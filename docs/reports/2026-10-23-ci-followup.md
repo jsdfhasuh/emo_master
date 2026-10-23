@@ -97,6 +97,15 @@ The parallel UI test now registers a test-only `HeldPace` subclass in its tempor
 
 Windows at `21b9ad6a` separately reported one `EXPORT_TIMEOUT` during the two-Job dual-image test after 3988 passes. Diagnostics show the existing 500 ms completion-wait budget expired and the result was correctly marked `INCOMPLETE`, not incorrectly called image-ready. Raw diagnostics are retained in `windows-21b-failed.txt`. No export deadline, completeness assertion, or retry policy was weakened. This observation requires follow-up verification and is not claimed fixed by the parallel UI fixture correction.
 
+### Completed Local Run And Windows CI Budget
+
+The exact local `scripts/ci_check.py` run has now exited with code 0: **7162 passed, 13 skipped, 41 subtests passed in 2848.77 s (47:28)**. Protobuf validation, Ruff, and mypy also passed. Evidence: `final-full-ci.txt`. This fixed snapshot matches `a70c15a8` source/tests/configuration; it was not modified while running and predates the two separately validated PLC teardown and parallel UI follow-ups. The unchanged full multi-capture file also passed **20 tests in 31.69 s** (`multi-capture-recheck.txt/xml`); this does not establish the cause of the historical Windows export timeout.
+
+Windows CI at `a70c15a8` was still passing tests at 97% when GitHub cancelled the job. The check annotation explicitly states `The job has exceeded the maximum execution time of 45m0s`:
+https://github.com/jsdfhasuh/emo_master/actions/runs/39919057411/job/120299574871
+
+Evidence: `windows-a70-timeout.txt` plus the GitHub check annotation. The Windows job budget is therefore adjusted to 60 minutes; Ubuntu retains 45 minutes. This changes only CI orchestration time for the observed full-suite duration. The 120-second per-test timeout, 60-second fault-handler diagnostic threshold, 500 ms export deadline, test set, assertions, and fail-fast behavior are unchanged. A fresh run is required to establish the final remote matrix result.
+
 ## Acceptance Boundary
 
 No real camera/PLC connection, field project mutation, network readdressing, credentials change, deployment, frozen EXE build, or Release was performed. Simulated device, localhost socket, source selftest, native offscreen Qt, and remote CI results are separate evidence layers. Skipped tests are not passes. Running application executables do not hot-load these source repairs.

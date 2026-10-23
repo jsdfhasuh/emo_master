@@ -10,7 +10,8 @@ jobs:
   validate:
     name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+    # The complete Windows suite takes about 48 minutes before setup/cleanup.
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 60 || 45 }}
     strategy:
       fail-fast: false
       matrix:

@@ -45,7 +45,7 @@ A new direct signal-refresh regression, executed against the original source, al
 - Schema tests distinguish current 2.7 new projects from explicitly historical migration inputs. Old TCP configurations are not deleted to bypass migration.
 - Real TCP worker tests now load schema 2.7, bind managed devices, and use the current device management RPCs. Exact external-client bytes, connection generations, two-channel isolation, cancellation, backpressure, no replay, and resource release remain covered.
 - Legacy communication-management tests use an independent workflow and are labeled as compatibility tests. Designer Save As still exercises the actual window, disk file, listener release, path fencing, and reload; its controller gets a Runtime client that supports project loading.
-- Old PLC private-debug transport tests use explicitly isolated historical declarations. Separate tests assert that current production managed declarations reject both private-debug entry points with `E_DEVICE_REQUIREMENT`; the production guard was not loosened.
+- Old PLC private-debug transport tests use explicitly isolated historical declarations. Separate tests assert that current production managed declarations reject both private-debug entry points with `E_DEVICE_DEBUG_REQUIRED`; the production guard was not loosened.
 - Cycle fixtures forward current source/identity arguments. Rejected jobs assert `REJECTED`, no job ID, and no newly created workspace.
 - The page test now describes native editing plus the retained legacy preview backend, not a complete current-menu user journey. It retains real image/count changes, save/reopen, and worker teardown assertions.
 - The workflow-history test restores its fake page editor before window teardown instead of leaking it into production `closeEvent`.
@@ -82,6 +82,12 @@ Focused runs overlap; their counts must not be summed as unique full-suite cover
 `f7367e25` initially failed Ruff because of a fixture import alias; `17a26c4e` corrected it. That failed CI run is not reported as passed. The older display/live-contract success at `83745e40` likewise does not establish the status of later source.
 
 At publication, a fresh exact `scripts/ci_check.py` run is in progress against final repair source, recorded in `final-full-ci.txt`. The resulting push starts the unchanged Linux/Windows CI matrix. Consult that commit's run for final full-suite status; this report records verified focused evidence and does not predeclare the pending checks successful.
+
+### PLC Editor Teardown Follow-up
+
+The Windows job at `17a26c4e` passed 1844 tests, then failed while tearing down the high-frequency heartbeat test. The fixture waited for an empty cleanup queue while its 25 ms heartbeat was still producing renewals. It now invokes the existing `onClose()` first, then retains the assertions that operations, cleanup, and active calls all drain. Production heartbeat and timeout settings are unchanged.
+
+An independent committed-source snapshot at `a70c15a8` plus this one fixture correction passed all 163 tests in `tests/designer/test_plc_editor.py` (40.99 s). Evidence: `plc-teardown-final.txt/xml`; original remote failure: `windows-plc-teardown-before.txt`. The already-running full local snapshot is intentionally not modified mid-run. Its source/tests/configuration were audited against 1279 committed blobs before this follow-up.
 
 ## Acceptance Boundary
 

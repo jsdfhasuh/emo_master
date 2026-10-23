@@ -331,6 +331,7 @@ def editor(designerApplication):
         for gate in context.gates.values():
             gate.set()
         if not controller._disposed:
+            controller.onClose()
             _pump(designerApplication, lambda: controller._operation is None and not controller._cleanups)
         controller.dispose()
         controller._executor.shutdown(wait=True)

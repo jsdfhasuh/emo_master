@@ -117,11 +117,15 @@ def testKeyboardAndDisabledChoiceRespectExistingActions(designer):  # noqa: F811
     assert c.pageActive() and switch.currentIndex() == 1
 
 
-def testDecliningFirstPageEnableKeepsFlowAndOriginalProject(qtApp, monkeypatch):
+def testDecliningFirstPageEnableKeepsFlowAndOriginalProject(qtApp, monkeypatch, tmp_path):
     from emo_master.apps.designer.ui.main_window import MainWindow
+    from emo_master.apps.designer.state.project_store import saveProject
+    from tests.core.project.test_devices import legacyPayload
     monkeypatch.delenv('EMO_PAGE_DESIGNER', raising=False)
     monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.No)
     window = MainWindow(Client())
+    saveProject(tmp_path, legacyPayload())
+    assert window.loadProjectDirectory(str(tmp_path), confirmed=True)
     window.show()
     coordinator = window.pageCoordinator
     switch = coordinator.chrome.selector

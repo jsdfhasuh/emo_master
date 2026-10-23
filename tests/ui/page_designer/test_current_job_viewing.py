@@ -118,10 +118,14 @@ def designer(qtApp, tmp_path, monkeypatch):
     window.close()
 
 
-def testNormalEntryDoesNotMigrateWithoutExplicitEnable(qtApp, monkeypatch):
+def testNormalEntryDoesNotMigrateWithoutExplicitEnable(qtApp, monkeypatch, tmp_path):
+    from tests.core.project.test_devices import legacyPayload
     monkeypatch.delenv('EMO_PAGE_DESIGNER', raising=False)
     monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.No)
     window = MainWindow(Client())
+    assert window.pageCoordinator.session.document().schemaVersion == '2.7'
+    saveProject(tmp_path, legacyPayload())
+    assert window.loadProjectDirectory(str(tmp_path), confirmed=True)
     coordinator = window.pageCoordinator
     assert coordinator is not None
     assert window.pageCoordinator.chrome.selector.text() == '当前：流程设计'

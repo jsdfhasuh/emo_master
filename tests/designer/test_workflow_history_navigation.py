@@ -355,9 +355,10 @@ def testNavigationActionsAreDisabledInPageDesignAndDoNotAffectRuntimeMarkers(win
     assert nav.move(-1) and nav.move(-1)
     assert w.workflowTabs._labels['child'].status == 'RUNNING'
     before = list(nav.history.entries), nav.history.index
-    monkeypatch.setattr(w.designerActions, 'pageEditor', lambda: object())
-    for key in ['navigate_back', 'navigate_forward', 'definition', 'references']:
-        assert w.designerActions.blockedReason(key) == '仅流程设计可用'
+    with monkeypatch.context() as patch:
+        patch.setattr(w.designerActions, 'pageEditor', lambda: object())
+        for key in ['navigate_back', 'navigate_forward', 'definition', 'references']:
+            assert w.designerActions.blockedReason(key) == '仅流程设计可用'
     assert (nav.history.entries, nav.history.index) == before
     run.state.updateJob('IDLE')
 

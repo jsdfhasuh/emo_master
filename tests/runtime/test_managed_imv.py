@@ -17,7 +17,7 @@ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
 from emo_master.apps.runtime.main import createRuntimeServer
-from emo_master.apps.designer.services.runtime_client import RuntimeClient
+from emo_master.apps.designer.services.runtime_client import RuntimeClient, RuntimeClientError
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.devices import DeviceDefinition
 from emo_master.core.project.models import ProjectDocument
@@ -329,7 +329,7 @@ def testManagerSharesHostBetweenOwnersAndCapacityFailureDoesNotOpenSdk():
         manager.close()
 
 
-def testCompilerRequiresManagedCameraButPreservesLegacyProjects():
+def testCompilerRequiresManagedCameraAndKeepsUnboundLegacyDraftReadable():
     scan = PluginRegistry("0.6.1").scan(ROOT)
     compiler = WorkflowCompiler(scan.activeOperators, deviceTypes=scan.deviceTypes)
     payload = cameraProject()
@@ -344,8 +344,13 @@ def testCompilerRequiresManagedCameraButPreservesLegacyProjects():
         compiler.compile(payload)
     payload["schemaVersion"] = "2.5"
     payload["devices"] = {"bindings": {}}
+    payload["communication"] = {}
     node["params"] = dict(ipAddress="127.0.0.1")
-    assert not compiler.compile(payload).workflows["main"].nodes[1].devicePlans
+    legacy = ProjectDocument.model_validate(payload)
+    before = legacy.model_dump()
+    with pytest.raises(WorkflowCompileError, match="device slots"):
+        compiler.compile(legacy)
+    assert legacy.model_dump() == before
 
 
 def testOverrideRequiresApplicableModeAndKeepDoesNotInventExposure():
@@ -421,8 +426,9 @@ def testRemoteDiagnosticsShareHostDeduplicateAndRejectPrivatePreview(tmp_path):
         client.cameraDiagnostic(*args, "close", sessionId=sessionId)
         assert not service.deviceManager.maintenanceOwners
         assert driver.process.is_alive()
-        with pytest.raises(ValueError, match="synchronized"):
+        with pytest.raises(RuntimeClientError, match="synchronized") as error:
             client.recoverDevice(service.loadedProjectId, runtimeId, "camera", state)
+        assert error.value.code == 'E_DEVICE_STATE'
         client.recoverDevice(service.loadedProjectId, runtimeId, "camera", state, hardwareSynchronized=True)
         assert driver.process is None
         with pytest.raises(ValueError, match="changed"):

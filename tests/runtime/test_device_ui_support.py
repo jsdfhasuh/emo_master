@@ -35,7 +35,7 @@ def testPassiveWatchUsesProductionCopyAndDoesNotOwnOriginalOrBlockWrites(tmp_pat
         manager.authorize('production-job', ['camera'])
         cycle = service.projectConfiguration.beginCycle('production-job', -1)
         descriptor = manager.execute('production-job', 'camera', 'capture', manager.definitions['camera'].defaults,
-                                     cycleId=cycle['cycleId'])
+            cycleId=cycle['cycleId'], source=dict(workflowId='main', nodeId='capture', slot='camera'))
         manager.frames.release(descriptor['frameId'], 'production-job')
         watched = client.cameraDiagnostic(*args, 'watch', sessionId=session)
         assert watched['preview'] and watched['metadata']['frameId'] == descriptor['frameId']

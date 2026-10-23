@@ -8,7 +8,7 @@ from emo_master.core.contracts.device_driver import DeviceDriver, DeviceError
 from emo_master.core.contracts.tcp_service import TcpServiceError
 from emo_master.core.project.communication import tcpServerConfiguration
 from emo_master.plugins.builtins._tcp_transport import (
-    CancellableSocket, configureListener, connectCancellable, receiveFramed, sendAll,
+    CancellableSocket, TcpConnectError, configureListener, connectCancellable, receiveFramed, sendAll,
 )
 
 
@@ -161,12 +161,12 @@ class ManagedTcpOnce(DeviceDriver):
             if stopped():
                 raise DeviceError('E_DEVICE_CANCELLED', 'TCP action cancelled before execution')
             if isinstance(self, ManagedTcpClientOnce):
-                sock = self._track(connectCancellable(self.definition.connection['host'], self.definition.connection['port'],
-                    stopped, min(deadline, monotonic() + params['connectTimeoutMs']/1000)))
-                wire = CancellableSocket(sock, stopped, deadline, params['responseTimeoutMs']/1000)
                 data = base64.b64decode(arguments['dataBase64'], validate=True)
                 if not data or len(data) > params['maxRequestBytes']:
                     raise DeviceError('E_TCP_MESSAGE_SIZE', 'TCP request is empty or exceeds maxRequestBytes')
+                sock = self._track(connectCancellable(self.definition.connection['host'], self.definition.connection['port'],
+                    stopped, min(deadline, monotonic() + params['connectTimeoutMs']/1000)))
+                wire = CancellableSocket(sock, stopped, deadline, params['responseTimeoutMs']/1000)
                 attempted = True
                 sendAll(wire, data)
                 sent = len(data)
@@ -180,9 +180,18 @@ class ManagedTcpOnce(DeviceDriver):
                     result.update(dataBase64=base64.b64encode(response).decode('ascii'),
                         peerHost=self.definition.connection['host'], peerPort=self.definition.connection['port'])
             else:
+                ack = b''
+                if params['ackText']:
+                    from emo_master.plugins.builtins._communication_operators import _encodeTcpData
+                    ack = _encodeTcpData(params['ackText'], params['ackEncoding']) + (b'\n' if params['ackAppendNewline'] else b'')
+                    if len(ack) > params['maxAckBytes']:
+                        raise DeviceError('E_TCP_ACK_SIZE', 'ACK exceeds maxAckBytes')
                 server = self._track(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
                 configureListener(server)
-                server.bind((self.definition.connection['bindHost'], self.definition.connection['port']))
+                try:
+                    server.bind((self.definition.connection['bindHost'], self.definition.connection['port']))
+                except OSError as error:
+                    raise TcpConnectError(str(error)) from error
                 server.listen(1)
                 acceptEnd = min(deadline, monotonic()+params['acceptTimeoutMs']/1000)
                 while True:
@@ -199,11 +208,7 @@ class ManagedTcpOnce(DeviceDriver):
                 self._track(sock)
                 wire = CancellableSocket(sock, stopped, deadline, params['readTimeoutMs']/1000)
                 data = receiveFramed(wire, framing=params['framing'], maxBytes=params['maxMessageBytes'], expectedBytes=params['expectedBytes'])
-                if params['ackText']:
-                    from emo_master.plugins.builtins._communication_operators import _encodeTcpData
-                    ack = _encodeTcpData(params['ackText'], params['ackEncoding']) + (b'\n' if params['ackAppendNewline'] else b'')
-                    if len(ack) > params['maxAckBytes']:
-                        raise DeviceError('E_TCP_ACK_SIZE', 'ACK exceeds maxAckBytes')
+                if ack:
                     wire.settimeout(params['readTimeoutMs']/1000)
                     attempted = True
                     sendAll(wire, ack)
@@ -211,7 +216,9 @@ class ManagedTcpOnce(DeviceDriver):
             self.lastResult = dict(outcome='COMPLETED', bytesSent=wire.bytesSent if wire else sent)
             return result
         except Exception as error:
-            self.lastResult = dict(code=getattr(error, 'code', 'E_TCP_IO'), message=str(error),
+            from emo_master.plugins.builtins._communication_operators import _communicationError
+            code = getattr(error, 'code', None) or _communicationError(error)['error']['code']
+            self.lastResult = dict(code=code, message=str(error),
                 outcome='OUTCOME_UNKNOWN' if attempted else 'NOT_SENT', bytesSent=wire.bytesSent if wire else sent,
                 automaticRetry=False)
             raise DeviceError(self.lastResult['code'], str(error), outcome=self.lastResult['outcome'],

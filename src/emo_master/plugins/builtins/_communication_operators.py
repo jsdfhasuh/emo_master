@@ -713,7 +713,8 @@ class TcpClientOperator:
             return dict(status='ok', outputs=outputs)
         except Exception as error:
             _checkTcpCancellation(runtimeContext, error)
-            return dict(status='error', error=dict(code=getattr(error, 'code', 'E_TCP_IO'), message=str(error)),
+            code = getattr(error, 'code', None) or _communicationError(error)['error']['code']
+            return dict(status='error', error=dict(code=code, message=str(error)),
                         diagnostics=getattr(error, 'diagnostics', {}))
 
 
@@ -740,7 +741,8 @@ class TcpReceiveOnceOperator:
             return dict(status='ok', outputs=outputs)
         except Exception as error:
             _checkTcpCancellation(runtimeContext, error)
-            return dict(status='error', error=dict(code=getattr(error, 'code', 'E_TCP_IO'), message=str(error)),
+            code = getattr(error, 'code', None) or _communicationError(error)['error']['code']
+            return dict(status='error', error=dict(code=code, message=str(error)),
                         diagnostics=getattr(error, 'diagnostics', {}))
 
 

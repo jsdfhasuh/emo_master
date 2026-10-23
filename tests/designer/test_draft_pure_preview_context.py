@@ -352,7 +352,7 @@ def testSameIdProjectCopySwitchClosesOldEditorSession(tmp_path, ownedDesignerWin
 
 
 @pytest.mark.parametrize("operator", [ROI, HISTOGRAM])
-def testDefaultNew21ProjectPreviewsUnsavedNodeAndAfterSaveWithoutRuntimeReload(tmp_path, ownedDesignerWindow, monkeypatch, operator):
+def testDefaultNewProjectPreviewsUnsavedNodeAndAfterSaveWithoutRuntimeReload(tmp_path, ownedDesignerWindow, monkeypatch, operator):
     from PySide2.QtWidgets import QFileDialog
     from tests.designer.qt_wait import waitForCatalog, waitUntil
     service = RuntimeService(dbPath=tmp_path / "runtime.db")
@@ -364,7 +364,7 @@ def testDefaultNew21ProjectPreviewsUnsavedNodeAndAfterSaveWithoutRuntimeReload(t
         waitForCatalog(window)
         monkeypatch.setattr(window, "_chooseProjectFile", lambda _title: str(projectPath))
         window.newProjectAction()
-        assert json.loads(projectPath.read_text())["schemaVersion"] == "2.1"
+        assert json.loads(projectPath.read_text())["schemaVersion"] == "2.7"
         assert window.activeWorkflowId == "main"
         # Mirror the real default-new workflow with existing unrelated nodes.
         for existing in ("vision.value.number", "vision.segment.in_range"):
@@ -372,13 +372,12 @@ def testDefaultNew21ProjectPreviewsUnsavedNodeAndAfterSaveWithoutRuntimeReload(t
         window.saveProjectAction()
         savedBefore = projectPath.read_bytes()
         loadedBefore = service.loadedDocument
-        assert loadedBefore is not None
+        assert loadedBefore is None  # Saving a current draft never publishes it.
         # No preview or later explicit Ctrl+S may silently reload that snapshot.
         monkeypatch.setattr(service, "LoadProject", lambda *_args, **_kwargs: pytest.fail("preview must not LoadProject"))
         oldNodes = set(window.flowModel.nodes)
         window.addNodeFromOperatorPayload(window._operatorDefinition(operator))
         nodeId, = set(window.flowModel.nodes) - oldNodes
-        assert all(node.nodeId != nodeId for node in loadedBefore.workflows["main"].nodes)
         assert nodeId not in {node["nodeId"] for node in json.loads(savedBefore)["workflows"]["main"]["nodes"]}
         window.openNodeParamDialog(nodeId)
         editor = window.nodeParamDialog

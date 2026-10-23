@@ -18,13 +18,17 @@ SIMULATION_FILE = "dual_plc_mc_simulation.emoproj"
 
 
 @lru_cache(maxsize=1)
-def builtin_registry():
+def builtin_scan():
     from emo_master import __version__
     from emo_master.core.plugin.registry import PluginRegistry
     scan = PluginRegistry(coreVersion=__version__).scan(HERE.parents[1] / "src/emo_master/plugins")
     if scan.rejectedOperators:
         raise RuntimeError(scan.rejectedOperators)
-    return scan.activeOperators
+    return scan
+
+
+def builtin_registry():
+    return builtin_scan().activeOperators
 
 
 def designer_metadata(payload):
@@ -37,8 +41,6 @@ def designer_metadata(payload):
                 manifest = registry[node["operatorId"]].manifest
                 inputs, outputs = manifest.inputPorts, manifest.outputPorts
                 node["paramSchema"] = deepcopy(manifest.paramSchema)
-                # This reproducible fixture intentionally remains schema 2.4.
-                node["paramSchema"].pop("xDeviceActionFields", None)
             elif kind == "subflow":
                 target = payload["workflows"][node["targetWorkflowId"]]
                 inputs, outputs = target["inputs"], target["outputs"]
@@ -195,11 +197,33 @@ def build_project(*, simulation=False, ports=(15950, 15951)):
     }
     order = ["read_both", *public, *helpers]
     operators = sorted({node["operatorId"] for flow in workflows.values() for node in flow["nodes"] if "operatorId" in node})
-    return designer_metadata(dict(schemaVersion="2.4", project=dict(projectId="dual-mc-simulation" if simulation else "dual-mc-field-20261015",
+    # Shared managed definitions own the physical endpoints; every operation keeps
+    # only address/type/value action parameters on its workflow node.
+    from emo_master.core.project.devices import DeviceDefinition
+    declaration = builtin_scan().deviceTypes["device.plc.mitsubishi_slmp"]
+    definitions = {}
+    connectionKeys = set(declaration.connectionSchema["properties"])
+    for key, flow in workflows.items():
+        for node in flow["nodes"]:
+            if node.get("operatorId") not in {READ, WRITE}:
+                continue
+            deviceId = key[:5]
+            params = node["params"]
+            connection = {name: value for name, value in params.items() if name in connectionKeys}
+            definition = declaration.validateDefinition(DeviceDefinition(name=deviceId,
+                deviceTypeId=declaration.deviceTypeId, driverVersion=declaration.version,
+                connection=connection, policies=dict(connectionRetryCount=0))).model_dump()
+            if deviceId in definitions:
+                assert definitions[deviceId] == definition
+            definitions[deviceId] = definition
+            node["params"] = {name: value for name, value in params.items()
+                              if name not in connectionKeys | {"retryCount", "retryDelayMs"}}
+            node["deviceBindings"] = {"plc": dict(deviceId=deviceId)}
+    return designer_metadata(dict(schemaVersion="2.7", project=dict(projectId="dual-mc-simulation" if simulation else "dual-mc-field-20261015",
         name="双 PLC MC 全类型模拟测试" if simulation else "双 PLC MC 真机测试（仅 D796 写入）", revision=2,
         createdAt="2026-10-15T00:00:00Z", updatedAt="2026-10-15T00:00:00Z"), entryWorkflowId="read_both",
         workflowOrder=order, workflows={key: workflows[key] for key in order},
-        runtime=dict(maxConcurrentJobs=1, startupWorkflowIds=["read_both"]), devices={"bindings": {}},
+        runtime=dict(maxConcurrentJobs=1, startupWorkflowIds=["read_both"]), devices={"schemaVersion": "1.0", "bindings": {}, "definitions": definitions},
         dependencies={"operators": operators}, presentation={}, resources={}, globalVariables={},
         production=dict(autoStart=False, mode="single", cycleIntervalMs=100)))
 

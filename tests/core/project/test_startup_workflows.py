@@ -17,6 +17,11 @@ def payload():
 
 def testMissingStartupListPreservesLegacySchemaAndCleanDraft():
     data = payload()
+    # New projects now default to 2.7; construct the legacy input explicitly.
+    data["schemaVersion"] = "2.1"
+    data["devices"] = {"bindings": {}}
+    for key in ("presentation", "resources", "production", "globalVariables"):
+        data.pop(key, None)
     session = ProjectEditSession(data, enablePresentation=False)
     assert not session.dirty
     assert session.document().startupWorkflows() == ['main']

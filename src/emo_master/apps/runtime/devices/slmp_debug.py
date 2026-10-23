@@ -33,7 +33,7 @@ class ManagedSlmpDebug:
                 config.endCycle(self.owner, cycle["cycleId"])
 
     def open(self):
-        self._call("connect", {})
+        self.manager.connectDiagnostic(self.owner, self.deviceId, self.closed.is_set)
 
     def readWords(self, device, start, count):
         return self._call("read", dict(device=device, startAddress=start, count=count))["words"]

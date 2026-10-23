@@ -1,11 +1,12 @@
 """Real spawned workers; local fixtures only, no production devices or database writes."""
 import base64
 from contextlib import closing, contextmanager
+from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 import socket
 import sqlite3
-from threading import Thread
+from threading import Event, Thread
 import time
 from uuid import uuid4
 
@@ -17,8 +18,7 @@ from emo_master.apps.designer.operator_editors import EditorKey
 from emo_master.apps.designer.services.operator_debug import DebugConnection
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
-from emo_master.apps.runtime.operator_debug.contracts import SINGLE_NODE_FOLDERS, digest
-from emo_master.plugins.builtins.huaray_camera.operator import HuarayCameraOperator
+from emo_master.apps.runtime.operator_debug.contracts import digest, trustedEntries
 from tests.runtime.operator_debug_fixture import project
 from tests.runtime.tcp_port_probe import assertTcpPortReleased
 from tests.runtime.test_operator_debug_rpc import runtime as runtime
@@ -56,14 +56,19 @@ def uploadImage(debug):
     return debug.upload(encoded.tobytes(), "image/png", {"kind": "file"})
 
 
-def testAllBuiltinsAdmittedButExternalResourcesNotWorkflowEnabled(runtime):
+def testReviewedPureAdaptersAdmittedAndManagedDevicesRequireDiagnostics(runtime):
     rows = json.loads(runtime.GetOperatorDebugCapabilities(pb.OperatorDebugRequest(), None).snapshot_json)["operators"]
-    managed = {"communication.tcp.session", "communication.tcp.session_send", "vision.io.simulated_camera"}
-    assert len(rows) == 71
-    assert {row["operatorId"] for row in rows if not row["supported"]} == managed
+    registry = runtime.pluginScanResult.activeOperators
+    managed = {key for key, descriptor in registry.items() if descriptor.manifest.deviceRequirements}
+    admitted = trustedEntries(registry)
+    assert {row["operatorId"] for row in rows} == set(registry)
+    assert {row["operatorId"] for row in rows if row["supported"]} == set(admitted) - managed
+    assert all(row["reason"] == "use managed device diagnostics" for row in rows if row["operatorId"] in managed)
     flow = json.loads(runtime.GetWorkflowDebugCapabilities(pb.OperatorDebugRequest(), None).snapshot_json)["operators"]
-    assert sum(not row["supported"] for row in flow) == len(SINGLE_NODE_FOLDERS) + len(managed)
-    assert all(row["supported"] != row["singleNodeOnly"] for row in flow if row["operatorId"] not in managed)
+    assert {row["operatorId"] for row in flow if row["supported"]} == {
+        key for key, descriptor in admitted.items() if not descriptor.get("singleNodeOnly") and key not in managed}
+    for operatorId in managed:
+        assertPrivateDebugRefused(runtime, operatorId)
 
 
 def testSelectValueReallyExecutes(runtime):
@@ -233,34 +238,95 @@ def testComplexSqliteSchemaRequiresTemplateAndKeepsBothSourcesUnchanged(runtime,
     assert production.read_bytes() == original and template.read_bytes() == testOriginal
 
 
-def testPlcWriteRequiresOneShotUnlockAndUsesConfiguredValues(runtime):
+def assertPrivateDebugRefused(runtime, operatorId):
+    request = pb.OperatorDebugRequest(runtime_instance_id=runtime.runtimeInstanceId, open_request_id=uuid4().hex,
+        project_json=json.dumps(project(operatorId)), project_id="draft", workflow_id="main", node_id="node",
+        operator_id=operatorId)
+    reply = runtime.OpenOperatorDebugSession(request, None)
+    assert not reply.ok and reply.code == "E_DEVICE_DEBUG_REQUIRED"
+    assert not runtime.operatorDebugManager.ownsResources() and not runtime.operatorDebugManager.opens
+    assert runtime.loadedDocument is None and not runtime.jobRepository.all()
+
+
+def testManagedPlcWriteRequiresUnlockConfirmationAndDeduplicatesReceipt(runtime, tmp_path):
     from tests.runtime.plc_debug_server import PlcDebugServer
-    with PlcDebugServer() as peer, connected(runtime, "communication.plc.slmp_write") as debug:
-        params = peer.params(device="D", startAddress=800, dataType="uint16", values=[123], retryCount=0)
-        from emo_master.apps.designer.services.runtime_client import RuntimeClientError
-        with pytest.raises(RuntimeClientError) as locked:
-            debug.execute(params, {})
-        assert locked.value.code == "E_DEBUG_CONFIRM_REQUIRED" and not debug.uncertain
-        assert not peer.requests
-        with pytest.raises(RuntimeClientError) as retry:
-            debug.execute({**params, "retryCount": 1}, {}, confirmSideEffects=True)
-        assert retry.value.code == "E_DEBUG_WRITE_RETRY_FORBIDDEN" and not peer.requests
-        record = run(debug, params, confirmSideEffects=True)
-        assert record["status"] == "SUCCEEDED", json.dumps(record, ensure_ascii=False)
-        assert peer.words[800] == 123 and len(peer.requests) == 1
-        fractional = run(debug, {**params, "values": [1.5]}, confirmSideEffects=True)
-        assert fractional["status"] == "FAILED" and len(peer.requests) == 1
-        replay = runtime.ExecuteOperatorDebugNode(pb.OperatorDebugRequest(**debug.identity,
-            request_id=uuid4().hex, input_set_id=record["inputSetId"], params_json=json.dumps(params),
-            control_json=json.dumps({"confirmedInputSetId": record["inputSetId"], "confirmedParamsDigest": digest(params)})), None)
-        assert not replay.ok and replay.code == "E_DEBUG_RESULT_EXPIRED" and len(peer.requests) == 1
+    from tests.runtime.test_managed_slmp import plcProject, openManagedDebug, debugCommand
+
+    with PlcDebugServer() as peer:
+        assertPrivateDebugRefused(runtime, "communication.plc.slmp_write")
+        assert peer.connections == 0 and not peer.requests
+        path = tmp_path / "plc.emoproj"
+        path.write_text(json.dumps(plcProject(peer.port)), encoding="utf-8")
+        before = path.read_bytes()
+        loaded = runtime.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None)
+        assert loaded.ok, loaded.message
+        session = openManagedDebug(runtime)
+        assert session.ok, session
+        try:
+            params = dict(device="D", startAddress=800, dataType="uint16", values=[123], lockGeneration=0)
+            locked = debugCommand(runtime, session, "write", "locked", confirmed=True, **params)
+            assert not locked.ok and locked.code == "E_PLC_WRITE_LOCKED" and not peer.requests
+            assert debugCommand(runtime, session, "set_write_enabled", "unlock", enabled=True, lockGeneration=0).ok
+            unconfirmed = debugCommand(runtime, session, "write", "unconfirmed", **params)
+            assert not unconfirmed.ok and not peer.requests
+            record = debugCommand(runtime, session, "write", "write-once", confirmed=True, **params)
+            assert record.ok, record
+            payload = json.loads(record.result_json)
+            assert payload["receipt"]["outcome"] == "confirmed" and payload["readback"]["values"] == [123]
+            assert peer.words[800] == 123
+            assert [request.command for request in peer.requests] == [0x1401, 0x0401]
+            fractional = debugCommand(runtime, session, "write", "fractional", confirmed=True,
+                                      **dict(params, values=[1.5]))
+            assert not fractional.ok and len(peer.requests) == 2
+            replay = debugCommand(runtime, session, "write", "write-once", confirmed=True, **params)
+            assert replay.result_json == record.result_json and len(peer.requests) == 2
+            assert path.read_bytes() == before and not runtime.jobRepository.all()
+        finally:
+            closed = runtime.ClosePlcDebugSession(pb.ClosePlcDebugSessionRequest(
+                session_id=session.session_id, runtime_instance_id=runtime.runtimeInstanceId), None)
+            assert closed.ok and not runtime.deviceManager.maintenanceOwners
 
 
-def testTcpSendExchangeUsesLoopbackOnly(runtime):
+@contextmanager
+def managedTcp(runtime, kind, port, **defaults):
+    """Actual device authority and operator adapter, not a private debug worker."""
+    from emo_master.apps.designer.state.workflow_store import WorkflowStore
+    from emo_master.apps.runtime.devices.manager import DeviceManager
+    from emo_master.core.project.models import ProjectDocument
+    from emo_master.plugins.builtins._communication_operators import TcpClientOperator, TcpReceiveOnceOperator
+    from tests.runtime.test_tcp_device_integration import definition
+
+    operatorId = "communication.tcp." + ("client" if kind == "client_once" else "receive_once")
+    assertPrivateDebugRefused(runtime, operatorId)
+    declaration = runtime.pluginScanResult.deviceTypes["device.tcp." + kind]
+    device = definition(declaration, port=port)
+    device["defaults"].update(defaults)
+    payload = WorkflowStore().toPayload()
+    payload["devices"]["definitions"] = {"tcp": device}
+    manager = DeviceManager(runtime.pluginScanResult.deviceTypes)
+    manager.load(ProjectDocument.model_validate(payload))
+    manager.authorize("test-owner", ["tcp"])
+    stop = Event()
+    parameters = manager.definitions["tcp"].defaults
+    context = dict(deviceParameters={"tcp": parameters}, executeDevice=lambda slot, action, arguments:
+        manager.execute("test-owner", "tcp", action, parameters, arguments=arguments,
+                        cycleId="test-cycle", cancelled=stop.is_set))
+    operator = TcpClientOperator() if kind == "client_once" else TcpReceiveOnceOperator()
+    try:
+        yield operator, context, manager, stop
+    finally:
+        stop.set()
+        manager.retire("test-owner")
+        manager.close()
+        assert not manager.workers and not manager.drivers and not manager.frames.frames
+        assert runtime.loadedDocument is None and not runtime.jobRepository.all()
+
+
+def testManagedTcpSendExchangeUsesLoopbackOnly(runtime):
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
         listener.listen()
-        listener.settimeout(10)
+        listener.settimeout(5)
         received = []
         def serve():
             with listener.accept()[0] as peer:
@@ -269,23 +335,24 @@ def testTcpSendExchangeUsesLoopbackOnly(runtime):
         thread = Thread(target=serve)
         thread.start()
         try:
-            with connected(runtime, "communication.tcp.client") as debug:
-                record = run(debug, {"host": "127.0.0.1", "port": listener.getsockname()[1], "operation": "exchange",
-                    "text": "HELLO", "appendNewline": True, "responseTextEncoding": "utf-8"}, confirmSideEffects=True)
-                assert record["status"] == "SUCCEEDED", record
+            with managedTcp(runtime, "client_once", listener.getsockname()[1], appendNewline=True,
+                            responseTextEncoding="utf-8") as (operator, context, manager, stop):
+                record = operator.executeNode({}, {"operation": "exchange", "text": "HELLO"}, context)
+                assert record["status"] == "ok", record
                 assert record["outputs"]["responseText"] == "ACK"
                 assert received == [b"HELLO\n"]
+                assert not manager.drivers["tcp"].snapshot()["ownsResources"]
         finally:
-            thread.join(10)
+            thread.join(5)
+            assert not thread.is_alive()
 
 
-def testTcpReceiveAndAcknowledgeThenReleasePort(runtime):
-    with socket.socket() as unused:
-        unused.bind(("127.0.0.1", 0))
-        port = unused.getsockname()[1]
-    with connected(runtime, "communication.tcp.receive_once") as debug:
-        execution = debug.execute({"bindHost": "127.0.0.1", "port": port, "ackText": "ACK",
-            "messageTextEncoding": "utf-8"}, {}, confirmSideEffects=True)
+def testManagedTcpReceiveAndAcknowledgeThenReleasePort(runtime):
+    from tests.runtime.test_managed_tcp import freePort
+    port = freePort()
+    with managedTcp(runtime, "receive_once", port, ackText="ACK", messageTextEncoding="utf-8") as (
+            operator, context, manager, stop), ThreadPoolExecutor(1) as pool:
+        pending = pool.submit(operator.executeNode, {}, {}, context)
         deadline = time.monotonic() + 5
         while True:
             try:
@@ -299,65 +366,57 @@ def testTcpReceiveAndAcknowledgeThenReleasePort(runtime):
             peer.sendall(b"HELLO\n")
             assert peer.recv(100) == b"ACK\n"
             assert peer.recv(1) == b"", "Receive-once kept the accepted connection open"
-        record = finished(debug, execution)
-        assert record["status"] == "SUCCEEDED" and record["outputs"]["text"] == "HELLO", record
+        record = pending.result(5)
+        assert record["status"] == "ok" and record["outputs"]["text"] == "HELLO", record
+        assert not manager.drivers["tcp"].snapshot()["ownsResources"]
     assertTcpPortReleased(port)
 
 
-def testCancelBlockedTcpReceiveNeverClaimsSuccessAndReleasesPort(runtime):
-    with socket.socket() as unused:
-        unused.bind(("127.0.0.1", 0))
-        port = unused.getsockname()[1]
-    with connected(runtime, "communication.tcp.receive_once") as debug:
-        execution = debug.execute({"bindHost": "127.0.0.1", "port": port, "acceptTimeoutMs": 60000}, {},
-                                  confirmSideEffects=True)
-        debug.mutation("CancelOperatorDebugExecution", execution_id=execution["executionId"])
-        record = finished(debug, execution)
-        assert record["status"] in {"CANCELLED", "UNKNOWN"}, record
+def testCancelManagedTcpReceiveNeverClaimsSuccessAndReleasesPort(runtime):
+    from tests.runtime.test_managed_tcp import freePort
+    port = freePort()
+    with managedTcp(runtime, "receive_once", port, acceptTimeoutMs=60000) as (
+            operator, context, manager, stop), ThreadPoolExecutor(1) as pool:
+        pending = pool.submit(operator.executeNode, {}, {}, context)
+        waitFor(lambda: manager.drivers["tcp"].active)
+        stop.set()
+        record = pending.result(5)
+        assert record["status"] == "error" and record["error"]["code"] == "E_DEVICE_CANCELLED", record
+        manager.waitOwner("test-owner")
+        assert not manager.drivers["tcp"].snapshot()["ownsResources"]
     assertTcpPortReleased(port)
 
 
-class SimulatedCamera(HuarayCameraOperator):
-    """Only injected into a test manager, never into the production registry."""
-    def __init__(self):
-        from tests.plugins.test_huaray_camera_operator import _FakeImvApi
-        self.fake = _FakeImvApi()
-        super().__init__(lambda: self.fake)
+def testManagedCameraLifecycleWithSimulatedSdkInActualHost(runtime):
+    import os
+    from emo_master.apps.runtime.devices.manager import DeviceManager
+    from emo_master.apps.runtime.devices.frame_store import copyFrame
+    from emo_master.core.project.models import ProjectDocument
+    from tests.runtime.imv_test_support import useSimulatedImv
+    from tests.runtime.test_managed_imv import cameraProject, FakeImv
 
-    def executeNode(self, inputs, params, context):
-        result = super().executeNode(inputs, params, context)
-        if result.get("status") == "ok":
-            result.setdefault("metrics", {})["simulatedOpenCount"] = self.fake.openCount
-        return result
-
-    def disposeOperator(self):
-        super().disposeOperator()
-        assert self.fake.openCount == self.fake.closeCount == self.fake.destroyCount
-
-
-def testCameraLifecycleWithSimulatedSdkInActualWorker(runtime):
-    manager = runtime.operatorDebugManager
-    operatorId = "vision.io.huaray_camera"
-    manager.admitted[operatorId] = {**manager.admitted[operatorId],
-        "entry": "tests.runtime.test_operator_debug_resources:SimulatedCamera"}
-    base = {"runtimeInstanceId": runtime.runtimeInstanceId}
-    opened = manager.call("open", {**base, "openRequestId": uuid4().hex, "projectJson": json.dumps(project(operatorId)),
-        "projectId": "draft", "workflowId": "main", "nodeId": "node", "operatorId": operatorId})
-    identity = {**base, "sessionId": opened["sessionId"], "generation": opened["generation"]}
-    waitFor(lambda: manager.call("get", identity)["state"] == "READY")
-    params = {"selectionMode": "ip", "ipAddress": "127.0.0.1", "triggerMode": "freeRun", "retryCount": 0}
-    for _ in range(2):
-        prepared = manager.call("prepare", {**identity, "requestId": uuid4().hex, "paramsJson": json.dumps(params), "inputs": {}})
-        execution = manager.call("execute", {**identity, "requestId": uuid4().hex, "inputSetId": prepared["inputSetId"],
-            "paramsJson": json.dumps(params), "controlJson": json.dumps({"confirmedInputSetId": prepared["inputSetId"],
-                                                                       "confirmedParamsDigest": digest(params)})})
-        def result():
-            record = manager.call("execution", {**identity, "executionId": execution["executionId"]})
-            return record if record["status"] != "RUNNING" else None
-        record = waitFor(result)
-        assert record["status"] == "SUCCEEDED", record
-        assert record["metrics"]["simulatedOpenCount"] == 1
-        assert "image" in record["outputAssets"]
-    manager.call("close", {**identity, "requestId": uuid4().hex})
-    state = waitFor(lambda: (state if (state := manager.call("get", identity))["state"] in {"CLOSED", "FAULTED"} else None))
-    assert state["state"] == "CLOSED", state
+    assertPrivateDebugRefused(runtime, "vision.io.huaray_camera")
+    manager = DeviceManager(runtime.pluginScanResult.deviceTypes)
+    useSimulatedImv(manager)
+    manager.load(ProjectDocument.model_validate(cameraProject("freeRun")))
+    driver = manager.drivers["camera"]
+    driver.apiFactory = FakeImv
+    assert driver.process is None
+    manager.authorize("camera-test", ["camera"])
+    try:
+        params = manager.definitions["camera"].defaults
+        first = manager.execute("camera-test", "camera", "capture", params, cycleId="first")
+        process = driver.process
+        second = manager.execute("camera-test", "camera", "capture", params, cycleId="second")
+        assert copyFrame(first).shape == copyFrame(second).shape == (3, 4, 3)
+        assert first["frameId"] != second["frameId"]
+        assert first["acquisition"]["blockId"] + 1 == second["acquisition"]["blockId"]
+        assert first["acquisition"]["connectionGeneration"] == second["acquisition"]["connectionGeneration"]
+        assert driver.process is process and process.pid != os.getpid()
+        assert driver.memory is None
+        manager.retire("camera-test")
+        assert not manager.frames.frames and not manager.permissions
+    finally:
+        manager.close()
+    assert process._closed and driver.process is None and driver.memory is None
+    assert runtime.loadedDocument is None and not runtime.jobRepository.all()

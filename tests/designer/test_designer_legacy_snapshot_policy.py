@@ -451,7 +451,8 @@ def testMainWindowNextRunChoiceIsFrozenAndInspectorsInvalidate(monkeypatch):
 
     # Exercise real UI/controller construction without starting a QThread/job.
     monkeypatch.setattr(module, "RuntimeWorker", Worker)
-    window = MainWindow(SimpleNamespace(listOperators=lambda: []))
+    window = MainWindow(SimpleNamespace(listOperators=lambda: [],
+        getOnlineProjectSnapshot=lambda _project: {"sourcePath": "project"}))
     scene = window.flowScene
     try:
         assert window.nextRunLegacySnapshotPolicy == "ALL"

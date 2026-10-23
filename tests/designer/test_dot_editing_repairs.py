@@ -11,6 +11,7 @@ from emo_master.apps.designer.state.project_store import saveProject
 from emo_master.apps.designer.ui.main_window import MainWindow
 from tests.runtime.test_workflow_debug_control import nestedProject
 from tests.designer.test_variable_node_migration import _payload
+from tests.core.project.test_devices import legacyPayload
 from emo_master.plugins.builtins.variable_read.operator import ReadVariableOperator
 from emo_master.plugins.builtins.variable_write.operator import WriteVariableOperator
 
@@ -24,7 +25,8 @@ def window(settings=None):
 def testCancelExplicitMigrationChangesNothing(designerApplication, monkeypatch, tmp_path, operator):
     w = window()
     path = tmp_path / 'old.emoproj'
-    assert w.saveProjectToDirectory(str(path))
+    saveProject(path, legacyPayload())
+    assert w.loadProjectDirectory(str(path))
     session = w.pageCoordinator.session
     before = session.payload(), deepcopy(session._undo), deepcopy(session._redo), w.flowScene.getNodePositions()
     raw = path.read_bytes()
@@ -210,7 +212,8 @@ def testRecoveryExportsInvalidMemoryBeforeRestoringValidCheckpoint(designerAppli
     w = window()
     original = tmp_path / 'original.emoproj'
     recovery = tmp_path / 'recovery.json'
-    assert w.saveProjectToDirectory(str(original))
+    saveProject(original, legacyPayload())
+    assert w.loadProjectDirectory(str(original))
     raw = original.read_bytes()
     before = w.pageCoordinator.session.payload()
     node = w.flowModel.addNode('vision.state.variable_read', 'Broken legacy draft', {}, {'value': 'object'})

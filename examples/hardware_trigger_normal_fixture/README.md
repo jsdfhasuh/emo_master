@@ -4,6 +4,12 @@
 
 该项目包含两个普通工作流入口 `station1-run`、`station2-run`，各有一个 While；单帧链路仍是 `station1`、`station2`。2026-10-09 已撤回 M5 的平台级工位声明，不再使用 `production.stations` 或工位配置表单。源码和模拟边界测试不等于原算法或现场设备验收。
 
+## 当前托管设备配置
+
+当前可再生成的 `project.json` 使用 schema 2.7：两台相机、两台 PLC 和四个 TCP 单次客户端都在 `devices.definitions` 中配置，工作流节点仅绑定设备并保留操作参数。相机以 `captureTimeoutMs=0` 等待可取消的硬件触发，连续帧策略为 `contiguous`，使用者停止后确认 Host 和共享内存已退出。取消正在等待的采集可能丢失回执，必须保留未知结果并在停止外部触发后显式恢复设备，再手动启动工作流；恢复本身不重连、不重启任务、不补执行。PLC 连接由 Runtime 复用，不再每个节点私建连接。
+
+测试只注入模拟 SDK、ONNX 后端和回环网络对端，执行真实 DeviceManager、相机 Host 和 IPC。生产 IMV 驱动仍只声明支持 Windows；Linux 软件模拟不代表真实相机兼容性。历史报告保留原验证时的工程版本，不随当前夹具重写。
+
 ## 1 两拍控制没有专用阶段节点
 
 ~~~text

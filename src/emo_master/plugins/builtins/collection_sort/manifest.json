@@ -27,9 +27,181 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "key": {"title": "排序字段", "type": "string", "enum": ["angle", "area", "bboxHeight", "bboxWidth", "bboxX", "bboxY", "centerX", "centerY", "centroidX", "centroidY", "circularity", "classId", "confidence", "depth", "diameter", "endX", "endY", "id", "isHole", "label", "length", "minRectAngle", "minRectHeight", "minRectWidth", "perimeter", "quality", "radius", "rawScore", "sourceId", "sourceType", "startX", "startY"], "default": "area"},
-      "direction": {"title": "排序方向", "type": "string", "enum": ["ascending", "descending"], "default": "descending"}
-    }
+      "collectionType": {
+        "title": "处理对象",
+        "type": "string",
+        "enum": [
+          "",
+          "detections",
+          "blobs",
+          "contours",
+          "measurements",
+          "lines",
+          "circles",
+          "matches"
+        ],
+        "default": "",
+        "xOptionLabels": {
+          "": "请选择处理对象",
+          "detections": "检测结果",
+          "blobs": "连通域",
+          "contours": "轮廓",
+          "measurements": "形状测量",
+          "lines": "直线",
+          "circles": "圆",
+          "matches": "模板匹配结果"
+        }
+      },
+      "key": {
+        "title": "排序字段",
+        "type": "string",
+        "enum": [
+          "",
+          "angle",
+          "area",
+          "bboxHeight",
+          "bboxWidth",
+          "bboxX",
+          "bboxY",
+          "centerX",
+          "centerY",
+          "centroidX",
+          "centroidY",
+          "circularity",
+          "classId",
+          "confidence",
+          "depth",
+          "diameter",
+          "endX",
+          "endY",
+          "id",
+          "isHole",
+          "label",
+          "length",
+          "minRectAngle",
+          "minRectHeight",
+          "minRectWidth",
+          "perimeter",
+          "quality",
+          "radius",
+          "rawScore",
+          "sourceId",
+          "sourceType",
+          "startX",
+          "startY"
+        ],
+        "default": "",
+        "xOptionLabels": {
+          "": "自动（按对象类型）"
+        },
+        "xEnumBy": {
+          "parameter": "collectionType",
+          "options": {
+            "blobs": [
+              "",
+              "area",
+              "bboxHeight",
+              "bboxWidth",
+              "bboxX",
+              "bboxY",
+              "centroidX",
+              "centroidY",
+              "circularity",
+              "id",
+              "label"
+            ],
+            "detections": [
+              "",
+              "bboxHeight",
+              "bboxWidth",
+              "bboxX",
+              "bboxY",
+              "classId",
+              "confidence",
+              "id",
+              "label"
+            ],
+            "contours": [
+              "",
+              "area",
+              "bboxHeight",
+              "bboxWidth",
+              "bboxX",
+              "bboxY",
+              "depth",
+              "id",
+              "isHole",
+              "perimeter"
+            ],
+            "measurements": [
+              "",
+              "area",
+              "bboxHeight",
+              "bboxWidth",
+              "bboxX",
+              "bboxY",
+              "centroidX",
+              "centroidY",
+              "circularity",
+              "id",
+              "minRectAngle",
+              "minRectHeight",
+              "minRectWidth",
+              "perimeter",
+              "sourceId",
+              "sourceType"
+            ],
+            "lines": [
+              "",
+              "angle",
+              "bboxHeight",
+              "bboxWidth",
+              "bboxX",
+              "bboxY",
+              "endX",
+              "endY",
+              "id",
+              "length",
+              "startX",
+              "startY"
+            ],
+            "circles": [
+              "",
+              "area",
+              "bboxHeight",
+              "bboxWidth",
+              "bboxX",
+              "bboxY",
+              "centerX",
+              "centerY",
+              "diameter",
+              "id",
+              "radius"
+            ],
+            "matches": [
+              "",
+              "bboxHeight",
+              "bboxWidth",
+              "bboxX",
+              "bboxY",
+              "id",
+              "quality",
+              "rawScore"
+            ]
+          }
+        }
+      },
+      "direction": {
+        "title": "排序方向",
+        "type": "string",
+        "enum": [
+          "ascending",
+          "descending"
+        ],
+        "default": "descending"
+      }
+    },
+    "xModeOperator": "vision.collection.sort"
   },
   "minCoreVersion": "0.3.0",
   "maxCoreVersion": "1.x"

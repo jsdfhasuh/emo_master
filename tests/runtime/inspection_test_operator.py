@@ -7,8 +7,10 @@ import numpy as np
 
 class InspectionTestOperator:
     meta = SimpleNamespace(operatorId='test.inspection', displayName='受控测试', version='1.0.0',
-                           inputPorts={'index': {'type': 'integer', 'required': False}},
-                           outputPorts={'image': 'image'}, paramSchema={'type': 'object'})
+                           inputPorts={'index': {'type': 'integer', 'required': False},
+                                       'indices': {'type': 'list<integer>', 'required': False}},
+                           outputPorts={'image': 'image', 'count': 'integer', 'items': 'list<integer>'},
+                           paramSchema={'type': 'object'})
     def validateParams(self, params):
         return None
 
@@ -21,5 +23,12 @@ class InspectionTestOperator:
         index = inputs.get('index', 0)
         if index == params.get('failIndex', -1):
             return {'status': 'error', 'error': {'code': 'E_TEST_LAST_ITERATION', 'message': 'controlled final failure'}}
-        return {'status': 'ok', 'outputs': {'image': np.full((12, 16, 3), 20 + int(index), np.uint8)},
+        time.sleep(params.get('delayMs', 0) / 1000)
+        outputs = {'image': np.full((params.get('height', 12), params.get('width', 16), 3),
+                                    20 + int(index), np.uint8)}
+        if params.get('withCount'):
+            outputs['count'] = int(index)
+        if params.get('withItems'):
+            outputs['items'] = params.get('items', [5, 2, 3])
+        return {'status': 'ok', 'outputs': outputs,
                 'metrics': {'latencyMs': 1}}

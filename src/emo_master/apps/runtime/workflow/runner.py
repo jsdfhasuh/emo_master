@@ -385,6 +385,13 @@ class WorkflowRunner:
                     f"artifact created: {value['path']}",
                     payload={"artifact": _jsonSafe(artifact)},
                 )
+                capture = getattr(self.previewSnapshotStore, 'captureArtifact', None)
+                if callable(capture):
+                    try:
+                        capture(node, artifact, context)
+                    except Exception as error:
+                        self.publish('preview.snapshot.failed', context, str(error), level='WARN',
+                                     code='E_PREVIEW_SNAPSHOT_FAILED')
 
     def _capturePreviewSnapshot(self, node, outputs, context) -> None:
         if node.kind != "operator" or self.previewSnapshotStore is None:

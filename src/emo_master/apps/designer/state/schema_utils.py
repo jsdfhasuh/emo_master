@@ -20,9 +20,12 @@ def mergeParameterTitles(
                 title = sourceField.get("title")
                 if isinstance(title, str) and title.strip():
                     field["title"] = title.strip()
-                for key in ("description", "xOptionLabels", "xUnit", "xExample", "xMinimum", "xMaximum", "xOdd", "xBlankMeansEmpty"):
+                for key in ("description", "xOptionLabels", "xUnit", "xExample", "xMinimum", "xMaximum", "xOdd", "xBlankMeansEmpty", "xPlaceholder"):
                     if key in sourceField:
                         field[key] = deepcopy(sourceField[key])
+                if (field.get("type") == sourceField.get("type") == "array"
+                        and sourceField.get("xWidget") == "integer-list"):
+                    field["xWidget"] = "integer-list"
                 condition = sourceField.get("xEnabledWhen")
                 if isinstance(condition, dict) and all(key in properties for key in condition):
                     field["xEnabledWhen"] = deepcopy(condition)
@@ -114,7 +117,8 @@ def collectSchemaErrors(schema: dict[str, object], value: object, path: str = "p
     for key, itemSchema in properties.items():
       if not isinstance(key, str) or not isinstance(itemSchema, dict):
         continue
-      if key in value:
+      from emo_master.core.project.snapshots import parameterValidationApplies
+      if key in value and parameterValidationApplies(value, itemSchema):
         errors.extend(collectSchemaErrors(itemSchema, value[key], f"{path}.{key}"))
     return errors
 

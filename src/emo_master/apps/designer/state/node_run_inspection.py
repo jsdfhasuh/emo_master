@@ -75,6 +75,17 @@ class NodeRunInspection:
             receipt = receiptSummary(diagnostics.get('sqliteReceipt'), identities)
             if receipt is not None:
                 record['sqliteReceipt'] = receipt
+            imageMessages = diagnostics.get('imageOutputMessages')
+            if status == 'COMPLETED' and isinstance(imageMessages, dict):
+                # Subflow diagnostics can include a child's omissions even
+                # when another child supplied the parent output.
+                outputs = payload.get('outputs')
+                outputNames = (set(outputs) if isinstance(outputs, dict) else
+                               {item['port'] for item in (io['outputs'] or {}).get('items', ())})
+                record['imageOutputMessages'] = {
+                    clipText(port, 64): clipText(message, 256)
+                    for port, message in list(imageMessages.items())[:16]
+                    if isinstance(port, str) and isinstance(message, str) and port not in outputNames}
         # Identity from a remote endpoint is data too. Bound it before retention.
         for field in ('jobId', 'workflowId', 'nodeId', 'nodeRunId', 'workflowRunId'):
             record[field] = clipText(record[field], 128)
@@ -91,6 +102,7 @@ class NodeRunInspection:
                             'unavailableReason': '摘要超过界面额度，未保留端口值'}
         if encodedBytes(record) > MAX_NODE_BYTES:
             record.pop('sqliteReceipt', None)
+            record.pop('imageOutputMessages', None)
         self._nodes[key] = record
         self._nodes.move_to_end(key)
         while len(self._nodes) > MAX_INSPECTED_NODES:

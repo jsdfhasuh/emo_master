@@ -57,7 +57,8 @@ def testRetentionLimitsIncludeEscapedIdentityTextAndMaliciousPayloads():
         raw.update(workflowId='\x00' * 128, jobId='\x00' * 128,
                    workflowRunId='\x00' * 128, nodeRunId='\x00' * 128,
                    iterationPath=[1000000] * 1000, sequence=2**10000)
-        raw['payload'].update(message='\x00' * 10000, diagnostics={'text': '\x00' * 10000},
+        raw['payload'].update(message='\x00' * 10000, diagnostics={
+            'text': '\x00' * 10000, 'imageOutputMessages': {str(n): '\x00' * 10000 for n in range(20)}},
                               metrics={str(n): '\x00' * 10000 for n in range(100)})
         assert state.applyEvent(raw)
         assert encodedBytes(state.get(raw['workflowId'], str(i), raw['jobId'])) <= MAX_NODE_BYTES
@@ -87,3 +88,14 @@ def testOlderRuntimeIsHonestAboutMissingInputsAndUnavailableOutput():
     raw['payload'] = {'outputs': {'count': 999}, 'message': 'failed'}
     state.applyEvent(raw)
     assert '999' not in inspectionText(state.get('main', 'count', 'job'), 'job')
+
+
+def testImageOmissionDiagnosticsNeverHideAnActualOutput():
+    state = NodeRunInspection()
+    for sequence, outputs in enumerate(({'outputs': {'overlay': 'array pixels'}}, {
+        'ioSummary': finishInspection(startInspection({}), {'overlay': 'array pixels'})}), start=1):
+        raw = event(sequence=sequence)
+        raw['payload'] = {**outputs, 'diagnostics': {'imageOutputMessages': {
+            'overlay': 'child disabled overlay', 'croppedImage': 'crop disabled'}}}
+        assert state.applyEvent(raw)
+        assert state.get('main', 'count', 'job')['imageOutputMessages'] == {'croppedImage': 'crop disabled'}

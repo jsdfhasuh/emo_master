@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from time import perf_counter
 from typing import Any, TypeGuard, cast
 
+from emo_master.plugins.builtins._operator_modes import effectiveModeParams, modeSchema
+
 import cv2
 import numpy as np
 
@@ -121,10 +123,11 @@ class BlurOperator:
                 "schemaVersion": "1.x",
             },
         },
-        paramSchema=_PARAM_SCHEMA,
+        paramSchema=modeSchema("vision.preprocess.blur", _PARAM_SCHEMA),
     )
 
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
+        params = effectiveModeParams(params, self.meta.paramSchema)
         mode = params.get("mode", "gaussian")
         kernelSize = params.get("kernelSize", 5)
         diameter = params.get("diameter", 9)

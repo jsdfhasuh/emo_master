@@ -1,16 +1,32 @@
 """Latest-only read/decode ownership, late delivery and honest capability gaps."""
 from types import SimpleNamespace
 import threading
+import time
 
+import grpc
 import pytest
 
+from emo_master.apps.designer.services.display_calls import DisplayCallError
 from emo_master.apps.designer.services.inspection_images import InspectionImages, ImageSelection
+from emo_master.apps.designer.services.runtime_client import RuntimeClientError
 from emo_master.apps.designer.ui.node_image_decode import decodeNodeImage
 from emo_master.apps.runtime.preview.image_headers import imageHeader
 
 
 def selection(port='image'):
     return ImageSelection('project', 'job', 'main', 'node', 'flow', 'invocation', 7, port)
+
+
+def forceDueRenewal(images):
+    # Exercise the existing timer without waiting its production 10s interval.
+    with images._condition:
+        images._renewAt = time.monotonic() - 1
+        images._condition.notify_all()
+
+
+class StreamUnavailable(grpc.RpcError):
+    def code(self):
+        return grpc.StatusCode.UNAVAILABLE
 
 
 class Client:
@@ -20,13 +36,18 @@ class Client:
         self.exited = threading.Event()
         self.calls = []
         self.closed = []
+        self.queries = []
+        self.renewed = threading.Event()
 
     def inspectionSession(self, action, project, session=''):
         if action == 'close':
             self.closed.append(session)
+        elif action == 'renew':
+            self.renewed.set()
         return SimpleNamespace(session_id='session', runtime_instance_id='runtime')
 
     def listNodePreviewSourcesWithMetadata(self, *args, **kwargs):
+        self.queries.append((args, kwargs))
         source = SimpleNamespace(port='image', originJobId='job', originProjectRevision=7,
             workflowRunId='flow', nodeRunId='invocation', captureId='capture', workflowId='main',
             nodeId='node', sourceId='asset', width=1, height=1)
@@ -105,8 +126,150 @@ def testOlderRuntimeCapabilityIsExplicitAndDoesNotInventPixels():
         images.close()
 
 
+def testSameSelectionDoesNotReadTwiceAndQueriesExactInvocation():
+    client = Client()
+    client.release.set()
+    delivered = threading.Event()
+    images = InspectionImages(client, lambda *_args: ('pixels', 4, 'PNG'), lambda *_args: delivered.set())
+    try:
+        images.ensureSession('project')
+        generation = images.select(selection())
+        assert delivered.wait(2)
+        assert images.take(generation)['image'] == 'pixels'
+        for _ in range(10):
+            assert images.select(selection()) == generation
+        assert len(client.calls) == len(client.queries) == 1
+        args, query = client.queries[0]
+        assert args == ('project', 'main', 'node')
+        assert query['jobId'] == 'job' and query['inspectionSessionId'] == 'session'
+        assert query['workflowRunId'] == 'flow' and query['nodeRunId'] == 'invocation'
+    finally:
+        images.close()
+
+
+@pytest.mark.parametrize('failure', ['list', 'stream', 'timeout'])
+def testTransientReadFailureRecoversOnHealthyRenewalWithoutChangingSelection(failure):
+    client = Client()
+    client.release.set()
+    delivered = threading.Event()
+    images = InspectionImages(client, lambda *_args: ('pixels', 4, 'PNG'), lambda *_args: delivered.set())
+    methodName = 'listNodePreviewSourcesWithMetadata' if failure == 'list' else 'readInspectionAsset'
+    method = getattr(client, methodName)
+    attempts = []
+
+    def failOnce(*args, **kwargs):
+        attempts.append((args, kwargs))
+        if len(attempts) == 1:
+            if failure == 'stream':
+                raise StreamUnavailable()
+            if failure == 'timeout':
+                raise DisplayCallError('E_DISPLAY_TIMEOUT', 'read timed out')
+            raise RuntimeClientError('StatusCode.UNAVAILABLE', 'connection temporarily lost')
+        return method(*args, **kwargs)
+
+    setattr(client, methodName, failOnce)
+    try:
+        images.ensureSession('project')
+        generation = images.select(selection())
+        assert delivered.wait(2)
+        packet = images.take(generation)
+        assert 'image' not in packet and not packet['contextExpired']
+        delivered.clear()
+        for _ in range(10):
+            assert images.select(selection()) == generation
+        assert len(attempts) == 1  # UI refresh must not become a retry loop.
+        forceDueRenewal(images)
+        assert client.renewed.wait(2)
+        assert delivered.wait(2)
+        packet = images.take(generation)
+        assert packet['image'] == 'pixels' and packet['selection'] == selection()
+        assert len(attempts) == 2 and not images._disconnected
+        assert images.sessionId == 'session' and images.runtimeId == 'runtime'
+        assert images._pending is None
+        client.renewed.clear()
+        forceDueRenewal(images)
+        assert client.renewed.wait(2)
+        assert len(attempts) == 2
+        assert images.select(selection()) == generation
+    finally:
+        images.close()
+
+
+@pytest.mark.parametrize('code', ['E_INSPECTION_IDENTITY', 'E_DISPLAY_CANCELLED', 'E_INSPECTION_CORRUPT'])
+def testNonTransportReadFailuresAreNotRetriedByRenewal(code):
+    client = Client()
+    delivered = threading.Event()
+    attempts = []
+
+    def fail(*_args):
+        attempts.append(1)
+        raise RuntimeClientError(code, 'not a transient transport failure')
+
+    client.readInspectionAsset = fail
+    images = InspectionImages(client, lambda *_args: pytest.fail('no pixels'), lambda *_args: delivered.set())
+    try:
+        images.ensureSession('project')
+        generation = images.select(selection())
+        assert delivered.wait(2)
+        packet = images.take(generation)
+        assert packet['contextExpired'] == (code == 'E_INSPECTION_IDENTITY')
+        assert not images._disconnected
+        forceDueRenewal(images)
+        assert client.renewed.wait(2)
+        assert len(attempts) == 1 and images._pending is None
+    finally:
+        images.close()
+
+
+def testChangingSelectionAfterReadFailureDoesNotRetryTheOldImage():
+    client = Client()
+    delivered = threading.Event()
+
+    def fail(*_args):
+        raise RuntimeClientError('StatusCode.UNAVAILABLE', 'connection temporarily lost')
+
+    client.readInspectionAsset = fail
+    images = InspectionImages(client, lambda *_args: pytest.fail('no pixels'), lambda *_args: delivered.set())
+    try:
+        images.ensureSession('project')
+        generation = images.select(selection())
+        assert delivered.wait(2)
+        assert 'image' not in images.take(generation)
+        assert images._disconnected
+        delivered.clear()
+        generation = images.select(selection('missing'))
+        assert delivered.wait(2)
+        assert 'MISSING' in images.take(generation)['message']
+        assert not images._disconnected
+        forceDueRenewal(images)
+        assert client.renewed.wait(2)
+        assert len(client.queries) == 2 and images.reads == 1
+        assert images._pending is None
+    finally:
+        images.close()
+
+
+@pytest.mark.parametrize('code', ['E_INSPECTION_SESSION_EXPIRED', 'E_INSPECTION_IDENTITY'])
+def testLostContextIsReportedSoTheUiCanReleaseHistory(code):
+    client = Client()
+    delivered = threading.Event()
+    images = InspectionImages(client, lambda *_args: pytest.fail('no image selected'), lambda *_args: delivered.set())
+    method = client.inspectionSession
+    try:
+        images.ensureSession('project')
+        def lost(action, *args):
+            if action == 'renew':
+                raise RuntimeClientError(code, 'context is no longer available')
+            return method(action, *args)
+        client.inspectionSession = lost
+        forceDueRenewal(images)
+        assert delivered.wait(2)
+        assert images.take(images.generation)['contextExpired'] is True
+    finally:
+        images.close()
+
+
 def testLostRenewalClearsImageAndRecoveringLeaseRetriesOnlySelectedSource():
-    import time
     client = Client()
     client.release.set()
     client.failRenew = False
@@ -121,13 +284,6 @@ def testLostRenewalClearsImageAndRecoveringLeaseRetriesOnlySelectedSource():
     delivered = threading.Event()
     images = InspectionImages(client, lambda *_args: ('pixels', 4, 'PNG'), lambda *_args: delivered.set())
 
-    def forceDueRenewal():
-        # Make the already existing timer due; production's 10s interval and
-        # the 5s per-read deadline remain unchanged.
-        with images._condition:
-            images._renewAt = time.monotonic() - 1
-            images._condition.notify_all()
-
     try:
         images.ensureSession('project')
         generation = images.select(selection())
@@ -135,13 +291,13 @@ def testLostRenewalClearsImageAndRecoveringLeaseRetriesOnlySelectedSource():
         assert images.take(generation)['image'] == 'pixels'
         delivered.clear()
         client.failRenew = True
-        forceDueRenewal()
+        forceDueRenewal(images)
         assert delivered.wait(2)
         assert 'connection lost' in images.take(generation)['message']
         assert len(client.calls) == 1 and images.sessionId == 'session'
         delivered.clear()
         client.failRenew = False
-        forceDueRenewal()
+        forceDueRenewal(images)
         assert delivered.wait(2)
         assert images.take(generation)['image'] == 'pixels'
         assert len(client.calls) == 2 and images._pending is None

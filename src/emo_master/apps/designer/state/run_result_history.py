@@ -1,4 +1,4 @@
-"""Two explicit runs, independent of Qt, mutable drafts and the live canvas."""
+"""The last two actual invocations of each node, independent of the canvas."""
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from copy import deepcopy
@@ -39,6 +39,10 @@ class RunResultHistory:
         self.runs: OrderedDict[str, RunResultRecord] = OrderedDict()
         self.viewJobId: str | None = None
         self.notice = ''
+        self.executions = OrderedDict()
+        self.nodeIdentity = None
+        self.older = False
+        self.contextId = None
 
     @property
     def current(self):
@@ -46,27 +50,41 @@ class RunResultHistory:
 
     @property
     def previous(self):
-        return list(self.runs.values())[-2] if len(self.runs) == 2 else None
+        entries = self.executions.get(self.nodeIdentity, ())
+        return entries[-2]['run'] if len(entries) == 2 else None
 
     @property
     def selected(self):
-        return self.runs.get(self.viewJobId or '')
+        entries = self.executions.get(self.nodeIdentity, ())
+        if entries:
+            return entries[-2 if self.older and len(entries) == 2 else -1]['run']
+        return self.current
 
     @property
     def retainedBytes(self):
-        return sum(run.retainedBytes for run in self.runs.values())
+        return sum(run.retainedBytes for run in self.runs.values()) + (encodedBytes([
+            [{key: value for key, value in entry.items() if key != 'run'} for entry in entries]
+            for entries in self.executions.values()]) if self.executions else 0)
 
     def clear(self):
         self.runs.clear()
         self.viewJobId = None
         self.notice = ''
+        self.executions.clear()
+        self.nodeIdentity = None
+        self.older = False
+        self.contextId = None
+
+    def bindContext(self, contextId):
+        if self.contextId is not None and self.contextId != contextId:
+            self.clear()
+        self.contextId = contextId
 
     def accept(self, jobId, definitions=(), revision=1, acceptedAtMs=0):
         if not isinstance(jobId, str) or not jobId or len(jobId.encode()) > 128:
             return
         if jobId in self.runs:
             return
-        wasLive = self.selected is self.current
         frozen = {}
         limited = False
         for node in definitions:
@@ -93,18 +111,41 @@ class RunResultHistory:
             record.notice = 'E_INSPECTION_METADATA_BUDGET: 节点定义或端口超过摘要额度，部分内容未保留（节点上限64）'
         self.runs[jobId] = record
         self.notice = ''
-        while len(self.runs) > 2:
-            evicted, _ = self.runs.popitem(last=False)
-            if self.viewJobId == evicted:
-                self.notice = '正在查看的任务已超出两次运行的保留范围，已返回本次运行'
-        if wasLive or self.viewJobId not in self.runs:
-            self.viewJobId = jobId
+        self.viewJobId = jobId
+        self._pruneJobs()
 
     def selectPrevious(self, previous):
-        run = self.previous if previous else self.current
-        if run:
-            self.viewJobId = run.jobId
-            self.notice = ''
+        self.older = bool(previous and self.previous)
+        self.notice = ''
+
+    def _pruneJobs(self):
+        retained = {entry['run'].jobId for entries in self.executions.values() for entry in entries}
+        if self.current:
+            retained.add(self.current.jobId)
+        for jobId in list(self.runs):
+            if jobId not in retained:
+                del self.runs[jobId]
+            elif self.runs[jobId] is not self.current:
+                run = self.runs[jobId]
+                nodes = {key for key, entries in self.executions.items()
+                         if any(entry['run'] is run for entry in entries)}
+                run.definitions = {key: value for key, value in run.definitions.items() if key in nodes}
+                run.inspection._nodes = OrderedDict((key, value) for key, value in run.inspection._nodes.items()
+                                                    if key in nodes)
+
+    def setStatus(self, jobId, status):
+        run = self.runs.get(jobId)
+        if run is None:
+            return
+        run.status = status
+        if status not in {'COMPLETED', 'FAILED', 'ABORTED'}:
+            return
+        for entries in self.executions.values():
+            for entry in entries:
+                record = entry['record']
+                if record['jobId'] == jobId and record['status'] == 'RUNNING':
+                    record['status'] = 'CANCELLED' if status == 'ABORTED' else 'INTERRUPTED'
+                    record['message'] = '任务已结束，本次节点执行未完成'
 
     def applyEvent(self, event):
         run = self.runs.get(event.get('jobId', ''))
@@ -124,7 +165,7 @@ class RunResultHistory:
         if willEvict:
             run.notice = 'E_INSPECTION_METADATA_BUDGET: 节点摘要超过64条，最早更新的记录已释放；可查看任务日志'
         if kind in {'job.completed', 'job.failed', 'job.aborted'}:
-            run.status = kind.split('.')[1].upper()
+            self.setStatus(run.jobId, kind.split('.')[1].upper())
         elif kind == 'node.started':
             run.status = 'RUNNING'
         elif kind == 'artifact.created':
@@ -134,13 +175,46 @@ class RunResultHistory:
                                 for key in ('path', 'nodeId', 'artifactId', 'mimeType', 'checksum')}
                 run.artifact.update(workflowId=event.get('workflowId', ''), nodeId=event.get('nodeId', ''),
                                     nodeRunId=event.get('nodeRunId', ''), workflowRunId=event.get('workflowRunId', ''))
+        if kind in {'node.started', 'node.completed', 'node.failed'}:
+            record = run.inspection.get(*identifiers, run.jobId)
+            if record:
+                if record['status'] == 'FAILED' and record['code'] == 'E_CANCELLED':
+                    record = {**record, 'status': 'CANCELLED'}
+                if self.nodeIdentity is None:
+                    self.nodeIdentity = identifiers
+                entries = self.executions.setdefault(identifiers, [])
+                identity = (record['jobId'], record['workflowRunId'], record['nodeRunId'])
+                if not entries or identity != tuple(entries[-1]['record'][key] for key in
+                                                   ('jobId', 'workflowRunId', 'nodeRunId')):
+                    entries.append({'run': run, 'definition': deepcopy(run.definitions.get(identifiers)),
+                                    'record': deepcopy(record), 'artifact': {}})
+                    del entries[:-2]
+                else:
+                    entries[-1]['record'] = deepcopy(record)
+                artifact = run.artifact
+                if all(artifact.get(key) == record[key] for key in ('workflowId', 'nodeId', 'workflowRunId', 'nodeRunId')):
+                    entries[-1]['artifact'] = deepcopy(artifact)
+                self.executions.move_to_end(identifiers)
+                self._pruneJobs()
+                while self.executions and (len(self.executions) > 64 or self.retainedBytes > 2 * RUN_METADATA_LIMIT):
+                    self.executions.popitem(last=False)
+                    self._pruneJobs()
+                    run.notice = 'E_INSPECTION_METADATA_BUDGET: 节点摘要超过额度，最早更新的记录已释放'
         run.enforceLimit()
         return True
 
     def view(self, workflowId, nodeId):
-        run = self.selected
+        self.nodeIdentity = (workflowId, nodeId)
+        entries = self.executions.get(self.nodeIdentity, ())
+        older = self.older and len(entries) == 2
+        entry = entries[-2 if older else -1] if entries else None
+        run = entry['run'] if entry else self.current
         if run is None:
-            return {'job': None, 'definition': None, 'record': None, 'history': False}
-        return {'job': run, 'definition': deepcopy(run.definitions.get((workflowId, nodeId))),
-                'record': deepcopy(run.inspection.get(workflowId, nodeId, run.jobId)),
-                'history': run is not self.current}
+            return {'job': None, 'definition': None, 'record': None, 'history': False,
+                    'hasPrevious': False, 'artifact': {}, 'observation': None, 'currentJobId': ''}
+        self.viewJobId = run.jobId
+        return {'job': run, 'definition': deepcopy(entry['definition'] if entry else run.definitions.get(self.nodeIdentity)),
+                'record': deepcopy(entry['record']) if entry else None, 'history': older,
+                'hasPrevious': len(entries) == 2, 'artifact': deepcopy(entry['artifact']) if entry else {},
+                'observation': self.current.inspection.get(workflowId, nodeId, self.current.jobId),
+                'currentJobId': self.current.jobId}

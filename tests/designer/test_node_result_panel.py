@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 from tests.designer.test_run_inspector_ui import windowWithNode, deliver
+from tests.designer.test_node_run_inspection import event
 
 
 def testUnifiedPanelUsesRealValuesAndPreviousRunWithoutChangingDraft():
@@ -42,6 +43,93 @@ def testDeclaredButMissingImageKeepsImageTabAndMissingHistoryDoesNotUseDraft():
     window.addNodeFromOperatorPayload({'operatorId': 'new', 'displayName': '后来新增',
         'inputPorts': {}, 'outputPorts': {'value': 'number'}, 'paramSchema': {}})
     assert '所选任务没有此节点' in panel.values.toPlainText()
+
+
+def testDisabledImageMessageFollowsInvocationAndPortNotCurrentDraft(monkeypatch):
+    window, node = windowWithNode()
+    coordinator = window.nodeResultCoordinator
+    panel = coordinator.panel
+    selections = []
+    monkeypatch.setattr(coordinator.images, 'select', selections.append)
+    overlayMessage = '此次执行未启用“绘制叠加图”，未生成 overlay。'
+    cropMessage = '此次执行未启用“输出裁剪图”，未生成 croppedImage。'
+    try:
+        definition = window.flowModel.nodes[node]
+        definition.operatorId = 'vision.inference.yolo'
+        definition.outputPorts = {'overlay': 'image', 'croppedImage': 'image'}
+        definition.params['drawOverlay'] = False
+        window._setCurrentJobId('job')
+        coordinator.accepted('job')
+        raw = event(node=node)
+        raw['payload']['diagnostics'] = {'imageOutputMessages': {
+            'overlay': overlayMessage, 'croppedImage': cropMessage}}
+        window.runtimeController._onRuntimeEvent(SimpleNamespace(**raw))
+        assert panel.image.text() == overlayMessage
+        assert selections[-1] is None and not panel.enlarge.isEnabled()
+        panel.ports.setCurrentIndex(panel.ports.findData('croppedImage'))
+        assert panel.image.text() == cropMessage
+        assert selections[-1] is None
+        panel.ports.setCurrentIndex(panel.ports.findData('overlay'))
+        definition.params['drawOverlay'] = True
+        coordinator.refresh()
+        assert panel.image.text() == overlayMessage
+
+        deliver(window, node, 'node.started', 3, 'enabled')
+        assert '未启用' not in panel.image.text()
+        deliver(window, node, sequence=4, execution='enabled')
+        assert selections[-1].nodeRunId == 'enabled' and selections[-1].port == 'overlay'
+        assert '未启用' not in panel.image.text()
+        panel.previous.click()
+        assert panel.image.text() == overlayMessage and selections[-1] is None
+        assert coordinator.history.view('main', node)['record']['nodeRunId'] == 'invocation'
+        panel.live.click()
+        assert selections[-1].nodeRunId == 'enabled'
+        assert definition.params['drawOverlay'] is True
+
+        deliver(window, node, 'node.started', 5, 'failed')
+        failed = event('node.failed', 6, node=node, execution='failed')
+        failed['payload']['diagnostics'] = raw['payload']['diagnostics']
+        window.runtimeController._onRuntimeEvent(SimpleNamespace(**failed))
+        assert panel.image.text() == '本次执行未产生有效图片'
+        assert selections[-1] is None
+    finally:
+        window.close()
+
+
+def testRunTargetsHaveSeparateHistoryAndProjectSwitchReleasesBoth():
+    window, node = windowWithNode()
+    coordinator = window.nodeResultCoordinator
+    try:
+        for key, job, value in [('target-a', 'a', 2), ('target-b', 'b', 3)]:
+            coordinator.forWorkflow('onInspectionAccepted', key, SimpleNamespace(job_id=job, project_revision=7))
+            coordinator.forWorkflow('onInspectionEvent', key, event(job=job, node=node, value=value))
+        for key, expected in [('target-a', 2), ('target-b', 3), ('target-a', 2)]:
+            coordinator.selectWorkflow(key)
+            assert f'count = {expected}' in coordinator.panel.values.toPlainText()
+            assert not coordinator.panel.previous.isEnabled()
+        contexts = list(coordinator.workflowContexts.values())
+        coordinator.reset()
+        assert all(context['history'].retainedBytes == 0 for context in contexts)
+        assert coordinator.workflowContexts == {} and coordinator.history.current is None
+    finally:
+        window.close()
+
+
+def testExpiredContextClearsHistoryAndImageInsteadOfKeepingOldResults():
+    window, node = windowWithNode()
+    coordinator = window.nodeResultCoordinator
+    try:
+        window._setCurrentJobId('job')
+        coordinator.accepted('job')
+        deliver(window, node, value=2)
+        assert 'count = 2' in coordinator.panel.values.toPlainText()
+        coordinator.images._mailbox = {'contextExpired': True, 'message': 'E_INSPECTION_SESSION_EXPIRED'}
+        coordinator._imageReady(coordinator.images.generation)
+        assert coordinator.history.retainedBytes == 0 and coordinator.history.current is None
+        assert 'count = 2' not in coordinator.panel.values.toPlainText()
+        assert coordinator.pixmap.isNull() and coordinator.imagePacket is None
+    finally:
+        window.close()
 
 
 def testLongFrozenNameHasFullTooltipAndDoesNotExpandSidebar(designerApplication):

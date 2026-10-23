@@ -75,10 +75,11 @@ def testBuiltinCameraRoiAndHistogramUiControllersLoad(tmp_path: Path) -> None:
                 workflowId="main",
                 nodeId=f"node-{index}",
                 operatorId=manifest["operatorId"],
-                displayName=manifest["displayName"],
+                displayName=f"自定义节点 {index}",
                 schema=manifest["paramSchema"],
                 values={},
                 operatorDefinition={
+                    "displayName": manifest["displayName"],
                     "version": manifest["version"],
                     "editorSpec": manifest["editor"],
                     "editorIssues": [],
@@ -86,6 +87,8 @@ def testBuiltinCameraRoiAndHistogramUiControllersLoad(tmp_path: Path) -> None:
             )
             controller = getattr(window, "_controller", None)
             assert controller is not None
+            assert manifest["displayName"] in window.windowTitle()
+            assert manifest["displayName"] in window._operatorIdentityLabel.text()
             assert controller.__class__.__module__.startswith(
                 "emo_master.plugins.builtins."
             )

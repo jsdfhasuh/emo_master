@@ -505,6 +505,16 @@ class DeviceNodeDialog(QDialog):
         self.setWindowTitle("设备绑定与参数 · " + str(node.get("displayName") or node["operatorId"]))
         self.resize(700, 650)
         layout = QVBoxLayout(self)
+        from .widgets import OptionalWrapLabel
+        definition = coordinator.window._operatorDefinition(node["operatorId"])
+        operatorName = str(definition.get("displayName") or "")
+        self.operatorIdentityLabel = OptionalWrapLabel(
+            f"原始算子：{operatorName}\n算子 ID：{node['operatorId']}" if operatorName else ""
+        )
+        self.operatorIdentityLabel.setObjectName("operatorEditorIdentity")
+        layout.addWidget(self.operatorIdentityLabel)
+        if operatorName and operatorName != node.get("displayName"):
+            self.setWindowTitle(self.windowTitle() + f" · {operatorName}")
         self.tabs = QTabWidget()
         schema = deepcopy(node.get("paramSchema", {}))
         self.actionFields = schema.get("xDeviceActionFields")

@@ -69,6 +69,7 @@ class JobProcessSpec:
     dispatchSlots: tuple[tuple[str, str, int], ...] = ()
     runGroupId: str = ""
     targetSlotId: str = ""
+    inspectionEnabled: bool = False
 
     @property
     def inputs_json(self) -> str:

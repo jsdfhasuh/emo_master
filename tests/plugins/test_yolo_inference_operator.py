@@ -113,7 +113,11 @@ def testYoloInferenceProducesTypedDetectionsAndOverlay(
     assert isinstance(overlay, np.ndarray)
     assert overlay.shape == image.shape
     assert second["status"] == "ok"
-    assert set(second["outputs"]) == {"detections", "frame"}
+    assert set(second["outputs"]) == {"detections", "frame", "overlay"}
+    np.testing.assert_array_equal(second["outputs"]["overlay"], overlay)
+    assert np.any(overlay != image)
+    assert not np.shares_memory(overlay, image)
+    assert not np.any(image)
     assert len(loads) == 1
     assert len(fakeModel.calls) == 2
     assert fakeModel.calls[0]["confidence"] == 0.25
@@ -136,6 +140,25 @@ def testYoloInferenceSupportsEmptyResults(
 
     detections = DetectionCollection.fromPayload(result["outputs"]["detections"])
     assert detections.items == ()
+    np.testing.assert_array_equal(result["outputs"]["overlay"], np.zeros((4, 5, 3), dtype=np.uint8))
+
+
+def testExplicitlyDisabledOverlayPreservesDetectionsAndReportsOmittedImages(tmp_path, monkeypatch):
+    fake = _FakeModel(_result([[1, 1, 3, 3]], [.9], [0]))
+    monkeypatch.setattr(yolo_module, "_createModel", lambda path: fake)
+    operator = YoloInferenceOperator()
+    image = np.zeros((8, 8, 3), dtype=np.uint8)
+    params = {"modelPath": str(_modelFile(tmp_path))}
+    enabled = operator.executeNode({"image": image}, params, {})
+    disabled = operator.executeNode({"image": image}, {**params, "drawOverlay": False}, {})
+    assert disabled["status"] == "ok"
+    assert set(disabled["outputs"]) == {"detections", "frame"}
+    assert disabled["outputs"]["detections"] == enabled["outputs"]["detections"]
+    messages = disabled["diagnostics"]["imageOutputMessages"]
+    assert "未启用" in messages["overlay"] and "绘制叠加图" in messages["overlay"]
+    assert "输出裁剪图" in messages["croppedImage"]
+    assert "overlay" not in enabled["diagnostics"]["imageOutputMessages"]
+    assert not np.any(image)
 
 
 def testYoloInferenceMapsBackendAndModelErrors(
@@ -239,6 +262,7 @@ def testSelectedCropUsesDescendingConfidenceAndRawOwnedPixels(
     np.testing.assert_array_equal(image, before)
     assert crop.flags.c_contiguous and not np.shares_memory(crop, image)
     assert not np.shares_memory(crop, outputs["overlay"])
+    assert result["diagnostics"]["imageOutputMessages"] == {}
     assert outputs["overlay"].shape == (6, 10, 3)
     frame = BBox2D.fromPayload(outputs["croppedFrame"])
     assert (frame.width, frame.height) == (2, 3)
@@ -257,7 +281,7 @@ def testDetectionOrderIsStableForTiesWithoutEnablingCrop(tmp_path, monkeypatch):
     )
     detections = DetectionCollection.fromPayload(result["outputs"]["detections"])
     assert [d.bbox.x for d in detections.items] == [1, 2, 0]
-    assert set(result["outputs"]) == {"detections", "frame"}
+    assert set(result["outputs"]) == {"detections", "frame", "overlay"}
 
 
 @pytest.mark.parametrize("transform", [
@@ -337,6 +361,7 @@ def testCropManifestMatchesRuntimeContractAndDefaults():
     meta = YoloInferenceOperator.meta
     for name in ("version", "inputPorts", "outputPorts", "paramSchema"):
         assert manifest[name] == getattr(meta, name)
+    assert meta.paramSchema["properties"]["drawOverlay"]["default"] is True
     assert meta.paramSchema["properties"]["outputCrop"]["default"] is False
     assert meta.paramSchema["properties"]["cropTargetIndex"]["default"] == 1
     assert YoloInferenceOperator().validateParams({"modelPath": "model.onnx", "outputCrop": "true"})["code"] == "E_PARAM_INVALID"

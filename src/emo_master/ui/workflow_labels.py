@@ -5,7 +5,7 @@ from collections import Counter
 # Runtime status is separate from the static entry role and editor selection.
 WORKFLOW_RUN_STYLES = {
     'RUNNING': ('执行中', '#b45309', '#fef3c7'),
-    'WAITING_CHILD': ('调用中', '#6d28d9', '#ede9fe'),
+    'WAITING_CHILD': ('等待子流程', '#6d28d9', '#ede9fe'),
     'COMPLETED': ('已完成', '#047857', '#d1fae5'),
     'FAILED': ('失败', '#b91c1c', '#fee2e2'),
     'REJECTED': ('已拒绝', '#b91c1c', '#fee2e2'),

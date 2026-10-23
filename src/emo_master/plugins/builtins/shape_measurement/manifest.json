@@ -13,7 +13,27 @@
   "outputPorts": {
     "measurements": {"type": "shapeMeasurementCollection", "required": true, "nullable": false, "schemaVersion": "1.2"}
   },
-  "paramSchema": {"type": "object", "properties": {}},
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "inputType": {
+        "title": "处理对象",
+        "type": "string",
+        "enum": [
+          "",
+          "contours",
+          "blobs"
+        ],
+        "default": "",
+        "xOptionLabels": {
+          "": "请选择处理对象",
+          "contours": "轮廓",
+          "blobs": "连通域"
+        }
+      }
+    },
+    "xModeOperator": "vision.analysis.shape_measurement"
+  },
   "minCoreVersion": "0.3.0",
   "maxCoreVersion": "1.x"
 }

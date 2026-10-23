@@ -166,6 +166,7 @@ def variablePorts(operatorId, params, variables):
 
 
 def validateBoundValues(params, bindings, schema):
+    from emo_master.core.project.snapshots import parameterValidationApplies
     fields = dict(scalarFields(schema))
     for raw in bindings:
         binding = raw if isinstance(raw, VariableBinding) else VariableBinding.model_validate(dict(raw))
@@ -174,6 +175,11 @@ def validateBoundValues(params, bindings, schema):
         if spec is None:
             raise VariableError("E_VARIABLE_BINDING", "parameter schema no longer contains the bound scalar field")
         _checkBindableField(spec, path)
+        parent = params
+        for part in path[:-1]:
+            parent = parent[part]
+        if not parameterValidationApplies(parent, spec):
+            continue
         value = params
         for part in path:
             value = value[part]

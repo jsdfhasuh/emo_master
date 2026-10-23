@@ -351,7 +351,7 @@ def testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages(
     waitFor(lambda: service.jobRepository.get(jobId).status == 'RUNNING', seconds=45)
     waitFor(lambda: any(event.nodeId == 'blur' and event.eventType == 'node.completed'
         for event in service.eventStore.read(jobId)), seconds=30)
-    assert len(calls) == 1 and calls[0][0] == (str(path),) and calls[0][1]['workflowId'] == 'run'
+    assert len(calls) == 1 and calls[0][0] == (service.loadedProjectId,) and calls[0][1]['workflowId'] == 'run'
     assert len(service.jobRepository.all()) == 1
     draft, disk = c.session.payload(), path.read_bytes()
     c.showPages()
@@ -364,3 +364,68 @@ def testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages(
     waitFor(lambda: not window.isJobRunning, seconds=45)
     assert service.jobRepository.get(jobId).isTerminal and len(calls) == 1
     assert path.read_bytes() == disk and c.session.payload() == draft
+
+
+@pytest.mark.parametrize('dataMatches', [True, False])
+def testRunAndImagesUseOnlineIdentityWhenLocalFileDiffers(
+        ownedDesignerWindow, initialRuntime, tmp_path, monkeypatch, dataMatches):  # noqa: F811
+    from emo_master.apps.designer.state.workflow_store import WorkflowStore
+    service, client = initialRuntime
+    root = tmp_path / 'engineering'
+    image = imageProject(root)
+    payload = WorkflowStore().toPayload()
+    for key in ('workflows', 'resources'):
+        payload[key] = image[key]
+    path = root / 'local.emoproj'
+    saveProject(path, payload)
+    window = ownedDesignerWindow(client, settingsStore=QSettings(str(tmp_path / 'settings.ini'), QSettings.IniFormat))
+    waitFor(lambda: window.operatorCatalogController.state == 'ready')
+    assert window.loadProjectDirectory(str(path), confirmed=True)
+    window.pageCoordinator.sync()
+    draft, disk = window.pageCoordinator.session.payload(), path.read_bytes()
+    checked = client.initializeProjectConfiguration(draft, root, 'check', validate=True)
+    # Online publication can use a Runtime-managed path, unlike the local file.
+    client.initializeProjectConfiguration(draft, root, 'publish', runtimeInstanceId=checked['runtimeInstanceId'])
+    assert waitForWrite(service, client, 'publish')['state'] == 'COMMITTED'
+    assert service.loadedProjectFile != str(path)
+    assert not service._projectMatches(str(path))
+    assert not service.jobRepository.all()
+    with pytest.raises(RuntimeClientError, match='E_PROJECT_NOT_LOADED'):
+        client.inspectionSession('open', 'unrelated-project')
+    snapshot = client.getOnlineProjectSnapshot()
+    calls = []
+    start = client.startJob
+    def recordedStart(*args, **kwargs):
+        calls.append((args, kwargs))
+        return start(*args, **kwargs)
+    monkeypatch.setattr(client, 'startJob', recordedStart)
+    if not dataMatches:
+        window.flowModel.nodes['blur'].params['kernelSize'] = 5
+        window.pageCoordinator.sync()
+        comparisons = []
+        monkeypatch.setattr(window.pageCoordinator, 'configureRuntime',
+            lambda **kwargs: comparisons.append(kwargs) or QDialog.Rejected)
+        window.startJob()
+        assert comparisons == [dict(allowRun=True)]
+        assert not calls and not service.jobRepository.all()
+        assert client.getOnlineProjectSnapshot()['payload'] == snapshot['payload']
+        assert path.read_bytes() == disk
+        return
+    monkeypatch.setattr(ProjectConfigurationDialog, 'exec_', lambda _: pytest.fail('matching draft must run directly'))
+    window.navigateToNodeFromSidebar('blur')
+    window.startJob()
+    waitFor(lambda: window.currentJobId is not None or not window.isJobRunning, seconds=30)
+    assert window.currentJobId is not None, window.runtimePanelState.lastMessage
+    jobId = window.currentJobId
+    waitFor(lambda: service.jobRepository.get(jobId).isTerminal and not window.isJobRunning, seconds=30)
+    assert service.jobRepository.get(jobId).status == 'COMPLETED', window.runtimePanelState.lastMessage
+    coordinator = window.nodeResultCoordinator
+    waitFor(lambda: coordinator.imagePacket is not None, seconds=15)
+    assert coordinator.imagePacket['source'].originJobId == jobId
+    assert not coordinator.image.isNull()
+    assert calls[0][0] == (service.loadedProjectId,) and len(calls) == 1
+    assert coordinator.images.projectId == service.loadedProjectId
+    assert len(service.jobRepository.all()) == 1
+    assert client.getOnlineProjectSnapshot()['documentRevision'] == snapshot['documentRevision']
+    assert window.loadedProjectPath == str(path)
+    assert window.pageCoordinator.session.payload() == draft and path.read_bytes() == disk

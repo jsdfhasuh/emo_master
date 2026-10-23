@@ -80,6 +80,8 @@ class PreviewSource:
     snapshotState: str = "UNKNOWN"
     workflowRunId: str = ""
     nodeRunId: str = ""
+    originalWidth: int = 0
+    originalHeight: int = 0
 
 
 @dataclass(frozen=True)
@@ -776,6 +778,8 @@ class RuntimeClient:
         jobId: str = "",
         inspectionSessionId: str = "",
         cancellation: DisplayCallContext | None = None,
+        workflowRunId: str = "",
+        nodeRunId: str = "",
     ) -> PreviewSourceListing:
         request = runtime_pb2.ListNodePreviewSourcesRequest(
                 project_id=projectId,
@@ -783,6 +787,8 @@ class RuntimeClient:
                 node_id=nodeId,
                 job_id=jobId,
                 inspection_session_id=inspectionSessionId,
+                workflow_run_id=workflowRunId,
+                node_run_id=nodeRunId,
             )
         reply = (self._call("ListNodePreviewSources", request) if cancellation is None else
                  self._displayCall("ListNodePreviewSources", request, 5000, cancellation, 'node-inspection'))
@@ -820,6 +826,8 @@ class RuntimeClient:
                 snapshotState=state,
                 workflowRunId=str(getattr(source, "workflow_run_id", "")),
                 nodeRunId=str(getattr(source, "node_run_id", "")),
+                originalWidth=int(getattr(source, 'original_width', 0)),
+                originalHeight=int(getattr(source, 'original_height', 0)),
             ))
         return PreviewSourceListing(
             sources=tuple(sources), jobId=replyJobId,

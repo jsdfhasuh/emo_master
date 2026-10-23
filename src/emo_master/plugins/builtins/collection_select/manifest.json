@@ -28,11 +28,95 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "mode": {"title": "选择模式", "type": "string", "enum": ["first", "last", "index", "topK"], "default": "first"},
-      "index": {"title": "元素索引", "type": "integer", "minimum": 0, "default": 0},
-      "count": {"title": "数量", "type": "integer", "minimum": 1, "default": 1},
-      "onOutOfRange": {"title": "索引越界处理", "type": "string", "enum": ["empty", "error"], "default": "empty"}
-    }
+      "collectionType": {
+        "title": "处理对象",
+        "type": "string",
+        "enum": [
+          "",
+          "detections",
+          "blobs",
+          "contours",
+          "measurements",
+          "lines",
+          "circles",
+          "matches"
+        ],
+        "default": "",
+        "xOptionLabels": {
+          "": "请选择处理对象",
+          "detections": "检测结果",
+          "blobs": "连通域",
+          "contours": "轮廓",
+          "measurements": "形状测量",
+          "lines": "直线",
+          "circles": "圆",
+          "matches": "模板匹配结果"
+        }
+      },
+      "mode": {
+        "title": "选择模式",
+        "type": "string",
+        "enum": [
+          "first",
+          "last",
+          "index",
+          "topK"
+        ],
+        "default": "first"
+      },
+      "index": {
+        "title": "元素索引",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0,
+        "xVisibleWhen": {
+          "mode": [
+            "index"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "index"
+          ]
+        }
+      },
+      "count": {
+        "title": "数量",
+        "type": "integer",
+        "minimum": 1,
+        "default": 1,
+        "xVisibleWhen": {
+          "mode": [
+            "topK"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "topK"
+          ]
+        }
+      },
+      "onOutOfRange": {
+        "title": "索引越界处理",
+        "type": "string",
+        "enum": [
+          "empty",
+          "error"
+        ],
+        "default": "empty",
+        "xVisibleWhen": {
+          "mode": [
+            "index"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "index"
+          ]
+        }
+      }
+    },
+    "xModeOperator": "vision.collection.select"
   },
   "minCoreVersion": "0.3.0",
   "maxCoreVersion": "1.x"

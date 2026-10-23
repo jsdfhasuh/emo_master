@@ -66,62 +66,150 @@
           "strict": "逐项配对（数量相同）",
           "broadcast": "单点广播"
         },
-        "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。"
+        "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。",
+        "xVisibleWhen": {
+          "mode": [
+            "add",
+            "subtract",
+            "dot"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "add",
+            "subtract",
+            "dot"
+          ]
+        }
       },
       "scalarValue": {
         "title": "标量值",
         "type": "number",
-        "default": 1.0,
+        "default": 1,
         "xExample": 1.5,
-        "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。"
+        "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。",
+        "xVisibleWhen": {
+          "mode": [
+            "scalarMultiply"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "scalarMultiply"
+          ]
+        }
       },
       "closed": {
         "title": "闭合路径",
         "type": "boolean",
         "default": false,
-        "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。"
+        "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。",
+        "xVisibleWhen": {
+          "mode": [
+            "measure",
+            "transform",
+            "scalarMultiply"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "measure",
+            "transform",
+            "scalarMultiply"
+          ]
+        }
       },
       "offsetX": {
         "title": "水平偏移",
         "type": "number",
-        "default": 0.0,
+        "default": 0,
         "xUnit": "坐标单位",
-        "xExample": 10.0,
-        "description": "坐标变换的水平平移量，单位与输入坐标一致。"
+        "xExample": 10,
+        "description": "坐标变换的水平平移量，单位与输入坐标一致。",
+        "xVisibleWhen": {
+          "mode": [
+            "transform"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "transform"
+          ]
+        }
       },
       "offsetY": {
         "title": "垂直偏移",
         "type": "number",
-        "default": 0.0,
+        "default": 0,
         "xUnit": "坐标单位",
-        "xExample": -5.0,
-        "description": "坐标变换的垂直平移量，单位与输入坐标一致。"
+        "xExample": -5,
+        "description": "坐标变换的垂直平移量，单位与输入坐标一致。",
+        "xVisibleWhen": {
+          "mode": [
+            "transform"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "transform"
+          ]
+        }
       },
       "scaleX": {
         "title": "水平缩放比例",
         "type": "number",
-        "default": 1.0,
+        "default": 1,
         "xUnit": "倍",
-        "xExample": 1.0,
-        "description": "水平缩放系数；1 表示保持原大小。"
+        "xExample": 1,
+        "description": "水平缩放系数；1 表示保持原大小。",
+        "xVisibleWhen": {
+          "mode": [
+            "transform"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "transform"
+          ]
+        }
       },
       "scaleY": {
         "title": "垂直缩放比例",
         "type": "number",
-        "default": 1.0,
+        "default": 1,
         "xUnit": "倍",
-        "xExample": 1.0,
-        "description": "垂直缩放系数；1 表示保持原大小。"
+        "xExample": 1,
+        "description": "垂直缩放系数；1 表示保持原大小。",
+        "xVisibleWhen": {
+          "mode": [
+            "transform"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "transform"
+          ]
+        }
       },
       "rotationDegrees": {
         "title": "旋转角度（度）",
         "type": "number",
-        "minimum": -360.0,
-        "maximum": 360.0,
-        "default": 0.0,
+        "minimum": -360,
+        "maximum": 360,
+        "default": 0,
         "xUnit": "°",
-        "xExample": 90.0,
-        "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。"
+        "xExample": 90,
+        "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。",
+        "xVisibleWhen": {
+          "mode": [
+            "transform"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "transform"
+          ]
+        }
       },
       "pivot": {
         "title": "旋转中心模式",
@@ -139,25 +227,68 @@
           "first": "第一个点",
           "custom": "自定义坐标"
         },
-        "description": "选择缩放和旋转所使用的中心。"
+        "description": "选择缩放和旋转所使用的中心。",
+        "xVisibleWhen": {
+          "mode": [
+            "transform"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "transform"
+          ]
+        }
       },
       "pivotX": {
         "title": "旋转中心 X 坐标",
         "type": "number",
-        "default": 0.0,
+        "default": 0,
         "xUnit": "坐标单位",
-        "xExample": 0.0,
-        "description": "自定义中心的 X 坐标，单位与输入坐标一致。"
+        "xExample": 0,
+        "description": "自定义中心的 X 坐标，单位与输入坐标一致。",
+        "xVisibleWhen": {
+          "mode": [
+            "transform"
+          ],
+          "pivot": [
+            "custom"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "transform"
+          ],
+          "pivot": [
+            "custom"
+          ]
+        }
       },
       "pivotY": {
         "title": "旋转中心 Y 坐标",
         "type": "number",
-        "default": 0.0,
+        "default": 0,
         "xUnit": "坐标单位",
-        "xExample": 0.0,
-        "description": "自定义中心的 Y 坐标，单位与输入坐标一致。"
+        "xExample": 0,
+        "description": "自定义中心的 Y 坐标，单位与输入坐标一致。",
+        "xVisibleWhen": {
+          "mode": [
+            "transform"
+          ],
+          "pivot": [
+            "custom"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "transform"
+          ],
+          "pivot": [
+            "custom"
+          ]
+        }
       }
-    }
+    },
+    "xModeOperator": "vision.geometry.coordinate_calculator"
   },
   "minCoreVersion": "0.3.0",
   "maxCoreVersion": "1.x"

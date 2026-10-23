@@ -223,6 +223,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
             devices=self.deviceManager,
         )
         self.jobSupervisor.retirementRepairFactory = self._retirementRepair
+        self.jobSupervisor.inspectionCallback = self._onInspectionSnapshot
         self.jobManager = JobManager(self.jobRepository, self.eventStore, self.jobSupervisor)
         self.loadedProjectPath: str | None = None
         self.loadedProjectFile: str | None = None
@@ -678,6 +679,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                     managedConfiguration=self.projectConfiguration.current is not None,
                     planRevision=(self.projectConfiguration.current["executionRevision"] if self.projectConfiguration.current else 0),
                     legacySnapshotPolicy=legacyPolicy,
+                    inspectionEnabled=bool(inspectionId),
                     continuous=(self.productionMode and document.production is not None
                                 and document.production.mode == "continuous"),
                     cycleIntervalMs=(document.production.cycleIntervalMs if document.production else 100),
@@ -1182,7 +1184,8 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 try:
                     key = self.runInspectionStore.keyForReference(inspectionId, self._inspectionReference(projectId))
                     assets, state, message = self.runInspectionStore.list(
-                        inspectionId, key, jobId, workflowId, nodeId)
+                        inspectionId, key, jobId, workflowId, nodeId,
+                        str(getattr(request, 'workflow_run_id', '')), str(getattr(request, 'node_run_id', '')))
                 except ValueError as error:
                     return runtime_pb2.ListNodePreviewSourcesReply(capture_state="EXPIRED", message=str(error))
                 job = self.jobRepository.get(jobId)
@@ -1192,6 +1195,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                     origin_job_id=asset.originJobId, origin_project_revision=asset.originProjectRevision,
                     capture_id=asset.captureId, workflow_run_id=asset.workflowRunId, node_run_id=asset.nodeRunId,
                     created_at_ms=asset.createdAtMs, iteration_path_json=json.dumps(list(asset.iterationPath)),
+                    original_width=asset.originalWidth, original_height=asset.originalHeight,
                     snapshot_state="CURRENT") for asset in assets]
                 return runtime_pb2.ListNodePreviewSourcesReply(sources=sources, job_id=jobId,
                     legacy_snapshot_policy=job.legacySnapshotPolicy if job else "UNKNOWN",
@@ -2154,6 +2158,14 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
             encoding="utf-8",
         )
         return snapshot, workspace
+
+    def _onInspectionSnapshot(self, jobId, event):
+        workspace = self._workspacePaths.get(jobId, self.workspaceRoot / jobId)
+        try:
+            self.runInspectionStore.publish(jobId, event, workspace)
+        except Exception as error:
+            self.eventStore.append(jobId, 'preview.snapshot.failed', str(error), level='WARN',
+                                   code='E_INSPECTION_TAKEOVER')
 
     def _onJobTerminal(self, jobId: str, status: str) -> None:
         if self.loadedDocument is not None and self.loadedDocument.schemaVersion != '2.7':

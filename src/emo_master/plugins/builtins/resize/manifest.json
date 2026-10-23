@@ -49,13 +49,22 @@
       "mode": {
         "title": "缩放模式",
         "type": "string",
-        "enum": ["stretch", "fit", "letterbox"],
+        "enum": [
+          "stretch",
+          "fit",
+          "letterbox"
+        ],
         "default": "stretch"
       },
       "interpolation": {
         "title": "插值方式",
         "type": "string",
-        "enum": ["nearest", "linear", "area", "cubic"],
+        "enum": [
+          "nearest",
+          "linear",
+          "area",
+          "cubic"
+        ],
         "default": "linear"
       },
       "padValue": {
@@ -63,10 +72,24 @@
         "type": "integer",
         "minimum": 0,
         "maximum": 255,
-        "default": 0
+        "default": 0,
+        "xVisibleWhen": {
+          "mode": [
+            "letterbox"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "letterbox"
+          ]
+        }
       }
     },
-    "required": ["width", "height"]
+    "required": [
+      "width",
+      "height"
+    ],
+    "xModeOperator": "vision.preprocess.resize"
   },
   "minCoreVersion": "0.2.0",
   "maxCoreVersion": "1.x"

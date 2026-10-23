@@ -1,5 +1,8 @@
 from copy import deepcopy
 
+import pytest
+
+from emo_master.apps.designer.presenters.node_run_presenter import inspectionText
 from emo_master.apps.designer.state.run_result_history import RunResultHistory, RUN_METADATA_LIMIT
 from tests.designer.test_node_run_inspection import event
 
@@ -33,18 +36,95 @@ def testAcceptedRunsRotateOnlyOnceAndFreezeDefinitions():
     assert history.selected.revision == 7
 
 
-def testThirdAcceptanceEvictsSelectedPreviousAndClearReleasesEverything():
+def testAcceptanceDoesNotRotateAndThirdInvocationEvictsOnlyThatNode():
     history = RunResultHistory()
     for job in ('a', 'b'):
         history.accept(job, definitions())
         complete(history, job, 2)
     history.selectPrevious(True)
     history.accept('c', definitions())
+    assert list(history.runs) == ['a', 'b', 'c']
+    assert history.view('main', 'node')['job'].jobId == 'a'
+    complete(history, 'c', 3)
     assert list(history.runs) == ['b', 'c']
-    assert history.viewJobId == 'c'
-    assert '保留范围' in history.notice
+    assert history.view('main', 'node')['job'].jobId == 'b'
     history.clear()
     assert history.retainedBytes == 0 and history.selected is None
+
+
+def testThreeInvocationsInOneJobKeepTwoRecordsAndStartFinishRotateOnce():
+    history = RunResultHistory()
+    history.accept('job', definitions(), 7)
+    for index, value in enumerate((5, 2, 3)):
+        for kind, sequence in (('node.started', index * 2 + 1), ('node.completed', index * 2 + 2)):
+            raw = event(kind, sequence, node='node', execution=str(index), value=value)
+            history.applyEvent(raw)
+        assert len(history.executions[('main', 'node')]) == min(index + 1, 2)
+    assert history.view('main', 'node')['record']['io']['outputs']['items'][0]['value']['value'] == 3
+    history.selectPrevious(True)
+    previous = history.view('main', 'node')
+    assert previous['record']['io']['outputs']['items'][0]['value']['value'] == 2
+    assert previous['record']['nodeRunId'] == '1' and previous['history']
+    assert history.current.inspection.get('main', 'node', 'job')['nodeRunId'] == '2'
+
+
+def testSkippedNodeDoesNotDisplaceActualInvocationsAndCancelClosesActiveRecord():
+    history = RunResultHistory()
+    history.accept('job', definitions())
+    history.applyEvent(event('node.started', 1, node='node', execution='first'))
+    history.applyEvent(event('node.completed', 2, node='node', execution='first', value=5))
+    history.applyEvent(event('node.skipped', 3, node='node', execution='skip'))
+    view = history.view('main', 'node')
+    assert not view['hasPrevious'] and view['record']['nodeRunId'] == 'first'
+    assert view['observation']['status'] == 'SKIPPED'
+    history.applyEvent(event('node.started', 4, node='node', execution='second'))
+    history.applyEvent({'eventType': 'job.aborted', 'jobId': 'job'})
+    assert history.view('main', 'node')['record']['status'] == 'CANCELLED'
+    history.selectPrevious(True)
+    assert history.view('main', 'node')['record']['nodeRunId'] == 'first'
+
+
+def testRuntimeAndInspectionContextChangesReleaseHistoryButSameContextDoesNot():
+    history = RunResultHistory()
+    history.bindContext(('runtime-a', 'session-a'))
+    history.accept('a', definitions())
+    complete(history, 'a', 5)
+    history.bindContext(('runtime-a', 'session-a'))
+    assert history.view('main', 'node')['record'] is not None
+    history.bindContext(('runtime-b', 'session-b'))
+    assert history.current is None and history.retainedBytes == 0
+
+
+def testSameNodeIdInDifferentWorkflowsKeepsIndependentInvocations():
+    history = RunResultHistory()
+    history.accept('job', definitions() + [{**definitions()[0], 'workflowId': 'body'}])
+    for workflow, value in [('main', 5), ('body', 2)]:
+        history.applyEvent(event(node='node', workflow=workflow, value=value))
+    assert history.view('main', 'node')['record']['io']['outputs']['items'][0]['value']['value'] == 5
+    assert history.view('body', 'node')['record']['io']['outputs']['items'][0]['value']['value'] == 2
+    assert not history.view('main', 'node')['hasPrevious']
+
+
+def testCooperativeCancellationIsShownAsCancelledWithoutChangingCanvasObservation():
+    history = RunResultHistory()
+    history.accept('job', definitions())
+    history.applyEvent(event('node.started', 1, node='node'))
+    failed = event('node.failed', 2, node='node')
+    failed['code'] = 'E_CANCELLED'
+    history.applyEvent(failed)
+    assert history.view('main', 'node')['record']['status'] == 'CANCELLED'
+    assert history.current.inspection.get('main', 'node', 'job')['status'] == 'FAILED'
+
+
+@pytest.mark.parametrize('terminal,label,reason', [('ABORTED', '已取消', '取消原因'), ('FAILED', '已中断', '中断原因')])
+def testTerminalExecutionHasReadableStatusAndNoStaleOutputs(terminal, label, reason):
+    history = RunResultHistory()
+    history.accept('job', definitions())
+    history.applyEvent(event('node.started', 1, node='node'))
+    history.setStatus('job', terminal)
+    text = inspectionText(history.view('main', 'node')['record'], 'job')
+    assert label in text and reason in text
+    assert '无结果（本次执行未完成）' in text and '等待完成' not in text
 
 
 def testNewestFailedInvocationNeverRecoversPreviousSuccessfulValues():

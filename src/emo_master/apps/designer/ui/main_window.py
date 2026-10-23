@@ -3,6 +3,7 @@ from emo_master.apps.designer.ui.action_state import flowEditAllowed
 from datetime import datetime
 from dataclasses import replace
 from pathlib import Path
+import json
 from typing import Any, Callable, cast
 from uuid import uuid4
 
@@ -1036,6 +1037,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if _nativeQt:
             self.flowScene.presentationProvider = self._controlFlowPresentation
             self.flowScene.workflowOpenHandler = self._deferWorkflowReference
+            self.flowScene.hiddenPortsLoader = self._readHiddenPorts
+            self.flowScene.hiddenPortsChanged = self._saveHiddenPorts
         self.flowScene.setCanvasClickHandler(self.collapseOperatorBubble)
         self.flowScene.setOperatorDropHandler(self.addNodeFromOperatorDrop)
         self.flowView = DesignerGraphicsView(self.flowScene)
@@ -1346,7 +1349,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             applyRuntimeEventToNode=self.applyRuntimeEventToNode,
             setCurrentJobId=self._setCurrentJobId,
             setIsJobRunning=self._setIsJobRunning,
-            getLoadedProjectPath=lambda: self.loadedProjectPath,
+            getLoadedProjectPath=self._runtimeProjectReference,
             getCurrentJobId=lambda: self.currentJobId,
             getActiveWorkflowId=lambda: self.activeWorkflowId,
             getEntryWorkflowId=lambda: self.workflowStore.entryWorkflowId,
@@ -2334,8 +2337,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 inputs[port] = f"初始条件 ({port})"
                 outputs[port] = f"最终条件 ({port})"
         model = replace(model, summaryLines=lines, outputPortLabels=outputs, inputPortLabels=inputs)
-        from emo_master.apps.designer.ui.coordinate_port_presentation import coordinatePortPresentation, OPERATOR_ID
-        if node.operatorId == OPERATOR_ID:
+        from emo_master.apps.designer.ui.operator_mode_presentation import MODE_PORT_OPERATORS, operatorModePresentation
+        if node.operatorId in MODE_PORT_OPERATORS:
             resources = self.workflowStore.projectExtensions.get("resources", {})
             dynamic = set()
             for binding in (*resources.get("parameterBindings", []), *resources.get("siteBindings", [])):
@@ -2343,7 +2346,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 if (target.get("workflowId") == self.activeWorkflowId
                         and target.get("nodeId") == node.nodeId and target.get("parameterPath")):
                     dynamic.add(target["parameterPath"][0])
-            model = coordinatePortPresentation(model, node, self.flowModel.edges, dynamic)
+            model = operatorModePresentation(model, node, self.flowModel.edges, dynamic)
         return model
 
     def _onWorkflowTabChanged(self, index: int) -> None:
@@ -3569,6 +3572,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def stopJob(self) -> None:
         self.runtimeController.stopJob()
 
+    def _runtimeProjectReference(self) -> str | None:
+        # Online configurations may live at a Runtime-managed path, not the
+        # Designer file. Their logical identity is checked by run preflight.
+        if (self.loadedProjectPath is not None and self.pageCoordinator is not None
+                and self.pageCoordinator.session.document().schemaVersion in {'2.6', '2.7'}):
+            return self._currentProjectId()
+        return self.loadedProjectPath
+
     def _syncRuntimeProjectBeforeRun(self) -> bool:
         if self.hasActiveDebugSession():
             self.appendRuntimeLog("WARN", "请先结束当前调试，再启动正式运行")
@@ -3855,11 +3866,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
 
     def _connectableNodePorts(self, nodeId, direction):
-        from emo_master.apps.designer.ui.coordinate_port_presentation import OPERATOR_ID
+        from emo_master.apps.designer.ui.operator_mode_presentation import MODE_PORT_OPERATORS
         node = self.flowModel.nodes.get(nodeId)
         if node is None:
             raise ValueError("connectNodes references unknown node")
-        if node.operatorId != OPERATOR_ID:
+        if node.operatorId not in MODE_PORT_OPERATORS:
             return node.inputPorts if direction == "input" else node.outputPorts
         model = self._controlFlowPresentation(FlowNodeViewModel(
             nodeId, node.displayName, 0, 0, node.inputPorts, node.outputPorts,
@@ -4001,6 +4012,16 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if not isinstance(bounds, tuple) or len(bounds) != 4:
             return
         self.flowView.fitContent(bounds, minimumZoom=0.02)
+
+    def _hiddenPortsSettingsKey(self, nodeId):
+        return f'ui/hidden_ports/{self._currentProjectId()}/{self.workflowStore.activeWorkflowId}/{nodeId}'
+
+    def _readHiddenPorts(self, nodeId):
+        values = json.loads(self.settingsStore.value(self._hiddenPortsSettingsKey(nodeId), '[]'))
+        return {(direction, name) for direction, name in values}
+
+    def _saveHiddenPorts(self, nodeId, ports):
+        self.settingsStore.setValue(self._hiddenPortsSettingsKey(nodeId), json.dumps(sorted(ports)))
 
     def _workflowViewSettingsKey(self, workflowId):
         import hashlib
@@ -4905,6 +4926,20 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             # Remote catalogs may arrive after a minimal project was opened.
             schema = (deepcopy(catalogSchema) if not node.paramSchema else
                       mergeParameterTitles(node.paramSchema, catalogSchema))
+            from emo_master.plugins.builtins._operator_modes import INPUT_CHOICES, currentModeSchema, inferredInputType
+            modeSchema = currentModeSchema(node.operatorId)
+            if modeSchema is not None:
+                schema = modeSchema
+                schema["xDynamicParameters"] = [binding["parameterPath"][0]
+                    for binding in node.globalVariableBindings if binding.get("parameterPath")]
+            if node.operatorId == "vision.collection.filter":
+                from emo_master.plugins.builtins.collection_filter.operator import CollectionFilterOperator
+                from emo_master.apps.designer.ui.collection_filter_presentation import filterCollectionType
+                schema = deepcopy(CollectionFilterOperator.meta.paramSchema)
+                schema["xCollectionFilterType"] = filterCollectionType(node, self.flowModel.edges)
+                schema["xCollectionFilterDynamicParameters"] = [
+                    binding["parameterPath"][0] for binding in node.globalVariableBindings
+                    if binding.get("parameterPath")]
             if node.operatorId == "communication.tcp.session":
                 from emo_master.core.project.communication import CommunicationSettings
                 config = cast(dict, self.workflowStore.projectExtensions.get("communication", CommunicationSettings().model_dump()))
@@ -4968,6 +5003,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             occupied = [tuple(binding["target"]["parameterPath"])
                         for binding in (*resources.get("parameterBindings", []), *resources.get("siteBindings", []))
                         if binding["target"].get("workflowId") == sourceWorkflowId and binding["target"].get("nodeId") == getattr(node, "nodeId", None)]
+            if node.operatorId == "vision.collection.filter":
+                cast(list, schema["xCollectionFilterDynamicParameters"]).extend(path[0] for path in occupied if path)
+            if schema.get("xModeOperator"):
+                cast(list, schema["xDynamicParameters"]).extend(path[0] for path in occupied if path)
+                if node.operatorId in INPUT_CHOICES:
+                    schema["xInferredInputType"] = inferredInputType(
+                        node.operatorId, node.params, node.nodeId, self.flowModel.edges, schema["xDynamicParameters"])
             for path, field in scalarFields(schema):
                 if any(path[:len(other)] == other or other[:len(path)] == path for other in occupied):
                     field["xGlobalVariableBindingDisabled"] = True

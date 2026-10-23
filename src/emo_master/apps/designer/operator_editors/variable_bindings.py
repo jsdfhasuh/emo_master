@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from PySide2.QtWidgets import QComboBox, QFormLayout, QGroupBox, QVBoxLayout, QWidget
+from PySide2.QtWidgets import QComboBox, QFormLayout, QGroupBox, QHBoxLayout, QWidget
 
 from emo_master.core.project.global_variables import scalarFields, compatible, definitions, validateBindings, isFileParameter
 
@@ -108,19 +108,25 @@ class VariableBindingsPanel(QGroupBox):
             control = target._controls[path[-1]]
             proxy = QComboBox()
             proxy.setMinimumWidth(130)
+            proxy.setMaximumWidth(170)
+            proxy.setMinimumContentsLength(6)
             proxy.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
             for index in range(source.count()):
                 proxy.addItem(source.itemText(index), source.itemData(index))
             proxy.setCurrentIndex(source.currentIndex())
-            hint = "参数来源：固定值 / 全局变量。引用在每次执行前读取；下方固定值保留但不参与执行。"
+            hint = "参数来源：固定值 / 全局变量。引用在每次执行前读取；左侧固定值保留但不参与执行。"
+            proxy.setAccessibleName("参数来源：" + str(target._fieldsByName[path[-1]].schema.get("title") or path[-1]))
             proxy.setToolTip(proxy.currentText() + "\n" + hint)
             proxy.currentTextChanged.connect(lambda text, combo=proxy, tip=hint: combo.setToolTip(text + "\n" + tip))
-            box = QWidget()
-            layout = QVBoxLayout(box)
+            box = QWidget(target)
+            layout = QHBoxLayout(box)
             layout.setContentsMargins(0, 0, 0, 0)
-            target._layout.replaceWidget(control, box)
+            if target._layout.indexOf(control) >= 0:
+                target._layout.replaceWidget(control, box)
+            layout.addWidget(control, 1)
             layout.addWidget(proxy)
-            layout.addWidget(control)
+            proxy.setVisible(proxy.count() > 1)
+            proxy.installEventFilter(target)
             target._fieldContainers[path[-1]] = box
             target._variableSources[path[-1]] = proxy
             targetForms.add(target)

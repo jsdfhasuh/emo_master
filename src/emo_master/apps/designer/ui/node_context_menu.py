@@ -83,6 +83,9 @@ class NodeContextMenu(QObject):
         self._select(nodeId)
         context = (self.version, self.window._currentProjectId(), self.window.activeWorkflowId, nodeId, node)
         self.context = context
+        # QMenu.clear() removes submenu actions, but does not delete child menus.
+        for submenu in self.menu.findChildren(QMenu, options=Qt.FindDirectChildrenOnly):
+            submenu.deleteLater()
         self.menu.clear()
         title = node.displayName or node.operatorId or nodeId
         section = self.menu.addSection(QFontMetrics(self.menu.font()).elidedText(title, Qt.ElideRight, 280))
@@ -107,6 +110,8 @@ class NodeContextMenu(QObject):
             action.triggered.connect(lambda _checked=False, key=key, action=action:
                                      self._invoke(key, context, action))
             self.menu.addAction(action)
+        self.menu.addSeparator()
+        self.window.flowScene.addPortVisibilityActions(self.menu, nodeId)
         return self.menu
 
     def open(self, nodeId, screenX, screenY):

@@ -18,6 +18,7 @@ from emo_master.core.contracts.geometry2d import (
     PayloadValidationError,
 )
 from emo_master.plugins.builtins._image_frame import frameForInput
+from emo_master.plugins.builtins._operator_modes import modeSchema
 from emo_master.plugins.builtins.crop.operator import CropOperator
 from emo_master.plugins.builtins.yolo_inference.onnx_backend import (
     OnnxBackendUnavailableError,
@@ -110,8 +111,10 @@ _PARAM_SCHEMA: dict[str, object] = {
         },
         "classes": {
             "title": "检测类别（可选）",
-            "description": "留空或 [] 表示检测模型支持的全部类别；填写 [0, 1] 等类别编号时仅保留指定类别。类别名称自动从模型读取。",
+            "description": "留空表示检测模型支持的全部类别；填写 0, 1 等类别编号时仅保留指定类别，也可粘贴 [0, 1]。类别名称由模型决定。",
             "type": "array",
+            "xWidget": "integer-list",
+            "xPlaceholder": "全部类别",
             "items": {"type": "integer", "minimum": 0},
             "default": [],
             "xBlankMeansEmpty": True,
@@ -122,7 +125,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "type": "boolean",
             "default": False,
         },
-        "drawOverlay": {"title": "绘制叠加图", "type": "boolean", "default": False},
+        "drawOverlay": {"title": "绘制叠加图", "type": "boolean", "default": True},
         "outputCrop": {
             "title": "输出裁剪图",
             "type": "boolean",
@@ -177,7 +180,7 @@ class YoloInferenceOperator:
                 "schemaVersion": "1.x",
             },
         },
-        paramSchema=_PARAM_SCHEMA,
+        paramSchema=modeSchema("vision.inference.yolo", _PARAM_SCHEMA),
     )
 
     _modelCache: ClassVar[dict[tuple[str, str], _ModelEntry]] = {}
@@ -217,7 +220,7 @@ class YoloInferenceOperator:
         ):
             return _paramError("classes must be an array of non-negative integers")
         for name, default in (
-            ("agnosticNms", False), ("drawOverlay", False), ("outputCrop", False)
+            ("agnosticNms", False), ("drawOverlay", True), ("outputCrop", False)
         ):
             if not isinstance(params.get(name, default), bool):
                 return _paramError(f"{name} must be boolean")
@@ -308,6 +311,7 @@ class YoloInferenceOperator:
             ).toPayload(),
             "frame": frame.toPayload(),
         }
+        imageOutputMessages: dict[str, str] = {}
         if cast(bool, params.get("outputCrop", False)):
             targetIndex = cast(int, params.get("cropTargetIndex", 1))
             if targetIndex > len(detections):
@@ -328,8 +332,12 @@ class YoloInferenceOperator:
                 return cropResult
             outputs["croppedImage"] = cropResult["outputs"]["image"]
             outputs["croppedFrame"] = cropResult["outputs"]["frame"]
-        if cast(bool, params.get("drawOverlay", False)):
+        else:
+            imageOutputMessages["croppedImage"] = "此次执行未启用“输出裁剪图”，未生成 croppedImage。"
+        if cast(bool, params.get("drawOverlay", True)):
             outputs["overlay"] = _drawOverlay(image, detections)
+        else:
+            imageOutputMessages["overlay"] = "此次执行未启用“绘制叠加图”，未生成 overlay。"
         elapsedMs = (perf_counter() - startedAt) * 1000.0
         return {
             "status": "ok",
@@ -344,6 +352,7 @@ class YoloInferenceOperator:
                 "backend": "onnxruntime",
                 "provider": getattr(rawResult, "provider", "CPUExecutionProvider"),
                 "inputShape": list(getattr(rawResult, "inputShape", ())),
+                "imageOutputMessages": imageOutputMessages,
             },
         }
 

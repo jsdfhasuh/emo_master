@@ -46,6 +46,7 @@ class JobSupervisor:
         self.communication = communication
         self.devices = devices
         self.presentationCallback: Callable | None = None
+        self.inspectionCallback: Callable | None = None
         self.presentationErrors: deque[str] = deque(maxlen=64)
         self._context = multiprocessing.get_context("spawn")
         self._handles: dict[str, tuple[Any, Any, Any]] = {}
@@ -258,6 +259,15 @@ class JobSupervisor:
 
     def consumeWorkerEvent(self, jobId: str, event: dict[str, object]) -> None:
         self.assertMutationAllowed()
+        if event.get('eventType') == 'inspection.snapshot':
+            with self._lock:
+                record = self.jobRepository.get(jobId)
+                live = record is not None and not record.isTerminal and jobId not in self._terminalEvents
+            if live and self.inspectionCallback is not None:
+                # Files are already frozen by the worker. Do not copy under
+                # either the EventStore order lock or the Supervisor lock.
+                self.inspectionCallback(jobId, event)
+            return
         with self._terminalAttempt() as claim:
             with self._lock:
                 record = self.jobRepository.get(jobId)

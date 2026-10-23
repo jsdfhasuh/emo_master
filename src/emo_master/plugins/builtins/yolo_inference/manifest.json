@@ -62,8 +62,8 @@
       "confidence": {
         "title": "置信度阈值",
         "type": "number",
-        "minimum": 0.0,
-        "maximum": 1.0,
+        "minimum": 0,
+        "maximum": 1,
         "default": 0.25,
         "xExample": 0.25,
         "description": "保留置信度不低于此值的检测结果，范围为 0～1。"
@@ -71,8 +71,8 @@
       "iou": {
         "title": "非极大值抑制 IoU 阈值",
         "type": "number",
-        "minimum": 0.0,
-        "maximum": 1.0,
+        "minimum": 0,
+        "maximum": 1,
         "default": 0.45,
         "xExample": 0.45,
         "description": "非极大值抑制的交并比阈值，范围为 0～1。"
@@ -111,8 +111,10 @@
       },
       "classes": {
         "title": "检测类别（可选）",
-        "description": "留空或 [] 表示检测模型支持的全部类别；填写 [0, 1] 等类别编号时仅保留指定类别。类别名称自动从模型读取。",
+        "description": "留空表示检测模型支持的全部类别；填写 0, 1 等类别编号时仅保留指定类别，也可粘贴 [0, 1]。类别名称由模型决定。",
         "type": "array",
+        "xWidget": "integer-list",
+        "xPlaceholder": "全部类别",
         "items": {
           "type": "integer",
           "minimum": 0
@@ -132,7 +134,7 @@
       "drawOverlay": {
         "title": "绘制叠加图",
         "type": "boolean",
-        "default": false
+        "default": true
       },
       "outputCrop": {
         "title": "输出裁剪图",
@@ -150,12 +152,23 @@
             true
           ]
         },
-        "description": "按类别过滤、置信度筛选和 NMS 后的有效检测框排序：置信度从高到低，第 1 个最高；同分保留后端顺序。序号仅属于当前图像，超出数量时报错。"
+        "description": "按类别过滤、置信度筛选和 NMS 后的有效检测框排序：置信度从高到低，第 1 个最高；同分保留后端顺序。序号仅属于当前图像，超出数量时报错。",
+        "xVisibleWhen": {
+          "outputCrop": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "outputCrop": [
+            true
+          ]
+        }
       }
     },
     "required": [
       "modelPath"
-    ]
+    ],
+    "xModeOperator": "vision.inference.yolo"
   },
   "minCoreVersion": "0.2.0",
   "maxCoreVersion": "1.x"

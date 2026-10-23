@@ -67,10 +67,13 @@ class PreviewAsset:
     captureId: str = ""
     workflowRunId: str = ""
     nodeRunId: str = ""
+    originalWidth: int = 0
+    originalHeight: int = 0
 
 
 class PreviewSnapshotWriter:
-    def __init__(self, jobWorkspace: Path, *, jobId: str = "", projectRevision: int = 0) -> None:
+    def __init__(self, jobWorkspace: Path, *, jobId: str = "", projectRevision: int = 0,
+                 inspectionPublisher=None) -> None:
         self.jobId = jobId
         self.projectRevision = projectRevision
         self.root = _ioPath(jobWorkspace / "preview_staging")
@@ -78,6 +81,8 @@ class PreviewSnapshotWriter:
         self._entries: dict[tuple[str, str, str], dict[str, object]] = {}
         self._pendingCleanup: set[Path] = set()
         self._cleanupScanRequired = False
+        self.inspectionPublisher = inspectionPublisher
+        self.inspectionRoot = _ioPath(jobWorkspace / 'inspection_staging')
 
     def _retirePending(self) -> bool:
         if self._cleanupScanRequired:
@@ -175,9 +180,63 @@ class PreviewSnapshotWriter:
                 raise OSError("capture failed; unpublished snapshot cleanup pending") from error
             raise
         self._entries = nextEntries
+        if self.inspectionPublisher is not None:
+            self._captureInspection(node, outputs, context, captureId)
         self._pendingCleanup.update(obsolete)
         if not self._retirePending():
             raise OSError("snapshot committed; preceding capture cleanup pending")
+
+    def _captureInspection(self, node, outputs, context, captureId, *, saved=False):
+        entries = []
+        for port, value in outputs.items():
+            if not isinstance(value, np.ndarray) or value.dtype != np.uint8:
+                continue
+            if not saved and normalizePortType(getattr(node, 'outputPorts', {}).get(port, '')) != 'image':
+                continue
+            payload, width, height = inspectionPreview(value)
+            filename = hashlib.sha256((captureId + '\0' + port).encode()).hexdigest() + '.png'
+            _atomicBytes(self.inspectionRoot / filename, payload)
+            entries.append(dict(workflowId=context.workflowId, nodeId=node.nodeId, port=port,
+                originJobId=self.jobId, originProjectRevision=self.projectRevision,
+                workflowRunId=context.workflowRunId, nodeRunId=context.nodeRunId, captureId=captureId,
+                width=width, height=height, originalWidth=int(value.shape[1]), originalHeight=int(value.shape[0]),
+                relativePath=filename, mimeType='image/png', iterationPath=list(context.iterationPath),
+                createdAtMs=int(time.time() * 1000)))
+        if entries:
+            # Only immutable files cross the process boundary. The receiving
+            # inspection owner, not the next capture, releases these files.
+            self.inspectionPublisher(eventType='inspection.snapshot', context=context,
+                message='node inspection snapshot', payload={'entries': entries})
+
+    def captureArtifact(self, node, artifact, context):
+        if self.inspectionPublisher is None or not str(artifact.get('mimeType', '')).startswith('image/'):
+            return
+        source = _ioPath(Path(artifact['path'])).resolve()
+        if not source.is_relative_to((self.root.parent / 'artifacts').resolve()) or not artifact.get('checksum'):
+            return
+        content = source.read_bytes()
+        if hashlib.sha256(content).hexdigest() != artifact['checksum']:
+            return
+        image = cv2.imdecode(np.frombuffer(content, np.uint8), cv2.IMREAD_UNCHANGED)
+        if image is not None:
+            self._captureInspection(node, {'__saved_result__': image}, context, artifact['artifactId'], saved=True)
+
+
+def inspectionPreview(image):
+    """Freeze display pixels within the existing 4 MiB/8 MiB reader budgets."""
+    height, width = image.shape[:2]
+    scale = min(1., 1920 / width, 1080 / height)
+    preview = image
+    if scale < 1:
+        preview = cv2.resize(image, (max(1, round(width * scale)), max(1, round(height * scale))),
+                             interpolation=cv2.INTER_AREA)
+    for _ in range(4):
+        ok, encoded = cv2.imencode('.png', preview)
+        if ok and encoded.nbytes <= 4 * 1024 * 1024 and preview.shape[0] * preview.shape[1] * 4 <= 8 * 1024 * 1024:
+            return encoded.tobytes(), int(preview.shape[1]), int(preview.shape[0])
+        preview = cv2.resize(preview, (max(1, round(preview.shape[1] * .7)), max(1, round(preview.shape[0] * .7))),
+                             interpolation=cv2.INTER_AREA)
+    raise ValueError('E_INSPECTION_PREVIEW_BUDGET: 无法生成额度内的显示预览')
 
 
 

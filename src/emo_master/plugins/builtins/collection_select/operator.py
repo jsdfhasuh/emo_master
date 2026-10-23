@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from time import perf_counter
 from typing import Any, TypeGuard, cast
 
+from emo_master.plugins.builtins._operator_modes import effectiveModeParams, inputChoiceError, modeSchema
+
 from emo_master.plugins.builtins._collection_ops import (
     CollectionInputError,
     CollectionItem,
@@ -91,10 +93,14 @@ class CollectionSelectOperator:
                 "nullable": False,
             },
         },
-        paramSchema=_PARAM_SCHEMA,
+        paramSchema=modeSchema("vision.collection.select", _PARAM_SCHEMA),
     )
 
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
+        choiceError = inputChoiceError(self.meta.operatorId, params)
+        if choiceError:
+            return choiceError
+        params = effectiveModeParams(params, self.meta.paramSchema)
         if params.get("mode", "first") not in _MODES:
             return _paramError("mode must be first, last, index, or topK")
         index = params.get("index", 0)
@@ -116,6 +122,7 @@ class CollectionSelectOperator:
         _ = runtimeContext
         startedAt = perf_counter()
         paramError = self.validateParams(params)
+        paramError = paramError or inputChoiceError(self.meta.operatorId, params, inputs)
         if paramError is not None:
             return {"status": "error", "error": paramError}
         try:

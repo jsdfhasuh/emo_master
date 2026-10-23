@@ -102,6 +102,13 @@ def _parameterError(message, path):
     return WorkflowCompileError([ValidationIssue('E_PARAM_INVALID', message, fieldPath=path)])
 
 
+def parameterValidationApplies(params: Mapping, schema: Mapping) -> bool:
+    """Absent selectors retain legacy validation; explicit inactive groups keep their drafts."""
+    condition = schema.get("xValidateWhen")
+    return not isinstance(condition, Mapping) or all(
+        key not in params or params[key] in allowed for key, allowed in condition.items())
+
+
 def _parameters(value: Any, schema: Mapping, path: str) -> Any:
     """Normalize and check the supported manifest parameter-schema subset.
 
@@ -130,7 +137,8 @@ def _parameters(value: Any, schema: Mapping, path: str) -> Any:
         for key, definition in properties.items():
             if key not in value and "default" in definition:
                 value[key] = deepcopy(definition["default"])
-            if key in value:
+        for key, definition in properties.items():
+            if key in value and parameterValidationApplies(value, definition):
                 value[key] = _parameters(value[key], definition, f"{path}.{key}")
         if set(schema.get("required", [])) - set(value):
             raise _parameterError(f"{path}: required parameter missing", path + '.' + sorted(set(schema['required'])-set(value))[0])

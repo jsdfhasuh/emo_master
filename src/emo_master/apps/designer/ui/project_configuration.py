@@ -2,15 +2,32 @@
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 import json
+import traceback
 from uuid import uuid4
 from threading import Event
 from time import monotonic
 
-from PySide2.QtCore import Qt, QTimer
-from PySide2.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox,
-    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QMessageBox, QStyle, QTextBrowser)
+from PySide2.QtCore import Qt, QTimer, Signal, QEvent
+from PySide2.QtGui import QPalette
+from PySide2.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QCheckBox,
+    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QMessageBox, QStyle, QTextBrowser,
+    QStyledItemDelegate, QStyleOptionViewItem, QTreeWidget, QTreeWidgetItem)
 
 from emo_master.core.project.configuration import projectChanges, requiredProjectChanges, changeCategory
+
+
+class ChangeLocationDelegate(QStyledItemDelegate):
+    activated = Signal(int)
+
+    def editorEvent(self, event, model, option, index):
+        if event.type() == QEvent.MouseButtonRelease and event.button() == Qt.LeftButton:
+            styled = QStyleOptionViewItem(option)
+            self.initStyleOption(styled, index)
+            rect = option.widget.style().subElementRect(QStyle.SE_ItemViewItemText, styled, option.widget)
+            if rect.contains(event.pos()):
+                self.activated.emit(index.row())
+                return True
+        return super().editorEvent(event, model, option, index)
 
 
 class ProjectConfigurationDialog(QDialog):
@@ -64,22 +81,38 @@ class ProjectConfigurationDialog(QDialog):
         formatRow.addWidget(self.formatStatus, 1)
         formatRow.addWidget(self.upgradeButton)
         layout.addLayout(formatRow)
+        self.selectAllCheckBox = QCheckBox('全选')
+        self.selectAllCheckBox.clicked.connect(self._selectAllChanges)
+        layout.addWidget(self.selectAllCheckBox)
         self.table = QTableWidget(0, 6)
-        self.table.setHorizontalHeaderLabels(["对象 / 选中变更", "变更动作", "字段与改动摘要", "变更类别", '生效方式', '影响对象'])
+        self.locationDelegate = ChangeLocationDelegate(self.table)
+        self.table.setItemDelegateForColumn(0, self.locationDelegate)
+        self.locationDelegate.activated.connect(self.openChangeLocation)
+        self.table.activated.connect(lambda index: self.openChangeLocation(index.row()) if index.column() == 0 else None)
+        self.table.setHorizontalHeaderLabels(["修改位置", "操作", "改了什么", "修改类型", '何时生效', '影响哪些设备或流程'])
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.setWordWrap(False)
         self.table.setTextElideMode(Qt.ElideRight)
         self.table.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
         self.table.verticalHeader().setDefaultSectionSize(36)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        for column, width in ((0, 220), (1, 65), (3, 90), (4, 150), (5, 180)):
+            self.table.setColumnWidth(column, width)
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         self.table.verticalHeader().hide()
         layout.addWidget(self.table, 1)
+        detailRow = QHBoxLayout()
+        detailRow.addWidget(QLabel('改动说明'), 1)
+        self.technicalDetails = QCheckBox('技术详情')
+        self.technicalDetails.toggled.connect(lambda: self._showChangeDetails(self.table.currentRow()))
+        detailRow.addWidget(self.technicalDetails)
+        layout.addLayout(detailRow)
         self.details = QTextBrowser()
-        self.details.setMaximumHeight(110)
-        self.details.setPlaceholderText('选择一项查看内部路径和完整前后值')
+        self.details.setMaximumHeight(140)
+        self.details.setPlaceholderText('选择一项查看改动前后的内容')
         self.table.currentCellChanged.connect(self._showChangeDetails)
         layout.addWidget(self.details)
-        self.impact = QLabel('选中变更未校验')
+        self.impact = QLabel('尚未检查选中改动的影响')
         self.impact.setWordWrap(True)
         self.impact.setTextInteractionFlags(Qt.TextSelectableByMouse)
         layout.addWidget(self.impact)
@@ -175,6 +208,8 @@ class ProjectConfigurationDialog(QDialog):
         self.statusIcon.setPixmap(self.style().standardIcon(icons[level]).pixmap(20, 20))
 
     def _notify(self, title, text, details='', *, warning=False, key=None, upgrade=False):
+        text = text.strip() or title
+        details = details.strip()
         self._feedback(text, 'warning' if warning else 'error')
         if not self._valid() or self.notifying or key is not None and key in self.notifiedWrites:
             return
@@ -230,7 +265,8 @@ class ProjectConfigurationDialog(QDialog):
             self._showInitial()
         elif self.snapshot is not None:
             self._showSnapshot(self.snapshot)
-        self._feedback('草稿已变化，请重新校验；原校验结论已失效。')
+        if self.snapshot is None or self.table.rowCount():
+            self._feedback('草稿已变化，请重新校验；原校验结论已失效。')
         self._controls()
         return True
 
@@ -274,18 +310,24 @@ class ProjectConfigurationDialog(QDialog):
             self.revalidateAfterSnapshot = True
             self.refresh()
         except Exception as error:
-            self._notify('草稿升级未完成', str(error), self._errorDetails(error))
+            self._notify('草稿升级未完成', self._errorText(error), self._errorDetails(error))
+
+    @staticmethod
+    def _errorText(error):
+        return str(error).strip() or f'{type(error).__name__}：异常未提供具体说明，请查看详细信息。'
 
     @staticmethod
     def _errorDetails(error):
         from dataclasses import asdict
-        details = [str(getattr(error, 'code', '')), str(error)]
+        details = [type(error).__name__, str(getattr(error, 'code', '')), str(error)]
         if getattr(error, 'diagnostics', None):
             details.append(json.dumps(error.diagnostics, ensure_ascii=False, indent=2))
         if getattr(error, 'issues', None):
             details.append(json.dumps({'issues': [asdict(issue) for issue in error.issues]},
                                       ensure_ascii=False, indent=2))
-        return '\n'.join(details)
+        if error.__traceback__ is not None:
+            details.append(''.join(traceback.format_exception(type(error), error, error.__traceback__)))
+        return '\n'.join(part.strip() for part in details if part.strip())
 
     def _controls(self):
         idle = self.pending is None and not self.notifying and not self.confirming and self._valid()
@@ -312,6 +354,7 @@ class ProjectConfigurationDialog(QDialog):
             or (ready and uncertain and hasattr(self.client, 'cancelProjectResourceTransfers')))
         self.cancelButton.setEnabled(idle and self.writePending)
         self.table.setEnabled(ready or initialReady)
+        self._syncSelectAll()
         self.replacementPolicy.setEnabled(ready)
         if self.runButton:
             self.runButton.setEnabled(ready and not self.snapshot.get("recoveryError"))
@@ -350,15 +393,108 @@ class ProjectConfigurationDialog(QDialog):
     @staticmethod
     def _sectionSummary(key, value):
         titles = dict(project='工程信息', workflows='流程', resources='资源与现场绑定', presentation='工作页面',
-                      runtime='运行配置', schemaVersion='工程格式')
+                      runtime='运行配置', schemaVersion='工程格式', dependencies='所需算子与插件',
+                      globalVariables='工程变量', workflowOrder='流程排列顺序', entryWorkflowId='启动流程',
+                      production='生产设置', devices='设备配置')
         return titles.get(key, key) + (' · ' + str(len(value)) + ' 项' if isinstance(value, (dict, list)) else '：' + str(value))
+
+    def _namedObject(self, section, key):
+        for payload in (self.local, (self.snapshot or {}).get('payload', {})):
+            values = payload.get(section, {})
+            if section == 'devices':
+                values = values.get('definitions', {})
+            value = values.get(key, {})
+            if value:
+                return value
+        return {}
+
+    def _objectName(self, section, key):
+        return self._namedObject(section, key).get('name') or key
+
+    def _workflowNodeName(self, workflowId, nodeId):
+        for payload in (self.local, (self.snapshot or {}).get('payload', {})):
+            flow = payload.get('workflows', {}).get(workflowId, {})
+            node = next((n for n in flow.get('nodes', []) if n['nodeId'] == nodeId), {})
+            if node:
+                name = node.get('displayName') or nodeId
+                return {'Workflow Input': '流程输入', 'Workflow Output': '流程输出'}.get(name, name)
+        return nodeId
+
+    def _plainChangeLabels(self, change):
+        parts = list(change['parts'])
+        section = parts[0]
+        title = self._sectionSummary(section, '').rstrip('：')
+        fieldParts = parts[1:]
+        schema = {}
+        workflow = {}
+        if section == 'workflows' and len(parts) > 1:
+            workflow = self._namedObject('workflows', parts[1])
+            title = '流程：' + self._objectName('workflows', parts[1])
+            fieldParts = parts[2:]
+            if len(parts) > 3 and parts[2] == 'nodes':
+                node = next((n for n in workflow.get('nodes', []) if n['nodeId'] == parts[3]), {})
+                if not node:
+                    old = (self.snapshot or {}).get('payload', {}).get('workflows', {}).get(parts[1], {})
+                    node = next((n for n in old.get('nodes', []) if n['nodeId'] == parts[3]), {})
+                title += ' / ' + self._workflowNodeName(parts[1], parts[3])
+                fieldParts = parts[4:]
+                if fieldParts and fieldParts[0] == 'params':
+                    schema = node.get('paramSchema', {})
+        elif section == 'globalVariables' and len(parts) > 1:
+            title = '工程变量：' + self._objectName(section, parts[1])
+            fieldParts = parts[2:]
+        names = dict(name='名称', description='说明', operators='算子清单', plugins='插件清单',
+            edges='节点连线', nodes='节点', inputs='流程输入', outputs='流程输出',
+            inputPorts='输入接口', outputPorts='输出接口', layout='画布布局', nodePositions='节点位置',
+            params='参数', paramSchema='参数填写规则', displayName='显示名称',
+            operatorId='使用的算子', targetWorkflowId='调用的流程', loop='循环设置',
+            kind='类型', type='数据类型', initialValue='初始值', lifetime='有效范围',
+            legacyCounterName='旧计数器关联', deviceBindings='使用的设备', enabled='是否启用',
+            minimum='最小值', maximum='最大值', default='默认值', required='必填项',
+            schemaVersion='格式版本', entryWorkflowId='启动流程', version='版本',
+            properties='可填写参数', x='横向位置', y='纵向位置',
+            vehicles='车辆检测结果', image='图片', frame='图像范围', detections='检测结果',
+            hasNext='是否还有下一帧', frameIndex='原视频帧号', timestampSec='视频时间（秒）')
+        field = []
+        for index, part in enumerate(fieldParts):
+            if schema and index > 0:
+                schema = schema.get('properties', {}).get(part, {})
+                label = schema.get('title') or names.get(part, part)
+            elif index and fieldParts[index - 1] == 'nodePositions':
+                label = self._workflowNodeName(parts[1], part)
+            else:
+                label = names.get(part, part)
+            field.append(label)
+        field = ' / '.join(field) or '完整配置'
+        before, after = change.get('before'), change.get('after')
+        action = {'add': '新增', 'remove': '删除'}.get(change['operation'], '修改')
+        if section == 'dependencies' and fieldParts == ['operators']:
+            summary = f'所需算子：原来 {len(before or [])} 个，现在 {len(after or [])} 个'
+        elif section == 'workflowOrder':
+            summary = '调整流程排列：' + '、'.join(self._objectName('workflows', key) for key in (after or []))
+        elif section == 'globalVariables' and len(parts) == 2:
+            value = after if after is not None else before
+            summary = f'{action}变量；初始值：' + self._shortValue((value or {}).get('initialValue'))
+        elif section == 'workflows' and len(parts) == 2:
+            value = after if after is not None else before
+            summary = f'{action}整个流程，包含 {len((value or {}).get("nodes", []))} 个节点'
+        elif fieldParts and fieldParts[0] in {'inputs', 'outputs', 'inputPorts', 'outputPorts'}:
+            types = dict(detectionCollection='检测目标集合', image='图片', bbox2d='图像区域',
+                         boolean='是或否', integer='整数', number='数值', string='文本')
+            def portValue(value):
+                if isinstance(value, str):
+                    return types.get(value, value)
+                return self._shortValue(value)
+            summary = field + '：' + portValue(before) + ' → ' + portValue(after)
+        else:
+            summary = field + '：' + self._shortValue(before) + ' → ' + self._shortValue(after)
+        return title, action, summary
 
     def _changeLabels(self, change):
         parts, action = list(change['parts']), change['operation']
         device = len(parts) >= 3 and parts[:2] == ['devices', 'definitions']
         if not device:
-            return (self._sectionSummary(parts[0], {}), {'add': '新增', 'remove': '删除'}.get(action, '修改'),
-                    '/'.join(parts[1:]) + '：' + self._shortValue(change.get('before')) + ' → ' + self._shortValue(change.get('after')))
+            return self._plainChangeLabels(change)
         key = parts[2]
         before = (self.snapshot or {}).get('payload', {}).get('devices', {}).get('definitions', {}).get(key, {})
         after = self.local.get('devices', {}).get('definitions', {}).get(key, {})
@@ -386,12 +522,124 @@ class ProjectConfigurationDialog(QDialog):
         if isinstance(value, bool):
             return '启用' if value else '禁用'
         if isinstance(value, (dict, list)):
-            return f'{len(value)} 项（见详情）'
+            return f'{len(value)} 项'
         return str(value).replace('\n', ' ')[:100]
 
     def _showChangeDetails(self, row, *_args):
         item = self.table.item(row, 0)
-        self.details.setPlainText(json.dumps(item.data(Qt.UserRole + 1), ensure_ascii=False, indent=2) if item else '')
+        if not item:
+            self.details.clear()
+        elif self.technicalDetails.isChecked():
+            self.details.setPlainText(item.data(Qt.UserRole + 1) or '')
+        else:
+            headings = ['修改位置', '操作', '改动内容', '修改类型', '何时生效', '影响范围']
+            self.details.setPlainText('\n'.join(heading + '：' + self.table.item(row, col).text()
+                for col, heading in enumerate(headings) if self.table.item(row, col)))
+
+    def openChangeLocation(self, row):
+        if not self._valid() or self.pending is not None or self.writePending:
+            return
+        previousView = getattr(self, 'lastChangeDialog', None)
+        if previousView is not None and previousView.isVisible():
+            previousView.raise_()
+            return
+        item = self.table.item(row, 0)
+        if item is None:
+            return
+        change = json.loads(item.data(Qt.UserRole + 1))
+        if self._draftChanged():
+            return
+        parts = list(change.get('parts') or change['path'].strip('/').split('/'))
+        self.table.setCurrentCell(row, 0)
+        if parts[0] == 'workflows' and len(parts) >= 2:
+            from emo_master.apps.designer.ui.online_graph import OnlineGraphDialog
+            def graph(payload, revision):
+                return dict(runtimeInstanceId='local-comparison', snapshot=dict(payload=deepcopy(payload),
+                    documentRevision=revision, executionRevision=revision), ports={}, history=[], jobs=[], events=[])
+            old = (self.snapshot or {}).get('payload', {})
+            view = OnlineGraphDialog(None, self.projectId, self,
+                snapshotData=graph(self.local, 1), comparisonData=graph(old, 0) if old else None)
+            view.setWindowTitle('改动位置 · ' + item.text())
+            index = view.workflow.findData(parts[1])
+            if index >= 0:
+                view.workflow.setCurrentIndex(index)
+            nodeId = parts[3] if len(parts) >= 4 and parts[2] == 'nodes' else (
+                parts[4] if len(parts) >= 5 and parts[2:4] == ['layout', 'nodePositions'] else None)
+            if nodeId is not None:
+                view.selectNode(nodeId)
+            note = QLabel('本次定位的改动：' + self.table.item(row, 2).text())
+            note.setWordWrap(True)
+            view.layout().insertWidget(1, note)
+            locate = QPushButton()
+            def refreshLocate():
+                current = self.local.get('workflows', {}).get(view.workflow.currentData())
+                selected = view.node.currentData()
+                exists = current is not None and (selected is None or any(n['nodeId'] == selected for n in current['nodes']))
+                locate.setText('在工程中定位' if exists else '本地已删除，可在左侧查看原位置')
+                locate.setEnabled(exists)
+            view.workflow.currentIndexChanged.connect(refreshLocate)
+            view.node.currentIndexChanged.connect(refreshLocate)
+            refreshLocate()
+            view.layout().addWidget(locate)
+            def navigate():
+                if not self._valid():
+                    return
+                workflowId, selected = view.workflow.currentData(), view.node.currentData()
+                view.reject()
+                self.reject()
+                self.c.showFlow()
+                self.c.window.navigateToWorkflow(workflowId, selected)
+            locate.clicked.connect(navigate)
+        else:
+            from emo_master.apps.designer.ui.read_only_graph import displayValue
+            view = QDialog(self)
+            view.setWindowTitle('改动对照 · ' + item.text())
+            view.resize(900, 560)
+            layout = QVBoxLayout(view)
+            heading = QLabel(self.table.item(row, 2).text())
+            heading.setWordWrap(True)
+            layout.addWidget(heading)
+            tree = QTreeWidget()
+            tree.setHeaderLabels(['设置项', '运行端原内容', '本地待写入'])
+            tree.header().setSectionResizeMode(QHeaderView.ResizeToContents)
+            tree.header().setStretchLastSection(True)
+            labels = dict(name='名称', type='数据类型', kind='属性', initialValue='初始值',
+                lifetime='有效范围', legacyCounterName='旧计数器关联', operatorId='算子', version='版本',
+                operators='所需算子', description='说明', revision='工程版本', updatedAt='更新时间')
+            def readable(key, value):
+                choices = dict(type=dict(integer='整数', number='数值', boolean='是或否', string='文本'),
+                    kind=dict(variable='变量', constant='只读常量'), lifetime=dict(job='每次运行重新初始化', persistent='工程持久保存'))
+                if isinstance(value, str):
+                    return choices.get(key, {}).get(value, value)
+                return displayValue(value)
+            def add(parent, key, before, after):
+                structured = isinstance(before, (dict, list)) or isinstance(after, (dict, list))
+                node = QTreeWidgetItem(parent, [labels.get(str(key), str(key)),
+                    ('未设置' if before is None else '') if structured else readable(key, before),
+                    ('未设置' if after is None else '') if structured else readable(key, after)])
+                if before != after:
+                    node.setBackground(1, self.palette().alternateBase())
+                    node.setBackground(2, self.palette().alternateBase())
+                if isinstance(before, dict) or isinstance(after, dict):
+                    left = before if isinstance(before, dict) else {}
+                    right = after if isinstance(after, dict) else {}
+                    for name in dict.fromkeys([*left, *right]):
+                        add(node, name, left.get(name), right.get(name))
+                elif isinstance(before, list) or isinstance(after, list):
+                    left = before if isinstance(before, list) else []
+                    right = after if isinstance(after, list) else []
+                    for index in range(max(len(left), len(right))):
+                        add(node, f'第 {index + 1} 项', left[index] if index < len(left) else None,
+                            right[index] if index < len(right) else None)
+            add(tree, item.text(), change.get('before'), change.get('after'))
+            tree.expandAll()
+            layout.addWidget(tree, 1)
+            close = QPushButton('返回差异列表')
+            close.clicked.connect(view.reject)
+            layout.addWidget(close)
+        self.lastChangeDialog = view
+        view.setWindowModality(Qt.WindowModal)
+        view.show()
 
     def _showInitial(self):
         self.snapshot = None
@@ -406,16 +654,15 @@ class ProjectConfigurationDialog(QDialog):
                          for key, value in self.local.get('devices', {}).get('definitions', {}).items()]
             self.table.setRowCount(len(sections))
             for row, (key, value) in enumerate(sections):
-                text = json.dumps(value, ensure_ascii=False, sort_keys=True)
-                labels = (key, '首次加载', self._sectionSummary(key, value), '完整首次候选', '首次加载', '当前工程')
+                labels = (self._sectionSummary(key, '').rstrip('：'), '首次加载', self._sectionSummary(key, value), '完整工程', '写入后生效', '当前工程')
                 if key.startswith('/devices/definitions/'):
                     labels = (*self._changeLabels(dict(parts=key.strip('/').split('/'), operation='add',
                         path=key, before=None, after=value)), '完整首次候选', '首次加载', '当前工程')
                 for col, label in enumerate(labels):
                     item = QTableWidgetItem(label)
-                    item.setToolTip(text if col == 2 else str(label))
+                    item.setToolTip(str(label))
                     if col == 0:
-                        item.setData(Qt.UserRole + 1, dict(path=key, after=value))
+                        item.setData(Qt.UserRole + 1, json.dumps(dict(path=key, after=value), ensure_ascii=False, indent=2))
                     self.table.setItem(row, col, item)
         finally:
             self.table.blockSignals(False)
@@ -435,59 +682,105 @@ class ProjectConfigurationDialog(QDialog):
         if replacing and self.replacementPolicy.currentData() == "reject":
             self.replacementPolicy.setCurrentIndex(self.replacementPolicy.findData("stopAffected"))
         self.table.blockSignals(True)
-        self.table.setRowCount(len(changes))
-        for row, change in enumerate(changes):
-            labels = self._changeLabels(change)
-            item = QTableWidgetItem(labels[0])
-            item.setToolTip(change["path"])
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Checked if replacing or changeCategory(change["parts"]) in self.selectCategories else Qt.Unchecked)
-            item.setData(Qt.UserRole, change["path"])
-            item.setData(Qt.UserRole + 1, change)
-            self.table.setItem(row, 0, item)
-            for col in (1, 2):
-                item = QTableWidgetItem(labels[col])
-                item.setToolTip(json.dumps(change, ensure_ascii=False, indent=2))
-                self.table.setItem(row, col, item)
-            categories = {"document": "工程信息", "layout": "流程布局", "device_parameters": "设备默认参数",
-                "device_metadata": "设备描述", "device_connection": "设备连接 / 策略", "node_parameters": "节点参数 / 来源",
-                "device_binding": "设备引用", "workflow_structure": "流程结构", "resources": "资源 / 现场绑定",
-                "presentation": "工作页面", "runtime_configuration": "运行配置"}
-            self.table.setItem(row, 3, QTableWidgetItem(categories[changeCategory(change["parts"])]))
-            self.table.setItem(row, 4, QTableWidgetItem('待校验'))
-            self.table.setItem(row, 5, QTableWidgetItem('待校验'))
-        self.table.blockSignals(False)
+        change = None
+        try:
+            self.table.setRowCount(len(changes))
+            for row, change in enumerate(changes):
+                labels = self._changeLabels(change)
+                # Keep JSON numbers out of QVariant's signed 64-bit conversion.
+                details = json.dumps(change, ensure_ascii=False, indent=2)
+                item = QTableWidgetItem(labels[0])
+                item.setToolTip('点击查看改动位置和前后对照：' + labels[0])
+                font = item.font()
+                font.setUnderline(True)
+                item.setFont(font)
+                item.setForeground(self.palette().brush(QPalette.Link))
+                item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+                item.setCheckState(Qt.Checked if replacing or changeCategory(change["parts"]) in self.selectCategories else Qt.Unchecked)
+                item.setData(Qt.UserRole, change["path"])
+                item.setData(Qt.UserRole + 1, details)
+                self.table.setItem(row, 0, item)
+                for col in (1, 2):
+                    item = QTableWidgetItem(labels[col])
+                    item.setToolTip(labels[col])
+                    self.table.setItem(row, col, item)
+                categories = {"document": "工程信息", "layout": "流程布局", "device_parameters": "设备默认参数",
+                    "device_metadata": "设备描述", "device_connection": "设备连接 / 策略", "node_parameters": "节点参数 / 来源",
+                    "device_binding": "设备引用", "workflow_structure": "流程结构", "resources": "资源 / 现场绑定",
+                    "presentation": "工作页面", "runtime_configuration": "运行配置"}
+                self.table.setItem(row, 3, QTableWidgetItem(categories[changeCategory(change["parts"])]))
+                self.table.setItem(row, 4, QTableWidgetItem('检查后确定'))
+                self.table.setItem(row, 5, QTableWidgetItem('检查后确定'))
+        except Exception as error:
+            if change is None:
+                raise
+            failure = RuntimeError(f"无法显示变更 {change['path']}：{self._errorText(error)}")
+            failure.diagnostics = change
+            raise failure from error
+        finally:
+            self.table.blockSignals(False)
+        self._showChangeDetails(self.table.currentRow())
         self._invalidateEffects()
         self._feedback(f"在线文档 R{snapshot['documentRevision']} / 执行计划 R{snapshot['executionRevision']}；{len(changes)} 项差异"
+                            + ('；草稿与在线配置一致，无需写入。' if not changes else '')
                             + (f"；更换工程：{snapshot['payload']['project']['projectId']} → {self.projectId}" if replacing else "")
                             + ("；恢复未完成：" + snapshot["recoveryError"] if snapshot.get("recoveryError") else "")
                             + ("；配置副本导出失败（SQLite 已提交）：" + snapshot['exportCopyError'] if snapshot.get('exportCopyError') else '')
-                            + ('\n' + self.receiptSummary if self.receiptSummary else ''))
+                            + ('\n' + self.receiptSummary if self.receiptSummary else ''),
+                       'warning' if snapshot.get('recoveryError') or snapshot.get('exportCopyError') else 'info')
         self.c.onlineSummary = f"在线文档 R{snapshot['documentRevision']} / 执行 R{snapshot['executionRevision']}"
         if snapshot.get('recoveryError'):
             self.c.onlineSummary += ' · 恢复未完成'
         self.c.chrome.update()
 
+    def _syncSelectAll(self):
+        total = self.table.rowCount()
+        selected = sum(self.table.item(row, 0).checkState() == Qt.Checked
+                       for row in range(total)) if not self.initial else 0
+        state = (Qt.Unchecked if not selected else
+                 Qt.Checked if selected == total else Qt.PartiallyChecked)
+        self.selectAllCheckBox.setVisible(not self.initial)
+        self.selectAllCheckBox.setEnabled(self.table.isEnabled() and bool(total) and not self.initial)
+        self.selectAllCheckBox.setTristate(state == Qt.PartiallyChecked)
+        self.selectAllCheckBox.setCheckState(state)
+        self.selectAllCheckBox.setText(f'全选（已选 {selected} / {total} 项）')
+
+    def _selectAllChanges(self, checked):
+        if not self.selectAllCheckBox.isEnabled() or self.initial:
+            return
+        blocked = self.table.blockSignals(True)
+        try:
+            for row in range(self.table.rowCount()):
+                self.table.item(row, 0).setCheckState(Qt.Checked if checked else Qt.Unchecked)
+        finally:
+            self.table.blockSignals(blocked)
+        self._invalidateEffects()
+
     def _invalidateEffects(self, *_args):
+        self._syncSelectAll()
         self.validatedSelection = None
+        if not self.initial and self.snapshot is not None and not self.table.rowCount():
+            self.impact.setText('无配置差异，无需校验或写入。')
+            return
         if self.status.property('feedbackState') == 'success':
             self._feedback('选中变更已变化，请重新校验；尚未写入 Runtime。')
-        self.impact.setText('选中变更未校验')
+        self.impact.setText('尚未检查选中改动的影响')
         self.table.blockSignals(True)
         try:
             for row in range(self.table.rowCount()):
                 for col in (4, 5):
                     item = self.table.item(row, col)
                     if item is not None:
-                        item.setText('待校验')
+                        item.setText('检查后确定')
                         item.setToolTip('')
         finally:
             self.table.blockSignals(False)
+        self._showChangeDetails(self.table.currentRow())
 
     def _showEffects(self, result):
         self.validatedSelection = self.validationSelection
-        labels = dict(document='仅文档 / 页面外观', next_cycle='下一检测周期', idle='设备空闲后安装',
-                      reconnect='退出使用后替换 / 按策略重连', stop='停止或排空受影响任务后生效')
+        labels = dict(document='只更新工程信息或显示，不改变运行', next_cycle='从下一检测周期开始', idle='设备空闲后生效',
+                      reconnect='设备停止使用后更新，按所选方式重新连接', stop='受影响任务停止或完成当前工作后生效')
         effects = result.get('changeEffects', {})
         self.table.blockSignals(True)
         try:
@@ -496,16 +789,20 @@ class ProjectConfigurationDialog(QDialog):
                 effect = effects.get(item.data(Qt.UserRole))
                 if item.checkState() != Qt.Checked or not effect:
                     continue
-                self.table.item(row, 4).setText(labels.get(effect['effect'], 'Runtime 未声明'))
+                effectText = labels.get(effect['effect'], '运行端未提供说明')
+                self.table.item(row, 4).setText(effectText)
+                self.table.item(row, 4).setToolTip(effectText)
                 details = []
                 for key, title in [('devices', '设备'), ('workflows', '流程'), ('jobs', '任务')]:
                     if effect.get(key):
-                        details.append(title + '：' + '、'.join(effect[key]))
-                text = '\n'.join(details) or '无运行对象'
+                        names = [self._objectName(key, value) if key != 'jobs' else value for value in effect[key]]
+                        details.append(title + '：' + '、'.join(names))
+                text = '\n'.join(details) or '无受影响的设备、流程或任务'
                 self.table.item(row, 5).setText(text)
                 self.table.item(row, 5).setToolTip(text)
         finally:
             self.table.blockSignals(False)
+        self._showChangeDetails(self.table.currentRow())
         consequence = []
         if result.get('cycleSafe'):
             consequence.append('无需停止；新检测采用新配置，已受理周期保持原配置')
@@ -540,7 +837,7 @@ class ProjectConfigurationDialog(QDialog):
             dependencies = requiredProjectChanges(self.snapshot["payload"], self.local, paths,
                 deviceTypes=self.deviceTypes, operatorRegistry=self.deviceRequirements)
         except ValueError as error:
-            self._notify('工程校验未通过', str(error), self._errorDetails(error))
+            self._notify('工程校验未通过', self._errorText(error), self._errorDetails(error))
             return
         if dependencies:
             details = "\n".join(path + "：" + ", ".join(owners) for path, owners in dependencies.items())
@@ -687,7 +984,7 @@ class ProjectConfigurationDialog(QDialog):
             self._submit("upload", lambda: self.client.uploadProjectResources(snapshot, candidate,
                          self.c.directory, self.uploadCancelled, repairConfirmed=True))
         except Exception as error:
-            self._notify('候选资源上传未完成', str(error), self._errorDetails(error))
+            self._notify('候选资源上传未完成', self._errorText(error), self._errorDetails(error))
 
     def cancelWrite(self):
         if self.requestId:
@@ -725,6 +1022,7 @@ class ProjectConfigurationDialog(QDialog):
             self._feedback('草稿已变化，请重新校验；未继续写入。')
             self._controls()
             return
+        snapshotReceived = False
         try:
             result = future.result()
             if result.get('state') == 'FAILED':
@@ -737,6 +1035,7 @@ class ProjectConfigurationDialog(QDialog):
                     json.dumps(result, ensure_ascii=False, indent=2),
                     key=None if validating else (self.requestId, 'FAILED', json.dumps(result, sort_keys=True)))
             elif kind == "snapshot":
+                snapshotReceived = True
                 self._showSnapshot(result)
                 self._revalidateUpgraded()
             elif kind in {'initialValidate', 'initialPrewrite'}:
@@ -808,7 +1107,7 @@ class ProjectConfigurationDialog(QDialog):
                 self.initial = False
                 self.snapshot = None
                 self.revalidateAfterSnapshot = False
-                self.c.onlineSummary = '连接或读取失败'
+                self.c.onlineSummary = '在线配置已读取，差异显示失败' if snapshotReceived else '连接或读取失败'
                 self.c.chrome.update()
             if getattr(error, "code", "") in {"E_CONFIG_CONFLICT", "E_CONFIG_INSTANCE", "E_CONFIG_WRITER_BUSY",
                     "E_CONFIG_REQUEST_ID", "E_CONFIG_REQUEST_MISMATCH", "E_CONFIG_CAPACITY", "E_CONFIG_INVALID",
@@ -824,13 +1123,20 @@ class ProjectConfigurationDialog(QDialog):
                 self._controls()
                 return
             unknown = self.writePending
-            text = (f'写入结果尚未确认；请求 {self.requestId}，请查询原请求结果，未自动重试。\n{error}' if unknown else
-                    self.status.text() if resourceResult is not None else str(error))
+            text = (f'写入结果尚未确认；请求 {self.requestId}，请查询原请求结果，未自动重试。\n{self._errorText(error)}' if unknown else
+                    self.status.text() if resourceResult is not None else self._errorText(error))
             validating = kind in {'initialValidate', 'initialPrewrite', 'validate', 'prewrite'}
             if validating:
                 text = '工程校验未通过，尚未写入 Runtime；本地文件未改变。\n' + text
             title = ('写入结果尚未确认' if unknown else '工程校验未通过' if validating else
                      '读取 Runtime 在线配置失败' if kind == 'snapshot' else '工程与 Runtime 操作失败')
+            if kind == 'snapshot' and not unknown:
+                if snapshotReceived:
+                    title = '工程配置差异显示失败'
+                    text = '已读取 Runtime 在线配置，但生成差异表时失败。\n' + text
+                else:
+                    text = '未能读取 Runtime 在线配置，请检查连接后重新比较。\n' + text
+                text += '\n本次未写入 Runtime，未启动流程；本地工程文件未改变。'
             self._notify(title, text, self._errorDetails(error),
                 warning=unknown, key=(self.requestId, 'UNKNOWN', str(error)) if unknown else None)
             if getattr(error, 'code', '') in {'E_CONFIG_ACTIVE', 'E_CONFIG_INSTANCE', 'E_CONFIG_CONFLICT'}:
@@ -874,8 +1180,14 @@ class ProjectConfigurationDialog(QDialog):
         self.c.chrome.update()
         self.projectId = self.session.document().project.projectId
         self.local = deepcopy(self.session.payload())
+        self.draftCheckpoint = self.session._checkpoint
+        self.initialValidated = False
+        self.initialRuntimeId = ''
+        self.validationSelection = self.validatedSelection = None
+        self._formatFeedback()
         self._showSnapshot(self.snapshot)
-        self.status.setText("在线配置已读入工程草稿；本地文件未改变")
+        self._feedback('在线配置已读入工程草稿；本地文件未改变。\n' + self.status.text(),
+                       self.status.property('feedbackState'))
         self._controls()
 
     def done(self, result):

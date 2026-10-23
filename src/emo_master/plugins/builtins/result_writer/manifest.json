@@ -27,10 +27,65 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "format": {"title": "输出格式", "type": "string", "enum": ["json", "jsonl", "csv"], "default": "json"},
-      "relativePath": {"title": "相对输出路径", "type": "string", "default": "results/result"},
-      "overwrite": {"title": "覆盖已有文件", "type": "boolean", "default": false}
-    }
+      "inputType": {
+        "title": "处理对象",
+        "type": "string",
+        "enum": [
+          "",
+          "detections",
+          "blobs",
+          "contours",
+          "measurements",
+          "lines",
+          "circles",
+          "matches",
+          "histogram",
+          "statistics",
+          "geometry",
+          "numberValue",
+          "booleanValue",
+          "stringValue"
+        ],
+        "default": "",
+        "xOptionLabels": {
+          "": "请选择处理对象",
+          "detections": "检测结果",
+          "blobs": "连通域",
+          "contours": "轮廓",
+          "measurements": "形状测量",
+          "lines": "直线",
+          "circles": "圆",
+          "matches": "模板匹配结果",
+          "histogram": "直方图",
+          "statistics": "颜色统计",
+          "geometry": "几何对象",
+          "numberValue": "数值",
+          "booleanValue": "布尔值",
+          "stringValue": "文本"
+        }
+      },
+      "format": {
+        "title": "输出格式",
+        "type": "string",
+        "enum": [
+          "json",
+          "jsonl",
+          "csv"
+        ],
+        "default": "json"
+      },
+      "relativePath": {
+        "title": "相对输出路径",
+        "type": "string",
+        "default": "results/result"
+      },
+      "overwrite": {
+        "title": "覆盖已有文件",
+        "type": "boolean",
+        "default": false
+      }
+    },
+    "xModeOperator": "vision.io.result_writer"
   },
   "minCoreVersion": "0.3.0",
   "maxCoreVersion": "1.x"

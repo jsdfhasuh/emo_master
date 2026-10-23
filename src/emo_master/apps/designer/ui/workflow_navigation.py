@@ -4,15 +4,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from PySide2.QtCore import QEvent, QPoint, QRect, QSignalBlocker, QSize, Qt, Signal
-from PySide2.QtGui import QColor, QFontMetrics, QPainter
+from PySide2.QtCore import QEvent, QPoint, QSignalBlocker, QSize, Qt, QTimer, Signal
+from PySide2.QtGui import QColor, QFontMetrics
 from PySide2.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
-    QSizePolicy, QStyle, QTabBar, QToolButton, QVBoxLayout, QWidget,
+    QSizePolicy, QStyle, QStyleOptionTab, QStylePainter, QTabBar, QToolButton, QVBoxLayout, QWidget,
 )
 
 from emo_master.apps.designer.ui.icon_map import icon
-from emo_master.apps.designer.ui.theme import uiFont
+from emo_master.apps.designer.ui.theme import BORDER, MUTED, TEXT, uiFont
 from emo_master.ui.workflow_labels import WORKFLOW_RUN_STYLES
 
 
@@ -28,28 +28,82 @@ class _WorkflowLabel:
 class _WorkflowTabBar(QTabBar):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._fitting = False
+        self._fitTimer = QTimer(self)
+        self._fitTimer.setSingleShot(True)
+        self._fitTimer.timeout.connect(self._fitTabs)
         self.setFont(uiFont())
         self.setExpanding(False)
         self.setDocumentMode(True)
         self.setDrawBase(False)
-        self.setUsesScrollButtons(True)
+        self.setUsesScrollButtons(False)
         self.setElideMode(Qt.ElideRight)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        for button in self.findChildren(QToolButton):
-            button.setStyleSheet('QToolButton { padding: 0px; background: #f5f6f8; '
-                                'border: 1px solid #d8dce3; border-radius: 2px; }')
-            label = '向左浏览工作流' if button.arrowType() == Qt.LeftArrow else '向右浏览工作流'
-            button.setToolTip(label)
-            button.setAccessibleName(label)
+        self.currentChanged.connect(self._fitTabs)
+
+    def _fitTabs(self):
+        current = self.currentIndex()
+        if self._fitting or current < 0:
+            return
+        self._fitting = True
+        try:
+            widths = [self.tabSizeHint(i).width() for i in range(self.count())]
+            available = self.width()
+            first = next((i for i in range(self.count()) if self.isTabVisible(i)), current)
+            first = min(first, current)
+            used = sum(widths[first:current + 1])
+            while first < current and used > available:
+                used -= widths[first]
+                first += 1
+            last = current + 1
+            while last < self.count() and used + widths[last] <= available:
+                used += widths[last]
+                last += 1
+            while first > 0 and used + widths[first - 1] <= available:
+                first -= 1
+                used += widths[first]
+            # Keep real indices and IDs, and never hide the selected tab.
+            # Overflow remains available through the fixed workflow picker.
+            self.setTabVisible(current, True)
+            for index in range(self.count()):
+                visible = first <= index < last
+                if self.isTabVisible(index) != visible:
+                    self.setTabVisible(index, visible)
+        finally:
+            self._fitting = False
+
+    def setCurrentIndex(self, index):
+        super().setCurrentIndex(index)
+        self._fitTabs()
+
+    def tabLayoutChange(self):
+        if not self._fitting:
+            self._fitTimer.start(0)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._fitTabs()
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key_Left, Qt.Key_Right):
+            step = 1 if event.key() == Qt.Key_Right else -1
+            if self.layoutDirection() == Qt.RightToLeft:
+                step = -step
+            index = self.currentIndex() + step
+            if 0 <= index < self.count():
+                self.setCurrentIndex(index)
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def tabSizeHint(self, index):
         size = super().tabSizeHint(index)
         metrics = QFontMetrics(uiFont(bold=True))
         markers = [self.tabButton(index, side) for side in (QTabBar.LeftSide, QTabBar.RightSide)]
-        markerWidth = sum(marker.sizeHint().width() + 8 for marker in markers if marker is not None)
-        limit = 340 if markers[1] is not None else 280
-        arrows = 2 * self.style().pixelMetric(QStyle.PM_TabBarScrollButtonWidth)
-        limit = min(limit, max(100, self.width() - arrows - 8))
+        markerWidth = sum(marker.sizeHint().expandedTo(marker.minimumSize()).width() + 8
+                          for marker in markers if marker is not None)
+        hasStatusText = markers[1] is not None and markers[1].property('runtimeStatus') != 'COMPLETED'
+        limit = min(340 if hasStatusText else 280, max(1, self.width() - 2))
         size.setWidth(min(limit, max(100, metrics.horizontalAdvance(self.tabText(index)) + 36 + markerWidth)))
         size.setHeight(max(36, self.fontMetrics().height() + 16))
         for marker in markers:
@@ -64,16 +118,35 @@ class _WorkflowTabBar(QTabBar):
         # The surrounding layout, not the longest name, owns the available width.
         return QSize(0, self.sizeHint().height())
 
+    def initStyleOption(self, option, index):
+        super().initStyleOption(option, index)
+        option.fontMetrics = QFontMetrics(uiFont(bold=index == self.currentIndex()))
+        # Qt's default elision does not reserve stylesheet padding or the
+        # selected tab's heavier font when a custom width cap is used.
+        option.text = option.fontMetrics.elidedText(self.tabText(index), Qt.ElideRight,
+                                                   max(0, self._textRect(option).width()))
+
+    def _textRect(self, option):
+        rect = self.style().subElementRect(QStyle.SE_TabBarTabText, option, self)
+        padding = self.style().sizeFromContents(QStyle.CT_TabBarTab, option, QSize(0, 0), self).width()
+        return rect.adjusted(padding // 2, 0, -(padding - padding // 2), 0)
+
     def paintEvent(self, event):
-        super().paintEvent(event)
-        painter = QPainter(self)
+        painter = QStylePainter(self)
         try:
-            for index in range(self.count()):
-                badge = self.tabButton(index, QTabBar.RightSide)
-                color = badge.property('runtimeColor') if badge is not None else None
-                if color:
-                    rect = self.tabRect(index).adjusted(1, 1, -1, -1)
-                    painter.fillRect(QRect(rect.x(), rect.y(), rect.width(), 3), QColor(color))
+            current = self.currentIndex()
+            indices = [i for i in range(self.count()) if i != current]
+            if current >= 0:
+                indices.append(current)
+            for index in indices:
+                if not self.isTabVisible(index):
+                    continue
+                option = QStyleOptionTab()
+                self.initStyleOption(option, index)
+                painter.setFont(uiFont(bold=index == current))
+                painter.drawControl(QStyle.CE_TabBarTabShape, option)
+                painter.setPen(QColor(TEXT if index == current else MUTED))
+                painter.drawText(self._textRect(option), Qt.AlignCenter, option.text)
         finally:
             painter.end()
 
@@ -163,26 +236,33 @@ class WorkflowTabs(QWidget):
         self._bar.currentChanged.connect(self.currentChanged.emit)
         self._bar.tabBarClicked.connect(self.tabBarClicked.emit)
         self._allButton = QToolButton(self)
-        self._allButton.setText('全部')
+        self._allButton.setIcon(icon('list'))
+        self._allButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self._allButton.setToolTip('全部工作流（可搜索）')
         self._allButton.setAccessibleName('全部工作流')
-        self._allButton.setFixedSize(52, 32)
         self._allButton.clicked.connect(self._showPicker)
         self._addButton = QToolButton(self)
         self._addButton.setIcon(icon('plus'))
         self._addButton.setToolTip('新增工作流')
         self._addButton.setAccessibleName('新增工作流')
-        self._addButton.setFixedSize(32, 32)
         self._addButton.clicked.connect(lambda: self.addRequested.emit())
+        for button in (self._allButton, self._addButton):
+            button.setFixedSize(32, 32)
+            button.setIconSize(QSize(18, 18))
+        separator = QFrame(self)
+        separator.setFixedSize(1, 20)
+        separator.setStyleSheet(f'QFrame {{ background: {BORDER}; border: none; }}')
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(6)
         layout.addWidget(self._bar, 1)
+        layout.addWidget(separator)
         layout.addWidget(self._allButton)
         layout.addWidget(self._addButton)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self._picker = _WorkflowPicker(self)
         self._picker.workflowRequested.connect(self.selectWorkflow)
+        self._picker.workflowRequested.connect(lambda _: self._bar.setFocus())
 
     def tabBar(self):
         return self._bar
@@ -280,7 +360,17 @@ class WorkflowTabs(QWidget):
                 old.deleteLater()
             if status in WORKFLOW_RUN_STYLES:
                 text, color, background = WORKFLOW_RUN_STYLES[status]
-                badge = self._badge(text, color, background)
+                if status == 'COMPLETED':
+                    badge = QLabel(self._bar)
+                    badge.setPixmap(icon('check', color).pixmap(QSize(16, 16)))
+                    badge.setAlignment(Qt.AlignCenter)
+                    badge.setFixedSize(20, 20)
+                    badge.setStyleSheet('QLabel { background: transparent; border: none; }')
+                    badge.setAccessibleName(text)
+                    badge.setAttribute(Qt.WA_TransparentForMouseEvents)
+                else:
+                    badge = self._badge(text, color, background)
+                badge.setToolTip(text)
                 badge.setObjectName('workflowRuntimeBadge')
                 badge.setProperty('runtimeStatus', status)
                 badge.setProperty('runtimeColor', color)
@@ -304,11 +394,14 @@ class WorkflowTabs(QWidget):
     def _updateTabDescription(self, index):
         label = self._labels[self._bar.tabData(index)]
         tooltip = label.entryTooltip or label.title
+        statusText = WORKFLOW_RUN_STYLES.get(label.status, ('',))[0]
+        if statusText:
+            tooltip += '\n状态：' + statusText
         if label.runtimeDetails:
             tooltip += '\n\n' + label.runtimeDetails
         self._bar.setTabToolTip(index, tooltip)
         markers = [self._bar.tabButton(index, side) for side in (QTabBar.LeftSide, QTabBar.RightSide)]
-        names = [marker.text() for marker in markers if marker is not None]
+        names = [marker.accessibleName() for marker in markers if marker is not None]
         self._bar.setAccessibleTabName(index, ' '.join([*names, label.title]))
         self._refreshPicker()
 
@@ -332,10 +425,13 @@ class WorkflowTabs(QWidget):
         self._refreshPicker()
         screen = self.screen().availableGeometry()
         self._picker.resize(min(460, screen.width()), min(480, screen.height()))
-        point = self._allButton.mapToGlobal(QPoint(0, self._allButton.height()))
+        point = self._allButton.mapToGlobal(QPoint(self._allButton.width(), self._allButton.height() + 4))
+        point.setX(point.x() - self._picker.width())
         x = min(max(screen.left(), point.x()), screen.right() - self._picker.width() + 1)
         y = min(max(screen.top(), point.y()), screen.bottom() - self._picker.height() + 1)
         self._picker.move(x, y)
+        if self._picker.list.currentItem() is not None:
+            self._picker.list.scrollToItem(self._picker.list.currentItem())
         self._picker.search.setFocus()
 
     def sizeHint(self):

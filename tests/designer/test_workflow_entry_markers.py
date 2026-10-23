@@ -285,7 +285,7 @@ def testLiveWorkflowColorsAcrossJobsSurviveSelectionAndRestart(designerApplicati
 
 
 @pytest.mark.parametrize('width', [380, 640, 1060])
-def testRuntimeBadgesAndColorStripeVisibleWithLongNames(designerApplication, tmp_path, width):
+def testRuntimeBadgesStayReadableAndSelectionUnderlineIsIndependent(designerApplication, tmp_path, width):
     tabs = WorkflowTabs()
     tabs.setObjectName('workflowTabs')
     for index, status in enumerate(('RUNNING', 'WAITING_CHILD', 'COMPLETED', 'FAILED', 'ABORTED')):
@@ -303,17 +303,24 @@ def testRuntimeBadgesAndColorStripeVisibleWithLongNames(designerApplication, tmp
         for badge in (left, right):
             assert badge.visibleRegion().boundingRect() == badge.rect()
             assert badge.contentsRect().width() >= badge.fontMetrics().horizontalAdvance(badge.text())
+        assert right.accessibleName() in bar.accessibleTabName(index)
+        assert right.accessibleName() in bar.tabToolTip(index)
+        if right.property('runtimeStatus') == 'COMPLETED':
+            assert right.text() == '' and not right.pixmap().isNull()
+            assert right.width() == 20
         stripe = bar.grab().toImage()
         rect = bar.tabRect(index)
         # Read native rendered pixels at device scale, not an expected stylesheet.
         dpr = stripe.devicePixelRatio()
-        pixel = stripe.pixelColor(round(rect.center().x() * dpr), round((rect.top() + 2) * dpr))
-        assert pixel.name() == right.property('runtimeColor')
+        pixel = stripe.pixelColor(round(rect.center().x() * dpr), round((rect.bottom() - 1) * dpr))
+        assert pixel.name() == '#2563eb'
+        top = stripe.pixelColor(round(rect.center().x() * dpr), round((rect.top() + 2) * dpr))
+        assert top.name() != right.property('runtimeColor')
     assert tabs.grab().save(str(tmp_path / f'runtime-badges-{width}.png'))
 
 
 @pytest.mark.parametrize('direction', [Qt.LeftToRight, Qt.RightToLeft])
-def testGrowingOverflowStripHasNoBlankLeadingGapOrDisabledScroll(designerApplication, direction):
+def testGrowingOverflowStripKeepsCurrentTabVisibleWithoutArrowControls(designerApplication, direction):
     tabs = WorkflowTabs()
     tabs.setObjectName('workflowTabs')
     tabs.setLayoutDirection(direction)
@@ -331,8 +338,8 @@ def testGrowingOverflowStripHasNoBlankLeadingGapOrDisabledScroll(designerApplica
         tabs.resize(width, tabs.sizeHint().height())
         settle(designerApplication)
         bar = tabs.tabBar()
-        first = bar.tabRect(0)
-        assert first.right() >= bar.width() - 1 if direction == Qt.RightToLeft else first.left() <= 0
-        arrows = [button for button in bar.findChildren(QToolButton) if button.isVisible()]
-        assert arrows and any(button.isEnabled() for button in arrows)
+        first = next(bar.tabRect(i) for i in range(bar.count()) if bar.isTabVisible(i))
+        assert first.right() == bar.width() - 1 if direction == Qt.RightToLeft else first.left() == 0
+        assert all(button.visibleRegion().isEmpty() for button in bar.findChildren(QToolButton))
+        assert bar.rect().contains(bar.tabRect(1))
         assert tabs.currentIndex() == 1 and changes == []

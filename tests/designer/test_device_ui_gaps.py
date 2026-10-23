@@ -104,9 +104,11 @@ def testValidatedEffectsAreNextToSelectedChanges(ownedDesignerWindow, tmp_path):
         waitUntil(lambda: d.pending is None)
         assert d.table.columnCount() == 6
         assert '下一检测周期' in d.table.item(row, 4).text()
-        assert 'camera' in d.table.item(row, 5).text() and 'job-1' in d.table.item(row, 5).text()
+        assert d.local['devices']['definitions']['camera']['name'] in d.table.item(row, 5).text()
+        assert d.local['workflows']['main']['name'] in d.table.item(row, 5).text()
+        assert 'job-1' in d.table.item(row, 5).text()
         d.table.item(row, 0).setCheckState(Qt.Unchecked)
-        assert '未校验' in d.impact.text()
+        assert d.impact.text() == '尚未检查选中改动的影响'
     finally:
         d.reject()
 

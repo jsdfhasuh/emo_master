@@ -22,27 +22,180 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "roiType": {"title": "ROI 类型", "type": "string", "enum": ["bbox", "rotatedBox", "polygon"], "default": "bbox"},
-      "x": {"title": "X 坐标", "type": "number", "default": 0.0},
-      "y": {"title": "Y 坐标", "type": "number", "default": 0.0},
-      "width": {"title": "宽度（像素）", "type": "number", "minimum": 0.0, "default": 1.0},
-      "height": {"title": "高度（像素）", "type": "number", "minimum": 0.0, "default": 1.0},
-      "centerX": {"title": "中心 X 坐标", "type": "number", "default": 0.0},
-      "centerY": {"title": "中心 Y 坐标", "type": "number", "default": 0.0},
-      "angleDegrees": {"title": "旋转角度（度）", "type": "number", "minimum": -180.0, "exclusiveMaximum": 180.0, "default": 0.0},
+      "roiType": {
+        "title": "ROI 类型",
+        "type": "string",
+        "enum": [
+          "bbox",
+          "rotatedBox",
+          "polygon"
+        ],
+        "default": "bbox"
+      },
+      "x": {
+        "title": "X 坐标",
+        "type": "number",
+        "default": 0,
+        "xVisibleWhen": {
+          "roiType": [
+            "bbox"
+          ]
+        },
+        "xValidateWhen": {
+          "roiType": [
+            "bbox"
+          ]
+        }
+      },
+      "y": {
+        "title": "Y 坐标",
+        "type": "number",
+        "default": 0,
+        "xVisibleWhen": {
+          "roiType": [
+            "bbox"
+          ]
+        },
+        "xValidateWhen": {
+          "roiType": [
+            "bbox"
+          ]
+        }
+      },
+      "width": {
+        "title": "宽度（像素）",
+        "type": "number",
+        "minimum": 0,
+        "default": 1,
+        "xVisibleWhen": {
+          "roiType": [
+            "bbox",
+            "rotatedBox"
+          ]
+        },
+        "xValidateWhen": {
+          "roiType": [
+            "bbox",
+            "rotatedBox"
+          ]
+        }
+      },
+      "height": {
+        "title": "高度（像素）",
+        "type": "number",
+        "minimum": 0,
+        "default": 1,
+        "xVisibleWhen": {
+          "roiType": [
+            "bbox",
+            "rotatedBox"
+          ]
+        },
+        "xValidateWhen": {
+          "roiType": [
+            "bbox",
+            "rotatedBox"
+          ]
+        }
+      },
+      "centerX": {
+        "title": "中心 X 坐标",
+        "type": "number",
+        "default": 0,
+        "xVisibleWhen": {
+          "roiType": [
+            "rotatedBox"
+          ]
+        },
+        "xValidateWhen": {
+          "roiType": [
+            "rotatedBox"
+          ]
+        }
+      },
+      "centerY": {
+        "title": "中心 Y 坐标",
+        "type": "number",
+        "default": 0,
+        "xVisibleWhen": {
+          "roiType": [
+            "rotatedBox"
+          ]
+        },
+        "xValidateWhen": {
+          "roiType": [
+            "rotatedBox"
+          ]
+        }
+      },
+      "angleDegrees": {
+        "title": "旋转角度（度）",
+        "type": "number",
+        "minimum": -180,
+        "exclusiveMaximum": 180,
+        "default": 0,
+        "xVisibleWhen": {
+          "roiType": [
+            "rotatedBox"
+          ]
+        },
+        "xValidateWhen": {
+          "roiType": [
+            "rotatedBox"
+          ]
+        }
+      },
       "points": {
         "title": "多边形顶点（JSON）",
         "type": "array",
         "items": {
           "type": "object",
-          "properties": {"x": {"title": "X 坐标", "type": "number"}, "y": {"title": "Y 坐标", "type": "number"}},
-          "required": ["x", "y"]
+          "properties": {
+            "x": {
+              "title": "X 坐标",
+              "type": "number"
+            },
+            "y": {
+              "title": "Y 坐标",
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ]
         },
-        "default": []
+        "default": [],
+        "xVisibleWhen": {
+          "roiType": [
+            "polygon"
+          ]
+        },
+        "xValidateWhen": {
+          "roiType": [
+            "polygon"
+          ]
+        }
       },
-      "padValue": {"title": "填充值", "type": "integer", "minimum": 0, "maximum": 255, "default": 0},
-      "interpolation": {"title": "插值方式", "type": "string", "enum": ["nearest", "linear", "cubic"], "default": "linear"}
-    }
+      "padValue": {
+        "title": "填充值",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 0
+      },
+      "interpolation": {
+        "title": "插值方式",
+        "type": "string",
+        "enum": [
+          "nearest",
+          "linear",
+          "cubic"
+        ],
+        "default": "linear"
+      }
+    },
+    "xModeOperator": "vision.preprocess.roi"
   },
   "minCoreVersion": "0.2.0",
   "maxCoreVersion": "1.x",

@@ -21,18 +21,24 @@ from tests.runtime.runtime_test_utils import jobFailureDetails, waitForTerminal
 
 
 @contextmanager
-def running(root, *, configure=None):
+def running(root, *, configure=None, factory=sampleProject):
     project = root / '本地 图片'
-    document = sampleProject(project)
+    # The original sample remains a deliberate 2.1 compatibility fixture.
+    # New live-loop tests use WorkflowStore's complete current-format defaults.
+    document = factory(project)
     plugin = root / 'controlled-plugin'
     plugin.mkdir()
     (plugin / 'manifest.json').write_text(json.dumps({'operatorId': 'test.inspection', 'displayName': '受控测试',
         'version': '1.0.0', 'entry': 'tests.runtime.inspection_test_operator:InspectionTestOperator',
-        'inputPorts': {'index': {'type': 'integer', 'required': False}}, 'outputPorts': {'image': 'image'},
+        'inputPorts': {'index': {'type': 'integer', 'required': False},
+                       'indices': {'type': 'list<integer>', 'required': False}},
+        'outputPorts': {'image': 'image', 'count': 'integer', 'items': 'list<integer>'},
         'paramSchema': {'type': 'object'}, 'minCoreVersion': '0.1.0', 'maxCoreVersion': '1.x'}), encoding='utf-8')
     if configure:
         configure(document, root)
     saveProject(project, document.model_dump())
+    from emo_master.apps.designer.state.project_store import loadProjectDocument
+    assert loadProjectDocument(project) == document
     from pathlib import Path
     builtins = Path(__file__).resolve().parents[2] / 'src/emo_master/plugins/builtins'
     runtime = RuntimeService(dbPath=root / 'temporary.sqlite3', workspaceRoot=root / 'jobs', logDirectory=root / 'logs',

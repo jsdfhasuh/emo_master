@@ -93,7 +93,8 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
             eventPublisher=publisher,
             artifactStore=ArtifactStore(Path(spec.jobWorkspacePath)) if spec.copyArtifacts else None,
             previewSnapshotStore=(PreviewSnapshotWriter(Path(spec.jobWorkspacePath),
-                jobId=spec.jobId, projectRevision=document.project.revision)
+                jobId=spec.jobId, projectRevision=document.project.revision,
+                inspectionPublisher=publisher if spec.inspectionEnabled else None)
                 if normalizeLegacySnapshotPolicy(spec.legacySnapshotPolicy) == "ALL" else None),
             globalCounters=globalCounters,
             globalVariables=globalVariables,

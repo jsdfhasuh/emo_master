@@ -42,12 +42,15 @@ def testCommandsHaveFixedSlotsSeparateFromTabs(designerApplication, titles, dire
     assert abs(button.center().y() - rect.center().y()) <= 2
     assert tabs.rect().contains(button)
     assert tabs._addButton.visibleRegion().boundingRect() == tabs._addButton.rect()
+    assert tabs._allButton.size() == tabs._addButton.size()
+    assert not tabs._allButton.icon().isNull()
+    assert tabs._allButton.accessibleName() == '全部工作流'
     assert bar.count() == len(titles) and all(bar.isTabVisible(i) for i in range(bar.count()))
 
 
 @pytest.mark.parametrize('width', [180, 320, 520])
 @pytest.mark.parametrize('direction', [Qt.LeftToRight, Qt.RightToLeft])
-def testOverflowReservesButtonAndKeepsScrollControlsSeparate(designerApplication, width, direction):
+def testOverflowReservesCommandsAndShowsCurrentTabWithoutScrollButtons(designerApplication, width, direction):
     titles = ['Camera Capture 中文流程 ' + str(i) for i in range(12)]
     tabs = makeTabs(designerApplication, titles, width, direction)
     bar, button = tabs.tabBar(), tabs._addButton
@@ -56,12 +59,9 @@ def testOverflowReservesButtonAndKeepsScrollControlsSeparate(designerApplication
         settle(designerApplication)
         assert tabs.rect().contains(button.geometry())
         assert not button.geometry().intersects(bar.geometry())
-        arrows = [b for b in bar.findChildren(QToolButton) if b.isVisible()]
-        assert arrows
-        for arrow in arrows:
-            rect = arrow.geometry()
-            rect.moveTopLeft(arrow.mapTo(tabs, QPoint()))
-            assert not rect.intersects(button.geometry())
+        assert all(b.visibleRegion().isEmpty() for b in bar.findChildren(QToolButton))
+        assert bar.rect().contains(bar.tabRect(index))
+        assert not tabs._allButton.geometry().intersects(bar.geometry())
         assert button.visibleRegion().boundingRect() == button.rect()
     clicks = []
     tabs.addRequested.connect(lambda: clicks.append('add'))

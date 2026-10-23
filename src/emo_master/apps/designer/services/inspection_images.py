@@ -56,7 +56,7 @@ class InspectionImages:
             existing = self.sessionId if self.projectId == projectId else ''
             epoch = self._projectGeneration
         if not callable(getattr(self.client, 'inspectionSession', None)):
-            self.message = 'E_INSPECTION_UNSUPPORTED: 旧 Runtime 客户端不支持两次运行图片检查会话'
+            self.message = 'E_INSPECTION_UNSUPPORTED: Runtime 客户端不支持节点执行图片检查会话'
             return ''
         if existing:
             try:
@@ -92,6 +92,8 @@ class InspectionImages:
 
     def select(self, selection):
         with self._condition:
+            if selection is not None and selection == self._selection:
+                return self.generation
             self.generation += 1
             if self._active:
                 self._active.cancel()
@@ -99,6 +101,7 @@ class InspectionImages:
             self.decodedBytes = 0
             self._pending = (self.generation, selection) if selection else None
             self._selection = selection
+            self._disconnected = False
             self._condition.notify_all()
             generation = self.generation
         if selection and not self.sessionId and self.message:
@@ -179,7 +182,9 @@ class InspectionImages:
                             self._renewAt = time.monotonic() + 10
                             generation = self.generation
                     if generation is not None:
-                        self._publish(generation, {'message': self.message})
+                        self._publish(generation, {'message': self.message,
+                            'contextExpired': getattr(error, 'code', '') in
+                            ('E_INSPECTION_SESSION_EXPIRED', 'E_INSPECTION_IDENTITY')})
                 else:
                     with self._condition:
                         self._renewAt = time.monotonic() + 10
@@ -196,9 +201,24 @@ class InspectionImages:
                         continue
                     self._active = context
                 try:
-                    self._publish(generation, self._read(selection, context))
+                    packet = self._read(selection, context)
+                    with self._condition:
+                        if generation == self.generation:
+                            self._disconnected = False
+                            self.message = ''
+                    self._publish(generation, packet)
                 except Exception as error:
-                    self._publish(generation, {'message': str(error)[:300]})
+                    code = getattr(error, 'code', '')
+                    code = str(code() if callable(code) else code)
+                    with self._condition:
+                        if generation == self.generation:
+                            # Retry this read on the existing lease recovery,
+                            # not on every same-selection UI refresh.
+                            self._disconnected = code in {'StatusCode.UNAVAILABLE',
+                                'StatusCode.DEADLINE_EXCEEDED', 'E_DISPLAY_TIMEOUT'}
+                    self._publish(generation, {'message': str(error)[:300],
+                        'contextExpired': code in
+                        ('E_INSPECTION_SESSION_EXPIRED', 'E_INSPECTION_IDENTITY')})
                 finally:
                     with self._condition:
                         self._active = None
@@ -211,7 +231,8 @@ class InspectionImages:
         context.start(5000)
         while True:
             listing = self.client.listNodePreviewSourcesWithMetadata(selection.projectId, selection.workflowId,
-                selection.nodeId, jobId=selection.jobId, inspectionSessionId=sessionId, cancellation=context)
+                selection.nodeId, jobId=selection.jobId, inspectionSessionId=sessionId, cancellation=context,
+                workflowRunId=selection.workflowRunId, nodeRunId=selection.nodeRunId)
             context.check()
             if listing.captureState != 'PREPARING':
                 break

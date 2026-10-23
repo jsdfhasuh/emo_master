@@ -1,8 +1,7 @@
-"""Opt-in, leased ownership of the last two explicitly started Jobs' images.
+"""Leased, read-only ownership of each node's last two actual invocations.
 
-Files are private session copies, never a new project format or a history DB.
-Readers retain ownership until their generator actually exits. Failed cleanup
-remains charged and prevents further copies; a timeout never proves release.
+Event sinks update metadata only. Immutable preview files arrive on the
+existing worker channel; copies and retirement run outside its order lock.
 """
 from collections import OrderedDict
 from dataclasses import dataclass, field
@@ -17,7 +16,6 @@ from uuid import uuid4
 from emo_master.core.contracts.port_types import normalizePortType
 from . import store as legacy
 from .store import PreviewAsset
-from .image_headers import imageHeader
 
 JOB_BYTES = 64 * 1024 * 1024
 SESSION_BYTES = 2 * JOB_BYTES
@@ -26,20 +24,28 @@ METADATA_BYTES = 512 * 1024
 
 
 @dataclass
+class InspectionExecution:
+    jobId: str
+    workflowId: str
+    nodeId: str
+    workflowRunId: str
+    nodeRunId: str
+    status: str = 'node.started'
+    sources: list = field(default_factory=list)
+    artifact: dict = field(default_factory=dict)
+    reason: str = ''
+    readers: int = 0
+    directory: Path | None = None
+
+
+@dataclass
 class InspectionJob:
     jobId: str
     revision: int
     definitions: dict
     last: dict = field(default_factory=dict)
-    sources: list = field(default_factory=list)
     ready: bool = False
     status: str = 'ACCEPTED'
-    reason: str = ''
-    reasons: dict = field(default_factory=dict)
-    artifact: dict = field(default_factory=dict)
-    readers: int = 0
-    retired: bool = False
-    directory: Path | None = None
 
 
 @dataclass
@@ -52,6 +58,7 @@ class InspectionSession:
     closed: bool = False
     pending: dict = field(default_factory=dict)
     projectReferences: frozenset = field(default_factory=frozenset)
+    executions: OrderedDict = field(default_factory=OrderedDict)
 
 
 class RunInspectionStore:
@@ -60,8 +67,6 @@ class RunInspectionStore:
         self.root = assets.root / '_inspection'
         self.root.mkdir(parents=True, exist_ok=True)
         self._lock = assets._lock
-        # Event sinks never take the disk/asset lock. This small metadata lock
-        # cannot be held by a copy, reader or cleanup operation.
         self._eventLock = threading.RLock()
         self._watches = {}
         self.clock = clock
@@ -70,8 +75,6 @@ class RunInspectionStore:
         self._pendingFiles: set[Path] = set()
         self._readers = 0
         self._stop = threading.Event()
-        # Session archives never survive a Runtime restart. Existing deferred
-        # files count before we admit any replacement allocations.
         for path in self.root.iterdir():
             if path.is_dir():
                 try:
@@ -112,7 +115,6 @@ class RunInspectionStore:
             return session.sessionId
 
     def keyForReference(self, sessionId, projectReference):
-        """Resolve the frozen copy, even after Runtime loads another project."""
         with self._lock:
             self.expire()
             session = self.sessions.get(sessionId)
@@ -130,8 +132,7 @@ class RunInspectionStore:
 
     def renew(self, sessionId, projectKey):
         with self._lock:
-            session = self.require(sessionId, projectKey)
-            session.expiresAt = self.clock() + TTL_SECONDS
+            self.require(sessionId, projectKey).expiresAt = self.clock() + TTL_SECONDS
 
     def attach(self, sessionId, projectKey, jobId, document, *, accepted=True):
         with self._lock:
@@ -148,210 +149,235 @@ class RunInspectionStore:
             job = InspectionJob(jobId, document.project.revision, definitions)
             if session.pending:
                 raise ValueError('E_INSPECTION_PENDING: another start is not yet resolved')
-            session.pending[jobId] = job
             with self._eventLock:
-                self._watches[jobId] = job
+                session.pending[jobId] = job
+                self._watches[jobId] = (session, job)
             if accepted:
                 self.confirm(sessionId, projectKey, jobId)
 
     def confirm(self, sessionId, projectKey, jobId):
         with self._lock:
             session = self.require(sessionId, projectKey)
-            session.jobs[jobId] = session.pending.pop(jobId)
-            while len(session.jobs) > 2:
-                _key, old = session.jobs.popitem(last=False)
-                old.retired = True
-                session.retired.append(old)
-                with self._eventLock:
-                    self._watches.pop(old.jobId, None)
+            with self._eventLock:
+                session.jobs[jobId] = session.pending.pop(jobId)
+                self._pruneJobs(session)
             self._cleanup(session)
+
+    def _pruneJobs(self, session):
+        retained = {execution.jobId for entries in session.executions.values() for execution in entries}
+        retained.update(list(session.jobs)[-1:])
+        for jobId, job in list(session.jobs.items()):
+            if jobId not in retained and job.ready:
+                del session.jobs[jobId]
+                self._watches.pop(jobId, None)
+            elif job.ready:
+                nodes = {key for key, entries in session.executions.items()
+                         if any(execution.jobId == jobId for execution in entries)}
+                job.definitions = {key: value for key, value in job.definitions.items() if key in nodes}
+                job.last = {key: value for key, value in job.last.items() if key in nodes}
 
     def abandon(self, sessionId, projectKey, jobId):
         with self._lock:
             session = self.sessions.get(sessionId)
             if session is None or session.projectKey != projectKey:
                 return
-            job = session.pending.pop(jobId, None)
-            if job:
-                session.retired.append(job)
             with self._eventLock:
+                session.pending.pop(jobId, None)
                 self._watches.pop(jobId, None)
-            self._cleanup(session)
 
     def observe(self, event):
+        """The EventStore sink does no encoding, copying, deletion or disk IO."""
         with self._eventLock:
-            job = self._watches.get(event.jobId)
+            watched = self._watches.get(event.jobId)
+            if watched is None:
+                return
+            session, job = watched
             key = (event.workflowId, event.nodeId)
-            if job and key in job.definitions and not job.ready:
-                if event.eventType in ('node.started', 'node.completed', 'node.failed', 'node.skipped'):
-                    previous = job.last.get(key)
-                    if (previous and event.eventType in ('node.completed', 'node.failed')
-                            and previous['nodeRunId'] != event.nodeRunId):
-                        return
-                    if previous is None or event.sequence > previous['sequence']:
-                        job.last[key] = {'nodeRunId': event.nodeRunId, 'workflowRunId': event.workflowRunId,
-                                         'status': event.eventType, 'sequence': event.sequence}
-                elif event.eventType == 'artifact.created' and len(event.payloadJson.encode()) <= 16384:
-                    artifact = json.loads(event.payloadJson).get('artifact', {})
-                    if isinstance(artifact, dict) and str(artifact.get('mimeType', '')).startswith('image/'):
-                        job.artifact = {name: str(artifact.get(name, ''))[:1024]
-                                        for name in ('path', 'checksum', 'artifactId', 'mimeType')}
-                        job.artifact.update(workflowId=event.workflowId, nodeId=event.nodeId,
-                                            workflowRunId=event.workflowRunId, nodeRunId=event.nodeRunId,
-                                            createdAtMs=event.timestampMs)
+            if key not in job.definitions or job.ready:
+                return
+            entries = session.executions.get(key, [])
+            execution = next((item for item in reversed(entries)
+                              if (item.jobId, item.workflowRunId, item.nodeRunId) ==
+                              (event.jobId, event.workflowRunId, event.nodeRunId)), None)
+            if event.eventType == 'artifact.created' and execution and len(event.payloadJson.encode()) <= 16384:
+                artifact = json.loads(event.payloadJson).get('artifact', {})
+                if isinstance(artifact, dict) and str(artifact.get('mimeType', '')).startswith('image/'):
+                    execution.artifact = {name: str(artifact.get(name, ''))[:1024]
+                                          for name in ('path', 'checksum', 'artifactId', 'mimeType')}
+                return
+            if event.eventType not in ('node.started', 'node.completed', 'node.failed', 'node.skipped'):
+                return
+            previous = job.last.get(key)
+            if previous and (event.sequence <= previous['sequence'] or
+                    (event.eventType in ('node.completed', 'node.failed') and
+                     (previous['workflowRunId'], previous['nodeRunId']) != (event.workflowRunId, event.nodeRunId))):
+                return
+            job.last[key] = dict(nodeRunId=event.nodeRunId, workflowRunId=event.workflowRunId,
+                                 status=event.eventType, sequence=event.sequence)
+            if event.eventType == 'node.skipped':
+                return
+            if execution is None:
+                execution = InspectionExecution(event.jobId, event.workflowId, event.nodeId,
+                                                 event.workflowRunId, event.nodeRunId)
+                directoryId = hashlib.sha256(('\0'.join((event.workflowId, event.nodeId,
+                    event.workflowRunId, event.nodeRunId))).encode()).hexdigest()
+                execution.directory = self.root / session.projectKey / session.sessionId / event.jobId / directoryId
+                entries.append(execution)
+                session.retired.extend(entries[:-2])
+                del entries[:-2]
+                session.executions[key] = entries
+                session.executions.move_to_end(key)
+                while len(session.executions) > 64:
+                    session.retired.extend(session.executions.popitem(last=False)[1])
+            execution.status = 'node.cancelled' if event.eventType == 'node.failed' and event.code == 'E_CANCELLED' else event.eventType
+            self._pruneJobs(session)
 
-    def terminal(self, jobId, workspace, status):
-        with self._lock:
-            for session in list(self.sessions.values()):
-                job = session.jobs.get(jobId) or session.pending.get(jobId)
-                if session.closed or job is None or job.ready:
-                    continue
-                job.status = status
-                with self._eventLock:
-                    self._watches.pop(jobId, None)
-                job.directory = self.root / session.projectKey / session.sessionId / jobId
-                try:
-                    self._takeover(session, job, workspace)
-                except Exception as error:
-                    job.reason = 'E_INSPECTION_TAKEOVER: 节点图片接管失败：' + str(error)[:200]
-                job.ready = True
-
-    def _takeover(self, session, job, workspace):
-        index = workspace / 'preview_staging' / 'index.json'
-        if not index.exists():
-            job.reason = 'E_INSPECTION_NOT_CAPTURED: 本次未采集或尚无已提交节点图片'
-            return
-        if index.stat().st_size > METADATA_BYTES:
-            raise ValueError('snapshot index metadata exceeds 512 KiB')
-        entries = json.loads(index.read_text(encoding='utf-8')).get('entries', [])
-        if not isinstance(entries, list) or len(entries) > 4096:
-            raise ValueError('snapshot index has too many ports')
-        candidates = []
-        staging = legacy._ioPath(workspace / 'preview_staging').resolve()
+    def publish(self, jobId, event, workspace):
+        """Accept immutable worker previews before the following node.completed."""
+        staging = legacy._ioPath(workspace / 'inspection_staging').resolve()
+        entries = event.get('payload', {}).get('entries', ())
         for entry in entries:
-            if not isinstance(entry, dict) or entry.get('portType') != 'image':
-                continue
-            key = (entry.get('workflowId'), entry.get('nodeId'))
-            last = job.last.get(key)
-            if (last is None or last['status'] != 'node.completed' or not last['nodeRunId']
-                    or entry.get('nodeRunId') != last['nodeRunId']
-                    or entry.get('workflowRunId') != last['workflowRunId']
-                    or entry.get('originJobId') != job.jobId
-                    or entry.get('originProjectRevision') != job.revision or not entry.get('captureId')
-                    or normalizePortType(job.definitions.get(key, {}).get(entry.get('port'), '')) != 'image'):
-                self._reason(job, (*key, entry.get('port')), 'E_INSPECTION_IDENTITY: 快照与最后一次执行身份不匹配')
-                continue
             source = (staging / str(entry.get('relativePath', ''))).resolve()
             if not source.is_relative_to(staging) or not source.is_file():
                 continue
-            candidates.append((entry, source))
-        # Only a completed node's registered workspace copy with a checksum
-        # receipt is eligible. Never retain its mutable development output path.
-        artifact = job.artifact
-        if artifact:
-            key = (artifact['workflowId'], artifact['nodeId'])
-            last = job.last.get(key, {})
-            source = Path(artifact['path']).resolve()
-            if (last.get('status') == 'node.completed' and last.get('nodeRunId') == artifact['nodeRunId']
-                    and source.is_relative_to((workspace / 'artifacts').resolve()) and source.is_file()
-                    and source.stat().st_size <= JOB_BYTES):
-                digest = hashlib.sha256()
-                with source.open('rb') as handle:
-                    for block in iter(lambda: handle.read(256 * 1024), b''):
-                        digest.update(block)
-                if digest.hexdigest() == artifact['checksum']:
-                    try:
-                        width, height, mime = imageHeader(source)
-                    except ValueError as error:
-                        self._reason(job, (*key, '__saved_result__'), str(error))
-                    else:
-                        candidates.append(({**artifact, 'port': '__saved_result__', 'captureId': artifact['artifactId'],
-                                            'width': width, 'height': height, 'mimeType': mime}, source))
-        used = 0
-        for entry, source in sorted(candidates, key=lambda item: (
-                item[0]['workflowId'], item[0]['nodeId'], item[0]['port'])):
-            size = source.stat().st_size
-            key = (entry['workflowId'], entry['nodeId'], entry['port'])
-            if len(job.sources) >= 128:
-                self._reason(job, key, 'E_INSPECTION_METADATA_BUDGET: 图片端口元数据额度不足')
-                continue
-            if (size > JOB_BYTES - used or self.usage(session.projectKey) + size > SESSION_BYTES * 2
-                    or self._publicUsage(session.projectKey) + size > legacy._PROJECT_LIMIT_BYTES
-                    or self._publicUsage() + size > legacy._GLOBAL_LIMIT_BYTES or self._pendingFiles
-                    or any(old.directory and old.directory.exists() and not old.readers for old in session.retired)):
-                job.reason = 'E_INSPECTION_ASSET_BUDGET: 图片未接管，存储额度不足或清理未完成'
-                self._reason(job, key, job.reason)
-                continue
-            sessionBytes = sum(p.stat().st_size for p in (self.root / session.projectKey / session.sessionId).rglob('*')
-                               if p.is_file())
-            if sessionBytes + size > SESSION_BYTES:
-                job.reason = 'E_INSPECTION_ASSET_BUDGET: 会话图片超过128 MiB'
-                self._reason(job, key, job.reason)
-                continue
-            identity = hashlib.sha256(('\0'.join((session.sessionId, job.jobId, entry['workflowId'],
-                                                entry['nodeId'], entry['captureId'], entry['port']))).encode()).hexdigest()
-            assetId = 'inspection-' + identity
-            destination = job.directory / (assetId + '.png')
-            asset = PreviewAsset(assetId, destination, str(entry.get('mimeType', 'image/png')), int(entry.get('width', 0)),
-                                 int(entry.get('height', 0)), session.projectKey, entry['workflowId'],
-                                 entry['nodeId'], entry['port'], 'image', tuple(entry.get('iterationPath', ())),
-                                 int(entry.get('createdAtMs', 0)), job.jobId, job.revision, entry['captureId'],
-                                 entry['workflowRunId'], entry['nodeRunId'])
-            if self.metadataBytes(job, asset) > METADATA_BYTES:
-                self._reason(job, key, 'E_INSPECTION_METADATA_BUDGET: 节点图片元数据超过512 KiB')
-                continue
-            destination.parent.mkdir(parents=True, exist_ok=True)
             try:
-                legacy._atomicCopy(source, destination)
-            except OSError:
-                self._pendingFiles.update(p for p in destination.parent.iterdir() if p.is_file() and
-                                          p not in {asset.path for asset in job.sources})
-                raise
-            job.sources.append(asset)
-            used += size
-        if not job.sources and not job.reason:
-            job.reason = '本次没有与最后一次有效节点执行匹配的已提交图片'
+                with self._lock:
+                    with self._eventLock:
+                        watched = self._watches.get(jobId)
+                        if watched is None:
+                            continue
+                        session, job = watched
+                        key = (entry.get('workflowId'), entry.get('nodeId'))
+                        execution = next((item for item in session.executions.get(key, ())
+                            if (item.jobId, item.workflowRunId, item.nodeRunId) ==
+                            (jobId, entry.get('workflowRunId'), entry.get('nodeRunId'))), None)
+                        if execution is None:
+                            continue
+                        if (entry.get('originJobId') != jobId
+                                or entry.get('originProjectRevision') != job.revision or not entry.get('captureId')):
+                            execution.reason = 'E_INSPECTION_IDENTITY: 快照与所选执行身份不匹配'
+                            continue
+                        port = entry.get('port')
+                        if port == '__saved_result__':
+                            if (execution.artifact.get('artifactId') != entry['captureId']
+                                    or not execution.artifact.get('checksum')
+                                    or not Path(execution.artifact['path']).resolve().is_relative_to(
+                                        (workspace / 'artifacts').resolve())):
+                                continue
+                        elif normalizePortType(job.definitions.get(key, {}).get(port, '')) != 'image':
+                            continue
+                    self._cleanup(session)
+                    self._copy(session, job, execution, entry, source)
+            finally:
+                source.unlink(missing_ok=True)
+
+    def _copy(self, session, job, execution, entry, source):
+        size = source.stat().st_size
+        sessionRoot = self.root / session.projectKey / session.sessionId
+        sessionUsage = sum(path.stat().st_size for path in sessionRoot.rglob('*') if path.is_file())
+        with self._eventLock:
+            sources = [asset for entries in session.executions.values() for item in entries for asset in item.sources]
+        jobRoot = sessionRoot / job.jobId
+        jobUsage = sum(path.stat().st_size for path in jobRoot.rglob('*') if path.is_file())
+        if (size > JOB_BYTES - jobUsage or sessionUsage + size > SESSION_BYTES
+                or self._publicUsage(session.projectKey) + size > legacy._PROJECT_LIMIT_BYTES
+                or self._publicUsage() + size > legacy._GLOBAL_LIMIT_BYTES or self._pendingFiles
+                or any(old.directory and old.directory.exists() and not old.readers for old in session.retired)):
+            execution.reason = 'E_INSPECTION_ASSET_BUDGET: 图片未接管，存储额度不足或清理未完成'
+            return
+        if len(sources) >= 256:
+            execution.reason = 'E_INSPECTION_METADATA_BUDGET: 图片端口元数据额度不足'
+            return
+        identity = hashlib.sha256(('\0'.join((session.sessionId, job.jobId, execution.workflowId,
+            execution.nodeId, execution.workflowRunId, execution.nodeRunId, entry['captureId'], entry['port']))).encode()).hexdigest()
+        assetId = 'inspection-' + identity
+        if any(asset.assetId == assetId for asset in execution.sources):
+            return
+        destination = execution.directory / (assetId + '.png')
+        asset = PreviewAsset(assetId=assetId, path=destination, mimeType='image/png',
+            width=int(entry['width']), height=int(entry['height']), projectKey=session.projectKey,
+            workflowId=execution.workflowId, nodeId=execution.nodeId, port=entry['port'], portType='image',
+            iterationPath=tuple(entry.get('iterationPath', ())), createdAtMs=int(entry.get('createdAtMs', 0)),
+            originJobId=job.jobId, originProjectRevision=job.revision, captureId=entry['captureId'],
+            workflowRunId=execution.workflowRunId, nodeRunId=execution.nodeRunId,
+            originalWidth=int(entry.get('originalWidth', entry['width'])),
+            originalHeight=int(entry.get('originalHeight', entry['height'])))
+        with self._eventLock:
+            if (self.metadataBytes(session, job.jobId, asset) > METADATA_BYTES
+                    or self.metadataBytes(session, additional=asset) > 2 * METADATA_BYTES):
+                execution.reason = 'E_INSPECTION_METADATA_BUDGET: 节点图片元数据超过会话额度'
+                return
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            legacy._atomicCopy(source, destination)
+        except OSError as error:
+            execution.reason = 'E_INSPECTION_TAKEOVER: 节点图片接管失败：' + str(error)[:200]
+            self._pendingFiles.update(destination.parent.glob('.*.tmp'))
+            return
+        with self._eventLock:
+            execution.sources.append(asset)
 
     @staticmethod
-    def _reason(job, key, text):
-        if len(job.reasons) < 128:
-            job.reasons[key] = text[:256]
-
-    @staticmethod
-    def metadataBytes(job, additional=None):
-        value = {'definitions': list(job.definitions.items()), 'last': list(job.last.items()),
-                 'sources': [asset.__dict__ for asset in (*job.sources, *((additional,) if additional else ()))],
-                 'reasons': list(job.reasons.items()), 'artifact': job.artifact, 'reason': job.reason}
+    def metadataBytes(session, jobId=None, additional=None):
+        jobs = [{'jobId': job.jobId, 'revision': job.revision, 'definitions': list(job.definitions.items()),
+                 'last': list(job.last.items()), 'status': job.status}
+                for job in session.jobs.values() if jobId is None or job.jobId == jobId]
+        executions = [{**execution.__dict__, 'sources': [asset.__dict__ for asset in execution.sources]}
+                      for entries in session.executions.values() for execution in entries
+                      if jobId is None or execution.jobId == jobId]
+        value = {'jobs': jobs, 'executions': executions, 'additional': additional.__dict__ if additional else None}
         return len(json.dumps(value, default=str, separators=(',', ':')).encode())
 
-    def list(self, sessionId, projectKey, jobId, workflowId, nodeId):
+    def terminal(self, jobId, workspace, status):
+        with self._lock:
+            with self._eventLock:
+                watched = self._watches.pop(jobId, None)
+                if watched is None:
+                    return
+                session, job = watched
+                job.status, job.ready = status, True
+                for entries in session.executions.values():
+                    for execution in entries:
+                        if execution.jobId == jobId and execution.status == 'node.started':
+                            execution.status = 'node.cancelled' if status == 'ABORTED' else 'node.interrupted'
+                self._pruneJobs(session)
+            self._cleanup(session)
+
+    def list(self, sessionId, projectKey, jobId, workflowId, nodeId, workflowRunId='', nodeRunId=''):
         with self._lock:
             session = self.require(sessionId, projectKey)
-            job = session.jobs.get(jobId)
-            if job is None:
-                return [], 'EXPIRED', '任务已超出会话保留范围'
-            if not job.ready:
-                return [], 'PREPARING', '节点图片接管尚未封闭；任务终态不等于资产已经就绪'
-            last = job.last.get((workflowId, nodeId))
-            if last is None or last['status'] != 'node.completed':
-                return [], 'NO_CURRENT_SNAPSHOT', 'E_INSPECTION_NOT_COMPLETED: 此节点最后一次执行没有有效完成输出'
-            sources = [asset for asset in job.sources if asset.workflowId == workflowId and asset.nodeId == nodeId]
-            reason = '; '.join(value for key, value in job.reasons.items() if key[:2] == (workflowId, nodeId))
-            return sources, 'CURRENT_AVAILABLE' if sources else 'NO_CURRENT_SNAPSHOT', \
-                reason or job.reason or 'E_INSPECTION_MISSING: 本次未输出或未采集此端口'
+            self._cleanup(session)
+            with self._eventLock:
+                job = session.jobs.get(jobId)
+                if job is None:
+                    return [], 'EXPIRED', '任务已超出节点执行保留范围'
+                entries = session.executions.get((workflowId, nodeId), ())
+                execution = next((item for item in reversed(entries) if item.jobId == jobId
+                    and (not workflowRunId or item.workflowRunId == workflowRunId)
+                    and (not nodeRunId or item.nodeRunId == nodeRunId)), None)
+                if execution is None:
+                    return [], 'NO_CURRENT_SNAPSHOT', 'E_INSPECTION_MISSING: 所选节点执行未采集或已淘汰'
+                if execution.status == 'node.started':
+                    return [], 'PREPARING', '节点正在执行，图片尚未发布'
+                if execution.status != 'node.completed':
+                    return [], 'NO_CURRENT_SNAPSHOT', 'E_INSPECTION_NOT_COMPLETED: 此次执行没有有效完成输出'
+                sources = list(execution.sources)
+                return sources, 'CURRENT_AVAILABLE' if sources else 'NO_CURRENT_SNAPSHOT', \
+                    execution.reason or ('' if sources else 'E_INSPECTION_MISSING: 本次未输出或未采集此端口')
 
     def stream(self, sessionId, projectKey, assetId, active=lambda: True):
         with self._lock:
             session = self.require(sessionId, projectKey)
-            match = next(((job, asset) for job in session.jobs.values() for asset in job.sources
-                          if asset.assetId == assetId), None)
-            if match is None:
-                raise KeyError('inspection asset is not retained by this session')
-            if self._readers >= 2:
-                raise ValueError('E_INSPECTION_READ_BUDGET: at most two actual readers')
-            job, asset = match
-            job.readers += 1
-            self._readers += 1
+            with self._eventLock:
+                match = next(((execution, asset) for entries in session.executions.values() for execution in entries
+                    for asset in execution.sources if asset.assetId == assetId and execution.status == 'node.completed'), None)
+                if match is None:
+                    raise KeyError('inspection asset is not retained by this session')
+                if self._readers >= 2:
+                    raise ValueError('E_INSPECTION_READ_BUDGET: at most two actual readers')
+                execution, asset = match
+                execution.readers += 1
+                self._readers += 1
         try:
             with asset.path.open('rb') as handle:
                 while active():
@@ -361,7 +387,7 @@ class RunInspectionStore:
                     yield chunk, asset.mimeType
         finally:
             with self._lock:
-                job.readers -= 1
+                execution.readers -= 1
                 self._readers -= 1
                 self._cleanup(session)
 
@@ -372,33 +398,33 @@ class RunInspectionStore:
                 return
             if projectKey is not None and session.projectKey != projectKey:
                 raise ValueError('inspection session belongs to another project')
-            session.closed = True
             with self._eventLock:
+                session.closed = True
                 for job in (*session.jobs.values(), *session.pending.values()):
                     self._watches.pop(job.jobId, None)
-            session.retired.extend(session.jobs.values())
-            session.retired.extend(session.pending.values())
-            session.jobs.clear()
-            session.pending.clear()
+                session.retired.extend(item for entries in session.executions.values() for item in entries)
+                session.executions.clear()
+                session.jobs.clear()
+                session.pending.clear()
             self._cleanup(session)
 
     def _cleanup(self, session):
-        for job in list(session.retired):
-            # Evicted UI metadata is released even when physical file ownership
-            # must remain. The receipt only needs its directory/readers.
-            job.definitions.clear()
-            job.last.clear()
-            job.sources.clear()
-            job.artifact.clear()
-            job.reasons.clear()
-            if job.readers:
+        with self._eventLock:
+            retired = list(session.retired)
+            for execution in retired:
+                execution.sources.clear()
+                execution.artifact.clear()
+                execution.reason = ''
+        for execution in retired:
+            if execution.readers:
                 continue
             try:
-                if job.directory and job.directory.exists():
-                    shutil.rmtree(job.directory)
+                if execution.directory and execution.directory.exists():
+                    shutil.rmtree(execution.directory)
             except OSError:
                 continue
-            session.retired.remove(job)
+            with self._eventLock:
+                session.retired.remove(execution)
         if session.closed and not session.retired:
             self.sessions.pop(session.sessionId, None)
             root = self.root / session.projectKey / session.sessionId
@@ -413,6 +439,8 @@ class RunInspectionStore:
             for session in list(self.sessions.values()):
                 if session.closed or self.clock() >= session.expiresAt:
                     self.closeSession(session.sessionId)
+                else:
+                    self._cleanup(session)
             for path in list(self._pendingFiles):
                 try:
                     path.unlink(missing_ok=True)

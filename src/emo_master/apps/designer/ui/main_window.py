@@ -3592,7 +3592,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             # First publication uses the same explicit draft/resource path as
             # Runtime > Write, never Save-to-disk followed by legacy LoadProject.
             from emo_master.apps.designer.services.runtime_client import RuntimeClientError
-            from emo_master.core.project.configuration import projectChanges
+            from emo_master.core.project.configuration import projectConfigurationChanges
             if not self.pageCoordinator._canSync():
                 return False
             try:
@@ -3602,7 +3602,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                     self.appendRuntimeLog('ERROR', str(error))
                     return False
             else:
-                if not online.get('recoveryError') and not projectChanges(online['payload'], self.pageCoordinator.session.payload()):
+                if not online.get('recoveryError') and not projectConfigurationChanges(
+                        online['payload'], self.pageCoordinator.session.payload()):
                     return True
             from PySide2.QtWidgets import QDialog
             return self.pageCoordinator.configureRuntime(allowRun=True) == QDialog.Accepted

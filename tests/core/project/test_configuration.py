@@ -2,7 +2,8 @@ from copy import deepcopy
 
 import pytest
 
-from emo_master.core.project.configuration import projectChanges, selectedCandidate, executionDigest, requiredDeviceChanges, changeCategory
+from emo_master.core.project.configuration import (
+    projectChanges, projectConfigurationChanges, selectedCandidate, executionDigest, requiredDeviceChanges, changeCategory)
 from emo_master.core.project.models import ProjectDocument
 from tests.runtime.test_device_runtime import simulatedProject
 
@@ -139,6 +140,60 @@ def testLayoutAndLabelsDoNotChangeExecutionRevision():
     assert executionDigest(online) == executionDigest(local)
     local["devices"]["definitions"]["camera"]["defaults"]["gain"] = 1
     assert executionDigest(online) != executionDigest(local)
+
+
+@pytest.mark.parametrize('layout', [None, {}, {'nodePositions': {}},
+    {'nodePositions': {'capture': {'x': 5, 'y': 8}}}])
+def testConfigurationComparisonIgnoresPositionAddMoveAndRemove(layout):
+    online = simulatedProject()
+    workflow = online['workflows']['main']
+    if layout is None:
+        workflow.pop('layout', None)
+    else:
+        workflow['layout'] = deepcopy(layout)
+    local = deepcopy(online)
+    local['workflows']['main']['layout'] = {'nodePositions': {'capture': {'x': 20, 'y': 40}}}
+    before, after = deepcopy(online), deepcopy(local)
+    assert projectChanges(online, local)
+    assert projectConfigurationChanges(online, local) == []
+    assert projectConfigurationChanges(local, online) == []
+    assert online == before and local == after
+
+
+def testConfigurationComparisonKeepsNamesParametersBindingsAndStructure():
+    online = simulatedProject()
+    local = deepcopy(online)
+    workflow = local['workflows']['main']
+    workflow['layout'] = {'nodePositions': {'capture': {'x': 20, 'y': 40}}}
+    workflow['name'] = 'Renamed workflow'
+    node = next(node for node in workflow['nodes'] if node['nodeId'] == 'capture')
+    node.update(displayName='Renamed capture', params={'gain': 1})
+    node['deviceBindings']['camera']['deviceId'] = 'other-camera'
+    workflow['edges'] = []
+    workflow['nodes'].append(dict(nodeId='new-node', operatorId='new-operator'))
+    changes = projectConfigurationChanges(online, local)
+    paths = {change['path'] for change in changes}
+    assert paths == {'/workflows/main/name', '/workflows/main/nodes/capture/displayName',
+        '/workflows/main/nodes/capture/params', '/workflows/main/nodes/capture/deviceBindings/camera/deviceId',
+        '/workflows/main/edges', '/workflows/main/nodes/new-node'}
+    candidate = selectedCandidate(online, local, list(paths))
+    assert candidate['workflows']['main']['layout'] == online['workflows']['main']['layout']
+    assert not projectConfigurationChanges(candidate, local)
+
+
+def testConfigurationComparisonPreservesWholeWorkflowAndProjectReplacement():
+    online = simulatedProject()
+    local = deepcopy(online)
+    local['workflows']['other'] = deepcopy(local['workflows']['main'])
+    local['workflows']['other']['layout'] = {'nodePositions': {'capture': {'x': 20, 'y': 40}}}
+    assert projectConfigurationChanges(online, local) == projectChanges(online, local)
+    assert selectedCandidate(online, local, ['/workflows/other']) == local
+    assert projectConfigurationChanges(local, online) == projectChanges(local, online)
+    local['project']['projectId'] = 'replacement-project'
+    local['workflows']['main']['layout'] = deepcopy(local['workflows']['other']['layout'])
+    assert projectConfigurationChanges(online, local) == projectChanges(online, local)
+    paths = [change['path'] for change in projectConfigurationChanges(online, local)]
+    assert selectedCandidate(online, local, paths) == local
 
 
 def testStaticPageSelectionRequiresOnlyItsMissingResource():

@@ -13,7 +13,7 @@ from PySide2.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushB
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QMessageBox, QStyle, QTextBrowser,
     QStyledItemDelegate, QStyleOptionViewItem, QTreeWidget, QTreeWidgetItem)
 
-from emo_master.core.project.configuration import projectChanges, requiredProjectChanges, changeCategory
+from emo_master.core.project.configuration import projectConfigurationChanges, requiredProjectChanges, changeCategory
 
 
 class ChangeLocationDelegate(QStyledItemDelegate):
@@ -209,7 +209,7 @@ class ProjectConfigurationDialog(QDialog):
         self.writeButton = QPushButton("写入 Runtime")
         self.queryButton = QPushButton("查询写入结果")
         self.cancelButton = QPushButton("取消待提交写入")
-        self.closeButton = QPushButton("保持差异并关闭")
+        self.closeButton = QPushButton("关闭")
         self.graphButton = QPushButton("在线 / 历史只读图")
         self.uploadButton = QPushButton("上传候选资源")
         from emo_master.apps.designer.ui.icon_map import icon
@@ -487,6 +487,7 @@ class ProjectConfigurationDialog(QDialog):
             (uploading and not self.uploadCancelled.is_set())
             or (ready and uncertain and hasattr(self.client, 'cancelProjectResourceTransfers')))
         self.cancelButton.setEnabled(idle and self.writePending)
+        self.closeButton.setText('保持差异并关闭' if self.snapshot is not None and self.table.rowCount() > 0 else '关闭')
         self.table.setEnabled(ready or initialReady)
         self._syncSelectAll()
         self.replacementPolicy.setEnabled(ready)
@@ -814,7 +815,7 @@ class ProjectConfigurationDialog(QDialog):
         self.initial = False
         self.replacementPolicy.show()
         self.snapshot = snapshot
-        changes = projectChanges(snapshot["payload"], self.local)
+        changes = projectConfigurationChanges(snapshot["payload"], self.local)
         replacing = snapshot["payload"]["project"]["projectId"] != self.projectId
         if replacing and self.replacementPolicy.currentData() == "reject":
             self.replacementPolicy.setCurrentIndex(self.replacementPolicy.findData("stopAffected"))
@@ -859,7 +860,7 @@ class ProjectConfigurationDialog(QDialog):
         self._showChangeDetails(self.table.currentRow())
         self._invalidateEffects()
         self._feedback(f"在线文档 R{snapshot['documentRevision']} / 执行计划 R{snapshot['executionRevision']}；{len(changes)} 项差异"
-                            + ('；草稿与在线配置一致，无需写入。' if not changes else '')
+                            + ('；运行配置一致，无需写入。' if not changes else '')
                             + (f"；更换工程：{snapshot['payload']['project']['projectId']} → {self.projectId}" if replacing else "")
                             + ("；恢复未完成：" + snapshot["recoveryError"] if snapshot.get("recoveryError") else "")
                             + ("；配置副本导出失败（SQLite 已提交）：" + snapshot['exportCopyError'] if snapshot.get('exportCopyError') else '')
@@ -1291,7 +1292,7 @@ class ProjectConfigurationDialog(QDialog):
             for row in range(self.table.rowCount()):
                 self.table.item(row, 0).setCheckState(Qt.Checked)
             if not self.table.rowCount():
-                self._feedback('草稿与在线配置一致，无需写入。', 'success')
+                self._feedback('运行配置一致，无需写入。', 'success')
                 return
         self.write(validate=True)
 

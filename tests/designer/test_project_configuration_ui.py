@@ -146,7 +146,46 @@ def testSelectAllDisabledWithoutDifferencesOrWhileBusy(ownedDesignerWindow, tmp_
         dialog._showInitial()
         dialog._controls()
         assert dialog.selectAllCheckBox.isHidden()
+        assert dialog.closeButton.text() == '关闭'
         assert not calls
+    finally:
+        dialog.reject()
+
+
+def testCloseButtonAfterCommittedWriteKeepsDraftAndDoesNotWriteAgain(
+        ownedDesignerWindow, tmp_path, monkeypatch):
+    window, dialog, calls, path = setupDialog(ownedDesignerWindow, tmp_path)
+    try:
+        before, disk = window.pageCoordinator.session.payload(), path.read_bytes()
+        assert dialog.table.rowCount() > 0
+        assert dialog.closeButton.text() == '保持差异并关闭'
+        originalWrite = dialog.client.writeProjectConfiguration
+
+        def write(snapshot, payload, paths, requestId, *, validate=False):
+            result = originalWrite(snapshot, payload, paths, requestId, validate=validate)
+            if not validate:
+                snapshot['payload'] = deepcopy(payload)
+                snapshot['documentRevision'] = result['documentRevision']
+            return result
+
+        monkeypatch.setattr(dialog.client, 'writeProjectConfiguration', write)
+        monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+        dialog.selectAllCheckBox.click()
+        dialog.writeButton.click()
+        waitUntil(lambda: dialog.pending is None)
+        assert [call[3] for call in calls] == [True, False]
+        assert dialog.table.rowCount() == 0 and '已提交' in dialog.status.text()
+        assert dialog.closeButton.text() == '关闭'
+        assert not dialog.writeButton.isEnabled() and not dialog.validateButton.isEnabled()
+        dialog.show()
+        from PySide2.QtWidgets import QApplication
+        QApplication.processEvents()
+        assert dialog.grab().save(str(tmp_path / 'committed-no-differences.png'))
+        assert dialog.rect().contains(dialog.closeButton.geometry())
+        dialog.closeButton.click()
+        assert dialog.closed and not dialog.isVisible()
+        assert [call[3] for call in calls] == [True, False]
+        assert window.pageCoordinator.session.payload() == before and path.read_bytes() == disk
     finally:
         dialog.reject()
 
@@ -187,6 +226,7 @@ def testReadBackFeedbackSurvivesPollAndLaterEditsInvalidateValidation(
         assert '已读入工程草稿' in feedback and '无需写入' in feedback
         assert dialog.draftCheckpoint is session._checkpoint
         assert dialog.table.rowCount() == 0
+        assert dialog.closeButton.text() == '关闭'
         assert not dialog.validateButton.isEnabled() and not dialog.writeButton.isEnabled()
         assert '无需校验' in dialog.impact.text()
         assert not dialog.details.toPlainText()
@@ -200,11 +240,13 @@ def testReadBackFeedbackSurvivesPollAndLaterEditsInvalidateValidation(
         assert '草稿已变化' in dialog.status.text()
         assert dialog.validationSelection is None and dialog.validatedSelection is None
         assert dialog.table.rowCount() == 1 and dialog.validateButton.isEnabled()
+        assert dialog.closeButton.text() == '保持差异并关闭'
         dialog._showChangeDetails(0)
         assert dialog.details.toPlainText()
         window.pageCoordinator.history()
         dialog.poll()
         assert dialog.table.rowCount() == 0 and '无需写入' in dialog.status.text()
+        assert dialog.closeButton.text() == '关闭'
         assert not dialog.details.toPlainText() and '无需校验' in dialog.impact.text()
         if changed:
             window.pageCoordinator.history()
@@ -464,10 +506,12 @@ def testSnapshotFailureIdentifiesStageAndCanRetryWithoutWriting(
         else:
             assert 'UNAVAILABLE' in message['detail']
         assert dialog.snapshot is None and not dialog.table.signalsBlocked()
+        assert dialog.closeButton.text() == '关闭'
         assert dialog.refreshButton.isEnabled() and not dialog.writeButton.isEnabled()
         dialog.refresh()
         waitUntil(lambda: dialog.pending is None)
         assert dialog.snapshot is not None and dialog.writeButton.isEnabled()
+        assert dialog.closeButton.text() == '保持差异并关闭'
         assert len(messages) == 1 and not calls and path.read_bytes() == disk
         assert window.pageCoordinator.session.payload() == draft
     finally:

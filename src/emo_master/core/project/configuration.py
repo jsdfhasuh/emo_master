@@ -55,6 +55,17 @@ def projectChanges(online, local):
     return changes
 
 
+def projectConfigurationChanges(online, local):
+    """Compare publishable settings without treating node placement as a change."""
+    changes = projectChanges(online, local)
+    if online["project"]["projectId"] != local["project"]["projectId"]:
+        return changes  # Replacing a project still requires its complete document.
+    # WorkflowLayout stores node positions; the broader layout category also
+    # contains names, which must remain visible and explicitly publishable.
+    return [change for change in changes if not (
+        len(change["parts"]) >= 3 and change["parts"][0] == "workflows" and change["parts"][2] == "layout")]
+
+
 def selectedCandidate(online, local, selected):
     if not selected or len(selected) != len(set(selected)):
         raise ValueError("select at least one unique change")

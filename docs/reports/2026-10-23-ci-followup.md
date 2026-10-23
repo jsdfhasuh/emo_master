@@ -89,6 +89,14 @@ The Windows job at `17a26c4e` passed 1844 tests, then failed while tearing down 
 
 An independent committed-source snapshot at `a70c15a8` plus this one fixture correction passed all 163 tests in `tests/designer/test_plc_editor.py` (40.99 s). Evidence: `plc-teardown-final.txt/xml`; original remote failure: `windows-plc-teardown-before.txt`. The already-running full local snapshot is intentionally not modified mid-run. Its source/tests/configuration were audited against 1279 committed blobs before this follow-up.
 
+### Parallel UI Observation Follow-up
+
+Ubuntu at `a70c15a8` reached 6983 passes and 23 skips, then failed the parallel-window test's instantaneous `pace == RUNNING` assertion. The test scheduler catches up to an absolute 5 Hz clock, so it does not guarantee a running interval when the GUI samples it. Its original Windows isolated run passed all 5 tests; this is a platform/scheduling-sensitive fixture, not evidence that the Runtime failed to start a Job.
+
+The parallel UI test now registers a test-only `HeldPace` subclass in its temporary plugin manifest. A temporary file holds the next real worker invocation, cancellation remains supported, and the original `RUNNING` assertion is retained with additional Job/workflow identity and new-invocation checks. The hold is released in `finally`; existing stop/restart/close assertions remain. Production code and the default `Pace` operator are unchanged. Parallel UI, Runtime orchestration, and existing startup-readiness tests passed 50 tests in 68.12 s (`parallel-ui-expanded.txt/xml`). The original Linux failure is retained in `linux-a70-failed.txt`.
+
+Windows at `21b9ad6a` separately reported one `EXPORT_TIMEOUT` during the two-Job dual-image test after 3988 passes. Diagnostics show the existing 500 ms completion-wait budget expired and the result was correctly marked `INCOMPLETE`, not incorrectly called image-ready. Raw diagnostics are retained in `windows-21b-failed.txt`. No export deadline, completeness assertion, or retry policy was weakened. This observation requires follow-up verification and is not claimed fixed by the parallel UI fixture correction.
+
 ## Acceptance Boundary
 
 No real camera/PLC connection, field project mutation, network readdressing, credentials change, deployment, frozen EXE build, or Release was performed. Simulated device, localhost socket, source selftest, native offscreen Qt, and remote CI results are separate evidence layers. Skipped tests are not passes. Running application executables do not hot-load these source repairs.

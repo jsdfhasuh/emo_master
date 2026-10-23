@@ -1,9 +1,24 @@
 """Ordinary While workflows over a synthetic image, with paced test operators."""
 from copy import deepcopy
+from pathlib import Path
+import time
 
+from examples.p2_pace import Pace
 from emo_master.core.project.models import ProjectDocument
 from tests.runtime.two_station_fixture import twoStationProject
 from tests.runtime.production_fixture import saveDocument
+
+
+class HeldPace(Pace):
+    """Hold a real worker invocation while the UI observes its running state."""
+
+    def executeNode(self, inputs, params, runtimeContext):
+        holdPath = params.get('holdPath')
+        if holdPath:
+            while Path(holdPath).exists():
+                runtimeContext['raiseIfCancellationRequested']()
+                time.sleep(.01)
+        return super().executeNode(inputs, params, runtimeContext)
 
 
 def whileProject(root, count=2, limit=4):

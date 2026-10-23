@@ -1,4 +1,6 @@
 """Native UI + actual spawned While Jobs; synthetic offline inputs only."""
+import json
+
 import pytest
 from PySide2.QtGui import QFontDatabase
 from PySide2.QtWidgets import QMessageBox
@@ -12,16 +14,57 @@ from tests.runtime.parallel_workflow_fixture import whileProject
 from tests.ui.operator_view.test_view import waitFor
 
 
+@pytest.mark.parametrize('cancelled', [False, True])
+def testPaceObservationHoldReleasesAndCancels(tmp_path, cancelled):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+    from emo_master.apps.runtime.workflow.cancellation import CancellationRequested, CancellationToken
+    from tests.runtime.parallel_workflow_fixture import HeldPace
+    path = tmp_path / 'hold'
+    path.touch()
+    entered, token = Event(), CancellationToken()
+    pace = HeldPace()
+    pace.initOperator(None)
+    def check():
+        entered.set()
+        token.raise_if_cancelled()
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(pace.executeNode, {}, {'holdPath': str(path), 'initialDelay': 0},
+                             {'raiseIfCancellationRequested': check})
+        try:
+            assert entered.wait(2) and not future.done() and pace.index == 0
+            if cancelled:
+                token.cancel()
+                with pytest.raises(CancellationRequested):
+                    future.result(timeout=2)
+                assert pace.index == 0
+            else:
+                path.unlink()
+                assert future.result(timeout=2)['outputs'] == {'tick': True}
+                assert pace.index == 1
+        finally:
+            token.cancel()
+            path.unlink(missing_ok=True)
+
+
 def testOneClickParallelStartSelectionStopRestartAndClose(qtApp, tmp_path, monkeypatch):
     monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Discard)
     QFontDatabase.addApplicationFont('C:/Windows/Fonts/msyh.ttc')
     root = tmp_path / 'engineering'
     document, roots = whileProject(root)
     from tests.runtime.production_fixture import saveDocument
+    holdPath = tmp_path / 'hold-selected-pace'
+    next(node for node in document.workflows['second'].nodes if node.nodeId == 'pace').params['holdPath'] = str(holdPath)
     document.runtime.startupWorkflowIds = roots
     saveDocument(root, document)
+    plugins = pluginRoots(tmp_path)
+    manifestPath = tmp_path / 'plugins/pace/manifest.json'
+    manifest = json.loads(manifestPath.read_text(encoding='utf-8'))
+    manifest['entry'] = 'tests.runtime.parallel_workflow_fixture:HeldPace'
+    manifest['paramSchema']['properties']['holdPath'] = {'type': 'string'}
+    manifestPath.write_text(json.dumps(manifest), encoding='utf-8')
     runtime = RuntimeService(dbPath=tmp_path / 'data/runtime.sqlite3', workspaceRoot=tmp_path / 'data/jobs',
-        pluginRootPaths=pluginRoots(tmp_path))
+        pluginRootPaths=plugins)
     window = MainWindow(RuntimeClient(runtime))
     try:
         assert window.loadProjectDirectory(str(root))
@@ -72,11 +115,19 @@ def testOneClickParallelStartSelectionStopRestartAndClose(qtApp, tmp_path, monke
             assert window.flowModel.selectedNodeId == 'count'
             window.grab().save(str(tmp_path / f'designer-parallel-{width}.png'))
         window.resize(1600, 800)
-        window.navigateToNodeFromSidebar('pace')
-        waitFor(lambda: window._nodeRuntimeState.get('pace', {}).get('status') == 'RUNNING')
-        qtApp.processEvents()
-        assert window.grab().save(str(tmp_path / 'designer-live-position.png'))
-        assert window.workflowTabs.grab().save(str(tmp_path / 'designer-running-tabs.png'))
+        previousRun = window._nodeRuntimeState.get('pace', {}).get('nodeRunId')
+        holdPath.touch()
+        try:
+            window.navigateToNodeFromSidebar('pace')
+            waitFor(lambda: window._nodeRuntimeState.get('pace', {}).get('status') == 'RUNNING'
+                and window._nodeRuntimeState['pace'].get('nodeRunId') != previousRun)
+            assert window._nodeRuntimeState['pace']['jobId'] == second
+            assert window._nodeRuntimeState['pace']['workflowId'] == 'second'
+            qtApp.processEvents()
+            assert window.grab().save(str(tmp_path / 'designer-live-position.png'))
+            assert window.workflowTabs.grab().save(str(tmp_path / 'designer-running-tabs.png'))
+        finally:
+            holdPath.unlink(missing_ok=True)
         window.pageCoordinator.showPages()
         assert window.pageCoordinator.pageActive()
         window._menuActions['停止运行'].trigger()

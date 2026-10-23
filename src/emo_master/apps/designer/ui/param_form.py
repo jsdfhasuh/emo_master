@@ -396,6 +396,13 @@ try:
             self._variableSources = {}
             self._fieldsByName = {}
             self._nestedFormsByControlId = {}
+            # Refresh can run inside a field's signal handler. Keep its
+            # QObject alive until Qt has finished dispatching that signal.
+            while self._layout.count():
+                item = self._layout.takeAt(0)
+                if item.widget() is not None:
+                    item.widget().hide()
+                    item.widget().deleteLater()
             while self._layout.rowCount() > 0:
                 self._layout.removeRow(0)
 

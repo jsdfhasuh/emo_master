@@ -181,6 +181,37 @@ def testUnrelatedDynamicGroupDoesNotBypassFixedRangeValidation():
     assert form.validationMessage() == ""
 
 
+def testSchemaRefreshDefersFieldDestruction(designerApplication):
+    from PySide2.QtCore import QCoreApplication, QEvent
+    from shiboken2 import isValid
+    form = SchemaParamForm()
+    form.setSchema(META.paramSchema, {"collectionType": "detections"})
+    oldControls = list(form._controls.values())
+    oldLabels = list(form._rowLabels.values())
+    form.setSchema(META.paramSchema, form.getValues())
+    assert all(isValid(widget) for widget in oldControls + oldLabels)
+    assert all(form._layout.indexOf(widget) == -1 for widget in oldControls + oldLabels)
+    QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+    assert not any(isValid(widget) for widget in oldControls + oldLabels)
+    assert form.getValues()["collectionType"] == "detections"
+
+
+def testSchemaRefreshFromFieldSignalKeepsSenderAlive(designerApplication):
+    from PySide2.QtCore import QCoreApplication, QEvent
+    from shiboken2 import isValid
+    form = SchemaParamForm()
+    form.setSchema(META.paramSchema, {"collectionType": "detections"})
+    selector = form._controls["collectionType"]
+    observed = []
+    form.valuesChanged.connect(lambda: form.setSchema(META.paramSchema, form.getValues()))
+    selector.currentIndexChanged.connect(lambda _: observed.append(selector.currentData()))
+    selector.setCurrentIndex(selector.findData("blobs"))
+    assert observed == ["blobs"] and isValid(selector)
+    assert form.getValues()["collectionType"] == "blobs"
+    QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+    assert not isValid(selector)
+
+
 def testSchemaRefreshReleasesDetachedRows(designerApplication):
     from PySide2.QtCore import QCoreApplication, QEvent
     from PySide2.QtWidgets import QWidget

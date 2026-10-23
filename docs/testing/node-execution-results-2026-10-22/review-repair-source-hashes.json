@@ -1,0 +1,120 @@
+{
+  "baselineHead": "d39169251c9bedc339c440a29a56df5eafba3be5",
+  "scope": "Source and test snapshot after the 2026-10-22 review repair. The original source-hashes.json and verification logs remain unchanged. Four files changed in this repair; the remaining feature files retain their prior hashes.",
+  "repairFiles": [
+    "src/emo_master/apps/designer/services/inspection_images.py",
+    "src/emo_master/apps/designer/ui/node_result_coordinator.py",
+    "tests/designer/test_inspection_images.py",
+    "tests/designer/test_node_image_viewer.py"
+  ],
+  "files": [
+    {
+      "path": "proto/runtime.proto",
+      "sha256": "9199e84b4c2675c0aa3dea9aeb9c6569eaeffabd325acc1ef26cf42e6e086117"
+    },
+    {
+      "path": "src/emo_master/apps/designer/presenters/node_run_presenter.py",
+      "sha256": "cba2d32d52d4536a1c8a8039dbd4ea0dc24c6a96a094b674eb1bac624aaad776"
+    },
+    {
+      "path": "src/emo_master/apps/designer/services/inspection_images.py",
+      "sha256": "75df28e3cd2c6627fe19ed5ce4cfcfb39951eed900b50b5b5ed4f69f2a63a0c2"
+    },
+    {
+      "path": "src/emo_master/apps/designer/services/runtime_client.py",
+      "sha256": "b80bbcf47e85ce9ab9a12323657e8120ad418c1941969cc763343ea5ffca9dd8"
+    },
+    {
+      "path": "src/emo_master/apps/designer/state/run_result_history.py",
+      "sha256": "b5ec9f44a71edc2f9463087a5f644f49133f8145fdc32910325242a95ec13ff5"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/node_result_coordinator.py",
+      "sha256": "3ce71bd7fcd43af4c14985d610b23014593ad4b8f20de169d6a94d756dda61c0"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/node_result_panel.py",
+      "sha256": "77dde0a76dfcb42d67f910d856b10345ebfcf1b58f4507b669d722313e11c5ae"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/events/models.py",
+      "sha256": "2b52658499d70ef2626f33fdd05421d77210750e8f6e137176ba61ad5ac1d283"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2.py",
+      "sha256": "c41f251f69a54b1f7196eb00ab5b143ee0fefe6e80c37c5493a6f2e5148b109a"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/service.py",
+      "sha256": "d9fcc0df9fff7e565f9589cb1752a6b003ae5a07bc6ac51d7b3a0daa588e9ad1"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/jobs/models.py",
+      "sha256": "c112674163f8ad7d19beef5a09a47f99de04122b53b4f32c92eb8c5959401d33"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/jobs/supervisor.py",
+      "sha256": "0e62d2ed5919510302f20bda22e9bba951124af53235fc09778cf4acff25721c"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/jobs/worker_main.py",
+      "sha256": "91508c225c8c24d343629c32e87839000fa7c595e61c687e5cdeec71d57fbabf"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/preview/run_inspection.py",
+      "sha256": "e2a6fe18fb61feb5715c0eadad7c10a036da6f000e6bf21f01297eff5276ea08"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/preview/store.py",
+      "sha256": "5d61599cc811d41defd14aec7ebba3cf729bed49219581ce26b6e5a34f5b8cb1"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/workflow/runner.py",
+      "sha256": "9d96defd9fc75047502a8814bc2759df09281d8926a9f6fa73cc67511f8a8f3e"
+    },
+    {
+      "path": "tests/designer/test_inspection_images.py",
+      "sha256": "afce1ac2d41547dc08b3d4b0375b31f97dc4fbbf35d33860889c33e7ae5c8a15"
+    },
+    {
+      "path": "tests/designer/test_node_image_viewer.py",
+      "sha256": "cdc3b874a0d75f0e50d9144d822a29c4552e83b6e97c42b7fa94c6ef49e64fd9"
+    },
+    {
+      "path": "tests/designer/test_node_result_panel.py",
+      "sha256": "41e50f23d31fbd68811a8d87780ff1619244f10141d5b1115094d3fa5c68f4de"
+    },
+    {
+      "path": "tests/designer/test_run_result_history.py",
+      "sha256": "547388caa5a58dc39408fd39a3503e05f1eb70d9fe61ae78c7e6c60a167621af"
+    },
+    {
+      "path": "tests/runtime/inspection_fixtures.py",
+      "sha256": "c65a5956ecf5ddad6ded95ef5a9612c2d66b11c99d5f367cd9c30c235fe0082b"
+    },
+    {
+      "path": "tests/runtime/inspection_test_operator.py",
+      "sha256": "cf377a12cfe4c4e8d36500b4eca7024b6961e032dfdb1362da066119cb79dd0b"
+    },
+    {
+      "path": "tests/runtime/test_inspection_preview.py",
+      "sha256": "01fdf0a242d8911c406a35ac091dc0c2ba28d45fd134ffea94b11cbe3d9a31a4"
+    },
+    {
+      "path": "tests/runtime/test_live_node_results.py",
+      "sha256": "ff7091be8b600c6a0827bc4e183394fb81c12aad18d4dcbce8956f5f7b4df5e3"
+    },
+    {
+      "path": "tests/runtime/test_run_inspection_rpc.py",
+      "sha256": "88052b3a9a76de18c7ed27b52a94e773c01e8cbadefc12e4334f0d119cd30e36"
+    },
+    {
+      "path": "tests/runtime/test_run_inspection_store.py",
+      "sha256": "4bcdf6778e05acd50709f227b389673fe16d62a471266b094784ac9a74d581d1"
+    },
+    {
+      "path": "tests/runtime/test_worker_event_batch_barriers.py",
+      "sha256": "bc1c9470b99ddc865096d7f6a99925288425015f0d08adadea8125493af34075"
+    }
+  ]
+}

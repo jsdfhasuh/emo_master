@@ -1,0 +1,175 @@
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+_________ testOpeningAndRefreshingReadsKnownStatesWithoutLosingEdits __________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000028F6EE3D030>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2882/testOpeningAndRefreshingReadsK0')
+definition = DeviceDefinition(name='Camera A', deviceTypeId='device.example.simulated_camera', driverVersion='1.0.0', enabled=True,...ce': 'offline'}, defaults={'exposureMode': 'manual', 'exposureUs': 8000.0, 'gain': 0.0, 'enabled': False}, policies={})
+declaration = DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.example.simulated_camera', version='1.0.0...tors={}, managementActions=[], actionSchemas={}, driverEntry=None, executionLocation='io_thread', cancellableWait=None)
+
+    def testOpeningAndRefreshingReadsKnownStatesWithoutLosingEdits(ownedDesignerWindow, tmp_path, definition, declaration):  # noqa: F811
+        window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+        calls = []
+        state = dict(state='IDLE', generation='g', definitionRevision='r', queued=0, activeOwner=None,
+                     connectionState='DISCONNECTED')
+        def states(project):
+            calls.append(project)
+            return 'instance', {'camera': deepcopy(state)}
+        window.runtimeClient.getDeviceStates = states
+        window.pageCoordinator.showDevices()
+        d = window.pageCoordinator.devices
+        waitUntil(lambda: d.pending is None)
+        assert calls and '未连接' in d.table.item(0, 3).text()
+        d.table.setCurrentCell(0, 0)
+        d.name.setText('Unapplied editor value')
+        state.update(queued=2, activeOwner='simulated-job', connectionState='CONNECTED')
+        d.stateTimer.timeout.emit()
+        waitUntil(lambda: d.pending is None)
+        assert d.name.text() == 'Unapplied editor value'
+>       assert '2' in d.table.item(0, 5).text() and '已连接' in d.table.item(0, 3).text()
+E       AssertionError: assert ('2' in 'simulated-job / 2' and '已连接' in '空闲 · 未连接 · 配置不同')
+E        +  where 'simulated-job / 2' = <built-in method text of PySide2.QtWidgets.QTableWidgetItem object at 0x0000028F6EE8A580>()
+E        +    where <built-in method text of PySide2.QtWidgets.QTableWidgetItem object at 0x0000028F6EE8A580> = <PySide2.QtWidgets.QTableWidgetItem object at 0x0000028F6EE8A580>.text
+E        +      where <PySide2.QtWidgets.QTableWidgetItem object at 0x0000028F6EE8A580> = <built-in method item of PySide2.QtWidgets.QTableWidget object at 0x0000028F6FF5FC80>(0, 5)
+E        +        where <built-in method item of PySide2.QtWidgets.QTableWidget object at 0x0000028F6FF5FC80> = <PySide2.QtWidgets.QTableWidget(0x28f6d59eba0) at 0x0000028F6FF5FC80>.item
+E        +          where <PySide2.QtWidgets.QTableWidget(0x28f6d59eba0) at 0x0000028F6FF5FC80> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x28f6f4edbd0) at 0x0000028F6ED4E700>.table
+E        +  and   '空闲 · 未连接 · 配置不同' = <built-in method text of PySide2.QtWidgets.QTableWidgetItem object at 0x0000028F6FFB2EC0>()
+E        +    where <built-in method text of PySide2.QtWidgets.QTableWidgetItem object at 0x0000028F6FFB2EC0> = <PySide2.QtWidgets.QTableWidgetItem object at 0x0000028F6FFB2EC0>.text
+E        +      where <PySide2.QtWidgets.QTableWidgetItem object at 0x0000028F6FFB2EC0> = <built-in method item of PySide2.QtWidgets.QTableWidget object at 0x0000028F6FF5FC80>(0, 3)
+E        +        where <built-in method item of PySide2.QtWidgets.QTableWidget object at 0x0000028F6FF5FC80> = <PySide2.QtWidgets.QTableWidget(0x28f6d59eba0) at 0x0000028F6FF5FC80>.item
+E        +          where <PySide2.QtWidgets.QTableWidget(0x28f6d59eba0) at 0x0000028F6FF5FC80> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x28f6f4edbd0) at 0x0000028F6ED4E700>.table
+
+tests\designer\test_device_ui_gaps.py:33: AssertionError
+___________ testNativeDeviceDialogProductionViewingWithRealRuntime ____________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000028F6EF2DBA0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2882/testNativeDeviceDialogProducti0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000028F6EDD3A90>
+
+    def testNativeDeviceDialogProductionViewingWithRealRuntime(ownedDesignerWindow, tmp_path, monkeypatch):
+        import json
+        from time import monotonic
+        from PySide2.QtCore import QSettings, QTimer
+        from emo_master.apps.designer.services.runtime_client import RuntimeClient
+        from emo_master.apps.designer.ui.managed_camera_debug import ManagedCameraDebugDialog
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+        from tests.runtime.imv_test_support import SimulatedImvRuntimeService
+        from tests.runtime.test_managed_imv import cameraProject
+        service = SimulatedImvRuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
+        client = RuntimeClient(service)
+        path = tmp_path / 'camera.emoproj'
+        path.write_text(json.dumps(cameraProject()), encoding='utf-8')
+        errors = []
+        try:
+            assert service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None).ok
+            manager = service.deviceManager
+            service.deviceNetwork.discovery = (monotonic(), dict(devices=[dict(cameraKey='FAKE-KEY',
+                modelName='Simulated IMV', serialNumber='SIM-001', macAddress='00:00:00:00:00:01')]))
+            window = ownedDesignerWindow(client, settingsStore=QSettings(str(tmp_path / 'ui.ini'), QSettings.IniFormat))
+            assert window.loadProjectDirectory(str(path), confirmed=True)
+            window.show()
+            window.pageCoordinator.showDevices()
+            d = window.pageCoordinator.devices
+            waitUntil(lambda: d.pending is None)
+            d.table.setCurrentCell(0, 0)
+            assert d.buttons['network'].isEnabled() and d.buttons['diagnostics'].isEnabled()
+            assert d.hardwareFields['modelName'].text() == 'Simulated IMV'
+            assert d.hardwareFields['serialNumber'].text() == 'SIM-001'
+            before = window.pageCoordinator.session.payload()
+            for width, height in [(900, 650), (1280, 800)]:
+                d.resize(width, height)
+                from PySide2.QtWidgets import QApplication
+                QApplication.processEvents()
+                assert d.size().width() == width and d.rect().contains(d.closeButton.geometry())
+                image = tmp_path / f'gap-device-{width}.png'
+                assert d.grab().save(str(image))
+                print('GAP_SCREENSHOT=' + str(image))
+            def exercise(monitor):
+                try:
+                    waitUntil(lambda: monitor.pending is None)
+                    monitor.previewTimer.timeout.emit()
+                    waitUntil(lambda: monitor.pending is None)
+                    assert not manager.permissions
+                    manager.authorize('simulated-production', ['camera'])
+                    cycle = service.projectConfiguration.beginCycle('simulated-production', -1)
+                    descriptor = manager.execute('simulated-production', 'camera', 'capture',
+                        manager.definitions['camera'].defaults, cycleId=cycle['cycleId'])
+                    manager.frames.release(descriptor['frameId'], 'simulated-production')
+                    monitor.previewTimer.timeout.emit()
+                    waitUntil(lambda: monitor.pending is None)
+                    assert monitor.previewPixmap is not None and not monitor.previewPixmap.isNull()
+                    assert 'simulated-production' in monitor.status.text() and cycle['cycleId'] in monitor.status.text()
+                    monitor.liveButton.click()
+                    waitUntil(lambda: monitor.pending is None)
+                    assert not monitor.liveButton.isChecked() and monitor.sequence == 0
+                    assert not manager.frames.frames and not manager.maintenanceOwners
+                    image = tmp_path / 'gap-camera-production.png'
+                    assert monitor.grab().save(str(image))
+                    print('GAP_SCREENSHOT=' + str(image))
+                    service.projectConfiguration.endCycle('simulated-production', cycle['cycleId'])
+                    manager.retire('simulated-production')
+                    monitor.previewTimer.timeout.emit()
+                    waitUntil(lambda: monitor.pending is None)
+                    assert not monitor.productionActive
+                except BaseException as error:
+                    errors.append(error)
+                finally:
+                    monitor.reject()
+            original = ManagedCameraDebugDialog.exec_
+            def nativeExec(monitor):
+                QTimer.singleShot(0, lambda: exercise(monitor))
+                return original(monitor)
+            monkeypatch.setattr(ManagedCameraDebugDialog, 'exec_', nativeExec)
+            monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+>           d.buttons['diagnostics'].click()
+E           AttributeError: 'PySide2.QtWidgets.QAction' object has no attribute 'click'
+
+tests\designer\test_device_ui_gaps.py:259: AttributeError
+---------------------------- Captured stdout call -----------------------------
+GAP_SCREENSHOT=C:\Users\jsdfhasuh\AppData\Local\Temp\pytest-of-jsdfhasuh\pytest-2882\testNativeDeviceDialogProducti0\gap-device-900.png
+GAP_SCREENSHOT=C:\Users\jsdfhasuh\AppData\Local\Temp\pytest-of-jsdfhasuh\pytest-2882\testNativeDeviceDialogProducti0\gap-device-1280.png
+_____________ testWorkflowProjectAndRuntimeSessionRebindConsumers _____________
+
+    def testWorkflowProjectAndRuntimeSessionRebindConsumers():
+        client = Client()
+        window = mainWindowModule.MainWindow(client)
+        try:
+            waitForCatalog(window)
+            window.addNodeFromOperatorPayload(iconDefinition())
+            nodeId = next(n.nodeId for n in window.flowModel.nodes.values() if n.kind == "operator")
+            window.createWorkflow("Other")
+            window.activateWorkflow("main")
+            provider = window.operatorIconProvider
+            item = window.flowScene._nodeItems[nodeId]
+            old = provider._bindings[provider._targets[id(item)]]
+            assert old.context == (window._projectInstanceToken, "main", nodeId)
+            oldProjectToken = window._projectInstanceToken
+            window._applyLoadedProjectState(None, None)
+            new = provider._bindings[provider._targets[id(item)]]
+            assert new.token > old.token and window._projectInstanceToken != oldProjectToken
+            assert new.context == (window._projectInstanceToken, "main", nodeId)
+            waitUntil(lambda: item._operatorIconSource == "custom")
+            oldScope = provider.scope
+            client.runtimeScope = "reconnected"
+            waitUntil(lambda: provider.scope != oldScope)
+>           waitUntil(lambda: item._operatorIconSource == "custom")
+
+tests\designer\test_operator_icon_integration.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+predicate = <function testWorkflowProjectAndRuntimeSessionRebindConsumers.<locals>.<lambda> at 0x0000028F7062D510>
+timeout = 3.0, pump = True
+
+    def waitUntil(predicate, timeout=3.0, *, pump=True):
+        deadline = time.monotonic() + timeout
+        while not predicate():
+            if time.monotonic() >= deadline:
+>               raise AssertionError("condition did not become true before timeout")
+E               AssertionError: condition did not become true before timeout
+
+tests\designer\qt_wait.py:8: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_ui_gaps.py::testOpeningAndRefreshingReadsKnownStatesWithoutLosingEdits
+FAILED tests/designer/test_device_ui_gaps.py::testNativeDeviceDialogProductionViewingWithRealRuntime
+FAILED tests/designer/test_operator_icon_integration.py::testWorkflowProjectAndRuntimeSessionRebindConsumers
+3 failed in 7.10s

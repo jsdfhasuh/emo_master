@@ -1,0 +1,1 @@
+scripts/gen_proto.py --check: exit 0

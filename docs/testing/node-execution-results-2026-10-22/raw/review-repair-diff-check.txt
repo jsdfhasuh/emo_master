@@ -1,0 +1,27 @@
+warning: in the working copy of 'docs/project-json-spec.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/runtime-node-results-contract.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'proto/runtime.proto', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/presenters/node_run_presenter.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/services/inspection_images.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/services/runtime_client.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/state/run_result_history.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/ui/main_window.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/ui/node_result_coordinator.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/ui/node_result_panel.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/ui/online_graph.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/ui/project_configuration.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/grpc_server/service.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/jobs/supervisor.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/preview/run_inspection.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/workflow/runner.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/designer/test_inspection_images.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/designer/test_node_image_viewer.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/designer/test_node_result_panel.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/designer/test_project_configuration_ui.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/designer/test_run_result_history.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/designer/test_runtime_menu_publication.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/runtime/inspection_test_operator.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/runtime/test_run_inspection_rpc.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/runtime/test_run_inspection_store.py', LF will be replaced by CRLF the next time Git touches it
+exit_code=0

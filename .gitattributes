@@ -18,3 +18,10 @@ docs/evidence/2026-10-21-tcp-once-log-preview/** -text -whitespace
 docs/evidence/2026-10-21-device-usability-improvement/** -text -whitespace
 docs/evidence/2026-10-22-video-image-delivery/** -text -whitespace
 docs/evidence/2026-10-22-device-usability-review-fixes/** -text -whitespace
+docs/testing/collection-filter-2026-10-22/** -text -whitespace
+docs/testing/manual-port-visibility-2026-10-22/** -text -whitespace
+docs/testing/node-execution-results-2026-10-22/** -text -whitespace
+docs/testing/operator-identity-2026-10-22/** -text -whitespace
+docs/testing/operator-modes-2026-10-22/** -text -whitespace
+docs/testing/wire-endpoints-2026-10-22/** -text -whitespace
+docs/testing/yolo-parameter-presentation-2026-10-22/** -text -whitespace

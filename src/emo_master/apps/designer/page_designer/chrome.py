@@ -140,6 +140,7 @@ class WorkspaceChrome(QObject):
             action.setChecked(self.window.nextRunLegacySnapshotPolicy == value)
 
     def update(self):
+        self.c.updateWindowTitle()
         status = getattr(self.window, 'communicationStatus', None)
         if status is not None:
             from emo_master.ui.communication_panel import tcpDeviceSummary

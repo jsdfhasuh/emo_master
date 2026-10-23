@@ -30,6 +30,72 @@ class ChangeLocationDelegate(QStyledItemDelegate):
         return super().editorEvent(event, model, option, index)
 
 
+def configurationDiagnostics(error, payload, deviceTypes, operators=()):
+    """Present compiler/RPC locations, without adding another validation pass."""
+    from dataclasses import asdict, is_dataclass
+    diagnostics = error.get('diagnostics', error) if isinstance(error, dict) else getattr(error, 'diagnostics', {})
+    issues = (error.get('issues', ()) if isinstance(error, dict) else getattr(error, 'issues', ()))
+    if not issues and isinstance(diagnostics, dict):
+        issues = diagnostics.get('issues', ())
+    definitions = payload.get('devices', {}).get('definitions', {})
+    catalog = {item['operatorId']: item for item in operators}
+    result = []
+    for raw in issues:
+        issue = asdict(raw) if is_dataclass(raw) else raw
+        if not isinstance(issue, dict):
+            continue
+        wid, nid = issue.get('workflowId', ''), issue.get('nodeId', '')
+        flow = payload.get('workflows', {}).get(wid, {})
+        node = next((value for value in flow.get('nodes', []) if value.get('nodeId') == nid), {})
+        parts = str(issue.get('fieldPath', '')).split('.')
+        deviceId, field = '', ''
+        message = str(issue.get('message') or '配置未通过校验') + '；请查看详细信息'
+        binding = node.get('deviceBindings', {}).get(parts[1], {}) if len(parts) > 1 and parts[0] == 'deviceBindings' else {}
+        if binding:
+            deviceId = binding.get('deviceId', '')
+        if parts[:2] == ['devices', 'definitions']:
+            # Device IDs may themselves contain dots; match the known identity.
+            path = str(issue.get('fieldPath', ''))
+            deviceId = next((key for key in sorted(definitions, key=len, reverse=True)
+                if path == 'devices.definitions.' + key or path.startswith('devices.definitions.' + key + '.')), '')
+            rest = path[len('devices.definitions.' + deviceId):].strip('.').split('.') if deviceId else []
+            declaration = deviceTypes.get(definitions.get(deviceId, {}).get('deviceTypeId'))
+            if rest:
+                field = {'connection': '连接', 'defaults': '工作参数', 'policies': '策略'}.get(rest[0], rest[0])
+                schema = getattr(declaration, rest[0] + 'Schema', {})
+                for part in rest[1:]:
+                    schema = schema.get('items', {}) if part.isdecimal() else schema.get('properties', {}).get(part, {})
+                    field += ' / ' + (f'第 {int(part) + 1} 项' if part.isdecimal() else schema.get('title', {'allowedIps': '允许客户端 IPv4'}.get(part, part)))
+            message = '设备待配置，请检查' + ('：' + field if field else '设备参数')
+        elif parts[0] == 'deviceBindings':
+            if len(parts) > 2 and parts[2] == 'selectors':
+                key = parts[3] if len(parts) > 3 else ''
+                field = '通道' if key == 'channelId' else '设备选择项'
+                declaration = deviceTypes.get(definitions.get(deviceId, {}).get('deviceTypeId'))
+                spec = getattr(declaration, 'bindingSelectors', {}).get(key, {})
+                field = spec.get('title', field)
+                missing = key and key not in binding.get('selectors', {}) and issue.get('code') == 'E_PARAM_INVALID'
+                message = field + ('未选择，请返回节点配置选择' if missing else '选择无效，请返回节点配置重新选择')
+            elif not binding or issue.get('code') == 'E_DEVICE_REFERENCE':
+                message = '设备未选择或引用已失效，请返回节点配置选择设备'
+            else:
+                message = '设备绑定不符合要求，请返回节点配置检查设备'
+        labels = []
+        if flow:
+            labels.append('流程「' + str(flow.get('name') or wid) + '」')
+        if node:
+            operator = catalog.get(node.get('operatorId'), {})
+            labels.append('节点「' + str(node.get('displayName') or operator.get('displayName') or nid) + '」')
+        if deviceId in definitions:
+            labels.append('设备「' + str(definitions[deviceId].get('name') or deviceId) + '」')
+        result.append(dict(text=' / '.join(labels) + ('：' if labels else '') + message,
+            workflowId=wid if flow else '', nodeId=nid if node else '',
+            deviceId=deviceId if deviceId in definitions else '', fieldPath=issue.get('fieldPath', ''),
+            target='device' if parts[:2] == ['devices', 'definitions'] and deviceId in definitions else
+                   'node' if node else 'workflow' if flow else 'configuration'))
+    return result
+
+
 class ProjectConfigurationDialog(QDialog):
     def __init__(self, coordinator, parent=None, *, allowRun=False, selectCategories=()):
         super().__init__(parent)
@@ -38,6 +104,7 @@ class ProjectConfigurationDialog(QDialog):
         self.session = coordinator.session
         self.closed = False
         self.notifying = False
+        self.diagnosticEntries = []
         self.confirming = False
         self.draftCheckpoint = self.session._checkpoint
         self.submittedCheckpoint = None
@@ -73,6 +140,18 @@ class ProjectConfigurationDialog(QDialog):
         statusRow.addWidget(self.statusIcon, 0, Qt.AlignTop)
         statusRow.addWidget(self.status, 1)
         layout.addLayout(statusRow)
+        diagnosticRow = QHBoxLayout()
+        self.diagnosticChoice = QComboBox()
+        self.diagnosticChoice.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+        self.diagnosticChoice.setMinimumContentsLength(20)
+        self.locateButton = QPushButton('返回配置')
+        self.locateButton.clicked.connect(self.locateDiagnostic)
+        self.diagnosticChoice.currentIndexChanged.connect(self._diagnosticSelected)
+        diagnosticRow.addWidget(self.diagnosticChoice, 1)
+        diagnosticRow.addWidget(self.locateButton)
+        layout.addLayout(diagnosticRow)
+        self.diagnosticChoice.hide()
+        self.locateButton.hide()
         formatRow = QHBoxLayout()
         self.formatStatus = QLabel()
         self.formatStatus.setWordWrap(True)
@@ -207,9 +286,23 @@ class ProjectConfigurationDialog(QDialog):
         self.status.setStyleSheet('font-weight: bold;' if level in {'success', 'error', 'warning'} else '')
         self.statusIcon.setPixmap(self.style().standardIcon(icons[level]).pixmap(20, 20))
 
-    def _notify(self, title, text, details='', *, warning=False, key=None, upgrade=False):
+    def _notify(self, title, text, details='', *, warning=False, key=None, upgrade=False, diagnostic=None):
         text = text.strip() or title
         details = details.strip()
+        if diagnostic is not None:
+            self.diagnosticEntries = configurationDiagnostics(diagnostic, self.local, self.deviceTypes,
+                self.c.window.operatorCatalogController.getCatalog())
+            self.diagnosticChoice.clear()
+            for entry in self.diagnosticEntries:
+                self.diagnosticChoice.addItem(entry['text'])
+            self.diagnosticChoice.setVisible(bool(self.diagnosticEntries))
+            self.locateButton.setVisible(True)
+            self._diagnosticSelected()
+            if self.diagnosticEntries:
+                text = '工程校验未通过，尚未写入 Runtime；草稿和输入已保留。\n' + '\n'.join(
+                    entry['text'] for entry in self.diagnosticEntries[:3])
+            else:
+                text += '\n请查看详细信息，或返回配置继续修改；草稿和输入已保留。'
         self._feedback(text, 'warning' if warning else 'error')
         if not self._valid() or self.notifying or key is not None and key in self.notifiedWrites:
             return
@@ -223,6 +316,7 @@ class ProjectConfigurationDialog(QDialog):
         if details:
             box.setDetailedText(details)
         upgradeAction = box.addButton('升级草稿并重新校验', QMessageBox.ActionRole) if upgrade else None
+        locateAction = box.addButton(self.locateButton.text(), QMessageBox.ActionRole) if diagnostic is not None else None
         box.addButton('关闭', QMessageBox.RejectRole)
         self.notifying = True
         self._controls()
@@ -231,8 +325,43 @@ class ProjectConfigurationDialog(QDialog):
         finally:
             self.notifying = False
             self._controls()
+        if locateAction is not None and box.clickedButton() is locateAction and self._valid():
+            self.locateDiagnostic()
         if upgradeAction is not None and box.clickedButton() is upgradeAction and self._valid():
             self.upgradeDraft()
+
+    def _diagnosticSelected(self, *_args):
+        index = self.diagnosticChoice.currentIndex()
+        entry = self.diagnosticEntries[index] if 0 <= index < len(self.diagnosticEntries) else {}
+        self.locateButton.setText({'node': '定位节点并配置', 'device': '配置设备',
+            'workflow': '定位流程'}.get(entry.get('target'), '返回配置'))
+        self.diagnosticChoice.setToolTip(entry.get('text', ''))
+
+    def locateDiagnostic(self):
+        if not self._valid() or self.pending is not None or self.writePending:
+            return
+        index = self.diagnosticChoice.currentIndex()
+        entry = self.diagnosticEntries[index] if 0 <= index < len(self.diagnosticEntries) else {}
+        # Closing the comparison retains the same edit session and every input.
+        self.reject()
+        if entry.get('target') == 'device':
+            self.c.showDevices()
+            workspace = self.c.devices
+            if workspace is not None:
+                workspace.search.clear()
+                workspace.selectedId = entry['deviceId']
+                workspace.refresh()
+                path = entry.get('fieldPath', '')
+                for key, scroll in workspace.formScrolls.items():
+                    if path.startswith('devices.definitions.' + entry['deviceId'] + '.' + key):
+                        workspace.tabs.setCurrentWidget(scroll)
+                        break
+            return
+        self.c.showFlow()
+        if entry.get('workflowId'):
+            self.c.window.navigateToWorkflow(entry['workflowId'], entry.get('nodeId') or None)
+            if entry.get('nodeId'):
+                self.c.window.openNodeParamDialog(entry['nodeId'])
 
     def _formatFeedback(self):
         version = self.local.get('schemaVersion')
@@ -265,6 +394,9 @@ class ProjectConfigurationDialog(QDialog):
             self._showInitial()
         elif self.snapshot is not None:
             self._showSnapshot(self.snapshot)
+        self.diagnosticEntries = []
+        self.diagnosticChoice.hide()
+        self.locateButton.hide()
         if self.snapshot is None or self.table.rowCount():
             self._feedback('草稿已变化，请重新校验；原校验结论已失效。')
         self._controls()
@@ -332,6 +464,8 @@ class ProjectConfigurationDialog(QDialog):
     def _controls(self):
         idle = self.pending is None and not self.notifying and not self.confirming and self._valid()
         uploading = self.pending is not None and self.kind == 'upload' and self._valid()
+        self.locateButton.setEnabled(idle and not self.writePending)
+        self.diagnosticChoice.setEnabled(idle and not self.writePending)
         ready = idle and self.snapshot is not None and not self.writePending
         initialReady = idle and self.initial and not self.writePending
         initialSupported = callable(getattr(self.client, 'initializeProjectConfiguration', None))
@@ -368,6 +502,9 @@ class ProjectConfigurationDialog(QDialog):
         if kind in {'initialValidate', 'initialPrewrite', 'validate', 'prewrite'}:
             self.initialValidated = False
             self.validatedSelection = None
+            self.diagnosticEntries = []
+            self.diagnosticChoice.hide()
+            self.locateButton.hide()
             self._feedback('正在校验完整工程…' if self.initial else '正在校验选中变更…', 'busy')
         self.pending = self.pool.submit(action, *args)
         self._controls()
@@ -837,7 +974,7 @@ class ProjectConfigurationDialog(QDialog):
             dependencies = requiredProjectChanges(self.snapshot["payload"], self.local, paths,
                 deviceTypes=self.deviceTypes, operatorRegistry=self.deviceRequirements)
         except ValueError as error:
-            self._notify('工程校验未通过', self._errorText(error), self._errorDetails(error))
+            self._notify('工程校验未通过', self._errorText(error), self._errorDetails(error), diagnostic=error)
             return
         if dependencies:
             details = "\n".join(path + "：" + ", ".join(owners) for path, owners in dependencies.items())
@@ -1033,7 +1170,8 @@ class ProjectConfigurationDialog(QDialog):
                 self._notify('工程校验未通过' if validating else 'Runtime 操作失败',
                     ('校验失败，尚未写入 Runtime：' if validating else 'Runtime 操作失败：') + result.get('message', '请查看详细信息'),
                     json.dumps(result, ensure_ascii=False, indent=2),
-                    key=None if validating else (self.requestId, 'FAILED', json.dumps(result, sort_keys=True)))
+                    key=None if validating else (self.requestId, 'FAILED', json.dumps(result, sort_keys=True)),
+                    diagnostic=result if validating else None)
             elif kind == "snapshot":
                 snapshotReceived = True
                 self._showSnapshot(result)
@@ -1138,7 +1276,8 @@ class ProjectConfigurationDialog(QDialog):
                     text = '未能读取 Runtime 在线配置，请检查连接后重新比较。\n' + text
                 text += '\n本次未写入 Runtime，未启动流程；本地工程文件未改变。'
             self._notify(title, text, self._errorDetails(error),
-                warning=unknown, key=(self.requestId, 'UNKNOWN', str(error)) if unknown else None)
+                warning=unknown, key=(self.requestId, 'UNKNOWN', str(error)) if unknown else None,
+                diagnostic=error if validating else None)
             if getattr(error, 'code', '') in {'E_CONFIG_ACTIVE', 'E_CONFIG_INSTANCE', 'E_CONFIG_CONFLICT'}:
                 self.initialValidated = False
                 self.refresh()

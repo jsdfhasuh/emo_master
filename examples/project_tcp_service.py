@@ -1,4 +1,4 @@
-"""No-device example: acquire a session BEFORE invoking the calculation subflow.
+"""Managed-device example: acquire a session BEFORE invoking the calculation subflow.
 
 The two channels are illustrative loopback routes, not a two-station scheduler.
 Nothing in this file opens sockets or sends data.
@@ -13,17 +13,26 @@ def sampleProject(port=10000, *, enabled=False, startupPolicy="manual"):
         entryWorkflowId="channel-a", workflowOrder=["channel-a", "channel-b", "calculate"], workflows={
             key: dict(name=key, nodes=[dict(nodeId="input", kind="workflow_input"),
                                      dict(nodeId="output", kind="workflow_output")], edges=[])
-            for key in ("channel-a", "channel-b", "calculate")}), enableCommunication=True)
-    payload["communication"] = dict(enabled=enabled, startupPolicy=startupPolicy, tcpServer=dict(port=port,
-        channels=[dict(channelId=key, name=name, allowedIps=[ip]) for key, name, ip in
-                  (("channel-a", "客户端 A", "127.0.0.1"), ("channel-b", "客户端 B", "127.0.0.2"))]))
+            for key in ("channel-a", "channel-b", "calculate")}), enableDevices=True)
+    payload["schemaVersion"] = "2.7"
+    payload["communication"] = None
+    payload["devices"]["definitions"] = {"tcp-server": dict(
+        name="示例 TCP 服务", deviceTypeId="device.tcp.server", driverVersion="1.0.0", enabled=enabled,
+        connection=dict(bindAddress="127.0.0.1", port=port,
+            channels=[dict(channelId=key, name=name, allowedIps=[ip]) for key, name, ip in
+                (("channel-a", "客户端 A", "127.0.0.1"), ("channel-b", "客户端 B", "127.0.0.2"))]),
+        defaults=dict(timeoutMs=5000, encoding="utf-8", appendNewline=False),
+        policies=dict(deviceWaitTimeoutMs=5000, connect=startupPolicy, release="on_project_close",
+                      sendTimeoutMs=2000, maxMessageBytes=1048576))}
     payload["runtime"]["startupWorkflowIds"] = ["channel-a", "channel-b"]
     for channel in ("channel-a", "channel-b"):
         payload["workflows"][channel] = dict(name=channel, inputs=dict(x="number", y="number"),
             outputs=dict(receipt="tcpSendReceipt"), nodes=[dict(nodeId="input", kind="workflow_input"),
-                dict(nodeId="session", operatorId="communication.tcp.session", params=dict(channelId=channel)),
+                dict(nodeId="session", operatorId="communication.tcp.session",
+                     deviceBindings={"tcp": dict(deviceId="tcp-server", selectors=dict(channelId=channel))}),
                 dict(nodeId="calculate", kind="subflow", targetWorkflowId="calculate"),
-                dict(nodeId="send", operatorId="communication.tcp.session_send"),
+                dict(nodeId="send", operatorId="communication.tcp.session_send",
+                     deviceBindings={"tcp": dict(deviceId="tcp-server")}),
                 dict(nodeId="output", kind="workflow_output")], edges=[
                     dict(fromNode="input", fromPort=p, toNode="calculate", toPort=p) for p in ("x", "y")] + [
                     dict(fromNode="session", fromPort="session", toNode="calculate", toPort="session"),

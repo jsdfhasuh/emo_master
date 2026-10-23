@@ -291,7 +291,8 @@ class JobSupervisor:
                 if eventType == "job.started":
                     self.jobRepository.update(
                         jobId,
-                        status=JobStatus.RUNNING.value,
+                        status=(JobStatus.STOPPING.value if record.status == JobStatus.STOPPING.value
+                                else JobStatus.RUNNING.value),
                         startedAtMs=stored.timestampMs,
                         pid=event.get("pid"),
                     )

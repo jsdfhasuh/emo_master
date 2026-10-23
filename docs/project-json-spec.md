@@ -40,7 +40,7 @@ assert reloaded == document
 注意以下历史入口与常量：
 
 - `migration.SCHEMA_VERSION` 当前为 **2.1**，是历史迁移基线，不是最新工程版本声明。
-- 单独调用 `createProjectSkeleton()` 当前仍生成 **2.1**；生成最新工程应使用上述完整创建流程。
+- `createProjectSkeleton()` 已复用 `WorkflowStore().toPayload()` 和 `saveProject()`，生成完整的 **2.7** 空白工程；业务工程生成器仍应按上述流程补充并校验业务配置。
 - 默认 `migrateProjectPayload()` 保留已支持版本，不会把所有旧工程升级到 2.7。
   `enableDevices=True` 当前迁移目标仍为 **2.6**，也不能当作 2.7 创建入口。
 

@@ -435,6 +435,48 @@ class DeviceManager:
                     for mapping in (self.definitions, self.identities, self.drivers, self.lifecycles, self.executors, self.services):
                         mapping.pop(key, None)
 
+    def connectDiagnostic(self, owner, deviceId, cancelled=lambda: False):
+        """Connect an authorized diagnostic lease through the device lifecycle."""
+        if cancelled():
+            raise DeviceError('E_DEVICE_CANCELLED', 'diagnostic connection cancelled before admission')
+        with self.lock:
+            self._checkReplacement([deviceId])
+            if deviceId not in self.permissions.get(owner, set()) or owner not in self.maintenanceOwners:
+                raise DeviceError('E_DEVICE_OWNER', 'diagnostic owner is not authorized')
+            definition = self.definitions[deviceId]
+            if not definition.enabled:
+                raise DeviceError('E_DEVICE_DISABLED', 'device is disabled')
+            declaration = self.types[definition.deviceTypeId]
+            if 'connect' not in declaration.controlCapabilities or declaration.connectionLifetime != 'persistent':
+                raise DeviceError('E_DEVICE_ACTION', 'persistent diagnostic connection is not declared')
+            lifecycle, executor = self.lifecycles[deviceId], self.executors[deviceId]
+            if lifecycle.paused or lifecycle.controlPending:
+                raise DeviceError('E_DEVICE_PAUSED', 'device admission is paused')
+            if executor.closed or executor.quarantined:
+                raise DeviceError('E_DEVICE_UNAVAILABLE', 'device is closed or quarantined')
+            lifecycle.keepAlive.add(owner)
+            # A cancelled diagnostic must not cancel another owner's pending
+            # connection. Its own FIFO operation reuses the resulting socket.
+            try:
+                operation = self._connectEvent(deviceId, owner, sharePending=False)
+                if operation is None:
+                    raise DeviceError('E_DEVICE_UNAVAILABLE', 'device connection is no longer available')
+            except BaseException:
+                lifecycle.keepAlive.discard(owner)
+                raise
+        try:
+            result = executor.wait(operation, cancelled)
+            if cancelled():
+                raise DeviceError('E_DEVICE_CANCELLED', 'diagnostic connection cancelled')
+            with self.lock:
+                if self.executors.get(deviceId) is not executor or result == 'SUPERSEDED':
+                    raise DeviceError('E_DEVICE_GENERATION', 'device changed during diagnostic connection')
+            return result
+        except BaseException:
+            with self.lock:
+                lifecycle.keepAlive.discard(owner)
+            raise
+
     def cameraDiagnostic(self, owner, deviceId, action, changes, cancelled):
         if action not in {'read_parameters', 'trial_capture'}:
             raise DeviceError('E_DEVICE_ACTION', 'unsupported camera diagnostic')
@@ -564,7 +606,7 @@ class DeviceManager:
             self.lifecycles.clear()
             self.services.clear()
 
-    def _connectEvent(self, deviceId, owner):
+    def _connectEvent(self, deviceId, owner, *, sharePending=True):
         self._checkReplacement([deviceId])
         lifecycle, executor = self.lifecycles[deviceId], self.executors[deviceId]
         if self.types[self.definitions[deviceId].deviceTypeId].connectionLifetime != 'persistent':
@@ -575,6 +617,7 @@ class DeviceManager:
             pending = getattr(lifecycle, 'connectOperation', None)
             configurationRevision = self.configuration.current['executionRevision'] if self.configuration and self.configuration.current else None
             if (pending is not None and not pending.future.done()
+                    and (sharePending or pending.owner == owner)
                     and getattr(lifecycle, 'connectRevision', None) == configurationRevision):
                 return pending
             revision = lifecycle.controlRevision

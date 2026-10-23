@@ -3,13 +3,15 @@
 Known external substitutes: IMV SDK, SLMP loopback server, ONNX inference backend,
 gateway loopback servers. No fabricated final points or driver-side business logic.
 """
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager
+from functools import partial
+from multiprocessing.shared_memory import SharedMemory
 import json
 from pathlib import Path
 import socket
 import struct
 from threading import Thread, Event
-from time import sleep
+from time import monotonic, sleep
 
 import cv2
 import numpy as np
@@ -23,13 +25,16 @@ from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.apps.runtime.workflow.runner import WorkflowRunner, WorkflowExecutionError
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.workflow.compiler import WorkflowCompiler
-from emo_master.plugins.builtins import _communication_operators as communication
-from emo_master.plugins.builtins.huaray_camera import operator as camera
+from emo_master.core.project.runtime_package import trustedDeviceTypes
+from emo_master.core.contracts.device_driver import DeviceError
 from emo_master.plugins.builtins.yolo_inference import operator as yolo
 from emo_master.plugins.builtins.yolo_inference.onnx_backend import OnnxInferenceResult
 from emo_master.plugins.builtins._huaray_imv import IMV_TIMEOUT
 from tests.plugins.test_huaray_camera_operator import _FakeImvApi
-from tests.plugins.test_communication_operators import _ScriptedSlmpServer, _slmpResponse
+from tests.plugins.test_communication_operators import _slmpResponse
+from tests.runtime.plc_debug_server import PlcDebugServer
+from tests.runtime.imv_test_support import useSimulatedImv
+from tests.runtime.test_dual_plc_field_project import managedDevices
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -47,15 +52,52 @@ def syntheticFrame(second=False):
 
 
 class FifoSdk(_FakeImvApi):
-    def __init__(self, frames):
+    def __init__(self, frames, audit):
         super().__init__()
+        self.audit = Path(audit)
         self.frames = list(frames)
         self.originals = [i.copy() for i in frames]
         self.ints.update(Width=160, Height=120, OffsetX=0, OffsetY=0)
-        self.waited = Event()
+        self._publish()
+
+    def _publish(self):
+        names = ("openCount", "releaseCount", "stopCount", "closeCount", "destroyCount", "commands")
+        temporary = self.audit / "state.tmp"
+        temporary.write_text(json.dumps({name: getattr(self, name) for name in names}), encoding="utf-8")
+        temporary.replace(self.audit / "state.json")
+
+    def open(self, handle):
+        result = super().open(handle)
+        self._publish()
+        return result
+
+    def release_frame(self, handle, frame):
+        result = super().release_frame(handle, frame)
+        self._publish()
+        return result
+
+    def stop_grabbing(self, handle):
+        result = super().stop_grabbing(handle)
+        self._publish()
+        return result
+
+    def close(self, handle):
+        result = super().close(handle)
+        self._publish()
+        return result
+
+    def destroy_handle(self, handle):
+        result = super().destroy_handle(handle)
+        self._publish()
+        return result
+
+    def execute_command(self, handle, name):
+        result = super().execute_command(handle, name)
+        self._publish()
+        return result
 
     def get_frame(self, handle, timeoutMs):
-        self.waited.set()
+        (self.audit / "waiting").touch()
         if not self.frames:
             sleep(timeoutMs / 1000)
             return IMV_TIMEOUT, None
@@ -66,6 +108,46 @@ class FifoSdk(_FakeImvApi):
         return self.current.copy()
 
 
+class SdkAudit:
+    """Read actual child-SDK observations without sharing a native camera object."""
+    def __init__(self, root, frames):
+        self.root = root
+        self.root.mkdir()
+        self.originals = [frame.copy() for frame in frames]
+        self.waited = self
+
+    def wait(self, timeout):
+        deadline = monotonic() + timeout
+        while monotonic() < deadline:
+            if (self.root / "waiting").exists():
+                return True
+            sleep(.01)
+        return False
+
+    def __getattr__(self, name):
+        state = json.loads((self.root / "state.json").read_text(encoding="utf-8"))
+        return state[name]
+
+    @property
+    def frames(self):
+        return self.originals[self.releaseCount:]
+
+
+@contextmanager
+def hardwareDevices(payload, state, api, cancellation=None):
+    with managedDevices(payload, state.jobId, prepare=useSimulatedImv,
+                        cancellation=cancellation) as (manager, devices, communicationProxy):
+        api.manager = manager
+        api.drivers = [driver for key, driver in manager.drivers.items() if key.endswith("-camera")]
+        for driver in api.drivers:
+            driver.apiFactory = partial(FifoSdk, api.originals, str(api.root))
+        yield devices, communicationProxy
+
+
+def compiler(operators):
+    return WorkflowCompiler(operators, deviceTypes=trustedDeviceTypes())
+
+
 class LocalGateway:
     def __init__(self, channel, count=2, delay=.03):
         self.channel, self.count, self.delay = channel, count, delay
@@ -73,7 +155,7 @@ class LocalGateway:
         self.server = socket.socket()
         self.server.bind(("127.0.0.1", 0))
         self.server.listen(count)
-        self.server.settimeout(2)
+        self.server.settimeout(10)
         self.port = self.server.getsockname()[1]
         self.thread = Thread(target=self._run, daemon=True)
 
@@ -120,8 +202,7 @@ def setup(tmp_path, monkeypatch, frames, station=1):
         (tmp_path / (name + ".onnx")).write_bytes(b"ONNX external boundary fixture, not a model")
     for s in (1, 2):
         (tmp_path / f"station{s}_reference.txt").write_bytes((EXAMPLE / f"station{s}_reference.txt").read_bytes())
-    api = FifoSdk(frames)
-    monkeypatch.setattr(camera, "getImvApi", lambda: api)
+    api = SdkAudit(tmp_path / "sdk-observations", frames)
     yolo.YoloInferenceOperator.clearCache()
     calls = []
     class Backend:
@@ -155,15 +236,17 @@ def testFourHardwareFramesRealOperatorChainAndFifoWhileAckDelayed(tmp_path, monk
     payload, operators, api, calls, state = setup(tmp_path, monkeypatch, images, station)
     root = f"station{station}"
     with ExitStack() as stack:
-        plc = stack.enter_context(_ScriptedSlmpServer([_slmpResponse(struct.pack("<H", 101 + n)) for n in range(4)]))
+        plc = stack.enter_context(PlcDebugServer([_slmpResponse(struct.pack("<H", 101 + n)) for n in range(4)]))
         plcGateway = stack.enter_context(LocalGateway("plc"))
         robotGateway = stack.enter_context(LocalGateway("robot"))
-        payload["workflows"][root + "_sample"]["nodes"][1]["params"]["port"] = plc.port
-        for kind, gateway in (("first", plcGateway), ("second", robotGateway)):
-            next(n for n in payload["workflows"][root + "_" + kind]["nodes"] if n["nodeId"] == "exchange")["params"]["port"] = gateway.port
+        payload["devices"]["definitions"][root + "-plc"]["connection"]["port"] = plc.port
+        for kind, gateway in (("plc", plcGateway), ("robot", robotGateway)):
+            payload["devices"]["definitions"][root + "-" + kind + "-gateway"]["connection"]["port"] = gateway.port
+        devices, communicationProxy = stack.enter_context(hardwareDevices(payload, state, api))
         events = []
-        runner = ObservedRunner(WorkflowCompiler(operators).compile(payload), operators, globalVariables=state,
-                                retainOperators=True, eventPublisher=lambda **event: events.append(event))
+        runner = ObservedRunner(compiler(operators).compile(payload), operators, globalVariables=state,
+                                retainOperators=True, eventPublisher=lambda **event: events.append(event),
+                                devices=devices, communication=communicationProxy)
         runner.holesCounts = []
         observed = []
         try:
@@ -178,10 +261,12 @@ def testFourHardwareFramesRealOperatorChainAndFifoWhileAckDelayed(tmp_path, monk
         finally:
             runner.closeSession(RunContext.root(state.jobId, root))
             yolo.YoloInferenceOperator.clearCache()
+        # Closing the owner, not the node, retires the managed SDK host.
+        stack.close()
         assert [(i[0], i[1]) for i in observed] == [(1, 1), (2, 0), (1, 1), (2, 0)]
         assert [i[2] for i in observed] == [41, 42, 43, 44]
         assert [i[3] for i in observed] == [[101], [102], [103], [104]]
-        assert len(plc.requests) == 4
+        assert len(plc.requests) == 4 and plc.connections == 1
         assert runner.holesCounts == [0, 0]
         assert [name for name, _ in calls].count("a") == [name for name, _ in calls].count("b") == [name for name, _ in calls].count("holes") == 2
         assert api.openCount == 1 and not api.commands
@@ -200,40 +285,66 @@ def testFourHardwareFramesRealOperatorChainAndFifoWhileAckDelayed(tmp_path, monk
 
 def testNoHardwareFrameNoPlcNoCountAndCancellationReleasesResources(tmp_path, monkeypatch):
     payload, operators, api, calls, state = setup(tmp_path, monkeypatch, [])
-    next(n for n in payload["workflows"]["station1"]["nodes"] if n["nodeId"] == "camera")["params"]["captureTimeoutMs"] = 30
+    assert payload["devices"]["definitions"]["station1-camera"]["defaults"]["captureTimeoutMs"] == 0
     sampled = []
-    monkeypatch.setattr(communication.Slmp3EClient, "readWords", lambda *args: sampled.append(args))
-    runner = WorkflowRunner(WorkflowCompiler(operators).compile(payload), operators, globalVariables=state, retainOperators=True)
+    def forbidden(*args):
+        sampled.append(args)
+        pytest.fail("a waiting camera must not open the PLC connection")
+    monkeypatch.setattr("emo_master.plugins.builtins._slmp.Slmp3ESession.open", forbidden)
     token = CancellationToken()
+    cancelled = Event()
     errors = []
-    def run():
+    with hardwareDevices(payload, state, api, cancelled) as (devices, communicationProxy):
+        runner = WorkflowRunner(compiler(operators).compile(payload), operators, globalVariables=state,
+                                retainOperators=True, devices=devices, communication=communicationProxy)
+        def run():
+            try:
+                runner.run("station1", {}, RunContext.root(state.jobId, "station1", str(tmp_path)), token)
+            except Exception as exc:
+                errors.append(exc)
+        thread = Thread(target=run)
+        thread.start()
         try:
-            runner.run("station1", {}, RunContext.root(state.jobId, "station1", str(tmp_path)), token)
-        except Exception as exc:
-            errors.append(exc)
-    thread = Thread(target=run)
-    thread.start()
-    try:
-        assert api.waited.wait(2)
-        sleep(.13)
-        assert thread.is_alive()  # beyond captureTimeoutMs, not a failed Job/retry
-        assert not sampled and not calls and state.get("station1-shot-count") == 0
-    finally:
-        token.cancel()
-        thread.join(1)
-        runner.closeSession(RunContext.root(state.jobId, "station1"))
-    assert not thread.is_alive() and len(errors) == 1 and isinstance(errors[0], CancellationRequested)
-    assert (api.stopCount, api.closeCount, api.destroyCount) == (1, 1, 1)
+            assert api.waited.wait(10)
+            memoryNames = [driver.memory.name for driver in api.drivers if driver.memory is not None]
+            assert len(memoryNames) == 1
+            sleep(.13)
+            assert thread.is_alive()  # unlimited hardware wait, not a failed Job/retry
+            assert not sampled and not calls and state.get("station1-shot-count") == 0
+        finally:
+            token.cancel()
+            cancelled.set()
+            thread.join(5)
+            runner.closeSession(RunContext.root(state.jobId, "station1"))
+    assert not thread.is_alive() and len(errors) == 1
+    # A cancelled native/IPC capture may lose its receipt. Preserve the managed
+    # failure's uncertainty rather than claiming no trigger occurred.
+    assert isinstance(errors[0], (CancellationRequested, DeviceError, WorkflowExecutionError))
+    assert getattr(errors[0], "code", "E_CANCELLED") in {"E_CANCELLED", "E_DEVICE_CANCELLED", "E_DEVICE_OUTCOME_UNKNOWN"}
+    if getattr(errors[0], "code", "") == "E_DEVICE_OUTCOME_UNKNOWN":
+        assert errors[0].outcome == "UNKNOWN"
+    # An interrupted native call retires the process and mappings, not a
+    # fabricated SDK-close receipt. Successful calls retain callback checks above.
+    assert api.releaseCount == 0
+    assert all(driver.process is None and driver.memory is None for driver in api.drivers)
+    for name in memoryNames:
+        with pytest.raises(FileNotFoundError):
+            SharedMemory(name=name)
+    assert not api.manager.workers and not api.manager.permissions
+    assert not api.manager.frames.frames and not api.manager.frames.reservations
 
 
 def testPlcFailureAfterExposureStopsBeforeIncrementAndVision(tmp_path, monkeypatch):
     payload, operators, api, calls, state = setup(tmp_path, monkeypatch, [syntheticFrame()])
-    def fail(*args):
-        raise communication.SlmpResponseError(0xC051)
-    monkeypatch.setattr(communication.Slmp3EClient, "readWords", fail)
-    runner = WorkflowRunner(WorkflowCompiler(operators).compile(payload), operators, globalVariables=state)
-    with pytest.raises(WorkflowExecutionError):
-        runner.run("station1", {}, RunContext.root(state.jobId, "station1", str(tmp_path)), CancellationToken())
+    with PlcDebugServer([_slmpResponse(endCode=0xC051)]) as plc:
+        payload["devices"]["definitions"]["station1-plc"]["connection"]["port"] = plc.port
+        with hardwareDevices(payload, state, api) as (devices, communicationProxy):
+            runner = WorkflowRunner(compiler(operators).compile(payload), operators, globalVariables=state,
+                                    devices=devices, communication=communicationProxy)
+            with pytest.raises(WorkflowExecutionError) as failure:
+                runner.run("station1", {}, RunContext.root(state.jobId, "station1", str(tmp_path)), CancellationToken())
+            assert failure.value.code == "E_DEVICE_SLMP_RESPONSE"
+            assert len(plc.requests) == 1
     assert api.releaseCount == 1 and not calls
     assert state.get("station1-shot-count") == 0
     assert api.openCount == 1 and api.destroyCount == 1

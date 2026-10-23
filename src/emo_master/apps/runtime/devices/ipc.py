@@ -5,6 +5,7 @@ import time
 from uuid import uuid4
 
 from emo_master.apps.runtime.communication.pipe_io import sendBytes, receiveBytes
+from emo_master.apps.runtime.workflow.cancellation import CancellationRequested
 from .executor import DeviceError
 from .frame_store import copyFrame
 
@@ -102,11 +103,32 @@ class DeviceProxy:
         return self._call('device_action', action, **fields)
 
     def framework(self, action, **fields):
-        return self._call('framework_operation', action, **fields)
+        try:
+            return self._call('framework_operation', action, **fields)
+        except DeviceError as error:
+            # Framework cancellation is not a failed device action. Only the
+            # explicit cancellation receipt for this cancelled Job qualifies;
+            # transport uncertainty and real faults keep their original detail.
+            if error.code == "E_DEVICE_CANCELLED" and self.cancellation.is_set():
+                cancelled = CancellationRequested(str(error))
+                cancelled.outcome, cancelled.diagnostics = error.outcome, error.diagnostics
+                raise cancelled from error
+            raise
 
     def _call(self, kind, action, **fields):
         def cancelled():
             return self.closed or self.cancellation.is_set()
+
+        def interrupted():
+            # pipe_io normally combines cancellation and timeout into OSError.
+            # Keep an observed framework stop distinct from a broken transport,
+            # including cancellation after the admission check but before I/O.
+            # Device actions still retain their possibly unknown native outcome.
+            if kind == 'framework_operation':
+                if self.cancellation.is_set():
+                    raise CancellationRequested("execution cancelled")
+                return self.closed
+            return cancelled()
         while not self.lock.acquire(timeout=.02):
             if cancelled():
                 raise DeviceError("E_DEVICE_CANCELLED", "device proxy cancelled")
@@ -123,8 +145,8 @@ class DeviceProxy:
                     # Runtime validates the plugin's cancellable-wait declaration.
                     # EOF and cancellation still retire this non-retrying call.
                     deadline = float("inf")
-                sendBytes(self.connection, raw, cancelled, time.monotonic() + 2)
-                reply = json.loads(receiveBytes(self.connection, MAX_BYTES, cancelled, deadline))
+                sendBytes(self.connection, raw, interrupted, time.monotonic() + 2)
+                reply = json.loads(receiveBytes(self.connection, MAX_BYTES, interrupted, deadline))
             except (OSError, EOFError, ValueError) as error:
                 self.close()
                 raise DeviceError("E_DEVICE_OUTCOME_UNKNOWN", "device transport interrupted; do not retry",

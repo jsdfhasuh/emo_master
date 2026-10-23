@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "2.4",
+  "schemaVersion": "2.7",
   "project": {
     "projectId": "hardware-normal-capability-fixture",
     "name": "双工位硬件正常基础链路夹具（非现场算法）",
@@ -57,15 +57,13 @@
           "nodeId": "camera",
           "kind": "operator",
           "operatorId": "vision.io.huaray_camera",
-          "params": {
-            "selectionMode": "cameraKey",
-            "cameraKey": "fixture-camera-1",
-            "triggerMode": "hardware",
-            "waitMode": "hardware",
-            "sequencePolicy": "contiguous",
-            "retryCount": 0
-          },
+          "params": {},
           "displayName": "硬件取图（本地夹具配置）",
+          "deviceBindings": {
+            "camera": {
+              "deviceId": "station1-camera"
+            }
+          },
           "inputPorts": {},
           "outputPorts": {
             "image": "image",
@@ -75,6 +73,7 @@
             "actualExposureUs": "number"
           },
           "paramSchema": {
+            "xDeviceActionFields": [],
             "type": "object",
             "additionalProperties": false,
             "properties": {
@@ -641,15 +640,17 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "127.0.0.1",
-            "port": 15001,
             "device": "D",
             "startAddress": 0,
             "dataType": "uint16",
-            "count": 1,
-            "retryCount": 0
+            "count": 1
           },
           "displayName": "plc",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "station1-plc"
+            }
+          },
           "inputPorts": {},
           "outputPorts": {
             "values": "plcValueCollection",
@@ -658,7 +659,27 @@
           },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
+              "frameEncoding": {
+                "title": "通信格式",
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "ascii"
+                ],
+                "default": "binary",
+                "xOptionLabels": {
+                  "binary": "MC 3E · 二进制（Binary）",
+                  "ascii": "MC 3E · ASCII"
+                }
+              },
               "host": {
                 "title": "主机地址",
                 "type": "string",
@@ -1127,7 +1148,16 @@
                   "dot",
                   "scalarMultiply"
                 ],
-                "default": "transform"
+                "default": "transform",
+                "xOptionLabels": {
+                  "measure": "测量",
+                  "transform": "坐标变换",
+                  "add": "坐标相加",
+                  "subtract": "坐标相减",
+                  "dot": "点积",
+                  "scalarMultiply": "标量乘法"
+                },
+                "description": "选择测量、几何变换或坐标运算；参数和输出含义随模式变化。"
               },
               "pairing": {
                 "title": "坐标配对方式",
@@ -1136,44 +1166,67 @@
                   "strict",
                   "broadcast"
                 ],
-                "default": "strict"
+                "default": "strict",
+                "xOptionLabels": {
+                  "strict": "逐项配对（数量相同）",
+                  "broadcast": "单点广播"
+                },
+                "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。"
               },
               "scalarValue": {
                 "title": "标量值",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xExample": 1.5,
+                "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。"
               },
               "closed": {
                 "title": "闭合路径",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。"
               },
               "offsetX": {
                 "title": "水平偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 10.0,
+                "description": "坐标变换的水平平移量，单位与输入坐标一致。"
               },
               "offsetY": {
                 "title": "垂直偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": -5.0,
+                "description": "坐标变换的垂直平移量，单位与输入坐标一致。"
               },
               "scaleX": {
                 "title": "水平缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "水平缩放系数；1 表示保持原大小。"
               },
               "scaleY": {
                 "title": "垂直缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "垂直缩放系数；1 表示保持原大小。"
               },
               "rotationDegrees": {
                 "title": "旋转角度（度）",
                 "type": "number",
                 "minimum": -360.0,
                 "maximum": 360.0,
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "°",
+                "xExample": 90.0,
+                "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。"
               },
               "pivot": {
                 "title": "旋转中心模式",
@@ -1184,17 +1237,30 @@
                   "first",
                   "custom"
                 ],
-                "default": "origin"
+                "default": "origin",
+                "xOptionLabels": {
+                  "origin": "坐标原点",
+                  "centroid": "点集中心",
+                  "first": "第一个点",
+                  "custom": "自定义坐标"
+                },
+                "description": "选择缩放和旋转所使用的中心。"
               },
               "pivotX": {
                 "title": "旋转中心 X 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 X 坐标，单位与输入坐标一致。"
               },
               "pivotY": {
                 "title": "旋转中心 Y 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 Y 坐标，单位与输入坐标一致。"
               }
             }
           }
@@ -1244,7 +1310,16 @@
                   "dot",
                   "scalarMultiply"
                 ],
-                "default": "transform"
+                "default": "transform",
+                "xOptionLabels": {
+                  "measure": "测量",
+                  "transform": "坐标变换",
+                  "add": "坐标相加",
+                  "subtract": "坐标相减",
+                  "dot": "点积",
+                  "scalarMultiply": "标量乘法"
+                },
+                "description": "选择测量、几何变换或坐标运算；参数和输出含义随模式变化。"
               },
               "pairing": {
                 "title": "坐标配对方式",
@@ -1253,44 +1328,67 @@
                   "strict",
                   "broadcast"
                 ],
-                "default": "strict"
+                "default": "strict",
+                "xOptionLabels": {
+                  "strict": "逐项配对（数量相同）",
+                  "broadcast": "单点广播"
+                },
+                "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。"
               },
               "scalarValue": {
                 "title": "标量值",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xExample": 1.5,
+                "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。"
               },
               "closed": {
                 "title": "闭合路径",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。"
               },
               "offsetX": {
                 "title": "水平偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 10.0,
+                "description": "坐标变换的水平平移量，单位与输入坐标一致。"
               },
               "offsetY": {
                 "title": "垂直偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": -5.0,
+                "description": "坐标变换的垂直平移量，单位与输入坐标一致。"
               },
               "scaleX": {
                 "title": "水平缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "水平缩放系数；1 表示保持原大小。"
               },
               "scaleY": {
                 "title": "垂直缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "垂直缩放系数；1 表示保持原大小。"
               },
               "rotationDegrees": {
                 "title": "旋转角度（度）",
                 "type": "number",
                 "minimum": -360.0,
                 "maximum": 360.0,
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "°",
+                "xExample": 90.0,
+                "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。"
               },
               "pivot": {
                 "title": "旋转中心模式",
@@ -1301,17 +1399,30 @@
                   "first",
                   "custom"
                 ],
-                "default": "origin"
+                "default": "origin",
+                "xOptionLabels": {
+                  "origin": "坐标原点",
+                  "centroid": "点集中心",
+                  "first": "第一个点",
+                  "custom": "自定义坐标"
+                },
+                "description": "选择缩放和旋转所使用的中心。"
               },
               "pivotX": {
                 "title": "旋转中心 X 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 X 坐标，单位与输入坐标一致。"
               },
               "pivotY": {
                 "title": "旋转中心 Y 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 Y 坐标，单位与输入坐标一致。"
               }
             }
           }
@@ -1363,7 +1474,16 @@
                   "dot",
                   "scalarMultiply"
                 ],
-                "default": "transform"
+                "default": "transform",
+                "xOptionLabels": {
+                  "measure": "测量",
+                  "transform": "坐标变换",
+                  "add": "坐标相加",
+                  "subtract": "坐标相减",
+                  "dot": "点积",
+                  "scalarMultiply": "标量乘法"
+                },
+                "description": "选择测量、几何变换或坐标运算；参数和输出含义随模式变化。"
               },
               "pairing": {
                 "title": "坐标配对方式",
@@ -1372,44 +1492,67 @@
                   "strict",
                   "broadcast"
                 ],
-                "default": "strict"
+                "default": "strict",
+                "xOptionLabels": {
+                  "strict": "逐项配对（数量相同）",
+                  "broadcast": "单点广播"
+                },
+                "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。"
               },
               "scalarValue": {
                 "title": "标量值",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xExample": 1.5,
+                "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。"
               },
               "closed": {
                 "title": "闭合路径",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。"
               },
               "offsetX": {
                 "title": "水平偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 10.0,
+                "description": "坐标变换的水平平移量，单位与输入坐标一致。"
               },
               "offsetY": {
                 "title": "垂直偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": -5.0,
+                "description": "坐标变换的垂直平移量，单位与输入坐标一致。"
               },
               "scaleX": {
                 "title": "水平缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "水平缩放系数；1 表示保持原大小。"
               },
               "scaleY": {
                 "title": "垂直缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "垂直缩放系数；1 表示保持原大小。"
               },
               "rotationDegrees": {
                 "title": "旋转角度（度）",
                 "type": "number",
                 "minimum": -360.0,
                 "maximum": 360.0,
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "°",
+                "xExample": 90.0,
+                "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。"
               },
               "pivot": {
                 "title": "旋转中心模式",
@@ -1420,17 +1563,30 @@
                   "first",
                   "custom"
                 ],
-                "default": "origin"
+                "default": "origin",
+                "xOptionLabels": {
+                  "origin": "坐标原点",
+                  "centroid": "点集中心",
+                  "first": "第一个点",
+                  "custom": "自定义坐标"
+                },
+                "description": "选择缩放和旋转所使用的中心。"
               },
               "pivotX": {
                 "title": "旋转中心 X 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 X 坐标，单位与输入坐标一致。"
               },
               "pivotY": {
                 "title": "旋转中心 Y 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 Y 坐标，单位与输入坐标一致。"
               }
             }
           }
@@ -1481,7 +1637,16 @@
                   "dot",
                   "scalarMultiply"
                 ],
-                "default": "transform"
+                "default": "transform",
+                "xOptionLabels": {
+                  "measure": "测量",
+                  "transform": "坐标变换",
+                  "add": "坐标相加",
+                  "subtract": "坐标相减",
+                  "dot": "点积",
+                  "scalarMultiply": "标量乘法"
+                },
+                "description": "选择测量、几何变换或坐标运算；参数和输出含义随模式变化。"
               },
               "pairing": {
                 "title": "坐标配对方式",
@@ -1490,44 +1655,67 @@
                   "strict",
                   "broadcast"
                 ],
-                "default": "strict"
+                "default": "strict",
+                "xOptionLabels": {
+                  "strict": "逐项配对（数量相同）",
+                  "broadcast": "单点广播"
+                },
+                "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。"
               },
               "scalarValue": {
                 "title": "标量值",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xExample": 1.5,
+                "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。"
               },
               "closed": {
                 "title": "闭合路径",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。"
               },
               "offsetX": {
                 "title": "水平偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 10.0,
+                "description": "坐标变换的水平平移量，单位与输入坐标一致。"
               },
               "offsetY": {
                 "title": "垂直偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": -5.0,
+                "description": "坐标变换的垂直平移量，单位与输入坐标一致。"
               },
               "scaleX": {
                 "title": "水平缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "水平缩放系数；1 表示保持原大小。"
               },
               "scaleY": {
                 "title": "垂直缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "垂直缩放系数；1 表示保持原大小。"
               },
               "rotationDegrees": {
                 "title": "旋转角度（度）",
                 "type": "number",
                 "minimum": -360.0,
                 "maximum": 360.0,
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "°",
+                "xExample": 90.0,
+                "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。"
               },
               "pivot": {
                 "title": "旋转中心模式",
@@ -1538,17 +1726,30 @@
                   "first",
                   "custom"
                 ],
-                "default": "origin"
+                "default": "origin",
+                "xOptionLabels": {
+                  "origin": "坐标原点",
+                  "centroid": "点集中心",
+                  "first": "第一个点",
+                  "custom": "自定义坐标"
+                },
+                "description": "选择缩放和旋转所使用的中心。"
               },
               "pivotX": {
                 "title": "旋转中心 X 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 X 坐标，单位与输入坐标一致。"
               },
               "pivotY": {
                 "title": "旋转中心 Y 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 Y 坐标，单位与输入坐标一致。"
               }
             }
           }
@@ -1620,14 +1821,14 @@
           "kind": "operator",
           "operatorId": "communication.tcp.client",
           "params": {
-            "host": "127.0.0.1",
-            "port": 16013,
-            "operation": "exchange",
-            "responseFraming": "newline",
-            "rejectTrailingResponse": true,
-            "responseTimeoutMs": 1000
+            "operation": "exchange"
           },
           "displayName": "exchange",
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "station1-plc-gateway"
+            }
+          },
           "inputPorts": {
             "message": "tcpMessage",
             "text": "string"
@@ -1640,18 +1841,6 @@
           "paramSchema": {
             "type": "object",
             "properties": {
-              "host": {
-                "title": "主机地址",
-                "type": "string",
-                "default": "127.0.0.1"
-              },
-              "port": {
-                "title": "端口",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 65535,
-                "default": 10001
-              },
               "operation": {
                 "title": "操作类型",
                 "type": "string",
@@ -1665,105 +1854,14 @@
                 "title": "发送文本",
                 "type": "string",
                 "default": ""
-              },
-              "textEncoding": {
-                "title": "发送文本编码",
-                "type": "string",
-                "enum": [
-                  "utf-8",
-                  "ascii",
-                  "latin-1",
-                  "hex",
-                  "base64"
-                ],
-                "default": "utf-8"
-              },
-              "appendNewline": {
-                "title": "追加换行",
-                "type": "boolean",
-                "default": false
-              },
-              "rejectTrailingResponse": {
-                "title": "拒绝响应帧后的残留数据",
-                "type": "boolean",
-                "default": false,
-                "description": "单次换行事务中，拒绝同一接收块内多余报文；连接仍按事务关闭。"
-              },
-              "shutdownWrite": {
-                "title": "发送后关闭写入方向",
-                "type": "boolean",
-                "default": false
-              },
-              "connectTimeoutMs": {
-                "title": "连接超时（毫秒）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 60000,
-                "default": 2000
-              },
-              "responseTimeoutMs": {
-                "title": "响应超时（毫秒）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 60000,
-                "default": 2000
-              },
-              "responseFraming": {
-                "title": "响应分帧方式",
-                "type": "string",
-                "enum": [
-                  "newline",
-                  "quoted",
-                  "idle",
-                  "fixedLength"
-                ],
-                "default": "newline"
-              },
-              "expectedBytes": {
-                "title": "预期字节数",
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 16777216,
-                "default": 0
-              },
-              "maxResponseBytes": {
-                "title": "最大响应大小（字节）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 16777216,
-                "default": 1048576
-              },
-              "maxRequestBytes": {
-                "title": "最大发送大小（字节）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 16777216,
-                "default": 1048576
-              },
-              "responseEncoding": {
-                "title": "响应内容编码",
-                "type": "string",
-                "enum": [
-                  "utf-8",
-                  "ascii",
-                  "latin-1",
-                  "hex",
-                  "base64"
-                ],
-                "default": "utf-8"
-              },
-              "responseTextEncoding": {
-                "title": "响应文本编码",
-                "type": "string",
-                "enum": [
-                  "none",
-                  "utf-8",
-                  "ascii",
-                  "latin-1"
-                ],
-                "default": "none"
               }
-            }
+            },
+            "additionalProperties": false,
+            "required": [],
+            "xDeviceActionFields": [
+              "operation",
+              "text"
+            ]
           }
         },
         {
@@ -2332,7 +2430,16 @@
                   "dot",
                   "scalarMultiply"
                 ],
-                "default": "transform"
+                "default": "transform",
+                "xOptionLabels": {
+                  "measure": "测量",
+                  "transform": "坐标变换",
+                  "add": "坐标相加",
+                  "subtract": "坐标相减",
+                  "dot": "点积",
+                  "scalarMultiply": "标量乘法"
+                },
+                "description": "选择测量、几何变换或坐标运算；参数和输出含义随模式变化。"
               },
               "pairing": {
                 "title": "坐标配对方式",
@@ -2341,44 +2448,67 @@
                   "strict",
                   "broadcast"
                 ],
-                "default": "strict"
+                "default": "strict",
+                "xOptionLabels": {
+                  "strict": "逐项配对（数量相同）",
+                  "broadcast": "单点广播"
+                },
+                "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。"
               },
               "scalarValue": {
                 "title": "标量值",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xExample": 1.5,
+                "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。"
               },
               "closed": {
                 "title": "闭合路径",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。"
               },
               "offsetX": {
                 "title": "水平偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 10.0,
+                "description": "坐标变换的水平平移量，单位与输入坐标一致。"
               },
               "offsetY": {
                 "title": "垂直偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": -5.0,
+                "description": "坐标变换的垂直平移量，单位与输入坐标一致。"
               },
               "scaleX": {
                 "title": "水平缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "水平缩放系数；1 表示保持原大小。"
               },
               "scaleY": {
                 "title": "垂直缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "垂直缩放系数；1 表示保持原大小。"
               },
               "rotationDegrees": {
                 "title": "旋转角度（度）",
                 "type": "number",
                 "minimum": -360.0,
                 "maximum": 360.0,
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "°",
+                "xExample": 90.0,
+                "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。"
               },
               "pivot": {
                 "title": "旋转中心模式",
@@ -2389,17 +2519,30 @@
                   "first",
                   "custom"
                 ],
-                "default": "origin"
+                "default": "origin",
+                "xOptionLabels": {
+                  "origin": "坐标原点",
+                  "centroid": "点集中心",
+                  "first": "第一个点",
+                  "custom": "自定义坐标"
+                },
+                "description": "选择缩放和旋转所使用的中心。"
               },
               "pivotX": {
                 "title": "旋转中心 X 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 X 坐标，单位与输入坐标一致。"
               },
               "pivotY": {
                 "title": "旋转中心 Y 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 Y 坐标，单位与输入坐标一致。"
               }
             }
           }
@@ -2450,7 +2593,16 @@
                   "dot",
                   "scalarMultiply"
                 ],
-                "default": "transform"
+                "default": "transform",
+                "xOptionLabels": {
+                  "measure": "测量",
+                  "transform": "坐标变换",
+                  "add": "坐标相加",
+                  "subtract": "坐标相减",
+                  "dot": "点积",
+                  "scalarMultiply": "标量乘法"
+                },
+                "description": "选择测量、几何变换或坐标运算；参数和输出含义随模式变化。"
               },
               "pairing": {
                 "title": "坐标配对方式",
@@ -2459,44 +2611,67 @@
                   "strict",
                   "broadcast"
                 ],
-                "default": "strict"
+                "default": "strict",
+                "xOptionLabels": {
+                  "strict": "逐项配对（数量相同）",
+                  "broadcast": "单点广播"
+                },
+                "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。"
               },
               "scalarValue": {
                 "title": "标量值",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xExample": 1.5,
+                "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。"
               },
               "closed": {
                 "title": "闭合路径",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。"
               },
               "offsetX": {
                 "title": "水平偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 10.0,
+                "description": "坐标变换的水平平移量，单位与输入坐标一致。"
               },
               "offsetY": {
                 "title": "垂直偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": -5.0,
+                "description": "坐标变换的垂直平移量，单位与输入坐标一致。"
               },
               "scaleX": {
                 "title": "水平缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "水平缩放系数；1 表示保持原大小。"
               },
               "scaleY": {
                 "title": "垂直缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "垂直缩放系数；1 表示保持原大小。"
               },
               "rotationDegrees": {
                 "title": "旋转角度（度）",
                 "type": "number",
                 "minimum": -360.0,
                 "maximum": 360.0,
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "°",
+                "xExample": 90.0,
+                "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。"
               },
               "pivot": {
                 "title": "旋转中心模式",
@@ -2507,17 +2682,30 @@
                   "first",
                   "custom"
                 ],
-                "default": "origin"
+                "default": "origin",
+                "xOptionLabels": {
+                  "origin": "坐标原点",
+                  "centroid": "点集中心",
+                  "first": "第一个点",
+                  "custom": "自定义坐标"
+                },
+                "description": "选择缩放和旋转所使用的中心。"
               },
               "pivotX": {
                 "title": "旋转中心 X 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 X 坐标，单位与输入坐标一致。"
               },
               "pivotY": {
                 "title": "旋转中心 Y 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 Y 坐标，单位与输入坐标一致。"
               }
             }
           }
@@ -2589,14 +2777,14 @@
           "kind": "operator",
           "operatorId": "communication.tcp.client",
           "params": {
-            "host": "127.0.0.1",
-            "port": 16011,
-            "operation": "exchange",
-            "responseFraming": "newline",
-            "rejectTrailingResponse": true,
-            "responseTimeoutMs": 1000
+            "operation": "exchange"
           },
           "displayName": "exchange",
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "station1-robot-gateway"
+            }
+          },
           "inputPorts": {
             "message": "tcpMessage",
             "text": "string"
@@ -2609,18 +2797,6 @@
           "paramSchema": {
             "type": "object",
             "properties": {
-              "host": {
-                "title": "主机地址",
-                "type": "string",
-                "default": "127.0.0.1"
-              },
-              "port": {
-                "title": "端口",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 65535,
-                "default": 10001
-              },
               "operation": {
                 "title": "操作类型",
                 "type": "string",
@@ -2634,105 +2810,14 @@
                 "title": "发送文本",
                 "type": "string",
                 "default": ""
-              },
-              "textEncoding": {
-                "title": "发送文本编码",
-                "type": "string",
-                "enum": [
-                  "utf-8",
-                  "ascii",
-                  "latin-1",
-                  "hex",
-                  "base64"
-                ],
-                "default": "utf-8"
-              },
-              "appendNewline": {
-                "title": "追加换行",
-                "type": "boolean",
-                "default": false
-              },
-              "rejectTrailingResponse": {
-                "title": "拒绝响应帧后的残留数据",
-                "type": "boolean",
-                "default": false,
-                "description": "单次换行事务中，拒绝同一接收块内多余报文；连接仍按事务关闭。"
-              },
-              "shutdownWrite": {
-                "title": "发送后关闭写入方向",
-                "type": "boolean",
-                "default": false
-              },
-              "connectTimeoutMs": {
-                "title": "连接超时（毫秒）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 60000,
-                "default": 2000
-              },
-              "responseTimeoutMs": {
-                "title": "响应超时（毫秒）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 60000,
-                "default": 2000
-              },
-              "responseFraming": {
-                "title": "响应分帧方式",
-                "type": "string",
-                "enum": [
-                  "newline",
-                  "quoted",
-                  "idle",
-                  "fixedLength"
-                ],
-                "default": "newline"
-              },
-              "expectedBytes": {
-                "title": "预期字节数",
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 16777216,
-                "default": 0
-              },
-              "maxResponseBytes": {
-                "title": "最大响应大小（字节）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 16777216,
-                "default": 1048576
-              },
-              "maxRequestBytes": {
-                "title": "最大发送大小（字节）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 16777216,
-                "default": 1048576
-              },
-              "responseEncoding": {
-                "title": "响应内容编码",
-                "type": "string",
-                "enum": [
-                  "utf-8",
-                  "ascii",
-                  "latin-1",
-                  "hex",
-                  "base64"
-                ],
-                "default": "utf-8"
-              },
-              "responseTextEncoding": {
-                "title": "响应文本编码",
-                "type": "string",
-                "enum": [
-                  "none",
-                  "utf-8",
-                  "ascii",
-                  "latin-1"
-                ],
-                "default": "none"
               }
-            }
+            },
+            "additionalProperties": false,
+            "required": [],
+            "xDeviceActionFields": [
+              "operation",
+              "text"
+            ]
           }
         },
         {
@@ -3056,6 +3141,8 @@
           "outputPorts": {
             "detections": "detectionCollection",
             "overlay": "image",
+            "croppedImage": "image",
+            "croppedFrame": "bbox2d",
             "frame": "bbox2d"
           },
           "paramSchema": {
@@ -3074,26 +3161,36 @@
                 "type": "number",
                 "minimum": 0.0,
                 "maximum": 1.0,
-                "default": 0.25
+                "default": 0.25,
+                "xExample": 0.25,
+                "description": "保留置信度不低于此值的检测结果，范围为 0～1。"
               },
               "iou": {
                 "title": "非极大值抑制 IoU 阈值",
                 "type": "number",
                 "minimum": 0.0,
                 "maximum": 1.0,
-                "default": 0.45
+                "default": 0.45,
+                "xExample": 0.45,
+                "description": "非极大值抑制的交并比阈值，范围为 0～1。"
               },
               "imageSize": {
                 "title": "推理图像尺寸",
                 "type": "integer",
                 "minimum": 1,
-                "default": 640
+                "default": 640,
+                "xUnit": "像素",
+                "xExample": 640,
+                "description": "模型输入的目标图像尺寸，填写正整数。"
               },
               "maxDetections": {
                 "title": "最大检测数量",
                 "type": "integer",
                 "minimum": 1,
-                "default": 300
+                "default": 300,
+                "xUnit": "个",
+                "xExample": 300,
+                "description": "单次推理最多保留的检测结果数量。"
               },
               "device": {
                 "title": "推理设备",
@@ -3102,7 +3199,12 @@
                   "auto",
                   "cpu"
                 ],
-                "default": "auto"
+                "default": "auto",
+                "xOptionLabels": {
+                  "auto": "自动（当前使用 CPU）",
+                  "cpu": "CPU"
+                },
+                "description": "当前 ONNX 推理使用 CPU 执行提供程序。"
               },
               "classes": {
                 "title": "检测类别（可选）",
@@ -3112,7 +3214,12 @@
                   "type": "integer",
                   "minimum": 0
                 },
-                "default": []
+                "default": [],
+                "xBlankMeansEmpty": true,
+                "xExample": [
+                  0,
+                  1
+                ]
               },
               "agnosticNms": {
                 "title": "不区分类别的非极大值抑制",
@@ -3123,6 +3230,24 @@
                 "title": "绘制叠加图",
                 "type": "boolean",
                 "default": false
+              },
+              "outputCrop": {
+                "title": "输出裁剪图",
+                "type": "boolean",
+                "default": false,
+                "description": "输出所选检测框内的原始像素和裁剪坐标框；不是分割掩码，也不裁剪叠加图。"
+              },
+              "cropTargetIndex": {
+                "title": "裁剪目标序号（从 1 开始）",
+                "type": "integer",
+                "minimum": 1,
+                "default": 1,
+                "xEnabledWhen": {
+                  "outputCrop": [
+                    true
+                  ]
+                },
+                "description": "按类别过滤、置信度筛选和 NMS 后的有效检测框排序：置信度从高到低，第 1 个最高；同分保留后端顺序。序号仅属于当前图像，超出数量时报错。"
               }
             },
             "required": [
@@ -3258,30 +3383,66 @@
                   "adaptiveMean",
                   "adaptiveGaussian"
                 ],
-                "default": "fixed"
+                "default": "fixed",
+                "xOptionLabels": {
+                  "fixed": "固定阈值",
+                  "otsu": "大津法（自动阈值）",
+                  "triangle": "三角法（自动阈值）",
+                  "adaptiveMean": "自适应均值",
+                  "adaptiveGaussian": "自适应高斯"
+                },
+                "description": "固定模式使用指定阈值；自动模式由图像计算阈值；自适应模式按局部邻域计算阈值。"
               },
               "threshold": {
                 "title": "阈值",
                 "type": "integer",
-                "minimum": 0,
-                "maximum": 255,
-                "default": 127
+                "default": 127,
+                "xMinimum": 0,
+                "xMaximum": 255,
+                "xEnabledWhen": {
+                  "mode": [
+                    "fixed"
+                  ]
+                },
+                "xUnit": "灰度级",
+                "xExample": 127,
+                "description": "仅固定阈值模式生效，填写 0～255 的整数。"
               },
               "invert": {
                 "title": "反向阈值",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "开启后反转二值掩码的前景与背景，输出仍为 0/255。"
               },
               "blockSize": {
                 "title": "自适应邻域大小",
                 "type": "integer",
-                "minimum": 3,
-                "default": 11
+                "default": 11,
+                "xMinimum": 3,
+                "xOdd": true,
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xUnit": "像素",
+                "xExample": 11,
+                "description": "仅自适应模式生效，必须是大于等于 3 的奇数，如 3、5、11。"
               },
               "constant": {
                 "title": "自适应阈值偏移量",
                 "type": "number",
-                "default": 2.0
+                "default": 2.0,
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xUnit": "灰度级",
+                "xExample": 2.0,
+                "description": "仅自适应模式生效，从局部均值或加权均值中减去此有限数值，可为负数或小数。"
               }
             }
           }
@@ -3315,7 +3476,14 @@
                   "ccomp",
                   "tree"
                 ],
-                "default": "tree"
+                "default": "tree",
+                "xOptionLabels": {
+                  "external": "仅外部轮廓",
+                  "list": "全部轮廓（不建层级）",
+                  "ccomp": "两级层级",
+                  "tree": "完整树形层级"
+                },
+                "description": "选择轮廓保留范围及父子层级结构。"
               },
               "approximation": {
                 "title": "轮廓近似方式",
@@ -3324,7 +3492,12 @@
                   "none",
                   "simple"
                 ],
-                "default": "simple"
+                "default": "simple",
+                "xOptionLabels": {
+                  "none": "保留全部轮廓点",
+                  "simple": "压缩直线段"
+                },
+                "description": "压缩直线段可减少轮廓点；保留全部点适合需要逐点信息的处理。"
               }
             }
           }
@@ -3717,6 +3890,8 @@
           "outputPorts": {
             "detections": "detectionCollection",
             "overlay": "image",
+            "croppedImage": "image",
+            "croppedFrame": "bbox2d",
             "frame": "bbox2d"
           },
           "paramSchema": {
@@ -3735,26 +3910,36 @@
                 "type": "number",
                 "minimum": 0.0,
                 "maximum": 1.0,
-                "default": 0.25
+                "default": 0.25,
+                "xExample": 0.25,
+                "description": "保留置信度不低于此值的检测结果，范围为 0～1。"
               },
               "iou": {
                 "title": "非极大值抑制 IoU 阈值",
                 "type": "number",
                 "minimum": 0.0,
                 "maximum": 1.0,
-                "default": 0.45
+                "default": 0.45,
+                "xExample": 0.45,
+                "description": "非极大值抑制的交并比阈值，范围为 0～1。"
               },
               "imageSize": {
                 "title": "推理图像尺寸",
                 "type": "integer",
                 "minimum": 1,
-                "default": 640
+                "default": 640,
+                "xUnit": "像素",
+                "xExample": 640,
+                "description": "模型输入的目标图像尺寸，填写正整数。"
               },
               "maxDetections": {
                 "title": "最大检测数量",
                 "type": "integer",
                 "minimum": 1,
-                "default": 300
+                "default": 300,
+                "xUnit": "个",
+                "xExample": 300,
+                "description": "单次推理最多保留的检测结果数量。"
               },
               "device": {
                 "title": "推理设备",
@@ -3763,7 +3948,12 @@
                   "auto",
                   "cpu"
                 ],
-                "default": "auto"
+                "default": "auto",
+                "xOptionLabels": {
+                  "auto": "自动（当前使用 CPU）",
+                  "cpu": "CPU"
+                },
+                "description": "当前 ONNX 推理使用 CPU 执行提供程序。"
               },
               "classes": {
                 "title": "检测类别（可选）",
@@ -3773,7 +3963,12 @@
                   "type": "integer",
                   "minimum": 0
                 },
-                "default": []
+                "default": [],
+                "xBlankMeansEmpty": true,
+                "xExample": [
+                  0,
+                  1
+                ]
               },
               "agnosticNms": {
                 "title": "不区分类别的非极大值抑制",
@@ -3784,6 +3979,24 @@
                 "title": "绘制叠加图",
                 "type": "boolean",
                 "default": false
+              },
+              "outputCrop": {
+                "title": "输出裁剪图",
+                "type": "boolean",
+                "default": false,
+                "description": "输出所选检测框内的原始像素和裁剪坐标框；不是分割掩码，也不裁剪叠加图。"
+              },
+              "cropTargetIndex": {
+                "title": "裁剪目标序号（从 1 开始）",
+                "type": "integer",
+                "minimum": 1,
+                "default": 1,
+                "xEnabledWhen": {
+                  "outputCrop": [
+                    true
+                  ]
+                },
+                "description": "按类别过滤、置信度筛选和 NMS 后的有效检测框排序：置信度从高到低，第 1 个最高；同分保留后端顺序。序号仅属于当前图像，超出数量时报错。"
               }
             },
             "required": [
@@ -3919,30 +4132,66 @@
                   "adaptiveMean",
                   "adaptiveGaussian"
                 ],
-                "default": "fixed"
+                "default": "fixed",
+                "xOptionLabels": {
+                  "fixed": "固定阈值",
+                  "otsu": "大津法（自动阈值）",
+                  "triangle": "三角法（自动阈值）",
+                  "adaptiveMean": "自适应均值",
+                  "adaptiveGaussian": "自适应高斯"
+                },
+                "description": "固定模式使用指定阈值；自动模式由图像计算阈值；自适应模式按局部邻域计算阈值。"
               },
               "threshold": {
                 "title": "阈值",
                 "type": "integer",
-                "minimum": 0,
-                "maximum": 255,
-                "default": 127
+                "default": 127,
+                "xMinimum": 0,
+                "xMaximum": 255,
+                "xEnabledWhen": {
+                  "mode": [
+                    "fixed"
+                  ]
+                },
+                "xUnit": "灰度级",
+                "xExample": 127,
+                "description": "仅固定阈值模式生效，填写 0～255 的整数。"
               },
               "invert": {
                 "title": "反向阈值",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "开启后反转二值掩码的前景与背景，输出仍为 0/255。"
               },
               "blockSize": {
                 "title": "自适应邻域大小",
                 "type": "integer",
-                "minimum": 3,
-                "default": 11
+                "default": 11,
+                "xMinimum": 3,
+                "xOdd": true,
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xUnit": "像素",
+                "xExample": 11,
+                "description": "仅自适应模式生效，必须是大于等于 3 的奇数，如 3、5、11。"
               },
               "constant": {
                 "title": "自适应阈值偏移量",
                 "type": "number",
-                "default": 2.0
+                "default": 2.0,
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xUnit": "灰度级",
+                "xExample": 2.0,
+                "description": "仅自适应模式生效，从局部均值或加权均值中减去此有限数值，可为负数或小数。"
               }
             }
           }
@@ -3976,7 +4225,14 @@
                   "ccomp",
                   "tree"
                 ],
-                "default": "tree"
+                "default": "tree",
+                "xOptionLabels": {
+                  "external": "仅外部轮廓",
+                  "list": "全部轮廓（不建层级）",
+                  "ccomp": "两级层级",
+                  "tree": "完整树形层级"
+                },
+                "description": "选择轮廓保留范围及父子层级结构。"
               },
               "approximation": {
                 "title": "轮廓近似方式",
@@ -3985,7 +4241,12 @@
                   "none",
                   "simple"
                 ],
-                "default": "simple"
+                "default": "simple",
+                "xOptionLabels": {
+                  "none": "保留全部轮廓点",
+                  "simple": "压缩直线段"
+                },
+                "description": "压缩直线段可减少轮廓点；保留全部点适合需要逐点信息的处理。"
               }
             }
           }
@@ -4378,6 +4639,8 @@
           "outputPorts": {
             "detections": "detectionCollection",
             "overlay": "image",
+            "croppedImage": "image",
+            "croppedFrame": "bbox2d",
             "frame": "bbox2d"
           },
           "paramSchema": {
@@ -4396,26 +4659,36 @@
                 "type": "number",
                 "minimum": 0.0,
                 "maximum": 1.0,
-                "default": 0.25
+                "default": 0.25,
+                "xExample": 0.25,
+                "description": "保留置信度不低于此值的检测结果，范围为 0～1。"
               },
               "iou": {
                 "title": "非极大值抑制 IoU 阈值",
                 "type": "number",
                 "minimum": 0.0,
                 "maximum": 1.0,
-                "default": 0.45
+                "default": 0.45,
+                "xExample": 0.45,
+                "description": "非极大值抑制的交并比阈值，范围为 0～1。"
               },
               "imageSize": {
                 "title": "推理图像尺寸",
                 "type": "integer",
                 "minimum": 1,
-                "default": 640
+                "default": 640,
+                "xUnit": "像素",
+                "xExample": 640,
+                "description": "模型输入的目标图像尺寸，填写正整数。"
               },
               "maxDetections": {
                 "title": "最大检测数量",
                 "type": "integer",
                 "minimum": 1,
-                "default": 300
+                "default": 300,
+                "xUnit": "个",
+                "xExample": 300,
+                "description": "单次推理最多保留的检测结果数量。"
               },
               "device": {
                 "title": "推理设备",
@@ -4424,7 +4697,12 @@
                   "auto",
                   "cpu"
                 ],
-                "default": "auto"
+                "default": "auto",
+                "xOptionLabels": {
+                  "auto": "自动（当前使用 CPU）",
+                  "cpu": "CPU"
+                },
+                "description": "当前 ONNX 推理使用 CPU 执行提供程序。"
               },
               "classes": {
                 "title": "检测类别（可选）",
@@ -4434,7 +4712,12 @@
                   "type": "integer",
                   "minimum": 0
                 },
-                "default": []
+                "default": [],
+                "xBlankMeansEmpty": true,
+                "xExample": [
+                  0,
+                  1
+                ]
               },
               "agnosticNms": {
                 "title": "不区分类别的非极大值抑制",
@@ -4445,6 +4728,24 @@
                 "title": "绘制叠加图",
                 "type": "boolean",
                 "default": false
+              },
+              "outputCrop": {
+                "title": "输出裁剪图",
+                "type": "boolean",
+                "default": false,
+                "description": "输出所选检测框内的原始像素和裁剪坐标框；不是分割掩码，也不裁剪叠加图。"
+              },
+              "cropTargetIndex": {
+                "title": "裁剪目标序号（从 1 开始）",
+                "type": "integer",
+                "minimum": 1,
+                "default": 1,
+                "xEnabledWhen": {
+                  "outputCrop": [
+                    true
+                  ]
+                },
+                "description": "按类别过滤、置信度筛选和 NMS 后的有效检测框排序：置信度从高到低，第 1 个最高；同分保留后端顺序。序号仅属于当前图像，超出数量时报错。"
               }
             },
             "required": [
@@ -4580,30 +4881,66 @@
                   "adaptiveMean",
                   "adaptiveGaussian"
                 ],
-                "default": "fixed"
+                "default": "fixed",
+                "xOptionLabels": {
+                  "fixed": "固定阈值",
+                  "otsu": "大津法（自动阈值）",
+                  "triangle": "三角法（自动阈值）",
+                  "adaptiveMean": "自适应均值",
+                  "adaptiveGaussian": "自适应高斯"
+                },
+                "description": "固定模式使用指定阈值；自动模式由图像计算阈值；自适应模式按局部邻域计算阈值。"
               },
               "threshold": {
                 "title": "阈值",
                 "type": "integer",
-                "minimum": 0,
-                "maximum": 255,
-                "default": 127
+                "default": 127,
+                "xMinimum": 0,
+                "xMaximum": 255,
+                "xEnabledWhen": {
+                  "mode": [
+                    "fixed"
+                  ]
+                },
+                "xUnit": "灰度级",
+                "xExample": 127,
+                "description": "仅固定阈值模式生效，填写 0～255 的整数。"
               },
               "invert": {
                 "title": "反向阈值",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "开启后反转二值掩码的前景与背景，输出仍为 0/255。"
               },
               "blockSize": {
                 "title": "自适应邻域大小",
                 "type": "integer",
-                "minimum": 3,
-                "default": 11
+                "default": 11,
+                "xMinimum": 3,
+                "xOdd": true,
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xUnit": "像素",
+                "xExample": 11,
+                "description": "仅自适应模式生效，必须是大于等于 3 的奇数，如 3、5、11。"
               },
               "constant": {
                 "title": "自适应阈值偏移量",
                 "type": "number",
-                "default": 2.0
+                "default": 2.0,
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xUnit": "灰度级",
+                "xExample": 2.0,
+                "description": "仅自适应模式生效，从局部均值或加权均值中减去此有限数值，可为负数或小数。"
               }
             }
           }
@@ -4637,7 +4974,14 @@
                   "ccomp",
                   "tree"
                 ],
-                "default": "tree"
+                "default": "tree",
+                "xOptionLabels": {
+                  "external": "仅外部轮廓",
+                  "list": "全部轮廓（不建层级）",
+                  "ccomp": "两级层级",
+                  "tree": "完整树形层级"
+                },
+                "description": "选择轮廓保留范围及父子层级结构。"
               },
               "approximation": {
                 "title": "轮廓近似方式",
@@ -4646,7 +4990,12 @@
                   "none",
                   "simple"
                 ],
-                "default": "simple"
+                "default": "simple",
+                "xOptionLabels": {
+                  "none": "保留全部轮廓点",
+                  "simple": "压缩直线段"
+                },
+                "description": "压缩直线段可减少轮廓点；保留全部点适合需要逐点信息的处理。"
               }
             }
           }
@@ -4915,15 +5264,13 @@
           "nodeId": "camera",
           "kind": "operator",
           "operatorId": "vision.io.huaray_camera",
-          "params": {
-            "selectionMode": "cameraKey",
-            "cameraKey": "fixture-camera-2",
-            "triggerMode": "hardware",
-            "waitMode": "hardware",
-            "sequencePolicy": "contiguous",
-            "retryCount": 0
-          },
+          "params": {},
           "displayName": "硬件取图（本地夹具配置）",
+          "deviceBindings": {
+            "camera": {
+              "deviceId": "station2-camera"
+            }
+          },
           "inputPorts": {},
           "outputPorts": {
             "image": "image",
@@ -4933,6 +5280,7 @@
             "actualExposureUs": "number"
           },
           "paramSchema": {
+            "xDeviceActionFields": [],
             "type": "object",
             "additionalProperties": false,
             "properties": {
@@ -5499,15 +5847,17 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "127.0.0.1",
-            "port": 15002,
             "device": "D",
             "startAddress": 0,
             "dataType": "uint16",
-            "count": 1,
-            "retryCount": 0
+            "count": 1
           },
           "displayName": "plc",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "station2-plc"
+            }
+          },
           "inputPorts": {},
           "outputPorts": {
             "values": "plcValueCollection",
@@ -5516,7 +5866,27 @@
           },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
+              "frameEncoding": {
+                "title": "通信格式",
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "ascii"
+                ],
+                "default": "binary",
+                "xOptionLabels": {
+                  "binary": "MC 3E · 二进制（Binary）",
+                  "ascii": "MC 3E · ASCII"
+                }
+              },
               "host": {
                 "title": "主机地址",
                 "type": "string",
@@ -5753,7 +6123,16 @@
                   "dot",
                   "scalarMultiply"
                 ],
-                "default": "transform"
+                "default": "transform",
+                "xOptionLabels": {
+                  "measure": "测量",
+                  "transform": "坐标变换",
+                  "add": "坐标相加",
+                  "subtract": "坐标相减",
+                  "dot": "点积",
+                  "scalarMultiply": "标量乘法"
+                },
+                "description": "选择测量、几何变换或坐标运算；参数和输出含义随模式变化。"
               },
               "pairing": {
                 "title": "坐标配对方式",
@@ -5762,44 +6141,67 @@
                   "strict",
                   "broadcast"
                 ],
-                "default": "strict"
+                "default": "strict",
+                "xOptionLabels": {
+                  "strict": "逐项配对（数量相同）",
+                  "broadcast": "单点广播"
+                },
+                "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。"
               },
               "scalarValue": {
                 "title": "标量值",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xExample": 1.5,
+                "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。"
               },
               "closed": {
                 "title": "闭合路径",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。"
               },
               "offsetX": {
                 "title": "水平偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 10.0,
+                "description": "坐标变换的水平平移量，单位与输入坐标一致。"
               },
               "offsetY": {
                 "title": "垂直偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": -5.0,
+                "description": "坐标变换的垂直平移量，单位与输入坐标一致。"
               },
               "scaleX": {
                 "title": "水平缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "水平缩放系数；1 表示保持原大小。"
               },
               "scaleY": {
                 "title": "垂直缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "垂直缩放系数；1 表示保持原大小。"
               },
               "rotationDegrees": {
                 "title": "旋转角度（度）",
                 "type": "number",
                 "minimum": -360.0,
                 "maximum": 360.0,
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "°",
+                "xExample": 90.0,
+                "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。"
               },
               "pivot": {
                 "title": "旋转中心模式",
@@ -5810,17 +6212,30 @@
                   "first",
                   "custom"
                 ],
-                "default": "origin"
+                "default": "origin",
+                "xOptionLabels": {
+                  "origin": "坐标原点",
+                  "centroid": "点集中心",
+                  "first": "第一个点",
+                  "custom": "自定义坐标"
+                },
+                "description": "选择缩放和旋转所使用的中心。"
               },
               "pivotX": {
                 "title": "旋转中心 X 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 X 坐标，单位与输入坐标一致。"
               },
               "pivotY": {
                 "title": "旋转中心 Y 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 Y 坐标，单位与输入坐标一致。"
               }
             }
           }
@@ -5872,7 +6287,16 @@
                   "dot",
                   "scalarMultiply"
                 ],
-                "default": "transform"
+                "default": "transform",
+                "xOptionLabels": {
+                  "measure": "测量",
+                  "transform": "坐标变换",
+                  "add": "坐标相加",
+                  "subtract": "坐标相减",
+                  "dot": "点积",
+                  "scalarMultiply": "标量乘法"
+                },
+                "description": "选择测量、几何变换或坐标运算；参数和输出含义随模式变化。"
               },
               "pairing": {
                 "title": "坐标配对方式",
@@ -5881,44 +6305,67 @@
                   "strict",
                   "broadcast"
                 ],
-                "default": "strict"
+                "default": "strict",
+                "xOptionLabels": {
+                  "strict": "逐项配对（数量相同）",
+                  "broadcast": "单点广播"
+                },
+                "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。"
               },
               "scalarValue": {
                 "title": "标量值",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xExample": 1.5,
+                "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。"
               },
               "closed": {
                 "title": "闭合路径",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。"
               },
               "offsetX": {
                 "title": "水平偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 10.0,
+                "description": "坐标变换的水平平移量，单位与输入坐标一致。"
               },
               "offsetY": {
                 "title": "垂直偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": -5.0,
+                "description": "坐标变换的垂直平移量，单位与输入坐标一致。"
               },
               "scaleX": {
                 "title": "水平缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "水平缩放系数；1 表示保持原大小。"
               },
               "scaleY": {
                 "title": "垂直缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "垂直缩放系数；1 表示保持原大小。"
               },
               "rotationDegrees": {
                 "title": "旋转角度（度）",
                 "type": "number",
                 "minimum": -360.0,
                 "maximum": 360.0,
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "°",
+                "xExample": 90.0,
+                "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。"
               },
               "pivot": {
                 "title": "旋转中心模式",
@@ -5929,17 +6376,30 @@
                   "first",
                   "custom"
                 ],
-                "default": "origin"
+                "default": "origin",
+                "xOptionLabels": {
+                  "origin": "坐标原点",
+                  "centroid": "点集中心",
+                  "first": "第一个点",
+                  "custom": "自定义坐标"
+                },
+                "description": "选择缩放和旋转所使用的中心。"
               },
               "pivotX": {
                 "title": "旋转中心 X 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 X 坐标，单位与输入坐标一致。"
               },
               "pivotY": {
                 "title": "旋转中心 Y 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 Y 坐标，单位与输入坐标一致。"
               }
             }
           }
@@ -5990,7 +6450,16 @@
                   "dot",
                   "scalarMultiply"
                 ],
-                "default": "transform"
+                "default": "transform",
+                "xOptionLabels": {
+                  "measure": "测量",
+                  "transform": "坐标变换",
+                  "add": "坐标相加",
+                  "subtract": "坐标相减",
+                  "dot": "点积",
+                  "scalarMultiply": "标量乘法"
+                },
+                "description": "选择测量、几何变换或坐标运算；参数和输出含义随模式变化。"
               },
               "pairing": {
                 "title": "坐标配对方式",
@@ -5999,44 +6468,67 @@
                   "strict",
                   "broadcast"
                 ],
-                "default": "strict"
+                "default": "strict",
+                "xOptionLabels": {
+                  "strict": "逐项配对（数量相同）",
+                  "broadcast": "单点广播"
+                },
+                "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。"
               },
               "scalarValue": {
                 "title": "标量值",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xExample": 1.5,
+                "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。"
               },
               "closed": {
                 "title": "闭合路径",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。"
               },
               "offsetX": {
                 "title": "水平偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 10.0,
+                "description": "坐标变换的水平平移量，单位与输入坐标一致。"
               },
               "offsetY": {
                 "title": "垂直偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": -5.0,
+                "description": "坐标变换的垂直平移量，单位与输入坐标一致。"
               },
               "scaleX": {
                 "title": "水平缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "水平缩放系数；1 表示保持原大小。"
               },
               "scaleY": {
                 "title": "垂直缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "垂直缩放系数；1 表示保持原大小。"
               },
               "rotationDegrees": {
                 "title": "旋转角度（度）",
                 "type": "number",
                 "minimum": -360.0,
                 "maximum": 360.0,
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "°",
+                "xExample": 90.0,
+                "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。"
               },
               "pivot": {
                 "title": "旋转中心模式",
@@ -6047,17 +6539,30 @@
                   "first",
                   "custom"
                 ],
-                "default": "origin"
+                "default": "origin",
+                "xOptionLabels": {
+                  "origin": "坐标原点",
+                  "centroid": "点集中心",
+                  "first": "第一个点",
+                  "custom": "自定义坐标"
+                },
+                "description": "选择缩放和旋转所使用的中心。"
               },
               "pivotX": {
                 "title": "旋转中心 X 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 X 坐标，单位与输入坐标一致。"
               },
               "pivotY": {
                 "title": "旋转中心 Y 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 Y 坐标，单位与输入坐标一致。"
               }
             }
           }
@@ -6129,14 +6634,14 @@
           "kind": "operator",
           "operatorId": "communication.tcp.client",
           "params": {
-            "host": "127.0.0.1",
-            "port": 16023,
-            "operation": "exchange",
-            "responseFraming": "newline",
-            "rejectTrailingResponse": true,
-            "responseTimeoutMs": 1000
+            "operation": "exchange"
           },
           "displayName": "exchange",
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "station2-plc-gateway"
+            }
+          },
           "inputPorts": {
             "message": "tcpMessage",
             "text": "string"
@@ -6149,18 +6654,6 @@
           "paramSchema": {
             "type": "object",
             "properties": {
-              "host": {
-                "title": "主机地址",
-                "type": "string",
-                "default": "127.0.0.1"
-              },
-              "port": {
-                "title": "端口",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 65535,
-                "default": 10001
-              },
               "operation": {
                 "title": "操作类型",
                 "type": "string",
@@ -6174,105 +6667,14 @@
                 "title": "发送文本",
                 "type": "string",
                 "default": ""
-              },
-              "textEncoding": {
-                "title": "发送文本编码",
-                "type": "string",
-                "enum": [
-                  "utf-8",
-                  "ascii",
-                  "latin-1",
-                  "hex",
-                  "base64"
-                ],
-                "default": "utf-8"
-              },
-              "appendNewline": {
-                "title": "追加换行",
-                "type": "boolean",
-                "default": false
-              },
-              "rejectTrailingResponse": {
-                "title": "拒绝响应帧后的残留数据",
-                "type": "boolean",
-                "default": false,
-                "description": "单次换行事务中，拒绝同一接收块内多余报文；连接仍按事务关闭。"
-              },
-              "shutdownWrite": {
-                "title": "发送后关闭写入方向",
-                "type": "boolean",
-                "default": false
-              },
-              "connectTimeoutMs": {
-                "title": "连接超时（毫秒）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 60000,
-                "default": 2000
-              },
-              "responseTimeoutMs": {
-                "title": "响应超时（毫秒）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 60000,
-                "default": 2000
-              },
-              "responseFraming": {
-                "title": "响应分帧方式",
-                "type": "string",
-                "enum": [
-                  "newline",
-                  "quoted",
-                  "idle",
-                  "fixedLength"
-                ],
-                "default": "newline"
-              },
-              "expectedBytes": {
-                "title": "预期字节数",
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 16777216,
-                "default": 0
-              },
-              "maxResponseBytes": {
-                "title": "最大响应大小（字节）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 16777216,
-                "default": 1048576
-              },
-              "maxRequestBytes": {
-                "title": "最大发送大小（字节）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 16777216,
-                "default": 1048576
-              },
-              "responseEncoding": {
-                "title": "响应内容编码",
-                "type": "string",
-                "enum": [
-                  "utf-8",
-                  "ascii",
-                  "latin-1",
-                  "hex",
-                  "base64"
-                ],
-                "default": "utf-8"
-              },
-              "responseTextEncoding": {
-                "title": "响应文本编码",
-                "type": "string",
-                "enum": [
-                  "none",
-                  "utf-8",
-                  "ascii",
-                  "latin-1"
-                ],
-                "default": "none"
               }
-            }
+            },
+            "additionalProperties": false,
+            "required": [],
+            "xDeviceActionFields": [
+              "operation",
+              "text"
+            ]
           }
         },
         {
@@ -6809,7 +7211,16 @@
                   "dot",
                   "scalarMultiply"
                 ],
-                "default": "transform"
+                "default": "transform",
+                "xOptionLabels": {
+                  "measure": "测量",
+                  "transform": "坐标变换",
+                  "add": "坐标相加",
+                  "subtract": "坐标相减",
+                  "dot": "点积",
+                  "scalarMultiply": "标量乘法"
+                },
+                "description": "选择测量、几何变换或坐标运算；参数和输出含义随模式变化。"
               },
               "pairing": {
                 "title": "坐标配对方式",
@@ -6818,44 +7229,67 @@
                   "strict",
                   "broadcast"
                 ],
-                "default": "strict"
+                "default": "strict",
+                "xOptionLabels": {
+                  "strict": "逐项配对（数量相同）",
+                  "broadcast": "单点广播"
+                },
+                "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。"
               },
               "scalarValue": {
                 "title": "标量值",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xExample": 1.5,
+                "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。"
               },
               "closed": {
                 "title": "闭合路径",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。"
               },
               "offsetX": {
                 "title": "水平偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 10.0,
+                "description": "坐标变换的水平平移量，单位与输入坐标一致。"
               },
               "offsetY": {
                 "title": "垂直偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": -5.0,
+                "description": "坐标变换的垂直平移量，单位与输入坐标一致。"
               },
               "scaleX": {
                 "title": "水平缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "水平缩放系数；1 表示保持原大小。"
               },
               "scaleY": {
                 "title": "垂直缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "垂直缩放系数；1 表示保持原大小。"
               },
               "rotationDegrees": {
                 "title": "旋转角度（度）",
                 "type": "number",
                 "minimum": -360.0,
                 "maximum": 360.0,
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "°",
+                "xExample": 90.0,
+                "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。"
               },
               "pivot": {
                 "title": "旋转中心模式",
@@ -6866,17 +7300,30 @@
                   "first",
                   "custom"
                 ],
-                "default": "origin"
+                "default": "origin",
+                "xOptionLabels": {
+                  "origin": "坐标原点",
+                  "centroid": "点集中心",
+                  "first": "第一个点",
+                  "custom": "自定义坐标"
+                },
+                "description": "选择缩放和旋转所使用的中心。"
               },
               "pivotX": {
                 "title": "旋转中心 X 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 X 坐标，单位与输入坐标一致。"
               },
               "pivotY": {
                 "title": "旋转中心 Y 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 Y 坐标，单位与输入坐标一致。"
               }
             }
           }
@@ -6927,7 +7374,16 @@
                   "dot",
                   "scalarMultiply"
                 ],
-                "default": "transform"
+                "default": "transform",
+                "xOptionLabels": {
+                  "measure": "测量",
+                  "transform": "坐标变换",
+                  "add": "坐标相加",
+                  "subtract": "坐标相减",
+                  "dot": "点积",
+                  "scalarMultiply": "标量乘法"
+                },
+                "description": "选择测量、几何变换或坐标运算；参数和输出含义随模式变化。"
               },
               "pairing": {
                 "title": "坐标配对方式",
@@ -6936,44 +7392,67 @@
                   "strict",
                   "broadcast"
                 ],
-                "default": "strict"
+                "default": "strict",
+                "xOptionLabels": {
+                  "strict": "逐项配对（数量相同）",
+                  "broadcast": "单点广播"
+                },
+                "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。"
               },
               "scalarValue": {
                 "title": "标量值",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xExample": 1.5,
+                "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。"
               },
               "closed": {
                 "title": "闭合路径",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。"
               },
               "offsetX": {
                 "title": "水平偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 10.0,
+                "description": "坐标变换的水平平移量，单位与输入坐标一致。"
               },
               "offsetY": {
                 "title": "垂直偏移",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": -5.0,
+                "description": "坐标变换的垂直平移量，单位与输入坐标一致。"
               },
               "scaleX": {
                 "title": "水平缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "水平缩放系数；1 表示保持原大小。"
               },
               "scaleY": {
                 "title": "垂直缩放比例",
                 "type": "number",
-                "default": 1.0
+                "default": 1.0,
+                "xUnit": "倍",
+                "xExample": 1.0,
+                "description": "垂直缩放系数；1 表示保持原大小。"
               },
               "rotationDegrees": {
                 "title": "旋转角度（度）",
                 "type": "number",
                 "minimum": -360.0,
                 "maximum": 360.0,
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "°",
+                "xExample": 90.0,
+                "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。"
               },
               "pivot": {
                 "title": "旋转中心模式",
@@ -6984,17 +7463,30 @@
                   "first",
                   "custom"
                 ],
-                "default": "origin"
+                "default": "origin",
+                "xOptionLabels": {
+                  "origin": "坐标原点",
+                  "centroid": "点集中心",
+                  "first": "第一个点",
+                  "custom": "自定义坐标"
+                },
+                "description": "选择缩放和旋转所使用的中心。"
               },
               "pivotX": {
                 "title": "旋转中心 X 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 X 坐标，单位与输入坐标一致。"
               },
               "pivotY": {
                 "title": "旋转中心 Y 坐标",
                 "type": "number",
-                "default": 0.0
+                "default": 0.0,
+                "xUnit": "坐标单位",
+                "xExample": 0.0,
+                "description": "自定义中心的 Y 坐标，单位与输入坐标一致。"
               }
             }
           }
@@ -7066,14 +7558,14 @@
           "kind": "operator",
           "operatorId": "communication.tcp.client",
           "params": {
-            "host": "127.0.0.1",
-            "port": 16021,
-            "operation": "exchange",
-            "responseFraming": "newline",
-            "rejectTrailingResponse": true,
-            "responseTimeoutMs": 1000
+            "operation": "exchange"
           },
           "displayName": "exchange",
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "station2-robot-gateway"
+            }
+          },
           "inputPorts": {
             "message": "tcpMessage",
             "text": "string"
@@ -7086,18 +7578,6 @@
           "paramSchema": {
             "type": "object",
             "properties": {
-              "host": {
-                "title": "主机地址",
-                "type": "string",
-                "default": "127.0.0.1"
-              },
-              "port": {
-                "title": "端口",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 65535,
-                "default": 10001
-              },
               "operation": {
                 "title": "操作类型",
                 "type": "string",
@@ -7111,105 +7591,14 @@
                 "title": "发送文本",
                 "type": "string",
                 "default": ""
-              },
-              "textEncoding": {
-                "title": "发送文本编码",
-                "type": "string",
-                "enum": [
-                  "utf-8",
-                  "ascii",
-                  "latin-1",
-                  "hex",
-                  "base64"
-                ],
-                "default": "utf-8"
-              },
-              "appendNewline": {
-                "title": "追加换行",
-                "type": "boolean",
-                "default": false
-              },
-              "rejectTrailingResponse": {
-                "title": "拒绝响应帧后的残留数据",
-                "type": "boolean",
-                "default": false,
-                "description": "单次换行事务中，拒绝同一接收块内多余报文；连接仍按事务关闭。"
-              },
-              "shutdownWrite": {
-                "title": "发送后关闭写入方向",
-                "type": "boolean",
-                "default": false
-              },
-              "connectTimeoutMs": {
-                "title": "连接超时（毫秒）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 60000,
-                "default": 2000
-              },
-              "responseTimeoutMs": {
-                "title": "响应超时（毫秒）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 60000,
-                "default": 2000
-              },
-              "responseFraming": {
-                "title": "响应分帧方式",
-                "type": "string",
-                "enum": [
-                  "newline",
-                  "quoted",
-                  "idle",
-                  "fixedLength"
-                ],
-                "default": "newline"
-              },
-              "expectedBytes": {
-                "title": "预期字节数",
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 16777216,
-                "default": 0
-              },
-              "maxResponseBytes": {
-                "title": "最大响应大小（字节）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 16777216,
-                "default": 1048576
-              },
-              "maxRequestBytes": {
-                "title": "最大发送大小（字节）",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 16777216,
-                "default": 1048576
-              },
-              "responseEncoding": {
-                "title": "响应内容编码",
-                "type": "string",
-                "enum": [
-                  "utf-8",
-                  "ascii",
-                  "latin-1",
-                  "hex",
-                  "base64"
-                ],
-                "default": "utf-8"
-              },
-              "responseTextEncoding": {
-                "title": "响应文本编码",
-                "type": "string",
-                "enum": [
-                  "none",
-                  "utf-8",
-                  "ascii",
-                  "latin-1"
-                ],
-                "default": "none"
               }
-            }
+            },
+            "additionalProperties": false,
+            "required": [],
+            "xDeviceActionFields": [
+              "operation",
+              "text"
+            ]
           }
         },
         {
@@ -7533,6 +7922,8 @@
           "outputPorts": {
             "detections": "detectionCollection",
             "overlay": "image",
+            "croppedImage": "image",
+            "croppedFrame": "bbox2d",
             "frame": "bbox2d"
           },
           "paramSchema": {
@@ -7551,26 +7942,36 @@
                 "type": "number",
                 "minimum": 0.0,
                 "maximum": 1.0,
-                "default": 0.25
+                "default": 0.25,
+                "xExample": 0.25,
+                "description": "保留置信度不低于此值的检测结果，范围为 0～1。"
               },
               "iou": {
                 "title": "非极大值抑制 IoU 阈值",
                 "type": "number",
                 "minimum": 0.0,
                 "maximum": 1.0,
-                "default": 0.45
+                "default": 0.45,
+                "xExample": 0.45,
+                "description": "非极大值抑制的交并比阈值，范围为 0～1。"
               },
               "imageSize": {
                 "title": "推理图像尺寸",
                 "type": "integer",
                 "minimum": 1,
-                "default": 640
+                "default": 640,
+                "xUnit": "像素",
+                "xExample": 640,
+                "description": "模型输入的目标图像尺寸，填写正整数。"
               },
               "maxDetections": {
                 "title": "最大检测数量",
                 "type": "integer",
                 "minimum": 1,
-                "default": 300
+                "default": 300,
+                "xUnit": "个",
+                "xExample": 300,
+                "description": "单次推理最多保留的检测结果数量。"
               },
               "device": {
                 "title": "推理设备",
@@ -7579,7 +7980,12 @@
                   "auto",
                   "cpu"
                 ],
-                "default": "auto"
+                "default": "auto",
+                "xOptionLabels": {
+                  "auto": "自动（当前使用 CPU）",
+                  "cpu": "CPU"
+                },
+                "description": "当前 ONNX 推理使用 CPU 执行提供程序。"
               },
               "classes": {
                 "title": "检测类别（可选）",
@@ -7589,7 +7995,12 @@
                   "type": "integer",
                   "minimum": 0
                 },
-                "default": []
+                "default": [],
+                "xBlankMeansEmpty": true,
+                "xExample": [
+                  0,
+                  1
+                ]
               },
               "agnosticNms": {
                 "title": "不区分类别的非极大值抑制",
@@ -7600,6 +8011,24 @@
                 "title": "绘制叠加图",
                 "type": "boolean",
                 "default": false
+              },
+              "outputCrop": {
+                "title": "输出裁剪图",
+                "type": "boolean",
+                "default": false,
+                "description": "输出所选检测框内的原始像素和裁剪坐标框；不是分割掩码，也不裁剪叠加图。"
+              },
+              "cropTargetIndex": {
+                "title": "裁剪目标序号（从 1 开始）",
+                "type": "integer",
+                "minimum": 1,
+                "default": 1,
+                "xEnabledWhen": {
+                  "outputCrop": [
+                    true
+                  ]
+                },
+                "description": "按类别过滤、置信度筛选和 NMS 后的有效检测框排序：置信度从高到低，第 1 个最高；同分保留后端顺序。序号仅属于当前图像，超出数量时报错。"
               }
             },
             "required": [
@@ -7735,30 +8164,66 @@
                   "adaptiveMean",
                   "adaptiveGaussian"
                 ],
-                "default": "fixed"
+                "default": "fixed",
+                "xOptionLabels": {
+                  "fixed": "固定阈值",
+                  "otsu": "大津法（自动阈值）",
+                  "triangle": "三角法（自动阈值）",
+                  "adaptiveMean": "自适应均值",
+                  "adaptiveGaussian": "自适应高斯"
+                },
+                "description": "固定模式使用指定阈值；自动模式由图像计算阈值；自适应模式按局部邻域计算阈值。"
               },
               "threshold": {
                 "title": "阈值",
                 "type": "integer",
-                "minimum": 0,
-                "maximum": 255,
-                "default": 127
+                "default": 127,
+                "xMinimum": 0,
+                "xMaximum": 255,
+                "xEnabledWhen": {
+                  "mode": [
+                    "fixed"
+                  ]
+                },
+                "xUnit": "灰度级",
+                "xExample": 127,
+                "description": "仅固定阈值模式生效，填写 0～255 的整数。"
               },
               "invert": {
                 "title": "反向阈值",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "开启后反转二值掩码的前景与背景，输出仍为 0/255。"
               },
               "blockSize": {
                 "title": "自适应邻域大小",
                 "type": "integer",
-                "minimum": 3,
-                "default": 11
+                "default": 11,
+                "xMinimum": 3,
+                "xOdd": true,
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xUnit": "像素",
+                "xExample": 11,
+                "description": "仅自适应模式生效，必须是大于等于 3 的奇数，如 3、5、11。"
               },
               "constant": {
                 "title": "自适应阈值偏移量",
                 "type": "number",
-                "default": 2.0
+                "default": 2.0,
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xUnit": "灰度级",
+                "xExample": 2.0,
+                "description": "仅自适应模式生效，从局部均值或加权均值中减去此有限数值，可为负数或小数。"
               }
             }
           }
@@ -7792,7 +8257,14 @@
                   "ccomp",
                   "tree"
                 ],
-                "default": "tree"
+                "default": "tree",
+                "xOptionLabels": {
+                  "external": "仅外部轮廓",
+                  "list": "全部轮廓（不建层级）",
+                  "ccomp": "两级层级",
+                  "tree": "完整树形层级"
+                },
+                "description": "选择轮廓保留范围及父子层级结构。"
               },
               "approximation": {
                 "title": "轮廓近似方式",
@@ -7801,7 +8273,12 @@
                   "none",
                   "simple"
                 ],
-                "default": "simple"
+                "default": "simple",
+                "xOptionLabels": {
+                  "none": "保留全部轮廓点",
+                  "simple": "压缩直线段"
+                },
+                "description": "压缩直线段可减少轮廓点；保留全部点适合需要逐点信息的处理。"
               }
             }
           }
@@ -8194,6 +8671,8 @@
           "outputPorts": {
             "detections": "detectionCollection",
             "overlay": "image",
+            "croppedImage": "image",
+            "croppedFrame": "bbox2d",
             "frame": "bbox2d"
           },
           "paramSchema": {
@@ -8212,26 +8691,36 @@
                 "type": "number",
                 "minimum": 0.0,
                 "maximum": 1.0,
-                "default": 0.25
+                "default": 0.25,
+                "xExample": 0.25,
+                "description": "保留置信度不低于此值的检测结果，范围为 0～1。"
               },
               "iou": {
                 "title": "非极大值抑制 IoU 阈值",
                 "type": "number",
                 "minimum": 0.0,
                 "maximum": 1.0,
-                "default": 0.45
+                "default": 0.45,
+                "xExample": 0.45,
+                "description": "非极大值抑制的交并比阈值，范围为 0～1。"
               },
               "imageSize": {
                 "title": "推理图像尺寸",
                 "type": "integer",
                 "minimum": 1,
-                "default": 640
+                "default": 640,
+                "xUnit": "像素",
+                "xExample": 640,
+                "description": "模型输入的目标图像尺寸，填写正整数。"
               },
               "maxDetections": {
                 "title": "最大检测数量",
                 "type": "integer",
                 "minimum": 1,
-                "default": 300
+                "default": 300,
+                "xUnit": "个",
+                "xExample": 300,
+                "description": "单次推理最多保留的检测结果数量。"
               },
               "device": {
                 "title": "推理设备",
@@ -8240,7 +8729,12 @@
                   "auto",
                   "cpu"
                 ],
-                "default": "auto"
+                "default": "auto",
+                "xOptionLabels": {
+                  "auto": "自动（当前使用 CPU）",
+                  "cpu": "CPU"
+                },
+                "description": "当前 ONNX 推理使用 CPU 执行提供程序。"
               },
               "classes": {
                 "title": "检测类别（可选）",
@@ -8250,7 +8744,12 @@
                   "type": "integer",
                   "minimum": 0
                 },
-                "default": []
+                "default": [],
+                "xBlankMeansEmpty": true,
+                "xExample": [
+                  0,
+                  1
+                ]
               },
               "agnosticNms": {
                 "title": "不区分类别的非极大值抑制",
@@ -8261,6 +8760,24 @@
                 "title": "绘制叠加图",
                 "type": "boolean",
                 "default": false
+              },
+              "outputCrop": {
+                "title": "输出裁剪图",
+                "type": "boolean",
+                "default": false,
+                "description": "输出所选检测框内的原始像素和裁剪坐标框；不是分割掩码，也不裁剪叠加图。"
+              },
+              "cropTargetIndex": {
+                "title": "裁剪目标序号（从 1 开始）",
+                "type": "integer",
+                "minimum": 1,
+                "default": 1,
+                "xEnabledWhen": {
+                  "outputCrop": [
+                    true
+                  ]
+                },
+                "description": "按类别过滤、置信度筛选和 NMS 后的有效检测框排序：置信度从高到低，第 1 个最高；同分保留后端顺序。序号仅属于当前图像，超出数量时报错。"
               }
             },
             "required": [
@@ -8396,30 +8913,66 @@
                   "adaptiveMean",
                   "adaptiveGaussian"
                 ],
-                "default": "fixed"
+                "default": "fixed",
+                "xOptionLabels": {
+                  "fixed": "固定阈值",
+                  "otsu": "大津法（自动阈值）",
+                  "triangle": "三角法（自动阈值）",
+                  "adaptiveMean": "自适应均值",
+                  "adaptiveGaussian": "自适应高斯"
+                },
+                "description": "固定模式使用指定阈值；自动模式由图像计算阈值；自适应模式按局部邻域计算阈值。"
               },
               "threshold": {
                 "title": "阈值",
                 "type": "integer",
-                "minimum": 0,
-                "maximum": 255,
-                "default": 127
+                "default": 127,
+                "xMinimum": 0,
+                "xMaximum": 255,
+                "xEnabledWhen": {
+                  "mode": [
+                    "fixed"
+                  ]
+                },
+                "xUnit": "灰度级",
+                "xExample": 127,
+                "description": "仅固定阈值模式生效，填写 0～255 的整数。"
               },
               "invert": {
                 "title": "反向阈值",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "开启后反转二值掩码的前景与背景，输出仍为 0/255。"
               },
               "blockSize": {
                 "title": "自适应邻域大小",
                 "type": "integer",
-                "minimum": 3,
-                "default": 11
+                "default": 11,
+                "xMinimum": 3,
+                "xOdd": true,
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xUnit": "像素",
+                "xExample": 11,
+                "description": "仅自适应模式生效，必须是大于等于 3 的奇数，如 3、5、11。"
               },
               "constant": {
                 "title": "自适应阈值偏移量",
                 "type": "number",
-                "default": 2.0
+                "default": 2.0,
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xUnit": "灰度级",
+                "xExample": 2.0,
+                "description": "仅自适应模式生效，从局部均值或加权均值中减去此有限数值，可为负数或小数。"
               }
             }
           }
@@ -8453,7 +9006,14 @@
                   "ccomp",
                   "tree"
                 ],
-                "default": "tree"
+                "default": "tree",
+                "xOptionLabels": {
+                  "external": "仅外部轮廓",
+                  "list": "全部轮廓（不建层级）",
+                  "ccomp": "两级层级",
+                  "tree": "完整树形层级"
+                },
+                "description": "选择轮廓保留范围及父子层级结构。"
               },
               "approximation": {
                 "title": "轮廓近似方式",
@@ -8462,7 +9022,12 @@
                   "none",
                   "simple"
                 ],
-                "default": "simple"
+                "default": "simple",
+                "xOptionLabels": {
+                  "none": "保留全部轮廓点",
+                  "simple": "压缩直线段"
+                },
+                "description": "压缩直线段可减少轮廓点；保留全部点适合需要逐点信息的处理。"
               }
             }
           }
@@ -8854,6 +9419,8 @@
           "outputPorts": {
             "detections": "detectionCollection",
             "overlay": "image",
+            "croppedImage": "image",
+            "croppedFrame": "bbox2d",
             "frame": "bbox2d"
           },
           "paramSchema": {
@@ -8872,26 +9439,36 @@
                 "type": "number",
                 "minimum": 0.0,
                 "maximum": 1.0,
-                "default": 0.25
+                "default": 0.25,
+                "xExample": 0.25,
+                "description": "保留置信度不低于此值的检测结果，范围为 0～1。"
               },
               "iou": {
                 "title": "非极大值抑制 IoU 阈值",
                 "type": "number",
                 "minimum": 0.0,
                 "maximum": 1.0,
-                "default": 0.45
+                "default": 0.45,
+                "xExample": 0.45,
+                "description": "非极大值抑制的交并比阈值，范围为 0～1。"
               },
               "imageSize": {
                 "title": "推理图像尺寸",
                 "type": "integer",
                 "minimum": 1,
-                "default": 640
+                "default": 640,
+                "xUnit": "像素",
+                "xExample": 640,
+                "description": "模型输入的目标图像尺寸，填写正整数。"
               },
               "maxDetections": {
                 "title": "最大检测数量",
                 "type": "integer",
                 "minimum": 1,
-                "default": 300
+                "default": 300,
+                "xUnit": "个",
+                "xExample": 300,
+                "description": "单次推理最多保留的检测结果数量。"
               },
               "device": {
                 "title": "推理设备",
@@ -8900,7 +9477,12 @@
                   "auto",
                   "cpu"
                 ],
-                "default": "auto"
+                "default": "auto",
+                "xOptionLabels": {
+                  "auto": "自动（当前使用 CPU）",
+                  "cpu": "CPU"
+                },
+                "description": "当前 ONNX 推理使用 CPU 执行提供程序。"
               },
               "classes": {
                 "title": "检测类别（可选）",
@@ -8910,7 +9492,12 @@
                   "type": "integer",
                   "minimum": 0
                 },
-                "default": []
+                "default": [],
+                "xBlankMeansEmpty": true,
+                "xExample": [
+                  0,
+                  1
+                ]
               },
               "agnosticNms": {
                 "title": "不区分类别的非极大值抑制",
@@ -8921,6 +9508,24 @@
                 "title": "绘制叠加图",
                 "type": "boolean",
                 "default": false
+              },
+              "outputCrop": {
+                "title": "输出裁剪图",
+                "type": "boolean",
+                "default": false,
+                "description": "输出所选检测框内的原始像素和裁剪坐标框；不是分割掩码，也不裁剪叠加图。"
+              },
+              "cropTargetIndex": {
+                "title": "裁剪目标序号（从 1 开始）",
+                "type": "integer",
+                "minimum": 1,
+                "default": 1,
+                "xEnabledWhen": {
+                  "outputCrop": [
+                    true
+                  ]
+                },
+                "description": "按类别过滤、置信度筛选和 NMS 后的有效检测框排序：置信度从高到低，第 1 个最高；同分保留后端顺序。序号仅属于当前图像，超出数量时报错。"
               }
             },
             "required": [
@@ -9056,30 +9661,66 @@
                   "adaptiveMean",
                   "adaptiveGaussian"
                 ],
-                "default": "fixed"
+                "default": "fixed",
+                "xOptionLabels": {
+                  "fixed": "固定阈值",
+                  "otsu": "大津法（自动阈值）",
+                  "triangle": "三角法（自动阈值）",
+                  "adaptiveMean": "自适应均值",
+                  "adaptiveGaussian": "自适应高斯"
+                },
+                "description": "固定模式使用指定阈值；自动模式由图像计算阈值；自适应模式按局部邻域计算阈值。"
               },
               "threshold": {
                 "title": "阈值",
                 "type": "integer",
-                "minimum": 0,
-                "maximum": 255,
-                "default": 127
+                "default": 127,
+                "xMinimum": 0,
+                "xMaximum": 255,
+                "xEnabledWhen": {
+                  "mode": [
+                    "fixed"
+                  ]
+                },
+                "xUnit": "灰度级",
+                "xExample": 127,
+                "description": "仅固定阈值模式生效，填写 0～255 的整数。"
               },
               "invert": {
                 "title": "反向阈值",
                 "type": "boolean",
-                "default": false
+                "default": false,
+                "description": "开启后反转二值掩码的前景与背景，输出仍为 0/255。"
               },
               "blockSize": {
                 "title": "自适应邻域大小",
                 "type": "integer",
-                "minimum": 3,
-                "default": 11
+                "default": 11,
+                "xMinimum": 3,
+                "xOdd": true,
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xUnit": "像素",
+                "xExample": 11,
+                "description": "仅自适应模式生效，必须是大于等于 3 的奇数，如 3、5、11。"
               },
               "constant": {
                 "title": "自适应阈值偏移量",
                 "type": "number",
-                "default": 2.0
+                "default": 2.0,
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xUnit": "灰度级",
+                "xExample": 2.0,
+                "description": "仅自适应模式生效，从局部均值或加权均值中减去此有限数值，可为负数或小数。"
               }
             }
           }
@@ -9113,7 +9754,14 @@
                   "ccomp",
                   "tree"
                 ],
-                "default": "tree"
+                "default": "tree",
+                "xOptionLabels": {
+                  "external": "仅外部轮廓",
+                  "list": "全部轮廓（不建层级）",
+                  "ccomp": "两级层级",
+                  "tree": "完整树形层级"
+                },
+                "description": "选择轮廓保留范围及父子层级结构。"
               },
               "approximation": {
                 "title": "轮廓近似方式",
@@ -9122,7 +9770,12 @@
                   "none",
                   "simple"
                 ],
-                "default": "simple"
+                "default": "simple",
+                "xOptionLabels": {
+                  "none": "保留全部轮廓点",
+                  "simple": "压缩直线段"
+                },
+                "description": "压缩直线段可减少轮廓点；保留全部点适合需要逐点信息的处理。"
               }
             }
           }
@@ -9529,6 +10182,262 @@
             "x": 580,
             "y": 80
           }
+        }
+      }
+    }
+  },
+  "devices": {
+    "schemaVersion": "1.0",
+    "bindings": {},
+    "definitions": {
+      "station1-camera": {
+        "name": "工位 1 相机",
+        "deviceTypeId": "device.camera.huaray_imv",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "cameraKey": "fixture-camera-1",
+          "maxFrameBytes": 57600
+        },
+        "defaults": {
+          "triggerMode": "hardware",
+          "captureTimeoutMs": 0,
+          "sequencePolicy": "contiguous",
+          "exposureMode": "keep",
+          "gainMode": "keep",
+          "triggerSource": "Line1",
+          "triggerActivation": "RisingEdge",
+          "outputColor": "bgr",
+          "demosaic": "bilinear",
+          "exposureUs": 10000.0,
+          "gainRaw": 0.0,
+          "frameRateMode": "keep",
+          "frameRate": 30.0,
+          "roiMode": "keep",
+          "width": 1920,
+          "height": 1080,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pixelFormat": "keep"
+        },
+        "policies": {
+          "release": "when_unused",
+          "connect": "on_first_use",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 15000
+        }
+      },
+      "station1-plc": {
+        "name": "工位 1 PLC",
+        "deviceTypeId": "device.plc.mitsubishi_slmp",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "host": "127.0.0.1",
+          "port": 15001,
+          "frameEncoding": "binary",
+          "connectTimeoutMs": 2000,
+          "responseTimeoutMs": 2000,
+          "networkNo": 0,
+          "pcNo": 255,
+          "moduleIoNo": 1023,
+          "moduleStationNo": 0,
+          "monitoringTimer": 0
+        },
+        "defaults": {},
+        "policies": {
+          "connectionRetryCount": 0,
+          "recoveryTimeoutMs": 5000,
+          "recoveryBackoffMs": 100,
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "station1-plc-gateway": {
+        "name": "工位 1 plc 网关",
+        "deviceTypeId": "device.tcp.client_once",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "host": "127.0.0.1",
+          "port": 16013
+        },
+        "defaults": {
+          "responseFraming": "newline",
+          "rejectTrailingResponse": true,
+          "responseTimeoutMs": 1000,
+          "textEncoding": "utf-8",
+          "appendNewline": false,
+          "shutdownWrite": false,
+          "connectTimeoutMs": 2000,
+          "expectedBytes": 0,
+          "maxResponseBytes": 1048576,
+          "maxRequestBytes": 1048576,
+          "responseEncoding": "utf-8",
+          "responseTextEncoding": "none"
+        },
+        "policies": {
+          "deviceWaitTimeoutMs": 5000
+        }
+      },
+      "station1-robot-gateway": {
+        "name": "工位 1 robot 网关",
+        "deviceTypeId": "device.tcp.client_once",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "host": "127.0.0.1",
+          "port": 16011
+        },
+        "defaults": {
+          "responseFraming": "newline",
+          "rejectTrailingResponse": true,
+          "responseTimeoutMs": 1000,
+          "textEncoding": "utf-8",
+          "appendNewline": false,
+          "shutdownWrite": false,
+          "connectTimeoutMs": 2000,
+          "expectedBytes": 0,
+          "maxResponseBytes": 1048576,
+          "maxRequestBytes": 1048576,
+          "responseEncoding": "utf-8",
+          "responseTextEncoding": "none"
+        },
+        "policies": {
+          "deviceWaitTimeoutMs": 5000
+        }
+      },
+      "station2-camera": {
+        "name": "工位 2 相机",
+        "deviceTypeId": "device.camera.huaray_imv",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "cameraKey": "fixture-camera-2",
+          "maxFrameBytes": 57600
+        },
+        "defaults": {
+          "triggerMode": "hardware",
+          "captureTimeoutMs": 0,
+          "sequencePolicy": "contiguous",
+          "exposureMode": "keep",
+          "gainMode": "keep",
+          "triggerSource": "Line1",
+          "triggerActivation": "RisingEdge",
+          "outputColor": "bgr",
+          "demosaic": "bilinear",
+          "exposureUs": 10000.0,
+          "gainRaw": 0.0,
+          "frameRateMode": "keep",
+          "frameRate": 30.0,
+          "roiMode": "keep",
+          "width": 1920,
+          "height": 1080,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pixelFormat": "keep"
+        },
+        "policies": {
+          "release": "when_unused",
+          "connect": "on_first_use",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 15000
+        }
+      },
+      "station2-plc": {
+        "name": "工位 2 PLC",
+        "deviceTypeId": "device.plc.mitsubishi_slmp",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "host": "127.0.0.1",
+          "port": 15002,
+          "frameEncoding": "binary",
+          "connectTimeoutMs": 2000,
+          "responseTimeoutMs": 2000,
+          "networkNo": 0,
+          "pcNo": 255,
+          "moduleIoNo": 1023,
+          "moduleStationNo": 0,
+          "monitoringTimer": 0
+        },
+        "defaults": {},
+        "policies": {
+          "connectionRetryCount": 0,
+          "recoveryTimeoutMs": 5000,
+          "recoveryBackoffMs": 100,
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "station2-plc-gateway": {
+        "name": "工位 2 plc 网关",
+        "deviceTypeId": "device.tcp.client_once",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "host": "127.0.0.1",
+          "port": 16023
+        },
+        "defaults": {
+          "responseFraming": "newline",
+          "rejectTrailingResponse": true,
+          "responseTimeoutMs": 1000,
+          "textEncoding": "utf-8",
+          "appendNewline": false,
+          "shutdownWrite": false,
+          "connectTimeoutMs": 2000,
+          "expectedBytes": 0,
+          "maxResponseBytes": 1048576,
+          "maxRequestBytes": 1048576,
+          "responseEncoding": "utf-8",
+          "responseTextEncoding": "none"
+        },
+        "policies": {
+          "deviceWaitTimeoutMs": 5000
+        }
+      },
+      "station2-robot-gateway": {
+        "name": "工位 2 robot 网关",
+        "deviceTypeId": "device.tcp.client_once",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "host": "127.0.0.1",
+          "port": 16021
+        },
+        "defaults": {
+          "responseFraming": "newline",
+          "rejectTrailingResponse": true,
+          "responseTimeoutMs": 1000,
+          "textEncoding": "utf-8",
+          "appendNewline": false,
+          "shutdownWrite": false,
+          "connectTimeoutMs": 2000,
+          "expectedBytes": 0,
+          "maxResponseBytes": 1048576,
+          "maxRequestBytes": 1048576,
+          "responseEncoding": "utf-8",
+          "responseTextEncoding": "none"
+        },
+        "policies": {
+          "deviceWaitTimeoutMs": 5000
         }
       }
     }

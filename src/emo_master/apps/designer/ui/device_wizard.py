@@ -6,7 +6,8 @@ from uuid import uuid4
 from PySide2.QtCore import QTimer, Qt
 from PySide2.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit,
-    QDialogButtonBox, QTabWidget, QScrollArea, QWidget, QComboBox, QPushButton, QMessageBox, QCheckBox,
+    QDialogButtonBox, QTabWidget, QScrollArea, QSplitter, QTableWidget, QWidget,
+    QComboBox, QPushButton, QMessageBox, QCheckBox,
 )
 
 from emo_master.apps.designer.state.device_catalog import (DeviceCatalogEditor, changeParameterSource,
@@ -66,6 +67,51 @@ def _showControlTab(tabs, control):
                 break
 
 
+def _revealDeviceError(tabs, control):
+    """Reveal the field, not only its focus, in nested device editor viewports."""
+    _showControlTab(tabs, control)
+    child = control
+    parent = child.parentWidget()
+    while parent is not None:
+        if isinstance(parent, QSplitter) and parent.orientation() == Qt.Vertical:
+            index = parent.indexOf(child)
+            sizes = parent.sizes()
+            if index >= 0 and len(sizes) == 2:
+                total = sum(sizes)
+                sizes[index] = max(sizes[index], total * 4 // 5)
+                sizes[1 - index] = total - sizes[index]
+                parent.setSizes(sizes)
+        child, parent = parent, parent.parentWidget()
+    control.setFocus(Qt.OtherFocusReason)
+
+    def ensureVisible():
+        if isinstance(control, QTableWidget) and control.currentItem() is not None:
+            control.scrollToItem(control.currentItem())
+        parent = control.parentWidget()
+        while parent is not None:
+            if isinstance(parent, QScrollArea):
+                if isinstance(control, QTableWidget) and control.currentItem() is not None:
+                    # The whole table can be taller than the outer viewport.
+                    # Reveal the selected cell rather than the table's centre.
+                    rect = control.visualItemRect(control.currentItem())
+                    point = control.viewport().mapTo(parent.widget(), rect.center())
+                    parent.ensureVisible(point.x(), point.y(),
+                        rect.width() // 2 + 8, rect.height() // 2 + 8)
+                else:
+                    parent.ensureWidgetVisible(control)
+            parent = parent.parentWidget()
+
+    ensureVisible()
+    # A newly visible tab, expanded advanced fields and the error label can
+    # change layout on the next event turn. Parent ownership cancels this work
+    # if the editor is closed/rebuilt before then.
+    timer = QTimer(control)
+    timer.setSingleShot(True)
+    timer.timeout.connect(ensureVisible)
+    timer.timeout.connect(timer.deleteLater)
+    timer.start(0)
+
+
 def validateDeviceDefinition(declaration, nameControl, forms, tabs=None, *, base=None):
     """Validate editor fields before core validation, retaining existing metadata."""
     name = nameControl.text().strip()
@@ -73,14 +119,14 @@ def validateDeviceDefinition(declaration, nameControl, forms, tabs=None, *, base
     nameControl.setAccessibleDescription(message)
     nameControl.setStyleSheet('border: 1px solid #d93025;' if message else '')
     if message:
-        _showControlTab(tabs, nameControl)
-        nameControl.setFocus(Qt.OtherFocusReason)
+        _revealDeviceError(tabs, nameControl)
         raise ValueError(message)
     for form in forms.values():
         message = form.validationMessage()
         if message:
             _showControlTab(tabs, form)
             form.validationMessage()  # Focus the invalid control after revealing its tab.
+            _revealDeviceError(tabs, deviceErrorControl(nameControl, forms, message) or form)
             raise ValueError(message)
     payload = deepcopy(base) if base is not None else dict(
         deviceTypeId=declaration.deviceTypeId, driverVersion=declaration.version)
@@ -90,6 +136,7 @@ def validateDeviceDefinition(declaration, nameControl, forms, tabs=None, *, base
         form = forms['connection']
         _showControlTab(tabs, form)
         form.showChannelError('请添加至少一个客户端通道')
+        _revealDeviceError(tabs, form.channels.table)
         raise ValueError('请添加至少一个客户端通道')
     try:
         return declaration.validateDefinition(DeviceDefinition.model_validate(payload)).model_dump()
@@ -99,6 +146,7 @@ def validateDeviceDefinition(declaration, nameControl, forms, tabs=None, *, base
             form = forms['policies']
             _showControlTab(tabs, form)
             form._showFieldError('release', message)
+            _revealDeviceError(tabs, form._controls['release'])
             raise ValueError(message) from error
         from emo_master.core.workflow.errors import locatedValidationError
         raise locatedValidationError(error, 'E_DEVICE_DEFINITION') from error

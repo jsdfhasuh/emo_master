@@ -351,7 +351,8 @@ def testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages(
     waitFor(lambda: service.jobRepository.get(jobId).status == 'RUNNING', seconds=45)
     waitFor(lambda: any(event.nodeId == 'blur' and event.eventType == 'node.completed'
         for event in service.eventStore.read(jobId)), seconds=30)
-    assert len(calls) == 1 and calls[0][0] == (service.loadedProjectId,) and calls[0][1]['workflowId'] == 'run'
+    assert len(calls) == 1 and calls[0][0] == (service.loadedProjectFile,) and calls[0][1]['workflowId'] == 'run'
+    assert service.jobRepository.get(jobId).projectId == service.loadedProjectId
     assert len(service.jobRepository.all()) == 1
     draft, disk = c.session.payload(), path.read_bytes()
     c.showPages()
@@ -423,8 +424,9 @@ def testRunAndImagesUseOnlineIdentityWhenLocalFileDiffers(
     waitFor(lambda: coordinator.imagePacket is not None, seconds=15)
     assert coordinator.imagePacket['source'].originJobId == jobId
     assert not coordinator.image.isNull()
-    assert calls[0][0] == (service.loadedProjectId,) and len(calls) == 1
-    assert coordinator.images.projectId == service.loadedProjectId
+    assert calls[0][0] == (snapshot['sourcePath'],) and len(calls) == 1
+    assert service.jobRepository.get(jobId).projectId == service.loadedProjectId
+    assert coordinator.images.projectId == service.loadedProjectFile
     assert len(service.jobRepository.all()) == 1
     assert client.getOnlineProjectSnapshot()['documentRevision'] == snapshot['documentRevision']
     assert window.loadedProjectPath == str(path)

@@ -617,8 +617,13 @@ def testUpgradedDraftResourceFailureCanBeFixedAndRevalidated(ownedDesignerWindow
         dialog.upgradeButton.click()
         waitUntil(lambda: dialog.pending is None)
         assert window.pageCoordinator.session.document().schemaVersion == '2.6'
-        assert len(messages) == 1 and 'main/load/imagePath' in messages[0]['detail']
+        assert len(messages) == 1
+        details, _ = json.JSONDecoder().raw_decode(messages[0]['detail'][messages[0]['detail'].index('{'):])
+        assert any(issue['workflowId'] == 'main' and issue['nodeId'] == 'load'
+                   and issue['fieldPath'] == 'params.imagePath' for issue in details['issues'])
         assert 'input file not found' in messages[0]['text'] and not dialog.initialValidated
+        assert dialog.diagnosticEntries[0]['target'] == 'node'
+        assert dialog.diagnosticEntries[0]['nodeId'] == 'load'
         window.flowModel.nodes['load'].params['imagePath'] = 'input.png'
         window.pageCoordinator.sync()
         dialog.validateButton.click()

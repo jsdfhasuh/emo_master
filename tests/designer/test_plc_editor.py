@@ -33,7 +33,7 @@ from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.plugins.builtins._plc_editor import PlcEditorController, _Cancellation
 from emo_master.apps.designer.ui.plc_presentation import ADVANCED_FIELDS, NUMBER_TYPES, plcSchema
 from tests.runtime.plc_debug_server import BlockResponse, PlcDebugServer
-from tests.runtime.test_builtin_communication_operator_workflows import _project as plcProject
+from tests.core.project.test_devices import legacyPayload
 
 
 _ROOT = Path(__file__).resolve().parents[2] / "src/emo_master/plugins/builtins"
@@ -260,7 +260,9 @@ def embeddedPlcRuntime(tmp_path):
     try:
         directory = tmp_path / "project"
         directory.mkdir()
-        (directory / "project.json").write_text(plcProject(10001).model_dump_json(), encoding="utf-8")
+        # These tests exercise the explicit unsaved PLC diagnostic transport,
+        # not a compiled workflow with a managed PLC device binding.
+        (directory / "project.json").write_text(json.dumps(legacyPayload()), encoding="utf-8")
         loaded = runtime.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
         assert loaded.ok, loaded.message
         yield runtime, client

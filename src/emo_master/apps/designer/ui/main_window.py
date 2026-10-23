@@ -1349,7 +1349,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             applyRuntimeEventToNode=self.applyRuntimeEventToNode,
             setCurrentJobId=self._setCurrentJobId,
             setIsJobRunning=self._setIsJobRunning,
-            getLoadedProjectPath=self._runtimeProjectReference,
+            getLoadedProjectPath=lambda: self.loadedProjectPath,
+            getRunProjectReference=self._runtimeProjectReference,
             getCurrentJobId=lambda: self.currentJobId,
             getActiveWorkflowId=lambda: self.activeWorkflowId,
             getEntryWorkflowId=lambda: self.workflowStore.entryWorkflowId,
@@ -1552,7 +1553,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         except (OSError, ValueError) as error:
             QMessageBox.warning(self, "新建项目失败", str(error))
             return
-        self.loadProjectDirectory(selected, confirmed=True)
+        if not self.loadProjectDirectory(selected, confirmed=True):
+            QMessageBox.warning(
+                self, "新建项目未打开",
+                f"文件已创建并保留：{selected}\n当前工程未替换。\n"
+                + (self.projectController.lastLoadError or "打开操作未完成，请检查当前运行或编辑状态。"),
+            )
 
     def saveProjectAsAction(self) -> None:
         if self.isJobRunning:
@@ -3446,7 +3452,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if self.loadedProjectPath is None:
             self.appendRuntimeLog("WARN", "尚未加载项目")
             return
-        reply = self.runtimeClient.validateProject(self.loadedProjectPath)
+        try:
+            reply = self.runtimeClient.validateProject(self._runtimeProjectReference())
+        except Exception as error:
+            self.appendRuntimeLog("ERROR", f"项目校验失败：{error}")
+            return
         if getattr(reply, "ok", False):
             self.appendRuntimeLog("INFO", "项目校验通过")
             self.updateToolbarState()
@@ -3572,14 +3582,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def stopJob(self) -> None:
         self.runtimeController.stopJob()
 
-    def _runtimeProjectReference(self) -> str | None:
-        # Online configurations may live at a Runtime-managed path, not the
-        # Designer file. Their logical identity is checked by run preflight.
-        if (self.loadedProjectPath is not None and self.pageCoordinator is not None
-                and self.pageCoordinator.session.document().schemaVersion in {'2.6', '2.7'}):
-            return self._currentProjectId()
-        return self.loadedProjectPath
-
     def _syncRuntimeProjectBeforeRun(self) -> bool:
         if self.hasActiveDebugSession():
             self.appendRuntimeLog("WARN", "请先结束当前调试，再启动正式运行")
@@ -3612,6 +3614,16 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             successMessagePrefix="项目已同步",
             failedMessagePrefix="项目同步失败",
         )
+
+    def _runtimeProjectReference(self) -> str | None:
+        if self.pageCoordinator is not None:
+            document = self.pageCoordinator.session.document()
+            if document.schemaVersion in {"2.6", "2.7"}:
+                # The committed Runtime copy may be managed remotely and need
+                # not share the local file path. UUID mismatch remains an error.
+                snapshot = self.runtimeClient.getOnlineProjectSnapshot(document.project.projectId)
+                return str(snapshot["sourcePath"])
+        return self.loadedProjectPath
 
     def refreshOperators(self, *, explicit: bool = True) -> None:
         if self._operatorDisplayClosed:

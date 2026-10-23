@@ -6,7 +6,6 @@ import shutil
 import tempfile
 from pathlib import Path
 from typing import cast
-from uuid import uuid4
 
 from emo_master.core.project.migration import migrateProjectPayload, utc_now_iso
 from emo_master.core.project.models import ProjectDocument
@@ -59,41 +58,14 @@ def createProjectSkeleton(projectDir: Path, projectName: str) -> None:
 
     if projectFile.exists():
         return
-    now = utc_now_iso()
-    payload: dict[str, object] = {
-        "schemaVersion": "2.1",
-        "project": {
-            "projectId": str(uuid4()),
-            "name": projectName,
-            "revision": 1,
-            "createdAt": now,
-            "updatedAt": now,
-        },
-        "entryWorkflowId": "main",
-        "workflowOrder": ["main"],
-        "workflows": {
-            "main": {
-                "name": "Main",
-                "inputs": {},
-                "outputs": {},
-                "nodes": [
-                    {"nodeId": "__workflow_input__", "kind": "workflow_input"},
-                    {"nodeId": "__workflow_output__", "kind": "workflow_output"},
-                ],
-                "edges": [],
-                "layout": {"nodePositions": {}},
-            }
-        },
-        "runtime": {
-            "maxConcurrentJobs": 2,
-            "gracefulStopTimeoutMs": 5000,
-            "heartbeatTimeoutMs": 5000,
-            "eventRetentionPerJob": 10000,
-        },
-        "dependencies": {"operators": []},
-        "devices": {"bindings": {}},
-    }
-    _writeProjectFile(projectFile, payload, backup=False)
+    # Use the same complete current-format blank document as the editor.
+    from emo_master.apps.designer.state.workflow_store import WorkflowStore
+
+    store = WorkflowStore()
+    store.project["name"] = projectName
+    payload = store.toPayload()
+    payload["project"] = dict(store.project)
+    saveProject(projectFile, payload)
 
 
 def saveProject(projectDir: Path, payload: dict[str, object]) -> None:

@@ -129,7 +129,14 @@ def testWorkflowProjectAndRuntimeSessionRebindConsumers():
         oldScope = provider.scope
         client.runtimeScope = "reconnected"
         waitUntil(lambda: provider.scope != oldScope)
-        waitUntil(lambda: item._operatorIconSource == "custom")
+        # Catalog invalidation can replace scene items as presentation metadata
+        # disappears and returns. Observe the live consumer, not its retired item.
+        waitUntil(lambda: window.flowScene._nodeItems[nodeId]._operatorIconSource == "custom")
+        current = window.flowScene._nodeItems[nodeId]
+        binding = provider._bindings[provider._targets[id(current)]]
+        assert binding.context == (window._projectInstanceToken, "main", nodeId)
+        if current is not item:
+            assert id(item) not in provider._targets
         assert provider.scope == "reconnected" and client.calls == 2
         assert all(binding.request is None or binding.request.scope == "reconnected" for binding in provider._bindings.values())
     finally:

@@ -5,7 +5,7 @@ import emo_master  # noqa: F401 - initialize Windows DLL order before Qt/OpenCV.
 import cv2
 import numpy as np
 import pytest
-from PySide2.QtCore import Qt, QPoint, QEvent
+from PySide2.QtCore import Qt, QPoint, QEvent, QSettings
 from PySide2.QtGui import QPixmap, QWheelEvent
 from PySide2.QtTest import QTest
 
@@ -203,7 +203,9 @@ def testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs(tmp_path, designer
             height=shape[0], width=shape[1])
     with running(tmp_path, factory=autonomousLoopProject, configure=configure) as (runtime, client, project, extra):
         client.inspectionSession('close', project, extra)
-        window = ownedDesignerWindow(client)
+        # Keep this visual test independent of saved application preferences.
+        settings = QSettings(str(tmp_path / 'live-node-settings.ini'), QSettings.IniFormat)
+        window = ownedDesignerWindow(client, settingsStore=settings)
         window.resize(1360, 850)
         window.show()
         try:
@@ -233,7 +235,13 @@ def testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs(tmp_path, designer
 
             def firstDisplayedInvocation():
                 packet = coordinator.imagePacket
-                if packet is None or not panel.image.firstImagePaintNs:
+                if packet is None:
+                    return None
+                if not panel.image.firstImagePaintNs:
+                    # On the offscreen 800x600 screen the normal nested scroll
+                    # surfaces can clip the image. Expose it before requiring paint.
+                    panel.imagePage.ensureWidgetVisible(panel.image)
+                    coordinator.panelScroll.ensureWidgetVisible(panel.image)
                     return None
                 # Read the four tabs and pixels before processing another Qt event.
                 displayedCount = int(panel.values.toPlainText().split('count = ')[1].split()[0])
@@ -244,7 +252,25 @@ def testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs(tmp_path, designer
                 assert packet['source'].nodeRunId == coordinator.imageSelection[3]
                 return packet
 
-            firstPacket = wait(designerApplication, firstDisplayedInvocation, timeout=20)
+            try:
+                firstPacket = wait(designerApplication, firstDisplayedInvocation, timeout=20)
+            except AssertionError:
+                print('LIVE_NODE_FIRST_PAINT', {
+                    'job': window.currentJobId, 'message': window.runtimePanelState.lastMessage,
+                    'workflow': window.activeWorkflowId, 'node': window.flowModel.selectedNodeId,
+                    'packet': coordinator.imagePacket is not None,
+                    'visible': panel.image.isVisible(), 'painted': panel.image.firstImagePaintNs,
+                    'region': panel.image.visibleRegion().boundingRect().getRect(),
+                    'geometry': panel.image.geometry().getRect(),
+                    'windowGeometry': window.geometry().getRect(),
+                    'updatesEnabled': panel.image.updatesEnabled(),
+                    'windowExposed': window.windowHandle().isExposed(),
+                    'font': designerApplication.font().toString(),
+                    'imageNotice': coordinator.images.message,
+                    'values': panel.values.toPlainText(),
+                    'logs': [(entry.eventType, entry.message) for entry in window.logEntries[-10:]],
+                })
+                raise
             job = window.currentJobId
             assert runtime.jobRepository.get(job).status == 'RUNNING'
             assert not any(event.eventType == 'node.started' and event.nodeId == 'gate'

@@ -440,7 +440,16 @@ try:
                     event.accept()
                     return
                 else:
-                    handleNodeDoubleClick(self.model.nodeId)
+                    # Saving a modal editor can synchronously rebuild the scene
+                    # and delete this native item. Finish input ownership first;
+                    # never call the base handler (or this item) after dispatch.
+                    scene = self.scene()
+                    if scene is not None and scene.mouseGrabberItem() is self:
+                        self.ungrabMouse()
+                    nodeId = self.model.nodeId
+                    event.accept()
+                    handleNodeDoubleClick(nodeId)
+                    return
             super().mouseDoubleClickEvent(event)
 
         def setTitle(self, title: str) -> None:

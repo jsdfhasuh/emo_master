@@ -8,7 +8,7 @@ projectRoot = Path(__file__).resolve().parent.parent
 
 
 def runStep(command: list[str], name: str) -> int:
-  print(f"[ci-check] running {name}: {' '.join(command)}")
+  print(f"[ci-check] running {name}: {' '.join(command)}", flush=True)
   completed = subprocess.run(command, cwd=projectRoot)
   if completed.returncode != 0:
     print(f"[ci-check] failed {name} with code {completed.returncode}")
@@ -21,7 +21,8 @@ def main() -> int:
     ([sys.executable, "scripts/gen_proto.py", "--check"], "proto-drift"),
     ([sys.executable, "-m", "ruff", "check", "src", "tests"], "ruff"),
     ([sys.executable, "-m", "mypy", "--config-file", "mypy.ini", "src"], "mypy"),
-    ([sys.executable, "-m", "pytest", "-q"], "pytest")
+    ([sys.executable, "-m", "pytest", "-vv", "-x", "--tb=short", "--timeout=120",
+      "--timeout-method=thread", "-o", "faulthandler_timeout=60"], "pytest")
   ]
 
   for command, name in steps:

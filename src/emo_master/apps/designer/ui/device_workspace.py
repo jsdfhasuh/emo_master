@@ -187,6 +187,8 @@ class DeviceWorkspace(QDialog):
         self.details = QWidget()
         self.details.setMinimumWidth(280)
         detailLayout = QVBoxLayout(self.details)
+        detailLayout.setContentsMargins(6, 6, 6, 6)
+        detailLayout.setSpacing(4)
         self.detailTitle = QLabel('未选择设备')
         self.detailTitle.setWordWrap(True)
         titleFont = self.detailTitle.font()
@@ -198,6 +200,7 @@ class DeviceWorkspace(QDialog):
         self.onlineIndicator.setWordWrap(True)
         for label in (self.detailTitle, self.typeInfo, self.onlineIndicator):
             label.setTextFormat(Qt.PlainText)
+        for label in (self.detailTitle, self.onlineIndicator):
             detailLayout.addWidget(label)
         detailLayout.addLayout(deviceCommands)
         basic = QWidget()
@@ -213,6 +216,9 @@ class DeviceWorkspace(QDialog):
         form.addRow("名称", self.name)
         form.addRow("说明", self.description)
         form.addRow("", self.enabled)
+        # Long type/driver metadata belongs in the scrollable basic page, not
+        # in a permanent header which steals editing space in small windows.
+        form.addRow("类型 / 驱动", self.typeInfo)
         form.addRow("设备 ID", self.identity)
         self.hardwareFields = {}
         for key, title in [('modelName', '型号'), ('serialNumber', '序列号'), ('macAddress', 'MAC')]:
@@ -262,17 +268,23 @@ class DeviceWorkspace(QDialog):
         propertyLayout = QVBoxLayout(propertyArea)
         propertyLayout.setContentsMargins(0, 0, 0, 0)
         propertyLayout.addWidget(self.tabs)
-        propertyLayout.addLayout(propertyCommands)
         self.detailSplitter.addWidget(propertyArea)
         self.detailSplitter.addWidget(self.infoTabs)
-        self.detailSplitter.setSizes([260, 180])
         propertyArea.setMinimumSize(0, 0)
-        propertyArea.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        propertyArea.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Expanding)
         self.infoTabs.setMinimumSize(0, 0)
         self.infoTabs.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.tabs.setMinimumSize(0, 0)
+        self.tabs.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored)
+        # Give editing most of the available space, without imposing a fixed
+        # form height or preventing the user from resizing/collapsing either pane.
+        self.detailSplitter.setStretchFactor(0, 4)
+        self.detailSplitter.setStretchFactor(1, 1)
+        self.detailSplitter.setSizes([4, 1])
         self.details.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        detailLayout.addWidget(self.detailSplitter)
+        detailLayout.addWidget(self.detailSplitter, 1)
+        # Draft actions remain reachable even when a pane is collapsed.
+        detailLayout.addLayout(propertyCommands)
         self.splitter.addWidget(self.details)
         self.splitter.setSizes([180, 430, 400])
         buttons = QDialogButtonBox(QDialogButtonBox.Close)

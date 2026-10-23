@@ -11,6 +11,8 @@ from pathlib import Path
 from emo_master import __version__
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.models import ProductionSettings
+from emo_master.core.project.devices import DeviceDefinition
+from emo_master.core.project.runtime_package import trustedDeviceTypes
 from emo_master.core.presentation.models import Presentation
 from emo_master.core.project.resources import ResourcePlan
 from emo_master.core.contracts.port_types import normalizePortType
@@ -39,15 +41,33 @@ def workflow(name, inputs, outputs, nodes, edges):
             for i, n in enumerate([dict(nodeId="input"), *nodes, dict(nodeId="output")])}})
 
 
+def deviceDefinition(name, deviceTypeId, *, connection, defaults=None, policies=None):
+    declaration = trustedDeviceTypes()[deviceTypeId]
+    return declaration.validateDefinition(DeviceDefinition(name=name, deviceTypeId=deviceTypeId,
+        driverVersion=declaration.version, connection=connection, defaults=defaults or {},
+        policies=policies or {})).model_dump()
+
+
+def bound(node, slot, deviceId):
+    node["deviceBindings"] = {slot: dict(deviceId=deviceId)}
+    return node
+
+
 def buildProject():
-    workflows = {}
+    workflows, definitions = {}, {}
     common = dict(shot="integer", image="image", frame="bbox2d", plcSample="plcValueCollection")
     for station in (1, 2):
         root = f"station{station}"
         first, second = root + "_first", root + "_second"
         sample = root + "_sample"
-        nodes = [op("camera", "vision.io.huaray_camera", dict(selectionMode="cameraKey", cameraKey=f"fixture-camera-{station}",
-                    triggerMode="hardware", waitMode="hardware", sequencePolicy="contiguous", retryCount=0), "硬件取图（本地夹具配置）"),
+        definitions[root + "-camera"] = deviceDefinition(f"工位 {station} 相机", "device.camera.huaray_imv",
+            connection=dict(cameraKey=f"fixture-camera-{station}", maxFrameBytes=160 * 120 * 3),
+            defaults=dict(triggerMode="hardware", captureTimeoutMs=0, sequencePolicy="contiguous",
+                          exposureMode="keep", gainMode="keep"), policies=dict(release="when_unused"))
+        definitions[root + "-plc"] = deviceDefinition(f"工位 {station} PLC", "device.plc.mitsubishi_slmp",
+            connection=dict(host="127.0.0.1", port=15000 + station), policies=dict(connectionRetryCount=0))
+        nodes = [bound(op("camera", "vision.io.huaray_camera", title="硬件取图（本地夹具配置）"),
+                       "camera", root + "-camera"),
                  call("sample", sample),
                  op("increment", "vision.state.variable_write", dict(variableId=root + "-shot-count", operation="increment")),
                  op("switch", "vision.flow.switch", dict(case1Value="1", case2Value="2")),
@@ -68,8 +88,8 @@ def buildProject():
         # PLC operator. Its values gate count increment and travel with this frame.
         workflows[sample] = workflow("本帧到达后 PLC 采样", dict(image="image", frame="bbox2d"),
             dict(image="image", frame="bbox2d", plcSample="plcValueCollection"),
-            [op("plc", "communication.plc.slmp_read", dict(host="127.0.0.1", port=15000 + station,
-                  device="D", startAddress=0, dataType="uint16", count=1, retryCount=0))],
+            [bound(op("plc", "communication.plc.slmp_read", dict(
+                  device="D", startAddress=0, dataType="uint16", count=1)), "plc", root + "-plc")],
             [edge("input", "image", "output", "image"), edge("input", "frame", "output", "frame"),
              edge("plc", "values", "output", "plcSample")])
         for kind, target in (("plc", first), ("robot", second)):
@@ -119,9 +139,12 @@ def buildProject():
                 nodes.append(op(name, "vision.geometry.coordinate_calculator", params, "U03：非交换的测试 2D 参数"))
                 edges.append(edge(source, "points", name, "points"))
                 source = name
+            gatewayId = root + "-" + kind + "-gateway"
+            definitions[gatewayId] = deviceDefinition(f"工位 {station} {kind} 网关", "device.tcp.client_once",
+                connection=dict(host="127.0.0.1", port=16000 + station * 10 + (1 if kind == "robot" else 3)),
+                defaults=dict(responseFraming="newline", rejectTrailingResponse=True, responseTimeoutMs=1000))
             nodes.extend([op("format", "communication.gateway.coordinate_format", dict(channel=kind, plcRounding="halfAwayFromZero")),
-                op("exchange", "communication.tcp.client", dict(host="127.0.0.1", port=16000 + station * 10 + (1 if kind == "robot" else 3),
-                    operation="exchange", responseFraming="newline", rejectTrailingResponse=True, responseTimeoutMs=1000)),
+                bound(op("exchange", "communication.tcp.client", dict(operation="exchange")), "tcp", gatewayId),
                 op("ack", "communication.gateway.ack_validate", dict(channel=kind))])
             edges.extend([edge(source, "points", "format", "points"), edge("format", "message", "exchange", "message"),
                 edge("format", "message", "ack", "request"), edge("exchange", "response", "ack", "response"),
@@ -153,9 +176,10 @@ def buildProject():
                      edge("points", "points", "source", "points"), edge("input", "frame", "source", "frame"),
                      edge("source", "points", "output", "points")]
             workflows[target] = workflow(f"{target}：真实算子测量区域链", dict(after="any", image="image", frame="bbox2d"), dict(points="list<point2d>"), nodes, edges)
-    payload = dict(schemaVersion="2.4", project=dict(projectId="hardware-normal-capability-fixture", name="双工位硬件正常基础链路夹具（非现场算法）",
+    payload = dict(schemaVersion="2.7", project=dict(projectId="hardware-normal-capability-fixture", name="双工位硬件正常基础链路夹具（非现场算法）",
         revision=1, createdAt="2026-10-09T00:00:00Z", updatedAt="2026-10-09T00:00:00Z"),
         entryWorkflowId="station1-run", workflowOrder=list(workflows), workflows=workflows,
+        devices=dict(schemaVersion="1.0", bindings={}, definitions=definitions),
         resources=ResourcePlan().model_dump(), presentation=Presentation().model_dump(), production=ProductionSettings().model_dump())
     payload["globalVariables"] = {f"station{s}-shot-count": dict(name=f"工位{s}拍次", type="integer", kind="variable", lifetime="job", initialValue=0) for s in (1, 2)}
     payload["production"]["mode"] = "single"

@@ -3,12 +3,13 @@ import zipfile
 
 import pytest
 
-from emo_master.apps.designer.state.project_store import createProjectSkeleton
+from emo_master.apps.designer.state.project_store import createProjectSkeleton, saveProject
 from emo_master.apps.operator_runtime.controller import ProductionRuntime
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.core.project.package_builder import buildPackage
 from emo_master.core.project.runtime_package import buildRuntimePackage, installRuntimePackage
+from tests.core.project.test_devices import legacyPayload
 from tests.runtime.production_fixture import productionProject, waitFor
 
 
@@ -27,6 +28,17 @@ def testRuntimeMatchesExactNamedProjectAndRejectsAmbiguousDirectory(tmp_path):
         assert not service.ValidateProject(pb.ValidateProjectRequest(project_id=str(legacy)), None).ok
         session = service.OpenRunInspectionSession(pb.RunInspectionSessionRequest(project_id=str(named)), None)
         assert session.ok
+        reply = service.LoadProject(pb.LoadProjectRequest(project_path=str(root)), None)
+        assert not reply.ok and "E_CONFIG_ACTIVE" in reply.message
+        assert service.loadedProjectFile == str(named)
+        assert service.loadedDocument.project.name == "Named"
+    finally:
+        service.close()
+
+    # Without an existing online configuration, ambiguous paths are rejected
+    # by file resolution rather than the explicit-publication guard above.
+    service = RuntimeService(dbPath=tmp_path / "empty-data/runtime.db", workspaceRoot=tmp_path / "empty-jobs")
+    try:
         reply = service.LoadProject(pb.LoadProjectRequest(project_path=str(root)), None)
         assert not reply.ok and "multiple project files" in reply.message
         assert service.loadedProjectFile is None
@@ -96,7 +108,10 @@ def testNamedProjectExportAndOfflineUpdatePreserveSelectedName(tmp_path):
 
 def testLegacyPackageBuilderAcceptsNamedSourceWithoutDuplicatingIt(tmp_path):
     named = tmp_path / "project" / "test.emoproj"
-    createProjectSkeleton(named, "Test")
+    payload = legacyPayload()
+    payload["project"]["name"] = "Test"
+    assert payload["schemaVersion"] == "2.1"
+    saveProject(named, payload)
     package = buildPackage(named, tmp_path / "packages")
     with zipfile.ZipFile(package) as archive:
         assert "project.json" in archive.namelist()

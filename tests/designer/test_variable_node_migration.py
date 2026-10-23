@@ -28,10 +28,14 @@ def approveExplicitMigration(monkeypatch):
 
 
 def _window():
-    return MainWindow(SimpleNamespace(
+    window = MainWindow(SimpleNamespace(
         listOperators=lambda: [],
         loadProject=lambda path: SimpleNamespace(ok=True, message="ok"),
     ))
+    from tests.core.project.test_devices import legacyPayload
+    window.workflowController.loadPayload(legacyPayload())
+    window.pageCoordinator.session.acceptLoaded()
+    return window
 
 
 def _payload(operator):

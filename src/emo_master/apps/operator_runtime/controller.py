@@ -209,18 +209,21 @@ class ProductionRuntime:
         with self.operationLock:
             self._synchronizeOnlineDocument()
             if self.document is None:
-                return dict(state="EMPTY", jobId="", message="", canStart=False, canLoad=True, workflows={})
+                return dict(state="EMPTY", jobId="", message="", canStart=False, canLoad=True, workflows={},
+                            runtimeConnected=not self.closed)
             if workflowId is not None or len(self.sessions) == 1:
                 key = self._workflowId(workflowId if workflowId is not None else next(iter(self.sessions)))
                 state = self._workflowStatus(key)
                 if workflowId is None:
                     state["workflows"] = {key: dict(state)}
                 state["pagePublicationRevision"] = self._pagePublicationRevision()
+                state["runtimeConnected"] = not self.closed
                 return state
             rows = {key: self._workflowStatus(key) for key in self.sessions}
             states = {row["state"] for row in rows.values()}
             state = next((s for s in ("FAULT", "STOPPING", "RUNNING", "READY") if s in states), "READY")
             return dict(state=state, jobId="", workflows=rows,
+                runtimeConnected=not self.closed,
                 pagePublicationRevision=self._pagePublicationRevision(),
                 message="\n".join(f"{row['name']}: {row['message']}" for row in rows.values() if row["message"]),
                 canStart=any(row["canStart"] for row in rows.values()), canLoad=all(row["canLoad"] for row in rows.values()))
@@ -293,6 +296,8 @@ class ProductionRuntime:
         else:
             state, message = ("STOPPING" if record.status == "STOPPING" or record.isTerminal else "RUNNING"), ""
         return dict(state=state, jobId=session.jobId, message=message,
+                    jobStatus=record.status if record is not None else "",
+                    resourcesReleased=not owned if record is not None else None,
                     canStart=idle and self.document is not None, canLoad=idle)
 
     def stop(self, workflowId=None):

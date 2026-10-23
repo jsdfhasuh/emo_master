@@ -15,7 +15,7 @@ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
 from emo_master.apps.runtime.main import createRuntimeServer
-from emo_master.apps.designer.services.runtime_client import RuntimeClient
+from emo_master.apps.designer.services.runtime_client import RuntimeClient, RuntimeClientError
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.project.snapshots import revisionOf
@@ -163,7 +163,7 @@ def testDuplicateEndpointCannotBypassLockThroughRoutingOrFormat():
     other = deepcopy(payload["devices"]["definitions"]["plc"])
     other["connection"].update(frameEncoding="ascii", networkNo=2)
     payload["devices"]["definitions"]["other"] = other
-    with pytest.raises(DeviceError, match="reuse the existing"):
+    with pytest.raises(DeviceError, match="conflicts with plc"):
         managerFor(payload)
 
 
@@ -176,7 +176,7 @@ def testDnsAliasesAreRejectedAndMappedIpv4CannotCreateAnotherOwner():
     other = deepcopy(payload["devices"]["definitions"]["plc"])
     other["connection"]["host"] = "::ffff:127.0.0.1"
     payload["devices"]["definitions"]["mapped"] = other
-    with pytest.raises(DeviceError, match="reuse the existing"):
+    with pytest.raises(DeviceError, match="conflicts with plc"):
         managerFor(payload)
 
 
@@ -195,7 +195,10 @@ def testManagedCompilerRequiresBindingAndRejectsHiddenConnectionOverrides():
         compiler.compile(payload)
     payload["schemaVersion"] = "2.5"
     payload["devices"] = {"bindings": {}}
-    assert not compiler.compile(payload).workflows["main"].nodes[0].devicePlans
+    from emo_master.core.project.communication import CommunicationSettings
+    payload["communication"] = CommunicationSettings().model_dump()
+    with pytest.raises(WorkflowCompileError, match="device slots"):
+        compiler.compile(payload)
 
 
 @pytest.mark.parametrize("encoding", ["binary", "ascii"])
@@ -316,7 +319,7 @@ def testManagedDiagnosticLostReceiptDoesNotReplayOrReleaseAnotherOwner(tmp_path)
             recovered = service.RecoverDevice(recover, None)
             assert recovered.ok, recovered
             new = json.loads(recovered.states_json)["plc"]
-            assert new["generation"] != state["generation"] and new["connectionState"] == "DISCONNECTED"
+            assert new["generation"] != state["generation"] and not new["lifecycleConnected"]
             assert peer.connections == len(peer.requests) == 1
             assert not service.RecoverDevice(recover, None).ok
             session = openManagedDebug(service)
@@ -390,9 +393,9 @@ def testRemoteRecoveryFencesAndLegacyDebugGateWithoutConnecting(tmp_path):
             runtimeId, states = client.getDeviceStates(service.loadedProjectId)
             _, recovered = client.recoverDevice(service.loadedProjectId, runtimeId, "plc", states["plc"])
             assert recovered["plc"]["generation"] != states["plc"]["generation"]
-            with pytest.raises(ValueError, match="generation"):
+            with pytest.raises(RuntimeClientError, match="generation"):
                 client.recoverDevice(service.loadedProjectId, runtimeId, "plc", states["plc"])
-            with pytest.raises(ValueError, match="Runtime"):
+            with pytest.raises(RuntimeClientError, match="Runtime"):
                 client.recoverDevice(service.loadedProjectId, "old", "plc", recovered["plc"])
             request = pb.OperatorDebugRequest(project_id=service.loadedProjectId, project_json="{}",
                 operator_id="communication.plc.slmp_read")
@@ -407,3 +410,110 @@ def testRemoteRecoveryFencesAndLegacyDebugGateWithoutConnecting(tmp_path):
             channel.close()
             server.stop(0).wait()
             service.close()
+
+
+@pytest.mark.parametrize("blocked,code", [
+    ("unauthorized", "E_DEVICE_OWNER"), ("not-maintenance", "E_DEVICE_OWNER"),
+    ("disabled", "E_DEVICE_DISABLED"), ("cancelled", "E_DEVICE_CANCELLED"),
+    ("paused", "E_DEVICE_PAUSED"), ("pending", "E_DEVICE_PAUSED"),
+    ("quarantined", "E_DEVICE_UNAVAILABLE"),
+])
+def testDiagnosticConnectChecksAuthorityBeforeSocketIo(blocked, code):
+    with PlcDebugServer() as peer:
+        manager = managerFor(plcProject(peer.port))
+        owner = "diagnostic-test"
+        try:
+            if blocked != "unauthorized":
+                manager.authorize(owner, ["plc"])
+                if blocked != "not-maintenance":
+                    manager.authorizeMaintenance(owner, "plc")
+            if blocked == "disabled":
+                manager.definitions["plc"].enabled = False
+            if blocked == "paused":
+                manager.lifecycles["plc"].paused = True
+            if blocked == "pending":
+                manager.lifecycles["plc"].controlPending = True
+            if blocked == "quarantined":
+                manager.executors["plc"].quarantined = True
+            with pytest.raises(DeviceError) as failure:
+                manager.connectDiagnostic(owner, "plc", lambda: blocked == "cancelled")
+            assert failure.value.code == code
+            assert peer.connections == 0 and not peer.requests
+        finally:
+            manager.retire("diagnostic-test")
+            manager.close()
+
+
+def testDiagnosticConnectKeepsLeaseAndFirstReadReusesSocket():
+    with PlcDebugServer() as peer:
+        manager = managerFor(plcProject(peer.port))
+        manager.definitions["plc"].policies.update(connect="manual", release="when_unused")
+        manager.authorizeMaintenance("diagnostic-test", "plc")
+        try:
+            assert manager.connectDiagnostic("diagnostic-test", "plc") == "CONNECTED"
+            assert manager.lifecycles["plc"].connected
+            assert "diagnostic-test" in manager.lifecycles["plc"].keepAlive
+            assert not peer.requests
+            result = execute(manager, owner="diagnostic-test")
+            assert result["outcome"] == "COMPLETED"
+            assert peer.connections == 1 and len(peer.requests) == 1
+            manager.retire("diagnostic-test")
+            assert "diagnostic-test" not in manager.lifecycles["plc"].keepAlive
+        finally:
+            manager.retire("diagnostic-test")
+            manager.close()
+
+
+def testCancelledDiagnosticDoesNotCancelAnotherOwnersConnection(monkeypatch):
+    entered, release, cancelled = Event(), Event(), Event()
+    with PlcDebugServer() as peer, ThreadPoolExecutor(1) as pool:
+        manager = managerFor(plcProject(peer.port))
+        driver = manager.drivers["plc"]
+        original = driver.connect
+        def blocked(params, cancel, deadline):
+            entered.set()
+            assert release.wait(3)
+            return original(params, cancel, deadline)
+        monkeypatch.setattr(driver, "connect", blocked)
+        manager.authorizeMaintenance("diagnostic-test", "plc")
+        try:
+            production = manager._connectEvent("plc", "a")
+            assert entered.wait(2)
+            diagnostic = pool.submit(manager.connectDiagnostic, "diagnostic-test", "plc", cancelled.is_set)
+            end = time.monotonic() + 2
+            while not manager.executors["plc"].queue and time.monotonic() < end:
+                time.sleep(.01)
+            assert manager.executors["plc"].queue
+            cancelled.set()
+            with pytest.raises(DeviceError) as failure:
+                diagnostic.result(2)
+            assert failure.value.code == "E_DEVICE_CANCELLED"
+            assert not production.cancellation.is_set()
+            release.set()
+            assert manager.executors["plc"].wait(production) == "CONNECTED"
+            assert manager.lifecycles["plc"].connected and not peer.requests
+        finally:
+            release.set()
+            manager.retire("diagnostic-test")
+            manager.close()
+
+
+@pytest.mark.parametrize("unavailable", [False, True])
+def testDiagnosticSubmissionFailureDoesNotLeakKeepalive(monkeypatch, unavailable):
+    with PlcDebugServer() as peer:
+        manager = managerFor(plcProject(peer.port))
+        manager.authorizeMaintenance("diagnostic-test", "plc")
+        def fail(*args, **kwargs):
+            if unavailable:
+                return None
+            raise DeviceError("E_DEVICE_REPLACING", "fixture submission failure")
+        monkeypatch.setattr(manager, "_connectEvent", fail)
+        try:
+            with pytest.raises(DeviceError) as failure:
+                manager.connectDiagnostic("diagnostic-test", "plc")
+            assert failure.value.code == ("E_DEVICE_UNAVAILABLE" if unavailable else "E_DEVICE_REPLACING")
+            assert "diagnostic-test" not in manager.lifecycles["plc"].keepAlive
+            assert not peer.connections
+        finally:
+            manager.retire("diagnostic-test")
+            manager.close()

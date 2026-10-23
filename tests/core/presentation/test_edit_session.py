@@ -171,12 +171,15 @@ assert not any(name.startswith(('PySide', 'PyQt', 'emo_master.apps.runtime',
     assert result.returncode == 0, result.stderr
 
 
-def testWorkflowFragmentKeepsItsOldScopeAndPreservesDestinationPages(project):
+def testWorkflowFragmentCarriesOnlyDependenciesAndPreservesDestinationPages(project):
     from emo_master.apps.designer.state.workflow_package import buildWorkflowPackage, importWorkflowPackage
     session = ProjectEditSession(project.model_dump())
     before = session.presentation.snapshot()
     fragment = buildWorkflowPackage(session.workflows, "child")
-    assert "presentation" not in fragment.model_dump() and "resources" not in fragment.model_dump()
+    assert "presentation" not in fragment.model_dump()
+    # Package 1.4 carries referenced resources, not unrelated project/page assets.
+    assert not fragment.resources.items and not fragment.resources.parameterBindings
+    assert not fragment.resources.siteBindings and not fragment.resourceData
     with session.transaction():
         imported = importWorkflowPackage(session.workflows, fragment)
     assert imported.rootWorkflowId != "child"

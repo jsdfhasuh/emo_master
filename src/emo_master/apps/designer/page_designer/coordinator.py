@@ -279,6 +279,8 @@ class PageCoordinator:
             self.window._refreshWorkflowTabs()
             if self.devices:
                 self.devices.refresh()
+                self.devices.status.setText(('已重做' if redo else '已撤销') + '工程修改；当前设备列表已同步，在线配置未改变')
+                self.devices.status.setToolTip('')
             if self.editor:
                 if self.session.document().presentation is None:
                     self.showFlow()
@@ -360,7 +362,11 @@ class PageCoordinator:
     def saved(self, directory):
         self.directory = directory
         self.session.markSaved()
-        self.window.setWindowTitle('视觉流程设计器')
+        self.updateWindowTitle()
+
+    def updateWindowTitle(self):
+        name = self.session.workflows.project.get('name') or '未命名工程'
+        self.window.setWindowTitle(f'视觉流程设计器 · {name}' + (' *' if self.session.dirty else ''))
 
     def normalizeDraft(self, payload):
         from copy import deepcopy

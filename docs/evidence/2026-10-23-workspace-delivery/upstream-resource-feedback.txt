@@ -1,0 +1,16 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_____ testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[embedded] ______
+tests\designer\test_runtime_validation_feedback.py:620: in testUpgradedDraftResourceFailureCanBeFixedAndRevalidated
+    assert len(messages) == 1 and 'main/load/imagePath' in messages[0]['detail']
+E   assert (1 == 1 and 'main/load/imagePath' in 'E_CONFIG_INVALID\nparams.imagePath: input file not found: C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfh...6628e937",\n      "workflowId": "main",\n      "nodeId": "load",\n      "fieldPath": "params.imagePath"\n    }\n  ]\n}')
+E    +  where 1 = len([{'title': '����У��δͨ��', 'text': '����У��δͨ������δд�� Runtime���ݸ�������ѱ�����\n���̡�Main�� / �ڵ㡸Image Loader��������δͨ��У�飬��鿴��ϸ��Ϣ', 'detail':...eId": "load",\n      "fieldPath": "params.imagePath"\n    }\n  ]\n}', 'buttons': ['�ر�', 'Show Details...', '��λ�ڵ㲢����']}])
+_____ testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[loopback] ______
+tests\designer\test_runtime_validation_feedback.py:620: in testUpgradedDraftResourceFailureCanBeFixedAndRevalidated
+    assert len(messages) == 1 and 'main/load/imagePath' in messages[0]['detail']
+E   assert (1 == 1 and 'main/load/imagePath' in 'E_CONFIG_INVALID\nparams.imagePath: input file not found: C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfh...5ab1d1de",\n      "workflowId": "main",\n      "nodeId": "load",\n      "fieldPath": "params.imagePath"\n    }\n  ]\n}')
+E    +  where 1 = len([{'title': '����У��δͨ��', 'text': '����У��δͨ������δд�� Runtime���ݸ�������ѱ�����\n���̡�Main�� / �ڵ㡸vision.io.image_loader��������δͨ��У�飬��鿴��ϸ��Ϣ',...eId": "load",\n      "fieldPath": "params.imagePath"\n    }\n  ]\n}', 'buttons': ['�ر�', 'Show Details...', '��λ�ڵ㲢����']}])
+=========================== short test summary info ===========================
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[loopback]
+2 failed, 55 deselected in 6.23s

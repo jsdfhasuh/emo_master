@@ -1,0 +1,8 @@
+[designer] Python: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe
+[designer] Source: D:\jsdfhasuh\documents\my_project\emo_master\build\workspace_delivery_20261023\merged-source\src
+[designer] Runtime: embedded
+[designer] Data: D:\jsdfhasuh\documents\my_project\emo_master\build\workspace_delivery_20261023\merged-source\manual_test_workspace\runtime-embedded
+Source import: D:\jsdfhasuh\documents\my_project\emo_master\build\workspace_delivery_20261023\merged-source\src\emo_master\__init__.py
+PySide2: 5.15.2.1
+gRPC: 1.78.0
+Designer startup check passed (no window or Job started).

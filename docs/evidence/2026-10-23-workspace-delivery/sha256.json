@@ -1,0 +1,147 @@
+[
+  {
+    "file": "4k-live-current.png",
+    "bytes": 71528,
+    "sha256": "29b7dcefe88b489c931c4cf29010e26e3979f3e069ea6319dc1bf135f70b73c0"
+  },
+  {
+    "file": "4k-live-previous.png",
+    "bytes": 72129,
+    "sha256": "31a923e32da40bd86f4563e15c7786de99aca51aaefb8b202aef027a10a28172"
+  },
+  {
+    "file": "4k-live-viewer.png",
+    "bytes": 12379,
+    "sha256": "2d3a323f31fc665d5d090a971f28e0389b4dc45ada1b416d38bdfeb52357fa67"
+  },
+  {
+    "file": "affected-regression.txt",
+    "bytes": 189524,
+    "sha256": "e41c144e8b79f6e06f8e74b95a5ddf5cd1a907d72d783c1c4760852738ac8136"
+  },
+  {
+    "file": "affected-regression.xml",
+    "bytes": 222407,
+    "sha256": "a6bf6c79945c4564b7e664e6068ba7fd223159832621cd047dae124264e57a2a"
+  },
+  {
+    "file": "affected-remaining-final.txt",
+    "bytes": 1768,
+    "sha256": "091190842449d29583e64f84147fd5fe5b8c35f2b5aa33558a1bbcf4f363b6f5"
+  },
+  {
+    "file": "affected-remaining-final.xml",
+    "bytes": 148522,
+    "sha256": "e28a308b4c1fb928cdc166dd48525ce8a13782e4fb86f5fcfe977b9d53d90c02"
+  },
+  {
+    "file": "affected-tests.json",
+    "bytes": 3846,
+    "sha256": "16bfde0bb0d9d93e74f650d3bf7b5d29dbf04d9bc08c6abea29bb2d8ef5cd8dd"
+  },
+  {
+    "file": "designer-check.txt",
+    "bytes": 598,
+    "sha256": "658063e34d49110d207374d73a134b13b72da8ff7617fc804e02527e303d1fd3"
+  },
+  {
+    "file": "feedback-review-final.txt",
+    "bytes": 1730,
+    "sha256": "bb3d715f53b0ac5ae90e54ba036ea351c18959de7fd64809a4e0783d4fb2501f"
+  },
+  {
+    "file": "feedback-review-verified.txt",
+    "bytes": 102,
+    "sha256": "184d159f60e38a54023c8e9f9d25cc3bc32fe076492f687743d5d131354d4370"
+  },
+  {
+    "file": "feedback-review-verified.xml",
+    "bytes": 10213,
+    "sha256": "4d28271f6f158916365ecfc417edbe222b08e7a48fd7067d8f0cf58f6c4eb6d7"
+  },
+  {
+    "file": "image-prefix-final.txt",
+    "bytes": 3881,
+    "sha256": "4761088731fca13cd963ab988a09def8e61e7be849cd5775b0fd8fe7b7297e55"
+  },
+  {
+    "file": "image-prefix-geometry.txt",
+    "bytes": 4205,
+    "sha256": "3ab36d4b063d8f7f0e94dd50a14fd4b4655fd42d8e7a52ab243124cbcb181d26"
+  },
+  {
+    "file": "image-prefix-scroll.txt",
+    "bytes": 449,
+    "sha256": "a285fcd82cd4ca4c042c6521c924fbe138f9f056113e0bf5544c10f0540291fe"
+  },
+  {
+    "file": "image-prefix-scroll.xml",
+    "bytes": 49462,
+    "sha256": "0166220afd7d390e51216e5d5d58ce1af8ccb564b17b58cbffc76eb969c00664"
+  },
+  {
+    "file": "merge-focused-initial.txt",
+    "bytes": 5995,
+    "sha256": "41dfe098e27ddcd5d01f55d364ec6177bd03614ce1fcafd33c2871ab8c170415"
+  },
+  {
+    "file": "mypy-review-final.txt",
+    "bytes": 12483,
+    "sha256": "7d6e9ce8c9a0e1b2a1bff904e3eeaba1320e353f16545734c130aee65b9782bb"
+  },
+  {
+    "file": "native-node-final.txt",
+    "bytes": 723,
+    "sha256": "fd9eacc6a9be12bdb67319aab1906aa6fd0f644cba9802f7b1e33d5b9c23b87b"
+  },
+  {
+    "file": "native-node-final.xml",
+    "bytes": 680,
+    "sha256": "f38a30776512aa2217351e75f83c6b50ed9e6bc2cf225cabba7db7c3987cc614"
+  },
+  {
+    "file": "protected-final.json",
+    "bytes": 284,
+    "sha256": "2a8fd7c94973777e1fefb2e1e24712b58b09263c7bcbf3597ae9c8de76192560"
+  },
+  {
+    "file": "proto-review-final.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "README.md",
+    "bytes": 1889,
+    "sha256": "9ef13d29e8d17b7bed0376adff6bf074d2758948a8d03f414b9e53f4bd28d8c2"
+  },
+  {
+    "file": "ruff-review-final.txt",
+    "bytes": 20,
+    "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+  },
+  {
+    "file": "small-live-current.png",
+    "bytes": 69831,
+    "sha256": "1cc87e8dcf7e857e99e47211ca087dea1a48535a95024a4eb92939e421470c97"
+  },
+  {
+    "file": "small-live-previous.png",
+    "bytes": 70339,
+    "sha256": "1cf5f65f22c90077faef003cbfc204fff32ed81004a3e2e1b728aa8b2d1ca311"
+  },
+  {
+    "file": "small-live-viewer.png",
+    "bytes": 10575,
+    "sha256": "e6a11e4794493d6d0b530b88b595271f9c8c0f450d4f864095921399467cf3fb"
+  },
+  {
+    "file": "snapshot-review-integrity.json",
+    "bytes": 124,
+    "sha256": "31d0be0f43bb65d6db6df126185ee9931d688894a0e51327fd5436d0b8889e88"
+  },
+  {
+    "file": "upstream-resource-feedback.txt",
+    "bytes": 2603,
+    "sha256": "b4fd0489321c9113dc737ffca3117009b1273d581649587d3bce32c54ad547b5"
+  }
+]

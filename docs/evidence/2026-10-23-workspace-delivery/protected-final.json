@@ -1,0 +1,10 @@
+{
+  "checked": 652,
+  "unchanged": 649,
+  "expectedUpstreamChanges": [
+    "field_tests/plc_dual_mc/build_project.py",
+    "field_tests/plc_dual_mc/dual_plc_mc.emoproj",
+    "field_tests/plc_dual_mc/simulation/dual_plc_mc_simulation.emoproj"
+  ],
+  "unexpectedChanges": 0
+}

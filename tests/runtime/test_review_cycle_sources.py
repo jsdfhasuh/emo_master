@@ -22,12 +22,12 @@ def testLiveNodeSourcesSwitchOnlyNextIterationAndMetadataKeepsJobAndConnection(t
         assert runtime.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None).ok
         driver = runtime.deviceManager.drivers["camera"]
         execute = driver.execute
-        def capture(action, params, cancelled, deadline):
+        def capture(action, params, cancelled, deadline, **kwargs):
             captured.append(params["exposureUs"])
             if len(captured) == 1:
                 entered.set()
                 assert release.wait(10)
-            return execute(action, params, cancelled, deadline)
+            return execute(action, params, cancelled, deadline, **kwargs)
         driver.execute = capture
         started = runtime.StartJob(pb.StartJobRequest(workflow_id="main", inputs_json='{"count":0}'), None)
         assert started.ok and entered.wait(10)

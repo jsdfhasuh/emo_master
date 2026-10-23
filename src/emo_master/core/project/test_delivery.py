@@ -24,7 +24,7 @@ FORMAT = 'emo-pages-test-1'
 OPERATORS = {'vision.io.image_loader': ('image_loader', '1.1.0'),
              'vision.analysis.blob': ('blob_analysis', '1.2.0'),
              'vision.collection.count': ('collection_count', '1.1.0'),
-             'vision.io.image_saver': ('image_saver', '1.0.0')}
+             'vision.io.image_saver': ('image_saver', '1.1.0')}
 
 
 def packagePath(name):

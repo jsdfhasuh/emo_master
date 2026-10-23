@@ -34,7 +34,7 @@ from emo_master.plugins.builtins._slmp import (
     SlmpResponseError, SlmpTimeoutError,
 )
 from tests.runtime.plc_debug_server import BlockResponse, PlcDebugServer, response
-from tests.runtime.test_builtin_communication_operator_workflows import _project as plcProject
+from tests.core.project.test_devices import legacyPayload
 from tests.runtime.presentation.test_normal_capture import normalProject
 
 
@@ -1461,8 +1461,10 @@ def runtime(tmp_path):
     try:
         directory = tmp_path / "project"
         directory.mkdir()
-        document = plcProject(10001)
-        (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+        # These cases exercise the legacy endpoint-debug API for unsaved nodes.
+        # Current managed-device diagnostics must not accept endpoint overrides.
+        document = legacyPayload()
+        (directory / "project.json").write_text(json.dumps(document), encoding="utf-8")
         loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
         scan = service.pluginScanResult
         required = {READ_OPERATOR, WRITE_OPERATOR, "vision.compare.number"}
@@ -1794,12 +1796,15 @@ def test_terminal_job_with_unretired_worker_resources_refuses_debug_open(runtime
 def test_service_not_loaded_and_closing_do_not_reserve_a_socket(runtime, monkeypatch):
     with PlcDebugServer() as peer, connected_client(runtime, "INPROCESS") as path:
         project_id, directory = runtime.loadedProjectId, runtime.loadedProjectPath
+        document = runtime.loadedDocument
         unloaded = runtime.LoadProject(pb.LoadProjectRequest(project_path=directory + "-missing"), None)
-        assert not unloaded.ok and runtime.loadedDocument is None and not runtime.loadedProjectId
-        reply = path.client.openPlcDebugSession(project_id, "main", "read", READ_OPERATOR,
-                                               peer.params(), "no-project")
-        assert not reply.ok and reply.code == "E_PLC_CONTEXT_INVALID"
-        assert runtime.LoadProject(pb.LoadProjectRequest(project_path=directory), None).ok
+        assert not unloaded.ok and runtime.loadedDocument is document and runtime.loadedProjectId == project_id
+        with monkeypatch.context() as patch:
+            patch.setattr(runtime, "loadedDocument", None)
+            patch.setattr(runtime, "loadedProjectId", "")
+            reply = path.client.openPlcDebugSession(project_id, "main", "read", READ_OPERATOR,
+                                                   peer.params(), "no-project")
+            assert not reply.ok and reply.code == "E_PLC_CONTEXT_INVALID"
         with monkeypatch.context() as patch:
             patch.setattr(runtime, "_closing", True)
             reply = path.client.openPlcDebugSession(runtime.loadedProjectId, "main", "read", READ_OPERATOR,

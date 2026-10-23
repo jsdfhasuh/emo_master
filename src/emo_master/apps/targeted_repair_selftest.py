@@ -43,9 +43,9 @@ def _project(root):
             [('input', 'count', 'compare', 'left'), ('compare', 'result', 'output', 'continue')]),
         'body': flow('Body', ports, ports, [dict(nodeId='value', operatorId='vision.value.number', params=dict(value=1))],
             [('input', 'image', 'output', 'image'), ('value', 'value', 'output', 'count')])}
-    payload = dict(schemaVersion='2.6', project=dict(projectId='targeted-repair-selftest', name='Targeted repairs',
+    payload = dict(schemaVersion='2.7', project=dict(projectId='targeted-repair-selftest', name='Targeted repairs',
         createdAt='2026-10-18T00:00:00Z', updatedAt='2026-10-18T00:00:00Z'), entryWorkflowId='main', workflowOrder=list(workflows), workflows=workflows,
-        runtime=dict(maxConcurrentJobs=3), presentation={}, production={}, communication={}, globalVariables={},
+        runtime=dict(maxConcurrentJobs=3), presentation={}, production={}, globalVariables={},
         devices=dict(schemaVersion='1.0', definitions=dict(camera=dict(
             name='Simulated', deviceTypeId='device.simulated.camera', driverVersion='1.0.0',
             connection=dict(serial='TARGETED-SELFTEST'), defaults=dict(width=8, height=8, exposureUs=8000, gain=0)))),
@@ -71,7 +71,12 @@ def checkTargetedRepairs(*, includeDesigner=False):
             from emo_master.core.project.models import ProjectDocument
             store = WorkflowStore(payload)
             package = buildWorkflowPackage(store, 'main', sourceRoot=root)
-            imported = importWorkflowPackage(store, package, targetRoot=root, deviceMapping={'camera': 'camera'})
+            from emo_master import __version__
+            from emo_master.core.plugin.registry import PluginRegistry
+            scan = PluginRegistry(__version__).scan(Path(__file__).resolve().parents[1] / 'plugins/builtins')
+            imported = importWorkflowPackage(store, package, targetRoot=root, deviceMapping={'camera': 'camera'},
+                deviceTypes=scan.deviceTypes, operatorRequirements={
+                    key: descriptor.manifest.deviceRequirements for key, descriptor in scan.activeOperators.items()})
             model = ProjectDocument.model_validate(store.toPayload())
             if set(groupSlots(model, 'main')) & set(groupSlots(model, imported.rootWorkflowId)):
                 raise RuntimeError('copied Dispatch slots collide')
@@ -171,7 +176,8 @@ def checkTargetedRepairs(*, includeDesigner=False):
                     or service.projectConfiguration.snapshot()['documentRevision'] != snap['documentRevision']
                     or any(v.connected for v in service.deviceManager.lifecycles.values())):
                 raise RuntimeError('same-revision recovery did not remain software-only')
-            connected = service.deviceManager.testConnection(service.deviceManager.definitions['camera'].model_dump())
+            connected = service.deviceManager.testConnection(
+                service.deviceManager.definitions['camera'].model_dump(), deviceId='camera')
             if not connected['reused'] or service.deviceManager.maintenanceOwners:
                 raise RuntimeError('setup test did not release its borrowed simulated device')
             copy = json.loads((root / 'online-project.json').read_text(encoding='utf-8'))
@@ -188,7 +194,8 @@ def checkTargetedRepairs(*, includeDesigner=False):
             owner = 'observation-selftest'
             manager.authorize(owner, ['camera'])
             cycle = service.projectConfiguration.beginCycle(owner, -1)
-            frame = manager.execute(owner, 'camera', 'capture', manager.definitions['camera'].defaults, cycleId=cycle['cycleId'])
+            frame = manager.execute(owner, 'camera', 'capture', manager.definitions['camera'].defaults,
+                cycleId=cycle['cycleId'], source=dict(workflowId='main', nodeId='capture', slot='camera'))
             manager.frames.release(frame['frameId'], owner)
             observed = service.cameraDiagnostics.watch(observer, 0)
             if (not observed['preview'] or observed['metadata']['frameId'] != frame['frameId']

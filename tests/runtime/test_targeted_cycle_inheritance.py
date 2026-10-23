@@ -219,7 +219,7 @@ def testPersistentRunnerCanInstallNewOldNewAndBorrowedExceptionDoesNotEndOwner(t
     document = ProjectDocument.model_validate(payload)
     runner = WorkflowRunner(compiler.compile(document), scan.activeOperators, retainOperators=True)
     class Proxy:
-        def call(self, action, **fields):
+        def framework(self, action, **fields):
             return getattr(c, action)('consumer', **fields)
     plans = CyclePlanSession(runner, Proxy(), document, compiler, scan.activeOperators, (), 1, lambda: False)
     runner.cycleScope = plans.iteration

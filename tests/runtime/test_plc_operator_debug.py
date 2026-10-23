@@ -14,12 +14,14 @@ from emo_master.apps.runtime.operator_debug.contracts import trustedEntries
 from tests.runtime.operator_debug_fixture import project
 from tests.runtime.plc_debug_server import BlockResponse, PlcDebugServer, response
 from tests.core.project.test_devices import legacyPayload
-from tests.runtime.test_operator_debug_rpc import runtime as runtimeService, openRequest
+from tests.runtime import test_operator_debug_rpc as rpcFixtures
+from tests.runtime.test_operator_debug_rpc import openRequest
 from tests.runtime.test_operator_debug_sessions import waitFor
 from tests.runtime.test_workflow_debug_control import nestedProject
 
 
 READ = "communication.plc.slmp_read"
+runtimeService = rpcFixtures.runtime
 
 
 @pytest.fixture

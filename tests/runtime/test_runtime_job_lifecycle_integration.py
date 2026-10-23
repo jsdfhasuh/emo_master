@@ -207,11 +207,12 @@ def testRealSpawnConcurrencyStopsAndCleanup(tmp_path: Path, monkeypatch) -> None
         assert secondRunning.pid > 0
         assert firstRunning.pid != secondRunning.pid
 
+        existingWorkspaces = set(workspaceRoot.iterdir())
         rejected = _start(service, "cooperative")
         assert rejected.ok is False
-        assert rejected.status == "FAILED"
+        assert rejected.status == "REJECTED"
         assert "MAX_CONCURRENT" in rejected.message
-        assert not (workspaceRoot / rejected.job_id).exists()
+        assert not rejected.job_id and set(workspaceRoot.iterdir()) == existingWorkspaces
 
         (releaseDir / f"{first.job_id}.release").touch()
         (releaseDir / f"{second.job_id}.release").touch()

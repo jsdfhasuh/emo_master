@@ -74,26 +74,47 @@ def _inside(root: Path, relative: str) -> Path:
 
 
 def verifyResources(project: ProjectDocument, root: Path, *, resourcePaths=None) -> dict[str, str]:
+    from emo_master.core.workflow.errors import locatedValidationError, ValidationIssue, WorkflowCompileError
     assert project.resources is not None
     resolved: dict[str, str] = {}
+    issues = []
     for resourceId, item in project.resources.items.items():
-        from emo_master.core.workflow.errors import locatedValidationError, ValidationIssue, WorkflowCompileError
         location = 'resources.items.'+resourceId
         try:
             path = Path(resourcePaths[resourceId]) if resourcePaths and resourceId in resourcePaths else _inside(root, item.path)
+        except FileNotFoundError:
+            # A replacement's managed root is created only when it is published.
+            issues.append(ValidationIssue('E_RESOURCE_MISSING',
+                f'resource unavailable: {resourceId} ({item.path}); resource root not found: {root}',
+                projectId=project.project.projectId, fieldPath=location+'.path'))
+            continue
         except ValueError as error:
-            raise locatedValidationError(error, 'E_RESOURCE_INPUT', projectId=project.project.projectId, fieldPath=location+'.path') from error
-        if not path.is_file() or path.stat().st_size != item.size:
-            raise WorkflowCompileError([ValidationIssue('E_RESOURCE_INPUT', f'resource missing or size mismatch: {resourceId}',
-                projectId=project.project.projectId, fieldPath=location+'.path')])
+            issues.extend(locatedValidationError(error, 'E_RESOURCE_INPUT', projectId=project.project.projectId,
+                                                  fieldPath=location+'.path').issues)
+            continue
+        if not path.is_file():
+            exists = path.exists()
+            issues.append(ValidationIssue('E_RESOURCE_INPUT' if exists else 'E_RESOURCE_MISSING',
+                f'resource {"is not a file" if exists else "missing"}: {resourceId} ({path})',
+                projectId=project.project.projectId, fieldPath=location+'.path'))
+            continue
+        size = path.stat().st_size
+        if size != item.size:
+            issues.append(ValidationIssue('E_RESOURCE_SIZE',
+                f'resource size mismatch: {resourceId} ({path}); expected {item.size}, actual {size}',
+                projectId=project.project.projectId, fieldPath=location+'.size'))
+            continue
         digest = hashlib.sha256()
         with path.open("rb") as stream:
             for block in iter(lambda: stream.read(1024 * 1024), b""):
                 digest.update(block)
         if digest.hexdigest() != item.sha256:
-            raise WorkflowCompileError([ValidationIssue('E_RESOURCE_DIGEST', f'resource digest mismatch: {resourceId}',
-                projectId=project.project.projectId, fieldPath=location+'.sha256')])
+            issues.append(ValidationIssue('E_RESOURCE_DIGEST', f'resource digest mismatch: {resourceId} ({path})',
+                projectId=project.project.projectId, fieldPath=location+'.sha256'))
+            continue
         resolved[resourceId] = str(path)
+    if issues:
+        raise WorkflowCompileError(issues)
     return resolved
 
 

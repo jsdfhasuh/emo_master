@@ -405,6 +405,13 @@ class WorkflowCompiler:
         if operatorClass is None:
             return []
         validate = getattr(operatorClass, "validateParams", None)
+        # Port-aware validators defer only values supplied by graph connections.
+        validationArgs: tuple = ()
+        connectedValidator = getattr(operatorClass, "validateNodeParams", None)
+        if callable(connectedValidator):
+            validate = connectedValidator
+            validationArgs = ({edge.toPort for edge in document.workflows[workflowId].edges
+                               if edge.toNode == node.nodeId},)
         if node.deviceBindings:
             validate = getattr(operatorClass, "validateDeviceParams", validate)
         try:
@@ -415,12 +422,12 @@ class WorkflowCompiler:
             if not callable(validate):
                 return []
             validator = cast(Callable[..., object], validate)
-            result = validator(params)
+            result = validator(params, *validationArgs)
         except TypeError:
             try:
                 validator = cast(Callable[..., object], validate)
                 operatorFactory = cast(Callable[[], object], operatorClass)
-                result = validator(operatorFactory(), params)
+                result = validator(operatorFactory(), params, *validationArgs)
             except Exception as err:
                 return [
                     ValidationIssue(

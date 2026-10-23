@@ -137,10 +137,39 @@ def testVideoLoaderSequenceExhaustionResetAndParameterChange(runtime, tmp_path):
         assert run(debug, {**params, "intervalSec": .25})["outputs"]["index"] == 0
 
 
+def testFileListDebugReturnsRuntimePaths(runtime, tmp_path):
+    (tmp_path / "clip10.mp4").touch()
+    (tmp_path / "clip2.mp4").touch()
+    with connected(runtime, "vision.io.file_list") as debug:
+        result = run(debug, {"folderPath": str(tmp_path), "patterns": ["*.mp4"]})
+        assert result["status"] == "SUCCEEDED", result
+        assert result["outputs"] == {"paths": [str(tmp_path / "clip2.mp4"), str(tmp_path / "clip10.mp4")], "count": 2}
+
+
+def testVideoLoaderDebugUsesDynamicPath(runtime, tmp_path):
+    from tests.plugins.test_video_loader_operator import makeVideo
+    makeVideo(tmp_path / "01.avi", count=1)
+    makeVideo(tmp_path / "02.mp4", count=1)
+    with connected(runtime, "vision.io.video_loader") as debug:
+        params = {"videoPath": "missing-old-draft.mp4", "intervalSec": .5}
+        firstInput = {"videoPath": {"inline": str(tmp_path / "01.avi")}}
+        secondInput = {"videoPath": {"inline": str(tmp_path / "02.mp4")}}
+        first, second = run(debug, params, firstInput), run(debug, params, secondInput)
+        assert first["status"] == second["status"] == "SUCCEEDED", (first, second)
+        assert first["outputs"]["videoPath"] == firstInput["videoPath"]["inline"]
+        assert second["outputs"]["videoPath"] == secondInput["videoPath"]["inline"]
+        assert not first["outputs"]["hasNext"] and not second["outputs"]["hasNext"]
+        assert first["outputAssets"]["image"] and second["outputAssets"]["image"]
+        assert run(debug, params, secondInput)["code"] == "E_INPUT_EXHAUSTED"
+        assert run(debug, params, {**secondInput, "reset": {"inline": True}})["outputs"]["index"] == 0
+        assert run(debug, params, {"videoPath": {"inline": "relative.mp4"}})["code"] == "E_PARAM_INVALID"
+
+
 @pytest.mark.parametrize("operatorId,key", [
     ("vision.io.coordinate_reader", "filePath"), ("vision.io.image_batch_loader", "folderPath"),
     ("vision.inference.yolo", "modelPath"),
     ("vision.io.video_loader", "videoPath"),
+    ("vision.io.file_list", "folderPath"),
 ])
 def testPathsMustExistOnRuntime(runtime, tmp_path, operatorId, key):
     with connected(runtime, operatorId) as debug:

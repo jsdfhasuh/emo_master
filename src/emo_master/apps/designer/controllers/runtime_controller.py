@@ -35,6 +35,7 @@ class RuntimeController:
         onInspectionAccepted=None,
         onInspectionClosing=None,
         getRunProjectReference: Callable[[], str | None] | None = None,
+        onRunFailed: Callable[[dict[str, object]], None] | None = None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.runtimePanelState = runtimePanelState
@@ -61,6 +62,9 @@ class RuntimeController:
         self.onInspectionStatus = onInspectionStatus
         self.onInspectionAccepted = onInspectionAccepted
         self.onInspectionClosing = onInspectionClosing
+        self.onRunFailed = onRunFailed
+        self._failureEvent: dict[str, object] | None = None
+        self._failureNotified = False
         self._captureCurrentRun = False
         self._previousCaptureJob: tuple[str, str] | None = None
         self._startUncertain = False
@@ -90,6 +94,10 @@ class RuntimeController:
             return
         if not self.syncRuntimeProjectBeforeRun():
             return
+        self._failureEvent = None
+        self._failureNotified = False
+        # Preparation failures must not borrow the previous Job's identity.
+        self.setCurrentJobId(None)
         try:
             # Publication can replace the online copy while leaving the local
             # Designer file association unchanged. Resolve only after sync.
@@ -100,13 +108,10 @@ class RuntimeController:
             captureRequest = self.getCapturePresentation()
             capturePresentation = bool(captureRequest)
         except Exception as error:
-            self.appendLog("ERROR", f"运行准备失败：{error}")
+            self._onWorkerFailed(f"运行准备失败：{error}")
             return
         self._captureCurrentRun = capturePresentation
         inspection = self.onInspectionStarting() if self.onInspectionStarting else None
-        # A new start attempt must not keep presenting the previous terminal job
-        # if the worker fails before it receives a new job id.
-        self.setCurrentJobId(None)
         self.invalidatePreviewSources()
         workflowId = self.getEntryWorkflowId() or ""
         worker = RuntimeWorker(
@@ -227,6 +232,14 @@ class RuntimeController:
                 fallback=int(time.time() * 1000),
             ),
         }
+        if (eventType in {"node.failed", "workflow.failed", "job.failed"}
+                and (not event["jobId"] or event["jobId"] == self.getCurrentJobId())):
+            # Child failures arrive before the enclosing call/loop fails. Keep
+            # the concrete origin instead of replacing it with the outer node.
+            if self._failureEvent is None or (
+                eventType == "node.failed" and self._failureEvent.get("eventType") != "node.failed"
+            ):
+                self._failureEvent = event
         if self.appendEvent is None:
             self.appendLog(eventLevel, f"事件 {eventType}：{eventMessage}")
         else:
@@ -240,6 +253,10 @@ class RuntimeController:
     def _onJobStatus(self, statusReply) -> None:
         runtimeStatus = str(getattr(statusReply, "status", "UNKNOWN"))
         runtimeMessage = str(getattr(statusReply, "message", ""))
+        startedAt = _nonNegativeInteger(getattr(statusReply, 'started_at_ms', 0))
+        endedAt = _nonNegativeInteger(getattr(statusReply, 'ended_at_ms', 0))
+        if startedAt or endedAt:
+            self.runtimePanelState.updateJobTiming(startedAt, endedAt)
         self.runtimePanelState.updateJob(runtimeStatus, runtimeMessage)
         if self.onInspectionStatus:
             self.onInspectionStatus(statusReply)
@@ -253,6 +270,22 @@ class RuntimeController:
             self.setIsJobRunning(True)
         self.refreshRuntimePanelView()
         self.updateToolbarState()
+
+        if runtimeStatus in {"FAILED", "REJECTED"}:
+            self._notifyRunFailure(runtimeMessage, status=runtimeStatus,
+                                   code=str(getattr(statusReply, "error_code", "")))
+
+    def _notifyRunFailure(self, message: str, *, status: str = "FAILED", code: str = "") -> None:
+        if self._failureNotified or self._closing or self._closed or self.onRunFailed is None:
+            return
+        self._failureNotified = True
+        failure = dict(self._failureEvent or {})
+        failure.setdefault("jobId", self.getCurrentJobId() or "")
+        failure.setdefault("workflowId", self.getEntryWorkflowId() or "")
+        failure["message"] = failure.get("message") or message or "Runtime 未提供失败原因"
+        failure["code"] = failure.get("code") or code
+        failure.update(status=status, jobMessage=message)
+        self.onRunFailed(failure)
 
     def _onStartUncertain(self, message: str) -> None:
         self._startUncertain = True
@@ -274,6 +307,7 @@ class RuntimeController:
         self.setIsJobRunning(False)
         self.refreshRuntimePanelView()
         self.updateToolbarState()
+        self._notifyRunFailure(message, status="FAILED" if self.getCurrentJobId() else "REJECTED")
 
     def stopJob(self, mode: str | None = None) -> None:
         if self._closed:

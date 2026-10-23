@@ -150,6 +150,48 @@ def testInstancesAreIndependent(tmp_path):
         second.disposeOperator()
 
 
+def testDynamicVideoPathOverridesDraftAndSwitchesFiles(tmp_path):
+    first = makeVideo(tmp_path / "first.avi", count=6)
+    second = makeVideo(tmp_path / "second.mp4", count=1)
+    operator = VideoLoaderOperator()
+    params = {"videoPath": "missing-old-draft.mp4", "intervalSec": .5}
+    try:
+        out = operator.executeNode({"videoPath": str(first)}, params, {})["outputs"]
+        assert (out["index"], out["frameIndex"], out["hasNext"]) == (0, 0, True)
+        capture = operator._capture
+        out = operator.executeNode({"videoPath": str(first)}, params, {})["outputs"]
+        assert (out["index"], out["frameIndex"], out["hasNext"]) == (1, 5, False)
+        assert not capture.isOpened()
+        out = operator.executeNode({"videoPath": str(second)}, params, {})["outputs"]
+        assert (out["index"], out["frameIndex"], out["hasNext"]) == (0, 0, False)
+        assert out["videoPath"] == str(second)
+        assert operator.executeNode({"videoPath": str(second), "reset": True}, params, {})["outputs"]["index"] == 0
+        assert params["videoPath"] == "missing-old-draft.mp4"
+    finally:
+        operator.disposeOperator()
+
+
+@pytest.mark.parametrize("value,code", [("", "E_PARAM_INVALID"), ("relative.mp4", "E_PARAM_INVALID"),
+                                       (3, "E_INPUT_TYPE"), (None, "E_INPUT_TYPE")])
+def testInvalidDynamicPathNeverFallsBackAndReleasesCapture(tmp_path, value, code):
+    path = makeVideo(tmp_path / "video.avi")
+    operator = VideoLoaderOperator()
+    read(operator, path, intervalSec=.2)
+    capture = operator._capture
+    result = read(operator, path, {"videoPath": value}, intervalSec=.2)
+    assert result["error"]["code"] == code
+    assert not capture.isOpened()
+
+
+def testDynamicPathCanOmitFixedPath(tmp_path):
+    path = makeVideo(tmp_path / "video.avi", count=1)
+    operator = VideoLoaderOperator()
+    assert operator.validateNodeParams({}, {"videoPath"}) is None
+    assert operator.validateParams({})["code"] == "E_PARAM_INVALID"
+    result = operator.executeNode({"videoPath": str(path)}, {}, {})
+    assert result["status"] == "ok", result
+
+
 def testManifestMatchesImplementation():
     root = Path(__file__).resolve().parents[2] / "src/emo_master/plugins/builtins/video_loader"
     manifest = json.loads((root / "manifest.json").read_text())

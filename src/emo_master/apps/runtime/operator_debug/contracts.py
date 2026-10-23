@@ -34,12 +34,15 @@ SUPPORTED_FOLDERS = (
 # its debug reservation excludes competing execution owners.
 # These entries must not also admit automatic workflow execution or trials.
 SINGLE_NODE_FOLDERS = (
-    "plc_slmp_read", "image_loader", "coordinate_reader", "image_batch_loader", "video_loader",
+    "plc_slmp_read", "image_loader", "coordinate_reader", "image_batch_loader", "video_loader", "file_list",
     "yolo_inference", "image_saver", "result_writer", "sqlite_writer",
     "tcp_client", "tcp_receive_once", "plc_slmp_write", "huaray_camera",
+    "rtsp_camera", "hikvision_audio",
 )
 
 EXECUTION_WARNINGS = {
+    "vision.io.rtsp_camera": "本次将从 Runtime 连接 RTSP 摄像头并读取一帧，请确认设备可用于调试。",
+    "communication.camera.hikvision_audio": "本次可能使摄像头现场发声，使用设备当前音量和播放次数。取消不能撤销已发送的播放请求；结果不明时禁止自动重试。",
     "communication.plc.slmp_write": "本次将解锁一次 PLC 写入并真实写入配置的设备。取消或超时不能撤销已发送的数据；禁止自动重试。",
     "communication.tcp.client": "本次将向配置的 TCP 地址真实发送数据。取消或超时不能撤销已发送的数据。",
     "communication.tcp.receive_once": "本次将在 Runtime 监听 TCP 端口，并可能发送配置的应答。请确认监听地址及应答内容。",

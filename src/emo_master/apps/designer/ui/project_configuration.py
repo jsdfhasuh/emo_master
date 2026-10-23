@@ -10,7 +10,7 @@ from time import monotonic
 from PySide2.QtCore import Qt, QTimer, Signal, QEvent
 from PySide2.QtGui import QPalette
 from PySide2.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QCheckBox,
-    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QMessageBox, QStyle, QTextBrowser,
+    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QMessageBox, QStyle, QTextBrowser, QTextEdit,
     QStyledItemDelegate, QStyleOptionViewItem, QTreeWidget, QTreeWidgetItem)
 
 from emo_master.core.project.configuration import projectConfigurationChanges, requiredProjectChanges, changeCategory
@@ -30,7 +30,7 @@ class ChangeLocationDelegate(QStyledItemDelegate):
         return super().editorEvent(event, model, option, index)
 
 
-def configurationDiagnostics(error, payload, deviceTypes, operators=()):
+def configurationDiagnostics(error, payload, deviceTypes, operators=(), *, localResources=False):
     """Present compiler/RPC locations, without adding another validation pass."""
     from dataclasses import asdict, is_dataclass
     diagnostics = error.get('diagnostics', error) if isinstance(error, dict) else getattr(error, 'diagnostics', {})
@@ -38,6 +38,7 @@ def configurationDiagnostics(error, payload, deviceTypes, operators=()):
     if not issues and isinstance(diagnostics, dict):
         issues = diagnostics.get('issues', ())
     definitions = payload.get('devices', {}).get('definitions', {})
+    resources = (payload.get('resources') or {}).get('items', {})
     catalog = {item['operatorId']: item for item in operators}
     result = []
     for raw in issues:
@@ -48,6 +49,11 @@ def configurationDiagnostics(error, payload, deviceTypes, operators=()):
         flow = payload.get('workflows', {}).get(wid, {})
         node = next((value for value in flow.get('nodes', []) if value.get('nodeId') == nid), {})
         parts = str(issue.get('fieldPath', '')).split('.')
+        resourceId = next((key for key in sorted(resources, key=len, reverse=True)
+            if str(issue.get('fieldPath', '')).startswith('resources.items.' + key + '.')), '')
+        code = issue.get('code', '')
+        resourceIssue = bool(resourceId and code in {
+            'E_RESOURCE_MISSING', 'E_RESOURCE_SIZE', 'E_RESOURCE_INPUT', 'E_RESOURCE_DIGEST'})
         deviceId, field = '', ''
         message = str(issue.get('message') or '配置未通过校验') + '；请查看详细信息'
         binding = node.get('deviceBindings', {}).get(parts[1], {}) if len(parts) > 1 and parts[0] == 'deviceBindings' else {}
@@ -80,7 +86,20 @@ def configurationDiagnostics(error, payload, deviceTypes, operators=()):
                 message = '设备未选择或引用已失效，请返回节点配置选择设备'
             else:
                 message = '设备绑定不符合要求，请返回节点配置检查设备'
+        elif resourceIssue:
+            if code == 'E_RESOURCE_MISSING':
+                message = ('本地找不到此文件，请恢复工程目录中的文件后重试' if localResources else
+                           'Runtime 缺少此文件，请点击“上传候选资源”')
+            elif code in {'E_RESOURCE_SIZE', 'E_RESOURCE_DIGEST'}:
+                message = ('本地文件' if localResources else 'Runtime 中的文件')
+                message += ('大小' if code == 'E_RESOURCE_SIZE' else '内容') + '与工程记录不一致；'
+                message += ('请恢复匹配的文件，或更新工程的资源记录后重试' if localResources else
+                            '请确认本地文件正确后，点击“上传候选资源”重新上传')
+            else:
+                message = '文件路径无效、不是普通文件或无法作为输入；请检查文件路径，具体原因见“详细信息”'
         labels = []
+        if resourceIssue:
+            labels.append('资源「' + str(resources[resourceId].get('path') or resourceId) + '」')
         if flow:
             labels.append('流程「' + str(flow.get('name') or wid) + '」')
         if node:
@@ -89,9 +108,11 @@ def configurationDiagnostics(error, payload, deviceTypes, operators=()):
         if deviceId in definitions:
             labels.append('设备「' + str(definitions[deviceId].get('name') or deviceId) + '」')
         result.append(dict(text=' / '.join(labels) + ('：' if labels else '') + message,
+            code=code, resourcePath=str(resources[resourceId].get('path') or resourceId) if resourceIssue else '',
             workflowId=wid if flow else '', nodeId=nid if node else '',
             deviceId=deviceId if deviceId in definitions else '', fieldPath=issue.get('fieldPath', ''),
-            target='device' if parts[:2] == ['devices', 'definitions'] and deviceId in definitions else
+            target='resources' if resourceIssue and not localResources and code != 'E_RESOURCE_INPUT' else
+                   'device' if parts[:2] == ['devices', 'definitions'] and deviceId in definitions else
                    'node' if node else 'workflow' if flow else 'configuration'))
     return result
 
@@ -286,12 +307,14 @@ class ProjectConfigurationDialog(QDialog):
         self.status.setStyleSheet('font-weight: bold;' if level in {'success', 'error', 'warning'} else '')
         self.statusIcon.setPixmap(self.style().standardIcon(icons[level]).pixmap(20, 20))
 
-    def _notify(self, title, text, details='', *, warning=False, key=None, upgrade=False, diagnostic=None):
+    def _notify(self, title, text, details='', *, warning=False, key=None, upgrade=False, diagnostic=None,
+                localResources=False):
         text = text.strip() or title
         details = details.strip()
         if diagnostic is not None:
+            localResources = localResources or self.initial
             self.diagnosticEntries = configurationDiagnostics(diagnostic, self.local, self.deviceTypes,
-                self.c.window.operatorCatalogController.getCatalog())
+                self.c.window.operatorCatalogController.getCatalog(), localResources=localResources)
             self.diagnosticChoice.clear()
             for entry in self.diagnosticEntries:
                 self.diagnosticChoice.addItem(entry['text'])
@@ -299,8 +322,21 @@ class ProjectConfigurationDialog(QDialog):
             self.locateButton.setVisible(True)
             self._diagnosticSelected()
             if self.diagnosticEntries:
-                text = '工程校验未通过，尚未写入 Runtime；草稿和输入已保留。\n' + '\n'.join(
-                    entry['text'] for entry in self.diagnosticEntries[:3])
+                entries = self.diagnosticEntries
+                if all(entry['code'] == 'E_RESOURCE_MISSING' and entry['resourcePath'] for entry in entries):
+                    text = (f'本地缺少 {len(entries)} 个工程文件，无法完成校验：' if localResources else
+                            f'Runtime 缺少 {len(entries)} 个工程文件，无法完成校验：')
+                    text += '\n' + '\n'.join('- ' + entry['resourcePath'] for entry in entries[:5])
+                else:
+                    text = '工程校验未通过：\n' + '\n'.join(entry['text'] for entry in entries[:5])
+                if len(entries) > 5:
+                    text += f'\n另有 {len(entries) - 5} 项问题，可在问题列表或“详细信息”中查看。'
+                if all(entry['resourcePath'] for entry in entries):
+                    if localResources:
+                        text += '\n\n请检查本地工程目录中的上述文件；恢复匹配的文件，或更新工程的资源记录后重试。'
+                    elif any(entry['target'] == 'resources' for entry in entries):
+                        text += '\n\n请点击“上传候选资源”，将本地文件传到 Runtime；完成后再点击“校验选中变更”。'
+                text += '\n本次未写入 Runtime，未连接设备或启动任务；草稿和本地工程文件未改变。'
             else:
                 text += '\n请查看详细信息，或返回配置继续修改；草稿和输入已保留。'
         self._feedback(text, 'warning' if warning else 'error')
@@ -315,9 +351,16 @@ class ProjectConfigurationDialog(QDialog):
         box.setText(text)
         if details:
             box.setDetailedText(details)
+            detailButton = next(button for button in box.buttons() if box.buttonRole(button) == QMessageBox.ActionRole)
+            detailView = box.findChild(QTextEdit)
+            detailButton.setText('详细信息')
         upgradeAction = box.addButton('升级草稿并重新校验', QMessageBox.ActionRole) if upgrade else None
         locateAction = box.addButton(self.locateButton.text(), QMessageBox.ActionRole) if diagnostic is not None else None
         box.addButton('关闭', QMessageBox.RejectRole)
+        if details:
+            # QMessageBox resets this label during its own click dispatch.
+            detailButton.clicked.connect(lambda: detailButton.setText(
+                '收起详情' if detailView.isVisible() else '详细信息'), Qt.QueuedConnection)
         self.notifying = True
         self._controls()
         try:
@@ -334,7 +377,8 @@ class ProjectConfigurationDialog(QDialog):
         index = self.diagnosticChoice.currentIndex()
         entry = self.diagnosticEntries[index] if 0 <= index < len(self.diagnosticEntries) else {}
         self.locateButton.setText({'node': '定位节点并配置', 'device': '配置设备',
-            'workflow': '定位流程'}.get(entry.get('target'), '返回配置'))
+            'workflow': '定位流程', 'resources': '上传候选资源' if self.snapshot is not None else '返回配置'
+            }.get(entry.get('target'), '返回配置'))
         self.diagnosticChoice.setToolTip(entry.get('text', ''))
 
     def locateDiagnostic(self):
@@ -342,6 +386,9 @@ class ProjectConfigurationDialog(QDialog):
             return
         index = self.diagnosticChoice.currentIndex()
         entry = self.diagnosticEntries[index] if 0 <= index < len(self.diagnosticEntries) else {}
+        if entry.get('target') == 'resources' and self.snapshot is not None:
+            self.uploadResources()
+            return
         # Closing the comparison retains the same edit session and every input.
         self.reject()
         if entry.get('target') == 'device':
@@ -1265,9 +1312,13 @@ class ProjectConfigurationDialog(QDialog):
             text = (f'写入结果尚未确认；请求 {self.requestId}，请查询原请求结果，未自动重试。\n{self._errorText(error)}' if unknown else
                     self.status.text() if resourceResult is not None else self._errorText(error))
             validating = kind in {'initialValidate', 'initialPrewrite', 'validate', 'prewrite'}
+            localResourceError = (resourceResult is not None
+                and bool(getattr(error, 'diagnostics', {}).get('issues'))
+                and any(item.get('stage') == 'VALIDATE' for item in resourceResult.get('errors', [])))
             if validating:
                 text = '工程校验未通过，尚未写入 Runtime；本地文件未改变。\n' + text
             title = ('写入结果尚未确认' if unknown else '工程校验未通过' if validating else
+                     '本地工程文件校验未通过' if localResourceError else
                      '读取 Runtime 在线配置失败' if kind == 'snapshot' else '工程与 Runtime 操作失败')
             if kind == 'snapshot' and not unknown:
                 if snapshotReceived:
@@ -1278,7 +1329,7 @@ class ProjectConfigurationDialog(QDialog):
                 text += '\n本次未写入 Runtime，未启动流程；本地工程文件未改变。'
             self._notify(title, text, self._errorDetails(error),
                 warning=unknown, key=(self.requestId, 'UNKNOWN', str(error)) if unknown else None,
-                diagnostic=error if validating else None)
+                diagnostic=error if validating or localResourceError else None, localResources=localResourceError)
             if getattr(error, 'code', '') in {'E_CONFIG_ACTIVE', 'E_CONFIG_INSTANCE', 'E_CONFIG_CONFLICT'}:
                 self.initialValidated = False
                 self.refresh()

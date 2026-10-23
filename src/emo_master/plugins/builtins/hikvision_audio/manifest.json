@@ -1,0 +1,127 @@
+{
+  "operatorId": "communication.camera.hikvision_audio",
+  "displayName": "\u6444\u50cf\u5934\u53d1\u58f0\uff08\u6d77\u5eb7\uff09",
+  "version": "1.0.0",
+  "inputPorts": {
+    "trigger": {
+      "type": "boolean",
+      "required": false,
+      "nullable": false
+    }
+  },
+  "outputPorts": {
+    "triggered": {
+      "type": "boolean",
+      "required": true,
+      "nullable": false
+    },
+    "audioId": {
+      "type": "integer",
+      "required": true,
+      "nullable": false
+    },
+    "volume": {
+      "type": "integer",
+      "required": true,
+      "nullable": false
+    },
+    "alarmTimes": {
+      "type": "integer",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "cameraUrl": {
+        "title": "\u6444\u50cf\u5934HTTP\u5730\u5740",
+        "type": "string",
+        "default": ""
+      },
+      "username": {
+        "title": "\u7528\u6237\u540d",
+        "type": "string",
+        "default": "admin"
+      },
+      "password": {
+        "title": "\u5bc6\u7801",
+        "type": "string",
+        "default": "",
+        "xWidget": "password"
+      },
+      "passwordEnv": {
+        "title": "\u5bc6\u7801\u73af\u5883\u53d8\u91cf",
+        "type": "string",
+        "default": ""
+      },
+      "audioSource": {
+        "title": "\u97f3\u9891\u6765\u6e90",
+        "type": "string",
+        "default": "builtin",
+        "enum": [
+          "builtin",
+          "custom"
+        ],
+        "xOptionLabels": {
+          "builtin": "\u5185\u7f6e\u97f3\u9891",
+          "custom": "\u5df2\u4e0a\u4f20\u97f3\u9891"
+        }
+      },
+      "audioId": {
+        "title": "\u5185\u7f6e\u97f3\u9891ID",
+        "type": "integer",
+        "default": 12,
+        "minimum": 1,
+        "maximum": 12,
+        "xVisibleWhen": {
+          "audioSource": [
+            "builtin"
+          ]
+        }
+      },
+      "customAudioId": {
+        "title": "\u81ea\u5b9a\u4e49\u97f3\u9891\u69fd\u4f4d",
+        "type": "integer",
+        "default": 1,
+        "minimum": 1,
+        "maximum": 3,
+        "xVisibleWhen": {
+          "audioSource": [
+            "custom"
+          ]
+        }
+      },
+      "maxVolume": {
+        "title": "\u5141\u8bb8\u7684\u6700\u5927\u97f3\u91cf",
+        "type": "integer",
+        "default": 30,
+        "minimum": 1,
+        "maximum": 100
+      },
+      "maxAlarmTimes": {
+        "title": "\u5141\u8bb8\u7684\u6700\u5927\u64ad\u653e\u6b21\u6570",
+        "type": "integer",
+        "default": 1,
+        "minimum": 1,
+        "maximum": 50
+      },
+      "timeoutMs": {
+        "title": "\u8bf7\u6c42\u8d85\u65f6\uff08\u6beb\u79d2\uff09",
+        "type": "integer",
+        "default": 5000,
+        "minimum": 100,
+        "maximum": 60000
+      }
+    },
+    "required": [
+      "cameraUrl"
+    ]
+  },
+  "entry": "emo_master.plugins.builtins.hikvision_audio.operator:HikvisionAudioOperator",
+  "category": "\u901a\u8baf",
+  "iconKey": "output",
+  "summary": "\u901a\u8fc7\u6d77\u5eb7 H8 ISAPI \u64ad\u653e\u5185\u7f6e\u6216\u5df2\u4e0a\u4f20\u97f3\u9891\uff1b\u4e0d\u4fee\u6539\u5168\u5c40\u97f3\u91cf\u548c\u64ad\u653e\u6b21\u6570\uff0c\u4e0d\u81ea\u52a8\u91cd\u8bd5\u3002",
+  "minCoreVersion": "0.1.0",
+  "maxCoreVersion": "1.x"
+}

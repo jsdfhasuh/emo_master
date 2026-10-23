@@ -7,6 +7,7 @@
   "iconKey": "source",
   "summary": "\u6309\u89c6\u9891\u65f6\u95f4\u6bcf\u9694 X \u79d2\u53d6\u4e00\u5e27\uff0c\u6bcf\u6b21\u6267\u884c\u8f93\u51fa\u4e00\u5f20\u56fe\u7247\uff0c\u7528 hasNext \u7ed3\u675f While \u5faa\u73af\u3002",
   "inputPorts": {
+    "videoPath": {"type": "string", "required": false, "nullable": false},
     "reset": {"type": "boolean", "required": false, "nullable": false}
   },
   "outputPorts": {

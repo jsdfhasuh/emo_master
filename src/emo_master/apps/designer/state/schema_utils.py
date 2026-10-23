@@ -24,8 +24,8 @@ def mergeParameterTitles(
                     if key in sourceField:
                         field[key] = deepcopy(sourceField[key])
                 if (field.get("type") == sourceField.get("type") == "array"
-                        and sourceField.get("xWidget") == "integer-list"):
-                    field["xWidget"] = "integer-list"
+                        and sourceField.get("xWidget") in ("integer-list", "file-patterns")):
+                    field["xWidget"] = sourceField["xWidget"]
                 condition = sourceField.get("xEnabledWhen")
                 if isinstance(condition, dict) and all(key in properties for key in condition):
                     field["xEnabledWhen"] = deepcopy(condition)

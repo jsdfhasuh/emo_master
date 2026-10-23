@@ -5,7 +5,7 @@
   "entry": "emo_master.plugins.builtins.collection_select.operator:CollectionSelectOperator",
   "category": "结果处理",
   "iconKey": "select",
-  "summary": "从强类型视觉集合中选择首项、末项、指定索引或 Top-K。",
+  "summary": "从强类型视觉集合中选择首项、末项、指定索引或 Top-K；按索引选择时可连接动态 index 输入。",
   "inputPorts": {
     "blobs": {"type": "blobCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
     "detections": {"type": "detectionCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
@@ -13,7 +13,8 @@
     "measurements": {"type": "shapeMeasurementCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
     "lines": {"type": "lineCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
     "circles": {"type": "circleCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
-    "matches": {"type": "templateMatchCollection", "required": false, "nullable": false, "schemaVersion": "1.2"}
+    "matches": {"type": "templateMatchCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "index": {"type": "integer", "required": false, "nullable": false}
   },
   "outputPorts": {
     "selectedBlobs": {"type": "blobCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
@@ -66,6 +67,7 @@
       },
       "index": {
         "title": "元素索引",
+        "description": "按索引选择时使用；连接 index 输入后，以本次输入为准。",
         "type": "integer",
         "minimum": 0,
         "default": 0,

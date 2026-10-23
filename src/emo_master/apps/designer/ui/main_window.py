@@ -1356,6 +1356,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             getEntryWorkflowId=lambda: self.workflowStore.entryWorkflowId,
             appendEvent=self.appendRuntimeEvent,
             onJobAccepted=self._rememberRuntimeLogJob,
+            onRunFailed=self._showRunFailure,
             getLegacySnapshotPolicy=lambda: self.nextRunLegacySnapshotPolicy,
             invalidatePreviewSources=lambda: self.operatorEditorManager.invalidatePreviewSources(),
             deliveryContext=self if _nativeQt else None,
@@ -1464,12 +1465,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.runtimeController.getCapturePresentation = self._capturePresentationForRun
         self.communicationController = None
         self.communicationDock = None
-        if _nativeQt:
-            self.communicationStatus = QPushButton('TCP · 设备管理')
+        if _nativeQt and self.pageCoordinator is not None:
+            self.communicationStatus = QPushButton('设备状态读取中')
             self.communicationStatus.setFlat(True)
-            self.communicationStatus.setToolTip('查看工程中的 TCP 设备')
-            self.communicationStatus.clicked.connect(self.openCommunicationPanel)
+            self.communicationStatus.clicked.connect(self.pageCoordinator.showDevices)
             self.statusBar().addPermanentWidget(self.communicationStatus)
+            from .device_status import DeviceStatusObserver
+            self.deviceStatusObserver = DeviceStatusObserver(self.pageCoordinator, self.communicationStatus)
 
     def openCommunicationPanel(self):
         coordinator = self.pageCoordinator
@@ -2306,6 +2308,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if workflow is None:
                 return None
             raw = next((item for item in workflow.nodes if item.get("nodeId") == nodeId), {})
+            if raw.get("operatorId") == "vision.io.video_loader":
+                return self._nodeEditorSchema(SimpleNamespace(
+                    kind="operator", nodeId=nodeId, operatorId=raw["operatorId"],
+                    paramSchema=raw.get("paramSchema", {})), workflowId)
             if raw.get("kind") not in {"loop", "subflow"}:
                 return None
             return self._nodeEditorSchema(SimpleNamespace(
@@ -2321,6 +2327,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return model
         lines, outputs = controlFlowDetails(node, self.workflowStore.workflows, self._globalVariableDefinitions())
         definition = self._operatorDefinition(node.operatorId)
+        if (node.operatorId == "vision.collection.select" and "index" not in node.inputPorts
+                and cast(dict, definition.get("inputPorts", {})).get("index") == "integer"):
+            # Offer the compatible optional input without editing a saved node
+            # merely by opening it. Successful wiring records the port below.
+            node = replace(node, inputPorts={**node.inputPorts, "index": "integer"})
         requirements = definition.get('deviceRequirements')
         if requirements:
             pending = []
@@ -3090,6 +3101,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
         if self.pageCoordinator is not None:
             self.pageCoordinator.shutdown()
+        observer = getattr(self, 'deviceStatusObserver', None)
+        if observer is not None:
+            observer.close()
         self.runtimePanelState.nodeInspection.clear()
         self._displayedRunImage = None
         self._saveRuntimeLogSettings()
@@ -3861,7 +3875,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             inputs = self._connectableNodePorts(targetNodeId, "input")
             fromPort = self.flowModel._getFirstPortName(outputs, "source output")
             toPort = self.flowModel._getFirstPortName(inputs, "target input")
-            edge = self.flowModel.connectNodes(sourceNodeId, fromPort, targetNodeId, toPort)
+            edge = self.flowModel.connectNodes(sourceNodeId, fromPort, targetNodeId, toPort,
+                                               newInputPortType=inputs[toPort])
         except ValueError as err:
             self.appendRuntimeLog("ERROR", str(err))
             return
@@ -3873,6 +3888,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
         self.flowScene.renderEdge(edgeViewModel)
         self.refreshWorkflowDependencyTree()
+        self._refreshWorkflowEditorSchemas()
         self.appendRuntimeLog(
             "INFO",
             f"连线成功：{edge.fromNode}.{edge.fromPort} -> {edge.toNode}.{edge.toPort}",
@@ -3900,7 +3916,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         try:
             if fromPort not in self._connectableNodePorts(fromNodeId, "output"):
                 raise ValueError(f"当前配置不支持输出引脚：{fromPort}")
-            if toPort not in self._connectableNodePorts(toNodeId, "input"):
+            inputs = self._connectableNodePorts(toNodeId, "input")
+            if toPort not in inputs:
                 raise ValueError(f"当前配置不支持输入引脚：{toPort}")
             edge = self.flowModel.connectNodes(
                 fromNode=fromNodeId,
@@ -3908,6 +3925,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 toNode=toNodeId,
                 toPort=toPort,
                 replaceInputPort=True,
+                newInputPortType=inputs[toPort],
             )
         except ValueError as err:
             self.appendRuntimeLog("ERROR", self._formatConnectionError(str(err)))
@@ -3924,6 +3942,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             f"连线成功：{edge.fromNode}.{edge.fromPort} -> {edge.toNode}.{edge.toPort}",
         )
         self.refreshWorkflowDependencyTree()
+        self._refreshWorkflowEditorSchemas()
         return edgeViewModel
 
     def validateGraph(self) -> None:
@@ -3965,6 +3984,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
         deletedCount = len(selectedEdgeKeys) + len(selectedNodeIds)
         if deletedCount > 0:
+            self._refreshWorkflowEditorSchemas()
             if _nativeQt:
                 self.flowScene.refreshPresentations()
             self.appendRuntimeLog("INFO", f"已删除选中元素：{deletedCount}")
@@ -4263,13 +4283,22 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         while len(self._runtimeLogJobProjects) > DEFAULT_MAX_LOG_ENTRIES:
             self._runtimeLogJobProjects.pop(next(iter(self._runtimeLogJobProjects)))
 
-    def appendRuntimeEvent(self, event: dict[str, object]) -> None:
+    def _runtimeLogEntry(self, event: dict[str, object]) -> StructuredLogEntry:
         entry = StructuredLogEntry.fromRuntimeEvent(event)
         identity = self._runtimeLogJobProjects.get(entry.jobId)
         if identity is not None:
             projectId, token = identity
             if not entry.projectId or entry.projectId == projectId:
                 entry = replace(entry, projectId=projectId, projectInstanceToken=token)
+        return entry
+
+    def _showRunFailure(self, failure: dict[str, object]) -> None:
+        if _nativeQt:
+            from emo_master.apps.designer.ui.run_failure_dialog import showRunFailure
+            showRunFailure(self, self._runtimeLogEntry(failure), failure)
+
+    def appendRuntimeEvent(self, event: dict[str, object]) -> None:
+        entry = self._runtimeLogEntry(event)
         self._storeRuntimeLogEntry(entry, entry.displayLine())
         if self.logDock is not None:
             self.logDock.appendEntry(entry)
@@ -4939,6 +4968,17 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             # Remote catalogs may arrive after a minimal project was opened.
             schema = (deepcopy(catalogSchema) if not node.paramSchema else
                       mergeParameterTitles(node.paramSchema, catalogSchema))
+            if node.operatorId == "vision.io.video_loader":
+                edges = (self.flowModel.edges if sourceWorkflowId == self.activeWorkflowId else
+                         self.workflowStore.get(sourceWorkflowId).edges)
+                connected = any((edge.get("toNode"), edge.get("toPort")) == (node.nodeId, "videoPath")
+                                if isinstance(edge, dict) else (edge.toNode, edge.toPort) == (node.nodeId, "videoPath")
+                                for edge in edges)
+                if connected:
+                    field = cast(dict, schema.get("properties", {})).get("videoPath")
+                    if isinstance(field, dict):
+                        field.update(xReadOnly=True, title="视频文件（由输入端口提供）")
+                    schema["required"] = [key for key in cast(list, schema.get("required", [])) if key != "videoPath"]
             from emo_master.plugins.builtins._operator_modes import INPUT_CHOICES, currentModeSchema, inferredInputType
             modeSchema = currentModeSchema(node.operatorId)
             if modeSchema is not None:

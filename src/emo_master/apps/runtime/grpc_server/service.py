@@ -108,6 +108,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
         logDirectory: Path | None = None,
         productionMode: bool = False,
     ) -> None:
+        self._startedMonotonic = time.monotonic()
         explicitDbPath = dbPath is not None
         if dbPath is None:
             dbPath = _defaultDbPath()
@@ -833,9 +834,11 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
 
     @_withProjectStateLock
     def GetDeviceStates(self, request, context):
+        uptimeMs = max(0, int((time.monotonic() - self._startedMonotonic) * 1000))
         if request.project_id != self.loadedProjectId or self.loadedDocument is None:
             return runtime_pb2.GetDeviceStatesReply(ok=False, runtime_instance_id=self.runtimeInstanceId,
                 project_id=self.loadedProjectId, states_json="{}", message="Runtime 未加载此工程",
+                runtime_uptime_ms=uptimeMs,
                 code='E_CONFIG_NOT_LOADED' if self.projectConfiguration.current is None else 'E_CONFIG_PROJECT')
         with self.deviceManager.lock:
             from emo_master.core.project.snapshots import revisionOf
@@ -845,7 +848,11 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
             for key, driver in self.deviceManager.drivers.items():
                 definition = self.deviceManager.definitions[key]
                 states[key].update(deviceTypeId=definition.deviceTypeId, name=definition.name,
-                                   enabled=definition.enabled)
+                                   enabled=definition.enabled,
+                                   connectionLifetime=self.deviceManager.types[definition.deviceTypeId].connectionLifetime,
+                                   connectionAddress={field: definition.connection[field]
+                                       for field in ('host', 'port', 'bindAddress', 'bindHost', 'cameraKey', 'serial')
+                                       if field in definition.connection})
                 snapshot = getattr(driver, "snapshot", None)
                 if callable(snapshot):
                     states[key]['driverState'] = snapshot()
@@ -866,6 +873,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 states[key]['rpcBudgetsMs'] = self.deviceManager.rpcBudgetsMs(key)
         return runtime_pb2.GetDeviceStatesReply(ok=True, runtime_instance_id=self.runtimeInstanceId,
             project_id=self.loadedProjectId, states_json=json.dumps(states),
+            runtime_uptime_ms=uptimeMs,
             project_load_generation=self.deviceManager.scope['projectLoadGeneration'])
 
     @_withProjectStateLock

@@ -872,10 +872,9 @@ class DeviceWorkspace(QDialog):
         self._updateOnlineActions()
         self.showDiagnostics()
 
-        status = getattr(self.c.window, 'communicationStatus', None)
-        if status is not None:
-            from emo_master.ui.communication_panel import tcpDeviceSummary
-            status.setText(tcpDeviceSummary(definitions, self.states))
+        observer = getattr(self.c.window, 'deviceStatusObserver', None)
+        if observer is not None:
+            observer.refresh()
 
     def _updateOnlineActions(self):
         definition = self.c.session.workflows.devices.get('definitions', {}).get(self.selectedId, {})

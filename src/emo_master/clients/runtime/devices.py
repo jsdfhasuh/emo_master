@@ -68,6 +68,13 @@ class DeviceManagementClient:
     def getDeviceStates(self, projectId, *, cancellation=None):
         return self._states(self._call('GetDeviceStates', pb.GetDeviceStatesRequest(project_id=projectId), cancellation))
 
+    def getDeviceOverview(self, projectId, *, cancellation=None):
+        reply = self._call('GetDeviceStates', pb.GetDeviceStatesRequest(project_id=projectId), cancellation)
+        return dict(runtimeInstanceId=reply.runtime_instance_id, projectId=reply.project_id,
+                    available=reply.ok, states=json.loads(reply.states_json or '{}') if reply.ok else {},
+                    message=reply.message, code=reply.code,
+                    uptimeMs=reply.runtime_uptime_ms if reply.HasField('runtime_uptime_ms') else None)
+
     def controlDevice(self, projectId, runtimeInstanceId, deviceId, state, action, *, confirmed=False):
         return self._states(self._call('ControlDevice', pb.ControlDeviceRequest(project_id=projectId,
             runtime_instance_id=runtimeInstanceId, device_id=deviceId, expected_generation=state['generation'],

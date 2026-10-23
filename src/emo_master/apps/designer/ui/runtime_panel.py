@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from time import monotonic
 from emo_master.apps.designer.state.node_run_inspection import NodeRunInspection
 from emo_master.apps.designer.state.workflow_execution import WorkflowExecutionState
 
@@ -20,6 +21,31 @@ class RuntimePanelState:
     allowEventsWithoutActiveJob: bool = field(default=True, init=False, repr=False)
     nodeInspection: NodeRunInspection = field(default_factory=NodeRunInspection)
     workflowExecution: WorkflowExecutionState = field(default_factory=WorkflowExecutionState)
+    jobStartedAtMs: int = 0
+    jobEndedAtMs: int = 0
+    _jobStartedClock: float | None = field(default=None, init=False, repr=False)
+    _jobEndedClock: float | None = field(default=None, init=False, repr=False)
+
+    def _resetJobTiming(self) -> None:
+        self.jobStartedAtMs = self.jobEndedAtMs = 0
+        self._jobStartedClock = self._jobEndedClock = None
+
+    def updateJobTiming(self, startedAtMs: int = 0, endedAtMs: int = 0) -> None:
+        if startedAtMs > 0:
+            self.jobStartedAtMs = startedAtMs
+            if self._jobStartedClock is None:
+                self._jobStartedClock = monotonic()
+        if endedAtMs > 0:
+            self.jobEndedAtMs = endedAtMs
+
+    def jobElapsedMs(self) -> float | None:
+        # Both timestamps come from Runtime, avoiding client/server clock skew.
+        if self.jobStartedAtMs and self.jobEndedAtMs:
+            return max(0, self.jobEndedAtMs - self.jobStartedAtMs)
+        if self._jobStartedClock is None:
+            return None
+        end = self._jobEndedClock if self._jobEndedClock is not None else monotonic()
+        return max(0, (end - self._jobStartedClock) * 1000)
 
     def setActiveJob(self, jobId: str | None) -> None:
         if self.activeJobId == jobId:
@@ -40,8 +66,16 @@ class RuntimePanelState:
         self.latestArtifact = {}
         self.jobStatus = "IDLE"
         self.lastMessage = ""
+        self._resetJobTiming()
 
     def updateJob(self, status: str, message: str = "") -> None:
+        if status in {'IDLE', 'READY'} or (status == 'STARTING' and
+                self.jobStatus in {'IDLE', 'READY', 'COMPLETED', 'FAILED', 'ABORTED', 'REJECTED'}):
+            self._resetJobTiming()
+        if status == 'RUNNING' and self._jobStartedClock is None:
+            self._jobStartedClock = monotonic()
+        if status in {'COMPLETED', 'FAILED', 'ABORTED', 'REJECTED'} and self._jobEndedClock is None:
+            self._jobEndedClock = monotonic()
         self.jobStatus = status
         self.lastMessage = message
 
@@ -62,8 +96,11 @@ class RuntimePanelState:
         runId = workflowRunId if isinstance(workflowRunId, str) else ""
         workflowIdRaw = event.get("workflowId")
         workflowId = workflowIdRaw if isinstance(workflowIdRaw, str) else ""
-        if eventType == 'job.started' and self.jobStatus in {'IDLE', 'ACCEPTED', 'STARTING'}:
-            self.updateJob('RUNNING', str(message or '作业运行中'))
+        if eventType == 'job.started':
+            timestamp = event.get('timestampMs', 0)
+            self.updateJobTiming(startedAtMs=timestamp if isinstance(timestamp, int) else 0)
+            if self.jobStatus in {'IDLE', 'ACCEPTED', 'STARTING'}:
+                self.updateJob('RUNNING', str(message or '作业运行中'))
         iterationRaw = event.get("iterationPath", ())
         iterationPath = (
             tuple(item for item in iterationRaw if isinstance(item, int) and not isinstance(item, bool))
@@ -116,15 +153,10 @@ class RuntimePanelState:
                 self.latestImagePath = message.split("output image saved:", 1)[
                     1
                 ].strip()
-            self.jobStatus = "COMPLETED"
-            self.lastMessage = message
-        if eventType == "job.stopping":
-            self.jobStatus = "STOPPING"
-            if isinstance(message, str):
-                self.lastMessage = message
-        if eventType == "job.failed" and isinstance(message, str):
-            self.jobStatus = "FAILED"
-            self.lastMessage = message
-        if eventType == "job.aborted" and isinstance(message, str):
-            self.jobStatus = "ABORTED"
-            self.lastMessage = message
+        jobEvents = {'job.completed': 'COMPLETED', 'job.failed': 'FAILED',
+                     'job.aborted': 'ABORTED', 'job.stopping': 'STOPPING'}
+        if eventType in jobEvents:
+            if eventType != 'job.stopping':
+                timestamp = event.get('timestampMs', 0)
+                self.updateJobTiming(endedAtMs=timestamp if isinstance(timestamp, int) else 0)
+            self.updateJob(jobEvents[str(eventType)], message if isinstance(message, str) else self.lastMessage)

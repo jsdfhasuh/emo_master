@@ -65,10 +65,10 @@ class DebugResources:
         elif operatorId == "vision.io.coordinate_reader":
             # A frozen session remains usable if its source is later removed.
             runtimePath(params.get("filePath"), mustExist=params.get("readMode") != "session")
-        elif operatorId == "vision.io.image_batch_loader":
+        elif operatorId in {"vision.io.image_batch_loader", "vision.io.file_list"}:
             runtimePath(params.get("folderPath"), directory=True)
         elif operatorId == "vision.io.video_loader":
-            runtimePath(params.get("videoPath"))
+            runtimePath(values["videoPath"] if "videoPath" in values else params.get("videoPath"))
         elif operatorId == "vision.inference.yolo":
             runtimePath(params.get("modelPath"))
         elif operatorId == "vision.io.image_saver":

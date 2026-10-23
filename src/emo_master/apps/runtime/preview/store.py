@@ -95,6 +95,14 @@ class PreviewSnapshotWriter:
         return _retirePaths(self._pendingCleanup)
 
     def capture(self, node: object, outputs: Mapping[str, object], context: object) -> None:
+        captureId = str(uuid4())
+        self.captureLegacy(node, outputs, context, captureId=captureId)
+        if self.inspectionPublisher is not None:
+            self._captureInspection(node, outputs, context, captureId)
+
+    def captureLegacy(self, node: object, outputs: Mapping[str, object], context: object,
+                      *, captureId: str, createdAtMs: int | None = None) -> None:
+        """Persist one legacy invocation; live inspection has a separate owner."""
         # A failed unlink cannot become an unbounded UUID-file history. Keep
         # the last committed capture readable, and refuse new allocations until
         # the bounded previous invocation's cleanup actually retires.
@@ -109,7 +117,6 @@ class PreviewSnapshotWriter:
         iterationPath = [int(item) for item in rawIteration]
         # One capture invocation owns all its image/companion ports. Node IDs
         # alone cannot distinguish repeated calls, iterations or later Jobs.
-        captureId = str(uuid4())
         originJobId = self.jobId or str(getattr(context, "jobId", ""))
         nextEntries = dict(self._entries)
         created: list[Path] = []
@@ -123,7 +130,7 @@ class PreviewSnapshotWriter:
                     continue
                 key = (workflowId, nodeId, port)
                 identity = hashlib.sha256(("\0".join(key) + "\0" + captureId).encode("utf-8")).hexdigest()
-                createdAtMs = int(time.time() * 1000)
+                capturedAt = int(time.time() * 1000) if createdAtMs is None else createdAtMs
                 if portType == "image":
                     if not isinstance(value, np.ndarray) or value.dtype != np.uint8:
                         continue
@@ -144,7 +151,7 @@ class PreviewSnapshotWriter:
                         "width": int(width),
                         "height": int(height),
                         "iterationPath": iterationPath,
-                        "createdAtMs": createdAtMs,
+                        "createdAtMs": capturedAt,
                     }
                 else:
                     if not _isJsonValue(value):
@@ -162,7 +169,7 @@ class PreviewSnapshotWriter:
                         "width": 0,
                         "height": 0,
                         "iterationPath": iterationPath,
-                        "createdAtMs": createdAtMs,
+                        "createdAtMs": capturedAt,
                     }
                 entry.update(originJobId=originJobId, originProjectRevision=self.projectRevision,
                              captureId=captureId,
@@ -172,6 +179,8 @@ class PreviewSnapshotWriter:
                 if previous is not None:
                     obsolete.append(self.root / str(previous["relativePath"]))
                 nextEntries[key] = entry
+            if not created:
+                return  # No supported outputs: there is no changed index to commit.
             _atomicJson(self.root / "index.json", {"entries": list(nextEntries.values())})
         except BaseException as error:
             self._pendingCleanup.update(created)
@@ -180,8 +189,6 @@ class PreviewSnapshotWriter:
                 raise OSError("capture failed; unpublished snapshot cleanup pending") from error
             raise
         self._entries = nextEntries
-        if self.inspectionPublisher is not None:
-            self._captureInspection(node, outputs, context, captureId)
         self._pendingCleanup.update(obsolete)
         if not self._retirePending():
             raise OSError("snapshot committed; preceding capture cleanup pending")

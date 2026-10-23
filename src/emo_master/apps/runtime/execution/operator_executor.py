@@ -138,7 +138,9 @@ class OperatorExecutor:
             params = resolveParams(params, node.globalVariableBindings, values)
             params = validateEffectiveParams(params, node.globalVariableBindings, node.paramSchema)
             validator = getattr(operator, "validateParams", None)
-            error = validator(params) if callable(validator) else None
+            connectedValidator = getattr(operator, "validateNodeParams", None)
+            error = (connectedValidator(params, nodeInput) if callable(connectedValidator)
+                     else validator(params) if callable(validator) else None)
             if isinstance(error, dict):
                 raise WorkflowExecutionError(str(error.get("code", "E_PARAM_INVALID")),
                                              str(error.get("message", "invalid bound parameters")), node.nodeId)

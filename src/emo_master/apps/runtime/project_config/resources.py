@@ -7,6 +7,8 @@ import hashlib
 from pathlib import Path
 from uuid import uuid4
 
+from emo_master.core.project.runtime_directory import nodeFileSchema
+
 from .store import ConfigurationError
 
 
@@ -152,7 +154,7 @@ def prepareResources(document, registry, deviceTypes, cacheRoot, cancelled, *, p
                 old = nodeAt(previous, wid, node.nodeId)
                 source, oldSource = nodeAt(raw, wid, node.nodeId), nodeAt(previousRaw, wid, node.nodeId)
                 if node.operatorId in registry:
-                    node.params = visit(node.params, registry[node.operatorId].manifest.paramSchema,
+                    node.params = visit(node.params, nodeFileSchema(node, workflow, registry[node.operatorId].manifest.paramSchema),
                         old.params if old and reuse else None, source.params if source else None,
                         oldSource.params if oldSource else None)
                 for slot, binding in node.deviceBindings.items():

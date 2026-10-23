@@ -14,6 +14,24 @@ class _Panel:
         self.events.append(event)
 
 
+def testRuntimeControllerPassesJobTimingToCurrentRun():
+    from types import SimpleNamespace
+    from emo_master.apps.designer.ui.runtime_panel import RuntimePanelState
+
+    panel = RuntimePanelState()
+    panel.setActiveJob('current')
+    controller = RuntimeController(
+        runtimeClient=None, runtimePanelState=panel,
+        appendLog=lambda *args: None, refreshRuntimePanelView=lambda: None,
+        updateToolbarState=lambda: None, syncRuntimeProjectBeforeRun=lambda: True,
+        applyRuntimeEventToNode=lambda event: None, setCurrentJobId=lambda job: None,
+        setIsJobRunning=lambda running: None, getLoadedProjectPath=lambda: None,
+        getCurrentJobId=lambda: 'current')
+    controller._onJobStatus(SimpleNamespace(status='FAILED', message='failed',
+                                           started_at_ms=100000, ended_at_ms=114200))
+    assert panel.jobStatus == 'FAILED' and panel.jobElapsedMs() == 14200
+
+
 def testRuntimeControllerPreservesEventCorrelationMetadata() -> None:
     panel = _Panel()
     received = []

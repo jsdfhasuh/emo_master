@@ -185,6 +185,7 @@ try:
         QToolButton,
         QWidget,
     )
+    from emo_master.apps.designer.ui.file_patterns_control import FilePatternsControl
 
     class _IntegerValueControl(QLineEdit):
         """Exact integer input for schemas wider than Qt's signed int32 spin box.
@@ -284,7 +285,7 @@ try:
             currentPath = self._lineEdit.text().strip()
             if self._fileMode == "directory":
                 selectedPath = QFileDialog.getExistingDirectory(
-                    self, "选择图片文件夹", currentPath
+                    self, "选择文件夹", currentPath
                 )
             elif self._fileMode == "save":
                 selectedPath, _ = QFileDialog.getSaveFileName(
@@ -407,6 +408,9 @@ try:
                 self._layout.removeRow(0)
 
             properties = paramSchema.get('properties', {})
+            compactFiles = isinstance(properties, dict) and any(
+                isinstance(spec, dict) and spec.get("xWidget") == "file-patterns" for spec in properties.values())
+            self._layout.setAlignment(Qt.AlignTop if compactFiles else Qt.Alignment())
             self._advancedFields = {name for name, spec in properties.items()
                                     if self.deviceMode and isinstance(spec, dict) and spec.get('xAdvanced')
                                     } if isinstance(properties, dict) else set()
@@ -597,8 +601,8 @@ try:
                         rowLabel.setVisible(visible and expanded)
                 condition = field.schema.get("xEnabledWhen")
                 source = self._variableSources.get(name)
-                if condition is not None or visibility is not None or source is not None:
-                    enabled = visible and self._conditionApplies(condition, values)
+                if condition is not None or visibility is not None or source is not None or field.schema.get("xReadOnly"):
+                    enabled = visible and self._conditionApplies(condition, values) and not field.schema.get("xReadOnly", False)
                     if source is not None:
                         source.setEnabled(enabled)
                     control.setEnabled(enabled and not (source is not None and source.currentData()))
@@ -916,6 +920,8 @@ try:
                 return textEditor
 
             if field.fieldType == "array":
+                if field.schema.get("xWidget") == "file-patterns":
+                    return FilePatternsControl(selectedValue)
                 if field.schema.get("xWidget") == "integer-list":
                     control = _IntegerListControl(selectedValue, str(field.schema.get("xPlaceholder", "")))
                     if (self._rawSchema.get("xCollectionFilter") or self._rawSchema.get("xModeOperator")) and isinstance(selectedValue, str):
@@ -933,6 +939,8 @@ try:
                 return textEditor
 
             lineEdit = QLineEdit()
+            if field.schema.get("xWidget") == "password":
+                lineEdit.setEchoMode(QLineEdit.Password)
             if selectedValue is not None:
                 lineEdit.setText(str(selectedValue))
             return lineEdit
@@ -947,6 +955,8 @@ try:
             self, control: QWidget, field: FieldDefinition | None
         ) -> object:
             _ = field
+            if isinstance(control, FilePatternsControl):
+                return control.value()
             if isinstance(control, _OptionalFieldControl):
                 return self._readControlValue(control.valueControl, field)
             if isinstance(control, QCheckBox):

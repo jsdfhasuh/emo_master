@@ -16,7 +16,7 @@ from emo_master.apps.runtime.workflow.cancellation import CancellationRequested,
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.apps.runtime.workflow.runner import WorkflowRunner
 from emo_master.apps.runtime.artifacts.store import ArtifactStore
-from emo_master.apps.runtime.preview.store import PreviewSnapshotWriter
+from emo_master.apps.runtime.preview.async_writer import AsyncPreviewSnapshotWriter
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.compiler import WorkflowCompiler
@@ -37,8 +37,20 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
     heartbeatEmissionLock = threading.Lock()
     runner = None
     token = CancellationToken(cancelEvent)
+    previewWriter = None
 
     def publishTerminal(event):
+        if previewWriter is not None:
+            # Finish final captures before promotion/retirement; cancellation
+            # discards queued diagnostics, never replays business operations.
+            try:
+                previewWriter.close(drain=event["eventType"] == "job.completed")
+            except Exception as error:
+                # Optional preview diagnostics must not mask a business error.
+                event["payload"] = dict(event.get("payload", {}), previewSnapshotError=str(error))
+            event["payload"] = dict(event.get("payload", {}), previewSnapshots=previewWriter.statistics())
+        if event["eventType"] == "job.completed":
+            token.raise_if_cancelled()  # A stop during final drain is still a stop.
         # Once terminal is enqueued, no heartbeat can follow it or race queue
         # close. Cell pulses continue until the existing feeder flush finishes.
         with heartbeatEmissionLock:
@@ -91,15 +103,17 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
                                                      document.globalVariables, spec.jobId)
             globalVariables.synchronize()
             globalVariables.initializeJob()
+        if normalizeLegacySnapshotPolicy(spec.legacySnapshotPolicy) == "ALL":
+            previewWriter = AsyncPreviewSnapshotWriter(Path(spec.jobWorkspacePath), jobId=spec.jobId,
+                projectRevision=document.project.revision,
+                inspectionPublisher=publisher if spec.inspectionEnabled else None,
+                errorPublisher=publisher, cancellation=token)
         runner = WorkflowRunner(
             compiledProject=compiled,
             operatorRegistry=registry,
             eventPublisher=publisher,
             artifactStore=ArtifactStore(Path(spec.jobWorkspacePath)) if spec.copyArtifacts else None,
-            previewSnapshotStore=(PreviewSnapshotWriter(Path(spec.jobWorkspacePath),
-                jobId=spec.jobId, projectRevision=document.project.revision,
-                inspectionPublisher=publisher if spec.inspectionEnabled else None)
-                if normalizeLegacySnapshotPolicy(spec.legacySnapshotPolicy) == "ALL" else None),
+            previewSnapshotStore=previewWriter,
             globalCounters=globalCounters,
             globalVariables=globalVariables,
             resultCollector=_collector(spec, eventQueue),
@@ -166,6 +180,8 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
         )
         raise
     finally:
+        if previewWriter is not None:
+            previewWriter.close(drain=False)
         if devices is not None:
             devices.close()
         if communication is not None:

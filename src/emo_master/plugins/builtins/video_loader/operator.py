@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Collection
 from pathlib import Path
 from time import perf_counter
 from typing import Any, cast
@@ -16,7 +17,10 @@ class VideoLoaderOperator:
         operatorId="vision.io.video_loader",
         displayName="\u672c\u5730\u89c6\u9891\u53d6\u5e27",
         version="1.0.0",
-        inputPorts={"reset": {"type": "boolean", "required": False, "nullable": False}},
+        inputPorts={
+            "videoPath": {"type": "string", "required": False, "nullable": False},
+            "reset": {"type": "boolean", "required": False, "nullable": False},
+        },
         outputPorts={
             **ImageLoaderOperator.meta.outputPorts,
             "videoPath": {"type": "string", "required": True, "nullable": False},
@@ -71,9 +75,13 @@ class VideoLoaderOperator:
         self._fps = 0.0
 
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
-        path = params.get("videoPath")
-        if not isinstance(path, str) or not path.strip():
-            return {"code": "E_PARAM_INVALID", "message": "videoPath must be non-empty string"}
+        return self.validateNodeParams(params, ())
+
+    def validateNodeParams(self, params: dict[str, object], connectedInputs: Collection[str]) -> dict[str, str] | None:
+        if "videoPath" not in connectedInputs:
+            path = params.get("videoPath")
+            if not isinstance(path, str) or not path.strip():
+                return {"code": "E_PARAM_INVALID", "message": "videoPath must be non-empty string or connected input"}
         interval = params.get("intervalSec", 1.0)
         if (not isinstance(interval, (int, float)) or isinstance(interval, bool) or not math.isfinite(interval)
                 or interval <= 0):
@@ -110,6 +118,15 @@ class VideoLoaderOperator:
         runtimeContext: dict[str, object],
     ) -> dict[str, Any]:
         started = perf_counter()
+        if "videoPath" in inputs:
+            suppliedPath = inputs["videoPath"]
+            if not isinstance(suppliedPath, str):
+                self.disposeOperator()
+                return _error("E_INPUT_TYPE", "videoPath input must be a string")
+            if not suppliedPath.strip() or not Path(suppliedPath.strip()).is_absolute():
+                self.disposeOperator()
+                return _error("E_PARAM_INVALID", "videoPath input must be an absolute path on the Runtime computer")
+            params = {**params, "videoPath": suppliedPath}
         error = self.validateParams(params)
         if error is not None:
             return {"status": "error", "error": error}

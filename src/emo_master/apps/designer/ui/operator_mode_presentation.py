@@ -44,6 +44,10 @@ def operatorModePresentation(model, node, edges, dynamicParameters=()):
             outputs = {prefix + name.capitalize() for name in inputs}
             if node.operatorId == "vision.collection.select":
                 outputs.add("selectedCount")
+                if node.params.get("mode", "first") == "index" or "mode" in dynamic:
+                    inputs.add("index")
+                    if any(edge.toNode == node.nodeId and edge.toPort == "index" for edge in edges):
+                        lines.append(("索引：index 输入优先", None))
         if selector in dynamic or "feature" in dynamic:
             lines.append(("处理对象由绑定决定，显示可能使用的引脚", None))
         else:

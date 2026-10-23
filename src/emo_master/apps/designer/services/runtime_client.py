@@ -649,6 +649,9 @@ class RuntimeClient:
                 error.resourceResult = results
                 raise
             wrapped = RuntimeClientError('E_RESOURCE_UPLOAD', str(error))
+            if getattr(error, 'issues', None):
+                from dataclasses import asdict
+                wrapped.diagnostics = {'issues': [asdict(issue) for issue in error.issues]}
             wrapped.resourceResult = results
             raise wrapped from error
         return results
@@ -672,6 +675,9 @@ class RuntimeClient:
 
     def getDeviceStates(self, projectId):
         return self._deviceCall('getDeviceStates', projectId)
+
+    def getDeviceOverview(self, projectId, *, cancellation=None):
+        return self._deviceCall('getDeviceOverview', projectId, cancellation=cancellation)
 
     def getDeviceDiagnostics(self, scope, deviceId, cursor=0):
         return self._deviceCall('getDeviceDiagnostics', scope, deviceId, cursor)

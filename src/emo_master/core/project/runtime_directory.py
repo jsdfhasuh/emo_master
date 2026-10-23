@@ -6,13 +6,23 @@ from pathlib import Path
 from typing import Any
 
 from emo_master.core.plugin.models import PluginDescriptor
-from emo_master.core.project.models import ProjectDocument
+from emo_master.core.project.models import ProjectDocument, WorkflowDefinition, WorkflowNode
 from emo_master.core.project.files import projectFiles
 from emo_master.core.project.global_variables import validateBindings
 from emo_master.core.project.snapshots import _setPath, verifyResources
 from emo_master.core.project.resources import DeviceParameterTarget
 from emo_master.core.project.device_resources import deviceDeclaration, deviceTarget
 from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError, locatedValidationError
+
+
+def nodeFileSchema(node: WorkflowNode, workflow: WorkflowDefinition, schema: dict[str, Any]) -> dict[str, Any]:
+    """Exclude only a connected reader's dormant literal from file I/O preparation."""
+    if node.operatorId == "vision.io.video_loader" and any(
+        edge.toNode == node.nodeId and edge.toPort == "videoPath" for edge in workflow.edges
+    ):
+        return {**schema, "properties": {key: value for key, value in schema.get("properties", {}).items()
+                                         if key != "videoPath"}}
+    return schema
 
 
 def prepareRuntimeProject(
@@ -117,10 +127,11 @@ def prepareRuntimeProject(
         # paths, including at export/install time (before any package is written).
         validateBindings(node.globalVariableBindings, prepared.globalVariables, descriptor.manifest.paramSchema)
         try:
-            _resolveFiles(node.params, descriptor.manifest.paramSchema, root, inputs, outputs, 'params')
-            if node.operatorId == "vision.io.image_saver" and any(
+            schema = nodeFileSchema(node, prepared.workflows[wid], descriptor.manifest.paramSchema)
+            _resolveFiles(node.params, schema, root, inputs, outputs, 'params')
+            if node.operatorId == "vision.io.detection_archive" or (node.operatorId == "vision.io.image_saver" and any(
                 edge.toNode == nid and edge.toPort == "fileName" for edge in prepared.workflows[wid].edges
-            ):
+            )):
                 outputPath = node.params.get("outputPath")
                 if isinstance(outputPath, str) and outputPath:
                     # A dynamic basename can target any file in this directory.

@@ -1,0 +1,34 @@
+{
+  "operatorId": "vision.math.integer_add",
+  "displayName": "整数加法",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.integer_add.operator:IntegerAddOperator",
+  "category": "数值与逻辑",
+  "iconKey": "calculator",
+  "summary": "整数相加；输入优先于默认值，可用于 While 局部索引，不读写全局变量或数据库。",
+  "inputPorts": {
+    "left": {"type": "integer", "required": false, "nullable": false},
+    "right": {"type": "integer", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "value": {"type": "integer", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "leftValue": {
+        "title": "左侧默认值", "type": "integer", "default": 0,
+        "minimum": -9223372036854775808, "maximum": 9223372036854775807,
+        "description": "未连接对应输入时使用；连接输入后以本次输入为准。"
+      },
+      "rightValue": {
+        "title": "右侧默认值", "type": "integer", "default": 0,
+        "minimum": -9223372036854775808, "maximum": 9223372036854775807,
+        "description": "未连接对应输入时使用；连接输入后以本次输入为准。"
+      }
+    },
+    "additionalProperties": false
+  },
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x"
+}

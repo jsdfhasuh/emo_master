@@ -106,6 +106,12 @@ https://github.com/jsdfhasuh/emo_master/actions/runs/39919057411/job/12029957487
 
 Evidence: `windows-a70-timeout.txt` plus the GitHub check annotation. The Windows job budget is therefore adjusted to 60 minutes; Ubuntu retains 45 minutes. This changes only CI orchestration time for the observed full-suite duration. The 120-second per-test timeout, 60-second fault-handler diagnostic threshold, 500 ms export deadline, test set, assertions, and fail-fast behavior are unchanged. A fresh run is required to establish the final remote matrix result.
 
+### Subscription Observation Follow-up
+
+Ubuntu at `25120e01` stopped after 3823 passes at `testFiveRealSessionsHaveFiveHealthySubscriptions`. The test waited only for the server's admission count, then synchronously asserted that every client's `Subscribe()` call had returned and assigned `client.stream`. Server admission can precede that assignment. The bounded wait now requires both the original five-admission condition and all five active client handles, within the same 3-second deadline. The explicit active-stream assertion, empty-error assertion, subscription retirement checks, and joined-thread checks are retained; production subscription code is unchanged.
+
+The subscription, control-read retry, and real-network suites passed **30 tests in 23.66 s** in the isolated source snapshot, with Ruff also passing. Evidence: `subscription-final.txt/xml`; remote failure: `linux-251-failed.txt`. The local full-suite result above predates this additional fixture correction.
+
 ## Acceptance Boundary
 
 No real camera/PLC connection, field project mutation, network readdressing, credentials change, deployment, frozen EXE build, or Release was performed. Simulated device, localhost socket, source selftest, native offscreen Qt, and remote CI results are separate evidence layers. Skipped tests are not passes. Running application executables do not hot-load these source repairs.

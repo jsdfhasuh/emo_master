@@ -22,7 +22,9 @@ def testFiveRealSessionsHaveFiveHealthySubscriptions(channel):
     server = AioRuntimeServer(channel.runtime, channel)
     clients = [DisplaySession(f"127.0.0.1:{server.port}", job) for job in jobs]
     try:
-        until(lambda: server.active["display"] == 5, timeout=3)
+        # Server admission can precede Subscribe returning its client handle.
+        until(lambda: server.active["display"] == 5
+              and all(client.stream is not None and client.stream.is_active() for client in clients), timeout=3)
         assert all(client.stream is not None and client.stream.is_active() for client in clients)
         assert not [error for client in clients for error in client.errors]
     finally:

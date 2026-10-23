@@ -364,7 +364,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
             # so a startup chooser can explain which legacy node needs repair.
             details = []
             for issue in err.issues:
-                location = issue.fieldPath or "/".join(filter(None, (issue.workflowId, issue.nodeId))) or "project"
+                location = "/".join(filter(None, (issue.workflowId, issue.nodeId, issue.fieldPath))) or "project"
                 details.append(f"{issue.code} [{location}]: {issue.message}")
             return runtime_pb2.LoadProjectReply(ok=False, status="FAILED", message="\n".join(details) or str(err))
         except Exception as err:

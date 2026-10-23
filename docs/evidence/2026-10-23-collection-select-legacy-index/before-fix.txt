@@ -1,0 +1,81 @@
+..FFF                                                                    [100%]
+================================== FAILURES ===================================
+_ testLegacyIndexIsOfferedOnlyWhenCatalogSupportsItWithoutDirtyingProject[integer] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001B574768730>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3092/testLegacyIndexIsOfferedOnlyWh2')
+legacySelection = (WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3092/testLegacyIndexIsOfferedOnlyWh2/le...er_add': <class 'emo_master.plugins.builtins.integer_add.operator.IntegerAddOperator'>}, '__workflow_input__', 'other')
+indexType = 'integer'
+
+    @pytest.mark.parametrize("indexType", [None, "number", "integer"])
+    def testLegacyIndexIsOfferedOnlyWhenCatalogSupportsItWithoutDirtyingProject(
+        ownedDesignerWindow, tmp_path, legacySelection, indexType,
+    ):
+        path, _, _, other = legacySelection
+        before = path.read_bytes()
+        window = _open(ownedDesignerWindow, tmp_path, path, _catalog(indexType))
+        original = deepcopy(window.flowModel.nodes["select"])
+        session = window.pageCoordinator.session
+        assert not session.dirty
+        for workflow in (other, "main"):
+            window.activateWorkflow(workflow)
+>       assert ("index" in window.flowScene._nodeItems["select"].model.inputPorts) == (indexType == "integer")
+E       AssertionError: assert ('index' in {'detections': 'detectionCollection'}) == ('integer' == 'integer'
+E        +  where {'detections': 'detectionCollection'} = FlowNodeViewModel(nodeId='select', title='Select Collection', x=0.0, y=0.0, inputPorts={'detections': 'detectionCollec...sion.collection.select', kind='operator', summaryLines=(('处理对象：检测结果', None),), outputPortLabels={}, inputPortLabels={}).inputPorts
+E        +    where FlowNodeViewModel(nodeId='select', title='Select Collection', x=0.0, y=0.0, inputPorts={'detections': 'detectionCollec...sion.collection.select', kind='operator', summaryLines=(('处理对象：检测结果', None),), outputPortLabels={}, inputPortLabels={}) = <emo_master.apps.designer.ui.flow_scene._NodeItem(0x1b573ea0300, pos=0,0, flags=(ItemIsMovable|ItemIsSelectable|ItemSendsGeometryChanges)) at 0x000001B574806A00>.model
+E         
+E           integer)
+
+tests\designer\test_collection_select_legacy_ports.py:116: AssertionError
+__ testLegacyIndexConnectionPreservesBindingsAndSurvivesUndoSaveReloadAndRun __
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001B573685D50>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3092/testLegacyIndexConnectionPrese0')
+legacySelection = (WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3092/testLegacyIndexConnectionPrese0/le...er_add': <class 'emo_master.plugins.builtins.integer_add.operator.IntegerAddOperator'>}, '__workflow_input__', 'other')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001B5747A3DC0>
+
+    def testLegacyIndexConnectionPreservesBindingsAndSurvivesUndoSaveReloadAndRun(
+        ownedDesignerWindow, tmp_path, legacySelection, monkeypatch,
+    ):
+        path, registry, boundaryInput, other = legacySelection
+        before = path.read_bytes()
+        window = _open(ownedDesignerWindow, tmp_path, path, _catalog())
+        original = deepcopy(window.flowModel.nodes["select"])
+        originalEdges = list(window.flowModel.edges)
+        session = window.pageCoordinator.session
+        # A failed, ordinary incompatible drag must not add a port or an undo record.
+        assert window.connectPorts(boundaryInput, "text", "select", "index") is None
+        assert window.flowModel.nodes["select"] == original
+        assert window.flowModel.edges == originalEdges and not session.dirty and not session._undo
+>       assert "index" in window._connectableNodePorts("select", "input")
+E       AssertionError: assert 'index' in {'detections': 'detectionCollection'}
+E        +  where {'detections': 'detectionCollection'} = _connectableNodePorts('select', 'input')
+E        +    where _connectableNodePorts = <emo_master.apps.designer.ui.main_window.MainWindow(0x1b573e39f70) at 0x000001B5747792C0>._connectableNodePorts
+
+tests\designer\test_collection_select_legacy_ports.py:136: AssertionError
+___ testLegacyIndexAppearsAfterCatalogArrivalAndKeepsEdgesAcrossModeChanges ___
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001B5747A3F40>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3092/testLegacyIndexAppearsAfterCat0')
+legacySelection = (WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3092/testLegacyIndexAppearsAfterCat0/le...er_add': <class 'emo_master.plugins.builtins.integer_add.operator.IntegerAddOperator'>}, '__workflow_input__', 'other')
+
+    def testLegacyIndexAppearsAfterCatalogArrivalAndKeepsEdgesAcrossModeChanges(
+        ownedDesignerWindow, tmp_path, legacySelection,
+    ):
+        path, _, _, _ = legacySelection
+        window = _open(ownedDesignerWindow, tmp_path, path, [])
+        assert "index" not in window._connectableNodePorts("select", "input")
+        window.runtimeClient.catalog = _catalog()
+        window.operatorCatalogController.applyOperators(_catalog(), window._classifyOperator)
+        window.flowScene.refreshPresentations()
+>       assert "index" in window._connectableNodePorts("select", "input")
+E       AssertionError: assert 'index' in {'detections': 'detectionCollection'}
+E        +  where {'detections': 'detectionCollection'} = _connectableNodePorts('select', 'input')
+E        +    where _connectableNodePorts = <emo_master.apps.designer.ui.main_window.MainWindow(0x1b57391f6e0) at 0x000001B5747B3280>._connectableNodePorts
+
+tests\designer\test_collection_select_legacy_ports.py:189: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_collection_select_legacy_ports.py::testLegacyIndexIsOfferedOnlyWhenCatalogSupportsItWithoutDirtyingProject[integer]
+FAILED tests/designer/test_collection_select_legacy_ports.py::testLegacyIndexConnectionPreservesBindingsAndSurvivesUndoSaveReloadAndRun
+FAILED tests/designer/test_collection_select_legacy_ports.py::testLegacyIndexAppearsAfterCatalogArrivalAndKeepsEdgesAcrossModeChanges
+3 failed, 2 passed in 3.07s

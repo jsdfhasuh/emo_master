@@ -1,0 +1,74 @@
+--- src/emo_master/apps/designer/ui/main_window.py (before this fix)
++++ src/emo_master/apps/designer/ui/main_window.py
+@@ -2326,6 +2326,11 @@
+             return model
+         lines, outputs = controlFlowDetails(node, self.workflowStore.workflows, self._globalVariableDefinitions())
+         definition = self._operatorDefinition(node.operatorId)
++        if (node.operatorId == "vision.collection.select" and "index" not in node.inputPorts
++                and cast(dict, definition.get("inputPorts", {})).get("index") == "integer"):
++            # Offer the compatible optional input without editing a saved node
++            # merely by opening it. Successful wiring records the port below.
++            node = replace(node, inputPorts={**node.inputPorts, "index": "integer"})
+         requirements = definition.get('deviceRequirements')
+         if requirements:
+             pending = []
+@@ -3868,7 +3873,8 @@
+             inputs = self._connectableNodePorts(targetNodeId, "input")
+             fromPort = self.flowModel._getFirstPortName(outputs, "source output")
+             toPort = self.flowModel._getFirstPortName(inputs, "target input")
+-            edge = self.flowModel.connectNodes(sourceNodeId, fromPort, targetNodeId, toPort)
++            edge = self.flowModel.connectNodes(sourceNodeId, fromPort, targetNodeId, toPort,
++                                               newInputPortType=inputs[toPort])
+         except ValueError as err:
+             self.appendRuntimeLog("ERROR", str(err))
+             return
+@@ -3908,7 +3914,8 @@
+         try:
+             if fromPort not in self._connectableNodePorts(fromNodeId, "output"):
+                 raise ValueError(f"当前配置不支持输出引脚：{fromPort}")
+-            if toPort not in self._connectableNodePorts(toNodeId, "input"):
++            inputs = self._connectableNodePorts(toNodeId, "input")
++            if toPort not in inputs:
+                 raise ValueError(f"当前配置不支持输入引脚：{toPort}")
+             edge = self.flowModel.connectNodes(
+                 fromNode=fromNodeId,
+@@ -3916,6 +3923,7 @@
+                 toNode=toNodeId,
+                 toPort=toPort,
+                 replaceInputPort=True,
++                newInputPortType=inputs[toPort],
+             )
+         except ValueError as err:
+             self.appendRuntimeLog("ERROR", self._formatConnectionError(str(err)))
+--- src/emo_master/apps/designer/state/flow_graph_model.py (before this fix)
++++ src/emo_master/apps/designer/state/flow_graph_model.py
+@@ -97,6 +97,8 @@
+         toNode: str,
+         toPort: str,
+         replaceInputPort: bool = True,
++        *,
++        newInputPortType: str | None = None,
+     ) -> FlowEdge:
+         if fromNode not in self.nodes or toNode not in self.nodes:
+             raise ValueError("connectNodes references unknown node")
+@@ -105,15 +107,18 @@
+         targetNode = self.nodes[toNode]
+         if fromPort not in sourceNode.outputPorts:
+             raise ValueError(f"unknown source port: {fromNode}.{fromPort}")
+-        if toPort not in targetNode.inputPorts:
++        targetType = targetNode.inputPorts.get(toPort, newInputPortType)
++        if targetType is None:
+             raise ValueError(f"unknown target port: {toNode}.{toPort}")
+         sourceType = sourceNode.outputPorts[fromPort]
+-        targetType = targetNode.inputPorts[toPort]
+         if not arePortTypesCompatible(sourceType, targetType):
+             raise ValueError(
+                 f"port type mismatch: {fromNode}.{fromPort}({sourceType}) -> {toNode}.{toPort}({targetType})"
+             )
+ 
++        # Persist a catalog-supported extension only after successful validation,
++        # in the same editing command as its first edge. Existing types win.
++        targetNode.inputPorts.setdefault(toPort, targetType)
+         if replaceInputPort:
+             self._removeInputEdge(toNode=toNode, toPort=toPort)
+ 

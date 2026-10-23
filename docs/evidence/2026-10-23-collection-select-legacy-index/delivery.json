@@ -1,0 +1,15 @@
+{
+  "head": "e8c24fcfd7ebf964f0f506a7d73a42405069dff9",
+  "sourceHashes": {
+    "src/emo_master/apps/designer/ui/main_window.py": "d923b933843ed8cf063d6d6be722130a984eadc255094d740018c1d3ffb3045d",
+    "src/emo_master/apps/designer/state/flow_graph_model.py": "95505eb20687d6d3adf287d6bc83b7c8e372ce91ebdb3ad3dc7a95b6e69a3b26",
+    "tests/designer/test_collection_select_legacy_ports.py": "153b622cceeb521ecea1ef578fdf79b1c035b26b989d2d94c4f84586d03eb2d4"
+  },
+  "fullSuite": false,
+  "regression": {
+    "files": 26,
+    "passed": 324,
+    "seconds": 30.04
+  },
+  "sourceScope": "two existing Designer files; other local modifications preserved"
+}

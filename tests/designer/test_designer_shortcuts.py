@@ -59,7 +59,8 @@ def makePage(window, monkeypatch):
     return editor, key
 
 
-def testCanonicalActionsOwnKeysAndContextMenuOnlyDisplaysThem(canvas):  # noqa: F811
+@pytest.mark.parametrize('hiddenPorts', [False, True])
+def testCanonicalActionsOwnKeysAndContextMenuOnlyDisplaysThem(canvas, hiddenPorts):  # noqa: F811
     window, (first, _second), _client = canvas
     registry = window.designerActions
     assert set(registry.actions) == set(SHORTCUTS)
@@ -67,10 +68,26 @@ def testCanonicalActionsOwnKeysAndContextMenuOnlyDisplaysThem(canvas):  # noqa: 
     assert window._toolbarActions['开始运行'] is registry.actions['run']
     assert window._menuActions['复制所选算子'] is registry.actions['copy']
     assert window.deleteShortcut.key().isEmpty() and window.backspaceDeleteShortcut.key().isEmpty()
+    if hiddenPorts:
+        window.flowScene.hideUnusedPorts(first)
     menu = actions(window.nodeContextMenu.buildMenu(first))
+    canonical = {'configure', 'results', 'operator_debug', 'copy', 'delete'}
+    visibility = {'showPorts', 'showAllPorts', 'hideUnusedPorts'}
+    assert set(menu) == canonical | visibility
+    assert canonical <= set(registry.actions)
+    assert visibility.isdisjoint(registry.actions)
     for key, action in menu.items():
-        assert registry.shortcutLabel(key) in action.text()
-        assert action.shortcut().isEmpty()  # No competing menu shortcut registration.
+        # Port visibility is node-local UI state, not a global keyboard command.
+        if key in canonical:
+            assert registry.shortcutLabel(key) in action.text()
+        else:
+            assert '\t' not in action.text()
+        assert not action.shortcuts()  # No competing menu shortcut registration.
+    portActions = menu['showPorts'].menu().actions()
+    assert bool(portActions) is hiddenPorts
+    for action in portActions:
+        assert action.data()[0] == 'showPort'
+        assert not action.shortcuts() and '\t' not in action.text()
     assert len([a for a in window.actions() if a.shortcut().toString() == 'Ctrl+Z']) == 1
 
 

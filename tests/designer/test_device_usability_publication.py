@@ -94,7 +94,15 @@ def testReadableDeviceDiffRetainsExactPathAndBoundedRows(ownedDesignerWindow, tm
             dict(effect='next_cycle', devices=['camera']*100)}))
         assert d.table.rowHeight(row) <= 48
         d.table.setCurrentCell(row, 0)
+        readable = d.details.toPlainText()
+        assert not d.technicalDetails.isChecked()
+        assert d.local['devices']['definitions']['camera']['name'] in readable
+        assert 'exposureUs' in readable and '12000' in readable and '8000' in readable
+        d.technicalDetails.click()
         assert '/devices/definitions/camera/defaults/exposureUs' in d.details.toPlainText()
+        d.technicalDetails.click()
+        assert d.details.toPlainText() == readable
+        assert d.table.rowHeight(row) <= 48
         assert not calls
     finally:
         d.reject()

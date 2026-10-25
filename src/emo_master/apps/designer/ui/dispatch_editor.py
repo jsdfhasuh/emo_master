@@ -32,6 +32,27 @@ class DispatchEditor(QDialog):
         self.tabs = QTabWidget()
         self.rows = []
         if kind == "dispatch":
+            params = current.get("params", {})
+            policyForm = QFormLayout()
+            self.queuePolicy = QComboBox()
+            self.queuePolicy.addItem("报错", "error")
+            self.queuePolicy.addItem("等待容量", "wait")
+            self.queuePolicy.addItem("跳过本次投递", "skip")
+            self.queuePolicy.setCurrentIndex(self.queuePolicy.findData(params.get("queueFullPolicy", "error")))
+            self.waitTimeout = QSpinBox()
+            self.waitTimeout.setRange(0, 2147483647)
+            self.waitTimeout.setSpecialValueText("等待至有容量或取消")
+            self.waitTimeout.setSuffix(" ms")
+            self.waitTimeout.setValue(params.get("waitTimeoutMs", 0))
+            policyForm.addRow("队列满时", self.queuePolicy)
+            policyForm.addRow("等待超时", self.waitTimeout)
+            def updatePolicy():
+                visible = self.queuePolicy.currentData() == "wait"
+                self.waitTimeout.setVisible(visible)
+                policyForm.labelForField(self.waitTimeout).setVisible(visible)
+            self.queuePolicy.currentIndexChanged.connect(updatePolicy)
+            updatePolicy()
+            layout.addLayout(policyForm)
             toolbar = QHBoxLayout()
             for glyph, label, callback in (("plus", "添加目标槽", self.addTarget), ("trash-2", "删除目标槽", self.removeTarget)):
                 button = QPushButton()
@@ -134,7 +155,12 @@ class DispatchEditor(QDialog):
                     inputs[source], mapping[port] = kind, source
                 targets.append(dict(targetSlotId=slot.text().strip(), workflowId=workflow.currentData(),
                                     queueCapacity=capacity.value(), inputs=mapping))
-            node.update(params=dict(targets=targets), inputPorts=inputs)
+            params = dict(targets=targets)
+            if self.queuePolicy.currentData() == "wait":
+                params.update(queueFullPolicy="wait", waitTimeoutMs=self.waitTimeout.value())
+            elif self.queuePolicy.currentData() == "skip":
+                params.update(queueFullPolicy="skip")
+            node.update(params=params, inputPorts=inputs)
         else:
             node.update(params=dict(dispatchNodeId=self.dispatch.currentData(), timeoutMs=self.timeout.value()))
         if current is not None:

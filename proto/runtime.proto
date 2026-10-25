@@ -94,6 +94,7 @@ message StartJobReply {
   string legacy_snapshot_policy = 7;
   int64 project_revision = 8;
   string inspection_session_id = 9;
+  string diagnostics_json = 10; // Structured pre-start validation; raw message remains available.
 }
 
 message StartRequestLookup {
@@ -605,7 +606,22 @@ message GlobalVariablesReply {
   string jobs_json = 5;
 }
 
+message DispatchQueueRequest {
+  string project_id = 1;
+  string run_group_id = 2;
+  string target_slot_id = 3;
+  bool include_items = 4;
+}
+
+message DispatchQueueReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string state_json = 4;
+}
+
 service RuntimeService {
+  rpc GetDispatchQueueState(DispatchQueueRequest) returns (DispatchQueueReply);
   rpc GetOnlineProjectSnapshot(OnlineProjectRequest) returns (ProjectConfigurationReply);
   rpc InitializeProjectConfiguration(InitialProjectConfigurationRequest) returns (ProjectConfigurationReply);
   rpc GetOnlineGraphSnapshot(OnlineGraphRequest) returns (ProjectConfigurationReply);
@@ -883,6 +899,9 @@ message DisplayJob {
   bool resources_released = 14; string capture_definition_json = 15;
   string capture_limits_json = 16;
   string legacy_snapshot_policy = 17;
+  string run_group_id = 18;
+  string source_job_id = 19;
+  string target_slot_id = 20;
 }
 message DisplayJobs { repeated DisplayJob jobs = 1; }
 // Exact, read-only current-runtime lookup; does not read historical persisted Jobs.

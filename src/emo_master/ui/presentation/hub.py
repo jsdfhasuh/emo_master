@@ -164,6 +164,7 @@ class DisplayHub(QObject):
                  tuple((s, r.result.identity.resultKey, r.readyNs, tuple(r.imageStates.items())) for s, r in view.scopes.items()),
                  tuple((s, r.identity.resultKey) for s, r in view.loading.items()), tuple(view.started.items()),
                  tuple(getattr(view, 'expiredScopes', {}).items()),
+                 tuple(getattr(view, 'scopeErrors', {}).items()),
                  tuple((ticket, pin.state, pin.scope.readyNs if pin.scope else 0)
                        for ticket in self.pins.values() for pin in (self.session.pins().read(ticket),)))
         if token == self.lastToken:

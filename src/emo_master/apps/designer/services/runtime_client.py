@@ -1229,6 +1229,20 @@ class RuntimeClient:
             raise RuntimeClientError(reply.code, reply.message)
         return json.loads(reply.variables_json)
 
+    def dispatchQueueState(self, projectId, runGroupId="", targetSlotId="", includeItems=False):
+        try:
+            reply = self._call("GetDispatchQueueState", runtime_pb2.DispatchQueueRequest(
+                project_id=projectId, run_group_id=runGroupId, target_slot_id=targetSlotId, include_items=includeItems))
+        except AttributeError as error:
+            raise RuntimeClientError("E_DISPATCH_MONITOR_UNSUPPORTED", "当前 Runtime 不支持队列监控") from error
+        except RuntimeClientError as error:
+            if "UNIMPLEMENTED" in error.code:
+                raise RuntimeClientError("E_DISPATCH_MONITOR_UNSUPPORTED", "当前 Runtime 不支持队列监控") from error
+            raise
+        if not reply.ok:
+            raise RuntimeClientError(reply.code, reply.message)
+        return json.loads(reply.state_json)
+
     def listGlobalVariables(self, projectId, jobId=""):
         return self._variableCall("ListGlobalVariables", projectId, jobId=jobId)
 

@@ -21,6 +21,22 @@ def pageScopes(presentation: Presentation, pageId: str) -> set[str]:
     return result
 
 
+def dispatchPagePair(project, roots):
+    """A shared page may observe one producer and one of its declared consumers."""
+    if len(roots) != 2:
+        return None
+    from emo_master.core.workflow.dispatch_contracts import groupSlots
+    for producer in sorted(roots):
+        try:
+            targets = {workflow for workflow, _capacity in groupSlots(project, producer).values()}
+        except (ValueError, KeyError):
+            continue
+        consumer = next(iter(roots - {producer}))
+        if consumer in targets:
+            return producer, consumer
+    return None
+
+
 def validateBindings(
     project: ProjectDocument, manifests: Mapping[str, PluginManifest], *,
     publish: bool = False, counterNames: frozenset[str] = frozenset(),
@@ -87,8 +103,8 @@ def validateBindings(
     for pageId, page in presentation.pages.items():
         roots = {presentation.resultScopes[key].entryWorkflowId for key in pageScopes(presentation, pageId)
                  if key in presentation.resultScopes}
-        if len(roots) > 1:
-            report(f"presentation.pages.{pageId}", "a Job-bound page cannot mix different entry workflows", "scope_invalid")
+        if len(roots) > 1 and dispatchPagePair(project, roots) is None:
+            report(f"presentation.pages.{pageId}", "a shared page requires a declared Dispatch producer/consumer pair", "scope_invalid")
         for scopeId in page.resultScopeIds:
             if scopeId not in presentation.resultScopes:
                 report(f"presentation.pages.{pageId}.resultScopeIds", "result scope missing")

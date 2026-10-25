@@ -191,13 +191,16 @@ def testNavigationChangesWorkflowAndSelectionWithoutApplyingParamsOrDirty(
     monkeypatch.setattr(window.flowView, "centerOn", lambda *point: centered.append(point))
     monkeypatch.setattr(window, "_applyEditorParams", lambda *_: pytest.fail("navigation applied params"))
 
-    window.logDock.view.setEntries([entry])
-    window.logDock.view.table.cellDoubleClicked.emit(0, 0)
+    window.logDialog.view.setEntries([entry])
+    window.openLogDialog()
+    assert window.logDialog.isVisible()
+    assert not window.logDialog.isModal()
+    window.logDialog.view.table.cellDoubleClicked.emit(0, 0)
 
     assert window.getActiveWorkflowId() == childId
     assert window.flowModel.selectedNodeId == "shared-node"
     assert centered
-    assert "已定位" in window.logDock.view.navigationHint.text()
+    assert "已定位" in window.logDialog.view.navigationHint.text()
     assert session.payload() == before
     assert session.dirty is dirty
     assert session._undo == history

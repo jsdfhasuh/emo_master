@@ -94,10 +94,10 @@ def testFailedIndexPromotionKeepsOldBytesAndRemovesUnpublishedCopies(tmp_path, m
         files = set((assets.root / "project" / "assets").iterdir())
         atomic = module._atomicJson
 
-        def failIndex(path, value):
+        def failIndex(path, value, **kwargs):
             if path == assets.root / "project" / "index.json":
                 raise OSError("injected index write failure")
-            return atomic(path, value)
+            return atomic(path, value, **kwargs)
 
         monkeypatch.setattr(module, "_atomicJson", failIndex)
         with pytest.raises(OSError, match="injected"):
@@ -137,11 +137,11 @@ def testWriterFailureAfterImageWritePreservesCommittedCapture(tmp_path, monkeypa
     originalFiles = {path: path.read_bytes() for path in (writer.root / "assets").iterdir()}
     atomic = module._atomicJson
 
-    def fail(path, value):
+    def fail(path, value, **kwargs):
         if (failure == "index" and path == writer.root / "index.json") or (
                 failure == "companion" and path.parent.name == "assets"):
             raise OSError("injected after image write")
-        return atomic(path, value)
+        return atomic(path, value, **kwargs)
 
     monkeypatch.setattr(module, "_atomicJson", fail)
     with pytest.raises(OSError, match="after image"):
@@ -246,15 +246,20 @@ def testFailedAtomicTempDeletionIsOwnedBeforeAnotherStagingAllocation(tmp_path, 
     from pathlib import Path
     writer = capture(tmp_path, "job-a")
     oldIndex = (writer.root / "index.json").read_bytes()
-    unlink, fsync = Path.unlink, module.os.fsync
+    unlink, replace = Path.unlink, Path.replace
 
     def failTemp(path, *args, **kwargs):
         if path.suffix == ".tmp" and path.exists():
             raise PermissionError("held atomic temp")
         return unlink(path, *args, **kwargs)
 
+    def failReplace(path, target):
+        if path.is_relative_to(writer.root):
+            raise OSError("staging replacement failure")
+        return replace(path, target)
+
     monkeypatch.setattr(Path, "unlink", failTemp)
-    monkeypatch.setattr(module.os, "fsync", lambda _fd: (_ for _ in ()).throw(OSError("fsync failure")))
+    monkeypatch.setattr(Path, "replace", failReplace)
     node = SimpleNamespace(nodeId="source", outputPorts={"image": "image"})
     with pytest.raises(OSError, match="cleanup pending"):
         writer.capture(node, {"image": np.full((3, 4), 40, np.uint8)},
@@ -268,7 +273,7 @@ def testFailedAtomicTempDeletionIsOwnedBeforeAnotherStagingAllocation(tmp_path, 
         assert set((writer.root / "assets").iterdir()) == bounded
         assert (writer.root / "index.json").read_bytes() == oldIndex
     monkeypatch.setattr(Path, "unlink", unlink)
-    monkeypatch.setattr(module.os, "fsync", fsync)
+    monkeypatch.setattr(Path, "replace", replace)
     writer.capture(node, {"image": np.full((3, 4), 60, np.uint8)},
                    SimpleNamespace(workflowId="main", iterationPath=(2,)))
     assert not writer._pendingCleanup

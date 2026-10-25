@@ -10,7 +10,7 @@ from pathlib import Path
 import shutil
 import threading
 import time
-from typing import Any
+from typing import Any, Callable
 from uuid import uuid4
 
 import grpc
@@ -107,7 +107,10 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
         workspaceRoot: Path | None = None,
         logDirectory: Path | None = None,
         productionMode: bool = False,
+        startupProgress: Callable[[str], None] | None = None,
     ) -> None:
+        report = startupProgress or (lambda _stage: None)
+        report("runtime-database")
         self._startedMonotonic = time.monotonic()
         explicitDbPath = dbPath is not None
         if dbPath is None:
@@ -147,6 +150,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
             raise
         if self._runtimeDataLockIsPrimary:
             try:
+                report("runtime-maintenance")
                 self.sqliteStore.pruneTerminalJobEvents(
                     retentionDays=30,
                     minimumJobsPerProject=100,
@@ -157,6 +161,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 self._recordMaintenanceFailure(
                     f"runtime event startup maintenance failed: {err}"
                 )
+        report("runtime-logs")
         if logDirectory is None:
             logDirectory = _defaultLogDirectory(
                 dbPath,
@@ -176,12 +181,26 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
         )
         self._maintenanceThread.start()
         self._workspacePaths: dict[str, Path] = {}
-        self._cleanupStaleWorkspaces()
-        self.pluginScanResult = self._scanBuiltins(pluginRootPaths)
-        self.pluginRootPaths = pluginRootPaths or (str(self._builtinsRoot()),)
-        self.previewAssetStore = PreviewAssetStore(
-            self.workspaceRoot.parent / "preview-cache"
-        )
+        try:
+            report("runtime-workspaces")
+            self._cleanupStaleWorkspaces()
+            report("runtime-plugins")
+            self.pluginScanResult = self._scanBuiltins(pluginRootPaths)
+            self.pluginRootPaths = pluginRootPaths or (str(self._builtinsRoot()),)
+            report("runtime-preview")
+            self.previewAssetStore = PreviewAssetStore(
+                self.workspaceRoot.parent / "preview-cache"
+            )
+        except BaseException:
+            # No Job/device owners or retained SQLite connection exist yet.
+            # A normal cache-directory initialization failure must not strand
+            # the writer, maintenance thread or data lock before an explicit retry.
+            self._maintenanceStop.set()
+            self._maintenanceThread.join()
+            self.operationalLogWriter.close()
+            self._runtimeDataLock.release()
+            raise
+        report("runtime-managers")
         self.runInspectionStore = RunInspectionStore(self.previewAssetStore,
             maxSessions=None if maxConcurrentJobs is None else max(2, maxConcurrentJobs))
         self.eventStore.addSink(self.runInspectionStore.observe)
@@ -245,6 +264,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
         # Open only after the Runtime's owners are fully initialized, so a
         # failed acquisition can use the normal, retryable shutdown path.
         try:
+            report("runtime-online-configuration")
             self.sqliteStore.retainIdleConnection()
             self._initializeOnlineConfiguration()
         except BaseException:
@@ -588,6 +608,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
             return runtime_pb2.StartJobReply(ok=False, status="REJECTED", message=str(error))
 
         capture = None
+        consumerCaptures = {}
         presentation = getattr(self, "_presentationOwner", None)
         if bool(getattr(request, "capture_presentation", False)):
             try:
@@ -597,9 +618,29 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 from emo_master.apps.runtime.presentation.normal_capture import freezeNormalCapture
                 capture = freezeNormalCapture(document, self.pluginScanResult.activeOperators,
                     Path(self.loadedProjectPath), workflowId,
+                    resourcePaths=self.projectResourceTransfers.resolve(document),
                     counterNames=frozenset(record.name for record in self.sqliteStore.listGlobalCounters(document.project.projectId)))
+                from emo_master.core.workflow.dispatch_contracts import groupSlots
+                from emo_master.core.presentation.workflow_view import presentationForWorkflow
+                for consumerId, _capacity in set(groupSlots(document, workflowId).values()):
+                    if presentationForWorkflow(document, consumerId, capture=True).pages:
+                        consumerCaptures[consumerId] = freezeNormalCapture(document, self.pluginScanResult.activeOperators,
+                            Path(self.loadedProjectPath), consumerId,
+                            resourcePaths=self.projectResourceTransfers.resolve(document),
+                            counterNames=frozenset(record.name for record in self.sqliteStore.listGlobalCounters(document.project.projectId)))
             except (ValueError, OSError) as error:
-                return runtime_pb2.StartJobReply(ok=False, status="FAILED", message=str(error))
+                diagnostics = {}
+                if isinstance(error, WorkflowCompileError):
+                    diagnostics['issues'] = [asdict(issue) for issue in error.issues]
+                    # Use the rejected Runtime document, never the Designer's
+                    # possibly different draft, to label the affected files.
+                    if document.resources is not None:
+                        diagnostics['resources'] = {key: dict(path=item.path, purpose=item.purpose)
+                            for key, item in document.resources.items.items()}
+                if getattr(error, 'code', ''):
+                    diagnostics['code'] = error.code
+                return runtime_pb2.StartJobReply(ok=False, status="FAILED", message=str(error),
+                    diagnostics_json=json.dumps(diagnostics, ensure_ascii=True) if diagnostics else '')
 
         with self._previewJobLock:
             if self.operatorDebugManager.ownsResources():
@@ -624,8 +665,16 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 dispatchSlots = groupSlots(document, workflowId)
                 with self.jobSupervisor._lock:
                     limit = self.jobSupervisor.maxConcurrentJobs
-                    if limit is not None and len(self.jobSupervisor._ownedJobs()) + 1 + len(dispatchSlots) > limit:
-                        raise ValueError('E_MAX_CONCURRENT_JOBS: entire run group exceeds capacity')
+                    active = len(self.jobSupervisor._ownedJobs())
+                    required = 1 + len(dispatchSlots)
+                    if limit is not None and active + required > limit:
+                        capacity = dict(requiredJobs=required, consumerJobs=len(dispatchSlots),
+                            activeJobs=active, maxConcurrentJobs=limit, availableJobs=max(0, limit - active))
+                        return runtime_pb2.StartJobReply(ok=False, status="REJECTED",
+                            message=(f"E_MAX_CONCURRENT_JOBS: required={required} "
+                                     f"(1 entry + {len(dispatchSlots)} consumers), active={active}, "
+                                     f"limit={limit}, available={capacity['availableJobs']}"),
+                            diagnostics_json=json.dumps(dict(code="E_MAX_CONCURRENT_JOBS", capacity=capacity)))
                 self.deviceManager.preflight(document, workflowId)
             except Exception as error:
                 return runtime_pb2.StartJobReply(ok=False, status="REJECTED",
@@ -690,7 +739,13 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 if capture is not None:
                     from dataclasses import replace
                     spec = replace(spec, presentation=presentation.attachNormal(record.jobId, capture))
-                self.jobManager.start(record, spec)
+                if consumerCaptures:
+                    def attachConsumer(child):
+                        frozen = consumerCaptures.get(child.workflowId)
+                        return presentation.attachNormal(child.jobId, frozen) if frozen is not None else None
+                    self.jobManager.start(record, spec, consumerPresentation=attachConsumer)
+                else:
+                    self.jobManager.start(record, spec)
                 if inspectionId:
                     self.runInspectionStore.confirm(inspectionId, self._loadedProjectPreviewKey, record.jobId)
             except Exception as err:
@@ -1783,6 +1838,16 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 )
             )
         return runtime_pb2.ListWorkflowsReply(workflows=workflows)
+
+    @_withProjectStateLock
+    def GetDispatchQueueState(self, request, context):
+        error = self._globalCounterProjectError(request.project_id)
+        if error:
+            return runtime_pb2.DispatchQueueReply(ok=False, code=error[0], message=error[1])
+        state = self.jobSupervisor.dispatchQueueState(request.project_id, request.run_group_id,
+                                                     request.target_slot_id if request.include_items else "")
+        state["runtimeInstanceId"] = self.runtimeInstanceId
+        return runtime_pb2.DispatchQueueReply(ok=True, state_json=json.dumps(state, ensure_ascii=False))
 
     @_withProjectStateLock
     def ListGlobalVariables(self, request, context):

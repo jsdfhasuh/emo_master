@@ -36,7 +36,7 @@ from emo_master.apps.designer.ui.flow_scene import (
 from emo_master.apps.designer.ui.designer_graphics_view import DesignerGraphicsView
 from emo_master.apps.designer.ui.log_dialog import (
     DEFAULT_MAX_LOG_ENTRIES,
-    RuntimeLogDock,
+    LogDialog,
     StructuredLogEntry,
 )
 from emo_master.apps.designer.ui.node_param_dialog import NodeParamDialog
@@ -784,8 +784,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 workflowId, nodeId, self.currentJobId),
         )
         self.nodeParamDialog: NodeParamDialog | None = None
-        self.logDock: RuntimeLogDock | None = None
-        self.logDialog: RuntimeLogDock | None = None
+        self.logDialog: LogDialog | None = None
         self.logBuffer: list[str] = []
         self.logEntries: list[StructuredLogEntry] = []
         self._runtimeLogProjectToken = uuid4().hex
@@ -1299,17 +1298,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         rootLayout.addWidget(self.mainSplitter)
         rootWidget.setLayout(rootLayout)
         self.setCentralWidget(rootWidget)
-        self.logDock = RuntimeLogDock(
+        self.logDialog = LogDialog(
             self,
             onClear=self._clearRuntimeLogCache,
             onNavigate=self.navigateToRuntimeLogEntry,
             maximumEntries=DEFAULT_MAX_LOG_ENTRIES,
         )
-        self.logDialog = self.logDock
-        addDockWidget = getattr(self, "addDockWidget", None)
-        if callable(addDockWidget):
-            addDockWidget(Qt.BottomDockWidgetArea, self.logDock)
-        self.logDock.hide()
+        self.logDialog.hide()
 
         self.workflowController = WorkflowController(
             workflowStore=self.workflowStore,
@@ -1501,15 +1496,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         coordinator.sync()
         document = coordinator.session.document()
         from emo_master.core.presentation.workflow_view import presentationForWorkflow
-        presentation = presentationForWorkflow(document, workflowId or document.entryWorkflowId)
-        if presentation is None:
-            return False
+        from emo_master.core.workflow.dispatch_contracts import groupSlots
         from emo_master.core.presentation.models import walkComponents
-        if not any(component.bindings for page in presentation.pages.values()
-                   for component in walkComponents(page.components)):
-            return False
         from emo_master.core.presentation.capture_limits import normalCaptureLimits
-        return normalCaptureLimits(presentation)
+        entry = workflowId or document.entryWorkflowId
+        workflows = [entry, *{target for target, _capacity in groupSlots(document, entry).values()}]
+        limits = []
+        for target in workflows:
+            presentation = presentationForWorkflow(document, target)
+            if presentation and any(component.bindings for page in presentation.pages.values()
+                                    for component in walkComponents(page.components)):
+                limits.append(normalCaptureLimits(presentation))
+        return limits[0] if len(limits) == 1 else bool(limits)
 
     def triggerStartupProjectEntry(self) -> None:
         if not self._showStartupEntry:
@@ -2090,7 +2088,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self._globalCountersDialog = dialog
         showForProject = getattr(dialog, "showForProject", None)
         if callable(showForProject):
-            showForProject(self.loadedProjectPath if self._globalCountersDialogFactory else self._currentProjectId())
+            if self._globalCountersDialogFactory:
+                showForProject(self.loadedProjectPath)
+            else:
+                showForProject(self._currentProjectId(), str(self.workflowStore.project.get("name", "")))
         else:
             bindProject = getattr(dialog, "bindProject", None)
             if callable(bindProject):
@@ -3111,6 +3112,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.runtimePanelState.nodeInspection.clear()
         self._displayedRunImage = None
         self._saveRuntimeLogSettings()
+        if self.logDialog is not None:
+            self.logDialog.close()
         try:
             super().closeEvent(event)
         except Exception:
@@ -3320,8 +3323,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
         if not nodeExists:
             return "日志对应节点在当前工作流中已不存在，无法定位。请查看日志详情。"
+        if _nativeQt and self.pageCoordinator is not None:
+            # Read-only navigation must not apply pending page-editor inputs.
+            self.pageCoordinator.stack.setCurrentIndex(0)
+            self.pageCoordinator.chrome.update()
         self.navigateToWorkflow(entry.workflowId, entry.nodeId)
-        return f"已定位到工作流“{workflow.name}”的节点 {entry.nodeId}。"
+        if self.logDialog is not None:
+            self.logDialog.hide()
+        if _nativeQt:
+            self.raise_()
+            self.activateWindow()
+            self.flowView.setFocus(Qt.OtherFocusReason)
+        return f"已定位到工作流“{workflow.name}”的节点 {entry.displayNode()}。"
 
     def _buildProjectPayload(self, projectName: str) -> dict[str, object]:
         if hasattr(self, "workflowController"):
@@ -3518,12 +3531,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return None
         from emo_master.ui.run_targets_dialog import RunTargetsDialog
         editable = not self.isJobRunning and not self.hasActiveDebugSession()
+        self.workflowController.captureActiveWorkflow()
         dialog = RunTargetsDialog(self.workflowStore.workflows,
             self.effectiveRunTargetIds(),
             self.workflowStore.runtime.get('maxConcurrentJobs', 2), self, editLimit=editable,
             entryWorkflowId=self.workflowStore.entryWorkflowId,
             allowPersist=editable, temporary=bool(self.runTargetIds),
-            projectTargets=self.workflowStore.startupWorkflows())
+            projectTargets=self.workflowStore.startupWorkflows(),
+            document=self.pageCoordinator.session.document())
         if dialog.exec_():
             selected = dialog.selectedWorkflowIds()
             if dialog.saveSelection():
@@ -4236,23 +4251,21 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._displayedRunImage = imageIdentity
 
     def openLogDialog(self) -> None:
-        if self.logDock is None:
-            self.logDock = RuntimeLogDock(
+        if self.logDialog is None:
+            self.logDialog = LogDialog(
                 self,
                 onClear=self._clearRuntimeLogCache,
                 onNavigate=self.navigateToRuntimeLogEntry,
                 maximumEntries=DEFAULT_MAX_LOG_ENTRIES,
             )
-            self.logDialog = self.logDock
-            addDockWidget = getattr(self, "addDockWidget", None)
-            if callable(addDockWidget):
-                addDockWidget(Qt.BottomDockWidgetArea, self.logDock)
-            self.logDock.setEntries(self.logEntries)
-        self.logDock.show()
-        raiseWindow = getattr(self.logDock, "raise_", None)
+            self.logDialog.setEntries(self.logEntries)
+        if _nativeQt and self.logDialog.isMinimized():
+            self.logDialog.setWindowState(self.logDialog.windowState() & ~Qt.WindowMinimized)
+        self.logDialog.show()
+        raiseWindow = getattr(self.logDialog, "raise_", None)
         if callable(raiseWindow):
             raiseWindow()
-        activateWindow = getattr(self.logDock, "activateWindow", None)
+        activateWindow = getattr(self.logDialog, "activateWindow", None)
         if callable(activateWindow):
             activateWindow()
 
@@ -4277,8 +4290,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
         logLine = f"[{now.strftime('%H:%M:%S')}][{normalizedLevel}] {message}"
         self._storeRuntimeLogEntry(entry, logLine)
-        if self.logDock is not None:
-            self.logDock.appendEntry(entry)
+        if self.logDialog is not None:
+            self.logDialog.appendEntry(entry)
 
     def _rememberRuntimeLogJob(self, reply: object) -> None:
         jobId = str(getattr(reply, "job_id", ""))
@@ -4297,6 +4310,27 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             projectId, token = identity
             if not entry.projectId or entry.projectId == projectId:
                 entry = replace(entry, projectId=projectId, projectInstanceToken=token)
+                if projectId == self._currentProjectId() and token == self._runtimeLogProjectToken:
+                    workflow = self.workflowStore.workflows.get(entry.workflowId)
+                    if workflow is not None:
+                        nodeName = ""
+                        kind = ""
+                        if entry.workflowId == self.activeWorkflowId:
+                            node = self.flowModel.nodes.get(entry.nodeId)
+                            if node is not None:
+                                nodeName, kind = node.displayName, node.kind
+                        else:
+                            raw = next((node for node in workflow.nodes
+                                        if node.get("nodeId") == entry.nodeId), {})
+                            nodeName = str(raw.get("displayName", ""))
+                            kind = str(raw.get("kind", ""))
+                        if kind == "workflow_input" and nodeName in {"", "Workflow Input"}:
+                            nodeName = "工作流输入"
+                        elif kind == "workflow_output" and nodeName in {"", "Workflow Output"}:
+                            nodeName = "工作流输出"
+                        # Names are captured with the event, not re-resolved from
+                        # a later project or a renamed node while browsing history.
+                        entry = replace(entry, workflowName=workflow.name, nodeName=nodeName)
         return entry
 
     def _showRunFailure(self, failure: dict[str, object]) -> None:
@@ -4307,8 +4341,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def appendRuntimeEvent(self, event: dict[str, object]) -> None:
         entry = self._runtimeLogEntry(event)
         self._storeRuntimeLogEntry(entry, entry.displayLine())
-        if self.logDock is not None:
-            self.logDock.appendEntry(entry)
+        if self.logDialog is not None:
+            self.logDialog.appendEntry(entry)
 
     def _storeRuntimeLogEntry(
         self,
@@ -4327,46 +4361,37 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.logBuffer.clear()
 
     def _saveRuntimeLogSettings(self) -> None:
-        dock = self.logDock
+        dialog = self.logDialog
         setValue = getattr(self.settingsStore, "setValue", None)
-        if dock is None or not callable(setValue):
+        if dialog is None or not callable(setValue):
             return
-        saveState = getattr(self, "saveState", None)
-        if callable(saveState):
-            setValue("ui/runtime_log_dock_state", saveState())
-        saveGeometry = getattr(dock, "saveGeometry", None)
+        saveGeometry = getattr(dialog, "saveGeometry", None)
         if callable(saveGeometry):
-            setValue("ui/runtime_log_dock_geometry", saveGeometry())
-        setValue("ui/runtime_log_dock_visible", bool(dock.isVisible()))
-        setValue("ui/runtime_log_dock_floating", bool(dock.isFloating()))
-        setValue("ui/runtime_log_view", dock.view.settings())
+            setValue("ui/runtime_log_dialog_geometry", saveGeometry())
+        setValue("ui/runtime_log_dialog_visible", bool(dialog.isVisible()))
+        setValue("ui/runtime_log_view", dialog.view.settings())
         sync = getattr(self.settingsStore, "sync", None)
         if callable(sync):
             sync()
 
     def _restoreRuntimeLogSettings(self) -> None:
-        dock = self.logDock
+        dialog = self.logDialog
         value = getattr(self.settingsStore, "value", None)
-        if dock is None or not callable(value):
+        if dialog is None or not callable(value):
             return
-        state = value("ui/runtime_log_dock_state", None)
-        restoreState = getattr(self, "restoreState", None)
-        if state is not None and callable(restoreState):
-            restoreState(state)
-        geometry = value("ui/runtime_log_dock_geometry", None)
-        restoreGeometry = getattr(dock, "restoreGeometry", None)
+        # Dock state belongs to the old embedded panel, not this window. Keep
+        # its shared view preferences, but never restore its main-window layout.
+        geometry = value("ui/runtime_log_dialog_geometry", None)
+        restoreGeometry = getattr(dialog, "restoreGeometry", None)
         if geometry is not None and callable(restoreGeometry):
             restoreGeometry(geometry)
-        dock.setFloating(
-            _settingBool(value("ui/runtime_log_dock_floating", False), False)
-        )
         viewSettings = value("ui/runtime_log_view", {})
         if isinstance(viewSettings, dict):
-            dock.view.restoreSettings(viewSettings)
-        if _settingBool(value("ui/runtime_log_dock_visible", False), False):
-            dock.show()
+            dialog.view.restoreSettings(viewSettings)
+        if _settingBool(value("ui/runtime_log_dialog_visible", False), False):
+            dialog.show()
         else:
-            dock.hide()
+            dialog.hide()
 
     def updateToolbarState(self) -> None:
         from emo_master.apps.designer.operator_editors.sqlite_canvas import refreshCanvasHints

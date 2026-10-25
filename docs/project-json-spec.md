@@ -219,8 +219,24 @@ assert reloaded == document
 
 `dispatch.params.targets` 包含 1 至 32 个目标槽，每项为
 `targetSlotId/workflowId/inputs/queueCapacity`，单槽容量为 1 至 64。
+容量只计算等待项，不包含该槽位当前处理中的一项。
+
+Dispatch 节点另支持两个可选参数，不改变工程顶层 schema：
+
+| `dispatch.params` 字段 | 缺省值 | 语义 |
+| --- | --- | --- |
+| `queueFullPolicy` | `"error"` | `error` 保留满队列拒绝和部分接纳错误；`wait` 在所有目标有容量前等待；`skip` 在任一目标队列满时跳过整次投递，不阻塞采集、不向空闲目标提前扇出，输出 `status=SKIPPED`、`accepted=false` 的 token。只有队列满可跳过，消费者不可用仍报错。适合允许抽帧的实时预览，不用于必须逐帧处理的流程；Join 收到跳过的 token 仍报告未完成。 |
+| `waitTimeoutMs` | `0` | 整数 0 至 2147483647；仅在 wait 模式生效。0 等待到可用或取消，正数是本次逻辑投递的总容量等待上限。 |
+
+等待期间保留同一次输入和逻辑投递身份，不重新采图、不增加拒绝次数、不重放已接纳
+目标。超时返回 `E_DISPATCH_WAIT_TIMEOUT`，消费进程退出返回 `E_DISPATCH_UNAVAILABLE`。
+取消不会在之后补投递；通信故障或未知结果不自动重试。
+
 `join.params.timeoutMs` 为 1 至 1200000 毫秒。
 运行组必须一次容纳生产者和全部持久消费者，不自动重放失败调用。
+消费者页面须将 `resultScopes.entryWorkflowId` 和 `scopeWorkflowId` 绑定至消费流程，
+使用其实际输出；异步 Dispatch 不作为同步 `callPath`。消费 Job 每次调用独立发布结果，
+页面观察不改变生产者的停止权限。队列查看见 [全局变量与队列](global-variables.md)。
 详见 [设备与在线配置指南](guides/device-dispatch-online-configuration.md)。
 
 ## 5. 统一设备与 TCP
@@ -253,6 +269,14 @@ YOLO 处理流程添加虚假 TCP/相机设备。旧通信工程不能靠删除�
 数据源结构。页面 `image.props.imageResourceId` 引用 `page_image` 资源，与动态绑定互斥；
 `navigation_button.props.iconResourceId` 引用 `icon` 资源。执行期私有路径不写回工程 JSON。
 页面字段详见 [页面契约](runtime-pages-p1-contract.md)，其中历史阶段的发布限制不是本规范的当前版本结论。
+
+Designer 只读预览支持同页绑定一个 Dispatch 生产入口和一个已声明消费入口的结果。
+每个来源仍有独立 `resultScopeId` 和完整 `callPath`，各 Job 只采集自己的来源；预览必须
+核对同一 Runtime、工程、运行组及生产/消费 Job 关系，不拼接无关任务。整个组合视图仍
+最多两个不同图像来源。采集画面和检测图分别更新，不表示两侧来自同一帧；单侧连接
+失败只清除对应区域，停止查看不停止业务。此组合入口不等于独立 Runtime 生产页也已支持。
+图像组件可用 `props.emptyText` 为正常的可选输出缺失/分支跳过设置空态文案；执行或
+图像导出错误仍显示错误，原始原因仍保留在提示中。
 
 `resources.schemaVersion="1.0"`；[资源模型](../src/emo_master/core/project/resources.py)定义：
 

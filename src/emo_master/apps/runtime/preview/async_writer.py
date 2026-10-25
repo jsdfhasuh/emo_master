@@ -31,11 +31,11 @@ class _Capture:
 class AsyncPreviewSnapshotWriter:
     def __init__(self, jobWorkspace: Path, *, jobId="", projectRevision=0,
                  inspectionPublisher=None, errorPublisher, cancellation=None,
-                 maxPending=64, maxBytes=64 * 1024 * 1024) -> None:
+                 maxPending=64, maxBytes=64 * 1024 * 1024, inlineInspection=False) -> None:
         if maxPending < 1 or maxBytes < 1:
             raise ValueError("snapshot buffer limits must be positive")
         self._writer = PreviewSnapshotWriter(jobWorkspace, jobId=jobId, projectRevision=projectRevision,
-                                             inspectionPublisher=inspectionPublisher)
+                                             inspectionPublisher=inspectionPublisher, inlineInspection=inlineInspection)
         self._errorPublisher = errorPublisher
         self._cancellation = cancellation or CancellationToken()
         self._maxPending, self._maxBytes = maxPending, maxBytes

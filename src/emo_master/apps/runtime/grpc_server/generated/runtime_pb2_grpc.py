@@ -34,6 +34,11 @@ class RuntimeServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.GetDispatchQueueState = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetDispatchQueueState',
+                request_serializer=runtime__pb2.DispatchQueueRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DispatchQueueReply.FromString,
+                _registered_method=True)
         self.GetOnlineProjectSnapshot = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/GetOnlineProjectSnapshot',
                 request_serializer=runtime__pb2.OnlineProjectRequest.SerializeToString,
@@ -483,6 +488,12 @@ class RuntimeServiceStub(object):
 
 class RuntimeServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
+
+    def GetDispatchQueueState(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def GetOnlineProjectSnapshot(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -1021,6 +1032,11 @@ class RuntimeServiceServicer(object):
 
 def add_RuntimeServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'GetDispatchQueueState': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetDispatchQueueState,
+                    request_deserializer=runtime__pb2.DispatchQueueRequest.FromString,
+                    response_serializer=runtime__pb2.DispatchQueueReply.SerializeToString,
+            ),
             'GetOnlineProjectSnapshot': grpc.unary_unary_rpc_method_handler(
                     servicer.GetOnlineProjectSnapshot,
                     request_deserializer=runtime__pb2.OnlineProjectRequest.FromString,
@@ -1476,6 +1492,33 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class RuntimeService(object):
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def GetDispatchQueueState(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetDispatchQueueState',
+            runtime__pb2.DispatchQueueRequest.SerializeToString,
+            runtime__pb2.DispatchQueueReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def GetOnlineProjectSnapshot(request,

@@ -22,7 +22,7 @@ class NormalCapture:
     limitsJson: str
 
 
-def freezeNormalCapture(document, registry, resourceRoot, workflowId, *, counterNames=frozenset()):
+def freezeNormalCapture(document, registry, resourceRoot, workflowId, *, counterNames=frozenset(), resourcePaths=None):
     if document.presentation is None:
         raise ValueError("presentation must be explicitly enabled and saved")
     issues = validateBindings(document, {key: value.manifest for key, value in registry.items()}, counterNames=counterNames)
@@ -31,8 +31,8 @@ def freezeNormalCapture(document, registry, resourceRoot, workflowId, *, counter
     if document.resources is not None:
         # Check declared package assets, but never rewrite the original run's
         # site/file parameters or move it into the debug data namespace.
-        verifyResources(document, resourceRoot)
-    presentation = presentationForWorkflow(document, workflowId)
+        verifyResources(document, resourceRoot, resourcePaths=resourcePaths)
+    presentation = presentationForWorkflow(document, workflowId, capture=True)
     capture = captureDefinition(presentation)
     used = {sourceId for page in presentation.pages.values()
             for component in walkComponents(page.components)

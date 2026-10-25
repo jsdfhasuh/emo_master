@@ -60,6 +60,8 @@ class ImageView(QWidget):
 
     def setImage(self, image, key, message=""):
         assertGuiThread()
+        if self.image.cacheKey() == image.cacheKey() and self.key == key and self.message == message:
+            return
         self.image, self.key, self.message = image, key, message
         self.update()
 
@@ -481,6 +483,10 @@ class RuntimePages(QWidget):
                 self.widgets[pageId][component.componentId] = (component, widget)
             p = component.layout
             layout.addWidget(card, p.row, p.column, p.rowSpan, p.columnSpan)
+            if not self.editorHost and component.type in {'image', 'table'}:
+                # Honor image row spans instead of giving spare height to labels.
+                for row in range(p.row, p.row + p.rowSpan):
+                    layout.setRowStretch(row, 1)
 
     def imageSources(self, pageId=None):
         page = self.config.pages.get(pageId or self.currentPageId)
@@ -613,6 +619,9 @@ class RuntimePages(QWidget):
             problem = self.captureCoverage.sourceProblem(self.config, sourceId)
             if problem:
                 return None, None, problem
+        problem = getattr(view, 'scopeErrors', {}).get(source.resultScopeId)
+        if problem:
+            return None, None, problem
         scope = view.scopes.get(source.resultScopeId)
         if scope is None:
             if source.resultScopeId in getattr(view, 'expiredScopes', {}):
@@ -642,8 +651,8 @@ class RuntimePages(QWidget):
         """Only validated frozen metadata permits partial source compatibility."""
         if coverage is not None:
             self.setDesignExamples(False)
-        from emo_master.core.presentation.coverage import CaptureCoverage
-        if coverage is not None and not isinstance(coverage, CaptureCoverage):
+        from emo_master.core.presentation.coverage import CaptureCoverage, DispatchCoverage
+        if coverage is not None and not isinstance(coverage, (CaptureCoverage, DispatchCoverage)):
             raise TypeError('validated capture coverage required')
         self.captureCoverage = coverage
         if coverage is not None:
@@ -681,7 +690,8 @@ class RuntimePages(QWidget):
             self.modeLabel.setText(f"冻结 · {pin.state} · 不暂停检测，不自动续租")
             if pin.scope is not None:
                 scope = pin.scope
-                view = replace(view, connection="CONNECTED", scopes=MappingProxyType({scope.result.identity.resultScopeId: scope}), loading=MappingProxyType({}))
+                view = replace(view, connection="CONNECTED", scopes=MappingProxyType({scope.result.identity.resultScopeId: scope}),
+                               loading=MappingProxyType({}), scopeErrors=MappingProxyType({}))
             else:
                 view = replace(view, connection="PIN_EXPIRED", detail=pin.error,
                                scopes=MappingProxyType({}), loading=MappingProxyType({}))
@@ -692,60 +702,62 @@ class RuntimePages(QWidget):
         if page is None:
             return
         shown = {}
-        self.setUpdatesEnabled(False)
-        try:
-            for component, widget in self.widgets[page].values():
-                if component.props.imageResourceId:
-                    continue
-                if component.type == "navigation_button":
-                    continue
-                if component.type == "text" and not component.bindings:
-                    continue
-                if component.type == 'runtime_status' and not component.bindings:
-                    widget.setText('客户端连接：' + self.lastView.connection + ' · ' + self.lastView.detail)
-                    continue
-                scope, value, error = self._value(component, view)
-                if view.connection != "CONNECTED":
-                    value, error, scope = None, view.connection + ": " + view.detail, None
-                widget.setToolTip(error)
-                error = self.displayMessage(error)
-                if scope:
-                    shown[scope.result.identity.resultScopeId] = scope
-                if isinstance(widget, ImageView):
-                    image = QImage()
-                    if not error and value is not None:
-                        try:
-                            image = self.hub.image(scope, next(iter(component.bindings.values())), value) if self.hub else ownedImage(value)
-                        except ValueError as problem:
-                            error = str(problem)
-                    widget.setImage(image, scope.result.identity.resultKey if scope else "", error)
-                elif component.type == "number":
-                    widget.setText(error or (component.props.emptyText if value is None else
-                        (f"{value:.{component.props.decimals}f}" if type(value) is float else str(value)) + component.props.unit))
-                elif component.type == "text":
-                    text = error or (component.props.emptyText if value is None else json.dumps(value, ensure_ascii=False))
-                    widget.setText(text if len(text) <= 4096 else text[:4096] + '…（显示截断）')
-                elif component.type == 'indicator':
-                    state = component.props.indicatorStates.get(json.dumps(value, ensure_ascii=False)) if not error else None
-                    widget.setStyleSheet(appearanceStyle(component.props) + 'color:' + COLORS[state.color if state else 'neutral'])
-                    widget.setText(error or (component.props.emptyText if value is None else state.text if state else '未映射判定值: ' + json.dumps(value, ensure_ascii=False)))
-                elif component.type == 'runtime_status':
-                    widget.setText(error or str(value))
-                elif isinstance(widget, CollectionView):
-                    widget.submit(value, scope.result.identity.resultKey if scope else 'simulation-' + self.simulationState if self.simulationState else '', error)
-                elif component.type == 'table':
-                    widget.setText('UI_TABLE_BUDGET · 每窗口最多4个已创建表格')
-                else:
-                    widget.setText("组件尚未支持: " + component.type)
-            # Record only after all widgets have committed this scope together.
-            self.displayed = shown
-            self.identity.setText(" | ".join(f"{scope}: #{item.result.identity.resultOrdinal} · {item.result.status} · {item.result.identity.resultKey}"
-                                             for scope, item in shown.items()) or "尚无当前有效结果")
-            for scope in shown.values():
-                self.records.append({"key": scope.result.identity.resultKey, "ready_ns": scope.readyNs,
-                                     "gui_ns": time.perf_counter_ns(), "scope_end_ns": scope.result.timing.scopeEndedNs if scope.result.timing else None})
-        finally:
-            self.setUpdatesEnabled(True)
+        # QWidget updates coalesce after this GUI-thread submission returns.
+        # Toggling the whole window's updates would also repaint unchanged content.
+        for component, widget in self.widgets[page].values():
+            if component.props.imageResourceId:
+                continue
+            if component.type == "navigation_button":
+                continue
+            if component.type == "text" and not component.bindings:
+                continue
+            if component.type == 'runtime_status' and not component.bindings:
+                widget.setText('客户端连接：' + self.lastView.connection + ' · ' + self.lastView.detail)
+                continue
+            scope, value, error = self._value(component, view)
+            if view.connection != "CONNECTED":
+                value, error, scope = None, view.connection + ": " + view.detail, None
+            widget.setToolTip(error)
+            error = (component.props.emptyText if component.type == 'image'
+                     and error in {'OPTIONAL_ABSENT', 'BRANCH_SKIPPED'} and component.props.emptyText != '—'
+                     else self.displayMessage(error))
+            if scope:
+                shown[scope.result.identity.resultScopeId] = scope
+            if isinstance(widget, ImageView):
+                image = QImage()
+                if not error and value is not None:
+                    try:
+                        image = self.hub.image(scope, next(iter(component.bindings.values())), value) if self.hub else ownedImage(value)
+                    except ValueError as problem:
+                        error = str(problem)
+                widget.setImage(image, scope.result.identity.resultKey if scope else "", error)
+            elif component.type == "number":
+                widget.setText(error or (component.props.emptyText if value is None else
+                    (f"{value:.{component.props.decimals}f}" if type(value) is float else str(value)) + component.props.unit))
+            elif component.type == "text":
+                text = error or (component.props.emptyText if value is None else json.dumps(value, ensure_ascii=False))
+                widget.setText(text if len(text) <= 4096 else text[:4096] + '…（显示截断）')
+            elif component.type == 'indicator':
+                state = component.props.indicatorStates.get(json.dumps(value, ensure_ascii=False)) if not error else None
+                style = appearanceStyle(component.props) + 'color:' + COLORS[state.color if state else 'neutral']
+                if widget.styleSheet() != style:
+                    widget.setStyleSheet(style)
+                widget.setText(error or (component.props.emptyText if value is None else state.text if state else '未映射判定值: ' + json.dumps(value, ensure_ascii=False)))
+            elif component.type == 'runtime_status':
+                widget.setText(error or str(value))
+            elif isinstance(widget, CollectionView):
+                widget.submit(value, scope.result.identity.resultKey if scope else 'simulation-' + self.simulationState if self.simulationState else '', error)
+            elif component.type == 'table':
+                widget.setText('UI_TABLE_BUDGET · 每窗口最多4个已创建表格')
+            else:
+                widget.setText("组件尚未支持: " + component.type)
+        # Record only after all widgets have committed this scope together.
+        self.displayed = shown
+        self.identity.setText(" | ".join(f"{scope}: #{item.result.identity.resultOrdinal} · {item.result.status} · {item.result.identity.resultKey}"
+                                         for scope, item in shown.items()) or "尚无当前有效结果")
+        for scope in shown.values():
+            self.records.append({"key": scope.result.identity.resultKey, "ready_ns": scope.readyNs,
+                                 "gui_ns": time.perf_counter_ns(), "scope_end_ns": scope.result.timing.scopeEndedNs if scope.result.timing else None})
 
     def _painted(self, key, stamp):
         if key and key not in self._recordedPaints:

@@ -69,3 +69,30 @@ class CaptureCoverage:
         return (identity.jobId == self.jobId and identity.runtimeInstanceId == self.runtimeInstanceId
                 and identity.capturePlanRevision == self.capturePlanRevision
                 and identity.executionRevision == self.executionRevision)
+
+
+@dataclass(frozen=True)
+class DispatchCoverage:
+    """Two disjoint capture plans from the same explicitly admitted run group."""
+    members: tuple[CaptureCoverage, CaptureCoverage]
+
+    @classmethod
+    def fromMetadata(cls, producer, consumer):
+        if (not producer.run_group_id or producer.run_group_id != consumer.run_group_id
+                or consumer.source_job_id != producer.job_id or producer.source_job_id != producer.job_id
+                or producer.target_slot_id
+                or not consumer.target_slot_id or producer.job_id == consumer.job_id
+                or not producer.project_id or producer.project_id != consumer.project_id
+                or producer.runtime_instance_id != consumer.runtime_instance_id):
+            raise ValueError('unrelated Dispatch viewing Jobs')
+        members = (CaptureCoverage.fromMetadata(producer), CaptureCoverage.fromMetadata(consumer))
+        if set(members[0].sources) & set(members[1].sources) or set(members[0].scopes) & set(members[1].scopes):
+            raise ValueError('overlapping Dispatch capture scopes')
+        return cls(members)
+
+    def sourceProblem(self, presentation, sourceId):
+        owner = next((member for member in self.members if sourceId in member.sources), self.members[0])
+        return owner.sourceProblem(presentation, sourceId)
+
+    def matches(self, identity):
+        return any(member.matches(identity) and identity.resultScopeId in member.scopes for member in self.members)

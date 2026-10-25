@@ -27,6 +27,7 @@ class PinStore:
 
     def __init__(self, session):
         self.session = session
+        self.limit = min(self.limit, getattr(session, 'pinByteLimit', self.limit))
         self.lock = threading.RLock()
         self.entries = {}
         self.stop = threading.Event()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import time
 from typing import Callable
 
@@ -272,10 +273,15 @@ class RuntimeController:
         self.updateToolbarState()
 
         if runtimeStatus in {"FAILED", "REJECTED"}:
+            try:
+                diagnostics = json.loads(getattr(statusReply, 'diagnostics_json', '') or '{}')
+            except (ValueError, TypeError):
+                diagnostics = {}
             self._notifyRunFailure(runtimeMessage, status=runtimeStatus,
-                                   code=str(getattr(statusReply, "error_code", "")))
+                                   code=str(getattr(statusReply, "error_code", "")),
+                                   diagnostics=diagnostics if isinstance(diagnostics, dict) else {})
 
-    def _notifyRunFailure(self, message: str, *, status: str = "FAILED", code: str = "") -> None:
+    def _notifyRunFailure(self, message: str, *, status: str = "FAILED", code: str = "", diagnostics=None) -> None:
         if self._failureNotified or self._closing or self._closed or self.onRunFailed is None:
             return
         self._failureNotified = True
@@ -284,6 +290,11 @@ class RuntimeController:
         failure.setdefault("workflowId", self.getEntryWorkflowId() or "")
         failure["message"] = failure.get("message") or message or "Runtime 未提供失败原因"
         failure["code"] = failure.get("code") or code
+        if diagnostics:
+            eventPayload = failure.get('payload')
+            payload = dict(eventPayload) if isinstance(eventPayload, dict) else {}
+            payload.setdefault('diagnostics', diagnostics)
+            failure['payload'] = payload
         failure.update(status=status, jobMessage=message)
         self.onRunFailed(failure)
 

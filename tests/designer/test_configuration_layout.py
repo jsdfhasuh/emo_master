@@ -25,7 +25,7 @@ def testPositionOnlyChangesHaveNoConfigurationPrompt(ownedDesignerWindow, tmp_pa
         draft = session.payload()
         assert projectChanges(before, draft)
         assert dialog.table.rowCount() == 0
-        assert '0 项差异' in dialog.status.text() and '运行配置一致，无需写入' in dialog.status.text()
+        assert dialog.status.text() == '当前工程与 Runtime 配置一致，无需写入。'
         assert dialog.closeButton.text() == '关闭'
         assert not dialog.validateButton.isEnabled() and not dialog.writeButton.isEnabled()
         assert not dialog.selectAllCheckBox.isEnabled() and not dialog.details.toPlainText()

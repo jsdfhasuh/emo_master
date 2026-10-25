@@ -99,7 +99,7 @@ def testNativeLogAndLocalResultFileShortcuts(tmp_path, monkeypatch):
     window, _node = windowWithNode()
     window.show()
     window.runResultTools.logs.click()
-    assert window.logDock.isVisible()
+    assert window.logDialog.isVisible()
     assert not window.runResultTools.openFile.isEnabled()
     path = tmp_path / '本次结果.png'
     path.write_bytes(b'only checks desktop URL, not decoded')

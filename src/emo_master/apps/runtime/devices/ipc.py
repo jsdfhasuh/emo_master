@@ -149,6 +149,14 @@ class DeviceProxy:
                 reply = json.loads(receiveBytes(self.connection, MAX_BYTES, interrupted, deadline))
             except (OSError, EOFError, ValueError) as error:
                 self.close()
+                if kind == 'framework_operation' and self.cancellation.is_set() and isinstance(error, (OSError, EOFError)):
+                    # A Windows pipe can report closure before invoking the
+                    # cancellation probe. This stops the workflow, never replays
+                    # the request or claims that an admission did not happen.
+                    stopped = CancellationRequested("framework transport closed during cancellation; no replay")
+                    stopped.outcome = "UNKNOWN"
+                    stopped.diagnostics = dict(action=action, transportError=type(error).__name__)
+                    raise stopped from error
                 raise DeviceError("E_DEVICE_OUTCOME_UNKNOWN", "device transport interrupted; do not retry",
                                   outcome="UNKNOWN") from error
             if not reply["ok"]:

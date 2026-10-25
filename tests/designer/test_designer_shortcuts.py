@@ -253,7 +253,7 @@ def testLayoutFitAndLogsKeysCallExistingCommands(canvas, monkeypatch):  # noqa: 
     press(window, Qt.Key_Home)
     assert called.count('fit') == previous + 1
     press(window, Qt.Key_L, Qt.ControlModifier | Qt.ShiftModifier)
-    assert window.logDock.isVisible()
+    assert window.logDialog.isVisible()
 
 
 def testPageCopyDeleteUndoNeverModifyHiddenWorkflow(canvas, monkeypatch):  # noqa: F811

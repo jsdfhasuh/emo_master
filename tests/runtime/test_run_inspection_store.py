@@ -17,7 +17,7 @@ def document():
 
 
 def publish(store, session, root, job='a', value=1, final='node.completed', *, invocation=None,
-            terminal=True, writer=None, transform=None):
+            terminal=True, writer=None, transform=None, inline=False):
     if job not in store.sessions[session].jobs:
         store.attach(session, 'project', job, document())
     context = SimpleNamespace(workflowId='main', workflowRunId=job + '-flow',
@@ -31,7 +31,7 @@ def publish(store, session, root, job='a', value=1, final='node.completed', *, i
             transform(event['payload'])
         store.publish(job, event, root / job)
     writer = writer or PreviewSnapshotWriter(root / job, jobId=job, projectRevision=7,
-                                             inspectionPublisher=receive)
+                                             inspectionPublisher=receive, inlineInspection=inline)
     writer.capture(document().workflows['main'].nodes[0], {'image': np.full((30, 40, 3), value, np.uint8)}, context)
     store.observe(RuntimeEvent(job, final, '', workflowId='main', nodeId='load',
         workflowRunId=context.workflowRunId, nodeRunId=context.nodeRunId, sequence=sequence + 1))
@@ -70,9 +70,10 @@ def testTwoJobsAndReaderHoldEvictedPixelsUntilActualIteratorExit(owner, tmp_path
     assert store.stats()['sessions'] == 0
 
 
-def testLastLoopFailureNeverReusesEarlierSuccessButPreviousRemainsReadable(owner, tmp_path):
+@pytest.mark.parametrize('inline', [False, True])
+def testLastLoopFailureNeverReusesEarlierSuccessButPreviousRemainsReadable(owner, tmp_path, inline):
     store, session = owner
-    publish(store, session, tmp_path, invocation='node-0', terminal=False)
+    publish(store, session, tmp_path, invocation='node-0', terminal=False, inline=inline)
     for sequence, kind, node in [(3, 'node.started', 'node-1'), (4, 'node.failed', 'node-1'),
                                   (5, 'node.completed', 'node-0')]:
         store.observe(RuntimeEvent('a', kind, '', workflowId='main', nodeId='load', workflowRunId='a-flow',
@@ -182,10 +183,71 @@ def testRunningJobRetainsExactlyTwoInvocationsAndReaderSurvivesThird(owner, tmp_
     assert len(list((store.root).rglob('*.png'))) == 2
 
 
-def testLivePublishingPreservesExistingMetadataBudget(owner, tmp_path, monkeypatch):
+@pytest.mark.parametrize('inline', [False, True])
+def testLivePublishingPreservesExistingMetadataBudget(owner, tmp_path, monkeypatch, inline):
     store, session = owner
     monkeypatch.setattr(module, 'METADATA_BYTES', 1)
-    publish(store, session, tmp_path, terminal=False)
+    publish(store, session, tmp_path, terminal=False, inline=inline)
     sources, state, reason = store.list(session, 'project', 'a', 'main', 'load')
     assert not sources and state == 'NO_CURRENT_SNAPSHOT' and 'METADATA_BUDGET' in reason
     assert store.stats()['encodedBytes'] == 0
+
+
+def testInlineInspectionKeepsExactLastTwoWithoutStagingOrRetainedImageFiles(owner, tmp_path):
+    import cv2
+    store, session = owner
+    writer = None
+    sizes = []
+    for iteration in range(6):
+        writer = publish(store, session, tmp_path, invocation=str(iteration), value=iteration,
+                         terminal=False, writer=writer, inline=True)
+        sources, state, _ = store.list(session, 'project', 'a', 'main', 'load')
+        assert state == 'CURRENT_AVAILABLE' and len(sources) == 1
+        asset = sources[0]
+        assert asset.nodeRunId == str(iteration) and asset.originJobId == 'a' and asset.originProjectRevision == 7
+        data = b''.join(chunk for chunk, _ in store.stream(session, 'project', asset.assetId))
+        assert np.all(cv2.imdecode(np.frombuffer(data, np.uint8), -1) == iteration)
+        sizes.append(len(data))
+        assert store.usage() == sum(sizes[-2:])
+        assert len(store.sessions[session].executions[('main', 'load')]) == min(iteration + 1, 2)
+        assert not asset.path.exists() and not writer.inspectionRoot.exists()
+    assert not list(store.root.rglob('*.png'))
+
+
+def testInlineReaderKeepsEvictedBytesQuotaChargedUntilIteratorCloses(owner, tmp_path):
+    store, session = owner
+    publish(store, session, tmp_path, 'a', inline=True)
+    first = store.list(session, 'project', 'a', 'main', 'load')[0][0]
+    reader = store.stream(session, 'project', first.assetId)
+    data, mime = next(reader)
+    assert data and mime == 'image/png'
+    for job in ('b', 'c'):
+        publish(store, session, tmp_path, job, inline=True)
+    assert store.list(session, 'project', 'a', 'main', 'load')[1] == 'EXPIRED'
+    assert store.stats()['retiredJobs'] == 1 and store.usage() == 3 * len(data)
+    store.closeSession(session)
+    assert store.stats()['encodedBytes'] == len(data) and store.stats()['readers'] == 1
+    reader.close()
+    assert store.stats()['encodedBytes'] == 0 and store.stats()['sessions'] == 0
+
+
+@pytest.mark.parametrize('scope', ['JOB_BYTES', 'SESSION_BYTES', '_PROJECT_LIMIT_BYTES', '_GLOBAL_LIMIT_BYTES'])
+def testInlineImagesShareExistingStorageBudgets(owner, tmp_path, monkeypatch, scope):
+    store, session = owner
+    writer = publish(store, session, tmp_path, invocation='first', terminal=False, inline=True)
+    size = store.usage()
+    monkeypatch.setattr(module.legacy if scope.startswith('_') else module, scope, size)
+    publish(store, session, tmp_path, invocation='second', terminal=False, writer=writer)
+    sources, state, reason = store.list(session, 'project', 'a', 'main', 'load')
+    assert not sources and state == 'NO_CURRENT_SNAPSHOT' and 'ASSET_BUDGET' in reason
+    assert store.usage() == size
+
+
+def testInlineAndFileImagesUseOneCombinedBudget(owner, tmp_path, monkeypatch):
+    store, session = owner
+    publish(store, session, tmp_path, 'a')
+    size = store.usage()
+    monkeypatch.setattr(module, 'SESSION_BYTES', size)
+    publish(store, session, tmp_path, 'b', inline=True)
+    assert 'ASSET_BUDGET' in store.list(session, 'project', 'b', 'main', 'load')[2]
+    assert store.usage() == size

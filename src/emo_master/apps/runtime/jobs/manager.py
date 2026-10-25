@@ -58,8 +58,11 @@ class JobManager:
             )
             return record
 
-    def start(self, record: JobRecord, spec: JobProcessSpec) -> JobRecord:
-        self.supervisor.startJob(spec)
+    def start(self, record: JobRecord, spec: JobProcessSpec, *, consumerPresentation=None) -> JobRecord:
+        if consumerPresentation is None:
+            self.supervisor.startJob(spec)
+        else:
+            self.supervisor.startJob(spec, consumerPresentation=consumerPresentation)
         return record
 
     def startJob(self, record: JobRecord, spec: JobProcessSpec) -> JobRecord:

@@ -1,7 +1,7 @@
 """Leased, read-only ownership of each node's last two actual invocations.
 
-Event sinks update metadata only. Immutable preview files arrive on the
-existing worker channel; copies and retirement run outside its order lock.
+Event sinks update metadata only. Immutable PNG bytes or legacy preview files
+arrive on the existing worker channel and share the same leases and quotas.
 """
 from collections import OrderedDict
 from dataclasses import dataclass, field
@@ -36,6 +36,7 @@ class InspectionExecution:
     reason: str = ''
     readers: int = 0
     directory: Path | None = None
+    previewBytes: dict[str, bytes] = field(default_factory=dict)
 
 
 @dataclass
@@ -90,10 +91,24 @@ class RunInspectionStore:
         while not self._stop.wait(1):
             self.expire()
 
+    def _memoryUsage(self, projectKey=None, sessionId=None, jobId=None):
+        total = 0
+        with self._eventLock:
+            for session in self.sessions.values():
+                if ((projectKey is not None and session.projectKey != projectKey)
+                        or (sessionId is not None and session.sessionId != sessionId)):
+                    continue
+                for entries in (*session.executions.values(), session.retired):
+                    for execution in entries:
+                        if jobId is None or execution.jobId == jobId:
+                            total += sum(map(len, execution.previewBytes.values()))
+        return total
+
     def usage(self, projectKey=None):
         with self._lock:
             root = self.root / projectKey if projectKey else self.root
-            return sum(path.stat().st_size for path in root.rglob('*') if path.is_file()) if root.exists() else 0
+            disk = sum(path.stat().st_size for path in root.rglob('*') if path.is_file()) if root.exists() else 0
+            return disk + self._memoryUsage(projectKey)
 
     def _publicUsage(self, projectKey=None):
         if projectKey:
@@ -102,7 +117,7 @@ class RunInspectionStore:
             total += sum(a.path.stat().st_size for a in self.assets._assets.values()
                          if a.path.parent == self.assets.transientRoot and a.projectKey == projectKey and a.path.exists())
             return total + self.usage(projectKey)
-        return sum(p.stat().st_size for p in self.assets.root.rglob('*') if p.is_file())
+        return sum(p.stat().st_size for p in self.assets.root.rglob('*') if p.is_file()) + self._memoryUsage()
 
     def open(self, projectKey, projectReferences=()):
         with self._lock:
@@ -237,9 +252,15 @@ class RunInspectionStore:
         staging = legacy._ioPath(workspace / 'inspection_staging').resolve()
         entries = event.get('payload', {}).get('entries', ())
         for entry in entries:
-            source = (staging / str(entry.get('relativePath', ''))).resolve()
-            if not source.is_relative_to(staging) or not source.is_file():
-                continue
+            data = entry.get('imageBytes')
+            source = None
+            if data is not None:
+                if not isinstance(data, bytes) or not 0 < len(data) <= 4 * 1024 * 1024:
+                    continue
+            else:
+                source = (staging / str(entry.get('relativePath', ''))).resolve()
+                if not source.is_relative_to(staging) or not source.is_file():
+                    continue
             try:
                 with self._lock:
                     with self._eventLock:
@@ -267,18 +288,21 @@ class RunInspectionStore:
                         elif normalizePortType(job.definitions.get(key, {}).get(port, '')) != 'image':
                             continue
                     self._cleanup(session)
-                    self._copy(session, job, execution, entry, source)
+                    self._copy(session, job, execution, entry, source, data)
             finally:
-                source.unlink(missing_ok=True)
+                if source is not None:
+                    source.unlink(missing_ok=True)
 
-    def _copy(self, session, job, execution, entry, source):
-        size = source.stat().st_size
+    def _copy(self, session, job, execution, entry, source, data=None):
+        size = len(data) if data is not None else source.stat().st_size
         sessionRoot = self.root / session.projectKey / session.sessionId
         sessionUsage = sum(path.stat().st_size for path in sessionRoot.rglob('*') if path.is_file())
+        sessionUsage += self._memoryUsage(sessionId=session.sessionId)
         with self._eventLock:
             sources = [asset for entries in session.executions.values() for item in entries for asset in item.sources]
         jobRoot = sessionRoot / job.jobId
         jobUsage = sum(path.stat().st_size for path in jobRoot.rglob('*') if path.is_file())
+        jobUsage += self._memoryUsage(sessionId=session.sessionId, jobId=job.jobId)
         if (size > JOB_BYTES - jobUsage or sessionUsage + size > SESSION_BYTES
                 or self._publicUsage(session.projectKey) + size > legacy._PROJECT_LIMIT_BYTES
                 or self._publicUsage() + size > legacy._GLOBAL_LIMIT_BYTES or self._pendingFiles
@@ -307,6 +331,11 @@ class RunInspectionStore:
                     or self.metadataBytes(session, additional=asset) > 2 * METADATA_BYTES):
                 execution.reason = 'E_INSPECTION_METADATA_BUDGET: 节点图片元数据超过会话额度'
                 return
+        if data is not None:
+            with self._eventLock:
+                execution.previewBytes[assetId] = data
+                execution.sources.append(asset)
+            return
         destination.parent.mkdir(parents=True, exist_ok=True)
         try:
             legacy._atomicCopy(source, destination)
@@ -322,7 +351,8 @@ class RunInspectionStore:
         jobs = [{'jobId': job.jobId, 'revision': job.revision, 'definitions': list(job.definitions.items()),
                  'last': list(job.last.items()), 'status': job.status}
                 for job in session.jobs.values() if jobId is None or job.jobId == jobId]
-        executions = [{**execution.__dict__, 'sources': [asset.__dict__ for asset in execution.sources]}
+        executions = [{**execution.__dict__, 'sources': [asset.__dict__ for asset in execution.sources],
+                       'previewBytes': {key: len(data) for key, data in execution.previewBytes.items()}}
                       for entries in session.executions.values() for execution in entries
                       if jobId is None or execution.jobId == jobId]
         value = {'jobs': jobs, 'executions': executions, 'additional': additional.__dict__ if additional else None}
@@ -378,7 +408,14 @@ class RunInspectionStore:
                 execution, asset = match
                 execution.readers += 1
                 self._readers += 1
+                data = execution.previewBytes.get(assetId)
         try:
+            if data is not None:
+                for offset in range(0, len(data), 256 * 1024):
+                    if not active():
+                        return
+                    yield data[offset:offset + 256 * 1024], asset.mimeType
+                return
             with asset.path.open('rb') as handle:
                 while active():
                     chunk = handle.read(256 * 1024)
@@ -424,6 +461,7 @@ class RunInspectionStore:
             except OSError:
                 continue
             with self._eventLock:
+                execution.previewBytes.clear()
                 session.retired.remove(execution)
         if session.closed and not session.retired:
             self.sessions.pop(session.sessionId, None)

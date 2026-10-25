@@ -83,6 +83,7 @@ class DisplayRpc(rpc.DisplayServiceServicer):
                 config = self.service.jobs.get(job.jobId, {})
                 identity = config.get("identity", {})
                 plan = json.loads(config.get("plan", "{}"))
+                dispatch = config.get("dispatch", {})
                 result.append(pb.DisplayJob(job_id=job.jobId, status=job.status,
                     project_id=job.projectId, workflow_id=job.workflowId,
                     mode=identity.get("mode", job.executionMode), capture_enabled=bool(config.get("capture")),
@@ -96,6 +97,8 @@ class DisplayRpc(rpc.DisplayServiceServicer):
                     start_request_id=getattr(self.service.runtime, "_jobStartRequestIds", {}).get(job.jobId, ""),
                     accepted_at_ms=job.acceptedAtMs,
                     legacy_snapshot_policy=job.legacySnapshotPolicy,
+                    run_group_id=dispatch.get("runGroupId", ""), source_job_id=dispatch.get("sourceJobId", ""),
+                    target_slot_id=dispatch.get("targetSlotId", ""),
                     resources_released=job.isTerminal and not config
                     and not self.service.runtime.jobSupervisor.ownsJobResources(job.jobId)))
             return pb.DisplayJobs(jobs=result)

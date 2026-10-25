@@ -73,7 +73,7 @@ class PreviewAsset:
 
 class PreviewSnapshotWriter:
     def __init__(self, jobWorkspace: Path, *, jobId: str = "", projectRevision: int = 0,
-                 inspectionPublisher=None) -> None:
+                 inspectionPublisher=None, inlineInspection: bool = False) -> None:
         self.jobId = jobId
         self.projectRevision = projectRevision
         self.root = _ioPath(jobWorkspace / "preview_staging")
@@ -82,6 +82,7 @@ class PreviewSnapshotWriter:
         self._pendingCleanup: set[Path] = set()
         self._cleanupScanRequired = False
         self.inspectionPublisher = inspectionPublisher
+        self.inlineInspection = inlineInspection
         self.inspectionRoot = _ioPath(jobWorkspace / 'inspection_staging')
 
     def _retirePending(self) -> bool:
@@ -139,7 +140,7 @@ class PreviewSnapshotWriter:
                         continue
                     relativePath = f"assets/{identity}.png"
                     created.append(self.root / relativePath)
-                    _atomicBytes(self.root / relativePath, encoded.tobytes())
+                    _atomicBytes(self.root / relativePath, encoded.tobytes(), durable=False)
                     height, width = value.shape[:2]
                     entry: dict[str, object] = {
                         "workflowId": workflowId,
@@ -158,7 +159,7 @@ class PreviewSnapshotWriter:
                         continue
                     relativePath = f"assets/{identity}.json"
                     created.append(self.root / relativePath)
-                    _atomicJson(self.root / relativePath, value)
+                    _atomicJson(self.root / relativePath, value, durable=False)
                     entry = {
                         "workflowId": workflowId,
                         "nodeId": nodeId,
@@ -181,7 +182,7 @@ class PreviewSnapshotWriter:
                 nextEntries[key] = entry
             if not created:
                 return  # No supported outputs: there is no changed index to commit.
-            _atomicJson(self.root / "index.json", {"entries": list(nextEntries.values())})
+            _atomicJson(self.root / "index.json", {"entries": list(nextEntries.values())}, durable=False)
         except BaseException as error:
             self._pendingCleanup.update(created)
             self._cleanupScanRequired = True
@@ -202,13 +203,21 @@ class PreviewSnapshotWriter:
                 continue
             payload, width, height = inspectionPreview(value)
             filename = hashlib.sha256((captureId + '\0' + port).encode()).hexdigest() + '.png'
-            _atomicBytes(self.inspectionRoot / filename, payload)
-            entries.append(dict(workflowId=context.workflowId, nodeId=node.nodeId, port=port,
+            entry = dict(workflowId=context.workflowId, nodeId=node.nodeId, port=port,
                 originJobId=self.jobId, originProjectRevision=self.projectRevision,
                 workflowRunId=context.workflowRunId, nodeRunId=context.nodeRunId, captureId=captureId,
                 width=width, height=height, originalWidth=int(value.shape[1]), originalHeight=int(value.shape[0]),
                 relativePath=filename, mimeType='image/png', iterationPath=list(context.iterationPath),
-                createdAtMs=int(time.time() * 1000)))
+                createdAtMs=int(time.time() * 1000))
+            if self.inlineInspection:
+                # One immutable PNG per event keeps the existing bounded worker
+                # channel at <= 4 MiB of image bytes per queue item.
+                entry['imageBytes'] = payload
+                self.inspectionPublisher(eventType='inspection.snapshot', context=context,
+                    message='node inspection snapshot', payload={'entries': [entry]})
+            else:
+                _atomicBytes(self.inspectionRoot / filename, payload, durable=False)
+                entries.append(entry)
         if entries:
             # Only immutable files cross the process boundary. The receiving
             # inspection owner, not the next capture, releases these files.
@@ -710,19 +719,23 @@ def _intValue(value: object, default: int = 0) -> int:
     return default
 
 
-def _atomicJson(path: Path, payload: object) -> None:
+def _atomicJson(path: Path, payload: object, *, durable: bool = True) -> None:
     data = (json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
-    _atomicBytes(path, data)
+    _atomicBytes(path, data, durable=durable)
 
 
-def _atomicBytes(path: Path, data: bytes) -> None:
+def _atomicBytes(path: Path, data: bytes, *, durable: bool = True) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
     try:
         with temp.open("wb") as fileObj:
             fileObj.write(data)
-            fileObj.flush()
-            os.fsync(fileObj.fileno())
+            # Job-local staging needs complete bytes before publication, not
+            # power-loss durability. Closing flushes buffers before replacement;
+            # persistent cache commits retain the default fsync boundary.
+            if durable:
+                fileObj.flush()
+                os.fsync(fileObj.fileno())
         temp.replace(path)
     finally:
         _unlink(temp)

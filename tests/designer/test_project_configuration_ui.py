@@ -35,6 +35,51 @@ def setupDialog(ownedDesignerWindow, tmp_path, *, allowRun=False):
     return window, dialog, calls, path
 
 
+@pytest.mark.parametrize('changed', [False, True])
+def testConfigurationSummaryKeepsRevisionsInTechnicalDetails(ownedDesignerWindow, tmp_path, changed):
+    window, dialog, calls, path = setupDialog(ownedDesignerWindow, tmp_path)
+    try:
+        before, disk = window.pageCoordinator.session.payload(), path.read_bytes()
+        dialog.snapshot.update(documentRevision=9, executionRevision=7)
+        dialog.snapshot['payload'] = deepcopy(before)
+        if changed:
+            dialog.snapshot['payload']['devices']['definitions']['camera']['defaults']['exposureUs'] = 12000
+        dialog._showSnapshot(dialog.snapshot)
+        dialog._controls()
+        summary = ('当前工程与 Runtime 有 1 项配置差异，尚未写入。' if changed else
+                   '当前工程与 Runtime 配置一致，无需写入。')
+        assert dialog.status.text() == summary
+        assert dialog.table.rowCount() == int(changed)
+        assert not dialog.technicalDetails.isChecked() and dialog.revisionDetails.isHidden()
+        chrome = window.pageCoordinator.chrome.runtimeStatus.text()
+        assert ('上次比较：有 1 项配置差异' if changed else '上次比较：配置一致') in chrome
+        assert 'R9' not in chrome and 'R7' not in chrome
+        assert '在线文档' not in chrome and '执行计划' not in chrome
+        assert dialog.validateButton.isEnabled() == changed and dialog.writeButton.isEnabled() == changed
+
+        dialog.show()
+        from PySide2.QtWidgets import QApplication
+        QApplication.processEvents()
+        assert dialog.grab().save(str(tmp_path / 'configuration-summary.png'))
+        dialog.technicalDetails.click()
+        QApplication.processEvents()
+        assert dialog.revisionDetails.isVisible()
+        assert dialog.revisionDetails.text() == '在线文档 R9 / 执行计划 R7'
+        assert dialog.status.text() == summary
+        assert dialog.rect().contains(dialog.revisionDetails.geometry())
+        assert dialog.revisionDetails.geometry().bottom() < dialog.details.geometry().top()
+        assert dialog.rect().contains(dialog.closeButton.geometry())
+        assert dialog.grab().save(str(tmp_path / 'configuration-technical-details.png'))
+        dialog.snapshot.update(documentRevision=10, executionRevision=8)
+        dialog._showSnapshot(dialog.snapshot)
+        assert dialog.revisionDetails.text() == '在线文档 R10 / 执行计划 R8'
+        dialog.technicalDetails.click()
+        assert dialog.revisionDetails.isHidden() and dialog.status.text() == summary
+        assert window.pageCoordinator.session.payload() == before and path.read_bytes() == disk and not calls
+    finally:
+        dialog.reject()
+
+
 def testRecoveryErrorAllowsExplicitRepairButNeverRun(ownedDesignerWindow, tmp_path, monkeypatch):
     window, dialog, calls, path = setupDialog(ownedDesignerWindow, tmp_path, allowRun=True)
     try:
@@ -224,6 +269,10 @@ def testReadBackFeedbackSurvivesPollAndLaterEditsInvalidateValidation(
         dialog.poll()
         assert dialog.status.text() == feedback
         assert '已读入工程草稿' in feedback and '无需写入' in feedback
+        dialog.technicalDetails.click()
+        assert not dialog.revisionDetails.isHidden() and dialog.status.text() == feedback
+        dialog.technicalDetails.click()
+        assert dialog.revisionDetails.isHidden() and dialog.status.text() == feedback
         assert dialog.draftCheckpoint is session._checkpoint
         assert dialog.table.rowCount() == 0
         assert dialog.closeButton.text() == '关闭'
@@ -255,17 +304,22 @@ def testReadBackFeedbackSurvivesPollAndLaterEditsInvalidateValidation(
         dialog.reject()
 
 
-def testNoDifferencesStillReportsRuntimeRecoveryError(ownedDesignerWindow, tmp_path):
+@pytest.mark.parametrize('errorKey', ['recoveryError', 'exportCopyError'])
+def testNoDifferencesStillReportsRuntimeWarnings(ownedDesignerWindow, tmp_path, errorKey):
     window, dialog, calls, path = setupDialog(ownedDesignerWindow, tmp_path, allowRun=True)
     try:
         dialog.snapshot['payload'] = deepcopy(dialog.local)
-        dialog.snapshot['recoveryError'] = 'resource missing'
+        dialog.snapshot[errorKey] = 'resource missing' if errorKey == 'recoveryError' else 'export failed'
         dialog._showSnapshot(dialog.snapshot)
         dialog._controls()
         assert '无需写入' in dialog.status.text()
-        assert 'resource missing' in dialog.status.text()
+        assert dialog.snapshot[errorKey] in dialog.status.text()
         assert dialog.status.property('feedbackState') == 'warning'
-        assert not dialog.runButton.isEnabled() and not calls
+        assert ('恢复未完成' if errorKey == 'recoveryError' else '配置副本导出失败') in window.pageCoordinator.onlineSummary
+        warning = dialog.status.text()
+        dialog.technicalDetails.click()
+        assert dialog.status.text() == warning and dialog.status.property('feedbackState') == 'warning'
+        assert dialog.runButton.isEnabled() == (errorKey != 'recoveryError') and not calls
     finally:
         dialog.reject()
 

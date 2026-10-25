@@ -12,6 +12,15 @@ from emo_master.apps.runtime.preview.async_writer import AsyncPreviewSnapshotWri
 from tests.runtime.test_worker_heartbeat_finalization import _spec, _stubComputation
 
 
+def testInspectionTransportPreservesBytesWithoutChangingOrdinaryEventSanitizing():
+    events = queue.Queue()
+    pixels = b"\x89PNG\x00\xff"
+    module._put(events, {"eventType": "inspection.snapshot", "payload": {"entries": [{"imageBytes": pixels}]}})
+    assert events.get_nowait()["payload"]["entries"][0]["imageBytes"] == pixels
+    module._put(events, {"eventType": "node.completed", "payload": {"value": pixels}})
+    assert events.get_nowait()["payload"]["value"] == str(pixels)
+
+
 @pytest.mark.parametrize("outcome", ["completed", "failed", "aborted"])
 def testTerminalWaitsForSnapshotRetirementAndHeartbeatsContinue(monkeypatch, tmp_path, outcome):
     _stubComputation(monkeypatch, lambda: None)

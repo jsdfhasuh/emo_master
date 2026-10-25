@@ -45,3 +45,4 @@ class SessionView:
     started: Mapping[str, int]
     expiredScopes: Mapping[str, int] = field(default_factory=lambda: MappingProxyType({}))
     job: JobView | None = None
+    scopeErrors: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))

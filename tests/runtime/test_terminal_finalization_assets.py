@@ -71,11 +71,11 @@ def test_real_index_fsync_preserves_fifo_asset_winner_and_close_fence(tmp_path, 
                 assert release.wait(4)
             return original_os.fsync(fd)
 
-    def atomic(path, data):
+    def atomic(path, data, **kwargs):
         previous = getattr(local, 'index', False)
         local.index = Path(path) == index_path
         try:
-            return original_atomic(path, data)
+            return original_atomic(path, data, **kwargs)
         finally:
             local.index = previous
 

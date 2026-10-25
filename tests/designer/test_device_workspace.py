@@ -7,6 +7,7 @@ from PySide2.QtTest import QTest
 
 from emo_master.apps.designer.state.project_store import saveProject
 from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
+from emo_master.apps.designer.ui.device_workspace import DeviceWorkspace
 from tests.core.project.test_devices import declaration, definition, project  # noqa: F401
 
 
@@ -74,7 +75,7 @@ def testDeviceMenuOpensDialogWithoutChangingWorkspace(ownedDesignerWindow, tmp_p
     assert c.stack.currentWidget() is active and c.stack.count() == count
     assert len(c.chrome.selector.buttons) == 2 and c.chrome.workspaceActions[0].isChecked()
     action.trigger()
-    assert c.devices is devices and len(window.findChildren(QDialog)) == 1
+    assert c.devices is devices and window.findChildren(DeviceWorkspace) == [devices]
     devices.table.setCurrentCell(0, 0)
     QApplication.processEvents()
     assert devices.rect().contains(devices.closeButton.geometry())

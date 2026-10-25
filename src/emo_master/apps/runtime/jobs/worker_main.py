@@ -107,6 +107,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
             previewWriter = AsyncPreviewSnapshotWriter(Path(spec.jobWorkspacePath), jobId=spec.jobId,
                 projectRevision=document.project.revision,
                 inspectionPublisher=publisher if spec.inspectionEnabled else None,
+                inlineInspection=True,
                 errorPublisher=publisher, cancellation=token)
         runner = WorkflowRunner(
             compiledProject=compiled,
@@ -330,7 +331,9 @@ def _eventPublisher(jobId: str, projectId: str, eventQueue):
 
 
 def _put(eventQueue, event: dict[str, object]) -> None:
-    eventQueue.put(_jsonSafe(event))
+    # Inspection is a private IPC barrier, not a persisted JSON event. Preserve
+    # its bounded immutable PNG bytes; ordinary diagnostic events stay JSON-safe.
+    eventQueue.put(event if event.get("eventType") == "inspection.snapshot" else _jsonSafe(event))
 
 
 def _jsonSafe(value):

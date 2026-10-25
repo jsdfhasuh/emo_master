@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime
 import json
@@ -32,6 +33,8 @@ class StructuredLogEntry:
     # Local provenance, assigned only to events from an accepted Job. Never
     # infer this from a node ID or from whichever project happens to be open.
     projectInstanceToken: str = ""
+    workflowName: str = ""
+    nodeName: str = ""
 
     @classmethod
     def fromLine(cls, line: str) -> "StructuredLogEntry":
@@ -77,6 +80,8 @@ class StructuredLogEntry:
             code=str(event.get("code", "")),
             payload=dict(rawPayload) if isinstance(rawPayload, dict) else {},
             projectId=str(event.get("projectId", "")),
+            workflowName=str(event.get("workflowName", "")),
+            nodeName=str(event.get("nodeName", "")),
         )
 
     def displayTime(self) -> str:
@@ -87,6 +92,29 @@ class StructuredLogEntry:
         event = f"[{self.eventType}]" if self.eventType else ""
         return f"[{self.displayTime()}][{self.level}]{node}{event} {self.message}"
 
+    def workflowKey(self) -> tuple[str, str]:
+        return self.projectId, self.workflowId
+
+    def nodeKey(self) -> tuple[str, str, str]:
+        return self.projectId, self.workflowId, self.nodeId
+
+    def displayWorkflow(self) -> str:
+        return self.workflowName or self.workflowId
+
+    def displayNode(self) -> str:
+        return self.nodeName or self.nodeId
+
+    def displayMessage(self) -> str:
+        lifecycle = {
+            "node.started": (f"node started: {self.nodeId}", "开始执行节点"),
+            "node.completed": (f"node completed: {self.nodeId}", "节点执行完成"),
+            "node.skipped": (f"node skipped: {self.nodeId}", "跳过节点"),
+            "workflow.started": (f"workflow started: {self.workflowId}", "工作流开始执行"),
+            "workflow.completed": (f"workflow completed: {self.workflowId}", "工作流执行完成"),
+        }
+        standard = lifecycle.get(self.eventType)
+        return standard[1] if standard and self.message == standard[0] else self.message
+
     def detailPayload(self) -> dict[str, object]:
         return {
             "timestampMs": self.timestampMs,
@@ -96,8 +124,10 @@ class StructuredLogEntry:
             "jobId": self.jobId,
             "projectId": self.projectId,
             "workflowId": self.workflowId,
+            "workflowName": self.workflowName,
             "workflowRunId": self.workflowRunId,
             "nodeId": self.nodeId,
+            "nodeName": self.nodeName,
             "nodeRunId": self.nodeRunId,
             "iterationPath": list(self.iterationPath),
             "code": self.code,
@@ -154,6 +184,7 @@ try:
             self.levelFilter = _combo(("全部", "DEBUG", "INFO", "WARN", "ERROR"))
             self.sourceFilter = _combo(("全部", "runtime", "designer", "editor"))
             self.jobFilter = _combo(("全部",))
+            self.workflowFilter = _combo(("全部",))
             self.nodeFilter = _combo(("全部",))
             self.eventTypeFilter = _combo(("全部",))
             self.searchInput = QLineEdit()
@@ -164,6 +195,7 @@ try:
                 ("等级", self.levelFilter),
                 ("来源", self.sourceFilter),
                 ("Job", self.jobFilter),
+                ("工作流", self.workflowFilter),
                 ("节点", self.nodeFilter),
                 ("事件", self.eventTypeFilter),
             )):
@@ -174,8 +206,13 @@ try:
                 filters.addWidget(QLabel(label), row, column * 2)
                 filters.addWidget(widget, row, column * 2 + 1)
             self.searchInput.setMinimumWidth(80)
-            filters.addWidget(self.searchInput, 1, 4, 1, 2)
             root.addLayout(filters)
+            searchRow = QHBoxLayout()
+            searchRow.addWidget(self.searchInput, 1)
+            self.resetFiltersButton = QPushButton("清除筛选")
+            self.resetFiltersButton.setToolTip("恢复显示全部日志，不删除日志内容")
+            searchRow.addWidget(self.resetFiltersButton)
+            root.addLayout(searchRow)
             filterStatus = QHBoxLayout()
             self.filterStatusLabel = QLabel()
             self.filterStatusLabel.setObjectName("runtimeLogFilterStatus")
@@ -197,8 +234,9 @@ try:
             header = self.table.horizontalHeader()
             header.setStretchLastSection(False)
             header.setSectionsMovable(True)
-            header.moveSection(header.visualIndex(9), 3)
-            for column, width in enumerate((128, 64, 88, 120, 100, 100, 64, 100, 96, 360)):
+            for visualIndex, column in enumerate((0, 1, 4, 5, 9, 2, 6, 7, 3, 8)):
+                header.moveSection(header.visualIndex(column), visualIndex)
+            for column, width in enumerate((128, 64, 88, 120, 160, 180, 64, 100, 96, 360)):
                 self.table.setColumnWidth(column, width)
             self.table.setAlternatingRowColors(True)
             self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
@@ -233,16 +271,18 @@ try:
                 self.levelFilter,
                 self.sourceFilter,
                 self.jobFilter,
-                self.nodeFilter,
                 self.eventTypeFilter,
             ):
                 combo.currentTextChanged.connect(self._refreshTable)
+            self.workflowFilter.currentIndexChanged.connect(self._onWorkflowFilterChanged)
+            self.nodeFilter.currentIndexChanged.connect(self._refreshTable)
             self.searchInput.textChanged.connect(self._refreshTable)
             self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
             self.table.currentCellChanged.connect(self._showDetails)
             self.table.cellDoubleClicked.connect(self._navigateFromRow)
             self.locateButton.clicked.connect(self._navigateSelected)
             self.showErrorsButton.clicked.connect(self._showAllErrors)
+            self.resetFiltersButton.clicked.connect(self._resetFilters)
             self.clearButton.clicked.connect(self._clearLogs)
             self._refreshTimer = QTimer(self)
             self._refreshTimer.setSingleShot(True)
@@ -279,7 +319,10 @@ try:
                 "level": self.levelFilter.currentText(),
                 "source": self.sourceFilter.currentText(),
                 "job": self.jobFilter.currentText(),
-                "node": self.nodeFilter.currentText(),
+                "workflow": _contextSetting(self.workflowFilter),
+                "workflowLabel": self.workflowFilter.currentText(),
+                "node": _contextSetting(self.nodeFilter),
+                "nodeLabel": self.nodeFilter.currentText(),
                 "event": self.eventTypeFilter.currentText(),
                 "search": self.searchInput.text(),
                 "autoScroll": self.autoScrollCheck.isChecked(),
@@ -292,7 +335,6 @@ try:
                 (self.levelFilter, "level", False),
                 (self.sourceFilter, "source", False),
                 (self.jobFilter, "job", True),
-                (self.nodeFilter, "node", True),
                 (self.eventTypeFilter, "event", True),
             ):
                 requested = str(value.get(key, "全部"))
@@ -301,6 +343,11 @@ try:
                     combo.addItem(requested)
                     index = combo.findText(requested)
                 combo.setCurrentIndex(index if index >= 0 else 0)
+            _restoreContextChoice(self.workflowFilter, value.get("workflow"),
+                                  value.get("workflowLabel"), 2)
+            self._refreshContextFilters()
+            _restoreContextChoice(self.nodeFilter, value.get("node"),
+                                  value.get("nodeLabel"), 3, allowLegacy=True)
             self.searchInput.setText(str(value.get("search", "")))
             self.autoScrollCheck.setChecked(bool(value.get("autoScroll", True)))
             widths = value.get("columnWidths", [])
@@ -333,16 +380,50 @@ try:
                 _values(self._entries, "jobId"),
                 preserveUnknown=preserveUnknown,
             )
-            _replaceComboValues(
-                self.nodeFilter,
-                _values(self._entries, "nodeId"),
-                preserveUnknown=preserveUnknown,
-            )
+            self._refreshContextFilters(preserveUnknown=preserveUnknown)
             _replaceComboValues(
                 self.eventTypeFilter,
                 _values(self._entries, "eventType"),
                 preserveUnknown=preserveUnknown,
             )
+
+        def _refreshContextFilters(self, *, preserveUnknown: bool = True) -> None:
+            workflows = {
+                entry.workflowKey(): entry.displayWorkflow()
+                for entry in self._entries if entry.workflowId
+            }
+            counts = Counter(workflows.values())
+            workflowLabels = {
+                key: (f"{label} · {key[1]}" if counts[label] > 1 else label)
+                for key, label in workflows.items()
+            }
+            duplicates = Counter(workflowLabels.values())
+            workflowLabels = {
+                key: (f"{label} · {key[0]}" if duplicates[label] > 1 else label)
+                for key, label in workflowLabels.items()
+            }
+            _replaceContextChoices(self.workflowFilter, workflowLabels, preserveUnknown=preserveUnknown)
+            workflowKey = _contextKey(self.workflowFilter)
+            nodes = {
+                entry.nodeKey(): f"{workflowLabels.get(entry.workflowKey(), '未关联工作流')} / {entry.displayNode()}"
+                for entry in self._entries if entry.nodeId
+                and (workflowKey is None or entry.workflowKey() == workflowKey)
+            }
+            counts = Counter(nodes.values())
+            nodeLabels = {
+                key: (f"{label} · {key[2]}" if counts[label] > 1 else label)
+                for key, label in nodes.items()
+            }
+            _replaceContextChoices(self.nodeFilter, nodeLabels, preserveUnknown=preserveUnknown)
+
+        def _onWorkflowFilterChanged(self, *_args) -> None:
+            workflowKey = _contextKey(self.workflowFilter)
+            nodeKey = _contextKey(self.nodeFilter)
+            if workflowKey is not None and nodeKey is not None and (
+                    not isinstance(nodeKey, tuple) or nodeKey[:2] != workflowKey):
+                self.nodeFilter.setCurrentIndex(0)
+            self._refreshContextFilters()
+            self._refreshTable()
 
         def _applyPendingEntries(self) -> None:
             pending = list(self._pendingEntries)
@@ -403,8 +484,8 @@ try:
                 1 for entry in self._entries
                 if _isError(entry) and not self._matches(entry)
             )
-            filtered = any(combo.currentText() != "全部" for combo in (
-                self.levelFilter, self.sourceFilter, self.jobFilter,
+            filtered = any(combo.currentIndex() > 0 for combo in (
+                self.levelFilter, self.sourceFilter, self.jobFilter, self.workflowFilter,
                 self.nodeFilter, self.eventTypeFilter,
             )) or bool(self.searchInput.text().strip())
             suffix = (
@@ -415,10 +496,11 @@ try:
                 f"显示 {len(self._visibleEntries)} / {len(self._entries)} 条日志{suffix}"
             )
             self.showErrorsButton.setEnabled(hiddenErrors > 0)
+            self.resetFiltersButton.setEnabled(filtered)
 
-        def _showAllErrors(self) -> None:
+        def _resetFilters(self) -> None:
             controls = (
-                self.levelFilter, self.sourceFilter, self.jobFilter,
+                self.levelFilter, self.sourceFilter, self.jobFilter, self.workflowFilter,
                 self.nodeFilter, self.eventTypeFilter, self.searchInput,
             )
             for control in controls:
@@ -430,7 +512,11 @@ try:
             finally:
                 for control in controls:
                     control.blockSignals(False)
+            self._refreshContextFilters()
             self._refreshTable()
+
+        def _showAllErrors(self) -> None:
+            self._resetFilters()
             for row in range(len(self._visibleEntries) - 1, -1, -1):
                 if _isError(self._visibleEntries[row]):
                     self.table.setCurrentCell(row, 0)
@@ -443,33 +529,49 @@ try:
                 entry.level,
                 entry.source,
                 entry.jobId,
-                entry.workflowId,
-                entry.nodeId,
+                entry.displayWorkflow(),
+                entry.displayNode(),
                 "/".join(str(item) for item in entry.iterationPath),
                 entry.eventType,
                 entry.code,
-                entry.message,
+                entry.displayMessage(),
             )
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
-                item.setToolTip(value)
+                if column in (4, 5):
+                    item.setToolTip(
+                        f"工作流：{entry.displayWorkflow()}\n工作流 ID：{entry.workflowId}\n"
+                        f"节点：{entry.displayNode()}\n节点 ID：{entry.nodeId}"
+                    )
+                else:
+                    item.setToolTip(entry.message if column == 9 else value)
                 self.table.setItem(row, column, item)
 
         def _matches(self, entry: StructuredLogEntry) -> bool:
             for combo, value in (
                 (self.levelFilter, entry.level), (self.sourceFilter, entry.source),
-                (self.jobFilter, entry.jobId), (self.nodeFilter, entry.nodeId),
+                (self.jobFilter, entry.jobId),
                 (self.eventTypeFilter, entry.eventType),
             ):
                 selected = combo.currentText()
                 if selected != "全部" and selected != value:
+                    return False
+            workflowKey = _contextKey(self.workflowFilter)
+            if workflowKey is not None and workflowKey != entry.workflowKey():
+                return False
+            nodeKey = _contextKey(self.nodeFilter)
+            if nodeKey is not None:
+                # Old preferences held only a node ID, across all workflows.
+                actual = entry.nodeId if isinstance(nodeKey, str) else entry.nodeKey()
+                if nodeKey != actual:
                     return False
             query = self.searchInput.text().strip().casefold()
             if not query:
                 return True
             haystack = " ".join((
                 entry.message, entry.code, entry.eventType, entry.jobId,
-                entry.workflowId, entry.nodeId,
+                entry.workflowId, entry.nodeId, entry.workflowName, entry.nodeName,
+                entry.displayMessage(),
                 json.dumps(entry.payload, ensure_ascii=False, default=str),
             )).casefold()
             return query in haystack
@@ -554,18 +656,44 @@ try:
 
 
     class LogDialog(QDialog):
-        """Compatibility wrapper retained for callers outside MainWindow."""
+        """Reusable, non-modal runtime log window owned by the Designer."""
 
-        def __init__(self) -> None:
-            super().__init__()
+        def __init__(
+            self,
+            parent=None,
+            *,
+            onClear: Callable[[], None] | None = None,
+            onNavigate: Callable[[StructuredLogEntry], str] | None = None,
+            maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
+        ) -> None:
+            super().__init__(parent)
+            self.setObjectName("runtimeLogDialog")
             self.setModal(False)
+            self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
+            self.setWindowFlag(Qt.WindowMinMaxButtonsHint, True)
             self.setWindowTitle("运行日志")
-            self.resize(900, 520)
+            self.resize(1200, 720)
             layout = QVBoxLayout()
-            self.view = StructuredLogView(self)
+            layout.setContentsMargins(0, 0, 0, 0)
+            self.view = StructuredLogView(
+                self,
+                onClear=onClear,
+                onNavigate=onNavigate,
+                maximumEntries=maximumEntries,
+            )
+            # Searching with Enter must not trigger a QDialog default action.
+            for button in (self.view.resetFiltersButton, self.view.showErrorsButton,
+                           self.view.locateButton, self.view.clearButton):
+                button.setAutoDefault(False)
             self._logViewer = self.view.detailViewer
             layout.addWidget(self.view)
             self.setLayout(layout)
+
+        def appendEntry(self, entry: StructuredLogEntry) -> None:
+            self.view.appendEntry(entry)
+
+        def setEntries(self, entries: list[StructuredLogEntry]) -> None:
+            self.view.setEntries(entries)
 
         def appendLog(self, line: str) -> None:
             self.view.appendLog(line)
@@ -578,6 +706,52 @@ try:
         combo = QComboBox()
         combo.addItems(list(values))
         return combo
+
+
+    def _contextSetting(combo: QComboBox) -> object:
+        key = _contextKey(combo)
+        return list(key) if isinstance(key, tuple) else (key or "全部")
+
+
+    def _contextKey(combo: QComboBox):
+        value = combo.currentData()
+        return tuple(value) if isinstance(value, list) else value
+
+
+    def _restoreContextChoice(combo, key, label, dimensions, *, allowLegacy=False) -> None:
+        if isinstance(key, (list, tuple)) and len(key) == dimensions and all(isinstance(part, str) for part in key):
+            key = tuple(key)
+            defaultLabel = " / ".join(part for part in key[1:] if part)
+        elif allowLegacy and isinstance(key, str) and key not in {"", "全部"}:
+            defaultLabel = f"全部工作流 / {key}"
+        else:
+            combo.setCurrentIndex(0)
+            return
+        data = list(key) if isinstance(key, tuple) else key
+        index = combo.findData(data)
+        if index < 0:
+            combo.addItem(str(label or defaultLabel), data)
+            index = combo.count() - 1
+        combo.setCurrentIndex(index)
+
+
+    def _replaceContextChoices(combo, choices, *, preserveUnknown=True) -> None:
+        selected, label = _contextKey(combo), combo.currentText()
+        blocked = combo.blockSignals(True)
+        try:
+            combo.clear()
+            combo.addItem("全部")
+            for key, text in sorted(choices.items(), key=lambda item: (item[1], item[0])):
+                # QVariantList compares by value; Python tuple user data does not.
+                combo.addItem(text, list(key))
+            data = list(selected) if isinstance(selected, tuple) else selected
+            index = combo.findData(data) if selected is not None else 0
+            if preserveUnknown and selected is not None and index < 0:
+                combo.addItem(label, data)
+                index = combo.count() - 1
+            combo.setCurrentIndex(max(0, index))
+        finally:
+            combo.blockSignals(blocked)
 
 
     def _replaceComboValues(
@@ -707,8 +881,20 @@ except Exception:  # pragma: no cover
 
 
     class LogDialog(RuntimeLogDock):  # type: ignore[no-redef]
-        def __init__(self) -> None:
-            super().__init__()
+        def __init__(
+            self,
+            parent=None,
+            *,
+            onClear: Callable[[], None] | None = None,
+            onNavigate: Callable[[StructuredLogEntry], str] | None = None,
+            maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
+        ) -> None:
+            super().__init__(
+                parent,
+                onClear=onClear,
+                onNavigate=onNavigate,
+                maximumEntries=maximumEntries,
+            )
             self._lines = self.view._lines
 
 

@@ -207,6 +207,11 @@ class ProjectConfigurationDialog(QDialog):
         self.technicalDetails.toggled.connect(lambda: self._showChangeDetails(self.table.currentRow()))
         detailRow.addWidget(self.technicalDetails)
         layout.addLayout(detailRow)
+        self.revisionDetails = QLabel()
+        self.revisionDetails.setWordWrap(True)
+        self.revisionDetails.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.revisionDetails.hide()
+        layout.addWidget(self.revisionDetails)
         self.details = QTextBrowser()
         self.details.setMaximumHeight(140)
         self.details.setPlaceholderText('选择一项查看改动前后的内容')
@@ -509,6 +514,7 @@ class ProjectConfigurationDialog(QDialog):
         return '\n'.join(part.strip() for part in details if part.strip())
 
     def _controls(self):
+        self._showRevisionDetails()
         idle = self.pending is None and not self.notifying and not self.confirming and self._valid()
         uploading = self.pending is not None and self.kind == 'upload' and self._valid()
         self.locateButton.setEnabled(idle and not self.writePending)
@@ -710,7 +716,14 @@ class ProjectConfigurationDialog(QDialog):
             return f'{len(value)} 项'
         return str(value).replace('\n', ' ')[:100]
 
+    def _showRevisionDetails(self):
+        text = (f"在线文档 R{self.snapshot['documentRevision']} / 执行计划 R{self.snapshot['executionRevision']}"
+                if self.snapshot is not None else '')
+        self.revisionDetails.setText(text)
+        self.revisionDetails.setVisible(bool(text) and self.technicalDetails.isChecked())
+
     def _showChangeDetails(self, row, *_args):
+        self._showRevisionDetails()
         item = self.table.item(row, 0)
         if not item:
             self.details.clear()
@@ -851,6 +864,7 @@ class ProjectConfigurationDialog(QDialog):
                     self.table.setItem(row, col, item)
         finally:
             self.table.blockSignals(False)
+        self._showChangeDetails(self.table.currentRow())
         self.impact.setText('首次写入将加载完整当前草稿并准备资源；设备按既有连接策略建连。'
                             '不会保存本地工程、创建任务、采集图像或执行 PLC 节点。')
         self._feedback('Runtime 已连接，尚未加载工程；可首次写入当前工程。'
@@ -906,16 +920,18 @@ class ProjectConfigurationDialog(QDialog):
             self.table.blockSignals(False)
         self._showChangeDetails(self.table.currentRow())
         self._invalidateEffects()
-        self._feedback(f"在线文档 R{snapshot['documentRevision']} / 执行计划 R{snapshot['executionRevision']}；{len(changes)} 项差异"
-                            + ('；运行配置一致，无需写入。' if not changes else '')
+        self._feedback(('当前工程与 Runtime 配置一致，无需写入。' if not changes else
+                        f'当前工程与 Runtime 有 {len(changes)} 项配置差异，尚未写入。')
                             + (f"；更换工程：{snapshot['payload']['project']['projectId']} → {self.projectId}" if replacing else "")
                             + ("；恢复未完成：" + snapshot["recoveryError"] if snapshot.get("recoveryError") else "")
                             + ("；配置副本导出失败（SQLite 已提交）：" + snapshot['exportCopyError'] if snapshot.get('exportCopyError') else '')
                             + ('\n' + self.receiptSummary if self.receiptSummary else ''),
                        'warning' if snapshot.get('recoveryError') or snapshot.get('exportCopyError') else 'info')
-        self.c.onlineSummary = f"在线文档 R{snapshot['documentRevision']} / 执行 R{snapshot['executionRevision']}"
+        self.c.onlineSummary = '上次比较：' + ('配置一致' if not changes else f'有 {len(changes)} 项配置差异')
         if snapshot.get('recoveryError'):
             self.c.onlineSummary += ' · 恢复未完成'
+        if snapshot.get('exportCopyError'):
+            self.c.onlineSummary += ' · 配置副本导出失败'
         self.c.chrome.update()
 
     def _syncSelectAll(self):

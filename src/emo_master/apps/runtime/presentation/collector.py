@@ -112,6 +112,8 @@ class ResultCollector:
                     "workflowId": context.workflowId,
                     "iterationPath": list(getattr(context, "iterationPath", ()))[:16],
                     "callPath": path[:16],
+                    "dispatch": {name: getattr(context, name, "") for name in
+                        ("runGroupId", "targetSlotId", "invocationId", "deliveryId")},
                     "sourceOrigins": {key: {name: value for name, value in source.items() if name in
                         {"kind", "workflowId", "nodeId", "port", "fieldPath", "variableId", "name"}}
                         for key, source in sources.items()},

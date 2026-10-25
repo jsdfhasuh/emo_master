@@ -1,10 +1,11 @@
 """Bounded collection view; result-scoped rows, never a history query."""
+import html
 import json
 import math
 import sys
 
 from PySide2.QtCore import QAbstractTableModel, QModelIndex, Qt
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTableView
+from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTableView, QSizePolicy
 
 
 def retainedBytes(value):
@@ -65,11 +66,12 @@ class CollectionModel(QAbstractTableModel):
         return value
 
     def data(self, index, role=Qt.DisplayRole):
-        if not index.isValid() or role != Qt.DisplayRole:
+        if not index.isValid() or role not in (Qt.DisplayRole, Qt.ToolTipRole):
             return None
         value = self.value(self.order[self.page * self.pageSize + index.row()], index.column())
         text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
-        return text if len(text) <= 1024 else text[:1024] + '…（显示截断）'
+        text = text if len(text) <= 1024 else text[:1024] + '…（显示截断）'
+        return '<qt>' + html.escape(text) + '</qt>' if role == Qt.ToolTipRole else text
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         if role == Qt.DisplayRole:
@@ -102,14 +104,19 @@ class CollectionView(QWidget):
         self.emptyText = props.emptyText
         self.model = CollectionModel(props.columns, props.pageSize, self)
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.message = QLabel('尚无集合')
         self.message.setTextFormat(Qt.PlainText)
         layout.addWidget(self.message)
         self.table = QTableView()
         self.table.setModel(self.model)
         self.table.setSortingEnabled(True)
-        self.table.setMinimumHeight(120)
-        layout.addWidget(self.table)
+        self.table.setMinimumHeight(100)
+        # Let the page allocate height instead of imposing the scroll area's size hint.
+        self.table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored)
+        self.table.setWordWrap(False)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        layout.addWidget(self.table, 1)
         controls = QHBoxLayout()
         for title, delta in [('上一页', -1), ('下一页', 1)]:
             button = QPushButton(title)

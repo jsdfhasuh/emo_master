@@ -16,10 +16,21 @@ class DispatchRunner:
         if node.kind == "dispatch":
             self.sequence += 1
             encoded = self.devices.encode(inputs, context)
-            token = self.devices.framework("dispatchSubmit", dispatchSequence=self.sequence,
-                workflowId=context.workflowId, nodeId=node.nodeId, cycleId=context.cycleId,
-                planRevision=context.planRevision, inputs=encoded["value"])
-            self.publish("dispatch.accepted", context, "dispatch admission receipts", payload=token)
+            while True:
+                cancellation.raise_if_cancelled()
+                token = self.devices.framework("dispatchSubmit", dispatchSequence=self.sequence,
+                    workflowId=context.workflowId, nodeId=node.nodeId, cycleId=context.cycleId,
+                    planRevision=context.planRevision, inputs=encoded["value"])
+                if token.get("status") != "WAITING":
+                    break
+                # Only an explicit, unadmitted capacity wait may continue. A
+                # failed/unknown IPC call or a partial receipt is never replayed.
+                time.sleep(.02)
+            skipped = token.get("status") == "SKIPPED" and node.params.get("queueFullPolicy") == "skip"
+            self.publish("dispatch.skipped" if skipped else "dispatch.accepted", context,
+                         "dispatch skipped: queue full" if skipped else "dispatch admission receipts", payload=token)
+            if skipped:
+                return {"token": token}, {}, {}
             if not token["accepted"]:
                 error = WorkflowExecutionError("E_DISPATCH_PARTIAL", "not all targets accepted; admitted invocations are not replayed", node.nodeId)
                 error.diagnostics = {"dispatchToken": token}

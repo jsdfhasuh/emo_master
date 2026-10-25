@@ -99,7 +99,7 @@ class PreviewWindow(ObserverPages):
         for prefix, text in [('NOT_CAPTURED', '本次运行未采集所需数据'),
                              ('SOURCE_NOT_CAPTURED', '本次运行未采集所需数据'),
                              ('OFFLINE', '尚未运行'), ('CONNECTING', '正在连接结果服务'),
-                             ('DISCONNECTED', '连接已断开'), ('CONNECTED', '正在等待结果'),
+                             ('DISCONNECTED', '连接已断开'), ('CONNECTED', '结果服务已连接'),
                              ('RESOURCE_EXPIRED', '此结果已过期，请查看新的运行结果'),
                              ('PIN_EXPIRED', '固定的结果已过期，请继续更新'),
                              ('未绑定', '没有选择数据来源')]:

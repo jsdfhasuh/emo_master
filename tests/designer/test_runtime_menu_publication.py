@@ -65,7 +65,7 @@ def testMenuFirstWriteUsesUnsavedDraftAndDoesNotSaveOrStart(
             waitUntil(lambda: dialog.pending is None and not dialog.writePending and not dialog.initial)
             online = client.getOnlineProjectSnapshot()['payload']
             assert next(n for n in online['workflows']['main']['nodes'] if n['nodeId'] == 'blur')['params']['kernelSize'] == 5
-            assert not dialog.initial and '在线文档' in window.pageCoordinator.chrome.runtimeStatus.text()
+            assert not dialog.initial and '上次比较：配置一致' in window.pageCoordinator.chrome.runtimeStatus.text()
             assert service.loadedProjectFile == str(path.resolve())
         else:
             assert service.loadedDocument is None and not dialog.requestId

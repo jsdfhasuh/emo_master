@@ -2,6 +2,8 @@
 
 本指南适用于 `agent/runtime-workflow-architecture-v1`，核对基线为应用提交 `33fc53e`、版本 `0.6.1`；中央打包仓核对提交为 `ab4a33e`。整理日期为 2026-09-25。发布时必须重新核对实际源码提交与打包仓配置，不能把本文版本号当作“最新 Release”。
 
+2026-10-25 局部补充：独立操作员入口及其数据目录/设置规则已与底层服务分开说明，核对应用 HEAD 为 `9265547dbe61bc57542d3cf0ea143fcf455600fb` **加未提交源码修改**；本次没有重核打包仓、构建或发布，不将旧发布基线更新成新产物承诺。
+
 源码环境准备见 [开发指南](development-guide.md)，整体职责见 [工程师导读](engineer-guide.md)。本页说明已有交付流程及限制，不意味着已经完成生产环境认证或硬件验收。
 
 ## 1. 先选择运行和交付方式
@@ -10,10 +12,11 @@
 | --- | --- | --- |
 | 开发、修改和调试 | Python 3.10 源码环境，启动 Designer 或独立 Runtime | 需要依赖与 `src` 路径配置 |
 | 单机交付 | 完整便携 ZIP 或当前用户安装包；无参数启动 `EmoMaster.exe` | 默认 Designer + 内嵌 Runtime |
+| 独立操作员运行 | 源码 `start_runtime.cmd` / `scripts/run_operator.py`；对应冻结目标 `EmoMasterRuntime.exe` | 工程加载/自动开始和工具页见[独立 Runtime](operator-runtime.md)，本轮未重建 EXE |
 | 同机分离验证 | 源码启动 Runtime；Designer 设置 `EMO_RUNTIME_TARGET` 连接 | 默认 `127.0.0.1:50051`，详细双终端步骤见开发指南 |
-| 跨机、后台常驻、开机自动检测 | 不作为本版可直接照抄的部署流程 | 当前 EXE 没有 `--runtime` 模式，独立源码入口不会自动加载并运行项目 |
+| 跨机、后台常驻、开机自动检测 | 不作为本版可直接照抄的部署流程 | 操作员窗口不是 Windows 服务或开机自启安装器；外部服务仍需独立部署验收 |
 
-Windows 入口 `src/emo_master/apps/windows_entry.py` 只分派 `--self-test` 或无参数 Designer 启动，其他参数会被拒绝。程序支持连接外部 Runtime，并不等于已经提供独立 Runtime EXE、Windows 服务安装器或自动运行现场项目的命令。
+Windows 产品入口 `src/emo_master/apps/windows_entry.py` 无参数启动 Designer，支持 `--self-test` 与生产 `--run-project` 分支；旧 `--runtime` / `--operator-view` 是受限测试宿主/查看器，不能当作生产操作员入口。独立操作员已支持记忆工程、在线版本恢复和 `production.autoStart`，不等于已交付后台服务、开机自启或跨机安全部署。
 
 ## 2. Windows 现场安装和数据准备
 
@@ -27,16 +30,29 @@ Windows 入口 `src/emo_master/apps/windows_entry.py` 只分派 `--self-test` �
 
 ## 3. 数据目录、备份与回退
 
-未覆盖配置时，Runtime 使用 `~/.emo_master/runtime/emo_master.db`，Windows 通常位于 `%USERPROFILE%\.emo_master\runtime\emo_master.db`。Job workspace 位于同一数据目录的 `jobs/` 下，不在安装目录。
+### 独立操作员入口
+
+`scripts/run_operator.py` / `start_runtime.cmd` 使用 `%LOCALAPPDATA%\EmoMaster\operator-runtime`，数据库为 `runtime.sqlite3`，日志为 `logs/runtime-*.jsonl`，任务工作区为 `jobs/`。优先级为显式 `--data-root` > `EMO_RUNTIME_DATA_DIR` > 本机保存默认 > 系统默认。
+
+起始页或“Runtime 设置”显示本次有效值/来源和下次默认。保存 `QSettings("EmoMaster", "Runtime")` 的 `storage/defaultDataRoot`，只影响下次启动，不搬迁在线配置、数据库或日志，不热切正在运行的路径。CLI/环境仍覆盖时会提示；“使用系统默认”保存后移除覆盖键。展开诊断和“打开当前日志文件夹”取本次真实路径，而非未生效草稿。业务留档仍由工程配置，不等于内部根或 `jobs/`。
+
+独立入口显式传入数据库/日志路径，`EMO_RUNTIME_DB_PATH`、`EMO_MASTER_RUNTIME_DB_PATH`、`EMO_RUNTIME_LOG_DIR` 不分别覆盖它。具体操作、启动失败及只读日志说明见[独立 Runtime](operator-runtime.md)。
+
+### 底层 RuntimeService / Designer 内嵌及外部服务
+
+以下规则不是独立操作员默认值：未覆盖配置的底层服务使用 `~/.emo_master/runtime/emo_master.db`，Windows 通常位于 `%USERPROFILE%\.emo_master\runtime\emo_master.db`。Job workspace 使用底层服务自己的目录规则，不在安装目录；本次未批量修改这些默认位置。
 
 | 配置 | 含义与优先级 |
 | --- | --- |
 | 显式 `RuntimeService(dbPath=...)` | 构造参数，优先于环境变量 |
 | `EMO_RUNTIME_DB_PATH` | 完整 SQLite 文件路径，优先于数据目录变量 |
+| `EMO_MASTER_RUNTIME_DB_PATH` | 旧别名；仅在前一 DB 变量未设置时使用 |
 | `EMO_RUNTIME_DATA_DIR` | 数据目录，数据库名固定为 `emo_master.db` |
 | 不设置 | 使用用户目录下的默认路径 |
 
 路径支持 `~` 展开。同一数据目录同一时刻只允许一个跨进程 Runtime 实例。外部模式由服务端进程的配置决定路径；给客户端改数据目录不会迁移服务端数据。
+
+底层日志可由 `EMO_RUNTIME_LOG_DIR` 指定；不设置时，显式 DB 路径使用其旁边 `logs/`，否则使用底层数据目录的 `logs/`。这套规则不要套用到独立操作员入口。
 
 备份前停止 Job 并退出相关 Runtime，再备份项目目录、模型/标定等外部资源和 Runtime 数据目录。不要在 SQLite 仍被使用时只复制一个 `.db` 文件作为可靠备份，也不要删除锁文件绕过占用检查。`jobs/` 是临时工作区，存在终态及关闭清理逻辑，不应作为长期结果归档目录。
 
@@ -203,7 +219,7 @@ python scripts\release_wizard_emo_master.py
 
 ## 7. 外部 Runtime 和尚未交付的部署能力
 
-独立 Runtime 的源码命令为 `python scripts/dev.py run-runtime`，需要完整的运行依赖与源码路径。当前依赖文件没有为它提供独立的精简无 GUI 安装集，不能因服务没有窗口就直接删除 PySide2 等依赖。
+外部底层 gRPC 服务的源码命令为 `python scripts/dev.py run-runtime`，不是带起始页的独立操作员窗口。它需要完整的运行依赖与源码路径。当前依赖文件没有为它提供独立的精简无 GUI 安装集，不能因服务没有窗口就直接删除 PySide2 等依赖。
 
 默认只监听本机 `127.0.0.1:50051`。`EMO_RUNTIME_TARGET` 只改变 Designer 的连接地址，不会改变服务端监听；源码入口也没有 `--host` / `--port` 参数解析。不要在 README 命令后凭空添加这些参数。
 

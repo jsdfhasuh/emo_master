@@ -211,6 +211,7 @@ def testPendingCardBindingTimerDiesWithItsWidget():
 
 def testStartupCancellationShutsDownDisplayBeforeClient(monkeypatch):
     from emo_master.apps.designer import main
+    from emo_master.apps.designer import startup
     from PySide2 import QtWidgets
     from PySide2.QtWidgets import QApplication
 
@@ -218,8 +219,9 @@ def testStartupCancellationShutsDownDisplayBeforeClient(monkeypatch):
     client = SimpleNamespace(close=lambda: events.append("client"))
 
     class Window:
-        def __init__(self, actualClient, showStartupEntry):
+        def __init__(self, actualClient, showStartupEntry, projectEntryDialogFactory):
             assert actualClient is client and showStartupEntry
+            assert callable(projectEntryDialogFactory)
 
         def showStartupProjectEntry(self):
             events.append("cancel")
@@ -236,8 +238,7 @@ def testStartupCancellationShutsDownDisplayBeforeClient(monkeypatch):
     monkeypatch.setattr(main, "configureHighDpi", lambda: None)
     monkeypatch.setattr(main, "applyDesignerStyle", lambda *_args: None)
     monkeypatch.setattr(main, "resolveRuntimeTarget", lambda: "")
-    monkeypatch.setattr(main, "RuntimeService", lambda: object())
-    monkeypatch.setattr(main, "RuntimeClient", lambda **_kwargs: client)
+    monkeypatch.setattr(startup, "prepareRuntime", lambda *_args: client)
     monkeypatch.setattr(mainWindowModule, "MainWindow", Window)
     main.runDesigner()
     assert events == ["cancel", "display", "client"]

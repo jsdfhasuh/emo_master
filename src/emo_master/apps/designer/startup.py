@@ -1,0 +1,74 @@
+"""Timing and non-Qt preparation for the Designer entry point."""
+from __future__ import annotations
+
+import math
+import os
+from queue import SimpleQueue
+from threading import Event
+from time import perf_counter
+
+
+class StartupTiming:
+    def __init__(self, entryTime: float) -> None:
+        raw = os.environ.pop("EMO_DESIGNER_LAUNCH_STARTED", "")
+        try:
+            started = float(raw)
+        except ValueError:
+            started = entryTime
+        self.started = started if math.isfinite(started) and 0 <= started <= entryTime else entryTime
+        self.updates: SimpleQueue[str] = SimpleQueue()
+        self.stage = ""
+        self.stageStarted = entryTime
+
+    def mark(self, name: str) -> None:
+        print(f"[designer:start] {name} total={perf_counter() - self.started:.3f}s", flush=True)
+
+    def begin(self, stage: str) -> None:
+        self.finish()
+        self.stage = stage
+        self.stageStarted = perf_counter()
+        self.updates.put(stage)
+        self.mark(stage + " start")
+
+    def finish(self, outcome: str = "done") -> None:
+        if not self.stage:
+            return
+        now = perf_counter()
+        print(f"[designer:start] {self.stage} {outcome} "
+              f"elapsed={now - self.stageStarted:.3f}s total={now - self.started:.3f}s", flush=True)
+        self.stage = ""
+
+
+def prepareRuntime(timing: StartupTiming, cancelled: Event):
+    timing.begin("runtime-imports")
+    from emo_master.apps.designer.services.runtime_client import RuntimeClient
+
+    target = os.getenv("EMO_RUNTIME_TARGET", "").strip()
+    if target:
+        import grpc
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
+
+        if cancelled.is_set():
+            return None
+        timing.begin("runtime-channel")
+        channel = grpc.insecure_channel(target)
+        try:
+            return RuntimeClient(
+                runtimeService=runtime_pb2_grpc.RuntimeServiceStub(channel),
+                ownedChannel=channel, runtimeTarget=target,
+            )
+        except BaseException:
+            channel.close()
+            raise
+
+    from emo_master.apps.runtime.grpc_server.service import RuntimeService
+
+    if cancelled.is_set():
+        return None
+    service = RuntimeService(startupProgress=timing.begin)
+    try:
+        timing.begin("runtime-client")
+        return RuntimeClient(runtimeService=service, ownedRuntimeService=service)
+    except BaseException:
+        service.close()
+        raise

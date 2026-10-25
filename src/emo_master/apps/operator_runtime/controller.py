@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import os
 from dataclasses import dataclass
 from functools import wraps
 from pathlib import Path
@@ -17,6 +16,7 @@ from emo_master.apps.runtime.presentation.service import PresentationService
 from emo_master.core.project.models import ProductionSettings
 from emo_master.core.project.delivery_store import DirectoryOwner
 from emo_master.core.presentation.workflow_view import presentationForWorkflow
+from emo_master.apps.operator_runtime.settings import resolveDataRoot
 
 
 @dataclass
@@ -35,19 +35,25 @@ def serialized(method):
 
 
 def defaultDataRoot() -> Path:
-    configured = os.environ.get("EMO_RUNTIME_DATA_DIR")
-    if configured:
-        return Path(configured).expanduser().resolve()
-    base = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / ".local/share")))
-    return base / "EmoMaster" / "operator-runtime"
+    # Non-GUI callers retain environment/system defaults; GUI passes its resolved preference.
+    return resolveDataRoot().path
+
+
+class RuntimeInitializationError(RuntimeError):
+    def __init__(self, path, stage, cause):
+        self.path, self.stage, self.cause = Path(path), stage, cause
+        super().__init__(f"{stage}\n目标：{path}\n原因：{cause}")
 
 
 class ProductionRuntime:
     def __init__(self, dataRoot: Path | None = None, *, pluginRootPaths=None):
         self.dataRoot = (dataRoot or defaultDataRoot()).resolve()
-        self.runtime = RuntimeService(dbPath=self.dataRoot / "runtime.sqlite3",
-            workspaceRoot=self.dataRoot / "jobs", logDirectory=self.dataRoot / "logs",
-            pluginRootPaths=pluginRootPaths, productionMode=True)
+        try:
+            self.runtime = RuntimeService(dbPath=self.dataRoot / "runtime.sqlite3",
+                workspaceRoot=self.dataRoot / "jobs", logDirectory=self.dataRoot / "logs",
+                pluginRootPaths=pluginRootPaths, productionMode=True)
+        except Exception as error:
+            raise RuntimeInitializationError(self.dataRoot, "数据库 / Runtime 服务初始化失败", error) from error
         self.server = None
         self.closed = False
         self.document = None
@@ -56,9 +62,9 @@ class ProductionRuntime:
         self.projectOwner = None
         try:
             self.presentation = PresentationService(self.runtime, self.dataRoot / "display")
-        except BaseException:
+        except Exception as error:
             self.runtime.close()
-            raise
+            raise RuntimeInitializationError(self.dataRoot / "display", "显示缓存初始化失败", error) from error
 
     @property
     def address(self):

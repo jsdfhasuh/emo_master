@@ -1,17 +1,10 @@
 import os
 from pathlib import Path
 import sys
-from typing import cast
+from time import perf_counter
 
-import grpc
 
-from emo_master.apps.designer.services.runtime_client import (
-    RuntimeClient,
-    RuntimeServiceProtocol,
-)
-from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
-from emo_master.apps.runtime.grpc_server.service import RuntimeService
-from emo_master.apps.runtime.context.runtime_lock import RuntimeDataInUseError
+_ENTRY_TIME = perf_counter()
 
 
 def resolveRuntimeTarget() -> str:
@@ -63,63 +56,113 @@ def configureHighDpi() -> bool:
 
 
 def runDesigner() -> None:
+    from emo_master.apps.designer.startup import StartupTiming, prepareRuntime
+
+    timing = StartupTiming(_ENTRY_TIME)
+    timing.mark("entry")
+    timing.begin("qt")
     configureHighDpi()
     from PySide2.QtWidgets import QApplication
-
-    from emo_master.apps.designer.ui.main_window import MainWindow
+    from emo_master.apps.designer.ui.startup_dialog import DesignerStartupDialog
 
     app = QApplication([])
+    timing.begin("theme")
     applyDesignerStyle(app)
-    runtimeTarget = resolveRuntimeTarget()
-    runtimeClient: RuntimeClient | None = None
+    timing.begin("startup-window")
+    startup = DesignerStartupDialog(timing)
+    quitOnClose = app.quitOnLastWindowClosed()
+    app.setQuitOnLastWindowClosed(False)
+    runtimeClient = None
     window = None
     try:
-        if runtimeTarget != "":
-            channel = grpc.insecure_channel(runtimeTarget)
-            runtimeService = cast(
-                RuntimeServiceProtocol, runtime_pb2_grpc.RuntimeServiceStub(channel)
-            )
-            runtimeClient = RuntimeClient(
-                runtimeService=runtimeService,
-                ownedChannel=channel,
-                runtimeTarget=runtimeTarget,
-            )
-        else:
-            try:
-                embeddedService = RuntimeService()
-            except RuntimeDataInUseError as err:
-                from PySide2.QtWidgets import QMessageBox
+        runtimeClient = startup.prepare(lambda cancelled: prepareRuntime(timing, cancelled))
+        timing.finish()
+        if startup.cancelled.is_set():
+            return
 
-                message = (
-                    "运行数据目录正被另一个 Designer 或 Runtime 使用。\n\n"
-                    f"目录：{err.directory}\n\n"
-                    "请返回已打开的 Designer；如需重新启动，先停止任务并正常关闭原窗口。\n"
-                    "如果窗口已关闭，请等待原进程退出后重试。\n"
-                    "不要删除锁文件或数据库来强制启动。"
-                )
-                print(f"[designer] {message}", file=sys.stderr, flush=True)
-                dialog = QMessageBox()
-                dialog.setIcon(QMessageBox.Warning)
-                dialog.setWindowTitle("Designer 已在运行或数据目录被占用")
-                dialog.setText(message)
-                dialog.exec_()
-                raise SystemExit(2) from None
-            runtimeService = cast(RuntimeServiceProtocol, embeddedService)
-            runtimeClient = RuntimeClient(
-                runtimeService=runtimeService,
-                ownedRuntimeService=embeddedService,
-            )
-        window = MainWindow(runtimeClient, showStartupEntry=True)
+        def advance(stage):
+            timing.begin(stage)
+            startup.refreshStatus()
+            app.processEvents()
+            startup.repaint()
+            return not startup.cancelled.is_set()
+
+        if not advance("editor-imports"):
+            return
+        from emo_master.apps.designer.ui.main_window import MainWindow
+        from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
+
+        class TimedProjectEntryDialog(ProjectEntryDialog):
+            _readyReported = False
+
+            def paintEvent(self, event):
+                super().paintEvent(event)
+                if not self._readyReported:
+                    self._readyReported = True
+                    timing.finish()
+                    timing.mark("ready")
+
+        if not advance("editor-ui"):
+            return
+        window = MainWindow(runtimeClient, showStartupEntry=True,
+                            projectEntryDialogFactory=lambda: TimedProjectEntryDialog(window))
+        if not advance("project-entry"):
+            return
+        startup.finish()
         shouldShow = window.showStartupProjectEntry()
         if not shouldShow:
             return
         window.show()
+        app.setQuitOnLastWindowClosed(quitOnClose)
         app.exec_()
+    except Exception as error:
+        timing.finish("failed")
+        startup.finish()
+        _showStartupError(error)
     finally:
-        if window is not None:
-            window.shutdownOperatorDisplay()
-        if runtimeClient is not None:
-            runtimeClient.close()
+        try:
+            if window is not None:
+                window.shutdownOperatorDisplay()
+        finally:
+            try:
+                if runtimeClient is not None:
+                    runtimeClient.close()
+            finally:
+                startup.finish()
+                app.setQuitOnLastWindowClosed(quitOnClose)
+                if startup.cancelled.is_set():
+                    timing.finish("cancelled")
+                    timing.mark("cancelled")
+
+
+def _showStartupError(error) -> None:
+    from PySide2.QtWidgets import QMessageBox
+    from emo_master.apps.runtime.context.runtime_lock import RuntimeDataInUseError
+
+    dialog = QMessageBox()
+    if isinstance(error, RuntimeDataInUseError):
+        message = (
+            "运行数据目录正被另一个 Designer 或 Runtime 使用。\n\n"
+            f"目录：{error.directory}\n\n"
+            "请返回已打开的 Designer；如需重新启动，先停止任务并正常关闭原窗口。\n"
+            "如果窗口已关闭，请等待原进程退出后重试。\n"
+            "不要删除锁文件或数据库来强制启动。"
+        )
+        dialog.setIcon(QMessageBox.Warning)
+        dialog.setWindowTitle("Designer 已在运行或数据目录被占用")
+        code = 2
+    else:
+        import traceback
+
+        traceback.print_exception(type(error), error, error.__traceback__)
+        message = f"Designer 启动失败：\n{error}"
+        dialog.setIcon(QMessageBox.Critical)
+        dialog.setWindowTitle("Designer 启动失败")
+        code = 1
+    print(f"[designer] {message}", file=sys.stderr, flush=True)
+    dialog.setText(message)
+    dialog.exec_()
+    raise SystemExit(code) from None
 
 
 if __name__ == "__main__":

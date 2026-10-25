@@ -21,6 +21,7 @@ def workspace(*, variables=None, oldSchema=False):
         schema['properties']['classes'].pop('xWidget')
         schema['properties']['classes'].pop('xPlaceholder')
         schema['properties']['drawOverlay']['default'] = False
+        schema['properties'].pop('onMissingCrop')
     savedSchema = deepcopy(schema)
     schema = mergeParameterTitles(schema, YoloInferenceOperator.meta.paramSchema)
     applied = []
@@ -32,6 +33,8 @@ def workspace(*, variables=None, oldSchema=False):
     values = dict(modelPath='D:/models/yolo11n.onnx', confidence=.25, iou=.45, imageSize=1280,
                   maxDetections=300, device='cpu', classes=[0, 1, 3], agnosticNms=False,
                   drawOverlay=not oldSchema, outputCrop=False, cropTargetIndex=1)
+    if not oldSchema:
+        values['onMissingCrop'] = 'error'
     window = OperatorWorkspaceWindow(key=context.key, title='YOLO 检测全部目标', context=context,
                                      schema=schema, values=values)
     window.bindDebug(lambda: None)
@@ -79,12 +82,20 @@ def testCompactYoloWindowKeepsValuesSourcesAndActionsUsable(designerApplication,
         assert form._controls['outputCrop'].text() == '已关闭'
         assert not form._controls['cropTargetIndex'].isEnabled()
         assert form._fieldContainers['cropTargetIndex'].isHidden()
+        assert form._fieldContainers['onMissingCrop'].isHidden()
         assert window.collectParams() == original and not window.isDirty()
         assert form._controls['classes'].height() < 50
         form._controls['outputCrop'].setChecked(True)
         designerApplication.processEvents()
         assert not form._fieldContainers['cropTargetIndex'].isHidden()
         assert form._controls['cropTargetIndex'].isEnabled()
+        assert not form._fieldContainers['onMissingCrop'].isHidden()
+        policy = form._controls['onMissingCrop']
+        assert policy.currentData() == 'error'
+        assert policy.itemText(policy.findData('skip')) == '跳过裁剪，继续检测'
+        policy.setCurrentIndex(policy.findData('skip'))
+        assert window.applyChanges()
+        assert applied[-1][1]['onMissingCrop'] == 'skip'
         for name, source in form._variableSources.items():
             control = form._controls[name]
             box = form._fieldContainers[name]
@@ -96,6 +107,15 @@ def testCompactYoloWindowKeepsValuesSourcesAndActionsUsable(designerApplication,
         assert not window._bindingScroll.isVisible()
         assert not window._applyButton.visibleRegion().isEmpty()
         assert not window._closeButton.visibleRegion().isEmpty()
+        form.focusField('onMissingCrop')
+        designerApplication.processEvents()
+        assert policy.visibleRegion().boundingRect() == policy.rect()
+        assert policy.fontMetrics().horizontalAdvance(policy.currentText()) <= policy.width() - 25
+        screenshotDir = os.environ.get('EMO_YOLO_FORM_SCREEN_DIR')
+        if screenshotDir:
+            target = Path(screenshotDir)
+            target.mkdir(parents=True, exist_ok=True)
+            assert window.grab().save(str(target / f'yolo-crop-policy-{width}.png'))
         form._controls['outputCrop'].setChecked(False)
         designerApplication.processEvents()
         screenshotDir = os.environ.get('EMO_YOLO_FORM_SCREEN_DIR')
@@ -137,3 +157,19 @@ def testNoCompatibleVariablesDoNotShowRedundantFixedValueSelectors(designerAppli
         assert not window.isDirty()
     finally:
         window.forceClose()
+
+
+def testExistingYoloNodeGetsMissingCropControlWithoutChangingSavedPolicy(ownedDesignerWindow):
+    from emo_master.apps.designer.state.flow_graph_model import FlowNode
+    from tests.designer.test_runtime_log_usability import Client, Settings
+
+    window = ownedDesignerWindow(Client(), settingsStore=Settings())
+    saved = deepcopy(YoloInferenceOperator.meta.paramSchema)
+    saved['properties'].pop('onMissingCrop')
+    node = FlowNode('yolo', 'vision.inference.yolo', 'YOLO', {}, {}, paramSchema=saved,
+                    params=dict(modelPath='model.onnx', outputCrop=True))
+    before = deepcopy(node)
+    schema = window._nodeEditorSchema(node)
+    assert schema['properties']['onMissingCrop']['default'] == 'error'
+    assert schema['properties']['onMissingCrop']['xVisibleWhen'] == {'outputCrop': [True]}
+    assert node == before

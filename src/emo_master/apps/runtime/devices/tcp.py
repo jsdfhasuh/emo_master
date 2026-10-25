@@ -153,6 +153,7 @@ class ManagedTcpOnce(DeviceDriver):
         self.stop.clear()
         self.active = True
         sent = 0
+        received = 0
         wire = None
         attempted = False
         def stopped():
@@ -177,6 +178,7 @@ class ManagedTcpOnce(DeviceDriver):
                     wire.settimeout(params['responseTimeoutMs']/1000)
                     response = receiveFramed(wire, framing=params['responseFraming'], maxBytes=params['maxResponseBytes'],
                         expectedBytes=params['expectedBytes'], rejectTrailing=params['rejectTrailingResponse'])
+                    received = len(response)
                     result.update(dataBase64=base64.b64encode(response).decode('ascii'),
                         peerHost=self.definition.connection['host'], peerPort=self.definition.connection['port'])
             else:
@@ -208,12 +210,15 @@ class ManagedTcpOnce(DeviceDriver):
                 self._track(sock)
                 wire = CancellableSocket(sock, stopped, deadline, params['readTimeoutMs']/1000)
                 data = receiveFramed(wire, framing=params['framing'], maxBytes=params['maxMessageBytes'], expectedBytes=params['expectedBytes'])
+                received = len(data)
                 if ack:
                     wire.settimeout(params['readTimeoutMs']/1000)
                     attempted = True
                     sendAll(wire, ack)
                 result = dict(dataBase64=base64.b64encode(data).decode('ascii'), peerHost=str(peer[0]), peerPort=peer[1])
-            self.lastResult = dict(outcome='COMPLETED', bytesSent=wire.bytesSent if wire else sent)
+            self.lastResult = dict(action=action, outcome='COMPLETED', bytesSent=wire.bytesSent if wire else sent,
+                                   bytesReceived=received, automaticRetry=False)
+            result['tcpTransaction'] = dict(self.lastResult)
             return result
         except Exception as error:
             from emo_master.plugins.builtins._communication_operators import _communicationError

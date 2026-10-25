@@ -349,7 +349,14 @@ class WorkflowCompiler:
                 return dynamicPorts
             metadata = _operatorMetadata(self.operatorRegistry.get(node.operatorId))
             if metadata is not None:
-                return metadata[0], metadata[1]
+                from emo_master.plugins.builtins._operator_modes import requiredChoiceInput
+                inputs, outputs = metadata
+                required = requiredChoiceInput(node.operatorId, node.params,
+                    {edge.toPort for edge in document.workflows[workflowId].edges if edge.toNode == node.nodeId},
+                    {binding.parameterPath[0] for binding in node.globalVariableBindings})
+                if required in inputs:
+                    inputs[required] = {**cast(Mapping[str, object], inputs[required]), "required": True}
+                return inputs, outputs
         return dict(node.inputPorts), dict(node.outputPorts)
 
     def nodePortDefinitions(self, document: ProjectDocument, workflowId: str, node: WorkflowNode):

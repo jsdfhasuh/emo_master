@@ -141,13 +141,7 @@ class CollectionSelectOperator:
         selected: list[CollectionItem]
         if mode == "topK":
             selected = list(collection.items[: cast(int, params.get("count", 1))])
-        elif not collection.items:
-            selected = []
-        elif mode == "first":
-            selected = [collection.items[0]]
-        elif mode == "last":
-            selected = [collection.items[-1]]
-        else:
+        elif mode == "index":
             index = cast(int, index)
             if index >= len(collection.items):
                 if params.get("onOutOfRange", "empty") == "error":
@@ -158,6 +152,10 @@ class CollectionSelectOperator:
                 selected = []
             else:
                 selected = [collection.items[index]]
+        elif mode == "first":
+            selected = list(collection.items[:1])
+        else:
+            selected = list(collection.items[-1:])
         outputName = collection.outputName("selected")
         return {
             "status": "ok",

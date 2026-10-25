@@ -35,7 +35,7 @@ SUPPORTED_FOLDERS = (
 # These entries must not also admit automatic workflow execution or trials.
 SINGLE_NODE_FOLDERS = (
     "plc_slmp_read", "image_loader", "coordinate_reader", "image_batch_loader", "video_loader", "file_list",
-    "yolo_inference", "image_saver", "result_writer", "sqlite_writer",
+    "yolo_inference", "patchcore_inference", "image_saver", "result_writer", "sqlite_writer",
     "tcp_client", "tcp_receive_once", "plc_slmp_write", "huaray_camera",
     "rtsp_camera", "hikvision_audio",
 )
@@ -162,7 +162,7 @@ def trustedEntries(registry):
                 "entry": entry, "version": manifest.version,
                 "inputPorts": manifest.inputPorts, "outputPorts": manifest.outputPorts,
                 "paramSchema": manifest.paramSchema, "displayName": manifest.displayName,
-                "stateful": folder in {"global_counter", "variable_read", "variable_write", "image_batch_loader", "video_loader", "coordinate_reader"},
+                "stateful": folder in {"global_counter", "variable_read", "variable_write", "image_batch_loader", "video_loader", "coordinate_reader", "patchcore_inference"},
                 "singleNodeOnly": folder in SINGLE_NODE_FOLDERS,
                 "executionWarning": EXECUTION_WARNINGS.get(operatorId, ""),
             }

@@ -71,6 +71,8 @@ class DebugResources:
             runtimePath(values["videoPath"] if "videoPath" in values else params.get("videoPath"))
         elif operatorId == "vision.inference.yolo":
             runtimePath(params.get("modelPath"))
+        elif operatorId == "vision.inference.patchcore":
+            runtimePath(params.get("modelPath"), directory=True)
         elif operatorId == "vision.io.image_saver":
             runtimePath(params.get("outputPath"), mustExist=False)
         elif operatorId == "communication.plc.slmp_write" and params.get("dataType", "uint16") != "float32":

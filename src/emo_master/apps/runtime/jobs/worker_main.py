@@ -173,7 +173,8 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
                 "projectId": spec.projectId,
                 "workflowId": spec.workflowId,
                 "pid": _pid(),
-                "code": getattr(err, "code", "E_WORKER_CRASHED"),
+                "code": (getattr(err, "code", "E_EXEC_FAILED") if isinstance(err, Exception)
+                         else "E_WORKER_CRASHED"),
                 "message": str(err),
                 "payload": errorDetails(err),
             },

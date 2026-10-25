@@ -57,7 +57,11 @@ PARAMETER_CONDITIONS: dict[str, dict[str, dict[str, list[object]]]] = {
         "points": {"roiType": ["polygon"]},
     },
     "vision.preprocess.resize": {"padValue": {"mode": ["letterbox"]}},
-    "vision.inference.yolo": {"cropTargetIndex": {"outputCrop": [True]}},
+    "vision.inference.yolo": {name: {"outputCrop": [True]} for name in ("cropTargetIndex", "onMissingCrop")},
+    "vision.inference.patchcore": {
+        "overlayMode": {"drawOverlay": [True]},
+        "highlightThreshold": {"drawOverlay": [True], "overlayMode": ["highlight"]},
+    },
 }
 MODE_ENTRIES = {
     "vision.collection.sort": "collection_sort.operator:CollectionSortOperator",
@@ -71,6 +75,7 @@ MODE_ENTRIES = {
     "vision.preprocess.resize": "resize.operator:ResizeOperator",
     "vision.geometry.coordinate_calculator": "_coordinate_operators:CoordinateCalculatorOperator",
     "vision.inference.yolo": "yolo_inference.operator:YoloInferenceOperator",
+    "vision.inference.patchcore": "patchcore_inference.operator:PatchCoreInferenceOperator",
 }
 
 
@@ -126,6 +131,24 @@ def inputChoiceError(operatorId, params, inputs=None):
         if present != {selected}:
             return {"code": "E_INPUT_SHAPE", "message": "输入必须与所选处理对象一致，且只能连接一种对象"}
     return None
+
+
+def requiredChoiceInput(operatorId, params, connectedInputs, dynamicParameters=()):
+    choice = INPUT_CHOICES.get(operatorId)
+    if operatorId == "vision.collection.filter":
+        choice = ("collectionType", COLLECTION_TYPES)
+    if choice is None:
+        return None
+    selector, choices = choice
+    connected = set(connectedInputs) & choices.keys()
+    selected = "" if selector in dynamicParameters else params.get(selector, "")
+    if not isinstance(selected, str):
+        return None
+    # Do not turn alternative deliveries into an all-inputs-required contract,
+    # or hide a conflicting input choice behind a skipped node.
+    if selected:
+        return selected if selected in choices and connected <= {selected} else None
+    return next(iter(connected)) if len(connected) == 1 else None
 
 
 def inferredInputType(operatorId, params, nodeId, edges, dynamicParameters=()):

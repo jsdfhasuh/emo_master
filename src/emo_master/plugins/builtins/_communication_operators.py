@@ -679,6 +679,15 @@ def _checkTcpCancellation(runtimeContext, error):
             raise
 
 
+def _tcpFailure(error, runtimeContext, diagnostics):
+    if 'tcpTransaction' in diagnostics:
+        diagnostics = {'tcpTransaction': {**diagnostics['tcpTransaction'], 'phase': 'decode'}}
+    error.diagnostics = {**diagnostics, **getattr(error, 'diagnostics', {})}
+    _checkTcpCancellation(runtimeContext, error)
+    code = getattr(error, 'code', None) or _communicationError(error)['error']['code']
+    return dict(status='error', error=dict(code=code, message=str(error)), diagnostics=error.diagnostics)
+
+
 class TcpClientOperator:
     meta = OperatorMeta(operatorId="communication.tcp.client", displayName="TCP Client", version="1.2.0",
         inputPorts=TCP_CLIENT_INPUT_PORTS, outputPorts=TCP_CLIENT_OUTPUT_PORTS,
@@ -693,6 +702,7 @@ class TcpClientOperator:
         return None
 
     def executeNode(self, inputs, params, runtimeContext):
+        diagnostics = {}
         try:
             execute = runtimeContext.get('executeDevice')
             if execute is None:
@@ -703,6 +713,8 @@ class TcpClientOperator:
                 data += b'\n'
             result = execute('tcp', params.get('operation', 'send'),
                              {'dataBase64': base64.b64encode(data).decode('ascii')})
+            if 'tcpTransaction' in result:
+                diagnostics['tcpTransaction'] = dict(result['tcpTransaction'])
             outputs = {'sentBytes': result['sentBytes']}
             if 'dataBase64' in result:
                 raw = base64.b64decode(result['dataBase64'], validate=True)
@@ -710,12 +722,9 @@ class TcpClientOperator:
                     peerHost=result['peerHost'], peerPort=result['peerPort']).toPayload()
                 if work['responseTextEncoding'] != 'none':
                     outputs['responseText'] = _decodeTcpText(raw, work['responseTextEncoding'])
-            return dict(status='ok', outputs=outputs)
+            return dict(status='ok', outputs=outputs, diagnostics=diagnostics)
         except Exception as error:
-            _checkTcpCancellation(runtimeContext, error)
-            code = getattr(error, 'code', None) or _communicationError(error)['error']['code']
-            return dict(status='error', error=dict(code=code, message=str(error)),
-                        diagnostics=getattr(error, 'diagnostics', {}))
+            return _tcpFailure(error, runtimeContext, diagnostics)
 
 
 class TcpReceiveOnceOperator:
@@ -726,11 +735,14 @@ class TcpReceiveOnceOperator:
         return _paramError('此节点的工作参数由设备继承') if params else None
 
     def executeNode(self, inputs, params, runtimeContext):
+        diagnostics = {}
         try:
             execute = runtimeContext.get('executeDevice')
             if execute is None:
                 return _error('E_DEVICE_RUNTIME_UNAVAILABLE', '请绑定工程 TCP 设备并从 Runtime 运行')
             result = execute('tcp', 'receive', {})
+            if 'tcpTransaction' in result:
+                diagnostics['tcpTransaction'] = dict(result['tcpTransaction'])
             work = runtimeContext['deviceParameters']['tcp']
             raw = base64.b64decode(result['dataBase64'], validate=True)
             outputs = dict(message=TcpMessage.fromBytes(raw, encoding=work['messageEncoding'],
@@ -738,12 +750,9 @@ class TcpReceiveOnceOperator:
                 peerHost=result['peerHost'], peerPort=result['peerPort'])
             if work['messageTextEncoding'] != 'none':
                 outputs['text'] = _decodeTcpText(raw, work['messageTextEncoding'])
-            return dict(status='ok', outputs=outputs)
+            return dict(status='ok', outputs=outputs, diagnostics=diagnostics)
         except Exception as error:
-            _checkTcpCancellation(runtimeContext, error)
-            code = getattr(error, 'code', None) or _communicationError(error)['error']['code']
-            return dict(status='error', error=dict(code=code, message=str(error)),
-                        diagnostics=getattr(error, 'diagnostics', {}))
+            return _tcpFailure(error, runtimeContext, diagnostics)
 
 
 def _validatePlcCommonParams(

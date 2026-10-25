@@ -138,7 +138,16 @@ _PARAM_SCHEMA: dict[str, object] = {
             "minimum": 1,
             "default": 1,
             "xEnabledWhen": {"outputCrop": [True]},
-            "description": "按类别过滤、置信度筛选和 NMS 后的有效检测框排序：置信度从高到低，第 1 个最高；同分保留后端顺序。序号仅属于当前图像，超出数量时报错。",
+            "description": "按类别过滤、置信度筛选和 NMS 后的有效检测框排序：置信度从高到低，第 1 个最高；同分保留后端顺序。序号仅属于当前图像，超出数量时按“无裁剪目标时”处理。",
+        },
+        "onMissingCrop": {
+            "title": "无裁剪目标时",
+            "type": "string",
+            "enum": ["error", "skip"],
+            "default": "error",
+            "xOptionLabels": {"error": "报错停止", "skip": "跳过裁剪，继续检测"},
+            "xEnabledWhen": {"outputCrop": [True]},
+            "description": "跳过时保留检测集合和叠加图，不生成裁剪图；依赖裁剪图的后续节点跳过本次执行。模型、参数和推理错误仍然报错。",
         },
     },
     "required": ["modelPath"],
@@ -149,7 +158,7 @@ class YoloInferenceOperator:
     meta = OperatorMeta(
         operatorId="vision.inference.yolo",
         displayName="YOLO Inference",
-        version="1.3.0",
+        version="1.4.0",
         inputPorts={
             "image": {"type": "image", "required": True, "nullable": False},
             "frame": {
@@ -228,6 +237,8 @@ class YoloInferenceOperator:
             index = params.get("cropTargetIndex", 1)
             if not isinstance(index, int) or isinstance(index, bool) or index < 1:
                 return _paramError("裁剪目标序号 cropTargetIndex 必须是从 1 开始的整数")
+            if params.get("onMissingCrop", "error") not in ("error", "skip"):
+                return _paramError("无裁剪目标时 onMissingCrop 必须为 error 或 skip")
         return None
 
     def executeNode(
@@ -315,23 +326,25 @@ class YoloInferenceOperator:
         if cast(bool, params.get("outputCrop", False)):
             targetIndex = cast(int, params.get("cropTargetIndex", 1))
             if targetIndex > len(detections):
-                return _error(
-                    "E_CROP_TARGET_NOT_FOUND",
-                    f"裁剪目标序号为 {targetIndex}，本次仅有 {len(detections)} 个有效目标"
-                    "（按置信度从高到低排序）；请检查目标序号、类别和置信度阈值。",
+                message = (f"裁剪目标序号为 {targetIndex}，本次仅有 {len(detections)} 个有效目标"
+                           "（按置信度从高到低排序）")
+                if params.get("onMissingCrop", "error") == "error":
+                    return _error("E_CROP_TARGET_NOT_FOUND", message + "；请检查目标序号、类别和置信度阈值。")
+                for port in ("croppedImage", "croppedFrame"):
+                    imageOutputMessages[port] = message + "；已跳过裁剪，本次未生成 " + port + "。"
+            else:
+                # Reuse the normal crop operator's pixel rounding, clipping, owned
+                # image and composable source transform. Never crop the overlay.
+                cropResult = CropOperator().executeNode(
+                    {"image": image, "frame": frame.toPayload(),
+                     "roi": detections[targetIndex - 1].bbox.toPayload()},
+                    {"clip": True},
+                    runtimeContext,
                 )
-            # Reuse the normal crop operator's pixel rounding, clipping, owned
-            # image and composable source transform. Never crop the overlay.
-            cropResult = CropOperator().executeNode(
-                {"image": image, "frame": frame.toPayload(),
-                 "roi": detections[targetIndex - 1].bbox.toPayload()},
-                {"clip": True},
-                runtimeContext,
-            )
-            if cropResult["status"] != "ok":
-                return cropResult
-            outputs["croppedImage"] = cropResult["outputs"]["image"]
-            outputs["croppedFrame"] = cropResult["outputs"]["frame"]
+                if cropResult["status"] != "ok":
+                    return cropResult
+                outputs["croppedImage"] = cropResult["outputs"]["image"]
+                outputs["croppedFrame"] = cropResult["outputs"]["frame"]
         else:
             imageOutputMessages["croppedImage"] = "此次执行未启用“输出裁剪图”，未生成 croppedImage。"
         if cast(bool, params.get("drawOverlay", True)):

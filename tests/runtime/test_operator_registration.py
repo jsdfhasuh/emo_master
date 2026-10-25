@@ -63,6 +63,7 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.geometry.extract_points",
         "vision.geometry.reframe_points",
         "vision.inference.yolo",
+        "vision.inference.patchcore",
         "vision.io.image_loader",
         "vision.io.image_batch_loader",
         "vision.io.video_loader",
@@ -103,7 +104,7 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.collection.number_pair",
     } <= operatorIds
     assert "vision.io.simulated_camera" in operatorIds
-    assert len(operatorIds) == 76
+    assert len(operatorIds) == 77
     assert list(rejectedReply.rejected) == []
 
 

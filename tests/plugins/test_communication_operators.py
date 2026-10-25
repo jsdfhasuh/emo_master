@@ -496,6 +496,75 @@ def testTcpClientTextOutputValidationAndDecodeFailure() -> None:
     _joinPeer(thread, errors)
     assert invalidText["status"] == "error"
     assert invalidText["error"]["code"] == "E_RESULT_INVALID"
+    transaction = invalidText['diagnostics']['tcpTransaction']
+    assert transaction['outcome'] == 'COMPLETED'
+    assert transaction['phase'] == 'decode' and transaction['action'] == 'exchange'
+    assert transaction['bytesSent'] == 1 and transaction['bytesReceived'] == 1
+    assert transaction['automaticRetry'] is False
+
+
+def testTcpReceiveDecodeFailureRetainsConfirmedAck():
+    port = _unusedTcpPort()
+    resultBox = {}
+    def receive():
+        resultBox['result'] = _runTcp(TcpReceiveOnceOperator(), {}, {
+            'bindHost': '127.0.0.1', 'port': port, 'acceptTimeoutMs': 1000, 'readTimeoutMs': 500,
+            'messageEncoding': 'hex', 'messageTextEncoding': 'ascii',
+            'ackText': 'OK', 'ackAppendNewline': True})
+    thread = threading.Thread(target=receive)
+    thread.start()
+    try:
+        with _connectEventually(port) as peer:
+            peer.sendall(b'\xff\n')
+            assert _recvExact(peer, 3) == b'OK\n'
+    finally:
+        thread.join(3)
+    assert not thread.is_alive()
+    result = resultBox['result']
+    assert result['error']['code'] == 'E_RESULT_INVALID'
+    transaction = result['diagnostics']['tcpTransaction']
+    assert transaction['outcome'] == 'COMPLETED'
+    assert transaction['phase'] == 'decode' and transaction['action'] == 'receive'
+    assert transaction['bytesSent'] == 3 and transaction['bytesReceived'] == 1
+    assert transaction['automaticRetry'] is False
+
+
+@pytest.mark.parametrize('operatorClass,action,sent', [
+    (TcpClientOperator, 'exchange', 1), (TcpReceiveOnceOperator, 'receive', 3),
+])
+def testTcpDecodeCancellationPreservesTransactionWithoutLeakingToNextCall(operatorClass, action, sent):
+    from emo_master.apps.runtime.workflow.cancellation import CancellationRequested, CancellationToken
+    from emo_master.core.contracts.device_driver import DeviceError
+
+    token = CancellationToken()
+    calls = []
+    transaction = dict(action=action, outcome='COMPLETED', bytesSent=sent, bytesReceived=1, automaticRetry=False)
+    def execute(slot, calledAction, arguments):
+        calls.append((slot, calledAction, arguments))
+        if len(calls) == 2:
+            raise DeviceError('E_DEVICE_CONNECT', 'unavailable')
+        token.cancel()
+        return dict(sentBytes=sent, dataBase64='/w==', peerHost='127.0.0.1', peerPort=9000,
+                    tcpTransaction=transaction)
+    work = dict(textEncoding='ascii', appendNewline=False, responseEncoding='hex', responseTextEncoding='ascii',
+                messageEncoding='hex', messageTextEncoding='ascii')
+    runtime = dict(executeDevice=execute, deviceParameters={'tcp': work},
+                   raiseIfCancellationRequested=token.raise_if_cancelled)
+    op = operatorClass()
+    params = dict(operation=action, text='X') if operatorClass is TcpClientOperator else {}
+    with pytest.raises(CancellationRequested) as failure:
+        op.executeNode({}, params, runtime)
+    assert failure.value.code == 'E_CANCELLED'
+    assert failure.value.diagnostics['tcpTransaction'] == {**transaction, 'phase': 'decode'}
+    assert len(calls) == 1
+    assert calls[0][0:2] == ('tcp', action)
+    assert 'phase' not in transaction
+
+    runtime['raiseIfCancellationRequested'] = CancellationToken().raise_if_cancelled
+    result = op.executeNode({}, params, runtime)
+    assert result['error'] == dict(code='E_DEVICE_CONNECT', message='unavailable')
+    assert 'tcpTransaction' not in result['diagnostics']
+    assert len(calls) == 2
 
 
 def testTcpClientSupportsBinaryMessageInputAndTimeoutErrors() -> None:

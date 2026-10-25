@@ -74,6 +74,10 @@ class OperatorExecutor:
                 outcome=error.outcome, message=str(error))}
         if node.operatorId == "communication.tcp.session_send" and "tcpReceipt" in nodeDiagnostics:
             diagnostics = {**diagnostics, "tcpReceipt": nodeDiagnostics["tcpReceipt"]}
+        if node.operatorId in {"communication.tcp.client", "communication.tcp.receive_once"} and "tcpTransaction" in nodeDiagnostics:
+            diagnostics = {**diagnostics, "tcpTransaction": nodeDiagnostics["tcpTransaction"]}
+        if node.operatorId == "vision.io.detection_archive" and "archiveProgress" in nodeDiagnostics:
+            diagnostics = {**diagnostics, "archiveProgress": nodeDiagnostics["archiveProgress"]}
         if node.operatorId == "vision.io.sqlite_writer" and "sqliteReceipt" in nodeDiagnostics:
             # A later validation/cancellation failure cannot undo an external commit.
             from emo_master.core.contracts.sqlite_writer import receiptSummary

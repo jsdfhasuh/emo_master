@@ -97,25 +97,47 @@ class DetectionArchiveOperator:
         cropper = CropOperator()
         saveParams = {"outputPath": params["outputPath"], "overwrite": False}
         paths = []
-        for index, detection in enumerate(detections.items, 1):
+        progress = {"stage": "crop", "detectionIndex": None, "detectionId": None,
+                    "cropPaths": paths, "savedCropCount": 0, "overlayPath": None}
+
+        def diagnostics(existing=None):
+            return {**(existing or {}), "archiveProgress": {**progress, "cropPaths": list(paths)}}
+
+        def failed(result):
+            return {**result, "diagnostics": diagnostics(result.get("diagnostics"))}
+
+        try:
+            for index, detection in enumerate(detections.items, 1):
+                progress.update(stage="crop", detectionIndex=index, detectionId=detection.detectionId)
+                _checkCancellation(runtimeContext)
+                cropped = cropper.executeNode({"image": image, "frame": frame.toPayload(),
+                                               "roi": detection.bbox.toPayload()}, {"clip": True}, runtimeContext)
+                if cropped["status"] != "ok":
+                    return failed(cropped)
+                progress["stage"] = "saveCrop"
+                _checkCancellation(runtimeContext)
+                saved = saver.executeNode({"image": cropped["outputs"]["image"],
+                                           "fileName": f"{prefix}-crop-{index:03d}.png"}, saveParams, runtimeContext)
+                if saved["status"] != "ok":
+                    return failed(saved)
+                paths.append(saved["outputs"]["result"]["path"])
+                progress["savedCropCount"] = len(paths)
+            progress.update(stage="saveOverlay", detectionIndex=None, detectionId=None)
             _checkCancellation(runtimeContext)
-            cropped = cropper.executeNode({"image": image, "frame": frame.toPayload(),
-                                           "roi": detection.bbox.toPayload()}, {"clip": True}, runtimeContext)
-            if cropped["status"] != "ok":
-                return cropped
-            _checkCancellation(runtimeContext)
-            saved = saver.executeNode({"image": cropped["outputs"]["image"],
-                                       "fileName": f"{prefix}-crop-{index:03d}.png"}, saveParams, runtimeContext)
+            saved = saver.executeNode({"image": inputs["overlay"], "fileName": f"{prefix}-overlay.jpg"},
+                                      saveParams, runtimeContext)
             if saved["status"] != "ok":
-                return saved
-            paths.append(saved["outputs"]["result"]["path"])
-        _checkCancellation(runtimeContext)
-        saved = saver.executeNode({"image": inputs["overlay"], "fileName": f"{prefix}-overlay.jpg"},
-                                  saveParams, runtimeContext)
-        if saved["status"] != "ok":
-            return saved
-        self._lastSaved = monotonic()
-        return _result(True, "saved", paths, saved["outputs"]["result"]["path"])
+                return failed(saved)
+            progress.update(stage="completed", overlayPath=saved["outputs"]["result"]["path"])
+            self._lastSaved = monotonic()
+            _checkCancellation(runtimeContext)
+        except Exception as error:
+            # Cancellation keeps its identity and never finishes remaining saves.
+            error.diagnostics = diagnostics(getattr(error, "diagnostics", None))
+            raise
+        result = _result(True, "saved", paths, progress["overlayPath"])
+        result["diagnostics"] = diagnostics()
+        return result
 
 
 def _checkCancellation(context):

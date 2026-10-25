@@ -1,7 +1,7 @@
 {
   "operatorId": "vision.inference.yolo",
   "displayName": "YOLO Inference",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "entry": "emo_master.plugins.builtins.yolo_inference.operator:YoloInferenceOperator",
   "category": "推理",
   "iconKey": "yolo",
@@ -152,7 +152,7 @@
             true
           ]
         },
-        "description": "按类别过滤、置信度筛选和 NMS 后的有效检测框排序：置信度从高到低，第 1 个最高；同分保留后端顺序。序号仅属于当前图像，超出数量时报错。",
+        "description": "按类别过滤、置信度筛选和 NMS 后的有效检测框排序：置信度从高到低，第 1 个最高；同分保留后端顺序。序号仅属于当前图像，超出数量时按“无裁剪目标时”处理。",
         "xVisibleWhen": {
           "outputCrop": [
             true
@@ -163,6 +163,20 @@
             true
           ]
         }
+      },
+      "onMissingCrop": {
+        "title": "无裁剪目标时",
+        "type": "string",
+        "enum": ["error", "skip"],
+        "default": "error",
+        "xOptionLabels": {
+          "error": "报错停止",
+          "skip": "跳过裁剪，继续检测"
+        },
+        "xEnabledWhen": {"outputCrop": [true]},
+        "description": "跳过时保留检测集合和叠加图，不生成裁剪图；依赖裁剪图的后续节点跳过本次执行。模型、参数和推理错误仍然报错。",
+        "xVisibleWhen": {"outputCrop": [true]},
+        "xValidateWhen": {"outputCrop": [true]}
       }
     },
     "required": [

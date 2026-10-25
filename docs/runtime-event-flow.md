@@ -17,6 +17,28 @@ ACCEPTED -> STARTING -> RUNNING -> COMPLETED
 `node.completed`、`node.failed`、`workflow.started/completed/failed`、
 `loop.iteration.started/completed`、`node.log`、`artifact.created` 和 Job 终态事件。
 
+## 执行失败与缺少业务输出
+
+算子抛出的普通 Python 异常和返回的失败结果均使当前工作流、外层调用及所属 Job 失败，
+连续运行也会退出；不默认跳过异常、重试算子或撤销已经发生的外部操作。算子提供的错误码保留；
+没有错误码的普通异常在节点、工作流和 Job 层统一为 `E_EXEC_FAILED`。
+`E_WORKER_CRASHED` 用于进程异常退出，不用普通业务异常冒充进程崩溃。
+
+成功算子允许省略其可选输出。依赖该输出的下游必需输入缺失时，即使其他输入已到达，
+仍跳过本次节点执行，发布 `node.skipped`；payload 的 `code=E_INPUT_NOT_PRODUCED`、
+`missingInputs` 列出未收到的输入端口，`ioSummary` 保留实际到达的输入且没有输出。
+该判断仅使用本次工作流调用的数据，之后有数据的调用正常执行，不重用先前输出。
+未连接的必填输入和上游缺失必填输出仍按契约校验，不属于本跳过策略；最终工作流必填输出也不放宽。
+If/Switch 未选中分支仍使用原来的 `E_BRANCH_NOT_SELECTED`，不与数据缺失混同。
+
+集合处理、形状测量、几何取点和结果写入的多选一对象入口，在编译时按明确且连线一致的
+处理对象或唯一业务连线细化必需输入。它们可以承接上游跳过，不能把“未产出”伪装为空集合
+或计数 0；真正产出的空集合仍执行原业务逻辑。其他可选端口的缺失语义不变。
+
+`node.failed`、`workflow.failed` 和向上抛出的异常 diagnostics 保留 TCP 单次事务的
+`tcpTransaction` 和检测归档的 `archiveProgress`。这也适用于算子已返回、随后发生输出校验失败或取消的情况：任务失败或
+取消不意味着此前的发送、ACK 或文件保存没有发生，不自动重放或回滚这些外部操作。
+
 ## 事件字段
 
 ```text

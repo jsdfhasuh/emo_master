@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from emo_master.core.project.snapshots import _parameters
-from emo_master.plugins.builtins._operator_modes import INPUT_CHOICES, MODE_ENTRIES, currentModeSchema
+from emo_master.plugins.builtins._operator_modes import INPUT_CHOICES, MODE_ENTRIES, currentModeSchema, requiredChoiceInput
 from emo_master.plugins.builtins.blur.operator import BlurOperator
 from emo_master.plugins.builtins.collection_sort.operator import CollectionSortOperator
 from emo_master.plugins.builtins.collection_select.operator import CollectionSelectOperator
@@ -104,3 +104,17 @@ def testBoundInactiveValuesFollowTheSameModeValidation():
     validateBoundValues({"mode": "mean", "sigmaColor": 0}, bindings, schema)
     with pytest.raises(VariableError):
         validateBoundValues({"mode": "bilateral", "sigmaColor": 0}, bindings, schema)
+
+
+@pytest.mark.parametrize('params,connected,dynamic,expected', [
+    ({}, {'detections', 'index'}, (), 'detections'),
+    ({'collectionType': 'detections'}, set(), (), 'detections'),
+    ({'collectionType': 'detections'}, {'blobs'}, (), None),
+    ({}, {'blobs', 'detections'}, (), None),
+    ({'collectionType': 'detections'}, {'blobs', 'detections'}, (), None),
+    ({'collectionType': ['invalid']}, {'detections'}, (), None),
+    ({'collectionType': 'unfinished'}, {'detections'}, ('collectionType',), 'detections'),
+])
+def testChoiceRequirementDoesNotGateOptionalControlsOrConflictingInputs(params, connected, dynamic, expected):
+    assert requiredChoiceInput('vision.collection.select', params, connected, dynamic) == expected
+    assert requiredChoiceInput('vision.math.integer_add', params, connected, dynamic) is None

@@ -46,6 +46,31 @@ def testDynamicOutOfRangeUsesExistingPolicy(behavior):
         assert result["error"]["code"] == "E_PARAM_INVALID"
 
 
+@pytest.mark.parametrize("port", ["detections", "blobs", "contours", "measurements", "lines", "circles", "matches"])
+@pytest.mark.parametrize("dynamic", [False, True])
+@pytest.mark.parametrize("behavior", ["empty", "error"])
+def testEmptyCollectionHonorsIndexPolicy(port, dynamic, behavior):
+    source = dict(detections=_detections(), blobs=_blobs(), **_newCollections())[port].toPayload()
+    source["items"] = []
+    inputs = {port: source, **({"index": 0} if dynamic else {})}
+    result = CollectionSelectOperator().executeNode(inputs,
+        {"mode": "index", "index": 0, "onOutOfRange": behavior}, {})
+    if behavior == "error":
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "E_PARAM_INVALID"
+        assert "size 0" in result["error"]["message"]
+    else:
+        assert result["status"] == "ok" and result["outputs"]["selectedCount"] == 0
+
+
+@pytest.mark.parametrize("mode", ["first", "last", "topK"])
+def testEmptyNonIndexSelectionStillSucceeds(mode):
+    source = DetectionCollection((), _detections().coordinateSpace).toPayload()
+    result = CollectionSelectOperator().executeNode({"detections": source},
+        {"mode": mode, "onOutOfRange": "error"}, {})
+    assert result["status"] == "ok" and result["outputs"]["selectedCount"] == 0
+
+
 def testSelectManifestMatchesFullRuntimePortContract():
     import emo_master.plugins.builtins.collection_select.operator as module
     manifest = json.loads(Path(module.__file__).with_name("manifest.json").read_text(encoding="utf-8"))

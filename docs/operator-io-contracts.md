@@ -804,7 +804,13 @@ Filter、Count、Sort、Select 都使用第 8 节的 exactly-one 七入口规则
 - Sort 只接受集合类型对应的字段白名单并使用稳定排序；缺少 circularity、label 等
   可选字段的项无论升序或降序都排在末尾。
 - Select 支持 `first/last/index/topK`，越界按 `onOutOfRange=empty|error` 处理；即使只
-  选择一项，输出仍为对应的集合类型。
+  选择一项，输出仍为对应的集合类型。`index` 模式对空集合也执行该策略（索引 0 仍越界）；
+  `first/last/topK` 的空集合保持成功、选中数量为 0。
+
+这些多选一入口，以及 Shape Measurement、Geometry Points、Result Writer 的对象入口，
+在编译时按明确且连线一致的处理对象或唯一业务输入连线细化必需输入；未选候选端口和
+辅助可选输入不改为必需。上游本次未产出该输入时沿用 Runner 的 `E_INPUT_NOT_PRODUCED`
+跳过语义，后续有数据可继续执行；有效空集合仍正常执行，未连接或输入冲突仍报错。
 
 ### 10.3 数值与渲染契约
 
@@ -914,6 +920,11 @@ Receive Once 同理通过 `messageTextEncoding` 可选输出 `text:string`。文
 `responseEncoding/messageEncoding` 的 DTO 存储形式完全独立，因此 DTO 使用 hex/base64
 时仍可按 UTF-8、ASCII 或 Latin-1 解码。非法文本字节返回 `E_RESULT_INVALID`。
 
+已完成传输后解码失败，节点的 `diagnostics.tcpTransaction` 保留 `action`、
+`outcome=COMPLETED`、`bytesSent`、`bytesReceived`、`automaticRetry=false`，并标记
+`phase=decode`。Receive Once 的 `bytesSent` 包含已发送 ACK，`bytesReceived` 是分帧后的
+业务数据字节数。这只确认传输已完成，不代表对端业务已执行；失败和取消都不自动重发。
+
 TCP 是字节流，没有天然消息边界。两个节点都要求显式选择 `newline`、`quoted`、`idle`
 或 `fixedLength`：newline 去除末尾 CRLF，quoted 保留完整外层引号，idle 在收到至少一个
 字节后以读超时作为边界，fixedLength 必须给出 `expectedBytes`。所有模式都强制最大消息
@@ -977,9 +988,23 @@ YOLO 从 1.3.0 起支持可选检测框裁剪：
   不能回源之后再重复相加同一个 ROI 偏移。
 - 原 `frame` 和所有检测几何仍属于 YOLO 输入图空间，不随裁剪输出改变；原图画框应继续
   使用该检测集合。`overlay` 仅用于显示，不用于测量。选择一个裁剪目标不删除其余检测框。
-- 启用裁剪但本次没有有效目标、或序号超出本次数量时，返回 `E_CROP_TARGET_NOT_FOUND`
-  和明确的序号/数量提示；无输出，不退回第一个目标、不沿用上次图像。关闭裁剪仍允许空检测成功。
-  所选框与输入 frame 的有效内容无交集时保留 Crop 的 `E_INPUT_SHAPE` 错误，不输出虚构图像。
+- 从 1.4.0 起，`onMissingCrop` 控制启用裁剪但本次没有有效目标、或序号超出本次数量时的行为。
+  默认 `error`（报错停止）保持已有工程行为：返回 `E_CROP_TARGET_NOT_FOUND` 和序号/数量提示，
+  不产生输出。显式选择 `skip`（跳过裁剪，继续检测）时，检测仍成功，保留 `detections`、`frame`
+  及已开启的 `overlay`，不产生 `croppedImage` / `croppedFrame`；`imageOutputMessages` 记录缺失原因。
+  两种策略均不退回第一个目标、不沿用上次图像。关闭裁剪仍允许空检测成功，此时不校验无关的裁剪参数。
+- 下游节点已连接的必需输入本次没有数据时，标记 `SKIPPED / E_INPUT_NOT_PRODUCED`，不执行其副作用；
+  即使其他输入（例如 Image Saver 的 `fileName`）已到达，也不会用旧裁剪图执行。后续调用有数据即可正常运行。
+  多选一对象入口按第 10.2 节细化必需性，其余可选输入缺失不阻止节点运行；工作流声明为必填的最终输出仍必须产生，否则仍失败。
+- `skip` 只处理缺少裁剪目标，不忽略模型加载、参数、推理或写入错误。所选框与输入 frame 的有效内容
+  无交集时保留 Crop 的 `E_INPUT_SHAPE` 错误，不输出虚构图像。已有工程不自动改参数；连续检测需在
+  YOLO 的“输出裁剪图”下将“无裁剪目标时”显式设为“跳过裁剪，继续检测”。
+
+`vision.io.detection_archive` 在裁剪、保存或取消中保留 `diagnostics.archiveProgress`：
+`cropPaths`、`savedCropCount`、`overlayPath` 仅记录本次已确认保存的文件，`stage` 标识
+`crop/saveCrop/saveOverlay/completed`，逐目标阶段带一基 `detectionIndex` 和 `detectionId`。
+原始错误码和取消异常保留，不自动删除已保存文件，也不补执行剩余保存；成功后才收到取消时
+同样保留已完成保存的事实。未检测到目标和冷却期内仍不写文件，不附带先前调用的保存记录。
 
 ### 10.8 Designer 的对象、模式和条件引脚
 

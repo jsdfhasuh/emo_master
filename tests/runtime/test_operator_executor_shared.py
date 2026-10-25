@@ -503,3 +503,39 @@ def testCancellationAfterReturnRetainsOnlyThisInvocationSqliteReceipt(staleRecei
     if not staleReceipt:
         assert failure.value.diagnostics["sqliteReceipt"]["status"] == "COMMITTED"
     executor.closeSession(context(), failure.value)
+
+
+@pytest.mark.parametrize('operatorId,key,receipt', [
+    ('communication.tcp.client', 'tcpTransaction', {'outcome': 'COMPLETED', 'bytesSent': 1}),
+    ('communication.tcp.receive_once', 'tcpTransaction', {'outcome': 'COMPLETED', 'bytesSent': 3}),
+    ('vision.io.detection_archive', 'archiveProgress', {'savedCropCount': 1, 'cropPaths': ['crop.png']}),
+])
+@pytest.mark.parametrize('failureKind', ['cancel', 'output'])
+@pytest.mark.parametrize('formal', [False, True])
+def testPostExecutionFailureRetainsConfirmedSideEffects(operatorId, key, receipt, failureKind, formal):
+    token = CancellationToken()
+    class Completed(Echo):
+        def executeNode(self, inputs, params, runtime):
+            if failureKind == 'cancel':
+                token.cancel()
+            return dict(status='ok', outputs={'value': 'invalid' if failureKind == 'output' else 1},
+                        diagnostics={key: dict(receipt)})
+    node = nodeFor(Completed, operatorId=operatorId)
+    registry = {operatorId: Completed}
+    errorType = CancellationRequested if failureKind == 'cancel' else WorkflowExecutionError
+    if formal:
+        events = []
+        runner = WorkflowRunner(projectFor(node), registry, eventPublisher=lambda **event: events.append(event))
+        with pytest.raises(errorType) as failure:
+            runner.run('main', {'value': 1}, RunContext.root('owner', 'main'), token)
+        failed = next(event for event in events if event['eventType'] == 'node.failed')
+        assert failed['payload']['diagnostics'][key] == receipt
+        workflowFailed = next(event for event in events if event['eventType'] == 'workflow.failed')
+        assert workflowFailed['payload']['diagnostics'][key] == receipt
+    else:
+        executor = OperatorExecutor(registry)
+        with pytest.raises(errorType) as failure:
+            executor.execute(node, {'value': 1}, context(), token)
+        executor.closeSession(context(), failure.value)
+    assert failure.value.diagnostics[key] == receipt
+    assert getattr(failure.value, 'code') == ('E_CANCELLED' if failureKind == 'cancel' else 'E_OUTPUT_TYPE')

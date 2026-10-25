@@ -53,6 +53,13 @@ class ConfigurationCoordinator:
 
     def _candidate(self, request):
         self._check(request)
+        if request.get('operation') == 'loadLocalProject':
+            # The local operator explicitly selected a complete on-disk project.
+            # Remote writes still require their ordinary field selection.
+            if not request.get('sourcePath') or request.get('replacementPolicy') != 'stopAffected':
+                raise ConfigurationError('E_CONFIG_PROJECT_REPLACEMENT', 'local loading requires a source and explicit replacement policy')
+            from emo_master.core.project.models import ProjectDocument
+            return ProjectDocument.model_validate(request['localPayload']).model_dump(mode='json')
         candidate = selectedCandidate(self.current["payload"], request["localPayload"], request["selectedPaths"])
         if candidate["project"]["projectId"] != self.current["payload"]["project"]["projectId"]:
             from emo_master.core.project.models import ProjectDocument
@@ -71,7 +78,7 @@ class ConfigurationCoordinator:
             self.discard(prepared)
         return candidate
 
-    def start(self, request):
+    def start(self, request, *, synchronous=False):
         request = deepcopy(request)
         requestId = request["requestId"]
         if not isinstance(requestId, str) or not requestId or len(requestId) > 160:
@@ -107,10 +114,15 @@ class ConfigurationCoordinator:
                 state="VALIDATING", requestId=requestId, runtimeInstanceId=self.runtimeInstanceId))
             self.requests[requestId] = entry
             self.active = requestId
-            self.thread = Thread(target=self._write, args=(request, candidate, entry),
-                                 name="project-config-writer", daemon=True)
-            self.thread.start()
-            return deepcopy(entry["status"])
+            if not synchronous:
+                self.thread = Thread(target=self._write, args=(request, candidate, entry),
+                                     name="project-config-writer", daemon=True)
+                self.thread.start()
+                return deepcopy(entry["status"])
+        # A stopped local directory update already owns the project lock and
+        # must learn whether commit occurred before its file rollback can finish.
+        self._write(request, candidate, entry)
+        return self.status(requestId)
 
     def _retireRequests(self):
         if self.current is None:
@@ -186,11 +198,11 @@ class ConfigurationCoordinator:
         transition = None
         initial = request.get('operation') == 'initialize'
         try:
+            source = {'sourcePath': request['sourcePath']} if request.get('sourcePath') else {}
             if self.transition is not None and request.get("replacementPolicy", "reject") != "reject":
                 entry["status"]["state"] = "WAITING"
-                transition = self.transition(candidate, entry["cancelled"], request["replacementPolicy"])
-            prepared = (self.prepare(candidate, entry['cancelled'], sourcePath=request['sourcePath'])
-                        if initial else self.prepare(candidate, entry["cancelled"]))
+                transition = self.transition(candidate, entry["cancelled"], request["replacementPolicy"], **source)
+            prepared = self.prepare(candidate, entry['cancelled'], **source)
             with self.lock:
                 if entry["cancelled"].is_set():
                     entry["status"].update(state="CANCELLED", code="E_CONFIG_CANCELLED")

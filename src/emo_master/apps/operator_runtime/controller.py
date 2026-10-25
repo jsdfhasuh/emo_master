@@ -98,53 +98,96 @@ class ProductionRuntime:
         return presentationForWorkflow(self.document, workflowId)
 
     @serialized
-    def load(self, path):
+    def load(self, path, *, restoreOnline=False):
         from emo_master.core.project.files import resolveProjectFile
-        online = self.runtime.projectConfiguration.current
-        if online is not None:
-            selected = resolveProjectFile(Path(path).resolve(strict=True)).resolve()
-            if selected != Path(online["sourcePath"]).resolve():
-                raise ValueError("E_CONFIG_ACTIVE: online project replacement requires explicit configuration write")
-            if self.runtime.onlineRecoveryError or self.runtime.projectConfiguration.publicationError:
-                raise ValueError("E_CONFIG_NOT_READY: " + (self.runtime.onlineRecoveryError
-                    or self.runtime.projectConfiguration.publicationError))
-        self._releaseAll()
-        root = Path(path).resolve(strict=True)
-        root = root if root.is_dir() else root.parent
-        if self.projectOwner is None or self.projectOwner.root != root:
-            nextOwner = DirectoryOwner(root).acquire()
-            if self.projectOwner is not None:
-                self.projectOwner.close()
+        from emo_master.core.project.migration import loadProjectPayload, migrateProjectPayload
+        from emo_master.core.project.models import ProjectDocument
+        with self.runtime._projectStateLock:
+            online = self.runtime.projectConfiguration.current
+            restore = restoreOnline and online is not None
+            selected = (Path(online['sourcePath']).resolve() if restore
+                        else resolveProjectFile(Path(path).resolve(strict=True)).resolve())
+            self._releaseAll()
+            previousOwner = self.projectOwner
+            nextOwner = (previousOwner if previousOwner is not None and previousOwner.root == selected.parent
+                         else DirectoryOwner(selected.parent).acquire())
+            receipt = None
+            try:
+                if online is None:
+                    reply = self.runtime.LoadProject(pb.LoadProjectRequest(project_path=str(selected)), None)
+                    if not reply.ok:
+                        raise ValueError(reply.message)
+                elif restore:
+                    if self.runtime.onlineRecoveryError or self.runtime.projectConfiguration.publicationError:
+                        raise ValueError('E_CONFIG_NOT_READY: ' + (self.runtime.onlineRecoveryError
+                            or self.runtime.projectConfiguration.publicationError))
+                else:
+                    document = ProjectDocument.model_validate(migrateProjectPayload(loadProjectPayload(selected)))
+                    receipt = self._writeLocalConfiguration(document, selected)
+            except BaseException:
+                if nextOwner is not previousOwner:
+                    nextOwner.close()
+                if online is None:
+                    self.document = None
+                    self.sessions.clear()
+                    if previousOwner is not None:
+                        previousOwner.close()
+                    self.projectOwner = None
+                raise
+            if previousOwner is not None and previousOwner is not nextOwner:
+                previousOwner.close()
             self.projectOwner = nextOwner
-        try:
-            if online is None:
-                reply = self.runtime.LoadProject(pb.LoadProjectRequest(project_path=str(Path(path).resolve())), None)
-                if not reply.ok:
-                    raise ValueError(reply.message)
-        except BaseException:
-            self.document = None
-            self.sessions.clear()
-            self.projectOwner.close()
-            self.projectOwner = None
-            raise
+            self._acceptLoadedDocument()
+            self._checkPublication(receipt)
+            return self.document
+
+    def _acceptLoadedDocument(self):
         self.document = self.runtime.loadedDocument
         self.sessions = {key: WorkflowSession() for key in self.document.startupWorkflows()}
-        return self.document
+
+    def _writeLocalConfiguration(self, document, source):
+        configuration = self.runtime.projectConfiguration
+        snapshot = configuration.snapshot()
+        self.runtime.jobSupervisor.assertMutationAllowed()
+        receipt = configuration.start(dict(operation='loadLocalProject', requestId=uuid4().hex,
+            expectedRuntimeInstanceId=self.runtime.runtimeInstanceId, expectedRevision=snapshot['documentRevision'],
+            localPayload=document.model_dump(mode='json'), sourcePath=str(source), replacementPolicy='stopAffected'),
+            synchronous=True)
+        if receipt['state'] != 'COMMITTED':
+            raise ValueError(f"{receipt.get('code', 'E_CONFIG_WRITE')}: {receipt.get('message', receipt['state'])}")
+        return receipt
+
+    @staticmethod
+    def _checkPublication(receipt):
+        if receipt and (receipt.get('publicationError') or receipt.get('cleanupError')):
+            raise RuntimeError('E_CONFIG_NOT_READY: configuration committed; ' +
+                               (receipt.get('publicationError') or receipt['cleanupError']))
 
     @serialized
     def installPackage(self, package):
         from emo_master.core.project.runtime_package import installRuntimePackage
-        if self.runtime.projectConfiguration.current is not None:
-            raise ValueError("E_CONFIG_ACTIVE: managed online project updates require prepared replacement; no files changed")
-        self._releaseAll()
-        if self.projectOwner is None:
-            raise ValueError("load the destination project before updating")
-        root = self.projectOwner.root
-        projectFile = self.runtime.loadedProjectFile
-        installRuntimePackage(package, root, owner=self.projectOwner,
-            registry=self.runtime.pluginScanResult.activeOperators,
-            deviceTypes=self.runtime.pluginScanResult.deviceTypes, projectFile=projectFile)
-        return self.load(projectFile or root)
+        with self.runtime._projectStateLock:
+            self._releaseAll()
+            if self.projectOwner is None:
+                raise ValueError("load the destination project before updating")
+            configuration = self.runtime.projectConfiguration
+            if configuration.active:
+                raise ValueError('E_CONFIG_WRITER_BUSY: another configuration write is pending')
+            root = self.projectOwner.root
+            projectFile = self.runtime.loadedProjectFile
+            receipt = None
+            def activate(document):
+                nonlocal receipt
+                receipt = self._writeLocalConfiguration(document, projectFile)
+            installRuntimePackage(package, root, owner=self.projectOwner,
+                registry=self.runtime.pluginScanResult.activeOperators,
+                deviceTypes=self.runtime.pluginScanResult.deviceTypes, projectFile=projectFile,
+                activate=activate if configuration.current is not None else None)
+            if receipt is None:
+                return self.load(projectFile or root)
+            self._acceptLoadedDocument()
+            self._checkPublication(receipt)
+            return self.document
 
     def start(self, workflowId=None):
         with self.operationLock:
@@ -208,6 +251,7 @@ class ProductionRuntime:
     def status(self, workflowId=None):
         with self.operationLock:
             self._synchronizeOnlineDocument()
+            revision = (self.runtime.projectConfiguration.current or {}).get('documentRevision')
             if self.document is None:
                 return dict(state="EMPTY", jobId="", message="", canStart=False, canLoad=True, workflows={},
                             runtimeConnected=not self.closed)
@@ -217,12 +261,14 @@ class ProductionRuntime:
                 if workflowId is None:
                     state["workflows"] = {key: dict(state)}
                 state["pagePublicationRevision"] = self._pagePublicationRevision()
+                state['documentRevision'] = revision
                 state["runtimeConnected"] = not self.closed
                 return state
             rows = {key: self._workflowStatus(key) for key in self.sessions}
             states = {row["state"] for row in rows.values()}
             state = next((s for s in ("FAULT", "STOPPING", "RUNNING", "READY") if s in states), "READY")
             return dict(state=state, jobId="", workflows=rows,
+                documentRevision=revision,
                 runtimeConnected=not self.closed,
                 pagePublicationRevision=self._pagePublicationRevision(),
                 message="\n".join(f"{row['name']}: {row['message']}" for row in rows.values() if row["message"]),

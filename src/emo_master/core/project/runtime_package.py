@@ -276,7 +276,7 @@ def _extract(package, stage, registry, deviceTypes=None):
 
 
 def installRuntimePackage(package: Path, destination: Path, *, registry=None, deviceTypes=None,
-                          owner=None, projectFile=None) -> ProjectDocument:
+                          owner=None, projectFile=None, activate=None) -> ProjectDocument:
     """Normal failures restore replaced assets; crashes leave the sibling backup for repair."""
     registry = trustedRegistry() if registry is None else registry
     deviceTypes = trustedDeviceTypes() if deviceTypes is None else deviceTypes
@@ -340,6 +340,10 @@ def installRuntimePackage(package: Path, destination: Path, *, registry=None, de
                     target.parent.mkdir(parents=True, exist_ok=True)
                     _replaceInstalledFile(stage / name, target)
                     replaced.append(targetName)
+                if activate is not None:
+                    # The local Runtime raises only before durable configuration
+                    # commit, so ordinary activation failures restore these files.
+                    activate(document)
             except BaseException:
                 for name in reversed(replaced):
                     old = backup / name

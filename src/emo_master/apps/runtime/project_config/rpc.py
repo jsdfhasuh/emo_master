@@ -93,9 +93,9 @@ class ProjectConfigurationRpcMixin:
                 if pin:
                     runtime.projectResourceTransfers.unpin(pin)
 
-    def _transitionProjectConfiguration(self, payload, cancelled, policy):
+    def _transitionProjectConfiguration(self, payload, cancelled, policy, *, sourcePath=None):
         from .transition import DeviceTransition
-        return DeviceTransition(self, payload, cancelled, policy)
+        return DeviceTransition(self, payload, cancelled, policy, sourcePath=sourcePath)
 
     def _configurationSourcePath(self, payload):
         runtime: Any = self
@@ -106,7 +106,7 @@ class ProjectConfigurationRpcMixin:
         identity = sha256(payload["project"]["projectId"].encode("utf-8")).hexdigest()
         return str(runtime.workspaceRoot.parent / "online-projects" / identity / "project.emoproj")
 
-    def _validateProjectConfiguration(self, payload, *, checkAdmission=True):
+    def _validateProjectConfiguration(self, payload, *, checkAdmission=True, sourcePath=None):
         runtime: Any = self
         document = ProjectDocument.model_validate(payload)
         with runtime._projectStateLock:
@@ -133,7 +133,7 @@ class ProjectConfigurationRpcMixin:
             if checkAdmission:
                 self._checkConfigurationAdmission(payload)
         from emo_master.core.project.runtime_directory import prepareRuntimeProject
-        prepared = prepareRuntimeProject(document, Path(self._configurationSourcePath(payload)).parent,
+        prepared = prepareRuntimeProject(document, Path(sourcePath or self._configurationSourcePath(payload)).parent,
             runtime.pluginScanResult.activeOperators, deviceTypes=runtime.pluginScanResult.deviceTypes,
             resourcePaths=runtime.projectResourceTransfers.resolve(document),
             allowMissingRoot=True,
@@ -217,27 +217,28 @@ class ProjectConfigurationRpcMixin:
             raise
 
     def _prepareProjectConfiguration(self, payload, cancelled, *, sourcePath=None):
-        if sourcePath is not None:
-            return self._prepareInitialProjectConfiguration(payload, cancelled, sourcePath)
         runtime: Any = self
+        if sourcePath is not None and runtime.projectConfiguration.current is None:
+            return self._prepareInitialProjectConfiguration(payload, cancelled, sourcePath)
         document = ProjectDocument.model_validate(payload)
-        sourcePath = self._configurationSourcePath(payload)
-        if sourcePath != runtime.projectConfiguration.current["sourcePath"]:
-            Path(sourcePath).parent.mkdir(parents=True, exist_ok=True)
+        selectedSource = sourcePath or self._configurationSourcePath(payload)
+        if selectedSource != runtime.projectConfiguration.current["sourcePath"]:
+            Path(selectedSource).parent.mkdir(parents=True, exist_ok=True)
         pin = runtime.projectResourceTransfers.pin(document,
-            Path(sourcePath).parent, cancelled=cancelled)
+            Path(selectedSource).parent, cancelled=cancelled)
         try:
-            prepared = self._preparePinnedProjectConfiguration(payload, cancelled)
+            prepared = self._preparePinnedProjectConfiguration(payload, cancelled,
+                **({'sourcePath': sourcePath} if sourcePath is not None else {}))
             prepared.resourcePin = pin
-            prepared.sourcePath = sourcePath
+            prepared.sourcePath = selectedSource
             return prepared
         except BaseException:
             runtime.projectResourceTransfers.unpin(pin)
             raise
 
-    def _preparePinnedProjectConfiguration(self, payload, cancelled):
+    def _preparePinnedProjectConfiguration(self, payload, cancelled, *, sourcePath=None):
         runtime: Any = self
-        document, prepared = self._validateProjectConfiguration(payload)
+        document, prepared = self._validateProjectConfiguration(payload, sourcePath=sourcePath)
         if cancelled.is_set():
             raise ConfigurationError("E_CONFIG_CANCELLED", "configuration preparation cancelled")
         from .resources import prepareResources, discardResources
@@ -246,7 +247,8 @@ class ProjectConfigurationRpcMixin:
         self._reclaimConfigurationResources()
         prepared, resources = prepareResources(prepared, runtime.pluginScanResult.activeOperators,
             runtime.pluginScanResult.deviceTypes, root, cancelled, previous=None if projectChanged else runtime.loadedDocument,
-            raw=document, previousRaw=ProjectDocument.model_validate(runtime.projectConfiguration.current["payload"]),
+            raw=document, previousRaw=(ProjectDocument.model_validate(runtime.projectConfiguration.current["payload"])
+                                       if sourcePath is None else None),
             journal=runtime.configurationResourceJournal)
         try:
             adapters = runtime.deviceManager.prepareReplacement(prepared, force=True) if projectChanged else runtime.deviceManager.prepareReplacement(prepared)

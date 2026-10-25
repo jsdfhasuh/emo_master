@@ -6,7 +6,7 @@ from .store import ConfigurationError
 
 
 class DeviceTransition:
-    def __init__(self, runtime, payload, cancelled, policy):
+    def __init__(self, runtime, payload, cancelled, policy, *, sourcePath=None):
         if policy not in {"stopAffected", "drainAffected"}:
             raise ConfigurationError("E_CONFIG_POLICY", "unknown replacement policy")
         self.runtime, self.cancelled = runtime, cancelled
@@ -15,8 +15,8 @@ class DeviceTransition:
         self.communicationListening = False
         self.configuration = runtime.projectConfiguration
         self.projectChanged = payload["project"]["projectId"] != self.configuration.current["payload"]["project"]["projectId"]
-        _document, prepared = runtime._validateProjectConfiguration(payload, checkAdmission=False)
-        if runtime._supportsCycleChange(payload):
+        _document, prepared = runtime._validateProjectConfiguration(payload, checkAdmission=False, sourcePath=sourcePath)
+        if sourcePath is None and runtime._supportsCycleChange(payload):
             return
         if runtime.operatorDebugManager.ownsResources() or runtime.livePreviewManager.hasConfigurationSession():
             raise ConfigurationError("E_CONFIG_REQUIRES_STOP", "close diagnostic sessions before automatic transition")

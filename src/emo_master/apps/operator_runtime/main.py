@@ -73,8 +73,10 @@ class OperatorWindow(QWidget):
 
         def initialize():
             self.controller = runtimeFactory(dataRoot)
-            if self.projectPath:
+            if projectPath:
                 self.controller.load(self.projectPath)
+            elif self.projectPath or self.controller.runtime.projectConfiguration.current is not None:
+                self.controller.load(self.projectPath, restoreOnline=True)
             return self.controller.status()
         self.launch("loaded", initialize)
 
@@ -157,7 +159,6 @@ class OperatorWindow(QWidget):
     def loadProject(self, path):
         if self.closing or self._deferCommand(lambda: self.loadProject(path)) or not self.state["canLoad"]:
             return
-        self.projectPath = str(path)
         self._removePages()
         def load():
             self._closeSession()
@@ -418,6 +419,7 @@ class OperatorWindow(QWidget):
         names = dict(EMPTY="未加载工程", READY="就绪", RUNNING="检测中", STOPPING="停止中", FAULT="故障")
         if not self.error:
             self.message.setText(names[self.state["state"]] +
+                                 (f" · 配置版本 {self.state['documentRevision']}" if self.state.get('documentRevision') else '') +
                                  ("\n" + self.state["message"] if self.state["state"] == "FAULT" else ""))
         self._updateBasicPages()
         self._controls()
@@ -437,6 +439,11 @@ class OperatorWindow(QWidget):
             self.error = error
             self.message.setText("操作失败：" + error)
             self.closing = False
+            if kind == 'loaded' and self.controller and self.controller.document:
+                self.projectPath = self.controller.runtime.loadedProjectFile
+                self.projectLabel.setText(self.controller.document.project.name)
+                self.projectLabel.setToolTip(self.projectPath)
+                self._showPages()
             if kind == "status":
                 self._updateBasicPages(connected=False, connectionDetail=error)
             if self.controller:
@@ -527,14 +534,15 @@ def main(arguments=None):
     actions.add_argument("--install-package", type=Path, metavar="PACKAGE", help="Install/update an offline project directory")
     parser.add_argument("--plugin-root", type=Path, action="append", help="Trusted plugin root; may repeat")
     args = parser.parse_args(arguments)
-    if args.export_package or args.install_package:
-        if args.project is None or args.check:
-            parser.error("package actions require an explicit project directory and cannot use --check")
-        from emo_master.core.project.runtime_package import buildRuntimePackage, installRuntimePackage
+    if args.export_package or args.install_package or args.check:
         from emo_master import __version__
         from emo_master.core.plugin.registry import PluginRegistry
         from emo_master.apps.runtime.grpc_server.service import RuntimeService
         scan = PluginRegistry(__version__).scanRoots(args.plugin_root or [RuntimeService._builtinsRoot()])
+    if args.export_package or args.install_package:
+        if args.project is None or args.check:
+            parser.error("package actions require an explicit project directory and cannot use --check")
+        from emo_master.core.project.runtime_package import buildRuntimePackage, installRuntimePackage
         if args.export_package:
             print(buildRuntimePackage(args.project, args.export_package, registry=scan.activeOperators, deviceTypes=scan.deviceTypes))
         else:
@@ -544,12 +552,20 @@ def main(arguments=None):
     if args.check:
         if args.project is None:
             parser.error("--check requires an explicit project")
-        runtime = ProductionRuntime(args.data_root, pluginRootPaths=tuple(map(str, args.plugin_root)) if args.plugin_root else None)
-        try:
-            document = runtime.load(args.project)
-            print(f"Project: {document.project.name}; mode: {runtime.settings.mode}; validation passed; no Job started.")
-        finally:
-            runtime.close()
+        from emo_master.apps.operator_runtime.controller import defaultDataRoot
+        from emo_master.core.project.files import resolveProjectFile
+        from emo_master.core.project.migration import loadProjectPayload, migrateProjectPayload
+        from emo_master.core.project.models import ProjectDocument, ProductionSettings
+        from emo_master.core.project.runtime_directory import prepareRuntimeProject
+        from emo_master.core.workflow.compiler import WorkflowCompiler
+        source = resolveProjectFile(args.project.resolve(strict=True))
+        document = ProjectDocument.model_validate(migrateProjectPayload(loadProjectPayload(source)))
+        dataRoot = args.data_root or defaultDataRoot()
+        prepared = prepareRuntimeProject(document, source.parent, scan.activeOperators, deviceTypes=scan.deviceTypes,
+            protectedPaths=(dataRoot / 'runtime.sqlite3', dataRoot / 'logs'))
+        WorkflowCompiler(scan.activeOperators, deviceTypes=scan.deviceTypes).compile(prepared)
+        settings = document.production or ProductionSettings()
+        print(f"Project: {document.project.name}; mode: {settings.mode}; validation passed; no Job started.")
         return 0
     app = QApplication.instance() or QApplication([])
     window = OperatorWindow(args.project, dataRoot=args.data_root,

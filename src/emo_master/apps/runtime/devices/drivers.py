@@ -3,12 +3,13 @@ import importlib
 
 from .imv_host import ManagedImv
 from .simulated import SimulatedCamera
+from .rtsp import ManagedRtsp
 from .slmp import ManagedSlmp
 from .tcp import ManagedTcpServer, ManagedTcpClientOnce, ManagedTcpReceiveOnce
 
 
 BUILTINS = {f"{driver.__module__}:{driver.__name__}": driver
-            for driver in (ManagedImv, SimulatedCamera, ManagedSlmp,
+            for driver in (ManagedImv, SimulatedCamera, ManagedRtsp, ManagedSlmp,
                            ManagedTcpServer, ManagedTcpClientOnce, ManagedTcpReceiveOnce)}
 
 

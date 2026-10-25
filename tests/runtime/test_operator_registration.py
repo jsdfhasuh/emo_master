@@ -68,6 +68,7 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.io.image_batch_loader",
         "vision.io.video_loader",
         "vision.io.rtsp_camera",
+        "vision.io.rtsp_capture",
         "communication.camera.hikvision_audio",
         "vision.io.file_list",
         "vision.io.image_saver",
@@ -104,7 +105,7 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.collection.number_pair",
     } <= operatorIds
     assert "vision.io.simulated_camera" in operatorIds
-    assert len(operatorIds) == 77
+    assert len(operatorIds) == 78
     assert list(rejectedReply.rejected) == []
 
 

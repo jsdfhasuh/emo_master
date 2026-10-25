@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "1.1",
+  "driverApiVersion": "1.1",
+  "deviceTypeId": "device.camera.rtsp",
+  "version": "1.0.0",
+  "displayName": "RTSP\u7f51\u7edc\u76f8\u673a",
+  "category": "\u76f8\u673a",
+  "iconKey": "camera",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "0.x",
+  "platforms": ["windows", "linux"],
+  "driverEntry": "emo_master.apps.runtime.devices.rtsp:ManagedRtsp",
+  "executionLocation": "io_thread",
+  "operationScheduling": "serial",
+  "connectionLifetime": "persistent",
+  "connectionSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {
+      "rtspUrl": {"title": "RTSP\u5730\u5740", "type": "string", "default": "", "minLength": 1,
+        "pattern": "(?i)^rtsps?://[^/@?#\\s]+(?:/[^?#\\s]*)?(?:\\?[^#\\s]*)?$", "xDeviceIdentity": true,
+        "xResourcePurpose": "device_address"},
+      "username": {"title": "\u7528\u6237\u540d", "type": "string", "default": "admin"},
+      "password": {"title": "\u5bc6\u7801", "type": "string", "default": "", "xWidget": "password"},
+      "passwordEnv": {"title": "\u5bc6\u7801\u73af\u5883\u53d8\u91cf", "type": "string", "default": "", "pattern": "^[^=\\u0000]*$"},
+      "openTimeoutMs": {"title": "\u8fde\u63a5\u8d85\u65f6", "type": "integer", "minimum": 100, "maximum": 60000,
+        "default": 5000, "xUnit": "ms", "xAdvanced": true},
+      "readTimeoutMs": {"title": "\u89e3\u7801\u53d6\u5e27\u8d85\u65f6", "type": "integer", "minimum": 100, "maximum": 60000,
+        "default": 1000, "xUnit": "ms", "xAdvanced": true},
+      "maxFrameBytes": {"title": "\u5355\u5e27\u5185\u5b58\u4e0a\u9650", "type": "integer", "minimum": 1024, "maximum": 134217728,
+        "default": 33554432, "xUnit": "bytes", "xAdvanced": true}
+    },
+    "required": ["rtspUrl", "openTimeoutMs", "readTimeoutMs", "maxFrameBytes"]
+  },
+  "defaultsSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {
+      "colorMode": {"title": "\u989c\u8272\u6a21\u5f0f", "type": "string", "enum": ["color", "grayscale"], "default": "color",
+        "xOptionLabels": {"color": "\u5f69\u8272", "grayscale": "\u7070\u5ea6"}},
+      "maxFrameAgeMs": {"title": "\u5e27\u6700\u5927\u7f13\u5b58\u65f6\u957f", "type": "integer", "minimum": 1, "maximum": 60000,
+        "default": 1000, "xUnit": "ms"}
+    },
+    "required": ["colorMode", "maxFrameAgeMs"]
+  },
+  "policiesSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {
+      "connect": {"title": "\u8fde\u63a5\u7b56\u7565", "type": "string", "enum": ["on_first_use", "on_project_open", "on_project_run", "manual"], "default": "on_first_use"},
+      "release": {"title": "\u91ca\u653e\u7b56\u7565", "type": "string", "enum": ["idle_timeout", "on_project_close", "when_unused", "manual"], "default": "idle_timeout"},
+      "idleTimeoutMs": {"title": "\u7a7a\u95f2\u91ca\u653e\u65f6\u957f", "type": "integer", "minimum": 1, "maximum": 86400000, "default": 5000, "xUnit": "ms", "xAdvanced": true},
+      "deviceWaitTimeoutMs": {"title": "\u6392\u961f\u8d85\u65f6", "type": "integer", "minimum": 1, "maximum": 600000, "default": 5000, "xUnit": "ms", "xAdvanced": true},
+      "operationTimeoutMs": {"title": "\u64cd\u4f5c\u8d85\u65f6", "type": "integer", "minimum": 1, "maximum": 600000, "default": 10000, "xUnit": "ms", "xAdvanced": true}
+    },
+    "required": ["connect", "release", "idleTimeoutMs", "deviceWaitTimeoutMs", "operationTimeoutMs"]
+  },
+  "overridePaths": ["colorMode", "maxFrameAgeMs"],
+  "dynamicPaths": ["colorMode", "maxFrameAgeMs"],
+  "nextCyclePaths": ["colorMode", "maxFrameAgeMs"],
+  "capabilities": ["capture"],
+  "controlCapabilities": ["connect", "disconnect", "maintenance", "resume", "recover", "test_connection"],
+  "actionSchemas": {"capture": {"type": "object", "properties": {}, "additionalProperties": false}}
+}

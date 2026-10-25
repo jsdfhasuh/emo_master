@@ -40,6 +40,13 @@ class DeviceOperationContext:
     source: dict = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class DeviceCaptureResult:
+    """An owned image and acquisition facts, published through the FrameStore."""
+    image: object
+    metadata: dict = field(default_factory=dict)
+
+
 class DeviceDriverProtocol(Protocol):
     def bindRuntime(self, context: DeviceRuntimeContext) -> None: ...
     @staticmethod

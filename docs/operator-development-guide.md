@@ -4,7 +4,7 @@
 
 最新核对日期：**2026-10-25**。本轮整理的源码基线为 `3ebc90954d6514b4e5681eaf7b57812a63d23461`，已包含编译器、执行器、TCP/归档诊断、PatchCore、独立 Runtime 和 Designer 浮层修改。配套文档、可执行示例测试及本轮验证记录随文档提交入库，详见 [工作区整理与验证记录](testing/2026-10-25-workspace-delivery.md)。源码入库不代表已有 EXE 已更新，也不等于真实设备或现场验收通过。
 
-完整算子盘点见 [当前算子目录](operator-catalog.md)。本轮扫描仍为 **77 个内置算子、54 个入口源文件、8 个托管设备算子、6 种内置设备类型**。数量没有变化，但行为与参数已有更新，不能只用注册数量判断文档是否过期。
+完整历史盘点见 [算子目录](operator-catalog.md)。2026-10-25 新增 RTSP 托管采集后为 **78 个内置算子、55 个入口源文件、9 个托管设备算子、7 种内置设备类型**。RTSP 的兼容边界和使用方式见 [RTSP 托管相机](guides/rtsp-managed-camera.md)；下文历史验证次数不代表新增实现已经通过同一批验收。
 
 ### 本轮变化
 
@@ -58,7 +58,7 @@ plugin root/**/device_types/*.json
 
 ## 2. 从已有算子选参考
 
-以下路径均相对 `src/emo_master/plugins/builtins`，各组互不重复，覆盖本次全部 77 个 manifest。
+以下路径均相对 `src/emo_master/plugins/builtins`，各组互不重复，覆盖当前全部 78 个 manifest。
 
 | 类别 | 数量 | 目录 | 主要开发关注点 |
 | --- | --- | --- | --- |
@@ -74,7 +74,7 @@ plugin root/**/device_types/*.json
 | 模型推理 | 2 | yolo_inference、patchcore_inference | YOLO 1.4.0 可选裁剪、PatchCore 1.1.0 高亮、资源与生命周期、原始判定和显示分离 |
 | 文件/数据库输出 | 4 | image_saver、detection_archive、result_writer、sqlite_writer | 覆盖规则、文件名、写入回执、部分完成与取消边界 |
 | 独立网络设备 I/O | 2 | rtsp_camera、hikvision_audio | 当前没有设备槽；显式一次性连接/动作、取消、未知结果不重试 |
-| Runtime 托管设备 | 8 | simulated_camera、huaray_camera、plc_slmp_read、plc_slmp_write、tcp_client、tcp_receive_once、tcp_session、tcp_session_send | 描述符、设备槽、静态 selector、周期、proxy、调度、释放 |
+| Runtime 托管设备 | 9 | simulated_camera、huaray_camera、rtsp_capture、plc_slmp_read、plc_slmp_write、tcp_client、tcp_receive_once、tcp_session、tcp_session_send | 描述符、设备槽、静态 selector、周期、proxy、调度、释放 |
 | 报文构造/验证 | 3 | coordinate_message_format、gateway_coordinate_format、gateway_ack_validate | 只处理数据，不拥有 socket |
 
 同族算子可共享一个 Python 文件；manifest 的 entry 才决定实现，不是每个目录都必须有 operator.py。histogram 还继承 `_intensity_operators` 中的实现，查看 entry 后应继续跟踪基类。
@@ -83,7 +83,7 @@ Loop、Subflow、While、Dispatch、Join、工作流输入输出属于编译器/
 
 ## 3. 完整的纯计算算子示例
 
-下面实现一个“输入值乘固定系数”的新算子。它是开发模板，**本文不会自动把它安装进内置目录**，因此不计入上述 77 个。
+下面实现一个“输入值乘固定系数”的新算子。它是开发模板，**本文不会自动把它安装进内置目录**，因此不计入上述 78 个。
 
 目录：
 
@@ -441,7 +441,7 @@ result = runtimeContext["executeDevice"](
 
 相机使用 `image, descriptor = runtimeContext["captureDevice"]("camera")`；已合成工作参数从 `runtimeContext["deviceParameters"][slot]` 读取。不能返回 SDK 指针，不能在 proxy 缺失时偷偷回退直连硬件。
 
-FrameStore 管理相机预算、原始图像和 descriptor；capture 驱动的 frameBytes 与实际格式必须一致。io_thread capture 返回图像；当前 camera_host 还返回 acquisition metadata，由 manager 发布再由 worker proxy 读取。普通动作 arguments 不能用来绕过图像传输路径。
+FrameStore 管理相机预算、原始图像和 descriptor；capture 驱动的 frameBytes 必须覆盖实际格式的内存预算。io_thread capture 可返回图像，或公共 `DeviceCaptureResult(image, metadata)`；当前 camera_host 的 image/metadata 二元组仍兼容。manager 通过 `descriptor.acquisition` 发布采集信息，再由 worker proxy 读取。普通动作 arguments 不能用来绕过图像传输路径。
 
 ### 配置写在哪里
 
@@ -459,7 +459,7 @@ FrameStore 管理相机预算、原始图像和 descriptor；capture 驱动的 f
 
 华睿/SLMP 为历史兼容保留了旧大 schema，编译器用 xDeviceActionFields 拒绝托管节点夹带连接/重试参数。华睿还提供 validateDeviceParams。新托管算子直接定义精简动作 schema，不必复制这些历史参数。
 
-当前 RTSP 与海康发声仍是独立一次性 I/O，不会因为名称有 camera 自动接入设备管理器。新增共享设备能力优先走托管；是否迁移旧算子应单独确定范围。
+旧 `vision.io.rtsp_camera` 与海康发声仍是独立一次性 I/O。新增的 `vision.io.rtsp_capture` 绑定 `device.camera.rtsp`，由 Runtime 持续解码并仅保留最新帧。旧 RTSP 节点通过迁移预览显式转换，不静默升级或强制替换；发声不随 RTSP 迁移。详见 [RTSP 托管相机](guides/rtsp-managed-camera.md)。
 
 ## 8. 工程绑定、资源与发布
 

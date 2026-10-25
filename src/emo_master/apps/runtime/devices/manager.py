@@ -223,7 +223,7 @@ class DeviceManager:
             raise DeviceError("E_DEVICE_CANCELLED", "request cancelled before device admission")
         planRevision = (self.configuration.requireCycle(owner, cycleId)
                         if self.configuration is not None and self.configuration.current is not None else 0)
-        from emo_master.core.contracts.device_driver import DeviceOperationContext
+        from emo_master.core.contracts.device_driver import DeviceCaptureResult, DeviceOperationContext
         source = deepcopy(source or {})
         selectors = deepcopy(selectors or {})
         if self.configuration is not None and self.configuration.current is not None and owner not in self.maintenanceOwners:
@@ -319,7 +319,9 @@ class DeviceManager:
                         arguments=arguments, operationContext=operationContext)
                     if reservation:
                         metadata = None
-                        if declaration.executionLocation == "camera_host":
+                        if isinstance(result, DeviceCaptureResult):
+                            result, metadata = result.image, result.metadata
+                        elif declaration.executionLocation == "camera_host":
                             result, metadata = result
                         descriptor = self.frames.publish(reservation, result, cycleId=cycleId,
                             generation=generation, requestId=requestId, planRevision=planRevision, metadata=metadata)

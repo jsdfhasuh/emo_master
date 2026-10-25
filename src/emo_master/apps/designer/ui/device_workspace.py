@@ -26,6 +26,12 @@ def _activeOwnersText(state):
     return text + (f' 等 {len(owners)} 个任务' if len(owners) > 4 else '')
 
 
+def _connectionText(state):
+    value = state.get('driverState', {}).get('connectionState',
+        'CONNECTED' if state.get('lifecycleConnected') else 'DISCONNECTED')
+    return {'CONNECTED': '已连接', 'DISCONNECTED': '未连接', 'FAULTED': '连接故障'}.get(value, '未知')
+
+
 class DeviceWorkspace(QDialog):
     def __init__(self, coordinator):
         super().__init__(coordinator.window)
@@ -469,12 +475,12 @@ class DeviceWorkspace(QDialog):
         state = self.states.get(self.selectedId) or {}
         freshness = (self.stateNotice or '读取失败：' + self.stateError if self.stateError or self.stateNotice else
                      f'更新于 {max(0, int(monotonic() - self.stateReadAt))} 秒前' if self.stateReadAt else '未获取在线状态')
-        values = [('连接', {'CONNECTED': '已连接', 'DISCONNECTED': '未连接', 'FAULTED': '连接故障'}.get(state.get('driverState', {}).get('connectionState', 'CONNECTED' if state.get('lifecycleConnected') else 'DISCONNECTED'), '未知')),
+        values = [('连接', _connectionText(state)),
                   ('执行状态', {'IDLE': '空闲', 'BUSY': '执行中', 'QUARANTINED': '已隔离', 'CLOSED': '已关闭'}.get(state.get('state'), '未知')),
                   ('当前任务', _activeOwnersText(state)), ('排队请求', state.get('queued', '-')),
                   ('连接准入', {'PAUSED': '手动暂停', 'CONTROL_PENDING': '维护处理中', 'REPLACING': '配置替换中'}.get(state.get('admissionState'), '正常' if state else '未知')),
                   ('会话代次', state.get('generation', '-')), ('设备恢复', state.get('recovery', {}).get('state', '-')),
-                  ('最近错误', state.get('lifecycleError') or state.get('lastError') or '-'), ('状态更新时间', freshness)]
+                  ('最近错误', state.get('lifecycleError') or state.get('lastError') or state.get('driverState', {}).get('lastError') or '-'), ('状态更新时间', freshness)]
         self.onlineState.setHtml('<table cellpadding="4">' + ''.join(
             f'<tr><th align="left">{escape(title)}</th><td>{escape(str(value))}</td></tr>' for title, value in values) + '</table>')
         self.onlineIndicator.setText(('在线状态 · ' if state else '') + freshness)
@@ -853,17 +859,18 @@ class DeviceWorkspace(QDialog):
                 label += ' · ' + ((f'监听中，已连接 {peers} 个客户端' if peers else '监听中，等待客户端')
                                   if driver.get('ready') else '未监听')
             else:
-                label += ' · ' + ('已连接' if state.get('lifecycleConnected') else '未连接')
+                label += ' · ' + _connectionText(state)
             item.setText(label if revision == state["definitionRevision"] else label + " · 配置不同")
             owners = _activeOwnersText(state)
             self.table.item(row, 5).setText(f"{owners} / {state['queued']}")
-            self.table.item(row, 6).setText(str(state.get('lifecycleError') or state.get('lastError') or '-'))
+            lastError = state.get('lifecycleError') or state.get('lastError') or driver.get('lastError') or '-'
+            self.table.item(row, 6).setText(str(lastError))
             item.setToolTip(f"排队：{state['queued']}\n操作 owner：{owners}\n代次：{state['generation']}"
                             f"\n建连恢复：{state.get('recovery', {}).get('state', '-')}"
                             f" · 尝试 {state.get('recovery', {}).get('attempt', 0)}"
                             f"\n显式保活：{state.get('explicitKeepAlive', 0)}"
                             f"\n触发流保活：{state.get('streamKeepAlive', False)}"
-                            f"\n错误：{state.get('lifecycleError') or state.get('lastError') or '-'}")
+                            f"\n错误：{lastError}")
         for key, item in self.instanceItems.items():
             row = next((r for r in range(self.table.rowCount()) if self.table.item(r, 0).data(Qt.UserRole) == key), None)
             if row is not None:

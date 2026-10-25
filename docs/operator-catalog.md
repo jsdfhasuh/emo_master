@@ -2,6 +2,10 @@
 
 本文件由 emo-master-operator-authoring skill 的 inspect_catalog.py 生成。开发流程和分类分析见 [算子与设备插件开发指南](operator-development-guide.md)。
 
+2026-10-25 增量：新增 `vision.io.rtsp_capture @ 1.0.0` 与 `device.camera.rtsp @ 1.0.0`，
+保留旧 `vision.io.rtsp_camera`。当前数量为 78 个算子、7 种设备类型；下面保留原扫描快照，
+其时间、哈希和统计不覆盖此次新增内容。使用和迁移说明见 [RTSP 托管相机](guides/rtsp-managed-camera.md)。
+
 扫描时间（UTC）：`2026-10-23T17:08:33.551146+00:00`。HEAD：`577450fc19c60ac86989475d76838e952bcc3e86`。
 快照包含下列未提交工作区，不代表仅该提交或已发布 EXE 的状态。
 

@@ -155,12 +155,25 @@ def validateDeviceDefinition(declaration, nameControl, forms, tabs=None, *, base
 def connectionTestPrompt(deviceTypeId):
     if deviceTypeId in {'device.tcp.server', 'device.tcp.receive_once'}:
         return '检查本地监听端点；不验证外部客户端，不应用草稿通道规则，不保存或发布配置。继续？'
+    if deviceTypeId == 'device.camera.rtsp':
+        return '测试 RTSP 建连与码流信息；不启动持续取帧，不保存图片，也不保存或发布配置。继续？'
     return '检查设备连接；不拍照、不发送业务报文、不写 PLC，不保存或发布配置。继续？'
 
 
 def deviceErrorMessage(error):
     if isinstance(error, ConnectionRefusedError) or getattr(error, 'code', '') in {'ECONNREFUSED', 'WSAECONNREFUSED', 'E_DEVICE_CONNECTION_REFUSED'}:
         return '无法连接到目标地址和端口，请检查设备端服务与端口设置'
+    cameraErrors = {
+        'E_CAMERA_CONNECT': 'RTSP 连接失败，请检查流地址、账号密码和摄像头编码格式',
+        'E_CAMERA_CONNECT_TIMEOUT': 'RTSP 连接超时，请检查流地址、网络及设备连接超时设置',
+        'E_CAMERA_READ': 'RTSP 已断流或取帧超时，请检查网络后从设备管理器重连',
+        'E_CAMERA_FRAME_TIMEOUT': '未收到符合帧龄要求的新画面，请检查码流及设备取帧超时设置',
+        'E_CAMERA_FRAME_SIZE': '摄像头画面超过单帧内存上限，请调整设备的单帧内存上限',
+        'E_CAMERA_NOT_CONNECTED': 'RTSP 尚未连接，请在设备管理器连接或恢复设备',
+        'E_CAMERA_FORMAT': 'RTSP 解码格式不受支持，请检查摄像头编码格式',
+    }
+    if getattr(error, 'code', '') in cameraErrors:
+        return cameraErrors[error.code]
     return '设备操作未完成，请查看详情'
 
 
@@ -555,6 +568,7 @@ class DeviceNodeDialog(QDialog):
         layout = QVBoxLayout(self)
         from .widgets import OptionalWrapLabel
         definition = coordinator.window._operatorDefinition(node["operatorId"])
+        self.operatorDefinition = definition
         operatorName = str(definition.get("displayName") or "")
         self.operatorIdentityLabel = OptionalWrapLabel(
             f"原始算子：{operatorName}\n算子 ID：{node['operatorId']}" if operatorName else ""
@@ -758,14 +772,17 @@ class DeviceNodeDialog(QDialog):
         old = self.sources.pop(slot, None)
         if old is not None:
             layout.removeWidget(old)
+            old.hide()
             old.deleteLater()
         oldSelectors = self.selectors.pop(slot, {})
         for oldControl in oldSelectors.values():
             clearNameFeedback(oldControl, self.error)
+            oldControl.hide()
             oldControl.deleteLater()
         hint = getattr(self, '_sourceHints', {}).pop(slot, None)
         if hint is not None:
             layout.removeWidget(hint)
+            hint.hide()
             hint.deleteLater()
         key = combo.currentData()
         definitions = {**self.c.session.workflows.devices.get("definitions", {}), **self.newDefinitions}
@@ -780,7 +797,7 @@ class DeviceNodeDialog(QDialog):
         clearNameFeedback(combo, self.error)
         declaration = self.types[definitions[key]["deviceTypeId"]]
         editorNode = self.node
-        if declaration.deviceTypeId == "device.camera.huaray_imv" and getattr(self, "migrateLegacy", False):
+        if declaration.deviceTypeId in {"device.camera.huaray_imv", "device.camera.rtsp"} and getattr(self, "migrateLegacy", False):
             editorNode = deepcopy(self.node)
             legacy = applySchemaDefaults(self.node.get("paramSchema", {}), self.node.get("params", {}))
             if legacy.get("waitMode") == "hardware":
@@ -833,6 +850,8 @@ class DeviceNodeDialog(QDialog):
                 raise ValueError("设备类型尚未就绪")
             draft = deepcopy(self.node)
             draft["params"] = self.params.getValues()
+            if self.migrateLegacy and self.node['operatorId'] == 'vision.io.rtsp_capture':
+                draft['paramSchema'] = deepcopy(self.operatorDefinition.get('paramSchema', {}))
             resources = self.c.session.document().resources
             resourcePlan = resources.model_dump() if resources else None
             moved = []
@@ -840,6 +859,8 @@ class DeviceNodeDialog(QDialog):
             for slot, (combo, _layout) in self.slots.items():
                 key = combo.currentData()
                 if key is None:
+                    if self.migrateLegacy and self.node['operatorId'] == 'vision.io.rtsp_capture':
+                        raise ValueError('RTSP 迁移需要先选择设备；取消可保留原节点及连接参数')
                     if not allowIncomplete:
                         message = '请选择设备：' + slot
                         combo.setAccessibleDescription(message)
@@ -876,16 +897,23 @@ class DeviceNodeDialog(QDialog):
                 selected = definitions[draft["deviceBindings"][firstSlot]["deviceId"]]
                 connection = self.types[selected["deviceTypeId"]].validateDefinition(
                     DeviceDefinition.model_validate(selected)).connection
-                lines = ["节点 ID 与输出端口保持不变。", "连接参数移入所选设备，自动重试取消。", ""]
-                lines += [f"{key}: {old.get(key, '(默认)')} -> {value}" for key, value in connection.items()]
+                from emo_master.apps.designer.state.rtsp_migration import redactDeviceValues
+                safeOld, safeConnection = redactDeviceValues(old), redactDeviceValues(connection)
+                lines = ["节点 ID、输出端口与连线保持不变。", "连接参数移入所选设备。", ""]
+                lines += [f"{key}: {safeOld.get(key, '(默认)')} -> {value}" for key, value in safeConnection.items()]
                 if moved:
                     lines += ["", "以下资源/现场绑定将移到共享设备属性，影响所有使用该设备的节点：", *moved]
                 if selected["deviceTypeId"] == "device.camera.huaray_imv":
+                    lines += ['自动重试取消。']
                     lines += ["", "旧 keep 表示保留设备当前值，不等于固定默认值。共享设备可能受其他节点覆写影响。",
                               "请核对设备工作参数与节点覆写。硬件触发参数变化需要停触发并同步后恢复。"]
                     if old.get("waitMode") == "hardware":
                         lines += ["无限硬件等待迁移为取图超时 0；停止操作可取消等待，不重发触发。"]
-                lines += ["", "转换仅修改本地草稿。工程中其他旧设备节点也需绑定后才能运行。"]
+                if selected['deviceTypeId'] == 'device.camera.rtsp':
+                    lines += ['', '单次 RTSP 算子转换为托管采集；持续解码仅保留最新帧。',
+                              '取流失败不会自动重放采集；请从设备管理器重连。',
+                              '未迁移的单次 RTSP 节点仍保持原行为。']
+                lines += ["", "转换仅修改本地草稿，不会连接设备或写入 Runtime。"]
                 if QMessageBox.question(self, "确认设备迁移", "\n".join(lines),
                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
                     return
@@ -893,7 +921,8 @@ class DeviceNodeDialog(QDialog):
             used = {binding["deviceId"] for binding in draft.get("deviceBindings", {}).values()}
             catalog.commitNode(self.workflowId, draft,
                                newDevices={key: value for key, value in self.newDefinitions.items() if key in used},
-                               position=self.position, resourcePlan=resourcePlan, allowIncomplete=allowIncomplete)
+                               position=self.position, resourcePlan=resourcePlan, allowIncomplete=allowIncomplete,
+                               operatorVersion=self.operatorDefinition.get('version'))
             self.c.window.workflowController._renderActive()
             self.c.chrome.update()
         except (ValueError, KeyError) as error:

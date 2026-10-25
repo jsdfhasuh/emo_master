@@ -89,7 +89,7 @@ class DeviceCatalogEditor:
             del self.session.workflows.devices["definitions"][deviceId]
 
     def commitNode(self, workflowId, node, *, newDevice=None, deviceId=None, newDevices=None, position=None,
-                   resourcePlan=None, allowIncomplete=False):
+                   resourcePlan=None, allowIncomplete=False, operatorVersion=None):
         """Publish a wizard draft only on Finish, including any new definition."""
         with self.session.transaction():
             self._enable()
@@ -116,12 +116,24 @@ class DeviceCatalogEditor:
                 from emo_master.core.project.resources import ResourcePlan
                 self.session.workflows.projectExtensions["resources"] = ResourcePlan.model_validate(resourcePlan).model_dump()
             workflow = self.session.workflows.get(workflowId)
+            previousOperator = None
             for index, existing in enumerate(workflow.nodes):
                 if existing["nodeId"] == checked.nodeId:
+                    previousOperator = existing.get('operatorId')
                     workflow.nodes[index] = checked.model_dump()
                     break
             else:
                 workflow.nodes.append(checked.model_dump())
+            if previousOperator is not None and previousOperator != checked.operatorId:
+                if not operatorVersion:
+                    raise ValueError('转换算子时必须提供当前插件版本')
+                used = {item.get('operatorId') for flow in self.session.workflows.workflows.values() for item in flow.nodes}
+                operators = self.session.workflows.dependencies.setdefault('operators', [])
+                def keep(item):
+                    key = item if isinstance(item, str) else item['operatorId']
+                    return key != checked.operatorId and (key != previousOperator or key in used)
+                operators[:] = [item for item in operators if keep(item)]
+                operators.append(dict(operatorId=checked.operatorId, version=operatorVersion))
             if position is not None:
                 workflow.layout.setdefault("nodePositions", {})[checked.nodeId] = position
 

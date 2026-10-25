@@ -162,6 +162,7 @@ def testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible(styledApp):
         window.addNodeFromOperatorPayload({'operatorId': 'test.layout', 'displayName': '布局检查',
             'inputPorts': {}, 'outputPorts': {'image': 'image'}, 'paramSchema': {}})
         panel = window.nodeResultCoordinator.panel
+        window.designerActions.invoke('results')
         # Keep the 80-line, unchanged-font and last-line-reachability constraints
         # on the visible result tabs replacing the old hidden detail section.
         details = "\n".join(f"parameter_{i}: " + "x" * 120 for i in range(80))
@@ -188,6 +189,7 @@ def testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible(styledApp):
 
         panel.tabs.setCurrentWidget(panel.execution)
         scroll.ensureWidgetVisible(panel.execution)
+        window.floatingRunPanel.contentScroll.ensureWidgetVisible(panel.execution)
         styledApp.processEvents()
         bar = panel.execution.verticalScrollBar()
         assert bar.maximum() > 0

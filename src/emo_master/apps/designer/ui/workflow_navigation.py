@@ -154,19 +154,19 @@ class _WorkflowTabBar(QTabBar):
 class _WorkflowPicker(QFrame):
     workflowRequested: Any = Signal(str)
 
-    def __init__(self, parent):
+    def __init__(self, parent, noun='工作流'):
         super().__init__(parent, Qt.Popup)
         self.setObjectName('workflowPicker')
         self.setFrameShape(QFrame.StyledPanel)
         layout = QVBoxLayout(self)
         self.search = QLineEdit(self)
-        self.search.setPlaceholderText('搜索工作流名称或 ID…')
-        self.search.setAccessibleName('搜索工作流')
+        self.search.setPlaceholderText(f'搜索{noun}名称或 ID…')
+        self.search.setAccessibleName(f'搜索{noun}')
         self.search.setClearButtonEnabled(True)
         self.search.installEventFilter(self)
         self.list = QListWidget(self)
-        self.list.setAccessibleName('全部工作流')
-        self.empty = QLabel('没有匹配的工作流', self)
+        self.list.setAccessibleName(f'全部{noun}')
+        self.empty = QLabel(f'没有匹配的{noun}', self)
         layout.addWidget(self.search)
         layout.addWidget(self.list)
         layout.addWidget(self.empty)
@@ -229,7 +229,7 @@ class WorkflowTabs(QWidget):
     tabBarClicked: Any = Signal(int)
     addRequested: Any = Signal()
 
-    def __init__(self):
+    def __init__(self, *, noun='工作流'):
         super().__init__()
         self._labels: dict[str, _WorkflowLabel] = {}
         self._bar = _WorkflowTabBar(self)
@@ -238,13 +238,13 @@ class WorkflowTabs(QWidget):
         self._allButton = QToolButton(self)
         self._allButton.setIcon(icon('list'))
         self._allButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
-        self._allButton.setToolTip('全部工作流（可搜索）')
-        self._allButton.setAccessibleName('全部工作流')
+        self._allButton.setToolTip(f'全部{noun}（可搜索）')
+        self._allButton.setAccessibleName(f'全部{noun}')
         self._allButton.clicked.connect(self._showPicker)
         self._addButton = QToolButton(self)
         self._addButton.setIcon(icon('plus'))
-        self._addButton.setToolTip('新增工作流')
-        self._addButton.setAccessibleName('新增工作流')
+        self._addButton.setToolTip(f'新增{noun}')
+        self._addButton.setAccessibleName(f'新增{noun}')
         self._addButton.clicked.connect(lambda: self.addRequested.emit())
         for button in (self._allButton, self._addButton):
             button.setFixedSize(32, 32)
@@ -260,7 +260,7 @@ class WorkflowTabs(QWidget):
         layout.addWidget(self._allButton)
         layout.addWidget(self._addButton)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self._picker = _WorkflowPicker(self)
+        self._picker = _WorkflowPicker(self, noun)
         self._picker.workflowRequested.connect(self.selectWorkflow)
         self._picker.workflowRequested.connect(lambda _: self._bar.setFocus())
 

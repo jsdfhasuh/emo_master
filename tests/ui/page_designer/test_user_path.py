@@ -94,8 +94,10 @@ def testNativePageEditingAndLegacyPreviewBackend(qtApp, tmp_path, monkeypatch):
         assert json.loads((root/'project.json').read_text())['schemaVersion'] == '2.1'
         window.pageCoordinator.chrome.workspaceActions[1].trigger()
         editor = window.pageCoordinator.editor
+        editor.floatingToolbox.setExpanded(True)
+        editor.floatingProperties.setExpanded(True)
         monkeypatch.setattr(QInputDialog, 'getText', lambda *a, **k: ('运行总览', True))
-        click(editor, '新建')
+        QTest.mouseClick(editor.pageTabs._addButton, Qt.LeftButton)
         overview = editor.pageId
         image = add(editor, 'image')
         shot('01-component-drop')
@@ -122,7 +124,7 @@ def testNativePageEditingAndLegacyPreviewBackend(qtApp, tmp_path, monkeypatch):
         editor.tools.destination.setCurrentIndex(editor.tools.destination.findData(overview))
         editor.tools.fields['text'].setText('返回总览')
         click(editor, '应用修改')
-        editor.pageList.setCurrentRow(editor.store.snapshot().pageOrder.index(overview))
+        editor.pageTabs.selectPage(overview)
         editor.tools.select(navigation)
         editor.tools.actionMode.setCurrentIndex(editor.tools.actionMode.findData('navigate'))
         editor.tools.destination.setCurrentIndex(editor.tools.destination.findData(detail))

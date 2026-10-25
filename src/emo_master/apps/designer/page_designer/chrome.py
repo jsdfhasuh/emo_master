@@ -1,6 +1,6 @@
 """One action registry for the mutually exclusive designer workspaces."""
-from PySide2.QtCore import QObject, QEvent
-from PySide2.QtWidgets import QAction, QActionGroup
+from PySide2.QtCore import QObject, QEvent, QPoint, Qt
+from PySide2.QtWidgets import QAction, QActionGroup, QSizePolicy, QToolButton, QWidget
 
 from emo_master.apps.designer.ui.icon_map import icon
 from emo_master.apps.designer.ui.widgets import ElidedLabel
@@ -46,7 +46,11 @@ class WorkspaceChrome(QObject):
         self.bindingsAction = self.action('工程资源 / 现场绑定…', coordinator.resourceBindings)
         self.menus['文件'].addAction(self.bindingsAction)
         self.selector = WorkspaceSwitch(self.workspaceActions, toolbar)
-        toolbar.addWidget(self.selector)
+        self.selectorSpace = QWidget(toolbar)
+        self.selectorSpace.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.selectorSpace.setFixedHeight(self.selector.sizeHint().height() + 8)
+        toolbar.addWidget(self.selectorSpace)
+        self.selector.show()
         for name, title in [('加载项目', '打开项目'), ('开始运行', '运行流程')]:
             action = w._toolbarActions[name]
             action.setText(title)
@@ -61,6 +65,9 @@ class WorkspaceChrome(QObject):
         layout.setToolTip('整理当前流程布局，可撤销；不保存或写入 Runtime')
         self.previewAction = self.action('预览页面', self.preview)
         self.previewAction.setIcon(icon('maximize'))
+        self.previewButton = QToolButton(toolbar)
+        self.previewButton.setDefaultAction(self.previewAction)
+        self.previewButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.pageActions.append(self.previewAction)
         self.menus['视图'].addAction(self.previewAction)
         self.menus['文件'].addAction(w._toolbarActions['校验项目'])
@@ -81,7 +88,7 @@ class WorkspaceChrome(QObject):
             self.policies.append((action, value))
         if w.legacySnapshotPolicyCombo:
             w.legacySnapshotPolicyCombo.currentIndexChanged.connect(self.syncPolicies)
-        for title, index in [('组件与页面栏', 0), ('属性栏', 2)]:
+        for title, index in [('页面工具区', 0), ('属性面板', 2)]:
             action = self.action(title, lambda index=index: self.c.editor.togglePanel(index) if self.c.pageActive() else None)
             action.setCheckable(True)
             self.menus['视图'].addAction(action)
@@ -96,7 +103,7 @@ class WorkspaceChrome(QObject):
         self.update()
 
     def eventFilter(self, obj, event):
-        if event.type() in (QEvent.Resize, QEvent.LayoutRequest, QEvent.FontChange, QEvent.StyleChange):
+        if event.type() in (QEvent.Resize, QEvent.Show, QEvent.LayoutRequest, QEvent.FontChange, QEvent.StyleChange):
             self.resizeTools()
         return super().eventFilter(obj, event)
 
@@ -105,7 +112,24 @@ class WorkspaceChrome(QObject):
             return
         self._sizingTools = True
         try:
-            self.selector.setCompact(self.window.mainToolbar.width() < 600)
+            toolbar = self.window.mainToolbar
+            self.selector.setCompact(toolbar.width() < 600)
+            size = self.selector.sizeHint()
+            self.selectorSpace.setFixedHeight(size.height() + 8)
+            # Anchor to the window, not the remaining space beside actions.
+            center = toolbar.mapFrom(self.window, QPoint(self.window.width() // 2, 0)).x()
+            self.selector.setGeometry(center - size.width() // 2,
+                                      (toolbar.height() - size.height()) // 2,
+                                      size.width(), size.height())
+            self.selector.raise_()
+            self.previewButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+            self.previewButton.adjustSize()
+            if toolbar.width() - self.previewButton.width() - 12 < self.selector.geometry().right() + 12:
+                self.previewButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+                self.previewButton.adjustSize()
+            self.previewButton.move(toolbar.width() - self.previewButton.width() - 12,
+                                    (toolbar.height() - self.previewButton.height()) // 2)
+            self.previewButton.raise_()
         finally:
             self._sizingTools = False
 
@@ -157,10 +181,11 @@ class WorkspaceChrome(QObject):
         for action in self.pageActions:
             action.setVisible(pages)
             action.setEnabled(pages)
+        self.previewButton.setVisible(pages)
         if pages:
             self.previewAction.setEnabled(bool(self.c.editor.store.snapshot().pages))
             for action, index in zip(self.pageActions[1:3], (0, 2)):
-                action.setChecked(self.c.editor.splitter.sizes()[index] > 0)
+                action.setChecked(self.c.editor.panel(index).isExpanded())
         runtime = self.window.runtimeController
         for key, allowed in [('开始运行', self.window.loadedProjectPath is not None and runtime.canStart()),
                              ('停止运行', runtime.canStop())]:

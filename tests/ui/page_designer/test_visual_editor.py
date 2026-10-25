@@ -5,13 +5,14 @@ from test_workspace import designer  # noqa: F401
 from test_pending_inputs import setupPage
 
 
-def testNativePaletteSplitterAndSearch(designer):  # noqa: F811
+def testNativeFloatingPaletteAndSearch(designer):  # noqa: F811
     c = designer.pageCoordinator
     c.showPages()
     e = c.editor
     designer.resize(1280, 720)
     QApplication.processEvents()
-    assert e.splitter.count() == 3
+    assert e.floatingToolbox.parentWidget() is e.canvasHost
+    assert e.floatingProperties.parentWidget() is e.canvasHost
     assert e.tools.palette.count() == 8
     assert e.libraryTabs.count() == 2
     history = len(c.session._undo)
@@ -19,12 +20,13 @@ def testNativePaletteSplitterAndSearch(designer):  # noqa: F811
     assert [e.tools.palette.item(i).data(Qt.UserRole) for i in range(8)
             if not e.tools.palette.item(i).isHidden()] == ['image']
     e.tools.search.clear()
-    if e.splitter.sizes()[0] == 0:
-        e.togglePanel(0)
+    e.floatingToolbox.setExpanded(True)
+    canvas = e.renderer.geometry()
     e.togglePanel(0)
-    assert e.splitter.sizes()[0] == 0
+    assert not e.floatingToolbox.isExpanded()
     e.togglePanel(0)
-    assert e.splitter.sizes()[0] > 0
+    assert e.floatingToolbox.isExpanded()
+    assert e.renderer.geometry() == canvas
     assert len(c.session._undo) == history
     assert e.propertyScroll.horizontalScrollBarPolicy() == Qt.ScrollBarAlwaysOff
     assert not e.tools.palette.grab().isNull()

@@ -61,12 +61,12 @@ def testDesignerExportRelocatedStandalonePath(qtApp, tmp_path, monkeypatch):
         window.pageCoordinator.showPages()
         editor = window.pageCoordinator.editor
         for index in range(2):
-            editor.pageList.setCurrentRow(index)
+            editor.pageTabs.setCurrentIndex(index)
             label = next(c for c in editor.store.snapshot().pages[editor.pageId].components if c.type == 'text')
             editor.tools.select(label.componentId)
             editor.tools.fields['text'].setText('测试项目交付 · 本地图像 · 真实 Blob / Count')
             QTest.mouseClick(next(w for w in editor.findChildren(QPushButton) if w.text() == '应用修改'), Qt.LeftButton)
-        editor.pageList.setCurrentRow(0)
+        editor.pageTabs.setCurrentIndex(0)
         assert window.saveProjectToDirectory(str(draft))
         presentation = window.pageCoordinator.session.document().presentation.model_dump()
         assert window.loadProjectDirectory(str(draft))

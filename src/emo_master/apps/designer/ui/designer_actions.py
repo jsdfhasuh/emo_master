@@ -265,12 +265,7 @@ class DesignerActions(QObject):
         self.pageEditor().openObserver()
 
     def showResults(self):
-        w = self.window
-        w.onNodeSelectionChanged()
-        w.rightPanelContainer.show()
-        coordinator = w.nodeResultCoordinator
-        coordinator.panelScroll.ensureWidgetVisible(coordinator.panel)
-        coordinator.panel.tabs.setFocus(Qt.OtherFocusReason)
+        self.window.nodeResultCoordinator.showPanel()
 
     def fit(self):
         editor = self.pageEditor()

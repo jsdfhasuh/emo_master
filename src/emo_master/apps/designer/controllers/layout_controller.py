@@ -39,6 +39,13 @@ class LayoutController:
         self._menuBarFontSize = 14
         self._applying = False
         self.floatingToolbox = None
+        self.floatingRunPanel = None
+
+    def setFloatingRunPanel(self, panel, slot) -> None:
+        self.floatingRunPanel = panel
+        slot.hide()
+        self.rightPanelContainer.setMinimumWidth(0)
+        self._applySizes()
 
     def setFloatingToolbox(self, toolbox) -> None:
         self.floatingToolbox = toolbox
@@ -56,6 +63,8 @@ class LayoutController:
         expanded = [int(size) for size in sizes]
         if (self.floatingToolbox is not None or self.isSidebarCollapsedGetter()) and expanded[0] < self._sidebarMinWidth:
             expanded[0] = self._expandedSplitterSizes[0]
+        if self.floatingRunPanel is not None and expanded[2] == 0:
+            expanded[2] = self._expandedSplitterSizes[2]
         self._expandedSplitterSizes = expanded
         self.settingsStore.setValue("ui/main_splitter_sizes", expanded)
         self._applySizes()
@@ -80,6 +89,8 @@ class LayoutController:
             if self.floatingToolbox is not None:
                 self.sidebarContainer.hide()
                 self._currentSplitterSizes = [0, *self._expandedSplitterSizes[1:]]
+                if self.floatingRunPanel is not None:
+                    self._currentSplitterSizes[2] = 0
                 self.mainSplitter.setSizes(self._currentSplitterSizes)
                 return
             width = self._sidebarCollapsedWidth if collapsed else self._sidebarMinWidth
@@ -99,7 +110,7 @@ class LayoutController:
 
     def applyResponsiveLayout(self) -> None:
         self._layoutMode = "large" if self.widthGetter() >= 1600 else "normal"
-        self.rightPanelContainer.setMinimumWidth(self._rightPanelMinWidth)
+        self.rightPanelContainer.setMinimumWidth(0 if self.floatingRunPanel is not None else self._rightPanelMinWidth)
         self.canvasPanel.setMinimumWidth(self._canvasMinWidth)
         self.canvasPanel.setMaximumWidth(16777215)
         self.previewImageLabel.setMinimumHeight(90)

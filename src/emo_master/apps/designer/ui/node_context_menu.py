@@ -136,11 +136,7 @@ class NodeContextMenu(QObject):
         elif key == 'results':
             # Reuse the current/previous selection and decoded image. No Job,
             # subscription or second image cache is created by this action.
-            self.window.onNodeSelectionChanged()
-            self.window.rightPanelContainer.show()
-            coordinator = self.window.nodeResultCoordinator
-            coordinator.panelScroll.ensureWidgetVisible(coordinator.panel)
-            coordinator.panel.tabs.setFocus(Qt.OtherFocusReason)
+            self.window.nodeResultCoordinator.showPanel()
 
     def _selectionChanged(self):
         if self.context is not None and not self._valid(self.context):

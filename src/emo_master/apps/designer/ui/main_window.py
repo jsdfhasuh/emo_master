@@ -1289,7 +1289,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setHandleWidth(8)
         self.mainSplitter.addWidget(self.sidebarContainer)
         self.mainSplitter.addWidget(self.canvasPanel)
-        self.mainSplitter.addWidget(self.rightPanelContainer)
+        self.rightPanelSlot = QWidget() if _nativeQt else self.rightPanelContainer
+        self.mainSplitter.addWidget(self.rightPanelSlot)
         connectSplitterMoved = getattr(self.mainSplitter, "splitterMoved", None)
         if connectSplitterMoved is not None and hasattr(
             connectSplitterMoved, "connect"
@@ -1431,6 +1432,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
             self.floatingToolbox = FloatingToolbox(self)
             self.layoutController.setFloatingToolbox(self.floatingToolbox)
+            from emo_master.apps.designer.ui.floating_run_panel import FloatingRunPanel
+            self.floatingRunPanel = FloatingRunPanel(self)
+            self.layoutController.setFloatingRunPanel(self.floatingRunPanel, self.rightPanelSlot)
         self.refreshSidebarNodeList()
         self._refreshWorkflowTabs()
         self.applyResponsiveLayout()
@@ -4138,6 +4142,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             else "-"
         )
         self.jobMessageCard.setText(f"消息：{messageText}")
+        panel = getattr(self, 'floatingRunPanel', None)
+        if panel is not None:
+            panel.refreshStatus()
 
         self._refreshNodeDetailsView()
         self._refreshPreviewImage()
@@ -4385,6 +4392,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if name in self._toolbarActions:
                 self._toolbarActions[name].setEnabled(enabled)
         self._updateRunBlockedHint(canRun)
+        panel = getattr(self, 'floatingRunPanel', None)
+        if panel is not None:
+            panel.refreshStatus()
         coordinator = getattr(self, 'pageCoordinator', None)
         if coordinator is not None and hasattr(coordinator, 'chrome'):
             coordinator.chrome.update()

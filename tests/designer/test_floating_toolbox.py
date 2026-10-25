@@ -239,7 +239,7 @@ def testShortCanvasCanScrollToEveryCategoryAndCard(toolboxWindow):
     window.expandSidebar()
     QApplication.processEvents()
     toolbox = window.floatingToolbox
-    assert window.flowView.viewport().rect().contains(toolbox.geometry())
+    assert window.flowView.viewport().geometry().contains(toolbox.geometry())
     bar = toolbox.libraryScroll.verticalScrollBar()
     assert bar.maximum() > 0
     bar.setValue(bar.maximum())

@@ -38,7 +38,8 @@ def testSharedActionsAndShortcutsCannotEditHiddenFlow(designer, monkeypatch):  #
         c.showPages()
     assert c.session.payload() == before
     assert len(designer.mainToolbar.actions()) == 1
-    assert designer.mainToolbar.widgetForAction(designer.mainToolbar.actions()[0]) is chrome.selector
+    assert designer.mainToolbar.widgetForAction(designer.mainToolbar.actions()[0]) is chrome.selectorSpace
+    assert chrome.selector.parentWidget() is designer.mainToolbar
 
 
 def testInvalidInputKeepsWorkspaceSelectionAndText(designer):  # noqa: F811
@@ -103,7 +104,8 @@ def testSinglePreviewDefaultsAndCompactPanels(designer):  # noqa: F811
     c, e, key = setupPage(designer)
     designer.resize(1280, 720)
     QApplication.processEvents()
-    assert e.pageList.height() < 70
+    assert e.pageTabs.height() < 70
+    e.floatingProperties.setExpanded(True)
     assert e.tools.title.text() != key
     assert e.tools.applyButton.isVisible() and e.tools.applyButton.parent() is e.propertyScroll.parent()
     assert all(not button.isVisible() for button in e.renderer.buttons.values())

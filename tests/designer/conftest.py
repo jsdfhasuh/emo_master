@@ -11,16 +11,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def designerApplication(tmp_path_factory):
+def designerApplication():
     try:
         from PySide2.QtWidgets import QApplication
-        from PySide2.QtCore import QSettings
     except ImportError:
         return None
 
-    QSettings.setDefaultFormat(QSettings.IniFormat)
-    QSettings.setPath(QSettings.IniFormat, QSettings.UserScope,
-                      str(tmp_path_factory.mktemp("designer-settings")))
     application = QApplication.instance()
     if application is None:
         application = QApplication([])
@@ -31,7 +27,7 @@ def designerApplication(tmp_path_factory):
 
 
 @pytest.fixture(autouse=True)
-def cleanupDesignerWidgets(designerApplication, monkeypatch):
+def cleanupDesignerWidgets(designerApplication, monkeypatch, isolatedDesignerSettings):
     if designerApplication is None:
         yield
         return

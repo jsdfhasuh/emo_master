@@ -6,6 +6,26 @@ import pytest
 import emo_master  # noqa: F401 - mirror application bootstrap before test collection imports Qt
 
 
+@pytest.fixture
+def isolatedDesignerSettings(tmp_path, monkeypatch):
+    try:
+        from PySide2.QtCore import QSettings
+    except ImportError:
+        return None
+    from emo_master.apps.designer.ui import main_window
+
+    path = tmp_path / 'designer.ini'
+
+    def settings(*_args):
+        store = QSettings(str(path), QSettings.IniFormat)
+        store.setFallbacksEnabled(False)
+        return store
+
+    # The organization/application constructor ignores setDefaultFormat().
+    monkeypatch.setattr(main_window, 'QSettings', settings)
+    return path
+
+
 @pytest.fixture(autouse=True)
 def isolatedRuntimeData(tmp_path, monkeypatch):
     # Tests using RuntimeService() must not acquire the live application's lock.

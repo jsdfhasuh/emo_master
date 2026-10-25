@@ -54,6 +54,17 @@ class NodeResultCoordinator(QObject):
         self.panel.configureRequested.connect(self.configure)
         self.panel.enlargeRequested.connect(self.openViewer)
 
+    def showPanel(self):
+        self.window.onNodeSelectionChanged()
+        floating = getattr(self.window, 'floatingRunPanel', None)
+        if floating is not None:
+            floating.setExpanded(True)
+            floating.contentScroll.ensureWidgetVisible(self.panelScroll)
+        else:
+            self.window.rightPanelContainer.show()
+        self.panelScroll.ensureWidgetVisible(self.panel)
+        self.panel.tabs.setFocus(Qt.OtherFocusReason)
+
     def blueprint(self):
         window = self.window
         definitions = []

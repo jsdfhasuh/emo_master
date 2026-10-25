@@ -104,6 +104,8 @@ def testOneClickParallelStartSelectionStopRestartAndClose(qtApp, tmp_path, monke
         assert runs[roots[0]].state.workflowExecution.statuses('RUNNING').get(roots[0]) in {'RUNNING', 'WAITING_CHILD'}
         window.activateWorkflow('second')
         window.navigateToNodeFromSidebar('count')
+        assert not window.floatingRunPanel.isExpanded()
+        window.floatingRunPanel.toggleButton.click()
         for width in (1060, 1280):
             window.resize(width, 800)
             qtApp.processEvents()

@@ -142,6 +142,9 @@ def testLongFrozenNameHasFullTooltipAndDoesNotExpandSidebar(designerApplication)
     window.resize(1280, 720)
     window.show()
     designerApplication.processEvents()
+    assert not window.floatingRunPanel.isExpanded()
+    window.designerActions.invoke('results')
+    designerApplication.processEvents()
     assert name in panel.title.toolTip()
     assert panel.title.minimumSizeHint().width() == 0
     assert panel.title.width() <= panel.width() <= 500

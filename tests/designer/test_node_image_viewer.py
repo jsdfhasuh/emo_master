@@ -232,6 +232,11 @@ def testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs(tmp_path, designer
                 wait(designerApplication, committed)
             assert not projectChanges(client.getOnlineProjectSnapshot()['payload'], local)
             window.startJob()
+            wait(designerApplication, lambda: coordinator.imagePacket is not None)
+            assert not window.floatingRunPanel.isExpanded()
+            assert runtime.jobRepository.get(window.currentJobId).status == 'RUNNING'
+            window.designerActions.invoke('results')
+            assert window.floatingRunPanel.isExpanded()
 
             def firstDisplayedInvocation():
                 packet = coordinator.imagePacket
@@ -242,6 +247,7 @@ def testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs(tmp_path, designer
                     # surfaces can clip the image. Expose it before requiring paint.
                     panel.imagePage.ensureWidgetVisible(panel.image)
                     coordinator.panelScroll.ensureWidgetVisible(panel.image)
+                    window.floatingRunPanel.contentScroll.ensureWidgetVisible(panel.image)
                     return None
                 # Read the four tabs and pixels before processing another Qt event.
                 displayedCount = int(panel.values.toPlainText().split('count = ')[1].split()[0])

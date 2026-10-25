@@ -133,7 +133,7 @@ def testMainWindowUsesHorizontalSplitterAndPersistsSizes() -> None:
     assert len(sizes) == 3
     assert sizes[0] == 0 if hasattr(window, 'floatingToolbox') else sizes[0] > 0
     assert sizes[1] > 0
-    assert sizes[2] > 0
+    assert sizes[2] == 0 if hasattr(window, 'floatingRunPanel') else sizes[2] > 0
 
     saveSplitterSizes = getattr(window, "saveMainSplitterSizes", None)
     assert callable(saveSplitterSizes)

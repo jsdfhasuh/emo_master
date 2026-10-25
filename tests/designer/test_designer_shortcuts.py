@@ -370,7 +370,7 @@ def testClickPageCardTransfersPropertyFocusBeforeCopy(canvas, monkeypatch):  # n
     assert client.starts == client.stops == 0
 
 
-def testPageSidebarAndTableDoNotDeleteCanvasSelection(canvas, monkeypatch):  # noqa: F811
+def testPageNavigationAndTableDoNotDeleteCanvasSelection(canvas, monkeypatch):  # noqa: F811
     window, _nodes, _client = canvas
     editor, key = makePage(window, monkeypatch)
     focusCanvas(window)
@@ -378,7 +378,7 @@ def testPageSidebarAndTableDoNotDeleteCanvasSelection(canvas, monkeypatch):  # n
     table.setItem(0, 0, QTableWidgetItem('文本值'))
     table.show()
     before = window.pageCoordinator.session.payload()
-    for field in (editor.pageList, table):
+    for field in (editor.pageTabs.tabBar(), table):
         field.setFocus()
         QApplication.processEvents()
         for button in (Qt.Key_Delete, Qt.Key_Backspace, Qt.Key_Home):

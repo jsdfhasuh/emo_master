@@ -1,0 +1,888 @@
+{
+  "base": "577450fc19c60ac86989475d76838e952bcc3e86",
+  "branch": "agent/runtime-workflow-architecture-v1",
+  "files": [
+    {
+      "path": "README.md",
+      "size": 13198,
+      "sha256": "56f1fb573e4123adee6a8e0c370dcf092a32b74cc91bf4c9fa8d548da170dd9b",
+      "tracked": true
+    },
+    {
+      "path": "docs/development-guide.md",
+      "size": 30673,
+      "sha256": "b2d1816d3cef68aa36768356f65ffdd856b78be8f03cc9afe4f937ffd90b9f7b",
+      "tracked": true
+    },
+    {
+      "path": "docs/operator-catalog.md",
+      "size": 34537,
+      "sha256": "ff4685abc85633acbae2be1873e1c586b25182d92bd55bdfae5a1d881904d836",
+      "tracked": false
+    },
+    {
+      "path": "docs/operator-development-guide.md",
+      "size": 47926,
+      "sha256": "6b87d17e7ea545c35746fc6af1de4c1563db07629c9e78d83e0ca6bedbd741a7",
+      "tracked": false
+    },
+    {
+      "path": "docs/operator-io-contracts.md",
+      "size": 54886,
+      "sha256": "101d6465a44256996d0b299fe033bc15b22d73c055ffbd9333d885617e93abcd",
+      "tracked": true
+    },
+    {
+      "path": "docs/operator-runtime.md",
+      "size": 10322,
+      "sha256": "b61b9538419dd9e0e65b86e2a6fe9c14fa8a179694c38bf64dd07999bb7aa250",
+      "tracked": true
+    },
+    {
+      "path": "docs/patchcore-inference.md",
+      "size": 8968,
+      "sha256": "ec842e564af124692756d6bdab75503f526c0829e6465f92d1996b309907cb36",
+      "tracked": false
+    },
+    {
+      "path": "docs/plugin-registration-flow.md",
+      "size": 36342,
+      "sha256": "202a881bebf9d55795d6fc91c1913494838ef394412f1aceec21e174a1e85005",
+      "tracked": true
+    },
+    {
+      "path": "docs/runtime-event-flow.md",
+      "size": 13709,
+      "sha256": "36a91e59237930270c3fc2dd699f48ca6ab84b13b8fa2bb2e77e4284b124acb1",
+      "tracked": true
+    },
+    {
+      "path": "docs/testing/2026-10-23-patchcore-highlight-validation.md",
+      "size": 7365,
+      "sha256": "0b81f5740c53ceb168820740c30200360b248d513f4a3bc0832183285095e632",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/2026-10-23-patchcore-v1-validation.md",
+      "size": 8744,
+      "sha256": "51fb1c1c148df24f9329eed546de6944d97612180a54d26a63c82abd311cac94",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/2026-10-24-standalone-runtime-configuration.md",
+      "size": 5414,
+      "sha256": "0286f08f22ac3637ec73fc439e754e89410b0a5fc146ac5a57d20a31a1292ac0",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/contracts.xml",
+      "size": 35155,
+      "sha256": "71ea705401f04c5b3bf412b0f1b23b2c9d2f8352c0890a77d8093dab4f0c81a8",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-100-final.xml",
+      "size": 925,
+      "sha256": "379b1369e5f9b13f68d843bd57ff51d8accacbab7c44aa2c64f5d68d190dc2c9",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-100.xml",
+      "size": 7030,
+      "sha256": "0bfaf9451c3ce30578e64ccc44b01dd745a71d19728386c6046334104a68dfb2",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-100/patchcore-debug-map.png",
+      "size": 34404,
+      "sha256": "50b5cc0cd19dc381c41220cb2b119bf3d450ae632bcb766b3b0d0553fb3c6a04",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-100/patchcore-debug-overlay.png",
+      "size": 612805,
+      "sha256": "95a5307478462a7396c42d23fc6d423dbb33941c6984a324bdef23ccad45942c",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-100/patchcore-parameters-460.png",
+      "size": 18474,
+      "sha256": "c7c5c084cc2f0635f5a223fff75ddb0e812a36b3819519fa8c48ea674a7b1cf3",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-100/patchcore-parameters-620.png",
+      "size": 20383,
+      "sha256": "34c09b695c1911be514d6a64f9219fa735490190b147aa6a83731a5845d9e6bd",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-100/patchcore-project-460.png",
+      "size": 62318,
+      "sha256": "31236a7558bde3f0d83fec8a98168c6ffab0ea484220b0677403f51c2737f7b0",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-100/patchcore-project-620.png",
+      "size": 62318,
+      "sha256": "31236a7558bde3f0d83fec8a98168c6ffab0ea484220b0677403f51c2737f7b0",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-150-final.xml",
+      "size": 925,
+      "sha256": "410bbc937ee45c36fa599d451aa75918f8dc90beb9dfa4f9f8d84bbe94ab86ae",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-150.xml",
+      "size": 7030,
+      "sha256": "81115fa4a4c2c094d997845d8941fa21758747f37966bebd3ec42f85bf1d8135",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-150/patchcore-debug-map.png",
+      "size": 53356,
+      "sha256": "08c383aea35418a2e8c8d7119f50e7ffb3d5d6712158d1f3b5bee568aafeed07",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-150/patchcore-debug-overlay.png",
+      "size": 764538,
+      "sha256": "80dd8fe03a193dc6e26694957051adcc743e1e2a9108b3b709eb9ba8e3038240",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-150/patchcore-parameters-460.png",
+      "size": 28004,
+      "sha256": "5d3b804bcb82b60e4c11a27f0a9fcae0d0a4556f00e5a01629b38559752c092b",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-150/patchcore-parameters-620.png",
+      "size": 31231,
+      "sha256": "14416d9f75da04bd0ba949f2ce81c749fe6dde7edbb1e5dd9000ed0a67974a62",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-150/patchcore-project-460.png",
+      "size": 98024,
+      "sha256": "36e3ae82ea3084a4b3f3ad55a42f1b38a498aacd7c7854845ee5f45f52823a45",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-150/patchcore-project-620.png",
+      "size": 98024,
+      "sha256": "36e3ae82ea3084a4b3f3ad55a42f1b38a498aacd7c7854845ee5f45f52823a45",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/patchcore.xml",
+      "size": 13496,
+      "sha256": "432f470c09949232c0c1e0c88629fae693c17464dd3d4abe97220dd17c71eadd",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/source.xml",
+      "size": 40525,
+      "sha256": "0dc07c9f170e182d072c66a0863c15aa6ba2b1411ebbcc7117bb81d4d586b8ff",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-100.xml",
+      "size": 12974,
+      "sha256": "596c787b064da52967f049d0a6d783407ba439cf6ced55e72a89229c339df0cc",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-100/patchcore-debug-map-heatmap.png",
+      "size": 34384,
+      "sha256": "96888d55c6477bc00036b4db91013ee2cb53952cf51c11a305a2ba978063d158",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-100/patchcore-debug-map-highlight.png",
+      "size": 34463,
+      "sha256": "eadd8ef68ccc9f052c349ceb33f3e7e43db996ae0a1b6fdb122177e75e9194d1",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-100/patchcore-debug-overlay-heatmap.png",
+      "size": 54136,
+      "sha256": "29917e350c72d00bd76901234c24e6502f99824c497a1a79753c8b9ae5eccd40",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-100/patchcore-debug-overlay-highlight.png",
+      "size": 40094,
+      "sha256": "32cf6a2bb5ef3f7f7767794f5373c11808d5f5a18e40c818c3a0f61fd43992cc",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-100/patchcore-highlight-parameters-460-legacy-False.png",
+      "size": 22683,
+      "sha256": "cedd93e885f3144a1b15c0e8ec2aa1995b04ff0f44bd4c8cb0cde47ccdc44e1e",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-100/patchcore-highlight-parameters-460-legacy-True.png",
+      "size": 22612,
+      "sha256": "f2ead2675b26d17f6581b588965595f05c334e246629362f704ec2ce2f1f319f",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-100/patchcore-highlight-parameters-620-legacy-False.png",
+      "size": 24071,
+      "sha256": "8060064d7ceb664f4b1be9928eb0f3faaa85b23e6cef7a617e5b2aa6798584e9",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-100/patchcore-project-460.png",
+      "size": 62388,
+      "sha256": "699135407fa918b3c0747298f3e29b6298f1b4c826c52f10e80dbc77e2042be1",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-100/patchcore-project-620.png",
+      "size": 62388,
+      "sha256": "699135407fa918b3c0747298f3e29b6298f1b4c826c52f10e80dbc77e2042be1",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-100/synthetic-input.png",
+      "size": 3489,
+      "sha256": "fff482235ac8b2f647fb53cd98f2285df9d975a60408e1a4322b94c049ff6898",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-100/synthetic-overlay-heatmap.png",
+      "size": 10003,
+      "sha256": "46d6221f28ed31d58332f5e515a9365f812ed9a040a980e528e2b9c1f23aeef2",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-100/synthetic-overlay-highlight.png",
+      "size": 1893,
+      "sha256": "dc8253486006d35c171664308d45111f5a9722fb56117e21dc14360650f9c8b0",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-150.xml",
+      "size": 12974,
+      "sha256": "84c63191701801ba80162f524f8939b541734d4ea1ca797590794fe84656976c",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-150/patchcore-debug-map-heatmap.png",
+      "size": 53967,
+      "sha256": "11c08bc2157a6be3d23fb6868fe3e3fb1056a8441e1778a5eb62860088fb0a34",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-150/patchcore-debug-map-highlight.png",
+      "size": 53411,
+      "sha256": "607ad6805c9a7094c55e928654737c95fd0508ec75c1c3ca80ebdc7842518cdf",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-150/patchcore-debug-overlay-heatmap.png",
+      "size": 74744,
+      "sha256": "6d3aab09fc65ce83290f0ea194b2a67aba40100e1bd8f56e4a2b5f32087d115f",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-150/patchcore-debug-overlay-highlight.png",
+      "size": 57337,
+      "sha256": "69f4d16358d5c12092bde50ab78dc6a4786fc9046c81ba83388724be95fb9598",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-150/patchcore-highlight-parameters-460-legacy-False.png",
+      "size": 34497,
+      "sha256": "52eea4af886d50b92363a91c0a31c4ce4a4d14b092193e7f4df2fca088a6130e",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-150/patchcore-highlight-parameters-460-legacy-True.png",
+      "size": 34465,
+      "sha256": "b3f73da258b66ed53e9bea24960f7ea77e8671f3108858be955a66d515264fc6",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-150/patchcore-highlight-parameters-620-legacy-False.png",
+      "size": 37751,
+      "sha256": "b80de56ace0f8cb0729c7227e386738c7d0bd53bcd62965b28b0ae04025b8595",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-150/patchcore-project-460.png",
+      "size": 98024,
+      "sha256": "36e3ae82ea3084a4b3f3ad55a42f1b38a498aacd7c7854845ee5f45f52823a45",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-150/patchcore-project-620.png",
+      "size": 98024,
+      "sha256": "36e3ae82ea3084a4b3f3ad55a42f1b38a498aacd7c7854845ee5f45f52823a45",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-150/synthetic-input.png",
+      "size": 3489,
+      "sha256": "fff482235ac8b2f647fb53cd98f2285df9d975a60408e1a4322b94c049ff6898",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-150/synthetic-overlay-heatmap.png",
+      "size": 10003,
+      "sha256": "46d6221f28ed31d58332f5e515a9365f812ed9a040a980e528e2b9c1f23aeef2",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-150/synthetic-overlay-highlight.png",
+      "size": 1893,
+      "sha256": "dc8253486006d35c171664308d45111f5a9722fb56117e21dc14360650f9c8b0",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/patchcore-concurrent-edit.xml",
+      "size": 37512,
+      "sha256": "2a1aadd428ba7e7d8634568b4cbfd15dca4d9998f5a3f9512d583a72e3992d39",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/patchcore-final.xml",
+      "size": 20284,
+      "sha256": "a9a1d092fb9645e1062208d5a2980c43d07e2e854f379ee8cdd452e1771dd0c7",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/patchcore.xml",
+      "size": 21422,
+      "sha256": "d42086001024aba9cdac380f431a86541c48071553dd923a2bc390a234c9f92e",
+      "tracked": false
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/regression.xml",
+      "size": 39677,
+      "sha256": "80baa5933af35bb2373ed51b9a3112a18aa0162f21437ee6d69ed266ea1cebad",
+      "tracked": false
+    },
+    {
+      "path": "pyproject.toml",
+      "size": 801,
+      "sha256": "801c0f747148c8cd42f56ea7122fab46fef0fda2dbd6ae93885a638da128f33d",
+      "tracked": true
+    },
+    {
+      "path": "requirements.txt",
+      "size": 219,
+      "sha256": "ec8b5ca77b1d32b09cbe71d75aab4d827a24d8c25517c82148eee093eaeb4714",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/designer/controllers/layout_controller.py",
+      "size": 7352,
+      "sha256": "ceaa1c7be2d300fccda282ca3d06a15d03320a6cb66ec553876db85e8b6c3024",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/chrome.py",
+      "size": 14151,
+      "sha256": "acb30b64013b1f7ced118ed58c2997e8098cfb3f94425cd05e99d137cf450c81",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/navigation.py",
+      "size": 935,
+      "sha256": "63d558b5e4f2ffcf4dc28c2ea3812f0df7c7d411c5e45caa9c18282da583e66d",
+      "tracked": false
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/tools.py",
+      "size": 47237,
+      "sha256": "23cd135c91fe3c4c78e21b1bbd0344554f5351876a7c039e209bf3718b633ad5",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/workspace.py",
+      "size": 14670,
+      "sha256": "2d9e7d6280253f9974d364fb2413396a093953354e437f2741229fd223f21629",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/_lucide_data.py",
+      "size": 14457,
+      "sha256": "2149579e929da015f0ec42ce53ccbc5a24686e337c71925c83d652c9e5013ac3",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/canvas_overlay.py",
+      "size": 10387,
+      "sha256": "39c1c87237aaeb16f085246712b6afa46661e98db11b3be504c9de7adbe7ebf4",
+      "tracked": false
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/designer_actions.py",
+      "size": 15967,
+      "sha256": "7501de872928ffe1f0c17876d39cfbf52bbd2c278d1edd5a5688ab461ca627ea",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/floating_run_panel.py",
+      "size": 3167,
+      "sha256": "23934b3697f086d6ed7e1aa49015fb40a0ea7d03cc32eb6088664b860d323f4b",
+      "tracked": false
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/floating_toolbox.py",
+      "size": 6437,
+      "sha256": "db5ce2e9af32fa3c6f083c1581069c948d38dfb216b014e9edf0a3c098b11257",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/main_window.py",
+      "size": 242818,
+      "sha256": "3c94394fdeb56ac1c1a582d875e7b269111a8706c613374dc89ef6a69e41763e",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/node_context_menu.py",
+      "size": 7107,
+      "sha256": "5691337cdfed996e8b3fc657f140dfb2151ab6de58d5b48e5492bdbd023b42e5",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/node_result_coordinator.py",
+      "size": 14513,
+      "sha256": "6d8b7b3b30dd5d3b98fe4f4ad929ef11efc3f468eac92883dc5610a4d79a7278",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/workflow_navigation.py",
+      "size": 18677,
+      "sha256": "e19c2dad60cb4a9637c707cef00e0d44bf2414f95edfce5d5beb280d883bedee",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/operator_runtime/controller.py",
+      "size": 24077,
+      "sha256": "cf37f3c5bfd52b0f74998ff081a93945132eb343645761ab44762355e33d17b4",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/operator_runtime/main.py",
+      "size": 29170,
+      "sha256": "b450dac84c06a06dc4b549515b596e689824e277551af1569143d961274de150",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/tcp.py",
+      "size": 12878,
+      "sha256": "0254732adeb1ba188d9847cc299453a831ad81e2603d18d580a2722a9709e2ac",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/runtime/execution/operator_executor.py",
+      "size": 24032,
+      "sha256": "7e543b6436e5a814f251a485e6b7518293212acd664b1541b21ea93ef84489bf",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/runtime/jobs/worker_main.py",
+      "size": 18019,
+      "sha256": "b66fb306c63dad34e119819e512cb7460877d0b5111d3548291c8829fe655071",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/runtime/operator_debug/contracts.py",
+      "size": 14058,
+      "sha256": "ce615ae5209834939bd5a5cf0821aee5c8ac8674045704887c0c324194fa8fa0",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/runtime/operator_debug/resources.py",
+      "size": 6887,
+      "sha256": "73c12fc4e9bb439875ce6a0d97a512d6868d881ed10ff9e705992b641702b9c9",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/coordinator.py",
+      "size": 22025,
+      "sha256": "d8332ddc6ce766f242fb385f54a8b1e62520b9e222c041b430684e32ea821fd5",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/rpc.py",
+      "size": 37870,
+      "sha256": "d2ec10e013b8ae810565eab37cc0aadd6df3457062b7b54c722e5cddeeba2354",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/transition.py",
+      "size": 8702,
+      "sha256": "e6a089e1993f8d6feca447f6546817becd9c1810a143beb0b9ad8f63ea24bfdf",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/apps/runtime/workflow/runner.py",
+      "size": 24119,
+      "sha256": "0fd0e009b4c1a6cbd1f4669c9ddad84a7b6cf60b27c4bdd244f50878e680dbb0",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/core/project/runtime_package.py",
+      "size": 20460,
+      "sha256": "20ae94316f68e95462b60f83f387e78611f59dca0843ec0ca35ae63191eaed00",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/core/workflow/compiler.py",
+      "size": 29327,
+      "sha256": "39605e5e7243dcb5bf4b83ae0d935712b920c7f501526ed4c794dcf2918b94a7",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_communication_operators.py",
+      "size": 38809,
+      "sha256": "8f0bff9c7da8168f7ae24afc5e2901f5d09daade266adcb5fad869a6a53bbcc9",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_operator_modes.py",
+      "size": 8448,
+      "sha256": "0082ca135e8940e9c86b77690a38d561368769bae134a50ad37f3864ea70a9e6",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/collection_select/operator.py",
+      "size": 7534,
+      "sha256": "6df06dcf2d0889e54fbf50120d25766365ca480f90943e7d224f35ee2f7d8bcd",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/detection_archive/operator.py",
+      "size": 7716,
+      "sha256": "cbe75b02f85c87152969e61c1d9990bf2b104d0ca273341020dd0141f454fbb6",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/__init__.py",
+      "size": 79,
+      "sha256": "60ba96056ea42a6c0929598278b46d5c3681eb030404f19eaef5b8806ac7bd72",
+      "tracked": false
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/assets/icon.svg",
+      "size": 425,
+      "sha256": "bdbecc9fc3f0cc0d8d33bc970dd396923cc453c0c18978b87f5afe97497559d4",
+      "tracked": false
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/bundle.py",
+      "size": 16934,
+      "sha256": "9fda28d96c327d84742717bce0faa99e444b56a2a537fade022a6e885ea253c5",
+      "tracked": false
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/manifest.json",
+      "size": 3206,
+      "sha256": "a23b131e144e2b3e3bee595c2dade0a745fad132a04da16d69b44095e80467b8",
+      "tracked": false
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/numeric.py",
+      "size": 3042,
+      "sha256": "2728f414a811fb3273fa7150bbb3d076fbd28ad6cae7589dd2896dcc4375852b",
+      "tracked": false
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/onnx_backend.py",
+      "size": 3533,
+      "sha256": "f33200374249aea58c8307547a5e7f562b7fc159c5856117e7bf489fa628e678",
+      "tracked": false
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/operator.py",
+      "size": 11435,
+      "sha256": "795b7cdeea2c6334b2931dde410ee89f35e40aaac9f16a8e5603eca79e654166",
+      "tracked": false
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/visualization.py",
+      "size": 982,
+      "sha256": "d0f9840cf0952d8a29d7994fb7008f9869139d314e392d700a1a941421716763",
+      "tracked": false
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/yolo_inference/manifest.json",
+      "size": 5683,
+      "sha256": "07a7e85acc0a66baac4cb9a200fae4b5c443e7cc880bdb498844b16631eb1bfe",
+      "tracked": true
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/yolo_inference/operator.py",
+      "size": 20554,
+      "sha256": "5e0b80d3a4227eae571bff21c64d76e7fb8bc01cdd0eeb964361e5c4e720658a",
+      "tracked": true
+    },
+    {
+      "path": "tests/conftest.py",
+      "size": 2464,
+      "sha256": "24ef3723eacba744e850d67be99a6b643b7788d2a7cf2d493588da2982bed956",
+      "tracked": true
+    },
+    {
+      "path": "tests/core/plugin/test_builtin_parameter_titles.py",
+      "size": 1086,
+      "sha256": "4a03fac904e4fd83362b82fec8723c42f4b459c5c39f7358bc2a1a3be7b4112c",
+      "tracked": true
+    },
+    {
+      "path": "tests/core/plugin/test_operator_development_examples.py",
+      "size": 6337,
+      "sha256": "76b9950842d49cf96e07bc2272425a88215c057b2a343298d5f7496e4771c095",
+      "tracked": false
+    },
+    {
+      "path": "tests/designer/conftest.py",
+      "size": 2350,
+      "sha256": "b60776271a29d015353470d084d114f89730dc92f909400607328a7819a3726b",
+      "tracked": true
+    },
+    {
+      "path": "tests/designer/test_designer_shortcuts.py",
+      "size": 18499,
+      "sha256": "f771122aac025031c1ed00551e8bd530dfb9d92c127b49fe467201c6cc8dfc41",
+      "tracked": true
+    },
+    {
+      "path": "tests/designer/test_floating_run_panel.py",
+      "size": 8662,
+      "sha256": "4cd3bcb33c72d74dd1a15d5d4341e80822fdee5d23ca03b79aa0f4b778c359a3",
+      "tracked": false
+    },
+    {
+      "path": "tests/designer/test_floating_toolbox.py",
+      "size": 14349,
+      "sha256": "918bd6a43f4c8e6c54e281aecdad984eda2d907ff8f609311f9d265de6aae140",
+      "tracked": true
+    },
+    {
+      "path": "tests/designer/test_main_window_layout.py",
+      "size": 8697,
+      "sha256": "3cfb79b4d5f0ed8f2cfda27f6d0b8d741948984017bbf89cbc0082d39686442b",
+      "tracked": true
+    },
+    {
+      "path": "tests/designer/test_node_image_viewer.py",
+      "size": 19650,
+      "sha256": "6396f20215e543467fbe3a6b6b6d65102913401f1b7b0f85f49348cc4f5a651f",
+      "tracked": true
+    },
+    {
+      "path": "tests/designer/test_node_result_panel.py",
+      "size": 12379,
+      "sha256": "b7fc8ac32fae700b796a3240db04c80610c80fa5696910bc852c91e597090371",
+      "tracked": true
+    },
+    {
+      "path": "tests/designer/test_patchcore_inference.py",
+      "size": 11855,
+      "sha256": "32aa219ae9729d065501dd131ebb54749957ca484ab1a82644e651c3aea12d62",
+      "tracked": false
+    },
+    {
+      "path": "tests/designer/test_visual_layout.py",
+      "size": 16368,
+      "sha256": "e7d4614b24efa09ee91dac25036e0bb5802a4c2a3e7573eaa2a7ba3b5a6f1021",
+      "tracked": true
+    },
+    {
+      "path": "tests/designer/test_yolo_parameter_presentation.py",
+      "size": 9192,
+      "sha256": "19f4e98d856ee0e1ce80a09b071bb6523b2c8d735457fe00e6271e2cb522512f",
+      "tracked": true
+    },
+    {
+      "path": "tests/plugins/patchcore_fixture.py",
+      "size": 10140,
+      "sha256": "f9eb3dfba4a7099c4de08a6f81fb49ad415da2d3404bc58eeb4a65c47038c15b",
+      "tracked": false
+    },
+    {
+      "path": "tests/plugins/test_collection_select_dynamic_index.py",
+      "size": 4016,
+      "sha256": "5098be888fa9467257eae15848959dea8ec80da97c7c7218e173af262666c839",
+      "tracked": true
+    },
+    {
+      "path": "tests/plugins/test_communication_operators.py",
+      "size": 33254,
+      "sha256": "1aeb9bea277e6f205459ed5fa346334166164312d5790c75b867e3639a690e32",
+      "tracked": true
+    },
+    {
+      "path": "tests/plugins/test_detection_archive_operator.py",
+      "size": 7753,
+      "sha256": "5da3227380a1f1719bf92b188fd1bbea71b59c88ef571377574dc9bd006fa3cd",
+      "tracked": true
+    },
+    {
+      "path": "tests/plugins/test_operator_modes.py",
+      "size": 6456,
+      "sha256": "12961c7e60bcabd0bd37a048a16a70dae4ccd45a3f96331ee793ca0445a75f6c",
+      "tracked": true
+    },
+    {
+      "path": "tests/plugins/test_patchcore_highlight.py",
+      "size": 8748,
+      "sha256": "c1972481f9d3b4c11c43c31ef567ae3607200b9c9fa1a62f02a09ab4fd45be85",
+      "tracked": false
+    },
+    {
+      "path": "tests/plugins/test_patchcore_inference_operator.py",
+      "size": 17127,
+      "sha256": "b96697caa0e7f2c6f1e8c1b8b209084e93a70b7225d31be007abcb7da258785e",
+      "tracked": false
+    },
+    {
+      "path": "tests/plugins/test_patchcore_numeric.py",
+      "size": 2555,
+      "sha256": "5e8e96069dd118fe819895fceeb77fce2c4ae38bb071037d4b1319c3a18ef4d8",
+      "tracked": false
+    },
+    {
+      "path": "tests/plugins/test_yolo_inference_operator.py",
+      "size": 17751,
+      "sha256": "bd30d403d41d0c7dd9f719536fb86f3ab4e6c9423d3d614687ec27381416eb28",
+      "tracked": true
+    },
+    {
+      "path": "tests/runtime/current_production_fixture.py",
+      "size": 3186,
+      "sha256": "0ad94cd95c4713900e38fc0be73da1ebe08bb0c01c066081a7e991bceaf17393",
+      "tracked": false
+    },
+    {
+      "path": "tests/runtime/patchcore_fixture.py",
+      "size": 3067,
+      "sha256": "3bf3ade33082895247e99d33a49c2f05ea072edf27a8078f25b494dc76353143",
+      "tracked": false
+    },
+    {
+      "path": "tests/runtime/test_operator_error_propagation.py",
+      "size": 7553,
+      "sha256": "bee55c7983ce4f6f345b9be15a4f18bf07b18a718d22e66eccbacf6ac9c5b54e",
+      "tracked": false
+    },
+    {
+      "path": "tests/runtime/test_operator_executor_shared.py",
+      "size": 23225,
+      "sha256": "a9f8b5cd1add5b5eb5802807faf72bc856c1226436bccdc28dc0e884ce6e1a59",
+      "tracked": true
+    },
+    {
+      "path": "tests/runtime/test_operator_registration.py",
+      "size": 5965,
+      "sha256": "9afb93d89fa8db72ef5915e986738568fd58adcce341f9cdc5ab13cc455376c2",
+      "tracked": true
+    },
+    {
+      "path": "tests/runtime/test_optional_output_execution.py",
+      "size": 5742,
+      "sha256": "e58c299a795c5e7c9f4231f071061c73d1528657614eed8ea74de545582f9b2e",
+      "tracked": false
+    },
+    {
+      "path": "tests/runtime/test_patchcore_debug.py",
+      "size": 4394,
+      "sha256": "195586c5bd906c608e17ff5cd97012ff82d54965ceaa5a89bcc7a21d57f9b7fb",
+      "tracked": false
+    },
+    {
+      "path": "tests/runtime/test_patchcore_workflow.py",
+      "size": 8911,
+      "sha256": "559f92f7b0b81d3c26fc5dfb8825d56a05aef05019bdd4a1a84f399369485432",
+      "tracked": false
+    },
+    {
+      "path": "tests/runtime/test_production_project_configuration.py",
+      "size": 10799,
+      "sha256": "46a1a8ba9f492f7764ebf1d234f08fc4ae749f1a05d87a131f461c356bd4bfdd",
+      "tracked": false
+    },
+    {
+      "path": "tests/runtime/test_runtime_workflow_architecture.py",
+      "size": 20639,
+      "sha256": "3d6faf8fcb312f1e18a127805c61153707a813c51e4a6f6c1ba181a8a7f123b2",
+      "tracked": true
+    },
+    {
+      "path": "tests/runtime/test_worker_capture_diagnostics.py",
+      "size": 2912,
+      "sha256": "f5e08850dca7ab52b3ca5981dad9f28c5de0b7645ccae48758e1940548ada176",
+      "tracked": true
+    },
+    {
+      "path": "tests/runtime/test_yolo_inspection_outputs.py",
+      "size": 11602,
+      "sha256": "b965bb12be1855ba3afefc36dd6dff3037c56dbc798b04cc690d41cd22181031",
+      "tracked": true
+    },
+    {
+      "path": "tests/ui/operator_view/test_production_configuration_window.py",
+      "size": 7188,
+      "sha256": "19053d5f8039234fcc6bfb91b4a1cf9645ea4ad8996f0e8bb893290f27e9d98a",
+      "tracked": false
+    },
+    {
+      "path": "tests/ui/page_designer/conftest.py",
+      "size": 1200,
+      "sha256": "6af1e9fb847c3f62168d6d82c9c85c3b9052847b4efcf9f9c2c3926ed260b2f8",
+      "tracked": true
+    },
+    {
+      "path": "tests/ui/page_designer/test_delivery_path.py",
+      "size": 8815,
+      "sha256": "61173b3d7309d396ee0b5a1d22c0fc581adb02a56bf039545b913e406c8a8488",
+      "tracked": true
+    },
+    {
+      "path": "tests/ui/page_designer/test_floating_workspace.py",
+      "size": 8268,
+      "sha256": "04db1182e3be0af3ffdce7c62df1534371fc1777e4fba0253f4beb0bc8bd8df4",
+      "tracked": false
+    },
+    {
+      "path": "tests/ui/page_designer/test_page_navigation.py",
+      "size": 11319,
+      "sha256": "466aea3a2de9ddcb8f9870ba35ba51c171fc77de5051dee4a05c467f80a8e3ed",
+      "tracked": true
+    },
+    {
+      "path": "tests/ui/page_designer/test_parallel_runtime.py",
+      "size": 12950,
+      "sha256": "ce4e766f80a880a4de9e8fd02583b298602521aadf8bb68a96e462ada4f9f018",
+      "tracked": true
+    },
+    {
+      "path": "tests/ui/page_designer/test_user_path.py",
+      "size": 13223,
+      "sha256": "c7bed8c4b113b00ab7d0d386171e2f7edd1ccb588b188c957eaeb69b3956bae4",
+      "tracked": true
+    },
+    {
+      "path": "tests/ui/page_designer/test_visual_editor.py",
+      "size": 6755,
+      "sha256": "955de7993bf2e150dc4171f4077eb76a70d36185c3b2ea52a96c6087bf9706da",
+      "tracked": true
+    },
+    {
+      "path": "tests/ui/page_designer/test_workspace_modes.py",
+      "size": 8898,
+      "sha256": "1f9c75e67fd32920c7291b6f70afd018b546279e4eaee809c3753445b696ab54",
+      "tracked": true
+    }
+  ]
+}

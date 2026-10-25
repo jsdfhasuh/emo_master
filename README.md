@@ -35,8 +35,9 @@ EmoMaster 是一个参考 VisionMaster 思路实现的机器视觉流程设计�
 
 - **默认内嵌模式**：只启动 Designer，由它直接创建并调用 `RuntimeService`，不经过网络 gRPC。每个正式 Job 仍使用独立的 `multiprocessing.spawn` 子进程。
 - **外部服务模式**：独立启动 Runtime，Designer 设置 `EMO_RUNTIME_TARGET` 后通过 gRPC 连接。源码入口默认监听 `127.0.0.1:50051`。
+- **独立操作员模式**：使用 `start_runtime.cmd` / `scripts/run_operator.py` 加载工程，提供工程页面、单次或连续执行和启停，不需要打开 Designer。当前 2.7 工程支持显式重新加载、切换和停机更新，见[独立 Runtime](docs/operator-runtime.md)。
 
-当前 Windows 包无参数启动 `EmoMaster.exe` 会进入 Designer，未提供 `EmoMaster.exe --runtime` 模式。独立 Runtime 启动后等待请求，不会自动加载并循环运行现场项目。详情见 [工程架构](docs/engineer-guide.md) 和 [部署与发布](docs/deployment-guide.md)。
+无参数启动 Designer 产品入口 `EmoMaster.exe` 会进入 Designer；独立运行端使用另行构建的 `EmoMasterRuntime.exe`。`run-runtime` 服务入口只等待请求，不等于操作员运行端。源码修复不会自动更新已有 EXE；详情见 [工程架构](docs/engineer-guide.md) 和 [部署与发布](docs/deployment-guide.md)。
 
 ## 从源码开始开发
 
@@ -104,7 +105,7 @@ python scripts/ci_check.py
 
 该命令依次执行 protobuf 一致性检查、Ruff、mypy 和 pytest。修改 `proto/runtime.proto` 后才需要运行 `python scripts/gen_proto.py` 重新生成，并连同生成文件一起提交；不要为掩盖一致性检查失败而直接覆盖生成文件。
 
-新增算子不需要修改中央注册表，见 [算子注册与执行流程](docs/plugin-registration-flow.md)。自定义图片、分类兜底和冻结资源说明见 [算子图标资源](docs/operator-icon-assets.md)。截图检查和真实硬件验收是不同层次，见 [Designer 验证记录](docs/designer-ui-validation.md)。
+新增算子和设备插件先看 [算子与设备插件开发指南](docs/operator-development-guide.md) 和 [当前算子目录](docs/operator-catalog.md)，覆盖 manifest、设备描述符、驱动、设备绑定与测试。新增算子不需要修改中央注册表，注册背景见 [算子注册与执行流程](docs/plugin-registration-flow.md)。自定义图片、分类兜底和冻结资源说明见 [算子图标资源](docs/operator-icon-assets.md)。截图检查和真实硬件验收是不同层次，见 [Designer 验证记录](docs/designer-ui-validation.md)。
 
 ## Windows 部署与打包
 
@@ -134,6 +135,7 @@ manifest.json
 | [开发指南](docs/development-guide.md) | 源码环境、启动、调试、检查和常见错误 |
 | [部署与发布指南](docs/deployment-guide.md) | Windows 交付、本地构建、CI 发布、自检与数据保留 |
 | [工程师导读](docs/engineer-guide.md) | Designer、Runtime、core 边界与执行主线 |
+| [算子与设备插件开发](docs/operator-development-guide.md) / [当前算子目录](docs/operator-catalog.md) | 算子编写、设备描述符注册、Runtime 驱动、参数绑定与验证 |
 | [项目格式](docs/project-json-spec.md) / [工作流包](docs/workflow-package-spec.md) | 文件契约、迁移和交换格式 |
 | [算子注册](docs/plugin-registration-flow.md) / [输入输出契约](docs/operator-io-contracts.md) / [图标资源](docs/operator-icon-assets.md) | 扩展算子与排查注册、类型、图标问题 |
 | [Designer / Runtime 时序](docs/runtime-designer-sequences.md) / [事件流](docs/runtime-event-flow.md) | 项目、Job、预览和事件交互 |

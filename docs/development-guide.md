@@ -244,7 +244,7 @@ IDE 使用 `emo_master` 环境中的 Python 3.10，工作目录设为仓库根�
 
 源码和可共享示例可提交；`manual_test_workspace`、运行数据库、模型、现场相机参数及原始验收资料不能因未跟踪就直接上传。保留现场 `project.json`，不要为测试覆盖真实项目。提交前检查 `git status --short` 和 `git diff --check`。
 
-新增算子按 [注册流程](plugin-registration-flow.md) 和 [图标资源](operator-icon-assets.md) 操作；新增项目字段同步模型、迁移、Designer store 和 Runtime loader；新增 RPC 同步 proto 及生成物。不要把业务执行逻辑放进 Designer 或薄 RPC 适配层。目录与数据约定见 [工作区指南](workspace-guide.md)。
+新增算子和设备插件按 [算子与设备插件开发指南](operator-development-guide.md) 操作，包含完整算子示例、DeviceType/Driver API、节点绑定与测试；可从 [当前算子目录](operator-catalog.md) 选择参考实现。[注册流程](plugin-registration-flow.md) 和 [图标资源](operator-icon-assets.md) 提供专项说明。新增项目字段同步模型、迁移、Designer store 和 Runtime loader；新增 RPC 同步 proto 及生成物。不要把业务执行逻辑放进 Designer 或薄 RPC 适配层。目录与数据约定见 [工作区指南](workspace-guide.md)。
 
 ## 7. 常见问题
 

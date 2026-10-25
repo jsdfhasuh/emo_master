@@ -1,0 +1,65 @@
+[
+  {
+    "name": "focused-regression",
+    "platform": "offscreen",
+    "scale": null,
+    "tests": 1011,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "unique_tests": 1011,
+    "duplicate_executions": 0,
+    "xml_time_seconds": 555.527,
+    "skips": [
+      {
+        "id": "tests.core.plugin.test_icon_resources::testSymlinkCannotEscapeRoot",
+        "reason": "symlinks unavailable in this environment"
+      }
+    ],
+    "failed_tests": []
+  },
+  {
+    "name": "native-100-complete",
+    "platform": "windows",
+    "scale": "1",
+    "tests": 96,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "unique_tests": 96,
+    "duplicate_executions": 0,
+    "xml_time_seconds": 107.367,
+    "skips": [],
+    "failed_tests": [
+      "tests.designer.test_floating_toolbox::testShortCanvasCanScrollToEveryCategoryAndCard"
+    ]
+  },
+  {
+    "name": "native-150-complete",
+    "platform": "windows",
+    "scale": "1.5",
+    "tests": 96,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unique_tests": 96,
+    "duplicate_executions": 0,
+    "xml_time_seconds": 169.409,
+    "skips": [],
+    "failed_tests": []
+  },
+  {
+    "name": "documentation-examples",
+    "platform": "offscreen",
+    "scale": null,
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unique_tests": 3,
+    "duplicate_executions": 0,
+    "xml_time_seconds": 0.56,
+    "skips": [],
+    "failed_tests": []
+  }
+]

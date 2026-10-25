@@ -1,0 +1,8 @@
+tests/designer/test_floating_run_panel.py
+tests/designer/test_floating_toolbox.py
+tests/designer/test_node_result_panel.py
+tests/designer/test_patchcore_inference.py
+tests/designer/test_yolo_parameter_presentation.py
+tests/designer/test_workflow_navigation.py
+tests/ui/page_designer/test_floating_workspace.py
+tests/ui/operator_view/test_production_configuration_window.py

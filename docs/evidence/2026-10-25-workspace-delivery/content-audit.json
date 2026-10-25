@@ -1,0 +1,101 @@
+{
+  "parse_checks": {
+    "python": 81,
+    "json": 2,
+    "xml": 13
+  },
+  "secret_findings": [],
+  "historical_report_results": [
+    {
+      "path": "docs/testing/patchcore-2026-10-23/contracts.xml",
+      "tests": "147",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "1"
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-100-final.xml",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-100.xml",
+      "tests": "46",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-150-final.xml",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/native-150.xml",
+      "tests": "46",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/patchcore.xml",
+      "tests": "85",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "path": "docs/testing/patchcore-2026-10-23/source.xml",
+      "tests": "273",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-100.xml",
+      "tests": "82",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/native-150.xml",
+      "tests": "82",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/patchcore-concurrent-edit.xml",
+      "tests": "132",
+      "failures": "17",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/patchcore-final.xml",
+      "tests": "132",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/patchcore.xml",
+      "tests": "132",
+      "failures": "2",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "path": "docs/testing/patchcore-highlight-2026-10-23/regression.xml",
+      "tests": "177",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "1"
+    }
+  ]
+}

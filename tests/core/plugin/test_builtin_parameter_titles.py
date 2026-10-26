@@ -1,6 +1,7 @@
 from pathlib import Path
 import re
 
+from emo_master import __version__
 from emo_master.core.plugin.registry import PluginRegistry
 
 
@@ -15,9 +16,9 @@ def _fields(schema):
 
 def testAllBuiltinParameterTitlesSurviveRegistration():
     root = Path(__file__).resolve().parents[3] / "src/emo_master/plugins/builtins"
-    scan = PluginRegistry("0.6.1").scan(root)
+    scan = PluginRegistry(__version__).scan(root)
     assert not scan.rejectedOperators
-    assert len(scan.activeOperators) == len(list(root.rglob("manifest.json"))) == 77
+    assert len(scan.activeOperators) == len(list(root.rglob("manifest.json"))) == 78
     fieldCount = 0
     for operatorId, descriptor in scan.activeOperators.items():
         for name, field in _fields(descriptor.manifest.paramSchema):

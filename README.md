@@ -1,6 +1,6 @@
 # emo_master
 
-EmoMaster 是一个参考 VisionMaster 思路实现的机器视觉流程设计与运行平台，当前代码版本为 `0.6.1`。
+EmoMaster 是一个参考 VisionMaster 思路实现的机器视觉流程设计与运行平台，当前软件版本统一在 [app_version.py](src/emo_master/app_version.py) 中维护。
 
 > 项目仍处于实验性阶段，适合学习、验证和二次开发，尚未面向生产环境。它是独立实现，与 VisionMaster 及其厂商不存在隶属或官方关联。
 >
@@ -108,6 +108,10 @@ python scripts/ci_check.py
 新增算子和设备插件先看 [算子与设备插件开发指南](docs/operator-development-guide.md) 和 [当前算子目录](docs/operator-catalog.md)，覆盖 manifest、设备描述符、驱动、设备绑定与测试。新增算子不需要修改中央注册表，注册背景见 [算子注册与执行流程](docs/plugin-registration-flow.md)。自定义图片、分类兜底和冻结资源说明见 [算子图标资源](docs/operator-icon-assets.md)。截图检查和真实硬件验收是不同层次，见 [Designer 验证记录](docs/designer-ui-validation.md)。
 
 ## Windows 部署与打包
+
+软件版本只修改 `src/emo_master/app_version.py` 中的 `APP_VERSION`，例如 `APP_VERSION = "0.6.2"`。`emo_master.__version__` 和 Python 包元数据自动读取该值，不需要再同步修改 `__init__.py` 或 `pyproject.toml`。发布标签仍须与它一致（例如 `v0.6.2`）；工程的 `schemaVersion` 独立维护。修改版本号后，已有 EXE 需要重新打包。
+
+版本读取器和三个 Windows 构建工作流已同步到中央打包工具固定提交 `3ef28d7f581dfff09fc900ba64df34b275cc1dcd`。tag 发布使用 `release-emo-master.yml`，从同一源码提交构建 Designer 和独立 Runtime 的安装版、便携版，全部通过后统一发布。两者安装目录独立，公开清单分别为 `manifest.json` 和 `runtime-manifest.json`；单独 Runtime 构建仍默认不发布。发布标题、摘要和更新日志格式沿用训练平台。
 
 现场使用者使用便携 ZIP 或当前用户安装包，无需另行配置源码开发环境。便携包必须完整解压，不能只复制 `EmoMaster.exe`；华睿 MV Viewer/MVSDK 仍需单独安装。安装程序默认目录为 `%LOCALAPPDATA%\Programs\EmoMaster`，应用安装不需要管理员权限，设备驱动安装权限另行处理。
 

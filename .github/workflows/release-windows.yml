@@ -53,93 +53,12 @@ jobs:
         run: python scripts/ci_check.py
 
   package:
-    name: Build Windows package
+    name: Build and publish Designer and Runtime
     needs: validate
-    uses: jsdfhasuh/python_build_scripts/.github/workflows/release-windows.yml@d5f3617a7265c545c793366f93e3a114212d8c59
+    uses: jsdfhasuh/python_build_scripts/.github/workflows/release-emo-master.yml@3ef28d7f581dfff09fc900ba64df34b275cc1dcd
     with:
-      target: emo-master
-      packager_ref: d5f3617a7265c545c793366f93e3a114212d8c59
+      packager_ref: 3ef28d7f581dfff09fc900ba64df34b275cc1dcd
       source_ref: ${{ github.sha }}
       release_tag: ${{ github.ref_name }}
-      release_repo: ${{ github.repository }}
-      publish_release: false
+      publish_release: true
     secrets: inherit
-
-  release:
-    name: Publish GitHub Release
-    needs: package
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout package verification gate
-        uses: actions/checkout@v7
-
-      - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ needs.package.outputs.artifact_name }}
-          path: release-assets
-
-      - name: Verify artifact names and SHA256
-        shell: pwsh
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          $portableName = "emo-master-windows-$env:RELEASE_TAG.zip"
-          $setupName = "emo-master-setup-$env:RELEASE_TAG.exe"
-          $manifestPath = Join-Path 'release-assets' 'manifest.json'
-          $portablePath = Join-Path 'release-assets' $portableName
-          $setupPath = Join-Path 'release-assets' $setupName
-          foreach ($path in @($portablePath, $setupPath, $manifestPath)) {
-            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-              throw "Required release artifact is missing: $path"
-            }
-          }
-          $allAssets = @(Get-ChildItem -LiteralPath 'release-assets' -File)
-          if ($allAssets.Count -ne 3) {
-            throw "Expected exactly three release artifacts, found $($allAssets.Count)"
-          }
-
-          $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
-          $portableSha = (Get-FileHash -LiteralPath $portablePath -Algorithm SHA256).Hash.ToLowerInvariant()
-          $setupSha = (Get-FileHash -LiteralPath $setupPath -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($manifest.url -ne $manifest.assets.portable.url -or $manifest.sha256 -ne $portableSha) {
-            throw 'Top-level manifest URL/SHA256 does not match the portable asset'
-          }
-          if ($manifest.assets.portable.name -ne $portableName -or $manifest.assets.portable.sha256 -ne $portableSha) {
-            throw 'Portable asset metadata or SHA256 is invalid'
-          }
-          if ($manifest.assets.setup.name -ne $setupName -or $manifest.assets.setup.sha256 -ne $setupSha) {
-            throw 'Setup asset metadata or SHA256 is invalid'
-          }
-
-      - name: Require custom icon rendering from the frozen portable package
-        shell: pwsh
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: ./scripts/verify_windows_package.ps1 -Archive "release-assets/emo-master-windows-$env:RELEASE_TAG.zip"
-
-      - name: Create or update GitHub Release
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.ref_name }}
-          RELEASE_REPO: ${{ github.repository }}
-        run: |
-          $assets = @(
-            (Join-Path 'release-assets' "emo-master-windows-$env:RELEASE_TAG.zip"),
-            (Join-Path 'release-assets' "emo-master-setup-$env:RELEASE_TAG.exe"),
-            (Join-Path 'release-assets' 'manifest.json')
-          )
-          gh release view $env:RELEASE_TAG --repo $env:RELEASE_REPO *> $null
-          if ($LASTEXITCODE -eq 0) {
-            gh release upload $env:RELEASE_TAG @assets --repo $env:RELEASE_REPO --clobber
-          } else {
-            gh release create $env:RELEASE_TAG @assets `
-              --repo $env:RELEASE_REPO `
-              --title $env:RELEASE_TAG `
-              --generate-notes
-          }
-          if ($LASTEXITCODE -ne 0) {
-            throw "Failed to publish release $env:RELEASE_TAG"
-          }

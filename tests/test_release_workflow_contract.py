@@ -16,10 +16,18 @@ class ReleaseWorkflowContractTests(unittest.TestCase):
                 package = workflow["jobs"]["package"]
                 ref = package["with"]["packager_ref"]
                 self.assertRegex(ref, r"^[0-9a-f]{40}$")
+                if filename == "release-windows.yml":
+                    entry = "release-emo-master.yml"
+                    self.assertIs(package["with"]["publish_release"], True)
+                    self.assertNotIn("target", package["with"])
+                    self.assertEqual(package["with"]["source_ref"], "${{ github.sha }}")
+                    self.assertNotIn("gh release", str(workflow))
+                else:
+                    entry = "release-windows.yml"
+                    self.assertEqual(package["with"]["target"], "emo-master")
+                    self.assertIs(package["with"]["publish_release"], False)
                 self.assertEqual(package["uses"],
-                    "jsdfhasuh/python_build_scripts/.github/workflows/release-windows.yml@" + ref)
-                self.assertEqual(package["with"]["target"], "emo-master")
-                self.assertIs(package["with"]["publish_release"], False)
+                    "jsdfhasuh/python_build_scripts/.github/workflows/" + entry + "@" + ref)
 
     def test_validation_cannot_publish_and_uses_exact_source(self):
         text = (ROOT / ".github/workflows/validate-windows-package.yml").read_text()

@@ -160,7 +160,9 @@ if ($LASTEXITCODE -ne 0) { throw "无法读取正确源码的版本。" }
 $ReleaseTag = "v" + $Version.Trim()
 ```
 
-源码版本来自当前 `SourceRoot`，不是从手工填写的旧 tag 推断。正式发布前要求源码工作区干净，并确认 `src/emo_master/__init__.py` 和 `pyproject.toml` 中版本一致。
+源码版本来自当前 `SourceRoot`，不是从手工填写的旧 tag 推断。软件版本只在 `src/emo_master/app_version.py` 的 `APP_VERSION` 中维护；`emo_master.__version__` 和 `pyproject.toml` 的动态版本元数据自动读取它。正式发布前要求源码工作区干净，并确认 tag 去掉 `v` 后与 `APP_VERSION` 一致。
+
+版本入口迁移的中央读取器已随打包工具提交 `3ef28d7f581dfff09fc900ba64df34b275cc1dcd` 发布，本仓三个 Windows 工作流已同步固定引用。旧版读取器无法解析新的版本导入关系，不能回退到旧打包提交直接发布。
 
 ### 先检查，再只构建
 
@@ -205,17 +207,17 @@ python scripts\release_wizard_emo_master.py
 本仓 `.github/workflows/release-windows.yml` 在推送 `v*` tag 后运行：
 
 1. 检查 tag 与 `emo_master.__version__` 一致，运行源码检查。
-2. 调用中央 `release-windows.yml@master`，固定 target 为 `emo-master`、source_ref 为触发提交，并暂不由中央流程发布。
-3. 下载产物，检查恰好存在便携 ZIP、安装 EXE、manifest，核对名称和 SHA256，再执行冻结包图标门禁。
-4. 由应用仓创建或更新 GitHub Release 并上传三项产物。
+2. 调用固定提交的中央 `release-emo-master.yml`，固定源码 SHA，分别构建 Designer 和独立 Runtime。两个构建任务自身都不发布。
+3. 验证两套便携 ZIP、安装 EXE 和清单，保留静默安装、已安装程序自测、卸载、用户数据保留、Designer 图标和 Runtime 解压运行验收。
+4. 统一创建草稿 Release，上传并核对六项产物的大小及 SHA256 后才公开。Designer 清单为 `manifest.json`，Runtime 清单为 `runtime-manifest.json`。
 
-这是有外部发布效果的流程。**本次文档修改不创建 tag、不运行发布向导、不生成或发布安装包。**
+这是有外部发布效果的流程。也可在中央仓手动运行该工作流；`publish_release=false` 只构建，显式选择 `true` 才会尝试发布。标题、短摘要、更新日志起点、全部历史和自定义正文参数与训练平台发布流程保持一致。
 
 发版前先完成版本更新、测试和审核，确认目标提交确实位于所需分支；tag 去掉 `v` 后必须与应用版本一致。检查 `git tag --list` 和远端已有 tag/Release，使用未发布的版本，不要强推或移动旧 tag 来补发文档。正式源码应无未提交修改，记录应用 SHA、中央构建 SHA、tag、自检报告和硬件验收状态。
 
-中央 workflow 当前引用可移动的 `@master`；它不是完全固定构建依赖的承诺。需要可重复交付时应记录实际打包仓提交，未来变更为固定 SHA 要作为单独的发布配置改动验证。
+中央 workflow 和构建代码均固定为 `3ef28d7f581dfff09fc900ba64df34b275cc1dcd`。两个产品使用同一源码和打包工具 SHA；仍须记录实际云端运行链接及验收结果。
 
-本地发布向导和 tag 工作流是两条发布路径。同一版本不要同时操作两者；已有 Release 的流程可能覆盖附件，必须经过明确的重新发布审核。
+本地发布向导和 tag 工作流是两条发布路径，同一版本不要同时操作。现有 tag 指向其他源码时拒绝发布，现有 Release 或同名附件不会被覆盖；失败的草稿保留供检查，不自动删除或覆盖。
 
 ## 7. 外部 Runtime 和尚未交付的部署能力
 

@@ -735,3 +735,60 @@ or skips**, and the source identity matches. Its artifacts remain under
 `display-contract-f72d7d3b-evidence/`. These are source/native and frozen checks,
 not real-device or field acceptance. Updated head/merge-candidate full CI and
 frozen verification remain necessary before merge; no branch was deleted.
+
+## Main Integration and Reset Generation Race
+
+The final source `d76acfded20c008a4e8510c482042b52536d6a2d` passed branch CI
+[40487163044](https://github.com/jsdfhasuh/emo_master/actions/runs/40487163044)
+and PR CI [40487169417](https://github.com/jsdfhasuh/emo_master/actions/runs/40487169417)
+on both platforms. Each downloaded JUnit contains 8332 records, zero failures
+and zero errors, with 31 existing Ubuntu skips and 5 existing Windows skips.
+Both Windows suites executed and passed the historical counter, BusinessNg,
+late-session-close and retained-native-owner cases. The earlier unrecoverable
+INCOMPLETE reason remains unestablished; these passes do not prove its cause.
+Frozen run [40487170557](https://github.com/jsdfhasuh/emo_master/actions/runs/40487170557)
+also passed on exact source d76acfde, with downloaded icons/Designer/Runtime
+acceptance evidence and no forced cleanup.
+
+PR #3 was normally merged at 2026-10-27T11:48:07Z as
+`4a8bbfc8fc0bb9bae5fdb1e8a3afe66b91d79c53`. Its tree
+`cdc5c28d39b78f7b2c4a2b1d9036ac3e1b2fa0b0` equals the tested PR candidate
+`fe088a271aff9337c1032643810d70f7c67e11e9` and the source tree.
+
+Post-merge main CI
+[40498867142](https://github.com/jsdfhasuh/emo_master/actions/runs/40498867142)
+then completed Ubuntu with **1 failed, 8258 passed, 31 skipped, 42 subtests
+passed in 2058.14 s**. Its JUnit has 8332 records, one failure and zero errors.
+Windows was still running when this failure was investigated. Evidence is
+retained under `build/ci-followup-40444071101/` as
+`ubuntu-main-4a8bbfc8-full.log` and
+`ci-main-4a8bbfc8-results/test-results-ubuntu-latest-py3.10/`.
+
+`testGrpcMultipartAssetExceedsUnaryLimitAndExpiresAfterReset` exposed a normal
+reset race in Designer's `DebugConnection`: GetOperatorDebugSession returned
+generation 1, the Runtime completed the reset to generation 2, and the next
+ReadOperatorDebugEvents correctly rejected generation 1. Cleanup then tried
+CloseOperatorDebugSession with that stale generation and failed as well.
+Real Runtime regressions deterministically reproduce both the between-read
+transition and a close after reset without an intervening poll.
+
+The local repair refreshes a snapshot once after the explicit stale-session
+rejection and pins its component reads to the returned generation. Close can
+refresh the same Runtime/session once after a pre-dispatch generation rejection,
+retaining its request ID. Runtime replacement, expired results, transport loss
+and repeated stale replies still fail; execute/upload/reset mutations are not
+replayed. Server generation guards, deadlines, the original acceptance test
+and resource-ownership checks are unchanged.
+
+New regressions before the repair: **4 failed, 6 passed** (including both real
+Runtime failures). Afterward, those tests plus the original multipart gRPC
+acceptance case passed **11 tests in 8.39 s**. Logs and JUnit are retained as
+`debug-reset-generation-before.{log,xml}` and
+`debug-reset-generation-focused.{log,xml}`. Ruff, Mypy (560 source files) and
+protobuf drift checks passed. The related native Windows regression passed
+**210 tests in 244.00 s**, with one existing opt-in stress-test skip. It covers
+operator sessions, RPC, assets, retirement, recovery windows and inherited
+workflow-debug cleanup; logs/JUnit are retained as
+`debug-reset-generation-regression.{log,xml}`. New remote CI and frozen-package
+validation remain pending. No physical device was accessed, and these local
+passes do not authorize branch cleanup while main CI is failing.

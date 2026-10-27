@@ -3,6 +3,7 @@ from emo_master.apps.designer.ui.action_state import flowEditAllowed
 from datetime import datetime
 from dataclasses import replace
 from pathlib import Path
+import json
 from typing import Any, Callable, cast
 from uuid import uuid4
 
@@ -35,7 +36,7 @@ from emo_master.apps.designer.ui.flow_scene import (
 from emo_master.apps.designer.ui.designer_graphics_view import DesignerGraphicsView
 from emo_master.apps.designer.ui.log_dialog import (
     DEFAULT_MAX_LOG_ENTRIES,
-    RuntimeLogDock,
+    LogDialog,
     StructuredLogEntry,
 )
 from emo_master.apps.designer.ui.node_param_dialog import NodeParamDialog
@@ -783,8 +784,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 workflowId, nodeId, self.currentJobId),
         )
         self.nodeParamDialog: NodeParamDialog | None = None
-        self.logDock: RuntimeLogDock | None = None
-        self.logDialog: RuntimeLogDock | None = None
+        self.logDialog: LogDialog | None = None
         self.logBuffer: list[str] = []
         self.logEntries: list[StructuredLogEntry] = []
         self._runtimeLogProjectToken = uuid4().hex
@@ -1036,6 +1036,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if _nativeQt:
             self.flowScene.presentationProvider = self._controlFlowPresentation
             self.flowScene.workflowOpenHandler = self._deferWorkflowReference
+            self.flowScene.hiddenPortsLoader = self._readHiddenPorts
+            self.flowScene.hiddenPortsChanged = self._saveHiddenPorts
         self.flowScene.setCanvasClickHandler(self.collapseOperatorBubble)
         self.flowScene.setOperatorDropHandler(self.addNodeFromOperatorDrop)
         self.flowView = DesignerGraphicsView(self.flowScene)
@@ -1286,7 +1288,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setHandleWidth(8)
         self.mainSplitter.addWidget(self.sidebarContainer)
         self.mainSplitter.addWidget(self.canvasPanel)
-        self.mainSplitter.addWidget(self.rightPanelContainer)
+        self.rightPanelSlot = QWidget() if _nativeQt else self.rightPanelContainer
+        self.mainSplitter.addWidget(self.rightPanelSlot)
         connectSplitterMoved = getattr(self.mainSplitter, "splitterMoved", None)
         if connectSplitterMoved is not None and hasattr(
             connectSplitterMoved, "connect"
@@ -1295,17 +1298,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         rootLayout.addWidget(self.mainSplitter)
         rootWidget.setLayout(rootLayout)
         self.setCentralWidget(rootWidget)
-        self.logDock = RuntimeLogDock(
+        self.logDialog = LogDialog(
             self,
             onClear=self._clearRuntimeLogCache,
             onNavigate=self.navigateToRuntimeLogEntry,
             maximumEntries=DEFAULT_MAX_LOG_ENTRIES,
         )
-        self.logDialog = self.logDock
-        addDockWidget = getattr(self, "addDockWidget", None)
-        if callable(addDockWidget):
-            addDockWidget(Qt.BottomDockWidgetArea, self.logDock)
-        self.logDock.hide()
+        self.logDialog.hide()
 
         self.workflowController = WorkflowController(
             workflowStore=self.workflowStore,
@@ -1331,27 +1330,36 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             ),
             workflowController=self.workflowController,
         )
+        self._runtimeEventRefreshTimer = None
+        if _nativeQt:
+            self._runtimeEventRefreshTimer = QTimer(self)
+            self._runtimeEventRefreshTimer.setSingleShot(True)
+            self._runtimeEventRefreshTimer.setInterval(100)
+            self._runtimeEventRefreshTimer.timeout.connect(self._flushRuntimeEventViews)
         self.runtimeController = WorkflowRuntimeController(
             getRunTargets=self.effectiveRunTargetIds,
             getWorkflows=lambda: self.workflowStore.workflows,
             getMaxJobs=lambda: self.workflowStore.runtime.get('maxConcurrentJobs', 2),
             selectState=self._selectRuntimeState,
             inspectionRouter=self.nodeResultCoordinator,
+            requestEventRefresh=self._requestRuntimeEventRefresh,
             runtimeClient=self.runtimeClient,
             runtimePanelState=self.runtimePanelState,
             appendLog=self.appendRuntimeLog,
             refreshRuntimePanelView=self._refreshRuntimePanelView,
-            updateToolbarState=self.updateToolbarState,
+            updateToolbarState=self._updateRuntimeToolbarState,
             syncRuntimeProjectBeforeRun=self._syncRuntimeProjectBeforeRun,
             applyRuntimeEventToNode=self.applyRuntimeEventToNode,
             setCurrentJobId=self._setCurrentJobId,
             setIsJobRunning=self._setIsJobRunning,
             getLoadedProjectPath=lambda: self.loadedProjectPath,
+            getRunProjectReference=self._runtimeProjectReference,
             getCurrentJobId=lambda: self.currentJobId,
             getActiveWorkflowId=lambda: self.activeWorkflowId,
             getEntryWorkflowId=lambda: self.workflowStore.entryWorkflowId,
             appendEvent=self.appendRuntimeEvent,
             onJobAccepted=self._rememberRuntimeLogJob,
+            onRunFailed=self._showRunFailure,
             getLegacySnapshotPolicy=lambda: self.nextRunLegacySnapshotPolicy,
             invalidatePreviewSources=lambda: self.operatorEditorManager.invalidatePreviewSources(),
             deliveryContext=self if _nativeQt else None,
@@ -1426,6 +1434,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
             self.floatingToolbox = FloatingToolbox(self)
             self.layoutController.setFloatingToolbox(self.floatingToolbox)
+            from emo_master.apps.designer.ui.floating_run_panel import FloatingRunPanel
+            self.floatingRunPanel = FloatingRunPanel(self)
+            self.layoutController.setFloatingRunPanel(self.floatingRunPanel, self.rightPanelSlot)
         self.refreshSidebarNodeList()
         self._refreshWorkflowTabs()
         self.applyResponsiveLayout()
@@ -1460,69 +1471,21 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.runtimeController.getCapturePresentation = self._capturePresentationForRun
         self.communicationController = None
         self.communicationDock = None
-        if _nativeQt:
-            from PySide2.QtWidgets import QDockWidget
-            from emo_master.ui.communication_panel import CommunicationPanel
-            from emo_master.ui.communication_controller import CommunicationController
-            self.communicationDock = QDockWidget("通信服务", self)
-            self.communicationDock.setObjectName("projectCommunicationDock")
-            panel = CommunicationPanel(self.communicationDock)
-            self.communicationDock.setWidget(panel)
-            self.addDockWidget(Qt.BottomDockWidgetArea, self.communicationDock)
-            if self.logDock is not None:
-                self.tabifyDockWidget(self.logDock, self.communicationDock)
-            self.communicationDock.hide()
-            self.communicationStatus = QPushButton("TCP · 请先打开项目")
+        if _nativeQt and self.pageCoordinator is not None:
+            self.communicationStatus = QPushButton('设备状态读取中')
             self.communicationStatus.setFlat(True)
-            self.communicationStatus.setToolTip("打开项目通信面板；关闭面板不停止服务")
-            self.communicationStatus.clicked.connect(self.openCommunicationPanel)
+            self.communicationStatus.clicked.connect(self.pageCoordinator.showDevices)
             self.statusBar().addPermanentWidget(self.communicationStatus)
-            self.communicationController = CommunicationController(self.runtimeClient, panel,
-                self._communicationProject, self._saveCommunicationConfig, self._navigateCommunicationSource, self)
-            cast(Any, self.communicationController.changed).connect(self.communicationStatus.setText)
-
-    def _communicationProject(self):
-        from emo_master.core.project.communication import CommunicationSettings
-        return dict(projectId=self._currentProjectId(), name=str(self.workflowStore.project.get("name", "未命名项目")),
-            path=str(self.projectController.currentProjectFile or self.loadedProjectPath or ""),
-            token=self._projectInstanceToken,
-            config=self.workflowStore.projectExtensions.get("communication", CommunicationSettings().model_dump()))
+            from .device_status import DeviceStatusObserver
+            self.deviceStatusObserver = DeviceStatusObserver(self.pageCoordinator, self.communicationStatus)
 
     def openCommunicationPanel(self):
-        dock = getattr(self, "communicationDock", None)
-        if dock is not None:
-            dock.show()
-            dock.raise_()
-            self.communicationController.nextPoll = 0
-
-    def _saveCommunicationConfig(self, config):
-        from copy import deepcopy
-        from emo_master.core.project.migration import migrateProjectPayload
-        from emo_master.core.project.models import ProjectDocument
-        from emo_master.core.project.tcp_dependencies import validateCommunicationNode
-        if self.hasActiveDebugSession():
-            return "请先结束当前调试再保存项目通信配置。"
-        self.workflowController.captureActiveWorkflow()
-        payload = migrateProjectPayload(self.workflowStore.toPayload(), enableCommunication=True)
-        payload["communication"] = config
-        candidate = ProjectDocument.model_validate(payload)
-        for workflow in candidate.workflows.values():
-            for node in workflow.nodes:
-                validateCommunicationNode(candidate, node)
-        target = self.projectController.currentProjectFile
-        if target is None:
-            path, _filter = QFileDialog.getSaveFileName(self, "保存通信配置前先保存项目", "项目.emoproj", "EmoMaster project (*.emoproj)")
-            if not path:
-                return "已取消项目保存；通信草稿保留，Runtime 未改变。"
-            target = Path(path)
-        previousExtensions = deepcopy(self.workflowStore.projectExtensions)
-        self.workflowStore.projectExtensions.update({key: deepcopy(payload[key]) for key in
-            ("presentation", "resources", "production", "globalVariables", "communication")})
-        if not self.saveProjectToDirectory(str(target)):
-            self.workflowStore.projectExtensions.clear()
-            self.workflowStore.projectExtensions.update(previousExtensions)
-            return "项目保存失败。草稿仍保留，Runtime 配置未改变；请检查日志中的路径、权限或配置错误。"
-        return ""
+        coordinator = self.pageCoordinator
+        if coordinator is not None:
+            coordinator.showDevices()
+            workspace = coordinator.devices
+            if workspace is not None:
+                workspace.selectTcpCategory()
 
     def _navigateCommunicationSource(self, source):
         workflowId, nodeId = source.get("workflowId"), source.get("nodeId")
@@ -1540,15 +1503,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         coordinator.sync()
         document = coordinator.session.document()
         from emo_master.core.presentation.workflow_view import presentationForWorkflow
-        presentation = presentationForWorkflow(document, workflowId or document.entryWorkflowId)
-        if presentation is None:
-            return False
+        from emo_master.core.workflow.dispatch_contracts import groupSlots
         from emo_master.core.presentation.models import walkComponents
-        if not any(component.bindings for page in presentation.pages.values()
-                   for component in walkComponents(page.components)):
-            return False
         from emo_master.core.presentation.capture_limits import normalCaptureLimits
-        return normalCaptureLimits(presentation)
+        entry = workflowId or document.entryWorkflowId
+        workflows = [entry, *{target for target, _capacity in groupSlots(document, entry).values()}]
+        limits = []
+        for target in workflows:
+            presentation = presentationForWorkflow(document, target, capture=True)
+            if presentation and any(component.bindings for page in presentation.pages.values()
+                                    for component in walkComponents(page.components)):
+                limits.append(normalCaptureLimits(presentation))
+        return limits[0] if len(limits) == 1 else bool(limits)
 
     def triggerStartupProjectEntry(self) -> None:
         if not self._showStartupEntry:
@@ -1598,7 +1564,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         except (OSError, ValueError) as error:
             QMessageBox.warning(self, "新建项目失败", str(error))
             return
-        self.loadProjectDirectory(selected, confirmed=True)
+        if not self.loadProjectDirectory(selected, confirmed=True):
+            QMessageBox.warning(
+                self, "新建项目未打开",
+                f"文件已创建并保留：{selected}\n当前工程未替换。\n"
+                + (self.projectController.lastLoadError or "打开操作未完成，请检查当前运行或编辑状态。"),
+            )
 
     def saveProjectAsAction(self) -> None:
         if self.isJobRunning:
@@ -2032,17 +2003,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 self.mainToolbar.addWidget(button)
                 button.clicked.connect(callback)
                 continue
-            action = QAction(icon(iconName, "#ffffff" if label == "开始运行" else "#475569"), label, self)
+            action = QAction(icon(iconName, "#475569"), label, self)
             action.setToolTip(label)
             action.triggered.connect(lambda checked=False, command=callback, action=action:
                                      command() if action.isEnabled() else None)
-            self.mainToolbar.addAction(action)
-            tool = self.mainToolbar.widgetForAction(action)
-            tool.setToolButtonStyle(Qt.ToolButtonTextBesideIcon if label in {
-                "加载项目", "保存项目", "开始运行", "停止运行"} else Qt.ToolButtonIconOnly)
-            tool.setObjectName("primaryButton" if label == "开始运行" else "dangerButton" if label == "停止运行" else "")
             self._toolbarActions[label] = action
-            setattr(self, attribute, tool)
+            # Native command handles are menu-owned QActions, not hidden copies
+            # of removed toolbar widgets. The no-Qt adapter keeps its buttons.
+            setattr(self, attribute, action)
             button.deleteLater()
 
     def _buildMainMenuBar(self) -> None:
@@ -2068,10 +2036,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         runMenu = addMenu("运行")
         self._addMenuAction(runMenu, "开始运行", self.startJob)
         self._addMenuAction(runMenu, "停止运行", self.stopJob)
-        self._addMenuAction(runMenu, "全局变量…", self.openGlobalCountersDialog)
-        self._addMenuAction(runMenu, "运行目标与并发…", self.openRunTargetsDialog)
-        self._addMenuAction(runMenu, "通信服务…", self.openCommunicationPanel)
         self._addMenuAction(runMenu, "停止全部", self.stopAllJobs)
+        if _nativeQt:
+            runMenu.addSeparator()
+        self._addMenuAction(runMenu, "运行目标与并发…", self.openRunTargetsDialog)
+        self._addMenuAction(runMenu, "全局变量…", self.openGlobalCountersDialog)
+        self._addMenuAction(runMenu, "通信服务…", self.openCommunicationPanel)
         self._addMenuAction(runMenu, "打开日志", self.openLogDialog)
 
         editMenu = addMenu("编辑")
@@ -2125,7 +2095,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self._globalCountersDialog = dialog
         showForProject = getattr(dialog, "showForProject", None)
         if callable(showForProject):
-            showForProject(self.loadedProjectPath if self._globalCountersDialogFactory else self._currentProjectId())
+            if self._globalCountersDialogFactory:
+                showForProject(self.loadedProjectPath)
+            else:
+                showForProject(self._currentProjectId(), str(self.workflowStore.project.get("name", "")))
         else:
             bindProject = getattr(dialog, "bindProject", None)
             if callable(bindProject):
@@ -2174,6 +2147,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._refreshRuntimePanelView()
 
     def _setIsJobRunning(self, isRunning: bool) -> None:
+        if self.isJobRunning == isRunning:
+            return
         self.isJobRunning = isRunning
         actions = getattr(self, 'designerActions', None)
         if actions is not None:
@@ -2347,6 +2322,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if workflow is None:
                 return None
             raw = next((item for item in workflow.nodes if item.get("nodeId") == nodeId), {})
+            if raw.get("operatorId") == "vision.io.video_loader":
+                return self._nodeEditorSchema(SimpleNamespace(
+                    kind="operator", nodeId=nodeId, operatorId=raw["operatorId"],
+                    paramSchema=raw.get("paramSchema", {})), workflowId)
             if raw.get("kind") not in {"loop", "subflow"}:
                 return None
             return self._nodeEditorSchema(SimpleNamespace(
@@ -2361,6 +2340,26 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if node is None:
             return model
         lines, outputs = controlFlowDetails(node, self.workflowStore.workflows, self._globalVariableDefinitions())
+        definition = self._operatorDefinition(node.operatorId)
+        if (node.operatorId == "vision.collection.select" and "index" not in node.inputPorts
+                and cast(dict, definition.get("inputPorts", {})).get("index") == "integer"):
+            # Offer the compatible optional input without editing a saved node
+            # merely by opening it. Successful wiring records the port below.
+            node = replace(node, inputPorts={**node.inputPorts, "index": "integer"})
+        requirements = definition.get('deviceRequirements')
+        if requirements:
+            pending = []
+            for slot, requirement in requirements.items():
+                binding = node.deviceBindings.get(slot)
+                if binding is None:
+                    pending.append(('待选择设备：' + slot, None))
+                    continue
+                for selector in requirement.get('selectorSchema', {}).get('required', []):
+                    if selector not in binding.get('selectors', {}):
+                        pending.append(('待选择通道：' + slot + '.' + selector, None))
+            lines = tuple(lines) + tuple(pending)
+        elif node.kind == 'operator' and not definition:
+            lines = tuple(lines) + (('绑定状态待检查', None),)
         inputs = {}
         from emo_master.core.workflow.loop_contracts import whileConditionMode
         if node.kind == "loop" and node.loop.get("mode") == "while" and whileConditionMode(node.loop) == "boolean":
@@ -2369,8 +2368,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 inputs[port] = f"初始条件 ({port})"
                 outputs[port] = f"最终条件 ({port})"
         model = replace(model, summaryLines=lines, outputPortLabels=outputs, inputPortLabels=inputs)
-        from emo_master.apps.designer.ui.coordinate_port_presentation import coordinatePortPresentation, OPERATOR_ID
-        if node.operatorId == OPERATOR_ID:
+        from emo_master.apps.designer.ui.operator_mode_presentation import MODE_PORT_OPERATORS, operatorModePresentation
+        if node.operatorId in MODE_PORT_OPERATORS:
             resources = self.workflowStore.projectExtensions.get("resources", {})
             dynamic = set()
             for binding in (*resources.get("parameterBindings", []), *resources.get("siteBindings", [])):
@@ -2378,7 +2377,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 if (target.get("workflowId") == self.activeWorkflowId
                         and target.get("nodeId") == node.nodeId and target.get("parameterPath")):
                     dynamic.add(target["parameterPath"][0])
-            model = coordinatePortPresentation(model, node, self.flowModel.edges, dynamic)
+            model = operatorModePresentation(model, node, self.flowModel.edges, dynamic)
         return model
 
     def _onWorkflowTabChanged(self, index: int) -> None:
@@ -2551,9 +2550,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             and str(item.get("operatorId")) != ""
         ]
         try:
+            metadata = getattr(self.runtimeClient, 'listDeviceTypes', None)
+            from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+            try:
+                deviceTypes, operatorRequirements, _rejected = metadata() if callable(metadata) else (None, None, {})
+            except RuntimeClientError:
+                # Offline import can create disabled copies; existing-device
+                # reuse needs the target's registered binding declarations.
+                deviceTypes, operatorRequirements = None, None
             preview = self.workflowController.previewWorkflowPackageImport(
                 selectedPath,
                 availableOperatorIds=availableOperatorIds,
+                deviceTypes=deviceTypes, operatorRequirements=operatorRequirements,
             )
         except (OSError, TypeError, ValueError) as err:
             message = f"导入工作流失败：{err}"
@@ -2572,6 +2580,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 expectedFingerprint=preview.packageFingerprint,
                 expectedTargetFingerprint=preview.targetFingerprint,
                 targetRoot=self.currentProjectDir,
+                deviceTypes=deviceTypes, operatorRequirements=operatorRequirements,
                 insertIntoWorkflowId=(
                     selectedParentWorkflowId if insertSubflow else None
                 ),
@@ -3104,11 +3113,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 self.statusBar().showMessage(message)
             event.ignore()
             return
+        if self._runtimeEventRefreshTimer is not None:
+            self._runtimeEventRefreshTimer.stop()
         if self.pageCoordinator is not None:
             self.pageCoordinator.shutdown()
+        observer = getattr(self, 'deviceStatusObserver', None)
+        if observer is not None:
+            observer.close()
         self.runtimePanelState.nodeInspection.clear()
         self._displayedRunImage = None
         self._saveRuntimeLogSettings()
+        if self.logDialog is not None:
+            self.logDialog.close()
         try:
             super().closeEvent(event)
         except Exception:
@@ -3217,7 +3233,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setNodeRuntimeState = getattr(self.flowScene, "setNodeRuntimeState", None)
             if callable(setNodeRuntimeState):
                 setNodeRuntimeState(nodeIdRaw, status)
-            self._refreshRuntimePanelView()
+            self._requestRuntimeEventRefresh()
 
     def _restoreActiveWorkflowRuntimeState(self) -> None:
         expectedJobId = self.currentJobId
@@ -3318,8 +3334,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
         if not nodeExists:
             return "日志对应节点在当前工作流中已不存在，无法定位。请查看日志详情。"
+        if _nativeQt and self.pageCoordinator is not None:
+            # Read-only navigation must not apply pending page-editor inputs.
+            self.pageCoordinator.stack.setCurrentIndex(0)
+            self.pageCoordinator.chrome.update()
         self.navigateToWorkflow(entry.workflowId, entry.nodeId)
-        return f"已定位到工作流“{workflow.name}”的节点 {entry.nodeId}。"
+        if self.logDialog is not None:
+            self.logDialog.hide()
+        if _nativeQt:
+            self.raise_()
+            self.activateWindow()
+            self.flowView.setFocus(Qt.OtherFocusReason)
+        return f"已定位到工作流“{workflow.name}”的节点 {entry.displayNode()}。"
 
     def _buildProjectPayload(self, projectName: str) -> dict[str, object]:
         if hasattr(self, "workflowController"):
@@ -3468,7 +3494,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if self.loadedProjectPath is None:
             self.appendRuntimeLog("WARN", "尚未加载项目")
             return
-        reply = self.runtimeClient.validateProject(self.loadedProjectPath)
+        try:
+            reply = self.runtimeClient.validateProject(self._runtimeProjectReference())
+        except Exception as error:
+            self.appendRuntimeLog("ERROR", f"项目校验失败：{error}")
+            return
         if getattr(reply, "ok", False):
             self.appendRuntimeLog("INFO", "项目校验通过")
             self.updateToolbarState()
@@ -3512,12 +3542,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return None
         from emo_master.ui.run_targets_dialog import RunTargetsDialog
         editable = not self.isJobRunning and not self.hasActiveDebugSession()
+        self.workflowController.captureActiveWorkflow()
         dialog = RunTargetsDialog(self.workflowStore.workflows,
             self.effectiveRunTargetIds(),
             self.workflowStore.runtime.get('maxConcurrentJobs', 2), self, editLimit=editable,
             entryWorkflowId=self.workflowStore.entryWorkflowId,
             allowPersist=editable, temporary=bool(self.runTargetIds),
-            projectTargets=self.workflowStore.startupWorkflows())
+            projectTargets=self.workflowStore.startupWorkflows(),
+            document=self.pageCoordinator.session.document())
         if dialog.exec_():
             selected = dialog.selectedWorkflowIds()
             if dialog.saveSelection():
@@ -3600,20 +3632,25 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return False
         if self.currentProjectDir is None:
             return True
-        if self.pageCoordinator is not None and self.pageCoordinator.session.document().schemaVersion == "2.6":
+        if self.pageCoordinator is not None and self.pageCoordinator.session.document().schemaVersion in {"2.6", "2.7"}:
+            # First publication uses the same explicit draft/resource path as
+            # Runtime > Write, never Save-to-disk followed by legacy LoadProject.
             from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+            from emo_master.core.project.configuration import projectConfigurationChanges
+            if not self.pageCoordinator._canSync():
+                return False
             try:
-                self.runtimeClient.getOnlineProjectSnapshot("")
+                online = self.runtimeClient.getOnlineProjectSnapshot('')
             except RuntimeClientError as error:
-                if error.code != "E_CONFIG_NOT_LOADED":
-                    self.appendRuntimeLog("ERROR", str(error))
+                if error.code != 'E_CONFIG_NOT_LOADED':
+                    self.appendRuntimeLog('ERROR', str(error))
                     return False
             else:
-                if not self.pageCoordinator._canSync():
-                    return False
-                from emo_master.apps.designer.ui.project_configuration import ProjectConfigurationDialog
-                dialog = ProjectConfigurationDialog(self.pageCoordinator, self, allowRun=True)
-                return dialog.exec_() == dialog.Accepted
+                if not online.get('recoveryError') and not projectConfigurationChanges(
+                        online['payload'], self.pageCoordinator.session.payload()):
+                    return True
+            from PySide2.QtWidgets import QDialog
+            return self.pageCoordinator.configureRuntime(allowRun=True) == QDialog.Accepted
         target = self.projectController.currentProjectFile or self.currentProjectDir
         if not self.saveProjectToDirectory(str(target)):
             return False
@@ -3622,6 +3659,16 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             successMessagePrefix="项目已同步",
             failedMessagePrefix="项目同步失败",
         )
+
+    def _runtimeProjectReference(self) -> str | None:
+        if self.pageCoordinator is not None:
+            document = self.pageCoordinator.session.document()
+            if document.schemaVersion in {"2.6", "2.7"}:
+                # The committed Runtime copy may be managed remotely and need
+                # not share the local file path. UUID mismatch remains an error.
+                snapshot = self.runtimeClient.getOnlineProjectSnapshot(document.project.projectId)
+                return str(snapshot["sourcePath"])
+        return self.loadedProjectPath
 
     def refreshOperators(self, *, explicit: bool = True) -> None:
         if self._operatorDisplayClosed:
@@ -3667,6 +3714,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.operatorCatalogController.operatorCatalog = []
             self.operatorCatalogController.hasCatalog = False
             self._refreshBubbleOperators()
+            self.flowScene.refreshPresentations()
             self.refreshOperators(explicit=False)
         for result in self.operatorCatalogWorker.poll():
             if result.key[0] != provider.scope:
@@ -3690,14 +3738,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 QMessageBox.warning(self, "相机配置需要核查", message)
             self._setOperatorCatalogState("ready")
             self._refreshBubbleOperators()
+            self.flowScene.refreshPresentations()
             self._refreshNodeDetailsView()
             self.updateToolbarState()
 
     def addNodeFromOperatorPayload(self, payload, sceneX=None, sceneY=None):
         if not flowEditAllowed(self):
             return
-        if (not isinstance(payload, dict) or not payload.get("deviceRequirements")
-                or payload.get("deviceBindingSince") == "2.6" and self.workflowStore.devices.get("schemaVersion") != "1.0"):
+        if (not isinstance(payload, dict) or not payload.get("deviceRequirements")):
             return self._addLegacyNodeFromOperatorPayload(payload, sceneX, sceneY)
         from uuid import uuid4
         from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
@@ -3857,7 +3905,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             inputs = self._connectableNodePorts(targetNodeId, "input")
             fromPort = self.flowModel._getFirstPortName(outputs, "source output")
             toPort = self.flowModel._getFirstPortName(inputs, "target input")
-            edge = self.flowModel.connectNodes(sourceNodeId, fromPort, targetNodeId, toPort)
+            edge = self.flowModel.connectNodes(sourceNodeId, fromPort, targetNodeId, toPort,
+                                               newInputPortType=inputs[toPort])
         except ValueError as err:
             self.appendRuntimeLog("ERROR", str(err))
             return
@@ -3869,17 +3918,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
         self.flowScene.renderEdge(edgeViewModel)
         self.refreshWorkflowDependencyTree()
+        self._refreshWorkflowEditorSchemas()
         self.appendRuntimeLog(
             "INFO",
             f"连线成功：{edge.fromNode}.{edge.fromPort} -> {edge.toNode}.{edge.toPort}",
         )
 
     def _connectableNodePorts(self, nodeId, direction):
-        from emo_master.apps.designer.ui.coordinate_port_presentation import OPERATOR_ID
+        from emo_master.apps.designer.ui.operator_mode_presentation import MODE_PORT_OPERATORS
         node = self.flowModel.nodes.get(nodeId)
         if node is None:
             raise ValueError("connectNodes references unknown node")
-        if node.operatorId != OPERATOR_ID:
+        if node.operatorId not in MODE_PORT_OPERATORS:
             return node.inputPorts if direction == "input" else node.outputPorts
         model = self._controlFlowPresentation(FlowNodeViewModel(
             nodeId, node.displayName, 0, 0, node.inputPorts, node.outputPorts,
@@ -3896,7 +3946,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         try:
             if fromPort not in self._connectableNodePorts(fromNodeId, "output"):
                 raise ValueError(f"当前配置不支持输出引脚：{fromPort}")
-            if toPort not in self._connectableNodePorts(toNodeId, "input"):
+            inputs = self._connectableNodePorts(toNodeId, "input")
+            if toPort not in inputs:
                 raise ValueError(f"当前配置不支持输入引脚：{toPort}")
             edge = self.flowModel.connectNodes(
                 fromNode=fromNodeId,
@@ -3904,6 +3955,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 toNode=toNodeId,
                 toPort=toPort,
                 replaceInputPort=True,
+                newInputPortType=inputs[toPort],
             )
         except ValueError as err:
             self.appendRuntimeLog("ERROR", self._formatConnectionError(str(err)))
@@ -3920,6 +3972,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             f"连线成功：{edge.fromNode}.{edge.fromPort} -> {edge.toNode}.{edge.toPort}",
         )
         self.refreshWorkflowDependencyTree()
+        self._refreshWorkflowEditorSchemas()
         return edgeViewModel
 
     def validateGraph(self) -> None:
@@ -3961,6 +4014,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
         deletedCount = len(selectedEdgeKeys) + len(selectedNodeIds)
         if deletedCount > 0:
+            self._refreshWorkflowEditorSchemas()
             if _nativeQt:
                 self.flowScene.refreshPresentations()
             self.appendRuntimeLog("INFO", f"已删除选中元素：{deletedCount}")
@@ -4022,6 +4076,16 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
         self.flowView.fitContent(bounds, minimumZoom=0.02)
 
+    def _hiddenPortsSettingsKey(self, nodeId):
+        return f'ui/hidden_ports/{self._currentProjectId()}/{self.workflowStore.activeWorkflowId}/{nodeId}'
+
+    def _readHiddenPorts(self, nodeId):
+        values = json.loads(self.settingsStore.value(self._hiddenPortsSettingsKey(nodeId), '[]'))
+        return {(direction, name) for direction, name in values}
+
+    def _saveHiddenPorts(self, nodeId, ports):
+        self.settingsStore.setValue(self._hiddenPortsSettingsKey(nodeId), json.dumps(sorted(ports)))
+
     def _workflowViewSettingsKey(self, workflowId):
         import hashlib
         path = self.projectController.currentProjectFile
@@ -4082,7 +4146,29 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             f"节点提示 {nodeId}：输入[{inputSummary}] 输出[{outputSummary}] 必填[{requiredSummary}]",
         )
 
+    def _requestRuntimeEventRefresh(self) -> None:
+        timer = self._runtimeEventRefreshTimer
+        if timer is None or not self.isJobRunning:
+            self._flushRuntimeEventViews()
+        elif not timer.isActive():
+            # Coalesce rendering, never events; do not postpone an active
+            # deadline when another event arrives.
+            timer.start()
+
+    def _flushRuntimeEventViews(self) -> None:
+        if self._runtimeEventRefreshTimer is not None:
+            self._runtimeEventRefreshTimer.stop()
+        if self.runtimeController._closing or self.runtimeController._closed:
+            return
+        self._refreshRuntimePanelView()
+        self._updateRuntimeToolbarState()
+
+    def _updateRuntimeToolbarState(self) -> None:
+        self.updateToolbarState(projectChanged=False)
+
     def _refreshRuntimePanelView(self) -> None:
+        if self._runtimeEventRefreshTimer is not None:
+            self._runtimeEventRefreshTimer.stop()
         statusMap = {
             "IDLE": "空闲",
             "READY": "就绪",
@@ -4104,9 +4190,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             else "-"
         )
         self.jobMessageCard.setText(f"消息：{messageText}")
+        panel = getattr(self, 'floatingRunPanel', None)
+        if panel is not None:
+            panel.refreshStatus()
 
         self._refreshNodeDetailsView()
-        self._refreshPreviewImage()
+        if self.nodeResultCoordinator is None or self.nodeResultCoordinator.history.current is None:
+            self._refreshPreviewImage()
 
     def _refreshNodeDetailsView(self) -> None:
         if self.nodeResultCoordinator is not None:
@@ -4195,23 +4285,21 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._displayedRunImage = imageIdentity
 
     def openLogDialog(self) -> None:
-        if self.logDock is None:
-            self.logDock = RuntimeLogDock(
+        if self.logDialog is None:
+            self.logDialog = LogDialog(
                 self,
                 onClear=self._clearRuntimeLogCache,
                 onNavigate=self.navigateToRuntimeLogEntry,
                 maximumEntries=DEFAULT_MAX_LOG_ENTRIES,
             )
-            self.logDialog = self.logDock
-            addDockWidget = getattr(self, "addDockWidget", None)
-            if callable(addDockWidget):
-                addDockWidget(Qt.BottomDockWidgetArea, self.logDock)
-            self.logDock.setEntries(self.logEntries)
-        self.logDock.show()
-        raiseWindow = getattr(self.logDock, "raise_", None)
+            self.logDialog.setEntries(self.logEntries)
+        if _nativeQt and self.logDialog.isMinimized():
+            self.logDialog.setWindowState(self.logDialog.windowState() & ~Qt.WindowMinimized)
+        self.logDialog.show()
+        raiseWindow = getattr(self.logDialog, "raise_", None)
         if callable(raiseWindow):
             raiseWindow()
-        activateWindow = getattr(self.logDock, "activateWindow", None)
+        activateWindow = getattr(self.logDialog, "activateWindow", None)
         if callable(activateWindow):
             activateWindow()
 
@@ -4236,8 +4324,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
         logLine = f"[{now.strftime('%H:%M:%S')}][{normalizedLevel}] {message}"
         self._storeRuntimeLogEntry(entry, logLine)
-        if self.logDock is not None:
-            self.logDock.appendEntry(entry)
+        if self.logDialog is not None:
+            self.logDialog.appendEntry(entry)
 
     def _rememberRuntimeLogJob(self, reply: object) -> None:
         jobId = str(getattr(reply, "job_id", ""))
@@ -4249,16 +4337,46 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         while len(self._runtimeLogJobProjects) > DEFAULT_MAX_LOG_ENTRIES:
             self._runtimeLogJobProjects.pop(next(iter(self._runtimeLogJobProjects)))
 
-    def appendRuntimeEvent(self, event: dict[str, object]) -> None:
+    def _runtimeLogEntry(self, event: dict[str, object]) -> StructuredLogEntry:
         entry = StructuredLogEntry.fromRuntimeEvent(event)
         identity = self._runtimeLogJobProjects.get(entry.jobId)
         if identity is not None:
             projectId, token = identity
             if not entry.projectId or entry.projectId == projectId:
                 entry = replace(entry, projectId=projectId, projectInstanceToken=token)
+                if projectId == self._currentProjectId() and token == self._runtimeLogProjectToken:
+                    workflow = self.workflowStore.workflows.get(entry.workflowId)
+                    if workflow is not None:
+                        nodeName = ""
+                        kind = ""
+                        if entry.workflowId == self.activeWorkflowId:
+                            node = self.flowModel.nodes.get(entry.nodeId)
+                            if node is not None:
+                                nodeName, kind = node.displayName, node.kind
+                        else:
+                            raw = next((node for node in workflow.nodes
+                                        if node.get("nodeId") == entry.nodeId), {})
+                            nodeName = str(raw.get("displayName", ""))
+                            kind = str(raw.get("kind", ""))
+                        if kind == "workflow_input" and nodeName in {"", "Workflow Input"}:
+                            nodeName = "工作流输入"
+                        elif kind == "workflow_output" and nodeName in {"", "Workflow Output"}:
+                            nodeName = "工作流输出"
+                        # Names are captured with the event, not re-resolved from
+                        # a later project or a renamed node while browsing history.
+                        entry = replace(entry, workflowName=workflow.name, nodeName=nodeName)
+        return entry
+
+    def _showRunFailure(self, failure: dict[str, object]) -> None:
+        if _nativeQt:
+            from emo_master.apps.designer.ui.run_failure_dialog import showRunFailure
+            showRunFailure(self, self._runtimeLogEntry(failure), failure)
+
+    def appendRuntimeEvent(self, event: dict[str, object]) -> None:
+        entry = self._runtimeLogEntry(event)
         self._storeRuntimeLogEntry(entry, entry.displayLine())
-        if self.logDock is not None:
-            self.logDock.appendEntry(entry)
+        if self.logDialog is not None:
+            self.logDialog.appendEntry(entry)
 
     def _storeRuntimeLogEntry(
         self,
@@ -4277,48 +4395,39 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.logBuffer.clear()
 
     def _saveRuntimeLogSettings(self) -> None:
-        dock = self.logDock
+        dialog = self.logDialog
         setValue = getattr(self.settingsStore, "setValue", None)
-        if dock is None or not callable(setValue):
+        if dialog is None or not callable(setValue):
             return
-        saveState = getattr(self, "saveState", None)
-        if callable(saveState):
-            setValue("ui/runtime_log_dock_state", saveState())
-        saveGeometry = getattr(dock, "saveGeometry", None)
+        saveGeometry = getattr(dialog, "saveGeometry", None)
         if callable(saveGeometry):
-            setValue("ui/runtime_log_dock_geometry", saveGeometry())
-        setValue("ui/runtime_log_dock_visible", bool(dock.isVisible()))
-        setValue("ui/runtime_log_dock_floating", bool(dock.isFloating()))
-        setValue("ui/runtime_log_view", dock.view.settings())
+            setValue("ui/runtime_log_dialog_geometry", saveGeometry())
+        setValue("ui/runtime_log_dialog_visible", bool(dialog.isVisible()))
+        setValue("ui/runtime_log_view", dialog.view.settings())
         sync = getattr(self.settingsStore, "sync", None)
         if callable(sync):
             sync()
 
     def _restoreRuntimeLogSettings(self) -> None:
-        dock = self.logDock
+        dialog = self.logDialog
         value = getattr(self.settingsStore, "value", None)
-        if dock is None or not callable(value):
+        if dialog is None or not callable(value):
             return
-        state = value("ui/runtime_log_dock_state", None)
-        restoreState = getattr(self, "restoreState", None)
-        if state is not None and callable(restoreState):
-            restoreState(state)
-        geometry = value("ui/runtime_log_dock_geometry", None)
-        restoreGeometry = getattr(dock, "restoreGeometry", None)
+        # Dock state belongs to the old embedded panel, not this window. Keep
+        # its shared view preferences, but never restore its main-window layout.
+        geometry = value("ui/runtime_log_dialog_geometry", None)
+        restoreGeometry = getattr(dialog, "restoreGeometry", None)
         if geometry is not None and callable(restoreGeometry):
             restoreGeometry(geometry)
-        dock.setFloating(
-            _settingBool(value("ui/runtime_log_dock_floating", False), False)
-        )
         viewSettings = value("ui/runtime_log_view", {})
         if isinstance(viewSettings, dict):
-            dock.view.restoreSettings(viewSettings)
-        if _settingBool(value("ui/runtime_log_dock_visible", False), False):
-            dock.show()
+            dialog.view.restoreSettings(viewSettings)
+        if _settingBool(value("ui/runtime_log_dialog_visible", False), False):
+            dialog.show()
         else:
-            dock.hide()
+            dialog.hide()
 
-    def updateToolbarState(self) -> None:
+    def updateToolbarState(self, *, projectChanged: bool = True) -> None:
         from emo_master.apps.designer.operator_editors.sqlite_canvas import refreshCanvasHints
         refreshCanvasHints(self)
         new = self._menuActions.get("新建项目…")
@@ -4342,9 +4451,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if name in self._toolbarActions:
                 self._toolbarActions[name].setEnabled(enabled)
         self._updateRunBlockedHint(canRun)
+        panel = getattr(self, 'floatingRunPanel', None)
+        if panel is not None:
+            panel.refreshStatus()
         coordinator = getattr(self, 'pageCoordinator', None)
         if coordinator is not None and hasattr(coordinator, 'chrome'):
-            coordinator.chrome.update()
+            coordinator.chrome.update(projectChanged=projectChanged)
         actions = getattr(self, 'designerActions', None)
         if actions is not None:
             actions.refresh()
@@ -4559,14 +4671,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
 
         definition = self._operatorDefinition(node.operatorId)
-        if node.deviceBindings or (definition.get("deviceRequirements") and
-                (definition.get("deviceBindingSince") != "2.6" or self.workflowStore.devices.get("schemaVersion") == "1.0")):
+        if node.deviceBindings or definition.get("deviceRequirements"):
             from dataclasses import asdict
             from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
             if self.pageCoordinator is None or not self.pageCoordinator._canSync():
                 return
             dialog = DeviceNodeDialog(self.pageCoordinator, asdict(node), definition.get("deviceRequirements", {}), self,
-                                      migrateLegacy=not node.deviceBindings)
+                                      migrateLegacy=self.pageCoordinator.session.document().schemaVersion not in {'2.6', '2.7'})
             dialog.exec_()
             return
 
@@ -4926,6 +5037,31 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             # Remote catalogs may arrive after a minimal project was opened.
             schema = (deepcopy(catalogSchema) if not node.paramSchema else
                       mergeParameterTitles(node.paramSchema, catalogSchema))
+            if node.operatorId == "vision.io.video_loader":
+                edges = (self.flowModel.edges if sourceWorkflowId == self.activeWorkflowId else
+                         self.workflowStore.get(sourceWorkflowId).edges)
+                connected = any((edge.get("toNode"), edge.get("toPort")) == (node.nodeId, "videoPath")
+                                if isinstance(edge, dict) else (edge.toNode, edge.toPort) == (node.nodeId, "videoPath")
+                                for edge in edges)
+                if connected:
+                    field = cast(dict, schema.get("properties", {})).get("videoPath")
+                    if isinstance(field, dict):
+                        field.update(xReadOnly=True, title="视频文件（由输入端口提供）")
+                    schema["required"] = [key for key in cast(list, schema.get("required", [])) if key != "videoPath"]
+            from emo_master.plugins.builtins._operator_modes import INPUT_CHOICES, currentModeSchema, inferredInputType
+            modeSchema = currentModeSchema(node.operatorId)
+            if modeSchema is not None:
+                schema = modeSchema
+                schema["xDynamicParameters"] = [binding["parameterPath"][0]
+                    for binding in node.globalVariableBindings if binding.get("parameterPath")]
+            if node.operatorId == "vision.collection.filter":
+                from emo_master.plugins.builtins.collection_filter.operator import CollectionFilterOperator
+                from emo_master.apps.designer.ui.collection_filter_presentation import filterCollectionType
+                schema = deepcopy(CollectionFilterOperator.meta.paramSchema)
+                schema["xCollectionFilterType"] = filterCollectionType(node, self.flowModel.edges)
+                schema["xCollectionFilterDynamicParameters"] = [
+                    binding["parameterPath"][0] for binding in node.globalVariableBindings
+                    if binding.get("parameterPath")]
             if node.operatorId == "communication.tcp.session":
                 from emo_master.core.project.communication import CommunicationSettings
                 config = cast(dict, self.workflowStore.projectExtensions.get("communication", CommunicationSettings().model_dump()))
@@ -4989,6 +5125,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             occupied = [tuple(binding["target"]["parameterPath"])
                         for binding in (*resources.get("parameterBindings", []), *resources.get("siteBindings", []))
                         if binding["target"].get("workflowId") == sourceWorkflowId and binding["target"].get("nodeId") == getattr(node, "nodeId", None)]
+            if node.operatorId == "vision.collection.filter":
+                cast(list, schema["xCollectionFilterDynamicParameters"]).extend(path[0] for path in occupied if path)
+            if schema.get("xModeOperator"):
+                cast(list, schema["xDynamicParameters"]).extend(path[0] for path in occupied if path)
+                if node.operatorId in INPUT_CHOICES:
+                    schema["xInferredInputType"] = inferredInputType(
+                        node.operatorId, node.params, node.nodeId, self.flowModel.edges, schema["xDynamicParameters"])
             for path, field in scalarFields(schema):
                 if any(path[:len(other)] == other or other[:len(path)] == path for other in occupied):
                     field["xGlobalVariableBindingDisabled"] = True

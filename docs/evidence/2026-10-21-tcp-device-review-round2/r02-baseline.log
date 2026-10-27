@@ -1,0 +1,36 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+__ testSelectiveChannelRemovalLocatesOldBindingAndUiCanPublishAfterSelection __
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x0000022E5D494040>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000022E5D4940D0>)
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000022E5F209390>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2693/testSelectiveChannelRemovalLoc0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022E5D44EBC0>
+messages = []
+
+    def testSelectiveChannelRemovalLocatesOldBindingAndUiCanPublishAfterSelection(
+            runtime, ownedDesignerWindow, tmp_path, monkeypatch, messages):  # noqa: F811
+        service, client = runtime
+        types = service.pluginScanResult.deviceTypes
+        operators = service.pluginScanResult.activeOperators
+        payload = WorkflowStore().toPayload()
+        payload['devices']['definitions'] = dict(server=definition(types['device.tcp.server'], channels=[
+            dict(channelId=key, name=key.upper(), allowedIps=['127.0.0.1']) for key in ('a', 'c')]))
+        payload['workflows']['main'] = graph([
+            node('acquire', 'communication.tcp.session', 'server', selectors=dict(channelId='a'))])
+        source = tmp_path/'project.emoproj'
+        source.write_text(json.dumps(payload), encoding='utf-8')
+        window = ownedDesignerWindow(client)
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+        client.initializeProjectConfiguration(window.pageCoordinator.session.payload(), tmp_path, 'r02-initialize',
+                                              runtimeInstanceId=service.runtimeInstanceId)
+>       assert waitWrite(service, client, 'r02-initialize')['state'] == 'COMMITTED'
+E       AssertionError: assert 'FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED
+
+tests\designer\test_tcp_closure_ui.py:136: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_tcp_closure_ui.py::testSelectiveChannelRemovalLocatesOldBindingAndUiCanPublishAfterSelection
+1 failed in 2.05s

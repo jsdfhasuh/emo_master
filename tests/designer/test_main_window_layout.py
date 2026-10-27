@@ -47,7 +47,7 @@ def testMainWindowUsesExpectedToolbarGroups() -> None:
 
     getMenuBarGroups = getattr(window, "getMenuBarGroups", None)
     assert callable(getMenuBarGroups)
-    assert getMenuBarGroups() == ["文件", "运行", "编辑", "视图"]
+    assert getMenuBarGroups() == ["文件", "运行", "编辑", "视图", "Runtime", "设备管理"]
 
 
 def testMainWindowUsesBalancedPanelWidths() -> None:
@@ -133,7 +133,7 @@ def testMainWindowUsesHorizontalSplitterAndPersistsSizes() -> None:
     assert len(sizes) == 3
     assert sizes[0] == 0 if hasattr(window, 'floatingToolbox') else sizes[0] > 0
     assert sizes[1] > 0
-    assert sizes[2] > 0
+    assert sizes[2] == 0 if hasattr(window, 'floatingRunPanel') else sizes[2] > 0
 
     saveSplitterSizes = getattr(window, "saveMainSplitterSizes", None)
     assert callable(saveSplitterSizes)
@@ -184,12 +184,22 @@ def testMainWindowDoesNotLimitCanvasMaxWidth() -> None:
     assert constraints["canvasMaxWidth"] == -1
 
 
-def testRuntimeLogDockIsBottomDockedAndRestoresLocalSettings() -> None:
+def testRuntimeLogDialogIsNonModalAndRestoresLocalSettings() -> None:
+    from PySide2.QtCore import Qt
+    from PySide2.QtWidgets import QDialog, QDockWidget
+
     ensureQApp()
     settings = SettingsStoreStub()
     window = MainWindow(RuntimeClientStub(), settingsStore=settings)
-    assert window.logDock is not None
-    assert window.logDock.isVisible() is False
+    dialog = window.logDialog
+    assert isinstance(dialog, QDialog)
+    assert dialog.parentWidget() is window
+    assert dialog.isWindow()
+    assert dialog.isModal() is False
+    assert dialog.windowModality() == Qt.NonModal
+    assert dialog.windowFlags() & Qt.WindowMinMaxButtonsHint
+    assert dialog.isVisible() is False
+    assert window.findChild(QDockWidget, "runtimeLogDock") is None
 
     window.appendRuntimeLog("INFO", "designer message")
     window.appendEditorLog("WARN", "editor message")
@@ -208,27 +218,138 @@ def testRuntimeLogDockIsBottomDockedAndRestoresLocalSettings() -> None:
     ]
 
     window.openLogDialog()
-    window.logDock.setFloating(True)
+    dialog.resize(1120, 660)
+    dialog.view.sourceFilter.setCurrentText("runtime")
+    dialog.view.autoScrollCheck.setChecked(False)
     window._saveRuntimeLogSettings()
-    assert settings.value("ui/runtime_log_dock_visible") is True
-    assert settings.value("ui/runtime_log_dock_floating") is True
+    assert settings.value("ui/runtime_log_dialog_visible") is True
+    assert settings.value("ui/runtime_log_dialog_geometry") is not None
+    assert settings.value("ui/runtime_log_dock_state") is None
+    assert settings.value("ui/runtime_log_dock_floating") is None
     assert isinstance(settings.value("ui/runtime_log_view"), dict)
 
     restored = MainWindow(RuntimeClientStub(), settingsStore=settings)
-    assert restored.logDock is not None
-    assert restored.logDock.isVisible() is True
-    assert restored.logDock.isFloating() is True
+    assert restored.logDialog.isVisible() is True
+    assert restored.logDialog.size() == dialog.size()
+    assert restored.logDialog.view.settings()["source"] == "runtime"
+    assert restored.logDialog.view.settings()["autoScroll"] is False
 
 
-def testRuntimeLogDockClearAlsoReleasesMainWindowViewCache() -> None:
+def testRuntimeLogDialogClearAlsoReleasesMainWindowViewCache() -> None:
     ensureQApp()
     window = MainWindow(RuntimeClientStub())
-    assert window.logDock is not None
+    assert window.logDialog is not None
     window.appendRuntimeLog("INFO", "cached message")
     assert window.logEntries
     assert window.logBuffer
 
-    window.logDock.view.clearView()
+    window.logDialog.view.clearView()
 
     assert window.logEntries == []
     assert window.logBuffer == []
+
+
+def testRuntimeLogDialogReusesWindowWithoutResizingCanvasOrLosingLogs(
+    designerApplication,
+) -> None:
+    from tests.designer.qt_wait import waitUntil
+
+    window = MainWindow(RuntimeClientStub(), settingsStore=SettingsStoreStub())
+    window.show()
+    designerApplication.processEvents()
+    # The asynchronous catalog contributes a real log before this test's history.
+    waitUntil(lambda: window.operatorCatalogController.state == "ready")
+    canvasSize = window.centralWidget().size()
+    window.logDialog.view.clearView()
+    window.appendRuntimeLog("INFO", "first message")
+
+    window.openLogDialog()
+    designerApplication.processEvents()
+    dialog = window.logDialog
+    assert window.centralWidget().size() == canvasSize
+    dialog.view.sourceFilter.setCurrentText("designer")
+    dialog.view.autoScrollCheck.setChecked(False)
+    dialog.view.table.setCurrentCell(0, 0)
+    assert "first message" in dialog.view.detailViewer.toPlainText()
+
+    dialog.close()
+    assert not dialog.isVisible()
+    window.appendEditorLog("WARN", "hidden editor message")
+    window.appendRuntimeLog("INFO", "message while closed")
+    dialog.view._applyPendingEntries()
+    window.openLogDialog()
+    designerApplication.processEvents()
+
+    assert window.logDialog is dialog
+    assert dialog.isVisible()
+    assert window.centralWidget().size() == canvasSize
+    assert [entry.message for entry in dialog.view._entries] == [
+        "first message", "hidden editor message", "message while closed",
+    ]
+    assert dialog.view.sourceFilter.currentText() == "designer"
+    assert dialog.view.autoScrollCheck.isChecked() is False
+    assert dialog.view.table.rowCount() == 2
+    assert "first message" in dialog.view.detailViewer.toPlainText()
+
+
+def testRuntimeLogDialogOpenRestoresMinimizedWindowButKeepsMaximized(
+    designerApplication,
+) -> None:
+    window = MainWindow(RuntimeClientStub(), settingsStore=SettingsStoreStub())
+    window.openLogDialog()
+    dialog = window.logDialog
+    dialog.showMinimized()
+    designerApplication.processEvents()
+    assert dialog.isMinimized()
+
+    window.openLogDialog()
+    assert dialog.isVisible()
+    assert not dialog.isMinimized()
+
+    dialog.showMaximized()
+    window.openLogDialog()
+    assert dialog.isMaximized()
+    dialog.showMinimized()
+    designerApplication.processEvents()
+    assert dialog.isMinimized()
+    window.openLogDialog()
+    assert not dialog.isMinimized()
+    assert dialog.isMaximized()
+
+
+def testRuntimeLogDialogIgnoresOldDockLayoutButKeepsViewSettings(monkeypatch) -> None:
+    ensureQApp()
+    settings = SettingsStoreStub()
+    settings.values.update({
+        "ui/runtime_log_dock_state": b"old main-window layout",
+        "ui/runtime_log_dock_geometry": b"old dock geometry",
+        "ui/runtime_log_dock_visible": True,
+        "ui/runtime_log_dock_floating": False,
+        "ui/runtime_log_view": {"level": "ERROR", "autoScroll": False},
+    })
+    restoredStates = []
+    monkeypatch.setattr(MainWindow, "restoreState", restoredStates.append)
+
+    window = MainWindow(RuntimeClientStub(), settingsStore=settings)
+
+    assert not restoredStates
+    assert not window.logDialog.isVisible()
+    assert window.logDialog.view.settings()["level"] == "ERROR"
+    assert window.logDialog.view.settings()["autoScroll"] is False
+    window.openLogDialog()
+    assert window.logDialog.isVisible()
+    assert window.logDialog.isWindow()
+
+
+def testClosingDesignerAlsoClosesLogDialog(designerApplication) -> None:
+    settings = SettingsStoreStub()
+    window = MainWindow(RuntimeClientStub(), settingsStore=settings)
+    window.show()
+    window.openLogDialog()
+    designerApplication.processEvents()
+    assert window.logDialog.isVisible()
+
+    assert window.close()
+
+    assert not window.logDialog.isVisible()
+    assert settings.value("ui/runtime_log_dialog_visible") is True

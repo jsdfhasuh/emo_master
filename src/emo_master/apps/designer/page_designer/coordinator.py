@@ -3,8 +3,8 @@ import hashlib
 from copy import deepcopy
 from pathlib import Path
 
-from PySide2.QtCore import QSize, Qt
-from PySide2.QtWidgets import QMessageBox, QStackedWidget, QFileDialog, QInputDialog, QScrollArea, QFrame, QWidget, QVBoxLayout, QTabBar
+from PySide2.QtCore import QSize, Qt, QTimer
+from PySide2.QtWidgets import QMessageBox, QStackedWidget, QFileDialog, QInputDialog, QScrollArea, QFrame
 
 from emo_master.apps.designer.state.project_edit_session import ProjectEditSession
 
@@ -24,7 +24,9 @@ class PageCoordinator:
         self.editor = None
         self.devices = None
         self.monitor = None
+        self.onlineSummary = '未读取在线状态'
         self.closeApproved = None
+        self._devicePublishPending = False
         from .preview import PreviewController
         self.preview = PreviewController(self)
         initialPayload = window.workflowStore.toPayload()
@@ -39,19 +41,7 @@ class PageCoordinator:
         flowScroll.setFrameShape(QFrame.NoFrame)
         flowScroll.setWidgetResizable(True)
         flowScroll.setWidget(flowWidget)
-        flowArea = QWidget()
-        flowLayout = QVBoxLayout(flowArea)
-        flowLayout.setContentsMargins(0, 0, 0, 0)
-        flowLayout.setSpacing(0)
-        self.flowModes = QTabBar()
-        self.flowModes.addTab('编辑工程')
-        self.flowModes.addTab('在线监视')
-        flowLayout.addWidget(self.flowModes)
-        self.flowStack = QStackedWidget()
-        self.flowStack.addWidget(flowScroll)
-        flowLayout.addWidget(self.flowStack, 1)
-        self.flowModes.currentChanged.connect(self.changeFlowMode)
-        self.stack.addWidget(flowArea)
+        self.stack.addWidget(flowScroll)
         window.setCentralWidget(self.stack)
         window.projectController.editCoordinator = self
         window.flowScene.editCompleted = self.sync
@@ -111,39 +101,97 @@ class PageCoordinator:
         return self.devices is not None and self.devices.isVisible()
 
     def flowActive(self):
-        return not self.pageActive() and self.flowStack.currentIndex() == 0
-
-    def changeFlowMode(self, index):
-        if index == 1:
-            if not self._canSync():
-                self.flowModes.setCurrentIndex(0)
-                return
-            if self.monitor is None:
-                from emo_master.apps.designer.ui.online_graph import OnlineGraphDialog
-                self.monitor = OnlineGraphDialog(self.window.runtimeClient, '', self.flowStack)
-                self.monitor.setWindowFlags(Qt.Widget)
-                self.flowStack.addWidget(self.monitor)
-            self.flowStack.setCurrentWidget(self.monitor)
-        else:
-            self.flowStack.setCurrentIndex(0)
-        self.chrome.update()
+        return not self.pageActive()
 
     def showOnline(self, projectId=None):
+        # Observation never checkpoints or navigates the local draft and does
+        # not require pending editor inputs to pass configuration validation.
+        if self.monitor and projectId and self.monitor.projectId != projectId:
+            self.closeMonitor()
+        if self.monitor is None:
+            from emo_master.apps.designer.ui.online_graph import OnlineGraphDialog
+            dialog = OnlineGraphDialog(self.window.runtimeClient, projectId or '', self.window)
+            self.monitor = dialog
+            dialog.setAttribute(Qt.WA_DeleteOnClose)
+            dialog.finished.connect(lambda _result: self._monitorClosed(dialog))
+        self.monitor.show()
+        self.monitor.raise_()
+        self.monitor.activateWindow()
+        return self.monitor
+
+    def _monitorClosed(self, dialog):
+        if self.monitor is dialog:
+            self.monitor = None
+
+    def closeMonitor(self):
+        if self.monitor:
+            dialog, self.monitor = self.monitor, None
+            dialog.done(0)
+
+    def configureRuntime(self, *, allowRun=False, selectCategories=()):
+        if not self._canSync():
+            return None
+        from emo_master.apps.designer.ui.project_configuration import ProjectConfigurationDialog
+        dialog = ProjectConfigurationDialog(self, self.window, allowRun=allowRun, selectCategories=selectCategories)
+        return dialog.exec_()
+
+    def configureFromDevices(self):
+        """Yield the modal observer before entering the existing publication UI."""
+        devices = self.devices
+        if self._devicePublishPending or devices is None or not devices.isVisible():
+            return
+        if devices.pending is not None:
+            devices.status.setText('请等待当前设备请求返回后再查看发布')
+            return
+        try:
+            self.sync()  # Invalid fields must still be visible when focused.
+        except ValueError as error:
+            devices.status.setText(str(error))
+            return
+        session, scope, selected = self.session, devices._scope(), devices.selectedId
+        view = (devices.tabs.currentIndex(), devices.infoTabs.currentIndex())
+        scrollValues = [(bar, bar.value())
+            for widget in (devices.tree, devices.table, devices.tabs.widget(0), *devices.formScrolls.values())
+            for bar in (widget.horizontalScrollBar(), widget.verticalScrollBar())]
+        self._devicePublishPending = True
+        devices.buttons['publish'].setEnabled(False)
+        devices.done(0)
+        if devices.isVisible():
+            self._devicePublishPending = False
+            devices._updateOnlineActions()
+            return
+        def publish():
+            try:
+                if self.session is session and self.devices is devices and devices._scope() == scope:
+                    self.configureRuntime()
+            finally:
+                self._devicePublishPending = False
+                if self.session is session and self.devices is devices and devices._scope() == scope:
+                    devices.selectedId = selected
+                    devices.refresh()
+                    devices.show()
+                    devices.tabs.setCurrentIndex(view[0])
+                    devices.infoTabs.setCurrentIndex(view[1])
+                    devices.raise_()
+                    devices.activateWindow()
+                    for bar, value in scrollValues:
+                        bar.setValue(value)
+                    devices.readState()
+                    devices._updateOnlineActions()
+        QTimer.singleShot(0, publish)
+
+    def resourceBindings(self):
         if not self._canSync():
             return
-        self.stack.setCurrentIndex(0)
-        if self.monitor and projectId and self.monitor.projectId != projectId:
-            self.monitor.done(0)
-            self.flowStack.removeWidget(self.monitor)
-            self.monitor.deleteLater()
-            self.monitor = None
-        if projectId and self.monitor is None:
-            from emo_master.apps.designer.ui.online_graph import OnlineGraphDialog
-            self.monitor = OnlineGraphDialog(self.window.runtimeClient, projectId, self.flowStack)
-            self.monitor.setWindowFlags(Qt.Widget)
-            self.flowStack.addWidget(self.monitor)
-        self.flowModes.setCurrentIndex(1)
-        self.changeFlowMode(1)
+        from emo_master.apps.designer.ui.resource_bindings import ResourceBindingsDialog
+        try:
+            types, _requirements, _rejected = self.window.runtimeClient.listDeviceTypes()
+        except Exception as error:
+            self.preview.message('设备类型读取失败：' + str(error))
+            return
+        operators = {item['operatorId']: item for item in self.window.operatorCatalogController.getCatalog()}
+        ResourceBindingsDialog(self, types, operators, self.window).exec_()
+        self.chrome.update()
 
     def showDevices(self):
         if self.deviceActive():
@@ -175,11 +223,6 @@ class PageCoordinator:
             raise ValueError('设备操作尚未返回，请等待完成后切换')
         if self.window._activeDebugWindows():
             raise ValueError('当前窗口的流程或算子调试尚未结束，请先关闭调试会话')
-        communication = getattr(self.window, 'communicationController', None)
-        if communication:
-            communication.poll()
-        if communication and (communication.thread is not None or communication.disableSave is not None):
-            raise ValueError('通信请求尚未返回，请等待完成后切换')
         if not self.window.operatorEditorManager.closeCameraConfigurations():
             raise ValueError('相机配置会话尚未退出')
         if not self._canSync():
@@ -189,19 +232,9 @@ class PageCoordinator:
             self.devices.shutdown()
             self.devices.deleteLater()
             self.devices = None
-        if self.monitor:
-            self.monitor.done(0)
-            self.flowStack.removeWidget(self.monitor)
-            self.monitor.deleteLater()
-            self.monitor = None
-        self.flowModes.setCurrentIndex(0)
+        self.closeMonitor()
+        self.onlineSummary = '未读取在线状态'
         self.window._resetRuntimeVisualState(clearHistory=True)
-        if communication:
-            communication.contextKey = None
-            communication.nextPoll = 0
-            communication.state = communication.identity = None
-            communication.history.clear()
-            communication._render()
         self.window.refreshOperators()
         self.chrome.update()
 
@@ -209,7 +242,6 @@ class PageCoordinator:
         if not self._canSync():
             return
         self.stack.setCurrentIndex(0)
-        self.flowModes.setCurrentIndex(0)
         if self.preview.observer is not None:
             self.preview.observer.hide()
         self.chrome.update()
@@ -247,6 +279,8 @@ class PageCoordinator:
             self.window._refreshWorkflowTabs()
             if self.devices:
                 self.devices.refresh()
+                self.devices.status.setText(('已重做' if redo else '已撤销') + '工程修改；当前设备列表已同步，在线配置未改变')
+                self.devices.status.setToolTip('')
             if self.editor:
                 if self.session.document().presentation is None:
                     self.showFlow()
@@ -328,7 +362,11 @@ class PageCoordinator:
     def saved(self, directory):
         self.directory = directory
         self.session.markSaved()
-        self.window.setWindowTitle('视觉流程设计器')
+        self.updateWindowTitle()
+
+    def updateWindowTitle(self):
+        name = self.session.workflows.project.get('name') or '未命名工程'
+        self.window.setWindowTitle(f'视觉流程设计器 · {name}' + (' *' if self.session.dirty else ''))
 
     def normalizeDraft(self, payload):
         from copy import deepcopy
@@ -412,12 +450,7 @@ class PageCoordinator:
                     temporary.unlink(missing_ok=True)
 
     def shutdown(self):
-        if self.monitor:
-            self.monitor.done(0)
-            self.flowStack.removeWidget(self.monitor)
-            self.monitor.deleteLater()
-            self.monitor = None
-        self.flowModes.setCurrentIndex(0)
+        self.closeMonitor()
         if self.devices:
             self.devices.shutdown()
             self.devices.deleteLater()

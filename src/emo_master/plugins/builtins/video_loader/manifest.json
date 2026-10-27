@@ -1,0 +1,41 @@
+{
+  "operatorId": "vision.io.video_loader",
+  "displayName": "\u672c\u5730\u89c6\u9891\u53d6\u5e27",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.video_loader.operator:VideoLoaderOperator",
+  "category": "\u9884\u5904\u7406",
+  "iconKey": "source",
+  "summary": "\u6309\u89c6\u9891\u65f6\u95f4\u6bcf\u9694 X \u79d2\u53d6\u4e00\u5e27\uff0c\u6bcf\u6b21\u6267\u884c\u8f93\u51fa\u4e00\u5f20\u56fe\u7247\uff0c\u7528 hasNext \u7ed3\u675f While \u5faa\u73af\u3002",
+  "inputPorts": {
+    "videoPath": {"type": "string", "required": false, "nullable": false},
+    "reset": {"type": "boolean", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.1"},
+    "videoPath": {"type": "string", "required": true, "nullable": false},
+    "index": {"type": "integer", "required": true, "nullable": false},
+    "frameIndex": {"type": "integer", "required": true, "nullable": false},
+    "timestampSec": {"type": "number", "required": true, "nullable": false},
+    "hasNext": {"type": "boolean", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "videoPath": {
+        "title": "\u89c6\u9891\u6587\u4ef6", "type": "string", "default": "",
+        "xWidget": "file", "xFileMode": "open",
+        "xFilter": "\u89c6\u9891\u6587\u4ef6 (*.mp4 *.avi *.mkv *.mov *.wmv *.m4v *.webm *.mpg *.mpeg);;\u6240\u6709\u6587\u4ef6 (*)"
+      },
+      "intervalSec": {
+        "title": "\u53d6\u5e27\u95f4\u9694\uff08\u79d2\uff09", "type": "number", "exclusiveMinimum": 0.0, "default": 1.0
+      },
+      "colorMode": {
+        "title": "\u989c\u8272\u6a21\u5f0f", "type": "string", "enum": ["color", "grayscale"], "default": "color"
+      }
+    },
+    "required": ["videoPath"]
+  },
+  "minCoreVersion": "0.1.0",
+  "maxCoreVersion": "1.x"
+}

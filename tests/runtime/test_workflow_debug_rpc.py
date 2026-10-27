@@ -177,14 +177,16 @@ def testLoopbackGrpcWorkflowAndOperatorNamespacesCannotCross(runtime):
         server.stop(0).wait(3)
 
 
-@pytest.mark.parametrize("operatorId", ["vision.io.huaray_camera", "vision.io.sqlite_writer", "third.party"])
-def testWorkflowRejectsUnreviewedPluginBeforeWorkerConstruction(runtime, operatorId):
+@pytest.mark.parametrize("operatorId,code", [
+    ("vision.io.huaray_camera", "E_DEVICE_DEBUG_REQUIRED"),
+    ("vision.io.sqlite_writer", "E_DEBUG_UNSUPPORTED"), ("third.party", "E_DEBUG_UNSUPPORTED")])
+def testWorkflowRejectsUnreviewedPluginBeforeWorkerConstruction(runtime, operatorId, code):
     payload = nestedProject()
     payload["workflows"]["child"]["nodes"][1]["operatorId"] = operatorId
     client = FlowClient(runtime)
     reply = client.raw("OpenWorkflowDebugSession", open_request_id=uuid4().hex,
         project_json=json.dumps(payload), project_id=payload["project"]["projectId"], workflow_id="main")
-    assert not reply.ok and reply.code == "E_DEBUG_UNSUPPORTED"
+    assert not reply.ok and reply.code == code
     assert not runtime.operatorDebugManager.sessions
 
 

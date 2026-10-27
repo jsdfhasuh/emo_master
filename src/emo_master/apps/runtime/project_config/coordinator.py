@@ -10,13 +10,15 @@ REQUEST_WINDOW = 2048
 
 
 class ConfigurationCoordinator:
-    def __init__(self, store, runtimeInstanceId, *, lock=None, prepare, publish, beforeCommit=None, discard=None, transition=None):
+    def __init__(self, store, runtimeInstanceId, *, lock=None, prepare, publish, beforeCommit=None, discard=None,
+                 transition=None, cycleIdentity=None):
         self.store, self.runtimeInstanceId = store, runtimeInstanceId
         self.lock = lock if lock is not None else RLock()
         self.prepare, self.publish = prepare, publish
         self.beforeCommit = beforeCommit
         self.discard = discard
         self.transition = transition
+        self.cycleIdentity = cycleIdentity
         self.drainingOwners = set()
         self.parkedOwners = set()
         self.current = store.snapshot()
@@ -42,11 +44,22 @@ class ConfigurationCoordinator:
             raise ConfigurationError("E_CONFIG_NOT_READY", "previous configuration publication or cleanup requires recovery")
         if request["expectedRuntimeInstanceId"] != self.runtimeInstanceId:
             raise ConfigurationError("E_CONFIG_INSTANCE", "Runtime restarted; compare again")
+        if request.get('operation') == 'initialize':
+            if self.current is not None:
+                raise ConfigurationError('E_CONFIG_ACTIVE', 'Runtime already has an online project; compare before writing')
+            return
         if self.current is None or request["expectedRevision"] != self.current["documentRevision"]:
             raise ConfigurationError("E_CONFIG_CONFLICT", "online revision changed; compare again")
 
     def _candidate(self, request):
         self._check(request)
+        if request.get('operation') == 'loadLocalProject':
+            # The local operator explicitly selected a complete on-disk project.
+            # Remote writes still require their ordinary field selection.
+            if not request.get('sourcePath') or request.get('replacementPolicy') != 'stopAffected':
+                raise ConfigurationError('E_CONFIG_PROJECT_REPLACEMENT', 'local loading requires a source and explicit replacement policy')
+            from emo_master.core.project.models import ProjectDocument
+            return ProjectDocument.model_validate(request['localPayload']).model_dump(mode='json')
         candidate = selectedCandidate(self.current["payload"], request["localPayload"], request["selectedPaths"])
         if candidate["project"]["projectId"] != self.current["payload"]["project"]["projectId"]:
             from emo_master.core.project.models import ProjectDocument
@@ -65,7 +78,7 @@ class ConfigurationCoordinator:
             self.discard(prepared)
         return candidate
 
-    def start(self, request):
+    def start(self, request, *, synchronous=False):
         request = deepcopy(request)
         requestId = request["requestId"]
         if not isinstance(requestId, str) or not requestId or len(requestId) > 160:
@@ -89,22 +102,31 @@ class ConfigurationCoordinator:
                 raise ConfigurationError("E_CONFIG_WRITER_BUSY", "another configuration write is pending")
             self._retireRequests()
             if len(self.requests) >= REQUEST_WINDOW:
+                if self.current is None:
+                    raise ConfigurationError('E_CONFIG_CAPACITY', 'initial request window is full; no requests were forgotten')
                 # Failures at the current revision cannot be forgotten until
                 # their original requests have a durable stale-revision fence.
                 self.current = self.store.advanceRequestFence(self.current["documentRevision"])
                 self._retireRequests()
                 raise ConfigurationError("E_CONFIG_CONFLICT", "request window rotated; compare the new document revision before writing")
-            candidate = self._candidate(request)
+            candidate = request['localPayload'] if request.get('operation') == 'initialize' else self._candidate(request)
             entry = dict(fingerprint=fingerprint, expectedRevision=request["expectedRevision"], cancelled=Event(), status=dict(
                 state="VALIDATING", requestId=requestId, runtimeInstanceId=self.runtimeInstanceId))
             self.requests[requestId] = entry
             self.active = requestId
-            self.thread = Thread(target=self._write, args=(request, candidate, entry),
-                                 name="project-config-writer", daemon=True)
-            self.thread.start()
-            return deepcopy(entry["status"])
+            if not synchronous:
+                self.thread = Thread(target=self._write, args=(request, candidate, entry),
+                                     name="project-config-writer", daemon=True)
+                self.thread.start()
+                return deepcopy(entry["status"])
+        # A stopped local directory update already owns the project lock and
+        # must learn whether commit occurred before its file rollback can finish.
+        self._write(request, candidate, entry)
+        return self.status(requestId)
 
     def _retireRequests(self):
+        if self.current is None:
+            return
         for key, entry in list(self.requests.items()):
             if len(self.requests) < REQUEST_WINDOW:
                 break
@@ -174,11 +196,13 @@ class ConfigurationCoordinator:
     def _write(self, request, candidate, entry):
         prepared = None
         transition = None
+        initial = request.get('operation') == 'initialize'
         try:
+            source = {'sourcePath': request['sourcePath']} if request.get('sourcePath') else {}
             if self.transition is not None and request.get("replacementPolicy", "reject") != "reject":
                 entry["status"]["state"] = "WAITING"
-                transition = self.transition(candidate, entry["cancelled"], request["replacementPolicy"])
-            prepared = self.prepare(candidate, entry["cancelled"])
+                transition = self.transition(candidate, entry["cancelled"], request["replacementPolicy"], **source)
+            prepared = self.prepare(candidate, entry['cancelled'], **source)
             with self.lock:
                 if entry["cancelled"].is_set():
                     entry["status"].update(state="CANCELLED", code="E_CONFIG_CANCELLED")
@@ -191,10 +215,16 @@ class ConfigurationCoordinator:
                 if self.beforeCommit is not None:
                     self.beforeCommit(candidate)
                 sourcePath = getattr(prepared, "sourcePath", "") or self.current["sourcePath"]
-                receipt = self.store.commit(request["expectedRevision"], candidate, request["requestId"],
-                                            entry["fingerprint"], self.runtimeInstanceId, sourcePath=sourcePath)
-                self.current = dict(payload=candidate, sourcePath=sourcePath,
-                    documentRevision=receipt["documentRevision"], executionRevision=receipt["executionRevision"])
+                if initial:
+                    receipt = dict(state='COMMITTED', requestId=request['requestId'], runtimeInstanceId=self.runtimeInstanceId,
+                                   documentRevision=1, executionRevision=1, message='首次写入成功；未启动任务')
+                    self.current = self.store.initialize(candidate, sourcePath,
+                        receipt=receipt, fingerprint=entry['fingerprint'])
+                else:
+                    receipt = self.store.commit(request["expectedRevision"], candidate, request["requestId"],
+                                                entry["fingerprint"], self.runtimeInstanceId, sourcePath=sourcePath)
+                    self.current = dict(payload=candidate, sourcePath=sourcePath,
+                        documentRevision=receipt["documentRevision"], executionRevision=receipt["executionRevision"])
                 entry["status"] = receipt
                 # Publication must only install prepared software state. An unexpected
                 # publication failure cannot erase the SQLite commit or invite a retry.
@@ -203,10 +233,15 @@ class ConfigurationCoordinator:
                 except Exception as error:
                     self.publicationError = str(error)
                     entry["status"] = dict(receipt, publicationError=str(error))
+                    self.store.recordTransition(entry['status'])
         except Exception as error:
             with self.lock:
                 entry["status"].update(state="CANCELLED" if entry["cancelled"].is_set() else "FAILED",
                     code=getattr(error, "code", "E_CONFIG_VALIDATION"), message=str(error))
+                from dataclasses import asdict
+                from emo_master.core.workflow.errors import WorkflowCompileError
+                if isinstance(error, WorkflowCompileError):
+                    entry['status']['issues'] = [asdict(issue) for issue in error.issues]
         finally:
             if prepared is not None and self.discard is not None:
                 try:
@@ -269,6 +304,10 @@ class ConfigurationCoordinator:
                     snapshot = self.current
                     lease = dict(cycleId=cycleId, snapshot=snapshot, parentCycleId=parentCycleId,
                                  allowChildRefresh=parentCycleId is None)
+                    if self.cycleIdentity is not None:
+                        # Capture the Runtime backends once, alongside the plan.
+                        # Retained consumers may use devices the source does not.
+                        lease.update(self.cycleIdentity())
                     if parentCycleId is None:
                         self.cycles[owner] = lease
                     else:
@@ -299,6 +338,9 @@ class ConfigurationCoordinator:
         snapshot = lease["snapshot"]
         result = dict(cycleId=lease["cycleId"], planRevision=snapshot["executionRevision"],
                       documentRevision=snapshot["documentRevision"], ownsCycle=ownsCycle)
+        for key in ('deviceScope', 'deviceIdentities'):
+            if key in lease:
+                result[key] = deepcopy(lease[key])
         if knownRevision != snapshot["executionRevision"]:
             result["payload"] = deepcopy(snapshot["payload"])
         return result
@@ -312,6 +354,11 @@ class ConfigurationCoordinator:
                 raise ConfigurationError("E_CYCLE_STALE", "device request has no matching root cycle lease")
             return cycle["snapshot"]["executionRevision"]
 
+    def cyclePayload(self, owner, cycleId):
+        with self.cycleLock:
+            self.requireCycle(owner, cycleId)
+            return deepcopy(self._cycleLease(owner, cycleId)['snapshot']['payload'])
+
     def retainCycle(self, sourceOwner, cycleId, owner):
         """Queued consumers pin the source plan without holding the project lock."""
         with self.cycleLock:
@@ -322,9 +369,7 @@ class ConfigurationCoordinator:
             if owner in self.cycles:
                 raise ConfigurationError("E_CYCLE_ACTIVE", "consumer already owns a cycle")
             self.cycles[owner] = dict(source, parentCycleId=None, allowChildRefresh=False)
-            return dict(cycleId=cycleId, planRevision=source["snapshot"]["executionRevision"],
-                        documentRevision=source["snapshot"]["documentRevision"],
-                        payload=deepcopy(source["snapshot"]["payload"]))
+            return self._cycleResult(source, None, ownsCycle=False)
 
     def endCycle(self, owner, cycleId):
         with self.cycleLock:

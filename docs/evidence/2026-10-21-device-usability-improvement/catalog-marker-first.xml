@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="1.547" timestamp="2026-10-21T22:17:52.977044+08:00" hostname="视觉电脑"><testcase classname="tests.designer.test_device_usability_drafts" name="testPendingMarkerUpdatesWhenOperatorCatalogArrives" time="0.575"><failure message="AssertionError: assert ('待选择设备：camera', None) in (('绑定状态待检查', None),)&#10; +  where (('绑定状态待检查', None),) = FlowNodeViewModel(nodeId='pending-camera', title='vision.io.huaray_camera', x=80.0, y=90.0, inputPorts={}, outputPorts...'vision.io.huaray_camera', kind='operator', summaryLines=(('绑定状态待检查', None),), outputPortLabels={}, inputPortLabels={}).summaryLines&#10; +    where FlowNodeViewModel(nodeId='pending-camera', title='vision.io.huaray_camera', x=80.0, y=90.0, inputPorts={}, outputPorts...'vision.io.huaray_camera', kind='operator', summaryLines=(('绑定状态待检查', None),), outputPortLabels={}, inputPortLabels={}) = &lt;emo_master.apps.designer.ui.flow_scene._NodeItem(0x1ec4fb75c30, pos=80,90, flags=(ItemIsMovable|ItemIsSelectable|ItemSendsGeometryChanges)) at 0x000001EC4F299D00&gt;.model">ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001EC4E650490&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2762/testPendingMarkerUpdatesWhenOp0')
+definition = DeviceDefinition(name='Camera A', deviceTypeId='device.example.simulated_camera', driverVersion='1.0.0', enabled=True,...ce': 'offline'}, defaults={'exposureMode': 'manual', 'exposureUs': 8000.0, 'gain': 0.0, 'enabled': False}, policies={})
+declaration = DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.example.simulated_camera', version='1.0.0...tors={}, managementActions=[], actionSchemas={}, driverEntry=None, executionLocation='io_thread', cancellableWait=None)
+
+    def testPendingMarkerUpdatesWhenOperatorCatalogArrives(ownedDesignerWindow, tmp_path,
+            definition, declaration):  # noqa: F811
+        from threading import Event
+    
+        window, requirements = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+        waitUntil(lambda: window.operatorCatalogController.state == 'ready')
+        c = window.pageCoordinator
+        editor = DeviceCatalogEditor(c.session, {declaration.deviceTypeId: declaration}, requirements)
+        editor.commitNode('main', dict(nodeId='pending-camera', operatorId='vision.io.huaray_camera'),
+                          allowIncomplete=True, position=dict(x=80., y=90.))
+        window.workflowController._renderActive()
+        scene = window.flowScene
+        item = scene._nodeItems['pending-camera']
+        item.setSelected(True)
+        assert ('绑定状态待检查', None) in item.model.summaryLines
+        before = c.session.payload()
+        release, entered = Event(), Event()
+    
+        def delayedCatalog(**_kwargs):
+            entered.set()
+            assert release.wait(5)
+            return [SimpleNamespace(operatorId='vision.io.huaray_camera', displayName='相机',
+                                    deviceRequirements=requirements['vision.io.huaray_camera'])]
+    
+        window.runtimeClient.listOperators = delayedCatalog
+        try:
+            window.refreshOperators()
+            assert entered.wait(2)
+            release.set()
+            waitUntil(lambda: window.operatorCatalogController.state == 'ready')
+            current = scene._nodeItems['pending-camera']
+&gt;           assert ('待选择设备：camera', None) in current.model.summaryLines
+E           AssertionError: assert ('待选择设备：camera', None) in (('绑定状态待检查', None),)
+E            +  where (('绑定状态待检查', None),) = FlowNodeViewModel(nodeId='pending-camera', title='vision.io.huaray_camera', x=80.0, y=90.0, inputPorts={}, outputPorts...'vision.io.huaray_camera', kind='operator', summaryLines=(('绑定状态待检查', None),), outputPortLabels={}, inputPortLabels={}).summaryLines
+E            +    where FlowNodeViewModel(nodeId='pending-camera', title='vision.io.huaray_camera', x=80.0, y=90.0, inputPorts={}, outputPorts...'vision.io.huaray_camera', kind='operator', summaryLines=(('绑定状态待检查', None),), outputPortLabels={}, inputPortLabels={}) = &lt;emo_master.apps.designer.ui.flow_scene._NodeItem(0x1ec4fb75c30, pos=80,90, flags=(ItemIsMovable|ItemIsSelectable|ItemSendsGeometryChanges)) at 0x000001EC4F299D00&gt;.model
+
+tests\designer\test_device_usability_drafts.py:295: AssertionError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,56 @@
+...............................................FFFFF.F........ss..       [100%]
+================================== FAILURES ===================================
+__ testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages[embedded-menu] __
+tests\designer\test_runtime_menu_publication.py:354: in testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages
+    assert len(calls) == 1 and calls[0][0] == (service.loadedProjectId,) and calls[0][1]['workflowId'] == 'run'
+E   AssertionError: assert (1 == 1 and ('C:\\Users\\...run.emoproj',) == ('a7f1c027-c4...53d7cd20279',)
+E    +  where 1 = len([(('C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2960\\testRealRuntimeRunAndStopRemai0\\eng...onId': '529fe5c0-9557-41a1-bb89-20fa5a3ca436', 'workflowId': 'run', 'inputs': {}, 'legacySnapshotPolicy': 'ALL', ...})])
+E     
+E     At index 0 diff: 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2960\\testRealRuntimeRunAndStopRemai0\\engineering\\run.emoproj' != 'a7f1c027-c460-4099-9805-d53d7cd20279'
+E     Use -v to get more diff)
+_ testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages[embedded-shortcut] _
+tests\designer\test_runtime_menu_publication.py:354: in testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages
+    assert len(calls) == 1 and calls[0][0] == (service.loadedProjectId,) and calls[0][1]['workflowId'] == 'run'
+E   AssertionError: assert (1 == 1 and ('C:\\Users\\...run.emoproj',) == ('80ee69b2-0a...06146cf82a9',)
+E    +  where 1 = len([(('C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2960\\testRealRuntimeRunAndStopRemai1\\eng...onId': 'eecbdfde-44a9-447b-8e68-f3407261fc80', 'workflowId': 'run', 'inputs': {}, 'legacySnapshotPolicy': 'ALL', ...})])
+E     
+E     At index 0 diff: 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2960\\testRealRuntimeRunAndStopRemai1\\engineering\\run.emoproj' != '80ee69b2-0a76-4d65-a9ce-906146cf82a9'
+E     Use -v to get more diff)
+__ testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages[loopback-menu] __
+tests\designer\test_runtime_menu_publication.py:354: in testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages
+    assert len(calls) == 1 and calls[0][0] == (service.loadedProjectId,) and calls[0][1]['workflowId'] == 'run'
+E   AssertionError: assert (1 == 1 and ('C:\\Users\\...run.emoproj',) == ('babb7047-f5...b27d5394235',)
+E    +  where 1 = len([(('C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2960\\testRealRuntimeRunAndStopRemai2\\eng...SessionId': 'c3c9d299-08af-4dd1-8c6d-26986dcec942', 'workflowId': 'run', 'inputs': {}, 'legacySnapshotPolicy': 'ALL'})])
+E     
+E     At index 0 diff: 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2960\\testRealRuntimeRunAndStopRemai2\\engineering\\run.emoproj' != 'babb7047-f5bb-40d8-9be1-6b27d5394235'
+E     Use -v to get more diff)
+_ testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages[loopback-shortcut] _
+tests\designer\test_runtime_menu_publication.py:354: in testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages
+    assert len(calls) == 1 and calls[0][0] == (service.loadedProjectId,) and calls[0][1]['workflowId'] == 'run'
+E   AssertionError: assert (1 == 1 and ('C:\\Users\\...run.emoproj',) == ('dbd25df2-e2...7edf2183ab7',)
+E    +  where 1 = len([(('C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2960\\testRealRuntimeRunAndStopRemai3\\eng...SessionId': '06fa756b-edf0-4580-80f5-d178dd246c44', 'workflowId': 'run', 'inputs': {}, 'legacySnapshotPolicy': 'ALL'})])
+E     
+E     At index 0 diff: 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2960\\testRealRuntimeRunAndStopRemai3\\engineering\\run.emoproj' != 'dbd25df2-e21c-40be-8c51-07edf2183ab7'
+E     Use -v to get more diff)
+____ testRunAndImagesUseOnlineIdentityWhenLocalFileDiffers[embedded-True] _____
+tests\designer\test_runtime_menu_publication.py:426: in testRunAndImagesUseOnlineIdentityWhenLocalFileDiffers
+    assert calls[0][0] == (service.loadedProjectId,) and len(calls) == 1
+E   AssertionError: assert (('C:\\Users\\...ect.emoproj',) == ('e09d9ef4-2f...390e7b5efdc',)
+E     
+E     At index 0 diff: 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2960\\testRunAndImagesUseOnlineIdent0\\engineering\\project.emoproj' != 'e09d9ef4-2f3b-4d6b-8b76-2390e7b5efdc'
+E     Use -v to get more diff)
+____ testRunAndImagesUseOnlineIdentityWhenLocalFileDiffers[loopback-True] _____
+tests\designer\test_runtime_menu_publication.py:426: in testRunAndImagesUseOnlineIdentityWhenLocalFileDiffers
+    assert calls[0][0] == (service.loadedProjectId,) and len(calls) == 1
+E   AssertionError: assert (('C:\\Users\\...ect.emoproj',) == ('41334769-0a...7fb4747602c',)
+E     
+E     At index 0 diff: 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2960\\testRunAndImagesUseOnlineIdent2\\engineering\\project.emoproj' != '41334769-0ad2-484e-8110-e7fb4747602c'
+E     Use -v to get more diff)
+=========================== short test summary info ===========================
+FAILED tests/designer/test_runtime_menu_publication.py::testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages[embedded-menu]
+FAILED tests/designer/test_runtime_menu_publication.py::testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages[embedded-shortcut]
+FAILED tests/designer/test_runtime_menu_publication.py::testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages[loopback-menu]
+FAILED tests/designer/test_runtime_menu_publication.py::testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages[loopback-shortcut]
+FAILED tests/designer/test_runtime_menu_publication.py::testRunAndImagesUseOnlineIdentityWhenLocalFileDiffers[embedded-True]
+FAILED tests/designer/test_runtime_menu_publication.py::testRunAndImagesUseOnlineIdentityWhenLocalFileDiffers[loopback-True]
+6 failed, 58 passed, 2 skipped in 85.57s (0:01:25)

@@ -96,10 +96,15 @@ def jobFailureDetails(runtimeService, jobId: str, status=None, result=None) -> s
         if isinstance(value, list):
             return [shorten(item, limit) for item in value]
         return value
-    for limit in (256, 128, 64, 32, 16):
-        rendered = json.dumps(shorten(details, limit), ensure_ascii=True)
-        if len(rendered) <= 16384:
-            return rendered
+    summary = {key: details[key] for key in (
+        "job", "record", "last_status_reply", "result", "presentation_errors", "export_errors"
+    ) if key in details}
+    summary["diagnostic_error"] = "detailed context omitted: diagnostic budget exceeded"
+    for candidate in (details, summary):
+        for limit in (256, 128, 64, 32, 16):
+            rendered = json.dumps(shorten(candidate, limit), ensure_ascii=True)
+            if len(rendered) <= 16384:
+                return rendered
     return json.dumps({"job": jobId[:128], "diagnostic_error": "diagnostic budget exceeded"})
 
 

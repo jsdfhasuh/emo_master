@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="2.720" timestamp="2026-10-20T18:39:57.717609+08:00" hostname="视觉电脑"><testcase classname="test_plan_contract" name="testClosingDeviceWorkspaceDoesNotOpenLateDiscovery" time="0.560"><failure message="AssertionError: closing the parent must abandon the pending open-dialog intent&#10;assert [{'parentVisi...yOnly': True}] == []&#10;  &#10;  Left contains one more item: {'parentVisible': False, 'discoveryOnly': True}&#10;  Use -v to get more diff">..\..\AppData\Local\Temp\emo-runtime-menu-plan-audit-20261020\test_plan_contract.py:52: in testClosingDeviceWorkspaceDoesNotOpenLateDiscovery
+    assert opened == [], 'closing the parent must abandon the pending open-dialog intent'
+E   AssertionError: closing the parent must abandon the pending open-dialog intent
+E   assert [{'parentVisi...yOnly': True}] == []
+E     
+E     Left contains one more item: {'parentVisible': False, 'discoveryOnly': True}
+E     Use -v to get more diff</failure></testcase><testcase classname="test_plan_contract" name="testStopFailureCannotReplaceObservedTerminal[transport]" time="0.003"><failure message="AssertionError: assert ('RUNNING' == 'ABORTED'&#10;  &#10;  - ABORTED&#10;  + RUNNING)">..\..\AppData\Local\Temp\emo-runtime-menu-plan-audit-20261020\test_plan_contract.py:79: in testStopFailureCannotReplaceObservedTerminal
+    assert panel.jobStatus == 'ABORTED' and not controller._jobActive and running[-1] is False
+E   AssertionError: assert ('RUNNING' == 'ABORTED'
+E     
+E     - ABORTED
+E     + RUNNING)</failure></testcase><testcase classname="test_plan_contract" name="testStopFailureCannotReplaceObservedTerminal[reply]" time="0.003"><failure message="AssertionError: assert ('RUNNING' == 'ABORTED'&#10;  &#10;  - ABORTED&#10;  + RUNNING)">..\..\AppData\Local\Temp\emo-runtime-menu-plan-audit-20261020\test_plan_contract.py:79: in testStopFailureCannotReplaceObservedTerminal
+    assert panel.jobStatus == 'ABORTED' and not controller._jobActive and running[-1] is False
+E   AssertionError: assert ('RUNNING' == 'ABORTED'
+E     
+E     - ABORTED
+E     + RUNNING)</failure></testcase><testcase classname="test_plan_contract" name="testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback]" time="1.014"><failure message="AssertionError: assert (False)&#10; +  where False = isinstance('StatusCode.DEADLINE_EXCEEDED', dict)">..\..\AppData\Local\Temp\emo-runtime-menu-plan-audit-20261020\test_plan_contract.py:124: in testInitialWriteIsQueryableAndCancellableBeforeCommit
+    assert isinstance(outcomes['cancel'], dict) and outcomes['cancel']['state'] in {'VALIDATING', 'WAITING', 'CANCELLED'}
+E   AssertionError: assert (False)
+E    +  where False = isinstance('StatusCode.DEADLINE_EXCEEDED', dict)</failure></testcase></testsuite></testsuites>

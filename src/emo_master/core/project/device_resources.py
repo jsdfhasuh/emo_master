@@ -4,6 +4,7 @@ from typing import Any
 
 from emo_master.core.plugin.devices import DeviceType
 from emo_master.core.project.resources import DeviceParameterTarget
+from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError
 
 
 def trustedDeviceTypes():
@@ -15,29 +16,36 @@ def trustedDeviceTypes():
     return scanDeviceTypes([root], __version__)[0]
 
 
-def deviceDeclaration(definition, deviceTypes: Mapping[str, DeviceType] | None) -> DeviceType:
+def deviceDeclaration(definition, deviceTypes: Mapping[str, DeviceType] | None, *, deviceId='') -> DeviceType:
     declaration = (deviceTypes or {}).get(definition.deviceTypeId)
     if declaration is None or declaration.version != definition.driverVersion:
-        raise ValueError(f"device metadata missing or version mismatch: {definition.deviceTypeId}")
+        raise WorkflowCompileError([ValidationIssue('E_DEVICE_DEPENDENCY',
+            f'device metadata missing or version mismatch: {definition.deviceTypeId}；要求 {definition.driverVersion}；'
+            f'当前安装 {declaration.version if declaration else "未安装"}',
+            fieldPath=f'devices.definitions.{deviceId}.driverVersion' if deviceId else 'dependencies.deviceTypes.'+definition.deviceTypeId)])
     return declaration
 
 
 def deviceTarget(document, target: DeviceParameterTarget, deviceTypes, purpose: str):
+    path = f'devices.definitions.{target.deviceId}.{target.section}.' + '.'.join(target.parameterPath)
+    def invalid(message):
+        return WorkflowCompileError([ValidationIssue('E_DEVICE_RESOURCE', message,
+            projectId=document.project.projectId, fieldPath=path)])
     definition = document.devices.definitions.get(target.deviceId)
     if definition is None:
-        raise ValueError(f"device target missing: {target.deviceId}")
-    declaration = deviceDeclaration(definition, deviceTypes)
+        raise invalid(f"device target missing: {target.deviceId}")
+    declaration = deviceDeclaration(definition, deviceTypes, deviceId=target.deviceId)
     schema: Any = declaration.connectionSchema if target.section == "connection" else declaration.defaultsSchema
     for part in target.parameterPath:
         schema = schema.get("properties", {}).get(part, {})
     if schema.get("type") != "string" or schema.get("xResourcePurpose") != purpose:
-        raise ValueError("device parameter purpose is not approved by installed metadata")
+        raise invalid("device parameter purpose is not approved by installed metadata")
     if purpose in {"input_image", "model"} and (
             schema.get("xWidget") != "file" or schema.get("xFileMode") != "open"):
-        raise ValueError("device resource must target a declared input file")
+        raise invalid("device resource must target a declared input file")
     if purpose in {"output_file", "output_directory"} and (
             schema.get("xWidget") != "file" or schema.get("xFileMode") != "save"):
-        raise ValueError("device output must target a declared output path")
+        raise invalid("device output must target a declared output path")
     return getattr(definition, target.section)
 
 

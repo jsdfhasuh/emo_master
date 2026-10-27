@@ -32,12 +32,12 @@ from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields,
 
 
 WORKFLOW_PACKAGE_TYPE = "emo-master.workflow"
-WORKFLOW_PACKAGE_SCHEMA_VERSION = "1.0"
+WORKFLOW_PACKAGE_SCHEMA_VERSION = "1.4"
 WORKFLOW_PACKAGE_EXTENSION = ".emowf.json"
 
 
 class WorkflowPackageDocument(StrictModel):
-    schemaVersion: Literal["1.0", "1.1", "1.2", "1.3"] = "1.0"
+    schemaVersion: Literal["1.0", "1.1", "1.2", "1.3", "1.4"] = "1.4"
     packageType: Literal["emo-master.workflow"] = "emo-master.workflow"
     rootWorkflowId: str
     workflowOrder: list[str]
@@ -53,9 +53,9 @@ class WorkflowPackageDocument(StrictModel):
         payload = handler(self)
         if self.schemaVersion == "1.0":
             payload.pop("globalVariables", None)
-        if self.schemaVersion not in {"1.2", "1.3"}:
+        if self.schemaVersion not in {"1.2", "1.3", "1.4"}:
             payload.pop("devices", None)
-        if self.schemaVersion != "1.3":
+        if self.schemaVersion not in {"1.3", "1.4"}:
             payload.pop("resources", None)
             payload.pop("resourceData", None)
         return payload
@@ -64,9 +64,9 @@ class WorkflowPackageDocument(StrictModel):
     def validateWorkflowIndex(self) -> "WorkflowPackageDocument":
         if self.globalVariables and self.schemaVersion == "1.0":
             raise ValueError("variables require workflow package 1.1")
-        if self.devices and self.schemaVersion not in {"1.2", "1.3"}:
+        if self.devices and self.schemaVersion not in {"1.2", "1.3", "1.4"}:
             raise ValueError("devices require workflow package 1.2")
-        if self.schemaVersion != "1.3" and (self.resourceData or self.resources.items
+        if self.schemaVersion not in {"1.3", "1.4"} and (self.resourceData or self.resources.items
                 or self.resources.parameterBindings or self.resources.siteBindings):
             raise ValueError("resources and site bindings require workflow package 1.3")
         workflowIds = set(self.workflows)
@@ -189,13 +189,11 @@ def buildWorkflowPackage(
     }
     referencedDevices = _referencedDeviceIds(workflows)
     resources = packagedResources.dependencyPlan(sourceStore, workflows, referencedDevices)
-    hasResources = bool(resources.items or resources.parameterBindings or resources.siteBindings)
     catalog = cast(dict, sourceStore.devices.get("definitions", {}))
     if referencedDevices - set(catalog):
         raise ValueError(f"workflow package has missing devices: {sorted(referencedDevices - set(catalog))}")
     document = WorkflowPackageDocument(
-        schemaVersion=("1.3" if hasResources else "1.2" if sourceStore.devices.get("schemaVersion") == "1.0" else
-                       "1.1" if "globalVariables" in sourceStore.projectExtensions else "1.0"),
+        schemaVersion="1.4",
         devices={key: catalog[key] for key in sorted(referencedDevices)},
         resources=resources,
         globalVariables={key: value for key, value in cast(dict, sourceStore.projectExtensions.get("globalVariables", {})).items()
@@ -264,6 +262,7 @@ def previewWorkflowPackageImport(
     store: WorkflowStore,
     document: WorkflowPackageDocument,
     availableOperatorIds: Collection[str] | None = None,
+    *, deviceTypes=None, operatorRequirements=None,
 ) -> WorkflowPackageImportPreview:
     _validateWorkflowPackage(document)
     _checkVariableConflicts(store, document)
@@ -273,7 +272,7 @@ def previewWorkflowPackageImport(
         document,
         workflowIdMap,
         availableOperatorIds=availableOperatorIds,
-        devices=_devicePreviews(store, document),
+        devices=_devicePreviews(store, document, deviceTypes, operatorRequirements),
         targetFingerprint=_importTargetFingerprint(store),
     )
 
@@ -287,6 +286,7 @@ def importWorkflowPackage(
     expectedFingerprint: str | None = None,
     expectedTargetFingerprint: str | None = None,
     targetRoot: Path | None = None,
+    deviceTypes=None, operatorRequirements=None,
 ) -> WorkflowPackageImportResult:
     _validateWorkflowPackage(document, referencesOnly=reuseVariableIds)
     if expectedFingerprint is not None and expectedFingerprint != workflowPackageFingerprint(document):
@@ -299,8 +299,9 @@ def importWorkflowPackage(
              for key, value in document.globalVariables.items()):
         raise ValueError("only identical in-project variable definitions may be reused by workflow copy")
     workingStore = deepcopy(store)
-    deviceIdMap = _importDevices(workingStore, document, deviceMapping, inProjectCopy=reuseVariableIds)
-    if document.schemaVersion in {"1.1", "1.2", "1.3"}:
+    deviceIdMap = _importDevices(workingStore, document, deviceMapping, inProjectCopy=reuseVariableIds,
+        deviceTypes=deviceTypes, operatorRequirements=operatorRequirements)
+    if document.schemaVersion in {"1.1", "1.2", "1.3", "1.4"}:
         enableVariables(workingStore)
         cast(dict, workingStore.projectExtensions["globalVariables"]).update(
             {key: value.model_dump() for key, value in document.globalVariables.items()})
@@ -347,7 +348,7 @@ def importWorkflowPackage(
     _validateWorkflowPackage(mappedDocument)
     installed = None
     try:
-        if document.schemaVersion == "1.3":
+        if document.schemaVersion in {"1.3", "1.4"}:
             plan, resourceIds = packagedResources.remapDependencies(workingStore, document,
                 workflowIdMap, nodeIdMaps, deviceIdMap, inProjectCopy=reuseVariableIds)
             workingStore.projectExtensions["resources"] = plan.model_dump(mode="json")
@@ -601,13 +602,42 @@ def _referencedDeviceIds(workflows: dict[str, WorkflowDefinition]) -> set[str]:
             for binding in node.deviceBindings.values()}
 
 
-def _compatibleDevice(source: DeviceDefinition, target: DeviceDefinition) -> bool:
-    # Without a loaded driver, equal defaults preserve inherited source semantics.
-    return (source.deviceTypeId, source.driverVersion, source.defaults) == (
-        target.deviceTypeId, target.driverVersion, target.defaults)
+def _compatibleDevice(source: DeviceDefinition, target: DeviceDefinition, channelIds=()) -> bool:
+    if (source.deviceTypeId, source.driverVersion, source.defaults) != (
+            target.deviceTypeId, target.driverVersion, target.defaults):
+        return False
+    if source.deviceTypeId == 'device.tcp.server':
+        def mapping(definition):
+            return {channel['channelId']: set(channel['allowedIps']) for channel in definition.connection['channels']}
+        old, new = mapping(source), mapping(target)
+        return all(key in old and key in new and old[key] == new[key] for key in channelIds)
+    return True
 
 
-def _devicePreviews(store: WorkflowStore, document: WorkflowPackageDocument
+def _usedChannels(document, deviceId):
+    return {binding.selectors['channelId'] for workflow in document.workflows.values() for node in workflow.nodes
+            for binding in node.deviceBindings.values() if binding.deviceId == deviceId and 'channelId' in binding.selectors}
+
+
+def _compatibleBindings(document, sourceId, target, deviceTypes, operatorRequirements):
+    if deviceTypes is None or operatorRequirements is None:
+        return False
+    from emo_master.core.plugin.devices import validateDeviceBinding
+    try:
+        declaration = deviceTypes[target.deviceTypeId]
+        if declaration.version != target.driverVersion:
+            return False
+        for workflow in document.workflows.values():
+            for node in workflow.nodes:
+                for slot, binding in node.deviceBindings.items():
+                    if binding.deviceId == sourceId:
+                        validateDeviceBinding(operatorRequirements[node.operatorId][slot], binding, target, declaration)
+        return True
+    except (KeyError, ValueError, TypeError):
+        return False
+
+
+def _devicePreviews(store: WorkflowStore, document: WorkflowPackageDocument, deviceTypes, operatorRequirements
                     ) -> tuple[WorkflowPackageDevicePreview, ...]:
     existing = {key: DeviceDefinition.model_validate(value)
                 for key, value in cast(dict, store.devices.get("definitions", {})).items()}
@@ -616,21 +646,25 @@ def _devicePreviews(store: WorkflowStore, document: WorkflowPackageDocument
         driverVersion=value.driverVersion,
         compatibleTargets=tuple((targetId, target.name) for targetId, target in existing.items()
                                 if key not in packagedResources.deviceDependencies(document)
-                                and _compatibleDevice(value, target)),
+                                and _compatibleDevice(value, target, _usedChannels(document, key))
+                                and _compatibleBindings(document, key, target, deviceTypes, operatorRequirements)),
     ) for key, value in sorted(document.devices.items()))
 
 
 def _importDevices(store: WorkflowStore, document: WorkflowPackageDocument,
-                   mapping: dict[str, str | None] | None, *, inProjectCopy=False) -> dict[str, str]:
+                   mapping: dict[str, str | None] | None, *, inProjectCopy=False,
+                   deviceTypes=None, operatorRequirements=None) -> dict[str, str]:
     if set(mapping or {}) != set(document.devices) or (document.devices and mapping is None):
         raise ValueError("每个设备依赖必须显式选择复用或新建")
-    if document.schemaVersion not in {"1.2", "1.3"}:
+    if document.schemaVersion not in {"1.2", "1.3", "1.4"}:
         return {}
     upgraded = WorkflowStore(migrateProjectPayload(store.toPayload(), enableDevices=True))
     # Upgrade only project-level fields; preserve the active canvas and allocated IDs.
     store.devices = deepcopy(upgraded.devices)
     store.projectExtensions = deepcopy(upgraded.projectExtensions)
     catalog = cast(dict, store.devices["definitions"])
+    from .device_catalog import importedDeviceName
+    names = {value['name'] for value in catalog.values()}
     result = {}
     for key, value in document.devices.items():
         targetId = (mapping or {})[key]
@@ -638,14 +672,19 @@ def _importDevices(store: WorkflowStore, document: WorkflowPackageDocument,
             if key in packagedResources.deviceDependencies(document) and not inProjectCopy:
                 raise ValueError("带资源或现场绑定的设备必须新建为禁用设备；不能覆盖已有设备绑定")
             target = catalog.get(targetId)
-            if target is None or not _compatibleDevice(value, DeviceDefinition.model_validate(target)):
+            if target is None or not _compatibleDevice(value, DeviceDefinition.model_validate(target), _usedChannels(document, key)):
                 raise ValueError(f"设备映射不兼容或已失效：{key} -> {targetId}；类型、驱动版本和默认参数必须一致")
+            if not inProjectCopy and not _compatibleBindings(document, key, DeviceDefinition.model_validate(target),
+                    deviceTypes, operatorRequirements):
+                raise ValueError(f"设备映射不兼容或注册声明不可用：{key} -> {targetId}；请核对节点能力和 selectors，或新建禁用副本")
         else:
             targetId = "device-" + uuid4().hex
             while targetId in catalog:
                 targetId = "device-" + uuid4().hex
             raw = value.model_dump()
             raw["enabled"] = False
+            raw['name'] = importedDeviceName(raw['name'], names)
+            names.add(raw['name'])
             catalog[targetId] = raw
         result[key] = targetId
     return result
@@ -663,7 +702,7 @@ def _validateWorkflowPackage(document: WorkflowPackageDocument, *, referencesOnl
         )
     projectDocument = ProjectDocument.model_validate(
         {
-            "schemaVersion": {"1.0": "2.1", "1.1": "2.4", "1.2": "2.6", "1.3": "2.6"}[document.schemaVersion],
+            "schemaVersion": {"1.0": "2.1", "1.1": "2.4", "1.2": "2.6", "1.3": "2.6", "1.4": "2.7"}[document.schemaVersion],
             **({"globalVariables": document.globalVariables, "presentation": {}, "resources": document.resources, "production": {}}
                if document.schemaVersion != "1.0" else {}),
             **({"communication": {}} if document.schemaVersion in {"1.2", "1.3"} else {}),
@@ -683,7 +722,7 @@ def _validateWorkflowPackage(document: WorkflowPackageDocument, *, referencesOnl
             "runtime": {},
             "dependencies": {"operators": list(document.requiredOperators)},
             "devices": ({"schemaVersion": "1.0", "definitions": document.devices}
-                        if document.schemaVersion in {"1.2", "1.3"} else {}),
+                        if document.schemaVersion in {"1.2", "1.3", "1.4"} else {}),
         }
     )
     issues = validateProjectDocument(projectDocument)
@@ -770,7 +809,7 @@ def _populateImportedWorkflow(
         node = sourceNode.model_dump(mode="python")
         node["nodeId"] = nodeIdMap[sourceNode.nodeId]
         if sourceNode.deviceBindings:
-            node["deviceBindings"] = {slot: {"deviceId": deviceIdMap[binding.deviceId]}
+            node["deviceBindings"] = {slot: {**binding.model_dump(), "deviceId": deviceIdMap[binding.deviceId]}
                                       for slot, binding in sourceNode.deviceBindings.items()}
         if sourceNode.operatorId == "vision.io.sqlite_writer":
             from emo_master.core.contracts.sqlite_writer import rebindParams

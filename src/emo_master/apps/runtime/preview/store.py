@@ -67,10 +67,13 @@ class PreviewAsset:
     captureId: str = ""
     workflowRunId: str = ""
     nodeRunId: str = ""
+    originalWidth: int = 0
+    originalHeight: int = 0
 
 
 class PreviewSnapshotWriter:
-    def __init__(self, jobWorkspace: Path, *, jobId: str = "", projectRevision: int = 0) -> None:
+    def __init__(self, jobWorkspace: Path, *, jobId: str = "", projectRevision: int = 0,
+                 inspectionPublisher=None, inlineInspection: bool = False) -> None:
         self.jobId = jobId
         self.projectRevision = projectRevision
         self.root = _ioPath(jobWorkspace / "preview_staging")
@@ -78,6 +81,9 @@ class PreviewSnapshotWriter:
         self._entries: dict[tuple[str, str, str], dict[str, object]] = {}
         self._pendingCleanup: set[Path] = set()
         self._cleanupScanRequired = False
+        self.inspectionPublisher = inspectionPublisher
+        self.inlineInspection = inlineInspection
+        self.inspectionRoot = _ioPath(jobWorkspace / 'inspection_staging')
 
     def _retirePending(self) -> bool:
         if self._cleanupScanRequired:
@@ -90,6 +96,15 @@ class PreviewSnapshotWriter:
         return _retirePaths(self._pendingCleanup)
 
     def capture(self, node: object, outputs: Mapping[str, object], context: object) -> None:
+        captureId = str(uuid4())
+        encodedImages: dict[str, bytes] = {}
+        self.captureLegacy(node, outputs, context, captureId=captureId, encodedImages=encodedImages)
+        if self.inspectionPublisher is not None:
+            self._captureInspection(node, outputs, context, captureId, encodedImages=encodedImages)
+
+    def captureLegacy(self, node: object, outputs: Mapping[str, object], context: object,
+                      *, captureId: str, createdAtMs: int | None = None, encodedImages=None) -> None:
+        """Persist one legacy invocation; live inspection has a separate owner."""
         # A failed unlink cannot become an unbounded UUID-file history. Keep
         # the last committed capture readable, and refuse new allocations until
         # the bounded previous invocation's cleanup actually retires.
@@ -104,7 +119,6 @@ class PreviewSnapshotWriter:
         iterationPath = [int(item) for item in rawIteration]
         # One capture invocation owns all its image/companion ports. Node IDs
         # alone cannot distinguish repeated calls, iterations or later Jobs.
-        captureId = str(uuid4())
         originJobId = self.jobId or str(getattr(context, "jobId", ""))
         nextEntries = dict(self._entries)
         created: list[Path] = []
@@ -118,16 +132,21 @@ class PreviewSnapshotWriter:
                     continue
                 key = (workflowId, nodeId, port)
                 identity = hashlib.sha256(("\0".join(key) + "\0" + captureId).encode("utf-8")).hexdigest()
-                createdAtMs = int(time.time() * 1000)
+                capturedAt = int(time.time() * 1000) if createdAtMs is None else createdAtMs
                 if portType == "image":
                     if not isinstance(value, np.ndarray) or value.dtype != np.uint8:
                         continue
-                    ok, encoded = cv2.imencode(".png", value)
-                    if not ok:
-                        continue
+                    content = encodedImages.get(port) if encodedImages is not None else None
+                    if content is None:
+                        ok, encoded = cv2.imencode(".png", value)
+                        if not ok:
+                            continue
+                        content = encoded.tobytes()
+                        if encodedImages is not None:
+                            encodedImages[port] = content
                     relativePath = f"assets/{identity}.png"
                     created.append(self.root / relativePath)
-                    _atomicBytes(self.root / relativePath, encoded.tobytes())
+                    _atomicBytes(self.root / relativePath, content, durable=False)
                     height, width = value.shape[:2]
                     entry: dict[str, object] = {
                         "workflowId": workflowId,
@@ -139,14 +158,14 @@ class PreviewSnapshotWriter:
                         "width": int(width),
                         "height": int(height),
                         "iterationPath": iterationPath,
-                        "createdAtMs": createdAtMs,
+                        "createdAtMs": capturedAt,
                     }
                 else:
                     if not _isJsonValue(value):
                         continue
                     relativePath = f"assets/{identity}.json"
                     created.append(self.root / relativePath)
-                    _atomicJson(self.root / relativePath, value)
+                    _atomicJson(self.root / relativePath, value, durable=False)
                     entry = {
                         "workflowId": workflowId,
                         "nodeId": nodeId,
@@ -157,7 +176,7 @@ class PreviewSnapshotWriter:
                         "width": 0,
                         "height": 0,
                         "iterationPath": iterationPath,
-                        "createdAtMs": createdAtMs,
+                        "createdAtMs": capturedAt,
                     }
                 entry.update(originJobId=originJobId, originProjectRevision=self.projectRevision,
                              captureId=captureId,
@@ -167,7 +186,9 @@ class PreviewSnapshotWriter:
                 if previous is not None:
                     obsolete.append(self.root / str(previous["relativePath"]))
                 nextEntries[key] = entry
-            _atomicJson(self.root / "index.json", {"entries": list(nextEntries.values())})
+            if not created:
+                return  # No supported outputs: there is no changed index to commit.
+            _atomicJson(self.root / "index.json", {"entries": list(nextEntries.values())}, durable=False)
         except BaseException as error:
             self._pendingCleanup.update(created)
             self._cleanupScanRequired = True
@@ -178,6 +199,75 @@ class PreviewSnapshotWriter:
         self._pendingCleanup.update(obsolete)
         if not self._retirePending():
             raise OSError("snapshot committed; preceding capture cleanup pending")
+
+    def _captureInspection(self, node, outputs, context, captureId, *, saved=False, createdAtMs=None,
+                           encodedImages=None):
+        entries = []
+        for port, value in outputs.items():
+            if not isinstance(value, np.ndarray) or value.dtype != np.uint8:
+                continue
+            if not saved and normalizePortType(getattr(node, 'outputPorts', {}).get(port, '')) != 'image':
+                continue
+            payload, width, height = inspectionPreview(
+                value, encodedImage=encodedImages.get(port) if encodedImages is not None else None)
+            # Only share full-resolution, lossless bytes from this invocation.
+            # A reduced inspection image must never replace a legacy source.
+            if encodedImages is not None and (height, width) == value.shape[:2]:
+                encodedImages[port] = payload
+            filename = hashlib.sha256((captureId + '\0' + port).encode()).hexdigest() + '.png'
+            entry = dict(workflowId=context.workflowId, nodeId=node.nodeId, port=port,
+                originJobId=self.jobId, originProjectRevision=self.projectRevision,
+                workflowRunId=context.workflowRunId, nodeRunId=context.nodeRunId, captureId=captureId,
+                width=width, height=height, originalWidth=int(value.shape[1]), originalHeight=int(value.shape[0]),
+                relativePath=filename, mimeType='image/png', iterationPath=list(context.iterationPath),
+                createdAtMs=int(time.time() * 1000) if createdAtMs is None else createdAtMs)
+            if self.inlineInspection:
+                # One immutable PNG per event keeps the existing bounded worker
+                # channel at <= 4 MiB of image bytes per queue item.
+                entry['imageBytes'] = payload
+                self.inspectionPublisher(eventType='inspection.snapshot', context=context,
+                    message='node inspection snapshot', payload={'entries': [entry]})
+            else:
+                _atomicBytes(self.inspectionRoot / filename, payload, durable=False)
+                entries.append(entry)
+        if entries:
+            # Only immutable files cross the process boundary. The receiving
+            # inspection owner, not the next capture, releases these files.
+            self.inspectionPublisher(eventType='inspection.snapshot', context=context,
+                message='node inspection snapshot', payload={'entries': entries})
+
+    def captureArtifact(self, node, artifact, context):
+        if self.inspectionPublisher is None or not str(artifact.get('mimeType', '')).startswith('image/'):
+            return
+        source = _ioPath(Path(artifact['path'])).resolve()
+        if not source.is_relative_to((self.root.parent / 'artifacts').resolve()) or not artifact.get('checksum'):
+            return
+        content = source.read_bytes()
+        if hashlib.sha256(content).hexdigest() != artifact['checksum']:
+            return
+        image = cv2.imdecode(np.frombuffer(content, np.uint8), cv2.IMREAD_UNCHANGED)
+        if image is not None:
+            self._captureInspection(node, {'__saved_result__': image}, context, artifact['artifactId'], saved=True)
+
+
+def inspectionPreview(image, *, encodedImage=None):
+    """Freeze display pixels within the existing 4 MiB/8 MiB reader budgets."""
+    height, width = image.shape[:2]
+    scale = min(1., 1920 / width, 1080 / height)
+    if (scale == 1. and encodedImage is not None and len(encodedImage) <= 4 * 1024 * 1024
+            and height * width * 4 <= 8 * 1024 * 1024):
+        return encodedImage, int(width), int(height)
+    preview = image
+    if scale < 1:
+        preview = cv2.resize(image, (max(1, round(width * scale)), max(1, round(height * scale))),
+                             interpolation=cv2.INTER_AREA)
+    for _ in range(4):
+        ok, encoded = cv2.imencode('.png', preview)
+        if ok and encoded.nbytes <= 4 * 1024 * 1024 and preview.shape[0] * preview.shape[1] * 4 <= 8 * 1024 * 1024:
+            return encoded.tobytes(), int(preview.shape[1]), int(preview.shape[0])
+        preview = cv2.resize(preview, (max(1, round(preview.shape[1] * .7)), max(1, round(preview.shape[0] * .7))),
+                             interpolation=cv2.INTER_AREA)
+    raise ValueError('E_INSPECTION_PREVIEW_BUDGET: 无法生成额度内的显示预览')
 
 
 
@@ -194,10 +284,13 @@ class PreviewAssetStore:
         # further allocations until those private files are actually removed.
         self._pendingTransientCleanup: set[Path] = set(self.transientRoot.iterdir())
         self._cleanupScanRequired = True
+        self._storageUsage: dict[str | None, int] | None = None
         self.inspectionUsage = lambda projectKey=None: 0
         self._loadPersistentAssets()
 
     def _retirePending(self) -> bool:
+        if self._cleanupScanRequired or self._pendingCleanup:
+            self._storageUsage = None
         if self._cleanupScanRequired:
             try:
                 # Reconstruct ownership after reopening: only private files no
@@ -227,6 +320,7 @@ class PreviewAssetStore:
 
     def promote(self, stagingRoot: Path, projectKey: str) -> None:
         with self._lock:
+            self._storageUsage = None
             self._promoteLocked(_ioPath(stagingRoot), projectKey)
 
     def _promoteLocked(self, stagingRoot: Path, projectKey: str) -> None:
@@ -327,6 +421,7 @@ class PreviewAssetStore:
         if not ok:
             raise ValueError("failed to encode preview image")
         with self._lock:
+            self._storageUsage = None
             if not _retirePaths(self._pendingTransientCleanup):
                 raise OSError("preview transient cleanup pending; new allocation refused")
             assetId = f"transient-{uuid4()}"
@@ -472,12 +567,14 @@ class PreviewAssetStore:
             asset = self._assets.get(assetId)
             if asset is None or asset.path.parent != self.transientRoot:
                 return
+            self._storageUsage = None
             self._assets.pop(assetId, None)
             self._pendingTransientCleanup.add(asset.path)
             _retirePaths(self._pendingTransientCleanup)
 
     def close(self) -> None:
         with self._lock:
+            self._storageUsage = None
             for assetId in list(self._assets):
                 self.removeTransient(assetId)
             if not _retirePaths(self._pendingTransientCleanup):
@@ -491,6 +588,7 @@ class PreviewAssetStore:
 
     def _loadPersistentAssets(self) -> None:
         with self._lock:
+            self._storageUsage = None
             transient = {
                 key: value
                 for key, value in self._assets.items()
@@ -534,7 +632,31 @@ class PreviewAssetStore:
                     )
             self._assets = {**loaded, **transient}
 
+    def storageUsage(self, projectKey: str | None = None) -> int:
+        """Public files only; refresh after owned mutations, not per inspection."""
+        with self._lock:
+            if self._storageUsage is None:
+                usage: dict[str | None, int] = {None: 0}
+                transientProjects = {asset.path: asset.projectKey for asset in self._assets.values()
+                                     if asset.path.parent == self.transientRoot}
+                for root in self.root.iterdir():
+                    if root.name == '_inspection':
+                        continue
+                    directory = root.is_dir()
+                    for path in root.rglob('*') if directory else (root,):
+                        if not path.is_file():
+                            continue
+                        size = path.stat().st_size
+                        usage[None] += size
+                        key = transientProjects.get(path) if root == self.transientRoot else (
+                            root.name if directory else None)
+                        if key is not None:
+                            usage[key] = usage.get(key, 0) + size
+                self._storageUsage = usage
+            return self._storageUsage.get(projectKey, 0)
+
     def _enforceLimits(self) -> None:
+        self._storageUsage = None
         projects: list[tuple[Path, list[dict[str, object]]]] = []
         for projectRoot in self.root.iterdir():
             if not projectRoot.is_dir() or projectRoot.name.startswith("_"):
@@ -644,19 +766,23 @@ def _intValue(value: object, default: int = 0) -> int:
     return default
 
 
-def _atomicJson(path: Path, payload: object) -> None:
+def _atomicJson(path: Path, payload: object, *, durable: bool = True) -> None:
     data = (json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
-    _atomicBytes(path, data)
+    _atomicBytes(path, data, durable=durable)
 
 
-def _atomicBytes(path: Path, data: bytes) -> None:
+def _atomicBytes(path: Path, data: bytes, *, durable: bool = True) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
     try:
         with temp.open("wb") as fileObj:
             fileObj.write(data)
-            fileObj.flush()
-            os.fsync(fileObj.fileno())
+            # Job-local staging needs complete bytes before publication, not
+            # power-loss durability. Closing flushes buffers before replacement;
+            # persistent cache commits retain the default fsync boundary.
+            if durable:
+                fileObj.flush()
+                os.fsync(fileObj.fileno())
         temp.replace(path)
     finally:
         _unlink(temp)

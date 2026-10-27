@@ -17,7 +17,7 @@ def testLn5RoundStringBytes(x, y, expected):
 def testFormatterStrictParametersAndNoProductionSessionDebug():
     assert CoordinateMessageFormatOperator().validateParams(dict(decimals=True))
     assert CoordinateMessageFormatOperator().executeNode(dict(x=float("nan"), y=0), {}, {})["status"] == "error"
-    error = TcpSessionOperator().executeNode({}, dict(channelId="front"), {})
+    error = TcpSessionOperator().executeNode({}, {}, {})
     assert error["error"]["code"] == "E_TCP_UNSUPPORTED"
     assert not matchesPortSpec(dict(type="tcpSessionRef", schemaVersion="1.0"), "tcpSessionRef")
 
@@ -25,14 +25,13 @@ def testFormatterStrictParametersAndNoProductionSessionDebug():
 @pytest.mark.parametrize("code", ["E_CANCELLED", "E_TCP_IPC_CLOSED", "E_TCP_OUTCOME_UNKNOWN"])
 def testLiveCancellationWinsTransportRaceWithoutLosingReceipt(code):
     from emo_master.apps.runtime.workflow.cancellation import CancellationRequested, CancellationToken
-    from emo_master.core.contracts.tcp_service import TcpServiceError
     receipt = dict(outcome="OUTCOME_UNKNOWN", message="cannot prove not sent")
-    class Proxy:
-        def acquire(self, *args):
-            raise TcpServiceError(code, "transport stopped", receipt)
+    def executeDevice(*args):
+        from emo_master.core.contracts.device_driver import DeviceError
+        raise DeviceError(code, 'transport stopped', diagnostics=dict(tcpReceipt=receipt))
     token = CancellationToken()
     token.cancel()
     with pytest.raises(CancellationRequested) as error:
-        TcpSessionOperator().executeNode({}, dict(channelId="front"),
-            dict(communication=Proxy(), raiseIfCancellationRequested=token.raise_if_cancelled))
+        TcpSessionOperator().executeNode({}, {},
+            dict(executeDevice=executeDevice, raiseIfCancellationRequested=token.raise_if_cancelled))
     assert error.value.diagnostics == dict(tcpReceipt=receipt)

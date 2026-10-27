@@ -10,13 +10,16 @@ jobs:
   validate:
     name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    # Native Windows Qt reached 99% at 60 minutes; keep each test bounded at 120s.
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 90 || 45 }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: ["3.10"]
     env:
-      QT_QPA_PLATFORM: offscreen
+      # Windows offscreen QPA crashes while rendering QMessageBox.
+      QT_QPA_PLATFORM: ${{ matrix.os == 'windows-latest' && 'windows' || 'offscreen' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,7 +27,38 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
+      - name: Configure native Windows test desktop
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+      - name: Verify native Windows test desktop
+        if: runner.os == 'Windows'
+        shell: python
+        env:
+          PYTHONPATH: src
+        run: |
+          import json
+          import emo_master
+          from PySide2.QtWidgets import QApplication
+          app = QApplication([])
+          screen = app.primaryScreen()
+          geometry = screen.geometry()
+          print(json.dumps({"platform": app.platformName(),
+              "geometry": geometry.getRect(),
+              "available": screen.availableGeometry().getRect(),
+              "scale": screen.devicePixelRatio()}), flush=True)
+          assert app.platformName() == "windows"
+          assert geometry.width() >= 1920 and geometry.height() >= 1080
       - name: Validate generated protobuf
         run: python scripts/gen_proto.py --check
       - name: Run project checks
         run: python scripts/ci_check.py
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: |
+            build/ci-results.xml
+            build/ci-failures.log
+          if-no-files-found: ignore

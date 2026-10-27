@@ -226,6 +226,8 @@ class RoiEditorController(PurePreviewControllerBase):
             "angleDegrees": "angleLabel", "points": "pointsLabel",
             "padValue": "padLabel", "interpolation": "interpolationLabel",
         }
+        self._parameterLabels = {name: requiredChild(rootWidget, QLabel, labelName)
+                                 for name, labelName in labels.items()}
         for name, labelName in labels.items():
             applyParameterLabel(
                 requiredChild(rootWidget, QLabel, labelName), self.controls[name],
@@ -291,16 +293,18 @@ class RoiEditorController(PurePreviewControllerBase):
                 self.controls[name].setValue(float(params.get(name, 0.0 if name not in {"width", "height"} else 1.0)))
             self.controls["padValue"].setValue(int(params.get("padValue", 0)))
             self.controls["interpolation"].setCurrentText(str(params.get("interpolation", "linear")))
-            self.controls["points"].setPlainText(json.dumps(params.get("points", []), ensure_ascii=False))
+            points = params.get("points", [])
+            self.controls["points"].setPlainText(points if isinstance(points, str) else json.dumps(points, ensure_ascii=False))
         finally:
             self._loading = False
         self._syncCanvas()
+        self.refreshParameterVisibility()
 
     def collectParams(self) -> dict[str, Any]:
         try:
             points = json.loads(self.controls["points"].toPlainText().strip() or "[]")
         except json.JSONDecodeError:
-            points = []
+            points = self.controls["points"].toPlainText()
         return {
             "roiType": self.controls["roiType"].currentText(),
             "x": float(self.controls["x"].value()),
@@ -310,7 +314,7 @@ class RoiEditorController(PurePreviewControllerBase):
             "centerX": float(self.controls["centerX"].value()),
             "centerY": float(self.controls["centerY"].value()),
             "angleDegrees": float(self.controls["angleDegrees"].value()),
-            "points": points if isinstance(points, list) else [],
+            "points": points,
             "padValue": int(self.controls["padValue"].value()),
             "interpolation": self.controls["interpolation"].currentText(),
         }
@@ -318,7 +322,7 @@ class RoiEditorController(PurePreviewControllerBase):
     def validate(self) -> object:
         params = self.collectParams()
         if params["roiType"] == "polygon":
-            if len(params["points"]) < 3:
+            if not isinstance(params["points"], list) or len(params["points"]) < 3:
                 return "Polygon 至少需要三个点"
         elif float(params["width"]) <= 0 or float(params["height"]) <= 0:
             return "ROI width/height 必须大于 0"
@@ -487,6 +491,7 @@ class RoiEditorController(PurePreviewControllerBase):
         _ = args
         if self._loading:
             return
+        self.refreshParameterVisibility()
         self._syncCanvas()
         self.schedulePreview(markDirty=True)
 
@@ -496,12 +501,28 @@ class RoiEditorController(PurePreviewControllerBase):
         params = self.collectParams()
         roiType = str(params["roiType"])
         if roiType == "polygon":
-            geometry = {"points": params["points"]}
+            geometry = {"points": params["points"] if isinstance(params["points"], list) else []}
         elif roiType == "rotatedBox":
             geometry = {name: params[name] for name in ("centerX", "centerY", "width", "height", "angleDegrees")}
         else:
             geometry = {name: params[name] for name in ("x", "y", "width", "height")}
         self.canvas.setRoi(roiType, geometry)
+
+    def refreshParameterVisibility(self, *_args, bindings=None) -> None:
+        from emo_master.plugins.builtins._operator_modes import PARAMETER_CONDITIONS
+        if bindings is None:
+            source = getattr(self, "parameterBindingsForDisplay", None)
+            bindings = source() if callable(source) else getattr(self.context, "variableBindings", [])
+        dynamic = set(self.context.paramSchema.get("xDynamicParameters", []))
+        dynamic.difference_update(item["parameterPath"][0] for item in getattr(self.context, "variableBindings", [])
+                                  if item.get("parameterPath"))
+        dynamic.update(item["parameterPath"][0] for item in bindings if item.get("parameterPath"))
+        mode = self.controls["roiType"].currentText()
+        for name, condition in PARAMETER_CONDITIONS["vision.preprocess.roi"].items():
+            visible = "roiType" in dynamic or mode in condition["roiType"]
+            self.controls[name].setVisible(visible)
+            self.controls[name].setEnabled(visible)
+            self._parameterLabels[name].setVisible(visible)
 
     def _canvasChanged(self, geometry: dict[str, Any]) -> None:
         self._loading = True

@@ -29,27 +29,19 @@
   },
   "paramSchema": {
     "type": "object",
+    "properties": {},
     "additionalProperties": false,
-    "properties": {
-      "encoding": {
-        "title": "发送编码",
-        "type": "string",
-        "enum": [
-          "utf-8",
-          "ascii",
-          "latin-1",
-          "hex",
-          "base64"
-        ],
-        "default": "utf-8"
-      },
-      "appendNewline": {
-        "title": "追加换行",
-        "type": "boolean",
-        "default": false
-      }
-    }
+    "required": [],
+    "xDeviceActionFields": []
   },
   "minCoreVersion": "0.6.1",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "deviceRequirements": {
+    "tcp": {
+      "deviceTypeId": "device.tcp.server",
+      "requiredCapabilities": [
+        "send"
+      ]
+    }
+  }
 }

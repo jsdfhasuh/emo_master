@@ -4,10 +4,11 @@ from types import SimpleNamespace
 
 import pytest
 import emo_master  # noqa: F401 - retain the application's Windows DLL preload order before Qt
-from PySide2.QtCore import QPointF, Qt
+from PySide2.QtCore import QCoreApplication, QEvent, QPointF, Qt
 from PySide2.QtGui import QContextMenuEvent, QTransform
 from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QApplication, QMenu
+from shiboken2 import isValid
 
 from tests.designer.test_run_inspector_ui import deliver
 
@@ -82,7 +83,8 @@ def testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode(canvas, scal
     assert menu.isVisible() and QApplication.activePopupWidget() is menu
     assert window.flowModel.selectedNodeId == first
     assert scene.getSelectedNodeIds() == [first] and not scene.getSelectedEdgeKeys()
-    assert set(actions(menu)) == {'configure', 'results', 'copy', 'delete', 'operator_debug'}
+    assert set(actions(menu)) == {'configure', 'results', 'copy', 'delete', 'operator_debug',
+                                 'showPorts', 'showAllPorts', 'hideUnusedPorts'}
     assert window.pageCoordinator.session._signature() == before
     assert len(window.pageCoordinator.session._undo) == history
     assert client.starts == client.stops == 0
@@ -105,6 +107,30 @@ def testKeyboardContextUsesSelectedNodeAndEmptyCanvasDoesNotOpenNodeMenu(canvas)
     contextEvent(window, window.flowView.viewport().rect().center())
     assert not window.nodeContextMenu.menu.isVisible()
     assert not window.flowScene.handleNodeContextMenu(first, 0, 0)
+
+
+def testRebuildingNodeMenuReleasesOldPortSubmenu(canvas):
+    window, nodes, client = canvas
+    before = window.pageCoordinator.session._signature()
+    previous = None
+    for index in range(6):
+        nodeId = nodes[index % len(nodes)]
+        window.flowScene.setPortHidden(nodeId, 'output', 'count', True)
+        menu = window.nodeContextMenu.buildMenu(nodeId)
+        QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+        submenus = menu.findChildren(QMenu, options=Qt.FindDirectChildrenOnly)
+        assert len(submenus) == 1
+        current = actions(menu)['showPorts'].menu()
+        assert submenus == [current]
+        if previous is not None:
+            assert not isValid(previous)
+        assert [action.text() for action in current.actions()] == ['输出 · count']
+        current.actions()[0].trigger()
+        assert window.flowScene._portItems[(nodeId, 'output', 'count')].isVisible()
+        previous = current
+        window.nodeContextMenu.closePopup()
+    assert window.pageCoordinator.session._signature() == before
+    assert client.starts == client.stops == 0
 
 
 def testConfigurationUsesRealExistingEditorWithoutEditingDraft(canvas):

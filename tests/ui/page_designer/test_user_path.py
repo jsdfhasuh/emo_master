@@ -1,4 +1,4 @@
-"""Full native Designer path, driven by Qt clicks/drop events and schema forms."""
+"""Native page editing plus explicit legacy preview-backend compatibility."""
 import hashlib
 import json
 import os
@@ -56,7 +56,7 @@ def add(editor, kind):
     return editor.tools.selected
 
 
-def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
+def testNativePageEditingAndLegacyPreviewBackend(qtApp, tmp_path, monkeypatch):
     monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
     monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Yes)
     out = Path(os.environ['P4_SCREEN_DIR']) if os.environ.get('P4_SCREEN_DIR') else None
@@ -94,8 +94,10 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         assert json.loads((root/'project.json').read_text())['schemaVersion'] == '2.1'
         window.pageCoordinator.chrome.workspaceActions[1].trigger()
         editor = window.pageCoordinator.editor
+        editor.floatingToolbox.setExpanded(True)
+        editor.floatingProperties.setExpanded(True)
         monkeypatch.setattr(QInputDialog, 'getText', lambda *a, **k: ('运行总览', True))
-        click(editor, '新建')
+        QTest.mouseClick(editor.pageTabs._addButton, Qt.LeftButton)
         overview = editor.pageId
         image = add(editor, 'image')
         shot('01-component-drop')
@@ -122,7 +124,7 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         editor.tools.destination.setCurrentIndex(editor.tools.destination.findData(overview))
         editor.tools.fields['text'].setText('返回总览')
         click(editor, '应用修改')
-        editor.pageList.setCurrentRow(editor.store.snapshot().pageOrder.index(overview))
+        editor.pageTabs.selectPage(overview)
         editor.tools.select(navigation)
         editor.tools.actionMode.setCurrentIndex(editor.tools.actionMode.findData('navigate'))
         editor.tools.destination.setCurrentIndex(editor.tools.destination.findData(detail))
@@ -130,7 +132,7 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         click(editor, '应用修改')
         monkeypatch.setattr(QFileDialog, 'getOpenFileName', lambda *a, **k: (str(root/'input.png'), ''))
         window.pageCoordinator.showFlow()
-        click(window, '选择测试图片')
+        window.pageCoordinator.importInput()
         assert window.saveProjectToDirectory(str(root))
         before = window.pageCoordinator.session.document().presentation.model_dump()
         copy = tmp_path/'saved-as'
@@ -148,7 +150,7 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         assert '示例数据 · 非检测结果' in editor.renderer.banner.text()
         assert preview.session is None
         window.pageCoordinator.showFlow()
-        click(window, '开始测试')
+        preview.startDebug()
         waitFor(lambda: not preview.busy)
         assert preview.session is None
         window.pageCoordinator.showPages()
@@ -187,7 +189,7 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         records['session_stats'] = session.stats
         # Explicit stop, then register a different actual input and start a new snapshot.
         window.pageCoordinator.showFlow()
-        click(window, '停止测试')
+        preview.stopTest()
         waitFor(lambda: not preview.active())
         import cv2
         pixels = cv2.imread(str(root/'input.png'))
@@ -196,9 +198,9 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         assert cv2.imwrite(str(changed), pixels)
         monkeypatch.setattr(QFileDialog, 'getOpenFileName', lambda *a, **k: (str(changed), ''))
         window.pageCoordinator.showFlow()
-        click(window, '选择测试图片')
+        window.pageCoordinator.importInput()
         window.pageCoordinator.showFlow()
-        click(window, '开始测试')
+        preview.startDebug()
         waitFor(lambda: not preview.busy)
         assert preview.session is None
         window.pageCoordinator.showPages()
@@ -222,7 +224,7 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         if out:
             (out/'two-pages.json').write_text(editor.store.snapshot().model_dump_json(indent=2), encoding='utf-8')
         window.pageCoordinator.showFlow()
-        click(window, '停止测试')
+        preview.stopTest()
         waitFor(lambda: not preview.active())
         assert not runtime._closed
         assert window.loadProjectDirectory(str(copy))

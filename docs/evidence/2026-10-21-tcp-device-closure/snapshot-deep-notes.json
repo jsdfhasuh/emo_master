@@ -1,0 +1,44 @@
+{
+  "sourceSha": "24fcc827de18085f432fababa679acb0d382e940",
+  "chain": "1 failed, 42 passed in 140.51s",
+  "regression": "9 failed, 262 passed in 183.01s",
+  "failedCases": [
+    {
+      "test": "tests.core.project.test_device_resources::testInstalledDeviceResourcesReachSpawnedJobAndRestartRechecksIntegrity",
+      "message": "AssertionError: invalid project file: [WinError 3] 系统找不到指定的路径。: 'D:\\\\jsdfhasuh\\\\documents\\\\my_project\\\\emo_master\\\\build\\\\tcp-device-closure\\\\final-24fcc827\\\\pytest-final-regression\\\\testInstalledDeviceResourcesRe0\\\\configuration-resources\\\\1eac296aa29549f5bacd832d782e49e9\\\\7a50fb3461ea49fc9cd17db35a78ae13.pending' -> 'D:\\\\jsdfhasuh\\\\documents\\\\my_project\\\\emo_master\\\\build\\\\tcp-device-closure\\\\final-24fcc827\\\\pytest-final-regression\\\\testInstalledDeviceResourcesRe0\\\\configuration-resources\\\\1eac296aa29549f5bacd832d782e49e9\\\\05f977391d8bcbbd4bfd496cbf4c2af97fdc9f5b9848000db265d183e43fffbb.bin'\nassert False\n +  where False = status: \"FAILED\"\\nmessage: \"invalid project file: [WinError 3] 系统找不到指定的路径。: \\'D:\\\\\\\\jsdfhasuh\\\\\\\\documents\\\\\\\\my_projec...sources\\\\\\\\1eac296aa29549f5bacd832d782e49e9\\\\\\\\05f977391d8bcbbd4bfd496cbf4c2af97fdc9f5b9848000db265d183e43fffbb.bin\\'\"\\n.ok"
+    },
+    {
+      "test": "tests.runtime.test_initial_project_configuration::testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[embedded-False]",
+      "message": "AssertionError: assert 'FAILED' == 'COMMITTED'\n  \n  - COMMITTED\n  + FAILED"
+    },
+    {
+      "test": "tests.runtime.test_initial_project_configuration::testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[embedded-True]",
+      "message": "AssertionError: assert 'FAILED' == 'COMMITTED'\n  \n  - COMMITTED\n  + FAILED"
+    },
+    {
+      "test": "tests.runtime.test_initial_project_configuration::testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[loopback-False]",
+      "message": "AssertionError: assert 'FAILED' == 'COMMITTED'\n  \n  - COMMITTED\n  + FAILED"
+    },
+    {
+      "test": "tests.runtime.test_initial_project_configuration::testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[loopback-True]",
+      "message": "AssertionError: assert 'FAILED' == 'COMMITTED'\n  \n  - COMMITTED\n  + FAILED"
+    },
+    {
+      "test": "tests.runtime.test_initial_project_configuration::testInitialWriteIsQueryableAndCancellableBeforeCommit[embedded-copying]",
+      "message": "AssertionError: assert 'FAILED' == 'COMMITTED'\n  \n  - COMMITTED\n  + FAILED"
+    },
+    {
+      "test": "tests.runtime.test_initial_project_configuration::testInitialWriteIsQueryableAndCancellableBeforeCommit[embedded-prepared]",
+      "message": "AssertionError: assert ('VALIDATING' == 'VALIDATING'\n  \n    VALIDATING and False)\n +  where False = wait(2)\n +    where wait = <threading.Event object at 0x000001A9B5512650>.wait"
+    },
+    {
+      "test": "tests.runtime.test_initial_project_configuration::testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback-copying]",
+      "message": "AssertionError: assert 'FAILED' == 'COMMITTED'\n  \n  - COMMITTED\n  + FAILED"
+    },
+    {
+      "test": "tests.runtime.test_initial_project_configuration::testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback-prepared]",
+      "message": "AssertionError: assert ('VALIDATING' == 'VALIDATING'\n  \n    VALIDATING and False)\n +  where False = wait(2)\n +    where wait = <threading.Event object at 0x000001A9B54C1540>.wait"
+    }
+  ],
+  "nextStep": "Rerun the same source, environment, tests and assertions; place temporary test data in the normal system temp directory instead of the deeply nested source snapshot. Preserve both outcomes."
+}

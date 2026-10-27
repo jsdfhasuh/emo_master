@@ -54,15 +54,18 @@ def testRenameUsesSharedUndoAndUpdatesOpenEditor(designerApplication):
     window, nodeId = nodeWindow()
     editor = window.operatorEditorManager.open(projectId=window._currentProjectId(),
         workflowId=window.activeWorkflowId, nodeId=nodeId, operatorId="vision.value.number",
-        displayName="Original", schema={}, values={}, operatorDefinition={})
+        displayName="Original", schema={}, values={}, operatorDefinition={"displayName": "数值常量"})
     window.renameNode(nodeId, "Renamed")
     assert editor.windowTitle().startswith("Renamed")
+    assert "数值常量" in editor.windowTitle()
     window.pageCoordinator.history()
     assert window.flowModel.nodes[nodeId].displayName == "Original"
     assert editor.windowTitle().startswith("Original")
+    assert "数值常量" in editor.windowTitle()
     window.pageCoordinator.history(redo=True)
     assert window.flowScene._nodeItems[nodeId].model.title == "Renamed"
     assert editor.windowTitle().startswith("Renamed")
+    assert editor._operatorIdentityLabel.text() == "原始算子：数值常量\n算子 ID：vision.value.number"
     window.close()
 
 

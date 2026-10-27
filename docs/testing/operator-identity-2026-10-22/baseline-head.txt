@@ -1,0 +1,164 @@
+EFF                                                                      [100%]
+=================================== ERRORS ====================================
+_ ERROR at setup of testOpeningAndRefreshingReadsKnownStatesWithoutLosingEdits _
+
+    @pytest.fixture
+    def declaration():
+>       return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+
+tests\core\project\test_devices.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\..\..\.conda\envs\emo_master\lib\pathlib.py:1134: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-yolo-form-head-ddda716200364caca334dd446b55e13f/checkout/examples/device_plugin/device_types/simulated_camera.json')
+mode = 'r', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return self._accessor.open(self, mode, buffering, encoding, errors,
+                                   newline)
+E       FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-yolo-form-head-ddda716200364caca334dd446b55e13f\\checkout\\examples\\device_plugin\\device_types\\simulated_camera.json'
+
+..\..\..\..\..\.conda\envs\emo_master\lib\pathlib.py:1119: FileNotFoundError
+================================== FAILURES ===================================
+___________ testNativeDeviceDialogProductionViewingWithRealRuntime ____________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001AC08B47AC0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2881/testNativeDeviceDialogProducti0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001AC08B44CD0>
+
+    def testNativeDeviceDialogProductionViewingWithRealRuntime(ownedDesignerWindow, tmp_path, monkeypatch):
+        import json
+        from time import monotonic
+        from PySide2.QtCore import QSettings, QTimer
+        from emo_master.apps.designer.services.runtime_client import RuntimeClient
+        from emo_master.apps.designer.ui.managed_camera_debug import ManagedCameraDebugDialog
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+        from tests.runtime.imv_test_support import SimulatedImvRuntimeService
+        from tests.runtime.test_managed_imv import cameraProject
+        service = SimulatedImvRuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
+        client = RuntimeClient(service)
+        path = tmp_path / 'camera.emoproj'
+        path.write_text(json.dumps(cameraProject()), encoding='utf-8')
+        errors = []
+        try:
+            assert service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None).ok
+            manager = service.deviceManager
+            service.deviceNetwork.discovery = (monotonic(), dict(devices=[dict(cameraKey='FAKE-KEY',
+                modelName='Simulated IMV', serialNumber='SIM-001', macAddress='00:00:00:00:00:01')]))
+            window = ownedDesignerWindow(client, settingsStore=QSettings(str(tmp_path / 'ui.ini'), QSettings.IniFormat))
+            assert window.loadProjectDirectory(str(path), confirmed=True)
+            window.show()
+            window.pageCoordinator.showDevices()
+            d = window.pageCoordinator.devices
+            waitUntil(lambda: d.pending is None)
+            d.table.setCurrentCell(0, 0)
+            assert d.buttons['network'].isEnabled() and d.buttons['diagnostics'].isEnabled()
+            assert d.hardwareFields['modelName'].text() == 'Simulated IMV'
+            assert d.hardwareFields['serialNumber'].text() == 'SIM-001'
+            before = window.pageCoordinator.session.payload()
+            for width, height in [(900, 650), (1280, 800)]:
+                d.resize(width, height)
+                from PySide2.QtWidgets import QApplication
+                QApplication.processEvents()
+                assert d.size().width() == width and d.rect().contains(d.closeButton.geometry())
+                image = tmp_path / f'gap-device-{width}.png'
+                assert d.grab().save(str(image))
+                print('GAP_SCREENSHOT=' + str(image))
+            def exercise(monitor):
+                try:
+                    waitUntil(lambda: monitor.pending is None)
+                    monitor.previewTimer.timeout.emit()
+                    waitUntil(lambda: monitor.pending is None)
+                    assert not manager.permissions
+                    manager.authorize('simulated-production', ['camera'])
+                    cycle = service.projectConfiguration.beginCycle('simulated-production', -1)
+                    descriptor = manager.execute('simulated-production', 'camera', 'capture',
+                        manager.definitions['camera'].defaults, cycleId=cycle['cycleId'])
+                    manager.frames.release(descriptor['frameId'], 'simulated-production')
+                    monitor.previewTimer.timeout.emit()
+                    waitUntil(lambda: monitor.pending is None)
+                    assert monitor.previewPixmap is not None and not monitor.previewPixmap.isNull()
+                    assert 'simulated-production' in monitor.status.text() and cycle['cycleId'] in monitor.status.text()
+                    monitor.liveButton.click()
+                    waitUntil(lambda: monitor.pending is None)
+                    assert not monitor.liveButton.isChecked() and monitor.sequence == 0
+                    assert not manager.frames.frames and not manager.maintenanceOwners
+                    image = tmp_path / 'gap-camera-production.png'
+                    assert monitor.grab().save(str(image))
+                    print('GAP_SCREENSHOT=' + str(image))
+                    service.projectConfiguration.endCycle('simulated-production', cycle['cycleId'])
+                    manager.retire('simulated-production')
+                    monitor.previewTimer.timeout.emit()
+                    waitUntil(lambda: monitor.pending is None)
+                    assert not monitor.productionActive
+                except BaseException as error:
+                    errors.append(error)
+                finally:
+                    monitor.reject()
+            original = ManagedCameraDebugDialog.exec_
+            def nativeExec(monitor):
+                QTimer.singleShot(0, lambda: exercise(monitor))
+                return original(monitor)
+            monkeypatch.setattr(ManagedCameraDebugDialog, 'exec_', nativeExec)
+            monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+>           d.buttons['diagnostics'].click()
+E           AttributeError: 'PySide2.QtWidgets.QAction' object has no attribute 'click'
+
+tests\designer\test_device_ui_gaps.py:259: AttributeError
+---------------------------- Captured stdout call -----------------------------
+GAP_SCREENSHOT=C:\Users\jsdfhasuh\AppData\Local\Temp\pytest-of-jsdfhasuh\pytest-2881\testNativeDeviceDialogProducti0\gap-device-900.png
+GAP_SCREENSHOT=C:\Users\jsdfhasuh\AppData\Local\Temp\pytest-of-jsdfhasuh\pytest-2881\testNativeDeviceDialogProducti0\gap-device-1280.png
+_____________ testWorkflowProjectAndRuntimeSessionRebindConsumers _____________
+
+    def testWorkflowProjectAndRuntimeSessionRebindConsumers():
+        client = Client()
+        window = mainWindowModule.MainWindow(client)
+        try:
+            waitForCatalog(window)
+            window.addNodeFromOperatorPayload(iconDefinition())
+            nodeId = next(n.nodeId for n in window.flowModel.nodes.values() if n.kind == "operator")
+            window.createWorkflow("Other")
+            window.activateWorkflow("main")
+            provider = window.operatorIconProvider
+            item = window.flowScene._nodeItems[nodeId]
+            old = provider._bindings[provider._targets[id(item)]]
+            assert old.context == (window._projectInstanceToken, "main", nodeId)
+            oldProjectToken = window._projectInstanceToken
+            window._applyLoadedProjectState(None, None)
+            new = provider._bindings[provider._targets[id(item)]]
+            assert new.token > old.token and window._projectInstanceToken != oldProjectToken
+            assert new.context == (window._projectInstanceToken, "main", nodeId)
+            waitUntil(lambda: item._operatorIconSource == "custom")
+            oldScope = provider.scope
+            client.runtimeScope = "reconnected"
+            waitUntil(lambda: provider.scope != oldScope)
+>           waitUntil(lambda: item._operatorIconSource == "custom")
+
+tests\designer\test_operator_icon_integration.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+predicate = <function testWorkflowProjectAndRuntimeSessionRebindConsumers.<locals>.<lambda> at 0x000001AC0A2EE3B0>
+timeout = 3.0, pump = True
+
+    def waitUntil(predicate, timeout=3.0, *, pump=True):
+        deadline = time.monotonic() + timeout
+        while not predicate():
+            if time.monotonic() >= deadline:
+>               raise AssertionError("condition did not become true before timeout")
+E               AssertionError: condition did not become true before timeout
+
+tests\designer\qt_wait.py:8: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_ui_gaps.py::testNativeDeviceDialogProductionViewingWithRealRuntime
+FAILED tests/designer/test_operator_icon_integration.py::testWorkflowProjectAndRuntimeSessionRebindConsumers
+ERROR tests/designer/test_device_ui_gaps.py::testOpeningAndRefreshingReadsKnownStatesWithoutLosingEdits
+2 failed, 1 error in 8.63s

@@ -1,0 +1,22 @@
+...................................FF.                                   [100%]
+================================== FAILURES ===================================
+_____ testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize[642-452] _____
+tests\designer\test_device_workspace_sizing.py:24: in testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize
+    assert d.width() <= width and d.height() <= height
+E   assert (642 <= 642 and 1187 <= 452)
+E    +  where 642 = <built-in method width of DeviceWorkspace object at 0x000002E81AEADFC0>()
+E    +    where <built-in method width of DeviceWorkspace object at 0x000002E81AEADFC0> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x2e81e7643c0) at 0x000002E81AEADFC0>.width
+E    +  and   1187 = <built-in method height of DeviceWorkspace object at 0x000002E81AEADFC0>()
+E    +    where <built-in method height of DeviceWorkspace object at 0x000002E81AEADFC0> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x2e81e7643c0) at 0x000002E81AEADFC0>.height
+_____ testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize[826-590] _____
+tests\designer\test_device_workspace_sizing.py:24: in testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize
+    assert d.width() <= width and d.height() <= height
+E   assert (826 <= 826 and 1187 <= 590)
+E    +  where 826 = <built-in method width of DeviceWorkspace object at 0x000002E81B6B76C0>()
+E    +    where <built-in method width of DeviceWorkspace object at 0x000002E81B6B76C0> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x2e81d43f8a0) at 0x000002E81B6B76C0>.width
+E    +  and   1187 = <built-in method height of DeviceWorkspace object at 0x000002E81B6B76C0>()
+E    +    where <built-in method height of DeviceWorkspace object at 0x000002E81B6B76C0> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x2e81d43f8a0) at 0x000002E81B6B76C0>.height
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_workspace_sizing.py::testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize[642-452]
+FAILED tests/designer/test_device_workspace_sizing.py::testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize[826-590]
+2 failed, 36 passed in 12.01s

@@ -29,13 +29,16 @@ def testDefinitionsRenameUndoDeleteProtectionAndPackages():
     with pytest.raises(ValueError, match="不能删除"):
         editDefinitions(session.workflows, {})
     package = buildWorkflowPackage(session.workflows, "main")
-    assert package.schemaVersion == "1.1"
+    assert package.schemaVersion == "1.4"
     assert package.globalVariables["v"].initialValue == .5
     target = WorkflowStore()
     result = importWorkflowPackage(target, package)
-    assert target.toPayload()["schemaVersion"] == "2.4"
-    assert target.get(result.rootWorkflowId).nodes[1]["globalVariableBindings"][0]["variableId"] == "v"
     before = target.toPayload()
+    assert before["schemaVersion"] == "2.7"
+    assert before["devices"]["schemaVersion"] == "1.0"
+    assert not before["devices"]["definitions"]
+    assert "communication" not in before
+    assert target.get(result.rootWorkflowId).nodes[1]["globalVariableBindings"][0]["variableId"] == "v"
     with pytest.raises(ValueError, match="冲突"):
         importWorkflowPackage(target, package)
     assert target.toPayload() == before

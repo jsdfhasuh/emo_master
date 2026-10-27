@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import argparse
+from collections import deque
+import json
 import multiprocessing
 from pathlib import Path
 import queue
@@ -11,7 +13,7 @@ import time
 
 from PySide2.QtCore import QSettings, QTimer, Qt
 from PySide2.QtWidgets import (
-    QApplication, QDialog, QFileDialog, QHBoxLayout, QLabel, QPushButton, QStyle, QTabWidget, QVBoxLayout, QWidget,
+    QApplication, QFileDialog, QHBoxLayout, QLabel, QPushButton, QStackedWidget, QStyle, QTabWidget, QVBoxLayout, QWidget,
 )
 
 from emo_master.apps.operator_runtime.controller import ProductionRuntime
@@ -19,6 +21,11 @@ from emo_master.clients.runtime.display_session import DisplaySession
 from emo_master.ui.presentation.hub import DisplayHub
 from emo_master.ui.presentation.renderer import RuntimePages
 from emo_master.core.presentation.assets import pageAssets
+from emo_master.apps.operator_runtime.settings import DEFAULT_ROOT_KEY, resolveDataRoot
+from emo_master.apps.operator_runtime.startup_page import StartupPage
+from emo_master.apps.operator_runtime.log_reader import safeRecord, safeText
+from emo_master.apps.operator_runtime.log_view import LogFeed, RuntimeLogView
+from emo_master.apps.runtime.events.models import RuntimeEvent
 
 
 class OperatorWindow(QWidget):
@@ -27,6 +34,8 @@ class OperatorWindow(QWidget):
         self.setWindowTitle("EmoMaster Runtime")
         self.resize(1060, 800)
         self.preferences = preferences or QSettings("EmoMaster", "Runtime")
+        self.resolution = resolveDataRoot(dataRoot, saved=self.preferences.value(DEFAULT_ROOT_KEY, ""))
+        self.runtimeFactory, self.explicitProject = runtimeFactory, projectPath
         self.projectPath = str(projectPath or self.preferences.value("projectPath", ""))
         self.controller = self.session = self.hub = self.pages = None
         self.workflowSessions, self.workflowHubs, self.workflowPages, self.workflowControls = {}, {}, {}, {}
@@ -41,19 +50,32 @@ class OperatorWindow(QWidget):
         self.pendingCommand = None
         self.nextStatus = 0.0
         self.communication = self.communicationDialog = None
+        self.startupDiagnostics = deque(maxlen=64)
+        self.toolHistory = []
+        self.pageFocus = {}
+        self.initializationFailed = False
         layout = QVBoxLayout(self)
-        toolbar = QHBoxLayout()
+        header = QHBoxLayout()
+        header.addWidget(QLabel("EmoMaster Runtime"))
         self.projectLabel = QLabel("未加载工程")
         self.projectLabel.setTextFormat(Qt.PlainText)
         self.projectLabel.setWordWrap(True)
-        toolbar.addWidget(self.projectLabel, 1)
+        from PySide2.QtWidgets import QSizePolicy
+        self.projectLabel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        header.addWidget(self.projectLabel, 1)
+        self.settingsButton = self._button("Runtime 设置", QStyle.SP_FileDialogDetailedView, self.showSettings)
+        self.logsButton = self._button("查看日志", QStyle.SP_FileDialogContentsView, self.showLogs)
+        header.addWidget(self.settingsButton)
+        header.addWidget(self.logsButton)
+        layout.addLayout(header)
+        toolbar = QHBoxLayout()
         self.openButton = self._button("选择工程", QStyle.SP_DirOpenIcon, self.chooseProject)
         self.reloadButton = self._button("重新加载", QStyle.SP_BrowserReload, self.reloadProject)
         self.updateButton = self._button("更新工程", QStyle.SP_DialogSaveButton, self.choosePackage)
         self.targetsButton = self._button("运行目标…", QStyle.SP_FileDialogListView, self.chooseTargets)
         self.startButton = self._button("开始", QStyle.SP_MediaPlay, self.startDetection)
         self.stopButton = self._button("停止", QStyle.SP_MediaStop, self.stopDetection)
-        self.communicationButton = self._button("通信服务…", QStyle.SP_ComputerIcon, self.showCommunication)
+        self.communicationButton = self._button("设备状态与控制…", QStyle.SP_ComputerIcon, self.showCommunication)
         for button in (self.openButton, self.reloadButton, self.updateButton, self.targetsButton, self.startButton, self.stopButton):
             toolbar.addWidget(button)
         layout.addLayout(toolbar)
@@ -64,19 +86,146 @@ class OperatorWindow(QWidget):
         self.message = QLabel("正在准备 Runtime")
         self.message.setTextFormat(Qt.PlainText)
         self.message.setWordWrap(True)
+        self.message.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        self.message.setMaximumHeight(100)
         layout.addWidget(self.message)
-        self.pageLayout = QVBoxLayout()
-        layout.addLayout(self.pageLayout, 1)
+        self.backButton = self._button("返回", QStyle.SP_ArrowBack, self.backFromTool)
+        self.backButton.hide()
+        layout.addWidget(self.backButton, 0, Qt.AlignLeft)
+        self.contentStack = QStackedWidget()
+        self.businessHost = QWidget()
+        self.pageLayout = QVBoxLayout(self.businessHost)
+        self.pageLayout.setContentsMargins(0, 0, 0, 0)
+        self.startupPage = StartupPage(self.preferences, self.resolution)
+        self.startupPage.chooseRequested.connect(self.chooseProject)
+        self.startupPage.logsRequested.connect(lambda: self.showLogs(resetFilter=True))
+        self.startupPage.retryRequested.connect(self.retryInitialization)
+        self.logFeed = LogFeed(self.resolution.path / "logs", self)
+        self.logView = RuntimeLogView(self.logFeed)
+        self.logFeed.updated.connect(self._recentLogs)
+        for page in (self.businessHost, self.startupPage, self.logView):
+            self.contentStack.addWidget(page)
+        self.contentStack.setCurrentWidget(self.startupPage)
+        QApplication.instance().focusChanged.connect(self._rememberFocus)
+        layout.addWidget(self.contentStack, 1)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.poll)
         self.timer.start(25)
 
+        self._initialize()
+
+    def _initialize(self):
+        self.initializationFailed = False
+        self.startupPage.retryButton.hide()
+        self.startupPage.failureLabel.clear()
+        self.error = ""
+        self.message.setText("正在准备 Runtime")
+        self._diagnostic("operator.storage.resolved", "本次启动目标目录：" + str(self.resolution.path),
+                         payload={"source": self.resolution.source, "dataRoot": str(self.resolution.path)})
+
         def initialize():
-            self.controller = runtimeFactory(dataRoot)
-            if self.projectPath:
+            self.controller = self.runtimeFactory(self.resolution.path)
+            if self.explicitProject:
                 self.controller.load(self.projectPath)
+            elif self.projectPath or self.controller.runtime.projectConfiguration.current is not None:
+                self.controller.load(self.projectPath, restoreOnline=True)
             return self.controller.status()
         self.launch("loaded", initialize)
+
+    def retryInitialization(self):
+        if self.busy or self.closing or self.controller is not None:
+            return
+        # Retry the same startup target, never a saved-but-not-yet-effective draft.
+        self._initialize()
+
+    def _diagnostic(self, eventType, message, *, level="INFO", payload=None):
+        event = RuntimeEvent(jobId="", eventType=eventType, message=safeText(message), level=level,
+            timestampMs=int(time.time() * 1000), payloadJson=json.dumps(safeRecord(payload or {}), ensure_ascii=False))
+        writer = self.controller.runtime.operationalLogWriter if self.controller else None
+        accepted = bool(writer and writer.enqueue(event))
+        self.startupDiagnostics.append((event, accepted))
+        self._diagnosticText()
+
+    def _diagnosticText(self):
+        from datetime import datetime
+        writer = self.controller.runtime.operationalLogWriter if self.controller else None
+        self.logFeed.diagnostics = [
+            datetime.fromtimestamp(event.timestampMs / 1000).isoformat(timespec="seconds") + " · " + event.level + " · " + event.message
+            + ("（已提交 writer；落盘以实际文件为准）" if accepted and writer and writer.enabled and not writer.failureMessage
+               else "（未写入日志文件 / writer 未确认写入）")
+            for event, accepted in self.startupDiagnostics]
+        self.logFeed.updated.emit()
+
+    def _runtimeReady(self):
+        self.logFeed.setSource(self.controller)
+        self.startupPage.setCurrent(self.controller)
+        if not getattr(self, "_readyRecorded", False):
+            self._readyRecorded = True
+            self._diagnostic("operator.storage.resolved", "当前有效目录：" + str(self.controller.dataRoot),
+                             payload={"source": self.resolution.source})
+            self._diagnostic("operator.runtime.ready", "Runtime 已就绪")
+
+    def _recentLogs(self):
+        rows = self.logFeed.records[-5:]
+        text = "\n".join(f"{row.data.get('timestamp', '')} · {row.data.get('level', '')} · {row.data.get('message', '')}" for row in rows)
+        if text and self.logFeed.historyPath:
+            text = self.logFeed.sourceText(fullPath=False) + "\n" + text
+        if not text:
+            text = self.logFeed.statusText()
+        if self.startupPage.recentLogs.toPlainText() != text:
+            self.startupPage.recentLogs.setPlainText(text)
+
+    def _syncTool(self):
+        widget = self.contentStack.currentWidget()
+        self.backButton.setVisible(bool(self.toolHistory))
+        self.backButton.setText("返回运行页面" if self.toolHistory and self.toolHistory[-1] is self.businessHost else
+                                "返回设置 / 起始页" if self.toolHistory and self.toolHistory[-1] is self.startupPage else "返回日志")
+        self.logFeed.setVisible(self.isVisible() and widget in (self.startupPage, self.logView))
+
+    def _showTool(self, widget):
+        current = self.contentStack.currentWidget()
+        if current is not widget:
+            if widget in self.toolHistory:
+                self.toolHistory = self.toolHistory[:self.toolHistory.index(widget)]
+            else:
+                self.toolHistory.append(current)
+            self._switchContent(widget)
+        self._syncTool()
+
+    def _rememberFocus(self, old, new):
+        for focused in (old, new):
+            if focused is not None:
+                for page in (self.businessHost, self.startupPage, self.logView):
+                    if page.isAncestorOf(focused):
+                        self.pageFocus[page] = focused
+
+    def _switchContent(self, widget):
+        import shiboken2
+        focused = self.pageFocus.get(widget)
+        self.contentStack.setCurrentWidget(widget)
+        if focused is not None and shiboken2.isValid(focused) and focused.isVisible() and focused.isEnabled():
+            focused.setFocus(Qt.OtherFocusReason)
+
+    def showSettings(self):
+        self._showTool(self.startupPage)
+
+    def showLogs(self, checked=False, *, resetFilter=False):
+        if resetFilter:
+            self.logView.resetFilter()
+        self._showTool(self.logView)
+
+    def backFromTool(self):
+        if self.toolHistory:
+            self._switchContent(self.toolHistory.pop())
+        self._syncTool()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._syncTool()
+
+    def hideEvent(self, event):
+        self.logFeed.setVisible(False)
+        super().hideEvent(event)
 
     def _button(self, text, icon, action):
         button = QPushButton(text)
@@ -85,37 +234,21 @@ class OperatorWindow(QWidget):
         button.clicked.connect(action)
         return button
 
-    def _communicationProject(self):
-        from emo_master.core.project.communication import CommunicationSettings, projectCommunication
-        document = self.controller.document if self.controller else None
-        return dict(projectId=document.project.projectId if document else "", name=document.project.name if document else "未加载项目",
-            path=self.controller.runtime.loadedProjectFile if document else "",
-            token=self.controller.runtime.communicationManager.projectLoadGeneration if self.controller else "",
-            config=(projectCommunication(document) if document else CommunicationSettings()).model_dump())
-
     def _ensureCommunication(self):
-        if (self.communication is not None or not self.controller
-                or not hasattr(getattr(self.controller, "runtime", None), "communicationManager")):
+        if self.communicationDialog is not None or not self.controller:
             return
-        from emo_master.ui.communication_panel import CommunicationPanel
-        from emo_master.ui.communication_controller import CommunicationController
-        from emo_master.clients.runtime.communication import CommunicationClient
-        self.communicationDialog = QDialog(self)
-        self.communicationDialog.setWindowTitle("项目通信服务（配置由项目提供）")
-        self.communicationDialog.resize(950, 600)
-        panel = CommunicationPanel(self.communicationDialog)
-        layout = QVBoxLayout(self.communicationDialog)
-        layout.addWidget(panel)
-        self.communication = CommunicationController(CommunicationClient(self.controller.runtime), panel,
-            self._communicationProject, parent=self)
-        self.communication.changed.connect(self.communicationButton.setText)
+        from emo_master.clients.runtime.devices import DeviceManagementClient
+        from emo_master.ui.device_management import DeviceManagementDialog
+        self.communicationDialog = DeviceManagementDialog(DeviceManagementClient(self.controller.runtime),
+            lambda: self.controller.document.project.projectId if self.controller.document else '', self)
+        self.communication = self.communicationDialog
+        self.communicationButton.setText('设备状态与控制…')
 
     def showCommunication(self):
         self._ensureCommunication()
         if self.communicationDialog is not None:
             self.communicationDialog.show()
             self.communicationDialog.raise_()
-            self.communication.nextPoll = 0
 
     def launch(self, kind, operation):
         if self.busy:
@@ -173,7 +306,6 @@ class OperatorWindow(QWidget):
     def loadProject(self, path):
         if self.closing or self._deferCommand(lambda: self.loadProject(path)) or not self.state["canLoad"]:
             return
-        self.projectPath = str(path)
         self._removePages()
         def load():
             self._closeSession()
@@ -188,7 +320,9 @@ class OperatorWindow(QWidget):
         if (len(self.controller.sessions) > 1 or len(self.selectedWorkflowIds) > 1
                 or self.selectedWorkflowIds != [self.controller.document.entryWorkflowId]):
             return self.startWorkflows()
-        self._removePages()
+        if self.pages is None or self.pages.config.pageOrder:
+            self._removePages()
+        self._updateBasicPages(operation="starting")
         self.error = ""
         self.message.setText("正在启动")
         def start():
@@ -210,6 +344,7 @@ class OperatorWindow(QWidget):
                 or next(iter(self.controller.sessions), None) != self.controller.document.entryWorkflowId):
             return self.stopWorkflows()
         self.message.setText("正在停止")
+        self._updateBasicPages(operation="stopping")
         def stop():
             self.controller.stop()
             return self.controller.status()
@@ -222,7 +357,7 @@ class OperatorWindow(QWidget):
         dialog = RunTargetsDialog(self.controller.workflows, self.selectedWorkflowIds,
             self.controller.document.runtime.maxConcurrentJobs, self, editLimit=False,
             entryWorkflowId=self.controller.document.entryWorkflowId,
-            projectTargets=self.controller.document.startupWorkflows())
+            projectTargets=self.controller.document.startupWorkflows(), document=self.controller.document)
         if dialog.exec_():
             self.selectedWorkflowIds = dialog.selectedWorkflowIds()
             self._controls()
@@ -236,7 +371,10 @@ class OperatorWindow(QWidget):
         if not keys:
             return
         for key in keys:
-            self._removeWorkflowPages(key)
+            pages = self.workflowPages.get(key)
+            if pages is None or pages.config.pageOrder:
+                self._removeWorkflowPages(key)
+        self._updateBasicPages(operation="starting", workflowIds=keys)
         self.error = ""
         def start():
             for key in keys:
@@ -281,6 +419,8 @@ class OperatorWindow(QWidget):
             return state
         self.error = ""
         self.message.setText("正在停止流程")
+        self._updateBasicPages(operation="stopping",
+                               workflowIds=[workflowId] if workflowId else None)
         self.launch("workflowsStopped", stop)
 
     def _removePages(self):
@@ -307,6 +447,7 @@ class OperatorWindow(QWidget):
         if (len(self.controller.sessions) > 1
                 or next(iter(self.controller.sessions), None) != document.entryWorkflowId):
             self._showWorkflowPages()
+            self._businessReady()
             return
         self._removePages()
         if self.session:
@@ -316,6 +457,16 @@ class OperatorWindow(QWidget):
         self.pages.banner.hide()
         self.pageLayout.addWidget(self.pages)
         self.pages.show()
+        self._businessReady()
+
+    def _businessReady(self):
+        if not self.toolHistory:
+            self.contentStack.setCurrentWidget(self.businessHost)
+        elif self.businessHost not in self.toolHistory:
+            # A tool opened during initial Load must retain a route to the
+            # business page that became available while the tool was visible.
+            self.toolHistory.insert(0, self.businessHost)
+        self._syncTool()
 
     def _removeWorkflowPages(self, key):
         pages = self.workflowPages.pop(key, None)
@@ -401,6 +552,11 @@ class OperatorWindow(QWidget):
         self.stopButton.setText("全部停止" if multi else "停止")
         self.stopButton.setEnabled(enabled and (any(row["jobId"] and not row["canLoad"] for row in rows.values())
                                                if multi else bool(self.state["jobId"]) and not self.state["canLoad"]))
+        self.settingsButton.setEnabled(not self.closing)
+        self.logsButton.setEnabled(not self.closing)
+        self.startupPage.chooseButton.setEnabled(self.openButton.isEnabled())
+        self.startupPage.retryButton.setEnabled(not self.busy and not self.closing)
+        self.communicationButton.setEnabled(self.controller is not None and not self.closing)
         names = dict(READY="就绪", RUNNING="检测中", STOPPING="停止中", FAULT="故障")
         for key, controls in self.workflowControls.items():
             row = rows.get(key, {})
@@ -411,14 +567,36 @@ class OperatorWindow(QWidget):
                 (f"\n{row['message']}" if row.get("message") else ""))
             controls["label"].setToolTip(f"流程 ID: {key}\n启动请求: {row.get('startRequestId', '')}")
 
+    def _updateBasicPages(self, *, connected=None, connectionDetail="", operation="", workflowIds=None):
+        connected = self.state.get("runtimeConnected", False) if connected is None else connected
+        if self.pages is not None and (workflowIds is None
+                or self.controller.document.entryWorkflowId in workflowIds):
+            self.pages.setBasicStatus(self.state, connected=connected,
+                connectionDetail=connectionDetail, operation=operation)
+        for key, pages in self.workflowPages.items():
+            if workflowIds is None or key in workflowIds:
+                pages.setBasicStatus(self.state.get("workflows", {}).get(key, {}), connected=connected,
+                    connectionDetail=connectionDetail, operation=operation)
+
     def _displayState(self):
         names = dict(EMPTY="未加载工程", READY="就绪", RUNNING="检测中", STOPPING="停止中", FAULT="故障")
         if not self.error:
             self.message.setText(names[self.state["state"]] +
+                                 (f" · 配置版本 {self.state['documentRevision']}" if self.state.get('documentRevision') else '') +
                                  ("\n" + self.state["message"] if self.state["state"] == "FAULT" else ""))
+        self._updateBasicPages()
         self._controls()
 
     def poll(self):
+        if getattr(self, "_closeOperationDone", False):
+            if self.logFeed.idle:
+                self.done = True
+                self.close()
+            return
+        if self.controller is not None and not getattr(self, "_readyRecorded", False):
+            # Construction finished; project preparation may still be in flight.
+            # Tools can already report the actual writer/paths without waiting for Load.
+            self._runtimeReady()
         try:
             kind, value, error = self.events.get_nowait()
         except queue.Empty:
@@ -430,9 +608,32 @@ class OperatorWindow(QWidget):
         self.busy = False
         if error:
             self.pendingCommand = None
-            self.error = error
-            self.message.setText("操作失败：" + error)
+            self.error = safeText(error)
+            self.message.setText("操作失败：" + self.error)
+            self.message.setToolTip(self.error)
+            if kind == "loaded":
+                if self.controller:
+                    self._runtimeReady()
+                else:
+                    self.initializationFailed = True
+                    self.startupPage.failureLabel.setText("本次初始化失败（未写入日志文件）：\n" + self.error)
+                    self.startupPage.retryButton.show()
+                self._diagnostic("operator.project.load.failed" if self.controller else "operator.runtime.failed",
+                                 self.error, level="ERROR", payload={"targetDataRoot": str(self.resolution.path)})
+            if self.closing and kind != "closed":
+                self.shutdown()
+                return
             self.closing = False
+            if kind == "closed":
+                self.logFeed.closed = False
+                self._syncTool()
+            if kind == 'loaded' and self.controller and self.controller.document:
+                self.projectPath = self.controller.runtime.loadedProjectFile
+                self.projectLabel.setText(self.controller.document.project.name)
+                self.projectLabel.setToolTip(self.projectPath)
+                self._showPages()
+            if kind == "status":
+                self._updateBasicPages(connected=False, connectionDetail=error)
             if self.controller:
                 # Query off-thread before deciding whether Start is available.
                 self.launch("status", self.controller.status)
@@ -440,10 +641,11 @@ class OperatorWindow(QWidget):
                 self._controls()
             return
         if kind == "closed":
-            self.done = True
-            self.close()
+            self._closeOperationDone = True
             return
         self.state = value
+        if kind == "loaded":
+            self._runtimeReady()
         revision = value.get("pagePublicationRevision") if isinstance(value, dict) else None
         previousRevision = getattr(self, "_pagePublicationRevision", None)
         if revision is not None:
@@ -468,6 +670,7 @@ class OperatorWindow(QWidget):
             self.projectLabel.setText(document.project.name)
             self.projectLabel.setToolTip(self.projectPath)
             self.preferences.setValue("projectPath", self.projectPath)
+            self.startupPage.setCurrent(self.controller)
             self.error = ""
             self._showPages()
         failures = value.get("operationErrors", [])
@@ -484,10 +687,10 @@ class OperatorWindow(QWidget):
     def shutdown(self):
         if self.busy:
             return
-        if self.communication is not None and not self.communication.close():
-            self.message.setText("正在结束通信查询/控制，尚未确认服务释放。")
-            QTimer.singleShot(100, self.shutdown)
-            return
+        self.logFeed.beginClose()
+        if self.communication is not None:
+            self.communication.dispose()
+            self.communication = None
         self._removePages()
         self.pendingCommand = None
         self.message.setText("正在停止并退出")
@@ -520,29 +723,44 @@ def main(arguments=None):
     actions = parser.add_mutually_exclusive_group()
     actions.add_argument("--export-package", type=Path, metavar="OUTPUT_DIR", help="Export a portable production project")
     actions.add_argument("--install-package", type=Path, metavar="PACKAGE", help="Install/update an offline project directory")
+    parser.add_argument("--plugin-root", type=Path, action="append", help="Trusted plugin root; may repeat")
     args = parser.parse_args(arguments)
+    if args.export_package or args.install_package or args.check:
+        from emo_master import __version__
+        from emo_master.core.plugin.registry import PluginRegistry
+        from emo_master.apps.runtime.grpc_server.service import RuntimeService
+        scan = PluginRegistry(__version__).scanRoots(args.plugin_root or [RuntimeService._builtinsRoot()])
     if args.export_package or args.install_package:
         if args.project is None or args.check:
             parser.error("package actions require an explicit project directory and cannot use --check")
         from emo_master.core.project.runtime_package import buildRuntimePackage, installRuntimePackage
         if args.export_package:
-            print(buildRuntimePackage(args.project, args.export_package))
+            print(buildRuntimePackage(args.project, args.export_package, registry=scan.activeOperators, deviceTypes=scan.deviceTypes))
         else:
-            document = installRuntimePackage(args.install_package, args.project)
+            document = installRuntimePackage(args.install_package, args.project, registry=scan.activeOperators, deviceTypes=scan.deviceTypes)
             print(f"Installed {document.project.name}; no Job started.")
         return 0
     if args.check:
         if args.project is None:
             parser.error("--check requires an explicit project")
-        runtime = ProductionRuntime(args.data_root)
-        try:
-            document = runtime.load(args.project)
-            print(f"Project: {document.project.name}; mode: {runtime.settings.mode}; validation passed; no Job started.")
-        finally:
-            runtime.close()
+        from emo_master.core.project.files import resolveProjectFile
+        from emo_master.core.project.migration import loadProjectPayload, migrateProjectPayload
+        from emo_master.core.project.models import ProjectDocument, ProductionSettings
+        from emo_master.core.project.runtime_directory import prepareRuntimeProject
+        from emo_master.core.workflow.compiler import WorkflowCompiler
+        source = resolveProjectFile(args.project.resolve(strict=True))
+        document = ProjectDocument.model_validate(migrateProjectPayload(loadProjectPayload(source)))
+        preferences = QSettings("EmoMaster", "Runtime")
+        dataRoot = resolveDataRoot(args.data_root, saved=preferences.value(DEFAULT_ROOT_KEY, "")).path
+        prepared = prepareRuntimeProject(document, source.parent, scan.activeOperators, deviceTypes=scan.deviceTypes,
+            protectedPaths=(dataRoot / 'runtime.sqlite3', dataRoot / 'logs'))
+        WorkflowCompiler(scan.activeOperators, deviceTypes=scan.deviceTypes).compile(prepared)
+        settings = document.production or ProductionSettings()
+        print(f"Project: {document.project.name}; mode: {settings.mode}; validation passed; no Job started.")
         return 0
     app = QApplication.instance() or QApplication([])
-    window = OperatorWindow(args.project, dataRoot=args.data_root)
+    window = OperatorWindow(args.project, dataRoot=args.data_root,
+        runtimeFactory=lambda root: ProductionRuntime(root, pluginRootPaths=tuple(map(str, args.plugin_root)) if args.plugin_root else None))
     window.show()
     return app.exec_()
 

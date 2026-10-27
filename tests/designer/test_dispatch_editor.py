@@ -1,9 +1,52 @@
 from copy import deepcopy
 
+import pytest
+
 from emo_master.apps.designer.ui.dispatch_editor import DispatchEditor
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
 from emo_master.core.project.models import ProjectDocument
 from tests.runtime.test_frame_dispatch import dispatchProject
+
+
+@pytest.mark.parametrize('policy', ['wait', 'skip'])
+def testWaitPolicySaveReopenAndPortablePackage(designerApplication, tmp_path, policy):
+    from pathlib import Path
+    from examples.dispatch_queue_demo import demoProject
+    from emo_master.apps.designer.state.project_store import loadProjectDocument, saveProject
+    from emo_master.apps.designer.state.workflow_package import buildWorkflowPackage, importWorkflowPackage, loadWorkflowPackage, writeWorkflowPackage
+    from emo_master.core.plugin.registry import PluginRegistry
+    from emo_master.core.workflow.compiler import WorkflowCompiler
+    payload = demoProject(tmp_path).model_dump(mode="json")
+    dialog = DispatchEditor(payload, "capture", "dispatch", nodeId="dispatch")
+    try:
+        assert dialog.queuePolicy.currentData() == "wait"
+        dialog.queuePolicy.setCurrentIndex(dialog.queuePolicy.findData(policy))
+        dialog.waitTimeout.setValue(2500)
+        candidate = dialog.candidate()
+        path = tmp_path / "roundtrip.emoproj"
+        saveProject(path, candidate)
+        document = loadProjectDocument(path)
+        restored = DispatchEditor(document.model_dump(mode="json"), "capture", "dispatch", nodeId="dispatch")
+        assert restored.queuePolicy.currentData() == policy
+        if policy == 'wait':
+            assert restored.waitTimeout.value() == 2500
+        restored.close()
+        store = WorkflowStore(document.model_dump(mode="json"))
+        package = buildWorkflowPackage(store, "capture", sourceRoot=tmp_path)
+        package = loadWorkflowPackage(writeWorkflowPackage(tmp_path / "package", package))
+        scan = PluginRegistry("0.6.1").scanRoots([Path(__file__).resolve().parents[2] / "src/emo_master/plugins/builtins"])
+        imported = importWorkflowPackage(store, package, deviceMapping={"camera": "camera"}, targetRoot=tmp_path,
+            deviceTypes=scan.deviceTypes, operatorRequirements={key: definition.manifest.deviceRequirements
+                for key, definition in scan.activeOperators.items()})
+        node = next(n for n in store.get(imported.rootWorkflowId).nodes if n["kind"] == "dispatch")
+        assert node["params"]["queueFullPolicy"] == policy
+        assert node['params'].get('waitTimeoutMs') == (2500 if policy == 'wait' else None)
+        WorkflowCompiler(scan.activeOperators, deviceTypes=scan.deviceTypes).compile(ProjectDocument.model_validate(store.toPayload()))
+        dialog.queuePolicy.setCurrentIndex(dialog.queuePolicy.findData("error"))
+        errorNode = next(n for n in dialog.candidate()["workflows"]["capture"]["nodes"] if n["kind"] == "dispatch")
+        assert "queueFullPolicy" not in errorNode["params"] and "waitTimeoutMs" not in errorNode["params"]
+    finally:
+        dialog.close()
 
 
 def testStructuredMappingAndCancelDoNotMutateDraft(designerApplication):

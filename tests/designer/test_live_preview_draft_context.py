@@ -125,13 +125,16 @@ def testEditorManagerWiresDraftSnapshotProvider(tmp_path):
         manager.closeAll()
 
 
-def testActualCameraSingleFrameButtonUsesUnsavedCanvasSnapshot(tmp_path, monkeypatch):
-    from emo_master.apps.designer.ui.main_window import MainWindow
+def testManagedCameraWizardKeepsUnsavedDraftAndRejectsPrivatePreview(tmp_path, monkeypatch, ownedDesignerWindow):
+    from PySide2.QtWidgets import QDialogButtonBox
+    from emo_master.apps.designer.state.device_catalog import DeviceCatalogEditor
+    from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
     from emo_master.apps.runtime.grpc_server.service import RuntimeService
     from emo_master.plugins.builtins._huaray_imv import resetImvApiForTests
     from tests.designer.qt_wait import waitForCatalog, waitUntil
     from tests.runtime.test_global_counter_grpc import _writeCounterProject
     from tests.runtime.test_camera_configuration_session import TriggerApi
+    from tests.runtime.test_managed_imv import definition
 
     resetImvApiForTests()
     api = TriggerApi()
@@ -139,47 +142,47 @@ def testActualCameraSingleFrameButtonUsesUnsavedCanvasSnapshot(tmp_path, monkeyp
     service = RuntimeService(dbPath=tmp_path / "runtime.db")
     root = _writeCounterProject(tmp_path, "canvas-project")
     originalFile = (root / "project.json").read_bytes()
-    window = MainWindow(RuntimeClient(runtimeService=service))
-    editor = controller = None
+    client = RuntimeClient(runtimeService=service)
+    window = ownedDesignerWindow(client)
     try:
         waitForCatalog(window)
         assert window.loadProjectDirectory(str(root))
         loadedDocument = service.loadedDocument
         projectMetadata = deepcopy(window.workflowStore.project)
+        coordinator = window.pageCoordinator
+        catalog = DeviceCatalogEditor(coordinator.session, service.pluginScanResult.deviceTypes)
+        catalog.put(definition().model_dump(), deviceId="draft-camera")
+        visits = []
+
+        def complete(dialog):
+            waitUntil(lambda: dialog.buttons.button(QDialogButtonBox.Ok).isEnabled())
+            combo = dialog.slots["camera"][0]
+            combo.setCurrentIndex(combo.findData("draft-camera"))
+            dialog.accept()
+            assert dialog.result() == dialog.Accepted, dialog.error.text()
+            visits.append(True)
+            return dialog.result()
+
+        monkeypatch.setattr(DeviceNodeDialog, "exec_", complete)
         before = set(window.flowModel.nodes)
         window.addNodeFromOperatorPayload(window._operatorDefinition("vision.io.huaray_camera"))
         nodeId, = set(window.flowModel.nodes) - before
-        originalParams = deepcopy(window.flowModel.nodes[nodeId].params)
+        assert window.flowModel.nodes[nodeId].deviceBindings["camera"]["deviceId"] == "draft-camera"
         window.openNodeParamDialog(nodeId)
-        editor = window.nodeParamDialog
-        controller = editor._controller
-        assert controller is not None
-        controller.form._controls["ipAddress"].setText("192.168.1.10")
-        controller.connectButton.click()
-        waitUntil(lambda: controller._sessionId and controller._pending is None)
-        assert api.writes == [] and api.startStrategies == []
-        controller.singleFrameButton.click()
-        waitUntil(lambda: controller.blockIdLabel.text().split("：")[-1].strip().isdigit())
-        waitUntil(lambda: controller._pending is None and controller._snapshot.get("state") == "connected")
-        assert controller._sessionId and api.openCount == 1
+        assert len(visits) == 2 and window.operatorEditorManager.count() == 0
+        draft = window._livePreviewProject(EditorKey(projectMetadata["projectId"], "main", nodeId))
+        reply = client.openDraftOperatorPreviewSession(projectMetadata["projectId"], "main", nodeId,
+            "vision.io.huaray_camera", {}, draft, configurationOnly=True)
+        assert not reply.ok and reply.code == "E_DEVICE_DEBUG_REQUIRED"
+        assert api.openCount == 0 and not api.writes and not api.startStrategies
         assert service.loadedDocument is loadedDocument
         assert all(node.nodeId != nodeId for node in loadedDocument.workflows["main"].nodes)
         assert service.jobRepository.all() == []
-        assert window.flowModel.nodes[nodeId].params == originalParams
         assert window.workflowStore.project == projectMetadata
         assert (root / "project.json").read_bytes() == originalFile
-        assert window.pageCoordinator.session.dirty
+        assert coordinator.session.dirty
         with pytest.raises(EditorContextError, match="工程已关闭"):
             window._livePreviewProject(EditorKey("closed-project", "main", nodeId))
     finally:
-        if controller is not None:
-            waitUntil(lambda: controller._pending is None)
-            if controller._sessionId:
-                assert controller._modalAction("close", {"decision": "restore"})["ok"]
-                controller._finishSession()
-        if editor is not None:
-            editor.forceClose()
-        window.operatorEditorManager.closeAll()
-        window.close()
         service.close()
         resetImvApiForTests()

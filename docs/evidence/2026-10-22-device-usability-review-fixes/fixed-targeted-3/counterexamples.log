@@ -1,0 +1,64 @@
+.......F.............                                                    [100%]
+================================== FAILURES ===================================
+______ testDisabledEmptyDetailConnectionTestUsesCandidateWithoutApplying ______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001B883309F30>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-f-7sowug32/counterexamples/testDisabledEmptyDetailConnect0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001B88330A3B0>
+
+    def testDisabledEmptyDetailConnectionTestUsesCandidateWithoutApplying(ownedDesignerWindow, tmp_path, monkeypatch):
+        from types import SimpleNamespace
+        d = tcpWorkspace(ownedDesignerWindow, tmp_path)
+        d.enabled.setChecked(False)
+        d.forms['connection'].channels.setValue([])
+        d.forms['connection'].fields._controls['port'].setValue(10001)
+        candidate = deepcopy(d._formValue())
+        before = d.c.session.payload()
+        source = tmp_path/'device.emoproj'
+        disk = source.read_bytes()
+        calls = []
+    
+        def network(project, runtime, command, **kwargs):
+            calls.append((project, runtime, command, kwargs))
+            return dict(projectId='online', runtimeInstanceId='r', deviceSetupVersion=1, message='CURRENT-ENDPOINT')
+    
+        d.c.window.runtimeClient = SimpleNamespace(deviceNetworkCommand=network)
+        monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+        try:
+            d.testConnection()
+            waitUntil(lambda: d.pending is None)
+            assert [call[2] for call in calls] == ['info', 'test_connection']
+            assert calls[-1][3]['payload']['definition'] == candidate
+            assert 'CURRENT-ENDPOINT' in d.status.text()
+            assert d.c.session.payload() == before and source.read_bytes() == disk
+            assert d._formValue() == candidate and not d.timer.isActive()
+>           assert d.buttons['test'].isEnabled()
+E           assert False
+E            +  where False = <built-in method isEnabled of PySide2.QtWidgets.QToolButton object at 0x000001B8832F3E80>()
+E            +    where <built-in method isEnabled of PySide2.QtWidgets.QToolButton object at 0x000001B8832F3E80> = <PySide2.QtWidgets.QToolButton(0x1b881e3be30) at 0x000001B8832F3E80>.isEnabled
+
+tests\designer\test_device_workspace_usability.py:305: AssertionError
+=================================== PASSES ====================================
+=========================== short test summary info ===========================
+PASSED tests/designer/test_device_workspace_usability.py::testConnectionReceiptBelongsToDeviceAndCandidate[False-device]
+PASSED tests/designer/test_device_workspace_usability.py::testConnectionReceiptBelongsToDeviceAndCandidate[False-port]
+PASSED tests/designer/test_device_workspace_usability.py::testConnectionReceiptBelongsToDeviceAndCandidate[True-device]
+PASSED tests/designer/test_device_workspace_usability.py::testConnectionReceiptBelongsToDeviceAndCandidate[True-port]
+PASSED tests/designer/test_device_workspace_usability.py::testDetailConnectionValidationIsChineseFocusedAndReadOnly
+PASSED tests/designer/test_device_workspace_usability.py::testDetailFieldFeedbackClearsOnlyCorrectedInputAndSurvivesState
+PASSED tests/designer/test_device_workspace_usability.py::testDetailChannelFeedbackClearsOnlyEditedErrorCell
+PASSED tests/designer/test_device_definition_feedback.py::testCreationConnectionReceiptBelongsToCandidate[False]
+PASSED tests/designer/test_device_definition_feedback.py::testCreationConnectionReceiptBelongsToCandidate[True]
+PASSED tests/designer/test_device_definition_feedback.py::testMissingSlotFeedbackClearsOnlyWhenThatSlotIsSelected
+PASSED tests/designer/test_device_usability_drafts.py::testSelectorDefaultsAgreeBetweenDraftAndCompiledPlan[True-explicit0-expectedDraft0-expectedPlan0]
+PASSED tests/designer/test_device_usability_drafts.py::testSelectorDefaultsAgreeBetweenDraftAndCompiledPlan[False-explicit1-expectedDraft1-expectedPlan1]
+PASSED tests/designer/test_device_usability_drafts.py::testSelectorDefaultsAgreeBetweenDraftAndCompiledPlan[True-explicit2-expectedDraft2-expectedPlan2]
+PASSED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[gone-explicit0]
+PASSED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[42-explicit1]
+PASSED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[a-explicit2]
+PASSED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[a-explicit3]
+PASSED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[a-explicit4]
+PASSED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[None-explicit5]
+PASSED tests/runtime/test_tcp_device_closure.py::testSelectorDefaultReachesRealSpawnedJobAndFrozenAdmission
+FAILED tests/designer/test_device_workspace_usability.py::testDisabledEmptyDetailConnectionTestUsesCandidateWithoutApplying
+1 failed, 20 passed in 9.28s

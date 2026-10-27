@@ -65,6 +65,50 @@ def pendingChanges(state):
     return "；".join(changes)
 
 
+class TcpChannelEditor(QWidget):
+    """Stable IDs and editable names/IP routes shared by device creation/editing."""
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.table = QTableWidget(0, 3)
+        self.table.setObjectName('tcpChannelMappings')
+        self.table.setHorizontalHeaderLabels(['通道 ID（稳定引用）', '显示名称', '允许客户端 IPv4（逗号分隔）'])
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.setMinimumHeight(160)
+        layout.addWidget(self.table)
+        row = QHBoxLayout()
+        add, remove = QPushButton('添加通道'), QPushButton('移除选中通道')
+        add.clicked.connect(lambda: self.addChannel())
+        remove.clicked.connect(lambda: self.table.removeRow(self.table.currentRow()))
+        row.addWidget(add)
+        row.addWidget(remove)
+        layout.addLayout(row)
+
+    def setValue(self, channels):
+        self.table.setRowCount(0)
+        for channel in channels:
+            self.addChannel(channel)
+
+    def addChannel(self, channel=None):
+        if self.table.rowCount() >= 64:
+            return
+        channel = channel or dict(channelId='ch-' + uuid4().hex[:10],
+                                  name=f'通道 {self.table.rowCount() + 1}', allowedIps=[])
+        index = self.table.rowCount()
+        self.table.insertRow(index)
+        for col, value in enumerate((channel['channelId'], channel['name'], ', '.join(channel['allowedIps']))):
+            item = QTableWidgetItem(value)
+            if col == 0:
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+            self.table.setItem(index, col, item)
+
+    def value(self):
+        return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+                     allowedIps=[ip for ip in re.split(r'[,，;；\s]+', self.table.item(row, 2).text().strip()) if ip])
+                for row in range(self.table.rowCount())]
+
+
 class CommunicationSettingsDialog(QDialog):
     def __init__(self, projectName, config, save, parent=None):
         super().__init__(parent)
@@ -184,6 +228,114 @@ class CommunicationSettingsDialog(QDialog):
         self.accept()
 
 
+class TcpChannelStatusTable(QTableWidget):
+    """Passive channel presentation shared by both device management windows."""
+    def __init__(self):
+        super().__init__(0, 6)
+        self.setHorizontalHeaderLabels(['通道', '允许地址', '实际对端', '连接状态', '连接代次', '最近发送'])
+        self.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+    def setChannels(self, channels):
+        self.setRowCount(len(channels))
+        for row, channel in enumerate(channels):
+            peer = channel.get('peerAddress')
+            values = [f"{channel['name']} ({channel['channelId']})", ', '.join(channel['allowedIps']),
+                f'{peer[0]}:{peer[1]}' if peer else '—', '已连接' if channel.get('connected') else '等待客户端',
+                str(channel.get('connectionGeneration', 0)), (channel.get('lastSend') or {}).get('outcome', '—')]
+            for column, value in enumerate(values):
+                item = QTableWidgetItem(value)
+                item.setToolTip(value)
+                self.setItem(row, column, item)
+
+
+def recordDetails(record, *, utf8=False):
+    result = record.get('result')
+    data = record.get('dataHex') or (result.get('dataHex', '') if isinstance(result, dict) else '')
+    if utf8 and data:
+        data = repr(bytes.fromhex(data).decode('utf-8', errors='replace'))
+    byteTruncated = record.get('truncated') or (isinstance(result, dict) and result.get('dataTruncated'))
+    return data + ('\n[原始数据已截断]' if byteTruncated else '') + (
+        '\n[部分诊断字段已截断]' if record.get('fieldsTruncated') else '') + '\n' + json.dumps(
+        {key: value for key, value in record.items() if key != 'dataHex'}, ensure_ascii=False, indent=2)
+
+
+class DeviceDiagnosticsView(QWidget):
+    """Device events with channel filtering and bounded UTF-8/HEX receipt details."""
+    def __init__(self):
+        super().__init__()
+        self.page = {}
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        row = QHBoxLayout()
+        self.filter, self.format = QComboBox(), QComboBox()
+        self.filter.addItem('所有通道', '')
+        self.format.addItems(['HEX', 'UTF-8 文本'])
+        self.notice = label('选择一条记录查看来源和回执；传输完成不等于设备动作完成')
+        row.addWidget(self.filter)
+        row.addWidget(self.format)
+        row.addWidget(self.notice, 1)
+        layout.addLayout(row)
+        self.records = QTreeWidget()
+        self.records.setHeaderLabels(['时间', '事件', '通道 / 槽位', '结果'])
+        self.records.setRootIsDecorated(False)
+        self.records.header().setSectionResizeMode(3, QHeaderView.Stretch)
+        self.details = QPlainTextEdit()
+        self.details.setReadOnly(True)
+        split = QSplitter(Qt.Vertical)
+        split.addWidget(self.records)
+        split.addWidget(self.details)
+        layout.addWidget(split)
+        self.filter.currentIndexChanged.connect(self.renderRecords)
+        self.format.currentIndexChanged.connect(self.renderDetails)
+        self.records.itemSelectionChanged.connect(self.renderDetails)
+
+    def setPage(self, page, channels=()):
+        self.page = page
+        selected = self.filter.currentData()
+        self.filter.blockSignals(True)
+        self.filter.clear()
+        self.filter.addItem('所有通道', '')
+        for channel in channels:
+            self.filter.addItem(channel['name'], channel['channelId'])
+        self.filter.setCurrentIndex(max(0, self.filter.findData(selected)))
+        self.filter.blockSignals(False)
+        self.notice.setText('较早记录已截断' if page.get('truncated') else 'Runtime 设备日志；传输完成不等于设备动作完成')
+        self.renderRecords()
+
+    def renderRecords(self):
+        current = self.records.currentItem()
+        selected = current.data(0, Qt.UserRole).get('cursor') if current else None
+        self.records.blockSignals(True)
+        self.records.clear()
+        for record in self.page.get('records', []):
+            channel = record.get('channelId') or record.get('selectors', {}).get('channelId', '')
+            if self.filter.currentData() and channel != self.filter.currentData():
+                continue
+            item = QTreeWidgetItem([datetime.fromtimestamp(record['timestampMs']/1000).strftime('%H:%M:%S'),
+                record['eventType'], channel or record.get('slot', ''), record.get('message', '')])
+            item.setData(0, Qt.UserRole, record)
+            self.records.addTopLevelItem(item)
+            if record.get('cursor') == selected:
+                self.records.setCurrentItem(item)
+        self.records.blockSignals(False)
+        self.renderDetails()
+
+    def renderDetails(self):
+        item = self.records.currentItem()
+        self.details.setPlainText(recordDetails(item.data(0, Qt.UserRole), utf8=self.format.currentIndex() == 1)
+                                  if item else '选择一条记录查看详情')
+
+
+def tcpDeviceSummary(definitions, states):
+    ids = [key for key, value in definitions.items() if value['deviceTypeId'].startswith('device.tcp.')]
+    known = [states[key] for key in ids if key in states]
+    listening = sum(state.get('driverState', {}).get('state') == 'LISTENING' for state in known)
+    peers = sum(sum(bool(channel.get('connected')) for channel in state.get('driverState', {}).get('channels', []))
+                for state in known)
+    return f'TCP {len(ids)} 台 · 监听 {listening} · 客户端 {peers}' + (' · 状态未读取' if len(known) < len(ids) else '')
+
+
 class CommunicationPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -200,10 +352,7 @@ class CommunicationPanel(QWidget):
         layout.addWidget(self.identityLabel)
         layout.addWidget(self.notice)
         splitter = QSplitter(Qt.Vertical)
-        self.channels = QTableWidget(0, 6)
-        self.channels.setHorizontalHeaderLabels(["通道", "允许地址", "实际对端", "连接状态", "连接代次", "最近发送"])
-        self.channels.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.channels.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.channels = TcpChannelStatusTable()
         splitter.addWidget(self.channels)
         bottom = QWidget()
         bl = QVBoxLayout(bottom)
@@ -277,17 +426,7 @@ class CommunicationPanel(QWidget):
                     self.filter.addItem(title, key)
                 self.filter.setCurrentIndex(max(0, self.filter.findData(selected)))
                 self.filter.blockSignals(False)
-            for c in state["channels"]:
-                row = self.channels.rowCount()
-                self.channels.insertRow(row)
-                peer = c.get("peerAddress")
-                values = [f"{c['name']} ({c['channelId']})", ", ".join(c["allowedIps"]),
-                          f"{peer[0]}:{peer[1]}" if peer else "—", "已连接" if c["connected"] else "未连接",
-                          str(c["connectionGeneration"]), (c.get("lastSend") or {}).get("outcome", "—")]
-                for col, value in enumerate(values):
-                    item = QTableWidgetItem(value)
-                    item.setToolTip(value)
-                    self.channels.setItem(row, col, item)
+            self.channels.setChannels(state['channels'])
         else:
             self.identityLabel.setText("实时连接信息不可用")
         self.renderRecords()
@@ -320,8 +459,4 @@ class CommunicationPanel(QWidget):
         if not record:
             self.details.clear()
             return
-        data = record.get("dataHex", "")
-        if self.format.currentIndex() == 1 and data:
-            data = repr(bytes.fromhex(data).decode("utf-8", errors="replace"))
-        self.details.setPlainText(data + ("\n[原始数据已截断]" if record.get("truncated") else "") + "\n" +
-                                 json.dumps({k: v for k, v in record.items() if k != "dataHex"}, ensure_ascii=False, indent=2))
+        self.details.setPlainText(recordDetails(record, utf8=self.format.currentIndex() == 1))

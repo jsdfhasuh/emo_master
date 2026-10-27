@@ -1,0 +1,20 @@
+{
+  "operatorId": "vision.math.percentage",
+  "displayName": "\u767e\u5206\u6bd4",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.percentage.operator:PercentageOperator",
+  "category": "\u6570\u503c\u4e0e\u903b\u8f91",
+  "iconKey": "calculator",
+  "summary": "\u5206\u5b50 / \u5206\u6bcd * 100\uff1b\u5206\u6bcd\u672a\u8fde\u63a5\u65f6\u4e3a 1\uff0c\u5206\u6bcd\u4e3a 0 \u65f6\u8f93\u51fa null\uff0c\u4e0d\u4f2a\u88c5\u4e3a 0%\u3002",
+  "inputPorts": {
+    "numerator": {"type": "number", "required": true, "nullable": false},
+    "denominator": {"type": "number", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "value": {"type": "number", "required": true, "nullable": true},
+    "defined": {"type": "boolean", "required": true, "nullable": false}
+  },
+  "paramSchema": {"type": "object", "properties": {}, "additionalProperties": false},
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x"
+}

@@ -17,6 +17,7 @@ from emo_master.apps.designer.ui.floating_toolbox import FloatingToolbox
 from emo_master.apps.designer.ui.main_window import MainWindow
 from emo_master.apps.designer.ui.operator_bubble import OPERATOR_MIME_TYPE
 from tests.designer.qt_wait import waitForCatalog
+from tests.designer.test_canvas_navigation_bounds import readableFont as readableFont
 
 
 class Settings:
@@ -52,7 +53,7 @@ def makeWindow(settings=None):
 
 
 @pytest.fixture
-def toolboxWindow(designerApplication):
+def toolboxWindow(designerApplication, readableFont):
     window, calls = makeWindow()
     yield window, calls
     if shiboken2.isValid(window):
@@ -239,7 +240,7 @@ def testShortCanvasCanScrollToEveryCategoryAndCard(toolboxWindow):
     window.expandSidebar()
     QApplication.processEvents()
     toolbox = window.floatingToolbox
-    assert window.flowView.viewport().rect().contains(toolbox.geometry())
+    assert window.flowView.viewport().geometry().contains(toolbox.geometry())
     bar = toolbox.libraryScroll.verticalScrollBar()
     assert bar.maximum() > 0
     bar.setValue(bar.maximum())
@@ -251,7 +252,33 @@ def testShortCanvasCanScrollToEveryCategoryAndCard(toolboxWindow):
     for button in window.categoryButtons.values():
         toolbox.libraryScroll.ensureWidgetVisible(button, 0, 0)
         QApplication.processEvents()
+        assert toolbox.libraryScroll.viewport().height() >= button.height()
         assert not button.visibleRegion().isEmpty()
+
+
+def testCompactHeaderRestoresControlsWhenCanvasGrows(toolboxWindow):
+    window, _ = toolboxWindow
+    window.resize(640, 319)
+    window.expandSidebar()
+    QApplication.processEvents()
+    toolbox = window.floatingToolbox
+    assert toolbox.tabs.cornerWidget(Qt.TopLeftCorner) is toolbox.dragHandle
+    assert toolbox.tabs.cornerWidget(Qt.TopRightCorner) is toolbox.closeButton
+    assert toolbox.closeButton.isVisible() and toolbox.dragHandle.isVisible()
+    assert toolbox.dragHandle.geometry().bottom() < toolbox.libraryScroll.parentWidget().geometry().top()
+    assert not toolbox.dragHandle.visibleRegion().isEmpty()
+    assert toolbox.closeButton.visibleRegion().contains(toolbox.closeButton.rect().center())
+    QTest.mouseClick(toolbox.closeButton, Qt.LeftButton)
+    assert not toolbox.isExpanded()
+    QTest.mouseClick(toolbox.toggleButton, Qt.LeftButton)
+    assert toolbox.isExpanded()
+    window.resize(1280, 720)
+    QApplication.processEvents()
+    assert toolbox.tabs.cornerWidget(Qt.TopLeftCorner) is None
+    assert toolbox.tabs.cornerWidget(Qt.TopRightCorner) is None
+    assert toolbox.toggleButton.isVisible() and toolbox.dragHandle.isVisible()
+    QTest.mouseClick(toolbox.closeButton, Qt.LeftButton)
+    assert not toolbox.isExpanded() and toolbox.toggleButton.isVisible()
 
 
 def testAncestorScrollingKeepsToolboxWithinVisibleCanvas(toolboxWindow):

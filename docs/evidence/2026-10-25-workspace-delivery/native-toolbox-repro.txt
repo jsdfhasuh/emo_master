@@ -1,0 +1,13 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_______________ testShortCanvasCanScrollToEveryCategoryAndCard ________________
+tests\designer\test_floating_toolbox.py:254: in testShortCanvasCanScrollToEveryCategoryAndCard
+    assert not button.visibleRegion().isEmpty()
+E   assert not True
+E    +  where True = <built-in method isEmpty of PySide2.QtGui.QRegion object at 0x0000028705D5BE00>()
+E    +    where <built-in method isEmpty of PySide2.QtGui.QRegion object at 0x0000028705D5BE00> = <PySide2.QtGui.QRegion(null) at 0x0000028705D5BE00>.isEmpty
+E    +      where <PySide2.QtGui.QRegion(null) at 0x0000028705D5BE00> = <built-in method visibleRegion of PySide2.QtWidgets.QPushButton object at 0x0000028705D0C240>()
+E    +        where <built-in method visibleRegion of PySide2.QtWidgets.QPushButton object at 0x0000028705D0C240> = <PySide2.QtWidgets.QPushButton(0x2877f445d50, name="sideCategoryButton") at 0x0000028705D0C240>.visibleRegion
+=========================== short test summary info ===========================
+FAILED tests/designer/test_floating_toolbox.py::testShortCanvasCanScrollToEveryCategoryAndCard
+1 failed in 2.28s

@@ -4,6 +4,7 @@ from dataclasses import replace
 
 from emo_master.core.project.configuration import applyCycleParameters, applyDeviceCycleParameters
 from emo_master.core.project.models import ProjectDocument
+from emo_master.apps.runtime.workflow.cancellation import CancellationRequested
 
 
 class CyclePlanSession:
@@ -14,23 +15,40 @@ class CyclePlanSession:
 
     @contextmanager
     def scope(self, context, *, parentCycleId=None):
-        cycle = self.devices.call("beginCycle", knownRevision=self.revision, parentCycleId=parentCycleId)
-        previous = self.document, self.runner.compiledProject, self.revision
+        if self.cancelled():
+            raise CancellationRequested("execution cancelled")
+        cycle = self.devices.framework("beginCycle", knownRevision=self.revision, parentCycleId=parentCycleId)
+        executor = self.runner.operatorExecutor
+        previous = (self.document, self.runner.compiledProject, self.revision,
+                    getattr(executor, 'deviceScope', {}), getattr(executor, 'deviceIdentities', {}))
+        primaryError = None
         try:
             self.install(cycle)
             yield replace(context, cycleId=cycle["cycleId"], planRevision=self.revision,
                           documentRevision=cycle.get("documentRevision", 0))
+        except BaseException as error:
+            primaryError = error
+            raise
         finally:
             if parentCycleId is not None:
                 # Code after the Loop still belongs to the outer cycle's plan.
-                self.document, self.runner.compiledProject, self.revision = previous
+                (self.document, self.runner.compiledProject, self.revision,
+                 executor.deviceScope, executor.deviceIdentities) = previous
             if cycle["ownsCycle"] and not self.cancelled():
-                self.devices.call("endCycle", cycleId=cycle["cycleId"])
+                try:
+                    self.devices.framework("endCycle", cycleId=cycle["cycleId"])
+                except CancellationRequested:
+                    # A stop racing cleanup must not hide a real body failure.
+                    # The existing owner retirement releases this cycle lease.
+                    if primaryError is None:
+                        raise
 
     def iteration(self, context):
         return self.scope(context, parentCycleId=context.cycleId)
 
     def install(self, cycle):
+        self.runner.operatorExecutor.deviceScope = cycle.get('deviceScope', {})
+        self.runner.operatorExecutor.deviceIdentities = cycle.get('deviceIdentities', {})
         if "payload" in cycle:
             # Preserve materialized paths and retained operator instances.
             updated = self.document.model_dump(mode="json")

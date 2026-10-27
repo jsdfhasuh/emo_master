@@ -1,0 +1,22 @@
+...............................................FF..............          [100%]
+================================== FAILURES ===================================
+_____ testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[embedded] ______
+tests\designer\test_runtime_validation_feedback.py:621: in testUpgradedDraftResourceFailureCanBeFixedAndRevalidated
+    details = json.loads(messages[0]['detail'][messages[0]['detail'].index('{'):])
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\json\__init__.py:346: in loads
+    return _default_decoder.decode(s)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\json\decoder.py:340: in decode
+    raise JSONDecodeError("Extra data", s, end)
+E   json.decoder.JSONDecodeError: Extra data: line 13 column 1 (char 413)
+_____ testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[loopback] ______
+tests\designer\test_runtime_validation_feedback.py:621: in testUpgradedDraftResourceFailureCanBeFixedAndRevalidated
+    details = json.loads(messages[0]['detail'][messages[0]['detail'].index('{'):])
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\json\__init__.py:346: in loads
+    return _default_decoder.decode(s)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\json\decoder.py:340: in decode
+    raise JSONDecodeError("Extra data", s, end)
+E   json.decoder.JSONDecodeError: Extra data: line 13 column 1 (char 413)
+=========================== short test summary info ===========================
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[loopback]
+2 failed, 61 passed in 42.81s

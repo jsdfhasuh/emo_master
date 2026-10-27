@@ -16,7 +16,7 @@ from emo_master.apps.runtime.workflow.cancellation import CancellationRequested,
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.apps.runtime.workflow.runner import WorkflowRunner
 from emo_master.apps.runtime.artifacts.store import ArtifactStore
-from emo_master.apps.runtime.preview.store import PreviewSnapshotWriter
+from emo_master.apps.runtime.preview.async_writer import AsyncPreviewSnapshotWriter
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.compiler import WorkflowCompiler
@@ -36,8 +36,21 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
     heartbeatEventsStopped = threading.Event()
     heartbeatEmissionLock = threading.Lock()
     runner = None
+    token = CancellationToken(cancelEvent)
+    previewWriter = None
 
     def publishTerminal(event):
+        if previewWriter is not None:
+            # Finish final captures before promotion/retirement; cancellation
+            # discards queued diagnostics, never replays business operations.
+            try:
+                previewWriter.close(drain=event["eventType"] == "job.completed")
+            except Exception as error:
+                # Optional preview diagnostics must not mask a business error.
+                event["payload"] = dict(event.get("payload", {}), previewSnapshotError=str(error))
+            event["payload"] = dict(event.get("payload", {}), previewSnapshots=previewWriter.statistics())
+        if event["eventType"] == "job.completed":
+            token.raise_if_cancelled()  # A stop during final drain is still a stop.
         # Once terminal is enqueued, no heartbeat can follow it or race queue
         # close. Cell pulses continue until the existing feeder flush finishes.
         with heartbeatEmissionLock:
@@ -50,6 +63,9 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
                                     captureDiagnostics=list(getattr(runner, "captureDiagnostics", ())))
         _put(eventQueue, event)
 
+    def errorDetails(error):
+        return {key: getattr(error, key) for key in ("outcome", "diagnostics") if hasattr(error, key)}
+
     heartbeatThread = threading.Thread(
         target=heartbeatLoop,
         args=(spec.jobId, spec.projectId, spec.workflowId, eventQueue, heartbeatStop,
@@ -61,6 +77,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
     try:
         _put(eventQueue, {"eventType": "job.process.started", "jobId": spec.jobId, "projectId": spec.projectId, "workflowId": spec.workflowId, "pid": _pid()})
         heartbeatThread.start()
+        token.raise_if_cancelled()
         snapshot = json.loads(Path(spec.projectSnapshotPath).read_text(encoding="utf-8"))
         if not isinstance(snapshot, dict):
             raise RuntimeError("project snapshot must be an object")
@@ -74,8 +91,8 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
         inputs = json.loads(spec.inputsJson or "{}")
         if not isinstance(inputs, dict):
             raise ValueError("inputs_json must contain an object")
-        token = CancellationToken(cancelEvent)
-        publisher = _eventPublisher(spec.jobId, spec.projectId, eventQueue)
+        publisher = _eventPublisher(spec.jobId, spec.projectId, eventQueue,
+                                    inspectionCredits=spec.inspectionCredits, cancellation=token)
         globalCounters = (
             ProjectGlobalCounters(SqliteStore(Path(spec.runtimeDbPath)), spec.projectId)
             if spec.runtimeDbPath and spec.projectId
@@ -87,14 +104,21 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
                                                      document.globalVariables, spec.jobId)
             globalVariables.synchronize()
             globalVariables.initializeJob()
+        if normalizeLegacySnapshotPolicy(spec.legacySnapshotPolicy) == "ALL":
+            previewWriter = AsyncPreviewSnapshotWriter(Path(spec.jobWorkspacePath), jobId=spec.jobId,
+                projectRevision=document.project.revision,
+                inspectionPublisher=publisher if spec.inspectionEnabled else None,
+                # The encoder thread stages immutable PNGs. Only descriptors
+                # share the ordered node-event channel, never large image bytes.
+                inlineInspection=False,
+                errorPublisher=publisher, cancellation=token,
+                minIntervalMs=50 if spec.continuous or spec.targetSlotId else 0)
         runner = WorkflowRunner(
             compiledProject=compiled,
             operatorRegistry=registry,
             eventPublisher=publisher,
             artifactStore=ArtifactStore(Path(spec.jobWorkspacePath)) if spec.copyArtifacts else None,
-            previewSnapshotStore=(PreviewSnapshotWriter(Path(spec.jobWorkspacePath),
-                jobId=spec.jobId, projectRevision=document.project.revision)
-                if normalizeLegacySnapshotPolicy(spec.legacySnapshotPolicy) == "ALL" else None),
+            previewSnapshotStore=previewWriter,
             globalCounters=globalCounters,
             globalVariables=globalVariables,
             resultCollector=_collector(spec, eventQueue),
@@ -104,6 +128,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
         )
         runner.prepareResources(spec.workflowId,
             RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath, projectId=spec.projectId), token)
+        token.raise_if_cancelled()
         _put(eventQueue, {"eventType": "job.started", "jobId": spec.jobId, "projectId": spec.projectId, "pid": _pid(), "workflowId": spec.workflowId})
         from emo_master.apps.runtime.project_config.cycle_plan import CyclePlanSession
         cyclePlans = CyclePlanSession(runner, devices, document, compiler, registry,
@@ -122,7 +147,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
             if devices is None:
                 raise RuntimeError("E_DEVICE_RUNTIME_UNAVAILABLE: Dispatch requires managed device IPC")
             deadline = time.monotonic() + 30
-            while not devices.call("dispatchReady"):
+            while not devices.framework("dispatchReady"):
                 token.raise_if_cancelled()
                 if time.monotonic() >= deadline:
                     raise RuntimeError("E_DISPATCH_START_TIMEOUT: consumers did not become ready")
@@ -140,7 +165,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
             runCycle(context, inputs)
         publishTerminal({"eventType": "job.completed", "jobId": spec.jobId, "projectId": spec.projectId, "pid": _pid(), "workflowId": spec.workflowId})
     except CancellationRequested as err:
-        publishTerminal({"eventType": "job.aborted", "jobId": spec.jobId, "projectId": spec.projectId, "workflowId": spec.workflowId, "pid": _pid(), "code": "E_CANCELLED", "message": str(err)})
+        publishTerminal({"eventType": "job.aborted", "jobId": spec.jobId, "projectId": spec.projectId, "workflowId": spec.workflowId, "pid": _pid(), "code": "E_CANCELLED", "message": str(err), "payload": errorDetails(err)})
     except BaseException as err:
         if getattr(err, "code", "") == "E_CONFIG_DRAINED":
             publishTerminal({"eventType": "job.aborted", "jobId": spec.jobId, "projectId": spec.projectId,
@@ -153,12 +178,16 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
                 "projectId": spec.projectId,
                 "workflowId": spec.workflowId,
                 "pid": _pid(),
-                "code": getattr(err, "code", "E_WORKER_CRASHED"),
+                "code": (getattr(err, "code", "E_EXEC_FAILED") if isinstance(err, Exception)
+                         else "E_WORKER_CRASHED"),
                 "message": str(err),
+                "payload": errorDetails(err),
             },
         )
         raise
     finally:
+        if previewWriter is not None:
+            previewWriter.close(drain=False)
         if devices is not None:
             devices.close()
         if communication is not None:
@@ -211,7 +240,7 @@ def _runConsumer(runner, spec, devices, cyclePlans, token, cancelEvent, publish)
     try:
         while True:
             token.raise_if_cancelled()
-            invocation = devices.call("dispatchNext")
+            invocation = devices.framework("dispatchNext")
             if invocation["status"] == "CLOSED":
                 return
             if invocation["status"] == "IDLE":
@@ -231,12 +260,12 @@ def _runConsumer(runner, spec, devices, cyclePlans, token, cancelEvent, publish)
             except Exception as error:
                 if cancelEvent.is_set():
                     raise
-                devices.call("dispatchComplete", **identity, status="FAILED", outputs=None,
+                devices.framework("dispatchComplete", **identity, status="FAILED", outputs=None,
                              code=getattr(error, "code", "E_DISPATCH_CONSUMER"), message=str(error))
                 publish("dispatch.invocation.failed", context, str(error), level="ERROR",
                         code=getattr(error, "code", "E_DISPATCH_CONSUMER"))
                 raise
-            devices.call("dispatchComplete", **identity, status="COMPLETED", outputs=outputs)
+            devices.framework("dispatchComplete", **identity, status="COMPLETED", outputs=outputs)
             devices.frameCopies.clear()
             publish("dispatch.invocation.completed", context, "consumer invocation completed",
                     payload=dict(frameIds=list(invocation["frames"])))
@@ -278,11 +307,17 @@ def _collector(spec, eventQueue):
     return ResultCollector(spec.presentation, spec.presentation["queue"].put_nowait)
 
 
-def _eventPublisher(jobId: str, projectId: str, eventQueue):
+def _eventPublisher(jobId: str, projectId: str, eventQueue, *, inspectionCredits=None, cancellation=None):
     def publish(eventType, context, message, level="INFO", code="", payload=None):
-        _put(
-            eventQueue,
-            {
+        reserved = eventType == 'inspection.snapshot' and inspectionCredits is not None
+        if reserved:
+            while not inspectionCredits.acquire(timeout=.05):
+                if cancellation is not None:
+                    cancellation.raise_if_cancelled()
+        try:
+            if reserved and cancellation is not None:
+                cancellation.raise_if_cancelled()
+            _put(eventQueue, {
                 "eventType": eventType,
                 "jobId": jobId,
                 "projectId": context.projectId or projectId,
@@ -299,14 +334,19 @@ def _eventPublisher(jobId: str, projectId: str, eventQueue):
                     runGroupId=context.runGroupId, dispatchId=context.dispatchId, deliveryId=context.deliveryId,
                     invocationId=context.invocationId, targetSlotId=context.targetSlotId,
                     documentRevision=context.documentRevision),
-            },
-        )
+            })
+        except BaseException:
+            if reserved:
+                inspectionCredits.release()
+            raise
 
     return publish
 
 
 def _put(eventQueue, event: dict[str, object]) -> None:
-    eventQueue.put(_jsonSafe(event))
+    # Inspection is a private IPC barrier, not a persisted JSON event. Preserve
+    # its bounded immutable PNG bytes; ordinary diagnostic events stay JSON-safe.
+    eventQueue.put(event if event.get("eventType") == "inspection.snapshot" else _jsonSafe(event))
 
 
 def _jsonSafe(value):

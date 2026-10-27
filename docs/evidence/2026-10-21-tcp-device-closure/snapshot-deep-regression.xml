@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="271" time="182.953" timestamp="2026-10-21T10:19:37.269543+08:00" hostname="视觉电脑"><testcase classname="tests.core.project.test_configuration" name="testDispatchDependencyClosureIncludesTransitiveWorkflowAndOrderOnly" time="0.027" /><testcase classname="tests.core.project.test_configuration" name="testResourceDependencyClosureAndSelectedDeletion" time="0.006" /><testcase classname="tests.core.project.test_configuration" name="testPageDependencyClosureIncludesSourcesScopesAndNewWorkflow" time="0.006" /><testcase classname="tests.core.project.test_configuration" name="testSelectedExposureDoesNotIncludeInvalidUnselectedDraft" time="0.004" /><testcase classname="tests.core.project.test_configuration" name="testMissingDeviceDependencyIncludesOnlyExactNewDefinition" time="0.005" /><testcase classname="tests.core.project.test_configuration" name="testDependencySelectionDoesNotUndoDeletionOrInventMissingDefinition" time="0.005" /><testcase classname="tests.core.project.test_configuration" name="testComparisonCategoryPreservesBindingAndParameterKinds[parts0-device_parameters]" time="0.003" /><testcase classname="tests.core.project.test_configuration" name="testComparisonCategoryPreservesBindingAndParameterKinds[parts1-device_connection]" time="0.003" /><testcase classname="tests.core.project.test_configuration" name="testComparisonCategoryPreservesBindingAndParameterKinds[parts2-layout]" time="0.002" /><testcase classname="tests.core.project.test_configuration" name="testComparisonCategoryPreservesBindingAndParameterKinds[parts3-node_parameters]" time="0.002" /><testcase classname="tests.core.project.test_configuration" name="testComparisonCategoryPreservesBindingAndParameterKinds[parts4-device_binding]" time="0.002" /><testcase classname="tests.core.project.test_configuration" name="testComparisonCategoryPreservesBindingAndParameterKinds[parts5-resources]" time="0.002" /><testcase classname="tests.core.project.test_configuration" name="testComparisonCategoryPreservesBindingAndParameterKinds[parts6-presentation]" time="0.004" /><testcase classname="tests.core.project.test_configuration" name="testNodeIdSelectionSurvivesReorderAndEscapesPointers" time="0.005" /><testcase classname="tests.core.project.test_configuration" name="testMissingNullFalseZeroAndEmptyAreNotConflated" time="0.003" /><testcase classname="tests.core.project.test_configuration" name="testSelectionRejectsStaleDuplicateAndEmptyPaths" time="0.002" /><testcase classname="tests.core.project.test_configuration" name="testLayoutAndLabelsDoNotChangeExecutionRevision" time="0.004" /><testcase classname="tests.core.project.test_configuration" name="testStaticPageSelectionRequiresOnlyItsMissingResource" time="0.005" /><testcase classname="tests.core.project.test_configuration" name="testCycleParametersKeepMaterializedPathsAndDoNotMutateOnlineSnapshot" time="0.002" /><testcase classname="tests.core.project.test_devices" name="testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.0]" time="0.005" /><testcase classname="tests.core.project.test_devices" name="testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.1]" time="0.004" /><testcase classname="tests.core.project.test_devices" name="testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.2]" time="0.004" /><testcase classname="tests.core.project.test_devices" name="testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.3]" time="0.004" /><testcase classname="tests.core.project.test_devices" name="testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.4]" time="0.004" /><testcase classname="tests.core.project.test_devices" name="testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.5]" time="0.006" /><testcase classname="tests.core.project.test_devices" name="testLegacySerializationDoesNotAddNewFields" time="0.004" /><testcase classname="tests.core.project.test_devices" name="testNewFieldsCannotHideInOldVersion[catalog]" time="0.005" /><testcase classname="tests.core.project.test_devices" name="testNewFieldsCannotHideInOldVersion[emptySources]" time="0.004" /><testcase classname="tests.core.project.test_devices" name="testNewFieldsCannotHideInOldVersion[binding]" time="0.005" /><testcase classname="tests.core.project.test_devices" name="testUnknownTypeAndKeepArePreservedWithoutDiscovery" time="0.003" /><testcase classname="tests.core.project.test_devices" name="testConflictingSourcesRejected[overrides0-values0]" time="0.003" /><testcase classname="tests.core.project.test_devices" name="testConflictingSourcesRejected[overrides1-values1]" time="0.002" /><testcase classname="tests.core.project.test_devices" name="testConflictingSourcesRejected[overrides2-values2]" time="0.002" /><testcase classname="tests.core.project.test_devices" name="testConflictingSourcesRejected[overrides3-values3]" time="0.002" /><testcase classname="tests.core.project.test_devices" name="testOrphanSourceAndMissingReferenceRejected" time="0.006" /><testcase classname="tests.core.project.test_devices" name="testDynamicSourceHasExactlyOneIdentity[binding0]" time="0.003" /><testcase classname="tests.core.project.test_devices" name="testDynamicSourceHasExactlyOneIdentity[binding1]" time="0.003" /><testcase classname="tests.core.project.test_devices" name="testDynamicSourceHasExactlyOneIdentity[binding2]" time="0.002" /><testcase classname="tests.core.project.test_devices" name="testOverridesPreservePresenceAndNeverMutateDefaults" time="0.006" /><testcase classname="tests.core.project.test_devices" name="testNodeCannotOverrideConnectionOrPolicy[connection]" time="0.004" /><testcase classname="tests.core.project.test_devices" name="testNodeCannotOverrideConnectionOrPolicy[policies]" time="0.003" /><testcase classname="tests.core.project.test_devices" name="testNodeCannotOverrideConnectionOrPolicy[unknown]" time="0.003" /><testcase classname="tests.core.project.test_devices" name="testRelatedModeCannotBeSilentlyChanged" time="0.005" /><testcase classname="tests.core.project.test_devices" name="testDynamicValuesResolveOnceAndValidateBeforeAdmission" time="0.004" /><testcase classname="tests.core.project.test_devices" name="testPolicyDefaultsAndFixedValues" time="0.003" /><testcase classname="tests.core.project.test_devices" name="testDynamicRelatedModeValidatedOnlyAfterResolution" time="0.003" /><testcase classname="tests.core.project.test_devices" name="testOpaqueOrNonfiniteDeviceValuesRejected[nan]" time="0.003" /><testcase classname="tests.core.project.test_devices" name="testOpaqueOrNonfiniteDeviceValuesRejected[inf]" time="0.003" /><testcase classname="tests.core.project.test_devices" name="testOpaqueOrNonfiniteDeviceValuesRejected[value2]" time="0.003" /><testcase classname="tests.core.project.test_devices" name="testFileRoundtripAndExplicitBackup" time="0.121" /><testcase classname="tests.core.project.test_device_resources" name="testDeviceTargetsResolveWithoutMutatingDraftOrGuessingAddress" time="0.386" /><testcase classname="tests.core.project.test_device_resources" name="testAmbiguousOrInvalidDeviceTargetsRejected[target0]" time="0.003" /><testcase classname="tests.core.project.test_device_resources" name="testAmbiguousOrInvalidDeviceTargetsRejected[target1]" time="0.005" /><testcase classname="tests.core.project.test_device_resources" name="testAmbiguousOrInvalidDeviceTargetsRejected[target2]" time="0.002" /><testcase classname="tests.core.project.test_device_resources" name="testDeviceTargetVersionAndReferenceGates" time="0.206" /><testcase classname="tests.core.project.test_device_resources" name="testOverlapIncludesAncestorsButDifferentOwnersAreIndependent" time="0.006" /><testcase classname="tests.core.project.test_device_resources" name="testPreparationFailsClosedBeforeAnyRuntimeAction[missing]" time="0.201" /><testcase classname="tests.core.project.test_device_resources" name="testPreparationFailsClosedBeforeAnyRuntimeAction[changed]" time="0.192" /><testcase classname="tests.core.project.test_device_resources" name="testPreparationFailsClosedBeforeAnyRuntimeAction[purpose]" time="0.173" /><testcase classname="tests.core.project.test_device_resources" name="testPreparationFailsClosedBeforeAnyRuntimeAction[metadata]" time="0.170" /><testcase classname="tests.core.project.test_device_resources" name="testPreparationFailsClosedBeforeAnyRuntimeAction[path]" time="0.269" /><testcase classname="tests.core.project.test_device_resources" name="testPreparationFailsClosedBeforeAnyRuntimeAction[site]" time="0.163" /><testcase classname="tests.core.project.test_device_resources" name="testPreparationFailsClosedBeforeAnyRuntimeAction[empty-site]" time="0.198" /><testcase classname="tests.core.project.test_device_resources" name="testDeviceOutputsCannotOverwriteInputsOrRuntime[calibration.bin]" time="0.200" /><testcase classname="tests.core.project.test_device_resources" name="testDeviceOutputsCannotOverwriteInputsOrRuntime[project.json]" time="0.176" /><testcase classname="tests.core.project.test_device_resources" name="testDeviceOutputsCannotOverwriteInputsOrRuntime[runtime/data.db]" time="0.169" /><testcase classname="tests.core.project.test_device_resources" name="testDeviceSecretMustRemainVersionedReference" time="0.178" /><testcase classname="tests.core.project.test_device_resources" name="testUnboundSecretCannotLeakIntoDeployment" time="0.195" /><testcase classname="tests.core.project.test_device_resources" name="testDeviceResourceReferencePreventsCatalogDeletion" time="0.203" /><testcase classname="tests.core.project.test_device_resources" name="testStaticFileOverrideIsResolvedWithoutMaterializingInheritedFields" time="0.206" /><testcase classname="tests.core.project.test_device_resources" name="testFileFieldsCannotBypassResourcePreparation[dynamicPaths]" time="0.169" /><testcase classname="tests.core.project.test_device_resources" name="testFileFieldsCannotBypassResourcePreparation[nextCyclePaths]" time="0.179" /><testcase classname="tests.core.project.test_device_resources" name="testRuntimePackageMovesAllDeviceFilesAndLocksMetadataWithoutDriverCreation" time="0.344" /><testcase classname="tests.core.project.test_device_resources" name="testMetadataDriftRejectsInstallBeforeReplacingProject" time="0.309" /><testcase classname="tests.core.project.test_device_resources" name="testUpdateProtectsExistingDeviceOutput" time="0.305" /><testcase classname="tests.core.project.test_device_resources" name="testWorkflowPackageCannotSilentlyDropDeviceResourceDeclarations" time="0.187" /><testcase classname="tests.core.project.test_device_resources" name="testPackagedDeviceInputCannotFallBackToInstallerHostFile" time="0.662" /><testcase classname="tests.core.project.test_device_resources" name="testNestedFileDefaultsCannotBypassExistenceChecks" time="0.195" /><testcase classname="tests.core.project.test_device_resources" name="testInstalledDeviceResourcesReachSpawnedJobAndRestartRechecksIntegrity" time="2.763"><failure message="AssertionError: invalid project file: [WinError 3] 系统找不到指定的路径。: 'D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\final-24fcc827\\pytest-final-regression\\testInstalledDeviceResourcesRe0\\configuration-resources\\1eac296aa29549f5bacd832d782e49e9\\7a50fb3461ea49fc9cd17db35a78ae13.pending' -&gt; 'D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\final-24fcc827\\pytest-final-regression\\testInstalledDeviceResourcesRe0\\configuration-resources\\1eac296aa29549f5bacd832d782e49e9\\05f977391d8bcbbd4bfd496cbf4c2af97fdc9f5b9848000db265d183e43fffbb.bin'&#10;assert False&#10; +  where False = status: &quot;FAILED&quot;\nmessage: &quot;invalid project file: [WinError 3] 系统找不到指定的路径。: \'D:\\\\jsdfhasuh\\\\documents\\\\my_projec...sources\\\\1eac296aa29549f5bacd832d782e49e9\\\\05f977391d8bcbbd4bfd496cbf4c2af97fdc9f5b9848000db265d183e43fffbb.bin\'&quot;\n.ok">bundle = (WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regres...ns/builtins/annotate'), editorIssues=(), editorUiContent=None, editorUiSha256='', iconAsset=None, iconIssues=()), ...})
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInstalledDeviceResourcesRe0')
+
+    def testInstalledDeviceResourcesReachSpawnedJobAndRestartRechecksIntegrity(bundle, tmp_path):
+        from emo_master.apps.runtime.grpc_server.service import RuntimeService
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+        from tests.runtime.runtime_test_utils import waitForTerminal
+    
+        _, document, types, registry = bundle
+        installed = tmp_path / "installed"
+        installRuntimePackage(build(bundle, tmp_path), installed, registry=registry, deviceTypes=types)
+        # This installed metadata fixture is external to the project/package. It uses
+        # the existing simulator; no SDK, socket or new driver code is loaded.
+        plugins = tmp_path / "trusted-plugins"
+        plugin = plugins / "simulated"
+        (plugin / "device_types").mkdir(parents=True)
+        (plugin / "device_types/camera.json").write_text(next(iter(types.values())).model_dump_json(), encoding="utf-8")
+        builtin = Path(__file__).resolve().parents[3] / "src/emo_master/plugins/builtins/simulated_camera/manifest.json"
+        (plugin / "manifest.json").write_bytes(builtin.read_bytes())
+        kwargs = dict(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs", pluginRootPaths=(str(plugins),))
+        service = RuntimeService(**kwargs)
+        try:
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(installed / "project.json")), None)
+&gt;           assert loaded.ok, loaded.message
+E           AssertionError: invalid project file: [WinError 3] 系统找不到指定的路径。: 'D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\final-24fcc827\\pytest-final-regression\\testInstalledDeviceResourcesRe0\\configuration-resources\\1eac296aa29549f5bacd832d782e49e9\\7a50fb3461ea49fc9cd17db35a78ae13.pending' -&gt; 'D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\final-24fcc827\\pytest-final-regression\\testInstalledDeviceResourcesRe0\\configuration-resources\\1eac296aa29549f5bacd832d782e49e9\\05f977391d8bcbbd4bfd496cbf4c2af97fdc9f5b9848000db265d183e43fffbb.bin'
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "invalid project file: [WinError 3] 系统找不到指定的路径。: \'D:\\\\jsdfhasuh\\\\documents\\\\my_projec...sources\\\\1eac296aa29549f5bacd832d782e49e9\\\\05f977391d8bcbbd4bfd496cbf4c2af97fdc9f5b9848000db265d183e43fffbb.bin\'"\n.ok
+
+tests\core\project\test_device_resources.py:319: AssertionError</failure></testcase><testcase classname="tests.core.project.test_device_resources" name="testProductionReopenUsesCommittedVersionAndRefusesInPlacePackageUpdate" time="3.409" /><testcase classname="tests.core.test_runtime_directory" name="testExplicitProductionUpgradeOldShapeAndDesignerRoundtrip" time="0.015" /><testcase classname="tests.core.test_runtime_directory" name="testInvalidProductionConfigurationFailsAtBoundary[change0]" time="0.006" /><testcase classname="tests.core.test_runtime_directory" name="testInvalidProductionConfigurationFailsAtBoundary[change1]" time="0.006" /><testcase classname="tests.core.test_runtime_directory" name="testInvalidProductionConfigurationFailsAtBoundary[change2]" time="0.005" /><testcase classname="tests.core.test_runtime_directory" name="testInvalidProductionConfigurationFailsAtBoundary[change3]" time="0.007" /><testcase classname="tests.core.test_runtime_directory" name="testMovedUnicodeProjectResolvesPathsNotCwdAndLeavesSourceUntouched" time="0.157" /><testcase classname="tests.core.test_runtime_directory" name="testOutputCannotOverwriteInputsProjectOrRuntime[input.png]" time="0.013" /><testcase classname="tests.core.test_runtime_directory" name="testOutputCannotOverwriteInputsProjectOrRuntime[project.json]" time="0.013" /><testcase classname="tests.core.test_runtime_directory" name="testOutputCannotOverwriteInputsProjectOrRuntime[runtime/state.sqlite3]" time="0.012" /><testcase classname="tests.core.test_runtime_directory" name="testOutputCannotOverwriteInputsProjectOrRuntime[runtime/jobs/output.png]" time="0.016" /><testcase classname="tests.core.test_runtime_directory" name="testAbsoluteFilePathsRetainExplicitMeaning" time="0.012" /><testcase classname="tests.core.test_runtime_directory" name="testMissingAndModifiedResourceFailsBeforeExecution" time="0.012" /><testcase classname="tests.core.test_runtime_directory" name="testFileArrayMetadataAndOptionalBlankFileHaveNoPathGuessing" time="0.005" /><testcase classname="tests.core.test_runtime_directory" name="testLegacyPublishersAndTestPackagesDoNotAcceptProductionSchema" time="0.212" /><testcase classname="tests.core.test_runtime_package" name="testPortablePackagePreservesDeviceOutputPolicyAndCollectsExternalInput" time="5.715" /><testcase classname="tests.core.test_runtime_package" name="testOfflineUpdatePreservesOutputsAndBacksUpConfiguration" time="0.921" /><testcase classname="tests.core.test_runtime_package" name="testUpdateRequiresDirectoryOwnershipAndDifferentProjectUsesNewDirectory" time="1.159" /><testcase classname="tests.core.test_runtime_package" name="testRunningRuntimeRefusesUpdateButStoppedOwnerCanApplyIt" time="6.061" /><testcase classname="tests.core.test_runtime_package" name="testUpdateCanRepairMissingOldInputWithoutDeletingBusinessData" time="0.696" /><testcase classname="tests.core.test_runtime_package" name="testNormalUpdateFailureRestoresReplacedResourcesAndConfig" time="0.824" /><testcase classname="tests.core.test_runtime_package" name="testBadPackageFailsBeforeReplacingInstalledProject[digest]" time="0.614" /><testcase classname="tests.core.test_runtime_package" name="testBadPackageFailsBeforeReplacingInstalledProject[traversal]" time="0.605" /><testcase classname="tests.core.test_runtime_package" name="testBadPackageFailsBeforeReplacingInstalledProject[case-alias]" time="0.682" /><testcase classname="tests.core.test_runtime_package" name="testBadPackageFailsBeforeReplacingInstalledProject[undeclared]" time="0.624" /><testcase classname="tests.core.test_runtime_package" name="testBadPackageFailsBeforeReplacingInstalledProject[plugin]" time="0.568" /><testcase classname="tests.core.test_runtime_package" name="testExporterRejectsOutputInsideSource" time="0.160" /><testcase classname="tests.core.test_runtime_package" name="testUpdateWaitsForTransientWindowsReplacementDenial[5]" time="0.914" /><testcase classname="tests.core.test_runtime_package" name="testUpdateWaitsForTransientWindowsReplacementDenial[32]" time="1.211" /><testcase classname="tests.core.test_runtime_package" name="testUpdateWaitsForTransientWindowsReplacementDenial[33]" time="0.913" /><testcase classname="tests.core.test_runtime_package" name="testPermanentReplacementDenialRemainsBoundedAndRestoresInputs[5-5]" time="1.710" /><testcase classname="tests.core.test_runtime_package" name="testPermanentReplacementDenialRemainsBoundedAndRestoresInputs[32-5]" time="1.661" /><testcase classname="tests.core.test_runtime_package" name="testPermanentReplacementDenialRemainsBoundedAndRestoresInputs[33-5]" time="1.596" /><testcase classname="tests.core.test_runtime_package" name="testPermanentReplacementDenialRemainsBoundedAndRestoresInputs[None-1]" time="0.859" /><testcase classname="tests.core.test_runtime_package" name="testPermanentReplacementDenialRemainsBoundedAndRestoresInputs[2-1]" time="0.929" /><testcase classname="tests.runtime.test_device_executor" name="testFifoCancellationAndIndependentDevice" time="0.036" /><testcase classname="tests.runtime.test_device_executor" name="testTimeoutDoesNotReleaseNativeOwnerAndCloseIsRetryable" time="0.046" /><testcase classname="tests.runtime.test_device_executor" name="testQueueExpiryDoesNotExecuteAndDoesNotQuarantine" time="0.044" /><testcase classname="tests.runtime.test_device_executor" name="testUnhealthyFailureRejectsFollowingOperation" time="0.031" /><testcase classname="tests.runtime.test_device_executor" name="testOwnedOriginalCopyAndLeases[shape0]" time="0.021" /><testcase classname="tests.runtime.test_device_executor" name="testOwnedOriginalCopyAndLeases[shape1]" time="0.005" /><testcase classname="tests.runtime.test_device_executor" name="testFrameByteBudgetAndDistinctIds" time="0.004" /><testcase classname="tests.runtime.test_device_manager" name="testAcquisitionDoesNotWaitForAlgorithmOrConsumerCopy" time="0.075" /><testcase classname="tests.runtime.test_device_manager" name="testCancellingOneJobDoesNotRetireDeviceUsedBySibling" time="0.076" /><testcase classname="tests.runtime.test_device_manager" name="testBadParametersAndUnauthorizedJobNeverEnterDriver" time="0.030" /><testcase classname="tests.runtime.test_device_manager" name="testDuplicatePhysicalIdentityCannotCreateSecondExecutor" time="0.029" /><testcase classname="tests.runtime.test_device_manager" name="testCapacityRejectedBeforeAcquisition" time="0.044" /><testcase classname="tests.runtime.test_device_manager" name="testReplacementConstructorFailureKeepsExistingAuthority" time="0.060" /><testcase classname="tests.runtime.test_device_lifecycle" name="testStaticJobDoesNotKeepIdleDeviceConnected[idle_timeout]" time="0.199" /><testcase classname="tests.runtime.test_device_lifecycle" name="testStaticJobDoesNotKeepIdleDeviceConnected[when_unused]" time="0.172" /><testcase classname="tests.runtime.test_device_lifecycle" name="testExplicitLeaseAndQueuedOperationsPreventIdleRelease" time="0.198" /><testcase classname="tests.runtime.test_device_lifecycle" name="testManualDisconnectPausesAutomaticAdmissionUntilExplicitConnect" time="0.201" /><testcase classname="tests.runtime.test_device_lifecycle" name="testManualPolicyDoesNotConnectFromJobOrActivation" time="0.134" /><testcase classname="tests.runtime.test_device_lifecycle" name="testAlreadyCancelledOperationDoesNotOpenConnection" time="0.062" /><testcase classname="tests.runtime.test_device_lifecycle" name="testCancellationDuringConnectDoesNotStartCapture" time="0.092" /><testcase classname="tests.runtime.test_device_lifecycle" name="testAbandonedConnectCannotUnpauseAdmissionAfterLateNativeSuccess" time="0.090" /><testcase classname="tests.runtime.test_device_lifecycle" name="testDriverWithoutConnectOnlyContractCannotReplaceExistingAuthority" time="0.090" /><testcase classname="tests.runtime.test_device_lifecycle" name="testQueuedAcquisitionKeepsOldCycleParametersAfterCommit" time="1.083" /><testcase classname="tests.runtime.test_device_lifecycle" name="testActivationAndRunEventsDoNotAcquireFrames" time="0.394" /><testcase classname="tests.runtime.test_device_lifecycle" name="testMaintenanceWaitsForRealExitButDoesNotBlockOtherDevices" time="0.126" /><testcase classname="tests.runtime.test_device_lifecycle" name="testIdleCloseFailureIsVisibleAndQuarantinesInsteadOfPretendingReleased" time="0.179" /><testcase classname="tests.runtime.test_device_lifecycle" name="testRejectImmediateConnectReleaseCombinations[manual]" time="0.051" /><testcase classname="tests.runtime.test_device_lifecycle" name="testRejectImmediateConnectReleaseCombinations[on_project_run]" time="0.033" /><testcase classname="tests.runtime.test_device_lifecycle" name="testRejectImmediateConnectReleaseCombinations[on_project_open]" time="0.027" /><testcase classname="tests.runtime.test_device_lifecycle" name="testCameraConnectDoesNotConfigureStartStreamOrTrigger" time="0.073" /><testcase classname="tests.runtime.test_device_lifecycle" name="testSpawnHostExplicitConnectionAndHardwareStreamHold" time="2.113" /><testcase classname="tests.runtime.test_device_lifecycle" name="testRemoteControlsAreConfirmedFencedAndDoNotModifyConfiguration" time="2.470" /><testcase classname="tests.runtime.test_device_ipc_retirement" name="testDeviceIpcRetiresWhileWorkerOwnsCancellationReadLock" time="0.903" /><testcase classname="tests.runtime.test_device_ipc_retirement" name="testJobCancellationWaitHasFiniteTimeout" time="0.037" /><testcase classname="tests.runtime.test_device_ipc_retirement" name="testSpawnedWorkerObservesCancellationWhileWaiting[None]" time="0.916" /><testcase classname="tests.runtime.test_device_ipc_retirement" name="testSpawnedWorkerObservesCancellationWhileWaiting[5.0]" time="0.910" /><testcase classname="tests.runtime.test_device_ipc_retirement" name="testCancelledDeviceProxyDoesNotSubmitOrReplay" time="0.004" /><testcase classname="tests.runtime.test_device_ipc_retirement" name="testWorkerCancellationIsVisibleToRuntime" time="0.881" /><testcase classname="tests.runtime.test_device_ipc_retirement" name="testRuntimeShutdownRetiresIpcAfterTerminatingCancellationReader" time="0.905" /><testcase classname="tests.runtime.test_frame_dispatch" name="testSpawnedPersistentFanoutRetiresOriginalsAndIndependentWorkers[True]" time="5.554" /><testcase classname="tests.runtime.test_frame_dispatch" name="testSpawnedPersistentFanoutRetiresOriginalsAndIndependentWorkers[False]" time="4.327" /><testcase classname="tests.runtime.test_frame_dispatch" name="testGroupCapacityRejectedBeforeCapture" time="1.800" /><testcase classname="tests.runtime.test_frame_dispatch" name="testActualConsumerProcessCrashAfterDurableSideEffectNeverReplays" time="5.062" /><testcase classname="tests.runtime.test_frame_dispatch" name="testPartialConsumerStartupFailureRetiresWithoutProducerAction" time="3.749" /><testcase classname="tests.runtime.test_frame_dispatch" name="testContinuousInvocationsReuseProcessesWithoutGrowingLeases" time="7.218" /><testcase classname="tests.runtime.test_frame_dispatch" name="testDuplicateNoReplayAndPartialQueueReceipts" time="0.423" /><testcase classname="tests.runtime.test_frame_dispatch" name="testSourceEndDoesNotRetireLiveConsumersAndOldPlan" time="0.393" /><testcase classname="tests.runtime.test_frame_dispatch" name="testJoinIdentityAndNgIsNormalCompletion" time="0.387" /><testcase classname="tests.runtime.test_frame_dispatch" name="testThreeHundredJoinsRetireDeliveriesAndBoundReplayReceipts" time="1.074" /><testcase classname="tests.runtime.test_frame_dispatch" name="testCachedJoinNeverKeepsReleasedOutputAlive" time="0.428" /><testcase classname="tests.runtime.test_frame_dispatch" name="testCrashDoesNotReplayAndOtherConsumerRetainsFrame" time="0.443" /><testcase classname="tests.runtime.test_frame_dispatch" name="testQueuedConsumersKeepOldPlanAcrossNewSourceCycle" time="0.545" /><testcase classname="tests.runtime.test_frame_dispatch" name="testTimeoutAndStopDoNotUnlinkAnActiveConsumer" time="0.410" /><testcase classname="tests.runtime.test_frame_dispatch" name="testMutatedCopiesUseNewRuntimeOwnedFrames" time="0.403" /><testcase classname="tests.runtime.test_frame_dispatch" name="testDerivedImageOutputsAndIndependentRunGroups" time="8.105" /><testcase classname="tests.runtime.test_frame_dispatch" name="testCompilerRejectsInvalidDispatch[mapping]" time="0.004" /><testcase classname="tests.runtime.test_frame_dispatch" name="testCompilerRejectsInvalidDispatch[type]" time="0.003" /><testcase classname="tests.runtime.test_frame_dispatch" name="testCompilerRejectsInvalidDispatch[recursive]" time="0.003" /><testcase classname="tests.runtime.test_frame_dispatch" name="testCompilerRejectsInvalidDispatch[join]" time="0.004" /><testcase classname="tests.runtime.test_loop_cycle_configuration" name="testNestedLeasesRetainOuterPlanAndRejectForeignOrStaleParent" time="0.535" /><testcase classname="tests.runtime.test_loop_cycle_configuration" name="testCancelledCycleAdmissionDoesNotAllocateLease" time="0.406" /><testcase classname="tests.runtime.test_loop_cycle_configuration" name="testDrainFinishesNestedCyclesThenParksAtOuterIterationAndCanCancel" time="0.440" /><testcase classname="tests.runtime.test_loop_cycle_configuration" name="testIterationRestoresOuterCompiledPlanAndReleasesOnException" time="0.667" /><testcase classname="tests.runtime.test_loop_cycle_configuration" name="testBoundaryIsExplicitAndRequiresManagedSchema[boundary0]" time="0.004" /><testcase classname="tests.runtime.test_loop_cycle_configuration" name="testBoundaryIsExplicitAndRequiresManagedSchema[boundary1]" time="0.004" /><testcase classname="tests.runtime.test_loop_cycle_configuration" name="testBoundaryIsExplicitAndRequiresManagedSchema[1]" time="0.004" /><testcase classname="tests.runtime.test_loop_cycle_configuration" name="testBoundaryIsExplicitAndRequiresManagedSchema[node]" time="0.004" /><testcase classname="tests.runtime.test_loop_cycle_configuration" name="testBoundaryIsExplicitAndRequiresManagedSchema[iteration]" time="0.010" /><testcase classname="tests.runtime.test_loop_cycle_configuration" name="testRealSpawnWhileSwitchesOnlyBeforeConditionAndRetiresFalseIteration" time="5.816" /><testcase classname="tests.runtime.test_operator_logging" name="testRunnerInjectsExecuteAndLifecycleLoggersWithCorrelationAndOrdering" time="0.003" /><testcase classname="tests.runtime.test_operator_logging" name="testLoggerSanitizesSecretsCyclesBinaryAndNonFiniteValues" time="0.003" /><testcase classname="tests.runtime.test_operator_logging" name="testLoopAndSubflowLogsKeepIterationAndParentRunCorrelation" time="0.042" /><testcase classname="tests.runtime.test_operator_logging" name="testFailureAndCancellationLogsPrecedeNodeTerminalEvent[test.logging.failure-_FailingLoggingOperator-RuntimeError]" time="0.005" /><testcase classname="tests.runtime.test_operator_logging" name="testFailureAndCancellationLogsPrecedeNodeTerminalEvent[test.logging.cancel-_CancellingLoggingOperator-CancellationRequested]" time="0.005" /><testcase classname="tests.runtime.test_operator_logging" name="testLoggerRateLimitAndJobLimitProduceOneDroppedSummary" time="0.005" /><testcase classname="tests.runtime.test_operator_logging" name="testJobHardLimitCannotBeBypassedByCreatingMoreNodeLoggers" time="0.005" /><testcase classname="tests.runtime.test_operator_logging" name="testLoggerIsThreadSafeAndNeverRaisesOnPublisherOrBadValues" time="0.010" /><testcase classname="tests.runtime.test_operator_logging" name="testGetOperatorLoggerFallsBackToNoOpLogger" time="0.005" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[embedded-False]" time="2.911"><failure message="AssertionError: assert 'FAILED' == 'COMMITTED'&#10;  &#10;  - COMMITTED&#10;  + FAILED">initialRuntime = (&lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B5513EB0&gt;, &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B5513580&gt;)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialDraftKeepsDiskAndRe0')
+bound = False
+
+    @pytest.mark.parametrize('bound', [False, True])
+    def testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph(initialRuntime, tmp_path, bound):
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root, bound=bound)
+        draft = deepcopy(payload)
+        sentinel = root / 'original.emoproj'
+        sentinel.write_bytes(b'original on-disk project must not change')
+        before = {p.name: p.read_bytes() for p in root.iterdir()}
+        checked = client.initializeProjectConfiguration(payload, root, 'check', validate=True)
+        assert checked['state'] == 'VALIDATED'
+        assert service.loadedDocument is None and service.projectConfiguration.current is None
+        assert not service.jobRepository.all() and not service.deviceManager.drivers
+        assert {p.name: p.read_bytes() for p in root.iterdir()} == before
+        pending = client.initializeProjectConfiguration(payload, root, 'first', runtimeInstanceId=checked['runtimeInstanceId'])
+        assert pending['state'] == 'VALIDATING'
+        receipt = waitForWrite(service, client, 'first')
+&gt;       assert receipt['state'] == 'COMMITTED'
+E       AssertionError: assert 'FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED
+
+tests\runtime\test_initial_project_configuration.py:92: AssertionError</failure></testcase><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[embedded-True]" time="2.940"><failure message="AssertionError: assert 'FAILED' == 'COMMITTED'&#10;  &#10;  - COMMITTED&#10;  + FAILED">initialRuntime = (&lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B52D8B20&gt;, &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B53D3820&gt;)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialDraftKeepsDiskAndRe1')
+bound = True
+
+    @pytest.mark.parametrize('bound', [False, True])
+    def testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph(initialRuntime, tmp_path, bound):
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root, bound=bound)
+        draft = deepcopy(payload)
+        sentinel = root / 'original.emoproj'
+        sentinel.write_bytes(b'original on-disk project must not change')
+        before = {p.name: p.read_bytes() for p in root.iterdir()}
+        checked = client.initializeProjectConfiguration(payload, root, 'check', validate=True)
+        assert checked['state'] == 'VALIDATED'
+        assert service.loadedDocument is None and service.projectConfiguration.current is None
+        assert not service.jobRepository.all() and not service.deviceManager.drivers
+        assert {p.name: p.read_bytes() for p in root.iterdir()} == before
+        pending = client.initializeProjectConfiguration(payload, root, 'first', runtimeInstanceId=checked['runtimeInstanceId'])
+        assert pending['state'] == 'VALIDATING'
+        receipt = waitForWrite(service, client, 'first')
+&gt;       assert receipt['state'] == 'COMMITTED'
+E       AssertionError: assert 'FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED
+
+tests\runtime\test_initial_project_configuration.py:92: AssertionError</failure></testcase><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[loopback-False]" time="2.720"><failure message="AssertionError: assert 'FAILED' == 'COMMITTED'&#10;  &#10;  - COMMITTED&#10;  + FAILED">initialRuntime = (&lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B54C3040&gt;, &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B54333D0&gt;)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialDraftKeepsDiskAndRe2')
+bound = False
+
+    @pytest.mark.parametrize('bound', [False, True])
+    def testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph(initialRuntime, tmp_path, bound):
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root, bound=bound)
+        draft = deepcopy(payload)
+        sentinel = root / 'original.emoproj'
+        sentinel.write_bytes(b'original on-disk project must not change')
+        before = {p.name: p.read_bytes() for p in root.iterdir()}
+        checked = client.initializeProjectConfiguration(payload, root, 'check', validate=True)
+        assert checked['state'] == 'VALIDATED'
+        assert service.loadedDocument is None and service.projectConfiguration.current is None
+        assert not service.jobRepository.all() and not service.deviceManager.drivers
+        assert {p.name: p.read_bytes() for p in root.iterdir()} == before
+        pending = client.initializeProjectConfiguration(payload, root, 'first', runtimeInstanceId=checked['runtimeInstanceId'])
+        assert pending['state'] == 'VALIDATING'
+        receipt = waitForWrite(service, client, 'first')
+&gt;       assert receipt['state'] == 'COMMITTED'
+E       AssertionError: assert 'FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED
+
+tests\runtime\test_initial_project_configuration.py:92: AssertionError</failure></testcase><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[loopback-True]" time="2.216"><failure message="AssertionError: assert 'FAILED' == 'COMMITTED'&#10;  &#10;  - COMMITTED&#10;  + FAILED">initialRuntime = (&lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B54C1360&gt;, &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B384A7A0&gt;)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialDraftKeepsDiskAndRe3')
+bound = True
+
+    @pytest.mark.parametrize('bound', [False, True])
+    def testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph(initialRuntime, tmp_path, bound):
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root, bound=bound)
+        draft = deepcopy(payload)
+        sentinel = root / 'original.emoproj'
+        sentinel.write_bytes(b'original on-disk project must not change')
+        before = {p.name: p.read_bytes() for p in root.iterdir()}
+        checked = client.initializeProjectConfiguration(payload, root, 'check', validate=True)
+        assert checked['state'] == 'VALIDATED'
+        assert service.loadedDocument is None and service.projectConfiguration.current is None
+        assert not service.jobRepository.all() and not service.deviceManager.drivers
+        assert {p.name: p.read_bytes() for p in root.iterdir()} == before
+        pending = client.initializeProjectConfiguration(payload, root, 'first', runtimeInstanceId=checked['runtimeInstanceId'])
+        assert pending['state'] == 'VALIDATING'
+        receipt = waitForWrite(service, client, 'first')
+&gt;       assert receipt['state'] == 'COMMITTED'
+E       AssertionError: assert 'FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED
+
+tests\runtime\test_initial_project_configuration.py:92: AssertionError</failure></testcase><testcase classname="tests.runtime.test_initial_project_configuration" name="testInvalidInitialInputCanBeFixedWithoutLoadingOrStarting[embedded]" time="1.742" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testInvalidInitialInputCanBeFixedWithoutLoadingOrStarting[loopback]" time="2.562" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialFailedReceiptRetainsCompilerIssueLocations[embedded]" time="2.236" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialFailedReceiptRetainsCompilerIssueLocations[loopback]" time="2.831" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialPublicationCannotOverwriteAnInterveningOnlineProject[embedded]" time="1.751" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialPublicationCannotOverwriteAnInterveningOnlineProject[loopback]" time="2.271" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testRemoteFirstInstallDoesNotSendDesignerPath" time="0.005" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testFirstWriteActivationErrorKeepsCommittedOutcome[embedded]" time="2.314" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testFirstWriteActivationErrorKeepsCommittedOutcome[loopback]" time="2.032" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialOnlineWriteDoesNotPretendLegacySchemaWasPersisted[embedded]" time="2.102" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialOnlineWriteDoesNotPretendLegacySchemaWasPersisted[loopback]" time="2.063" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialWriteIsQueryableAndCancellableBeforeCommit[embedded-copying]" time="3.533"><failure message="AssertionError: assert 'FAILED' == 'COMMITTED'&#10;  &#10;  - COMMITTED&#10;  + FAILED">initialRuntime = (&lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B3636EC0&gt;, &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B35D6F50&gt;)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialWriteIsQueryableAnd0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001A9B558D900&gt;
+phase = 'copying'
+
+    @pytest.mark.parametrize('phase', ['copying', 'prepared'])
+    def testInitialWriteIsQueryableAndCancellableBeforeCommit(initialRuntime, tmp_path, monkeypatch, phase):
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+        from emo_master.apps.runtime.project_config import resources
+    
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root)
+        checked = client.initializeProjectConfiguration(payload, root, 'check-cancel', validate=True)
+        cache = service.workspaceRoot.parent / 'configuration-resources'
+        beforeCache = {p for p in cache.rglob('*') if p.is_file()}
+        entered, release = Event(), Event()
+        prepare = resources.prepareResources
+        calls = []
+        def slowPrepare(*args, **kwargs):
+            calls.append(True)
+            result = prepare(*args, **kwargs) if phase == 'prepared' else None
+            entered.set()
+            assert release.wait(5)
+            return result if result is not None else prepare(*args, **kwargs)
+        monkeypatch.setattr(resources, 'prepareResources', slowPrepare)
+        client.deadlineMs = 500
+        try:
+            pending = client.initializeProjectConfiguration(payload, root, 'cancel-first',
+                runtimeInstanceId=checked['runtimeInstanceId'])
+            assert pending['state'] == 'VALIDATING' and entered.wait(2)
+            assert client.getProjectWriteStatus('cancel-first')['state'] == 'VALIDATING'
+            assert client.initializeProjectConfiguration(payload, root, 'cancel-first',
+                runtimeInstanceId=checked['runtimeInstanceId']) == pending
+            with pytest.raises(RuntimeClientError) as error:
+                client.initializeProjectConfiguration(payload, root, 'competing-first',
+                    runtimeInstanceId=checked['runtimeInstanceId'])
+            assert error.value.code == 'E_CONFIG_WRITER_BUSY'
+            legacy = service.LoadProject(pb.LoadProjectRequest(project_path=str(root)), None)
+            assert not legacy.ok and 'E_CONFIG_WRITER_BUSY' in legacy.message
+            cancelled = client.cancelProjectWrite('cancel-first')
+            assert cancelled['state'] in {'VALIDATING', 'WAITING', 'CANCELLED'}
+            assert service.projectConfiguration.current is None and service.loadedDocument is None
+            assert not service.deviceManager.drivers
+        finally:
+            release.set()
+            client.deadlineMs = 10000
+        final = waitForWrite(service, client, 'cancel-first')
+        assert final['state'] == 'CANCELLED'
+        assert service.projectConfiguration.current is None and service.loadedDocument is None
+        assert not service.jobRepository.all() and not service.deviceManager.drivers
+        assert service.deviceManager.replacement is None
+        assert {p for p in cache.rglob('*') if p.is_file()} == beforeCache
+        assert client.initializeProjectConfiguration(payload, root, 'cancel-first',
+            runtimeInstanceId=checked['runtimeInstanceId']) == final
+        assert calls == [True]  # A cancelled request ID is never executed again.
+        client.initializeProjectConfiguration(payload, root, 'explicit-new-write',
+            runtimeInstanceId=checked['runtimeInstanceId'])
+&gt;       assert waitForWrite(service, client, 'explicit-new-write')['state'] == 'COMMITTED'
+E       AssertionError: assert 'FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED
+
+tests\runtime\test_initial_project_configuration.py:245: AssertionError</failure></testcase><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialWriteIsQueryableAndCancellableBeforeCommit[embedded-prepared]" time="3.755"><failure message="AssertionError: assert ('VALIDATING' == 'VALIDATING'&#10;  &#10;    VALIDATING and False)&#10; +  where False = wait(2)&#10; +    where wait = &lt;threading.Event object at 0x000001A9B5512650&gt;.wait">initialRuntime = (&lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B5512CB0&gt;, &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B5513EB0&gt;)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialWriteIsQueryableAnd1')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001A9B5510B50&gt;
+phase = 'prepared'
+
+    @pytest.mark.parametrize('phase', ['copying', 'prepared'])
+    def testInitialWriteIsQueryableAndCancellableBeforeCommit(initialRuntime, tmp_path, monkeypatch, phase):
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+        from emo_master.apps.runtime.project_config import resources
+    
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root)
+        checked = client.initializeProjectConfiguration(payload, root, 'check-cancel', validate=True)
+        cache = service.workspaceRoot.parent / 'configuration-resources'
+        beforeCache = {p for p in cache.rglob('*') if p.is_file()}
+        entered, release = Event(), Event()
+        prepare = resources.prepareResources
+        calls = []
+        def slowPrepare(*args, **kwargs):
+            calls.append(True)
+            result = prepare(*args, **kwargs) if phase == 'prepared' else None
+            entered.set()
+            assert release.wait(5)
+            return result if result is not None else prepare(*args, **kwargs)
+        monkeypatch.setattr(resources, 'prepareResources', slowPrepare)
+        client.deadlineMs = 500
+        try:
+            pending = client.initializeProjectConfiguration(payload, root, 'cancel-first',
+                runtimeInstanceId=checked['runtimeInstanceId'])
+&gt;           assert pending['state'] == 'VALIDATING' and entered.wait(2)
+E           AssertionError: assert ('VALIDATING' == 'VALIDATING'
+E             
+E               VALIDATING and False)
+E            +  where False = wait(2)
+E            +    where wait = &lt;threading.Event object at 0x000001A9B5512650&gt;.wait
+
+tests\runtime\test_initial_project_configuration.py:217: AssertionError</failure></testcase><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback-copying]" time="3.545"><failure message="AssertionError: assert 'FAILED' == 'COMMITTED'&#10;  &#10;  - COMMITTED&#10;  + FAILED">initialRuntime = (&lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B3640130&gt;, &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B4D38E20&gt;)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialWriteIsQueryableAnd2')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001A9B5511390&gt;
+phase = 'copying'
+
+    @pytest.mark.parametrize('phase', ['copying', 'prepared'])
+    def testInitialWriteIsQueryableAndCancellableBeforeCommit(initialRuntime, tmp_path, monkeypatch, phase):
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+        from emo_master.apps.runtime.project_config import resources
+    
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root)
+        checked = client.initializeProjectConfiguration(payload, root, 'check-cancel', validate=True)
+        cache = service.workspaceRoot.parent / 'configuration-resources'
+        beforeCache = {p for p in cache.rglob('*') if p.is_file()}
+        entered, release = Event(), Event()
+        prepare = resources.prepareResources
+        calls = []
+        def slowPrepare(*args, **kwargs):
+            calls.append(True)
+            result = prepare(*args, **kwargs) if phase == 'prepared' else None
+            entered.set()
+            assert release.wait(5)
+            return result if result is not None else prepare(*args, **kwargs)
+        monkeypatch.setattr(resources, 'prepareResources', slowPrepare)
+        client.deadlineMs = 500
+        try:
+            pending = client.initializeProjectConfiguration(payload, root, 'cancel-first',
+                runtimeInstanceId=checked['runtimeInstanceId'])
+            assert pending['state'] == 'VALIDATING' and entered.wait(2)
+            assert client.getProjectWriteStatus('cancel-first')['state'] == 'VALIDATING'
+            assert client.initializeProjectConfiguration(payload, root, 'cancel-first',
+                runtimeInstanceId=checked['runtimeInstanceId']) == pending
+            with pytest.raises(RuntimeClientError) as error:
+                client.initializeProjectConfiguration(payload, root, 'competing-first',
+                    runtimeInstanceId=checked['runtimeInstanceId'])
+            assert error.value.code == 'E_CONFIG_WRITER_BUSY'
+            legacy = service.LoadProject(pb.LoadProjectRequest(project_path=str(root)), None)
+            assert not legacy.ok and 'E_CONFIG_WRITER_BUSY' in legacy.message
+            cancelled = client.cancelProjectWrite('cancel-first')
+            assert cancelled['state'] in {'VALIDATING', 'WAITING', 'CANCELLED'}
+            assert service.projectConfiguration.current is None and service.loadedDocument is None
+            assert not service.deviceManager.drivers
+        finally:
+            release.set()
+            client.deadlineMs = 10000
+        final = waitForWrite(service, client, 'cancel-first')
+        assert final['state'] == 'CANCELLED'
+        assert service.projectConfiguration.current is None and service.loadedDocument is None
+        assert not service.jobRepository.all() and not service.deviceManager.drivers
+        assert service.deviceManager.replacement is None
+        assert {p for p in cache.rglob('*') if p.is_file()} == beforeCache
+        assert client.initializeProjectConfiguration(payload, root, 'cancel-first',
+            runtimeInstanceId=checked['runtimeInstanceId']) == final
+        assert calls == [True]  # A cancelled request ID is never executed again.
+        client.initializeProjectConfiguration(payload, root, 'explicit-new-write',
+            runtimeInstanceId=checked['runtimeInstanceId'])
+&gt;       assert waitForWrite(service, client, 'explicit-new-write')['state'] == 'COMMITTED'
+E       AssertionError: assert 'FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED
+
+tests\runtime\test_initial_project_configuration.py:245: AssertionError</failure></testcase><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback-prepared]" time="4.182"><failure message="AssertionError: assert ('VALIDATING' == 'VALIDATING'&#10;  &#10;    VALIDATING and False)&#10; +  where False = wait(2)&#10; +    where wait = &lt;threading.Event object at 0x000001A9B54C1540&gt;.wait">initialRuntime = (&lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B4D390C0&gt;, &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B54C3A30&gt;)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialWriteIsQueryableAnd3')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001A9B4D3A860&gt;
+phase = 'prepared'
+
+    @pytest.mark.parametrize('phase', ['copying', 'prepared'])
+    def testInitialWriteIsQueryableAndCancellableBeforeCommit(initialRuntime, tmp_path, monkeypatch, phase):
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+        from emo_master.apps.runtime.project_config import resources
+    
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root)
+        checked = client.initializeProjectConfiguration(payload, root, 'check-cancel', validate=True)
+        cache = service.workspaceRoot.parent / 'configuration-resources'
+        beforeCache = {p for p in cache.rglob('*') if p.is_file()}
+        entered, release = Event(), Event()
+        prepare = resources.prepareResources
+        calls = []
+        def slowPrepare(*args, **kwargs):
+            calls.append(True)
+            result = prepare(*args, **kwargs) if phase == 'prepared' else None
+            entered.set()
+            assert release.wait(5)
+            return result if result is not None else prepare(*args, **kwargs)
+        monkeypatch.setattr(resources, 'prepareResources', slowPrepare)
+        client.deadlineMs = 500
+        try:
+            pending = client.initializeProjectConfiguration(payload, root, 'cancel-first',
+                runtimeInstanceId=checked['runtimeInstanceId'])
+&gt;           assert pending['state'] == 'VALIDATING' and entered.wait(2)
+E           AssertionError: assert ('VALIDATING' == 'VALIDATING'
+E             
+E               VALIDATING and False)
+E            +  where False = wait(2)
+E            +    where wait = &lt;threading.Event object at 0x000001A9B54C1540&gt;.wait
+
+tests\runtime\test_initial_project_configuration.py:217: AssertionError</failure></testcase><testcase classname="tests.runtime.test_initial_project_configuration" name="testFailedInitialWriteStaysQueryableWithoutReplay[embedded]" time="2.104" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testFailedInitialWriteStaysQueryableWithoutReplay[loopback]" time="2.507" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialWritePreservesConnectPolicyWithoutCapturing[embedded-on_project_open]" time="2.179" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialWritePreservesConnectPolicyWithoutCapturing[embedded-on_first_use]" time="2.008" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialWritePreservesConnectPolicyWithoutCapturing[loopback-on_project_open]" time="2.664" /><testcase classname="tests.runtime.test_initial_project_configuration" name="testInitialWritePreservesConnectPolicyWithoutCapturing[loopback-on_first_use]" time="2.024" /><testcase classname="tests.designer.test_project_configuration_ui" name="testRecoveryErrorAllowsExplicitRepairButNeverRun" time="1.865" /><testcase classname="tests.designer.test_project_configuration_ui" name="testCompareDoesNotSaveOrMutateAndSelectionIsExplicit" time="0.828" /><testcase classname="tests.designer.test_project_configuration_ui" name="testReadBackIsUndoableDraftNotDiskWrite" time="0.511" /><testcase classname="tests.designer.test_project_configuration_ui" name="testRuntimeSwitchFencesOldDialog" time="0.490" /><testcase classname="tests.designer.test_project_configuration_ui" name="testDifferentOnlineProjectSelectsCompleteReplacementAndReadBackRequiresConsent" time="0.457" /><testcase classname="tests.designer.test_project_configuration_ui" name="testDeviceDependenciesRequireConfirmationAndLeaveUnselectedDraftOut" time="0.596" /><testcase classname="tests.designer.test_project_configuration_ui" name="testResourceUploadRequiresConfirmationAndDoesNotPublishDraft" time="0.843" /><testcase classname="tests.designer.test_device_definition_feedback" name="testPreacceptRejectionRetainsCandidateUntilCorrected" time="0.043" /><testcase classname="tests.designer.test_device_definition_feedback" name="testPreacceptRefusalKeepsFormAndPendingSetupCannotCommit" time="0.041" /><testcase classname="tests.designer.test_device_definition_feedback" name="testDeviceNameErrorUsesChineseAndKeepsInput[-\u8bbe\u5907\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a]" time="0.075" /><testcase classname="tests.designer.test_device_definition_feedback" name="testDeviceNameErrorUsesChineseAndKeepsInput[   -\u8bbe\u5907\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a]" time="0.044" /><testcase classname="tests.designer.test_device_definition_feedback" name="testDeviceNameErrorUsesChineseAndKeepsInput[\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d-160]" time="0.044" /><testcase classname="tests.designer.test_device_definition_feedback" name="testLocalFieldErrorShowsTabAndFocusWithoutResettingInput" time="0.053" /><testcase classname="tests.designer.test_device_definition_feedback" name="testPolicyLabelsArePresentationOnly" time="0.010" /><testcase classname="tests.designer.test_device_definition_feedback" name="testSharedValidationPreservesMetadataAndFindsOffsetTabs" time="0.062" /><testcase classname="tests.designer.test_device_definition_feedback" name="testPolicyCombinationErrorUsesChineseAndShowsPolicyTab" time="0.074" /><testcase classname="tests.designer.test_device_definition_feedback" name="testSharedValidationStillUsesCoreIdentityGuard" time="0.028" /><testcase classname="tests.designer.test_device_definition_feedback" name="testNodeReuseNoRetainsDialogForCorrectionAndCancelRemainsAtomic" time="0.660" /><testcase classname="tests.designer.test_device_workspace" name="testDeviceDialogEditHistoryAndReopen" time="1.385" /><testcase classname="tests.designer.test_device_workspace" name="testDeviceMenuOpensDialogWithoutChangingWorkspace" time="0.917" /><testcase classname="tests.designer.test_device_workspace" name="testDeviceDialogReturnsToPagesAndRetiresOnProjectSwitch" time="1.274" /><testcase classname="tests.designer.test_device_workspace" name="testDeviceDialogCloseKeepsDraftAndRejectsInvalidInput" time="0.648" /><testcase classname="tests.designer.test_device_workspace" name="testDeviceDialogCloseDuringMetadataReadCanReopen" time="0.667" /><testcase classname="tests.designer.test_device_workspace" name="testDeviceControlNeedsConfirmationAndNeverEditsDraft" time="0.667" /><testcase classname="tests.designer.test_device_workspace" name="testDeviceStateResponseIsDiscardedAfterScopeChanges" time="0.928" /><testcase classname="tests.designer.test_device_workspace" name="testWizardCancelAndSourceCommit" time="0.725" /><testcase classname="tests.designer.test_device_workspace" name="testNormalDropWizardAtomicFinishAndCancel" time="0.475" /><testcase classname="tests.designer.test_device_package" name="testPortableDeviceResourcesSiteFieldsAndAtomicHistory" time="0.015" /><testcase classname="tests.designer.test_device_package" name="testInvalidPackageDoesNotChangeDraft" time="0.008" /><testcase classname="tests.designer.test_workflow_package_devices" name="testDeviceDependencyClosureAndUnknownDriverRoundtrip" time="0.032" /><testcase classname="tests.designer.test_workflow_package_devices" name="testImportNewDisabledDevicePreservesSourcesAndLegacyCatalog" time="0.012" /><testcase classname="tests.designer.test_workflow_package_devices" name="testUnresolvedOrStaleMappingIsAtomic[None]" time="0.008" /><testcase classname="tests.designer.test_workflow_package_devices" name="testUnresolvedOrStaleMappingIsAtomic[mapping1]" time="0.050" /><testcase classname="tests.designer.test_workflow_package_devices" name="testUnresolvedOrStaleMappingIsAtomic[mapping2]" time="0.011" /><testcase classname="tests.designer.test_workflow_package_devices" name="testUnresolvedOrStaleMappingIsAtomic[mapping3]" time="0.009" /><testcase classname="tests.designer.test_workflow_package_devices" name="testIncompatibleReuseRejectedWithoutMutation[deviceTypeId-other]" time="0.012" /><testcase classname="tests.designer.test_workflow_package_devices" name="testIncompatibleReuseRejectedWithoutMutation[driverVersion-2.0]" time="0.013" /><testcase classname="tests.designer.test_workflow_package_devices" name="testIncompatibleReuseRejectedWithoutMutation[defaults-value2]" time="0.013" /><testcase classname="tests.designer.test_workflow_package_devices" name="testReuseDoesNotReplaceConnectionPoliciesOrEnabledState" time="0.015" /><testcase classname="tests.designer.test_workflow_package_devices" name="testReuseUsesRegisteredGenericSelectorAndCapabilityRules" time="0.027" /><testcase classname="tests.designer.test_workflow_package_devices" name="testSameConnectionNeverAutomaticallyMerged" time="0.015" /><testcase classname="tests.designer.test_workflow_package_devices" name="testInProjectCopyReusesDeviceAndVariableIds" time="0.017" /><testcase classname="tests.designer.test_workflow_package_devices" name="testFailureAfterDeviceAllocationRollsBackEntireImport" time="0.011" /><testcase classname="tests.designer.test_workflow_package_devices" name="testChangedPackageRequiresNewPreview" time="0.010" /><testcase classname="tests.designer.test_workflow_package_devices" name="testChangedTargetConnectionRequiresNewPreview" time="0.011" /><testcase classname="tests.designer.test_workflow_package_devices" name="testMalformedDeviceDependenciesRejected[missing]" time="0.031" /><testcase classname="tests.designer.test_workflow_package_devices" name="testMalformedDeviceDependenciesRejected[extra]" time="0.030" /><testcase classname="tests.designer.test_workflow_package_devices" name="testMalformedDeviceDependenciesRejected[old-version]" time="0.040" /><testcase classname="tests.designer.test_workflow_package_devices" name="testNewWorkflowPackageUsesCurrentCompleteSchema" time="0.004" /><testcase classname="tests.designer.test_workflow_package_devices" name="testMissingCatalogDefinitionHasActionableExportFailure" time="0.010" /><testcase classname="tests.designer.test_workflow_package_devices" name="testInputParameterSourceSurvivesImport" time="0.011" /><testcase classname="tests.designer.test_workflow_package_devices" name="testDeviceMappingDialogRequiresEverySelection" time="0.047" /><testcase classname="tests.designer.test_workflow_package_devices" name="testNormalWindowImportAndCopyAreSingleUndoableEdits[False]" time="0.411" /><testcase classname="tests.designer.test_workflow_package_devices" name="testNormalWindowImportAndCopyAreSingleUndoableEdits[True]" time="0.360" /></testsuite></testsuites>

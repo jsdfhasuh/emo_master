@@ -1,0 +1,43 @@
+{
+  "platform": "offscreen",
+  "temporaryWorkspace": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-menu-render-hbut2rrt",
+  "physicalDevices": false,
+  "jobsStarted": 0,
+  "captures": {
+    "main-1280": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1.0
+    },
+    "main-642": {
+      "width": 642,
+      "height": 452,
+      "dpr": 1.0
+    },
+    "runtime-menu": {
+      "width": 202,
+      "height": 155,
+      "dpr": 1.0
+    },
+    "devices-1200": {
+      "width": 1200,
+      "height": 760,
+      "dpr": 1.0
+    },
+    "devices-642": {
+      "width": 642,
+      "height": 452,
+      "dpr": 1.0
+    },
+    "first-write": {
+      "width": 1050,
+      "height": 650,
+      "dpr": 1.0
+    },
+    "monitor-empty": {
+      "width": 1100,
+      "height": 720,
+      "dpr": 1.0
+    }
+  }
+}

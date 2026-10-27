@@ -1,0 +1,4 @@
+.LIVE_NODE_QT {"platform": "windows", "dpr": 1.0, "job": "9590ed3a-72b9-4a48-929e-9df4c03dee4b", "firstNodeRun": "781a9184-db3f-4e89-ad8f-3e8f44f5a6f5", "previousNodeRun": "5eb422ac-e4c3-4115-9b29-bd06b6b0a669", "reads": 32, "state": "RUNNING", "sharedPixmap": true, "counts": [3, 2], "originalShape": [12, 16], "previewShape": [12, 16]}
+.LIVE_NODE_QT {"platform": "windows", "dpr": 1.0, "job": "fd96f24d-fa02-4949-832e-2f5475f244f8", "firstNodeRun": "c08b7ce8-3554-4f37-92af-1c3c54f0f530", "previousNodeRun": "b95571a0-aeae-4474-b53e-710fb3de97f7", "reads": 32, "state": "RUNNING", "sharedPixmap": true, "counts": [3, 2], "originalShape": [2160, 3840], "previewShape": [1080, 1920]}
+.
+3 passed, 3 deselected in 25.03s

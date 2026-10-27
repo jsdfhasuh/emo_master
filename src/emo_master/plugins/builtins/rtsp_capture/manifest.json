@@ -1,0 +1,25 @@
+{
+  "operatorId": "vision.io.rtsp_capture",
+  "displayName": "RTSP\u76f8\u673a\u91c7\u96c6\uff08\u8bbe\u5907\uff09",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.rtsp_capture.operator:RtspCaptureOperator",
+  "category": "\u9884\u5904\u7406",
+  "iconKey": "camera",
+  "summary": "\u4ece Runtime \u6258\u7ba1 RTSP \u8bbe\u5907\u83b7\u53d6\u65b0\u9c9c\u5e27\uff0c\u590d\u7528\u8fde\u63a5\u5e76\u4e22\u5f03\u79ef\u538b\u753b\u9762\u3002",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "0.x",
+  "inputPorts": {},
+  "outputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.1"},
+    "capturedAt": {"type": "number", "required": true, "nullable": false}
+  },
+  "paramSchema": {"type": "object", "properties": {}, "additionalProperties": false, "xDeviceActionFields": []},
+  "deviceRequirements": {
+    "camera": {
+      "deviceTypeId": "device.camera.rtsp",
+      "requiredCapabilities": ["capture"],
+      "selectorSchema": {"type": "object", "properties": {}, "additionalProperties": false}
+    }
+  }
+}

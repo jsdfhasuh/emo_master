@@ -1,0 +1,35 @@
+.F                                                                       [100%]
+================================== FAILURES ===================================
+_____________ testPublicationReturnPreservesDeviceListViewport[2] _____________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000021878AD5780>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2758/testPublicationReturnPreserves1')
+definition = DeviceDefinition(name='Camera A', deviceTypeId='device.example.simulated_camera', driverVersion='1.0.0', enabled=True,...ce': 'offline'}, defaults={'exposureMode': 'manual', 'exposureUs': 8000.0, 'gain': 0.0, 'enabled': False}, policies={})
+declaration = DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.example.simulated_camera', version='1.0.0...tors={}, managementActions=[], actionSchemas={}, driverEntry=None, executionLocation='io_thread', cancellableWait=None)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000021878AD7F40>
+offset = 2
+
+    @pytest.mark.parametrize('offset', [0, 2])
+    def testPublicationReturnPreservesDeviceListViewport(ownedDesignerWindow, tmp_path,
+            definition, declaration, monkeypatch, offset):  # noqa: F811
+        window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+        c = window.pageCoordinator
+        c.showDevices()
+        d = c.devices
+        waitUntil(lambda: d.pending is None)
+        d.table.setCurrentCell(0, 0)
+        for column in range(d.table.columnCount()):
+            d.table.setColumnWidth(column, 180)
+        QApplication.processEvents()
+        bar = d.table.horizontalScrollBar()
+>       assert bar.maximum() > offset
+E       assert 2 > 2
+E        +  where 2 = <built-in method maximum of PySide2.QtWidgets.QScrollBar object at 0x00000218769A0D00>()
+E        +    where <built-in method maximum of PySide2.QtWidgets.QScrollBar object at 0x00000218769A0D00> = <PySide2.QtWidgets.QScrollBar(0x218770b3380) at 0x00000218769A0D00>.maximum
+
+tests\designer\test_device_usability_publication.py:59: AssertionError
+=================================== PASSES ====================================
+=========================== short test summary info ===========================
+PASSED tests/designer/test_device_usability_publication.py::testPublicationReturnPreservesDeviceListViewport[0]
+FAILED tests/designer/test_device_usability_publication.py::testPublicationReturnPreservesDeviceListViewport[2]
+1 failed, 1 passed in 2.54s

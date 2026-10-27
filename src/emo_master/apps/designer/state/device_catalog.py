@@ -4,10 +4,24 @@ from __future__ import annotations
 from copy import deepcopy
 from uuid import uuid4
 
+from emo_master.core.contracts.port_types import normalizePortType
 from emo_master.core.project.devices import DeviceDefinition
 from emo_master.core.project.global_variables import compatible
 from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import WorkflowNode
+
+
+def importedDeviceName(name, used):
+    """Allocate display names without changing package identities or defaults."""
+    if name not in used:
+        return name
+    index = 1
+    while True:
+        suffix = '（导入副本）' if index == 1 else f'（导入副本 {index}）'
+        candidate = name[:160 - len(suffix)] + suffix
+        if candidate not in used:
+            return candidate
+        index += 1
 
 
 class DeviceCatalogEditor:
@@ -47,10 +61,13 @@ class DeviceCatalogEditor:
                 raise ValueError("已有设备不能通过属性编辑替换类型或驱动版本")
             self._checkIdentity(checked.model_dump(), catalog, deviceId)
             catalog[deviceId] = checked.model_dump()
-            for workflow in self.session.workflows.workflows.values():
+            for workflowId, workflow in self.session.workflows.workflows.items():
                 for node in workflow.nodes:
                     if any(b["deviceId"] == deviceId for b in node.get("deviceBindings", {}).values()):
-                        self._validateNode(WorkflowNode.model_validate(node))
+                        try:
+                            self._validateNode(WorkflowNode.model_validate(node), allowIncomplete=True)
+                        except ValueError as error:
+                            raise ValueError(f"{workflowId}/{node['nodeId']}: {error}") from error
         return deviceId
 
     def _checkIdentity(self, value, catalog, deviceId):
@@ -71,7 +88,8 @@ class DeviceCatalogEditor:
         with self.session.transaction():
             del self.session.workflows.devices["definitions"][deviceId]
 
-    def commitNode(self, workflowId, node, *, newDevice=None, deviceId=None, newDevices=None, position=None, resourcePlan=None):
+    def commitNode(self, workflowId, node, *, newDevice=None, deviceId=None, newDevices=None, position=None,
+                   resourcePlan=None, allowIncomplete=False, operatorVersion=None):
         """Publish a wizard draft only on Finish, including any new definition."""
         with self.session.transaction():
             self._enable()
@@ -93,37 +111,55 @@ class DeviceCatalogEditor:
                 checked.displayName = checked.operatorId or checked.kind
             if newDevice is not None and not any(binding.deviceId == deviceId for binding in checked.deviceBindings.values()):
                 raise ValueError("向导创建的新设备必须被本节点引用")
-            self._validateNode(checked)
+            self._validateNode(checked, allowIncomplete=allowIncomplete)
             if resourcePlan is not None:
                 from emo_master.core.project.resources import ResourcePlan
                 self.session.workflows.projectExtensions["resources"] = ResourcePlan.model_validate(resourcePlan).model_dump()
             workflow = self.session.workflows.get(workflowId)
+            previousOperator = None
             for index, existing in enumerate(workflow.nodes):
                 if existing["nodeId"] == checked.nodeId:
+                    previousOperator = existing.get('operatorId')
                     workflow.nodes[index] = checked.model_dump()
                     break
             else:
                 workflow.nodes.append(checked.model_dump())
+            if previousOperator is not None and previousOperator != checked.operatorId:
+                if not operatorVersion:
+                    raise ValueError('转换算子时必须提供当前插件版本')
+                used = {item.get('operatorId') for flow in self.session.workflows.workflows.values() for item in flow.nodes}
+                operators = self.session.workflows.dependencies.setdefault('operators', [])
+                def keep(item):
+                    key = item if isinstance(item, str) else item['operatorId']
+                    return key != checked.operatorId and (key != previousOperator or key in used)
+                operators[:] = [item for item in operators if keep(item)]
+                operators.append(dict(operatorId=checked.operatorId, version=operatorVersion))
             if position is not None:
                 workflow.layout.setdefault("nodePositions", {})[checked.nodeId] = position
 
-    def _validateNode(self, node):
+    def _validateNode(self, node, *, allowIncomplete=False):
         catalog = self.session.workflows.devices["definitions"]
         variables = self.session.document().globalVariables
         requirements = self.operatorRequirements.get(node.operatorId, {})
-        if set(node.deviceBindings) != set(requirements):
+        if set(node.deviceBindings) - set(requirements) or (not allowIncomplete and set(requirements) - set(node.deviceBindings)):
             raise ValueError("节点设备槽必须与算子声明一致")
         for slot, binding in node.deviceBindings.items():
             if binding.deviceId not in catalog:
-                raise ValueError("设备引用不存在")
+                raise ValueError(f"槽位 {slot}：设备引用不存在：{binding.deviceId}")
             definition = DeviceDefinition.model_validate(catalog[binding.deviceId])
             requirement = requirements[slot]
-            typeId = requirement.deviceTypeId if hasattr(requirement, "deviceTypeId") else requirement["deviceTypeId"]
-            if definition.deviceTypeId != typeId:
-                raise ValueError("所选设备类型与算子不兼容")
+
             declaration = self.deviceTypes.get(definition.deviceTypeId)
             if declaration is None:
                 raise ValueError("绑定设备的插件不可用")
+            from emo_master.core.plugin.devices import validateDeviceBinding
+            from emo_master.core.workflow.errors import locatedValidationError
+            try:
+                binding.selectors = validateDeviceBinding(requirement, binding, definition, declaration,
+                    allowMissingSelectors=allowIncomplete)
+            except ValueError as error:
+                raise locatedValidationError(error, 'E_DEVICE_BINDING', nodeId=node.nodeId,
+                    prefix='deviceBindings.' + slot) from error
             values = node.deviceValueBindings.get(slot, {})
             declaration.validateNodeSources(definition, node.deviceOverrides.get(slot, {}), values)
             for path, source in values.items():
@@ -132,7 +168,7 @@ class DeviceCatalogEditor:
                     variable = variables.get(source.variableId)
                     if variable is None or not compatible(variable.type, expected):
                         raise ValueError("设备动态变量不存在或类型不兼容")
-                elif node.inputPorts.get(source.inputName) != expected:
+                elif not compatible(normalizePortType(node.inputPorts.get(source.inputName)), expected):
                     raise ValueError("设备动态输入不存在或类型不兼容")
 
 

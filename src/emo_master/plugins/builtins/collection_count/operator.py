@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from time import perf_counter
 from typing import Any
 
+from emo_master.plugins.builtins._operator_modes import inputChoiceError, modeSchema
+
 from emo_master.plugins.builtins._collection_ops import (
     CollectionInputError,
     parseCollectionInputs,
@@ -76,12 +78,11 @@ class CollectionCountOperator:
         outputPorts={
             "count": {"type": "integer", "required": True, "nullable": False}
         },
-        paramSchema=_PARAM_SCHEMA,
+        paramSchema=modeSchema("vision.collection.count", _PARAM_SCHEMA),
     )
 
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
-        _ = params
-        return None
+        return inputChoiceError(self.meta.operatorId, params)
 
     def executeNode(
         self,
@@ -91,6 +92,9 @@ class CollectionCountOperator:
     ) -> dict[str, Any]:
         _ = params, runtimeContext
         startedAt = perf_counter()
+        choiceError = inputChoiceError(self.meta.operatorId, params, inputs)
+        if choiceError:
+            return {"status": "error", "error": choiceError}
         try:
             collection = parseCollectionInputs(inputs)
         except CollectionInputError as err:

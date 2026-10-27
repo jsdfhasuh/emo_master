@@ -1,0 +1,916 @@
+{
+  "schemaVersion": "2.7",
+  "project": {
+    "projectId": "581ed4ae-0e9c-490c-8416-7adf1d7b98d7",
+    "name": "File list and video While",
+    "revision": 2,
+    "createdAt": "2026-10-23T06:46:10Z",
+    "updatedAt": "2026-10-23T06:46:10Z"
+  },
+  "entryWorkflowId": "main",
+  "workflowOrder": [
+    "main",
+    "batch",
+    "one_video",
+    "frame"
+  ],
+  "workflows": {
+    "main": {
+      "name": "List files",
+      "inputs": {},
+      "outputs": {
+        "videoPath": "list<string>"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": null,
+          "displayName": null,
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "files",
+          "kind": "operator",
+          "operatorId": "vision.io.file_list",
+          "displayName": "\u6587\u4ef6\u5217\u8868",
+          "inputPorts": {},
+          "outputPorts": {
+            "paths": "list<string>",
+            "count": "integer"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "folderPath": {
+                "title": "\u6587\u4ef6\u5939",
+                "type": "string",
+                "default": "",
+                "xWidget": "file",
+                "xFileMode": "directory"
+              },
+              "patterns": {
+                "title": "\u6587\u4ef6\u540d\u7b5b\u9009",
+                "type": "array",
+                "default": [
+                  "*"
+                ],
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "xExample": [
+                  "*.mp4",
+                  "*.avi"
+                ]
+              },
+              "recursive": {
+                "title": "\u5305\u542b\u5b50\u6587\u4ef6\u5939",
+                "type": "boolean",
+                "default": false
+              }
+            },
+            "required": [
+              "folderPath"
+            ]
+          },
+          "params": {
+            "folderPath": "videos",
+            "patterns": [
+              "*.mp4",
+              "*.avi"
+            ]
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "batch",
+          "kind": "subflow",
+          "operatorId": null,
+          "displayName": null,
+          "inputPorts": {
+            "items": "list<string>"
+          },
+          "outputPorts": {
+            "videoPath": "list<string>"
+          },
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": "batch",
+          "loop": {}
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": null,
+          "displayName": null,
+          "inputPorts": {
+            "videoPath": "list<string>"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "files",
+          "fromPort": "paths",
+          "toNode": "batch",
+          "toPort": "items"
+        },
+        {
+          "fromNode": "batch",
+          "fromPort": "videoPath",
+          "toNode": "output",
+          "toPort": "videoPath"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 0.0,
+            "y": 100.0
+          },
+          "files": {
+            "x": 300.0,
+            "y": 100.0
+          },
+          "batch": {
+            "x": 600.0,
+            "y": 100.0
+          },
+          "output": {
+            "x": 900.0,
+            "y": 100.0
+          }
+        }
+      }
+    },
+    "batch": {
+      "name": "ForEach files",
+      "inputs": {
+        "items": "list<string>"
+      },
+      "outputs": {
+        "videoPath": "list<string>"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": null,
+          "displayName": null,
+          "inputPorts": {},
+          "outputPorts": {
+            "items": "list<string>"
+          },
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "foreach",
+          "kind": "loop",
+          "operatorId": null,
+          "displayName": null,
+          "inputPorts": {
+            "items": "list<string>"
+          },
+          "outputPorts": {
+            "videoPath": "list<string>"
+          },
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {
+            "contractVersion": 2,
+            "mode": "foreach",
+            "bodyWorkflowId": "one_video",
+            "itemInputPort": "videoPath",
+            "maxIterations": 10000,
+            "timeoutMs": 0
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": null,
+          "displayName": null,
+          "inputPorts": {
+            "videoPath": "list<string>"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "items",
+          "toNode": "foreach",
+          "toPort": "items"
+        },
+        {
+          "fromNode": "foreach",
+          "fromPort": "videoPath",
+          "toNode": "output",
+          "toPort": "videoPath"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 0.0,
+            "y": 100.0
+          },
+          "foreach": {
+            "x": 300.0,
+            "y": 100.0
+          },
+          "output": {
+            "x": 600.0,
+            "y": 100.0
+          }
+        }
+      }
+    },
+    "one_video": {
+      "name": "One video",
+      "inputs": {
+        "videoPath": "string"
+      },
+      "outputs": {
+        "videoPath": "string"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": null,
+          "displayName": null,
+          "inputPorts": {},
+          "outputPorts": {
+            "videoPath": "string"
+          },
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "one",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "Number",
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "\u6570\u503c",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "\u586b\u5199\u6709\u9650\u6570\u503c\uff0c\u53ef\u4f7f\u7528\u6574\u6570\u3001\u5c0f\u6570\u6216\u79d1\u5b66\u8ba1\u6570\u6cd5\uff0c\u4f8b\u5982 0.5 \u6216 1e-6\uff1b\u4e0d\u63a5\u53d7 NaN \u6216\u65e0\u7a77\u5927\u3002"
+              }
+            }
+          },
+          "params": {
+            "value": 1
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "initial",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "Compare Number",
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "\u6bd4\u8f83\u8fd0\u7b97\u7b26",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "\u53f3\u4fa7\u6bd4\u8f83\u503c",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "params": {
+            "operator": "eq",
+            "rightValue": 1
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "while",
+          "kind": "loop",
+          "operatorId": null,
+          "displayName": null,
+          "inputPorts": {
+            "hasNext": "boolean",
+            "videoPath": "string",
+            "reset": "boolean"
+          },
+          "outputPorts": {
+            "hasNext": "boolean",
+            "videoPath": "string",
+            "reset": "boolean"
+          },
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {
+            "contractVersion": 2,
+            "mode": "while",
+            "bodyWorkflowId": "frame",
+            "maxIterations": 10000,
+            "timeoutMs": 0,
+            "conditionMode": "boolean",
+            "conditionPort": "hasNext"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": null,
+          "displayName": null,
+          "inputPorts": {
+            "videoPath": "string"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "one",
+          "fromPort": "value",
+          "toNode": "initial",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "initial",
+          "fromPort": "result",
+          "toNode": "while",
+          "toPort": "hasNext"
+        },
+        {
+          "fromNode": "initial",
+          "fromPort": "result",
+          "toNode": "while",
+          "toPort": "reset"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "videoPath",
+          "toNode": "while",
+          "toPort": "videoPath"
+        },
+        {
+          "fromNode": "while",
+          "fromPort": "videoPath",
+          "toNode": "output",
+          "toPort": "videoPath"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 0.0,
+            "y": 100.0
+          },
+          "one": {
+            "x": 300.0,
+            "y": 100.0
+          },
+          "initial": {
+            "x": 600.0,
+            "y": 100.0
+          },
+          "while": {
+            "x": 900.0,
+            "y": 100.0
+          },
+          "output": {
+            "x": 1200.0,
+            "y": 100.0
+          }
+        }
+      }
+    },
+    "frame": {
+      "name": "Sample and process",
+      "inputs": {
+        "hasNext": "boolean",
+        "videoPath": "string",
+        "reset": "boolean"
+      },
+      "outputs": {
+        "hasNext": "boolean",
+        "videoPath": "string",
+        "reset": "boolean"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": null,
+          "displayName": null,
+          "inputPorts": {},
+          "outputPorts": {
+            "hasNext": "boolean",
+            "videoPath": "string",
+            "reset": "boolean"
+          },
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "load",
+          "kind": "operator",
+          "operatorId": "vision.io.video_loader",
+          "displayName": "\u672c\u5730\u89c6\u9891\u53d6\u5e27",
+          "inputPorts": {
+            "videoPath": "string",
+            "reset": "boolean"
+          },
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d",
+            "videoPath": "string",
+            "index": "integer",
+            "frameIndex": "integer",
+            "timestampSec": "number",
+            "hasNext": "boolean"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "videoPath": {
+                "title": "\u89c6\u9891\u6587\u4ef6",
+                "type": "string",
+                "default": "",
+                "xWidget": "file",
+                "xFileMode": "open",
+                "xFilter": "\u89c6\u9891\u6587\u4ef6 (*.mp4 *.avi *.mkv *.mov *.wmv *.m4v *.webm *.mpg *.mpeg);;\u6240\u6709\u6587\u4ef6 (*)"
+              },
+              "intervalSec": {
+                "title": "\u53d6\u5e27\u95f4\u9694\uff08\u79d2\uff09",
+                "type": "number",
+                "exclusiveMinimum": 0.0,
+                "default": 1.0
+              },
+              "colorMode": {
+                "title": "\u989c\u8272\u6a21\u5f0f",
+                "type": "string",
+                "enum": [
+                  "color",
+                  "grayscale"
+                ],
+                "default": "color"
+              }
+            },
+            "required": [
+              "videoPath"
+            ]
+          },
+          "params": {
+            "videoPath": "",
+            "intervalSec": 0.25
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "blur",
+          "kind": "operator",
+          "operatorId": "vision.preprocess.blur",
+          "displayName": "Blur / Denoise",
+          "inputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "title": "\u6ee4\u6ce2\u6a21\u5f0f",
+                "type": "string",
+                "enum": [
+                  "gaussian",
+                  "median",
+                  "bilateral",
+                  "mean"
+                ],
+                "default": "gaussian",
+                "xOptionLabels": {
+                  "gaussian": "\u9ad8\u65af\u6ee4\u6ce2",
+                  "median": "\u4e2d\u503c\u6ee4\u6ce2",
+                  "bilateral": "\u53cc\u8fb9\u6ee4\u6ce2",
+                  "mean": "\u5747\u503c\u6ee4\u6ce2"
+                },
+                "description": "\u9ad8\u65af\u9002\u5408\u4e00\u822c\u5e73\u6ed1\uff0c\u4e2d\u503c\u9002\u5408\u6912\u76d0\u566a\u58f0\uff0c\u53cc\u8fb9\u6ee4\u6ce2\u53ef\u4fdd\u7559\u8fb9\u7f18\uff0c\u5747\u503c\u6ee4\u6ce2\u5bf9\u90bb\u57df\u7b49\u6743\u5e73\u5747\u3002"
+              },
+              "kernelSize": {
+                "title": "\u5377\u79ef\u6838\u5927\u5c0f",
+                "type": "integer",
+                "minimum": 3,
+                "default": 5,
+                "xUnit": "\u50cf\u7d20",
+                "xOdd": true,
+                "xExample": 5,
+                "description": "\u5377\u79ef\u6838\u8fb9\u957f\uff0c\u5fc5\u987b\u662f\u5927\u4e8e\u7b49\u4e8e 3 \u7684\u5947\u6570\u3002",
+                "xVisibleWhen": {
+                  "mode": [
+                    "gaussian",
+                    "median",
+                    "mean"
+                  ]
+                },
+                "xValidateWhen": {
+                  "mode": [
+                    "gaussian",
+                    "median",
+                    "mean"
+                  ]
+                }
+              },
+              "sigmaX": {
+                "title": "\u6c34\u5e73\u65b9\u5411\u6807\u51c6\u5dee",
+                "type": "number",
+                "minimum": 0,
+                "default": 0,
+                "xUnit": "\u50cf\u7d20",
+                "xExample": 0,
+                "description": "\u9ad8\u65af\u6c34\u5e73\u65b9\u5411\u6807\u51c6\u5dee\uff0c0 \u8868\u793a\u7531\u5377\u79ef\u6838\u5927\u5c0f\u81ea\u52a8\u8ba1\u7b97\u3002",
+                "xVisibleWhen": {
+                  "mode": [
+                    "gaussian"
+                  ]
+                },
+                "xValidateWhen": {
+                  "mode": [
+                    "gaussian"
+                  ]
+                }
+              },
+              "sigmaY": {
+                "title": "\u5782\u76f4\u65b9\u5411\u6807\u51c6\u5dee",
+                "type": "number",
+                "minimum": 0,
+                "default": 0,
+                "xUnit": "\u50cf\u7d20",
+                "xExample": 0,
+                "description": "\u9ad8\u65af\u5782\u76f4\u65b9\u5411\u6807\u51c6\u5dee\uff0c0 \u8868\u793a\u4e0e\u6c34\u5e73\u65b9\u5411\u76f8\u540c\u3002",
+                "xVisibleWhen": {
+                  "mode": [
+                    "gaussian"
+                  ]
+                },
+                "xValidateWhen": {
+                  "mode": [
+                    "gaussian"
+                  ]
+                }
+              },
+              "diameter": {
+                "title": "\u6ee4\u6ce2\u90bb\u57df\u76f4\u5f84\uff08\u50cf\u7d20\uff09",
+                "type": "integer",
+                "minimum": 1,
+                "default": 9,
+                "xUnit": "\u50cf\u7d20",
+                "xExample": 9,
+                "description": "\u53cc\u8fb9\u6ee4\u6ce2\u90bb\u57df\u76f4\u5f84\uff0c\u586b\u5199\u5927\u4e8e\u7b49\u4e8e 1 \u7684\u6574\u6570\u3002",
+                "xVisibleWhen": {
+                  "mode": [
+                    "bilateral"
+                  ]
+                },
+                "xValidateWhen": {
+                  "mode": [
+                    "bilateral"
+                  ]
+                }
+              },
+              "sigmaColor": {
+                "title": "\u989c\u8272\u7a7a\u95f4\u6807\u51c6\u5dee",
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "default": 75,
+                "xUnit": "\u989c\u8272\u503c",
+                "xExample": 75,
+                "description": "\u53cc\u8fb9\u6ee4\u6ce2\u7684\u989c\u8272\u5dee\u5f02\u6807\u51c6\u5dee\uff0c\u5fc5\u987b\u4e3a\u6b63\u6570\u3002",
+                "xVisibleWhen": {
+                  "mode": [
+                    "bilateral"
+                  ]
+                },
+                "xValidateWhen": {
+                  "mode": [
+                    "bilateral"
+                  ]
+                }
+              },
+              "sigmaSpace": {
+                "title": "\u5750\u6807\u7a7a\u95f4\u6807\u51c6\u5dee",
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "default": 75,
+                "xUnit": "\u50cf\u7d20",
+                "xExample": 75,
+                "description": "\u53cc\u8fb9\u6ee4\u6ce2\u7684\u7a7a\u95f4\u8ddd\u79bb\u6807\u51c6\u5dee\uff0c\u5fc5\u987b\u4e3a\u6b63\u6570\u3002",
+                "xVisibleWhen": {
+                  "mode": [
+                    "bilateral"
+                  ]
+                },
+                "xValidateWhen": {
+                  "mode": [
+                    "bilateral"
+                  ]
+                }
+              }
+            },
+            "xModeOperator": "vision.preprocess.blur"
+          },
+          "params": {
+            "mode": "gaussian",
+            "kernelSize": 3
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "zero",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "Number",
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "\u6570\u503c",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "\u586b\u5199\u6709\u9650\u6570\u503c\uff0c\u53ef\u4f7f\u7528\u6574\u6570\u3001\u5c0f\u6570\u6216\u79d1\u5b66\u8ba1\u6570\u6cd5\uff0c\u4f8b\u5982 0.5 \u6216 1e-6\uff1b\u4e0d\u63a5\u53d7 NaN \u6216\u65e0\u7a77\u5927\u3002"
+              }
+            }
+          },
+          "params": {
+            "value": 0
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "no_reset",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "Compare Number",
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "\u6bd4\u8f83\u8fd0\u7b97\u7b26",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "\u53f3\u4fa7\u6bd4\u8f83\u503c",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "params": {
+            "operator": "eq",
+            "rightValue": 1
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": null,
+          "displayName": null,
+          "inputPorts": {
+            "hasNext": "boolean",
+            "videoPath": "string",
+            "reset": "boolean"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "videoPath",
+          "toNode": "load",
+          "toPort": "videoPath"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "reset",
+          "toNode": "load",
+          "toPort": "reset"
+        },
+        {
+          "fromNode": "load",
+          "fromPort": "image",
+          "toNode": "blur",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "load",
+          "fromPort": "frame",
+          "toNode": "blur",
+          "toPort": "frame"
+        },
+        {
+          "fromNode": "load",
+          "fromPort": "hasNext",
+          "toNode": "output",
+          "toPort": "hasNext"
+        },
+        {
+          "fromNode": "load",
+          "fromPort": "videoPath",
+          "toNode": "output",
+          "toPort": "videoPath"
+        },
+        {
+          "fromNode": "zero",
+          "fromPort": "value",
+          "toNode": "no_reset",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "no_reset",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "reset"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 0.0,
+            "y": 100.0
+          },
+          "load": {
+            "x": 300.0,
+            "y": 100.0
+          },
+          "blur": {
+            "x": 600.0,
+            "y": 100.0
+          },
+          "zero": {
+            "x": 900.0,
+            "y": 100.0
+          },
+          "no_reset": {
+            "x": 1200.0,
+            "y": 100.0
+          },
+          "output": {
+            "x": 1500.0,
+            "y": 100.0
+          }
+        }
+      }
+    }
+  },
+  "runtime": {
+    "maxConcurrentJobs": 2,
+    "gracefulStopTimeoutMs": 5000,
+    "heartbeatTimeoutMs": 5000,
+    "eventRetentionPerJob": 10000
+  },
+  "dependencies": {
+    "operators": [
+      {
+        "operatorId": "vision.compare.number",
+        "version": "1.0.0"
+      },
+      {
+        "operatorId": "vision.io.file_list",
+        "version": "1.0.0"
+      },
+      {
+        "operatorId": "vision.io.video_loader",
+        "version": "1.0.0"
+      },
+      {
+        "operatorId": "vision.preprocess.blur",
+        "version": "1.1.0"
+      },
+      {
+        "operatorId": "vision.value.number",
+        "version": "1.0.0"
+      }
+    ]
+  },
+  "devices": {
+    "bindings": {},
+    "schemaVersion": "1.0",
+    "definitions": {}
+  },
+  "presentation": {
+    "schemaVersion": "1.0",
+    "defaultPageId": null,
+    "pageOrder": [],
+    "navigation": {
+      "mode": "tabs"
+    },
+    "resultScopes": {},
+    "dataSources": {},
+    "pages": {}
+  },
+  "resources": {
+    "schemaVersion": "1.0",
+    "items": {},
+    "parameterBindings": [],
+    "siteBindings": []
+  },
+  "production": {
+    "autoStart": false,
+    "mode": "single",
+    "cycleIntervalMs": 100,
+    "inputs": {}
+  },
+  "globalVariables": {}
+}

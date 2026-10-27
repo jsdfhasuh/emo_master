@@ -182,7 +182,12 @@ def testInvalidRememberedProjectStillAllowsSelectionAndClosing(qtApp, tmp_path):
         buttons.remove(window.communicationButton)
         if window.communicationDialog is not None:
             buttons -= set(window.communicationDialog.findChildren(QPushButton))
-        assert {button.text() for button in buttons} == {"选择工程", "更新工程", "重新加载", "开始", "停止", "运行目标…"}
+        assert {"选择工程", "更新工程", "重新加载", "开始", "停止", "运行目标…"}.issubset(
+            {button.text() for button in buttons})
+        assert window.settingsButton.isEnabled() and window.logsButton.isEnabled()
+        assert not window.startupPage.retryButton.isVisible()  # Project error is not a failed Runtime constructor.
+        QTest.mouseClick(window.logsButton, Qt.LeftButton)
+        assert window.contentStack.currentWidget() is window.logView
     finally:
         closeWindow(window)
 

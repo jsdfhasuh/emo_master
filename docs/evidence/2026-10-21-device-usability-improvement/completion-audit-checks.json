@@ -1,0 +1,116 @@
+{
+  "sourceSha": "236d6008651a6f1bde5daebc999f83065555940a",
+  "sourceTree": "ecdb1063bdd6da2f85f30cfd2fe0b4b97c514d08",
+  "started": "2026-10-21T23:18:49.608311+08:00",
+  "previousDeliverySha": "88f1805cf59cadca1bea780993d1ef730cef80ab",
+  "commands": [
+    {
+      "label": "branch",
+      "argv": [
+        "git",
+        "branch",
+        "--show-current"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "exitCode": 0,
+      "stdout": "agent/runtime-workflow-architecture-v1\n",
+      "stderr": ""
+    },
+    {
+      "label": "head",
+      "argv": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "exitCode": 0,
+      "stdout": "236d6008651a6f1bde5daebc999f83065555940a\n",
+      "stderr": ""
+    },
+    {
+      "label": "source-tests-unchanged",
+      "argv": [
+        "git",
+        "diff",
+        "--exit-code",
+        "236d6008651a6f1bde5daebc999f83065555940a",
+        "HEAD",
+        "--",
+        "src",
+        "tests"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "documentation-diff-check",
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "docs/guides/device-catalog-contract-v1.md",
+        "docs/plans/2026-10-21-device-usability-improvement-plan-v1.md",
+        "docs/testing/2026-10-21-device-usability-improvement.md",
+        "docs/testing/2026-10-21-device-usability-completion-audit.md",
+        "docs/evidence/2026-10-21-device-usability-improvement/README.md"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'docs/guides/device-catalog-contract-v1.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'docs/testing/2026-10-21-device-usability-improvement.md', LF will be replaced by CRLF the next time Git touches it\n"
+    }
+  ],
+  "previousEvidenceManifest": {
+    "verifiedFromCommit": "88f1805cf59cadca1bea780993d1ef730cef80ab",
+    "fileCount": 305,
+    "mismatches": [],
+    "retainedManifest": "audit-history/88f1805-SHA256SUMS.json",
+    "retainedIndex": "audit-history/88f1805-evidence-index.json"
+  },
+  "parallelWork": {
+    "checked": 10,
+    "changed": [],
+    "hashes": {
+      "src/emo_master/apps/runtime/operator_debug/contracts.py": "39c756152c2233e10740712773bea232b692dd3e04c13b0560678595447d936f",
+      "src/emo_master/apps/runtime/operator_debug/resources.py": "6d51bd74d03ad2ec14b8d2ad1a2c73bdd0791fe476364c7c721ae6d533510c6f",
+      "src/emo_master/core/project/runtime_directory.py": "b3126ffa25bd4c2f7ad27076b7a49766a5e4c7bcac88793d63790c89f14a6b27",
+      "src/emo_master/plugins/builtins/image_saver/manifest.json": "de9bfec50ed5d2fb9bfc51f7112ba738b4f124bf5834486c5e16f5c8636e2902",
+      "src/emo_master/plugins/builtins/image_saver/operator.py": "8300c238aab3639419908147cfec30af618984ea99c61c2377836e0d544d0713",
+      "tests/core/plugin/test_builtin_parameter_titles.py": "d59f97c5325f271c4c15d33974286ba23434f25c3d099742c3e22f8552765f32",
+      "tests/core/test_runtime_directory.py": "8e80e22543f7595234b35ae114f31f490239042e8f93eea673ca51d47ac18b7e",
+      "tests/plugins/test_image_saver_operator.py": "2496adfdd57e00669910b8503f8fa02877243913a020495cf92a87700849402a",
+      "tests/runtime/test_operator_debug_resources.py": "992d5430295fea438f913490816134f52194f626469ebfa2db29d30563ff5442",
+      "tests/runtime/test_operator_registration.py": "267539e69e3f7f8da06abee36c7f26f6c51c1e34a2e409177bdcf2572fac9852"
+    }
+  },
+  "documentationLinks": {
+    "checked": 16,
+    "broken": []
+  },
+  "finalSnapshot": {
+    "sourceSha": "236d6008651a6f1bde5daebc999f83065555940a",
+    "sourceTree": "ecdb1063bdd6da2f85f30cfd2fe0b4b97c514d08",
+    "importLog": "completion-audit-snapshot/environment.log",
+    "changedFileBlobs": 29,
+    "allBlobMatches": true,
+    "allCommandExitCodesZero": true,
+    "validation": "completion-audit-snapshot/validation.json"
+  },
+  "runnerExitCode": 0,
+  "runnerCommand": [
+    "C:/Users/jsdfhasuh/.conda/envs/emo_master/python.exe",
+    "docs/evidence/2026-10-21-device-usability-improvement/run_validation.py",
+    "--repo",
+    "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+    "--source-sha",
+    "236d6008651a6f1bde5daebc999f83065555940a",
+    "--output-dir",
+    "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-device-usability-improvement\\completion-audit-snapshot"
+  ],
+  "runnerLog": "completion-audit-runner.log",
+  "finished": "2026-10-21T23:18:49.902555+08:00"
+}

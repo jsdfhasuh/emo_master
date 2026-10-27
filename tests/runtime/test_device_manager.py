@@ -50,9 +50,9 @@ def testCancellingOneJobDoesNotRetireDeviceUsedBySibling(manager):
     entered = Event()
     driver = manager.drivers["camera"]
     execute = driver.execute
-    def recording(*args):
+    def recording(*args, **kwargs):
         entered.set()
-        return execute(*args)
+        return execute(*args, **kwargs)
     driver.execute = recording
     with ThreadPoolExecutor(max_workers=1) as pool:
         running = pool.submit(manager.execute, "a", "camera", "capture", params(1000000), cycleId="a")

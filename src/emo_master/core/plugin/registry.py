@@ -240,6 +240,19 @@ class PluginRegistry:
             )
 
         deviceTypes, rejectedDeviceTypes = self.scanDeviceTypes(pluginRoots)
+        for operatorId, descriptor in list(activeOperators.items()):
+            issues = []
+            for slot, requirement in descriptor.manifest.deviceRequirements.items():
+                declaration = deviceTypes.get(requirement.deviceTypeId)
+                if declaration is None or not set(requirement.requiredCapabilities) <= set(declaration.capabilities):
+                    issues.append(ValidationIssue('R09', 'E_DEVICE_REQUIREMENT',
+                        f'{slot}: device type or required actions unavailable: {requirement.deviceTypeId}'))
+                elif not set(requirement.selectorSchema['properties']) <= set(declaration.bindingSelectors):
+                    issues.append(ValidationIssue('R09', 'E_DEVICE_SELECTOR',
+                        f'{slot}: selector not declared by {requirement.deviceTypeId}'))
+            if issues:
+                self._appendIssues(rejectedOperators, operatorId, issues)
+                del activeOperators[operatorId]
         return RegistryScanResult(
             activeOperators=activeOperators,
             rejectedOperators=rejectedOperators,

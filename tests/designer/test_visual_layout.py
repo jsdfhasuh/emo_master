@@ -162,6 +162,7 @@ def testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible(styledApp):
         window.addNodeFromOperatorPayload({'operatorId': 'test.layout', 'displayName': '布局检查',
             'inputPorts': {}, 'outputPorts': {'image': 'image'}, 'paramSchema': {}})
         panel = window.nodeResultCoordinator.panel
+        window.designerActions.invoke('results')
         # Keep the 80-line, unchanged-font and last-line-reachability constraints
         # on the visible result tabs replacing the old hidden detail section.
         details = "\n".join(f"parameter_{i}: " + "x" * 120 for i in range(80))
@@ -188,6 +189,7 @@ def testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible(styledApp):
 
         panel.tabs.setCurrentWidget(panel.execution)
         scroll.ensureWidgetVisible(panel.execution)
+        window.floatingRunPanel.contentScroll.ensureWidgetVisible(panel.execution)
         styledApp.processEvents()
         bar = panel.execution.verticalScrollBar()
         assert bar.maximum() > 0
@@ -229,7 +231,8 @@ def testToolbarAndMenuShareEnabledActions(styledApp):
     window = makeWindow()
     try:
         action = window._menuActions["开始运行"]
-        assert action is window.startButton.defaultAction()
+        assert action is window.startButton
+        assert window.mainToolbar.widgetForAction(action) is None
         assert not action.isEnabled()
         window.loadedProjectPath = "fixture/project.json"
         window.updateToolbarState()
@@ -300,7 +303,7 @@ def testFirstFitWaitsForFinalViewportSize(styledApp):
         window.close()
 
 
-def testNarrowToolbarKeepsRunActionAndHasOverflow(styledApp):
+def testNarrowToolbarOnlySwitchesWorkspaceAndMenusOwnCommands(styledApp):
     window = makeWindow()
     try:
         window.resize(640, 500)
@@ -308,11 +311,12 @@ def testNarrowToolbarKeepsRunActionAndHasOverflow(styledApp):
         for _ in range(4):
             styledApp.processEvents()
         extension = window.mainToolbar.findChild(QToolButton, "qt_toolbar_ext_button")
-        assert extension is not None and extension.isVisible()
-        assert window.startButton.isVisible()
+        assert extension is None or not extension.isVisible()
+        assert window.startButton in window.pageCoordinator.chrome.menus['运行'].actions()
         assert window._toolbarActions["打开日志"] not in window.mainToolbar.actions()
         assert window._toolbarActions["打开日志"] in window.pageCoordinator.chrome.menus['运行'].actions()
-        assert window.loadButton.toolButtonStyle() == Qt.ToolButtonIconOnly
+        assert len(window.mainToolbar.actions()) == 1
+        assert window.loadButton in window.pageCoordinator.chrome.menus['文件'].actions()
     finally:
         window.close()
 
@@ -327,7 +331,7 @@ def testLogMessageAppearsInInitialViewport(styledApp):
         view.show()
         styledApp.processEvents()
         header = view.table.horizontalHeader()
-        assert header.visualIndex(9) == 3
+        assert [header.logicalIndex(index) for index in range(5)] == [0, 1, 4, 5, 9]
         assert header.sectionViewportPosition(9) < view.table.viewport().width() - 200
     finally:
         view.close()

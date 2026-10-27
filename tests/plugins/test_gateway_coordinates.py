@@ -9,7 +9,7 @@ from emo_master.plugins.builtins._communication_operators import TcpClientOperat
 from emo_master.plugins.builtins._gateway_coordinates import GatewayAckValidateOperator, GatewayCoordinateFormatOperator
 from emo_master.plugins.builtins._image_frame import defaultFrame
 from emo_master.plugins.builtins._tcp_transport import receiveFramed, TcpFrameError
-from tests.plugins.test_communication_operators import _startTcpPeer, _joinPeer, _recvExact
+from tests.plugins.test_communication_operators import _startTcpPeer, _joinPeer, _recvExact, _runTcp
 
 
 def point(x, y):
@@ -61,8 +61,8 @@ def testSplitLfAckAndUncertainTimeoutNeverResends():
         time.sleep(.01)
         sock.sendall(b"2 D6=6\n")
     port, thread, errors = _startTcpPeer(handler)
-    result = TcpClientOperator().executeNode({"message": request}, {"host": "127.0.0.1", "port": port,
-        "operation": "exchange", "responseFraming": "newline", "rejectTrailingResponse": True}, {})
+    result = _runTcp(TcpClientOperator(), {"message": request}, {"host": "127.0.0.1", "port": port,
+        "operation": "exchange", "responseFraming": "newline", "rejectTrailingResponse": True})
     _joinPeer(thread, errors)
     assert observed == [b'"-6,2206"']
     assert result["status"] == "ok"
@@ -71,11 +71,14 @@ def testSplitLfAckAndUncertainTimeoutNeverResends():
         observed.append(_recvExact(sock, 9))
         time.sleep(.1)
     port, thread, errors = _startTcpPeer(noAck)
-    result = TcpClientOperator().executeNode({"message": request}, {"host": "127.0.0.1", "port": port,
-        "operation": "exchange", "responseTimeoutMs": 20}, {})
+    result = _runTcp(TcpClientOperator(), {"message": request}, {"host": "127.0.0.1", "port": port,
+        "operation": "exchange", "responseTimeoutMs": 20})
     _joinPeer(thread, errors)
     assert result["error"]["code"] == "E_COMM_TIMEOUT"
-    assert result["diagnostics"]["executionOutcome"] == "uncertain"
+    transaction = result["diagnostics"]["tcpTransaction"]
+    assert transaction["outcome"] == "OUTCOME_UNKNOWN"
+    assert transaction["bytesSent"] == len(b'"-6,2206"')
+    assert transaction["automaticRetry"] is False
     assert len(observed) == 2
 
 

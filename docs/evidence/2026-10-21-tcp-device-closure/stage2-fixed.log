@@ -1,0 +1,126 @@
+.FF..................................................................... [ 76%]
+....F.................                                                   [100%]
+================================== FAILURES ===================================
+_____ testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error0] _____
+
+serviceManager = <emo_master.apps.runtime.devices.manager.DeviceManager object at 0x000001B9FFC80040>
+error = DeviceError('unhealthy service')
+
+    @pytest.mark.parametrize('error', [DeviceError('E_FATAL', 'unhealthy service', unhealthy=True), RuntimeError('driver failed')])
+    def testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover(serviceManager, error):
+        manager = serviceManager
+        driver = manager.drivers['ticker']
+        def fail(*_args, **_kwargs):
+            raise error
+        driver.execute = fail
+        with pytest.raises(type(error)):
+            manager.execute('owner', 'ticker', 'sample', {}, cycleId='cycle')
+        executor = manager.executors['ticker']
+        assert executor.quarantined and str(error) in executor.lastError
+        with pytest.raises(DeviceError, match='quarantined'):
+            manager.execute('owner', 'ticker', 'sample', {}, cycleId='cycle')
+        assert not manager.services['ticker'].busy()
+>       manager.recover('ticker', executor.generation)
+
+tests\runtime\test_device_contract_closure.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.devices.manager.DeviceManager object at 0x000001B9FFC80040>
+deviceId = 'ticker', expectedGeneration = '77e160be81fa46da9fa3855442fd1bf1'
+
+    def recover(self, deviceId, expectedGeneration):
+        from .drivers import validateDriver
+        with self.lock:
+            self._checkReplacement([deviceId])
+            definition = self.definitions[deviceId]
+            if 'recover' not in self.types[definition.deviceTypeId].controlCapabilities:
+                raise DeviceError('E_DEVICE_ACTION', 'recovery not declared')
+            previous = self.executors[deviceId]
+            if previous.generation != expectedGeneration:
+                raise DeviceError('E_DEVICE_GENERATION', 'device generation changed')
+            if self.busy(deviceId) or any(deviceId in ids for ids in self.permissions.values()):
+>               raise DeviceError('E_DEVICE_BUSY', 'retire device users before recovery')
+E               emo_master.core.contracts.device_driver.DeviceError: retire device users before recovery
+
+src\emo_master\apps\runtime\devices\manager.py:666: DeviceError
+_____ testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error1] _____
+
+serviceManager = <emo_master.apps.runtime.devices.manager.DeviceManager object at 0x000001B99AB4AF20>
+error = RuntimeError('driver failed')
+
+    @pytest.mark.parametrize('error', [DeviceError('E_FATAL', 'unhealthy service', unhealthy=True), RuntimeError('driver failed')])
+    def testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover(serviceManager, error):
+        manager = serviceManager
+        driver = manager.drivers['ticker']
+        def fail(*_args, **_kwargs):
+            raise error
+        driver.execute = fail
+        with pytest.raises(type(error)):
+            manager.execute('owner', 'ticker', 'sample', {}, cycleId='cycle')
+        executor = manager.executors['ticker']
+        assert executor.quarantined and str(error) in executor.lastError
+        with pytest.raises(DeviceError, match='quarantined'):
+            manager.execute('owner', 'ticker', 'sample', {}, cycleId='cycle')
+        assert not manager.services['ticker'].busy()
+>       manager.recover('ticker', executor.generation)
+
+tests\runtime\test_device_contract_closure.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.devices.manager.DeviceManager object at 0x000001B99AB4AF20>
+deviceId = 'ticker', expectedGeneration = 'f23c2249e03c49b1a0d0ec688422593d'
+
+    def recover(self, deviceId, expectedGeneration):
+        from .drivers import validateDriver
+        with self.lock:
+            self._checkReplacement([deviceId])
+            definition = self.definitions[deviceId]
+            if 'recover' not in self.types[definition.deviceTypeId].controlCapabilities:
+                raise DeviceError('E_DEVICE_ACTION', 'recovery not declared')
+            previous = self.executors[deviceId]
+            if previous.generation != expectedGeneration:
+                raise DeviceError('E_DEVICE_GENERATION', 'device generation changed')
+            if self.busy(deviceId) or any(deviceId in ids for ids in self.permissions.values()):
+>               raise DeviceError('E_DEVICE_BUSY', 'retire device users before recovery')
+E               emo_master.core.contracts.device_driver.DeviceError: retire device users before recovery
+
+src\emo_master\apps\runtime\devices\manager.py:666: DeviceError
+________ testIterationRestoresOuterCompiledPlanAndReleasesOnException _________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2681/testIterationRestoresOuterComp0')
+
+    def testIterationRestoresOuterCompiledPlanAndReleasesOnException(tmp_path):
+        c = authority(tmp_path)
+        document = ProjectDocument.model_validate(c.snapshot()["payload"])
+        scan = PluginRegistry("0.6.1").scanRoots([Path(__file__).resolve().parents[2] / "src/emo_master/plugins/builtins"])
+        compiler = WorkflowCompiler(scan.activeOperators, deviceTypes=scan.deviceTypes)
+        compiled = compiler.compile(document)
+        runner = WorkflowRunner(compiled, scan.activeOperators)
+        class Proxy:
+            def call(self, action, **fields):
+                return getattr(c, action)("job", **fields)
+        plans = CyclePlanSession(runner, Proxy(), document, compiler, scan.activeOperators, (), 1, lambda: False)
+        try:
+>           with plans.scope(RunContext.root("job", "main")) as root:
+
+tests\runtime\test_loop_cycle_configuration.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\contextlib.py:135: in __enter__
+    return next(self.gen)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.project_config.cycle_plan.CyclePlanSession object at 0x000001B99C67BA60>
+context = RunContext(jobId='job', workflowId='main', workflowRunId='010ad23b-783b-4c84-b336-4e6ac7154dd6', parentWorkflowRunId='...ad', planRevision=0, runGroupId='', dispatchId='', deliveryId='', invocationId='', targetSlotId='', documentRevision=0)
+parentCycleId = None
+
+    @contextmanager
+    def scope(self, context, *, parentCycleId=None):
+>       cycle = self.devices.framework("beginCycle", knownRevision=self.revision, parentCycleId=parentCycleId)
+E       AttributeError: 'Proxy' object has no attribute 'framework'
+
+src\emo_master\apps\runtime\project_config\cycle_plan.py:17: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_device_contract_closure.py::testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error0]
+FAILED tests/runtime/test_device_contract_closure.py::testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error1]
+FAILED tests/runtime/test_loop_cycle_configuration.py::testIterationRestoresOuterCompiledPlanAndReleasesOnException
+3 failed, 91 passed in 55.31s

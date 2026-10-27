@@ -5,7 +5,7 @@ import grpc
 import pytest
 
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
-from emo_master.apps.designer.services.runtime_client import RuntimeClient
+from emo_master.apps.designer.services.runtime_client import RuntimeClient, RuntimeClientError
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
@@ -72,8 +72,9 @@ def testDeviceMetadataRemoteContractAndProjectFence(tmp_path):
         types, requirements, _ = client.listDeviceTypes()
         assert "device.simulated.camera" in types
         assert "vision.io.simulated_camera" in requirements
-        with pytest.raises(ValueError, match="Runtime"):
+        with pytest.raises(RuntimeClientError, match="Runtime") as error:
             client.getDeviceStates("unloaded")
+        assert error.value.code == 'E_CONFIG_NOT_LOADED'
         assert not service.deviceManager.drivers
     finally:
         channel.close()
@@ -91,7 +92,9 @@ def testDeviceMetadataThroughRuntimeClientHasNoHardwareSideEffects(tmp_path):
         assert not rejected
         operators = client.listOperators()
         simulated = next(op for op in operators if op.operatorId == "vision.io.simulated_camera")
-        assert simulated.deviceRequirements == {"camera": {"deviceTypeId": "device.simulated.camera"}}
+        assert simulated.deviceRequirements == {"camera": {"deviceTypeId": "device.simulated.camera",
+            "requiredCapabilities": ["capture"],
+            "selectorSchema": {"type": "object", "properties": {}, "additionalProperties": False}}}
         assert not service.deviceManager.drivers and not service.deviceManager.executors
     finally:
         service.close()

@@ -1,0 +1,26 @@
+{
+  "captures": [
+    {
+      "title": "配置已提交，但后续操作异常",
+      "text": "已提交；请求 connection-check；；连接控制：{\"camera\": \"FAILED: connection timeout\", \"communication\": \"FAILED: address already in use\"}\n已提交事实保留，请先处理后续问题，不要重复写入。",
+      "details": "{\n  \"connections\": {\n    \"camera\": \"FAILED: connection timeout\",\n    \"communication\": \"FAILED: address already in use\"\n  }\n}",
+      "width": 533,
+      "height": 108
+    }
+  ],
+  "nativeDesktop": "NOT_RUN",
+  "modalExec": "CONTROLLED_WIDGET_RUNNER",
+  "visualAcceptance": "NOT_CONFIRMED",
+  "unshownRender": "connection-failure-popup-unshown.png",
+  "visibleRenderExitCode": 1,
+  "standaloneVisible": {
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "-u",
+      "-c",
+      "import os,sys\nsys.path.insert(0,\"src\")\nos.environ[\"QT_QPA_PLATFORM\"]=\"offscreen\"\nimport emo_master\nfrom PySide2.QtWidgets import QApplication,QMessageBox\nfrom PySide2.QtGui import QFontDatabase\nfrom emo_master.apps.designer.main import applyDesignerStyle\napp=QApplication([])\nQFontDatabase.addApplicationFont(\"C:/Windows/Fonts/msyh.ttc\")\napplyDesignerStyle(app)\nbox=QMessageBox()\nbox.setText(\"Standalone message box, no project or Runtime\")\nbox.addButton(\"Close\",QMessageBox.RejectRole)\nprint(\"before show\",flush=True)\nbox.show()\nprint(\"before processEvents\",flush=True)\napp.processEvents()\nprint(\"after processEvents\",flush=True)\nbox.close()\n"
+    ],
+    "exitCode": 3221225477,
+    "log": "modal-visible-isolated.log"
+  }
+}

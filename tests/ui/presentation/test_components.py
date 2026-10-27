@@ -21,6 +21,42 @@ def testStrictPropsDefaultsAndMappings():
             Props.model_validate(invalid)
 
 
+@pytest.mark.parametrize('value,expected', [('"00:03:42"', '00:03:42'),
+                                         ('{"n":2}', '{"n": 2}'), ('null', '--')])
+def testBoundTextDisplaysStringsWithoutJsonQuotes(qtApp, tmp_path, value, expected):
+    config = sampleProjectP3(tmp_path).presentation
+    component = next(c for c in config.pages['overview'].components if c.type == 'number')
+    component.type = 'text'
+    component.props.emptyText = '--'
+    config.dataSources['count'].expectedType = 'string'
+    window = RuntimePages(config)
+    window.submit(resultView(count=value, capture=window.expectedCapture))
+    assert window.widgets['overview']['overview-count'][1].text() == expected
+    window.close()
+
+
+def testSansUsesWindowsCjkSansFamily(qtApp, monkeypatch):
+    from emo_master.ui.presentation import renderer
+    monkeypatch.setattr(renderer.sys, 'platform', 'win32')
+    assert "font-family:'Microsoft YaHei UI'" in renderer.appearanceStyle(Props(fontFamily='sans'))
+
+
+def testSpanningImageKeepsAdjacentScalarFooterCompact(qtApp, tmp_path):
+    config = sampleProjectP3(tmp_path).presentation
+    page = config.pages['overview']
+    page.layout.columns = 2
+    page.components = [
+        Component(componentId='live', type='image', layout=Placement(row=0, column=0, rowSpan=2)),
+        Component(componentId='crop', type='image', layout=Placement(row=0, column=1)),
+        Component(componentId='value', type='number', layout=Placement(row=1, column=1)),
+    ]
+    window = RuntimePages(config)
+    grid = window.pages['overview'].widget().layout()
+    assert grid.rowStretch(0) == 1
+    assert grid.rowStretch(1) == 0
+    window.close()
+
+
 def testCollectionPagingSortingEmptyAndNewIdentity(qtApp):
     widget=CollectionView(Props.model_validate({'pageSize':2,'columns':[{'title':'值','fieldPath':['v']}]}))
     widget.submit({'items':[{'v':10},{'v':2},{'v':0}]},'N','')
@@ -93,4 +129,74 @@ def testEvictHiddenPageBeforeAllocatingTableQuota(qtApp,tmp_path):
     window.navigate('c')
     assert set(window.pages)=={'b','c'}
     assert all(isinstance(w,CollectionView) for _c,w in window.widgets['c'].values())
+    window.close()
+
+
+def testCollectionFitsSidebarAndKeepsPreciseValueTooltip(qtApp):
+    widget = CollectionView(Props.model_validate({'pageSize': 5, 'columns': [
+        {'title': 'Label', 'fieldPath': ['label']},
+        {'title': 'Confidence', 'fieldPath': ['confidence']},
+    ]}))
+    rows = [{'label': 'face', 'confidence': 0.7617098093032837}]
+    widget.submit(rows, 'result', '')
+    widget.resize(380, 220)
+    widget.show()
+    qtApp.processEvents()
+    header = widget.table.horizontalHeader()
+    assert header.sectionSize(1) > header.sectionSize(0)
+    assert header.length() == widget.table.viewport().width()
+    assert not widget.table.wordWrap()
+    index = widget.model.index(0, 1)
+    assert widget.model.data(index) == '0.7617098093032837'
+    assert widget.model.data(index, Qt.ToolTipRole) == '<qt>0.7617098093032837</qt>'
+    compactHeight = widget.table.height()
+    assert compactHeight >= widget.table.minimumHeight()
+    widget.resize(380, 480)
+    qtApp.processEvents()
+    assert widget.table.height() > compactHeight + 100
+    assert widget.model.rows == rows and widget.model.key == 'result'
+    widget.close()
+
+
+def testCollectionTooltipEscapesMarkupAndRetainsTextLimit(qtApp):
+    import html
+
+    widget = CollectionView(Props.model_validate({'columns': [{'title': 'Label', 'fieldPath': []}]}))
+    value = '<img src="file:///not-a-runtime-asset.png">' + 'x' * 1100
+    widget.submit([value], 'result', '')
+    index = widget.model.index(0, 0)
+    visible = widget.model.data(index)
+    tooltip = widget.model.data(index, Qt.ToolTipRole)
+    assert len(visible) < len(value)
+    assert tooltip == '<qt>' + html.escape(visible) + '</qt>'
+    assert '<img' not in tooltip
+    widget.close()
+
+
+def testImageSidebarTableFitsPreviewWithoutOuterScroll(qtApp, tmp_path, monkeypatch):
+    from PySide2.QtCore import QRect
+    from emo_master.core.presentation.models import Grid, Page
+
+    monkeypatch.setattr(qtApp.primaryScreen(), 'availableGeometry', lambda: QRect(0, 0, 1920, 1080))
+    config = sampleProjectP3(tmp_path).presentation
+    config.pages['overview'] = Page(name='Inspection', layout=Grid(columns=12, spacing=8), components=[
+        Component(componentId='overlay', type='image', bindings={'image': 'image'},
+                  layout=Placement(row=0, column=0, rowSpan=3, columnSpan=8)),
+        Component(componentId='count', type='number', bindings={'value': 'count'},
+                  props=Props(title='Count', fontSize=18),
+                  layout=Placement(row=0, column=8, columnSpan=4)),
+        Component(componentId='raw', type='image', bindings={'image': 'image'},
+                  layout=Placement(row=1, column=8, columnSpan=4)),
+        Component(componentId='table', type='table', bindings={'rows': 'blobs'},
+                  props=Props(title='Detections', columns=[{'title': 'Area', 'fieldPath': ['area']}]),
+                  layout=Placement(row=2, column=8, columnSpan=4)),
+    ])
+    window = RuntimePages(config)
+    window.setSimulationState('OK')
+    window.resize(1024, 768)
+    window.show()
+    qtApp.processEvents()
+    page = window.pages['overview']
+    assert page.verticalScrollBar().maximum() == 0
+    assert page.horizontalScrollBar().maximum() == 0
     window.close()

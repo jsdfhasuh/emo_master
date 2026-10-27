@@ -1,0 +1,8 @@
+....                                                                     [100%]
+=================================== PASSES ====================================
+=========================== short test summary info ===========================
+PASSED tests/designer/test_device_usability_publication.py::testShortcutValidatesThenHidesAndRestoresSameObserver
+PASSED tests/designer/test_device_usability_publication.py::testPublicationReturnPreservesDeviceListViewport[0]
+PASSED tests/designer/test_device_usability_publication.py::testPublicationReturnPreservesDeviceListViewport[1]
+PASSED tests/designer/test_device_usability_publication.py::testReadableDeviceDiffRetainsExactPathAndBoundedRows
+4 passed in 3.42s

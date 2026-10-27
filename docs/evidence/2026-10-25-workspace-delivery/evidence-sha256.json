@@ -1,0 +1,136 @@
+{
+  "hash": "sha256",
+  "excludes": "evidence-sha256.json itself",
+  "files": [
+    {
+      "path": "content-audit.json",
+      "size": 2471,
+      "sha256": "59414e33bc7849ad5ad321babe0b481ffb9afb6116e8914d4ce8e8b6ccc4ac76"
+    },
+    {
+      "path": "documentation-examples.txt",
+      "size": 100,
+      "sha256": "772dce3dfe623096a871ca609785fee2e0dea9a0566cb044ef0b8cbee1d31ae2"
+    },
+    {
+      "path": "documentation-examples.xml",
+      "size": 645,
+      "sha256": "ddea2433a372b2c21c650cfb93495d6bc9bae6bc16a21e244f015b94f9383d4a"
+    },
+    {
+      "path": "documentation-link-check.json",
+      "size": 112,
+      "sha256": "4c72162a7fcc45666644df3fa2a51544c63bdb948861fd899bdf2138fa6335b0"
+    },
+    {
+      "path": "focused-regression.txt",
+      "size": 1260,
+      "sha256": "dcf0d638ae869c72daa8f8f2f7f3e42883c39446e79a02c8006178919a7f79fc"
+    },
+    {
+      "path": "focused-regression.xml",
+      "size": 164824,
+      "sha256": "c4bd8e97cecea6c674cc67f486990798ffa2c4eccd52e1c49a06a5a28d428586"
+    },
+    {
+      "path": "focused-test-paths.txt",
+      "size": 2865,
+      "sha256": "50e337dda721f9c3fab90876ca9f48e9f235929efd5310355110b3324bb6bbec"
+    },
+    {
+      "path": "initial-workspace.json",
+      "size": 32503,
+      "sha256": "e74df4606e1adabb89c8257b4ea722b9b3167b0d4b864024d713a52c677d36c4"
+    },
+    {
+      "path": "mypy-final.txt",
+      "size": 12483,
+      "sha256": "7ffcddf4a742de02bef6f2e577f96baa32a15d83b91500eefc50d3654b5fedf3"
+    },
+    {
+      "path": "mypy-initial.txt",
+      "size": 12776,
+      "sha256": "c6f9031743ad2ef437ddb93d10328b4fe571f7033d2a062bca46a0d5dd5b1d7a"
+    },
+    {
+      "path": "native-100-complete.txt",
+      "size": 1368,
+      "sha256": "73f8c293e49b63b9278c103c37323d5e1df1d9e5b61dbac735c0c0d679bbb463"
+    },
+    {
+      "path": "native-100-complete.xml",
+      "size": 16043,
+      "sha256": "95e6cd6157354575a199b76cb0c01e0fafe6af4a385717c9fd84c313252d60d9"
+    },
+    {
+      "path": "native-100.txt",
+      "size": 1305,
+      "sha256": "de87de4548c9707441759a922cd3f1a497a16e0f8bdd3f7e9c040c08cd0a587a"
+    },
+    {
+      "path": "native-100.xml",
+      "size": 5541,
+      "sha256": "bb14479ee71f697149b64af5be2572e7d0946ebd5839d03c7956569f871517f0"
+    },
+    {
+      "path": "native-150-complete.txt",
+      "size": 194,
+      "sha256": "2ba80bf3f3cbc9613a78585d72f97c7dc6e938d7ed30831ffc542cfd0c2a9ba5"
+    },
+    {
+      "path": "native-150-complete.xml",
+      "size": 14417,
+      "sha256": "5fb31fc71ab27280d280c2caecb3f39bf536fe3f98afd3400990c9cf348c2be2"
+    },
+    {
+      "path": "native-test-paths.txt",
+      "size": 381,
+      "sha256": "5115a38290eb89edb02430c676551d4b2903f70f3221bd530dbeac50b1aa06c0"
+    },
+    {
+      "path": "native-toolbox-after-settle.png",
+      "size": 22724,
+      "sha256": "d397cfe0228bc926e23edef54c85c3760f2059469b0acc32bf8746bbced018d1"
+    },
+    {
+      "path": "native-toolbox-repro.txt",
+      "size": 1264,
+      "sha256": "fb3e882b45003059d11de5a16b71a348462773b70874500d7ce8b84e0ac53bec"
+    },
+    {
+      "path": "native-toolbox-repro.xml",
+      "size": 2002,
+      "sha256": "26841589953283a8442684c541684d9cc82116b881989de5b62b0223059b2261"
+    },
+    {
+      "path": "proto-check.txt",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "reviewed-file-groups.json",
+      "size": 11744,
+      "sha256": "52994da1fec89383b91e3dc29adc5492caab060408a935c26205d2dfe268298e"
+    },
+    {
+      "path": "ruff-final.txt",
+      "size": 20,
+      "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+    },
+    {
+      "path": "source-manifest.json",
+      "size": 16064,
+      "sha256": "1f443d8e69ce9d76601d140d02e4dfd5c290815686cbd5ac6a618c7164cc20b7"
+    },
+    {
+      "path": "test-results-summary.json",
+      "size": 1493,
+      "sha256": "0f93dc5e09e4ea68583fcd97595e8a538602fc2e5f039bf7ded822633a3f0db4"
+    },
+    {
+      "path": "verification-status.json",
+      "size": 1134,
+      "sha256": "0d86b376d49b5ed904779e31638863cb9b3559921a68a323a7bda359e47f29fe"
+    }
+  ]
+}

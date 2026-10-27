@@ -40,11 +40,11 @@ def testRepeatedNgContinuesButDeviceFaultStopsWithoutReplay(tmp_path):
         driver = service.deviceManager.drivers["camera"]
         execute = driver.execute
         failedCalls = []
-        def controlled(action, params, cancelled, deadline):
+        def controlled(action, params, cancelled, deadline, **kwargs):
             if fail.is_set():
                 failedCalls.append(action)
                 raise DeviceError("E_TEST_DEVICE_FAULT", "injected synthetic device fault", outcome="UNKNOWN", unhealthy=True)
-            return execute(action, params, cancelled, deadline)
+            return execute(action, params, cancelled, deadline, **kwargs)
         driver.execute = controlled
         started = service.StartJob(pb.StartJobRequest(project_id=service.loadedProjectId, workflow_id="main"), None)
         assert started.ok, started.message

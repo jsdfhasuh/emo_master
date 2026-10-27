@@ -86,7 +86,7 @@ class ConfigurationStore:
             if row is None:
                 return
             receipt = json.loads(row[0])
-            for field in ("affectedJobs", "connections", "connectionError", "transitionMessage"):
+            for field in ("affectedJobs", "connections", "connectionError", "transitionMessage", "publicationError"):
                 if field in status:
                     receipt[field] = status[field]
             connection.execute("UPDATE projectWriteReceipts SET receipt=? WHERE requestId=?",
@@ -98,13 +98,18 @@ class ConfigurationStore:
                 "SELECT documentRevision, executionRevision, payload FROM onlineProjectHistory ORDER BY documentRevision DESC")
                 if projectId is None or json.loads(row[2])["project"]["projectId"] == projectId]
 
-    def initialize(self, payload, sourcePath):
+    def initialize(self, payload, sourcePath, *, receipt=None, fingerprint=''):
         with self.sqlite.connection() as connection:
             beginImmediate(connection)
             if connection.execute("SELECT 1 FROM onlineProject").fetchone():
                 raise ConfigurationError("E_CONFIG_ACTIVE", "an online configuration already exists; compare before writing")
+            if self.commitState is not None:
+                self.commitState(connection, None, payload)
             connection.execute("INSERT INTO onlineProject VALUES (1,1,1,?,?)", (canonical(payload), sourcePath))
             connection.execute("INSERT INTO onlineProjectHistory VALUES (1,1,?,?)", (canonical(payload), sourcePath))
+            if receipt is not None:
+                connection.execute("INSERT INTO projectWriteReceipts VALUES (?,?,?)",
+                                   (receipt['requestId'], fingerprint, canonical(receipt)))
         self.exportCopy()
         return self.snapshot()
 

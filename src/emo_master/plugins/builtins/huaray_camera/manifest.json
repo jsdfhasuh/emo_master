@@ -2,8 +2,12 @@
   "operatorId": "vision.io.huaray_camera",
   "displayName": "Huaray IMV Camera",
   "version": "1.2.0",
-  "deviceBindingSince": "2.6",
-  "deviceRequirements": {"camera": {"deviceTypeId": "device.camera.huaray_imv"}},
+  "deviceRequirements": {
+    "camera": {
+      "deviceTypeId": "device.camera.huaray_imv",
+      "requiredCapabilities": ["capture"]
+    }
+  },
   "entry": "emo_master.plugins.builtins.huaray_camera.operator:HuarayCameraOperator",
   "category": "图像采集",
   "iconKey": "camera",

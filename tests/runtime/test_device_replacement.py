@@ -111,7 +111,7 @@ def testFailedCandidateCleanupRetainsOwnershipUntilActualRelease(makeManager):
     prepared = manager.prepareReplacement(changedProject(manager))
     driver = prepared.drivers["camera"]
     close = driver.close
-    def fail():
+    def fail(deadline=None):
         raise RuntimeError("injected cleanup failure")
     driver.close = fail
     with pytest.raises(DeviceError, match="cleanup failure"):

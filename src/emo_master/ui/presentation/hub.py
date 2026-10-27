@@ -164,6 +164,7 @@ class DisplayHub(QObject):
                  tuple((s, r.result.identity.resultKey, r.readyNs, tuple(r.imageStates.items())) for s, r in view.scopes.items()),
                  tuple((s, r.identity.resultKey) for s, r in view.loading.items()), tuple(view.started.items()),
                  tuple(getattr(view, 'expiredScopes', {}).items()),
+                 tuple(getattr(view, 'scopeErrors', {}).items()),
                  tuple((ticket, pin.state, pin.scope.readyNs if pin.scope else 0)
                        for ticket in self.pins.values() for pin in (self.session.pins().read(ticket),)))
         if token == self.lastToken:
@@ -184,9 +185,13 @@ class DisplayHub(QObject):
             self.coalesced += max(0, ordinal - previous - 1)
             self.lastOrdinal[address] = ordinal
         self.lastOrdinal = {k: v for k, v in self.lastOrdinal.items() if k[0] == view.generation}
-        for window in tuple(self.windows):
-            if window.isVisible():
-                window.submit(view)
+        visible = [window for window in self.windows if window.isVisible()]
+        # Release superseded shared images before converting their replacements.
+        # Both phases finish on the GUI thread before any window paints.
+        for window in visible:
+            window.releaseReplacedImages(view)
+        for window in visible:
+            window.submit(view)
 
     def stats(self):
         snapshot = self.session.readSnapshot()

@@ -1,5 +1,7 @@
 """Structural/resource acceptance only: no hardware/model inference is started."""
+from copy import deepcopy
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import zipfile
@@ -13,7 +15,7 @@ from emo_master.apps.runtime.workflow.runner import WorkflowRunner
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.project.runtime_directory import prepareRuntimeProject
-from emo_master.core.project.runtime_package import buildRuntimePackage, installRuntimePackage
+from emo_master.core.project.runtime_package import buildRuntimePackage, installRuntimePackage, trustedDeviceTypes
 from emo_master.core.workflow.compiler import WorkflowCompiler
 
 
@@ -38,6 +40,24 @@ def sourceProject(tmp_path):
     return source, ProjectDocument.model_validate(payload), scan.activeOperators
 
 
+def testGeneratedFixtureMatchesCurrentManagedSource():
+    spec = importlib.util.spec_from_file_location("hardware_fixture", EXAMPLE / "build_project.py")
+    fixture = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fixture)
+    payload = json.loads((EXAMPLE / "project.json").read_text(encoding="utf-8"))
+    source = deepcopy(payload)
+    for workflow in source["workflows"].values():
+        for node in workflow["nodes"]:
+            if node["kind"] == "operator":
+                for field in ("inputPorts", "outputPorts", "paramSchema"):
+                    node.pop(field)
+    assert source == fixture.buildProject()
+    assert len(source["devices"]["definitions"]) == 8
+    bound = [node for workflow in source["workflows"].values() for node in workflow["nodes"]
+             if node.get("deviceBindings")]
+    assert len(bound) == 8
+
+
 def testFixtureSaveReloadExportRelocationAndCoordinateAdmission(tmp_path):
     source, document, registry = sourceProject(tmp_path)
     original = (source / "project.json").read_bytes()
@@ -50,7 +70,9 @@ def testFixtureSaveReloadExportRelocationAndCoordinateAdmission(tmp_path):
     with zipfile.ZipFile(package) as archive:
         manifest = json.loads(archive.read("manifest.json"))
         exported = ProjectDocument.model_validate_json(archive.read("project.json"))
-        assert exported.schemaVersion == "2.4"
+        assert exported.schemaVersion == "2.7"
+        assert exported.devices == document.devices
+        assert len(exported.devices.definitions) == 8
         assert exported.globalVariables == document.globalVariables
         assert set(exported.workflows) == set(document.workflows)
         assets = [name for name in archive.namelist() if name.startswith("runtime-assets/")]
@@ -63,8 +85,8 @@ def testFixtureSaveReloadExportRelocationAndCoordinateAdmission(tmp_path):
     installed = installRuntimePackage(package, moved, registry=registry)
     assert installed.production == document.production
     assert installed.runtime == document.runtime
-    prepared = prepareRuntimeProject(installed, moved, registry)
-    compiled = WorkflowCompiler(registry).compile(prepared)
+    prepared = prepareRuntimeProject(installed, moved, registry, deviceTypes=trustedDeviceTypes())
+    compiled = WorkflowCompiler(registry, deviceTypes=trustedDeviceTypes()).compile(prepared)
     for station, expected in ((1, (10.0, 20.0)), (2, (-10.0, 15.0))):
         root = f"station{station}"
         runner = WorkflowRunner(compiled, registry, retainOperators=True)

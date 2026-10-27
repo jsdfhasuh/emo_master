@@ -94,6 +94,11 @@ def _validate(document, root, registry, deviceTypes=None, *, portable=False):
 
 def _operators(document, registry):
     ids = {node.operatorId for flow in document.workflows.values() for node in flow.nodes if node.kind == "operator"}
+    from emo_master.core.project.dependencies import requireInstalled
+    for key in ids:
+        descriptor = registry.get(key)
+        requireInstalled(key, None, descriptor.manifest.version if descriptor else None,
+            kind='算子', fieldPath='dependencies.operators.'+key, projectId=document.project.projectId)
     return {key: registry[key].manifest.version for key in sorted(ids)}
 
 
@@ -190,7 +195,7 @@ def buildRuntimePackage(projectDir: Path, outputDir: Path, *, registry=None, dev
             archive.writestr("project.json", metadata)
             manifest = dict(format=FORMAT, application=__version__, projectSchema=document.schemaVersion,
                 projectId=document.project.projectId, requiredOperators=_operators(document, registry), files=checksums)
-            if document.schemaVersion == "2.6":
+            if document.schemaVersion in {"2.6", "2.7"}:
                 manifest["requiredDeviceTypes"] = _devices(document, deviceTypes)
             archive.writestr("manifest.json", canonicalJson(manifest))
         # Validate the copied bytes, not just the source's earlier hash.
@@ -238,7 +243,7 @@ def _extract(package, stage, registry, deviceTypes=None):
         if any(archive.getinfo(name).file_size > MAX_METADATA for name in ("manifest.json", "project.json")):
             raise ValueError("runtime package metadata limit")
         manifest = readJson(archive.read("manifest.json"))
-        if manifest.get("format") != FORMAT or manifest.get("projectSchema") not in {"2.3", "2.4", "2.5", "2.6"}:
+        if manifest.get("format") != FORMAT or manifest.get("projectSchema") not in {"2.3", "2.4", "2.5", "2.6", "2.7"}:
             raise ValueError("unsupported runtime package format")
         files = manifest.get("files")
         if not isinstance(files, dict) or set(files) | {"manifest.json"} != set(names.values()):
@@ -252,17 +257,26 @@ def _extract(package, stage, registry, deviceTypes=None):
                 if _digest(source, output) != expected:
                     raise ValueError("package file digest or size mismatch")
         document = ProjectDocument.model_validate(readJson((stage / "project.json").read_bytes()))
+        from emo_master.core.project.dependencies import requireInstalled
+        for key, version in manifest.get('requiredOperators', {}).items():
+            descriptor = registry.get(key)
+            requireInstalled(key, version, descriptor.manifest.version if descriptor else None,
+                kind='算子', fieldPath='requiredOperators.'+key, projectId=document.project.projectId)
+        for key, lock in manifest.get('requiredDeviceTypes', {}).items():
+            declaration = (deviceTypes or {}).get(key)
+            requireInstalled(key, lock['version'], declaration.version if declaration else None,
+                kind='设备类型', fieldPath='requiredDeviceTypes.'+key, projectId=document.project.projectId)
         if (document.schemaVersion != manifest["projectSchema"] or document.project.projectId != manifest.get("projectId")
                 or _operators(document, registry) != manifest.get("requiredOperators")):
             raise ValueError("incompatible operator versions or project identity")
-        if document.schemaVersion == "2.6" and _devices(document, deviceTypes) != manifest.get("requiredDeviceTypes"):
+        if document.schemaVersion in {"2.6", "2.7"} and _devices(document, deviceTypes) != manifest.get("requiredDeviceTypes"):
             raise ValueError("incompatible device metadata lock")
         _validate(document, stage, registry, deviceTypes, portable=True)
         return document, manifest
 
 
 def installRuntimePackage(package: Path, destination: Path, *, registry=None, deviceTypes=None,
-                          owner=None, projectFile=None) -> ProjectDocument:
+                          owner=None, projectFile=None, activate=None) -> ProjectDocument:
     """Normal failures restore replaced assets; crashes leave the sibling backup for repair."""
     registry = trustedRegistry() if registry is None else registry
     deviceTypes = trustedDeviceTypes() if deviceTypes is None else deviceTypes
@@ -326,6 +340,10 @@ def installRuntimePackage(package: Path, destination: Path, *, registry=None, de
                     target.parent.mkdir(parents=True, exist_ok=True)
                     _replaceInstalledFile(stage / name, target)
                     replaced.append(targetName)
+                if activate is not None:
+                    # The local Runtime raises only before durable configuration
+                    # commit, so ordinary activation failures restore these files.
+                    activate(document)
             except BaseException:
                 for name in reversed(replaced):
                     old = backup / name

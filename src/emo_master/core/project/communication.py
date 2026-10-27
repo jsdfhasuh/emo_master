@@ -4,7 +4,7 @@ from __future__ import annotations
 from ipaddress import IPv4Address
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 
 class CommunicationModel(BaseModel):
@@ -65,8 +65,43 @@ class CommunicationSettings(CommunicationModel):
         return self
 
     def transportPayload(self):
-        return self.tcpServer.model_dump(mode="json")
+        payload = self.tcpServer.model_dump(mode="json")
+        payload.pop('name')
+        for channel in payload['channels']:
+            channel.pop('name')
+        return payload
 
 
 def projectCommunication(document) -> CommunicationSettings:
     return document.communication or CommunicationSettings()
+
+
+def tcpServerConfiguration(definition):
+    """Pure adapter; lifecycle policy belongs exclusively to DeviceManager."""
+    return CommunicationSettings(enabled=definition.enabled, startupPolicy="manual", tcpServer=TcpServerSettings(
+        serviceId="tcp-server", name=definition.name[:80], **definition.connection,
+        sendTimeoutMs=definition.policies.get("sendTimeoutMs", 2000),
+        maxMessageBytes=definition.policies.get("maxMessageBytes", 1048576)))
+
+
+def validateTcpDefinition(definition):
+    payload = definition.model_dump()
+    if definition.deviceTypeId == "device.tcp.server":
+        try:
+            config = tcpServerConfiguration(definition)
+        except ValidationError as error:
+            from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError
+            raise WorkflowCompileError([ValidationIssue('E_DEVICE_DEFINITION', item['msg'],
+                fieldPath='connection.'+'.'.join(str(part) for part in item['loc'] if part != 'tcpServer')
+                    if item['loc'] else 'connection.channels') for item in error.errors()]) from error
+        payload["connection"] = {key: getattr(config.tcpServer, key) for key in ("bindAddress", "port")}
+        payload["connection"]["channels"] = [item.model_dump() for item in config.tcpServer.channels]
+    elif definition.deviceTypeId == "device.tcp.receive_once":
+        host = IPv4Address(definition.connection["bindHost"])
+        if host.is_multicast:
+            from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError
+            raise WorkflowCompileError([ValidationIssue('E_DEVICE_DEFINITION', 'connection.bindHost cannot be multicast',
+                                                       fieldPath='connection.bindHost')])
+        payload["connection"]["bindHost"] = str(host)
+    from emo_master.core.project.devices import DeviceDefinition
+    return DeviceDefinition.model_validate(payload)

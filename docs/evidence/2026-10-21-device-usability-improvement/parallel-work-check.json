@@ -1,0 +1,6 @@
+{
+  "sourceSha": "e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf",
+  "checked": 10,
+  "changed": [],
+  "explanation": "test_device_definition_feedback.py belongs to this task; its initial counterexamples preceded protection capture"
+}

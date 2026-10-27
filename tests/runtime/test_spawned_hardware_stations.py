@@ -2,6 +2,7 @@
 from contextlib import ExitStack
 import json
 import os
+from multiprocessing.shared_memory import SharedMemory
 from pathlib import Path
 import shutil
 import socket
@@ -10,12 +11,18 @@ from threading import Event, Thread
 from time import monotonic, sleep
 
 import numpy as np
+import pytest
 
 from emo_master.apps.operator_runtime.controller import ProductionRuntime
 from emo_master.core.project.models import ProjectDocument
+from emo_master.core.project.snapshots import revisionOf
+from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from tests.plugins.test_communication_operators import _recvExact, _slmpResponse
 from tests.runtime.production_fixture import saveDocument, waitFor
 from tests.runtime.test_hardware_trigger_normal_chain import syntheticFrame
+from tests.runtime.imv_test_support import useSimulatedImv
+from tests.runtime.plc_debug_server import PlcDebugServer
+from tests.runtime.station_camera_boundary import FileTriggeredSdk
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -77,7 +84,7 @@ class Peer:
 def boundaryRegistry(tmp_path):
     target = tmp_path / "plugins"
     shutil.copytree(ROOT / "src/emo_master/plugins/builtins", target, ignore=shutil.ignore_patterns("__pycache__"))
-    for folder, entry in (("huaray_camera", "TriggeredCamera"), ("yolo_inference", "BoundaryYolo")):
+    for folder, entry in (("yolo_inference", "BoundaryYolo"),):
         path = target / folder / "manifest.json"
         manifest = json.loads(path.read_text(encoding="utf-8"))
         manifest["entry"] = "tests.runtime.station_camera_boundary:" + entry
@@ -98,6 +105,18 @@ def completed(owner, job):
             and event.workflowId in {"station1", "station2"}]
 
 
+def assertRetiredCamera(owner, station, job, memoryName=None):
+    manager = owner.runtime.deviceManager
+    driver = manager.drivers[f"station{station}-camera"]
+    assert driver.process is None and driver.memory is None
+    if memoryName is not None:
+        with pytest.raises(FileNotFoundError):
+            SharedMemory(name=memoryName)
+    assert job not in manager.workers and job not in manager.permissions
+    assert all(job not in frame.owners for frame in manager.frames.frames.values())
+    assert all(reservation[0] != job for reservation in manager.frames.reservations.values())
+
+
 def testNoTriggerStationDoesNotBlockOtherActualHardwareNormalJob(tmp_path, monkeypatch):
     cameras = tmp_path / "simulated-sdk"
     monkeypatch.setenv("EMO_M5_SIMULATED_CAMERA_ROOT", str(cameras))
@@ -108,7 +127,7 @@ def testNoTriggerStationDoesNotBlockOtherActualHardwareNormalJob(tmp_path, monke
         (root / f"{role}.onnx").write_text("M5 simulated ONNX:" + role, encoding="ascii")
     for s in (1, 2):
         shutil.copyfile(ROOT / f"examples/hardware_trigger_normal_fixture/station{s}_reference.txt", root / f"station{s}_reference.txt")
-        next(n for n in payload["workflows"][f"station{s}"]["nodes"] if n["nodeId"] == "camera")["params"]["captureTimeoutMs"] = 1
+        assert payload["devices"]["definitions"][f"station{s}-camera"]["defaults"]["captureTimeoutMs"] == 0
         # Additional test observation, still captured from the real workflow output.
         payload["presentation"]["dataSources"][f"station{s}-sample"] = dict(kind="workflow_output",
             resultScopeId=f"station{s}", workflowId=f"station{s}", port="plcSample", expectedType="collection",
@@ -116,21 +135,22 @@ def testNoTriggerStationDoesNotBlockOtherActualHardwareNormalJob(tmp_path, monke
         payload["presentation"]["pages"][f"station{s}"]["components"].append(dict(componentId=f"station{s}-sample",
             type="table", layout={"row": 3}, bindings={"rows": f"station{s}-sample"}))
     with ExitStack() as stack:
-        peers = {(s, channel): stack.enter_context(Peer(channel, s)) for s in (1, 2) for channel in ("slmp", "plc", "robot")}
+        peers = {(s, channel): stack.enter_context(Peer(channel, s)) for s in (1, 2) for channel in ("plc", "robot")}
         for s in (1, 2):
-            for wid, flow in payload["workflows"].items():
-                if not wid.startswith(f"station{s}"):
-                    continue
-                for node in flow["nodes"]:
-                    if node.get("operatorId") == "communication.plc.slmp_read":
-                        node["params"]["port"] = peers[s, "slmp"].port
-                    if node.get("nodeId") == "exchange":
-                        node["params"]["port"] = peers[s, "robot" if wid.endswith("second") else "plc"].port
+            peers[s, "slmp"] = stack.enter_context(PlcDebugServer([
+                _slmpResponse(struct.pack("<H", s * 100 + n)) for n in range(1, 5)]))
+            for channel, suffix in (("slmp", "plc"), ("plc", "plc-gateway"), ("robot", "robot-gateway")):
+                payload["devices"]["definitions"][f"station{s}-{suffix}"]["connection"]["port"] = peers[s, channel].port
         document = ProjectDocument.model_validate(payload)
         saveDocument(root, document)
         owner = ProductionRuntime(tmp_path / "data", pluginRootPaths=boundaryRegistry(tmp_path))
         try:
+            # Opt only this manager into software IMV. Production declarations
+            # remain Windows-only and the workflow uses the real camera operator.
+            useSimulatedImv(owner.runtime.deviceManager)
             owner.load(root)
+            for s in (1, 2):
+                owner.runtime.deviceManager.drivers[f"station{s}-camera"].apiFactory = FileTriggeredSdk
             assert not owner.runtime.jobRepository.all()
             started = owner.startAll(["station1-run", "station2-run"])
             assert all(row["ok"] for row in started.values()), started
@@ -146,7 +166,7 @@ def testNoTriggerStationDoesNotBlockOtherActualHardwareNormalJob(tmp_path, monke
             record = owner.runtime.jobRepository.get(second)
             assert record.status == "RUNNING", (record.errorCode, record.message)
             assert not completed(owner, first) and not peers[1, "slmp"].requests
-            assert len(peers[2, "slmp"].requests) == 4
+            assert len(peers[2, "slmp"].requests) == 4 and peers[2, "slmp"].connections == 1
             assert len(peers[2, "plc"].requests) == len(peers[2, "robot"].requests) == 2
             waitFor(lambda: len([r for r in owner.presentation.store.history if r.identity.jobId == second]) >= 4)
             results = sorted((r for r in owner.presentation.store.history if r.identity.jobId == second), key=lambda r: r.identity.resultOrdinal)
@@ -155,23 +175,82 @@ def testNoTriggerStationDoesNotBlockOtherActualHardwareNormalJob(tmp_path, monke
             assert [v["station2-count"] for v in values] == [1, 0, 1, 0]
             assert [v["station2-sample"]["values"] for v in values] == [[201], [202], [203], [204]]
             assert all(all(s.sourceId.startswith("station2-") for s in r.sources) for r in results)
-            # Repeated stops/restarts while the other camera remains live/owned.
-            for received in (0, 0):
+            # Cancellation of an in-flight managed capture has an unknown
+            # native outcome. Restart requires explicit recovery, never replay.
+            manager = owner.runtime.deviceManager
+            other = manager.drivers["station2-camera"]
+            otherGeneration, otherPid = other.generation, other.process.pid
+            for _ in range(2):
+                driver = manager.drivers["station1-camera"]
+                memoryName = driver.memory.name
                 before = monotonic()
                 owner.stop("station1-run")
                 assert monotonic() - before < 3
                 assert not owner.runtime.jobSupervisor.ownsJobResources(first)
-                assert (cameras / "fixture-camera-1/destroyed").read_text() == str(received)
+                assertRetiredCamera(owner, 1, first, memoryName)
+                stopped = owner.runtime.jobRepository.get(first)
+                assert (stopped.status, stopped.errorCode) in {
+                    ("ABORTED", "E_CANCELLED"), ("FAILED", "E_DEVICE_CANCELLED"),
+                    ("FAILED", "E_DEVICE_OUTCOME_UNKNOWN")}, stopped
+                if stopped.errorCode == "E_DEVICE_OUTCOME_UNKNOWN":
+                    failures = [json.loads(event.payloadJson) for event in owner.runtime.eventStore.read(first)
+                                if event.eventType == "node.failed" and event.workflowId == "station1"
+                                and event.nodeId == "camera"]
+                    assert failures[-1]["diagnostics"]["deviceOutcome"]["outcome"] == "UNKNOWN"
+                assert manager.executors["station1-camera"].quarantined
+                (cameras / "fixture-camera-1/waiting").unlink()
+                rejected = owner.start("station1-run")
+                waitFor(lambda: owner.runtime.jobRepository.get(rejected).isTerminal)
+                failed = owner.runtime.jobRepository.get(rejected)
+                assert (failed.status, failed.errorCode) == ("FAILED", "E_DEVICE_UNAVAILABLE")
+                assert not completed(owner, rejected) and not peers[1, "slmp"].requests
+                assert not (cameras / "fixture-camera-1/waiting").exists()
+                waitFor(lambda: not owner.runtime.jobSupervisor.ownsJobResources(rejected))
+                assertRetiredCamera(owner, 1, rejected)
+
+                # The test models a deliberate operator recovery after external
+                # triggers are stopped. Recovery does not reconnect or restart.
+                generation = manager.executors["station1-camera"].generation
+                request = pb.RecoverDeviceRequest(project_id=owner.runtime.loadedProjectId,
+                    runtime_instance_id=owner.runtime.runtimeInstanceId, device_id="station1-camera",
+                    expected_generation=generation,
+                    expected_definition_revision=revisionOf(manager.definitions["station1-camera"].model_dump()))
+                unconfirmed = owner.runtime.RecoverDevice(request, None)
+                assert not unconfirmed.ok and "synchronized" in unconfirmed.message
+                assert manager.executors["station1-camera"].generation == generation
+                request.hardware_synchronized = True
+                recovered = owner.runtime.RecoverDevice(request, None)
+                assert recovered.ok, recovered.message
+                replacement = manager.drivers["station1-camera"]
+                replacement.apiFactory = FileTriggeredSdk
+                assert manager.executors["station1-camera"].generation != generation
+                assert replacement.process is None and replacement.memory is None
+                assert not manager.executors["station1-camera"].quarantined
+                assert owner.sessions["station1-run"].jobId == rejected
+                assert not peers[1, "slmp"].requests
+                assert not (cameras / "fixture-camera-1/waiting").exists()
                 first = owner.start("station1-run")
+                waitFor(lambda: (cameras / "fixture-camera-1/waiting").exists()
+                        or owner.runtime.jobRepository.get(first).isTerminal)
+                record = owner.runtime.jobRepository.get(first)
+                assert record.status == "RUNNING", (record.errorCode, record.message)
                 assert owner.sessions["station2-run"].jobId == second and len(owner.presentation.jobs) == 2
+                assert manager.drivers["station2-camera"] is other
+                assert other.generation == otherGeneration and other.process.pid == otherPid
+                assert other.process.is_alive() and len(completed(owner, second)) == 4
             sendFrame(cameras, 1, 1)
             sendFrame(cameras, 1, 2, second=True)
             waitFor(lambda: len(completed(owner, first)) == 2 or owner.runtime.jobRepository.get(first).isTerminal)
             assert owner.runtime.jobRepository.get(first).status == "RUNNING"
-            assert len(peers[1, "slmp"].requests) == 2
+            assert len(peers[1, "slmp"].requests) == 2 and peers[1, "slmp"].connections == 1
             assert len(peers[1, "plc"].requests) == len(peers[1, "robot"].requests) == 1
+            # A completed frame releases its transfer memory. Wait until both
+            # next captures are armed, then verify those live buffers are unlinked.
+            waitFor(lambda: all(manager.drivers[f"station{s}-camera"].memory is not None for s in (1, 2)))
+            memories = {s: manager.drivers[f"station{s}-camera"].memory.name for s in (1, 2)}
             assert all(row["ok"] for row in owner.stopAll().values())
-            assert (cameras / "fixture-camera-1/destroyed").read_text() == "2"
-            assert (cameras / "fixture-camera-2/destroyed").read_text() == "4"
+            assertRetiredCamera(owner, 1, first, memories[1])
+            assertRetiredCamera(owner, 2, second, memories[2])
+            assert not list(cameras.glob("fixture-camera-*/frame-*.npy"))
         finally:
             owner.close()

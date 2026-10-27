@@ -3,6 +3,7 @@ import argparse
 import os
 import subprocess
 import sys
+from time import perf_counter
 
 
 projectRoot = Path(__file__).resolve().parent.parent
@@ -24,9 +25,11 @@ def commandEnvironment(localDesigner: bool = False) -> dict[str, str]:
   return environment
 
 
-def runCommand(command: list[str], *, localDesigner: bool = False) -> int:
+def runCommand(command: list[str], *, localDesigner: bool = False,
+               environment: dict[str, str] | None = None) -> int:
   completed = subprocess.run(
-    command, cwd=projectRoot, env=commandEnvironment(localDesigner)
+    command, cwd=projectRoot,
+    env=environment if environment is not None else commandEnvironment(localDesigner),
   )
   return completed.returncode
 
@@ -63,6 +66,8 @@ import emo_master
 import PySide2
 import grpc
 import emo_master.apps.designer.main
+import emo_master.apps.designer.ui.main_window
+import emo_master.apps.runtime.grpc_server.service
 expected = Path(sys.argv[1]) / 'src' / 'emo_master' / '__init__.py'
 assert expected.samefile(emo_master.__file__), 'Imported a different work copy'
 print('Source import:', emo_master.__file__)
@@ -71,8 +76,10 @@ print('gRPC:', grpc.__version__)
 print('Designer startup check passed (no window or Job started).')
 """
     return runCommand([sys.executable, "-c", code, str(projectRoot)], localDesigner=local)
+  environment["EMO_DESIGNER_LAUNCH_STARTED"] = str(perf_counter())
+  print("[designer:start] launch start total=0.000s", flush=True)
   return runCommand(
-    [sys.executable, "-m", "emo_master.apps.designer.main"], localDesigner=local
+    [sys.executable, "-m", "emo_master.apps.designer.main"], environment=environment
   )
 
 
@@ -80,7 +87,7 @@ def main(argv: list[str]) -> int:
   parser = argparse.ArgumentParser(description="Run tools from this source checkout.")
   parser.add_argument("action", choices=["proto", "test", "run-runtime", "run-designer"])
   parser.add_argument("--local", action="store_true",
-                      help="Designer: visible embedded Runtime with isolated local data")
+                      help="Designer: prefill visible local startup with isolated data; UI may override")
   parser.add_argument("--check", action="store_true",
                       help="Designer: check imports and configuration without opening a window")
   arguments = parser.parse_args(argv[1:])

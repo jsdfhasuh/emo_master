@@ -1,0 +1,6 @@
+font 0
+opening
+Windows fatal exception: access violation
+
+Current thread 0x00006ccc (most recent call first):
+  File "<stdin>", line 12 in <module>

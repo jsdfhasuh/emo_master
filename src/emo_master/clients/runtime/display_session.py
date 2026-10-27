@@ -83,7 +83,7 @@ def decodePng(content):
 
 class DisplaySession:
     def __init__(self, address, jobId, *, imageDemand=False, expectedRuntimeInstanceId="", projectId="",
-                 readResults=True):
+                 readResults=True, pinByteLimit=16 * 1024 * 1024):
         if not jobId:
             raise ValueError("an explicitly selected Job is required")
         if bool(expectedRuntimeInstanceId) != bool(projectId):
@@ -134,6 +134,7 @@ class DisplaySession:
         self.loading = {}
         self.readyAt = {}
         self._pinStore = None
+        self.pinByteLimit = pinByteLimit
         self.compatible = False
         self.threads = [threading.Thread(target=self._receive, name="display-metadata"),
                         threading.Thread(target=self._health, name="display-snapshot-health"),

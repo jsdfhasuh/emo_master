@@ -1,5 +1,7 @@
 # 算子注册与执行流程：给未来工程师的实战说明
 
+> 当前开发入口：先读 [算子与设备插件开发指南](operator-development-guide.md) 和 [当前算子目录](operator-catalog.md)。本文保留注册机制的历史讲解；其中旧 executeGraph 调用链、旧设备直连示例、算子数量和“未来”规划不代表当前完整状态。正式工作流以 WorkflowCompiler / WorkflowRunner / OperatorExecutor、设备以 Runtime DeviceManager 为准。
+
 > 这份文档专门解释一个算子从磁盘文件到 Designer 显示、再到 Runtime 执行的全过程。适合新增算子、排查“为什么没显示出来”、以及理解插件系统后续应该怎么演进。
 
 参数中文显示名的 `title` 约定、专用编辑器接入与旧工程兼容，见[算子参数显示名称](operator-parameter-titles.md)。

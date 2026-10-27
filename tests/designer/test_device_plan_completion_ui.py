@@ -1,5 +1,6 @@
 from copy import deepcopy
 from types import SimpleNamespace
+from threading import Event
 
 import pytest
 from PySide2.QtCore import QUrl, Qt
@@ -29,7 +30,8 @@ def testSearchAndCategoryNeverRetainHiddenCommands(ownedDesignerWindow, tmp_path
     assert d.table.isRowHidden(0) and d.selectedId is None and not d.name.text()
     for key in ('connect', 'disconnect', 'maintenance', 'recover', 'diagnostics', 'network'):
         assert not d.buttons[key].isEnabled()
-        d.buttons[key].click()
+        command = d.buttons[key]
+        (command.click if hasattr(command, 'click') else command.trigger)()
     assert not calls
     d.search.clear()
     d.tree.setCurrentItem(d.instanceItems['camera'])
@@ -95,7 +97,7 @@ def testInstanceSelectionAndSearchStayOnVisibleDevice(ownedDesignerWindow, tmp_p
     assert d.selectedId == 'camera' and d.table.item(d.table.currentRow(), 0).data(Qt.UserRole) == 'camera'
 
 
-def testInlineMonitorDoesNotReplaceEditModel(ownedDesignerWindow, tmp_path, definition, declaration):  # noqa: F811
+def testWindowMonitorDoesNotReplaceEditModel(ownedDesignerWindow, tmp_path, definition, declaration):  # noqa: F811
     window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
     c = window.pageCoordinator
     before = c.session.payload()
@@ -105,17 +107,22 @@ def testInlineMonitorDoesNotReplaceEditModel(ownedDesignerWindow, tmp_path, defi
         raise ValueError('offline simulated Runtime')
     window.runtimeClient.getOnlineGraphSnapshot = offline
     window.show()
-    c.flowModes.setCurrentIndex(1)
+    deleteEnabled = window.designerActions.actions['delete'].isEnabled()
+    active = c.stack.currentWidget()
+    c.chrome.monitorAction.trigger()
     monitor = c.monitor
     waitUntil(lambda: monitor.pending is None)
-    assert c.flowStack.currentWidget() is monitor and not monitor.isWindow()
+    assert c.stack.currentWidget() is active and monitor.isWindow()
+    assert monitor.parentWidget() is window and not monitor.isModal()
+    assert not hasattr(c, 'flowModes') and not hasattr(c, 'flowStack')
     assert requests[0][0] == ''
-    assert not window.deleteShortcut.isEnabled() and not monitor.view.isInteractive()
+    assert window.designerActions.actions['delete'].isEnabled() == deleteEnabled
+    assert not monitor.view.isInteractive()
     assert c.session.payload() == before
     QTest.keyClick(monitor, Qt.Key_Escape)
-    assert monitor.isVisible() and monitor.timer.isActive()
-    c.flowModes.setCurrentIndex(0)
-    assert c.flowActive() and window.deleteShortcut.isEnabled()
+    assert not monitor.isVisible() and not monitor.timer.isActive()
+    assert c.monitor is None
+    assert c.flowActive() and window.designerActions.actions['delete'].isEnabled() == deleteEnabled
     assert c.session.payload() == before
 
 
@@ -204,6 +211,149 @@ def testWizardDiscoveryAdoptsDraftWithoutNetworkMutation(retainedQtApplication, 
         assert dialog.value is None
     finally:
         dialog.close()
+
+
+@pytest.mark.parametrize('loadedProject', ['', 'other-online-project'])
+def testDeviceWorkspaceOfflineDiscoveryOnlyAdoptsDraft(ownedDesignerWindow, tmp_path, monkeypatch, loadedProject):
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+    from emo_master.apps.designer.ui.device_network import DeviceNetworkDialog
+    from emo_master.core.project.device_resources import trustedDeviceTypes
+    from tests.runtime.test_managed_imv import definition as imvDefinition
+
+    cameraType = trustedDeviceTypes()['device.camera.huaray_imv']
+    window, _ = windowFor(ownedDesignerWindow, tmp_path, imvDefinition(), cameraType)
+    calls, dialogs = [], []
+    def states(_project):
+        raise RuntimeClientError('E_CONFIG_PROJECT' if loadedProject else 'E_CONFIG_NOT_LOADED', 'simulated offline draft')
+    def command(projectId, runtimeId, action, **kwargs):
+        calls.append(action)
+        if action == 'info':
+            assert projectId == runtimeId == ''
+            return dict(projectId=loadedProject, runtimeInstanceId='instance', deviceSetupVersion=1)
+        assert action == 'discover'
+        assert (projectId, runtimeId, kwargs['deviceId']) == (loadedProject, 'instance', 'camera')
+        return dict(devices=[dict(cameraKey='OFFLINE-DISCOVERED-CAMERA', cameraType=0)])
+    def discover(dialog):
+        dialogs.append(dialog)
+        dialog.show()
+        assert dialog.discoveryOnly and not dialog.forceButton.isVisible()
+        assert not dialog.receiptButton.isVisible()
+        assert calls == ['info']
+        dialog.discoverButton.click()
+        waitUntil(lambda: dialog.pending is None)
+        dialog.table.setCurrentCell(0, 0)
+        dialog.adoptButton.click()
+        return dialog.result()
+
+    window.runtimeClient.getDeviceStates = states
+    window.runtimeClient.deviceNetworkCommand = command
+    monkeypatch.setattr(DeviceNetworkDialog, 'exec_', discover)
+    c = window.pageCoordinator
+    c.chrome.deviceAction.trigger()
+    d = c.devices
+    waitUntil(lambda: d.pending is None and bool(d.stateNotice))
+    d.table.setCurrentCell(0, 0)
+    assert not d.stateRuntimeId and d.buttons['network'].isEnabled()
+    assert not d.buttons['connect'].isEnabled() and not d.buttons['disconnect'].isEnabled()
+    assert not calls and not dialogs  # Opening/refreshing never discovers hardware.
+    before = c.session.payload()
+    path = tmp_path / 'device.emoproj'
+    disk = path.read_bytes()
+    d.buttons['network'].trigger()
+    waitUntil(lambda: c.session.workflows.devices['definitions']['camera']['connection']['cameraKey'] == 'OFFLINE-DISCOVERED-CAMERA')
+    expected = deepcopy(before)
+    expected['devices']['definitions']['camera']['connection']['cameraKey'] = 'OFFLINE-DISCOVERED-CAMERA'
+    assert c.session.payload() == expected and c.session.dirty
+    assert len(dialogs) == 1 and calls == ['info', 'discover']
+    assert path.read_bytes() == disk
+    d.closeButton.click()
+    assert not d.isVisible() and path.read_bytes() == disk
+    assert calls == ['info', 'discover']
+
+
+def testOfflineDiscoveryReportsOldRuntimeInsteadOfStaleUnpublishedNotice(ownedDesignerWindow, tmp_path):
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+    from emo_master.core.project.device_resources import trustedDeviceTypes
+    from tests.runtime.test_managed_imv import definition as imvDefinition
+
+    cameraType = trustedDeviceTypes()['device.camera.huaray_imv']
+    window, _ = windowFor(ownedDesignerWindow, tmp_path, imvDefinition(), cameraType)
+    calls = []
+    def states(_project):
+        raise RuntimeClientError('E_CONFIG_NOT_LOADED', 'empty Runtime')
+    def command(_project, _runtime, action, **_kwargs):
+        calls.append(action)
+        assert action == 'info'
+        return dict(projectId='', runtimeInstanceId='old-instance', deviceSetupVersion=0)
+    window.runtimeClient.getDeviceStates = states
+    window.runtimeClient.deviceNetworkCommand = command
+    c = window.pageCoordinator
+    c.chrome.deviceAction.trigger()
+    d = c.devices
+    waitUntil(lambda: d.pending is None and bool(d.stateNotice))
+    d.table.setCurrentCell(0, 0)
+    before = c.session.payload()
+    d.buttons['network'].trigger()
+    waitUntil(lambda: d.pending is None)
+    assert calls == ['info'] and '升级 Runtime' in d.status.text()
+    assert '未下发' not in d.status.text() and d.buttons['network'].isEnabled()
+    assert c.session.payload() == before
+
+
+@pytest.mark.parametrize('closeMode', ['close', 'reopen', 'invalid-close'])
+def testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent(ownedDesignerWindow, tmp_path, monkeypatch, closeMode):
+    from PySide2.QtWidgets import QDialog
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+    from emo_master.apps.designer.ui.device_network import DeviceNetworkDialog
+    from emo_master.core.project.device_resources import trustedDeviceTypes
+    from tests.runtime.test_managed_imv import definition as imvDefinition
+
+    cameraType = trustedDeviceTypes()['device.camera.huaray_imv']
+    window, _ = windowFor(ownedDesignerWindow, tmp_path, imvDefinition(), cameraType)
+    entered, release = Event(), Event()
+    opened = []
+    def states(_project):
+        raise RuntimeClientError('E_CONFIG_NOT_LOADED', 'empty isolated Runtime')
+    def command(_project, _runtime, action, **_kwargs):
+        assert action == 'info'
+        entered.set()
+        assert release.wait(5)
+        return dict(projectId='', runtimeInstanceId='instance', deviceSetupVersion=1)
+    def modal(dialog):
+        opened.append(dict(parentVisible=dialog.parentWidget().isVisible(), discoveryOnly=dialog.discoveryOnly))
+        dialog.reject()
+        return QDialog.Rejected
+    window.runtimeClient.getDeviceStates = states
+    window.runtimeClient.deviceNetworkCommand = command
+    monkeypatch.setattr(DeviceNetworkDialog, 'exec_', modal)
+    c = window.pageCoordinator
+    c.chrome.deviceAction.trigger()
+    d = c.devices
+    waitUntil(lambda: d.pending is None and bool(d.stateNotice))
+    d.table.setCurrentCell(0, 0)
+    try:
+        d.buttons['network'].trigger()
+        assert entered.wait(2)
+        if closeMode == 'invalid-close':
+            d.name.setText('')
+        d.closeButton.click()
+        assert d.isVisible() == (closeMode == 'invalid-close')
+        if closeMode == 'reopen':
+            c.showDevices()
+            assert d.isVisible()
+        release.set()
+        waitUntil(lambda: d.pending is None)
+        assert opened == ([dict(parentVisible=True, discoveryOnly=True)] if closeMode == 'invalid-close' else [])
+        d.revert()
+        c.showDevices()
+        waitUntil(lambda: d.pending is None)
+        d.table.setCurrentCell(0, 0)
+        count = len(opened)
+        d.buttons['network'].trigger()
+        waitUntil(lambda: d.pending is None)
+        assert len(opened) == count + 1 and opened[-1]['parentVisible']
+    finally:
+        release.set()
 
 
 @pytest.mark.parametrize('width,height', [(1280, 800), (900, 650)])

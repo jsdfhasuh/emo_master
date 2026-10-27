@@ -165,11 +165,11 @@ class ProjectController:
             self.lastLoadError = f"加载项目失败：{projectDirPath}\n{err}"
             self.appendLog("ERROR", self.lastLoadError)
             return False, None, None
-        if self.editCoordinator is not None and payload.get('schemaVersion') in {'2.2', '2.3', '2.4', '2.5', '2.6'}:
+        if self.editCoordinator is not None and payload.get('schemaVersion') in {'2.2', '2.3', '2.4', '2.5', '2.6', '2.7'}:
             # Opening an editable draft must not compile unresolved resource paths
             # through the legacy execution API. P2 preparation happens on explicit start.
             loaded, runtimePath = True, str(projectFile)
-            self.appendLog('INFO', '2.2 草稿已打开；明确启动本地调试时物化资源和编译')
+            self.appendLog('INFO', '工程草稿已打开；写入 Runtime 仍需显式发布')
         else:
             loaded, runtimePath = self.loadProjectFromPath(
                 str(projectFile),
@@ -232,7 +232,7 @@ class ProjectController:
             except (OSError, RuntimeError):
                 # The file was saved; failed identity probing must not undo that fact.
                 pass
-        if payload.get("schemaVersion") != "2.6" and changedPath:
+        if payload.get("schemaVersion") not in {"2.6", "2.7"} and changedPath:
             release = getattr(self.runtimeClient, "releaseCommunicationForReplacement", None)
             if callable(release):
                 try:
@@ -320,20 +320,20 @@ class ProjectController:
             if selectedDir != "":
                 selected = Path(selectedDir)
                 projectName = selected.stem if selected.suffix.lower() == ".emoproj" else selected.name
-                saved, savedProjectDir = self.saveProjectToDirectory(
-                    selectedDir, projectName or "project", None
-                )
-                if not saved or savedProjectDir is None:
+                projectFile = projectFileForSave(selected)
+                if projectFile.exists():
+                    self.lastLoadError = "目标文件已存在；新建不会覆盖已有工程，请选择新文件名。"
                     return False, None, None
-                self.appendLog("INFO", f"空白项目已初始化：{selectedDir}")
-                loaded, runtimePath = self.loadProjectFromPath(
-                    str(self.currentProjectFile or savedProjectDir),
-                    successMessagePrefix="空白项目已加载",
-                    failedMessagePrefix="加载空白项目失败",
-                )
-                if not loaded:
+                try:
+                    createProjectSkeleton(projectFile, projectName or "project")
+                except (OSError, ValueError) as error:
+                    self.lastLoadError = f"创建空白项目失败：{error}"
+                    self.appendLog("ERROR", self.lastLoadError)
                     return False, None, None
-                return True, runtimePath, savedProjectDir
+                result = self.loadProjectDirectory(str(projectFile))
+                if not result[0] and self.lastLoadError:
+                    self.lastLoadError = f"文件已创建并保留：{projectFile}\n{self.lastLoadError}"
+                return result
         return False, None, None
 
     def _buildProjectPayload(

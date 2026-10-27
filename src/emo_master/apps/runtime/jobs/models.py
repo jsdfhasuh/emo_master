@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+from multiprocessing.synchronize import BoundedSemaphore
 import time
 
 from emo_master.apps.runtime.jobs.heartbeat import HeartbeatCell
@@ -69,6 +70,8 @@ class JobProcessSpec:
     dispatchSlots: tuple[tuple[str, str, int], ...] = ()
     runGroupId: str = ""
     targetSlotId: str = ""
+    inspectionEnabled: bool = False
+    inspectionCredits: BoundedSemaphore | None = field(default=None, repr=False, compare=False)
 
     @property
     def inputs_json(self) -> str:

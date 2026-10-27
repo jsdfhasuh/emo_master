@@ -1,0 +1,103 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_____________ testPublicationReturnPreservesDeviceListViewport[0] _____________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000025A63EA20B0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2760/testPublicationReturnPreserves0')
+definition = DeviceDefinition(name='Camera A', deviceTypeId='device.example.simulated_camera', driverVersion='1.0.0', enabled=True,...ce': 'offline'}, defaults={'exposureMode': 'manual', 'exposureUs': 8000.0, 'gain': 0.0, 'enabled': False}, policies={})
+declaration = DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.example.simulated_camera', version='1.0.0...tors={}, managementActions=[], actionSchemas={}, driverEntry=None, executionLocation='io_thread', cancellableWait=None)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000025A63EA1ED0>
+offset = 0
+
+    @pytest.mark.parametrize('offset', [0, 1])
+    def testPublicationReturnPreservesDeviceListViewport(ownedDesignerWindow, tmp_path,
+            definition, declaration, monkeypatch, offset):  # noqa: F811
+        window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+        c = window.pageCoordinator
+        with c.session.transaction():
+            for index in range(24):
+                c.session.workflows.devices['definitions'][f'copy-{index}'] = definition.model_copy(
+                    update={'name': f'导入副本 {index + 1}', 'enabled': False}).model_dump()
+        c.showDevices()
+        d = c.devices
+        waitUntil(lambda: d.pending is None)
+        d.table.setCurrentCell(0, 0)
+        for column in range(d.table.columnCount()):
+            d.table.setColumnWidth(column, 180)
+        QApplication.processEvents()
+        bar = d.table.horizontalScrollBar()
+        assert bar.maximum() > offset
+        bar.setValue(offset)
+        vertical = d.table.verticalScrollBar()
+        assert vertical.maximum() > 1
+        vertical.setValue(vertical.maximum() // 2)
+        tablePosition = vertical.value()
+        treeBar = d.tree.verticalScrollBar()
+        treeBar.setValue(treeBar.maximum())
+        treePosition = treeBar.value()
+        calls = []
+        monkeypatch.setattr(c, 'configureRuntime', lambda: calls.append(True))
+        d.buttons['publish'].click()
+        waitUntil(lambda: bool(calls) and d.isVisible())
+        QApplication.processEvents()
+        assert d.selectedId == 'camera'
+        assert bar.value() == offset
+        assert vertical.value() == tablePosition
+>       assert treeBar.value() == treePosition
+E       assert 0 == 12
+E        +  where 0 = <built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A64B9F480>()
+E        +    where <built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A64B9F480> = <PySide2.QtWidgets.QScrollBar(0x25a65937bc0) at 0x0000025A64B9F480>.value
+
+tests\designer\test_device_usability_publication.py:80: AssertionError
+_____________ testPublicationReturnPreservesDeviceListViewport[1] _____________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000025A64AF9F90>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2760/testPublicationReturnPreserves1')
+definition = DeviceDefinition(name='Camera A', deviceTypeId='device.example.simulated_camera', driverVersion='1.0.0', enabled=True,...ce': 'offline'}, defaults={'exposureMode': 'manual', 'exposureUs': 8000.0, 'gain': 0.0, 'enabled': False}, policies={})
+declaration = DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.example.simulated_camera', version='1.0.0...tors={}, managementActions=[], actionSchemas={}, driverEntry=None, executionLocation='io_thread', cancellableWait=None)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000025A64AF97B0>
+offset = 1
+
+    @pytest.mark.parametrize('offset', [0, 1])
+    def testPublicationReturnPreservesDeviceListViewport(ownedDesignerWindow, tmp_path,
+            definition, declaration, monkeypatch, offset):  # noqa: F811
+        window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+        c = window.pageCoordinator
+        with c.session.transaction():
+            for index in range(24):
+                c.session.workflows.devices['definitions'][f'copy-{index}'] = definition.model_copy(
+                    update={'name': f'导入副本 {index + 1}', 'enabled': False}).model_dump()
+        c.showDevices()
+        d = c.devices
+        waitUntil(lambda: d.pending is None)
+        d.table.setCurrentCell(0, 0)
+        for column in range(d.table.columnCount()):
+            d.table.setColumnWidth(column, 180)
+        QApplication.processEvents()
+        bar = d.table.horizontalScrollBar()
+        assert bar.maximum() > offset
+        bar.setValue(offset)
+        vertical = d.table.verticalScrollBar()
+        assert vertical.maximum() > 1
+        vertical.setValue(vertical.maximum() // 2)
+        tablePosition = vertical.value()
+        treeBar = d.tree.verticalScrollBar()
+        treeBar.setValue(treeBar.maximum())
+        treePosition = treeBar.value()
+        calls = []
+        monkeypatch.setattr(c, 'configureRuntime', lambda: calls.append(True))
+        d.buttons['publish'].click()
+        waitUntil(lambda: bool(calls) and d.isVisible())
+        QApplication.processEvents()
+        assert d.selectedId == 'camera'
+        assert bar.value() == offset
+>       assert vertical.value() == tablePosition
+E       assert 0 == 5
+E        +  where 0 = <built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A66C6C580>()
+E        +    where <built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A66C6C580> = <PySide2.QtWidgets.QScrollBar(0x25a65248bb0) at 0x0000025A66C6C580>.value
+
+tests\designer\test_device_usability_publication.py:79: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_usability_publication.py::testPublicationReturnPreservesDeviceListViewport[0]
+FAILED tests/designer/test_device_usability_publication.py::testPublicationReturnPreservesDeviceListViewport[1]
+2 failed in 2.94s

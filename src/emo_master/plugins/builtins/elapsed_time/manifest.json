@@ -1,0 +1,17 @@
+{
+  "operatorId": "vision.state.elapsed_time",
+  "displayName": "\u8fd0\u884c\u8ba1\u65f6",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.elapsed_time.operator:ElapsedTimeOperator",
+  "category": "\u6570\u503c\u4e0e\u903b\u8f91",
+  "iconKey": "clock",
+  "summary": "\u4ece\u672c\u4f5c\u4e1a\u8be5\u8282\u70b9\u9996\u6b21\u6267\u884c\u8d77\u8ba1\u65f6\uff0c\u6bcf\u6b21\u8f93\u5165\u5230\u8fbe\u65f6\u66f4\u65b0\u79d2\u6570\u548c HH:MM:SS\u3002",
+  "inputPorts": {"after": {"type": "any", "required": true, "nullable": false}},
+  "outputPorts": {
+    "seconds": {"type": "number", "required": true, "nullable": false},
+    "text": {"type": "string", "required": true, "nullable": false}
+  },
+  "paramSchema": {"type": "object", "properties": {}, "additionalProperties": false},
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x"
+}

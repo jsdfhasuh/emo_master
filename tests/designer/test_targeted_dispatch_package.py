@@ -34,8 +34,12 @@ def testDispatchCopyImportJoinPortsAndCombinedRun(tmp_path, monkeypatch, portabl
     package = buildWorkflowPackage(store, 'main', forInProjectCopy=not portable, sourceRoot=tmp_path)
     if portable:
         package = loadWorkflowPackage(writeWorkflowPackage(tmp_path / 'portable', package))
+    scan = PluginRegistry('0.6.1').scanRoots([Path(__file__).resolve().parents[2] / 'src/emo_master/plugins/builtins'])
     result = importWorkflowPackage(store, package, reuseVariableIds=not portable,
-                                   deviceMapping={'camera': None if newDevice else 'camera'}, targetRoot=tmp_path)
+        deviceMapping={'camera': None if newDevice else 'camera'}, targetRoot=tmp_path,
+        deviceTypes=scan.deviceTypes,
+        operatorRequirements={key: descriptor.manifest.deviceRequirements
+                              for key, descriptor in scan.activeOperators.items()})
     assert store.toPayload()['workflows']['main'] == before['workflows']['main']
     assert store.toPayload()['devices']['definitions']['camera'] == before['devices']['definitions']['camera']
     if newDevice:
@@ -59,7 +63,6 @@ def testDispatchCopyImportJoinPortsAndCombinedRun(tmp_path, monkeypatch, portabl
     document['workflowOrder'].append('both')
     model = ProjectDocument.model_validate(document)
     assert len(groupSlots(model, 'both')) == 4
-    scan = PluginRegistry('0.6.1').scanRoots([Path(__file__).resolve().parents[2] / 'src/emo_master/plugins/builtins'])
     WorkflowCompiler(scan.activeOperators, deviceTypes=scan.deviceTypes).compile(model)
     path = tmp_path / 'project.emoproj'
     path.write_text(json.dumps(document), encoding='utf-8')

@@ -11,7 +11,7 @@ from PySide2.QtGui import QDoubleValidator, QRegularExpressionValidator
 from PySide2.QtWidgets import (
     QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout, QLabel,
     QLineEdit, QMessageBox, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout,
-    QHeaderView, QAbstractItemView, QWidget,
+    QHeaderView, QAbstractItemView, QWidget, QTabWidget,
 )
 
 from emo_master.core.project.global_variables import VariableDefinition, validateValue
@@ -137,11 +137,20 @@ class GlobalVariablesDialog(QDialog):
         self._records = {}
         self._jobs = []
         self._closing = False
-        self.setWindowTitle("全局变量")
+        self.setWindowTitle("全局变量与队列")
         self.resize(980, 520)
         layout = QVBoxLayout(self)
         self.projectLabel = WrapLabel("")
         layout.addWidget(self.projectLabel)
+        rootLayout = layout
+        self.tabs = QTabWidget()
+        self.variablePage = QWidget()
+        self.tabs.addTab(self.variablePage, "业务变量")
+        from emo_master.apps.designer.ui.dispatch_queue_panel import DispatchQueuePanel
+        self.queuePanel = DispatchQueuePanel(lambda: self.runtimeClient, self.getCurrentJobId)
+        self.tabs.addTab(self.queuePanel, "运行队列")
+        rootLayout.addWidget(self.tabs, 1)
+        layout = QVBoxLayout(self.variablePage)
         jobRow = QHBoxLayout()
         jobRow.addWidget(QLabel("任务"))
         self.jobs = QComboBox()
@@ -167,12 +176,18 @@ class GlobalVariablesDialog(QDialog):
             ("new", "新建", self.newVariable, "plus"), ("edit", "编辑定义", self.editVariable, "sliders-horizontal"),
             ("delete", "删除", self.deleteVariable, "trash-2"), ("set", "设值", self.setValue, "sliders-horizontal"),
             ("reset", "恢复初始值", self.resetValue, "refresh-cw"),
-            ("refresh", "刷新", self.refreshVariables, "refresh-cw"), ("close", "关闭", self.close, "x"),
+            ("refresh", "刷新", self.refreshCurrent, "refresh-cw"), ("close", "关闭", self.close, "x"),
         ):
             if key == "set":
                 row.addStretch(1)
                 layout.addLayout(row)
                 row = QHBoxLayout()
+            if key == "refresh":
+                row.addStretch(1)
+                layout.addLayout(row)
+                layout = rootLayout
+                row = QHBoxLayout()
+                row.addStretch(1)
             button = QPushButton(label)
             button.setIcon(icon(glyph))
             button.clicked.connect(callback)
@@ -182,7 +197,25 @@ class GlobalVariablesDialog(QDialog):
         self.table.itemSelectionChanged.connect(self._buttons)
         self.timer = QTimer(self)
         self.timer.setInterval(1000)
-        self.timer.timeout.connect(self.refreshVariables)
+        self.timer.timeout.connect(self.refreshCurrent)
+        self.tabs.currentChanged.connect(self._tabChanged)
+
+    def refreshCurrent(self):
+        if not self.isVisible():
+            return
+        if self.tabs.currentIndex() == 0:
+            self.refreshVariables()
+        else:
+            self.queuePanel.refresh()
+
+    def _tabChanged(self):
+        queue = self.tabs.currentIndex() == 1 and self.isVisible() and not self._closing
+        self.queuePanel.setActive(queue)
+        self.timer.stop()
+        if self.tabs.currentIndex() == 0 and self.isVisible() and not self._closing:
+            self.timer.start()
+            self.refreshVariables()
+        self._buttons()
 
     def bindProject(self, projectId):
         if projectId != self._projectId:
@@ -196,11 +229,15 @@ class GlobalVariablesDialog(QDialog):
             self.jobs.addItem("未选择任务", "")
             self.jobs.blockSignals(False)
         self.projectLabel.setText("当前项目：" + projectId)
+        self.queuePanel.bindProject(projectId)
         self._render()
 
-    def showForProject(self, projectId):
+    def showForProject(self, projectId, projectName=""):
         self._closing = False
         self.bindProject(projectId)
+        if projectName:
+            self.projectLabel.setText("当前项目：" + projectName)
+        self.projectLabel.setToolTip(projectId)
         job = self.getCurrentJobId()
         if job and self.jobs.findData(job) < 0:
             self.jobs.addItem(str(job), job)
@@ -208,8 +245,7 @@ class GlobalVariablesDialog(QDialog):
             self.jobs.setCurrentIndex(self.jobs.findData(job))
         self.show()
         self.raise_()
-        self.timer.start()
-        self.refreshVariables()
+        self._tabChanged()
 
     def _jobChanged(self):
         self._discardPendingOperations()
@@ -219,7 +255,7 @@ class GlobalVariablesDialog(QDialog):
         self.refreshVariables()
 
     def refreshVariables(self):
-        if self._worker is None and not self._closing:
+        if self._worker is None and not self._closing and self.tabs.currentIndex() == 0:
             self._request()
 
     def _discardPendingOperations(self):
@@ -351,7 +387,7 @@ class GlobalVariablesDialog(QDialog):
             writable = writable and any(job["jobId"] == self.jobs.currentData() and not job["ended"] for job in self._jobs)
         for action in ("set", "reset"):
             self.buttons[action].setEnabled(writable)
-        self.buttons["refresh"].setEnabled(not busy)
+        self.buttons["refresh"].setEnabled(self.tabs.currentIndex() == 1 or not busy)
 
     def _applyDefinitions(self, values):
         try:
@@ -422,12 +458,22 @@ class GlobalVariablesDialog(QDialog):
         self._generation += 1
         self._pendingOperations.clear()
         self.timer.stop()
+        self.queuePanel.shutdown()
         if self._worker:
             self._worker.requestStop()
 
     def closeEvent(self, event):
         self.shutdown()
         super().closeEvent(event)
+
+    def hideEvent(self, event):
+        self.timer.stop()
+        self.queuePanel.setActive(False)
+        super().hideEvent(event)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._tabChanged()
 
 
 def _text(value):

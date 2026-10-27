@@ -46,6 +46,7 @@ class JobSupervisor:
         self.communication = communication
         self.devices = devices
         self.presentationCallback: Callable | None = None
+        self.inspectionCallback: Callable | None = None
         self.presentationErrors: deque[str] = deque(maxlen=64)
         self._context = multiprocessing.get_context("spawn")
         self._handles: dict[str, tuple[Any, Any, Any]] = {}
@@ -70,11 +71,11 @@ class JobSupervisor:
         self._failedStartRetirement: set[str] = set()
         self.retirementRepairFactory: Callable | None = None
 
-    def startJob(self, spec: JobProcessSpec) -> None:
-        if spec.dispatchSlots and not spec.runGroupId:
-            self._startRunGroup(spec)
-            return
+    def startJob(self, spec: JobProcessSpec, *, consumerPresentation=None) -> None:
         self.assertMutationAllowed()
+        if spec.dispatchSlots and not spec.runGroupId:
+            self._startRunGroup(spec, consumerPresentation=consumerPresentation)
+            return
         with self._lock:
             active = len(self._ownedJobs())
             if self.maxConcurrentJobs is not None and active >= self.maxConcurrentJobs:
@@ -102,8 +103,8 @@ class JobSupervisor:
             try:
                 cell = HeartbeatCell(self._context)
                 spec = replace(spec, heartbeatCell=cell)
-                if self.communication is not None and spec.usesCommunication:
-                    communicationPipe = self.communication.openWorker(spec.jobId, cancelEvent, self._context)
+                if self.devices is not None and spec.usesCommunication:
+                    communicationPipe = self.devices.openTcpWorker(spec.jobId, cancelEvent, self._context)
                 if spec.deviceIds or spec.managedConfiguration or spec.runGroupId:
                     if self.devices is None:
                         raise RuntimeError("E_DEVICE_RUNTIME_UNAVAILABLE")
@@ -158,10 +159,10 @@ class JobSupervisor:
                     self.devices.retire(spec.jobId)
                 if communicationPipe is not None:
                     communicationPipe.close()
-                if spec.jobId not in self._handles and self.communication is not None:
-                    self.communication.revokeJob(spec.jobId)
+                if spec.jobId not in self._handles and self.devices is not None:
+                    self.devices.revokeTcpWorker(spec.jobId)
 
-    def _startRunGroup(self, spec):
+    def _startRunGroup(self, spec, *, consumerPresentation=None):
         import json
         from pathlib import Path
         from uuid import uuid4
@@ -175,28 +176,45 @@ class JobSupervisor:
             raise RuntimeError("E_DISPATCH_CONFIGURATION: Dispatch requires authoritative online configuration")
         slots = {key: Slot(workflow, capacity, str(uuid4())) for key, workflow, capacity in spec.dispatchSlots}
         group = RunGroup(spec.jobId, slots, self.devices, document)
-        # Reserve producer and every persistent consumer in one admission section.
-        # No producer process exists until all consumer starts have been issued.
-        with self._lock:
-            self.assertMutationAllowed()
-            if self._closing:
-                raise RuntimeError("E_RUNTIME_CLOSING")
-            if self.maxConcurrentJobs is not None and len(self._ownedJobs()) + len(slots) + 1 > self.maxConcurrentJobs:
-                raise RuntimeError("E_MAX_CONCURRENT_JOBS: entire Dispatch run group exceeds capacity")
-            for member in group.members:
-                self.devices.dispatchGroups[member] = group
-            try:
-                for key, slot in slots.items():
-                    self.jobRepository.create(JobRecord(slot.jobId, spec.projectId, document.project.revision, slot.workflowId))
-                    workspace = Path(spec.jobWorkspacePath).parent / slot.jobId
-                    workspace.mkdir(parents=True, exist_ok=True)
-                    self.startJob(replace(spec, jobId=slot.jobId, workflowId=slot.workflowId,
-                        runGroupId=group.groupId, targetSlotId=key, dispatchSlots=(),
-                        jobWorkspacePath=str(workspace), continuous=False, presentation=None,
-                        inputsJson="{}", deviceIds=workflowDeviceIds(document, slot.workflowId),
-                        usesCommunication=bool(communicationNodes(document, slot.workflowId))))
+        if spec.presentation is not None:
+            spec.presentation["dispatch"] = dict(runGroupId=group.groupId, sourceJobId=spec.jobId, targetSlotId="")
+        children = []
+        try:
+            # Display attachment takes the presentation lock and may retire an old
+            # capture. Finish it before taking the process-admission lock.
+            for key, slot in slots.items():
+                self.jobRepository.create(JobRecord(slot.jobId, spec.projectId, document.project.revision, slot.workflowId))
+                workspace = Path(spec.jobWorkspacePath).parent / slot.jobId
+                workspace.mkdir(parents=True, exist_ok=True)
+                # Only the source Job is attached to the requested inspection
+                # session; consumers keep legacy snapshots and their own display.
+                child = replace(spec, jobId=slot.jobId, workflowId=slot.workflowId,
+                    runGroupId=group.groupId, targetSlotId=key, dispatchSlots=(),
+                    jobWorkspacePath=str(workspace), continuous=False, presentation=None, inspectionEnabled=False,
+                    inspectionCredits=None,
+                    inputsJson="{}", deviceIds=workflowDeviceIds(document, slot.workflowId),
+                    usesCommunication=bool(communicationNodes(document, slot.workflowId)))
+                if consumerPresentation is not None:
+                    config = consumerPresentation(child)
+                    if config is not None:
+                        config["dispatch"] = dict(runGroupId=group.groupId, sourceJobId=spec.jobId, targetSlotId=key)
+                        child = replace(child, presentation=config)
+                children.append(child)
+            # Reserve the whole group at once. No process exists before all
+            # attachments are ready; recheck admission after that preparation.
+            with self._lock:
+                self.assertMutationAllowed()
+                if self._closing:
+                    raise RuntimeError("E_RUNTIME_CLOSING")
+                if self.maxConcurrentJobs is not None and len(self._ownedJobs()) + len(slots) + 1 > self.maxConcurrentJobs:
+                    raise RuntimeError("E_MAX_CONCURRENT_JOBS: entire Dispatch run group exceeds capacity")
+                for member in group.members:
+                    self.devices.dispatchGroups[member] = group
+                for child in children:
+                    self.startJob(child)
                 self.startJob(replace(spec, runGroupId=group.groupId, dispatchSlots=()))
-            except BaseException:
+        except BaseException:
+            with self._lock:
                 group.stop()
                 for member in group.members:
                     handle = self._handles.get(member)
@@ -214,11 +232,33 @@ class JobSupervisor:
                 if not self._ownedJobs().intersection(group.members):
                     for member in group.members:
                         self.devices.dispatchGroups.pop(member, None)
-                raise
+            raise
         self.eventStore.append(spec.jobId, "dispatch.group.started", "persistent consumer group admitted",
             projectId=spec.projectId, workflowId=spec.workflowId,
             payload=dict(runGroupId=group.groupId, sourceJobId=spec.jobId,
                          slots={key: slot.jobId for key, slot in slots.items()}))
+
+    def dispatchQueueState(self, projectId, runGroupId="", detailSlotId=""):
+        with self._lock:
+            groups = {group.groupId: group for group in self.devices.dispatchGroups.values()
+                      if group.document.project.projectId == projectId} if self.devices is not None else {}
+            sources = {key: self.jobRepository.get(group.source) for key, group in groups.items()}
+        summaries, selected = [], None
+        for key, group in groups.items():
+            snapshot = group.snapshot(detailSlotId if key == runGroupId else "")
+            record = sources[key]
+            workflowId = record.workflowId if record is not None else ""
+            snapshot["sourceWorkflowId"] = workflowId
+            snapshot["sourceWorkflowName"] = (group.document.workflows[workflowId].name
+                                               if workflowId in group.document.workflows else workflowId)
+            summaries.append({name: snapshot[name] for name in ("runGroupId", "sourceJobId", "state",
+                              "createdAtMs", "sourceWorkflowId", "sourceWorkflowName")}
+                             | {"consumerJobIds": [slot.jobId for slot in group.slots.values()]})
+            if key == runGroupId:
+                selected = snapshot
+        return dict(groups=summaries, selected=selected,
+                    state="AVAILABLE" if selected else "UNAVAILABLE" if runGroupId else
+                          "SELECT_GROUP" if groups else "NO_ACTIVE_GROUP", snapshotAtMs=nowMs())
 
     @staticmethod
     def _workerEventFields(jobId, record, event) -> dict[str, Any]:
@@ -258,6 +298,15 @@ class JobSupervisor:
 
     def consumeWorkerEvent(self, jobId: str, event: dict[str, object]) -> None:
         self.assertMutationAllowed()
+        if event.get('eventType') == 'inspection.snapshot':
+            with self._lock:
+                record = self.jobRepository.get(jobId)
+                live = record is not None and not record.isTerminal and jobId not in self._terminalEvents
+            if live and self.inspectionCallback is not None:
+                # Files are already frozen by the worker. Do not copy under
+                # either the EventStore order lock or the Supervisor lock.
+                self.inspectionCallback(jobId, event)
+            return
         with self._terminalAttempt() as claim:
             with self._lock:
                 record = self.jobRepository.get(jobId)
@@ -281,7 +330,8 @@ class JobSupervisor:
                 if eventType == "job.started":
                     self.jobRepository.update(
                         jobId,
-                        status=JobStatus.RUNNING.value,
+                        status=(JobStatus.STOPPING.value if record.status == JobStatus.STOPPING.value
+                                else JobStatus.RUNNING.value),
                         startedAtMs=stored.timestampMs,
                         pid=event.get("pid"),
                     )
@@ -426,6 +476,12 @@ class JobSupervisor:
     def stopJobOutcome(self, jobId: str, mode: str = "graceful", context=None) -> StopOutcome:
         group = self.devices.dispatchGroups.get(jobId) if self.devices is not None else None
         if group is not None and group.source == jobId and mode in {"graceful", "force"}:
+            # Stop a capacity waiter before closing its targets. Otherwise it can
+            # observe target shutdown as a business failure during a normal Stop.
+            with self._lock:
+                source = self._handles.get(jobId)
+                if source is not None:
+                    source[1].set()
             group.stop()
             for slot in group.slots.values():
                 self.stopJobOutcome(slot.jobId, mode, context)

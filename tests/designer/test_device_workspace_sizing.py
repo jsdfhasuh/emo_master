@@ -29,10 +29,15 @@ def testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize(
         assert d.rect().contains(area), (button.text(), area, d.size())
         assert button.isVisibleTo(d)
     # Keeping the footer fixed must not make the lower device details unreachable.
-    d.contentScroll.ensureWidgetVisible(d.infoTabs)
-    QApplication.processEvents()
-    assert d.contentScroll.viewport().rect().intersects(QRect(
-        d.infoTabs.mapTo(d.contentScroll.viewport(), d.infoTabs.rect().topLeft()), d.infoTabs.size()))
+    # Settle deferred layout/focus scrolling before simulating a user scroll.
+    for _ in range(6):
+        QApplication.processEvents()
+    assert d.rect().intersects(QRect(d.infoTabs.mapTo(d, d.infoTabs.rect().topLeft()), d.infoTabs.size()))
+    if width == 1200:
+        for key in ('apply', 'revert'):
+            button = d.buttons[key]
+            assert d.rect().contains(QRect(button.mapTo(d, button.rect().topLeft()), button.size()))
+            assert button.isVisibleTo(d)
     before = c.session.payload()
     d.closeButton.click()
     assert not d.isVisible() and c.session.payload() == before

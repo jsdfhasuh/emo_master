@@ -1,0 +1,158 @@
+.......F...................................                              [100%]
+================================== FAILURES ===================================
+____________ testA5AllThreePackagesImportAndRunFromNewDirectories _____________
+
+chain = {'root': WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-fina...s': {'wait': {'initialValue': 5000, 'kind': 'constant', 'legacyCounterName': None, 'lifetime': 'job', ...}}, ...}, ...}
+
+    def testA5AllThreePackagesImportAndRunFromNewDirectories(chain):
+        from emo_master.apps.designer.state.project_edit_session import ProjectEditSession
+        from emo_master.apps.designer.state.device_package import exportDevices, importDevices, readDevicePackage
+        from emo_master.apps.designer.state.workflow_package import buildWorkflowPackage, writeWorkflowPackage, loadWorkflowPackage, importWorkflowPackage
+        from emo_master.core.project.runtime_package import buildRuntimePackage, installRuntimePackage
+        c = chain
+        control(c, 'server', 'disconnect')
+        session = ProjectEditSession(c['payload'])
+        package = exportDevices(session, list(c['payload']['devices']['definitions']), c['path'].parent)
+        devicePath = c['root']/'devices.emodev.json'
+        devicePath.write_text(package.model_dump_json(indent=2), encoding='utf-8')
+        destination = c['root']/'device-import'
+        destination.mkdir()
+        target = ProjectEditSession(WorkflowStore().toPayload())
+        mapped = importDevices(target, readDevicePackage(devicePath), c['types'], destination)
+        definitions = target.document().model_dump()['devices']['definitions']
+        assert all(not value['enabled'] for value in definitions.values())
+        assert definitions[mapped['camera']]['connection']['serial'] == ''
+        imported = deepcopy(c['payload'])
+        imported['devices']['definitions'] = definitions
+        for key, value in definitions.items():
+            value['enabled'] = True
+        definitions[mapped['camera']]['connection']['serial'] = 'ACCEPTANCE-IMPORTED'
+        for workflow in imported['workflows'].values():
+            for node in workflow['nodes']:
+                for binding in node.get('deviceBindings', {}).values():
+                    binding['deviceId'] = mapped[binding['deviceId']]
+        imported['resources']['siteBindings'] = []
+        (destination/'sample.png').write_bytes((c['path'].parent/'sample.png').read_bytes())
+>       runImported(c, destination, imported, 'main', 'DEVICE-PACKAGE')
+
+tests\runtime\test_tcp_device_integration.py:521: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+c = {'root': WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-fina...s': {'wait': {'initialValue': 5000, 'kind': 'constant', 'legacyCounterName': None, 'lifetime': 'job', ...}}, ...}, ...}
+directory = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-chain/tcp-device-chain0/device-import')
+payload = {'dependencies': {'operators': []}, 'devices': {'bindings': {}, 'definitions': {'device-5becd5f03f294eeb9e7cfa39270206...riables': {'wait': {'initialValue': 5000, 'kind': 'constant', 'legacyCounterName': None, 'lifetime': 'job', ...}}, ...}
+workflow = 'main', label = 'DEVICE-PACKAGE'
+
+    def runImported(c, directory, payload, workflow, label):
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+        path = directory/'imported.emoproj'
+        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
+        service = RuntimeService(dbPath=directory/'runtime/runtime.db', workspaceRoot=directory/'runtime/jobs')
+        client = RuntimeClient(runtimeService=service)
+        try:
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None)
+>           assert loaded.ok, loaded
+E           AssertionError: status: "FAILED"
+E             message: "invalid project file: [WinError 3] 系统找不到指定的路径。: \'D:\\\\jsdfhasuh\\\\documents\\\\my_projec...sources\\\\46efdcb9f68149a0963d2697b177f93d\\\\7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4.png\'"
+E             
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "invalid project file: [WinError 3] 系统找不到指定的路径。: \'D:\\\\jsdfhasuh\\\\documents\\\\my_projec...sources\\\\46efdcb9f68149a0963d2697b177f93d\\\\7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4.png\'"\n.ok
+
+tests\runtime\test_tcp_device_integration.py:435: AssertionError
+=================================== PASSES ====================================
+__ testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication ___
+---------------------------- Captured stdout setup ----------------------------
+TCP_ACCEPTANCE_ROOT=D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\pytest-final-chain\tcp-device-chain0
+______ testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure ______
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-88334fe4-2453-4b0e-b9cb-8bce0eefce6c:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\jobs\worker_main.py", line 140, in runJobProcess
+    runCycle(context, inputs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\execution\operator_executor.py", line 222, in invoke
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: 等待连接已取消
+_________ testA6ThirdPartyServiceUsesSameFactoryJobStateAndDeviceLogs _________
+---------------------------- Captured stdout call -----------------------------
+THIRD_PARTY_ACCEPTANCE_ROOT=D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\pytest-final-chain\testA6ThirdPartyServiceUsesSam0
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-10bb0868-84e2-4ab9-89bf-b4c5d253b9c7:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\jobs\worker_main.py", line 140, in runJobProcess
+    runCycle(context, inputs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\execution\operator_executor.py", line 222, in invoke
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: 示例采样被拒绝；服务可继续使用
+=========================== short test summary info ===========================
+PASSED tests/runtime/test_tcp_device_integration.py::testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication
+PASSED tests/runtime/test_tcp_device_integration.py::testA2CameraProcessingThenPlcWriteInTheSameSavedProject
+PASSED tests/runtime/test_tcp_device_integration.py::testA3ServerAndBothSingleTransactionsUseRealJobEntry
+PASSED tests/runtime/test_tcp_device_integration.py::testNormal16MiBMessageCrossesTheBoundedTcpBridge
+PASSED tests/runtime/test_tcp_device_integration.py::testBindingRejectsMissingChannelAndClientIdentityIsNotExclusive
+PASSED tests/runtime/test_tcp_device_integration.py::testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure
+PASSED tests/runtime/test_tcp_device_integration.py::testUnavailableReplyPreservesUnknownReceiptAndNeverReplays
+PASSED tests/runtime/test_tcp_device_integration.py::testA6ThirdPartyServiceUsesSameFactoryJobStateAndDeviceLogs
+PASSED tests/runtime/test_tcp_device_closure.py::testF02NewServerReferenceIsAddedBeforeSelectorValidation
+PASSED tests/runtime/test_tcp_device_closure.py::testF02SelectorDependencyUsesDeviceDeclaration[True]
+PASSED tests/runtime/test_tcp_device_closure.py::testF02SelectorDependencyUsesDeviceDeclaration[False]
+PASSED tests/runtime/test_tcp_device_closure.py::testF03ThirdPartyTcpGetsBridgeInSpawnedJob[False]
+PASSED tests/runtime/test_tcp_device_closure.py::testF03ThirdPartyTcpGetsBridgeInSpawnedJob[True]
+PASSED tests/runtime/test_tcp_device_closure.py::testF02NewServerAndBoundNodeSelectedPublicationRuns
+PASSED tests/runtime/test_tcp_device_closure.py::testF04StopSingleTransactionAbortsAndReleases[client_once]
+PASSED tests/runtime/test_tcp_device_closure.py::testF04StopSingleTransactionAbortsAndReleases[receive_once]
+PASSED tests/runtime/test_tcp_device_closure.py::testF05ReceiveTwiceAndListenerRemainsExclusive
+PASSED tests/runtime/test_device_contract_closure.py::testF06BusinessReleaseAndFrameworkFrameReleaseHaveDifferentRoutes
+PASSED tests/runtime/test_device_contract_closure.py::testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error0]
+PASSED tests/runtime/test_device_contract_closure.py::testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error1]
+PASSED tests/runtime/test_device_contract_closure.py::testF07BusinessRejectionLeavesServiceUsable
+PASSED tests/runtime/test_device_contract_closure.py::testF08OrdinaryChannelsUseGenericCreateEditAndSave
+PASSED tests/runtime/test_device_feedback_closure.py::testF09ProjectionPreservesFrozenIdentityAndOriginalEvent[False]
+PASSED tests/runtime/test_device_feedback_closure.py::testF09ProjectionPreservesFrozenIdentityAndOriginalEvent[True]
+PASSED tests/runtime/test_device_feedback_closure.py::testF09LifecycleLoggerKeepsCreationIdentityWhileExecutionUsesNewSnapshot
+PASSED tests/runtime/test_device_feedback_closure.py::testF10ConcurrentServiceOwnersAppearInAuthoritativeState
+PASSED tests/runtime/test_device_feedback_closure.py::testF11SelectorIssueHasWorkflowNodeSlotAndSelector
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DefinitionIssueHasDeviceAndExactFieldWithoutIO
+PASSED tests/runtime/test_device_feedback_closure.py::testF11InitialRpcAndUiReceiveStructuredDeviceLocation
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DeviceParameterSourcesKeepExactPositions[override]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DeviceParameterSourcesKeepExactPositions[dynamic]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DeviceParameterSourcesKeepExactPositions[address]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DevicePackageShowsTypeAndRequiredVersion
+PASSED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[operator_missing]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[operator_version]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[device_missing]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[device_version]
+PASSED tests/runtime/test_device_feedback_closure.py::testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[embedded]
+PASSED tests/runtime/test_device_feedback_closure.py::testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[grpc]
+PASSED tests/runtime/test_device_feedback_closure.py::testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[designer]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpShortcutAppliesAfterMetadataAndDoesNotChooseFirstServer
+PASSED tests/designer/test_tcp_closure_ui.py::testDraftAndConnectedServerSummaryUseSameSnapshot
+FAILED tests/runtime/test_tcp_device_integration.py::testA5AllThreePackagesImportAndRunFromNewDirectories
+1 failed, 42 passed in 140.51s (0:02:20)

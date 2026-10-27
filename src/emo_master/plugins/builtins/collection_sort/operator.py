@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from time import perf_counter
 from typing import Any, cast
 
+from emo_master.plugins.builtins._operator_modes import SORT_DEFAULTS, inputChoiceError, modeSchema
+
 from emo_master.plugins.builtins._collection_ops import (
     CollectionInputError,
     CollectionItem,
@@ -76,11 +78,17 @@ _KEYS_BY_KIND = {
     "circle": _CIRCLE_KEYS,
     "match": _MATCH_KEYS,
 }
-_ALL_KEYS = sorted(set().union(*_KEYS_BY_KIND.values()))
+_ALL_KEYS = ["", *sorted(set().union(*_KEYS_BY_KIND.values()))]
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
-        "key": {"title": "排序字段", "type": "string", "enum": _ALL_KEYS, "default": "area"},
+        "key": {"title": "排序字段", "type": "string", "enum": _ALL_KEYS, "default": "",
+                "xOptionLabels": {"": "自动（按对象类型）"},
+                "xEnumBy": {"parameter": "collectionType", "options": {
+                    port: ["", *sorted(_KEYS_BY_KIND[kind])] for port, kind in (
+                        ("blobs", "blob"), ("detections", "detection"), ("contours", "contour"),
+                        ("measurements", "measurement"), ("lines", "line"),
+                        ("circles", "circle"), ("matches", "match"))}}},
         "direction": {
             "title": "排序方向",
             "type": "string",
@@ -134,13 +142,20 @@ class CollectionSortOperator:
             "sortedCircles": {"type": "circleCollection", "required": False, "nullable": False, "schemaVersion": "1.2"},
             "sortedMatches": {"type": "templateMatchCollection", "required": False, "nullable": False, "schemaVersion": "1.2"},
         },
-        paramSchema=_PARAM_SCHEMA,
+        paramSchema=modeSchema("vision.collection.sort", _PARAM_SCHEMA),
     )
 
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
-        key = params.get("key", "area")
+        choiceError = inputChoiceError(self.meta.operatorId, params)
+        if choiceError:
+            return choiceError
+        key = params.get("key", "")
         if not isinstance(key, str) or key not in _ALL_KEYS:
             return _paramError("key is not a supported collection field")
+        selected = params.get("collectionType", "")
+        options = cast(dict, self.meta.paramSchema["properties"])["key"]["xEnumBy"]["options"]
+        if selected in options and key not in options[selected]:
+            return _paramError("排序字段不适用于所选处理对象")
         if params.get("direction", "descending") not in {"ascending", "descending"}:
             return _paramError("direction must be ascending or descending")
         return None
@@ -154,13 +169,14 @@ class CollectionSortOperator:
         _ = runtimeContext
         startedAt = perf_counter()
         paramError = self.validateParams(params)
+        paramError = paramError or inputChoiceError(self.meta.operatorId, params, inputs)
         if paramError is not None:
             return {"status": "error", "error": paramError}
         try:
             collection = parseCollectionInputs(inputs)
         except CollectionInputError as err:
             return _error(err.code, str(err))
-        key = cast(str, params.get("key", "area"))
+        key = cast(str, params.get("key") or SORT_DEFAULTS[collection.kind])
         allowed = _KEYS_BY_KIND[collection.kind]
         if key not in allowed:
             return _error(

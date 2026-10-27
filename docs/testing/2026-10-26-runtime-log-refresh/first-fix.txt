@@ -1,0 +1,30 @@
+........F.FF..F.                                                         [100%]
+================================== FAILURES ===================================
+_ testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches[True-jobFilter] __
+tests\designer\test_runtime_log_refresh.py:85: in testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches
+    waitUntil(lambda: combo.count() == oldCount + 1)
+tests\designer\qt_wait.py:8: in waitUntil
+    raise AssertionError("condition did not become true before timeout")
+E   AssertionError: condition did not become true before timeout
+_ testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches[True-nodeFilter] _
+tests\designer\test_runtime_log_refresh.py:85: in testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches
+    waitUntil(lambda: combo.count() == oldCount + 1)
+tests\designer\qt_wait.py:8: in waitUntil
+    raise AssertionError("condition did not become true before timeout")
+E   AssertionError: condition did not become true before timeout
+_ testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches[True-eventTypeFilter] _
+tests\designer\test_runtime_log_refresh.py:85: in testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches
+    waitUntil(lambda: combo.count() == oldCount + 1)
+tests\designer\qt_wait.py:8: in waitUntil
+    raise AssertionError("condition did not become true before timeout")
+E   AssertionError: condition did not become true before timeout
+______________ testHistoryAnchorAndDetailsSurviveOldRowEviction _______________
+tests\designer\test_runtime_log_refresh.py:138: in testHistoryAnchorAndDetailsSurviveOldRowEviction
+    assert logView.table.item(logView.table.rowAt(0), 9).text() == first
+E   AssertionError: assert 'message-050' == 'message-040'
+E
+E     - message-040
+E     ?          ^
+E     + message-050
+E     ?          ^
+4 failed, 12 passed in 15.75s

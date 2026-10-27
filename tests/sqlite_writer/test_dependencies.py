@@ -105,14 +105,22 @@ def testBuiltinSqlitePreservesActualCoreCapabilityGate():
         "vision.math.exact_integer", "vision.math.truncate", "vision.collection.number_pair",
         "communication.coordinate_message_format", "communication.tcp.session", "communication.tcp.session_send",
         "vision.io.simulated_camera",
+        "vision.io.rtsp_capture", "vision.inference.yolo_classification",
+        "vision.math.integer_add", "vision.math.percentage", "vision.state.elapsed_time",
     }
-    assert set(legacy.rejectedOperators) == currentCoreOperators
+    managedOperators = {
+        "vision.io.huaray_camera", "communication.plc.slmp_read", "communication.plc.slmp_write",
+        "communication.tcp.client", "communication.tcp.receive_once",
+    }
+    assert set(legacy.rejectedOperators) == currentCoreOperators | managedOperators
     assert all(legacy.rejectedOperators[operator][0].code == 'E_CORE_VERSION_INCOMPATIBLE'
                for operator in currentCoreOperators)
-    assert currentCoreOperators.isdisjoint(legacy.activeOperators)
+    assert all(legacy.rejectedOperators[operator][0].code == 'E_DEVICE_REQUIREMENT'
+               for operator in managedOperators)
+    assert (currentCoreOperators | managedOperators).isdisjoint(legacy.activeOperators)
     assert 'vision.value.number' in legacy.activeOperators
     current = PluginRegistry(coreVersion=__version__).scan(root)
-    assert current.rejectedOperators == {} and currentCoreOperators <= set(current.activeOperators)
+    assert current.rejectedOperators == {} and currentCoreOperators | managedOperators <= set(current.activeOperators)
     camera = current.activeOperators["vision.io.simulated_camera"].manifest
     assert camera.minCoreVersion == "0.6.1"
     assert camera.deviceRequirements["camera"].deviceTypeId == "device.simulated.camera"

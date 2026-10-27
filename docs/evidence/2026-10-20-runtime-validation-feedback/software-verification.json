@@ -1,0 +1,727 @@
+{
+  "createdAt": "2026-10-20T11:51:31.119312+00:00",
+  "head": "ef5af5066599bc57a5182067e31775f8798e8107",
+  "python": "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+  "files": [
+    "tests/designer/test_main_window_menubar.py",
+    "tests/designer/test_main_window_layout.py",
+    "tests/designer/test_toolbar_width.py",
+    "tests/designer/test_visual_layout.py",
+    "tests/designer/test_small_window_layout_repair.py",
+    "tests/designer/test_device_workspace.py",
+    "tests/designer/test_device_workspace_usability.py",
+    "tests/designer/test_device_workspace_sizing.py",
+    "tests/designer/test_device_plan_completion_ui.py",
+    "tests/designer/test_project_configuration_ui.py",
+    "tests/designer/test_designer_shortcuts.py",
+    "tests/designer/test_flow_layout_qt.py",
+    "tests/designer/test_flow_layout_routing.py",
+    "tests/designer/test_runtime_connection_ui.py",
+    "tests/designer/test_runtime_menu_publication.py",
+    "tests/designer/test_online_run.py",
+    "tests/designer/test_project_resource_upload_cancel_ui.py",
+    "tests/designer/test_targeted_resource_repair_ui.py",
+    "tests/designer/test_runtime_controller.py",
+    "tests/designer/test_runtime_worker.py",
+    "tests/ui/page_designer/test_workspace_modes.py",
+    "tests/ui/page_designer/test_workspace_switch.py",
+    "tests/ui/page_designer/test_workspace.py",
+    "tests/ui/page_designer/test_preview.py",
+    "tests/ui/page_designer/test_parallel_runtime.py",
+    "tests/runtime/test_initial_project_configuration.py",
+    "tests/runtime/test_device_runtime.py",
+    "tests/runtime/test_project_configuration.py",
+    "tests/runtime/test_configuration_transition.py",
+    "tests/runtime/test_configuration_export_copy.py",
+    "tests/runtime/test_configuration_owners.py",
+    "tests/runtime/test_configuration_resource_leases.py",
+    "tests/runtime/test_configuration_resource_journal.py",
+    "tests/runtime/test_prepared_resources.py",
+    "tests/runtime/test_online_graph.py",
+    "tests/runtime/test_project_resource_transfer.py",
+    "tests/runtime/test_targeted_resource_repair.py",
+    "tests/designer/test_runtime_validation_feedback.py",
+    "tests/core/test_runtime_directory.py",
+    "tests/core/test_global_variable_file_bindings.py",
+    "tests/core/project/test_device_resources.py",
+    "tests/core/project/test_project_models.py",
+    "tests/core/presentation/test_edit_session.py",
+    "tests/designer/test_device_catalog.py"
+  ],
+  "sourceBefore": [
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/render_offscreen.py",
+      "sha256": "417c5e8202253ce49bd6516220cbd4d204ed3376cbdd9a6c2b413c7877603cee"
+    },
+    {
+      "path": "proto/runtime.proto",
+      "sha256": "c70d4a773157d45d1a1685abacd0e894df747a57076131d1f4700f9c8e55c8ea"
+    },
+    {
+      "path": "src/emo_master/apps/designer/controllers/runtime_controller.py",
+      "sha256": "118795c3a9c85be1cebb43a7dfe7a12182d2e93b07674539224816657371ed57"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/chrome.py",
+      "sha256": "01b3d662bfe974b90e4f1075b6ac679fbcf76b998fcc3e2e111505777c40876a"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/coordinator.py",
+      "sha256": "43bf09a173ad200245bdfef958742a6e6a330cfb03f418f4f70814cf5ab66bbb"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/preview.py",
+      "sha256": "171e8b582c4addc945aa50691a0bd4b30c96a5e8e2c5f6b972c3601326d767b5"
+    },
+    {
+      "path": "src/emo_master/apps/designer/services/runtime_client.py",
+      "sha256": "8d996c6157f1c3902aba2fa1820870f411a9b61b4be1dea5834a6d3c2a306414"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/designer_actions.py",
+      "sha256": "b69a21d71a256c749e6afabb7f7db165da6cb4067ee58af742d09af4e8694a27"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/device_workspace.py",
+      "sha256": "8e0f6e3b5ea18c79dd78f344e81d1d0c2443b5115cf291baf7cf8ef3c0a1eba1"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/main_window.py",
+      "sha256": "b8e558d093cc147d7037ea0af74418dfa9ccc1b803a32b446d741ee8fef3b03f"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/online_graph.py",
+      "sha256": "5c22d0fece36c37a549edc3081ae8b1e28613bae1565b08229098f175a3902b2"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/project_configuration.py",
+      "sha256": "009e2a6ce7380235c1cb7c8f8f8b0dafa22c502d8400fb284f6773112bd5805a"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/runtime_connection.py",
+      "sha256": "dbb7afab67337d4ccc76798f900ee659156416d26aebd79045fb8791175a748d"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2.py",
+      "sha256": "0dbf7e86658f0579f04d9ffd61959e7ec622ce9fe875b2727d70dc99a91f792d"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2_grpc.py",
+      "sha256": "4c0ce193f58793161b1c89dd2683107f3808a819d1aa18931dfb936aeec2526d"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/service.py",
+      "sha256": "6b685c76c365bacc1bf1cea4c92431e904903a8ff6e5518f027ad62c43e68cd8"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/coordinator.py",
+      "sha256": "7fdc6c680154396f54c637b9ac094e69dc221e17aee963e57efa342510048672"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/rpc.py",
+      "sha256": "f50babb6c6a9677a1594f1da4b092bcff4da0d4f0260515a1cc3be0ad7f145ce"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/store.py",
+      "sha256": "8b86c523b512559432e81db58465184414414a15557a77ea0fddcae1bb1b5593"
+    },
+    {
+      "path": "src/emo_master/core/project/runtime_directory.py",
+      "sha256": "1d1e4702573b759db29ada055d10a8e76fd9147da05a384c12f23fade20b7d86"
+    },
+    {
+      "path": "tests/core/presentation/test_edit_session.py",
+      "sha256": "1d818010aa1478055fb669e9f47b79d843d113eee27b061717afd1d8a062e4f8"
+    },
+    {
+      "path": "tests/core/project/test_device_resources.py",
+      "sha256": "500178d7ea1edecc796a49a977eb1eced39da4a7d0242ab0d33d837d636daae0"
+    },
+    {
+      "path": "tests/core/project/test_project_models.py",
+      "sha256": "e434e7b33f5fdeca76333662d7d18b3e52e4b9c62260b268b9e840c3c952f0d5"
+    },
+    {
+      "path": "tests/core/test_global_variable_file_bindings.py",
+      "sha256": "68ea945dcc1065eda9dba2074fc91c4ef31e1f9805539c21c76813cfbddcef82"
+    },
+    {
+      "path": "tests/core/test_runtime_directory.py",
+      "sha256": "7e5c1f946a855b731320471f6f48eef2d9392011a4f7dfeafa15fa83cb9659d0"
+    },
+    {
+      "path": "tests/designer/runtime_feedback_fixture.py",
+      "sha256": "9dbb2c23df6084b43c0060592f55619a85f8f374e1eccadf52393bae3004795e"
+    },
+    {
+      "path": "tests/designer/test_designer_shortcuts.py",
+      "sha256": "677b3f0a7292c6f63ede5bd90157c82abe39d9f35d1382a5fe67445455c4f27b"
+    },
+    {
+      "path": "tests/designer/test_device_catalog.py",
+      "sha256": "165b54370f5c6ac8ab8d89f641d165ae91788ac6c72b0e77c88025c62546d576"
+    },
+    {
+      "path": "tests/designer/test_device_plan_completion_ui.py",
+      "sha256": "033c293dad0a6db80c4cab9f1f7c5aff12d603bae3870e6ee99d8a60c84f45ca"
+    },
+    {
+      "path": "tests/designer/test_device_workspace.py",
+      "sha256": "5114f70694b09070292dd11a6b9ed91112c52634944d5d374ca125d91fdebbb8"
+    },
+    {
+      "path": "tests/designer/test_device_workspace_sizing.py",
+      "sha256": "330430aeff7d6a41ce1abae978b864ffebc6e74db4f93b4dd878c80e006b4e6a"
+    },
+    {
+      "path": "tests/designer/test_device_workspace_usability.py",
+      "sha256": "3cbd21cc7f6144d4ed596ff29f78972504c6204c6a15f2d3a9c4230b0051ea68"
+    },
+    {
+      "path": "tests/designer/test_flow_layout_qt.py",
+      "sha256": "11c64ca50f099bd9e96b32bcc617a15a291f373aacac2a82ba1bf29d49951732"
+    },
+    {
+      "path": "tests/designer/test_flow_layout_routing.py",
+      "sha256": "8be5464428c756a0d6076aa44b6cf170e3befd412c5c417ee8255488ee52e735"
+    },
+    {
+      "path": "tests/designer/test_main_window_layout.py",
+      "sha256": "1307dbfb43eb74a31891f5eeff8676d01f63f5bda520043bbfdcb7f5851484e2"
+    },
+    {
+      "path": "tests/designer/test_main_window_menubar.py",
+      "sha256": "2f1474866ba5ace6b4b77dc85ef1b437768cda6c002735683160ba008958fdcd"
+    },
+    {
+      "path": "tests/designer/test_online_run.py",
+      "sha256": "427670812d984dac59b690d1e7ca74c554e4b4048cbcfe113cfeb4548b1de287"
+    },
+    {
+      "path": "tests/designer/test_project_configuration_ui.py",
+      "sha256": "848e0595170fcb6e0ced2f197131bc8c6041a785fcc6187163284662fbc9db1f"
+    },
+    {
+      "path": "tests/designer/test_project_resource_upload_cancel_ui.py",
+      "sha256": "38310b667b9c45c4e3a84a31eb0db50b9b78bcd0bd019c9c6cc31e919306ebbb"
+    },
+    {
+      "path": "tests/designer/test_runtime_connection_ui.py",
+      "sha256": "f8bd1d4001fc63774b2099118b414831a22df671c246ba342992e8b361bd70fa"
+    },
+    {
+      "path": "tests/designer/test_runtime_controller.py",
+      "sha256": "060f1fad849a8fe0173f9812d77bc624f1d706a694d46fca27ca6a2a245debd7"
+    },
+    {
+      "path": "tests/designer/test_runtime_menu_publication.py",
+      "sha256": "733750abe7011d759370c5bbce30adbb877c4227f4be8f6c21b02707808dcf01"
+    },
+    {
+      "path": "tests/designer/test_runtime_validation_feedback.py",
+      "sha256": "1afa090df4b051b33e3b5e1e91651b94bf83fb514a05f0c87119d2aa63ac93e5"
+    },
+    {
+      "path": "tests/designer/test_runtime_worker.py",
+      "sha256": "3b81ce2e332bc626fdfc4978d02eb2228aef826475b27a578e436597782b804f"
+    },
+    {
+      "path": "tests/designer/test_small_window_layout_repair.py",
+      "sha256": "6961e159b542ab5b720e0e5432e1a3372d7259405ec04fe89df9089452cfe557"
+    },
+    {
+      "path": "tests/designer/test_targeted_resource_repair_ui.py",
+      "sha256": "71ea388a319434d50803759d89b3c3c17f015f925cb8eb0d4c63b19a7342e9f0"
+    },
+    {
+      "path": "tests/designer/test_toolbar_width.py",
+      "sha256": "4a482e74d938867b5fe988d0b0f60d152f43d2588743ffc43788db23533d707a"
+    },
+    {
+      "path": "tests/designer/test_visual_layout.py",
+      "sha256": "de67225ccf11e6aaeb16b44bf5d80070f20b889411bdad6f8606313747ec104b"
+    },
+    {
+      "path": "tests/runtime/test_configuration_export_copy.py",
+      "sha256": "efa8ca0ca885c8af6e905d81494823e20ca5dc1efcbb978f544eda7a29bebb73"
+    },
+    {
+      "path": "tests/runtime/test_configuration_owners.py",
+      "sha256": "9678e5ad2e83e279673ed2b919ef56ec8923b94e34f562033398c461a5d9ece8"
+    },
+    {
+      "path": "tests/runtime/test_configuration_resource_journal.py",
+      "sha256": "5a5acdd82b49af4c7733a6ae6f7703fd0d57e97631686bc04a78cef58158f8b6"
+    },
+    {
+      "path": "tests/runtime/test_configuration_resource_leases.py",
+      "sha256": "5545ef4310ff51fd93121289697752070fe2c80a9388c04f5627e5cd09df11cd"
+    },
+    {
+      "path": "tests/runtime/test_configuration_transition.py",
+      "sha256": "4389cb8380dbcb58c79cb2c32481e969fc768c67239b0166c2f46a5545403de3"
+    },
+    {
+      "path": "tests/runtime/test_device_runtime.py",
+      "sha256": "6017c1e7bae83d33fc772a6f942a151cc5cb82ad6f289635639ec35c2005ae95"
+    },
+    {
+      "path": "tests/runtime/test_initial_project_configuration.py",
+      "sha256": "0ce55c5bdb7fd8d28848aceed1a6fdaa188f42912e9b224c092cf79aea2616dc"
+    },
+    {
+      "path": "tests/runtime/test_online_graph.py",
+      "sha256": "97143cf126c7a082c98437f354112060348a81b95b8c4bdf129d30292c7a1bc2"
+    },
+    {
+      "path": "tests/runtime/test_prepared_resources.py",
+      "sha256": "10081900fbb2a24eba27a3d7d4fe4908d99191cb8578468d8a544d52a2e892db"
+    },
+    {
+      "path": "tests/runtime/test_project_configuration.py",
+      "sha256": "b4051e6fdbdaed0d6351cdaf78d21f077a83505a5abc0d313d260e7a088eb73f"
+    },
+    {
+      "path": "tests/runtime/test_project_resource_transfer.py",
+      "sha256": "9dca8b36951d2146cb8cc4aef82e033ef49280434e33c9e91ca1d7db94dad700"
+    },
+    {
+      "path": "tests/runtime/test_targeted_resource_repair.py",
+      "sha256": "fac695c4a7954577a53e1e092378c1abb970d70cd1af6017a11c32d142c0e2c7"
+    },
+    {
+      "path": "tests/ui/page_designer/test_parallel_runtime.py",
+      "sha256": "a1ffd6fd7f5839dabc36f5edf8c8dcc922ee3171f4c921c40e75f32b7a16c5b9"
+    },
+    {
+      "path": "tests/ui/page_designer/test_preview.py",
+      "sha256": "a6de4acbaa76cfe56f24109c98549d56e42f3100ee6f0c6723375d157e20dada"
+    },
+    {
+      "path": "tests/ui/page_designer/test_workspace.py",
+      "sha256": "3843419d222f9d9bb423cc6ab8b4505ab70aead7a949a9c0f9673993519ff59a"
+    },
+    {
+      "path": "tests/ui/page_designer/test_workspace_modes.py",
+      "sha256": "9321b83541fa93162961abbb22e5298e5f36c7e782c5c9c6a7e1b9b756c4846f"
+    },
+    {
+      "path": "tests/ui/page_designer/test_workspace_switch.py",
+      "sha256": "1039e7167657770cbf1904853dbab1ac652dc2c0930ce00582fcf23468d3056a"
+    }
+  ],
+  "regression": {
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "-u",
+      "-m",
+      "pytest",
+      "tests/designer/test_main_window_menubar.py",
+      "tests/designer/test_main_window_layout.py",
+      "tests/designer/test_toolbar_width.py",
+      "tests/designer/test_visual_layout.py",
+      "tests/designer/test_small_window_layout_repair.py",
+      "tests/designer/test_device_workspace.py",
+      "tests/designer/test_device_workspace_usability.py",
+      "tests/designer/test_device_workspace_sizing.py",
+      "tests/designer/test_device_plan_completion_ui.py",
+      "tests/designer/test_project_configuration_ui.py",
+      "tests/designer/test_designer_shortcuts.py",
+      "tests/designer/test_flow_layout_qt.py",
+      "tests/designer/test_flow_layout_routing.py",
+      "tests/designer/test_runtime_connection_ui.py",
+      "tests/designer/test_runtime_menu_publication.py",
+      "tests/designer/test_online_run.py",
+      "tests/designer/test_project_resource_upload_cancel_ui.py",
+      "tests/designer/test_targeted_resource_repair_ui.py",
+      "tests/designer/test_runtime_controller.py",
+      "tests/designer/test_runtime_worker.py",
+      "tests/ui/page_designer/test_workspace_modes.py",
+      "tests/ui/page_designer/test_workspace_switch.py",
+      "tests/ui/page_designer/test_workspace.py",
+      "tests/ui/page_designer/test_preview.py",
+      "tests/ui/page_designer/test_parallel_runtime.py",
+      "tests/runtime/test_initial_project_configuration.py",
+      "tests/runtime/test_device_runtime.py",
+      "tests/runtime/test_project_configuration.py",
+      "tests/runtime/test_configuration_transition.py",
+      "tests/runtime/test_configuration_export_copy.py",
+      "tests/runtime/test_configuration_owners.py",
+      "tests/runtime/test_configuration_resource_leases.py",
+      "tests/runtime/test_configuration_resource_journal.py",
+      "tests/runtime/test_prepared_resources.py",
+      "tests/runtime/test_online_graph.py",
+      "tests/runtime/test_project_resource_transfer.py",
+      "tests/runtime/test_targeted_resource_repair.py",
+      "tests/designer/test_runtime_validation_feedback.py",
+      "tests/core/test_runtime_directory.py",
+      "tests/core/test_global_variable_file_bindings.py",
+      "tests/core/project/test_device_resources.py",
+      "tests/core/project/test_project_models.py",
+      "tests/core/presentation/test_edit_session.py",
+      "tests/designer/test_device_catalog.py",
+      "-q",
+      "--tb=short",
+      "-o",
+      "faulthandler_timeout=90",
+      "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-20-runtime-validation-feedback\\acceptance-regression.xml"
+    ],
+    "exitCode": 0,
+    "seconds": 300.11
+  },
+  "proto": {
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "scripts/gen_proto.py",
+      "--check"
+    ],
+    "exitCode": 0,
+    "seconds": 0.24
+  },
+  "ruff": {
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "-m",
+      "ruff",
+      "check",
+      "docs/evidence/2026-10-20-runtime-menu/render_offscreen.py",
+      "src/emo_master/apps/designer/controllers/runtime_controller.py",
+      "src/emo_master/apps/designer/page_designer/chrome.py",
+      "src/emo_master/apps/designer/page_designer/coordinator.py",
+      "src/emo_master/apps/designer/page_designer/preview.py",
+      "src/emo_master/apps/designer/services/runtime_client.py",
+      "src/emo_master/apps/designer/ui/designer_actions.py",
+      "src/emo_master/apps/designer/ui/device_workspace.py",
+      "src/emo_master/apps/designer/ui/main_window.py",
+      "src/emo_master/apps/designer/ui/online_graph.py",
+      "src/emo_master/apps/designer/ui/project_configuration.py",
+      "src/emo_master/apps/designer/ui/runtime_connection.py",
+      "src/emo_master/apps/runtime/grpc_server/service.py",
+      "src/emo_master/apps/runtime/project_config/coordinator.py",
+      "src/emo_master/apps/runtime/project_config/rpc.py",
+      "src/emo_master/apps/runtime/project_config/store.py",
+      "src/emo_master/core/project/runtime_directory.py",
+      "tests/core/presentation/test_edit_session.py",
+      "tests/core/project/test_device_resources.py",
+      "tests/core/project/test_project_models.py",
+      "tests/core/test_global_variable_file_bindings.py",
+      "tests/core/test_runtime_directory.py",
+      "tests/designer/runtime_feedback_fixture.py",
+      "tests/designer/test_designer_shortcuts.py",
+      "tests/designer/test_device_catalog.py",
+      "tests/designer/test_device_plan_completion_ui.py",
+      "tests/designer/test_device_workspace.py",
+      "tests/designer/test_device_workspace_sizing.py",
+      "tests/designer/test_device_workspace_usability.py",
+      "tests/designer/test_flow_layout_qt.py",
+      "tests/designer/test_flow_layout_routing.py",
+      "tests/designer/test_main_window_layout.py",
+      "tests/designer/test_main_window_menubar.py",
+      "tests/designer/test_online_run.py",
+      "tests/designer/test_project_configuration_ui.py",
+      "tests/designer/test_project_resource_upload_cancel_ui.py",
+      "tests/designer/test_runtime_connection_ui.py",
+      "tests/designer/test_runtime_controller.py",
+      "tests/designer/test_runtime_menu_publication.py",
+      "tests/designer/test_runtime_validation_feedback.py",
+      "tests/designer/test_runtime_worker.py",
+      "tests/designer/test_small_window_layout_repair.py",
+      "tests/designer/test_targeted_resource_repair_ui.py",
+      "tests/designer/test_toolbar_width.py",
+      "tests/designer/test_visual_layout.py",
+      "tests/runtime/test_configuration_export_copy.py",
+      "tests/runtime/test_configuration_owners.py",
+      "tests/runtime/test_configuration_resource_journal.py",
+      "tests/runtime/test_configuration_resource_leases.py",
+      "tests/runtime/test_configuration_transition.py",
+      "tests/runtime/test_device_runtime.py",
+      "tests/runtime/test_initial_project_configuration.py",
+      "tests/runtime/test_online_graph.py",
+      "tests/runtime/test_prepared_resources.py",
+      "tests/runtime/test_project_configuration.py",
+      "tests/runtime/test_project_resource_transfer.py",
+      "tests/runtime/test_targeted_resource_repair.py",
+      "tests/ui/page_designer/test_parallel_runtime.py",
+      "tests/ui/page_designer/test_preview.py",
+      "tests/ui/page_designer/test_workspace.py",
+      "tests/ui/page_designer/test_workspace_modes.py",
+      "tests/ui/page_designer/test_workspace_switch.py"
+    ],
+    "exitCode": 0,
+    "seconds": 0.16
+  },
+  "diff": {
+    "command": [
+      "git",
+      "-c",
+      "core.safecrlf=false",
+      "diff",
+      "--check"
+    ],
+    "exitCode": 0,
+    "seconds": 0.16
+  },
+  "sourceAfter": [
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/render_offscreen.py",
+      "sha256": "417c5e8202253ce49bd6516220cbd4d204ed3376cbdd9a6c2b413c7877603cee"
+    },
+    {
+      "path": "proto/runtime.proto",
+      "sha256": "c70d4a773157d45d1a1685abacd0e894df747a57076131d1f4700f9c8e55c8ea"
+    },
+    {
+      "path": "src/emo_master/apps/designer/controllers/runtime_controller.py",
+      "sha256": "118795c3a9c85be1cebb43a7dfe7a12182d2e93b07674539224816657371ed57"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/chrome.py",
+      "sha256": "01b3d662bfe974b90e4f1075b6ac679fbcf76b998fcc3e2e111505777c40876a"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/coordinator.py",
+      "sha256": "43bf09a173ad200245bdfef958742a6e6a330cfb03f418f4f70814cf5ab66bbb"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/preview.py",
+      "sha256": "171e8b582c4addc945aa50691a0bd4b30c96a5e8e2c5f6b972c3601326d767b5"
+    },
+    {
+      "path": "src/emo_master/apps/designer/services/runtime_client.py",
+      "sha256": "8d996c6157f1c3902aba2fa1820870f411a9b61b4be1dea5834a6d3c2a306414"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/designer_actions.py",
+      "sha256": "b69a21d71a256c749e6afabb7f7db165da6cb4067ee58af742d09af4e8694a27"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/device_workspace.py",
+      "sha256": "8e0f6e3b5ea18c79dd78f344e81d1d0c2443b5115cf291baf7cf8ef3c0a1eba1"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/main_window.py",
+      "sha256": "b8e558d093cc147d7037ea0af74418dfa9ccc1b803a32b446d741ee8fef3b03f"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/online_graph.py",
+      "sha256": "5c22d0fece36c37a549edc3081ae8b1e28613bae1565b08229098f175a3902b2"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/project_configuration.py",
+      "sha256": "009e2a6ce7380235c1cb7c8f8f8b0dafa22c502d8400fb284f6773112bd5805a"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/runtime_connection.py",
+      "sha256": "dbb7afab67337d4ccc76798f900ee659156416d26aebd79045fb8791175a748d"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2.py",
+      "sha256": "0dbf7e86658f0579f04d9ffd61959e7ec622ce9fe875b2727d70dc99a91f792d"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2_grpc.py",
+      "sha256": "4c0ce193f58793161b1c89dd2683107f3808a819d1aa18931dfb936aeec2526d"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/service.py",
+      "sha256": "6b685c76c365bacc1bf1cea4c92431e904903a8ff6e5518f027ad62c43e68cd8"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/coordinator.py",
+      "sha256": "7fdc6c680154396f54c637b9ac094e69dc221e17aee963e57efa342510048672"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/rpc.py",
+      "sha256": "f50babb6c6a9677a1594f1da4b092bcff4da0d4f0260515a1cc3be0ad7f145ce"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/store.py",
+      "sha256": "8b86c523b512559432e81db58465184414414a15557a77ea0fddcae1bb1b5593"
+    },
+    {
+      "path": "src/emo_master/core/project/runtime_directory.py",
+      "sha256": "1d1e4702573b759db29ada055d10a8e76fd9147da05a384c12f23fade20b7d86"
+    },
+    {
+      "path": "tests/core/presentation/test_edit_session.py",
+      "sha256": "1d818010aa1478055fb669e9f47b79d843d113eee27b061717afd1d8a062e4f8"
+    },
+    {
+      "path": "tests/core/project/test_device_resources.py",
+      "sha256": "500178d7ea1edecc796a49a977eb1eced39da4a7d0242ab0d33d837d636daae0"
+    },
+    {
+      "path": "tests/core/project/test_project_models.py",
+      "sha256": "e434e7b33f5fdeca76333662d7d18b3e52e4b9c62260b268b9e840c3c952f0d5"
+    },
+    {
+      "path": "tests/core/test_global_variable_file_bindings.py",
+      "sha256": "68ea945dcc1065eda9dba2074fc91c4ef31e1f9805539c21c76813cfbddcef82"
+    },
+    {
+      "path": "tests/core/test_runtime_directory.py",
+      "sha256": "7e5c1f946a855b731320471f6f48eef2d9392011a4f7dfeafa15fa83cb9659d0"
+    },
+    {
+      "path": "tests/designer/runtime_feedback_fixture.py",
+      "sha256": "9dbb2c23df6084b43c0060592f55619a85f8f374e1eccadf52393bae3004795e"
+    },
+    {
+      "path": "tests/designer/test_designer_shortcuts.py",
+      "sha256": "677b3f0a7292c6f63ede5bd90157c82abe39d9f35d1382a5fe67445455c4f27b"
+    },
+    {
+      "path": "tests/designer/test_device_catalog.py",
+      "sha256": "165b54370f5c6ac8ab8d89f641d165ae91788ac6c72b0e77c88025c62546d576"
+    },
+    {
+      "path": "tests/designer/test_device_plan_completion_ui.py",
+      "sha256": "033c293dad0a6db80c4cab9f1f7c5aff12d603bae3870e6ee99d8a60c84f45ca"
+    },
+    {
+      "path": "tests/designer/test_device_workspace.py",
+      "sha256": "5114f70694b09070292dd11a6b9ed91112c52634944d5d374ca125d91fdebbb8"
+    },
+    {
+      "path": "tests/designer/test_device_workspace_sizing.py",
+      "sha256": "330430aeff7d6a41ce1abae978b864ffebc6e74db4f93b4dd878c80e006b4e6a"
+    },
+    {
+      "path": "tests/designer/test_device_workspace_usability.py",
+      "sha256": "3cbd21cc7f6144d4ed596ff29f78972504c6204c6a15f2d3a9c4230b0051ea68"
+    },
+    {
+      "path": "tests/designer/test_flow_layout_qt.py",
+      "sha256": "11c64ca50f099bd9e96b32bcc617a15a291f373aacac2a82ba1bf29d49951732"
+    },
+    {
+      "path": "tests/designer/test_flow_layout_routing.py",
+      "sha256": "8be5464428c756a0d6076aa44b6cf170e3befd412c5c417ee8255488ee52e735"
+    },
+    {
+      "path": "tests/designer/test_main_window_layout.py",
+      "sha256": "1307dbfb43eb74a31891f5eeff8676d01f63f5bda520043bbfdcb7f5851484e2"
+    },
+    {
+      "path": "tests/designer/test_main_window_menubar.py",
+      "sha256": "2f1474866ba5ace6b4b77dc85ef1b437768cda6c002735683160ba008958fdcd"
+    },
+    {
+      "path": "tests/designer/test_online_run.py",
+      "sha256": "427670812d984dac59b690d1e7ca74c554e4b4048cbcfe113cfeb4548b1de287"
+    },
+    {
+      "path": "tests/designer/test_project_configuration_ui.py",
+      "sha256": "848e0595170fcb6e0ced2f197131bc8c6041a785fcc6187163284662fbc9db1f"
+    },
+    {
+      "path": "tests/designer/test_project_resource_upload_cancel_ui.py",
+      "sha256": "38310b667b9c45c4e3a84a31eb0db50b9b78bcd0bd019c9c6cc31e919306ebbb"
+    },
+    {
+      "path": "tests/designer/test_runtime_connection_ui.py",
+      "sha256": "f8bd1d4001fc63774b2099118b414831a22df671c246ba342992e8b361bd70fa"
+    },
+    {
+      "path": "tests/designer/test_runtime_controller.py",
+      "sha256": "060f1fad849a8fe0173f9812d77bc624f1d706a694d46fca27ca6a2a245debd7"
+    },
+    {
+      "path": "tests/designer/test_runtime_menu_publication.py",
+      "sha256": "733750abe7011d759370c5bbce30adbb877c4227f4be8f6c21b02707808dcf01"
+    },
+    {
+      "path": "tests/designer/test_runtime_validation_feedback.py",
+      "sha256": "1afa090df4b051b33e3b5e1e91651b94bf83fb514a05f0c87119d2aa63ac93e5"
+    },
+    {
+      "path": "tests/designer/test_runtime_worker.py",
+      "sha256": "3b81ce2e332bc626fdfc4978d02eb2228aef826475b27a578e436597782b804f"
+    },
+    {
+      "path": "tests/designer/test_small_window_layout_repair.py",
+      "sha256": "6961e159b542ab5b720e0e5432e1a3372d7259405ec04fe89df9089452cfe557"
+    },
+    {
+      "path": "tests/designer/test_targeted_resource_repair_ui.py",
+      "sha256": "71ea388a319434d50803759d89b3c3c17f015f925cb8eb0d4c63b19a7342e9f0"
+    },
+    {
+      "path": "tests/designer/test_toolbar_width.py",
+      "sha256": "4a482e74d938867b5fe988d0b0f60d152f43d2588743ffc43788db23533d707a"
+    },
+    {
+      "path": "tests/designer/test_visual_layout.py",
+      "sha256": "de67225ccf11e6aaeb16b44bf5d80070f20b889411bdad6f8606313747ec104b"
+    },
+    {
+      "path": "tests/runtime/test_configuration_export_copy.py",
+      "sha256": "efa8ca0ca885c8af6e905d81494823e20ca5dc1efcbb978f544eda7a29bebb73"
+    },
+    {
+      "path": "tests/runtime/test_configuration_owners.py",
+      "sha256": "9678e5ad2e83e279673ed2b919ef56ec8923b94e34f562033398c461a5d9ece8"
+    },
+    {
+      "path": "tests/runtime/test_configuration_resource_journal.py",
+      "sha256": "5a5acdd82b49af4c7733a6ae6f7703fd0d57e97631686bc04a78cef58158f8b6"
+    },
+    {
+      "path": "tests/runtime/test_configuration_resource_leases.py",
+      "sha256": "5545ef4310ff51fd93121289697752070fe2c80a9388c04f5627e5cd09df11cd"
+    },
+    {
+      "path": "tests/runtime/test_configuration_transition.py",
+      "sha256": "4389cb8380dbcb58c79cb2c32481e969fc768c67239b0166c2f46a5545403de3"
+    },
+    {
+      "path": "tests/runtime/test_device_runtime.py",
+      "sha256": "6017c1e7bae83d33fc772a6f942a151cc5cb82ad6f289635639ec35c2005ae95"
+    },
+    {
+      "path": "tests/runtime/test_initial_project_configuration.py",
+      "sha256": "0ce55c5bdb7fd8d28848aceed1a6fdaa188f42912e9b224c092cf79aea2616dc"
+    },
+    {
+      "path": "tests/runtime/test_online_graph.py",
+      "sha256": "97143cf126c7a082c98437f354112060348a81b95b8c4bdf129d30292c7a1bc2"
+    },
+    {
+      "path": "tests/runtime/test_prepared_resources.py",
+      "sha256": "10081900fbb2a24eba27a3d7d4fe4908d99191cb8578468d8a544d52a2e892db"
+    },
+    {
+      "path": "tests/runtime/test_project_configuration.py",
+      "sha256": "b4051e6fdbdaed0d6351cdaf78d21f077a83505a5abc0d313d260e7a088eb73f"
+    },
+    {
+      "path": "tests/runtime/test_project_resource_transfer.py",
+      "sha256": "9dca8b36951d2146cb8cc4aef82e033ef49280434e33c9e91ca1d7db94dad700"
+    },
+    {
+      "path": "tests/runtime/test_targeted_resource_repair.py",
+      "sha256": "fac695c4a7954577a53e1e092378c1abb970d70cd1af6017a11c32d142c0e2c7"
+    },
+    {
+      "path": "tests/ui/page_designer/test_parallel_runtime.py",
+      "sha256": "a1ffd6fd7f5839dabc36f5edf8c8dcc922ee3171f4c921c40e75f32b7a16c5b9"
+    },
+    {
+      "path": "tests/ui/page_designer/test_preview.py",
+      "sha256": "a6de4acbaa76cfe56f24109c98549d56e42f3100ee6f0c6723375d157e20dada"
+    },
+    {
+      "path": "tests/ui/page_designer/test_workspace.py",
+      "sha256": "3843419d222f9d9bb423cc6ab8b4505ab70aead7a949a9c0f9673993519ff59a"
+    },
+    {
+      "path": "tests/ui/page_designer/test_workspace_modes.py",
+      "sha256": "9321b83541fa93162961abbb22e5298e5f36c7e782c5c9c6a7e1b9b756c4846f"
+    },
+    {
+      "path": "tests/ui/page_designer/test_workspace_switch.py",
+      "sha256": "1039e7167657770cbf1904853dbab1ac652dc2c0930ce00582fcf23468d3056a"
+    }
+  ],
+  "sameSource": true
+}

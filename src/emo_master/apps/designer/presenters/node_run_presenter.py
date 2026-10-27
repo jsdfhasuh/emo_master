@@ -30,7 +30,8 @@ def inspectionText(record: dict | None, jobId: str | None, selected: bool = True
     if record is None:
         return '本次尚未收到此节点的执行记录。'
     status = record['status']
-    label = {'RUNNING': '运行中', 'COMPLETED': '已完成', 'FAILED': '执行失败', 'SKIPPED': '已跳过'}[status]
+    label = {'RUNNING': '运行中', 'COMPLETED': '已完成', 'FAILED': '执行失败', 'SKIPPED': '已跳过',
+             'CANCELLED': '已取消', 'INTERRUPTED': '已中断'}[status]
     lines = [f'本次运行 · {label}', f"任务：{record['jobId'][:8]} · 流程：{record['workflowId']}"]
     if record['nodeRunId']:
         lines.append('节点执行：' + record['nodeRunId'][:8])
@@ -51,7 +52,7 @@ def inspectionText(record: dict | None, jobId: str | None, selected: bool = True
         lines.append(title + '：')
         batch = io.get(side)
         if batch is None:
-            text = ('等待完成' if status == 'RUNNING' else '无结果（执行失败或跳过）') if side == 'outputs' and status != 'COMPLETED' else '此事件未提供端口值'
+            text = ('等待完成' if status == 'RUNNING' else '无结果（本次执行未完成）') if side == 'outputs' and status != 'COMPLETED' else '此事件未提供端口值'
             lines.append('  ' + io.get('unavailableReason', text))
         else:
             for item in batch['items']:
@@ -68,8 +69,9 @@ def inspectionText(record: dict | None, jobId: str | None, selected: bool = True
         lines.append('诊断：' + record['diagnostic'])
     if record.get('sqliteReceipt'):
         lines.append(sqliteReceiptText(record['sqliteReceipt']))
-    if status in {'FAILED', 'SKIPPED'}:
-        lines.append(('错误：' if status == 'FAILED' else '跳过原因：') + record['code'] + ' ' + record['message'])
+    reasons = {'FAILED': '错误：', 'SKIPPED': '跳过原因：', 'CANCELLED': '取消原因：', 'INTERRUPTED': '中断原因：'}
+    if status in reasons:
+        lines.append(reasons[status] + record['code'] + ' ' + record['message'])
     if io.get('legacy'):
         lines.append('旧事件未提供输入摘要；仅展示已上报的本次输出、指标和诊断。')
     lines.append('节点完成状态表示执行状态；判定值以实际输出为准。')

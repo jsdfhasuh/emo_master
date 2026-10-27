@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="1.803" timestamp="2026-10-21T20:06:49.481774+08:00" hostname="视觉电脑"><testcase classname="tests.designer.test_device_usability_drafts" name="testMissingSlotDraftPersistsAndStrictFinishStillRejects" time="0.037"><failure message="TypeError: DeviceCatalogEditor.commitNode() got an unexpected keyword argument 'allowIncomplete'">tests\designer\test_device_usability_drafts.py:26: in testMissingSlotDraftPersistsAndStrictFinishStillRejects
+    editor.commitNode('main', node, allowIncomplete=True, position=[20.0, 30.0])
+E   TypeError: DeviceCatalogEditor.commitNode() got an unexpected keyword argument 'allowIncomplete'</failure></testcase><testcase classname="tests.designer.test_device_usability_drafts" name="testMissingSelectorAllowedButWrongSelectorRejected" time="0.004"><failure message="KeyError: 'server'">tests\designer\test_device_usability_drafts.py:36: in testMissingSelectorAllowedButWrongSelectorRejected
+    declaration = builtin('server')
+tests\designer\test_device_identity_reuse.py:21: in builtin
+    return DeviceType.model_validate_json((root / paths[name]).read_text(encoding='utf-8'))
+E   KeyError: 'server'</failure></testcase><testcase classname="tests.designer.test_device_usability_drafts" name="testPendingWizardPreservesUnavailableDeviceInsteadOfErasingIt" time="0.771"><failure message="AssertionError: assert (None == 'missing-device')&#10; +  where None = &lt;built-in method currentData of PySide2.QtWidgets.QComboBox object at 0x000001842E60B180&gt;()&#10; +    where &lt;built-in method currentData of PySide2.QtWidgets.QComboBox object at 0x000001842E60B180&gt; = &lt;PySide2.QtWidgets.QComboBox(0x1842ce4f760) at 0x000001842E60B180&gt;.currentData">tests\designer\test_device_usability_drafts.py:62: in testPendingWizardPreservesUnavailableDeviceInsteadOfErasingIt
+    assert combo.currentData() == 'missing-device' and '不可用' in combo.currentText()
+E   AssertionError: assert (None == 'missing-device')
+E    +  where None = &lt;built-in method currentData of PySide2.QtWidgets.QComboBox object at 0x000001842E60B180&gt;()
+E    +    where &lt;built-in method currentData of PySide2.QtWidgets.QComboBox object at 0x000001842E60B180&gt; = &lt;PySide2.QtWidgets.QComboBox(0x1842ce4f760) at 0x000001842E60B180&gt;.currentData</failure></testcase><testcase classname="tests.designer.test_device_usability_drafts" name="testDeviceCopiesAreNamedAndEachImportIsOneUndo" time="0.010"><failure message="AssertionError: assert 'Camera A' == 'Camera A（导入副本）'&#10;  &#10;  - Camera A（导入副本）&#10;  + Camera A">tests\designer\test_device_usability_drafts.py:82: in testDeviceCopiesAreNamedAndEachImportIsOneUndo
+    assert definitions[first].name == definition.name + '（导入副本）'
+E   AssertionError: assert 'Camera A' == 'Camera A（导入副本）'
+E     
+E     - Camera A（导入副本）
+E     + Camera A</failure></testcase><testcase classname="tests.designer.test_device_usability_drafts" name="testAdvancedDeviceFieldsKeepValuesAndRevealInvalidField" time="0.032"><failure message="AttributeError: 'SchemaParamForm' object has no attribute 'advancedButton'">tests\designer\test_device_usability_drafts.py:96: in testAdvancedDeviceFieldsKeepValuesAndRevealInvalidField
+    assert not form.advancedButton.isChecked()
+E   AttributeError: 'SchemaParamForm' object has no attribute 'advancedButton'</failure></testcase></testsuite></testsuites>

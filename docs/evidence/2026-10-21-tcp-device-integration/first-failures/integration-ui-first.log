@@ -1,0 +1,759 @@
+...FFFEEEEEEEEEEEEEEEEEEFF.FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF.........FF [ 90%]
+F.FF...F                                                                 [100%]
+=================================== ERRORS ====================================
+___________ ERROR at setup of testDeviceDialogEditHistoryAndReopen ____________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+_____ ERROR at setup of testDeviceMenuOpensDialogWithoutChangingWorkspace _____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+__ ERROR at setup of testDeviceDialogReturnsToPagesAndRetiresOnProjectSwitch __
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+___ ERROR at setup of testDeviceDialogCloseKeepsDraftAndRejectsInvalidInput ___
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+_____ ERROR at setup of testDeviceDialogCloseDuringMetadataReadCanReopen ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+___ ERROR at setup of testDeviceControlNeedsConfirmationAndNeverEditsDraft ____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+____ ERROR at setup of testDeviceStateResponseIsDiscardedAfterScopeChanges ____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+______________ ERROR at setup of testWizardCancelAndSourceCommit ______________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+_________ ERROR at setup of testNormalDropWizardAtomicFinishAndCancel _________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+________ ERROR at setup of testVisibleActionLabelsExplainDraftBoundary ________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+_ ERROR at setup of testWorkspaceDuplicateIsExplicitAndNeverOverwrites[False] _
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+_ ERROR at setup of testWorkspaceDuplicateIsExplicitAndNeverOverwrites[True] __
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+______ ERROR at setup of testWorkspaceValidationFocusAndRevertStayAtomic ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+______ ERROR at setup of testUnchangedDisabledPortableDefinitionCanClose ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+_ ERROR at setup of testBackgroundRecoveryClearsOnlyItsOwnErrorAndPreservesEdit[] _
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+_ ERROR at setup of testBackgroundRecoveryClearsOnlyItsOwnErrorAndPreservesEdit[\u8bbe\u5907\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a] _
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+_ ERROR at setup of testIncompleteNumberRevealsItsTabWithoutCommitting[apply] _
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+_ ERROR at setup of testIncompleteNumberRevealsItsTabWithoutCommitting[close] _
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:19: in declaration
+    return DeviceType.model_validate_json((ROOT / "examples/device_plugin/device_types/simulated_camera.json").read_text())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E   schemaVersion
+E     Input should be '1.1' [type=literal_error, input_value='1.0', input_type=str]
+E       For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+================================== FAILURES ===================================
+___________ testTwoSpawnedJobsShareRuntimeDeviceAndReleaseOriginals ___________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:33: in testTwoSpawnedJobsShareRuntimeDeviceAndReleaseOriginals
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_______________ testDeviceMetadataRemoteContractAndProjectFence _______________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:76: in testDeviceMetadataRemoteContractAndProjectFence
+    client.getDeviceStates("unloaded")
+src\emo_master\apps\designer\services\runtime_client.py:662: in getDeviceStates
+    return self._deviceManagement().getDeviceStates(projectId)
+src\emo_master\clients\runtime\devices.py:67: in getDeviceStates
+    return self._states(self._call('GetDeviceStates', pb.GetDeviceStatesRequest(project_id=projectId), cancellation))
+src\emo_master\clients\runtime\devices.py:61: in _states
+    raise DeviceClientError(reply.code or 'E_DEVICE_STATE', reply.message)
+E   emo_master.clients.runtime.devices.DeviceClientError: Runtime δ���ش˹���
+_______ testDeviceMetadataThroughRuntimeClientHasNoHardwareSideEffects ________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:95: in testDeviceMetadataThroughRuntimeClientHasNoHardwareSideEffects
+    assert simulated.deviceRequirements == {"camera": {"deviceTypeId": "device.simulated.camera"}}
+E   AssertionError: assert {'camera': {'...ies': False}}} == {'camera': {'...ated.camera'}}
+E     
+E     Differing items:
+E     {'camera': {'deviceTypeId': 'device.simulated.camera', 'requiredCapabilities': [], 'selectorSchema': {'type': 'object', 'properties': {}, 'additionalProperties': False}}} != {'camera': {'deviceTypeId': 'device.simulated.camera'}}
+E     Use -v to get more diff
+__________ testValidationHasImmediateBusyAndPassedNotWrittenFeedback __________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:52: in testValidationHasImmediateBusyAndPassedNotWrittenFeedback
+    window, dialog, calls, path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_______________ testLocalSelectionErrorIsVisibleAndRecoverable ________________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:81: in testLocalSelectionErrorIsVisibleAndRecoverable
+    _window, dialog, calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_______ testLegacyValidationOffersUpgradeWithoutMutatingDraft[embedded] _______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:106: in testLegacyValidationOffersUpgradeWithoutMutatingDraft
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_______ testLegacyValidationOffersUpgradeWithoutMutatingDraft[loopback] _______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:106: in testLegacyValidationOffersUpgradeWithoutMutatingDraft
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+___ testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[embedded-2.1] ___
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:125: in testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path, version=version)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+___ testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[embedded-2.5] ___
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:125: in testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path, version=version)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+___ testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[loopback-2.1] ___
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:125: in testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path, version=version)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+___ testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[loopback-2.5] ___
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:125: in testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path, version=version)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+__________ testUpgradeActionFromPopupDoesNotResumePrewrite[embedded] __________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:164: in testUpgradeActionFromPopupDoesNotResumePrewrite
+    _window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+__________ testUpgradeActionFromPopupDoesNotResumePrewrite[loopback] __________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:164: in testUpgradeActionFromPopupDoesNotResumePrewrite
+    _window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+____ testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations[embedded] ____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:192: in testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path, badOperator=True)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+____ testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations[loopback] ____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:192: in testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path, badOperator=True)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_________ testMigrationStructureFailureLeavesNoHalfUpgrade[embedded] __________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:212: in testMigrationStructureFailureLeavesNoHalfUpgrade
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_________ testMigrationStructureFailureLeavesNoHalfUpgrade[loopback] __________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:212: in testMigrationStructureFailureLeavesNoHalfUpgrade
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+____ testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[embedded] _____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:231: in testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject
+    _window, dialog, _path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+____ testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[loopback] _____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:231: in testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject
+    _window, dialog, _path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+__ testValidationFailuresPopupEachNewOperationAndRestoreControls[exception] ___
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:252: in testValidationFailuresPopupEachNewOperationAndRestoreControls
+    _window, dialog, _calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+____ testValidationFailuresPopupEachNewOperationAndRestoreControls[FAILED] ____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:252: in testValidationFailuresPopupEachNewOperationAndRestoreControls
+    _window, dialog, _calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+______ testReceiptNotificationsRespectActualStateAndDeduplicate[FAILED] _______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:272: in testReceiptNotificationsRespectActualStateAndDeduplicate
+    _window, dialog, _calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_____ testReceiptNotificationsRespectActualStateAndDeduplicate[COMMITTED] _____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:272: in testReceiptNotificationsRespectActualStateAndDeduplicate
+    _window, dialog, _calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_____ testReceiptNotificationsRespectActualStateAndDeduplicate[CANCELLED] _____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:272: in testReceiptNotificationsRespectActualStateAndDeduplicate
+    _window, dialog, _calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+______ testReceiptNotificationsRespectActualStateAndDeduplicate[WAITING] ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:272: in testReceiptNotificationsRespectActualStateAndDeduplicate
+    _window, dialog, _calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_ testCommittedConnectionFailureWarnsWithoutRewriting[camera-FAILED: connection timeout] _
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:301: in testCommittedConnectionFailureWarnsWithoutRewriting
+    window, dialog, calls, path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_ testCommittedConnectionFailureWarnsWithoutRewriting[communication-FAILED: address already in use] _
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:301: in testCommittedConnectionFailureWarnsWithoutRewriting
+    window, dialog, calls, path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_____ testCommittedConnectionFailureReportedWhenLaterQueryResolvesPending _____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:341: in testCommittedConnectionFailureReportedWhenLaterQueryResolvesPending
+    _window, dialog, calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+____________ testCommittedNonfailedConnectionDoesNotWarn[PENDING] _____________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:367: in testCommittedNonfailedConnectionDoesNotWarn
+    _window, dialog, calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+___________ testCommittedNonfailedConnectionDoesNotWarn[CONNECTED] ____________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:367: in testCommittedNonfailedConnectionDoesNotWarn
+    _window, dialog, calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+___________ testCommittedNonfailedConnectionDoesNotWarn[LISTENING] ____________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:367: in testCommittedNonfailedConnectionDoesNotWarn
+    _window, dialog, calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+___________ testCommittedNonfailedConnectionDoesNotWarn[SUPERSEDED] ___________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:367: in testCommittedNonfailedConnectionDoesNotWarn
+    _window, dialog, calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_____ testCommittedNonfailedConnectionDoesNotWarn[UNKNOWN_AFTER_RESTART] ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:367: in testCommittedNonfailedConnectionDoesNotWarn
+    _window, dialog, calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+___________ testCommittedConnectionAndTopLevelErrorsShareOneWarning ___________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:383: in testCommittedConnectionAndTopLevelErrorsShareOneWarning
+    _window, dialog, calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_____ testLateValidationCannotNotifyOrContinueWritingInNewContext[close] ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:402: in testLateValidationCannotNotifyOrContinueWritingInNewContext
+    window, dialog, _calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+____ testLateValidationCannotNotifyOrContinueWritingInNewContext[runtime] _____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:402: in testLateValidationCannotNotifyOrContinueWritingInNewContext
+    window, dialog, _calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+____ testLateValidationCannotNotifyOrContinueWritingInNewContext[project] _____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:402: in testLateValidationCannotNotifyOrContinueWritingInNewContext
+    window, dialog, _calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_____ testLateValidationCannotNotifyOrContinueWritingInNewContext[draft] ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:402: in testLateValidationCannotNotifyOrContinueWritingInNewContext
+    window, dialog, _calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_____________ testValidationErrorModalCannotReenterCommandOrPoll ______________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:435: in testValidationErrorModalCannotReenterCommandOrPoll
+    _window, dialog, calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_____ testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[embedded] ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:582: in testUpgradedDraftResourceFailureCanBeFixedAndRevalidated
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_____ testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[loopback] ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:582: in testUpgradedDraftResourceFailureCanBeFixedAndRevalidated
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:23: in legacyDialog
+    payload = imageProject(tmp_path / 'engineering', bound=version != '2.1')
+tests\runtime\test_initial_project_configuration.py:38: in imageProject
+    payload = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+____________ testPrewriteSuccessHasOnlyExistingImpactConfirmation _____________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:604: in testPrewriteSuccessHasOnlyExistingImpactConfirmation
+    _window, dialog, calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+________ testSelectionChangeImmediatelyInvalidatesVisiblePassedVerdict ________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:654: in testSelectionChangeImmediatelyInvalidatesVisiblePassedVerdict
+    _window, dialog, calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+______ testReconnectedRuntimeExplainsExpiredDialogInsteadOfSilentButtons ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:668: in testReconnectedRuntimeExplainsExpiredDialogInsteadOfSilentButtons
+    window, dialog, calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_____ testIdleContextChecksUseExistingIdentityWithoutWholeDraftValidation _____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:756: in testIdleContextChecksUseExistingIdentityWithoutWholeDraftValidation
+    window, configuration, _calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_project_configuration_ui.py:15: in setupDialog
+    local = simulatedProject()
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:18: in simulatedProject
+    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+src\emo_master\core\project\migration.py:75: in migrateProjectPayload
+    return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.6', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_device_runtime.py::testTwoSpawnedJobsShareRuntimeDeviceAndReleaseOriginals
+FAILED tests/runtime/test_device_runtime.py::testDeviceMetadataRemoteContractAndProjectFence
+FAILED tests/runtime/test_device_runtime.py::testDeviceMetadataThroughRuntimeClientHasNoHardwareSideEffects
+FAILED tests/designer/test_runtime_validation_feedback.py::testValidationHasImmediateBusyAndPassedNotWrittenFeedback
+FAILED tests/designer/test_runtime_validation_feedback.py::testLocalSelectionErrorIsVisibleAndRecoverable
+FAILED tests/designer/test_runtime_validation_feedback.py::testLegacyValidationOffersUpgradeWithoutMutatingDraft[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testLegacyValidationOffersUpgradeWithoutMutatingDraft[loopback]
+FAILED tests/designer/test_runtime_validation_feedback.py::testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[embedded-2.1]
+FAILED tests/designer/test_runtime_validation_feedback.py::testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[embedded-2.5]
+FAILED tests/designer/test_runtime_validation_feedback.py::testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[loopback-2.1]
+FAILED tests/designer/test_runtime_validation_feedback.py::testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[loopback-2.5]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeActionFromPopupDoesNotResumePrewrite[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeActionFromPopupDoesNotResumePrewrite[loopback]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations[loopback]
+FAILED tests/designer/test_runtime_validation_feedback.py::testMigrationStructureFailureLeavesNoHalfUpgrade[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testMigrationStructureFailureLeavesNoHalfUpgrade[loopback]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[loopback]
+FAILED tests/designer/test_runtime_validation_feedback.py::testValidationFailuresPopupEachNewOperationAndRestoreControls[exception]
+FAILED tests/designer/test_runtime_validation_feedback.py::testValidationFailuresPopupEachNewOperationAndRestoreControls[FAILED]
+FAILED tests/designer/test_runtime_validation_feedback.py::testReceiptNotificationsRespectActualStateAndDeduplicate[FAILED]
+FAILED tests/designer/test_runtime_validation_feedback.py::testReceiptNotificationsRespectActualStateAndDeduplicate[COMMITTED]
+FAILED tests/designer/test_runtime_validation_feedback.py::testReceiptNotificationsRespectActualStateAndDeduplicate[CANCELLED]
+FAILED tests/designer/test_runtime_validation_feedback.py::testReceiptNotificationsRespectActualStateAndDeduplicate[WAITING]
+FAILED tests/designer/test_runtime_validation_feedback.py::testCommittedConnectionFailureWarnsWithoutRewriting[camera-FAILED: connection timeout]
+FAILED tests/designer/test_runtime_validation_feedback.py::testCommittedConnectionFailureWarnsWithoutRewriting[communication-FAILED: address already in use]
+FAILED tests/designer/test_runtime_validation_feedback.py::testCommittedConnectionFailureReportedWhenLaterQueryResolvesPending
+FAILED tests/designer/test_runtime_validation_feedback.py::testCommittedNonfailedConnectionDoesNotWarn[PENDING]
+FAILED tests/designer/test_runtime_validation_feedback.py::testCommittedNonfailedConnectionDoesNotWarn[CONNECTED]
+FAILED tests/designer/test_runtime_validation_feedback.py::testCommittedNonfailedConnectionDoesNotWarn[LISTENING]
+FAILED tests/designer/test_runtime_validation_feedback.py::testCommittedNonfailedConnectionDoesNotWarn[SUPERSEDED]
+FAILED tests/designer/test_runtime_validation_feedback.py::testCommittedNonfailedConnectionDoesNotWarn[UNKNOWN_AFTER_RESTART]
+FAILED tests/designer/test_runtime_validation_feedback.py::testCommittedConnectionAndTopLevelErrorsShareOneWarning
+FAILED tests/designer/test_runtime_validation_feedback.py::testLateValidationCannotNotifyOrContinueWritingInNewContext[close]
+FAILED tests/designer/test_runtime_validation_feedback.py::testLateValidationCannotNotifyOrContinueWritingInNewContext[runtime]
+FAILED tests/designer/test_runtime_validation_feedback.py::testLateValidationCannotNotifyOrContinueWritingInNewContext[project]
+FAILED tests/designer/test_runtime_validation_feedback.py::testLateValidationCannotNotifyOrContinueWritingInNewContext[draft]
+FAILED tests/designer/test_runtime_validation_feedback.py::testValidationErrorModalCannotReenterCommandOrPoll
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[loopback]
+FAILED tests/designer/test_runtime_validation_feedback.py::testPrewriteSuccessHasOnlyExistingImpactConfirmation
+FAILED tests/designer/test_runtime_validation_feedback.py::testSelectionChangeImmediatelyInvalidatesVisiblePassedVerdict
+FAILED tests/designer/test_runtime_validation_feedback.py::testReconnectedRuntimeExplainsExpiredDialogInsteadOfSilentButtons
+FAILED tests/designer/test_runtime_validation_feedback.py::testIdleContextChecksUseExistingIdentityWithoutWholeDraftValidation
+ERROR tests/designer/test_device_workspace.py::testDeviceDialogEditHistoryAndReopen
+ERROR tests/designer/test_device_workspace.py::testDeviceMenuOpensDialogWithoutChangingWorkspace
+ERROR tests/designer/test_device_workspace.py::testDeviceDialogReturnsToPagesAndRetiresOnProjectSwitch
+ERROR tests/designer/test_device_workspace.py::testDeviceDialogCloseKeepsDraftAndRejectsInvalidInput
+ERROR tests/designer/test_device_workspace.py::testDeviceDialogCloseDuringMetadataReadCanReopen
+ERROR tests/designer/test_device_workspace.py::testDeviceControlNeedsConfirmationAndNeverEditsDraft
+ERROR tests/designer/test_device_workspace.py::testDeviceStateResponseIsDiscardedAfterScopeChanges
+ERROR tests/designer/test_device_workspace.py::testWizardCancelAndSourceCommit
+ERROR tests/designer/test_device_workspace.py::testNormalDropWizardAtomicFinishAndCancel
+ERROR tests/designer/test_device_workspace_usability.py::testVisibleActionLabelsExplainDraftBoundary
+ERROR tests/designer/test_device_workspace_usability.py::testWorkspaceDuplicateIsExplicitAndNeverOverwrites[False]
+ERROR tests/designer/test_device_workspace_usability.py::testWorkspaceDuplicateIsExplicitAndNeverOverwrites[True]
+ERROR tests/designer/test_device_workspace_usability.py::testWorkspaceValidationFocusAndRevertStayAtomic
+ERROR tests/designer/test_device_workspace_usability.py::testUnchangedDisabledPortableDefinitionCanClose
+ERROR tests/designer/test_device_workspace_usability.py::testBackgroundRecoveryClearsOnlyItsOwnErrorAndPreservesEdit[]
+ERROR tests/designer/test_device_workspace_usability.py::testBackgroundRecoveryClearsOnlyItsOwnErrorAndPreservesEdit[\u8bbe\u5907\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a]
+ERROR tests/designer/test_device_workspace_usability.py::testIncompleteNumberRevealsItsTabWithoutCommitting[apply]
+ERROR tests/designer/test_device_workspace_usability.py::testIncompleteNumberRevealsItsTabWithoutCommitting[close]
+45 failed, 17 passed, 18 errors in 20.23s

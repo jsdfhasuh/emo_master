@@ -73,7 +73,7 @@ def _bridge(items, alive=False, supervisor=None):
 
 @pytest.mark.parametrize("barrier", ["job.started", "job.completed", "job.failed",
     "job.aborted", "job.custom", "display.image", "display.custom",
-    "process.heartbeat", "sqlite.write.started", "sqlite.write.completed", "sqlite.write.custom"])
+    "process.heartbeat", "sqlite.write.started", "sqlite.write.completed", "sqlite.write.custom", "inspection.snapshot"])
 def testPrefetchedBarrierStaysInOrderDuringDeadProcessDrain(barrier):
     items = [_event(0), _event(1), _event(2, barrier), _event(3), _event(4)]
     bridge, supervisor, events = _bridge(items)

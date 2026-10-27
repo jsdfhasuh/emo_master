@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="2.265" timestamp="2026-10-21T20:45:59.285301+08:00" hostname="视觉电脑"><testcase classname="tests.designer.test_device_project_open" name="testDeviceDraftOpenCopySwitchSaveAndReopen" time="1.503"><failure message="AssertionError: assert {'camera': {'...lectors': {}}} == {'camera': {'...d': 'camera'}}&#10;  &#10;  Differing items:&#10;  {'camera': {'deviceId': 'camera', 'selectors': {}}} != {'camera': {'deviceId': 'camera'}}&#10;  Use -v to get more diff">ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000002108DE8B6D0&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2750/testDeviceDraftOpenCopySwitchS0')
+definition = DeviceDefinition(name='Camera A', deviceTypeId='device.example.simulated_camera', driverVersion='1.0.0', enabled=True,...ce': 'offline'}, defaults={'exposureMode': 'manual', 'exposureUs': 8000.0, 'gain': 0.0, 'enabled': False}, policies={})
+
+    def testDeviceDraftOpenCopySwitchSaveAndReopen(ownedDesignerWindow, tmp_path, definition):  # noqa: F811
+        def forbidden(*args, **kwargs):
+            raise AssertionError("device draft must not execute or load a Runtime project")
+    
+        payload = project(definition)
+        source = tmp_path / "device.emoproj"
+        saveProject(source, payload)
+        runtime = SimpleNamespace(listOperators=lambda: [], loadProject=forbidden, startJob=forbidden,
+                                  releaseCommunicationForReplacement=forbidden)
+        window = ownedDesignerWindow(runtime, settingsStore=QSettings(str(tmp_path / "settings.ini"), QSettings.IniFormat))
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+&gt;       assert window.flowModel.nodes["capture"].deviceBindings == {"camera": {"deviceId": "camera"}}
+E       AssertionError: assert {'camera': {'...lectors': {}}} == {'camera': {'...d': 'camera'}}
+E         
+E         Differing items:
+E         {'camera': {'deviceId': 'camera', 'selectors': {}}} != {'camera': {'deviceId': 'camera'}}
+E         Use -v to get more diff
+
+tests\designer\test_device_project_open.py:21: AssertionError</failure></testcase></testsuite></testsuites>

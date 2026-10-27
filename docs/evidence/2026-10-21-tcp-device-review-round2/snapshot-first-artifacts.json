@@ -1,0 +1,102 @@
+[
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\acceptance-results.json",
+    "retained": "snapshot-first-acceptance\\acceptance-results.json"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\device-diagnostics-before-export.json",
+    "retained": "snapshot-first-acceptance\\device-diagnostics-before-export.json"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\devices.emodev.json",
+    "retained": "snapshot-first-acceptance\\devices.emodev.json"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\qt-device-connection.png",
+    "retained": "snapshot-first-acceptance\\qt-device-connection.png"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\qt-first-write.png",
+    "retained": "snapshot-first-acceptance\\qt-first-write.png"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\workflow.emowf.json",
+    "retained": "snapshot-first-acceptance\\workflow.emowf.json"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\device-import\\device-diagnostics.json",
+    "retained": "snapshot-first-acceptance\\device-import\\device-diagnostics.json"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\device-import\\imported.emoproj",
+    "retained": "snapshot-first-acceptance\\device-import\\imported.emoproj"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\device-import\\sample.png",
+    "retained": "snapshot-first-acceptance\\device-import\\sample.png"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\engineering\\acceptance.emoproj",
+    "retained": "snapshot-first-acceptance\\engineering\\acceptance.emoproj"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\engineering\\sample.png",
+    "retained": "snapshot-first-acceptance\\engineering\\sample.png"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\runtime-import\\device-diagnostics.json",
+    "retained": "snapshot-first-acceptance\\runtime-import\\device-diagnostics.json"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\runtime-import\\imported.emoproj",
+    "retained": "snapshot-first-acceptance\\runtime-import\\imported.emoproj"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\runtime-import\\project.json",
+    "retained": "snapshot-first-acceptance\\runtime-import\\project.json"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\runtime-import\\sample.png",
+    "retained": "snapshot-first-acceptance\\runtime-import\\sample.png"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\runtime-package\\runtime-768af335265a48ccb3f424bfd53b42af.vxpkg",
+    "retained": "snapshot-first-acceptance\\runtime-package\\runtime-768af335265a48ccb3f424bfd53b42af.vxpkg"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\saved-copy\\project.json",
+    "retained": "snapshot-first-acceptance\\saved-copy\\project.json"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\saved-copy\\sample.png",
+    "retained": "snapshot-first-acceptance\\saved-copy\\sample.png"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\workflow-import\\device-diagnostics.json",
+    "retained": "snapshot-first-acceptance\\workflow-import\\device-diagnostics.json"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\workflow-import\\imported.emoproj",
+    "retained": "snapshot-first-acceptance\\workflow-import\\imported.emoproj"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\workflow-import\\workflow-resources-1wiqceeh\\resource-1a0bd27e4fcd4ddb866533ba2902e56d.png",
+    "retained": "snapshot-first-acceptance\\workflow-import\\workflow-resources-1wiqceeh\\resource-1a0bd27e4fcd4ddb866533ba2902e56d.png"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\regression\\testConsumerDeviceLogsKeepReta0\\logs\\runtime-20261021-033046-13576-0001.jsonl",
+    "retained": "snapshot-first-dispatch\\testConsumerDeviceLogsKeepReta0\\logs\\runtime-20261021-033046-13576-0001.jsonl"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\regression\\testConsumerDeviceLogsKeepReta0\\project.json",
+    "retained": "snapshot-first-dispatch\\testConsumerDeviceLogsKeepReta0\\project.json"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\regression\\testConsumerDeviceLogsKeepReta1\\logs\\runtime-20261021-033049-13576-0001.jsonl",
+    "retained": "snapshot-first-dispatch\\testConsumerDeviceLogsKeepReta1\\logs\\runtime-20261021-033049-13576-0001.jsonl"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\regression\\testConsumerDeviceLogsKeepReta1\\project.json",
+    "retained": "snapshot-first-dispatch\\testConsumerDeviceLogsKeepReta1\\project.json"
+  }
+]

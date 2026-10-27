@@ -1,0 +1,34 @@
+TCP_ACCEPTANCE_ROOT=C:\Users\jsdfhasuh\AppData\Local\Temp\pytest-of-jsdfhasuh\pytest-2668\tcp-device-chain0
+Process emo-master-job-6de2ac53-afe3-45aa-ad8e-0d8dd41c165b:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 140, in runJobProcess
+    runCycle(context, inputs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\execution\operator_executor.py", line 221, in invoke
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: 等待连接已取消
+........F
+================================== FAILURES ===================================
+_________ testA6ThirdPartyServiceUsesSameFactoryJobStateAndDeviceLogs _________
+tests\runtime\test_tcp_device_integration.py:529: in testA6ThirdPartyServiceUsesSameFactoryJobStateAndDeviceLogs
+    assert 'example.ticker.sample' in service.pluginScanResult.activeOperators, service.pluginScanResult.rejectedOperators
+E   AssertionError: {'example.ticker.sample': [ValidationIssue(ruleId='R02', code='E_ENTRY_IMPORT_FAILED', message="D:\\jsdfhasuh\\documen...ice_service\\manifest.json: mutable default <class 'dict'> for field inputPorts is not allowed: use default_factory")]}
+E   assert 'example.ticker.sample' in {'vision.image.absdiff': PluginDescriptor(manifest=PluginManifest(operatorId='vision.image.absdiff', displayName='Abso...ins/builtins/annotate'), editorIssues=(), editorUiContent=None, editorUiSha256='', iconAsset=None, iconIssues=()), ...}
+E    +  where {'vision.image.absdiff': PluginDescriptor(manifest=PluginManifest(operatorId='vision.image.absdiff', displayName='Abso...ins/builtins/annotate'), editorIssues=(), editorUiContent=None, editorUiSha256='', iconAsset=None, iconIssues=()), ...} = RegistryScanResult(activeOperators={'vision.image.absdiff': PluginDescriptor(manifest=PluginManifest(operatorId='visio...'examples.device_service.driver:Ticker', executionLocation='io_thread', cancellableWait=None)}, rejectedDeviceTypes={}).activeOperators
+E    +    where RegistryScanResult(activeOperators={'vision.image.absdiff': PluginDescriptor(manifest=PluginManifest(operatorId='visio...'examples.device_service.driver:Ticker', executionLocation='io_thread', cancellableWait=None)}, rejectedDeviceTypes={}) = <emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x0000023A4AAF1BD0>.pluginScanResult
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_tcp_device_integration.py::testA6ThirdPartyServiceUsesSameFactoryJobStateAndDeviceLogs
+1 failed, 8 passed in 19.63s

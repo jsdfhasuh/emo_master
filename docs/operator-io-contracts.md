@@ -748,6 +748,23 @@ if isinstance(geometry, BBox2D):
 | `communication.tcp.client` | `message`、`text` 或参数文本中的一个 | `sentBytes`、可选 `response:tcpMessage/responseText` | 一次有界 TCP send/exchange 事务，可独立解码文本响应 |
 | `communication.tcp.receive_once` | 无 | `message:tcpMessage`、`peerHost/peerPort`、可选 `text` | 在超时内监听并接收一条消息，可独立解码文本后关闭 |
 
+`vision.collection.filter` 1.2.0 保留七类集合的完整端口声明，但单次执行只接收一种
+集合。`collectionType` 选择检测结果、连通域、轮廓、形状测量、直线、圆或模板匹配；
+显式选择与实际输入不一致时报 `E_INPUT_TYPE`。旧节点未保存此参数时仍依据输入类型执行。
+Designer 根据已有集合连线带出旧节点的类型，新节点先选择筛选对象；不在打开编辑器时改写工程。
+
+筛选条件按组启用，组间是 AND，同一类别列表内命中任意项即可。条件关闭或不适用于
+所选类型时保留参数原值，但不参与筛选及参数校验。旧节点缺少新增开关时保留原来的
+过滤语义，编辑器根据旧条件值或参数绑定识别启用组；圆度仍沿用原有显式开关。
+新增开关不写入固定 schema 默认值，避免快照补默认值时改变旧节点的结果。
+`xVisibleWhen` 控制参数展示，`xValidateWhen` 控制条件性校验；后者也用于快照和
+全局变量有效参数校验，不删除关闭条件的草稿值。
+
+画布仅显示当前集合输入、对应 kept/rejected 集合和两项数量输出；开启空间筛选且选择
+空间关系后显示 `roi`。新勾选空间筛选时默认使用“中心位于区域内”。绑定决定类型时
+显示可能使用的引脚。已有不适用连线保留并标记，禁止新增不适用连接；手动“显示全部”
+只恢复当前展示集合内的引脚，不修改完整模型端口。
+
 `vision.state.counter` 的 `name` 是必填参数，区分大小写，允许 1–128 个 Unicode
 字符，但不允许首尾空白。计数状态由 Runtime SQLite 按 `(projectId, name)` 保存，
 不写入项目文件；`reset=true` 优先于 `increment=true`，两者均未给出或为 false 时
@@ -787,7 +804,13 @@ Filter、Count、Sort、Select 都使用第 8 节的 exactly-one 七入口规则
 - Sort 只接受集合类型对应的字段白名单并使用稳定排序；缺少 circularity、label 等
   可选字段的项无论升序或降序都排在末尾。
 - Select 支持 `first/last/index/topK`，越界按 `onOutOfRange=empty|error` 处理；即使只
-  选择一项，输出仍为对应的集合类型。
+  选择一项，输出仍为对应的集合类型。`index` 模式对空集合也执行该策略（索引 0 仍越界）；
+  `first/last/topK` 的空集合保持成功、选中数量为 0。
+
+这些多选一入口，以及 Shape Measurement、Geometry Points、Result Writer 的对象入口，
+在编译时按明确且连线一致的处理对象或唯一业务输入连线细化必需输入；未选候选端口和
+辅助可选输入不改为必需。上游本次未产出该输入时沿用 Runner 的 `E_INPUT_NOT_PRODUCED`
+跳过语义，后续有数据可继续执行；有效空集合仍正常执行，未连接或输入冲突仍报错。
 
 ### 10.3 数值与渲染契约
 
@@ -897,6 +920,11 @@ Receive Once 同理通过 `messageTextEncoding` 可选输出 `text:string`。文
 `responseEncoding/messageEncoding` 的 DTO 存储形式完全独立，因此 DTO 使用 hex/base64
 时仍可按 UTF-8、ASCII 或 Latin-1 解码。非法文本字节返回 `E_RESULT_INVALID`。
 
+已完成传输后解码失败，节点的 `diagnostics.tcpTransaction` 保留 `action`、
+`outcome=COMPLETED`、`bytesSent`、`bytesReceived`、`automaticRetry=false`，并标记
+`phase=decode`。Receive Once 的 `bytesSent` 包含已发送 ACK，`bytesReceived` 是分帧后的
+业务数据字节数。这只确认传输已完成，不代表对端业务已执行；失败和取消都不自动重发。
+
 TCP 是字节流，没有天然消息边界。两个节点都要求显式选择 `newline`、`quoted`、`idle`
 或 `fixedLength`：newline 去除末尾 CRLF，quoted 保留完整外层引号，idle 在收到至少一个
 字节后以读超时作为边界，fixedLength 必须给出 `expectedBytes`。所有模式都强制最大消息
@@ -936,6 +964,14 @@ ONNX Runtime CPU session，并按模型路径与 device 缓存。模型路径可
 相对作业工作区；仅支持 batch 1、float32、未内置 NMS 的 Ultralytics YOLOv8/YOLO11
 detect `.onnx` 导出，不支持 pose、segmentation、端到端 NMS、INT8、DirectML 或 CUDA。
 
+YOLO 的 `drawOverlay` 默认值为 `true`，成功推理后输出 `overlay` 图像；没有目标时也输出
+无框图像。绘制在输入副本上完成，不改变原图或检测集合。显式 `drawOverlay=false` 仍关闭
+该输出，已有工程参数不自动改写。关闭绘图或裁剪时，本次完成诊断的
+`imageOutputMessages` 按端口记录原因，供节点结果面板显示；`frame` 是坐标元数据，不是图像。
+
+Designer 中 `classes` 使用紧凑编号输入：`0, 1, 3`，兼容中文逗号和粘贴 `[0, 1, 3]`；
+留空显示「全部类别」，仍保存为 `[]`。不把编号套用固定的 COCO 类别名称，不改变模型过滤规则。
+
 YOLO 从 1.3.0 起支持可选检测框裁剪：
 
 - `detections` 保留所有经过类别/置信度/NMS 过滤且裁切到图像边界后仍有面积的结果，
@@ -952,6 +988,42 @@ YOLO 从 1.3.0 起支持可选检测框裁剪：
   不能回源之后再重复相加同一个 ROI 偏移。
 - 原 `frame` 和所有检测几何仍属于 YOLO 输入图空间，不随裁剪输出改变；原图画框应继续
   使用该检测集合。`overlay` 仅用于显示，不用于测量。选择一个裁剪目标不删除其余检测框。
-- 启用裁剪但本次没有有效目标、或序号超出本次数量时，返回 `E_CROP_TARGET_NOT_FOUND`
-  和明确的序号/数量提示；无输出，不退回第一个目标、不沿用上次图像。关闭裁剪仍允许空检测成功。
-  所选框与输入 frame 的有效内容无交集时保留 Crop 的 `E_INPUT_SHAPE` 错误，不输出虚构图像。
+- 从 1.4.0 起，`onMissingCrop` 控制启用裁剪但本次没有有效目标、或序号超出本次数量时的行为。
+  默认 `error`（报错停止）保持已有工程行为：返回 `E_CROP_TARGET_NOT_FOUND` 和序号/数量提示，
+  不产生输出。显式选择 `skip`（跳过裁剪，继续检测）时，检测仍成功，保留 `detections`、`frame`
+  及已开启的 `overlay`，不产生 `croppedImage` / `croppedFrame`；`imageOutputMessages` 记录缺失原因。
+  两种策略均不退回第一个目标、不沿用上次图像。关闭裁剪仍允许空检测成功，此时不校验无关的裁剪参数。
+- 下游节点已连接的必需输入本次没有数据时，标记 `SKIPPED / E_INPUT_NOT_PRODUCED`，不执行其副作用；
+  即使其他输入（例如 Image Saver 的 `fileName`）已到达，也不会用旧裁剪图执行。后续调用有数据即可正常运行。
+  多选一对象入口按第 10.2 节细化必需性，其余可选输入缺失不阻止节点运行；工作流声明为必填的最终输出仍必须产生，否则仍失败。
+- `skip` 只处理缺少裁剪目标，不忽略模型加载、参数、推理或写入错误。所选框与输入 frame 的有效内容
+  无交集时保留 Crop 的 `E_INPUT_SHAPE` 错误，不输出虚构图像。已有工程不自动改参数；连续检测需在
+  YOLO 的“输出裁剪图”下将“无裁剪目标时”显式设为“跳过裁剪，继续检测”。
+
+`vision.io.detection_archive` 在裁剪、保存或取消中保留 `diagnostics.archiveProgress`：
+`cropPaths`、`savedCropCount`、`overlayPath` 仅记录本次已确认保存的文件，`stage` 标识
+`crop/saveCrop/saveOverlay/completed`，逐目标阶段带一基 `detectionIndex` 和 `detectionId`。
+原始错误码和取消异常保留，不自动删除已保存文件，也不补执行剩余保存；成功后才收到取消时
+同样保留已完成保存的事实。未检测到目标和冷却期内仍不写文件，不附带先前调用的保存记录。
+
+### 10.8 Designer 的对象、模式和条件引脚
+
+算子的完整端口类型契约仍保存在模型和工程中，Designer 按当前配置投影显示及可连接端口。
+“显示全部引脚”只恢复当前配置适用的引脚，不重新开放其他模式的输入或关闭的输出。
+切换模式不会删除旧连线：不适用但已连接的端口继续显示警告，断开后才收起，且不可新建连接。
+全局变量、资源和现场参数绑定决定模式时，保留可能使用的端口及参数，执行时校验实际配置。
+
+- Sort、Select、Count 使用 `collectionType` 单选处理对象；Result Writer、Shape Measurement
+  和 Geometry Points 使用 `inputType`。缺失或空值兼容旧工程的单输入推断；显式值要求实际输入
+  与选择一致。打开旧节点时优先从输入连线推断，Sort/Select 还可从输出连线推断，不自动保存。
+- Sort 的 `key=""` 表示自动：检测结果按 confidence、直线按 length、圆按 radius、模板匹配按
+  quality，其余按 area。新节点默认自动；旧节点明确保存的 key 保持原值。不适用的旧字段显示
+  提示并要求重新选择，不静默替换。手选字段列表按对象收窄，稳定排序和缺失值置后规则不变。
+- Geometry Points 的圆心仅适用 circles；质心与旋转矩形中心仅适用 measurements；包围框中心
+  和左上角可选择 bbox 或 measurements。模式只有一种来源时编辑器自动选中对应对象。
+- YOLO 的 overlay、croppedImage/croppedFrame，RGB Statistics 的 mask，Coordinate Reader 的
+  polygon，以及 Blob 的 overlay 随各自开关显示。Mask Logic 的 not 模式不显示未连接的 B 输入。
+- Select、Blur、Coordinate Calculator、ROI、Resize 和 YOLO 裁剪参数按模式显示与校验。
+  `xVisibleWhen` 管理显示，`xValidateWhen` 管理准入和绑定值校验；隐藏字段的草稿保留，但不执行
+  无关约束。ROI 专用编辑器与通用表单保持相同的模式规则。
+- Annotate 等本来允许多种集合同时参与处理的算子不增加互斥对象限制。

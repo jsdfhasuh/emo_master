@@ -1,0 +1,24 @@
+ M src/emo_master/apps/runtime/operator_debug/contracts.py
+ M src/emo_master/apps/runtime/operator_debug/resources.py
+ M src/emo_master/core/project/runtime_directory.py
+ M src/emo_master/plugins/builtins/image_saver/manifest.json
+ M src/emo_master/plugins/builtins/image_saver/operator.py
+ M tests/core/plugin/test_builtin_parameter_titles.py
+ M tests/core/test_runtime_directory.py
+ M tests/designer/test_device_definition_feedback.py
+ M tests/plugins/test_image_saver_operator.py
+ M tests/runtime/test_operator_debug_resources.py
+ M tests/runtime/test_operator_registration.py
+?? docs/image-saver.md
+?? docs/plans/2026-10-21-device-usability-improvement-plan-v1.md
+?? docs/testing/2026-10-21-image-saver-filename-validation.md
+?? docs/testing/2026-10-21-video-loader-validation.md
+?? docs/video-loader.md
+?? examples/video_sample_while/
+?? examples/video_yolo_crop_operators/
+?? src/emo_master/plugins/builtins/video_loader/
+?? tests/designer/test_image_saver_form.py
+?? tests/designer/test_video_loader_form.py
+?? tests/plugins/test_video_loader_operator.py
+?? tests/runtime/test_image_saver_filename.py
+?? tests/runtime/test_video_sample_while.py

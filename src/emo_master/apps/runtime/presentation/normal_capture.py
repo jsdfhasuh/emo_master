@@ -22,7 +22,7 @@ class NormalCapture:
     limitsJson: str
 
 
-def freezeNormalCapture(document, registry, resourceRoot, workflowId, *, counterNames=frozenset()):
+def freezeNormalCapture(document, registry, resourceRoot, workflowId, *, counterNames=frozenset(), resourcePaths=None):
     if document.presentation is None:
         raise ValueError("presentation must be explicitly enabled and saved")
     issues = validateBindings(document, {key: value.manifest for key, value in registry.items()}, counterNames=counterNames)
@@ -31,8 +31,8 @@ def freezeNormalCapture(document, registry, resourceRoot, workflowId, *, counter
     if document.resources is not None:
         # Check declared package assets, but never rewrite the original run's
         # site/file parameters or move it into the debug data namespace.
-        verifyResources(document, resourceRoot)
-    presentation = presentationForWorkflow(document, workflowId)
+        verifyResources(document, resourceRoot, resourcePaths=resourcePaths)
+    presentation = presentationForWorkflow(document, workflowId, capture=True)
     capture = captureDefinition(presentation)
     used = {sourceId for page in presentation.pages.values()
             for component in walkComponents(page.components)
@@ -56,8 +56,8 @@ def freezeNormalCapture(document, registry, resourceRoot, workflowId, *, counter
             raise ValueError(f"{sourceId}: output must belong to its explicit invocation scope")
     execution = {"projectId": document.project.projectId,
                  **({"globalVariables": {key: value.model_dump() for key, value in document.globalVariables.items()}}
-                    if document.schemaVersion in {"2.4", "2.5", "2.6"} else {}),
-                 **({"devices": document.devices.model_dump()} if document.schemaVersion == "2.6" else {}),
+                    if document.schemaVersion in {"2.4", "2.5", "2.6", "2.7"} else {}),
+                 **({"devices": document.devices.model_dump()} if document.schemaVersion in {"2.6", "2.7"} else {}),
                  **({"communication": document.communication.model_dump()} if document.communication is not None else {}),
                  "workflowId": workflowId,
                  "workflows": {key: value.model_dump() for key, value in document.workflows.items()},

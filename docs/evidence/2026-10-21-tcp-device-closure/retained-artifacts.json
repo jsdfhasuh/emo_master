@@ -1,0 +1,151 @@
+{
+  "sourceSha": "24fcc827de18085f432fababa679acb0d382e940",
+  "sourceTree": "4dd9d4dd3ebcb5dfcff1a4ddc110dca05c658319",
+  "temporaryRoot": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain",
+  "files": [
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\acceptance-results.json",
+      "retained": "acceptance\\acceptance-results.json",
+      "sha256": "4d8b41c220e7c989506cbc1a3bfaa54f57f3dcaed13b72b18160d5c701c5c0fb",
+      "bytes": 20562
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\device-diagnostics-before-export.json",
+      "retained": "acceptance\\device-diagnostics-before-export.json",
+      "sha256": "f65b36f7b00101dec0a88daa0da099129b60d90d9c939f14619a142fe5a952b4",
+      "bytes": 32868
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\devices.emodev.json",
+      "retained": "acceptance\\devices.emodev.json",
+      "sha256": "5d906a92515784f43e8f990b560cd35315cee432bdca745c5869174e9a50c9fa",
+      "bytes": 4478
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\workflow.emowf.json",
+      "retained": "acceptance\\workflow.emowf.json",
+      "sha256": "4f81617937c092c3ca2e487889f29a7effc750c7f404c0ee4dbe7ba24dd2d86c",
+      "bytes": 10658
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\qt-device-connection.png",
+      "retained": "acceptance\\qt-device-connection.png",
+      "sha256": "b7a084d579fe731ac04e32cef4d1d816b9fd257ebcfc1690d052d87741e5820d",
+      "bytes": 64886
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\qt-first-write.png",
+      "retained": "acceptance\\qt-first-write.png",
+      "sha256": "abba291086e3ae7bd6f24aea7d74b678461a6103637e715863f35ff870479538",
+      "bytes": 15683
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\engineering\\acceptance.emoproj",
+      "retained": "acceptance\\engineering\\acceptance.emoproj",
+      "sha256": "a8ff4de06529b52b55a4a7b9f8aaab71cf13b48297707a74476baa079228d235",
+      "bytes": 32524
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\engineering\\sample.png",
+      "retained": "acceptance\\engineering\\sample.png",
+      "sha256": "7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4",
+      "bytes": 80
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\saved-copy\\project.json",
+      "retained": "acceptance\\saved-copy\\project.json",
+      "sha256": "d9a1d799ec5288430ef6105e50c210b6846d4b27b82e20fc18ecf5fe82a8a27f",
+      "bytes": 33680
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\saved-copy\\sample.png",
+      "retained": "acceptance\\saved-copy\\sample.png",
+      "sha256": "7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4",
+      "bytes": 80
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\device-import\\device-diagnostics.json",
+      "retained": "acceptance\\device-import\\device-diagnostics.json",
+      "sha256": "fa80bf9a2aff4158199f7ddb998b6457a9a89d567176b7f0ef933b3b03be5d75",
+      "bytes": 7586
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\device-import\\imported.emoproj",
+      "retained": "acceptance\\device-import\\imported.emoproj",
+      "sha256": "7104c43c6a056b6ddb5176498bdfe24fc0140d2251ebb6f360e0a744571b2f76",
+      "bytes": 32636
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\device-import\\sample.png",
+      "retained": "acceptance\\device-import\\sample.png",
+      "sha256": "7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4",
+      "bytes": 80
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\workflow-import\\device-diagnostics.json",
+      "retained": "acceptance\\workflow-import\\device-diagnostics.json",
+      "sha256": "457e3e43fe4c1d074a8cc0c053ec766409ac8621f162ea63f974f0ac30d815b6",
+      "bytes": 7598
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\workflow-import\\imported.emoproj",
+      "retained": "acceptance\\workflow-import\\imported.emoproj",
+      "sha256": "cae5d03d4a9702ec41f420850c695a54d942334e15cf370cbf99f11763d00d1a",
+      "bytes": 12886
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\workflow-import\\workflow-resources-vibxste2\\resource-ec36a3fcc5864ab6aca33de1fad9126c.png",
+      "retained": "acceptance\\workflow-import\\workflow-resources-vibxste2\\resource-ec36a3fcc5864ab6aca33de1fad9126c.png",
+      "sha256": "7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4",
+      "bytes": 80
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\runtime-import\\device-diagnostics.json",
+      "retained": "acceptance\\runtime-import\\device-diagnostics.json",
+      "sha256": "c2660147f321955a243347a5e5e79035b780a70642bfdae96dee29aab6b28f7f",
+      "bytes": 7226
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\runtime-import\\imported.emoproj",
+      "retained": "acceptance\\runtime-import\\imported.emoproj",
+      "sha256": "bd1b3cd4a7602d484c0105649c1305c652a6a67dd46400efe6b2a366c6bf6bda",
+      "bytes": 32524
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\runtime-import\\project.json",
+      "retained": "acceptance\\runtime-import\\project.json",
+      "sha256": "ee197d99ea014511080cf044ecb150591ab40d6cc11f08592259e510987213a9",
+      "bytes": 17806
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\runtime-import\\sample.png",
+      "retained": "acceptance\\runtime-import\\sample.png",
+      "sha256": "7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4",
+      "bytes": 80
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\tcp-device-chain0\\runtime-package\\runtime-2300ac36a1a741c3b3ff1d4093198c43.vxpkg",
+      "retained": "acceptance\\runtime-package\\runtime-2300ac36a1a741c3b3ff1d4093198c43.vxpkg",
+      "sha256": "607fafd5e63fc74d7f6d1230619e2609d32a2e9a66bb594af15fafe045d36fd0",
+      "bytes": 5248
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\testA6ThirdPartyServiceUsesSam0\\service.emoproj",
+      "retained": "third-party\\service.emoproj",
+      "sha256": "9f9651bd61d60b788994e7aea2c41a284c949cd02b4ba91972ce6f4b587f8e63",
+      "bytes": 2037
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\testA6ThirdPartyServiceUsesSam0\\third-party-diagnostics.json",
+      "retained": "third-party\\third-party-diagnostics.json",
+      "sha256": "d0a3f662d0aae43599bf4fa858c464911ec66dfbfb0be4a368866cff4c679591",
+      "bytes": 10673
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain\\testA6ThirdPartyServiceUsesSam0\\runtime\\logs\\runtime-20261021-022428-27300-0001.jsonl",
+      "retained": "third-party\\raw-events\\runtime\\logs\\runtime-20261021-022428-27300-0001.jsonl",
+      "sha256": "8fb1a1f9967d80ba842b2a956bba1784e231c177d83139b29b1bac3204beac87",
+      "bytes": 29797
+    }
+  ]
+}

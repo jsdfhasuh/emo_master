@@ -19,7 +19,8 @@ try:
 
     class ProjectEntryDialog(QDialog):
         def __init__(self, parent=None) -> None:
-            super().__init__(parent)
+            # A hidden editor owner suppresses the startup dialog's taskbar entry.
+            super().__init__(parent if parent is not None and parent.isVisible() else None)
             self.setModal(True)
             self.setWindowTitle("项目入口")
             self.resize(720, 520)
@@ -53,6 +54,13 @@ try:
             heroLayout.addWidget(self._heroSubtitle)
             self._heroSection.setLayout(heroLayout)
             rootLayout.addWidget(self._heroSection)
+
+            self._startupNotice = QLabel()
+            self._startupNotice.setWordWrap(True)
+            self._startupNotice.setTextFormat(Qt.PlainText)
+            self._startupNotice.setObjectName("startupSettingsError")
+            self._startupNotice.hide()
+            rootLayout.addWidget(self._startupNotice)
 
             self._actionSection = QWidget()
             setActionSectionName = getattr(self._actionSection, "setObjectName", None)
@@ -137,6 +145,10 @@ try:
                 "请检查以下错误；可继续选择其他项目、新建空白项目，或取消退出。\n\n" + message
             )
             self._loadErrorEdit.show()
+
+        def setStartupNotice(self, message: str) -> None:
+            self._startupNotice.setText(message)
+            self._startupNotice.setVisible(bool(message))
 
         def setRecentProjects(self, projects: list[dict[str, str]]) -> None:
             self._recentProjects = list(projects)

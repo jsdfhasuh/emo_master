@@ -1,0 +1,1169 @@
+{
+  "schemaVersion": "2.7",
+  "project": {
+    "projectId": "4814e2e2-c7eb-430d-8252-2c7b49246c22",
+    "name": "project",
+    "revision": 3,
+    "createdAt": "2026-10-21T14:19:37Z",
+    "updatedAt": "2026-10-21T14:19:39Z"
+  },
+  "entryWorkflowId": "main",
+  "workflowOrder": [
+    "main",
+    "single",
+    "receive",
+    "other",
+    "camera-plc"
+  ],
+  "workflows": {
+    "camera-plc": {
+      "name": "TCP acceptance",
+      "inputs": {},
+      "outputs": {
+        "image": "image",
+        "receipt": "plcWriteReceipt"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "camera",
+          "kind": "operator",
+          "operatorId": "vision.io.simulated_camera",
+          "displayName": "模拟相机采集",
+          "inputPorts": {},
+          "outputPorts": {
+            "frame": "bbox2d",
+            "image": "image"
+          },
+          "paramSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "type": "object"
+          },
+          "params": {},
+          "deviceBindings": {
+            "camera": {
+              "deviceId": "camera",
+              "selectors": {}
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "process",
+          "kind": "operator",
+          "operatorId": "vision.analysis.blob",
+          "displayName": "Blob Analysis",
+          "inputPorts": {
+            "frame": "bbox2d",
+            "image": "image",
+            "mask": "image"
+          },
+          "outputPorts": {
+            "blobs": "blobCollection",
+            "frame": "bbox2d",
+            "mask": "image",
+            "overlay": "image"
+          },
+          "paramSchema": {
+            "properties": {
+              "connectivity": {
+                "default": 8,
+                "enum": [
+                  4,
+                  8
+                ],
+                "title": "连通方式",
+                "type": "integer"
+              },
+              "drawOverlay": {
+                "default": false,
+                "title": "绘制叠加图",
+                "type": "boolean"
+              },
+              "includeContour": {
+                "default": true,
+                "title": "包含轮廓",
+                "type": "boolean"
+              },
+              "invert": {
+                "default": false,
+                "title": "反转掩膜",
+                "type": "boolean"
+              },
+              "maxArea": {
+                "default": 0,
+                "minimum": 0,
+                "title": "最大面积",
+                "type": "integer"
+              },
+              "minArea": {
+                "default": 1,
+                "minimum": 1,
+                "title": "最小面积",
+                "type": "integer"
+              },
+              "threshold": {
+                "default": 127,
+                "maximum": 255,
+                "minimum": 0,
+                "title": "阈值",
+                "type": "integer"
+              },
+              "useOtsu": {
+                "default": false,
+                "title": "使用大津法阈值",
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          },
+          "params": {
+            "threshold": 0
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "count",
+          "kind": "operator",
+          "operatorId": "vision.collection.count",
+          "displayName": "Count Collection",
+          "inputPorts": {
+            "blobs": "blobCollection",
+            "circles": "circleCollection",
+            "contours": "contourCollection",
+            "detections": "detectionCollection",
+            "lines": "lineCollection",
+            "matches": "templateMatchCollection",
+            "measurements": "shapeMeasurementCollection"
+          },
+          "outputPorts": {
+            "count": "integer"
+          },
+          "paramSchema": {
+            "properties": {},
+            "type": "object"
+          },
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "plc",
+          "kind": "operator",
+          "operatorId": "communication.plc.slmp_write",
+          "displayName": "PLC SLMP Write",
+          "inputPorts": {
+            "data": "plcValueCollection",
+            "value": "number",
+            "values": "list<number>"
+          },
+          "outputPorts": {
+            "receipt": "plcWriteReceipt"
+          },
+          "paramSchema": {
+            "properties": {
+              "connectTimeoutMs": {
+                "default": 2000,
+                "maximum": 60000,
+                "minimum": 1,
+                "title": "连接超时（毫秒）",
+                "type": "integer"
+              },
+              "dataType": {
+                "default": "uint16",
+                "enum": [
+                  "uint16",
+                  "int16",
+                  "uint32",
+                  "int32",
+                  "float32"
+                ],
+                "title": "数据类型",
+                "type": "string"
+              },
+              "device": {
+                "default": "D",
+                "enum": [
+                  "D",
+                  "M",
+                  "d",
+                  "m"
+                ],
+                "title": "PLC 软元件",
+                "type": "string"
+              },
+              "frameEncoding": {
+                "default": "binary",
+                "enum": [
+                  "binary",
+                  "ascii"
+                ],
+                "title": "通信格式",
+                "type": "string",
+                "xOptionLabels": {
+                  "ascii": "MC 3E · ASCII",
+                  "binary": "MC 3E · 二进制（Binary）"
+                }
+              },
+              "host": {
+                "default": "127.0.0.1",
+                "title": "主机地址",
+                "type": "string"
+              },
+              "moduleIoNo": {
+                "default": 1023,
+                "maximum": 65535,
+                "minimum": 0,
+                "title": "模块 I/O 编号",
+                "type": "integer"
+              },
+              "moduleStationNo": {
+                "default": 0,
+                "maximum": 255,
+                "minimum": 0,
+                "title": "模块站号",
+                "type": "integer"
+              },
+              "monitoringTimer": {
+                "default": 0,
+                "maximum": 65535,
+                "minimum": 0,
+                "title": "监视定时器（250 毫秒单位）",
+                "type": "integer"
+              },
+              "networkNo": {
+                "default": 0,
+                "maximum": 255,
+                "minimum": 0,
+                "title": "网络编号",
+                "type": "integer"
+              },
+              "pcNo": {
+                "default": 255,
+                "maximum": 255,
+                "minimum": 0,
+                "title": "PC 编号",
+                "type": "integer"
+              },
+              "port": {
+                "default": 10001,
+                "maximum": 65535,
+                "minimum": 1,
+                "title": "端口",
+                "type": "integer"
+              },
+              "responseTimeoutMs": {
+                "default": 2000,
+                "maximum": 60000,
+                "minimum": 1,
+                "title": "响应超时（毫秒）",
+                "type": "integer"
+              },
+              "retryCount": {
+                "default": 0,
+                "maximum": 3,
+                "minimum": 0,
+                "title": "异常重试次数",
+                "type": "integer"
+              },
+              "retryDelayMs": {
+                "default": 0,
+                "maximum": 10000,
+                "minimum": 0,
+                "title": "重试间隔（毫秒）",
+                "type": "integer"
+              },
+              "startAddress": {
+                "default": 0,
+                "maximum": 16777215,
+                "minimum": 0,
+                "title": "起始地址",
+                "type": "integer"
+              },
+              "values": {
+                "default": [],
+                "items": {
+                  "type": "number"
+                },
+                "title": "写入值",
+                "type": "array"
+              }
+            },
+            "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "values"
+            ]
+          },
+          "params": {
+            "startAddress": 100
+          },
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc",
+              "selectors": {}
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {
+            "image": "image",
+            "receipt": "plcWriteReceipt"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "camera",
+          "fromPort": "image",
+          "toNode": "process",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "process",
+          "fromPort": "blobs",
+          "toNode": "count",
+          "toPort": "blobs"
+        },
+        {
+          "fromNode": "count",
+          "fromPort": "count",
+          "toNode": "plc",
+          "toPort": "value"
+        },
+        {
+          "fromNode": "process",
+          "fromPort": "mask",
+          "toNode": "output",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "plc",
+          "fromPort": "receipt",
+          "toNode": "output",
+          "toPort": "receipt"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "output": {
+            "x": 360.0,
+            "y": 20.0
+          }
+        }
+      }
+    },
+    "main": {
+      "name": "TCP acceptance",
+      "inputs": {
+        "text": "string"
+      },
+      "outputs": {
+        "receipt": "tcpSendReceipt"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {
+            "text": "string"
+          },
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "acquire",
+          "kind": "operator",
+          "operatorId": "communication.tcp.session",
+          "displayName": "TCP 通道会话",
+          "inputPorts": {},
+          "outputPorts": {
+            "session": "tcpSessionRef"
+          },
+          "paramSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object",
+            "xDeviceActionFields": []
+          },
+          "params": {},
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "server",
+              "selectors": {
+                "channelId": "a"
+              }
+            }
+          },
+          "deviceValueBindings": {
+            "tcp": {
+              "timeoutMs": {
+                "source": "variable",
+                "variableId": "wait",
+                "inputName": null
+              }
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "send",
+          "kind": "operator",
+          "operatorId": "communication.tcp.session_send",
+          "displayName": "TCP 会话发送",
+          "inputPorts": {
+            "data": "string",
+            "session": "tcpSessionRef"
+          },
+          "outputPorts": {
+            "receipt": "tcpSendReceipt"
+          },
+          "paramSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object",
+            "xDeviceActionFields": []
+          },
+          "params": {},
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "server",
+              "selectors": {}
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {
+            "receipt": "tcpSendReceipt"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "load",
+          "kind": "operator",
+          "operatorId": "vision.io.image_loader",
+          "displayName": "Image Loader",
+          "inputPorts": {},
+          "outputPorts": {
+            "frame": "bbox2d",
+            "image": "image"
+          },
+          "paramSchema": {
+            "properties": {
+              "colorMode": {
+                "default": "color",
+                "enum": [
+                  "color",
+                  "grayscale"
+                ],
+                "title": "颜色模式",
+                "type": "string"
+              },
+              "imagePath": {
+                "default": "",
+                "title": "图像路径",
+                "type": "string",
+                "xFileMode": "open",
+                "xFilter": "图片文件 (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
+                "xWidget": "file"
+              }
+            },
+            "required": [
+              "imagePath"
+            ],
+            "type": "object"
+          },
+          "params": {
+            "imagePath": "sample.png"
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "mask",
+          "kind": "operator",
+          "operatorId": "vision.preprocess.threshold",
+          "displayName": "Threshold",
+          "inputPorts": {
+            "frame": "bbox2d",
+            "image": "image"
+          },
+          "outputPorts": {
+            "frame": "bbox2d",
+            "mask": "image",
+            "threshold": "number"
+          },
+          "paramSchema": {
+            "properties": {
+              "blockSize": {
+                "default": 11,
+                "description": "仅自适应模式生效，必须是大于等于 3 的奇数，如 3、5、11。",
+                "title": "自适应邻域大小",
+                "type": "integer",
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xExample": 11,
+                "xMinimum": 3,
+                "xOdd": true,
+                "xUnit": "像素"
+              },
+              "constant": {
+                "default": 2.0,
+                "description": "仅自适应模式生效，从局部均值或加权均值中减去此有限数值，可为负数或小数。",
+                "title": "自适应阈值偏移量",
+                "type": "number",
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xExample": 2.0,
+                "xUnit": "灰度级"
+              },
+              "invert": {
+                "default": false,
+                "description": "开启后反转二值掩码的前景与背景，输出仍为 0/255。",
+                "title": "反向阈值",
+                "type": "boolean"
+              },
+              "mode": {
+                "default": "fixed",
+                "description": "固定模式使用指定阈值；自动模式由图像计算阈值；自适应模式按局部邻域计算阈值。",
+                "enum": [
+                  "fixed",
+                  "otsu",
+                  "triangle",
+                  "adaptiveMean",
+                  "adaptiveGaussian"
+                ],
+                "title": "阈值模式",
+                "type": "string",
+                "xOptionLabels": {
+                  "adaptiveGaussian": "自适应高斯",
+                  "adaptiveMean": "自适应均值",
+                  "fixed": "固定阈值",
+                  "otsu": "大津法（自动阈值）",
+                  "triangle": "三角法（自动阈值）"
+                }
+              },
+              "threshold": {
+                "default": 127,
+                "description": "仅固定阈值模式生效，填写 0～255 的整数。",
+                "title": "阈值",
+                "type": "integer",
+                "xEnabledWhen": {
+                  "mode": [
+                    "fixed"
+                  ]
+                },
+                "xExample": 127,
+                "xMaximum": 255,
+                "xMinimum": 0,
+                "xUnit": "灰度级"
+              }
+            },
+            "type": "object"
+          },
+          "params": {
+            "mode": "fixed",
+            "threshold": 64
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "acquire",
+          "fromPort": "session",
+          "toNode": "send",
+          "toPort": "session"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "text",
+          "toNode": "send",
+          "toPort": "data"
+        },
+        {
+          "fromNode": "send",
+          "fromPort": "receipt",
+          "toNode": "output",
+          "toPort": "receipt"
+        },
+        {
+          "fromNode": "load",
+          "fromPort": "image",
+          "toNode": "mask",
+          "toPort": "image"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "output": {
+            "x": 360.0,
+            "y": 20.0
+          }
+        }
+      }
+    },
+    "other": {
+      "name": "TCP acceptance",
+      "inputs": {},
+      "outputs": {
+        "session": "tcpSessionRef"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "wait-b",
+          "kind": "operator",
+          "operatorId": "communication.tcp.session",
+          "displayName": "TCP 通道会话",
+          "inputPorts": {},
+          "outputPorts": {
+            "session": "tcpSessionRef"
+          },
+          "paramSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object",
+            "xDeviceActionFields": []
+          },
+          "params": {},
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "server",
+              "selectors": {
+                "channelId": "c"
+              }
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {
+            "session": "tcpSessionRef"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "wait-b",
+          "fromPort": "session",
+          "toNode": "output",
+          "toPort": "session"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "output": {
+            "x": 360.0,
+            "y": 20.0
+          }
+        }
+      }
+    },
+    "receive": {
+      "name": "TCP acceptance",
+      "inputs": {},
+      "outputs": {
+        "message": "tcpMessage"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "receive",
+          "kind": "operator",
+          "operatorId": "communication.tcp.receive_once",
+          "displayName": "TCP Receive Once",
+          "inputPorts": {},
+          "outputPorts": {
+            "message": "tcpMessage",
+            "peerHost": "string",
+            "peerPort": "integer",
+            "text": "string"
+          },
+          "paramSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object",
+            "xDeviceActionFields": []
+          },
+          "params": {},
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "receiver",
+              "selectors": {}
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {
+            "message": "tcpMessage"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "receive",
+          "fromPort": "message",
+          "toNode": "output",
+          "toPort": "message"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "output": {
+            "x": 360.0,
+            "y": 20.0
+          }
+        }
+      }
+    },
+    "single": {
+      "name": "TCP acceptance",
+      "inputs": {},
+      "outputs": {
+        "response": "tcpMessage"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "client",
+          "kind": "operator",
+          "operatorId": "communication.tcp.client",
+          "displayName": "TCP Client",
+          "inputPorts": {
+            "message": "tcpMessage",
+            "text": "string"
+          },
+          "outputPorts": {
+            "response": "tcpMessage",
+            "responseText": "string",
+            "sentBytes": "integer"
+          },
+          "paramSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "operation": {
+                "default": "send",
+                "enum": [
+                  "send",
+                  "exchange"
+                ],
+                "title": "操作类型",
+                "type": "string"
+              },
+              "text": {
+                "default": "",
+                "title": "发送文本",
+                "type": "string"
+              }
+            },
+            "required": [],
+            "type": "object",
+            "xDeviceActionFields": [
+              "operation",
+              "text"
+            ]
+          },
+          "params": {
+            "operation": "exchange",
+            "text": "PING"
+          },
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "client",
+              "selectors": {}
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {
+            "response": "tcpMessage"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "client",
+          "fromPort": "response",
+          "toNode": "output",
+          "toPort": "response"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "output": {
+            "x": 360.0,
+            "y": 20.0
+          }
+        }
+      }
+    }
+  },
+  "runtime": {
+    "maxConcurrentJobs": 2,
+    "gracefulStopTimeoutMs": 5000,
+    "heartbeatTimeoutMs": 5000,
+    "eventRetentionPerJob": 10000
+  },
+  "dependencies": {
+    "operators": []
+  },
+  "devices": {
+    "bindings": {},
+    "schemaVersion": "1.0",
+    "definitions": {
+      "camera": {
+        "name": "模拟相机",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "serial": "ACCEPTANCE-SIMULATOR"
+        },
+        "defaults": {
+          "exposureUs": 8000,
+          "gain": 0,
+          "height": 6,
+          "width": 8
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "deviceWaitTimeoutMs": 5000,
+          "idleTimeoutMs": 30000,
+          "operationTimeoutMs": 5000,
+          "release": "on_project_close"
+        }
+      },
+      "client": {
+        "name": "TCP 单次客户端",
+        "deviceTypeId": "device.tcp.client_once",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "host": "127.0.0.1",
+          "port": 58165
+        },
+        "defaults": {
+          "appendNewline": false,
+          "connectTimeoutMs": 2000,
+          "expectedBytes": 0,
+          "maxRequestBytes": 1048576,
+          "maxResponseBytes": 1048576,
+          "rejectTrailingResponse": false,
+          "responseEncoding": "utf-8",
+          "responseFraming": "newline",
+          "responseTextEncoding": "none",
+          "responseTimeoutMs": 2000,
+          "shutdownWrite": false,
+          "textEncoding": "utf-8"
+        },
+        "policies": {
+          "deviceWaitTimeoutMs": 5000
+        }
+      },
+      "plc": {
+        "name": "三菱 SLMP PLC",
+        "deviceTypeId": "device.plc.mitsubishi_slmp",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "connectTimeoutMs": 2000,
+          "frameEncoding": "binary",
+          "host": "127.0.0.1",
+          "moduleIoNo": 1023,
+          "moduleStationNo": 0,
+          "monitoringTimer": 0,
+          "networkNo": 0,
+          "pcNo": 255,
+          "port": 58167,
+          "responseTimeoutMs": 2000
+        },
+        "defaults": {},
+        "policies": {
+          "connect": "on_first_use",
+          "connectionRetryCount": 0,
+          "deviceWaitTimeoutMs": 5000,
+          "idleTimeoutMs": 30000,
+          "operationTimeoutMs": 5000,
+          "recoveryBackoffMs": 100,
+          "recoveryTimeoutMs": 5000,
+          "release": "on_project_close"
+        }
+      },
+      "receiver": {
+        "name": "TCP 单次接收",
+        "deviceTypeId": "device.tcp.receive_once",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "bindHost": "127.0.0.1",
+          "port": 58166
+        },
+        "defaults": {
+          "acceptTimeoutMs": 5000,
+          "ackAppendNewline": true,
+          "ackEncoding": "utf-8",
+          "ackText": "ACK",
+          "expectedBytes": 0,
+          "framing": "newline",
+          "maxAckBytes": 1048576,
+          "maxMessageBytes": 1048576,
+          "messageEncoding": "utf-8",
+          "messageTextEncoding": "utf-8",
+          "readTimeoutMs": 1000
+        },
+        "policies": {
+          "deviceWaitTimeoutMs": 5000
+        }
+      },
+      "server": {
+        "name": "TCP 常驻服务",
+        "deviceTypeId": "device.tcp.server",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "bindAddress": "127.0.0.1",
+          "channels": [
+            {
+              "allowedIps": [
+                "127.0.0.1"
+              ],
+              "channelId": "a",
+              "name": "Station A Qt"
+            },
+            {
+              "allowedIps": [
+                "127.0.0.2"
+              ],
+              "channelId": "c",
+              "name": "Station B"
+            }
+          ],
+          "port": 58192
+        },
+        "defaults": {
+          "appendNewline": false,
+          "encoding": "utf-8",
+          "timeoutMs": 5000
+        },
+        "policies": {
+          "connect": "on_project_open",
+          "deviceWaitTimeoutMs": 5000,
+          "maxMessageBytes": 16777216,
+          "release": "on_project_close",
+          "sendTimeoutMs": 10000
+        }
+      }
+    }
+  },
+  "presentation": {
+    "schemaVersion": "1.0",
+    "defaultPageId": null,
+    "pageOrder": [],
+    "navigation": {
+      "mode": "tabs"
+    },
+    "resultScopes": {},
+    "dataSources": {},
+    "pages": {}
+  },
+  "resources": {
+    "schemaVersion": "1.0",
+    "items": {
+      "sample": {
+        "path": "sample.png",
+        "sha256": "7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4",
+        "size": 80,
+        "purpose": "input_image"
+      }
+    },
+    "parameterBindings": [
+      {
+        "target": {
+          "workflowId": "main",
+          "nodeId": "load",
+          "parameterPath": [
+            "imagePath"
+          ]
+        },
+        "resourceId": "sample"
+      }
+    ],
+    "siteBindings": [
+      {
+        "target": {
+          "deviceId": "camera",
+          "section": "connection",
+          "parameterPath": [
+            "serial"
+          ]
+        },
+        "field": "camera-serial",
+        "purpose": "camera_serial",
+        "required": true
+      }
+    ]
+  },
+  "production": {
+    "autoStart": false,
+    "mode": "single",
+    "cycleIntervalMs": 100,
+    "inputs": {}
+  },
+  "globalVariables": {
+    "wait": {
+      "name": "等待客户端",
+      "type": "integer",
+      "kind": "constant",
+      "initialValue": 5000,
+      "lifetime": "job",
+      "legacyCounterName": null
+    }
+  }
+}

@@ -1,0 +1,14 @@
+RUN environment
+environment: exit=0
+RUN chain
+chain: exit=0
+RUN regression
+regression: exit=0
+RUN ruff
+ruff: exit=0
+RUN mypy
+mypy: exit=0
+RUN proto
+proto: exit=0
+RUN diff-check
+diff-check: exit=0

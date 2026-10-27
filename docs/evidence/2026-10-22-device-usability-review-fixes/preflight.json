@@ -1,0 +1,9 @@
+{
+  "head": "eefb930481eda864cf03b0725407192c41eff17a",
+  "branch": "agent/runtime-workflow-architecture-v1",
+  "remote": "eefb930481eda864cf03b0725407192c41eff17a\trefs/heads/agent/runtime-workflow-architecture-v1",
+  "protected": {
+    "AGENTS.md": "63944dc639c73e5cd5bd22bdaf5fc7c35c1d88f80d2e48fad0c8dfc0f3d541df",
+    "docs/project-json-spec.md": "f714cae15427ec5b815aa349d25f37605d43efa96667576b7620971c8b7d0d26"
+  }
+}

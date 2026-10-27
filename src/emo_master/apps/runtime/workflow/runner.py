@@ -186,7 +186,10 @@ class WorkflowRunner:
                 nodeContext = context.forNode(node.nodeId)
                 nodeInput = dict(nodeInputs.get(nodeId, {}))
                 blockedBranches = branchActivity.blockingBranches(node)
-                if blockedBranches or (
+                missingInputs = _missingUpstreamInputs(
+                    node, nodeInput, workflow.incomingEdges.get(nodeId, ())
+                )
+                if blockedBranches or missingInputs or (
                     node.inputPorts
                     and not nodeInput
                     and _shouldSkipNodeWithoutInputs(
@@ -202,7 +205,9 @@ class WorkflowRunner:
                         f"node skipped: {node.nodeId}",
                         payload={"status": "SKIPPED", "ioSummary": startInspection(nodeInput),
                                  "code": "E_BRANCH_NOT_SELECTED" if blockedBranches else "E_INPUT_NOT_PRODUCED",
-                                 "message": "upstream branch was not selected" if blockedBranches else "upstream did not produce input",
+                                 "message": "upstream branch was not selected" if blockedBranches else
+                                 "upstream did not produce input" + (": " + ", ".join(missingInputs) if missingInputs else ""),
+                                 "missingInputs": missingInputs,
                                  "blockedByBranches": sorted(blockedBranches)},
                     )
                     continue
@@ -223,7 +228,7 @@ class WorkflowRunner:
                     if self.resultCollector is not None:
                         self._capture("observe", node, nodeInput, nodeOutputs)
                         self._capture("output", nodeContext, nodeOutputs)
-                    self._capturePreviewSnapshot(
+                    previewCapture = self._capturePreviewSnapshot(
                         node, nodeOutputs, nodeContext
                     )
                     self._publishArtifacts(node, nodeOutputs, nodeContext)
@@ -241,7 +246,9 @@ class WorkflowRunner:
                     failedDiagnostics = self.operatorExecutor.failureDiagnostics(
                         node, nodeContext, nodeDiagnostics, err
                     )
+                    setattr(err, "diagnostics", failedDiagnostics)
                     failedPayload = {
+                        "deviceBindings": self.operatorExecutor.bindingSnapshot(node),
                         "status": "FAILED",
                         "code": str(code),
                         "message": str(err),
@@ -273,6 +280,8 @@ class WorkflowRunner:
                     "diagnostics": _jsonSafe(nodeDiagnostics),
                     "ioSummary": finishInspection(inspection, nodeOutputs),
                 }
+                if previewCapture is not None:
+                    payload["previewCapture"] = previewCapture
                 branch = _branchName(node.operatorId, nodeOutputs)
                 if branch:
                     payload["branch"] = branch
@@ -384,15 +393,22 @@ class WorkflowRunner:
                     f"artifact created: {value['path']}",
                     payload={"artifact": _jsonSafe(artifact)},
                 )
+                capture = getattr(self.previewSnapshotStore, 'captureArtifact', None)
+                if callable(capture):
+                    try:
+                        capture(node, artifact, context)
+                    except Exception as error:
+                        self.publish('preview.snapshot.failed', context, str(error), level='WARN',
+                                     code='E_PREVIEW_SNAPSHOT_FAILED')
 
-    def _capturePreviewSnapshot(self, node, outputs, context) -> None:
+    def _capturePreviewSnapshot(self, node, outputs, context):
         if node.kind != "operator" or self.previewSnapshotStore is None:
             return
         capture = getattr(self.previewSnapshotStore, "capture", None)
         if not callable(capture):
             return
         try:
-            capture(node, outputs, context)
+            return capture(node, outputs, context)
         except Exception as err:
             self.publish(
                 "preview.snapshot.failed",
@@ -467,6 +483,17 @@ def _jsonSafe(value: object) -> object:
 
 def _missingKeys(interface: Mapping[str, object], values: Mapping[str, object]) -> list[str]:
     return _missingRequiredKeys(interface, values, defaultRequired=True)
+
+
+def _missingUpstreamInputs(node, inputs, incomingEdges) -> list[str]:
+    if node.kind == "workflow_output":
+        return []
+    missing = {name for name, spec in node.inputPorts.items()
+               if name not in inputs and isPortRequired(spec, default=True)}
+    connected = {edge.toPort for edge in incomingEdges}
+    # Only omitted deliveries can skip work; an unconnected required input is
+    # still an invalid invocation. Optional inputs never gate an action.
+    return sorted(missing) if missing and missing <= connected else []
 
 
 def _shouldSkipNodeWithoutInputs(

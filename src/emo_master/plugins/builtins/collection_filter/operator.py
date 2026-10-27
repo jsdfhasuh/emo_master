@@ -31,6 +31,11 @@ from emo_master.plugins.builtins._collection_ops import (
     parseRoi,
     pointInGeometry,
 )
+from emo_master.plugins.builtins.collection_filter.configuration import (
+    COLLECTION_TYPES,
+    FILTER_GROUPS,
+    effectiveFilterParams,
+)
 
 
 @dataclass(frozen=True)
@@ -84,6 +89,59 @@ _PARAM_SCHEMA: dict[str, object] = {
 }
 
 
+def _groupedParamSchema() -> dict[str, object]:
+    fields = cast(dict[str, dict[str, object]], _PARAM_SCHEMA["properties"])
+    labels = {
+        "contourMode": {"any": "不限", "present": "存在轮廓", "absent": "无轮廓"},
+        "geometryTypes": {"bbox2d": "矩形框", "polygon2d": "多边形", "rotatedBox2d": "旋转矩形框"},
+        "holeMode": {"any": "不限", "outer": "外轮廓", "hole": "孔洞轮廓"},
+        "sourceTypes": {"contour": "轮廓", "blob": "连通域"},
+        "templateMethods": {
+            "sqdiff": "平方差", "sqdiffNormed": "归一化平方差",
+            "ccorr": "互相关", "ccorrNormed": "归一化互相关",
+            "ccoeff": "相关系数", "ccoeffNormed": "归一化相关系数",
+        },
+        "spatialMode": {
+            "none": "请选择空间关系", "centerInside": "中心位于区域内",
+            "bboxIntersects": "包围框与区域相交", "bboxContained": "包围框完全位于区域内",
+        },
+    }
+    properties: dict[str, object] = {
+        "collectionType": {
+            "title": "筛选对象", "type": "string", "default": "",
+            "enum": ["", *COLLECTION_TYPES],
+            "xOptionLabels": {"": "请选择筛选对象", **COLLECTION_TYPES},
+        },
+    }
+    for flag, group in FILTER_GROUPS.items():
+        visibleTypes = list(group["types"])
+        validateTypes = ["", *group["types"]]
+        flagSchema: dict[str, object] = {
+            "title": group["title"], "type": "boolean",
+            "xVisibleWhen": {"collectionType": visibleTypes},
+            "xValidateWhen": {"collectionType": validateTypes},
+        }
+        # New flags must stay absent when snapshots merge legacy schema defaults.
+        if flag == "circularityEnabled":
+            flagSchema["default"] = False
+        properties[flag] = flagSchema
+        for name in group["fields"]:
+            field = dict(fields[name])
+            field["xVisibleWhen"] = {"collectionType": visibleTypes, flag: [True]}
+            field["xValidateWhen"] = {"collectionType": validateTypes, flag: [True]}
+            if name in labels:
+                field["xOptionLabels"] = labels[name]
+                if field["type"] == "array":
+                    field["items"] = {**cast(dict, field["items"]), "xOptionLabels": labels[name]}
+            if name in {"blobLabels", "classIds"}:
+                field["xWidget"] = "integer-list"
+            properties[name] = field
+    return {"type": "object", "xCollectionFilter": True, "properties": properties}
+
+
+_PARAM_SCHEMA = _groupedParamSchema()
+
+
 def _collectionInputs() -> dict[str, object]:
     return {
         "blobs": {"type": "blobCollection", "required": False, "nullable": False, "schemaVersion": "1.x"},
@@ -125,13 +183,20 @@ class CollectionFilterOperator:
     meta = OperatorMeta(
         operatorId="vision.collection.filter",
         displayName="Filter Collection",
-        version="1.1.0",
+        version="1.2.0",
         inputPorts=_collectionInputs(),
         outputPorts=_collectionOutputs(),
         paramSchema=_PARAM_SCHEMA,
     )
 
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
+        selected = params.get("collectionType", "")
+        if not isinstance(selected, str) or (selected and selected not in COLLECTION_TYPES):
+            return _paramError("collectionType must be a supported collection input port or empty")
+        params = effectiveFilterParams(params)
+        for flag in FILTER_GROUPS:
+            if not isinstance(params.get(flag, flag != "circularityEnabled"), bool):
+                return _paramError(f"{flag} must be boolean")
         for minimumName, maximumName in (
             ("minArea", "maxArea"),
             ("minPerimeter", "maxPerimeter"),
@@ -155,14 +220,15 @@ class CollectionFilterOperator:
                 return _paramError(f"{minimumName} and {maximumName} must be in [0, 1]")
             if float(minimum) > float(maximum):
                 return _paramError(f"{maximumName} must be >= {minimumName}")
-        if not isinstance(params.get("circularityEnabled", False), bool):
-            return _paramError("circularityEnabled must be boolean")
-        if params.get("contourMode", "any") not in {"any", "present", "absent"}:
+        if params.get("contourMode", "any") not in ("any", "present", "absent"):
             return _paramError("contourMode must be any, present, or absent")
-        if params.get("holeMode", "any") not in {"any", "outer", "hole"}:
+        if params.get("holeMode", "any") not in ("any", "outer", "hole"):
             return _paramError("holeMode must be any, outer, or hole")
-        if params.get("spatialMode", "none") not in _SPATIAL_MODES:
+        spatialMode = params.get("spatialMode", "none")
+        if not isinstance(spatialMode, str) or spatialMode not in _SPATIAL_MODES:
             return _paramError("spatialMode is invalid")
+        if params.get("spatialEnabled") is True and spatialMode == "none":
+            return _paramError("spatialMode must select a spatial relation when spatialEnabled is true")
         for name in ("blobLabels", "classIds"):
             if not _integerList(params.get(name, [])):
                 return _paramError(f"{name} must contain non-negative integers")
@@ -184,11 +250,19 @@ class CollectionFilterOperator:
     ) -> dict[str, Any]:
         _ = runtimeContext
         started = perf_counter()
-        paramError = self.validateParams(params)
-        if paramError is not None:
-            return {"status": "error", "error": paramError}
         try:
             collection = parseCollectionInputs(inputs)
+            inputPort = next(name for name in COLLECTION_TYPES if name in inputs)
+            selected = params.get("collectionType", "")
+            if selected not in ("", inputPort):
+                return _error(
+                    "E_INPUT_TYPE",
+                    f"collectionType {selected!r} does not match input '{inputPort}'",
+                )
+            params = effectiveFilterParams(params, inputPort)
+            paramError = self.validateParams(params)
+            if paramError is not None:
+                return {"status": "error", "error": paramError}
             roi = None
             spatialMode = cast(str, params.get("spatialMode", "none"))
             if spatialMode != "none":
@@ -336,7 +410,7 @@ def _stringList(value: object) -> bool:
 
 
 def _enumList(value: object, allowed: set[str]) -> bool:
-    return isinstance(value, list) and all(item in allowed for item in value)
+    return _stringList(value) and all(item in allowed for item in cast(list[str], value))
 
 
 def _nonNegativeNumber(value: object) -> TypeGuard[int | float]:

@@ -13,8 +13,9 @@ from emo_master.plugins.builtins.yolo_inference.operator import YoloInferenceOpe
 @pytest.mark.parametrize("schemaSource", ["operator", "manifest"])
 @pytest.mark.parametrize(
     ("text", "expected"),
-    [("", []), (" \n\t", []), ("[]", []), ("[0]", [0]), ("[0, 1]", [0, 1])],
-    ids=["blank", "whitespace", "empty-array", "class-zero", "multiple-classes"],
+    [("", []), (" \n\t", []), ("[]", []), ("[0]", [0]), ("[0, 1]", [0, 1]),
+     ("0, 1, 3", [0, 1, 3]), ("0，1，3", [0, 1, 3])],
+    ids=["blank", "whitespace", "empty-array", "class-zero", "multiple-classes", "ids", "chinese-comma"],
 )
 def testYoloFormAllowsUnrestrictedOrExplicitClasses(schemaSource, text, expected):
     schema = YoloInferenceOperator.meta.paramSchema
@@ -28,7 +29,9 @@ def testYoloFormAllowsUnrestrictedOrExplicitClasses(schemaSource, text, expected
             {"modelPath": "model.onnx", "classes": [2]},
         )
         control = form._controls["classes"]
-        control.setPlainText(text)
+        assert control.text() == "2"
+        assert control.placeholderText() == "全部类别"
+        control.setText(text)
         values = form.getValues()
         assert values["classes"] == expected
         assert YoloInferenceOperator().validateParams(values) is None
@@ -40,15 +43,31 @@ def testYoloFormAllowsUnrestrictedOrExplicitClasses(schemaSource, text, expected
         form.close()
 
 
-def testOptionalClassFilterDoesNotTreatMalformedJsonAsUnrestricted():
+@pytest.mark.parametrize("text", ["[1,", "0,,1", "part", "[true]", "-1", "1.5"])
+def testOptionalClassFilterDoesNotTreatMalformedInputAsUnrestricted(text):
     form = SchemaParamForm()
     try:
         form.setSchema(YoloInferenceOperator.meta.paramSchema, {"modelPath": "model.onnx", "classes": [2]})
-        form._controls["classes"].setPlainText("[1,")
-        assert "JSON" in form.validationMessage()
+        form._controls["classes"].setText(text)
+        assert form.validationMessage()
         with pytest.raises(ValueError):
             form.getValues()
-        assert form._controls["classes"].toPlainText() == "[1,"
+        assert form._controls["classes"].text() == text
+    finally:
+        form.close()
+
+
+@pytest.mark.parametrize("schemaSource", ["operator", "manifest"])
+@pytest.mark.parametrize("params,expected", [({}, True), ({"drawOverlay": False}, False)])
+def testYoloOverlayDefaultsOnWithoutOverwritingExplicitFalse(schemaSource, params, expected):
+    schema = YoloInferenceOperator.meta.paramSchema
+    if schemaSource == "manifest":
+        schema = json.loads(Path(yolo_module.__file__).with_name("manifest.json").read_text(encoding="utf-8"))["paramSchema"]
+    form = SchemaParamForm()
+    try:
+        form.setSchema(schema, {"modelPath": "model.onnx", **params})
+        assert form._controls["drawOverlay"].isChecked() is expected
+        assert form.getValues()["drawOverlay"] is expected
     finally:
         form.close()
 

@@ -2,6 +2,7 @@
 from contextlib import contextmanager
 from dataclasses import asdict
 import json
+import threading
 import time
 
 import cv2
@@ -21,18 +22,24 @@ from tests.runtime.runtime_test_utils import jobFailureDetails, waitForTerminal
 
 
 @contextmanager
-def running(root, *, configure=None):
+def running(root, *, configure=None, factory=sampleProject):
     project = root / '本地 图片'
-    document = sampleProject(project)
+    # The original sample remains a deliberate 2.1 compatibility fixture.
+    # New live-loop tests use WorkflowStore's complete current-format defaults.
+    document = factory(project)
     plugin = root / 'controlled-plugin'
     plugin.mkdir()
     (plugin / 'manifest.json').write_text(json.dumps({'operatorId': 'test.inspection', 'displayName': '受控测试',
         'version': '1.0.0', 'entry': 'tests.runtime.inspection_test_operator:InspectionTestOperator',
-        'inputPorts': {'index': {'type': 'integer', 'required': False}}, 'outputPorts': {'image': 'image'},
+        'inputPorts': {'index': {'type': 'integer', 'required': False},
+                       'indices': {'type': 'list<integer>', 'required': False}},
+        'outputPorts': {'image': 'image', 'count': 'integer', 'items': 'list<integer>'},
         'paramSchema': {'type': 'object'}, 'minCoreVersion': '0.1.0', 'maxCoreVersion': '1.x'}), encoding='utf-8')
     if configure:
         configure(document, root)
     saveProject(project, document.model_dump())
+    from emo_master.apps.designer.state.project_store import loadProjectDocument
+    assert loadProjectDocument(project) == document
     from pathlib import Path
     builtins = Path(__file__).resolve().parents[2] / 'src/emo_master/plugins/builtins'
     runtime = RuntimeService(dbPath=root / 'temporary.sqlite3', workspaceRoot=root / 'jobs', logDirectory=root / 'logs',
@@ -227,3 +234,62 @@ def testRealLoopLastFailureCannotDisplayEarlierIterationSnapshot(tmp_path):
         events = runtime.eventStore.readMerged(reply.job_id)
         assert any(event.nodeId == 'image' and event.eventType == 'node.completed' for event in events)
         assert any(event.nodeId == 'image' and event.eventType == 'node.failed' for event in events)
+
+
+def testSlowImageAdoptionDoesNotBlockSpawnedWorkflowEvents(tmp_path, monkeypatch):
+    from tests.runtime.inspection_fixtures import loopProject
+
+    def configure(document, root):
+        body = document.workflows['body']
+        body.nodes = [node for node in body.nodes if node.nodeId != 'save']
+        body.edges = [edge for edge in body.edges if edge.toNode != 'save']
+        next(node for node in body.nodes if node.nodeId == 'image').params['delayMs'] = 30
+
+    entered, release = threading.Event(), threading.Event()
+    adoptionThreads = []
+    with running(tmp_path, configure=configure, factory=loopProject) as (runtime, client, project, session):
+        original = runtime.runInspectionStore._copy
+
+        def slow(*args, **kwargs):
+            adoptionThreads.append(threading.current_thread().name)
+            entered.set()
+            assert release.wait(10), 'test failed to release adoption'
+            return original(*args, **kwargs)
+
+        monkeypatch.setattr(runtime.runInspectionStore, '_copy', slow)
+        reply = client.startJob(project, inputs={'items': list(range(20))}, inspectionSessionId=session)
+        assert reply.ok
+        try:
+            assert entered.wait(5)
+            deadline = time.monotonic() + 5
+            while True:
+                images = [event for event in runtime.eventStore.readMerged(reply.job_id)
+                          if event.eventType == 'node.completed' and event.nodeId == 'image']
+                if len(images) == 20:
+                    break
+                assert time.monotonic() < deadline, len(images)
+                time.sleep(.01)
+            assert not release.is_set()
+            assert [json.loads(event.payloadJson)['outputs']['count'] for event in images] == list(range(20))
+        finally:
+            release.set()
+        deadline = time.monotonic() + 5
+        while True:
+            listing = client.listNodePreviewSourcesWithMetadata(project, 'body', 'image', jobId=reply.job_id,
+                inspectionSessionId=session, workflowRunId=images[-1].workflowRunId, nodeRunId=images[-1].nodeRunId)
+            if listing.captureState != 'PREPARING':
+                break
+            assert time.monotonic() < deadline
+            time.sleep(.01)
+        assert listing.sources, listing
+        source = listing.sources[0]
+        assert source.nodeRunId == images[-1].nodeRunId
+        data, _ = client.readInspectionAsset(project, session, source.sourceId, DisplayCallContext())
+        assert np.all(cv2.imdecode(np.frombuffer(data, np.uint8), -1) == 39)
+        assert adoptionThreads and all(name.startswith('inspection-receiver-') for name in adoptionThreads)
+        assert client.stopJob(reply.job_id).ok
+        assert waitForTerminal(runtime, reply.job_id).status == 'ABORTED'
+        runtime.jobSupervisor.waitForRetirement(deadline=time.monotonic() + 5)
+        assert not runtime.runInspectionStore._receivers
+        assert not [event for event in runtime.eventStore.readMerged(reply.job_id)
+                    if event.eventType == 'preview.snapshot.failed']

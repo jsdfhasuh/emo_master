@@ -1,0 +1,776 @@
+{
+  "sourceSha": "236d6008651a6f1bde5daebc999f83065555940a",
+  "results": [
+    {
+      "path": "affected-fixed.xml",
+      "counts": {
+        "tests": 155,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "affected-working-tree-corrected.xml",
+      "counts": {
+        "tests": 154,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_project_open::testDeviceDraftOpenCopySwitchSaveAndReopen",
+          "kind": "failure",
+          "message": "AssertionError: assert {'camera': {'...lectors': {}}} == {'camera': {'...d': 'camera'}}\n  \n  Differing items:\n  {'camera': {'deviceId': 'camera', 'selectors': {}}} != {'camera': {'deviceId': 'camera'}}\n  Use -v to get more diff"
+        }
+      ]
+    },
+    {
+      "path": "affected-working-tree.xml",
+      "counts": {
+        "tests": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "batch1-final.xml",
+      "counts": {
+        "tests": 39,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "batch1-first-failure.xml",
+      "counts": {
+        "tests": 2,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_definition_feedback::testDisabledEmptyServerCanBeCreatedAndEnabledErrorFindsChannels",
+          "kind": "failure",
+          "message": "AttributeError: 'DeviceDefinitionDialog' object has no attribute 'enabled'. Did you mean: 'isEnabled'?"
+        },
+        {
+          "test": "tests.designer.test_device_definition_feedback::testEmptyTcpIpFindsExactCellAndGivesChineseFeedback",
+          "kind": "failure",
+          "message": "AssertionError: assert '通道 1：请填写至少一个允许接入的客户端 IPv4' in '1 validation error for TcpServerSettings\\nchannels.0.allowedIps\\n  List should have at least 1 item after validation,...hort, input_value=[], input_type=list]\\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short'\n +  where '1 validation error for TcpServerSettings\\nchannels.0.allowedIps\\n  List should have at least 1 item after validation,...hort, input_value=[], input_type=list]\\n    For further information visit https://errors.pydantic.dev/2.13/v/too_short' = <built-in method text of PySide2.QtWidgets.QLabel object at 0x00000219D29EFEC0>()\n +    where <built-in method text of PySide2.QtWidgets.QLabel object at 0x00000219D29EFEC0> = <PySide2.QtWidgets.QLabel(0x219d3fd2fe0) at 0x00000219D29EFEC0>.text\n +      where <PySide2.QtWidgets.QLabel(0x219d3fd2fe0) at 0x00000219D29EFEC0> = <emo_master.apps.designer.ui.device_wizard.DeviceDefinitionDialog(0x219d40b0840) at 0x00000219CF40F5C0>.error"
+        }
+      ]
+    },
+    {
+      "path": "batch1-fixed.xml",
+      "counts": {
+        "tests": 38,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_workspace_sizing::testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize[642-452]",
+          "kind": "failure",
+          "message": "assert (642 <= 642 and 1187 <= 452)\n +  where 642 = <built-in method width of DeviceWorkspace object at 0x000002E81AEADFC0>()\n +    where <built-in method width of DeviceWorkspace object at 0x000002E81AEADFC0> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x2e81e7643c0) at 0x000002E81AEADFC0>.width\n +  and   1187 = <built-in method height of DeviceWorkspace object at 0x000002E81AEADFC0>()\n +    where <built-in method height of DeviceWorkspace object at 0x000002E81AEADFC0> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x2e81e7643c0) at 0x000002E81AEADFC0>.height"
+        },
+        {
+          "test": "tests.designer.test_device_workspace_sizing::testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize[826-590]",
+          "kind": "failure",
+          "message": "assert (826 <= 826 and 1187 <= 590)\n +  where 826 = <built-in method width of DeviceWorkspace object at 0x000002E81B6B76C0>()\n +    where <built-in method width of DeviceWorkspace object at 0x000002E81B6B76C0> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x2e81d43f8a0) at 0x000002E81B6B76C0>.width\n +  and   1187 = <built-in method height of DeviceWorkspace object at 0x000002E81B6B76C0>()\n +    where <built-in method height of DeviceWorkspace object at 0x000002E81B6B76C0> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x2e81d43f8a0) at 0x000002E81B6B76C0>.height"
+        }
+      ]
+    },
+    {
+      "path": "batch1-layout-fixed.xml",
+      "counts": {
+        "tests": 3,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_workspace_sizing::testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize[642-452]",
+          "kind": "failure",
+          "message": "assert (642 <= 642 and 1187 <= 452)\n +  where 642 = <built-in method width of DeviceWorkspace object at 0x0000022B7AD23F40>()\n +    where <built-in method width of DeviceWorkspace object at 0x0000022B7AD23F40> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x22b7b520220) at 0x0000022B7AD23F40>.width\n +  and   1187 = <built-in method height of DeviceWorkspace object at 0x0000022B7AD23F40>()\n +    where <built-in method height of DeviceWorkspace object at 0x0000022B7AD23F40> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x22b7b520220) at 0x0000022B7AD23F40>.height"
+        },
+        {
+          "test": "tests.designer.test_device_workspace_sizing::testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize[826-590]",
+          "kind": "failure",
+          "message": "assert (826 <= 826 and 1187 <= 590)\n +  where 826 = <built-in method width of DeviceWorkspace object at 0x0000022B7AC4DE00>()\n +    where <built-in method width of DeviceWorkspace object at 0x0000022B7AC4DE00> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x22b7bcb8130) at 0x0000022B7AC4DE00>.width\n +  and   1187 = <built-in method height of DeviceWorkspace object at 0x0000022B7AC4DE00>()\n +    where <built-in method height of DeviceWorkspace object at 0x0000022B7AC4DE00> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x22b7bcb8130) at 0x0000022B7AC4DE00>.height"
+        }
+      ]
+    },
+    {
+      "path": "batch2-first-counterexample.xml",
+      "counts": {
+        "tests": 3,
+        "failures": 2,
+        "errors": 1,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_publication::testShortcutValidatesThenHidesAndRestoresSameObserver",
+          "kind": "failure",
+          "message": "KeyError: 'publish'"
+        },
+        {
+          "test": "tests.designer.test_device_usability_publication::testShortcutValidatesThenHidesAndRestoresSameObserver",
+          "kind": "error",
+          "message": "failed on teardown with \"AssertionError: window 0 refused close; window 0 runtime controller is not closed; window 0 icon workers are still running; window 0 catalog workers are still running\""
+        },
+        {
+          "test": "tests.designer.test_device_usability_publication::testReadableDeviceDiffRetainsExactPathAndBoundedRows",
+          "kind": "failure",
+          "message": "AssertionError: assert ('camera' not in '/devices/de...s/exposureUs'\n  \n  'camera' is contained here:\n    /devices/definitions/camera/defaults/exposureUs\n  ?                      ++++++ or not True)\n +  where True = <built-in method startswith of str object at 0x0000016D04FC9A10>('/')\n +    where <built-in method startswith of str object at 0x0000016D04FC9A10> = '/devices/definitions/camera/defaults/exposureUs'.startswith\n +      where '/devices/definitions/camera/defaults/exposureUs' = <built-in method text of PySide2.QtWidgets.QTableWidgetItem object at 0x0000016D0239F040>()\n +        where <built-in method text of PySide2.QtWidgets.QTableWidgetItem object at 0x0000016D0239F040> = <PySide2.QtWidgets.QTableWidgetItem object at 0x0000016D0239F040>.text\n +          where <PySide2.QtWidgets.QTableWidgetItem object at 0x0000016D0239F040> = <built-in method item of PySide2.QtWidgets.QTableWidget object at 0x0000016D023A8780>(0, 0)\n +            where <built-in method item of PySide2.QtWidgets.QTableWidget object at 0x0000016D023A8780> = <PySide2.QtWidgets.QTableWidget(0x16d033c57d0) at 0x0000016D023A8780>.item\n +              where <PySide2.QtWidgets.QTableWidget(0x16d033c57d0) at 0x0000016D023A8780> = <emo_master.apps.designer.ui.project_configuration.ProjectConfigurationDialog(0x16d03d2aed0) at 0x0000016D04F32A80>.table"
+        }
+      ]
+    },
+    {
+      "path": "batch2-first-failure.xml",
+      "counts": {
+        "tests": 2,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_publication::testShortcutValidatesThenHidesAndRestoresSameObserver",
+          "kind": "failure",
+          "message": "AttributeError: 'ProjectController' object has no attribute 'currentFile'"
+        },
+        {
+          "test": "tests.designer.test_device_usability_publication::testReadableDeviceDiffRetainsExactPathAndBoundedRows",
+          "kind": "failure",
+          "message": "AssertionError: assert ('camera' not in '/devices/de...s/exposureUs'\n  \n  'camera' is contained here:\n    /devices/definitions/camera/defaults/exposureUs\n  ?                      ++++++ or not True)\n +  where True = <built-in method startswith of str object at 0x00000235CA633E70>('/')\n +    where <built-in method startswith of str object at 0x00000235CA633E70> = '/devices/definitions/camera/defaults/exposureUs'.startswith\n +      where '/devices/definitions/camera/defaults/exposureUs' = <built-in method text of PySide2.QtWidgets.QTableWidgetItem object at 0x00000235CA64C500>()\n +        where <built-in method text of PySide2.QtWidgets.QTableWidgetItem object at 0x00000235CA64C500> = <PySide2.QtWidgets.QTableWidgetItem object at 0x00000235CA64C500>.text\n +          where <PySide2.QtWidgets.QTableWidgetItem object at 0x00000235CA64C500> = <built-in method item of PySide2.QtWidgets.QTableWidget object at 0x00000235CA6F0280>(0, 0)\n +            where <built-in method item of PySide2.QtWidgets.QTableWidget object at 0x00000235CA6F0280> = <PySide2.QtWidgets.QTableWidget(0x235c85a6570) at 0x00000235CA6F0280>.item\n +              where <PySide2.QtWidgets.QTableWidget(0x235c85a6570) at 0x00000235CA6F0280> = <emo_master.apps.designer.ui.project_configuration.ProjectConfigurationDialog(0x235c9322000) at 0x00000235CA646900>.table"
+        }
+      ]
+    },
+    {
+      "path": "batch2-fixed.xml",
+      "counts": {
+        "tests": 22,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_publication::testReadableDeviceDiffRetainsExactPathAndBoundedRows",
+          "kind": "failure",
+          "message": "AssertionError: assert 'Simulated' in 'devices · 0 项'\n +  where 'devices · 0 项' = <built-in method text of PySide2.QtWidgets.QTableWidgetItem object at 0x000001689BD4AA00>()\n +    where <built-in method text of PySide2.QtWidgets.QTableWidgetItem object at 0x000001689BD4AA00> = <PySide2.QtWidgets.QTableWidgetItem object at 0x000001689BD4AA00>.text\n +      where <PySide2.QtWidgets.QTableWidgetItem object at 0x000001689BD4AA00> = <built-in method item of PySide2.QtWidgets.QTableWidget object at 0x000001689BD09CC0>(0, 0)\n +        where <built-in method item of PySide2.QtWidgets.QTableWidget object at 0x000001689BD09CC0> = <PySide2.QtWidgets.QTableWidget(0x1689a170620) at 0x000001689BD09CC0>.item\n +          where <PySide2.QtWidgets.QTableWidget(0x1689a170620) at 0x000001689BD09CC0> = <emo_master.apps.designer.ui.project_configuration.ProjectConfigurationDialog(0x1689a3e8b00) at 0x0000016898EE2E00>.table"
+        },
+        {
+          "test": "tests.designer.test_device_workspace_usability::testVisibleActionLabelsExplainDraftBoundary",
+          "kind": "failure",
+          "message": "AssertionError: assert ['保留草稿并关闭', '查看并写入 Runtime…'] == ['保留草稿并关闭']\n  \n  Left contains one more item: '查看并写入 Runtime…'\n  Use -v to get more diff"
+        }
+      ]
+    },
+    {
+      "path": "batch3-first-failure.xml",
+      "counts": {
+        "tests": 5,
+        "failures": 5,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_drafts::testMissingSlotDraftPersistsAndStrictFinishStillRejects",
+          "kind": "failure",
+          "message": "TypeError: DeviceCatalogEditor.commitNode() got an unexpected keyword argument 'allowIncomplete'"
+        },
+        {
+          "test": "tests.designer.test_device_usability_drafts::testMissingSelectorAllowedButWrongSelectorRejected",
+          "kind": "failure",
+          "message": "KeyError: 'server'"
+        },
+        {
+          "test": "tests.designer.test_device_usability_drafts::testPendingWizardPreservesUnavailableDeviceInsteadOfErasingIt",
+          "kind": "failure",
+          "message": "AssertionError: assert (None == 'missing-device')\n +  where None = <built-in method currentData of PySide2.QtWidgets.QComboBox object at 0x000001842E60B180>()\n +    where <built-in method currentData of PySide2.QtWidgets.QComboBox object at 0x000001842E60B180> = <PySide2.QtWidgets.QComboBox(0x1842ce4f760) at 0x000001842E60B180>.currentData"
+        },
+        {
+          "test": "tests.designer.test_device_usability_drafts::testDeviceCopiesAreNamedAndEachImportIsOneUndo",
+          "kind": "failure",
+          "message": "AssertionError: assert 'Camera A' == 'Camera A（导入副本）'\n  \n  - Camera A（导入副本）\n  + Camera A"
+        },
+        {
+          "test": "tests.designer.test_device_usability_drafts::testAdvancedDeviceFieldsKeepValuesAndRevealInvalidField",
+          "kind": "failure",
+          "message": "AttributeError: 'SchemaParamForm' object has no attribute 'advancedButton'"
+        }
+      ]
+    },
+    {
+      "path": "batch3-fixed.xml",
+      "counts": {
+        "tests": 42,
+        "failures": 5,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_drafts::testMissingSlotDraftPersistsAndStrictFinishStillRejects",
+          "kind": "failure",
+          "message": "pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument\nworkflows.main.layout.nodePositions.pending\n  Input should be a valid dictionary [type=dict_type, input_value=[20.0, 30.0], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/dict_type"
+        },
+        {
+          "test": "tests.designer.test_device_catalog::testWizardCommitAndUndoAreSingleTransaction",
+          "kind": "failure",
+          "message": "AssertionError: assert '2.7' == '2.6'\n  \n  - 2.6\n  + 2.7"
+        },
+        {
+          "test": "tests.designer.test_device_catalog::testCanvasAndStoreRoundtripPreserveAllDeviceSources",
+          "kind": "failure",
+          "message": "AssertionError: assert '2.7' == '2.6'\n  \n  - 2.6\n  + 2.7"
+        },
+        {
+          "test": "tests.designer.test_device_catalog::testWorkflowExportIncludesDeviceDependencies",
+          "kind": "failure",
+          "message": "AssertionError: assert '1.4' == '1.2'\n  \n  - 1.2\n  + 1.4"
+        },
+        {
+          "test": "tests.designer.test_device_catalog::testCompilerCannotFallBackToPrivateConnection",
+          "kind": "failure",
+          "message": "assert False\n +  where False = any(<generator object testCompilerCannotFallBackToPrivateConnection.<locals>.<genexpr> at 0x000002192EB20C10>)"
+        }
+      ]
+    },
+    {
+      "path": "batch3-selector-counterexample.xml",
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_drafts::testMissingSelectorAllowedButWrongSelectorRejected",
+          "kind": "failure",
+          "message": "TypeError: validateDeviceBinding() got an unexpected keyword argument 'allowMissingSelectors'"
+        }
+      ]
+    },
+    {
+      "path": "catalog-marker-first.xml",
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_drafts::testPendingMarkerUpdatesWhenOperatorCatalogArrives",
+          "kind": "failure",
+          "message": "AssertionError: assert ('待选择设备：camera', None) in (('绑定状态待检查', None),)\n +  where (('绑定状态待检查', None),) = FlowNodeViewModel(nodeId='pending-camera', title='vision.io.huaray_camera', x=80.0, y=90.0, inputPorts={}, outputPorts...'vision.io.huaray_camera', kind='operator', summaryLines=(('绑定状态待检查', None),), outputPortLabels={}, inputPortLabels={}).summaryLines\n +    where FlowNodeViewModel(nodeId='pending-camera', title='vision.io.huaray_camera', x=80.0, y=90.0, inputPorts={}, outputPorts...'vision.io.huaray_camera', kind='operator', summaryLines=(('绑定状态待检查', None),), outputPortLabels={}, inputPortLabels={}) = <emo_master.apps.designer.ui.flow_scene._NodeItem(0x1ec4fb75c30, pos=80,90, flags=(ItemIsMovable|ItemIsSelectable|ItemSendsGeometryChanges)) at 0x000001EC4F299D00>.model"
+        }
+      ]
+    },
+    {
+      "path": "catalog-marker-fixed.xml",
+      "counts": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "chain-pixels-graph.xml",
+      "counts": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "chain-setup-scope.xml",
+      "counts": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "completion-audit-snapshot/chain.xml",
+      "counts": {
+        "tests": 61,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "completion-audit-snapshot/regression.xml",
+      "counts": {
+        "tests": 349,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "discovery-fixed.xml",
+      "counts": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "draft-boundaries-first.xml",
+      "counts": {
+        "tests": 10,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_drafts::testPendingCameraReopensThroughCurrentEditorAndKeepsGraph",
+          "kind": "failure",
+          "message": "AttributeError: 'FlowGraphModel' object has no attribute 'moveNode'. Did you mean: 'removeNode'?"
+        }
+      ]
+    },
+    {
+      "path": "drafts-publish-fixed.xml",
+      "counts": {
+        "tests": 28,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "edit-publish.xml",
+      "counts": {
+        "tests": 54,
+        "failures": 6,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_plan_completion_ui::testDeviceWorkspaceOfflineDiscoveryOnlyAdoptsDraft[]",
+          "kind": "failure",
+          "message": "assert (not '' and False)\n +  where '' = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x173840b94c0) at 0x0000017380945800>.stateRuntimeId\n +  and   False = <built-in method isEnabled of PySide2.QtWidgets.QAction object at 0x0000017380CF9D40>()\n +    where <built-in method isEnabled of PySide2.QtWidgets.QAction object at 0x0000017380CF9D40> = <PySide2.QtWidgets.QAction(0x17384433ad0 text=\"�豸����\" toolTip=\"Runtime �豸���� / ʵ�� IP����ѡ���Ͳ�֧�ֻ� Runtime ���ṩ��\" menuRole=TextHeuristicRole visible=true) at 0x0000017380CF9D40>.isEnabled"
+        },
+        {
+          "test": "tests.designer.test_device_plan_completion_ui::testDeviceWorkspaceOfflineDiscoveryOnlyAdoptsDraft[other-online-project]",
+          "kind": "failure",
+          "message": "assert (not '' and False)\n +  where '' = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x17384543cc0) at 0x0000017384FF2F40>.stateRuntimeId\n +  and   False = <built-in method isEnabled of PySide2.QtWidgets.QAction object at 0x0000017380D7DA40>()\n +    where <built-in method isEnabled of PySide2.QtWidgets.QAction object at 0x0000017380D7DA40> = <PySide2.QtWidgets.QAction(0x173824b9e50 text=\"�豸����\" toolTip=\"Runtime �豸���� / ʵ�� IP����ѡ���Ͳ�֧�ֻ� Runtime ���ṩ��\" menuRole=TextHeuristicRole visible=true) at 0x0000017380D7DA40>.isEnabled"
+        },
+        {
+          "test": "tests.designer.test_device_plan_completion_ui::testOfflineDiscoveryReportsOldRuntimeInsteadOfStaleUnpublishedNotice",
+          "kind": "failure",
+          "message": "AssertionError: assert ([] == ['info']\n  \n  Right contains one more item: 'info'\n  Use -v to get more diff)"
+        },
+        {
+          "test": "tests.designer.test_device_plan_completion_ui::testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent[close]",
+          "kind": "failure",
+          "message": "assert False\n +  where False = wait(2)\n +    where wait = <threading.Event object at 0x0000017384FFA380>.wait"
+        },
+        {
+          "test": "tests.designer.test_device_plan_completion_ui::testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent[reopen]",
+          "kind": "failure",
+          "message": "assert False\n +  where False = wait(2)\n +    where wait = <threading.Event object at 0x00000173853BE0E0>.wait"
+        },
+        {
+          "test": "tests.designer.test_device_plan_completion_ui::testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent[invalid-close]",
+          "kind": "failure",
+          "message": "assert False\n +  where False = wait(2)\n +    where wait = <threading.Event object at 0x00000173854294E0>.wait"
+        }
+      ]
+    },
+    {
+      "path": "feedback-first.xml",
+      "counts": {
+        "tests": 11,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_drafts::testPendingCameraReopensThroughCurrentEditorAndKeepsGraph",
+          "kind": "failure",
+          "message": "KeyError: 'pending-camera'"
+        },
+        {
+          "test": "tests.runtime.test_device_usability_chain::testConnectionRefusalReachesBothEditorsAsActionableFeedback",
+          "kind": "failure",
+          "message": "AssertionError: assert 'E_NETWORK_REQUEST' == 'E_DEVICE_CONNECTION_REFUSED'\n  \n  - E_DEVICE_CONNECTION_REFUSED\n  + E_NETWORK_REQUEST"
+        }
+      ]
+    },
+    {
+      "path": "feedback-fixed.xml",
+      "counts": {
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "final-snapshot/chain.xml",
+      "counts": {
+        "tests": 61,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "final-snapshot/regression.xml",
+      "counts": {
+        "tests": 345,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "final-snapshot-delivery/chain.xml",
+      "counts": {
+        "tests": 61,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "final-snapshot-delivery/regression.xml",
+      "counts": {
+        "tests": 348,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "final-snapshot-verified/chain.xml",
+      "counts": {
+        "tests": 61,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "final-snapshot-verified/regression.xml",
+      "counts": {
+        "tests": 347,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "preexisting-catalog.xml",
+      "counts": {
+        "tests": 18,
+        "failures": 4,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_catalog::testWizardCommitAndUndoAreSingleTransaction",
+          "kind": "failure",
+          "message": "AssertionError: assert '2.7' == '2.6'\n  \n  - 2.6\n  + 2.7"
+        },
+        {
+          "test": "tests.designer.test_device_catalog::testCanvasAndStoreRoundtripPreserveAllDeviceSources",
+          "kind": "failure",
+          "message": "AssertionError: assert '2.7' == '2.6'\n  \n  - 2.6\n  + 2.7"
+        },
+        {
+          "test": "tests.designer.test_device_catalog::testWorkflowExportIncludesDeviceDependencies",
+          "kind": "failure",
+          "message": "AssertionError: assert '1.4' == '1.2'\n  \n  - 1.2\n  + 1.4"
+        },
+        {
+          "test": "tests.designer.test_device_catalog::testCompilerCannotFallBackToPrivateConnection",
+          "kind": "failure",
+          "message": "assert False\n +  where False = any(<generator object testCompilerCannotFallBackToPrivateConnection.<locals>.<genexpr> at 0x0000023A05B511C0>)"
+        }
+      ]
+    },
+    {
+      "path": "preexisting-project-open.xml",
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_project_open::testDeviceDraftOpenCopySwitchSaveAndReopen",
+          "kind": "failure",
+          "message": "AssertionError: assert {'camera': {'...lectors': {}}} == {'camera': {'...d': 'camera'}}\n  \n  Differing items:\n  {'camera': {'deviceId': 'camera', 'selectors': {}}} != {'camera': {'deviceId': 'camera'}}\n  Use -v to get more diff"
+        }
+      ]
+    },
+    {
+      "path": "reopen-feedback-fixed.xml",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "selector-default-first.xml",
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_drafts::testPendingSelectorsPreserveOptionalDefaultsWithoutFillingRequiredSelector",
+          "kind": "failure",
+          "message": "AssertionError: assert {} == {'backupChannelId': 'a'}\n  \n  Right contains 1 more item:\n  {'backupChannelId': 'a'}\n  Use -v to get more diff"
+        }
+      ]
+    },
+    {
+      "path": "selector-default-fixed.xml",
+      "counts": {
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "ui-feedback-final.xml",
+      "counts": {
+        "tests": 30,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_drafts::testImvRequiredKeyAndFieldFeedbackClearWithoutLosingOtherErrors",
+          "kind": "failure",
+          "message": "AssertionError: assert (not '' and not '请填写 SDK 设备唯一标识，或通过设备发现选择')\n +  where '' = <built-in method accessibleDescription of PySide2.QtWidgets.QLineEdit object at 0x0000016557564B00>()\n +    where <built-in method accessibleDescription of PySide2.QtWidgets.QLineEdit object at 0x0000016557564B00> = <PySide2.QtWidgets.QLineEdit(0x16558619b40) at 0x0000016557564B00>.accessibleDescription\n +  and   '请填写 SDK 设备唯一标识，或通过设备发现选择' = <built-in method text of PySide2.QtWidgets.QLabel object at 0x000001655718C5C0>()\n +    where <built-in method text of PySide2.QtWidgets.QLabel object at 0x000001655718C5C0> = <PySide2.QtWidgets.QLabel(0x16558338020) at 0x000001655718C5C0>.text\n +      where <PySide2.QtWidgets.QLabel(0x16558338020) at 0x000001655718C5C0> = <emo_master.apps.designer.ui.device_wizard.DeviceDefinitionDialog(0x16558617d80) at 0x00000165570DDB80>.error"
+        }
+      ]
+    },
+    {
+      "path": "unknown-feedback-first.xml",
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_drafts::testUnknownDefinitionValidationKeepsTechnicalDetails",
+          "kind": "failure",
+          "message": "AssertionError: assert 'vendor valid...ined verbatim' == '设备配置校验未通过，请查看详情'\n  \n  - 设备配置校验未通过，请查看详情\n  + vendor validation diagnostic retained verbatim"
+        }
+      ]
+    },
+    {
+      "path": "unknown-feedback-fixed.xml",
+      "counts": {
+        "tests": 29,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "usability-chain-first.xml",
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.runtime.test_device_usability_chain::testC1ThroughC6PendingDraftPublicationAndRun",
+          "kind": "failure",
+          "message": "assert False\n +  where False = <function testC1ThroughC6PendingDraftPublicationAndRun.<locals>.<lambda> at 0x0000026F5F58D1B0>()"
+        }
+      ]
+    },
+    {
+      "path": "usability-chain-fixed.xml",
+      "counts": {
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "usability-chain-located.xml",
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.runtime.test_device_usability_chain::testC1ThroughC6PendingDraftPublicationAndRun",
+          "kind": "failure",
+          "message": "AssertionError: ok: true\n  status: \"FAILED\"\n  error_code: \"E_INPUT_MISSING\"\n  message: \"node inputs are missing: data\"\n  project_id: \"507597a0...72\n  accepted_at_ms: 1792585883617\n  started_at_ms: 1792585884583\n  ended_at_ms: 1792585884596\n  legacy_snapshot_policy: \"ALL\"\n  \nassert 'FAILED' == 'COMPLETED'\n  \n  - COMPLETED\n  + FAILED"
+        }
+      ]
+    },
+    {
+      "path": "usability-chain-normalized.xml",
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.runtime.test_device_usability_chain::testC1ThroughC6PendingDraftPublicationAndRun",
+          "kind": "failure",
+          "message": "AssertionError: assert (True and 'selectors.channelId' in '槽位 tcp: selectors: required parameter missing')\n +  where True = <built-in method isVisible of DeviceNodeDialog object at 0x00000217B99B0200>()\n +    where <built-in method isVisible of DeviceNodeDialog object at 0x00000217B99B0200> = <emo_master.apps.designer.ui.device_wizard.DeviceNodeDialog(0x217b91d5740) at 0x00000217B99B0200>.isVisible\n +  and   '槽位 tcp: selectors: required parameter missing' = <built-in method text of PySide2.QtWidgets.QLabel object at 0x00000217B9988500>()\n +    where <built-in method text of PySide2.QtWidgets.QLabel object at 0x00000217B9988500> = <PySide2.QtWidgets.QLabel(0x217b91d5a50) at 0x00000217B9988500>.text\n +      where <PySide2.QtWidgets.QLabel(0x217b91d5a50) at 0x00000217B9988500> = <emo_master.apps.designer.ui.device_wizard.DeviceNodeDialog(0x217b91d5740) at 0x00000217B99B0200>.error"
+        }
+      ]
+    },
+    {
+      "path": "usability-chain-ports.xml",
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.runtime.test_device_usability_chain::testC1ThroughC6PendingDraftPublicationAndRun",
+          "kind": "failure",
+          "message": "AssertionError: assert 'camera' in 'device slots do not match the operator declaration'\n +  where 'device slots do not match the operator declaration' = str(RuntimeClientError('device slots do not match the operator declaration'))\n +    where RuntimeClientError('device slots do not match the operator declaration') = <ExceptionInfo RuntimeClientError('device slots do not match the operator declaration') tblen=3>.value"
+        }
+      ]
+    },
+    {
+      "path": "usability-components.xml",
+      "counts": {
+        "tests": 73,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_workspace_sizing::testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize[642-452]",
+          "kind": "failure",
+          "message": "assert (642 <= 642 and 454 <= 452)\n +  where 642 = <built-in method width of DeviceWorkspace object at 0x000002C891B2E2C0>()\n +    where <built-in method width of DeviceWorkspace object at 0x000002C891B2E2C0> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x2c8901ce780) at 0x000002C891B2E2C0>.width\n +  and   454 = <built-in method height of DeviceWorkspace object at 0x000002C891B2E2C0>()\n +    where <built-in method height of DeviceWorkspace object at 0x000002C891B2E2C0> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x2c8901ce780) at 0x000002C891B2E2C0>.height"
+        }
+      ]
+    },
+    {
+      "path": "viewport-counterexample.xml",
+      "counts": {
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "viewport-first-failure.xml",
+      "counts": {
+        "tests": 2,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_publication::testPublicationReturnPreservesDeviceListViewport[2]",
+          "kind": "failure",
+          "message": "assert 2 > 2\n +  where 2 = <built-in method maximum of PySide2.QtWidgets.QScrollBar object at 0x00000218769A0D00>()\n +    where <built-in method maximum of PySide2.QtWidgets.QScrollBar object at 0x00000218769A0D00> = <PySide2.QtWidgets.QScrollBar(0x218770b3380) at 0x00000218769A0D00>.maximum"
+        }
+      ]
+    },
+    {
+      "path": "viewport-fixed.xml",
+      "counts": {
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "viewport-list-counterexample.xml",
+      "counts": {
+        "tests": 2,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_publication::testPublicationReturnPreservesDeviceListViewport[0]",
+          "kind": "failure",
+          "message": "assert 0 == 12\n +  where 0 = <built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A64B9F480>()\n +    where <built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A64B9F480> = <PySide2.QtWidgets.QScrollBar(0x25a65937bc0) at 0x0000025A64B9F480>.value"
+        },
+        {
+          "test": "tests.designer.test_device_usability_publication::testPublicationReturnPreservesDeviceListViewport[1]",
+          "kind": "failure",
+          "message": "assert 0 == 5\n +  where 0 = <built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A66C6C580>()\n +    where <built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A66C6C580> = <PySide2.QtWidgets.QScrollBar(0x25a65248bb0) at 0x0000025A66C6C580>.value"
+        }
+      ]
+    }
+  ]
+}

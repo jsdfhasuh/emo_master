@@ -50,6 +50,23 @@ def testRecoveryDeadlineDoesNotRefreshBetweenRetries():
     assert driver.calls == 1 and monotonic() - start < .5
 
 
+@pytest.mark.parametrize('unhealthy', [False, True])
+def testRecoveryDeadlinePreservesConnectionFailureHealth(unhealthy):
+    class HealthDriver(Driver):
+        def connect(self, params, cancel, deadline):
+            self.calls += 1
+            raise DeviceError('IO', 'connection failed', unhealthy=unhealthy)
+
+    driver = HealthDriver()
+    config = definition()
+    config.policies.update(recoveryTimeoutMs=20, recoveryBackoffMs=50)
+    with pytest.raises(DeviceError) as caught:
+        connectWithRecovery(driver, config, lambda: False, monotonic() + 1)
+    assert caught.value.code == 'E_DEVICE_RECOVERY_TIMEOUT'
+    assert caught.value.unhealthy is unhealthy
+    assert driver.calls == driver.resets == 1
+
+
 def testRecoveryBackoffCanCancelWithoutAnotherAttempt():
     driver, cancel = Driver(), Event()
     def progress(state):

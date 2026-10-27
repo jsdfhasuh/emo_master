@@ -1,0 +1,33 @@
+{
+  "status": "PASSED",
+  "entry": "MainWindow.loadProjectSelection",
+  "visited": [
+    "main",
+    "process_video",
+    "video_frame",
+    "one_target",
+    "rider_check",
+    "one_vehicle",
+    "save_person",
+    "process_crop"
+  ],
+  "legacyNodes": [
+    {
+      "workflow": "one_target",
+      "shown": true,
+      "savedContractUntouched": true
+    },
+    {
+      "workflow": "one_vehicle",
+      "shown": true,
+      "savedContractUntouched": true
+    }
+  ],
+  "firstConnectionSavedReloadedCompiled": true,
+  "paramsAndBindingsPreserved": true,
+  "sourceProjectHashes": {
+    "D:\\jsdfhasuh\\Downloads\\Compressed\\emo_master_file_list_riders_20261023\\motorcycle-file-list-riders.emoproj": "c380474ac8f464e06e4c08d8543f7a0f41646a2bfd4428159b754f0a7c87d3e0",
+    "D:\\jsdfhasuh\\Downloads\\Compressed\\emo_master_loop_state_riders_20261023\\motorcycle-local-loop-state.emoproj": "73bcf716ec9df79a22a03281a1f630863930cf35f6bf1b9bc75020e3628c35f5"
+  },
+  "boundary": "Native offscreen Qt with stub; temporary copy only, no video execution, live Runtime or original project writes"
+}

@@ -11,16 +11,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def designerApplication(tmp_path_factory):
+def designerApplication():
     try:
         from PySide2.QtWidgets import QApplication
-        from PySide2.QtCore import QSettings
     except ImportError:
         return None
 
-    QSettings.setDefaultFormat(QSettings.IniFormat)
-    QSettings.setPath(QSettings.IniFormat, QSettings.UserScope,
-                      str(tmp_path_factory.mktemp("designer-settings")))
     application = QApplication.instance()
     if application is None:
         application = QApplication([])
@@ -31,13 +27,20 @@ def designerApplication(tmp_path_factory):
 
 
 @pytest.fixture(autouse=True)
-def cleanupDesignerWidgets(designerApplication, monkeypatch):
+def cleanupDesignerWidgets(designerApplication, monkeypatch, isolatedDesignerSettings):
     if designerApplication is None:
         yield
         return
+    for key in ("EMO_RUNTIME_TARGET", "EMO_MASTER_RUNTIME_DB_PATH", "EMO_RUNTIME_LOG_DIR", "EMO_DESIGNER_SETTINGS_PATH"):
+        monkeypatch.delenv(key, raising=False)
     from PySide2.QtCore import QCoreApplication, QEvent
     import shiboken2
     from PySide2.QtWidgets import QMessageBox
+    from PySide2.QtCore import QSettings
+    from emo_master.apps.designer.ui import startup_settings_dialog
+
+    monkeypatch.setattr(startup_settings_dialog, "QSettings",
+                        lambda *_: QSettings(str(isolatedDesignerSettings), QSettings.IniFormat))
 
     # PageCoordinator is now part of the normal Designer. Legacy flow tests
     # deliberately discard their synthetic edits; dedicated page tests cover
@@ -48,6 +51,18 @@ def cleanupDesignerWidgets(designerApplication, monkeypatch):
             return QMessageBox.Discard
         return originalQuestion(parent, title, *args, **kwargs)
     monkeypatch.setattr(QMessageBox, 'question', question)
+
+    if os.name == 'nt' and designerApplication.platformName() == 'offscreen':
+        originalOpen = QMessageBox.open
+
+        def openMessage(box, *args):
+            # Windows offscreen crashes while rendering QMessageBox. Dedicated
+            # connection-result layout tests use the native windows platform.
+            if box.objectName() == 'deviceConnectionTestResult':
+                return
+            return originalOpen(box, *args)
+
+        monkeypatch.setattr(QMessageBox, 'open', openMessage)
 
     existing = set(designerApplication.topLevelWidgets())
     yield
@@ -66,3 +81,15 @@ def cleanupDesignerWidgets(designerApplication, monkeypatch):
         if shiboken2.isValid(widget):
             widget.deleteLater()
     QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+
+
+@pytest.fixture
+def confirmedStartupSettings(monkeypatch):
+    from emo_master.apps.designer.ui.startup_settings_dialog import DesignerStartupSettingsDialog
+
+    def select(dialog):
+        dialog.accept()
+        assert dialog._selection is not None, dialog.errorLabel.text()
+        return dialog._selection
+
+    monkeypatch.setattr(DesignerStartupSettingsDialog, "execSelection", select)

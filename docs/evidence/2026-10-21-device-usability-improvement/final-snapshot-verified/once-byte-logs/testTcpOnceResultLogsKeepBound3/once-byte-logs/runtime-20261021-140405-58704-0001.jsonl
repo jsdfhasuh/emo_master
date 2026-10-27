@@ -1,0 +1,1 @@
+{"schemaVersion":"1.0","timestamp":"2026-10-21T14:04:05.884000+00:00","timestampMs":1792591445884,"sequence":0,"level":"INFO","eventType":"device.action.completed","jobId":"","projectId":"108bf9ba-4fe9-4513-abb1-645f9e867c46","workflowId":"","workflowRunId":"","parentWorkflowRunId":"","nodeId":"","nodeRunId":"","iterationPath":[],"code":"","message":"receive","payload":{}}

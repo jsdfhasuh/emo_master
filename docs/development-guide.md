@@ -117,11 +117,19 @@ if ($LASTEXITCODE -ne 0) { throw "protobuf 检查失败，请查看第 5 节。"
 
 双击入口默认使用 `%USERPROFILE%\.conda\envs\emo_master\python.exe`，不会重新安装或创建环境；解释器在其他目录时设置 `$env:EMO_MASTER_PYTHON = '实际路径\python.exe'`。从其他 cwd 可用启动脚本的绝对路径。`./start_designer.cmd --check` 可检查启动配置，失败返回非零退出码。
 
-已经激活 Python 3.10 环境时，等价命令是 `python scripts/dev.py run-designer --local`。`--local` 只在子进程中清除外部 Runtime 地址、数据库/旧数据库路径、日志目录覆盖和 Qt 平台覆盖，并指定 `manual_test_workspace/runtime-embedded`。这使遗留的 `offscreen` 或外部服务配置不会影响本次可见内嵌启动；关闭后父终端原设置仍然保留。
+已经激活 Python 3.10 环境时，等价命令是 `python scripts/dev.py run-designer --local`。`--local` 只在子进程中清除外部 Runtime 地址、数据库/旧数据库路径、日志目录覆盖和 Qt 平台覆盖，并以 `manual_test_workspace/runtime-embedded` 预填本机运行目录。关闭后父终端原设置仍然保留。
+
+每次打开 Designer 都先显示 **启动设置**，源码和 Windows EXE 使用同一入口。选择“本机运行”后可编辑或浏览运行目录，允许填写尚不存在的绝对路径；确认“启动”后才初始化。要双开两个独立 Designer，分别选择不同目录，不需要复制程序或修改端口。占用或初始化失败时可在保留输入的设置界面重选。
+
+“连接外部 Runtime”接受 `主机:端口`，默认候选为 `127.0.0.1:50051`。启动前只读检查连接、在线工程信息和设备类型，不自动写入配置或开始任务；外部服务需要预先启动。多个 Designer 连接同一外部 Runtime 时共享在线配置和任务，不是彼此隔离的运行环境。
+
+启动成功并进入项目入口前，才记住本机上的模式和对应配置；目录与地址各保留最多 10 条最近记录。显式环境配置优先预填，其次使用上次成功记录，最后使用系统默认目录 `~/.emo_master/runtime`。`--local` 提供本机隔离初始值，但仍可在界面手动改目录或选择外部连接。`--check` 不显示设置、不创建 Runtime。
+
+界面显示实际数据库、任务和日志路径。未改动目录时保留原有数据库/日志环境覆盖；手动选择目录后，本次路径统一为 `<目录>/emo_master.db`、`<目录>/jobs/`、`<目录>/logs/`，不搬迁、清空或复制原数据。两个目录不会自动隔离同一个工程文件、设备或业务输出位置，避免两个窗口同时覆盖同一文件或争用独占设备。
 
 Designer 未配置外部目标时直接创建 `RuntimeService()`。这是同一应用进程内的服务调用，不会额外监听 gRPC 端口；正式 Job 仍在 Runtime 管理的 spawn 子进程中执行。关闭 Designer 时会关闭它拥有的内嵌 Runtime。
 
-`manual_test_workspace` 用于本机隔离数据，不应提交。需要自定义数据库、目录、Qt 平台或连接外部 Runtime 时，继续使用 `python scripts/dev.py run-designer`，不加 `--local`；原环境变量优先级和连接行为保持兼容。不要同时让多个内嵌实例访问同一数据目录。
+`manual_test_workspace` 用于本机隔离数据，不应提交。需要继承自定义数据库、目录、Qt 平台或外部 Runtime 环境预填时，使用 `python scripts/dev.py run-designer`，不加 `--local`。也可直接在启动设置选择本机目录或外部连接。不要同时让多个内嵌实例访问同一数据目录。
 
 第一次启动使用本地图像或不涉及设备的流程。打开项目本身不等于已授权执行设备动作；含相机、PLC、TCP 算子的流程只应在确认设备和参数安全后运行。
 
@@ -154,7 +162,7 @@ python scripts/dev.py run-designer
 
 外部模式的数据目录由 **终端 A 的 Runtime** 决定，不由 Designer 终端的数据库变量决定。结束调试时先停止 Job、关闭 Designer，再在 Runtime 终端按 Ctrl+C；关闭外部客户端不等于关闭独立服务。
 
-恢复内嵌模式时，先关闭当前 Designer，再按第 0 节使用 `--local` 或双击入口启动；无需手动清除父终端的 `EMO_RUNTIME_TARGET`。连接外部 Runtime 时则不要加 `--local`，否则会明确改用内嵌模式。每个独立 Runtime 实例必须使用不同数据目录；不要同时让两个服务访问同一数据库，也不要通过删除锁文件强行启动。
+恢复内嵌模式时，在下次启动设置选择“本机运行”；使用 `--local` 或双击入口会预填本机隔离目录，无需手动清除父终端的 `EMO_RUNTIME_TARGET`。要继承外部地址环境预填则不要加 `--local`，也可在界面手动选择外部连接。每个独立 Runtime 实例必须使用不同数据目录；不要同时让两个服务访问同一数据库，也不要通过删除锁文件强行启动。
 
 PowerShell 使用 `$env:EMO_RUNTIME_TARGET = "..."`；CMD 对应写法为 `set "EMO_RUNTIME_TARGET=..."`，不能混用。本页没有提供跨机一键部署：当前入口没有 `--host` / `--port` 命令行解析，gRPC 使用非 TLS 连接。改变监听、认证、路径可达性等要求见 [部署限制](deployment-guide.md)。
 
@@ -244,7 +252,7 @@ IDE 使用 `emo_master` 环境中的 Python 3.10，工作目录设为仓库根�
 
 源码和可共享示例可提交；`manual_test_workspace`、运行数据库、模型、现场相机参数及原始验收资料不能因未跟踪就直接上传。保留现场 `project.json`，不要为测试覆盖真实项目。提交前检查 `git status --short` 和 `git diff --check`。
 
-新增算子按 [注册流程](plugin-registration-flow.md) 和 [图标资源](operator-icon-assets.md) 操作；新增项目字段同步模型、迁移、Designer store 和 Runtime loader；新增 RPC 同步 proto 及生成物。不要把业务执行逻辑放进 Designer 或薄 RPC 适配层。目录与数据约定见 [工作区指南](workspace-guide.md)。
+新增算子和设备插件按 [算子与设备插件开发指南](operator-development-guide.md) 操作，包含完整算子示例、DeviceType/Driver API、节点绑定与测试；可从 [当前算子目录](operator-catalog.md) 选择参考实现。[注册流程](plugin-registration-flow.md) 和 [图标资源](operator-icon-assets.md) 提供专项说明。新增项目字段同步模型、迁移、Designer store 和 Runtime loader；新增 RPC 同步 proto 及生成物。不要把业务执行逻辑放进 Designer 或薄 RPC 适配层。目录与数据约定见 [工作区指南](workspace-guide.md)。
 
 ## 7. 常见问题
 
@@ -253,7 +261,7 @@ IDE 使用 `emo_master` 环境中的 Python 3.10，工作目录设为仓库根�
 | 双击入口提示 `Python not found` | 确认已有 Python 3.10 环境的解释器路径；设置 `EMO_MASTER_PYTHON` 或使用第 0 节方式 A 的实际路径，不必重新安装环境 |
 | `No module named emo_master` | 优先用 `scripts/dev.py ... --check` 核对源码入口；直接模块启动或 IDE 调试时才需显式设置 `PYTHONPATH=<仓库>/src` |
 | 找不到 Ruff、mypy 或 pytest | 是否只安装了 `requirements.txt`；开发应安装 `requirements-dev.txt` |
-| PowerShell 设置外部地址后仍走内嵌模式 | 是否使用了强制内嵌的 `--local` / 双击入口；外部模式使用第 4 节命令，并用 `$env:EMO_RUNTIME_TARGET` 设置地址 |
+| PowerShell 设置外部地址后仍预填本机模式 | `--local` / 双击入口会清除外部地址预填；在启动设置选择外部模式，或使用第 4 节不带 `--local` 的命令 |
 | 无法连接 `127.0.0.1:50051` | Runtime 终端是否存活、端口是否被其他程序占用、两端协议是否匹配；`Test-NetConnection 127.0.0.1 -Port 50051` 只能验证 TCP 可达，不代表 RPC 正常 |
 | 数据目录被占用或启动失败 | 是否已有内嵌/外部 Runtime 使用同一目录；检查更高优先级的 `EMO_RUNTIME_DB_PATH`，不要删除活跃实例的锁或数据库 |
 | 进程存在但没有窗口 | 是否继承了 `QT_QPA_PLATFORM=offscreen`；恢复可见 GUI 前清除该变量 |

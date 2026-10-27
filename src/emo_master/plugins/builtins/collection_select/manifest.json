@@ -5,7 +5,7 @@
   "entry": "emo_master.plugins.builtins.collection_select.operator:CollectionSelectOperator",
   "category": "结果处理",
   "iconKey": "select",
-  "summary": "从强类型视觉集合中选择首项、末项、指定索引或 Top-K。",
+  "summary": "从强类型视觉集合中选择首项、末项、指定索引或 Top-K；按索引选择时可连接动态 index 输入。",
   "inputPorts": {
     "blobs": {"type": "blobCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
     "detections": {"type": "detectionCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
@@ -13,7 +13,8 @@
     "measurements": {"type": "shapeMeasurementCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
     "lines": {"type": "lineCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
     "circles": {"type": "circleCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
-    "matches": {"type": "templateMatchCollection", "required": false, "nullable": false, "schemaVersion": "1.2"}
+    "matches": {"type": "templateMatchCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "index": {"type": "integer", "required": false, "nullable": false}
   },
   "outputPorts": {
     "selectedBlobs": {"type": "blobCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
@@ -28,11 +29,96 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "mode": {"title": "选择模式", "type": "string", "enum": ["first", "last", "index", "topK"], "default": "first"},
-      "index": {"title": "元素索引", "type": "integer", "minimum": 0, "default": 0},
-      "count": {"title": "数量", "type": "integer", "minimum": 1, "default": 1},
-      "onOutOfRange": {"title": "索引越界处理", "type": "string", "enum": ["empty", "error"], "default": "empty"}
-    }
+      "collectionType": {
+        "title": "处理对象",
+        "type": "string",
+        "enum": [
+          "",
+          "detections",
+          "blobs",
+          "contours",
+          "measurements",
+          "lines",
+          "circles",
+          "matches"
+        ],
+        "default": "",
+        "xOptionLabels": {
+          "": "请选择处理对象",
+          "detections": "检测结果",
+          "blobs": "连通域",
+          "contours": "轮廓",
+          "measurements": "形状测量",
+          "lines": "直线",
+          "circles": "圆",
+          "matches": "模板匹配结果"
+        }
+      },
+      "mode": {
+        "title": "选择模式",
+        "type": "string",
+        "enum": [
+          "first",
+          "last",
+          "index",
+          "topK"
+        ],
+        "default": "first"
+      },
+      "index": {
+        "title": "元素索引",
+        "description": "按索引选择时使用；连接 index 输入后，以本次输入为准。",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0,
+        "xVisibleWhen": {
+          "mode": [
+            "index"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "index"
+          ]
+        }
+      },
+      "count": {
+        "title": "数量",
+        "type": "integer",
+        "minimum": 1,
+        "default": 1,
+        "xVisibleWhen": {
+          "mode": [
+            "topK"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "topK"
+          ]
+        }
+      },
+      "onOutOfRange": {
+        "title": "索引越界处理",
+        "type": "string",
+        "enum": [
+          "empty",
+          "error"
+        ],
+        "default": "empty",
+        "xVisibleWhen": {
+          "mode": [
+            "index"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "index"
+          ]
+        }
+      }
+    },
+    "xModeOperator": "vision.collection.select"
   },
   "minCoreVersion": "0.3.0",
   "maxCoreVersion": "1.x"

@@ -9,8 +9,7 @@ import pytest
 from PySide2.QtCore import QEventLoop, QSettings, QTimer, Qt
 
 from emo_master.apps.designer.state.project_store import loadProject, saveProject
-from emo_master.core.workflow.compiler import WorkflowCompiler
-from tests.runtime.test_dual_plc_field_project import HERE, fixture
+from tests.runtime.test_dual_plc_field_project import HERE, fixture, compiler
 from tests.designer.test_workflow_entry_markers import readableNativeFont  # noqa: F401
 
 
@@ -67,7 +66,7 @@ def testNativeDesignerOpensEveryWorkflowAndSaveReopenPreservesWires(
     saved = tmp_path / source.name
     saveProject(saved, payload)
     reopened = dict(loadProject(saved))
-    WorkflowCompiler(registry).compile(reopened)
+    compiler(registry).compile(reopened)
     assert window.loadProjectDirectory(str(saved), confirmed=True)
     for workflow_id in expected["workflowOrder"]:
         window.workflowTabs.selectWorkflow(workflow_id)

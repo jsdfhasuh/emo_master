@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\validate-snapshot.py", line 20, in <module>
+    assert hashlib.sha256((root/item['path']).read_bytes()).hexdigest()==item['sha256'], item['path']
+AssertionError: docs/guides/device-catalog-contract-v1.md

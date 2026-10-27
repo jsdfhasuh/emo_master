@@ -81,8 +81,12 @@ class WorkflowStore:
             "eventRetentionPerJob": 10000,
         }
         self.dependencies = {"operators": []}
-        self.devices = {"bindings": {}}
-        self.projectExtensions = {}
+        self.devices = {"bindings": {}, "schemaVersion": "1.0", "definitions": {}}
+        from emo_master.core.presentation.models import Presentation
+        from emo_master.core.project.resources import ResourcePlan
+        from emo_master.core.project.models import ProductionSettings
+        self.projectExtensions = dict(presentation=Presentation().model_dump(), resources=ResourcePlan().model_dump(),
+                                      production=ProductionSettings().model_dump(), globalVariables={})
         self.workflowOrder = ["main"]
         self.entryWorkflowId = "main"
         self.activeWorkflowId = "main"
@@ -103,7 +107,7 @@ class WorkflowStore:
         )
         if document.production is not None:
             self.projectExtensions["production"] = document.production.model_dump()
-        if document.schemaVersion in {"2.4", "2.5", "2.6"}:
+        if document.schemaVersion in {"2.4", "2.5", "2.6", "2.7"}:
             self.projectExtensions["globalVariables"] = {key: value.model_dump() for key, value in document.globalVariables.items()}
         if document.communication is not None:
             self.projectExtensions["communication"] = document.communication.model_dump()
@@ -616,7 +620,8 @@ class WorkflowStore:
         revision = project.get("revision", 1)
         project["revision"] = (revision if isinstance(revision, int) else 1) + 1
         return {
-            "schemaVersion": ("2.6" if self.devices.get("schemaVersion") == "1.0"
+            "schemaVersion": ("2.7" if self.devices.get("schemaVersion") == "1.0" and "communication" not in self.projectExtensions
+                              else "2.6" if self.devices.get("schemaVersion") == "1.0"
                               else "2.5" if "communication" in self.projectExtensions
                               else "2.4" if "globalVariables" in self.projectExtensions
                               else "2.3" if "production" in self.projectExtensions

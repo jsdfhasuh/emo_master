@@ -43,9 +43,21 @@ def testPackageAndSnapshotKeepCommunicationPagesVariablesAndResources(tmp_path):
 def testExampleHasRealSessionToCalculationDependency():
     document = sampleProject()
     registry = PluginRegistry("0.6.1").scanRoots([Path("src/emo_master/plugins/builtins")]).activeOperators
-    compiled = WorkflowCompiler(registry).compile(document)
+    scan = PluginRegistry("0.6.1").scanRoots([Path("src/emo_master/plugins/builtins")])
+    compiled = WorkflowCompiler(registry, deviceTypes=scan.deviceTypes).compile(document)
     for key in ("channel-a", "channel-b"):
         workflow = compiled.workflows[key]
         assert workflow.topologicalOrder.index("session") < workflow.topologicalOrder.index("calculate")
         assert workflow.topologicalOrder.index("calculate") < workflow.topologicalOrder.index("send")
-    assert not document.communication.enabled
+    assert document.schemaVersion == "2.7" and document.communication is None
+    server = document.devices.definitions["tcp-server"]
+    assert not server.enabled and server.policies["connect"] == "manual"
+    for channel in ("channel-a", "channel-b"):
+        nodes = {node.nodeId: node for node in document.workflows[channel].nodes}
+        assert nodes["session"].deviceBindings["tcp"].deviceId == "tcp-server"
+        assert nodes["session"].deviceBindings["tcp"].selectors == {"channelId": channel}
+        assert nodes["send"].deviceBindings["tcp"].deviceId == "tcp-server"
+    enabled = sampleProject(port=12345, enabled=True, startupPolicy="on_project_run")
+    definition = enabled.devices.definitions["tcp-server"]
+    assert definition.enabled and definition.connection["port"] == 12345
+    assert definition.policies["connect"] == "on_project_run"

@@ -1,6 +1,7 @@
+from .app_version import APP_VERSION as __version__
 from .qt_environment import prepareQtEnvironment as _prepareQtEnvironment
 
-__version__ = "0.6.1"
+__all__ = ["__version__"]
 
 
 def _preloadOnnxRuntimeBeforeQt() -> None:

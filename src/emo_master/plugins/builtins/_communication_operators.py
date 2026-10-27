@@ -3,7 +3,6 @@ from __future__ import annotations
 import base64
 import binascii
 import math
-import socket
 import time
 from dataclasses import dataclass
 from time import perf_counter
@@ -11,7 +10,6 @@ from typing import Any, TypeGuard, cast
 
 from emo_master.core.contracts.communication import (
     PLC_DATA_TYPES,
-    TCP_MESSAGE_ENCODINGS,
     CommunicationPayloadValidationError,
     PlcValueCollection,
     PlcWriteReceipt,
@@ -33,15 +31,10 @@ from emo_master.plugins.builtins._slmp import (
     runSlmpWithRetry,
 )
 from emo_master.plugins.builtins._tcp_transport import (
-    TCP_FRAMING_MODES,
     TcpConnectError,
     TcpFrameError,
     TcpIoError,
     TcpTimeoutError,
-    listenOnce,
-    openTcpClient,
-    receiveFramed,
-    sendAll,
 )
 
 
@@ -669,402 +662,97 @@ def _executeManagedPlc(operator, action, inputs, params, context):
                     diagnostics={"deviceOperation": {"action": action, "outcome": getattr(error, "outcome", outcome)}})
 
 
-class TcpClientOperator:
-    meta = OperatorMeta(
-        operatorId="communication.tcp.client",
-        displayName="TCP Client",
-        version="1.2.0",
-        inputPorts={
-            "message": {
-                "type": "tcpMessage",
-                "required": False,
-                "nullable": False,
-                "schemaVersion": "1.x",
-            },
-            "text": {"type": "string", "required": False, "nullable": False},
-        },
-        outputPorts={
-            "response": {
-                "type": "tcpMessage",
-                "required": False,
-                "nullable": False,
-                "schemaVersion": "1.x",
-            },
-            "sentBytes": {"type": "integer", "required": True, "nullable": False},
-            "responseText": {
-                "type": "string",
-                "required": False,
-                "nullable": False,
-            },
-        },
-        paramSchema=TCP_CLIENT_PARAM_SCHEMA,
-    )
+TCP_CLIENT_INPUT_PORTS: dict[str, object] = {'message': {'type': 'tcpMessage', 'required': False, 'nullable': False, 'schemaVersion': '1.x'}, 'text': {'type': 'string', 'required': False, 'nullable': False}}
+TCP_CLIENT_OUTPUT_PORTS: dict[str, object] = {'response': {'type': 'tcpMessage', 'required': False, 'nullable': False, 'schemaVersion': '1.x'}, 'sentBytes': {'type': 'integer', 'required': True, 'nullable': False}, 'responseText': {'type': 'string', 'required': False, 'nullable': False}}
+TCP_CLIENT_NODE_SCHEMA = {'type': 'object', 'properties': {'operation': {'title': '操作类型', 'type': 'string', 'enum': ['send', 'exchange'], 'default': 'send'}, 'text': {'title': '发送文本', 'type': 'string', 'default': ''}}, 'additionalProperties': False, 'required': [], 'xDeviceActionFields': ['operation', 'text']}
+TCP_RECEIVE_OUTPUT_PORTS: dict[str, object] = {'message': {'type': 'tcpMessage', 'required': True, 'nullable': False, 'schemaVersion': '1.x'}, 'peerHost': {'type': 'string', 'required': True, 'nullable': False}, 'peerPort': {'type': 'integer', 'required': True, 'nullable': False}, 'text': {'type': 'string', 'required': False, 'nullable': False}}
+TCP_RECEIVE_NODE_SCHEMA = {'type': 'object', 'properties': {}, 'additionalProperties': False, 'required': [], 'xDeviceActionFields': []}
 
-    def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
-        error = _validateTcpParams(
-            params,
-            allowed={
-                "host",
-                "port",
-                "operation",
-                "text",
-                "textEncoding",
-                "appendNewline",
-                "rejectTrailingResponse",
-                "shutdownWrite",
-                "connectTimeoutMs",
-                "responseTimeoutMs",
-                "responseFraming",
-                "expectedBytes",
-                "maxResponseBytes",
-                "maxRequestBytes",
-                "responseEncoding",
-                "responseTextEncoding",
-            },
-        )
-        if error is not None:
-            return error
-        operation = params.get("operation", "send")
-        if not isinstance(operation, str) or operation not in {"send", "exchange"}:
-            return _paramError("operation must be send or exchange")
-        responseTextEncoding = params.get("responseTextEncoding", "none")
-        if not isinstance(responseTextEncoding, str) or responseTextEncoding not in {
-            "none",
-            "utf-8",
-            "ascii",
-            "latin-1",
-        }:
-            return _paramError("responseTextEncoding is not supported")
-        if responseTextEncoding != "none" and operation != "exchange":
-            return _paramError("responseTextEncoding requires operation=exchange")
-        if not isinstance(params.get("text", ""), str):
-            return _paramError("text must be a string")
-        for name, default in (
-            ("textEncoding", "utf-8"),
-            ("responseEncoding", "utf-8"),
-        ):
-            encoding = params.get(name, default)
-            if not isinstance(encoding, str) or encoding not in TCP_MESSAGE_ENCODINGS:
-                return _paramError(f"{name} is not supported")
-        framing = params.get("responseFraming", "newline")
-        if not isinstance(framing, str) or framing not in TCP_FRAMING_MODES:
-            return _paramError("responseFraming is not supported")
-        expectedBytes = params.get("expectedBytes", 0)
-        maxBytes = params.get("maxResponseBytes", 1048576)
-        if not _isIntegerInRange(expectedBytes, 0, 16777216):
-            return _paramError("expectedBytes must be between 0 and 16777216")
-        if not _isIntegerInRange(maxBytes, 1, 16777216):
-            return _paramError("maxResponseBytes must be between 1 and 16777216")
-        if not _isIntegerInRange(
-            params.get("maxRequestBytes", 1048576), 1, 16777216
-        ):
-            return _paramError("maxRequestBytes must be between 1 and 16777216")
-        if framing == "fixedLength" and not 1 <= cast(int, expectedBytes) <= cast(
-            int, maxBytes
-        ):
-            return _paramError(
-                "fixedLength framing requires expectedBytes between 1 and maxResponseBytes"
-            )
-        for name, booleanDefault in (
-            ("appendNewline", False),
-            ("rejectTrailingResponse", False),
-            ("shutdownWrite", False),
-        ):
-            if not isinstance(params.get(name, booleanDefault), bool):
-                return _paramError(f"{name} must be boolean")
+
+def _checkTcpCancellation(runtimeContext, error):
+    check = runtimeContext.get('raiseIfCancellationRequested')
+    if callable(check):
+        try:
+            check()
+        except Exception as cancelled:
+            cancelled.diagnostics = getattr(error, 'diagnostics', {})
+            raise
+
+
+def _tcpFailure(error, runtimeContext, diagnostics):
+    if 'tcpTransaction' in diagnostics:
+        diagnostics = {'tcpTransaction': {**diagnostics['tcpTransaction'], 'phase': 'decode'}}
+    error.diagnostics = {**diagnostics, **getattr(error, 'diagnostics', {})}
+    _checkTcpCancellation(runtimeContext, error)
+    code = getattr(error, 'code', None) or _communicationError(error)['error']['code']
+    return dict(status='error', error=dict(code=code, message=str(error)), diagnostics=error.diagnostics)
+
+
+class TcpClientOperator:
+    meta = OperatorMeta(operatorId="communication.tcp.client", displayName="TCP Client", version="1.2.0",
+        inputPorts=TCP_CLIENT_INPUT_PORTS, outputPorts=TCP_CLIENT_OUTPUT_PORTS,
+        paramSchema=TCP_CLIENT_NODE_SCHEMA)
+
+    def validateParams(self, params):
+        from emo_master.core.project.snapshots import _parameters
+        try:
+            _parameters(params, self.meta.paramSchema, "params")
+        except ValueError as error:
+            return _paramError(str(error))
         return None
 
-    def executeNode(
-        self,
-        inputs: dict[str, object],
-        params: dict[str, object],
-        runtimeContext: dict[str, object],
-    ) -> dict[str, Any]:
-        logger = getOperatorLogger(runtimeContext)
-        startedAt = perf_counter()
-        paramError = self.validateParams(params)
-        if paramError is not None:
-            return {"status": "error", "error": paramError}
+    def executeNode(self, inputs, params, runtimeContext):
+        diagnostics = {}
         try:
-            outbound = _tcpClientSource(inputs, params)
-        except CommunicationPayloadValidationError as exc:
-            return _error("E_INPUT_TYPE", str(exc))
-        except (TypeError, ValueError) as exc:
-            return _error("E_INPUT_SHAPE", str(exc))
-        if bool(params.get("appendNewline", False)):
-            outbound += b"\n"
-        if not outbound:
-            return _error("E_INPUT_SHAPE", "TCP message must contain at least one byte")
-        maxRequestBytes = cast(int, params.get("maxRequestBytes", 1048576))
-        if len(outbound) > maxRequestBytes:
-            return _error(
-                "E_INPUT_SHAPE",
-                f"TCP request exceeds maxRequestBytes={maxRequestBytes}",
-            )
-        host = cast(str, params.get("host", "127.0.0.1"))
-        port = cast(int, params.get("port", 10001))
-        operation = cast(str, params.get("operation", "send"))
-        outputs: dict[str, object] = {"sentBytes": len(outbound)}
-        logger.info(
-            "starting TCP client operation",
-            payload={
-                "host": host,
-                "port": port,
-                "operation": operation,
-                "requestBytes": len(outbound),
-            },
-        )
-        sendAttempted = False
-        try:
-            with openTcpClient(
-                host,
-                port,
-                connectTimeoutSec=cast(int, params.get("connectTimeoutMs", 2000))
-                / 1000.0,
-                ioTimeoutSec=cast(int, params.get("responseTimeoutMs", 2000))
-                / 1000.0,
-            ) as sock:
-                # sendall can fail after a partial write. Once attempted, outcome
-                # is uncertain; never label a timeout as safe to resend.
-                sendAttempted = True
-                sendAll(sock, outbound)
-                if bool(params.get("shutdownWrite", False)):
-                    try:
-                        sock.shutdown(socket.SHUT_WR)
-                    except OSError as exc:
-                        raise TcpIoError(f"TCP shutdown(SHUT_WR) failed: {exc}") from exc
-                if operation == "exchange":
-                    responseBytes = receiveFramed(
-                        sock,
-                        framing=cast(str, params.get("responseFraming", "newline")),
-                        maxBytes=cast(int, params.get("maxResponseBytes", 1048576)),
-                        expectedBytes=cast(int, params.get("expectedBytes", 0)),
-                        rejectTrailing=bool(params.get("rejectTrailingResponse", False)),
-                    )
-                    outputs["response"] = TcpMessage.fromBytes(
-                        responseBytes,
-                        encoding=cast(str, params.get("responseEncoding", "utf-8")),
-                        peerHost=host,
-                        peerPort=port,
-                    ).toPayload()
-                    responseTextEncoding = cast(
-                        str, params.get("responseTextEncoding", "none")
-                    )
-                    if responseTextEncoding != "none":
-                        outputs["responseText"] = _decodeTcpText(
-                            responseBytes, responseTextEncoding
-                        )
-        except Exception as exc:
-            logger.error(
-                "TCP client operation failed",
-                code=getattr(exc, "code", "E_COMMUNICATION_IO"),
-                payload={"errorType": type(exc).__name__},
-            )
-            result = _communicationError(exc)
-            result["diagnostics"] = {**cast(dict, result.get("diagnostics", {})),
-                                     "executionOutcome": "uncertain" if sendAttempted else "not_sent",
-                                     "sendAttempted": sendAttempted, "automaticRetry": False}
-            return result
-        latencyMs = round((perf_counter() - startedAt) * 1000.0, 3)
-        logger.info(
-            "TCP client operation completed",
-            payload={
-                "sentBytes": len(outbound),
-                "receivedBytes": (
-                    cast(dict[str, object], outputs["response"])["byteLength"]
-                    if "response" in outputs
-                    else 0
-                ),
-            },
-        )
-        return {
-            "status": "ok",
-            "outputs": outputs,
-            "metrics": {
-                "latencyMs": latencyMs,
-                "sentBytes": len(outbound),
-                "receivedBytes": (
-                    cast(dict[str, object], outputs["response"])["byteLength"]
-                    if "response" in outputs
-                    else 0
-                ),
-            },
-            "diagnostics": {
-                "text": f"TCP {operation} completed with {host}:{port}"
-            },
-        }
+            execute = runtimeContext.get('executeDevice')
+            if execute is None:
+                return _error('E_DEVICE_RUNTIME_UNAVAILABLE', '请绑定工程 TCP 设备并从 Runtime 运行')
+            work = runtimeContext['deviceParameters']['tcp']
+            data = _tcpClientSource(inputs, dict(params, textEncoding=work['textEncoding']))
+            if work['appendNewline']:
+                data += b'\n'
+            result = execute('tcp', params.get('operation', 'send'),
+                             {'dataBase64': base64.b64encode(data).decode('ascii')})
+            if 'tcpTransaction' in result:
+                diagnostics['tcpTransaction'] = dict(result['tcpTransaction'])
+            outputs = {'sentBytes': result['sentBytes']}
+            if 'dataBase64' in result:
+                raw = base64.b64decode(result['dataBase64'], validate=True)
+                outputs['response'] = TcpMessage.fromBytes(raw, encoding=work['responseEncoding'],
+                    peerHost=result['peerHost'], peerPort=result['peerPort']).toPayload()
+                if work['responseTextEncoding'] != 'none':
+                    outputs['responseText'] = _decodeTcpText(raw, work['responseTextEncoding'])
+            return dict(status='ok', outputs=outputs, diagnostics=diagnostics)
+        except Exception as error:
+            return _tcpFailure(error, runtimeContext, diagnostics)
 
 
 class TcpReceiveOnceOperator:
-    meta = OperatorMeta(
-        operatorId="communication.tcp.receive_once",
-        displayName="TCP Receive Once",
-        version="1.1.0",
-        inputPorts={},
-        outputPorts={
-            "message": {
-                "type": "tcpMessage",
-                "required": True,
-                "nullable": False,
-                "schemaVersion": "1.x",
-            },
-            "peerHost": {"type": "string", "required": True, "nullable": False},
-            "peerPort": {"type": "integer", "required": True, "nullable": False},
-            "text": {"type": "string", "required": False, "nullable": False},
-        },
-        paramSchema=TCP_RECEIVE_ONCE_PARAM_SCHEMA,
-    )
+    meta = OperatorMeta(operatorId="communication.tcp.receive_once", displayName="TCP Receive Once", version="1.1.0",
+        inputPorts={}, outputPorts=TCP_RECEIVE_OUTPUT_PORTS, paramSchema=TCP_RECEIVE_NODE_SCHEMA)
 
-    def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
-        error = _validateTcpParams(
-            params,
-            allowed={
-                "bindHost",
-                "port",
-                "acceptTimeoutMs",
-                "readTimeoutMs",
-                "framing",
-                "expectedBytes",
-                "maxMessageBytes",
-                "messageEncoding",
-                "messageTextEncoding",
-                "ackText",
-                "ackEncoding",
-                "ackAppendNewline",
-                "maxAckBytes",
-            },
-            hostName="bindHost",
-            connectTimeoutName="acceptTimeoutMs",
-            responseTimeoutName="readTimeoutMs",
-        )
-        if error is not None:
-            return error
-        framing = params.get("framing", "newline")
-        if not isinstance(framing, str) or framing not in TCP_FRAMING_MODES:
-            return _paramError("framing is not supported")
-        expectedBytes = params.get("expectedBytes", 0)
-        maxBytes = params.get("maxMessageBytes", 1048576)
-        if not _isIntegerInRange(expectedBytes, 0, 16777216):
-            return _paramError("expectedBytes must be between 0 and 16777216")
-        if not _isIntegerInRange(maxBytes, 1, 16777216):
-            return _paramError("maxMessageBytes must be between 1 and 16777216")
-        if framing == "fixedLength" and not 1 <= cast(int, expectedBytes) <= cast(
-            int, maxBytes
-        ):
-            return _paramError(
-                "fixedLength framing requires expectedBytes between 1 and maxMessageBytes"
-            )
-        for name, default in (
-            ("messageEncoding", "utf-8"),
-            ("ackEncoding", "utf-8"),
-        ):
-            encoding = params.get(name, default)
-            if not isinstance(encoding, str) or encoding not in TCP_MESSAGE_ENCODINGS:
-                return _paramError(f"{name} is not supported")
-        messageTextEncoding = params.get("messageTextEncoding", "none")
-        if not isinstance(messageTextEncoding, str) or messageTextEncoding not in {
-            "none",
-            "utf-8",
-            "ascii",
-            "latin-1",
-        }:
-            return _paramError("messageTextEncoding is not supported")
-        if not isinstance(params.get("ackText", ""), str):
-            return _paramError("ackText must be a string")
-        if not isinstance(params.get("ackAppendNewline", True), bool):
-            return _paramError("ackAppendNewline must be boolean")
-        if not _isIntegerInRange(params.get("maxAckBytes", 1048576), 1, 16777216):
-            return _paramError("maxAckBytes must be between 1 and 16777216")
-        return None
+    def validateParams(self, params):
+        return _paramError('此节点的工作参数由设备继承') if params else None
 
-    def executeNode(
-        self,
-        inputs: dict[str, object],
-        params: dict[str, object],
-        runtimeContext: dict[str, object],
-    ) -> dict[str, Any]:
-        _ = inputs
-        logger = getOperatorLogger(runtimeContext)
-        startedAt = perf_counter()
-        paramError = self.validateParams(params)
-        if paramError is not None:
-            return {"status": "error", "error": paramError}
-        ackText = cast(str, params.get("ackText", ""))
-        bindHost = cast(str, params.get("bindHost", "127.0.0.1"))
-        port = cast(int, params.get("port", 10001))
-        logger.info(
-            "waiting for one TCP message",
-            payload={"bindHost": bindHost, "port": port},
-        )
+    def executeNode(self, inputs, params, runtimeContext):
+        diagnostics = {}
         try:
-            ack = (
-                _encodeTcpData(
-                    ackText,
-                    cast(str, params.get("ackEncoding", "utf-8")),
-                )
-                if ackText
-                else None
-            )
-            if ack is not None and bool(params.get("ackAppendNewline", True)):
-                ack += b"\n"
-            maxAckBytes = cast(int, params.get("maxAckBytes", 1048576))
-            if ack is not None and len(ack) > maxAckBytes:
-                raise ValueError(f"TCP acknowledgement exceeds maxAckBytes={maxAckBytes}")
-            messageBytes, peer = listenOnce(
-                bindHost,
-                port,
-                acceptTimeoutSec=cast(int, params.get("acceptTimeoutMs", 5000))
-                / 1000.0,
-                ioTimeoutSec=cast(int, params.get("readTimeoutMs", 1000)) / 1000.0,
-                framing=cast(str, params.get("framing", "newline")),
-                maxBytes=cast(int, params.get("maxMessageBytes", 1048576)),
-                expectedBytes=cast(int, params.get("expectedBytes", 0)),
-                ack=ack,
-            )
-            message = TcpMessage.fromBytes(
-                messageBytes,
-                encoding=cast(str, params.get("messageEncoding", "utf-8")),
-                peerHost=peer[0],
-                peerPort=peer[1],
-            ).toPayload()
-            textEncoding = cast(str, params.get("messageTextEncoding", "none"))
-            textValue = (
-                _decodeTcpText(messageBytes, textEncoding)
-                if textEncoding != "none"
-                else None
-            )
-        except Exception as exc:
-            logger.error(
-                "TCP receive failed",
-                code=getattr(exc, "code", "E_COMMUNICATION_IO"),
-                payload={"errorType": type(exc).__name__},
-            )
-            return _communicationError(exc)
-        latencyMs = round((perf_counter() - startedAt) * 1000.0, 3)
-        outputs: dict[str, object] = {
-            "message": message,
-            "peerHost": peer[0],
-            "peerPort": peer[1],
-        }
-        if textValue is not None:
-            outputs["text"] = textValue
-        logger.info(
-            "TCP message received",
-            payload={
-                "peerHost": peer[0],
-                "peerPort": peer[1],
-                "receivedBytes": len(messageBytes),
-                "ackBytes": len(ack) if ack is not None else 0,
-            },
-        )
-        return {
-            "status": "ok",
-            "outputs": outputs,
-            "metrics": {"latencyMs": latencyMs, "receivedBytes": len(messageBytes)},
-            "diagnostics": {
-                "text": f"Received one TCP message from {peer[0]}:{peer[1]}"
-            },
-        }
+            execute = runtimeContext.get('executeDevice')
+            if execute is None:
+                return _error('E_DEVICE_RUNTIME_UNAVAILABLE', '请绑定工程 TCP 设备并从 Runtime 运行')
+            result = execute('tcp', 'receive', {})
+            if 'tcpTransaction' in result:
+                diagnostics['tcpTransaction'] = dict(result['tcpTransaction'])
+            work = runtimeContext['deviceParameters']['tcp']
+            raw = base64.b64decode(result['dataBase64'], validate=True)
+            outputs = dict(message=TcpMessage.fromBytes(raw, encoding=work['messageEncoding'],
+                peerHost=result['peerHost'], peerPort=result['peerPort']).toPayload(),
+                peerHost=result['peerHost'], peerPort=result['peerPort'])
+            if work['messageTextEncoding'] != 'none':
+                outputs['text'] = _decodeTcpText(raw, work['messageTextEncoding'])
+            return dict(status='ok', outputs=outputs, diagnostics=diagnostics)
+        except Exception as error:
+            return _tcpFailure(error, runtimeContext, diagnostics)
 
 
 def _validatePlcCommonParams(

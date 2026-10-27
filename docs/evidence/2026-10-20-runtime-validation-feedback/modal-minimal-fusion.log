@@ -1,0 +1,5 @@
+opening fusion
+Windows fatal exception: access violation
+
+Current thread 0x000094d8 (most recent call first):
+  File "<stdin>", line 11 in <module>

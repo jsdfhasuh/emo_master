@@ -43,8 +43,8 @@ def testBlurRejectsInvalidInputsAndParameters() -> None:
         operator.executeNode({}, {}, {}),
         operator.executeNode({"image": valid.astype(np.float32)}, {}, {}),
         operator.executeNode({"image": valid}, {"kernelSize": 4}, {}),
-        operator.executeNode({"image": valid}, {"diameter": 0}, {}),
-        operator.executeNode({"image": valid}, {"sigmaColor": 0}, {}),
+        operator.executeNode({"image": valid}, {"mode": "bilateral", "diameter": 0}, {}),
+        operator.executeNode({"image": valid}, {"mode": "bilateral", "sigmaColor": 0}, {}),
     ]
     assert [item["error"]["code"] for item in cases] == [
         "E_INPUT_MISSING",

@@ -1,0 +1,57 @@
+{
+  "testedLocalSource": "e7ceb5135f2f5dcc158110fb23da29c049bbe2be",
+  "publishedSource": "a1d6b24f671afb458cb405ceb5c2e73fb96f9424",
+  "sourceFullTree": "a4ca2b2a5ef8fea6d5a593cca6de01d7bf0884e6",
+  "localDocumentation": [
+    "8cfcb87eb853bfc4e54a20ac36611d669ab56176",
+    "5a8c79095b32b6870ea7d4806f902a3b019cfcda"
+  ],
+  "note": "Git HTTPS had no credentials. GitHub connector recreated each plan/source/test commit in order with an exactly identical full Git tree; metadata/commit SHAs differ. Remote documentation packaging is compact and docs-only. No source/test blob changes after local tested e7ceb51.",
+  "commits": [
+    {
+      "local": "b1bf28a2441e0f50924d212e15357d80942b5430",
+      "remote": "bfb1f0ae27404ed8ee0f72015aded7f8fd61e6c5",
+      "tree": "d8e28a60584e63f39699109a77ea56b56ada1958"
+    },
+    {
+      "local": "456a9d003559d8beb900c51cd4a9f82681cb0c9b",
+      "remote": "617e95414eb6430c71425bbe8d1acd9c5cd9e3d2",
+      "tree": "4b5308b8b309dd2201fd571e73e5f4b57356262e"
+    },
+    {
+      "local": "f8d7fb343dfa362640bedcba6b2fdb30f8ae7c11",
+      "remote": "2c4c649fb94fe1d6336bd0bbcffbcd15640996c1",
+      "tree": "90f437e073835b21b33ed99456a743001378d7b1"
+    },
+    {
+      "local": "1360cc5986fe0b089f15f11d29a38574eaad33a7",
+      "remote": "c0df3a47377acd7985c8240a91c7d739171f7208",
+      "tree": "ef6a9279804ac9f6a35c11d8264e07654259e702"
+    },
+    {
+      "local": "324b1949b7bd1db71190ad077a3f73ae0845f5bd",
+      "remote": "91d2bf3e70a5b1ed900529d4f556a0b3af0833d5",
+      "tree": "200d44da471107a99449a2576c052dcc937d0478"
+    },
+    {
+      "local": "598d4a8f1a38b5305394f255572184e8f658c8af",
+      "remote": "a22340caccd0d199fee7ae1d2009785f09a59c44",
+      "tree": "881345c8c0365995840da965bd93836e0f501c8a"
+    },
+    {
+      "local": "9fa574597961d5e86097361417a4f70de79e3809",
+      "remote": "04abff2a6419fb36a7d59a26eda3779785d27809",
+      "tree": "ab79f474917ed281f657ffac6decd2fb120a5003"
+    },
+    {
+      "local": "73194eceef2819b2207129eeb55311efb4be8f79",
+      "remote": "87ca482da390cfa298553d382e4317765282e46e",
+      "tree": "2432e9352676756ee20af21227fdfa1c02e77a9d"
+    },
+    {
+      "local": "e7ceb5135f2f5dcc158110fb23da29c049bbe2be",
+      "remote": "a1d6b24f671afb458cb405ceb5c2e73fb96f9424",
+      "tree": "a4ca2b2a5ef8fea6d5a593cca6de01d7bf0884e6"
+    }
+  ]
+}

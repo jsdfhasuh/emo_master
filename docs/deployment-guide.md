@@ -2,6 +2,8 @@
 
 本指南适用于 `agent/runtime-workflow-architecture-v1`，核对基线为应用提交 `33fc53e`、版本 `0.6.1`；中央打包仓核对提交为 `ab4a33e`。整理日期为 2026-09-25。发布时必须重新核对实际源码提交与打包仓配置，不能把本文版本号当作“最新 Release”。
 
+2026-10-25 局部补充：独立操作员入口及其数据目录/设置规则已与底层服务分开说明，核对应用 HEAD 为 `9265547dbe61bc57542d3cf0ea143fcf455600fb` **加未提交源码修改**；本次没有重核打包仓、构建或发布，不将旧发布基线更新成新产物承诺。
+
 源码环境准备见 [开发指南](development-guide.md)，整体职责见 [工程师导读](engineer-guide.md)。本页说明已有交付流程及限制，不意味着已经完成生产环境认证或硬件验收。
 
 ## 1. 先选择运行和交付方式
@@ -9,11 +11,12 @@
 | 场景 | 当前方式 | 边界 |
 | --- | --- | --- |
 | 开发、修改和调试 | Python 3.10 源码环境，启动 Designer 或独立 Runtime | 需要依赖与 `src` 路径配置 |
-| 单机交付 | 完整便携 ZIP 或当前用户安装包；无参数启动 `EmoMaster.exe` | 默认 Designer + 内嵌 Runtime |
-| 同机分离验证 | 源码启动 Runtime；Designer 设置 `EMO_RUNTIME_TARGET` 连接 | 默认 `127.0.0.1:50051`，详细双终端步骤见开发指南 |
-| 跨机、后台常驻、开机自动检测 | 不作为本版可直接照抄的部署流程 | 当前 EXE 没有 `--runtime` 模式，独立源码入口不会自动加载并运行项目 |
+| 单机交付 | 完整便携 ZIP 或当前用户安装包；无参数启动 `EmoMaster.exe` | Designer 启动设置选择本机目录或外部 Runtime；新增源码尚未据此重建 EXE |
+| 独立操作员运行 | 源码 `start_runtime.cmd` / `scripts/run_operator.py`；对应冻结目标 `EmoMasterRuntime.exe` | 工程加载/自动开始和工具页见[独立 Runtime](operator-runtime.md)，本轮未重建 EXE |
+| 同机分离验证 | 源码启动 Runtime；Designer 启动设置选择外部连接，或用 `EMO_RUNTIME_TARGET` 预填 | 默认 `127.0.0.1:50051`，详细双终端步骤见开发指南 |
+| 跨机、后台常驻、开机自动检测 | 不作为本版可直接照抄的部署流程 | 操作员窗口不是 Windows 服务或开机自启安装器；外部服务仍需独立部署验收 |
 
-Windows 入口 `src/emo_master/apps/windows_entry.py` 只分派 `--self-test` 或无参数 Designer 启动，其他参数会被拒绝。程序支持连接外部 Runtime，并不等于已经提供独立 Runtime EXE、Windows 服务安装器或自动运行现场项目的命令。
+Windows 产品入口 `src/emo_master/apps/windows_entry.py` 无参数启动 Designer，支持 `--self-test` 与生产 `--run-project` 分支；旧 `--runtime` / `--operator-view` 是受限测试宿主/查看器，不能当作生产操作员入口。独立操作员已支持记忆工程、在线版本恢复和 `production.autoStart`，不等于已交付后台服务、开机自启或跨机安全部署。
 
 ## 2. Windows 现场安装和数据准备
 
@@ -25,18 +28,37 @@ Windows 入口 `src/emo_master/apps/windows_entry.py` 只分派 `--self-test` �
 
 默认启动 Designer 后先打开项目、核对路径和设备参数，再进行离线验证。只有确认安全条件后才连接相机、执行 PLC 写入或联动设备。新版本上线前保留旧程序和数据备份，异常时先停止任务再回退。
 
+2026-10-27 启动设置源码变更：每次打开 Designer 先选择“本机运行”或“连接外部 Runtime”，初始化成功后进入原项目入口。双开时为两个本机实例选择不同运行目录；连接同一个外部 Runtime 则共享其配置与任务。目录占用可直接重选，不需要删除锁或数据库。本轮不构建、不发布，已安装旧 EXE 不会因源码修改自动获得此功能。
+
 ## 3. 数据目录、备份与回退
 
-未覆盖配置时，Runtime 使用 `~/.emo_master/runtime/emo_master.db`，Windows 通常位于 `%USERPROFILE%\.emo_master\runtime\emo_master.db`。Job workspace 位于同一数据目录的 `jobs/` 下，不在安装目录。
+### 独立操作员入口
+
+`scripts/run_operator.py` / `start_runtime.cmd` 使用 `%LOCALAPPDATA%\EmoMaster\operator-runtime`，数据库为 `runtime.sqlite3`，日志为 `logs/runtime-*.jsonl`，任务工作区为 `jobs/`。优先级为显式 `--data-root` > `EMO_RUNTIME_DATA_DIR` > 本机保存默认 > 系统默认。
+
+起始页或“Runtime 设置”显示本次有效值/来源和下次默认。保存 `QSettings("EmoMaster", "Runtime")` 的 `storage/defaultDataRoot`，只影响下次启动，不搬迁在线配置、数据库或日志，不热切正在运行的路径。CLI/环境仍覆盖时会提示；“使用系统默认”保存后移除覆盖键。展开诊断和“打开当前日志文件夹”取本次真实路径，而非未生效草稿。业务留档仍由工程配置，不等于内部根或 `jobs/`。
+
+独立入口显式传入数据库/日志路径，`EMO_RUNTIME_DB_PATH`、`EMO_MASTER_RUNTIME_DB_PATH`、`EMO_RUNTIME_LOG_DIR` 不分别覆盖它。具体操作、启动失败及只读日志说明见[独立 Runtime](operator-runtime.md)。
+
+### 底层 RuntimeService / Designer 内嵌及外部服务
+
+以下规则不是独立操作员默认值：未覆盖配置的底层服务使用 `~/.emo_master/runtime/emo_master.db`，Windows 通常位于 `%USERPROFILE%\.emo_master\runtime\emo_master.db`。Job workspace 使用底层服务自己的目录规则，不在安装目录；本次未批量修改这些默认位置。
+
+Designer 启动界面优先按环境配置预填，其次读取 `QSettings("emo_master", "designer")` 下的 `startup/` 成功记录，最后沿用上述默认值。手动选择本机目录后，以显式参数统一指定该目录下的 `emo_master.db`、`jobs/`、`logs/`，本次不再沿用其他数据库或日志环境覆盖。未改目录时保留并显示原覆盖路径。设置按本机保存，不写入工程，不搬迁历史数据；选择或连接失败不会覆盖上次成功记录。
+
+自动化/冻结验收可用 `EMO_DESIGNER_SETTINGS_PATH` 指定临时 INI，启动设置和后续 Designer 共用该文件，不读写用户注册表偏好；这不会跳过启动选择或改变 Runtime 路径。冻结验收脚本已适配启动设置、双开、占用后重选、独立关闭及目录重用。本轮仅进行源码/脚本测试，真实 EXE 与安装器验收仍需使用新构建单独执行。
 
 | 配置 | 含义与优先级 |
 | --- | --- |
 | 显式 `RuntimeService(dbPath=...)` | 构造参数，优先于环境变量 |
 | `EMO_RUNTIME_DB_PATH` | 完整 SQLite 文件路径，优先于数据目录变量 |
+| `EMO_MASTER_RUNTIME_DB_PATH` | 旧别名；仅在前一 DB 变量未设置时使用 |
 | `EMO_RUNTIME_DATA_DIR` | 数据目录，数据库名固定为 `emo_master.db` |
 | 不设置 | 使用用户目录下的默认路径 |
 
 路径支持 `~` 展开。同一数据目录同一时刻只允许一个跨进程 Runtime 实例。外部模式由服务端进程的配置决定路径；给客户端改数据目录不会迁移服务端数据。
+
+底层日志可由 `EMO_RUNTIME_LOG_DIR` 指定；不设置时，显式 DB 路径使用其旁边 `logs/`，否则使用底层数据目录的 `logs/`。这套规则不要套用到独立操作员入口。
 
 备份前停止 Job 并退出相关 Runtime，再备份项目目录、模型/标定等外部资源和 Runtime 数据目录。不要在 SQLite 仍被使用时只复制一个 `.db` 文件作为可靠备份，也不要删除锁文件绕过占用检查。`jobs/` 是临时工作区，存在终态及关闭清理逻辑，不应作为长期结果归档目录。
 
@@ -144,7 +166,9 @@ if ($LASTEXITCODE -ne 0) { throw "无法读取正确源码的版本。" }
 $ReleaseTag = "v" + $Version.Trim()
 ```
 
-源码版本来自当前 `SourceRoot`，不是从手工填写的旧 tag 推断。正式发布前要求源码工作区干净，并确认 `src/emo_master/__init__.py` 和 `pyproject.toml` 中版本一致。
+源码版本来自当前 `SourceRoot`，不是从手工填写的旧 tag 推断。软件版本只在 `src/emo_master/app_version.py` 的 `APP_VERSION` 中维护；`emo_master.__version__` 和 `pyproject.toml` 的动态版本元数据自动读取它。正式发布前要求源码工作区干净，并确认 tag 去掉 `v` 后与 `APP_VERSION` 一致。
+
+版本入口迁移的中央读取器已随打包工具提交 `3ef28d7f581dfff09fc900ba64df34b275cc1dcd` 发布，本仓三个 Windows 工作流已同步固定引用。旧版读取器无法解析新的版本导入关系，不能回退到旧打包提交直接发布。
 
 ### 先检查，再只构建
 
@@ -189,21 +213,21 @@ python scripts\release_wizard_emo_master.py
 本仓 `.github/workflows/release-windows.yml` 在推送 `v*` tag 后运行：
 
 1. 检查 tag 与 `emo_master.__version__` 一致，运行源码检查。
-2. 调用中央 `release-windows.yml@master`，固定 target 为 `emo-master`、source_ref 为触发提交，并暂不由中央流程发布。
-3. 下载产物，检查恰好存在便携 ZIP、安装 EXE、manifest，核对名称和 SHA256，再执行冻结包图标门禁。
-4. 由应用仓创建或更新 GitHub Release 并上传三项产物。
+2. 调用固定提交的中央 `release-emo-master.yml`，固定源码 SHA，分别构建 Designer 和独立 Runtime。两个构建任务自身都不发布。
+3. 验证两套便携 ZIP、安装 EXE 和清单，保留静默安装、已安装程序自测、卸载、用户数据保留、Designer 图标和 Runtime 解压运行验收。
+4. 统一创建草稿 Release，上传并核对六项产物的大小及 SHA256 后才公开。Designer 清单为 `manifest.json`，Runtime 清单为 `runtime-manifest.json`。
 
-这是有外部发布效果的流程。**本次文档修改不创建 tag、不运行发布向导、不生成或发布安装包。**
+这是有外部发布效果的流程。也可在中央仓手动运行该工作流；`publish_release=false` 只构建，显式选择 `true` 才会尝试发布。标题、短摘要、更新日志起点、全部历史和自定义正文参数与训练平台发布流程保持一致。
 
 发版前先完成版本更新、测试和审核，确认目标提交确实位于所需分支；tag 去掉 `v` 后必须与应用版本一致。检查 `git tag --list` 和远端已有 tag/Release，使用未发布的版本，不要强推或移动旧 tag 来补发文档。正式源码应无未提交修改，记录应用 SHA、中央构建 SHA、tag、自检报告和硬件验收状态。
 
-中央 workflow 当前引用可移动的 `@master`；它不是完全固定构建依赖的承诺。需要可重复交付时应记录实际打包仓提交，未来变更为固定 SHA 要作为单独的发布配置改动验证。
+中央 workflow 和构建代码均固定为 `3ef28d7f581dfff09fc900ba64df34b275cc1dcd`。两个产品使用同一源码和打包工具 SHA；仍须记录实际云端运行链接及验收结果。
 
-本地发布向导和 tag 工作流是两条发布路径。同一版本不要同时操作两者；已有 Release 的流程可能覆盖附件，必须经过明确的重新发布审核。
+本地发布向导和 tag 工作流是两条发布路径，同一版本不要同时操作。现有 tag 指向其他源码时拒绝发布，现有 Release 或同名附件不会被覆盖；失败的草稿保留供检查，不自动删除或覆盖。
 
 ## 7. 外部 Runtime 和尚未交付的部署能力
 
-独立 Runtime 的源码命令为 `python scripts/dev.py run-runtime`，需要完整的运行依赖与源码路径。当前依赖文件没有为它提供独立的精简无 GUI 安装集，不能因服务没有窗口就直接删除 PySide2 等依赖。
+外部底层 gRPC 服务的源码命令为 `python scripts/dev.py run-runtime`，不是带起始页的独立操作员窗口。它需要完整的运行依赖与源码路径。当前依赖文件没有为它提供独立的精简无 GUI 安装集，不能因服务没有窗口就直接删除 PySide2 等依赖。
 
 默认只监听本机 `127.0.0.1:50051`。`EMO_RUNTIME_TARGET` 只改变 Designer 的连接地址，不会改变服务端监听；源码入口也没有 `--host` / `--port` 参数解析。不要在 README 命令后凭空添加这些参数。
 

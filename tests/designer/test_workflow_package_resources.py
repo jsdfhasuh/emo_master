@@ -43,7 +43,7 @@ def testPortableClosureRemapsBytesDevicesNodesAndSiteFields(tmp_path):
     store, data = source(tmp_path)
     before = store.toPayload()
     package = buildWorkflowPackage(store, "main", sourceRoot=tmp_path)
-    assert package.schemaVersion == "1.3" and base64.b64decode(package.resourceData["model"]) == data
+    assert package.schemaVersion == "1.4" and base64.b64decode(package.resourceData["model"]) == data
     assert package.devices["camera"].connection["serial"] == ""
     assert package.devices["camera"].defaults["modelPath"] == "model.bin"
     assert "PRIVATE" not in str(package.toPayload())

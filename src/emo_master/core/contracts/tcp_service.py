@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 class TcpValue(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    schemaVersion: Literal["1.0"] = "1.0"
+    schemaVersion: Literal["1.1"] = "1.1"
 
     def toPayload(self):
         return self.model_dump(mode="json")
@@ -19,6 +19,7 @@ class TcpValue(BaseModel):
 
 
 class TcpSessionRef(TcpValue):
+    deviceId: str = Field(min_length=1, max_length=160)
     type: Literal["tcpSessionRef"] = "tcpSessionRef"
     runtimeInstanceId: str = Field(min_length=1, max_length=160)
     projectId: str = Field(min_length=1, max_length=160)
@@ -33,6 +34,7 @@ class TcpSessionRef(TcpValue):
 
 
 class TcpSendReceipt(TcpValue):
+    deviceId: str = Field(min_length=1, max_length=160)
     type: Literal["tcpSendReceipt"] = "tcpSendReceipt"
     requestId: str = Field(min_length=1, max_length=200)
     jobId: str = Field(min_length=1, max_length=160)
@@ -63,3 +65,17 @@ class TcpServiceError(RuntimeError):
         self.receipt = receipt
         self.diagnostics = {"tcpReceipt": receipt} if receipt else {}
         super().__init__(message)
+
+
+def tcpActionBudget(deviceTypeId, action, params, policies):
+    """Shared Worker/Runtime budgets, in milliseconds; no cached peer budget."""
+    queue = policies.get('deviceWaitTimeoutMs', 5000)
+    if deviceTypeId == 'device.tcp.client_once':
+        budget = params['connectTimeoutMs'] + params['responseTimeoutMs'] * (2 if action == 'exchange' else 1)
+    elif deviceTypeId == 'device.tcp.receive_once':
+        budget = params['acceptTimeoutMs'] + params['readTimeoutMs'] * (2 if params.get('ackText') else 1)
+    elif action == 'acquire_session':
+        budget = params['timeoutMs']
+    else:
+        budget = policies['sendTimeoutMs']
+    return dict(queueWaitMs=queue, actionBudgetMs=budget)

@@ -83,7 +83,7 @@ def testMalformedJsonDoesNotBlockOtherTypes(tmp_path):
 def testOperatorRequirementsAreOptionalAndStrict():
     payload = json.loads((ROOT / "src/emo_master/plugins/builtins/plc_slmp_read/manifest.json").read_text(encoding="utf-8"))
     payload.pop("deviceRequirements")
-    payload.pop("deviceBindingSince")
+    assert 'deviceBindingSince' not in payload
     manifest, errors = validateManifestFields(payload)
     assert not errors and manifest.deviceRequirements == {}
     payload["deviceRequirements"] = {"plc": {"deviceTypeId": "device.plc.mitsubishi_slmp"}}

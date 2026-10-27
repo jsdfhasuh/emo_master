@@ -6,7 +6,8 @@ from uuid import uuid4
 from PySide2.QtCore import QTimer, Qt
 from PySide2.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit,
-    QDialogButtonBox, QTabWidget, QScrollArea, QWidget, QComboBox, QPushButton, QMessageBox,
+    QDialogButtonBox, QTabWidget, QScrollArea, QSplitter, QTableWidget, QWidget,
+    QComboBox, QPushButton, QMessageBox, QCheckBox, QTextEdit,
 )
 
 from emo_master.apps.designer.state.device_catalog import (DeviceCatalogEditor, changeParameterSource,
@@ -36,13 +37,17 @@ def configurationSchema(schema):
     return schema
 
 
-def configurationForm(schema, values):
+def configurationForm(schema, values, *, deviceTypeId=None, section=None):
     schema = configurationSchema(schema)
-    form = SchemaParamForm()
+    if deviceTypeId == 'device.tcp.server' and section == 'connection':
+        from .tcp_device_form import TcpConnectionForm
+        form = TcpConnectionForm()
+    else:
+        form = SchemaParamForm(deviceMode=deviceTypeId is not None)
     form.setSchema(schema, values)
     for key, spec in schema.get("properties", {}).items():
         if len(spec.get("enum", [])) == 1:
-            form._controls[key].setEnabled(False)
+            form.setFieldEnabled(key, False)
     return form
 
 
@@ -62,6 +67,51 @@ def _showControlTab(tabs, control):
                 break
 
 
+def _revealDeviceError(tabs, control):
+    """Reveal the field, not only its focus, in nested device editor viewports."""
+    _showControlTab(tabs, control)
+    child = control
+    parent = child.parentWidget()
+    while parent is not None:
+        if isinstance(parent, QSplitter) and parent.orientation() == Qt.Vertical:
+            index = parent.indexOf(child)
+            sizes = parent.sizes()
+            if index >= 0 and len(sizes) == 2:
+                total = sum(sizes)
+                sizes[index] = max(sizes[index], total * 4 // 5)
+                sizes[1 - index] = total - sizes[index]
+                parent.setSizes(sizes)
+        child, parent = parent, parent.parentWidget()
+    control.setFocus(Qt.OtherFocusReason)
+
+    def ensureVisible():
+        if isinstance(control, QTableWidget) and control.currentItem() is not None:
+            control.scrollToItem(control.currentItem())
+        parent = control.parentWidget()
+        while parent is not None:
+            if isinstance(parent, QScrollArea):
+                if isinstance(control, QTableWidget) and control.currentItem() is not None:
+                    # The whole table can be taller than the outer viewport.
+                    # Reveal the selected cell rather than the table's centre.
+                    rect = control.visualItemRect(control.currentItem())
+                    point = control.viewport().mapTo(parent.widget(), rect.center())
+                    parent.ensureVisible(point.x(), point.y(),
+                        rect.width() // 2 + 8, rect.height() // 2 + 8)
+                else:
+                    parent.ensureWidgetVisible(control)
+            parent = parent.parentWidget()
+
+    ensureVisible()
+    # A newly visible tab, expanded advanced fields and the error label can
+    # change layout on the next event turn. Parent ownership cancels this work
+    # if the editor is closed/rebuilt before then.
+    timer = QTimer(control)
+    timer.setSingleShot(True)
+    timer.timeout.connect(ensureVisible)
+    timer.timeout.connect(timer.deleteLater)
+    timer.start(0)
+
+
 def validateDeviceDefinition(declaration, nameControl, forms, tabs=None, *, base=None):
     """Validate editor fields before core validation, retaining existing metadata."""
     name = nameControl.text().strip()
@@ -69,18 +119,25 @@ def validateDeviceDefinition(declaration, nameControl, forms, tabs=None, *, base
     nameControl.setAccessibleDescription(message)
     nameControl.setStyleSheet('border: 1px solid #d93025;' if message else '')
     if message:
-        _showControlTab(tabs, nameControl)
-        nameControl.setFocus(Qt.OtherFocusReason)
+        _revealDeviceError(tabs, nameControl)
         raise ValueError(message)
     for form in forms.values():
         message = form.validationMessage()
         if message:
             _showControlTab(tabs, form)
             form.validationMessage()  # Focus the invalid control after revealing its tab.
+            _revealDeviceError(tabs, deviceErrorControl(nameControl, forms, message) or form)
             raise ValueError(message)
     payload = deepcopy(base) if base is not None else dict(
         deviceTypeId=declaration.deviceTypeId, driverVersion=declaration.version)
     payload.update(name=name, **{key: form.getValues() for key, form in forms.items()})
+    if (declaration.deviceTypeId == 'device.tcp.server' and payload.get('enabled', True)
+            and not payload['connection'].get('channels')):
+        form = forms['connection']
+        _showControlTab(tabs, form)
+        form.showChannelError('请添加至少一个客户端通道')
+        _revealDeviceError(tabs, form.channels.table)
+        raise ValueError('请添加至少一个客户端通道')
     try:
         return declaration.validateDefinition(DeviceDefinition.model_validate(payload)).model_dump()
     except ValueError as error:
@@ -89,8 +146,112 @@ def validateDeviceDefinition(declaration, nameControl, forms, tabs=None, *, base
             form = forms['policies']
             _showControlTab(tabs, form)
             form._showFieldError('release', message)
+            _revealDeviceError(tabs, form._controls['release'])
             raise ValueError(message) from error
-        raise
+        from emo_master.core.workflow.errors import locatedValidationError
+        raise locatedValidationError(error, 'E_DEVICE_DEFINITION') from error
+
+
+def connectionTestPrompt(deviceTypeId):
+    if deviceTypeId in {'device.tcp.server', 'device.tcp.receive_once'}:
+        return '检查本地监听端点；不验证外部客户端，不应用草稿通道规则，不保存或发布配置。继续？'
+    if deviceTypeId == 'device.camera.rtsp':
+        return '测试 RTSP 建连与码流信息；不启动持续取帧，不保存图片，也不保存或发布配置。继续？'
+    return '检查设备连接；不拍照、不发送业务报文、不写 PLC，不保存或发布配置。继续？'
+
+
+def deviceErrorMessage(error):
+    if isinstance(error, ConnectionRefusedError) or getattr(error, 'code', '') in {'ECONNREFUSED', 'WSAECONNREFUSED', 'E_DEVICE_CONNECTION_REFUSED'}:
+        return '无法连接到目标地址和端口，请检查设备端服务与端口设置'
+    cameraErrors = {
+        'E_CAMERA_CONNECT': 'RTSP 连接失败，请检查流地址、账号密码和摄像头编码格式',
+        'E_CAMERA_CONNECT_TIMEOUT': 'RTSP 连接超时，请检查流地址、网络及设备连接超时设置',
+        'E_CAMERA_READ': 'RTSP 断流后未能恢复，请检查网络和设备重试策略；已隔离时需恢复设备会话',
+        'E_DEVICE_RECOVERY_TIMEOUT': '连接恢复已超时，请检查网络、设备地址和连接恢复总时限',
+        'E_CAMERA_FRAME_TIMEOUT': '未收到符合帧龄要求的新画面，请检查码流及设备取帧超时设置',
+        'E_CAMERA_FRAME_SIZE': '摄像头画面超过单帧内存上限，请调整设备的单帧内存上限',
+        'E_CAMERA_NOT_CONNECTED': 'RTSP 尚未连接，请在设备管理器连接或恢复设备',
+        'E_CAMERA_FORMAT': 'RTSP 解码格式不受支持，请检查摄像头编码格式',
+    }
+    if getattr(error, 'code', '') in cameraErrors:
+        return cameraErrors[error.code]
+    return '设备操作未完成，请查看详情'
+
+
+def deviceValidationMessage(error):
+    from emo_master.core.workflow.errors import WorkflowCompileError
+    return ('设备配置校验未通过，请查看详情' if isinstance(error, WorkflowCompileError)
+            and not any(issue.fieldPath for issue in error.issues) else str(error))
+
+
+def deviceErrorDetails(error):
+    codes = ', '.join(dict.fromkeys(issue.code for issue in getattr(error, 'issues', ())))
+    return (codes or getattr(error, 'code', '')) + '：' + str(error)
+
+
+def showConnectionTestResult(parent, name, message, *, error=None):
+    if not parent.isVisible():
+        return
+    box = QMessageBox(parent)
+    box.setObjectName('deviceConnectionTestResult')
+    box.setAttribute(Qt.WA_DeleteOnClose)
+    box.setWindowTitle('连接测试结果')
+    box.setTextFormat(Qt.PlainText)
+    box.setIcon(QMessageBox.Warning if error is not None else QMessageBox.Information)
+    box.setText('连接测试失败' if error is not None else '连接测试通过')
+    box.setInformativeText(f'设备：{name}\n\n{message}\n\n'
+        '本次仅检查连接，未验证采集或业务读写；未保存或发布配置。')
+    if error is not None:
+        box.setDetailedText(deviceErrorDetails(error))
+        detailButton = next(button for button in box.buttons() if box.buttonRole(button) == QMessageBox.ActionRole)
+        detailView = box.findChild(QTextEdit)
+        detailButton.setText('详细信息')
+        detailButton.clicked.connect(lambda: detailButton.setText(
+            '收起详情' if detailView.isVisible() else '详细信息'), Qt.QueuedConnection)
+    close = box.addButton('关闭', QMessageBox.RejectRole)
+    box.setDefaultButton(close)
+    box.setEscapeButton(close)
+    # Completion feedback must not nest the metadata polling event loop.
+    box.open()
+
+
+def clearNameFeedback(control, feedback):
+    previous = control.accessibleDescription()
+    control.setAccessibleDescription('')
+    control.setStyleSheet('')
+    if previous and previous in feedback.text().splitlines():
+        feedback.setText('\n'.join(line for line in feedback.text().splitlines() if line != previous))
+        if not feedback.text():
+            feedback.setToolTip('')
+
+
+def deviceErrorControl(name, forms, message):
+    controls = [name]
+    for form in forms.values():
+        controls.extend(getattr(getattr(form, 'fields', form), '_controls', {}).values())
+        if hasattr(form, 'channels'):
+            controls.append(form.channels.table)
+    return next((control for control in controls if control.accessibleDescription() == message), None)
+
+
+class DeviceTypeDialog(QDialog):
+    def __init__(self, deviceTypes, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle('新建设备')
+        layout = QVBoxLayout(self)
+        self.selection = QComboBox()
+        names = [declaration.displayName for declaration in deviceTypes.values()]
+        for key, declaration in deviceTypes.items():
+            label = declaration.displayName
+            if names.count(label) > 1:
+                label += f' · {declaration.version} ({key})'
+            self.selection.addItem(label, key)
+            self.selection.setItemData(self.selection.count()-1, key, Qt.ToolTipRole)
+        layout.addWidget(self.selection)
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
 
 
 class DeviceDefinitionDialog(QDialog):
@@ -99,28 +260,45 @@ class DeviceDefinitionDialog(QDialog):
     def __init__(self, declaration, parent=None, *, initial=None, client=None, beforeAccept=None):
         super().__init__(parent)
         self.declaration = declaration
+        self.initial = deepcopy(initial or {})
         self.value = None
         self.client = client
         self.beforeAccept = beforeAccept
         self.setupPool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='device-setup')
         self.setupPending = None
+        self.setupScope = None
+        self.setupCandidate = None
+        self.inputErrorControl = None
+        self.inputErrorMessage = ''
         self.setupTimer = QTimer(self)
         self.setupTimer.timeout.connect(self.setupReady)
         self.setWindowTitle("新建设备 · " + declaration.displayName)
         self.resize(600, 540)
         layout = QVBoxLayout(self)
-        self.name = QLineEdit(declaration.displayName)
+        self.name = QLineEdit(self.initial.get('name', declaration.displayName))
+        self.enabled = QCheckBox('启用设备')
+        self.enabled.setChecked(self.initial.get('enabled', True))
         names = QFormLayout()
         names.addRow("设备名称", self.name)
+        names.addRow('', self.enabled)
         layout.addLayout(names)
+        if declaration.deviceTypeId == 'device.tcp.server':
+            tip = QLabel('暂不启用时，可以先保存设备，稍后配置客户端通道')
+            tip.setWordWrap(True)
+            layout.addWidget(tip)
         self.tabs = QTabWidget()
         self.forms = {}
         for key, title in (("connection", "连接"), ("defaults", "工作参数"), ("policies", "策略")):
             schema = getattr(declaration, key + "Schema")
-            self.forms[key] = configurationForm(schema, applySchemaDefaults(schema, (initial or {}).get(key, {})))
+            self.forms[key] = configurationForm(schema, applySchemaDefaults(schema, (initial or {}).get(key, {})),
+                deviceTypeId=declaration.deviceTypeId, section=key)
             self.tabs.addTab(scrollWidget(self.forms[key]), title)
         layout.addWidget(self.tabs)
         self.error = QLabel()
+        self.name.textChanged.connect(lambda *_: clearNameFeedback(self.name, self.error))
+        self.name.textChanged.connect(self._fieldEdited)
+        for form in self.forms.values():
+            form.valuesChanged.connect(self._fieldEdited)
         self.error.setWordWrap(True)
         layout.addWidget(self.error)
         actions = QHBoxLayout()
@@ -129,7 +307,7 @@ class DeviceDefinitionDialog(QDialog):
         self.discoverButton.setEnabled(client is not None and declaration.deviceTypeId == 'device.camera.huaray_imv')
         self.testButton = QPushButton('测试连接')
         self.testButton.clicked.connect(self.testConnection)
-        self.testButton.setEnabled(client is not None)
+        self.testButton.setEnabled(client is not None and "test_connection" in declaration.controlCapabilities)
         actions.addWidget(self.discoverButton)
         actions.addWidget(self.testButton)
         layout.addLayout(actions)
@@ -141,23 +319,49 @@ class DeviceDefinitionDialog(QDialog):
         layout.addWidget(buttons)
 
     def definition(self):
-        return validateDeviceDefinition(self.declaration, self.name, self.forms, self.tabs)
+        base = dict(self.initial, deviceTypeId=self.declaration.deviceTypeId,
+                    driverVersion=self.initial.get('driverVersion', self.declaration.version), enabled=self.enabled.isChecked())
+        return validateDeviceDefinition(self.declaration, self.name, self.forms, self.tabs, base=base)
+
+    def _fieldEdited(self):
+        if self.inputErrorControl is not None and not self.inputErrorControl.accessibleDescription():
+            if self.error.text() == self.inputErrorMessage:
+                self.error.clear()
+                self.error.setToolTip('')
+            self.inputErrorControl = None
+
+    def _testCandidate(self):
+        return (self.name.text(), self.enabled.isChecked(),
+                {key: form.getValues() for key, form in self.forms.items()})
+
+    def _setupScope(self):
+        parent = self.parentWidget()
+        coordinator = getattr(parent, 'c', None)
+        return (id(self.client), getattr(self.client, 'runtimeScope', None),
+                id(getattr(self.client, 'runtimeService', None)), id(getattr(self.client, 'stub', None)),
+                coordinator.session._signature() if coordinator else None)
 
     def discover(self):
         if self.setupPending is None:
+            self.setupScope = self._setupScope()
             self.setupKind = 'discover'
             self.setupPending = self.setupPool.submit(self.client.deviceNetworkCommand, '', '', 'info')
             self.setupTimer.start(40)
 
     def testConnection(self):
         if self.setupPending is not None:
+            self.error.setText('正在测试连接' if self.setupKind == 'test' else '正在发现设备，请稍后重试')
             return
         try:
             definition = self.definition()
+            candidate = deepcopy(self._testCandidate())
         except ValueError as error:
-            self.error.setText(str(error))
+            self.inputErrorMessage = deviceValidationMessage(error)
+            self.error.setText(self.inputErrorMessage)
+            self.error.setToolTip(deviceErrorDetails(error))
+            self.inputErrorControl = deviceErrorControl(self.name, self.forms, str(error))
             return
-        if QMessageBox.question(self, '测试连接', '将实际连接设备，不拍照、不写 PLC，也不保存或发布配置。继续？',
+        if QMessageBox.question(self, '测试连接', connectionTestPrompt(self.declaration.deviceTypeId),
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
             return
         def test():
@@ -167,16 +371,38 @@ class DeviceDefinitionDialog(QDialog):
             return self.client.deviceNetworkCommand(info['projectId'], info['runtimeInstanceId'], 'test_connection',
                 payload=dict(confirmed=True, definition=definition))
         self.setupKind = 'test'
+        self.setupScope = self._setupScope()
+        self.setupCandidate = candidate
         self.setupPending = self.setupPool.submit(test)
         self.setupTimer.start(40)
         self.error.setText('正在测试连接')
+        self.error.setToolTip('')
+        self.testButton.setText('测试中…')
+        self.testButton.setEnabled(False)
 
     def setupReady(self):
         if self.setupPending is None or not self.setupPending.done():
             return
         future, self.setupPending = self.setupPending, None
         self.setupTimer.stop()
+        self.testButton.setText('测试连接')
+        self.testButton.setEnabled(self.client is not None and 'test_connection' in self.declaration.controlCapabilities)
         try:
+            if self.setupScope is not None and self.setupScope != self._setupScope():
+                if self.setupKind == 'test':
+                    self.error.setText('工程或 Runtime 连接已变化，请重新测试')
+                    self.error.setToolTip(self.error.text())
+                    return
+                raise ValueError('工程或 Runtime 连接已变化，请重新测试')
+            if self.setupKind == 'test':
+                try:
+                    current = self._testCandidate()
+                except ValueError:
+                    current = None
+                if current != self.setupCandidate:
+                    if self.error.text() == '正在测试连接':
+                        self.error.setText('输入已变化；此前测试结果不用于当前输入')
+                    return
             result = future.result()
             if self.setupKind == 'discover':
                 from .device_network import DeviceNetworkDialog
@@ -188,9 +414,14 @@ class DeviceDefinitionDialog(QDialog):
                     values['cameraKey'] = dialog.selectedCameraKey
                     self.forms['connection'].setSchema(self.declaration.connectionSchema, values)
             else:
-                self.error.setText('连接测试通过；未修改工程或在线配置；原有连接保持不变')
+                self.error.setText(result.get('message') or '连接检查通过；未验证采集或业务读写；未保存或发布配置')
+                self.error.setToolTip('')
+                showConnectionTestResult(self, self.name.text(), result.get('message') or '当前连接配置检查通过')
         except Exception as error:
-            self.error.setText(str(error))
+            self.error.setText(deviceErrorMessage(error))
+            self.error.setToolTip(deviceErrorDetails(error))
+            if self.setupKind == 'test':
+                showConnectionTestResult(self, self.name.text(), self.error.text(), error=error)
 
     def done(self, result):
         if self.setupPending is not None:
@@ -210,7 +441,10 @@ class DeviceDefinitionDialog(QDialog):
             if self.beforeAccept is not None and self.beforeAccept(value) is False:
                 return
         except (ValueError, KeyError, OSError) as error:
-            self.error.setText(str(error))
+            self.inputErrorMessage = deviceValidationMessage(error)
+            self.error.setText(self.inputErrorMessage)
+            self.error.setToolTip(deviceErrorDetails(error))
+            self.inputErrorControl = deviceErrorControl(self.name, self.forms, str(error))
             return
         self.value = value
         super().accept()
@@ -240,7 +474,8 @@ class SourceEditor(QWidget):
                     variable.addItem(f"{getattr(value, 'name', key)} ({key})", key)
             inputs = QComboBox()
             for key, kind in node.get("inputPorts", {}).items():
-                if kind == spec["type"]:
+                from emo_master.core.contracts.port_types import normalizePortType
+                if compatible(normalizePortType(kind), spec["type"]):
                     inputs.addItem(key, key)
             value = definition.get("defaults", {})
             override = node.get("deviceOverrides", {}).get(slot, {})
@@ -365,12 +600,24 @@ class DeviceNodeDialog(QDialog):
         self.newDefinitions = {}
         self.slots = {}
         self.sources = {}
+        self.selectors = {}
         self.onlineSnapshot = None
         self.onlineMessage = '在线配置未读取'
         self.onlinePending = None
         self.setWindowTitle("设备绑定与参数 · " + str(node.get("displayName") or node["operatorId"]))
         self.resize(700, 650)
         layout = QVBoxLayout(self)
+        from .widgets import OptionalWrapLabel
+        definition = coordinator.window._operatorDefinition(node["operatorId"])
+        self.operatorDefinition = definition
+        operatorName = str(definition.get("displayName") or "")
+        self.operatorIdentityLabel = OptionalWrapLabel(
+            f"原始算子：{operatorName}\n算子 ID：{node['operatorId']}" if operatorName else ""
+        )
+        self.operatorIdentityLabel.setObjectName("operatorEditorIdentity")
+        layout.addWidget(self.operatorIdentityLabel)
+        if operatorName and operatorName != node.get("displayName"):
+            self.setWindowTitle(self.windowTitle() + f" · {operatorName}")
         self.tabs = QTabWidget()
         schema = deepcopy(node.get("paramSchema", {}))
         self.actionFields = schema.get("xDeviceActionFields")
@@ -399,6 +646,9 @@ class DeviceNodeDialog(QDialog):
         self.buttons.button(QDialogButtonBox.Ok).setText("完成")
         self.buttons.button(QDialogButtonBox.Cancel).setText("取消")
         self.buttons.button(QDialogButtonBox.Ok).setEnabled(False)
+        self.pendingButton = self.buttons.addButton('保存待绑定节点', QDialogButtonBox.ActionRole)
+        self.pendingButton.setEnabled(False)
+        self.pendingButton.clicked.connect(self.savePending)
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
         layout.addWidget(self.buttons)
@@ -503,10 +753,15 @@ class DeviceNodeDialog(QDialog):
                 self.slots[slot] = (combo, pageLayout)
                 combo.currentIndexChanged.connect(lambda _index, slot=slot: self._sources(slot))
                 deviceId = self.node.get("deviceBindings", {}).get(slot, {}).get("deviceId")
+                if deviceId is not None and combo.findData(deviceId) < 0:
+                    combo.addItem('不可用：' + deviceId, deviceId)
                 combo.setCurrentIndex(max(0, combo.findData(deviceId)))
+                if slot not in self.sources:
+                    self._sources(slot)
                 self.tabs.addTab(scrollWidget(page), slot)
             self.error.setText("")
             self.buttons.button(QDialogButtonBox.Ok).setEnabled(True)
+            self.pendingButton.setEnabled(True)
         except Exception as error:
             self.error.setText(str(error))
 
@@ -558,14 +813,32 @@ class DeviceNodeDialog(QDialog):
         old = self.sources.pop(slot, None)
         if old is not None:
             layout.removeWidget(old)
+            old.hide()
             old.deleteLater()
+        oldSelectors = self.selectors.pop(slot, {})
+        for oldControl in oldSelectors.values():
+            clearNameFeedback(oldControl, self.error)
+            oldControl.hide()
+            oldControl.deleteLater()
+        hint = getattr(self, '_sourceHints', {}).pop(slot, None)
+        if hint is not None:
+            layout.removeWidget(hint)
+            hint.hide()
+            hint.deleteLater()
         key = combo.currentData()
-        if key is None:
-            return
         definitions = {**self.c.session.workflows.devices.get("definitions", {}), **self.newDefinitions}
+        if key is None or key not in definitions:
+            if not hasattr(self, '_sourceHints'):
+                self._sourceHints = {}
+            hint = QLabel('选择设备后可配置继承与覆盖' if key is None else '设备引用不存在：' + key)
+            hint.setWordWrap(True)
+            layout.addWidget(hint)
+            self._sourceHints[slot] = hint
+            return
+        clearNameFeedback(combo, self.error)
         declaration = self.types[definitions[key]["deviceTypeId"]]
         editorNode = self.node
-        if declaration.deviceTypeId == "device.camera.huaray_imv" and getattr(self, "migrateLegacy", False):
+        if declaration.deviceTypeId in {"device.camera.huaray_imv", "device.camera.rtsp"} and getattr(self, "migrateLegacy", False):
             editorNode = deepcopy(self.node)
             legacy = applySchemaDefaults(self.node.get("paramSchema", {}), self.node.get("params", {}))
             if legacy.get("waitMode") == "hardware":
@@ -582,17 +855,44 @@ class DeviceNodeDialog(QDialog):
                 self.error.setText(str(error))
         editor = SourceEditor(declaration, definitions[key], editorNode, slot,
                               self.c.session.document().globalVariables)
+        from emo_master.core.plugin.devices import DeviceRequirement, selectorCandidates
+        requirement = DeviceRequirement.model_validate(self.requirements[slot]) if isinstance(self.requirements[slot], dict) else self.requirements[slot]
+        self.selectors[slot] = {}
+        for name in requirement.selectorSchema['properties']:
+            select = QComboBox(editor)
+            select.setObjectName('selector-' + slot + '-' + name)
+            select.addItem('请选择通道' if name == 'channelId' else '请选择 ' + name, None)
+            candidates = selectorCandidates(declaration, definitions[key], name)
+            for value, label in candidates:
+                select.addItem(f'{label} ({value})', value)
+            prior = self.node.get('deviceBindings', {}).get(slot, {}).get('selectors', {}).get(name)
+            if prior is not None:
+                if select.findData(prior) < 0:
+                    select.addItem('不可用：' + str(prior), prior)
+                select.setCurrentIndex(select.findData(prior))
+            editor.layout().addRow('通道' if name == 'channelId' else name, select)
+            self.selectors[slot][name] = select
+            select.currentIndexChanged.connect(lambda _index, control=select, valid={value for value, _ in candidates}:
+                clearNameFeedback(control, self.error) if control.currentData() in valid else None)
         self.sources[slot] = editor
         self._compareSource(slot, editor)
         layout.addWidget(editor)
 
     def accept(self):
+        self._commit(allowIncomplete=False)
+
+    def savePending(self):
+        self._commit(allowIncomplete=True)
+
+    def _commit(self, *, allowIncomplete):
         try:
             self._checkContext()
             if not self.types or set(self.slots) != set(self.requirements):
                 raise ValueError("设备类型尚未就绪")
             draft = deepcopy(self.node)
             draft["params"] = self.params.getValues()
+            if self.migrateLegacy and self.node['operatorId'] == 'vision.io.rtsp_capture':
+                draft['paramSchema'] = deepcopy(self.operatorDefinition.get('paramSchema', {}))
             resources = self.c.session.document().resources
             resourcePlan = resources.model_dump() if resources else None
             moved = []
@@ -600,8 +900,29 @@ class DeviceNodeDialog(QDialog):
             for slot, (combo, _layout) in self.slots.items():
                 key = combo.currentData()
                 if key is None:
-                    raise ValueError("请选择设备：" + slot)
-                draft.setdefault("deviceBindings", {})[slot] = {"deviceId": key}
+                    if self.migrateLegacy and self.node['operatorId'] == 'vision.io.rtsp_capture':
+                        raise ValueError('RTSP 迁移需要先选择设备；取消可保留原节点及连接参数')
+                    if not allowIncomplete:
+                        message = '请选择设备：' + slot
+                        combo.setAccessibleDescription(message)
+                        _showControlTab(self.tabs, combo)
+                        combo.setFocus()
+                        raise ValueError(message)
+                    hadSources = bool(draft.get('deviceOverrides', {}).get(slot) or draft.get('deviceValueBindings', {}).get(slot))
+                    if hadSources and QMessageBox.question(self, '解除设备绑定',
+                            f'解除 {slot} 并移除该槽的参数覆写与动态来源？其他槽保持原值。',
+                            QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
+                        return
+                    for group in ('deviceBindings', 'deviceOverrides', 'deviceValueBindings'):
+                        draft.get(group, {}).pop(slot, None)
+                    continue
+                if key not in definitions:
+                    message = '槽位 ' + slot + '：设备引用不存在：' + key
+                    combo.setAccessibleDescription(message)
+                    raise ValueError(message)
+                draft.setdefault("deviceBindings", {})[slot] = {"deviceId": key, "selectors": {
+                    name: control.currentData() for name, control in self.selectors.get(slot, {}).items()
+                    if control.currentData() is not None}}
                 declaration = self.types[definitions[key]["deviceTypeId"]]
                 if self.actionFields is not None and self.migrateLegacy:
                     draft = migrateLegacySources(draft, slot, key, declaration, self.actionFields)
@@ -617,16 +938,25 @@ class DeviceNodeDialog(QDialog):
                 selected = definitions[draft["deviceBindings"][firstSlot]["deviceId"]]
                 connection = self.types[selected["deviceTypeId"]].validateDefinition(
                     DeviceDefinition.model_validate(selected)).connection
-                lines = ["节点 ID 与输出端口保持不变。", "连接参数移入所选设备，自动重试取消。", ""]
-                lines += [f"{key}: {old.get(key, '(默认)')} -> {value}" for key, value in connection.items()]
+                from emo_master.apps.designer.state.rtsp_migration import redactDeviceValues
+                safeOld, safeConnection = redactDeviceValues(old), redactDeviceValues(connection)
+                lines = ["节点 ID、输出端口与连线保持不变。", "连接参数移入所选设备。", ""]
+                lines += [f"{key}: {safeOld.get(key, '(默认)')} -> {value}" for key, value in safeConnection.items()]
                 if moved:
                     lines += ["", "以下资源/现场绑定将移到共享设备属性，影响所有使用该设备的节点：", *moved]
+                if selected["deviceTypeId"] == "device.plc.mitsubishi_slmp":
+                    lines += ["", "旧节点的自动重试取消；连接恢复由设备策略控制，业务读写不自动重放。"]
                 if selected["deviceTypeId"] == "device.camera.huaray_imv":
+                    lines += ['自动重试取消。']
                     lines += ["", "旧 keep 表示保留设备当前值，不等于固定默认值。共享设备可能受其他节点覆写影响。",
                               "请核对设备工作参数与节点覆写。硬件触发参数变化需要停触发并同步后恢复。"]
                     if old.get("waitMode") == "hardware":
                         lines += ["无限硬件等待迁移为取图超时 0；停止操作可取消等待，不重发触发。"]
-                lines += ["", "转换仅修改本地草稿。工程中其他旧设备节点也需绑定后才能运行。"]
+                if selected['deviceTypeId'] == 'device.camera.rtsp':
+                    lines += ['', '单次 RTSP 算子转换为托管采集；持续解码仅保留最新帧。',
+                              '取流失败不会自动重放采集；请从设备管理器重连。',
+                              '未迁移的单次 RTSP 节点仍保持原行为。']
+                lines += ["", "转换仅修改本地草稿，不会连接设备或写入 Runtime。"]
                 if QMessageBox.question(self, "确认设备迁移", "\n".join(lines),
                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
                     return
@@ -634,10 +964,27 @@ class DeviceNodeDialog(QDialog):
             used = {binding["deviceId"] for binding in draft.get("deviceBindings", {}).values()}
             catalog.commitNode(self.workflowId, draft,
                                newDevices={key: value for key, value in self.newDefinitions.items() if key in used},
-                               position=self.position, resourcePlan=resourcePlan)
+                               position=self.position, resourcePlan=resourcePlan, allowIncomplete=allowIncomplete,
+                               operatorVersion=self.operatorDefinition.get('version'))
             self.c.window.workflowController._renderActive()
             self.c.chrome.update()
         except (ValueError, KeyError) as error:
-            self.error.setText(str(error))
+            from emo_master.core.workflow.errors import WorkflowCompileError
+            if isinstance(error, WorkflowCompileError):
+                self.error.setText('\n'.join(f'{issue.fieldPath}：{issue.message}' for issue in error.issues))
+                first = None
+                for issue in error.issues:
+                    parts = issue.fieldPath.split('.')
+                    if len(parts) >= 4 and parts[0] == 'deviceBindings' and parts[2] == 'selectors':
+                        control = self.selectors.get(parts[1], {}).get(parts[3])
+                        if control is not None:
+                            control.setAccessibleDescription(f'{issue.fieldPath}：{issue.message}')
+                            if first is None:
+                                first = control
+                if first is not None:
+                    _showControlTab(self.tabs, first)
+                    first.setFocus(Qt.OtherFocusReason)
+            else:
+                self.error.setText(str(error))
             return
         super().accept()

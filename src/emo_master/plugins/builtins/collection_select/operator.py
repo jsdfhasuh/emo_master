@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from time import perf_counter
 from typing import Any, TypeGuard, cast
 
+from emo_master.plugins.builtins._operator_modes import effectiveModeParams, inputChoiceError, modeSchema
+
 from emo_master.plugins.builtins._collection_ops import (
     CollectionInputError,
     CollectionItem,
@@ -31,7 +33,8 @@ _PARAM_SCHEMA: dict[str, object] = {
             "enum": ["first", "last", "index", "topK"],
             "default": "first",
         },
-        "index": {"title": "元素索引", "type": "integer", "minimum": 0, "default": 0},
+        "index": {"title": "元素索引", "type": "integer", "minimum": 0, "default": 0,
+                  "description": "按索引选择时使用；连接 index 输入后，以本次输入为准。"},
         "count": {"title": "数量", "type": "integer", "minimum": 1, "default": 1},
         "onOutOfRange": {
             "title": "索引越界处理",
@@ -66,6 +69,7 @@ class CollectionSelectOperator:
             "lines": {"type": "lineCollection", "required": False, "nullable": False, "schemaVersion": "1.2"},
             "circles": {"type": "circleCollection", "required": False, "nullable": False, "schemaVersion": "1.2"},
             "matches": {"type": "templateMatchCollection", "required": False, "nullable": False, "schemaVersion": "1.2"},
+            "index": {"type": "integer", "required": False, "nullable": False},
         },
         outputPorts={
             "selectedBlobs": {
@@ -91,10 +95,14 @@ class CollectionSelectOperator:
                 "nullable": False,
             },
         },
-        paramSchema=_PARAM_SCHEMA,
+        paramSchema=modeSchema("vision.collection.select", _PARAM_SCHEMA),
     )
 
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
+        choiceError = inputChoiceError(self.meta.operatorId, params)
+        if choiceError:
+            return choiceError
+        params = effectiveModeParams(params, self.meta.paramSchema)
         if params.get("mode", "first") not in _MODES:
             return _paramError("mode must be first, last, index, or topK")
         index = params.get("index", 0)
@@ -116,24 +124,25 @@ class CollectionSelectOperator:
         _ = runtimeContext
         startedAt = perf_counter()
         paramError = self.validateParams(params)
+        paramError = paramError or inputChoiceError(self.meta.operatorId, params, inputs)
         if paramError is not None:
             return {"status": "error", "error": paramError}
+        mode = cast(str, params.get("mode", "first"))
+        index = inputs.get("index", params.get("index", 0))
+        if "index" in inputs:
+            if mode != "index":
+                return _error("E_INPUT_SHAPE", "index input is only used by mode=index")
+            if not _isInt(index) or index < 0:
+                return _error("E_INPUT_TYPE", "index input must be an integer >= 0")
         try:
             collection = parseCollectionInputs(inputs)
         except CollectionInputError as err:
             return _error(err.code, str(err))
-        mode = cast(str, params.get("mode", "first"))
         selected: list[CollectionItem]
         if mode == "topK":
             selected = list(collection.items[: cast(int, params.get("count", 1))])
-        elif not collection.items:
-            selected = []
-        elif mode == "first":
-            selected = [collection.items[0]]
-        elif mode == "last":
-            selected = [collection.items[-1]]
-        else:
-            index = cast(int, params.get("index", 0))
+        elif mode == "index":
+            index = cast(int, index)
             if index >= len(collection.items):
                 if params.get("onOutOfRange", "empty") == "error":
                     return _error(
@@ -143,6 +152,10 @@ class CollectionSelectOperator:
                 selected = []
             else:
                 selected = [collection.items[index]]
+        elif mode == "first":
+            selected = list(collection.items[:1])
+        else:
+            selected = list(collection.items[-1:])
         outputName = collection.outputName("selected")
         return {
             "status": "ok",

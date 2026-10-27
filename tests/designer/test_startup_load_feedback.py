@@ -8,16 +8,17 @@ from PySide2.QtWidgets import QFileDialog, QMessageBox
 
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
 from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
+from tests.core.project.test_devices import legacyPayload
 from tests.runtime.test_operator_debug_rpc import runtime  # noqa: F401
 
 
 @pytest.mark.parametrize('failure', ['runtime', 'transport', 'json', 'missing'])
 @pytest.mark.parametrize('nextAction', ['cancel', 'open'])
-def testStartupFailureExplainsAndWaitsForExplicitSelection(
+def testLegacyStartupFailureExplainsAndWaitsForExplicitSelection(
         ownedDesignerWindow, monkeypatch, tmp_path, failure, nextAction):
     invalid = tmp_path / '旧工程.emoproj'
     valid = tmp_path / '有效工程.emoproj'
-    valid.write_text(json.dumps(WorkflowStore().toPayload()), encoding='utf-8')
+    valid.write_text(json.dumps(legacyPayload()), encoding='utf-8')
     if failure != 'missing':
         invalid.write_text('{broken' if failure == 'json' else valid.read_text(encoding='utf-8'), encoding='utf-8')
     original = invalid.read_bytes() if invalid.exists() else None
@@ -70,11 +71,28 @@ def testStartupFailureExplainsAndWaitsForExplicitSelection(
     assert window.loadedProjectPath == (str(valid) if nextAction == 'open' else None)
 
 
-def testRealLegacyHuarayValidationFailureRemainsInChooser(
+def testCurrentDraftStartupDoesNotLoadRuntime(ownedDesignerWindow, tmp_path):
+    project = tmp_path / 'draft.emoproj'
+    payload = WorkflowStore().toPayload()
+    assert payload['schemaVersion'] == '2.7'
+    original = json.dumps(payload).encode('utf-8')
+    project.write_bytes(original)
+    client = SimpleNamespace(listOperators=lambda: [],
+        loadProject=lambda *_: pytest.fail('opening a current draft must not load Runtime'))
+    window = ownedDesignerWindow(client)
+    window._projectEntryDialogFactory = lambda: SimpleNamespace(
+        execSelection=lambda: ('open_project', str(project)))
+    assert window.showStartupProjectEntry()
+    assert window.loadedProjectPath == str(project)
+    assert window.pageCoordinator.session.document().schemaVersion == '2.7'
+    assert project.read_bytes() == original
+
+
+def testRealLegacyHuarayBindingFailureRemainsInChooser(
         runtime, ownedDesignerWindow, monkeypatch, tmp_path):  # noqa: F811
     from emo_master.apps.designer.services.runtime_client import RuntimeClient
     from emo_master.plugins.builtins.huaray_camera.operator import HuarayCameraOperator
-    payload = WorkflowStore().toPayload()
+    payload = legacyPayload()
     assert payload['schemaVersion'] == '2.1'
     payload['workflows']['main']['nodes'].append(dict(
         nodeId='node-01211f2b', kind='operator', operatorId='vision.io.huaray_camera', params={}))
@@ -106,9 +124,9 @@ def testRealLegacyHuarayValidationFailureRemainsInChooser(
                         lambda *_: pytest.fail('startup validation must not execute a camera'))
     assert not window.showStartupProjectEntry()
     assert entry.attempts == 2 and observed[0][:2] == (True, True)
-    assert 'ipAddress must be a valid IPv4 address' in observed[0][2]
-    assert 'E_PARAM_INVALID' in observed[0][2]
-    assert 'node-01211f2b' in observed[0][2] and str(project) in observed[0][2]
+    assert 'device slots do not match the operator declaration' in observed[0][2]
+    assert 'E_DEVICE_BINDING' in observed[0][2]
+    assert 'main/node-01211f2b/deviceBindings.camera' in observed[0][2] and str(project) in observed[0][2]
     assert project.read_bytes() == original
     assert not runtime.jobRepository.all() and window.loadedProjectPath is None
 

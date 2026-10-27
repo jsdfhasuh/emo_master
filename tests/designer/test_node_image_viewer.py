@@ -4,7 +4,8 @@ import time
 import emo_master  # noqa: F401 - initialize Windows DLL order before Qt/OpenCV.
 import cv2
 import numpy as np
-from PySide2.QtCore import Qt, QPoint, QEvent
+import pytest
+from PySide2.QtCore import Qt, QPoint, QEvent, QSettings
 from PySide2.QtGui import QPixmap, QWheelEvent
 from PySide2.QtTest import QTest
 
@@ -14,11 +15,27 @@ from tests.runtime.test_run_inspection_rpc import running
 
 def wait(app, predicate, timeout=10):
     deadline = time.monotonic() + timeout
-    while not predicate():
-        assert time.monotonic() < deadline, 'Qt condition was not reached before the outer watchdog'
+    while True:
         app.processEvents()
+        sample = predicate()
+        if sample:
+            return sample
+        assert time.monotonic() < deadline, 'Qt condition was not reached before the outer watchdog'
         time.sleep(.005)
-    app.processEvents()
+
+
+def testWaitReturnsTheSampleWithoutProcessingNewEventsAfterIt():
+    sample = object()
+
+    class Application:
+        calls = 0
+
+        def processEvents(self):
+            self.calls += 1
+
+    app = Application()
+    assert wait(app, lambda: sample if app.calls == 1 else None) is sample
+    assert app.calls == 1
 
 
 def testNativeZoomPanFitFullScreenAndOwnedSharedPixmap(designerApplication):
@@ -63,8 +80,9 @@ def testNativeZoomPanFitFullScreenAndOwnedSharedPixmap(designerApplication):
         viewer.close()
 
 
+@pytest.mark.parametrize('readDisconnect', [False, True])
 def testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime(tmp_path, designerApplication,
-                                                                              ownedDesignerWindow):
+                                                    ownedDesignerWindow, monkeypatch, readDisconnect):
     with running(tmp_path) as (runtime, client, project, unusedSession):
         # The helper's explicit test lease is closed before Designer opens its
         # own lease. Viewing never creates another Job or subscriber.
@@ -79,8 +97,35 @@ def testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime(tm
             panel = coordinator.panel
             window.navigateToNodeFromSidebar('load')
             assert not coordinator.history.current and len(runtime.jobRepository.all()) == 0
+            readAttempts = []
+            if readDisconnect:
+                from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+                read = client.readInspectionAsset
+
+                def failOnce(*args):
+                    readAttempts.append(args)
+                    if len(readAttempts) == 1:
+                        raise RuntimeClientError('StatusCode.UNAVAILABLE', 'temporary image read disconnect')
+                    return read(*args)
+
+                monkeypatch.setattr(client, 'readInspectionAsset', failOnce)
             window.startJob()
+            if readDisconnect:
+                wait(designerApplication, lambda: coordinator.images._disconnected
+                     and not window.runtimeController._jobActive
+                     and panel.image.text() == 'temporary image read disconnect')
+                from types import SimpleNamespace
+                for _ in range(10):
+                    coordinator.status(SimpleNamespace(status='COMPLETED'))
+                    coordinator.refresh()
+                assert panel.image.text() == 'temporary image read disconnect'
+                assert len(readAttempts) == 1 and len(runtime.jobRepository.all()) == 1
+                from tests.designer.test_inspection_images import forceDueRenewal
+                forceDueRenewal(coordinator.images)
             wait(designerApplication, lambda: coordinator.imagePacket is not None and not window.runtimeController._jobActive)
+            if readDisconnect:
+                assert len(readAttempts) == 2 and not coordinator.images._disconnected
+                assert len(runtime.jobRepository.all()) == 1
             first = window.currentJobId
             assert coordinator.imagePacket['source'].originJobId == first
             assert coordinator.image.pixelColor(210, 20).red() == 0
@@ -142,5 +187,152 @@ def testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime(tm
                 'history': coordinator.history.runs, 'store': runtime.runInspectionStore.stats()})
             print('LOG TAIL', [(entry.eventType, entry.message) for entry in window.logEntries[-15:]])
             raise
+        finally:
+            window.close()
+
+
+@pytest.mark.parametrize('shape', [(12, 16), (2160, 3840)])
+def testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs(tmp_path, designerApplication, ownedDesignerWindow, shape):
+    import json
+    import os
+    from pathlib import Path
+    from tests.runtime.inspection_fixtures import autonomousLoopProject
+    from tests.runtime.runtime_test_utils import waitForTerminal
+    def configure(document, root):
+        next(node for node in document.workflows['body'].nodes if node.nodeId == 'image').params.update(
+            height=shape[0], width=shape[1])
+    with running(tmp_path, factory=autonomousLoopProject, configure=configure) as (runtime, client, project, extra):
+        client.inspectionSession('close', project, extra)
+        # Keep this visual test independent of saved application preferences.
+        settings = QSettings(str(tmp_path / 'live-node-settings.ini'), QSettings.IniFormat)
+        window = ownedDesignerWindow(client, settingsStore=settings)
+        window.resize(1360, 850)
+        window.show()
+        try:
+            wait(designerApplication, lambda: window.operatorCatalogController.state == 'ready')
+            assert window.loadProjectDirectory(project)
+            window.navigateToWorkflow('body', 'image')
+            coordinator = window.nodeResultCoordinator
+            panel = coordinator.panel
+            # Publish the Designer-normalized fixture through the normal write
+            # API, so this test does not wait inside a comparison dialog.
+            from emo_master.core.project.configuration import projectChanges
+            window.workflowController.captureActiveWorkflow()
+            window.pageCoordinator.sync()
+            online = client.getOnlineProjectSnapshot()
+            local = window.pageCoordinator.session.payload()
+            changes = projectChanges(online['payload'], local)
+            if changes:
+                client.writeProjectConfiguration(online, local, [change['path'] for change in changes],
+                                                  'live-node-qt-fixture')
+                def committed():
+                    result = client.getProjectWriteStatus('live-node-qt-fixture')
+                    assert result['state'] not in ('FAILED', 'CANCELLED', 'REJECTED'), result
+                    return result['state'] == 'COMMITTED'
+                wait(designerApplication, committed)
+            assert not projectChanges(client.getOnlineProjectSnapshot()['payload'], local)
+            window.startJob()
+            wait(designerApplication, lambda: coordinator.imagePacket is not None)
+            assert not window.floatingRunPanel.isExpanded()
+            assert runtime.jobRepository.get(window.currentJobId).status == 'RUNNING'
+            window.designerActions.invoke('results')
+            assert window.floatingRunPanel.isExpanded()
+
+            def firstDisplayedInvocation():
+                packet = coordinator.imagePacket
+                if packet is None:
+                    return None
+                if not panel.image.firstImagePaintNs:
+                    # On the offscreen 800x600 screen the normal nested scroll
+                    # surfaces can clip the image. Expose it before requiring paint.
+                    panel.imagePage.ensureWidgetVisible(panel.image)
+                    coordinator.panelScroll.ensureWidgetVisible(panel.image)
+                    window.floatingRunPanel.contentScroll.ensureWidgetVisible(panel.image)
+                    return None
+                # Read the four tabs and pixels before processing another Qt event.
+                displayedCount = int(panel.values.toPlainText().split('count = ')[1].split()[0])
+                assert coordinator.image.pixelColor(0, 0).red() == 20 + displayedCount
+                assert f'index = {displayedCount}' in panel.inputs.toPlainText()
+                assert packet['source'].nodeRunId in panel.execution.toPlainText()
+                assert packet['source'].workflowRunId in panel.execution.toPlainText()
+                assert packet['source'].nodeRunId == coordinator.imageSelection[3]
+                return packet
+
+            try:
+                firstPacket = wait(designerApplication, firstDisplayedInvocation, timeout=20)
+            except AssertionError:
+                print('LIVE_NODE_FIRST_PAINT', {
+                    'job': window.currentJobId, 'message': window.runtimePanelState.lastMessage,
+                    'workflow': window.activeWorkflowId, 'node': window.flowModel.selectedNodeId,
+                    'packet': coordinator.imagePacket is not None,
+                    'visible': panel.image.isVisible(), 'painted': panel.image.firstImagePaintNs,
+                    'region': panel.image.visibleRegion().boundingRect().getRect(),
+                    'geometry': panel.image.geometry().getRect(),
+                    'windowGeometry': window.geometry().getRect(),
+                    'updatesEnabled': panel.image.updatesEnabled(),
+                    'windowExposed': window.windowHandle().isExposed(),
+                    'font': designerApplication.font().toString(),
+                    'imageNotice': coordinator.images.message,
+                    'values': panel.values.toPlainText(),
+                    'logs': [(entry.eventType, entry.message) for entry in window.logEntries[-10:]],
+                })
+                raise
+            job = window.currentJobId
+            assert runtime.jobRepository.get(job).status == 'RUNNING'
+            assert not any(event.eventType == 'node.started' and event.nodeId == 'gate'
+                           for event in runtime.eventStore.readMerged(job))
+            panel.enlarge.click()
+            viewer = coordinator.viewer
+            assert viewer.view.item.pixmap().cacheKey() == panel.image.pixmap().cacheKey()
+            wait(designerApplication, lambda: any(event.eventType == 'node.started' and event.nodeId == 'gate'
+                  for event in runtime.eventStore.readMerged(job)), timeout=40)
+            wait(designerApplication, lambda: coordinator.imagePacket is not None
+                 and 'count = 3' in panel.values.toPlainText() and coordinator.image.pixelColor(0, 0).red() == 23
+                 and panel.image.firstImagePaintNs > 0)
+            assert panel.previous.text() == '上一次执行' and panel.live.text() == '本次执行'
+            assert panel.image.firstImagePaintNs > 0
+            if shape[1] > 1920:
+                assert '原始 3840 × 2160 · 预览 1920 × 1080' in panel.imageMeta.text()
+            screenshots = os.environ.get('EMO_NODE_RESULTS_SCREEN_DIR')
+            if screenshots:
+                output = Path(screenshots) / ('4k' if shape[1] > 1920 else 'small')
+                output.mkdir(parents=True, exist_ok=True)
+                assert window.grab().save(str(output / 'live-current.png'))
+            panel.previous.click()
+            wait(designerApplication, lambda: coordinator.imagePacket is not None)
+            record = coordinator.history.view('body', 'image')['record']
+            assert 'count = 2' in panel.values.toPlainText() and 'index = 2' in panel.inputs.toPlainText()
+            assert record['nodeRunId'] in panel.execution.toPlainText()
+            assert coordinator.imagePacket['source'].nodeRunId == record['nodeRunId']
+            assert coordinator.image.pixelColor(0, 0).red() == 22
+            assert viewer.identity == coordinator.imageSelection
+            assert viewer.view.item.pixmap().cacheKey() == coordinator.pixmap.cacheKey()
+            originalName = panel.title.text()
+            window.flowModel.nodes['image'].displayName = 'Changed Draft'
+            coordinator.refresh()
+            assert panel.title.text() == originalName
+            if screenshots:
+                designerApplication.processEvents()
+                assert window.grab().save(str(output / 'live-previous.png'))
+                assert viewer.grab().save(str(output / 'live-viewer.png'))
+            window.navigateToWorkflow('body', 'save')
+            wait(designerApplication, lambda: coordinator.imagePacket is not None)
+            assert panel.ports.currentData() == '__saved_result__'
+            assert panel.tabs.currentWidget() is panel.imagePage
+            assert coordinator.image.pixelColor(0, 0).red() == 22
+            reads = coordinator.images.reads
+            viewer.close()
+            assert coordinator.viewer is None and runtime.jobRepository.get(job).status == 'RUNNING'
+            panel.enlarge.click()
+            assert coordinator.images.reads == reads
+            print('LIVE_NODE_QT', json.dumps(dict(platform=designerApplication.platformName(),
+                dpr=window.devicePixelRatioF(), job=job, firstNodeRun=firstPacket['source'].nodeRunId,
+                previousNodeRun=record['nodeRunId'], reads=reads, state=runtime.jobRepository.get(job).status,
+                sharedPixmap=True, counts=[3, 2], originalShape=shape,
+                previewShape=[coordinator.image.height(), coordinator.image.width()])))
+            assert client.stopJob(job).ok and waitForTerminal(runtime, job).status == 'ABORTED'
+            wait(designerApplication, lambda: not window.runtimeController._jobActive)
+            window.navigateToWorkflow('main', 'gate')
+            assert '已取消' in panel.origin.text() and not coordinator.imagePacket
         finally:
             window.close()

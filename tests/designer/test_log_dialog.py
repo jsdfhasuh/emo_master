@@ -30,6 +30,35 @@ def testLogDialogSetAndAppendLogs() -> None:
     assert viewer is not None
 
 
+@pytest.mark.parametrize("keyName", ["Key_Return", "Key_Enter"])
+def testLogDialogSearchEnterDoesNotActivateActionButtons(designerApplication, keyName) -> None:
+  from PySide2.QtCore import Qt
+  from PySide2.QtTest import QTest
+
+  dialog = LogDialog()
+  dialog.setEntries([
+    StructuredLogEntry(1, "INFO", "keep this message"),
+    StructuredLogEntry(2, "ERROR", "another failure"),
+  ])
+  dialog.show()
+  designerApplication.processEvents()
+  view = dialog.view
+  view.searchInput.setFocus()
+  QTest.keyClicks(view.searchInput, "keep")
+  assert view.table.rowCount() == 1
+  assert view.showErrorsButton.isEnabled()
+
+  QTest.keyClick(view.searchInput, getattr(Qt, keyName))
+
+  assert view.searchInput.text() == "keep"
+  assert view.table.rowCount() == 1
+  assert len(view._entries) == 2
+  view.showErrorsButton.click()
+  assert view.searchInput.text() == ""
+  assert view.table.rowCount() == 2
+  assert "another failure" in view.detailViewer.toPlainText()
+
+
 def testStructuredLogEntryPreservesRuntimeContextAndPayload() -> None:
   entry = StructuredLogEntry.fromRuntimeEvent({
     "timestampMs": 1234,
@@ -53,9 +82,10 @@ def testStructuredLogEntryPreservesRuntimeContextAndPayload() -> None:
   assert entry.detailPayload()["nodeRunId"] == "node-run"
 
 
-def testRuntimeLogDockClearOnlyClearsCurrentView() -> None:
+@pytest.mark.parametrize("logWindowType", [LogDialog, RuntimeLogDock])
+def testLogWindowClearOnlyClearsCurrentView(logWindowType) -> None:
   ensureQApp()
-  dock = RuntimeLogDock()
+  dock = logWindowType()
   original = [
     StructuredLogEntry(1, "INFO", "first", source="designer"),
     StructuredLogEntry(2, "ERROR", "second", source="runtime"),
@@ -69,9 +99,10 @@ def testRuntimeLogDockClearOnlyClearsCurrentView() -> None:
   assert [entry.message for entry in original] == ["first", "second"]
 
 
-def testStructuredLogViewRestoresFiltersBeforeHistoricalEntriesArrive() -> None:
+@pytest.mark.parametrize("logWindowType", [LogDialog, RuntimeLogDock])
+def testStructuredLogViewRestoresFiltersBeforeHistoricalEntriesArrive(logWindowType) -> None:
   ensureQApp()
-  dock = RuntimeLogDock()
+  dock = logWindowType()
   if not hasattr(dock.view, "levelFilter"):
     pytest.skip("PySide2 is not available")
   dock.view.restoreSettings({
@@ -104,9 +135,10 @@ def testStructuredLogViewRestoresFiltersBeforeHistoricalEntriesArrive() -> None:
   assert settings["autoScroll"] is False
 
 
-def testStructuredLogViewBatchesAndBoundsEntries() -> None:
+@pytest.mark.parametrize("logWindowType", [LogDialog, RuntimeLogDock])
+def testStructuredLogViewBatchesAndBoundsEntries(logWindowType) -> None:
   ensureQApp()
-  dock = RuntimeLogDock(maximumEntries=3)
+  dock = logWindowType(maximumEntries=3)
   for index in range(5):
     dock.appendEntry(StructuredLogEntry(index + 1, "INFO", f"entry-{index}"))
 
@@ -124,10 +156,11 @@ def testStructuredLogViewBatchesAndBoundsEntries() -> None:
     assert table.rowCount() == 3
 
 
-def testClearViewResetsDynamicFiltersAndClearsOwnerCache() -> None:
+@pytest.mark.parametrize("logWindowType", [LogDialog, RuntimeLogDock])
+def testClearViewResetsDynamicFiltersAndClearsOwnerCache(logWindowType) -> None:
   ensureQApp()
   clearCalls = []
-  dock = RuntimeLogDock(onClear=lambda: clearCalls.append(True))
+  dock = logWindowType(onClear=lambda: clearCalls.append(True))
   dock.setEntries([
     StructuredLogEntry(
       1,

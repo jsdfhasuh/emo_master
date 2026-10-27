@@ -44,7 +44,7 @@ class Outputs(QTreeWidget):
 
 
 class EditingTools(QObject):
-    def __init__(self, workspace, sidebar):
+    def __init__(self, workspace):
         super().__init__(workspace)
         self.w = workspace
         self.selected = None
@@ -54,6 +54,10 @@ class EditingTools(QObject):
         self.refreshTimer = QTimer(self)
         self.refreshTimer.setSingleShot(True)
         self.refreshTimer.timeout.connect(self.finishRefresh)
+        self.errorField = None
+        self.errorRevealTimer = QTimer(self)
+        self.errorRevealTimer.setSingleShot(True)
+        self.errorRevealTimer.timeout.connect(self.revealErrorField)
         self.selection = None
         self.retainedSelection = None
         self.gridPreview = None
@@ -172,7 +176,7 @@ class EditingTools(QObject):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(panel)
-        scroll.setMinimumWidth(240)
+        scroll.setMinimumSize(0, 0)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         panel.setMinimumWidth(0)
         panel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
@@ -200,7 +204,7 @@ class EditingTools(QObject):
         outer.addWidget(scroll, 1)
         self.applyButton.setObjectName('primaryButton')
         outer.addWidget(self.applyButton)
-        self.w.splitter.addWidget(propertyPanel)
+        self.w.propertyPanel = propertyPanel
         self.refreshCatalog()
         workspace.renderer.setDesignExamples(True)
 
@@ -511,6 +515,8 @@ class EditingTools(QObject):
                 self.w.message.setText('修改已应用')
                 self.w.coordinator.window.statusBar().clearMessage()
             self.propertyError.hide()
+            self.errorRevealTimer.stop()
+            self.errorField = None
         except ValueError as error:
             from .property_panel import editorMessage
             message = str(error)
@@ -518,13 +524,27 @@ class EditingTools(QObject):
             self.propertyError.setToolTip(message)
             self.w.coordinator.window.appendRuntimeLog('ERROR', message)
             self.propertyError.show()
+            self.w.floatingProperties.setExpanded(True)
             field = next((widget for name, widget in self.fields.items() if name in message), self.extra
                          if any(word in message for word in ('boolean', 'duplicate', '字段')) else self.fields['columnSpan'])
             if not self.selected and 'name' in message:
                 field = self.pageName
-            self.w.propertyScroll.ensureWidgetVisible(field)
             field.setFocus()
+            self.errorField = field
+            # The caller's error message can resize the canvas after we raise.
+            self.errorRevealTimer.start(0)
             raise
+
+    def revealErrorField(self):
+        field = self.errorField
+        if field is None or self.w.closed or not self.w.floatingProperties.isExpanded():
+            return
+        for scroll in (self.w.propertyScroll, self.w.floatingProperties.contentScroll):
+            center = field.mapTo(scroll.widget(), field.rect().center())
+            # Reveal the control, not only its input-method cursor rectangle.
+            scroll.ensureVisible(center.x(), center.y(),
+                                 min(field.width() // 2 + 4, scroll.viewport().width() // 2),
+                                 min(field.height() // 2 + 4, scroll.viewport().height() // 2))
 
     def applyFields(self):
         if not self.w.pageId:
@@ -676,6 +696,8 @@ class EditingTools(QObject):
 
     def shutdown(self):
         self.refreshTimer.stop()
+        self.errorRevealTimer.stop()
+        self.errorField = None
         self.pendingRefresh = False
         self.clearSelection()
 

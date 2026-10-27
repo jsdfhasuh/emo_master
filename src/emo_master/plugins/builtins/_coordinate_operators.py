@@ -17,6 +17,7 @@ from emo_master.core.contracts.geometry2d import (
     Vector2D,
 )
 from emo_master.plugins.builtins._image_frame import coordinateSpacesEquivalent
+from emo_master.plugins.builtins._operator_modes import effectiveModeParams, modeSchema
 
 
 @dataclass(frozen=True)
@@ -535,13 +536,14 @@ class CoordinateCalculatorOperator:
             "dotSum": {"type": "number", "required": False, "nullable": False},
             "resultCount": {"type": "integer", "required": True, "nullable": False},
         },
-        paramSchema=COORDINATE_CALCULATOR_PARAM_SCHEMA,
+        paramSchema=modeSchema("vision.geometry.coordinate_calculator", COORDINATE_CALCULATOR_PARAM_SCHEMA),
     )
 
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
         properties = cast(
             dict[str, object], COORDINATE_CALCULATOR_PARAM_SCHEMA["properties"]
         )
+        params = effectiveModeParams(params, self.meta.paramSchema)
         unknown = sorted(set(params) - set(properties))
         if unknown:
             return _paramError(f"unknown params: {', '.join(unknown)}")

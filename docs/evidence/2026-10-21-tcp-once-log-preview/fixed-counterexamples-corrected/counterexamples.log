@@ -1,0 +1,13 @@
+.........                                                                [100%]
+=================================== PASSES ====================================
+=========================== short test summary info ===========================
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpOnceResultLogsKeepBoundedPreview[512-client_once]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpOnceResultLogsKeepBoundedPreview[512-receive_once]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpOnceResultLogsKeepBoundedPreview[1025-client_once]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpOnceResultLogsKeepBoundedPreview[1025-receive_once]
+PASSED tests/runtime/test_device_feedback_closure.py::testCompactResultUsesExactOriginalByteLength[1024]
+PASSED tests/runtime/test_device_feedback_closure.py::testCompactResultUsesExactOriginalByteLength[1025]
+PASSED tests/runtime/test_device_feedback_closure.py::testCompactResultUsesExactOriginalByteLength[1026]
+PASSED tests/runtime/test_device_feedback_closure.py::testCompactResultUsesExactOriginalByteLength[1027]
+PASSED tests/runtime/test_device_feedback_closure.py::testFoldedByteResultRetainsOnlyBoundedPreviewAndCounts
+9 passed in 2.39s

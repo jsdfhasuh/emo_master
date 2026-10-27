@@ -1,4 +1,4 @@
-"""Real isolated workers against an independent loopback PLC, never hardware."""
+"""Legacy isolated-worker compatibility against loopback, never hardware."""
 from copy import deepcopy
 from dataclasses import replace
 import json
@@ -13,12 +13,42 @@ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.operator_debug.contracts import trustedEntries
 from tests.runtime.operator_debug_fixture import project
 from tests.runtime.plc_debug_server import BlockResponse, PlcDebugServer, response
-from tests.runtime.test_operator_debug_rpc import runtime as runtime, openRequest
+from tests.core.project.test_devices import legacyPayload
+from tests.runtime import test_operator_debug_rpc as rpcFixtures
+from tests.runtime.test_operator_debug_rpc import openRequest
 from tests.runtime.test_operator_debug_sessions import waitFor
 from tests.runtime.test_workflow_debug_control import nestedProject
 
 
 READ = "communication.plc.slmp_read"
+runtimeService = rpcFixtures.runtime
+
+
+@pytest.fixture
+def runtime(runtimeService):
+    # Keep the old worker/transport coverage with an explicit legacy descriptor.
+    # Current production declarations are independently rejected below.
+    scan = runtimeService.pluginScanResult
+    descriptor = scan.activeOperators[READ]
+    operators = dict(scan.activeOperators)
+    operators[READ] = replace(descriptor, manifest=replace(descriptor.manifest, deviceRequirements={}))
+    runtimeService.pluginScanResult = replace(scan, activeOperators=operators)
+    return runtimeService
+
+
+def testCurrentManagedPlcCannotOpenPrivateDebugWorker(runtimeService):
+    registry = runtimeService.pluginScanResult.activeOperators
+    assert registry[READ].manifest.deviceRequirements
+    assert READ not in trustedEntries(registry)
+    for method in (runtimeService.GetOperatorDebugCapabilities, runtimeService.GetWorkflowDebugCapabilities):
+        reply = method(pb.OperatorDebugRequest(), None)
+        assert reply.ok
+        entry = next(row for row in json.loads(reply.snapshot_json)["operators"] if row["operatorId"] == READ)
+        assert not entry["supported"] and entry["reason"] == "use managed device diagnostics"
+    for method in (runtimeService.OpenOperatorDebugSession, runtimeService.OpenWorkflowDebugSession):
+        reply = method(openRequest(runtimeService, READ), None)
+        assert not reply.ok and reply.code == "E_DEVICE_DEBUG_REQUIRED"
+    assert not runtimeService.operatorDebugManager.ownsResources()
 
 
 def openRead(runtime, params):
@@ -154,7 +184,7 @@ def testReadRespectsBothDirectionsOfPlcResourceExclusion(runtime):
         finally:
             runtime.plcDebugManager.close(reserved.sessionId)
         from emo_master.core.project.models import ProjectDocument
-        runtime.loadedDocument = ProjectDocument.model_validate(nestedProject())
+        runtime.loadedDocument = ProjectDocument.model_validate(legacyPayload())
         runtime.loadedProjectId = "draft"
         connection = openRead(runtime, peer.params())
         try:

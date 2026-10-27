@@ -80,12 +80,16 @@ try:
             self._bindingPanel = None
             self._bindingScroll = None
             self._loadedBindings = list(getattr(context, "variableBindings", []))
+            self._operatorName = ""
             self.setModal(False)
             self.setAttribute(Qt.WA_DeleteOnClose, True)
             self.setWindowTitle(title)
             self.resize(980 if customRoot is not None else 620, 720)
 
             layout = QVBoxLayout()
+            self._operatorIdentityLabel = OptionalWrapLabel("")
+            self._operatorIdentityLabel.setObjectName("operatorEditorIdentity")
+            layout.addWidget(self._operatorIdentityLabel)
             self._statusLabel = OptionalWrapLabel("")
             self._statusLabel.setObjectName("operatorEditorStatus")
             layout.addWidget(self._statusLabel)
@@ -110,6 +114,12 @@ try:
                 from emo_master.apps.designer.operator_editors.variable_bindings import VariableBindingsPanel
                 self._bindingPanel = VariableBindingsPanel(context)
                 context.collectVariableBindings = self._bindingPanel.bindings
+                refreshVisibility = getattr(controller, "refreshParameterVisibility", None)
+                if callable(refreshVisibility):
+                    setattr(controller, "parameterBindingsForDisplay", self._bindingPanel.rawBindings)
+                    for source in self._bindingPanel.fields.values():
+                        source.currentIndexChanged.connect(self._refreshCustomParameterVisibility)
+                    self._refreshCustomParameterVisibility()
                 bindingScroll = scrollContent(self._bindingPanel)
                 self._bindingScroll = bindingScroll
                 if self._scrollablePlcLayout:
@@ -149,6 +159,18 @@ try:
                 self._loadedParams = self.collectParams()
             except Exception:
                 self._loadedParams = dict(values)
+
+        def setNodeIdentity(self, displayName: str, operatorName: str | None = None) -> None:
+            if operatorName is not None:
+                self._operatorName = operatorName
+            title = displayName
+            if self._operatorName and self._operatorName != displayName:
+                title += f" · {self._operatorName}"
+            self.setWindowTitle(f"{title} · {self.key.nodeId}")
+            self._operatorIdentityLabel.setText(
+                f"原始算子：{self._operatorName}\n算子 ID：{self.context.operatorId}"
+                if self._operatorName else ""
+            )
 
         def openController(self) -> None:
             if self._controller is not None:
@@ -196,6 +218,16 @@ try:
                 self._bindingPanel.refresh()
                 if self._schemaForm is not None:
                     self._bindingScroll.setVisible(not self._bindingPanel.installInline(self._schemaForm))
+                refreshVisibility = getattr(self._controller, "refreshParameterVisibility", None)
+                if callable(refreshVisibility):
+                    for source in self._bindingPanel.fields.values():
+                        source.currentIndexChanged.connect(self._refreshCustomParameterVisibility)
+                    self._refreshCustomParameterVisibility()
+
+        def _refreshCustomParameterVisibility(self, *_args) -> None:
+            refresh = getattr(self._controller, "refreshParameterVisibility", None)
+            if callable(refresh) and self._bindingPanel is not None:
+                refresh(bindings=self._bindingPanel.rawBindings())
 
         def collectParams(self) -> dict[str, object]:
             if self._controller is not None:
@@ -444,6 +476,9 @@ except Exception:  # pragma: no cover
             self._loadedParams = self._form.getValues()
             self._visible = False
             self._onClosed = onClosed
+
+        def setNodeIdentity(self, displayName: str, operatorName: str | None = None) -> None:
+            return
 
         def openController(self) -> None:
             return

@@ -26,7 +26,7 @@ from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.clients.runtime.communication import CommunicationClient, CommunicationClientError
 from tests.runtime.tcp_port_probe import assertTcpPortReleased
 from tests.runtime.test_managed_tcp import waitUntil
-from tests.runtime.test_tcp_service_integration import payload
+from tests.runtime.test_tcp_service_integration import currentPayload as payload, managementPayload
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -146,6 +146,12 @@ class Rig:
         assert reply.ok, reply.message
         return reply.job_id
 
+    def send(self, data):
+        session = self.manager.acquire('legacy-probe', 'tcp-server', 'front', 1000, lambda: False)
+        from uuid import uuid4
+        receipt = self.manager.send('legacy-probe', uuid4().hex, session, data.encode(), lambda: False)
+        assert receipt['outcome'] == 'SENT_TO_TRANSPORT', receipt
+
     def terminal(self, job, status="COMPLETED"):
         waitUntil(lambda: self.runtime.jobRepository.get(job).isTerminal
                   and not self.runtime.jobSupervisor.ownsJobResources(job), 20)
@@ -196,6 +202,56 @@ def rig(tmp_path, request):
         owner.finish()
 
 
+class ManagedRig(Rig):
+    @property
+    def manager(self):
+        driver = self.runtime.deviceManager.drivers.get('server')
+        return driver.backend if driver is not None else getattr(self, 'closedBackend', self.runtime.communicationManager)
+
+    def load(self, value, filename='probe.emoproj'):
+        self.value = value
+        self.port = value['devices']['definitions']['server']['connection']['port']
+        self.path = self.directory / filename
+        self.path.write_text(json.dumps(value), encoding='utf-8')
+        reply = self.stub.LoadProject(pb.LoadProjectRequest(project_path=str(self.path)), timeout=10)
+        assert reply.ok, reply.message
+        return self.path
+
+    def state(self):
+        reply = self.stub.GetDeviceStates(pb.GetDeviceStatesRequest(project_id='tcp-project'), timeout=5)
+        assert reply.ok, reply.message
+        state = json.loads(reply.states_json)['server']['driverState']
+        diagnostics = self.stub.GetDeviceDiagnostics(pb.GetDeviceDiagnosticsRequest(
+            runtime_instance_id=reply.runtime_instance_id, project_id=reply.project_id,
+            project_load_generation=reply.project_load_generation, device_id='server'), timeout=5)
+        assert diagnostics.ok, diagnostics.message
+        state['records'] = json.loads(diagnostics.diagnostics_json)['records']
+        return state
+
+    def control(self, action, **fields):
+        assert not fields and action in {'START', 'STOP'}
+        from emo_master.clients.runtime.devices import DeviceManagementClient
+        client = DeviceManagementClient(self.stub)
+        runtimeId, states = client.getDeviceStates('tcp-project')
+        client.controlDevice('tcp-project', runtimeId, 'server', states['server'],
+            'connect' if action == 'START' else 'disconnect', confirmed=True)
+        return self.state()
+
+    def finish(self):
+        self.closedBackend = self.manager
+        super().finish()
+        assert not self.runtime.deviceManager.workers
+
+
+@pytest.fixture
+def managedRig(tmp_path):
+    owner = ManagedRig(tmp_path)
+    try:
+        yield owner
+    finally:
+        owner.finish()
+
+
 def fillKernelSendBuffer(rig):
     """Only test setup: fill the real socket until non-writable, without mocks.
 
@@ -227,7 +283,8 @@ def fillKernelSendBuffer(rig):
     raise AssertionError("Did not establish real kernel TCP pressure")
 
 
-def testRealJobsExactBytesLongConnectionRoutingAndReload(rig):
+def testRealJobsExactBytesLongConnectionRoutingAndReload(managedRig):
+    rig = managedRig
     value = payload()
     flow = deepcopy(value["workflows"]["front"])
     flow["inputs"] = dict(x="number", y="number")
@@ -265,13 +322,14 @@ def testRealJobsExactBytesLongConnectionRoutingAndReload(rig):
         else:
             rearBytes += data.encode()
             client.received(rearBytes)
-    rig.load(value)
+    rejected = rig.stub.LoadProject(pb.LoadProjectRequest(project_path=str(rig.path)), timeout=5)
+    assert not rejected.ok and 'E_CONFIG_ACTIVE' in rejected.message
     current = rig.state()
     assert current["serviceGeneration"] == initial["serviceGeneration"]
     assert [item["connectionGeneration"] for item in current["channels"]] == [
         item["connectionGeneration"] for item in initial["channels"]]
     front.command("send", hex=b"PROBE-ACK\x00\xff".hex())
-    waitUntil(lambda: any(r["kind"] == "rx" and r.get("dataHex") == "50 52 4F 42 45 2D 41 43 4B 00 FF"
+    waitUntil(lambda: any(r.get("kind") == "rx" and r.get("dataHex") == "50 52 4F 42 45 2D 41 43 4B 00 FF"
                          for r in rig.state()["records"]))
     assert not rig.manager._workers
     assert len(front.command("snapshot")["connections"]) == 1
@@ -281,7 +339,8 @@ def testRealJobsExactBytesLongConnectionRoutingAndReload(rig):
 
 
 @pytest.mark.parametrize("rst", [False, True], ids=["graceful", "reset"])
-def testReconnectRejectsOldSessionWithoutReplay(rig, rst):
+def testReconnectRejectsOldSessionWithoutReplay(managedRig, rst):
+    rig = managedRig
     rig.load(payload("manual"))
     rig.control("START")
     client = rig.client()
@@ -302,9 +361,10 @@ def testReconnectRejectsOldSessionWithoutReplay(rig, rst):
     rig.notes["staleReceipt"] = stale
 
 
-def testRealSlowClientTimeoutDoesNotBlockOtherChannel(rig):
+def testRealSlowClientTimeoutDoesNotBlockOtherChannel(managedRig):
+    rig = managedRig
     value = payload("manual")
-    value["communication"]["tcpServer"].update(sendTimeoutMs=1000, maxMessageBytes=2097152)
+    value['devices']['definitions']['server']['policies'].update(sendTimeoutMs=1000, maxMessageBytes=2097152)
     rig.load(value)
     rig.control("START")
     slow = rig.client("127.0.0.1", "--no-read", "--receive-buffer", "1024")
@@ -319,7 +379,7 @@ def testRealSlowClientTimeoutDoesNotBlockOtherChannel(rig):
     rig.terminal(slowJob, "FAILED")
     elapsed = time.monotonic() - start
     assert elapsed < 8
-    receipt = [r["receipt"] for r in rig.state()["records"] if r["kind"] == "tx" and r["channelId"] == "front"][-1]
+    receipt = [r["receipt"] for r in rig.state()["records"] if r.get("kind") == "tx" and r["channelId"] == "front"][-1]
     assert receipt["code"] == "E_TCP_SEND_TIMEOUT"
     assert receipt["outcome"] in {"NOT_SENT", "OUTCOME_UNKNOWN"}
     assert 0 <= receipt["bytesSent"] < 2097152
@@ -340,9 +400,10 @@ def testRealSlowClientTimeoutDoesNotBlockOtherChannel(rig):
 
 
 @pytest.mark.parametrize("mode", ["graceful", "force", "service-stop"])
-def testCancelOrServiceStopDuringRealBackpressure(rig, mode):
+def testCancelOrServiceStopDuringRealBackpressure(managedRig, mode):
+    rig = managedRig
     value = payload("manual")
-    value["communication"]["tcpServer"].update(sendTimeoutMs=10000, maxMessageBytes=2097152)
+    value['devices']['definitions']['server']['policies'].update(sendTimeoutMs=10000, maxMessageBytes=2097152)
     rig.load(value)
     rig.control("START")
     blocked = rig.client("127.0.0.1", "--no-read", "--receive-buffer", "1024")
@@ -372,9 +433,10 @@ def testCancelOrServiceStopDuringRealBackpressure(rig, mode):
 
 
 @pytest.mark.parametrize("mode", ["graceful", "force"])
-def testCancelledWaitCannotSendToLaterClient(rig, mode):
+def testCancelledWaitCannotSendToLaterClient(managedRig, mode):
+    rig = managedRig
     value = payload()
-    value["workflows"]["front"]["nodes"][1]["params"]["timeoutMs"] = 60000
+    value["workflows"]["front"]["nodes"][1]["deviceOverrides"] = {'tcp': {'timeoutMs': 60000}}
     rig.load(value)
     job = rig.startJob(data="CANCELLED-NEVER-SEND")
     waitUntil(lambda: rig.runtime.jobRepository.get(job).status == "RUNNING", 10)
@@ -385,15 +447,15 @@ def testCancelledWaitCannotSendToLaterClient(rig, mode):
     client = rig.client()
     rig.terminal(rig.startJob(data="NEW"))
     client.received(b"NEW")
-    assert not any(r["kind"] == "tx" and r["receipt"]["jobId"] == job for r in rig.state()["records"])
+    assert not any(r.get("kind") == "tx" and r["receipt"]["jobId"] == job for r in rig.state()["records"])
 
 
 def testStopRestartDisableGuardAndSameIdReplacement(rig):
-    value = payload("manual")
+    value = managementPayload("manual")
     rig.load(value)
     rig.control("START")
     client = rig.client()
-    rig.terminal(rig.startJob(data="ONE"))
+    rig.send('ONE')
     client.received(b"ONE")
     original = rig.state()
     rig.control("STOP")
@@ -413,7 +475,7 @@ def testStopRestartDisableGuardAndSameIdReplacement(rig):
     rig.control("SYNC", config=value["communication"])
     rig.control("START")
     client.command("connect")
-    rig.terminal(rig.startJob(data="TWO"))
+    rig.send('TWO')
     client.received(b"ONETWO")
     current = rig.state()
     rig.load(value, "same-id-another-path.emoproj")
@@ -425,7 +487,7 @@ def testStopRestartDisableGuardAndSameIdReplacement(rig):
     assert error.value.code == "E_TCP_STALE_CONTEXT"
     rig.control("START")
     client.command("connect")
-    rig.terminal(rig.startJob(data="THREE"))
+    rig.send('THREE')
     client.received(b"ONETWOTHREE")
 
 

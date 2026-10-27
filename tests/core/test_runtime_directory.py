@@ -82,6 +82,36 @@ def testAbsoluteFilePathsRetainExplicitMeaning(tmp_path, registry):
     assert next(n for n in prepared.workflows["main"].nodes if n.nodeId == "save").params["outputPath"] == str(outside)
 
 
+def namedSaver(document, outputPath):
+    from emo_master.core.project.models import WorkflowEdge
+    workflow = document.workflows["main"]
+    workflow.inputs["fileName"] = "string"
+    inputNode = next(n for n in workflow.nodes if n.kind == "workflow_input")
+    workflow.edges.append(WorkflowEdge(
+        fromNode=inputNode.nodeId, fromPort="fileName", toNode="save", toPort="fileName",
+    ))
+    next(n for n in workflow.nodes if n.nodeId == "save").params["outputPath"] = outputPath
+
+
+def testDynamicFileNameKeepsDirectoryRelativeToProject(tmp_path, registry):
+    root = tmp_path / "project"
+    document = productionProject(root)
+    namedSaver(document, "outputs/fallback.png")
+    prepared = prepareRuntimeProject(document, root, registry)
+    saver = next(n for n in prepared.workflows["main"].nodes if n.nodeId == "save")
+    assert saver.params["outputPath"] == str(root / "outputs/fallback.png")
+    assert next(n for n in document.workflows["main"].nodes if n.nodeId == "save").params["outputPath"] == "outputs/fallback.png"
+
+
+@pytest.mark.parametrize("output", ["fallback.png", "runtime/fallback.png"])
+def testDynamicFileNameCannotBypassInputAndRuntimeProtection(tmp_path, registry, output):
+    root = tmp_path / "project"
+    document = productionProject(root)
+    namedSaver(document, output)
+    with pytest.raises(ValueError, match="output overlaps"):
+        prepareRuntimeProject(document, root, registry, protectedPaths=(root / "runtime",))
+
+
 def testMissingAndModifiedResourceFailsBeforeExecution(tmp_path, registry):
     root = tmp_path / "project"
     document = productionProject(root)

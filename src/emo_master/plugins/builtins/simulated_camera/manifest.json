@@ -9,7 +9,7 @@
   "inputPorts": {},
   "outputPorts": {"image": "image", "frame": {"type": "bbox2d", "schemaVersion": "1.1"}},
   "paramSchema": {"type": "object", "properties": {}, "additionalProperties": false},
-  "deviceRequirements": {"camera": {"deviceTypeId": "device.simulated.camera"}},
+  "deviceRequirements": {"camera": {"deviceTypeId": "device.simulated.camera", "requiredCapabilities": ["capture"]}},
   "minCoreVersion": "0.6.1",
   "maxCoreVersion": "0.x"
 }

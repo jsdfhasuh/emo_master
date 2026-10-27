@@ -1,0 +1,792 @@
+{
+  "schemaVersion": "2.7",
+  "project": {
+    "projectId": "691b0b2e-5882-492c-86dd-7feb9840152a",
+    "name": "project",
+    "revision": 3,
+    "createdAt": "2026-10-21T14:20:16Z",
+    "updatedAt": "2026-10-21T14:20:19Z"
+  },
+  "entryWorkflowId": "main",
+  "workflowOrder": [
+    "main"
+  ],
+  "workflows": {
+    "main": {
+      "name": "Main",
+      "inputs": {},
+      "outputs": {},
+      "nodes": [
+        {
+          "nodeId": "__workflow_input__",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "__workflow_output__",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "capture",
+          "kind": "operator",
+          "operatorId": "vision.io.simulated_camera",
+          "displayName": "\u6a21\u62df\u76f8\u673a\u91c7\u96c6",
+          "inputPorts": {},
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "params": {},
+          "deviceBindings": {
+            "camera": {
+              "deviceId": "camera",
+              "selectors": {}
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "pending-camera",
+          "kind": "operator",
+          "operatorId": "vision.io.simulated_camera",
+          "displayName": "\u7a0d\u540e\u7ed1\u5b9a\u7684\u6a21\u62df\u76f8\u673a",
+          "inputPorts": {},
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [],
+      "layout": {
+        "nodePositions": {
+          "__workflow_input__": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "__workflow_output__": {
+            "x": 360.0,
+            "y": 20.0
+          },
+          "pending-camera": {
+            "x": 400.0,
+            "y": 250.0
+          }
+        }
+      }
+    }
+  },
+  "runtime": {
+    "maxConcurrentJobs": 2,
+    "gracefulStopTimeoutMs": 5000,
+    "heartbeatTimeoutMs": 5000,
+    "eventRetentionPerJob": 10000
+  },
+  "dependencies": {
+    "operators": []
+  },
+  "devices": {
+    "bindings": {},
+    "schemaVersion": "1.0",
+    "definitions": {
+      "camera": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000,
+          "gain": 0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "server": {
+        "name": "\u5f85\u914d\u7f6e TCP Server",
+        "deviceTypeId": "device.tcp.server",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "bindAddress": "127.0.0.1",
+          "port": 57828,
+          "channels": []
+        },
+        "defaults": {
+          "timeoutMs": 5000,
+          "encoding": "utf-8",
+          "appendNewline": false
+        },
+        "policies": {
+          "deviceWaitTimeoutMs": 5000,
+          "connect": "on_project_run",
+          "release": "on_project_close",
+          "sendTimeoutMs": 2000,
+          "maxMessageBytes": 1048576
+        }
+      },
+      "device-b421804232834ab0ac947ca9c16861d4": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-a32b48d5f0674e3ba990e6d81433222b": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 2\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-c8fd3fbccc654c8f84a88b0c77d7fa05": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 3\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-7948f8ff50924fcb80d38c8b1ae885d1": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 4\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-7cec9bc41b1d41c1aaa5f1742b56ddc7": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 5\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-339056f015334e02b906a24468e5a65e": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 6\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-011fc3b3a73f4f578471d92a88116b57": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 7\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-1b996d80926741c89976a5de2722ee57": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 8\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-2d130ccf8617450992ea6fc2005aa7b3": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 9\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-ed90ab962e2b4a3d86a8a7c6987ddf30": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 10\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-a5da4f0f06c9464482405a37f516a946": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 11\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-e99d743625ec45feaf02732b277044f4": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 12\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-257b401360dd4c669c6b79ae2143a4dd": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 13\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-ac23815ae06346619a2dda37d1b49cc5": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 14\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-c85484b6e47748f3915a3b456fef056e": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 15\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-5137e8cb43014440b5d9bba6040ba121": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 16\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-c3f9de9cb29c4f138fbe1ffe8eb0d124": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 17\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-0d64d5fb8f51451ab0845eda89d59dc1": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 18\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-2f3851bf2d024f828ddce996bf2405e1": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 19\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-88d279ba95184bb9a673c5d345a4c355": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 20\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-f969a5fd5f05422fa1ebc5508994d800": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 21\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-848b0bc4548844b78d7680b0d10c21a3": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 22\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-9aa998175a954a33a0b5f6c0e112e5c8": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 23\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-9ee212fe4b3f4efea80719e25df7a0a2": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 24\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-b92f34a8eed84960a749cbfd2e74bc97": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 25\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-229642e87cc048128503dbe785eb3c3a": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 26\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      }
+    }
+  },
+  "presentation": {
+    "schemaVersion": "1.0",
+    "defaultPageId": null,
+    "pageOrder": [],
+    "navigation": {
+      "mode": "tabs"
+    },
+    "resultScopes": {},
+    "dataSources": {},
+    "pages": {}
+  },
+  "resources": {
+    "schemaVersion": "1.0",
+    "items": {},
+    "parameterBindings": [],
+    "siteBindings": []
+  },
+  "production": {
+    "autoStart": false,
+    "mode": "single",
+    "cycleIntervalMs": 100,
+    "inputs": {}
+  },
+  "globalVariables": {}
+}

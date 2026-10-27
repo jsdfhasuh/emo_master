@@ -229,9 +229,9 @@ def testSpawnedContinuousCyclesApplyNextRevisionWithoutRestartingDriver(tmp_path
         driver = service.deviceManager.drivers["camera"]
         execute = driver.execute
         parameters = []
-        def record(action, params, cancelled, deadline):
+        def record(action, params, cancelled, deadline, *, arguments=None, operationContext=None):
             parameters.append(params["exposureUs"])
-            return execute(action, params, cancelled, deadline)
+            return execute(action, params, cancelled, deadline, arguments=arguments, operationContext=operationContext)
         driver.execute = record
         started = service.StartJob(pb.StartJobRequest(project_id=service.loadedProjectId, workflow_id="main"), None)
         assert started.ok, started.message
@@ -366,7 +366,7 @@ def testRemoteWriteAndLegacyMutationFence(tmp_path):
                 runtime_instance_id=service.runtimeInstanceId, project_id=service.loadedProjectId,
                 project_path=str(path), project_load_generation=state["projectLoadGeneration"], request_id="old-" + action,
                 action=action, expected_config_revision=state["desiredRevision"], config_json="{}"), timeout=5)
-            assert not rejected.ok and rejected.code == "E_CONFIG_UNIFIED_WRITE", rejected
+            assert not rejected.ok and rejected.code == "E_DEVICE_MANAGEMENT_REQUIRED", rejected
         assert before == service.loadedDocument.model_dump(mode="json")
     finally:
         channel.close()

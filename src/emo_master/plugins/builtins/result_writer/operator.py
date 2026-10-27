@@ -11,6 +11,8 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any, TypeGuard, cast
 
+from emo_master.plugins.builtins._operator_modes import inputChoiceError, modeSchema
+
 from emo_master.core.contracts.geometry2d import (
     BBox2D,
     BlobCollection,
@@ -144,10 +146,13 @@ class ResultWriterOperator:
         outputPorts={
             "result": {"type": "json", "required": True, "nullable": False}
         },
-        paramSchema=_PARAM_SCHEMA,
+        paramSchema=modeSchema("vision.io.result_writer", _PARAM_SCHEMA),
     )
 
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
+        choiceError = inputChoiceError(self.meta.operatorId, params)
+        if choiceError:
+            return choiceError
         if params.get("format", "json") not in {"json", "jsonl", "csv"}:
             return _paramError("format must be json, jsonl, or csv")
         relativePath = params.get("relativePath", "results/result")
@@ -165,6 +170,7 @@ class ResultWriterOperator:
     ) -> dict[str, Any]:
         startedAt = perf_counter()
         paramError = self.validateParams(params)
+        paramError = paramError or inputChoiceError(self.meta.operatorId, params, inputs)
         if paramError is not None:
             return {"status": "error", "error": paramError}
         try:

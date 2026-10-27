@@ -5,6 +5,7 @@ import multiprocessing
 import socket
 import threading
 import time
+from types import SimpleNamespace
 
 import pytest
 
@@ -13,8 +14,10 @@ from emo_master.apps.runtime.communication.ipc import CommunicationProxy, Worker
 from emo_master.apps.runtime.communication.pipe_io import sendBytes, receiveBytes
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.core.contracts.tcp_service import TcpServiceError
+from emo_master.core.contracts.device_driver import DeviceError
 from tests.designer.test_project_communication_ui import spin, retire
-from tests.runtime.test_tcp_service_integration import payload, load, runtime as runtime
+from tests.runtime.test_tcp_service_integration import managementPayload as payload, load, runtime as runtime
+from tests.runtime.test_tcp_review_fault_probes import editor
 
 
 @pytest.mark.parametrize("field,value", [("enabled", False), ("startupPolicy", "on_project_run")])
@@ -62,8 +65,9 @@ def testDisableSaveGuardBlocksStartReloadAndForeignSync(runtime, tmp_path):
             client.controlCommunication(action, before, config=initial["communication"])
         assert error.value.code == "E_TCP_SAVE_PENDING"
     assert not runtime.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None).ok
-    started = runtime.StartJob(pb.StartJobRequest(project_id="tcp-project", workflow_id="front", inputs_json='{"data":"NO"}'), None)
-    assert not started.ok and "E_TCP_SAVE_PENDING" in started.message
+    with pytest.raises(TcpServiceError) as error:
+        runtime.communicationManager.start()
+    assert error.value.code == 'E_TCP_SAVE_PENDING'
     with pytest.raises(RuntimeClientError) as error:
         client.controlCommunication("ABORT_DISABLE", before, saveToken="other")
     assert error.value.code == "E_TCP_SAVE_TOKEN"
@@ -86,20 +90,14 @@ def testDisablePreparationAfterConcurrentStartCannotWrite(runtime, tmp_path):
 
 
 @pytest.mark.parametrize("failure", [False, True])
-def testDesignerDisableSaveIsProtectedUntilDiskOutcome(runtime, tmp_path, retainedQtApplication,
-                                                      ownedDesignerWindow, monkeypatch, failure):
+def testLegacyControllerDisableSaveIsProtectedUntilDiskOutcome(runtime, tmp_path, retainedQtApplication, failure):
     value = payload("manual")
     path = load(runtime, tmp_path, value)
-    client = RuntimeClient(runtime)
-    window = ownedDesignerWindow(client)
-    try:
-        assert window.loadProjectDirectory(str(path), confirmed=True)
-        c = window.communicationController
-        spin(retainedQtApplication, lambda: c.state and c.thread is None)
+    rig = SimpleNamespace(path=path, value=value, stub=runtime)
+    with editor(rig, retainedQtApplication, save=lambda _: 'disk failure' if failure else '') as (c, client, current, writes):
+        c.timer.start()
         original = c.save
         blocked = []
-        if failure:
-            monkeypatch.setattr(window, "saveProjectToDirectory", lambda _: False)
         def save(config):
             other = RuntimeClient(runtime)
             with pytest.raises(RuntimeClientError) as error:
@@ -114,10 +112,9 @@ def testDesignerDisableSaveIsProtectedUntilDiskOutcome(runtime, tmp_path, retain
         assert blocked == ["E_TCP_SAVE_PENDING"]
         assert json.loads(path.read_text(encoding="utf-8"))["communication"]["enabled"] == failure
         assert runtime.communicationManager.desired.enabled == failure
-        assert window._communicationProject()["config"]["enabled"] == failure
+        assert current["config"]["enabled"] == failure
+        assert len(writes) == (0 if failure else 1)
         assert not runtime.communicationManager.snapshot()["disableSavePending"]
-    finally:
-        retire(retainedQtApplication, window.communicationController)
 
 
 def testSaveAsRequiresPathSynchronizationBeforeControl(runtime, tmp_path, retainedQtApplication, ownedDesignerWindow):
@@ -125,10 +122,10 @@ def testSaveAsRequiresPathSynchronizationBeforeControl(runtime, tmp_path, retain
     first = load(runtime, tmp_path, initial)
     client = RuntimeClient(runtime)
     window = ownedDesignerWindow(client)
-    try:
-        assert window.loadProjectDirectory(str(first), confirmed=True)
-        c = window.communicationController
-        spin(retainedQtApplication, lambda: c.state and c.thread is None)
+    assert window.loadProjectDirectory(str(first), confirmed=True)
+    rig = SimpleNamespace(path=first, value=initial, stub=runtime)
+    with editor(rig, retainedQtApplication, client=client) as (c, observer, current, writes):
+        c.timer.start()
         generation = c.state["projectLoadGeneration"]
         second = tmp_path / "copy.emoproj"
         client.controlCommunication("START", c.state)
@@ -137,6 +134,7 @@ def testSaveAsRequiresPathSynchronizationBeforeControl(runtime, tmp_path, retain
             assert window.saveProjectToDirectory(str(second))
             assert peer.recv(1) == b""
         assert runtime.loadedProjectId == ""
+        current.update(path=str(second), token='saved-as')
         c.control("START")  # Even before the next poll, do not use cached A identity.
         assert runtime.communicationManager.state == "STOPPED"
         spin(retainedQtApplication, lambda: c.thread is None and "MISMATCH" in c.message)
@@ -145,8 +143,6 @@ def testSaveAsRequiresPathSynchronizationBeforeControl(runtime, tmp_path, retain
         spin(retainedQtApplication, lambda: c.thread is None and c.state and not c.unsynced)
         assert runtime.loadedProjectFile == str(second)
         assert c.state["projectLoadGeneration"] != generation
-    finally:
-        retire(retainedQtApplication, window.communicationController)
 
 
 def testProjectReplacementDoesNotTrustDisabledLocalDraft(runtime, tmp_path, retainedQtApplication, ownedDesignerWindow):
@@ -167,7 +163,7 @@ def testProjectReplacementDoesNotTrustDisabledLocalDraft(runtime, tmp_path, reta
         assert runtime.loadedProjectId == "" and runtime.communicationManager.state == "STOPPED"
         assert not runtime.communicationManager._threads
     finally:
-        retire(retainedQtApplication, window.communicationController)
+        assert window.communicationController is None
 
 
 @pytest.mark.parametrize("cancel", [True, False])
@@ -175,12 +171,14 @@ def testRealPipeWriteCanBeCancelledOrExpireWithoutParentDrain(cancel):
     parent, child = multiprocessing.get_context("spawn").Pipe()
     event = threading.Event()
     proxy = CommunicationProxy(child, event)
-    proxy.sendTimeoutMs = 150 if not cancel else 5000
     failures = []
     def send():
         try:
-            proxy.call("send", dataBase64="A" * (4 * 1024 * 1024))
-        except TcpServiceError as error:
+            proxy.call("send", deviceTypeId='device.tcp.server',
+                policies=dict(deviceWaitTimeoutMs=1, sendTimeoutMs=150 if not cancel else 5000),
+                deviceId='server', params={}, arguments=dict(dataBase64="A" * (4 * 1024 * 1024),
+                    session=dict(jobId='job', channelId='front', serviceGeneration=1, connectionGeneration=1)))
+        except DeviceError as error:
             failures.append(error.code)
     thread = threading.Thread(target=send)
     thread.start()
@@ -225,19 +223,21 @@ def testLargePipeMessageRoundTripAndNativeFraming():
 
 
 def testExpiredDispatchNeverTouchesTransport(runtime, tmp_path):
-    value = payload("manual")
+    from tests.runtime.test_tcp_service_integration import currentPayload, backend
+    value = currentPayload("manual")
     load(runtime, tmp_path, value)
-    manager = runtime.communicationManager
+    manager = backend(runtime)
     manager.start()
     parent, child = multiprocessing.get_context("spawn").Pipe()
-    bridge = WorkerBridge(manager, "job", parent, threading.Event())
+    bridge = WorkerBridge(runtime.deviceManager, "job", parent, threading.Event())
     try:
-        with socket.create_connection(("127.0.0.1", value["communication"]["tcpServer"]["port"]), timeout=1):
+        with socket.create_connection(("127.0.0.1", value['devices']['definitions']['server']['connection']['port']), timeout=1):
             session = manager.acquire("job", "tcp-server", "front", 1000, lambda: False)
-            request = dict(protocolVersion="1.0", sequence=1, action="send", session=session,
-                           dataBase64="QQ==", deadlineNs=time.monotonic_ns() - 1)
-            reply = bridge.dispatch(json.dumps(request).encode())
-            assert not reply["ok"] and reply["code"] == "E_TCP_REQUEST_EXPIRED"
+            request = dict(kind='device_action', sequence=1, action="send", deviceId='server', params={},
+                           arguments=dict(session=session, dataBase64="QQ=="), deadlineNs=time.monotonic_ns() - 1)
+            with pytest.raises(DeviceError) as error:
+                bridge.dispatch(json.dumps(request).encode())
+            assert error.value.code == "E_TCP_REQUEST_EXPIRED"
             assert not [r for r, _ in manager._records if r["kind"] == "tx"]
     finally:
         parent.close()
@@ -246,15 +246,12 @@ def testExpiredDispatchNeverTouchesTransport(runtime, tmp_path):
 
 @pytest.mark.parametrize("lostAction", ["PREPARE_DISABLE", "SYNC"])
 def testLostDisableReceiptCanBeReconciledWithoutEnabling(runtime, tmp_path, retainedQtApplication,
-                                                       ownedDesignerWindow, monkeypatch, lostAction):
+                                                       monkeypatch, lostAction):
     initial = payload("manual")
     path = load(runtime, tmp_path, initial)
-    client = RuntimeClient(runtime)
-    window = ownedDesignerWindow(client)
-    try:
-        assert window.loadProjectDirectory(str(path), confirmed=True)
-        c = window.communicationController
-        spin(retainedQtApplication, lambda: c.state and c.thread is None)
+    rig = SimpleNamespace(path=path, value=initial, stub=runtime)
+    with editor(rig, retainedQtApplication) as (c, client, current, writes):
+        c.timer.start()
         original = client.controlCommunication
         injected = []
         def control(action, *args, **kwargs):
@@ -279,21 +276,17 @@ def testLostDisableReceiptCanBeReconciledWithoutEnabling(runtime, tmp_path, reta
             spin(retainedQtApplication, lambda: c.thread is None and c.disableSave is None)
         assert not runtime.communicationManager.snapshot()["disableSavePending"]
         assert runtime.communicationManager.state == "STOPPED"
-    finally:
-        retire(retainedQtApplication, window.communicationController)
 
 
 def testClosingDuringDisablePreparationAbortsWithoutSaving(runtime, tmp_path, retainedQtApplication,
-                                                          ownedDesignerWindow, monkeypatch):
+                                                          monkeypatch):
     initial = payload("manual")
     path = load(runtime, tmp_path, initial)
-    client = RuntimeClient(runtime)
-    window = ownedDesignerWindow(client)
     prepared, release = threading.Event(), threading.Event()
+    rig = SimpleNamespace(path=path, value=initial, stub=runtime)
+    session = editor(rig, retainedQtApplication)
+    c, client, current, writes = session.__enter__()
     try:
-        assert window.loadProjectDirectory(str(path), confirmed=True)
-        c = window.communicationController
-        spin(retainedQtApplication, lambda: c.state and c.thread is None)
         original = client.controlCommunication
         def control(action, *args, **kwargs):
             state = original(action, *args, **kwargs)
@@ -314,7 +307,7 @@ def testClosingDuringDisablePreparationAbortsWithoutSaving(runtime, tmp_path, re
         assert runtime.communicationManager.desired.enabled
     finally:
         release.set()
-        retire(retainedQtApplication, window.communicationController)
+        session.__exit__(None, None, None)
 
 
 def testPipeReadDeadlineWithoutReplyAndMessageLimit():
@@ -378,4 +371,4 @@ def testFailedReleaseKeepsOriginalDesignerAndRuntimeIdentity(runtime, tmp_path, 
             assert runtime.loadedProjectFile == str(first)
             assert runtime.communicationManager.state == "LISTENING"
     finally:
-        retire(retainedQtApplication, window.communicationController)
+        assert window.communicationController is None

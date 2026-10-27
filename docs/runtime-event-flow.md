@@ -17,6 +17,28 @@ ACCEPTED -> STARTING -> RUNNING -> COMPLETED
 `node.completed`、`node.failed`、`workflow.started/completed/failed`、
 `loop.iteration.started/completed`、`node.log`、`artifact.created` 和 Job 终态事件。
 
+## 执行失败与缺少业务输出
+
+算子抛出的普通 Python 异常和返回的失败结果均使当前工作流、外层调用及所属 Job 失败，
+连续运行也会退出；不默认跳过异常、重试算子或撤销已经发生的外部操作。算子提供的错误码保留；
+没有错误码的普通异常在节点、工作流和 Job 层统一为 `E_EXEC_FAILED`。
+`E_WORKER_CRASHED` 用于进程异常退出，不用普通业务异常冒充进程崩溃。
+
+成功算子允许省略其可选输出。依赖该输出的下游必需输入缺失时，即使其他输入已到达，
+仍跳过本次节点执行，发布 `node.skipped`；payload 的 `code=E_INPUT_NOT_PRODUCED`、
+`missingInputs` 列出未收到的输入端口，`ioSummary` 保留实际到达的输入且没有输出。
+该判断仅使用本次工作流调用的数据，之后有数据的调用正常执行，不重用先前输出。
+未连接的必填输入和上游缺失必填输出仍按契约校验，不属于本跳过策略；最终工作流必填输出也不放宽。
+If/Switch 未选中分支仍使用原来的 `E_BRANCH_NOT_SELECTED`，不与数据缺失混同。
+
+集合处理、形状测量、几何取点和结果写入的多选一对象入口，在编译时按明确且连线一致的
+处理对象或唯一业务连线细化必需输入。它们可以承接上游跳过，不能把“未产出”伪装为空集合
+或计数 0；真正产出的空集合仍执行原业务逻辑。其他可选端口的缺失语义不变。
+
+`node.failed`、`workflow.failed` 和向上抛出的异常 diagnostics 保留 TCP 单次事务的
+`tcpTransaction` 和检测归档的 `archiveProgress`。这也适用于算子已返回、随后发生输出校验失败或取消的情况：任务失败或
+取消不意味着此前的发送、ACK 或文件保存没有发生，不自动重放或回滚这些外部操作。
+
 ## 事件字段
 
 ```text
@@ -156,10 +178,19 @@ ERROR 和 Job 终态立即 flush/fsync，其余至少每秒刷新。JSONL 故障
 
 ## Designer 日志视图
 
-Designer 主窗口只有一个底部日志 Dock，可停靠或拖出为非模态窗口。表格保留事件的 Job、
-Workflow、Node、iteration、错误码与 payload，上方可按等级、来源、Job、节点、事件类型和
-全文搜索筛选；选择一行后可查看格式化 JSON 详情。“清空视图”只清理本次界面内容，不删除
-SQLite 或 JSONL。Dock 状态、列宽和筛选条件保存在本机 QSettings，不写入项目。
+Designer 通过“打开日志”（`Ctrl+Shift+L`）打开独立的非模态日志弹窗，不占用主窗口底部。
+窗口可移动、缩放和最大化，重复打开会激活同一个窗口；关闭只隐藏视图，后台继续接收日志。
+表格优先显示工作流名称、节点名称和消息，节点筛选按“所属工作流 / 节点名称”显示；
+先选择工作流可缩小节点范围，同名节点以 ID 补充区分。筛选使用工程、工作流、节点的真实身份，
+不会把不同流程中的同一个 `output` ID 混为一项。名称随已确认 Job 的事件记录保留；无法确认来源时
+回退显示 ID，不借用当前工程的同名节点。标准开始、完成和跳过消息采用中文显示，自定义消息保持原文。
+原始 Job、Workflow、Node、iteration、错误码、消息与 payload 保留在提示或 JSON 详情中。
+上方可按等级、来源、Job、工作流、节点、事件类型及名称 / ID 全文搜索筛选。
+“清除筛选”恢复全部记录，不删除内容；“清除筛选看错误”同时定位最新错误。
+定位节点成功后隐藏日志弹窗并显露流程画布，重新打开仍保留日志状态。
+“清空视图”只清理本次界面内容，不删除
+SQLite 或 JSONL。弹窗位置、大小、可见状态、列宽和筛选条件保存在本机 QSettings，不写入项目；
+旧版底部 Dock 的布局不再恢复，但原有列宽和筛选条件继续保留。
 
 Runtime 的 `node.log` 来源标记为 `runtime`；Designer 自身和 `EditorContext.log()` 分别标记为
 `designer`、`editor`，只保留在当前 Designer 会话中。

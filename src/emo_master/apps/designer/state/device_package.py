@@ -43,9 +43,8 @@ def importDevices(session, package, deviceTypes, root):
     resources.validateDependencies(package)
     checked = {}
     for key, definition in package.devices.items():
-        declaration = deviceTypes.get(definition.deviceTypeId)
-        if declaration is None:
-            raise ValueError('设备类型插件不可用：' + definition.deviceTypeId)
+        from emo_master.core.project.device_resources import deviceDeclaration
+        declaration = deviceDeclaration(definition, deviceTypes, deviceId=key)
         declaration = declaration.model_copy(deep=True)
         for binding in package.resources.siteBindings:
             if binding.target.deviceId != key:
@@ -59,16 +58,19 @@ def importDevices(session, package, deviceTypes, root):
                 raise ValueError('现场字段不属于设备类型的字符串属性')
             properties[name] = {'type': 'string'}
         checked[key] = declaration.validateDefinition(definition).model_copy(update={'enabled': False})
-    from .device_catalog import DeviceCatalogEditor
+    from .device_catalog import DeviceCatalogEditor, importedDeviceName
     editor = DeviceCatalogEditor(session, deviceTypes)
     deviceIds = {key: 'device-' + uuid4().hex for key in package.devices}
     directory = None
     try:
         with session.transaction():
             editor._enable()
+            names = {value['name'] for value in session.workflows.devices['definitions'].values()}
             for key, definition in checked.items():
                 value = definition.model_dump()
                 value['enabled'] = False
+                value['name'] = importedDeviceName(value['name'], names)
+                names.add(value['name'])
                 # Disabled portable definitions may have empty declared site fields.
                 session.workflows.devices['definitions'][deviceIds[key]] = deepcopy(value)
             plan, resourceIds = resources.remapDependencies(session.workflows, package, {}, {}, deviceIds)

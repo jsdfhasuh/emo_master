@@ -62,25 +62,59 @@
         "xUnit": "像素",
         "xOdd": true,
         "xExample": 5,
-        "description": "卷积核边长，必须是大于等于 3 的奇数。"
+        "description": "卷积核边长，必须是大于等于 3 的奇数。",
+        "xVisibleWhen": {
+          "mode": [
+            "gaussian",
+            "median",
+            "mean"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "gaussian",
+            "median",
+            "mean"
+          ]
+        }
       },
       "sigmaX": {
         "title": "水平方向标准差",
         "type": "number",
-        "minimum": 0.0,
-        "default": 0.0,
+        "minimum": 0,
+        "default": 0,
         "xUnit": "像素",
-        "xExample": 0.0,
-        "description": "高斯水平方向标准差，0 表示由卷积核大小自动计算。"
+        "xExample": 0,
+        "description": "高斯水平方向标准差，0 表示由卷积核大小自动计算。",
+        "xVisibleWhen": {
+          "mode": [
+            "gaussian"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "gaussian"
+          ]
+        }
       },
       "sigmaY": {
         "title": "垂直方向标准差",
         "type": "number",
-        "minimum": 0.0,
-        "default": 0.0,
+        "minimum": 0,
+        "default": 0,
         "xUnit": "像素",
-        "xExample": 0.0,
-        "description": "高斯垂直方向标准差，0 表示与水平方向相同。"
+        "xExample": 0,
+        "description": "高斯垂直方向标准差，0 表示与水平方向相同。",
+        "xVisibleWhen": {
+          "mode": [
+            "gaussian"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "gaussian"
+          ]
+        }
       },
       "diameter": {
         "title": "滤波邻域直径（像素）",
@@ -89,27 +123,58 @@
         "default": 9,
         "xUnit": "像素",
         "xExample": 9,
-        "description": "双边滤波邻域直径，填写大于等于 1 的整数。"
+        "description": "双边滤波邻域直径，填写大于等于 1 的整数。",
+        "xVisibleWhen": {
+          "mode": [
+            "bilateral"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "bilateral"
+          ]
+        }
       },
       "sigmaColor": {
         "title": "颜色空间标准差",
         "type": "number",
-        "exclusiveMinimum": 0.0,
-        "default": 75.0,
+        "exclusiveMinimum": 0,
+        "default": 75,
         "xUnit": "颜色值",
-        "xExample": 75.0,
-        "description": "双边滤波的颜色差异标准差，必须为正数。"
+        "xExample": 75,
+        "description": "双边滤波的颜色差异标准差，必须为正数。",
+        "xVisibleWhen": {
+          "mode": [
+            "bilateral"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "bilateral"
+          ]
+        }
       },
       "sigmaSpace": {
         "title": "坐标空间标准差",
         "type": "number",
-        "exclusiveMinimum": 0.0,
-        "default": 75.0,
+        "exclusiveMinimum": 0,
+        "default": 75,
         "xUnit": "像素",
-        "xExample": 75.0,
-        "description": "双边滤波的空间距离标准差，必须为正数。"
+        "xExample": 75,
+        "description": "双边滤波的空间距离标准差，必须为正数。",
+        "xVisibleWhen": {
+          "mode": [
+            "bilateral"
+          ]
+        },
+        "xValidateWhen": {
+          "mode": [
+            "bilateral"
+          ]
+        }
       }
-    }
+    },
+    "xModeOperator": "vision.preprocess.blur"
   },
   "minCoreVersion": "0.2.0",
   "maxCoreVersion": "1.x"

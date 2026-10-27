@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
 from typing import Any
-import os
 
 import cv2
 import numpy as np
@@ -13,7 +12,7 @@ class OperatorMeta:
     operatorId: str
     displayName: str
     version: str
-    inputPorts: dict[str, str]
+    inputPorts: dict[str, object]
     outputPorts: dict[str, str]
     paramSchema: dict[str, object]
 
@@ -22,14 +21,18 @@ class ImageSaverOperator:
     meta = OperatorMeta(
         operatorId="vision.io.image_saver",
         displayName="Image Saver",
-        version="1.0.0",
-        inputPorts={"image": "image"},
+        version="1.1.0",
+        inputPorts={
+            "image": "image",
+            "fileName": {"type": "string", "required": False, "nullable": False},
+        },
         outputPorts={"result": "json"},
         paramSchema={
             "type": "object",
             "properties": {
                 "outputPath": {
                     "title": "输出路径",
+                    "description": "未连接 fileName 时使用完整路径；连接后使用此路径的所在目录，文件名由输入提供，未带扩展名时沿用此路径的扩展名。",
                     "type": "string",
                     "default": "",
                     "xWidget": "file",
@@ -60,7 +63,6 @@ class ImageSaverOperator:
         params: dict[str, object],
         runtimeContext: dict[str, object],
     ) -> dict[str, Any]:
-        _ = runtimeContext
         startAt = perf_counter()
 
         paramError = self.validateParams(params)
@@ -89,35 +91,34 @@ class ImageSaverOperator:
         outputPath = str(params.get("outputPath", "")).strip()
         overwrite = bool(params.get("overwrite", True))
         outputFile = Path(outputPath)
+        if "fileName" in inputs:
+            fileName = inputs["fileName"]
+            if not isinstance(fileName, str):
+                return _error("E_INPUT_TYPE", "input 'fileName' must be string")
+            fileName = fileName.strip()
+            if (not fileName or fileName in {".", ".."} or fileName.endswith(".")
+                    or any(char in '<>:"/\\|?*' or ord(char) < 32 for char in fileName)):
+                return _error("E_INPUT_SHAPE", "fileName must be a non-empty file name without a directory")
+            if not Path(fileName).suffix:
+                fileName += outputFile.suffix
+            outputFile = outputFile.with_name(fileName)
 
         if outputFile.exists() and not overwrite:
-            return {
-                "status": "error",
-                "error": {
-                    "code": "E_OUTPUT_EXISTS",
-                    "message": f"output file exists: {outputPath}",
-                },
-            }
+            return _error("E_OUTPUT_EXISTS", f"output file exists: {outputFile}")
 
-        outputFile.parent.mkdir(parents=True, exist_ok=True)
-        if os.name == 'nt' and not str(outputFile).isascii():
+        try:
+            writeOk, encoded = cv2.imencode(outputFile.suffix, image)
+            if not writeOk:
+                return _error("E_OUTPUT_WRITE_FAILED", f"failed to encode image: {outputFile}")
+            outputFile.parent.mkdir(parents=True, exist_ok=True)
+            # Exclusive creation also honors overwrite=False for concurrent jobs.
             try:
-                writeOk, encoded = cv2.imencode(outputFile.suffix, image)
-                if writeOk:
-                    with outputFile.open('wb' if overwrite else 'xb') as stream:
-                        stream.write(encoded.tobytes())
-            except (OSError, cv2.error):
-                writeOk = False
-        else:
-            writeOk = cv2.imwrite(str(outputFile), image)
-        if not writeOk:
-            return {
-                "status": "error",
-                "error": {
-                    "code": "E_OUTPUT_WRITE_FAILED",
-                    "message": f"failed to write image: {outputPath}",
-                },
-            }
+                with outputFile.open("wb" if overwrite else "xb") as stream:
+                    stream.write(encoded.tobytes())
+            except FileExistsError:
+                return _error("E_OUTPUT_EXISTS", f"output file exists: {outputFile}")
+        except (OSError, ValueError, cv2.error) as error:
+            return _error("E_OUTPUT_WRITE_FAILED", f"failed to write image: {outputFile}; {error}")
 
         elapsedMs = (perf_counter() - startAt) * 1000.0
         return {
@@ -126,3 +127,7 @@ class ImageSaverOperator:
             "metrics": {"latencyMs": round(elapsedMs, 3)},
             "diagnostics": {"text": "Image saved"},
         }
+
+
+def _error(code: str, message: str) -> dict[str, Any]:
+    return {"status": "error", "error": {"code": code, "message": message}}

@@ -65,7 +65,7 @@ def testSafetyExplanationIsChineseWithoutSuggestingBypass(operator):
 
 
 @pytest.mark.parametrize('operator,guidance', [
-    ('vision.io.huaray_camera', '相机专用采集预览'),
+    ('vision.io.huaray_camera', '设备管理中的相机诊断'),
     ('communication.plc.slmp_write', '写入需明确解锁'),
     ('communication.tcp.client', '不会为解除调试拒绝而自动启动正式任务'),
     ('vision.io.result_writer', '不会为解除调试拒绝而自动启动正式任务'),
@@ -85,7 +85,9 @@ def testUntrustedOperatorRefusalUiExplainsSafetyWithoutOpeningResources(runtime,
         wait(lambda: dialog.state == 'FAULTED')
         message = dialog.status.text()
         assert 'E_DEBUG_UNSUPPORTED' in message and '已阻止执行' in message
-        assert '技术原因：No reviewed debug resource or side-effect adapter' in message
+        reason = ('use managed device diagnostics' if registry[operator].manifest.deviceRequirements
+                  else 'No reviewed debug resource or side-effect adapter')
+        assert '技术原因：' + reason in message
         assert guidance in message and not dialog.run.isEnabled()
         if operator == 'vision.io.huaray_camera' and sys.platform != 'win32':
             assert 'Windows 平台限制' in message

@@ -1,0 +1,81 @@
+{
+  "baseline": "756e526c1d2c657b3ff793fed7abe904d38b8d48",
+  "sourceSha": "e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf",
+  "sourceTree": "38a0f6252ddb7acf3019c4766d1af59f98614e55",
+  "paths": [
+    "src/emo_master/apps/designer/page_designer/coordinator.py",
+    "src/emo_master/apps/designer/state/device_catalog.py",
+    "src/emo_master/apps/designer/state/device_package.py",
+    "src/emo_master/apps/designer/state/workflow_package.py",
+    "src/emo_master/apps/designer/ui/device_wizard.py",
+    "src/emo_master/apps/designer/ui/device_workspace.py",
+    "src/emo_master/apps/designer/ui/main_window.py",
+    "src/emo_master/apps/designer/ui/param_form.py",
+    "src/emo_master/apps/designer/ui/project_configuration.py",
+    "src/emo_master/apps/designer/ui/tcp_device_form.py",
+    "src/emo_master/apps/runtime/devices/tcp.py",
+    "src/emo_master/core/plugin/devices.py",
+    "src/emo_master/plugins/builtins/_tcp_transport.py",
+    "src/emo_master/plugins/builtins/huaray_camera/device_types/imv.json",
+    "src/emo_master/plugins/builtins/plc_slmp_read/device_types/slmp.json",
+    "src/emo_master/plugins/builtins/simulated_camera/device_types/camera.json",
+    "src/emo_master/plugins/builtins/tcp_client/device_types/client_once.json",
+    "src/emo_master/plugins/builtins/tcp_receive_once/device_types/receive_once.json",
+    "src/emo_master/plugins/builtins/tcp_session/device_types/server.json",
+    "tests/designer/test_device_catalog.py",
+    "tests/designer/test_device_definition_feedback.py",
+    "tests/designer/test_device_project_open.py",
+    "tests/designer/test_device_usability_drafts.py",
+    "tests/designer/test_device_usability_publication.py",
+    "tests/designer/test_device_workspace_sizing.py",
+    "tests/designer/test_device_workspace_usability.py",
+    "tests/runtime/test_device_usability_chain.py"
+  ],
+  "blobs": {
+    "src/emo_master/apps/designer/page_designer/coordinator.py": "ae362f0d1ae0455f99fd8b52dce2508a48cebf95",
+    "src/emo_master/apps/designer/state/device_catalog.py": "8958c34769fc527b940a6828ea74f298f9c433ea",
+    "src/emo_master/apps/designer/state/device_package.py": "32f8c1689b932d39623daf8c3123a37b874385d2",
+    "src/emo_master/apps/designer/state/workflow_package.py": "edcd91cf6f2e648cadf687ed01aff4e2b4ac1c83",
+    "src/emo_master/apps/designer/ui/device_wizard.py": "0d79a3e61f05099f21fccb4e969d93171fadd118",
+    "src/emo_master/apps/designer/ui/device_workspace.py": "12f90f33aaeb0afb209c7c066d63e4a6c980939e",
+    "src/emo_master/apps/designer/ui/main_window.py": "6a4ebc3482f0bec71f918a48a232fe5407756fd4",
+    "src/emo_master/apps/designer/ui/param_form.py": "70f4efe6498a3dc32bc396bb866f954e6261dcf7",
+    "src/emo_master/apps/designer/ui/project_configuration.py": "8a133f900e76c9fc0fbaf952d086cb96b428e12d",
+    "src/emo_master/apps/designer/ui/tcp_device_form.py": "2ffe19788b0efeda0893949c5d946caf0e886742",
+    "src/emo_master/apps/runtime/devices/tcp.py": "f1219d99adca5f05ada4a2cf2949b88d9cd69b5f",
+    "src/emo_master/core/plugin/devices.py": "3068cd22a2e292682f721d8088f5dd80cb8f5924",
+    "src/emo_master/plugins/builtins/_tcp_transport.py": "29df091012640a6cbf7230a4136fae0f0ae870a4",
+    "src/emo_master/plugins/builtins/huaray_camera/device_types/imv.json": "5c802e16d7be9db46672e9228bfcc97954ad8372",
+    "src/emo_master/plugins/builtins/plc_slmp_read/device_types/slmp.json": "ccd27bb408465544177f8fb5435dc5a71e482ade",
+    "src/emo_master/plugins/builtins/simulated_camera/device_types/camera.json": "5a0946b42e1d8117f73970c1101c4d5042cf75cb",
+    "src/emo_master/plugins/builtins/tcp_client/device_types/client_once.json": "19e7b03eda985301bf52831cb5747e896698e8d3",
+    "src/emo_master/plugins/builtins/tcp_receive_once/device_types/receive_once.json": "436d19dfdebb2a62aafd31bdf6849650d3bf29dd",
+    "src/emo_master/plugins/builtins/tcp_session/device_types/server.json": "e9c4181d2751df5602f405abf19c691ab0788ca7",
+    "tests/designer/test_device_catalog.py": "faf919c5b971341dbf0e3431ec97f5059e335e9a",
+    "tests/designer/test_device_definition_feedback.py": "0b44ba735c148cf144ed4b61f146bfb70203d64a",
+    "tests/designer/test_device_project_open.py": "766948108f7fc1b8def17a5a6dcfa00fbbb60950",
+    "tests/designer/test_device_usability_drafts.py": "889a174d2521893e30fc33660e31564e5e2e770b",
+    "tests/designer/test_device_usability_publication.py": "2d0c4605f2145589669ff7bfe9993304bec8ad2b",
+    "tests/designer/test_device_workspace_sizing.py": "9ca694ab8641ae40707ccfcfbd416e2d2c893036",
+    "tests/designer/test_device_workspace_usability.py": "23807d30af9fdcecc2105a9d5d64a65f306e17cd",
+    "tests/runtime/test_device_usability_chain.py": "db207e3355c432f7a045b04364d03d8f0776b460"
+  },
+  "commits": [
+    {
+      "sha": "e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf",
+      "subject": "Refresh pending device markers when operator metadata arrives"
+    },
+    {
+      "sha": "ae74080243f871bb2086005d11b7e25d6a716144",
+      "subject": "Preserve device list viewport when returning from publication"
+    },
+    {
+      "sha": "848ad465aed1d1b1c32da7969ccbcd2da10fc29f",
+      "subject": "Complete device draft editing and explicit publication usability"
+    },
+    {
+      "sha": "674c6d3d02c4afdfc2f8d7b8953d7ce13a05437f",
+      "subject": "Allow disabled TCP drafts and locate device field errors"
+    }
+  ]
+}

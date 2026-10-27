@@ -534,15 +534,11 @@ def _frameForWarp(
     runtimeContext: dict[str, object],
     operatorId: str,
 ) -> Any:
-    ys, xs = np.nonzero(mask)
-    if xs.size == 0:
+    # Scan the mask without allocating two coordinates per valid pixel.
+    x, y, width, height = cv2.boundingRect(mask)
+    if width == 0 or height == 0:
         raise BuiltinInputError("E_INPUT_SHAPE", "transformed validMask is empty")
-    content = (
-        float(xs.min()),
-        float(ys.min()),
-        float(xs.max() - xs.min() + 1),
-        float(ys.max() - ys.min() + 1),
-    )
+    content = (float(x), float(y), float(width), float(height))
     return transformedFrame(
         inputFrame,
         outputWidth,

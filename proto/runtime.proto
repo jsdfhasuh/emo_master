@@ -12,6 +12,18 @@ message LoadProjectReply {
   string message = 3;
 }
 
+// Explicit first publication of an in-memory draft. resource_root is a
+// Runtime-visible directory, not an uploaded Designer filesystem path.
+message InitialProjectConfigurationRequest {
+  string request_id = 1;
+  string local_payload_json = 2;
+  string resource_root = 3;
+  bool validate_only = 4;
+  string expected_runtime_instance_id = 5;
+  // Source identity only: the in-memory payload is authoritative; never save this file.
+  string project_path = 6;
+}
+
 message ValidateProjectRequest {
   string project_id = 1;
 }
@@ -82,6 +94,7 @@ message StartJobReply {
   string legacy_snapshot_policy = 7;
   int64 project_revision = 8;
   string inspection_session_id = 9;
+  string diagnostics_json = 10; // Structured pre-start validation; raw message remains available.
 }
 
 message StartRequestLookup {
@@ -152,6 +165,19 @@ message ListDeviceTypesReply {
 }
 
 message GetDeviceStatesRequest { string project_id = 1; }
+message GetDeviceDiagnosticsRequest {
+  string runtime_instance_id = 1;
+  string project_id = 2;
+  string project_load_generation = 3;
+  string device_id = 4;
+  int64 cursor = 5;
+}
+message GetDeviceDiagnosticsReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string diagnostics_json = 4;
+}
 message ControlDeviceRequest {
   string project_id = 1;
   string runtime_instance_id = 2;
@@ -161,6 +187,24 @@ message ControlDeviceRequest {
   string action = 6;
   bool confirmed = 7;
   string expected_control_revision = 8;
+}
+message ExecuteDeviceActionRequest {
+  string project_id = 1;
+  string runtime_instance_id = 2;
+  string device_id = 3;
+  string expected_generation = 4;
+  string expected_definition_revision = 5;
+  string expected_control_revision = 6;
+  string action = 7;
+  string arguments_json = 8;
+  bool confirmed = 9;
+  string request_id = 10;
+}
+message ExecuteDeviceActionReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string result_json = 4;
 }
 message CameraDiagnosticRequest {
   string project_id = 1;
@@ -204,6 +248,9 @@ message GetDeviceStatesReply {
   string project_id = 3;
   string states_json = 4;
   string message = 5;
+  string code = 6;
+  string project_load_generation = 7;
+  optional uint64 runtime_uptime_ms = 8;
 }
 
 message OperatorInfo {
@@ -223,7 +270,8 @@ message OperatorInfo {
   OperatorIconInfo icon = 14;
   repeated OperatorIconIssue icon_issues = 15;
   string device_requirements_json = 16;
-  string device_binding_since = 17;
+  reserved 17;
+  reserved "device_binding_since";
 }
 
 message OperatorIconInfo {
@@ -278,6 +326,8 @@ message ListNodePreviewSourcesRequest {
   string node_id = 3;
   string job_id = 4; // Explicit selected run; empty never chooses a global last Job.
   string inspection_session_id = 5;
+  string workflow_run_id = 6;
+  string node_run_id = 7;
 }
 
 message PreviewSourceInfo {
@@ -298,6 +348,8 @@ message PreviewSourceInfo {
   string snapshot_state = 15;
   string workflow_run_id = 16;
   string node_run_id = 17;
+  int32 original_width = 18;
+  int32 original_height = 19;
 }
 
 message ListNodePreviewSourcesReply {
@@ -554,8 +606,24 @@ message GlobalVariablesReply {
   string jobs_json = 5;
 }
 
+message DispatchQueueRequest {
+  string project_id = 1;
+  string run_group_id = 2;
+  string target_slot_id = 3;
+  bool include_items = 4;
+}
+
+message DispatchQueueReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string state_json = 4;
+}
+
 service RuntimeService {
+  rpc GetDispatchQueueState(DispatchQueueRequest) returns (DispatchQueueReply);
   rpc GetOnlineProjectSnapshot(OnlineProjectRequest) returns (ProjectConfigurationReply);
+  rpc InitializeProjectConfiguration(InitialProjectConfigurationRequest) returns (ProjectConfigurationReply);
   rpc GetOnlineGraphSnapshot(OnlineGraphRequest) returns (ProjectConfigurationReply);
   rpc ValidateProjectWrite(ProjectConfigurationWriteRequest) returns (ProjectConfigurationReply);
   rpc WriteProjectConfiguration(ProjectConfigurationWriteRequest) returns (ProjectConfigurationReply);
@@ -616,9 +684,11 @@ service RuntimeService {
   rpc ListOperators(ListOperatorsRequest) returns (ListOperatorsReply);
   rpc ListDeviceTypes(ListDeviceTypesRequest) returns (ListDeviceTypesReply);
   rpc GetDeviceStates(GetDeviceStatesRequest) returns (GetDeviceStatesReply);
+  rpc GetDeviceDiagnostics(GetDeviceDiagnosticsRequest) returns (GetDeviceDiagnosticsReply);
   rpc RecoverDevice(RecoverDeviceRequest) returns (GetDeviceStatesReply);
   rpc DeviceNetworkCommand(DeviceNetworkRequest) returns (ProjectConfigurationReply);
   rpc ControlDevice(ControlDeviceRequest) returns (GetDeviceStatesReply);
+  rpc ExecuteDeviceAction(ExecuteDeviceActionRequest) returns (ExecuteDeviceActionReply);
   rpc CameraDiagnostic(CameraDiagnosticRequest) returns (CameraDiagnosticReply);
   rpc GetOperatorIconAsset(GetOperatorIconAssetRequest) returns (GetOperatorIconAssetReply);
   rpc GetOperatorEditorAsset(GetOperatorEditorAssetRequest) returns (GetOperatorEditorAssetReply);
@@ -829,6 +899,9 @@ message DisplayJob {
   bool resources_released = 14; string capture_definition_json = 15;
   string capture_limits_json = 16;
   string legacy_snapshot_policy = 17;
+  string run_group_id = 18;
+  string source_job_id = 19;
+  string target_slot_id = 20;
 }
 message DisplayJobs { repeated DisplayJob jobs = 1; }
 // Exact, read-only current-runtime lookup; does not read historical persisted Jobs.

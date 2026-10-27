@@ -18,6 +18,7 @@ from emo_master.core.contracts.geometry2d import (
     RotatedBox2D,
 )
 from emo_master.plugins.builtins._collection_ops import geometryPoints
+from emo_master.plugins.builtins._operator_modes import effectiveModeParams, modeSchema
 from emo_master.plugins.builtins._image_frame import (
     frameForInput,
     frameMask,
@@ -126,10 +127,11 @@ class RoiOperator:
                 "schemaVersion": "1.x",
             },
         },
-        paramSchema=_PARAM_SCHEMA,
+        paramSchema=modeSchema("vision.preprocess.roi", _PARAM_SCHEMA),
     )
 
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
+        params = effectiveModeParams(params, self.meta.paramSchema)
         roiType = params.get("roiType", "bbox")
         if roiType not in {"bbox", "rotatedBox", "polygon"}:
             return _paramError("roiType must be bbox, rotatedBox, or polygon")

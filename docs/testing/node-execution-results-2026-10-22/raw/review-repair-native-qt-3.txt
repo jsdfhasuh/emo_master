@@ -1,0 +1,85 @@
+...LIVE_NODE_QT {"platform": "windows", "dpr": 1.0, "job": "368bd6b0-f6f5-4e50-b5f5-ba272d5fdb8a", "firstNodeRun": "c4201228-447d-435b-9fcd-0272eeda3268", "previousNodeRun": "62481bc3-2bbc-4ba5-9178-a56a247e85e4", "reads": 32, "state": "RUNNING", "sharedPixmap": true, "counts": [3, 2], "originalShape": [12, 16], "previewShape": [12, 16]}
+.F
+================================== FAILURES ===================================
+______ testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs[shape1] ______
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2839/testLiveLoopPanelAndViewerKeep1')
+designerApplication = <PySide2.QtWidgets.QApplication(0x167a026cf60) at 0x00000167A17366A0>
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000167A5504BB0>
+shape = (2160, 3840)
+
+    @pytest.mark.parametrize('shape', [(12, 16), (2160, 3840)])
+    def testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs(tmp_path, designerApplication, ownedDesignerWindow, shape):
+        import json
+        import os
+        from pathlib import Path
+        from tests.runtime.inspection_fixtures import autonomousLoopProject
+        from tests.runtime.runtime_test_utils import waitForTerminal
+        def configure(document, root):
+            next(node for node in document.workflows['body'].nodes if node.nodeId == 'image').params.update(
+                height=shape[0], width=shape[1])
+        with running(tmp_path, factory=autonomousLoopProject, configure=configure) as (runtime, client, project, extra):
+            client.inspectionSession('close', project, extra)
+            window = ownedDesignerWindow(client)
+            window.resize(1360, 850)
+            window.show()
+            try:
+                wait(designerApplication, lambda: window.operatorCatalogController.state == 'ready')
+                assert window.loadProjectDirectory(project)
+                window.navigateToWorkflow('body', 'image')
+                coordinator = window.nodeResultCoordinator
+                panel = coordinator.panel
+                # Publish the Designer-normalized fixture through the normal write
+                # API, so this test does not wait inside a comparison dialog.
+                from emo_master.core.project.configuration import projectChanges
+                window.workflowController.captureActiveWorkflow()
+                window.pageCoordinator.sync()
+                online = client.getOnlineProjectSnapshot()
+                local = window.pageCoordinator.session.payload()
+                changes = projectChanges(online['payload'], local)
+                if changes:
+                    client.writeProjectConfiguration(online, local, [change['path'] for change in changes],
+                                                      'live-node-qt-fixture')
+                    def committed():
+                        result = client.getProjectWriteStatus('live-node-qt-fixture')
+                        assert result['state'] not in ('FAILED', 'CANCELLED', 'REJECTED'), result
+                        return result['state'] == 'COMMITTED'
+                    wait(designerApplication, committed)
+                assert not projectChanges(client.getOnlineProjectSnapshot()['payload'], local)
+                window.startJob()
+    
+                def firstDisplayedInvocation():
+                    packet = coordinator.imagePacket
+                    if packet is None:
+                        return None
+                    # Read the four tabs and pixels before processing another Qt event.
+                    displayedCount = int(panel.values.toPlainText().split('count = ')[1].split()[0])
+                    assert coordinator.image.pixelColor(0, 0).red() == 20 + displayedCount
+                    assert f'index = {displayedCount}' in panel.inputs.toPlainText()
+                    assert packet['source'].nodeRunId in panel.execution.toPlainText()
+                    assert packet['source'].workflowRunId in panel.execution.toPlainText()
+                    assert packet['source'].nodeRunId == coordinator.imageSelection[3]
+                    return packet
+    
+                firstPacket = wait(designerApplication, firstDisplayedInvocation, timeout=20)
+                job = window.currentJobId
+                assert runtime.jobRepository.get(job).status == 'RUNNING'
+                assert not any(event.eventType == 'node.started' and event.nodeId == 'gate'
+                               for event in runtime.eventStore.readMerged(job))
+                panel.enlarge.click()
+                viewer = coordinator.viewer
+                assert viewer.view.item.pixmap().cacheKey() == panel.image.pixmap().cacheKey()
+                wait(designerApplication, lambda: any(event.eventType == 'node.started' and event.nodeId == 'gate'
+                      for event in runtime.eventStore.readMerged(job)), timeout=40)
+                wait(designerApplication, lambda: coordinator.imagePacket is not None
+                     and 'count = 3' in panel.values.toPlainText() and coordinator.image.pixelColor(0, 0).red() == 23)
+                assert panel.previous.text() == '上一次执行' and panel.live.text() == '本次执行'
+>               assert panel.image.firstImagePaintNs > 0
+E               assert 0 > 0
+E                +  where 0 = <emo_master.apps.designer.ui.node_image_surface.NodeImageSurface(0x167a5f5e300, name="previewImage") at 0x00000167A55FE180>.firstImagePaintNs
+E                +    where <emo_master.apps.designer.ui.node_image_surface.NodeImageSurface(0x167a5f5e300, name="previewImage") at 0x00000167A55FE180> = <emo_master.apps.designer.ui.node_result_panel.NodeResultPanel(0x167a49c1ab0, name="nodeResultPanel") at 0x00000167A55B8740>.image
+
+tests\designer\test_node_image_viewer.py:260: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_node_image_viewer.py::testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs[shape1]
+1 failed, 4 passed, 1 deselected in 27.76s

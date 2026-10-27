@@ -13,8 +13,9 @@ from .recovery import connectionBudget
 
 
 class DeviceManager:
-    def __init__(self, types):
+    def __init__(self, types, *, operatorRequirements=None):
         self.types = types
+        self.operatorRequirements = deepcopy(operatorRequirements)
         self.lock = RLock()
         self.definitions = {}
         self.executors = {}
@@ -30,6 +31,12 @@ class DeviceManager:
         self.dispatchGroups = {}
         self.resourceLeasePath = None
         self.frameObserver = None
+        self.services = {}
+        self.tcpWorkers = {}
+        self.runtimeInstanceId = uuid4().hex
+        self.scope = dict(runtimeInstanceId=self.runtimeInstanceId, projectId='', projectLoadGeneration=uuid4().hex)
+        from .diagnostics import DeviceDiagnostics
+        self.diagnostics = DeviceDiagnostics()
 
     def _validatedDefinitions(self, document):
         definitions = {}
@@ -42,13 +49,20 @@ class DeviceManager:
             if platform.system().lower() not in declaration.platforms:
                 raise DeviceError("E_DEVICE_PLATFORM", "device driver does not support this Runtime platform")
             definition = declaration.validateDefinition(definition)
-            from .drivers import resolveDriver
-            driver = resolveDriver(declaration.driverEntry)
-            if not callable(getattr(driver, "connect", None)):
-                raise DeviceError("E_DEVICE_DRIVER_CONTRACT", "managed drivers must provide a connect-only operation")
+            from .drivers import validateDriver
+            driver = validateDriver(declaration)
             identity = driver.physicalIdentity(definition)
-            if identity in identities.values():
-                raise DeviceError("E_DEVICE_DUPLICATE_IDENTITY", "reuse the existing device for identity: " + identity)
+            if definition.enabled and identity is not None:
+                for other, otherIdentity in identities.items():
+                    if not definitions[other].enabled or otherIdentity is None:
+                        continue
+                    conflict = identity == otherIdentity
+                    if identity.startswith('listener://') and otherIdentity.startswith('listener://'):
+                        host, port = identity[11:].rsplit(':', 1)
+                        oldHost, oldPort = otherIdentity[11:].rsplit(':', 1)
+                        conflict |= port == oldPort and ('0.0.0.0' in {host, oldHost} or host == oldHost)
+                    if conflict:
+                        raise DeviceError('E_DEVICE_DUPLICATE_IDENTITY', f'{key} conflicts with {other}: {identity}')
             identities[key], definitions[key], classes[key] = identity, definition, driver
         return definitions, identities, classes
 
@@ -56,56 +70,183 @@ class DeviceManager:
         from .replacement import PreparedDevices
         definitions, identities, classes = self._validatedDefinitions(document)
         with self.lock:
-            return PreparedDevices(self, definitions, identities, classes, force=force)
+            return PreparedDevices(self, definitions, identities, classes,
+                                   scope=self.prepareScope(document, new=force), force=force)
 
     def _checkReplacement(self, deviceIds):
         if self.replacement is not None and self.replacement.changed.intersection(deviceIds):
             raise DeviceError("E_DEVICE_REPLACING", "affected device admission is paused for configuration replacement")
 
+    def prepareScope(self, document, *, new=False):
+        if not new and self.scope['projectId'] == document.project.projectId:
+            return dict(self.scope)
+        return dict(runtimeInstanceId=self.runtimeInstanceId, projectId=document.project.projectId,
+                    projectLoadGeneration=uuid4().hex)
+
+    def makeBackend(self, key, definition, driverClass, scope):
+        from emo_master.core.contracts.device_driver import DeviceRuntimeContext
+        driver = driverClass(definition)
+        if hasattr(driver, 'resourceLeasePath'):
+            driver.resourceLeasePath = self.resourceLeasePath
+        lifecycle = DeviceLifecycle(definition, driver, self.types[definition.deviceTypeId])
+        executor = DeviceExecutor(key, idleAction=lifecycle.idleAction)
+        try:
+            driver.bindRuntime(DeviceRuntimeContext(**scope, deviceId=key, generation=executor.generation,
+                events=lambda eventType, message, **fields: self.diagnostics.append(scope, key, eventType, message,
+                    **dict(fields, deviceGeneration=executor.generation))))
+        except BaseException:
+            executor.close()
+            driver.dispose(monotonic()+5)
+            raise
+        return driver, executor, lifecycle
+
     def load(self, document):
         definitions, identities, classes = self._validatedDefinitions(document)
+        scope = self.prepareScope(document, new=True)
         with self.lock:
-            if self.replacement is not None:
-                raise DeviceError("E_DEVICE_BUSY", "device replacement is pending")
-            if self.workers or self.maintenanceOwners:
-                raise DeviceError("E_DEVICE_BUSY", "device workers must retire before project replacement")
-            if any(executor.active or executor.queue for executor in self.executors.values()):
-                raise DeviceError("E_DEVICE_BUSY", "device operations must retire before replacement")
-            drivers, executors, lifecycles = {}, {}, {}
-            try:
-                # Constructors only prepare adapters. A malformed replacement must
-                # not destroy the existing device authority before it is prepared.
-                for key, value in definitions.items():
-                    drivers[key] = classes[key](value)
-                    if hasattr(drivers[key], 'resourceLeasePath'):
-                        drivers[key].resourceLeasePath = self.resourceLeasePath
-                    lifecycles[key] = DeviceLifecycle(value, drivers[key])
-                    executors[key] = DeviceExecutor(identities[key], idleAction=lifecycles[key].idleAction)
-                self._closeDevices()
-                self.frames.close()
-            except BaseException:
-                for executor in executors.values():
-                    executor.close()
-                for driver in drivers.values():
-                    driver.close()
-                raise
+            if self.replacement is not None or self.workers or self.maintenanceOwners or self.busy():
+                raise DeviceError('E_DEVICE_BUSY', 'retire device owners before project replacement')
+        prepared = {}
+        try:
+            for key, value in definitions.items():
+                prepared[key] = self.makeBackend(key, value, classes[key], scope)
+            self._closeDevices()
+            self.frames.close()
+        except BaseException:
+            for driver, executor, _ in prepared.values():
+                executor.close()
+                driver.dispose(monotonic()+5)
+            raise
+        from .service_executor import ServiceExecutor
+        with self.lock:
+            self.scope = scope
             self.frames = FrameStore()
             self.definitions, self.identities = definitions, identities
             self.permissions.clear()
-            self.drivers, self.executors = drivers, executors
-            self.lifecycles = lifecycles
+            self.drivers = {key: item[0] for key, item in prepared.items()}
+            self.executors = {key: item[1] for key, item in prepared.items()}
+            self.lifecycles = {key: item[2] for key, item in prepared.items()}
+            self.services = {key: ServiceExecutor(self.executors[key]) for key in definitions}
+
+    def busy(self, deviceId=None, owner=None, cycleId=None):
+        keys = [deviceId] if deviceId else list(self.executors)
+        return any((self.executors[key].active is not None and
+                    (owner is None or self.executors[key].active.owner == owner))
+                   or any(owner is None or op.owner == owner for op in self.executors[key].queue)
+                   or self.services.get(key) is not None and self.services[key].busy(owner, cycleId)
+                   for key in keys)
+
+    def waitOwner(self, owner, cycleId=None):
+        deadline = monotonic()+5
+        for key, executor in list(self.executors.items()):
+            with executor.condition:
+                if not executor.condition.wait_for(lambda: executor.active is None or executor.active.owner != owner,
+                                                    timeout=max(0, deadline-monotonic())):
+                    raise DeviceError('E_DEVICE_RELEASE_PENDING', 'owner operation still exiting')
+            self.services[key].wait(owner, cycleId, deadline)
 
     def productionOwners(self, deviceId):
         with self.lock:
             return sorted(owner for owner, ids in self.permissions.items()
                           if deviceId in ids and owner not in self.maintenanceOwners)
 
+    def cycleIdentitySnapshot(self):
+        """Freeze all backends, including devices used only by Dispatch consumers."""
+        with self.lock:
+            return dict(deviceScope=dict(self.scope), deviceIdentities={
+                key: dict(self.scope, deviceId=key, deviceGeneration=executor.generation)
+                for key, executor in self.executors.items()})
+
+    def availableControls(self, deviceId):
+        lifecycle, executor = self.lifecycles[deviceId], self.executors[deviceId]
+        controls = set(self.types[self.definitions[deviceId].deviceTypeId].controlCapabilities)
+        if lifecycle.controlPending or self.replacement is not None or executor.closed:
+            return []
+        if executor.quarantined:
+            return sorted(controls & {'disconnect', 'maintenance', 'recover'})
+        if lifecycle.connected:
+            controls.discard('connect')
+        else:
+            controls.discard('disconnect')
+        if not lifecycle.paused:
+            controls.discard('resume')
+        if not self.definitions[deviceId].enabled:
+            controls &= {'disconnect', 'maintenance', 'recover', 'test_connection'}
+        return sorted(controls)
+
+    def availableManagementActions(self, deviceId):
+        lifecycle, executor = self.lifecycles[deviceId], self.executors[deviceId]
+        definition = self.definitions[deviceId]
+        declaration = self.types[definition.deviceTypeId]
+        if (not definition.enabled or lifecycle.paused or lifecycle.controlPending
+                or self.replacement is not None or executor.closed or executor.quarantined
+                or declaration.operationScheduling == 'managed_service' and not lifecycle.connected
+                or definition.policies.get('connect') == 'manual' and not lifecycle.connected):
+            return []
+        return list(declaration.managementActions)
+
+    def activitySnapshot(self, deviceId):
+        executor = self.executors[deviceId]
+        with executor.condition:
+            state = executor.snapshot()
+            operations = self.services[deviceId].snapshot()
+            owners = {op['ownerId'] for op in operations}
+            if executor.active:
+                owners.add(executor.active.owner)
+            state.update(activeOwners=sorted(owners), serviceOperations=operations,
+                         activeOwner=next(iter(owners)) if len(owners) == 1 else None,
+                         controlActivity=self.lifecycles[deviceId].controlPending)
+            if operations and state['state'] == 'IDLE':
+                state['state'] = 'BUSY'
+            return state
+
+    def rpcBudgetsMs(self, deviceId):
+        definition = self.definitions[deviceId]
+        declaration = self.types[definition.deviceTypeId]
+        policies = definition.policies
+        actions = {}
+        for action in declaration.managementActions:
+            if definition.deviceTypeId.startswith('device.tcp.'):
+                from emo_master.core.contracts.tcp_service import tcpActionBudget
+                budget = tcpActionBudget(definition.deviceTypeId, action, definition.defaults, policies)
+                actions[action] = budget['queueWaitMs'] + budget['actionBudgetMs']
+            elif declaration.operationScheduling == 'managed_service':
+                actions[action] = policies.get('operationTimeoutMs', 5000)
+            else:
+                actions[action] = policies.get('deviceWaitTimeoutMs', 5000) + int(connectionBudget(policies)*1000)
+        return dict(actions=actions, controls={action: (12000 if action == 'recover' else
+            30000 + int(connectionBudget(policies)*1000)) for action in declaration.controlCapabilities})
+
     def execute(self, owner, deviceId, action, params, *, cycleId, arguments=None, cancelled=lambda: False,
-                previewOnly=False):
+                previewOnly=False, source=None, selectors=None, requestDeadline=None, requestId=None):
         if cancelled():
             raise DeviceError("E_DEVICE_CANCELLED", "request cancelled before device admission")
         planRevision = (self.configuration.requireCycle(owner, cycleId)
                         if self.configuration is not None and self.configuration.current is not None else 0)
+        from emo_master.core.contracts.device_driver import DeviceCaptureResult, DeviceOperationContext
+        source = deepcopy(source or {})
+        selectors = deepcopy(selectors or {})
+        if self.configuration is not None and self.configuration.current is not None and owner not in self.maintenanceOwners:
+            frozen = self.configuration.cyclePayload(owner, cycleId)
+            try:
+                node = next(node for node in frozen['workflows'][source['workflowId']]['nodes'] if node['nodeId'] == source['nodeId'])
+                binding = node['deviceBindings'][source['slot']]
+                if binding['deviceId'] != deviceId:
+                    raise ValueError('device differs from frozen cycle')
+                expected = binding.get('selectors', {})
+                if self.operatorRequirements is not None:
+                    from emo_master.core.plugin.devices import validateDeviceBinding
+                    from emo_master.core.project.devices import DeviceDefinition
+                    definition = DeviceDefinition.model_validate(frozen['devices']['definitions'][deviceId])
+                    requirement = self.operatorRequirements[node['operatorId']][source['slot']]
+                    # Normalize the authority's frozen binding, never the request
+                    # or the Designer's current/unselected draft. Still compare
+                    # the complete selector map before admission and device I/O.
+                    expected = validateDeviceBinding(requirement, binding, definition, self.types[definition.deviceTypeId])
+                if expected != selectors:
+                    raise ValueError('device binding differs from frozen cycle')
+            except (KeyError, StopIteration, ValueError) as error:
+                raise DeviceError('E_DEVICE_BINDING', 'request does not match frozen node/slot/selectors') from error
         with self.lock:
             self._checkReplacement([deviceId])
             if deviceId not in self.permissions.get(owner, set()):
@@ -145,25 +286,42 @@ class DeviceManager:
             unlimited = declaration.isUnlimitedWait(action, params)
             operationTimeout = policies.get("operationTimeoutMs", 5000) / 1000
             connectTimeout = connectionBudget(policies)
-            requestId = uuid4().hex
+            requestId = requestId or uuid4().hex
+            operationContext = DeviceOperationContext(ownerId=owner, cycleId=cycleId, planRevision=planRevision,
+                slot=source.get('slot', ''), selectors=selectors, workflowId=source.get('workflowId', ''),
+                nodeId=source.get('nodeId', ''), jobId='' if owner in self.maintenanceOwners else owner,
+                requestId=requestId, source=source)
+            tcp = definition.deviceTypeId.startswith('device.tcp.')
+            budget = None
+            if tcp:
+                from emo_master.core.contracts.tcp_service import tcpActionBudget
+                budget = tcpActionBudget(definition.deviceTypeId, action, params, policies)
+                operationTimeout = budget['actionBudgetMs']/1000
+            service = declaration.operationScheduling == 'managed_service'
+            if service and not lifecycle.connected:
+                raise DeviceError('E_TCP_NOT_RUNNING', f'{deviceId}: 服务尚未启动，请按策略启动或在设备页启动服务')
             def perform(cancel, deadline, generation):
                 try:
                     def stopped():
                         return cancel() or cancelled()
                     if stopped():
                         raise DeviceError("E_DEVICE_CANCELLED", "request cancelled before connection")
-                    if lifecycle.definition.policies.get("connect") == "manual" and not lifecycle.connected:
+                    if declaration.connectionLifetime == "persistent" and lifecycle.definition.policies.get("connect") == "manual" and not lifecycle.connected:
                         raise DeviceError("E_DEVICE_MANUAL_CONNECT", "manual connection was released before operation admission")
-                    lifecycle.connect(stopped, min(deadline, monotonic() + connectTimeout))
+                    if declaration.connectionLifetime == "persistent" and not service:
+                        lifecycle.connect(stopped, min(deadline, monotonic() + connectTimeout))
                     if stopped() or monotonic() >= deadline:
                         raise DeviceError("E_DEVICE_CANCELLED" if stopped() else "E_DEVICE_OPERATION_TIMEOUT",
                                           "device action abandoned after connection, before execution")
+                    deadline = min(deadline, requestDeadline or float("inf"))
                     actionDeadline = deadline if unlimited else min(deadline, monotonic() + operationTimeout)
-                    result = (driver.execute(action, params, stopped, actionDeadline, arguments=arguments)
-                              if actionSchema is not None else driver.execute(action, params, stopped, actionDeadline))
+                    result = driver.execute(action, params, stopped, actionDeadline,
+                        arguments=arguments, operationContext=operationContext)
                     if reservation:
                         metadata = None
-                        if declaration.executionLocation == "camera_host":
+                        if isinstance(result, DeviceCaptureResult):
+                            result, metadata = result.image, result.metadata
+                        elif declaration.executionLocation == "camera_host":
                             result, metadata = result
                         descriptor = self.frames.publish(reservation, result, cycleId=cycleId,
                             generation=generation, requestId=requestId, planRevision=planRevision, metadata=metadata)
@@ -173,24 +331,53 @@ class DeviceManager:
                             self.frameObserver(deviceId, owner, result, descriptor)
                         return descriptor
                     return result
+                except DeviceError:
+                    state = driver.snapshot()
+                    if state.get('ready') is False and state.get('ownsResources') is False:
+                        lifecycle.connected = False
+                    raise
                 finally:
                     lifecycle.touched()
                     if reservation:
                         self.frames.discardReservation(reservation)
+            if service:
+                with executor.condition:
+                    lifecycle.admit()
+                    operation = self.services[deviceId].admit(owner, cycleId, action, requestId)
+            else:
+                operation = None
             try:
-                operation = executor.submit(owner, perform,
+                if not service:
+                    operation = executor.submit(owner, perform,
                     requestId=requestId,
                     waitTimeout=policies.get("deviceWaitTimeoutMs", 5000) / 1000,
-                    operationTimeout=float("inf") if unlimited else connectTimeout, cancellableWait=unlimited)
+                    operationTimeout=float("inf") if unlimited else operationTimeout if tcp else connectTimeout, cancellableWait=unlimited)
             except BaseException:
                 if reservation:
                     self.frames.discardReservation(reservation)
                 raise
             if reservation:
                 operation.future.add_done_callback(lambda _future: self.frames.discardReservation(reservation))
+            events = driver.runtimeContext.events
+            def completed(future):
+                error = future.exception()
+                fields = dict(ownerId=owner, cycleId=cycleId, requestId=requestId,
+                    source=source, selectors=selectors)
+                if error is not None:
+                    events('device.action.failed', str(error), **fields,
+                        code=getattr(error, 'code', 'E_DEVICE_ERROR'), diagnostics=getattr(error, 'diagnostics', {}))
+                else:
+                    from .diagnostics import compactResult
+                    events('device.action.completed', action, **fields,
+                        result={'frame': True} if reservation else compactResult(future.result()))
+            # The native result is recorded even after the RPC caller stops waiting.
+            operation.future.add_done_callback(completed)
+        if service:
+            return self.services[deviceId].run(operation, perform, cancelled,
+                min(requestDeadline or float('inf'), monotonic()+operationTimeout), executor.generation)
         return executor.wait(operation, cancelled)
 
-    def testConnection(self, value, cancelled=lambda: False, *, admissionLock=None, admission=None):
+    def testConnection(self, value, cancelled=lambda: False, *, admissionLock=None, admission=None, deviceId=None):
         """Borrow the physical owner, or register a temporary owner until cleanup."""
         from types import SimpleNamespace
         from emo_master.core.project.devices import DeviceDefinition
@@ -198,22 +385,30 @@ class DeviceManager:
         definition = DeviceDefinition.model_validate(value)
         definitions, identities, classes = self._validatedDefinitions(
             SimpleNamespace(devices=SimpleNamespace(definitions={key: definition})))
+        definition, candidateIdentity = definitions[key], identities[key]
         temporary = False
         with (admissionLock or nullcontext()), self.lock:
             if admission is not None:
                 admission()
             if self.replacement is not None:
                 raise DeviceError('E_DEVICE_REPLACING', 'configuration replacement is pending')
-            existing = next((k for k, identity in self.identities.items() if identity == identities[key]), None)
+            explicit = deviceId
+            existing = explicit if explicit in self.drivers else next((k for k, identity in self.identities.items()
+                if candidateIdentity is not None and identity == candidateIdentity
+                and self.drivers[k].snapshot().get('ownsResources')), None)
             if existing is not None:
                 key = existing
-                if self.definitions[key].connection != definition.connection:
+                sameServerEndpoint = (definition.deviceTypeId == self.definitions[key].deviceTypeId == 'device.tcp.server'
+                    and candidateIdentity is not None and candidateIdentity == self.identities[key])
+                if self.definitions[key].connection != definition.connection and not sameServerEndpoint:
                     raise DeviceError('E_DEVICE_IDENTITY', 'existing physical device has different connection settings')
             else:
-                driver = classes[key](definitions[key])
+                driver, executor, lifecycle = self.makeBackend(key, definitions[key], classes[key], self.scope)
                 self.definitions[key], self.identities[key], self.drivers[key] = definitions[key], identities[key], driver
-                self.lifecycles[key] = DeviceLifecycle(definitions[key], driver)
-                self.executors[key] = DeviceExecutor(identities[key], idleAction=self.lifecycles[key].idleAction)
+                self.lifecycles[key] = lifecycle
+                self.executors[key] = executor
+                from .service_executor import ServiceExecutor
+                self.services[key] = ServiceExecutor(executor)
                 temporary = True
             self.authorizeMaintenance(owner, key)
             executor, lifecycle = self.executors[key], self.lifecycles[key]
@@ -221,32 +416,73 @@ class DeviceManager:
             def perform(cancel, deadline, _generation):
                 wasConnected = lifecycle.connected
                 try:
-                    lifecycle.connect(lambda: cancel() or cancelled(), deadline)
-                    return dict(connected=True, reused=not temporary, deviceId='' if temporary else key)
+                    return dict(self.drivers[key].testConnection(definition.defaults, lambda: cancel() or cancelled(), deadline),
+                                reused=not temporary, deviceId="" if temporary else key)
                 finally:
                     if not wasConnected:
                         lifecycle.disconnect()
-            try:
-                operation = executor.submit(owner, perform, waitTimeout=5,
-                    operationTimeout=connectionBudget(definition.policies))
-            except BaseException:
-                lifecycle.keepAlive.discard(owner)
-                self.retire(owner)
-                raise
         try:
+            operation = executor.submit(owner, perform, waitTimeout=5,
+                operationTimeout=connectionBudget(definition.policies))
             return executor.wait(operation, cancelled)
         finally:
             # The native owner, not RPC abandonment, determines when it is safe
             # to remove temporary identity and release the physical connection.
             with executor.condition:
                 executor.condition.wait_for(lambda: executor.active is None or executor.active.owner != owner)
+            lifecycle.keepAlive.discard(owner)
+            self.retire(owner)
+            if temporary:
+                driver = self.drivers[key]
+                driver.requestStop('test_complete')
+                cleanup = executor.submit('__dispose__', lambda _c, deadline, _g: driver.dispose(deadline), cleanup=True)
+                executor.wait(cleanup)
+                executor.close()
+                with self.lock:
+                    for mapping in (self.definitions, self.identities, self.drivers, self.lifecycles, self.executors, self.services):
+                        mapping.pop(key, None)
+
+    def connectDiagnostic(self, owner, deviceId, cancelled=lambda: False):
+        """Connect an authorized diagnostic lease through the device lifecycle."""
+        if cancelled():
+            raise DeviceError('E_DEVICE_CANCELLED', 'diagnostic connection cancelled before admission')
+        with self.lock:
+            self._checkReplacement([deviceId])
+            if deviceId not in self.permissions.get(owner, set()) or owner not in self.maintenanceOwners:
+                raise DeviceError('E_DEVICE_OWNER', 'diagnostic owner is not authorized')
+            definition = self.definitions[deviceId]
+            if not definition.enabled:
+                raise DeviceError('E_DEVICE_DISABLED', 'device is disabled')
+            declaration = self.types[definition.deviceTypeId]
+            if 'connect' not in declaration.controlCapabilities or declaration.connectionLifetime != 'persistent':
+                raise DeviceError('E_DEVICE_ACTION', 'persistent diagnostic connection is not declared')
+            lifecycle, executor = self.lifecycles[deviceId], self.executors[deviceId]
+            if lifecycle.paused or lifecycle.controlPending:
+                raise DeviceError('E_DEVICE_PAUSED', 'device admission is paused')
+            if executor.closed or executor.quarantined:
+                raise DeviceError('E_DEVICE_UNAVAILABLE', 'device is closed or quarantined')
+            lifecycle.keepAlive.add(owner)
+            # A cancelled diagnostic must not cancel another owner's pending
+            # connection. Its own FIFO operation reuses the resulting socket.
+            try:
+                operation = self._connectEvent(deviceId, owner, sharePending=False)
+                if operation is None:
+                    raise DeviceError('E_DEVICE_UNAVAILABLE', 'device connection is no longer available')
+            except BaseException:
+                lifecycle.keepAlive.discard(owner)
+                raise
+        try:
+            result = executor.wait(operation, cancelled)
+            if cancelled():
+                raise DeviceError('E_DEVICE_CANCELLED', 'diagnostic connection cancelled')
+            with self.lock:
+                if self.executors.get(deviceId) is not executor or result == 'SUPERSEDED':
+                    raise DeviceError('E_DEVICE_GENERATION', 'device changed during diagnostic connection')
+            return result
+        except BaseException:
             with self.lock:
                 lifecycle.keepAlive.discard(owner)
-                self.retire(owner)
-                if temporary and not lifecycle.connected:
-                    executor.close()
-                    for mapping in (self.definitions, self.identities, self.drivers, self.lifecycles, self.executors):
-                        mapping.pop(key, None)
+            raise
 
     def cameraDiagnostic(self, owner, deviceId, action, changes, cancelled):
         if action not in {'read_parameters', 'trial_capture'}:
@@ -300,7 +536,7 @@ class DeviceManager:
                 raise DeviceError("E_DEVICE_OWNER", "duplicate device worker")
             self.authorize(owner, deviceIds)
             for key in deviceIds:
-                if self.definitions[key].enabled and self.definitions[key].policies.get("connect") == "on_project_run":
+                if self.definitions[key].enabled and self.types[self.definitions[key].deviceTypeId].operationScheduling == "serial" and self.types[self.definitions[key].deviceTypeId].connectionLifetime == "persistent" and self.definitions[key].policies.get("connect") == "on_project_run":
                     self._connectEvent(key, owner)
             parent, child = context.Pipe()
             bridge = DeviceBridge(self, owner, parent, cancellation)
@@ -308,19 +544,44 @@ class DeviceManager:
             bridge.thread.start()
             return child
 
+    def openTcpWorker(self, owner, cancellation, context):
+        from emo_master.apps.runtime.communication.ipc import WorkerBridge
+        with self.lock:
+            if owner in self.tcpWorkers:
+                raise DeviceError('E_DEVICE_OWNER', 'duplicate TCP worker')
+            parent, child = context.Pipe()
+            bridge = WorkerBridge(self, owner, parent, cancellation)
+            self.tcpWorkers[owner] = bridge
+            bridge.start()
+            return child
+
+    def revokeTcpWorker(self, owner):
+        bridge = self.tcpWorkers.get(owner)
+        if bridge is not None:
+            bridge.close()
+            self.tcpWorkers.pop(owner, None)
+
     def revoke(self, owner):
         with self.lock:
             self.permissions.pop(owner, None)
-            for executor in self.executors.values():
+            drivers = list(self.drivers.values())
+            for key, executor in self.executors.items():
                 executor.cancelOwner(owner)
+                self.services[key].cancelOwner(owner)
             for lifecycle in self.lifecycles.values():
                 lifecycle.keepAlive.discard(owner)
+        for driver in drivers:
+            driver.revokeOwner(owner)
 
     def retire(self, owner):
         self.revoke(owner)
         bridge = self.workers.get(owner)
         if bridge:
             bridge.close()
+        tcpBridge = self.tcpWorkers.pop(owner, None)
+        if tcpBridge is not None:
+            tcpBridge.close()
+        self.waitOwner(owner)
         with self.lock:
             # A terminated Job is not proof that its in-flight native call returned.
             if any(executor.active is not None and executor.active.owner == owner
@@ -333,86 +594,158 @@ class DeviceManager:
             self.configuration.retireOwner(owner)
 
     def _closeDevices(self):
-        for executor in self.executors.values():
+        with self.lock:
+            entries = [(key, self.drivers[key], executor) for key, executor in self.executors.items()]
+            for key, driver, _ in entries:
+                self.lifecycles[key].paused = True
+                self.services[key].cancelOwner()
+        for _key, driver, _executor in entries:
+            driver.requestStop('project_close')
+        for key, driver, executor in entries:
+            self.services[key].wait(deadline=monotonic()+5)
+            operation = executor.submit('__dispose__', lambda _c, deadline, _g, driver=driver: driver.dispose(deadline),
+                operationTimeout=5, cleanup=True)
+            executor.wait(operation)
             executor.close()
-        for driver in self.drivers.values():
-            driver.close()
-        self.executors.clear()
-        self.drivers.clear()
-        self.lifecycles.clear()
+        with self.lock:
+            self.executors.clear()
+            self.drivers.clear()
+            self.lifecycles.clear()
+            self.services.clear()
 
-    def _connectEvent(self, deviceId, owner):
+    def _connectEvent(self, deviceId, owner, *, sharePending=True):
         self._checkReplacement([deviceId])
         lifecycle, executor = self.lifecycles[deviceId], self.executors[deviceId]
+        if self.types[self.definitions[deviceId].deviceTypeId].connectionLifetime != 'persistent':
+            return None
         with executor.condition:
             if lifecycle.paused or lifecycle.controlPending or executor.quarantined:
-                return
-            return executor.submit(owner, lambda cancel, deadline, _generation: lifecycle.connect(cancel, deadline),
+                return None
+            pending = getattr(lifecycle, 'connectOperation', None)
+            configurationRevision = self.configuration.current['executionRevision'] if self.configuration and self.configuration.current else None
+            if (pending is not None and not pending.future.done()
+                    and (sharePending or pending.owner == owner)
+                    and getattr(lifecycle, 'connectRevision', None) == configurationRevision):
+                return pending
+            revision = lifecycle.controlRevision
+            def connect(cancel, deadline, generation):
+                currentRevision = self.configuration.current['executionRevision'] if self.configuration and self.configuration.current else None
+                if (self.lifecycles.get(deviceId) is not lifecycle or revision != lifecycle.controlRevision or lifecycle.paused
+                        or currentRevision != configurationRevision):
+                    return 'SUPERSEDED'
+                try:
+                    lifecycle.connect(cancel, deadline)
+                except Exception as error:
+                    lifecycle.driver.runtimeContext.events('device.connect.failed', str(error), code=getattr(error, 'code', 'E_DEVICE_CONNECT'))
+                    raise
+                lifecycle.driver.runtimeContext.events('device.connect.completed', '设备连接已就绪')
+                return 'LISTENING' if lifecycle.driver.snapshot().get('state') == 'LISTENING' else 'CONNECTED'
+            operation = executor.submit(owner, connect,
                 operationTimeout=connectionBudget(self.definitions[deviceId].policies))
+            lifecycle.connectOperation = operation
+            lifecycle.connectRevision = configurationRevision
+            return operation
 
     def activate(self):
-        """One committed online activation event, never a status-refresh action."""
+        with self.lock:
+            return {key: self._connectEvent(key, '__project_open__') for key, definition in self.definitions.items()
+                if definition.enabled and definition.policies.get('connect') == 'on_project_open'
+                and not self.lifecycles[key].connected}
+
+    def preflight(self, document, workflowId):
+        from emo_master.core.project.devices import workflowDeviceIds
+        from emo_master.core.workflow.dispatch_contracts import groupSlots
+        required = set(workflowDeviceIds(document, workflowId))
+        for target, _capacity in groupSlots(document, workflowId).values():
+            required.update(workflowDeviceIds(document, target))
+        pending = {}
         with self.lock:
             for key, definition in self.definitions.items():
-                if definition.enabled and definition.policies.get("connect") == "on_project_open":
-                    self._connectEvent(key, "__project_open__")
+                declaration = self.types[definition.deviceTypeId]
+                if not definition.enabled or declaration.operationScheduling != 'managed_service':
+                    continue
+                if definition.policies.get('connect') == 'on_project_run':
+                    pending[key] = self._connectEvent(key, '__project_run__')
+                elif key in required:
+                    pending[key] = getattr(self.lifecycles[key], 'connectOperation', None)
+        for key in required:
+            if key not in self.definitions:
+                raise DeviceError('E_DEVICE_REFERENCE', key)
+            definition = self.definitions[key]
+            if not definition.enabled:
+                raise DeviceError('E_DEVICE_DISABLED', key + ': device is disabled')
+            if self.types[definition.deviceTypeId].operationScheduling == 'managed_service':
+                operation = pending.get(key)
+                if operation is not None and not self.lifecycles[key].connected:
+                    self.executors[key].wait(operation)
+                self.lifecycles[key].admit()
+                if not self.lifecycles[key].connected:
+                    raise DeviceError('E_TCP_NOT_RUNNING', key + ': 请从设备页启动服务')
 
     def beginControl(self, deviceId, expectedGeneration, action, *, expectedControlRevision=None):
-        if action not in {"connect", "disconnect", "maintenance"}:
-            raise DeviceError("E_DEVICE_ACTION", "unsupported lifecycle control")
         with self.lock:
             self._checkReplacement([deviceId])
             executor = self.executors.get(deviceId)
             if executor is None or executor.generation != expectedGeneration:
-                raise DeviceError("E_DEVICE_GENERATION", "device generation changed; read state again")
-            lifecycle = self.lifecycles[deviceId]
+                raise DeviceError('E_DEVICE_GENERATION', 'device generation changed; refresh state')
+            lifecycle, driver = self.lifecycles[deviceId], self.drivers[deviceId]
+            declaration = self.types[self.definitions[deviceId].deviceTypeId]
+            if action not in declaration.controlCapabilities or action in {'test_connection', 'recover'}:
+                raise DeviceError('E_DEVICE_ACTION', 'control not declared: ' + action)
+            if expectedControlRevision is not None and lifecycle.controlRevision != expectedControlRevision:
+                raise DeviceError('E_DEVICE_CONTROL_STALE', 'device control changed; refresh state')
+            if lifecycle.controlPending:
+                raise DeviceError('E_DEVICE_BUSY', 'another device control is pending')
+            if not self.definitions[deviceId].enabled and action in {'connect', 'resume'}:
+                raise DeviceError('E_DEVICE_DISABLED', deviceId)
+            if action == 'connect' and self.busy(deviceId):
+                raise DeviceError('E_DEVICE_BUSY', 'device is in use')
+            oldPaused = lifecycle.paused
+            lifecycle.controlRevision = uuid4().hex
+            lifecycle.controlPending = True
+            lifecycle.paused = True
+            if action in {'disconnect', 'maintenance'}:
+                for operation in list(executor.queue):
+                    executor.cancel(operation)
+                if executor.active:
+                    executor.active.cancellation.set()
+                self.services[deviceId].cancelOwner()
+            budget = connectionBudget(self.definitions[deviceId].policies)
+            service = self.services[deviceId]
+        def perform(cancel, deadline, _generation):
+            if action == 'connect':
+                lifecycle.connect(cancel, deadline)
+                if cancel() or monotonic() >= deadline:
+                    lifecycle.disconnect(deadline)
+                    raise DeviceError('E_DEVICE_CANCELLED' if cancel() else 'E_DEVICE_OPERATION_TIMEOUT',
+                        'connection control abandoned; admission remains paused')
+                lifecycle.paused = False
+            elif action == 'resume':
+                lifecycle.paused = False
+            else:
+                service.wait(deadline=deadline)
+                lifecycle.disconnect(deadline)
+            driver.runtimeContext.events('device.control', action)
+        try:
+            if action in {'disconnect', 'maintenance'}:
+                driver.requestStop(action)
+            operation = executor.submit('__device_control__', perform, waitTimeout=30,
+                operationTimeout=budget, cleanup=action != 'connect')
+        except BaseException:
+            with self.lock:
+                lifecycle.controlPending = False
+                lifecycle.paused = oldPaused
+            raise
+        def completed(future):
             with executor.condition:
-                if expectedControlRevision is not None and expectedControlRevision != lifecycle.controlRevision:
-                    raise DeviceError("E_DEVICE_CONTROL_STALE", "device control intent changed; read state again")
-                if lifecycle.controlPending:
-                    raise DeviceError("E_DEVICE_BUSY", "another lifecycle control is pending")
-                if not self.definitions[deviceId].enabled and action == "connect":
-                    raise DeviceError("E_DEVICE_DISABLED", "device is disabled")
-                if action != "maintenance" and (executor.active or executor.queue):
-                    raise DeviceError("E_DEVICE_BUSY", "device is in use; explicitly request maintenance to cancel its operations")
-                if action == "maintenance":
-                    for operation in list(executor.queue):
-                        executor.cancel(operation)
-                    if executor.active:
-                        executor.active.cancellation.set()
-                oldPaused = lifecycle.paused
-                oldRevision = lifecycle.controlRevision
-                lifecycle.controlRevision = uuid4().hex
-                lifecycle.controlPending = True
-                # A disconnected or maintained session cannot be auto-reopened.
-                lifecycle.paused = True
-
-                def perform(cancel, deadline, _generation):
-                    if action == "connect":
-                        lifecycle.connect(cancel, deadline)
-                        if cancel() or monotonic() >= deadline:
-                            lifecycle.disconnect()
-                            raise DeviceError("E_DEVICE_CANCELLED" if cancel() else "E_DEVICE_OPERATION_TIMEOUT",
-                                              "connection control abandoned; admission remains paused")
-                        lifecycle.paused = False
-                    else:
-                        lifecycle.disconnect()
-
-                try:
-                    operation = executor.submit("__device_control__", perform,
-                        waitTimeout=600, operationTimeout=connectionBudget(self.definitions[deviceId].policies))
-                except BaseException:
-                    lifecycle.controlPending = False
-                    lifecycle.paused = oldPaused
-                    lifecycle.controlRevision = oldRevision
-                    raise
-                def completed(future):
-                    with executor.condition:
-                        lifecycle.controlPending = False
-                        error = future.exception()
-                        lifecycle.lastError = str(error) if error else ""
-                operation.future.add_done_callback(completed)
-                return executor, operation
+                lifecycle.controlPending = False
+                error = future.exception()
+                lifecycle.lastError = str(error) if error else ''
+        operation.future.add_done_callback(completed)
+        with self.lock:
+            if action == 'connect':
+                lifecycle.connectOperation = operation
+        return executor, operation
 
     def setKeepAlive(self, owner, deviceId, enabled):
         with self.lock:
@@ -425,38 +758,40 @@ class DeviceManager:
                     self.lifecycles[deviceId].keepAlive.discard(owner)
 
     def recover(self, deviceId, expectedGeneration):
+        from .drivers import validateDriver
         with self.lock:
             self._checkReplacement([deviceId])
-            definition = self.definitions.get(deviceId)
-            if definition is None or definition.deviceTypeId not in {"device.plc.mitsubishi_slmp", "device.camera.huaray_imv"}:
-                raise DeviceError("E_DEVICE_ACTION", "device does not support explicit session recovery")
+            definition = self.definitions[deviceId]
+            if 'recover' not in self.types[definition.deviceTypeId].controlCapabilities:
+                raise DeviceError('E_DEVICE_ACTION', 'recovery not declared')
             previous = self.executors[deviceId]
             if previous.generation != expectedGeneration:
-                raise DeviceError("E_DEVICE_GENERATION", "device generation changed; read state again")
-            if (previous.active or previous.queue
-                    or any(deviceId in ids for ids in self.permissions.values())):
-                raise DeviceError("E_DEVICE_BUSY", "retire device Jobs and diagnostic leases before recovery")
-            driver = type(self.drivers[deviceId])(definition)
-            if hasattr(driver, 'resourceLeasePath'):
-                driver.resourceLeasePath = self.resourceLeasePath
-            lifecycle = DeviceLifecycle(definition, driver)
-            lifecycle.paused = self.lifecycles[deviceId].paused
-            executor = DeviceExecutor(self.identities[deviceId], idleAction=lifecycle.idleAction)
-            try:
-                previous.close()
-                self.drivers[deviceId].close()
-            except BaseException:
-                executor.close()
-                driver.close()
-                raise
-            self.drivers[deviceId], self.executors[deviceId] = driver, executor
-            self.lifecycles[deviceId] = lifecycle
+                raise DeviceError('E_DEVICE_GENERATION', 'device generation changed')
+            if self.busy(deviceId) or any(deviceId in ids for ids in self.permissions.values()):
+                raise DeviceError('E_DEVICE_BUSY', 'retire device users before recovery')
+            lifecycle = self.lifecycles[deviceId]
+            lifecycle.controlPending = True
+            oldDriver = self.drivers[deviceId]
+        try:
+            oldDriver.requestStop('recover')
+            operation = previous.submit('__recover__', lambda _c, deadline, _g: oldDriver.dispose(deadline), cleanup=True)
+            previous.wait(operation)
+            previous.close()
+            driver, executor, replacement = self.makeBackend(deviceId, definition,
+                validateDriver(self.types[definition.deviceTypeId]), self.scope)
+            replacement.paused = lifecycle.paused
+            with self.lock:
+                self.drivers[deviceId], self.executors[deviceId], self.lifecycles[deviceId] = driver, executor, replacement
+                from .service_executor import ServiceExecutor
+                self.services[deviceId] = ServiceExecutor(executor)
+        except BaseException:
+            lifecycle.controlPending = False
+            raise
 
     def close(self):
-        with self.lock:
-            if self.replacement is not None:
-                self.replacement.close()
-            if self.workers or self.maintenanceOwners:
-                raise DeviceError("E_DEVICE_RELEASE_PENDING", "device IPC workers still exist")
-            self._closeDevices()
-            self.frames.close()
+        if self.replacement is not None:
+            self.replacement.close()
+        if self.workers or self.maintenanceOwners:
+            raise DeviceError("E_DEVICE_RELEASE_PENDING", "device IPC workers still exist")
+        self._closeDevices()
+        self.frames.close()

@@ -1,0 +1,1169 @@
+{
+  "schemaVersion": "2.7",
+  "project": {
+    "projectId": "4814e2e2-c7eb-430d-8252-2c7b49246c22",
+    "name": "saved-copy",
+    "revision": 4,
+    "createdAt": "2026-10-21T14:19:37Z",
+    "updatedAt": "2026-10-21T14:19:40Z"
+  },
+  "entryWorkflowId": "main",
+  "workflowOrder": [
+    "main",
+    "single",
+    "receive",
+    "other",
+    "camera-plc"
+  ],
+  "workflows": {
+    "main": {
+      "name": "TCP acceptance",
+      "inputs": {
+        "text": "string"
+      },
+      "outputs": {
+        "receipt": "tcpSendReceipt"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {
+            "text": "string"
+          },
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "acquire",
+          "kind": "operator",
+          "operatorId": "communication.tcp.session",
+          "displayName": "TCP \u901a\u9053\u4f1a\u8bdd",
+          "inputPorts": {},
+          "outputPorts": {
+            "session": "tcpSessionRef"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false,
+            "required": [],
+            "xDeviceActionFields": []
+          },
+          "params": {},
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "server",
+              "selectors": {
+                "channelId": "a"
+              }
+            }
+          },
+          "deviceValueBindings": {
+            "tcp": {
+              "timeoutMs": {
+                "source": "variable",
+                "variableId": "wait",
+                "inputName": null
+              }
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "send",
+          "kind": "operator",
+          "operatorId": "communication.tcp.session_send",
+          "displayName": "TCP \u4f1a\u8bdd\u53d1\u9001",
+          "inputPorts": {
+            "session": "tcpSessionRef",
+            "data": "string"
+          },
+          "outputPorts": {
+            "receipt": "tcpSendReceipt"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false,
+            "required": [],
+            "xDeviceActionFields": []
+          },
+          "params": {},
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "server",
+              "selectors": {}
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {
+            "receipt": "tcpSendReceipt"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "load",
+          "kind": "operator",
+          "operatorId": "vision.io.image_loader",
+          "displayName": "Image Loader",
+          "inputPorts": {},
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "imagePath": {
+                "title": "\u56fe\u50cf\u8def\u5f84",
+                "type": "string",
+                "default": "",
+                "xWidget": "file",
+                "xFileMode": "open",
+                "xFilter": "\u56fe\u7247\u6587\u4ef6 (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)"
+              },
+              "colorMode": {
+                "title": "\u989c\u8272\u6a21\u5f0f",
+                "type": "string",
+                "enum": [
+                  "color",
+                  "grayscale"
+                ],
+                "default": "color"
+              }
+            },
+            "required": [
+              "imagePath"
+            ]
+          },
+          "params": {
+            "imagePath": "sample.png"
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "mask",
+          "kind": "operator",
+          "operatorId": "vision.preprocess.threshold",
+          "displayName": "Threshold",
+          "inputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "outputPorts": {
+            "mask": "image",
+            "threshold": "number",
+            "frame": "bbox2d"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "title": "\u9608\u503c\u6a21\u5f0f",
+                "type": "string",
+                "enum": [
+                  "fixed",
+                  "otsu",
+                  "triangle",
+                  "adaptiveMean",
+                  "adaptiveGaussian"
+                ],
+                "default": "fixed",
+                "xOptionLabels": {
+                  "fixed": "\u56fa\u5b9a\u9608\u503c",
+                  "otsu": "\u5927\u6d25\u6cd5\uff08\u81ea\u52a8\u9608\u503c\uff09",
+                  "triangle": "\u4e09\u89d2\u6cd5\uff08\u81ea\u52a8\u9608\u503c\uff09",
+                  "adaptiveMean": "\u81ea\u9002\u5e94\u5747\u503c",
+                  "adaptiveGaussian": "\u81ea\u9002\u5e94\u9ad8\u65af"
+                },
+                "description": "\u56fa\u5b9a\u6a21\u5f0f\u4f7f\u7528\u6307\u5b9a\u9608\u503c\uff1b\u81ea\u52a8\u6a21\u5f0f\u7531\u56fe\u50cf\u8ba1\u7b97\u9608\u503c\uff1b\u81ea\u9002\u5e94\u6a21\u5f0f\u6309\u5c40\u90e8\u90bb\u57df\u8ba1\u7b97\u9608\u503c\u3002"
+              },
+              "threshold": {
+                "title": "\u9608\u503c",
+                "type": "integer",
+                "default": 127,
+                "xMinimum": 0,
+                "xMaximum": 255,
+                "xEnabledWhen": {
+                  "mode": [
+                    "fixed"
+                  ]
+                },
+                "xUnit": "\u7070\u5ea6\u7ea7",
+                "xExample": 127,
+                "description": "\u4ec5\u56fa\u5b9a\u9608\u503c\u6a21\u5f0f\u751f\u6548\uff0c\u586b\u5199 0\uff5e255 \u7684\u6574\u6570\u3002"
+              },
+              "invert": {
+                "title": "\u53cd\u5411\u9608\u503c",
+                "type": "boolean",
+                "default": false,
+                "description": "\u5f00\u542f\u540e\u53cd\u8f6c\u4e8c\u503c\u63a9\u7801\u7684\u524d\u666f\u4e0e\u80cc\u666f\uff0c\u8f93\u51fa\u4ecd\u4e3a 0/255\u3002"
+              },
+              "blockSize": {
+                "title": "\u81ea\u9002\u5e94\u90bb\u57df\u5927\u5c0f",
+                "type": "integer",
+                "default": 11,
+                "xMinimum": 3,
+                "xOdd": true,
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xUnit": "\u50cf\u7d20",
+                "xExample": 11,
+                "description": "\u4ec5\u81ea\u9002\u5e94\u6a21\u5f0f\u751f\u6548\uff0c\u5fc5\u987b\u662f\u5927\u4e8e\u7b49\u4e8e 3 \u7684\u5947\u6570\uff0c\u5982 3\u30015\u300111\u3002"
+              },
+              "constant": {
+                "title": "\u81ea\u9002\u5e94\u9608\u503c\u504f\u79fb\u91cf",
+                "type": "number",
+                "default": 2.0,
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xUnit": "\u7070\u5ea6\u7ea7",
+                "xExample": 2.0,
+                "description": "\u4ec5\u81ea\u9002\u5e94\u6a21\u5f0f\u751f\u6548\uff0c\u4ece\u5c40\u90e8\u5747\u503c\u6216\u52a0\u6743\u5747\u503c\u4e2d\u51cf\u53bb\u6b64\u6709\u9650\u6570\u503c\uff0c\u53ef\u4e3a\u8d1f\u6570\u6216\u5c0f\u6570\u3002"
+              }
+            }
+          },
+          "params": {
+            "mode": "fixed",
+            "threshold": 64
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "acquire",
+          "fromPort": "session",
+          "toNode": "send",
+          "toPort": "session"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "text",
+          "toNode": "send",
+          "toPort": "data"
+        },
+        {
+          "fromNode": "send",
+          "fromPort": "receipt",
+          "toNode": "output",
+          "toPort": "receipt"
+        },
+        {
+          "fromNode": "load",
+          "fromPort": "image",
+          "toNode": "mask",
+          "toPort": "image"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "output": {
+            "x": 360.0,
+            "y": 20.0
+          }
+        }
+      }
+    },
+    "single": {
+      "name": "TCP acceptance",
+      "inputs": {},
+      "outputs": {
+        "response": "tcpMessage"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "client",
+          "kind": "operator",
+          "operatorId": "communication.tcp.client",
+          "displayName": "TCP Client",
+          "inputPorts": {
+            "message": "tcpMessage",
+            "text": "string"
+          },
+          "outputPorts": {
+            "response": "tcpMessage",
+            "sentBytes": "integer",
+            "responseText": "string"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "title": "\u64cd\u4f5c\u7c7b\u578b",
+                "type": "string",
+                "enum": [
+                  "send",
+                  "exchange"
+                ],
+                "default": "send"
+              },
+              "text": {
+                "title": "\u53d1\u9001\u6587\u672c",
+                "type": "string",
+                "default": ""
+              }
+            },
+            "additionalProperties": false,
+            "required": [],
+            "xDeviceActionFields": [
+              "operation",
+              "text"
+            ]
+          },
+          "params": {
+            "operation": "exchange",
+            "text": "PING"
+          },
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "client",
+              "selectors": {}
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {
+            "response": "tcpMessage"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "client",
+          "fromPort": "response",
+          "toNode": "output",
+          "toPort": "response"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "output": {
+            "x": 360.0,
+            "y": 20.0
+          }
+        }
+      }
+    },
+    "receive": {
+      "name": "TCP acceptance",
+      "inputs": {},
+      "outputs": {
+        "message": "tcpMessage"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "receive",
+          "kind": "operator",
+          "operatorId": "communication.tcp.receive_once",
+          "displayName": "TCP Receive Once",
+          "inputPorts": {},
+          "outputPorts": {
+            "message": "tcpMessage",
+            "peerHost": "string",
+            "peerPort": "integer",
+            "text": "string"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false,
+            "required": [],
+            "xDeviceActionFields": []
+          },
+          "params": {},
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "receiver",
+              "selectors": {}
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {
+            "message": "tcpMessage"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "receive",
+          "fromPort": "message",
+          "toNode": "output",
+          "toPort": "message"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "output": {
+            "x": 360.0,
+            "y": 20.0
+          }
+        }
+      }
+    },
+    "other": {
+      "name": "TCP acceptance",
+      "inputs": {},
+      "outputs": {
+        "session": "tcpSessionRef"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "wait-b",
+          "kind": "operator",
+          "operatorId": "communication.tcp.session",
+          "displayName": "TCP \u901a\u9053\u4f1a\u8bdd",
+          "inputPorts": {},
+          "outputPorts": {
+            "session": "tcpSessionRef"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false,
+            "required": [],
+            "xDeviceActionFields": []
+          },
+          "params": {},
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "server",
+              "selectors": {
+                "channelId": "b"
+              }
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {
+            "session": "tcpSessionRef"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "wait-b",
+          "fromPort": "session",
+          "toNode": "output",
+          "toPort": "session"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "output": {
+            "x": 360.0,
+            "y": 20.0
+          }
+        }
+      }
+    },
+    "camera-plc": {
+      "name": "TCP acceptance",
+      "inputs": {},
+      "outputs": {
+        "image": "image",
+        "receipt": "plcWriteReceipt"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "camera",
+          "kind": "operator",
+          "operatorId": "vision.io.simulated_camera",
+          "displayName": "\u6a21\u62df\u76f8\u673a\u91c7\u96c6",
+          "inputPorts": {},
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "params": {},
+          "deviceBindings": {
+            "camera": {
+              "deviceId": "camera",
+              "selectors": {}
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "process",
+          "kind": "operator",
+          "operatorId": "vision.analysis.blob",
+          "displayName": "Blob Analysis",
+          "inputPorts": {
+            "image": "image",
+            "mask": "image",
+            "frame": "bbox2d"
+          },
+          "outputPorts": {
+            "blobs": "blobCollection",
+            "mask": "image",
+            "overlay": "image",
+            "frame": "bbox2d"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "threshold": {
+                "title": "\u9608\u503c",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255,
+                "default": 127
+              },
+              "invert": {
+                "title": "\u53cd\u8f6c\u63a9\u819c",
+                "type": "boolean",
+                "default": false
+              },
+              "useOtsu": {
+                "title": "\u4f7f\u7528\u5927\u6d25\u6cd5\u9608\u503c",
+                "type": "boolean",
+                "default": false
+              },
+              "connectivity": {
+                "title": "\u8fde\u901a\u65b9\u5f0f",
+                "type": "integer",
+                "enum": [
+                  4,
+                  8
+                ],
+                "default": 8
+              },
+              "minArea": {
+                "title": "\u6700\u5c0f\u9762\u79ef",
+                "type": "integer",
+                "minimum": 1,
+                "default": 1
+              },
+              "maxArea": {
+                "title": "\u6700\u5927\u9762\u79ef",
+                "type": "integer",
+                "minimum": 0,
+                "default": 0
+              },
+              "includeContour": {
+                "title": "\u5305\u542b\u8f6e\u5ed3",
+                "type": "boolean",
+                "default": true
+              },
+              "drawOverlay": {
+                "title": "\u7ed8\u5236\u53e0\u52a0\u56fe",
+                "type": "boolean",
+                "default": false
+              }
+            }
+          },
+          "params": {
+            "threshold": 0
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "count",
+          "kind": "operator",
+          "operatorId": "vision.collection.count",
+          "displayName": "Count Collection",
+          "inputPorts": {
+            "blobs": "blobCollection",
+            "detections": "detectionCollection",
+            "contours": "contourCollection",
+            "measurements": "shapeMeasurementCollection",
+            "lines": "lineCollection",
+            "circles": "circleCollection",
+            "matches": "templateMatchCollection"
+          },
+          "outputPorts": {
+            "count": "integer"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {}
+          },
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "plc",
+          "kind": "operator",
+          "operatorId": "communication.plc.slmp_write",
+          "displayName": "PLC SLMP Write",
+          "inputPorts": {
+            "data": "plcValueCollection",
+            "value": "number",
+            "values": "list<number>"
+          },
+          "outputPorts": {
+            "receipt": "plcWriteReceipt"
+          },
+          "paramSchema": {
+            "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "values"
+            ],
+            "properties": {
+              "frameEncoding": {
+                "title": "\u901a\u4fe1\u683c\u5f0f",
+                "type": "string",
+                "enum": [
+                  "binary",
+                  "ascii"
+                ],
+                "default": "binary",
+                "xOptionLabels": {
+                  "binary": "MC 3E \u00b7 \u4e8c\u8fdb\u5236\uff08Binary\uff09",
+                  "ascii": "MC 3E \u00b7 ASCII"
+                }
+              },
+              "host": {
+                "title": "\u4e3b\u673a\u5730\u5740",
+                "type": "string",
+                "default": "127.0.0.1"
+              },
+              "port": {
+                "title": "\u7aef\u53e3",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535,
+                "default": 10001
+              },
+              "device": {
+                "title": "PLC \u8f6f\u5143\u4ef6",
+                "type": "string",
+                "enum": [
+                  "D",
+                  "M",
+                  "d",
+                  "m"
+                ],
+                "default": "D"
+              },
+              "startAddress": {
+                "title": "\u8d77\u59cb\u5730\u5740",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 16777215,
+                "default": 0
+              },
+              "connectTimeoutMs": {
+                "title": "\u8fde\u63a5\u8d85\u65f6\uff08\u6beb\u79d2\uff09",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60000,
+                "default": 2000
+              },
+              "responseTimeoutMs": {
+                "title": "\u54cd\u5e94\u8d85\u65f6\uff08\u6beb\u79d2\uff09",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60000,
+                "default": 2000
+              },
+              "retryCount": {
+                "title": "\u5f02\u5e38\u91cd\u8bd5\u6b21\u6570",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3,
+                "default": 0
+              },
+              "retryDelayMs": {
+                "title": "\u91cd\u8bd5\u95f4\u9694\uff08\u6beb\u79d2\uff09",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000,
+                "default": 0
+              },
+              "networkNo": {
+                "title": "\u7f51\u7edc\u7f16\u53f7",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255,
+                "default": 0
+              },
+              "pcNo": {
+                "title": "PC \u7f16\u53f7",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255,
+                "default": 255
+              },
+              "moduleIoNo": {
+                "title": "\u6a21\u5757 I/O \u7f16\u53f7",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535,
+                "default": 1023
+              },
+              "moduleStationNo": {
+                "title": "\u6a21\u5757\u7ad9\u53f7",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255,
+                "default": 0
+              },
+              "monitoringTimer": {
+                "title": "\u76d1\u89c6\u5b9a\u65f6\u5668\uff08250 \u6beb\u79d2\u5355\u4f4d\uff09",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 65535,
+                "default": 0
+              },
+              "dataType": {
+                "title": "\u6570\u636e\u7c7b\u578b",
+                "type": "string",
+                "enum": [
+                  "uint16",
+                  "int16",
+                  "uint32",
+                  "int32",
+                  "float32"
+                ],
+                "default": "uint16"
+              },
+              "values": {
+                "title": "\u5199\u5165\u503c",
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "default": []
+              }
+            }
+          },
+          "params": {
+            "startAddress": 100
+          },
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc",
+              "selectors": {}
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {
+            "image": "image",
+            "receipt": "plcWriteReceipt"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "camera",
+          "fromPort": "image",
+          "toNode": "process",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "process",
+          "fromPort": "blobs",
+          "toNode": "count",
+          "toPort": "blobs"
+        },
+        {
+          "fromNode": "count",
+          "fromPort": "count",
+          "toNode": "plc",
+          "toPort": "value"
+        },
+        {
+          "fromNode": "process",
+          "fromPort": "mask",
+          "toNode": "output",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "plc",
+          "fromPort": "receipt",
+          "toNode": "output",
+          "toPort": "receipt"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "output": {
+            "x": 360.0,
+            "y": 20.0
+          }
+        }
+      }
+    }
+  },
+  "runtime": {
+    "maxConcurrentJobs": 2,
+    "gracefulStopTimeoutMs": 5000,
+    "heartbeatTimeoutMs": 5000,
+    "eventRetentionPerJob": 10000
+  },
+  "dependencies": {
+    "operators": []
+  },
+  "devices": {
+    "bindings": {},
+    "schemaVersion": "1.0",
+    "definitions": {
+      "server": {
+        "name": "TCP \u5e38\u9a7b\u670d\u52a1",
+        "deviceTypeId": "device.tcp.server",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "bindAddress": "127.0.0.1",
+          "port": 58164,
+          "channels": [
+            {
+              "channelId": "a",
+              "name": "Station A Qt",
+              "allowedIps": [
+                "127.0.0.1"
+              ]
+            },
+            {
+              "channelId": "b",
+              "name": "Station B",
+              "allowedIps": [
+                "127.0.0.2"
+              ]
+            }
+          ]
+        },
+        "defaults": {
+          "timeoutMs": 5000,
+          "encoding": "utf-8",
+          "appendNewline": false
+        },
+        "policies": {
+          "deviceWaitTimeoutMs": 5000,
+          "connect": "on_project_open",
+          "release": "on_project_close",
+          "sendTimeoutMs": 10000,
+          "maxMessageBytes": 16777216
+        }
+      },
+      "client": {
+        "name": "TCP \u5355\u6b21\u5ba2\u6237\u7aef",
+        "deviceTypeId": "device.tcp.client_once",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "host": "127.0.0.1",
+          "port": 58165
+        },
+        "defaults": {
+          "textEncoding": "utf-8",
+          "appendNewline": false,
+          "rejectTrailingResponse": false,
+          "shutdownWrite": false,
+          "connectTimeoutMs": 2000,
+          "responseTimeoutMs": 2000,
+          "responseFraming": "newline",
+          "expectedBytes": 0,
+          "maxResponseBytes": 1048576,
+          "maxRequestBytes": 1048576,
+          "responseEncoding": "utf-8",
+          "responseTextEncoding": "none"
+        },
+        "policies": {
+          "deviceWaitTimeoutMs": 5000
+        }
+      },
+      "receiver": {
+        "name": "TCP \u5355\u6b21\u63a5\u6536",
+        "deviceTypeId": "device.tcp.receive_once",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "bindHost": "127.0.0.1",
+          "port": 58166
+        },
+        "defaults": {
+          "acceptTimeoutMs": 5000,
+          "readTimeoutMs": 1000,
+          "framing": "newline",
+          "expectedBytes": 0,
+          "maxMessageBytes": 1048576,
+          "messageEncoding": "utf-8",
+          "messageTextEncoding": "utf-8",
+          "ackText": "ACK",
+          "ackEncoding": "utf-8",
+          "ackAppendNewline": true,
+          "maxAckBytes": 1048576
+        },
+        "policies": {
+          "deviceWaitTimeoutMs": 5000
+        }
+      },
+      "camera": {
+        "name": "\u6a21\u62df\u76f8\u673a",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "serial": "ACCEPTANCE-SIMULATOR"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 8000,
+          "gain": 0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "plc": {
+        "name": "\u4e09\u83f1 SLMP PLC",
+        "deviceTypeId": "device.plc.mitsubishi_slmp",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "host": "127.0.0.1",
+          "port": 58167,
+          "frameEncoding": "binary",
+          "connectTimeoutMs": 2000,
+          "responseTimeoutMs": 2000,
+          "networkNo": 0,
+          "pcNo": 255,
+          "moduleIoNo": 1023,
+          "moduleStationNo": 0,
+          "monitoringTimer": 0
+        },
+        "defaults": {},
+        "policies": {
+          "connectionRetryCount": 0,
+          "recoveryTimeoutMs": 5000,
+          "recoveryBackoffMs": 100,
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      }
+    }
+  },
+  "presentation": {
+    "schemaVersion": "1.0",
+    "defaultPageId": null,
+    "pageOrder": [],
+    "navigation": {
+      "mode": "tabs"
+    },
+    "resultScopes": {},
+    "dataSources": {},
+    "pages": {}
+  },
+  "resources": {
+    "schemaVersion": "1.0",
+    "items": {
+      "sample": {
+        "path": "sample.png",
+        "sha256": "7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4",
+        "size": 80,
+        "purpose": "input_image"
+      }
+    },
+    "parameterBindings": [
+      {
+        "target": {
+          "workflowId": "main",
+          "nodeId": "load",
+          "parameterPath": [
+            "imagePath"
+          ]
+        },
+        "resourceId": "sample"
+      }
+    ],
+    "siteBindings": [
+      {
+        "target": {
+          "deviceId": "camera",
+          "section": "connection",
+          "parameterPath": [
+            "serial"
+          ]
+        },
+        "field": "camera-serial",
+        "purpose": "camera_serial",
+        "required": true
+      }
+    ]
+  },
+  "production": {
+    "autoStart": false,
+    "mode": "single",
+    "cycleIntervalMs": 100,
+    "inputs": {}
+  },
+  "globalVariables": {
+    "wait": {
+      "name": "\u7b49\u5f85\u5ba2\u6237\u7aef",
+      "type": "integer",
+      "kind": "constant",
+      "initialValue": 5000,
+      "lifetime": "job",
+      "legacyCounterName": null
+    }
+  }
+}

@@ -1,0 +1,36 @@
+FFFFF                                                                    [100%]
+================================== FAILURES ===================================
+___________ testMissingSlotDraftPersistsAndStrictFinishStillRejects ___________
+tests\designer\test_device_usability_drafts.py:26: in testMissingSlotDraftPersistsAndStrictFinishStillRejects
+    editor.commitNode('main', node, allowIncomplete=True, position=[20.0, 30.0])
+E   TypeError: DeviceCatalogEditor.commitNode() got an unexpected keyword argument 'allowIncomplete'
+_____________ testMissingSelectorAllowedButWrongSelectorRejected ______________
+tests\designer\test_device_usability_drafts.py:36: in testMissingSelectorAllowedButWrongSelectorRejected
+    declaration = builtin('server')
+tests\designer\test_device_identity_reuse.py:21: in builtin
+    return DeviceType.model_validate_json((root / paths[name]).read_text(encoding='utf-8'))
+E   KeyError: 'server'
+________ testPendingWizardPreservesUnavailableDeviceInsteadOfErasingIt ________
+tests\designer\test_device_usability_drafts.py:62: in testPendingWizardPreservesUnavailableDeviceInsteadOfErasingIt
+    assert combo.currentData() == 'missing-device' and '不可用' in combo.currentText()
+E   AssertionError: assert (None == 'missing-device')
+E    +  where None = <built-in method currentData of PySide2.QtWidgets.QComboBox object at 0x000001842E60B180>()
+E    +    where <built-in method currentData of PySide2.QtWidgets.QComboBox object at 0x000001842E60B180> = <PySide2.QtWidgets.QComboBox(0x1842ce4f760) at 0x000001842E60B180>.currentData
+_______________ testDeviceCopiesAreNamedAndEachImportIsOneUndo ________________
+tests\designer\test_device_usability_drafts.py:82: in testDeviceCopiesAreNamedAndEachImportIsOneUndo
+    assert definitions[first].name == definition.name + '（导入副本）'
+E   AssertionError: assert 'Camera A' == 'Camera A（导入副本）'
+E     
+E     - Camera A（导入副本）
+E     + Camera A
+___________ testAdvancedDeviceFieldsKeepValuesAndRevealInvalidField ___________
+tests\designer\test_device_usability_drafts.py:96: in testAdvancedDeviceFieldsKeepValuesAndRevealInvalidField
+    assert not form.advancedButton.isChecked()
+E   AttributeError: 'SchemaParamForm' object has no attribute 'advancedButton'
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_usability_drafts.py::testMissingSlotDraftPersistsAndStrictFinishStillRejects
+FAILED tests/designer/test_device_usability_drafts.py::testMissingSelectorAllowedButWrongSelectorRejected
+FAILED tests/designer/test_device_usability_drafts.py::testPendingWizardPreservesUnavailableDeviceInsteadOfErasingIt
+FAILED tests/designer/test_device_usability_drafts.py::testDeviceCopiesAreNamedAndEachImportIsOneUndo
+FAILED tests/designer/test_device_usability_drafts.py::testAdvancedDeviceFieldsKeepValuesAndRevealInvalidField
+5 failed in 1.83s

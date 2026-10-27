@@ -41,9 +41,9 @@ class NodeResultPanel(QWidget):
         top = QHBoxLayout()
         top.addWidget(QLabel('节点结果'), 1)
         self.live = QToolButton()
-        self.live.setText('本次运行')
+        self.live.setText('本次执行')
         self.previous = QToolButton()
-        self.previous.setText('上一次运行')
+        self.previous.setText('上一次执行')
         for button, older in ((self.live, False), (self.previous, True)):
             button.setCheckable(True)
             button.clicked.connect(lambda _checked=False, previous=older: self._selectRun(previous))
@@ -150,7 +150,7 @@ class NodeResultPanel(QWidget):
         run, record, definition = view['job'], view['record'], view['definition']
         # Draft port declarations are useful before Run, never after acceptance.
         definition = definition or (draft if run is None else None) or {}
-        self.previous.setEnabled(self.history.previous is not None)
+        self.previous.setEnabled(view['hasPrevious'])
         self.live.setChecked(not view['history'])
         self.previous.setChecked(view['history'])
         self.title.setText((definition.get('displayName') or definition.get('operatorId') or nodeId)
@@ -159,27 +159,33 @@ class NodeResultPanel(QWidget):
             ('\n名称已因摘要额度截断' if definition.get('displayNameTruncated') else '') +
             '\n' + str(definition.get('operatorId', '')) + '\n' + str(nodeId))
         self.operator.setText('算子：' + definition.get('operatorId', '未提供'))
-        status = {'RUNNING': '运行中', 'COMPLETED': '执行完成', 'FAILED': '执行失败', 'SKIPPED': '已跳过'}
-        nodeStatus = status.get(record['status'], record['status']) if record else '尚无执行记录'
+        status = {'RUNNING': '运行中', 'COMPLETED': '执行完成', 'FAILED': '执行失败', 'SKIPPED': '已跳过',
+                  'CANCELLED': '已取消', 'INTERRUPTED': '已中断'}
+        observation = view['observation']
+        nodeStatus = (status.get(record['status'], record['status']) if record else
+                      '已跳过' if observation and observation['status'] == 'SKIPPED' else '尚无执行记录')
         if run:
-            stamp = datetime.fromtimestamp(run.acceptedAtMs / 1000).strftime('%Y-%m-%d %H:%M:%S')
-            self.origin.setText(f"{'只读（历史）' if view['history'] else '本次运行'} · {nodeStatus}\n"
+            timestamp = record['timestampMs'] if record else run.acceptedAtMs
+            stamp = datetime.fromtimestamp(timestamp / 1000).strftime('%Y-%m-%d %H:%M:%S')
+            note = (' · 本轮已跳过' if observation and observation['status'] == 'SKIPPED' else
+                    ' · 本任务尚未执行' if record and record['jobId'] != view['currentJobId'] else '')
+            self.origin.setText(f"{'上一次执行 · 只读（历史）' if view['history'] else '本次执行'} · {nodeStatus}{note}\n"
                                 f'任务 {run.jobId[:8]} · 修订 {run.revision} · {stamp}')
             self.origin.setToolTip('任务：' + run.jobId)
         else:
             self.origin.setText('尚未运行 · 明确启动后查看真实结果')
         unavailable = '所选任务没有此节点' if run and not definition else '本次尚未收到此节点的执行记录'
-        self.values.setPlainText(portText(record['io']['outputs'], definition.get('outputPorts')) if record else unavailable)
+        values = portText(record['io']['outputs'], definition.get('outputPorts')) if record else unavailable
         if definition.get('operatorId') == 'vision.io.sqlite_writer' and record and record.get('sqliteReceipt'):
             from emo_master.apps.designer.presenters.node_run_presenter import sqliteReceiptText
-            self.values.setPlainText(sqliteReceiptText(record['sqliteReceipt']))
-        self.inputs.setPlainText(portText(record['io']['inputs'], definition.get('inputPorts')) if record else unavailable)
+            values = sqliteReceiptText(record['sqliteReceipt'])
+        self._setPlainText(self.values, values)
+        self._setPlainText(self.inputs, portText(record['io']['inputs'], definition.get('inputPorts')) if record else unavailable)
         execution = inspectionText(record, run.jobId if run else None, bool(nodeId))
-        if view['history']:
-            execution = execution.replace('本次运行', '上一次运行（只读）')
+        execution = execution.replace('本次运行', '上一次执行（只读）' if view['history'] else '本次执行')
         if record:
             execution += '\n流程执行：' + record['workflowRunId'] + '\n节点执行完整标识：' + record['nodeRunId']
-        self.execution.setPlainText(execution)
+        self._setPlainText(self.execution, execution)
         self.configure.setEnabled(bool(nodeId))
         self.notice.setText(self.history.notice or (run.notice if run else ''))
         self.notice.setVisible(bool(self.notice.text()))
@@ -187,8 +193,7 @@ class NodeResultPanel(QWidget):
                  if normalizePortType(kind) == 'image']
         previousPort = self.ports.currentData()
         wanted = [(port, port) for port in ports]
-        saved = bool(run and run.artifact and run.artifact.get('nodeId') == nodeId
-                     and run.artifact.get('workflowId') == workflowId)
+        saved = bool(view['artifact'])
         if saved:
             wanted.append(('保存结果图', '__saved_result__'))
         before = [(self.ports.itemText(i), self.ports.itemData(i)) for i in range(self.ports.count())]
@@ -203,9 +208,14 @@ class NodeResultPanel(QWidget):
         self.tabs.setTabVisible(0, bool(ports) or saved)
         defaultKey = (run.jobId if run else '', workflowId, nodeId)
         if defaultKey != self._defaulted:
-            self.tabs.setCurrentIndex(0 if ports else 1 if definition.get('outputPorts') else 2)
+            self.tabs.setCurrentIndex(0 if ports or saved else 1 if definition.get('outputPorts') else 2)
             self._defaulted = defaultKey
         return view
+
+    @staticmethod
+    def _setPlainText(widget, text):
+        if widget.toPlainText() != text:
+            widget.setPlainText(text)
 
     def clearImage(self, message):
         self.image.setText(message)

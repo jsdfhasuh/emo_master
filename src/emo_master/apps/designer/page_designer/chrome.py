@@ -1,6 +1,6 @@
 """One action registry for the mutually exclusive designer workspaces."""
-from PySide2.QtCore import Qt, QObject, QEvent
-from PySide2.QtWidgets import QAction, QActionGroup, QMenu, QToolButton, QStyle
+from PySide2.QtCore import QObject, QEvent, QPoint, Qt
+from PySide2.QtWidgets import QAction, QActionGroup, QSizePolicy, QToolButton, QWidget
 
 from emo_master.apps.designer.ui.icon_map import icon
 from emo_master.apps.designer.ui.widgets import ElidedLabel
@@ -11,16 +11,17 @@ class WorkspaceChrome(QObject):
     def __init__(self, coordinator):
         super().__init__(coordinator.window)
         self._sizingTools = False
-        self._toolSizeKey = None
         self.c = coordinator
         w = coordinator.window
         self.window = w
-        self.testStatus = ElidedLabel('')
-        w.statusBar().addPermanentWidget(self.testStatus)
+        self.runtimeStatus = ElidedLabel('')
+        w.statusBar().addPermanentWidget(self.runtimeStatus)
         self.menus = w._workspaceMenus
         self.flowActions = list(dict.fromkeys([
             a for key, a in {**w._toolbarActions, **w._menuActions}.items()
-            if key not in {'加载项目', '打开项目', '新建项目…', '保存项目', '校验项目'}]))
+            if key not in {'加载项目', '打开项目', '新建项目…', '保存项目', '校验项目',
+                           '开始运行', '停止运行', '停止全部', '运行目标与并发…',
+                           '全局变量…', '通信服务…', '打开日志', '刷新算子'}]))
         self.pageActions = []
         toolbar = w.mainToolbar
         for action in toolbar.actions():
@@ -33,66 +34,45 @@ class WorkspaceChrome(QObject):
             group.addAction(action)
             action.triggered.connect(command)
             self.workspaceActions.append(action)
+        self.menus['Runtime'] = w.menuBar().addMenu('Runtime')
+        self.runtimeConnectionAction = self.action('连接 Runtime…', coordinator.connectRuntime)
+        self.writeRuntimeAction = self.action('写入 Runtime…', coordinator.configureRuntime)
+        self.monitorAction = self.action('在线监视…', coordinator.showOnline)
+        for action in (self.runtimeConnectionAction, self.writeRuntimeAction, self.monitorAction):
+            self.menus['Runtime'].addAction(action)
         self.deviceAction = self.action('设备管理', coordinator.showDevices)
         w.menuBar().addAction(self.deviceAction)
-        self.runtimeConnectionAction = self.action('连接 Runtime…', coordinator.connectRuntime)
-        self.menus['文件'].addAction(self.runtimeConnectionAction)
+        w._menuBarGroups = ['文件', '运行', '编辑', '视图', 'Runtime', '设备管理']
+        self.bindingsAction = self.action('工程资源 / 现场绑定…', coordinator.resourceBindings)
+        self.menus['文件'].addAction(self.bindingsAction)
         self.selector = WorkspaceSwitch(self.workspaceActions, toolbar)
-        toolbar.addWidget(self.selector)
-        toolbar.addSeparator()
-        for name, attribute in [('加载项目', 'loadButton'), ('保存项目', 'saveProjectButton')]:
-            action = w._toolbarActions[name]
-            if name == '加载项目':
-                action.setText('打开项目')
-                action.setToolTip('打开项目')
-            tool = self.addTool(action)
-            setattr(w, attribute, tool)
-        toolbar.addSeparator()
-        # QToolBar overflows from the end. Keep the run controls ahead of edit
-        # conveniences so even a narrow running window retains its Stop button.
-        for name, attribute, title in [('开始运行', 'startButton', '运行流程'),
-                                       ('停止运行', 'stopButton', '停止运行')]:
+        self.selectorSpace = QWidget(toolbar)
+        self.selectorSpace.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.selectorSpace.setFixedHeight(self.selector.sizeHint().height() + 8)
+        toolbar.addWidget(self.selectorSpace)
+        self.selector.show()
+        for name, title in [('加载项目', '打开项目'), ('开始运行', '运行流程')]:
             action = w._toolbarActions[name]
             action.setText(title)
-            tool = self.addTool(action)
-            tool.setObjectName('primaryButton' if name == '开始运行' else 'dangerButton')
-            setattr(w, attribute, tool)
-        toolbar.addSeparator()
         self.undo = self.action('撤销', lambda: coordinator.history(), shortcut='Ctrl+Z')
         self.redo = self.action('重做', lambda: coordinator.history(True), shortcut='Ctrl+Shift+Z')
+        firstEdit = self.menus['编辑'].actions()[0]
         for action in (self.undo, self.redo):
-            self.addTool(action)
-            self.menus['编辑'].insertAction(self.menus['编辑'].actions()[0], action)
-        toolbar.addSeparator()
-        self.testMenu = QMenu('图片测试', w)
-        self.testActions = {}
-        for title, command in [('选择测试图片', coordinator.importInput),
-                               ('开始测试', coordinator.preview.startDebug),
-                               ('停止测试', coordinator.preview.stopTest)]:
-            action = self.action(title, lambda command=command: self.flowCommand(command))
-            self.testMenu.addAction(action)
-            self.testActions[title] = action
-        self.testActions['开始测试'].setToolTip('使用当前配置和测试图片，不控制设备；仅支持已验证的图片处理算子')
-        self.testAction = self.testMenu.menuAction()
-        self.addTool(self.testAction).setPopupMode(QToolButton.InstantPopup)
-        self.flowActions.append(self.testAction)
+            self.menus['编辑'].insertAction(firstEdit, action)
+        self.menus['编辑'].insertSeparator(firstEdit)
         layout = w._toolbarActions['自动布局']
         layout.setText('整理流程')
-        w.autoLayoutButton = self.addTool(layout)
-        # Existing controllers retain these command handles; their menu action
-        # owns availability now that the former toolbar button is removed.
-        for attribute, name in [('validateButton', '校验项目'), ('validateGraphButton', '校验流程图'),
-                                ('refreshButton', '刷新算子'), ('openLogsButton', '打开日志')]:
-            setattr(w, attribute, w._toolbarActions[name])
+        layout.setToolTip('整理当前流程布局，可撤销；不保存或写入 Runtime')
         self.previewAction = self.action('预览页面', self.preview)
         self.previewAction.setIcon(icon('maximize'))
-        self.addTool(self.previewAction).setObjectName('primaryButton')
+        self.previewButton = QToolButton(toolbar)
+        self.previewButton.setDefaultAction(self.previewAction)
+        self.previewButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.pageActions.append(self.previewAction)
         self.menus['视图'].addAction(self.previewAction)
         self.menus['文件'].addAction(w._toolbarActions['校验项目'])
         from .delivery import exportDialog
         self.menus['文件'].addAction(self.action('导出测试项目包…', lambda: self.command(lambda: exportDialog(coordinator))))
-        self.menus['运行'].addMenu(self.testMenu)
         self.menus['运行'].addAction(w._toolbarActions['刷新算子'])
         capture = self.menus['运行'].addMenu('结果采集设置')
         policies = QActionGroup(capture)
@@ -106,10 +86,9 @@ class WorkspaceChrome(QObject):
                                      self.flowCommand(lambda: w.setNextRunLegacySnapshotPolicy(value)))
             policies.addAction(action)
             self.policies.append((action, value))
-        self.flowActions.extend([capture.menuAction(), *self.testActions.values(), *policies.actions()])
         if w.legacySnapshotPolicyCombo:
             w.legacySnapshotPolicyCombo.currentIndexChanged.connect(self.syncPolicies)
-        for title, index in [('组件与页面栏', 0), ('属性栏', 2)]:
+        for title, index in [('页面工具区', 0), ('属性面板', 2)]:
             action = self.action(title, lambda index=index: self.c.editor.togglePanel(index) if self.c.pageActive() else None)
             action.setCheckable(True)
             self.menus['视图'].addAction(action)
@@ -118,68 +97,41 @@ class WorkspaceChrome(QObject):
         self.menus['视图'].addAction(self.fit)
         self.pageActions.append(self.fit)
         self.publishPages = self.action('发布工作页面…', self.publish)
-        self.menus['文件'].addAction(self.publishPages)
-        self.pageActions.append(self.publishPages)
+        self.menus['Runtime'].addSeparator()
+        self.menus['Runtime'].addAction(self.publishPages)
         toolbar.installEventFilter(self)
         self.update()
 
     def eventFilter(self, obj, event):
-        if event.type() in (QEvent.Resize, QEvent.LayoutRequest, QEvent.FontChange, QEvent.StyleChange):
+        if event.type() in (QEvent.Resize, QEvent.Show, QEvent.LayoutRequest, QEvent.FontChange, QEvent.StyleChange):
             self.resizeTools()
         return super().eventFilter(obj, event)
 
     def resizeTools(self):
         if self._sizingTools:
             return
-        toolbar = self.window.mainToolbar
-        self.selector.setCompact(toolbar.width() < 600)
-        buttons = (self.window.loadButton, self.window.saveProjectButton,
-                   self.window.startButton, self.window.stopButton)
-        key = (toolbar.width(), toolbar.font().toString(), toolbar.styleSheet(),
-               self.selector.font().toString(), self.selector.sizeHint().width(),
-               tuple((a.isVisible(), a.text()) for a in toolbar.actions()),
-               tuple((b.font().toString(), b.iconSize().width(), b.iconSize().height()) for b in buttons))
-        # Changing a button's style posts another LayoutRequest. A stable key
-        # keeps both that callback and routine status refreshes idempotent.
-        if key == self._toolSizeKey:
-            return
-        self._toolSizeKey = key
         self._sizingTools = True
         try:
-            for button in buttons:
-                button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-            if toolbar.width() < 900:
-                for button in buttons[:2]:
-                    button.setToolButtonStyle(Qt.ToolButtonIconOnly)
-            if self.c.pageActive():
-                return
-            for group in (buttons[:2], buttons[2:]):
-                if self._runControlsWidth() <= toolbar.contentsRect().width():
-                    break
-                for button in group:
-                    button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+            toolbar = self.window.mainToolbar
+            self.selector.setCompact(toolbar.width() < 600)
+            size = self.selector.sizeHint()
+            self.selectorSpace.setFixedHeight(size.height() + 8)
+            # Anchor to the window, not the remaining space beside actions.
+            center = toolbar.mapFrom(self.window, QPoint(self.window.width() // 2, 0)).x()
+            self.selector.setGeometry(center - size.width() // 2,
+                                      (toolbar.height() - size.height()) // 2,
+                                      size.width(), size.height())
+            self.selector.raise_()
+            self.previewButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+            self.previewButton.adjustSize()
+            if toolbar.width() - self.previewButton.width() - 12 < self.selector.geometry().right() + 12:
+                self.previewButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+                self.previewButton.adjustSize()
+            self.previewButton.move(toolbar.width() - self.previewButton.width() - 12,
+                                    (toolbar.height() - self.previewButton.height()) // 2)
+            self.previewButton.raise_()
         finally:
             self._sizingTools = False
-
-    def _runControlsWidth(self):
-        toolbar = self.window.mainToolbar
-        layout = toolbar.layout()
-        left, _top, right, _bottom = layout.getContentsMargins()
-        style = toolbar.style()
-        spacing = max(0, layout.spacing(), style.pixelMetric(QStyle.PM_ToolBarItemSpacing))
-        width = left + right + style.pixelMetric(QStyle.PM_ToolBarExtensionExtent)
-        if toolbar.isMovable():
-            width += style.pixelMetric(QStyle.PM_ToolBarHandleExtent)
-        count = 0
-        for action in toolbar.actions():
-            if action.isVisible():
-                widget = toolbar.widgetForAction(action)
-                if widget is not None:
-                    width += max(widget.sizeHint().width(), widget.minimumWidth())
-                    count += 1
-            if action is self.window._toolbarActions['停止运行']:
-                break
-        return width + max(0, count - 1) * spacing
 
     def action(self, title, command, shortcut=''):
         action = QAction(title, self.window)
@@ -188,13 +140,6 @@ class WorkspaceChrome(QObject):
             action.setShortcut(shortcut)
             self.window.addAction(action)
         return action
-
-    def addTool(self, action):
-        self.window.mainToolbar.addAction(action)
-        tool = self.window.mainToolbar.widgetForAction(action)
-        tool.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        tool.setAccessibleName(action.text())
-        return tool
 
     def command(self, command):
         try:
@@ -212,24 +157,23 @@ class WorkspaceChrome(QObject):
             self.command(self.c.preview.openObserver)
 
     def publish(self):
-        if not self.c._canSync():
-            return
-        from emo_master.apps.designer.ui.project_configuration import ProjectConfigurationDialog
-        dialog = ProjectConfigurationDialog(self.c, self.window, selectCategories={"presentation"})
-        dialog.exec_()
+        self.c.configureRuntime(selectCategories={'presentation'})
 
     def syncPolicies(self, *_args):
         for action, value in self.policies:
             action.setChecked(self.window.nextRunLegacySnapshotPolicy == value)
 
-    def update(self):
+    def update(self, *, projectChanged=True):
+        if projectChanged:
+            self.c.updateWindowTitle()
+        observer = getattr(self.window, 'deviceStatusObserver', None)
+        if observer is not None:
+            observer.refresh()
         pages = self.c.pageActive()
         flow = self.c.flowActive()
         index = 1 if pages else 0
-        self.testStatus.setVisible(flow and self.c.preview.backend is not None)
         self.workspaceActions[index].setChecked(True)
         self.selector.setCurrentIndex(index)
-        self.menus['运行'].menuAction().setVisible(flow)
         for action in self.flowActions:
             action.setVisible(flow)
             action.setEnabled(flow)
@@ -238,19 +182,30 @@ class WorkspaceChrome(QObject):
         for action in self.pageActions:
             action.setVisible(pages)
             action.setEnabled(pages)
+        self.previewButton.setVisible(pages)
         if pages:
-            self.previewAction.setEnabled(bool(self.c.editor.store.snapshot().pages))
+            if projectChanged:
+                self.previewAction.setEnabled(bool(self.c.editor.store.snapshot().pages))
             for action, index in zip(self.pageActions[1:3], (0, 2)):
-                action.setChecked(self.c.editor.splitter.sizes()[index] > 0)
+                action.setChecked(self.c.editor.panel(index).isExpanded())
         runtime = self.window.runtimeController
         for key, allowed in [('开始运行', self.window.loadedProjectPath is not None and runtime.canStart()),
                              ('停止运行', runtime.canStop())]:
-            self.window._toolbarActions[key].setEnabled(flow and allowed)
-        preview = self.c.preview
-        self.testActions['开始测试'].setEnabled(flow and not preview.busy and preview.backend is None)
-        self.testActions['停止测试'].setEnabled(flow and preview.backend is not None and not preview.busy)
+            self.window._toolbarActions[key].setEnabled(allowed)
+        self.window._menuActions['停止全部'].setEnabled(self.window.isJobRunning)
         for action, history in [(self.undo, self.c.session._undo), (self.redo, self.c.session._redo)]:
-            action.setToolTip(action.text() + '项目编辑：' + self.historyDescription(history, redo=action is self.redo))
+            if projectChanged:
+                action.setToolTip(action.text() + '项目编辑：' + self.historyDescription(history, redo=action is self.redo))
+            action.setEnabled(bool(history) and not self.window.isJobRunning)
+        client = self.window.runtimeClient
+        from emo_master.apps.designer.services.runtime_client import runtimeConnectionDescription
+        target = runtimeConnectionDescription(client)['label']
+        text = 'Runtime：' + target + ' · ' + self.c.onlineSummary
+        self.runtimeStatus.setText(text)
+        self.runtimeStatus.setToolTip(text)
+        actions = getattr(self.window, 'designerActions', None)
+        if actions is not None:
+            actions.refresh()
         self.resizeTools()
 
     def historyDescription(self, history, *, redo=False):

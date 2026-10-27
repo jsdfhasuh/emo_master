@@ -1,0 +1,670 @@
+........................................................................ [ 26%]
+......F................................................................. [ 53%]
+................................................FFFF...........FFFF..... [ 79%]
+.......................................................                  [100%]
+================================== FAILURES ===================================
+___ testInstalledDeviceResourcesReachSpawnedJobAndRestartRechecksIntegrity ____
+
+bundle = (WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regres...ns/builtins/annotate'), editorIssues=(), editorUiContent=None, editorUiSha256='', iconAsset=None, iconIssues=()), ...})
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInstalledDeviceResourcesRe0')
+
+    def testInstalledDeviceResourcesReachSpawnedJobAndRestartRechecksIntegrity(bundle, tmp_path):
+        from emo_master.apps.runtime.grpc_server.service import RuntimeService
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+        from tests.runtime.runtime_test_utils import waitForTerminal
+    
+        _, document, types, registry = bundle
+        installed = tmp_path / "installed"
+        installRuntimePackage(build(bundle, tmp_path), installed, registry=registry, deviceTypes=types)
+        # This installed metadata fixture is external to the project/package. It uses
+        # the existing simulator; no SDK, socket or new driver code is loaded.
+        plugins = tmp_path / "trusted-plugins"
+        plugin = plugins / "simulated"
+        (plugin / "device_types").mkdir(parents=True)
+        (plugin / "device_types/camera.json").write_text(next(iter(types.values())).model_dump_json(), encoding="utf-8")
+        builtin = Path(__file__).resolve().parents[3] / "src/emo_master/plugins/builtins/simulated_camera/manifest.json"
+        (plugin / "manifest.json").write_bytes(builtin.read_bytes())
+        kwargs = dict(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs", pluginRootPaths=(str(plugins),))
+        service = RuntimeService(**kwargs)
+        try:
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(installed / "project.json")), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: invalid project file: [WinError 3] 系统找不到指定的路径。: 'D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\final-24fcc827\\pytest-final-regression\\testInstalledDeviceResourcesRe0\\configuration-resources\\1eac296aa29549f5bacd832d782e49e9\\7a50fb3461ea49fc9cd17db35a78ae13.pending' -> 'D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\final-24fcc827\\pytest-final-regression\\testInstalledDeviceResourcesRe0\\configuration-resources\\1eac296aa29549f5bacd832d782e49e9\\05f977391d8bcbbd4bfd496cbf4c2af97fdc9f5b9848000db265d183e43fffbb.bin'
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "invalid project file: [WinError 3] 系统找不到指定的路径。: \'D:\\\\jsdfhasuh\\\\documents\\\\my_projec...sources\\\\1eac296aa29549f5bacd832d782e49e9\\\\05f977391d8bcbbd4bfd496cbf4c2af97fdc9f5b9848000db265d183e43fffbb.bin\'"\n.ok
+
+tests\core\project\test_device_resources.py:319: AssertionError
+___ testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[embedded-False] ____
+
+initialRuntime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B5513EB0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B5513580>)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialDraftKeepsDiskAndRe0')
+bound = False
+
+    @pytest.mark.parametrize('bound', [False, True])
+    def testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph(initialRuntime, tmp_path, bound):
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root, bound=bound)
+        draft = deepcopy(payload)
+        sentinel = root / 'original.emoproj'
+        sentinel.write_bytes(b'original on-disk project must not change')
+        before = {p.name: p.read_bytes() for p in root.iterdir()}
+        checked = client.initializeProjectConfiguration(payload, root, 'check', validate=True)
+        assert checked['state'] == 'VALIDATED'
+        assert service.loadedDocument is None and service.projectConfiguration.current is None
+        assert not service.jobRepository.all() and not service.deviceManager.drivers
+        assert {p.name: p.read_bytes() for p in root.iterdir()} == before
+        pending = client.initializeProjectConfiguration(payload, root, 'first', runtimeInstanceId=checked['runtimeInstanceId'])
+        assert pending['state'] == 'VALIDATING'
+        receipt = waitForWrite(service, client, 'first')
+>       assert receipt['state'] == 'COMMITTED'
+E       AssertionError: assert 'FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED
+
+tests\runtime\test_initial_project_configuration.py:92: AssertionError
+____ testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[embedded-True] ____
+
+initialRuntime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B52D8B20>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B53D3820>)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialDraftKeepsDiskAndRe1')
+bound = True
+
+    @pytest.mark.parametrize('bound', [False, True])
+    def testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph(initialRuntime, tmp_path, bound):
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root, bound=bound)
+        draft = deepcopy(payload)
+        sentinel = root / 'original.emoproj'
+        sentinel.write_bytes(b'original on-disk project must not change')
+        before = {p.name: p.read_bytes() for p in root.iterdir()}
+        checked = client.initializeProjectConfiguration(payload, root, 'check', validate=True)
+        assert checked['state'] == 'VALIDATED'
+        assert service.loadedDocument is None and service.projectConfiguration.current is None
+        assert not service.jobRepository.all() and not service.deviceManager.drivers
+        assert {p.name: p.read_bytes() for p in root.iterdir()} == before
+        pending = client.initializeProjectConfiguration(payload, root, 'first', runtimeInstanceId=checked['runtimeInstanceId'])
+        assert pending['state'] == 'VALIDATING'
+        receipt = waitForWrite(service, client, 'first')
+>       assert receipt['state'] == 'COMMITTED'
+E       AssertionError: assert 'FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED
+
+tests\runtime\test_initial_project_configuration.py:92: AssertionError
+___ testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[loopback-False] ____
+
+initialRuntime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B54C3040>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B54333D0>)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialDraftKeepsDiskAndRe2')
+bound = False
+
+    @pytest.mark.parametrize('bound', [False, True])
+    def testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph(initialRuntime, tmp_path, bound):
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root, bound=bound)
+        draft = deepcopy(payload)
+        sentinel = root / 'original.emoproj'
+        sentinel.write_bytes(b'original on-disk project must not change')
+        before = {p.name: p.read_bytes() for p in root.iterdir()}
+        checked = client.initializeProjectConfiguration(payload, root, 'check', validate=True)
+        assert checked['state'] == 'VALIDATED'
+        assert service.loadedDocument is None and service.projectConfiguration.current is None
+        assert not service.jobRepository.all() and not service.deviceManager.drivers
+        assert {p.name: p.read_bytes() for p in root.iterdir()} == before
+        pending = client.initializeProjectConfiguration(payload, root, 'first', runtimeInstanceId=checked['runtimeInstanceId'])
+        assert pending['state'] == 'VALIDATING'
+        receipt = waitForWrite(service, client, 'first')
+>       assert receipt['state'] == 'COMMITTED'
+E       AssertionError: assert 'FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED
+
+tests\runtime\test_initial_project_configuration.py:92: AssertionError
+____ testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[loopback-True] ____
+
+initialRuntime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B54C1360>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B384A7A0>)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialDraftKeepsDiskAndRe3')
+bound = True
+
+    @pytest.mark.parametrize('bound', [False, True])
+    def testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph(initialRuntime, tmp_path, bound):
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root, bound=bound)
+        draft = deepcopy(payload)
+        sentinel = root / 'original.emoproj'
+        sentinel.write_bytes(b'original on-disk project must not change')
+        before = {p.name: p.read_bytes() for p in root.iterdir()}
+        checked = client.initializeProjectConfiguration(payload, root, 'check', validate=True)
+        assert checked['state'] == 'VALIDATED'
+        assert service.loadedDocument is None and service.projectConfiguration.current is None
+        assert not service.jobRepository.all() and not service.deviceManager.drivers
+        assert {p.name: p.read_bytes() for p in root.iterdir()} == before
+        pending = client.initializeProjectConfiguration(payload, root, 'first', runtimeInstanceId=checked['runtimeInstanceId'])
+        assert pending['state'] == 'VALIDATING'
+        receipt = waitForWrite(service, client, 'first')
+>       assert receipt['state'] == 'COMMITTED'
+E       AssertionError: assert 'FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED
+
+tests\runtime\test_initial_project_configuration.py:92: AssertionError
+___ testInitialWriteIsQueryableAndCancellableBeforeCommit[embedded-copying] ___
+
+initialRuntime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B3636EC0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B35D6F50>)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialWriteIsQueryableAnd0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A9B558D900>
+phase = 'copying'
+
+    @pytest.mark.parametrize('phase', ['copying', 'prepared'])
+    def testInitialWriteIsQueryableAndCancellableBeforeCommit(initialRuntime, tmp_path, monkeypatch, phase):
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+        from emo_master.apps.runtime.project_config import resources
+    
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root)
+        checked = client.initializeProjectConfiguration(payload, root, 'check-cancel', validate=True)
+        cache = service.workspaceRoot.parent / 'configuration-resources'
+        beforeCache = {p for p in cache.rglob('*') if p.is_file()}
+        entered, release = Event(), Event()
+        prepare = resources.prepareResources
+        calls = []
+        def slowPrepare(*args, **kwargs):
+            calls.append(True)
+            result = prepare(*args, **kwargs) if phase == 'prepared' else None
+            entered.set()
+            assert release.wait(5)
+            return result if result is not None else prepare(*args, **kwargs)
+        monkeypatch.setattr(resources, 'prepareResources', slowPrepare)
+        client.deadlineMs = 500
+        try:
+            pending = client.initializeProjectConfiguration(payload, root, 'cancel-first',
+                runtimeInstanceId=checked['runtimeInstanceId'])
+            assert pending['state'] == 'VALIDATING' and entered.wait(2)
+            assert client.getProjectWriteStatus('cancel-first')['state'] == 'VALIDATING'
+            assert client.initializeProjectConfiguration(payload, root, 'cancel-first',
+                runtimeInstanceId=checked['runtimeInstanceId']) == pending
+            with pytest.raises(RuntimeClientError) as error:
+                client.initializeProjectConfiguration(payload, root, 'competing-first',
+                    runtimeInstanceId=checked['runtimeInstanceId'])
+            assert error.value.code == 'E_CONFIG_WRITER_BUSY'
+            legacy = service.LoadProject(pb.LoadProjectRequest(project_path=str(root)), None)
+            assert not legacy.ok and 'E_CONFIG_WRITER_BUSY' in legacy.message
+            cancelled = client.cancelProjectWrite('cancel-first')
+            assert cancelled['state'] in {'VALIDATING', 'WAITING', 'CANCELLED'}
+            assert service.projectConfiguration.current is None and service.loadedDocument is None
+            assert not service.deviceManager.drivers
+        finally:
+            release.set()
+            client.deadlineMs = 10000
+        final = waitForWrite(service, client, 'cancel-first')
+        assert final['state'] == 'CANCELLED'
+        assert service.projectConfiguration.current is None and service.loadedDocument is None
+        assert not service.jobRepository.all() and not service.deviceManager.drivers
+        assert service.deviceManager.replacement is None
+        assert {p for p in cache.rglob('*') if p.is_file()} == beforeCache
+        assert client.initializeProjectConfiguration(payload, root, 'cancel-first',
+            runtimeInstanceId=checked['runtimeInstanceId']) == final
+        assert calls == [True]  # A cancelled request ID is never executed again.
+        client.initializeProjectConfiguration(payload, root, 'explicit-new-write',
+            runtimeInstanceId=checked['runtimeInstanceId'])
+>       assert waitForWrite(service, client, 'explicit-new-write')['state'] == 'COMMITTED'
+E       AssertionError: assert 'FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED
+
+tests\runtime\test_initial_project_configuration.py:245: AssertionError
+__ testInitialWriteIsQueryableAndCancellableBeforeCommit[embedded-prepared] ___
+
+initialRuntime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B5512CB0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B5513EB0>)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialWriteIsQueryableAnd1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A9B5510B50>
+phase = 'prepared'
+
+    @pytest.mark.parametrize('phase', ['copying', 'prepared'])
+    def testInitialWriteIsQueryableAndCancellableBeforeCommit(initialRuntime, tmp_path, monkeypatch, phase):
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+        from emo_master.apps.runtime.project_config import resources
+    
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root)
+        checked = client.initializeProjectConfiguration(payload, root, 'check-cancel', validate=True)
+        cache = service.workspaceRoot.parent / 'configuration-resources'
+        beforeCache = {p for p in cache.rglob('*') if p.is_file()}
+        entered, release = Event(), Event()
+        prepare = resources.prepareResources
+        calls = []
+        def slowPrepare(*args, **kwargs):
+            calls.append(True)
+            result = prepare(*args, **kwargs) if phase == 'prepared' else None
+            entered.set()
+            assert release.wait(5)
+            return result if result is not None else prepare(*args, **kwargs)
+        monkeypatch.setattr(resources, 'prepareResources', slowPrepare)
+        client.deadlineMs = 500
+        try:
+            pending = client.initializeProjectConfiguration(payload, root, 'cancel-first',
+                runtimeInstanceId=checked['runtimeInstanceId'])
+>           assert pending['state'] == 'VALIDATING' and entered.wait(2)
+E           AssertionError: assert ('VALIDATING' == 'VALIDATING'
+E             
+E               VALIDATING and False)
+E            +  where False = wait(2)
+E            +    where wait = <threading.Event object at 0x000001A9B5512650>.wait
+
+tests\runtime\test_initial_project_configuration.py:217: AssertionError
+___ testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback-copying] ___
+
+initialRuntime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B3640130>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B4D38E20>)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialWriteIsQueryableAnd2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A9B5511390>
+phase = 'copying'
+
+    @pytest.mark.parametrize('phase', ['copying', 'prepared'])
+    def testInitialWriteIsQueryableAndCancellableBeforeCommit(initialRuntime, tmp_path, monkeypatch, phase):
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+        from emo_master.apps.runtime.project_config import resources
+    
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root)
+        checked = client.initializeProjectConfiguration(payload, root, 'check-cancel', validate=True)
+        cache = service.workspaceRoot.parent / 'configuration-resources'
+        beforeCache = {p for p in cache.rglob('*') if p.is_file()}
+        entered, release = Event(), Event()
+        prepare = resources.prepareResources
+        calls = []
+        def slowPrepare(*args, **kwargs):
+            calls.append(True)
+            result = prepare(*args, **kwargs) if phase == 'prepared' else None
+            entered.set()
+            assert release.wait(5)
+            return result if result is not None else prepare(*args, **kwargs)
+        monkeypatch.setattr(resources, 'prepareResources', slowPrepare)
+        client.deadlineMs = 500
+        try:
+            pending = client.initializeProjectConfiguration(payload, root, 'cancel-first',
+                runtimeInstanceId=checked['runtimeInstanceId'])
+            assert pending['state'] == 'VALIDATING' and entered.wait(2)
+            assert client.getProjectWriteStatus('cancel-first')['state'] == 'VALIDATING'
+            assert client.initializeProjectConfiguration(payload, root, 'cancel-first',
+                runtimeInstanceId=checked['runtimeInstanceId']) == pending
+            with pytest.raises(RuntimeClientError) as error:
+                client.initializeProjectConfiguration(payload, root, 'competing-first',
+                    runtimeInstanceId=checked['runtimeInstanceId'])
+            assert error.value.code == 'E_CONFIG_WRITER_BUSY'
+            legacy = service.LoadProject(pb.LoadProjectRequest(project_path=str(root)), None)
+            assert not legacy.ok and 'E_CONFIG_WRITER_BUSY' in legacy.message
+            cancelled = client.cancelProjectWrite('cancel-first')
+            assert cancelled['state'] in {'VALIDATING', 'WAITING', 'CANCELLED'}
+            assert service.projectConfiguration.current is None and service.loadedDocument is None
+            assert not service.deviceManager.drivers
+        finally:
+            release.set()
+            client.deadlineMs = 10000
+        final = waitForWrite(service, client, 'cancel-first')
+        assert final['state'] == 'CANCELLED'
+        assert service.projectConfiguration.current is None and service.loadedDocument is None
+        assert not service.jobRepository.all() and not service.deviceManager.drivers
+        assert service.deviceManager.replacement is None
+        assert {p for p in cache.rglob('*') if p.is_file()} == beforeCache
+        assert client.initializeProjectConfiguration(payload, root, 'cancel-first',
+            runtimeInstanceId=checked['runtimeInstanceId']) == final
+        assert calls == [True]  # A cancelled request ID is never executed again.
+        client.initializeProjectConfiguration(payload, root, 'explicit-new-write',
+            runtimeInstanceId=checked['runtimeInstanceId'])
+>       assert waitForWrite(service, client, 'explicit-new-write')['state'] == 'COMMITTED'
+E       AssertionError: assert 'FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED
+
+tests\runtime\test_initial_project_configuration.py:245: AssertionError
+__ testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback-prepared] ___
+
+initialRuntime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A9B4D390C0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A9B54C3A30>)
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/build/tcp-device-closure/final-24fcc827/pytest-final-regression/testInitialWriteIsQueryableAnd3')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A9B4D3A860>
+phase = 'prepared'
+
+    @pytest.mark.parametrize('phase', ['copying', 'prepared'])
+    def testInitialWriteIsQueryableAndCancellableBeforeCommit(initialRuntime, tmp_path, monkeypatch, phase):
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+        from emo_master.apps.runtime.project_config import resources
+    
+        service, client = initialRuntime
+        root = tmp_path / 'engineering'
+        payload = imageProject(root)
+        checked = client.initializeProjectConfiguration(payload, root, 'check-cancel', validate=True)
+        cache = service.workspaceRoot.parent / 'configuration-resources'
+        beforeCache = {p for p in cache.rglob('*') if p.is_file()}
+        entered, release = Event(), Event()
+        prepare = resources.prepareResources
+        calls = []
+        def slowPrepare(*args, **kwargs):
+            calls.append(True)
+            result = prepare(*args, **kwargs) if phase == 'prepared' else None
+            entered.set()
+            assert release.wait(5)
+            return result if result is not None else prepare(*args, **kwargs)
+        monkeypatch.setattr(resources, 'prepareResources', slowPrepare)
+        client.deadlineMs = 500
+        try:
+            pending = client.initializeProjectConfiguration(payload, root, 'cancel-first',
+                runtimeInstanceId=checked['runtimeInstanceId'])
+>           assert pending['state'] == 'VALIDATING' and entered.wait(2)
+E           AssertionError: assert ('VALIDATING' == 'VALIDATING'
+E             
+E               VALIDATING and False)
+E            +  where False = wait(2)
+E            +    where wait = <threading.Event object at 0x000001A9B54C1540>.wait
+
+tests\runtime\test_initial_project_configuration.py:217: AssertionError
+=================================== PASSES ====================================
+______ testActualConsumerProcessCrashAfterDurableSideEffectNeverReplays _______
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-7323a83c-b873-4362-a304-807a2764e50c:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\jobs\worker_main.py", line 133, in runJobProcess
+    runCycle(RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath,
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\workflow\runner.py", line 348, in _runNode
+    return self.dispatchRunner.run(node, nodeInput, context, cancellation)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\src\emo_master\apps\runtime\frame_dispatch\runner.py", line 41, in run
+    raise error
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: one or more consumers did not complete
+______________ testDeviceMenuOpensDialogWithoutChangingWorkspace ______________
+---------------------------- Captured stdout call -----------------------------
+DEVICE_DIALOG_SCREENSHOT=D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-closure\final-24fcc827\pytest-final-regression\testDeviceMenuOpensDialogWitho0\device-dialog.png
+=========================== short test summary info ===========================
+PASSED tests/core/project/test_configuration.py::testDispatchDependencyClosureIncludesTransitiveWorkflowAndOrderOnly
+PASSED tests/core/project/test_configuration.py::testResourceDependencyClosureAndSelectedDeletion
+PASSED tests/core/project/test_configuration.py::testPageDependencyClosureIncludesSourcesScopesAndNewWorkflow
+PASSED tests/core/project/test_configuration.py::testSelectedExposureDoesNotIncludeInvalidUnselectedDraft
+PASSED tests/core/project/test_configuration.py::testMissingDeviceDependencyIncludesOnlyExactNewDefinition
+PASSED tests/core/project/test_configuration.py::testDependencySelectionDoesNotUndoDeletionOrInventMissingDefinition
+PASSED tests/core/project/test_configuration.py::testComparisonCategoryPreservesBindingAndParameterKinds[parts0-device_parameters]
+PASSED tests/core/project/test_configuration.py::testComparisonCategoryPreservesBindingAndParameterKinds[parts1-device_connection]
+PASSED tests/core/project/test_configuration.py::testComparisonCategoryPreservesBindingAndParameterKinds[parts2-layout]
+PASSED tests/core/project/test_configuration.py::testComparisonCategoryPreservesBindingAndParameterKinds[parts3-node_parameters]
+PASSED tests/core/project/test_configuration.py::testComparisonCategoryPreservesBindingAndParameterKinds[parts4-device_binding]
+PASSED tests/core/project/test_configuration.py::testComparisonCategoryPreservesBindingAndParameterKinds[parts5-resources]
+PASSED tests/core/project/test_configuration.py::testComparisonCategoryPreservesBindingAndParameterKinds[parts6-presentation]
+PASSED tests/core/project/test_configuration.py::testNodeIdSelectionSurvivesReorderAndEscapesPointers
+PASSED tests/core/project/test_configuration.py::testMissingNullFalseZeroAndEmptyAreNotConflated
+PASSED tests/core/project/test_configuration.py::testSelectionRejectsStaleDuplicateAndEmptyPaths
+PASSED tests/core/project/test_configuration.py::testLayoutAndLabelsDoNotChangeExecutionRevision
+PASSED tests/core/project/test_configuration.py::testStaticPageSelectionRequiresOnlyItsMissingResource
+PASSED tests/core/project/test_configuration.py::testCycleParametersKeepMaterializedPathsAndDoNotMutateOnlineSnapshot
+PASSED tests/core/project/test_devices.py::testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.0]
+PASSED tests/core/project/test_devices.py::testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.1]
+PASSED tests/core/project/test_devices.py::testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.2]
+PASSED tests/core/project/test_devices.py::testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.3]
+PASSED tests/core/project/test_devices.py::testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.4]
+PASSED tests/core/project/test_devices.py::testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.5]
+PASSED tests/core/project/test_devices.py::testLegacySerializationDoesNotAddNewFields
+PASSED tests/core/project/test_devices.py::testNewFieldsCannotHideInOldVersion[catalog]
+PASSED tests/core/project/test_devices.py::testNewFieldsCannotHideInOldVersion[emptySources]
+PASSED tests/core/project/test_devices.py::testNewFieldsCannotHideInOldVersion[binding]
+PASSED tests/core/project/test_devices.py::testUnknownTypeAndKeepArePreservedWithoutDiscovery
+PASSED tests/core/project/test_devices.py::testConflictingSourcesRejected[overrides0-values0]
+PASSED tests/core/project/test_devices.py::testConflictingSourcesRejected[overrides1-values1]
+PASSED tests/core/project/test_devices.py::testConflictingSourcesRejected[overrides2-values2]
+PASSED tests/core/project/test_devices.py::testConflictingSourcesRejected[overrides3-values3]
+PASSED tests/core/project/test_devices.py::testOrphanSourceAndMissingReferenceRejected
+PASSED tests/core/project/test_devices.py::testDynamicSourceHasExactlyOneIdentity[binding0]
+PASSED tests/core/project/test_devices.py::testDynamicSourceHasExactlyOneIdentity[binding1]
+PASSED tests/core/project/test_devices.py::testDynamicSourceHasExactlyOneIdentity[binding2]
+PASSED tests/core/project/test_devices.py::testOverridesPreservePresenceAndNeverMutateDefaults
+PASSED tests/core/project/test_devices.py::testNodeCannotOverrideConnectionOrPolicy[connection]
+PASSED tests/core/project/test_devices.py::testNodeCannotOverrideConnectionOrPolicy[policies]
+PASSED tests/core/project/test_devices.py::testNodeCannotOverrideConnectionOrPolicy[unknown]
+PASSED tests/core/project/test_devices.py::testRelatedModeCannotBeSilentlyChanged
+PASSED tests/core/project/test_devices.py::testDynamicValuesResolveOnceAndValidateBeforeAdmission
+PASSED tests/core/project/test_devices.py::testPolicyDefaultsAndFixedValues
+PASSED tests/core/project/test_devices.py::testDynamicRelatedModeValidatedOnlyAfterResolution
+PASSED tests/core/project/test_devices.py::testOpaqueOrNonfiniteDeviceValuesRejected[nan]
+PASSED tests/core/project/test_devices.py::testOpaqueOrNonfiniteDeviceValuesRejected[inf]
+PASSED tests/core/project/test_devices.py::testOpaqueOrNonfiniteDeviceValuesRejected[value2]
+PASSED tests/core/project/test_devices.py::testFileRoundtripAndExplicitBackup
+PASSED tests/core/project/test_device_resources.py::testDeviceTargetsResolveWithoutMutatingDraftOrGuessingAddress
+PASSED tests/core/project/test_device_resources.py::testAmbiguousOrInvalidDeviceTargetsRejected[target0]
+PASSED tests/core/project/test_device_resources.py::testAmbiguousOrInvalidDeviceTargetsRejected[target1]
+PASSED tests/core/project/test_device_resources.py::testAmbiguousOrInvalidDeviceTargetsRejected[target2]
+PASSED tests/core/project/test_device_resources.py::testDeviceTargetVersionAndReferenceGates
+PASSED tests/core/project/test_device_resources.py::testOverlapIncludesAncestorsButDifferentOwnersAreIndependent
+PASSED tests/core/project/test_device_resources.py::testPreparationFailsClosedBeforeAnyRuntimeAction[missing]
+PASSED tests/core/project/test_device_resources.py::testPreparationFailsClosedBeforeAnyRuntimeAction[changed]
+PASSED tests/core/project/test_device_resources.py::testPreparationFailsClosedBeforeAnyRuntimeAction[purpose]
+PASSED tests/core/project/test_device_resources.py::testPreparationFailsClosedBeforeAnyRuntimeAction[metadata]
+PASSED tests/core/project/test_device_resources.py::testPreparationFailsClosedBeforeAnyRuntimeAction[path]
+PASSED tests/core/project/test_device_resources.py::testPreparationFailsClosedBeforeAnyRuntimeAction[site]
+PASSED tests/core/project/test_device_resources.py::testPreparationFailsClosedBeforeAnyRuntimeAction[empty-site]
+PASSED tests/core/project/test_device_resources.py::testDeviceOutputsCannotOverwriteInputsOrRuntime[calibration.bin]
+PASSED tests/core/project/test_device_resources.py::testDeviceOutputsCannotOverwriteInputsOrRuntime[project.json]
+PASSED tests/core/project/test_device_resources.py::testDeviceOutputsCannotOverwriteInputsOrRuntime[runtime/data.db]
+PASSED tests/core/project/test_device_resources.py::testDeviceSecretMustRemainVersionedReference
+PASSED tests/core/project/test_device_resources.py::testUnboundSecretCannotLeakIntoDeployment
+PASSED tests/core/project/test_device_resources.py::testDeviceResourceReferencePreventsCatalogDeletion
+PASSED tests/core/project/test_device_resources.py::testStaticFileOverrideIsResolvedWithoutMaterializingInheritedFields
+PASSED tests/core/project/test_device_resources.py::testFileFieldsCannotBypassResourcePreparation[dynamicPaths]
+PASSED tests/core/project/test_device_resources.py::testFileFieldsCannotBypassResourcePreparation[nextCyclePaths]
+PASSED tests/core/project/test_device_resources.py::testRuntimePackageMovesAllDeviceFilesAndLocksMetadataWithoutDriverCreation
+PASSED tests/core/project/test_device_resources.py::testMetadataDriftRejectsInstallBeforeReplacingProject
+PASSED tests/core/project/test_device_resources.py::testUpdateProtectsExistingDeviceOutput
+PASSED tests/core/project/test_device_resources.py::testWorkflowPackageCannotSilentlyDropDeviceResourceDeclarations
+PASSED tests/core/project/test_device_resources.py::testPackagedDeviceInputCannotFallBackToInstallerHostFile
+PASSED tests/core/project/test_device_resources.py::testNestedFileDefaultsCannotBypassExistenceChecks
+PASSED tests/core/project/test_device_resources.py::testProductionReopenUsesCommittedVersionAndRefusesInPlacePackageUpdate
+PASSED tests/core/test_runtime_directory.py::testExplicitProductionUpgradeOldShapeAndDesignerRoundtrip
+PASSED tests/core/test_runtime_directory.py::testInvalidProductionConfigurationFailsAtBoundary[change0]
+PASSED tests/core/test_runtime_directory.py::testInvalidProductionConfigurationFailsAtBoundary[change1]
+PASSED tests/core/test_runtime_directory.py::testInvalidProductionConfigurationFailsAtBoundary[change2]
+PASSED tests/core/test_runtime_directory.py::testInvalidProductionConfigurationFailsAtBoundary[change3]
+PASSED tests/core/test_runtime_directory.py::testMovedUnicodeProjectResolvesPathsNotCwdAndLeavesSourceUntouched
+PASSED tests/core/test_runtime_directory.py::testOutputCannotOverwriteInputsProjectOrRuntime[input.png]
+PASSED tests/core/test_runtime_directory.py::testOutputCannotOverwriteInputsProjectOrRuntime[project.json]
+PASSED tests/core/test_runtime_directory.py::testOutputCannotOverwriteInputsProjectOrRuntime[runtime/state.sqlite3]
+PASSED tests/core/test_runtime_directory.py::testOutputCannotOverwriteInputsProjectOrRuntime[runtime/jobs/output.png]
+PASSED tests/core/test_runtime_directory.py::testAbsoluteFilePathsRetainExplicitMeaning
+PASSED tests/core/test_runtime_directory.py::testMissingAndModifiedResourceFailsBeforeExecution
+PASSED tests/core/test_runtime_directory.py::testFileArrayMetadataAndOptionalBlankFileHaveNoPathGuessing
+PASSED tests/core/test_runtime_directory.py::testLegacyPublishersAndTestPackagesDoNotAcceptProductionSchema
+PASSED tests/core/test_runtime_package.py::testPortablePackagePreservesDeviceOutputPolicyAndCollectsExternalInput
+PASSED tests/core/test_runtime_package.py::testOfflineUpdatePreservesOutputsAndBacksUpConfiguration
+PASSED tests/core/test_runtime_package.py::testUpdateRequiresDirectoryOwnershipAndDifferentProjectUsesNewDirectory
+PASSED tests/core/test_runtime_package.py::testRunningRuntimeRefusesUpdateButStoppedOwnerCanApplyIt
+PASSED tests/core/test_runtime_package.py::testUpdateCanRepairMissingOldInputWithoutDeletingBusinessData
+PASSED tests/core/test_runtime_package.py::testNormalUpdateFailureRestoresReplacedResourcesAndConfig
+PASSED tests/core/test_runtime_package.py::testBadPackageFailsBeforeReplacingInstalledProject[digest]
+PASSED tests/core/test_runtime_package.py::testBadPackageFailsBeforeReplacingInstalledProject[traversal]
+PASSED tests/core/test_runtime_package.py::testBadPackageFailsBeforeReplacingInstalledProject[case-alias]
+PASSED tests/core/test_runtime_package.py::testBadPackageFailsBeforeReplacingInstalledProject[undeclared]
+PASSED tests/core/test_runtime_package.py::testBadPackageFailsBeforeReplacingInstalledProject[plugin]
+PASSED tests/core/test_runtime_package.py::testExporterRejectsOutputInsideSource
+PASSED tests/core/test_runtime_package.py::testUpdateWaitsForTransientWindowsReplacementDenial[5]
+PASSED tests/core/test_runtime_package.py::testUpdateWaitsForTransientWindowsReplacementDenial[32]
+PASSED tests/core/test_runtime_package.py::testUpdateWaitsForTransientWindowsReplacementDenial[33]
+PASSED tests/core/test_runtime_package.py::testPermanentReplacementDenialRemainsBoundedAndRestoresInputs[5-5]
+PASSED tests/core/test_runtime_package.py::testPermanentReplacementDenialRemainsBoundedAndRestoresInputs[32-5]
+PASSED tests/core/test_runtime_package.py::testPermanentReplacementDenialRemainsBoundedAndRestoresInputs[33-5]
+PASSED tests/core/test_runtime_package.py::testPermanentReplacementDenialRemainsBoundedAndRestoresInputs[None-1]
+PASSED tests/core/test_runtime_package.py::testPermanentReplacementDenialRemainsBoundedAndRestoresInputs[2-1]
+PASSED tests/runtime/test_device_executor.py::testFifoCancellationAndIndependentDevice
+PASSED tests/runtime/test_device_executor.py::testTimeoutDoesNotReleaseNativeOwnerAndCloseIsRetryable
+PASSED tests/runtime/test_device_executor.py::testQueueExpiryDoesNotExecuteAndDoesNotQuarantine
+PASSED tests/runtime/test_device_executor.py::testUnhealthyFailureRejectsFollowingOperation
+PASSED tests/runtime/test_device_executor.py::testOwnedOriginalCopyAndLeases[shape0]
+PASSED tests/runtime/test_device_executor.py::testOwnedOriginalCopyAndLeases[shape1]
+PASSED tests/runtime/test_device_executor.py::testFrameByteBudgetAndDistinctIds
+PASSED tests/runtime/test_device_manager.py::testAcquisitionDoesNotWaitForAlgorithmOrConsumerCopy
+PASSED tests/runtime/test_device_manager.py::testCancellingOneJobDoesNotRetireDeviceUsedBySibling
+PASSED tests/runtime/test_device_manager.py::testBadParametersAndUnauthorizedJobNeverEnterDriver
+PASSED tests/runtime/test_device_manager.py::testDuplicatePhysicalIdentityCannotCreateSecondExecutor
+PASSED tests/runtime/test_device_manager.py::testCapacityRejectedBeforeAcquisition
+PASSED tests/runtime/test_device_manager.py::testReplacementConstructorFailureKeepsExistingAuthority
+PASSED tests/runtime/test_device_lifecycle.py::testStaticJobDoesNotKeepIdleDeviceConnected[idle_timeout]
+PASSED tests/runtime/test_device_lifecycle.py::testStaticJobDoesNotKeepIdleDeviceConnected[when_unused]
+PASSED tests/runtime/test_device_lifecycle.py::testExplicitLeaseAndQueuedOperationsPreventIdleRelease
+PASSED tests/runtime/test_device_lifecycle.py::testManualDisconnectPausesAutomaticAdmissionUntilExplicitConnect
+PASSED tests/runtime/test_device_lifecycle.py::testManualPolicyDoesNotConnectFromJobOrActivation
+PASSED tests/runtime/test_device_lifecycle.py::testAlreadyCancelledOperationDoesNotOpenConnection
+PASSED tests/runtime/test_device_lifecycle.py::testCancellationDuringConnectDoesNotStartCapture
+PASSED tests/runtime/test_device_lifecycle.py::testAbandonedConnectCannotUnpauseAdmissionAfterLateNativeSuccess
+PASSED tests/runtime/test_device_lifecycle.py::testDriverWithoutConnectOnlyContractCannotReplaceExistingAuthority
+PASSED tests/runtime/test_device_lifecycle.py::testQueuedAcquisitionKeepsOldCycleParametersAfterCommit
+PASSED tests/runtime/test_device_lifecycle.py::testActivationAndRunEventsDoNotAcquireFrames
+PASSED tests/runtime/test_device_lifecycle.py::testMaintenanceWaitsForRealExitButDoesNotBlockOtherDevices
+PASSED tests/runtime/test_device_lifecycle.py::testIdleCloseFailureIsVisibleAndQuarantinesInsteadOfPretendingReleased
+PASSED tests/runtime/test_device_lifecycle.py::testRejectImmediateConnectReleaseCombinations[manual]
+PASSED tests/runtime/test_device_lifecycle.py::testRejectImmediateConnectReleaseCombinations[on_project_run]
+PASSED tests/runtime/test_device_lifecycle.py::testRejectImmediateConnectReleaseCombinations[on_project_open]
+PASSED tests/runtime/test_device_lifecycle.py::testCameraConnectDoesNotConfigureStartStreamOrTrigger
+PASSED tests/runtime/test_device_lifecycle.py::testSpawnHostExplicitConnectionAndHardwareStreamHold
+PASSED tests/runtime/test_device_lifecycle.py::testRemoteControlsAreConfirmedFencedAndDoNotModifyConfiguration
+PASSED tests/runtime/test_device_ipc_retirement.py::testDeviceIpcRetiresWhileWorkerOwnsCancellationReadLock
+PASSED tests/runtime/test_device_ipc_retirement.py::testJobCancellationWaitHasFiniteTimeout
+PASSED tests/runtime/test_device_ipc_retirement.py::testSpawnedWorkerObservesCancellationWhileWaiting[None]
+PASSED tests/runtime/test_device_ipc_retirement.py::testSpawnedWorkerObservesCancellationWhileWaiting[5.0]
+PASSED tests/runtime/test_device_ipc_retirement.py::testCancelledDeviceProxyDoesNotSubmitOrReplay
+PASSED tests/runtime/test_device_ipc_retirement.py::testWorkerCancellationIsVisibleToRuntime
+PASSED tests/runtime/test_device_ipc_retirement.py::testRuntimeShutdownRetiresIpcAfterTerminatingCancellationReader
+PASSED tests/runtime/test_frame_dispatch.py::testSpawnedPersistentFanoutRetiresOriginalsAndIndependentWorkers[True]
+PASSED tests/runtime/test_frame_dispatch.py::testSpawnedPersistentFanoutRetiresOriginalsAndIndependentWorkers[False]
+PASSED tests/runtime/test_frame_dispatch.py::testGroupCapacityRejectedBeforeCapture
+PASSED tests/runtime/test_frame_dispatch.py::testActualConsumerProcessCrashAfterDurableSideEffectNeverReplays
+PASSED tests/runtime/test_frame_dispatch.py::testPartialConsumerStartupFailureRetiresWithoutProducerAction
+PASSED tests/runtime/test_frame_dispatch.py::testContinuousInvocationsReuseProcessesWithoutGrowingLeases
+PASSED tests/runtime/test_frame_dispatch.py::testDuplicateNoReplayAndPartialQueueReceipts
+PASSED tests/runtime/test_frame_dispatch.py::testSourceEndDoesNotRetireLiveConsumersAndOldPlan
+PASSED tests/runtime/test_frame_dispatch.py::testJoinIdentityAndNgIsNormalCompletion
+PASSED tests/runtime/test_frame_dispatch.py::testThreeHundredJoinsRetireDeliveriesAndBoundReplayReceipts
+PASSED tests/runtime/test_frame_dispatch.py::testCachedJoinNeverKeepsReleasedOutputAlive
+PASSED tests/runtime/test_frame_dispatch.py::testCrashDoesNotReplayAndOtherConsumerRetainsFrame
+PASSED tests/runtime/test_frame_dispatch.py::testQueuedConsumersKeepOldPlanAcrossNewSourceCycle
+PASSED tests/runtime/test_frame_dispatch.py::testTimeoutAndStopDoNotUnlinkAnActiveConsumer
+PASSED tests/runtime/test_frame_dispatch.py::testMutatedCopiesUseNewRuntimeOwnedFrames
+PASSED tests/runtime/test_frame_dispatch.py::testDerivedImageOutputsAndIndependentRunGroups
+PASSED tests/runtime/test_frame_dispatch.py::testCompilerRejectsInvalidDispatch[mapping]
+PASSED tests/runtime/test_frame_dispatch.py::testCompilerRejectsInvalidDispatch[type]
+PASSED tests/runtime/test_frame_dispatch.py::testCompilerRejectsInvalidDispatch[recursive]
+PASSED tests/runtime/test_frame_dispatch.py::testCompilerRejectsInvalidDispatch[join]
+PASSED tests/runtime/test_loop_cycle_configuration.py::testNestedLeasesRetainOuterPlanAndRejectForeignOrStaleParent
+PASSED tests/runtime/test_loop_cycle_configuration.py::testCancelledCycleAdmissionDoesNotAllocateLease
+PASSED tests/runtime/test_loop_cycle_configuration.py::testDrainFinishesNestedCyclesThenParksAtOuterIterationAndCanCancel
+PASSED tests/runtime/test_loop_cycle_configuration.py::testIterationRestoresOuterCompiledPlanAndReleasesOnException
+PASSED tests/runtime/test_loop_cycle_configuration.py::testBoundaryIsExplicitAndRequiresManagedSchema[boundary0]
+PASSED tests/runtime/test_loop_cycle_configuration.py::testBoundaryIsExplicitAndRequiresManagedSchema[boundary1]
+PASSED tests/runtime/test_loop_cycle_configuration.py::testBoundaryIsExplicitAndRequiresManagedSchema[1]
+PASSED tests/runtime/test_loop_cycle_configuration.py::testBoundaryIsExplicitAndRequiresManagedSchema[node]
+PASSED tests/runtime/test_loop_cycle_configuration.py::testBoundaryIsExplicitAndRequiresManagedSchema[iteration]
+PASSED tests/runtime/test_loop_cycle_configuration.py::testRealSpawnWhileSwitchesOnlyBeforeConditionAndRetiresFalseIteration
+PASSED tests/runtime/test_operator_logging.py::testRunnerInjectsExecuteAndLifecycleLoggersWithCorrelationAndOrdering
+PASSED tests/runtime/test_operator_logging.py::testLoggerSanitizesSecretsCyclesBinaryAndNonFiniteValues
+PASSED tests/runtime/test_operator_logging.py::testLoopAndSubflowLogsKeepIterationAndParentRunCorrelation
+PASSED tests/runtime/test_operator_logging.py::testFailureAndCancellationLogsPrecedeNodeTerminalEvent[test.logging.failure-_FailingLoggingOperator-RuntimeError]
+PASSED tests/runtime/test_operator_logging.py::testFailureAndCancellationLogsPrecedeNodeTerminalEvent[test.logging.cancel-_CancellingLoggingOperator-CancellationRequested]
+PASSED tests/runtime/test_operator_logging.py::testLoggerRateLimitAndJobLimitProduceOneDroppedSummary
+PASSED tests/runtime/test_operator_logging.py::testJobHardLimitCannotBeBypassedByCreatingMoreNodeLoggers
+PASSED tests/runtime/test_operator_logging.py::testLoggerIsThreadSafeAndNeverRaisesOnPublisherOrBadValues
+PASSED tests/runtime/test_operator_logging.py::testGetOperatorLoggerFallsBackToNoOpLogger
+PASSED tests/runtime/test_initial_project_configuration.py::testInvalidInitialInputCanBeFixedWithoutLoadingOrStarting[embedded]
+PASSED tests/runtime/test_initial_project_configuration.py::testInvalidInitialInputCanBeFixedWithoutLoadingOrStarting[loopback]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialFailedReceiptRetainsCompilerIssueLocations[embedded]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialFailedReceiptRetainsCompilerIssueLocations[loopback]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialPublicationCannotOverwriteAnInterveningOnlineProject[embedded]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialPublicationCannotOverwriteAnInterveningOnlineProject[loopback]
+PASSED tests/runtime/test_initial_project_configuration.py::testRemoteFirstInstallDoesNotSendDesignerPath
+PASSED tests/runtime/test_initial_project_configuration.py::testFirstWriteActivationErrorKeepsCommittedOutcome[embedded]
+PASSED tests/runtime/test_initial_project_configuration.py::testFirstWriteActivationErrorKeepsCommittedOutcome[loopback]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialOnlineWriteDoesNotPretendLegacySchemaWasPersisted[embedded]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialOnlineWriteDoesNotPretendLegacySchemaWasPersisted[loopback]
+PASSED tests/runtime/test_initial_project_configuration.py::testFailedInitialWriteStaysQueryableWithoutReplay[embedded]
+PASSED tests/runtime/test_initial_project_configuration.py::testFailedInitialWriteStaysQueryableWithoutReplay[loopback]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialWritePreservesConnectPolicyWithoutCapturing[embedded-on_project_open]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialWritePreservesConnectPolicyWithoutCapturing[embedded-on_first_use]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialWritePreservesConnectPolicyWithoutCapturing[loopback-on_project_open]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialWritePreservesConnectPolicyWithoutCapturing[loopback-on_first_use]
+PASSED tests/designer/test_project_configuration_ui.py::testRecoveryErrorAllowsExplicitRepairButNeverRun
+PASSED tests/designer/test_project_configuration_ui.py::testCompareDoesNotSaveOrMutateAndSelectionIsExplicit
+PASSED tests/designer/test_project_configuration_ui.py::testReadBackIsUndoableDraftNotDiskWrite
+PASSED tests/designer/test_project_configuration_ui.py::testRuntimeSwitchFencesOldDialog
+PASSED tests/designer/test_project_configuration_ui.py::testDifferentOnlineProjectSelectsCompleteReplacementAndReadBackRequiresConsent
+PASSED tests/designer/test_project_configuration_ui.py::testDeviceDependenciesRequireConfirmationAndLeaveUnselectedDraftOut
+PASSED tests/designer/test_project_configuration_ui.py::testResourceUploadRequiresConfirmationAndDoesNotPublishDraft
+PASSED tests/designer/test_device_definition_feedback.py::testPreacceptRejectionRetainsCandidateUntilCorrected
+PASSED tests/designer/test_device_definition_feedback.py::testPreacceptRefusalKeepsFormAndPendingSetupCannotCommit
+PASSED tests/designer/test_device_definition_feedback.py::testDeviceNameErrorUsesChineseAndKeepsInput[-\u8bbe\u5907\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a]
+PASSED tests/designer/test_device_definition_feedback.py::testDeviceNameErrorUsesChineseAndKeepsInput[   -\u8bbe\u5907\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a]
+PASSED tests/designer/test_device_definition_feedback.py::testDeviceNameErrorUsesChineseAndKeepsInput[\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d-160]
+PASSED tests/designer/test_device_definition_feedback.py::testLocalFieldErrorShowsTabAndFocusWithoutResettingInput
+PASSED tests/designer/test_device_definition_feedback.py::testPolicyLabelsArePresentationOnly
+PASSED tests/designer/test_device_definition_feedback.py::testSharedValidationPreservesMetadataAndFindsOffsetTabs
+PASSED tests/designer/test_device_definition_feedback.py::testPolicyCombinationErrorUsesChineseAndShowsPolicyTab
+PASSED tests/designer/test_device_definition_feedback.py::testSharedValidationStillUsesCoreIdentityGuard
+PASSED tests/designer/test_device_definition_feedback.py::testNodeReuseNoRetainsDialogForCorrectionAndCancelRemainsAtomic
+PASSED tests/designer/test_device_workspace.py::testDeviceDialogEditHistoryAndReopen
+PASSED tests/designer/test_device_workspace.py::testDeviceMenuOpensDialogWithoutChangingWorkspace
+PASSED tests/designer/test_device_workspace.py::testDeviceDialogReturnsToPagesAndRetiresOnProjectSwitch
+PASSED tests/designer/test_device_workspace.py::testDeviceDialogCloseKeepsDraftAndRejectsInvalidInput
+PASSED tests/designer/test_device_workspace.py::testDeviceDialogCloseDuringMetadataReadCanReopen
+PASSED tests/designer/test_device_workspace.py::testDeviceControlNeedsConfirmationAndNeverEditsDraft
+PASSED tests/designer/test_device_workspace.py::testDeviceStateResponseIsDiscardedAfterScopeChanges
+PASSED tests/designer/test_device_workspace.py::testWizardCancelAndSourceCommit
+PASSED tests/designer/test_device_workspace.py::testNormalDropWizardAtomicFinishAndCancel
+PASSED tests/designer/test_device_package.py::testPortableDeviceResourcesSiteFieldsAndAtomicHistory
+PASSED tests/designer/test_device_package.py::testInvalidPackageDoesNotChangeDraft
+PASSED tests/designer/test_workflow_package_devices.py::testDeviceDependencyClosureAndUnknownDriverRoundtrip
+PASSED tests/designer/test_workflow_package_devices.py::testImportNewDisabledDevicePreservesSourcesAndLegacyCatalog
+PASSED tests/designer/test_workflow_package_devices.py::testUnresolvedOrStaleMappingIsAtomic[None]
+PASSED tests/designer/test_workflow_package_devices.py::testUnresolvedOrStaleMappingIsAtomic[mapping1]
+PASSED tests/designer/test_workflow_package_devices.py::testUnresolvedOrStaleMappingIsAtomic[mapping2]
+PASSED tests/designer/test_workflow_package_devices.py::testUnresolvedOrStaleMappingIsAtomic[mapping3]
+PASSED tests/designer/test_workflow_package_devices.py::testIncompatibleReuseRejectedWithoutMutation[deviceTypeId-other]
+PASSED tests/designer/test_workflow_package_devices.py::testIncompatibleReuseRejectedWithoutMutation[driverVersion-2.0]
+PASSED tests/designer/test_workflow_package_devices.py::testIncompatibleReuseRejectedWithoutMutation[defaults-value2]
+PASSED tests/designer/test_workflow_package_devices.py::testReuseDoesNotReplaceConnectionPoliciesOrEnabledState
+PASSED tests/designer/test_workflow_package_devices.py::testReuseUsesRegisteredGenericSelectorAndCapabilityRules
+PASSED tests/designer/test_workflow_package_devices.py::testSameConnectionNeverAutomaticallyMerged
+PASSED tests/designer/test_workflow_package_devices.py::testInProjectCopyReusesDeviceAndVariableIds
+PASSED tests/designer/test_workflow_package_devices.py::testFailureAfterDeviceAllocationRollsBackEntireImport
+PASSED tests/designer/test_workflow_package_devices.py::testChangedPackageRequiresNewPreview
+PASSED tests/designer/test_workflow_package_devices.py::testChangedTargetConnectionRequiresNewPreview
+PASSED tests/designer/test_workflow_package_devices.py::testMalformedDeviceDependenciesRejected[missing]
+PASSED tests/designer/test_workflow_package_devices.py::testMalformedDeviceDependenciesRejected[extra]
+PASSED tests/designer/test_workflow_package_devices.py::testMalformedDeviceDependenciesRejected[old-version]
+PASSED tests/designer/test_workflow_package_devices.py::testNewWorkflowPackageUsesCurrentCompleteSchema
+PASSED tests/designer/test_workflow_package_devices.py::testMissingCatalogDefinitionHasActionableExportFailure
+PASSED tests/designer/test_workflow_package_devices.py::testInputParameterSourceSurvivesImport
+PASSED tests/designer/test_workflow_package_devices.py::testDeviceMappingDialogRequiresEverySelection
+PASSED tests/designer/test_workflow_package_devices.py::testNormalWindowImportAndCopyAreSingleUndoableEdits[False]
+PASSED tests/designer/test_workflow_package_devices.py::testNormalWindowImportAndCopyAreSingleUndoableEdits[True]
+FAILED tests/core/project/test_device_resources.py::testInstalledDeviceResourcesReachSpawnedJobAndRestartRechecksIntegrity
+FAILED tests/runtime/test_initial_project_configuration.py::testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[embedded-False]
+FAILED tests/runtime/test_initial_project_configuration.py::testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[embedded-True]
+FAILED tests/runtime/test_initial_project_configuration.py::testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[loopback-False]
+FAILED tests/runtime/test_initial_project_configuration.py::testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[loopback-True]
+FAILED tests/runtime/test_initial_project_configuration.py::testInitialWriteIsQueryableAndCancellableBeforeCommit[embedded-copying]
+FAILED tests/runtime/test_initial_project_configuration.py::testInitialWriteIsQueryableAndCancellableBeforeCommit[embedded-prepared]
+FAILED tests/runtime/test_initial_project_configuration.py::testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback-copying]
+FAILED tests/runtime/test_initial_project_configuration.py::testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback-prepared]
+9 failed, 262 passed in 183.01s (0:03:03)

@@ -17,7 +17,7 @@ from tests.designer.test_project_communication_ui import retire, spin
 from tests.runtime.tcp_port_probe import assertTcpPortReleased
 from tests.runtime.test_managed_tcp import freePort, waitUntil, manager as manager, connect, acquire
 from tests.runtime.test_tcp_external_client import rig as rig
-from tests.runtime.test_tcp_service_integration import payload
+from tests.runtime.test_tcp_service_integration import managementPayload as payload
 
 
 def testPortProbeRejectsLiveListenerAndAcceptsClosedDescriptors(manager):
@@ -68,7 +68,7 @@ def testListenerFailureCanRestartWithoutBindingOverOwnedSocket(rig, monkeypatch)
             pytest.fail("Failed listener still accepts TCP handshakes")
     rig.control("START")
     client = rig.client()
-    rig.terminal(rig.startJob(data="RECOVERED"))
+    rig.send('RECOVERED')
     client.received(b"RECOVERED")
     rig.notes.update(injected="accept OSError", afterFailure=failed, directRestart=rig.state()["state"])
 
@@ -234,7 +234,7 @@ def testFailedSocketCleanupCannotBindOrLoseOwnership(manager):
 
 
 @contextmanager
-def editor(rig, app, save=None):
+def editor(rig, app, save=None, client=None):
     current = dict(projectId="tcp-project", name="Review", token="editor", path=str(rig.path),
                    config=deepcopy(rig.value["communication"]))
     writes = []
@@ -251,7 +251,7 @@ def editor(rig, app, save=None):
         rig.path.write_text(json.dumps(value), encoding="utf-8")
         return ""
 
-    client = CommunicationClient(rig.stub)
+    client = client if client is not None else CommunicationClient(rig.stub)
     panel = CommunicationPanel()
     controller = CommunicationController(client, panel, lambda: current, persist)
     try:

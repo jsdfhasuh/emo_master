@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="6" time="10.362" timestamp="2026-10-21T11:23:16.036513+08:00" hostname="视觉电脑"><testcase classname="tests.runtime.test_frame_dispatch" name="testConsumerDeviceLogsKeepRetainedCycleIdentityAndPersistOnce[False]" time="2.755"><failure message="AssertionError: assert {} == {'runtimeInst...361eed654893'}&#10;  &#10;  Right contains 3 more items:&#10;  {'projectId': 'eb33e4ce-ff4a-499f-94fe-153926d138d4',&#10;   'projectLoadGeneration': '65da3ed5309a48cbb9a8361eed654893',&#10;   'runtimeInstanceId': '91da3be1-ccfc-4918-b990-63ed45ce4bad'}&#10;  Use -v to get more diff">tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2692/testConsumerDeviceLogsKeepReta0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000198E5A341F0&gt;
+fail = False
+
+    @pytest.mark.parametrize('fail', [False, True])
+    def testConsumerDeviceLogsKeepRetainedCycleIdentityAndPersistOnce(tmp_path, monkeypatch, fail):
+        # The consumer uses a device absent from the producer's own device bindings.
+        builtins = Path(__file__).resolve().parents[2] / 'src/emo_master/plugins/builtins'
+        plugin = tmp_path / 'dispatch_logging'
+        plugin.mkdir()
+        (plugin / '__init__.py').write_text('''
+    from dataclasses import replace
+    from emo_master.plugins.builtins.simulated_camera.operator import SimulatedCameraOperator
+    class LoggedCamera(SimulatedCameraOperator):
+        meta = replace(SimulatedCameraOperator.meta, operatorId='test.dispatch.camera')
+        def validateParams(self, params):
+            return None
+        def executeNode(self, inputs, params, context):
+            result = super().executeNode(inputs, {}, context)
+            context['logger'].warning('consumer capture', payload=dict(reading=42))
+            if params['fail']:
+                return dict(status='error', error=dict(code='E_TEST_CAPTURE', message='consumer rejected capture'))
+            return result
+    ''', encoding='utf-8')
+        manifest = json.loads((builtins / 'simulated_camera/manifest.json').read_text(encoding='utf-8'))
+        manifest.update(operatorId='test.dispatch.camera', entry='dispatch_logging:LoggedCamera',
+            inputPorts=dict(image='image'), paramSchema=dict(type='object', properties=dict(fail=dict(type='boolean')),
+                                                           required=['fail'], additionalProperties=False))
+        (plugin / 'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
+        monkeypatch.syspath_prepend(str(tmp_path))
+        payload = dispatchProject()
+        consumer = payload['workflows']['consumer']
+        consumer['nodes'].insert(1, dict(nodeId='consumer-capture', operatorId='test.dispatch.camera',
+            params=dict(fail=fail), deviceBindings=dict(camera=dict(deviceId='consumer-camera'))))
+        consumer['edges'] = [dict(fromNode='input', fromPort='image', toNode='consumer-capture', toPort='image'),
+            dict(fromNode='consumer-capture', fromPort='image', toNode='output', toPort='image')]
+        payload['devices']['definitions']['consumer-camera'] = deepcopy(payload['devices']['definitions']['camera'])
+        payload['devices']['definitions']['consumer-camera']['connection']['serial'] = 'CONSUMER-ONLY'
+        path = tmp_path / 'project.json'
+        path.write_text(json.dumps(payload), encoding='utf-8')
+        service = RuntimeService(dbPath=tmp_path/'runtime.db', workspaceRoot=tmp_path/'jobs',
+            pluginRootPaths=(str(builtins), str(plugin)))
+        originals = []
+        try:
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None)
+            assert loaded.ok, loaded.message
+            manager = service.deviceManager
+            scope = dict(manager.scope)
+            generation = manager.executors['consumer-camera'].generation
+            started = service.StartJob(pb.StartJobRequest(workflow_id='main'), None)
+            assert started.ok, started.message
+            result = waitForTerminal(service, started.job_id, timeoutSeconds=45)
+            assert result.status == ('FAILED' if fail else 'COMPLETED'), result
+            waitFor(lambda: not manager.workers and not manager.dispatchGroups, timeout=30)
+            assert not manager.frames.frames and not manager.frames.reservations
+            assert not service.projectConfiguration.cycles and not service.projectConfiguration.childCycles
+            records = [r for r in service.jobRepository.all() if r.workflowId == 'consumer']
+            assert len(records) == 2 and len({r.pid for r in records}) == 2
+            assert all(r.status == ('FAILED' if fail else 'COMPLETED') for r in records)
+            originals = [e for r in records for e in service._eventsAfter(r.jobId, 0)
+                         if e.nodeId == 'consumer-capture' and e.eventType in {'node.log', 'node.failed'}]
+            assert sum(e.eventType == 'node.log' for e in originals) == 2
+            assert sum(e.eventType == 'node.failed' for e in originals) == (2 if fail else 0)
+            rows = manager.diagnostics.query(scope, 'consumer-camera')['records']
+            for event in originals:
+                fields = json.loads(event.payloadJson)
+                binding = fields['deviceBindings']['camera']
+&gt;               assert binding['scope'] == scope
+E               AssertionError: assert {} == {'runtimeInst...361eed654893'}
+E                 
+E                 Right contains 3 more items:
+E                 {'projectId': 'eb33e4ce-ff4a-499f-94fe-153926d138d4',
+E                  'projectLoadGeneration': '65da3ed5309a48cbb9a8361eed654893',
+E                  'runtimeInstanceId': '91da3be1-ccfc-4918-b990-63ed45ce4bad'}
+E                 Use -v to get more diff
+
+tests\runtime\test_frame_dispatch.py:151: AssertionError</failure></testcase><testcase classname="tests.runtime.test_frame_dispatch" name="testConsumerDeviceLogsKeepRetainedCycleIdentityAndPersistOnce[True]" time="1.944"><failure message="AssertionError: assert {} == {'runtimeInst...fdab34222856'}&#10;  &#10;  Right contains 3 more items:&#10;  {'projectId': 'c3707b60-cdb6-49de-8a50-b309536b59c1',&#10;   'projectLoadGeneration': '57c3e1fcb9644ce39255fdab34222856',&#10;   'runtimeInstanceId': '336baaa6-0f83-4466-9b90-d54a313b8842'}&#10;  Use -v to get more diff">tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2692/testConsumerDeviceLogsKeepReta1')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000198E6D73AC0&gt;
+fail = True
+
+    @pytest.mark.parametrize('fail', [False, True])
+    def testConsumerDeviceLogsKeepRetainedCycleIdentityAndPersistOnce(tmp_path, monkeypatch, fail):
+        # The consumer uses a device absent from the producer's own device bindings.
+        builtins = Path(__file__).resolve().parents[2] / 'src/emo_master/plugins/builtins'
+        plugin = tmp_path / 'dispatch_logging'
+        plugin.mkdir()
+        (plugin / '__init__.py').write_text('''
+    from dataclasses import replace
+    from emo_master.plugins.builtins.simulated_camera.operator import SimulatedCameraOperator
+    class LoggedCamera(SimulatedCameraOperator):
+        meta = replace(SimulatedCameraOperator.meta, operatorId='test.dispatch.camera')
+        def validateParams(self, params):
+            return None
+        def executeNode(self, inputs, params, context):
+            result = super().executeNode(inputs, {}, context)
+            context['logger'].warning('consumer capture', payload=dict(reading=42))
+            if params['fail']:
+                return dict(status='error', error=dict(code='E_TEST_CAPTURE', message='consumer rejected capture'))
+            return result
+    ''', encoding='utf-8')
+        manifest = json.loads((builtins / 'simulated_camera/manifest.json').read_text(encoding='utf-8'))
+        manifest.update(operatorId='test.dispatch.camera', entry='dispatch_logging:LoggedCamera',
+            inputPorts=dict(image='image'), paramSchema=dict(type='object', properties=dict(fail=dict(type='boolean')),
+                                                           required=['fail'], additionalProperties=False))
+        (plugin / 'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
+        monkeypatch.syspath_prepend(str(tmp_path))
+        payload = dispatchProject()
+        consumer = payload['workflows']['consumer']
+        consumer['nodes'].insert(1, dict(nodeId='consumer-capture', operatorId='test.dispatch.camera',
+            params=dict(fail=fail), deviceBindings=dict(camera=dict(deviceId='consumer-camera'))))
+        consumer['edges'] = [dict(fromNode='input', fromPort='image', toNode='consumer-capture', toPort='image'),
+            dict(fromNode='consumer-capture', fromPort='image', toNode='output', toPort='image')]
+        payload['devices']['definitions']['consumer-camera'] = deepcopy(payload['devices']['definitions']['camera'])
+        payload['devices']['definitions']['consumer-camera']['connection']['serial'] = 'CONSUMER-ONLY'
+        path = tmp_path / 'project.json'
+        path.write_text(json.dumps(payload), encoding='utf-8')
+        service = RuntimeService(dbPath=tmp_path/'runtime.db', workspaceRoot=tmp_path/'jobs',
+            pluginRootPaths=(str(builtins), str(plugin)))
+        originals = []
+        try:
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None)
+            assert loaded.ok, loaded.message
+            manager = service.deviceManager
+            scope = dict(manager.scope)
+            generation = manager.executors['consumer-camera'].generation
+            started = service.StartJob(pb.StartJobRequest(workflow_id='main'), None)
+            assert started.ok, started.message
+            result = waitForTerminal(service, started.job_id, timeoutSeconds=45)
+            assert result.status == ('FAILED' if fail else 'COMPLETED'), result
+            waitFor(lambda: not manager.workers and not manager.dispatchGroups, timeout=30)
+            assert not manager.frames.frames and not manager.frames.reservations
+            assert not service.projectConfiguration.cycles and not service.projectConfiguration.childCycles
+            records = [r for r in service.jobRepository.all() if r.workflowId == 'consumer']
+            assert len(records) == 2 and len({r.pid for r in records}) == 2
+            assert all(r.status == ('FAILED' if fail else 'COMPLETED') for r in records)
+            originals = [e for r in records for e in service._eventsAfter(r.jobId, 0)
+                         if e.nodeId == 'consumer-capture' and e.eventType in {'node.log', 'node.failed'}]
+            assert sum(e.eventType == 'node.log' for e in originals) == 2
+            assert sum(e.eventType == 'node.failed' for e in originals) == (2 if fail else 0)
+            rows = manager.diagnostics.query(scope, 'consumer-camera')['records']
+            for event in originals:
+                fields = json.loads(event.payloadJson)
+                binding = fields['deviceBindings']['camera']
+&gt;               assert binding['scope'] == scope
+E               AssertionError: assert {} == {'runtimeInst...fdab34222856'}
+E                 
+E                 Right contains 3 more items:
+E                 {'projectId': 'c3707b60-cdb6-49de-8a50-b309536b59c1',
+E                  'projectLoadGeneration': '57c3e1fcb9644ce39255fdab34222856',
+E                  'runtimeInstanceId': '336baaa6-0f83-4466-9b90-d54a313b8842'}
+E                 Use -v to get more diff
+
+tests\runtime\test_frame_dispatch.py:151: AssertionError</failure></testcase><testcase classname="tests.designer.test_tcp_closure_ui" name="testDeviceDetailShowsAllActiveOwners[owners0]" time="1.556" /><testcase classname="tests.designer.test_tcp_closure_ui" name="testDeviceDetailShowsAllActiveOwners[owners1]" time="0.775" /><testcase classname="tests.designer.test_tcp_closure_ui" name="testDeviceDetailShowsAllActiveOwners[owners2]" time="0.752"><failure message="assert ('当前任务\n' + ('job&lt;a&gt;, job-b')) in '\n连接\n未连接\n执行状态\n执行中\n当前任务\n-\n排队请求\n0\n连接准入\n正常\n会话代次\nbackend\n设备恢复\n-\n最近错误\n-\n状态更新时间\n当前工程未下发；请从主界面 Runtime 菜单写入\n\n{\n  &quot;ready&quot;: true,\n  &quot;channels&quot;: []\n}'&#10; +  where 'job&lt;a&gt;, job-b' = &lt;built-in method join of str object at 0x00000198BC5229B0&gt;(['job&lt;a&gt;', 'job-b'])&#10; +    where &lt;built-in method join of str object at 0x00000198BC5229B0&gt; = ', '.join">runtime = (&lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x00000198E8CDBD90&gt;, &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x00000198E8CDA860&gt;)
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000198E8EADF30&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2692/testDeviceDetailShowsAllActive2')
+owners = ['job&lt;a&gt;', 'job-b']
+
+    @pytest.mark.parametrize('owners', [[], ['job&lt;a&gt;'], ['job&lt;a&gt;', 'job-b']])
+    def testDeviceDetailShowsAllActiveOwners(runtime, ownedDesignerWindow, tmp_path, owners):  # noqa: F811
+        service, client = runtime
+        window = ownedDesignerWindow(client)
+        payload = WorkflowStore().toPayload()
+        payload['devices']['definitions'] = dict(server=definition(service.pluginScanResult.deviceTypes['device.tcp.server']))
+        source = tmp_path/'draft.emoproj'
+        source.write_text(json.dumps(payload), encoding='utf-8')
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+        window.pageCoordinator.showDevices()
+        workspace = window.pageCoordinator.devices
+        waitUntil(lambda: workspace.pending is None)
+        workspace.selectedId = 'server'
+        workspace.stateScope = workspace._scope()
+        workspace.states = dict(server=dict(state='BUSY' if owners else 'IDLE', activeOwners=owners,
+            activeOwner=owners[0] if len(owners) == 1 else None, queued=0, generation='backend',
+            driverState=dict(ready=True, channels=[])))
+        workspace.showDiagnostics()
+        rendered = workspace.onlineState.toPlainText()
+&gt;       assert '当前任务\n' + (', '.join(owners) or '-') in rendered
+E       assert ('当前任务\n' + ('job&lt;a&gt;, job-b')) in '\n连接\n未连接\n执行状态\n执行中\n当前任务\n-\n排队请求\n0\n连接准入\n正常\n会话代次\nbackend\n设备恢复\n-\n最近错误\n-\n状态更新时间\n当前工程未下发；请从主界面 Runtime 菜单写入\n\n{\n  "ready": true,\n  "channels": []\n}'
+E        +  where 'job&lt;a&gt;, job-b' = &lt;built-in method join of str object at 0x00000198BC5229B0&gt;(['job&lt;a&gt;', 'job-b'])
+E        +    where &lt;built-in method join of str object at 0x00000198BC5229B0&gt; = ', '.join
+
+tests\designer\test_tcp_closure_ui.py:111: AssertionError</failure></testcase><testcase classname="tests.designer.test_tcp_closure_ui" name="testSelectiveChannelRemovalLocatesOldBindingAndUiCanPublishAfterSelection" time="0.525"><failure message="emo_master.apps.designer.services.runtime_client.RuntimeClientError: Runtime restarted; compare again">runtime = (&lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x00000198E8EADCC0&gt;, &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x00000198E8EAF820&gt;)
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000198EAB1A530&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2692/testSelectiveChannelRemovalLoc0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000198E8EAF190&gt;
+messages = []
+
+    def testSelectiveChannelRemovalLocatesOldBindingAndUiCanPublishAfterSelection(
+            runtime, ownedDesignerWindow, tmp_path, monkeypatch, messages):  # noqa: F811
+        service, client = runtime
+        types = service.pluginScanResult.deviceTypes
+        operators = service.pluginScanResult.activeOperators
+        payload = WorkflowStore().toPayload()
+        payload['devices']['definitions'] = dict(server=definition(types['device.tcp.server'], channels=[
+            dict(channelId=key, name=key.upper(), allowedIps=['127.0.0.1']) for key in ('a', 'c')]))
+        payload['workflows']['main'] = graph([
+            node('acquire', 'communication.tcp.session', 'server', selectors=dict(channelId='a'))])
+        source = tmp_path/'project.emoproj'
+        source.write_text(json.dumps(payload), encoding='utf-8')
+        window = ownedDesignerWindow(client)
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+&gt;       client.initializeProjectConfiguration(window.pageCoordinator.session.payload(), tmp_path, 'r02-initialize')
+
+tests\designer\test_tcp_closure_ui.py:135: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\services\runtime_client.py:469: in initializeProjectConfiguration
+    return self._projectConfigurationCall('InitializeProjectConfiguration',
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x00000198E8EAF820&gt;
+method = 'InitializeProjectConfiguration'
+request = request_id: "r02-initialize"
+local_payload_json: "{\"schemaVersion\": \"2.7\", \"presentation\": {\"schemaVersion\": \..._root: "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2692\\testSelectiveChannelRemovalLoc0"
+
+
+    def _projectConfigurationCall(self, method, request):
+        reply = self._call(method, request)
+        if not reply.ok:
+            error = RuntimeClientError(reply.code, reply.message)
+            if reply.result_json:
+                error.diagnostics = json.loads(reply.result_json)
+&gt;           raise error
+E           emo_master.apps.designer.services.runtime_client.RuntimeClientError: Runtime restarted; compare again
+
+src\emo_master\apps\designer\services\runtime_client.py:452: RuntimeClientError</failure></testcase></testsuite></testsuites>

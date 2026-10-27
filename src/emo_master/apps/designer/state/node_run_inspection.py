@@ -10,9 +10,24 @@ MAX_NODE_BYTES = 8192
 class NodeRunInspection:
     def __init__(self) -> None:
         self._nodes: OrderedDict[tuple[str, str], dict] = OrderedDict()
+        self._nodeBytes: dict[tuple[str, str], int] = {}
 
     def clear(self) -> None:
         self._nodes.clear()
+        self._nodeBytes.clear()
+
+    def discard(self, key) -> None:
+        self._nodes.pop(key, None)
+        self._nodeBytes.pop(key, None)
+
+    def discardOldest(self) -> None:
+        if self._nodes:
+            self.discard(next(iter(self._nodes)))
+
+    def retainNodes(self, keys) -> None:
+        for key in list(self._nodes):
+            if key not in keys:
+                self.discard(key)
 
     def get(self, workflowId: str, nodeId: str, jobId: str | None) -> dict | None:
         value = self._nodes.get((workflowId, nodeId))
@@ -75,31 +90,49 @@ class NodeRunInspection:
             receipt = receiptSummary(diagnostics.get('sqliteReceipt'), identities)
             if receipt is not None:
                 record['sqliteReceipt'] = receipt
+            imageMessages = diagnostics.get('imageOutputMessages')
+            if status == 'COMPLETED' and isinstance(imageMessages, dict):
+                # Subflow diagnostics can include a child's omissions even
+                # when another child supplied the parent output.
+                outputs = payload.get('outputs')
+                outputNames = (set(outputs) if isinstance(outputs, dict) else
+                               {item['port'] for item in (io['outputs'] or {}).get('items', ())})
+                record['imageOutputMessages'] = {
+                    clipText(port, 64): clipText(message, 256)
+                    for port, message in list(imageMessages.items())[:16]
+                    if isinstance(port, str) and isinstance(message, str) and port not in outputNames}
         # Identity from a remote endpoint is data too. Bound it before retention.
         for field in ('jobId', 'workflowId', 'nodeId', 'nodeRunId', 'workflowRunId'):
             record[field] = clipText(record[field], 128)
         record['iterationPath'] = [n for n in record['iterationPath'] if type(n) is int and 0 <= n <= 1_000_000]
-        if encodedBytes(record) > MAX_NODE_BYTES:
+        size = encodedBytes(record)
+        if size > MAX_NODE_BYTES:
             record['metrics'] = {'items': [], 'portCount': record['metrics']['portCount'], 'omitted': record['metrics']['portCount']}
             record['diagnostic'] = ''
-        if encodedBytes(record) > MAX_NODE_BYTES:
+            size = encodedBytes(record)
+        if size > MAX_NODE_BYTES:
             record['message'] = ''
-        if encodedBytes(record) > MAX_NODE_BYTES:
+            size = encodedBytes(record)
+        if size > MAX_NODE_BYTES:
             # JSON escaping can expand even short strings. Retain identity/status
             # and an explicit unavailable marker rather than exceed the budget.
             record['io'] = {'version': 1, 'inputs': None, 'outputs': None, 'legacy': False,
                             'unavailableReason': '摘要超过界面额度，未保留端口值'}
-        if encodedBytes(record) > MAX_NODE_BYTES:
+            size = encodedBytes(record)
+        if size > MAX_NODE_BYTES:
             record.pop('sqliteReceipt', None)
+            record.pop('imageOutputMessages', None)
+            size = encodedBytes(record)
         self._nodes[key] = record
+        self._nodeBytes[key] = size
         self._nodes.move_to_end(key)
         while len(self._nodes) > MAX_INSPECTED_NODES:
-            self._nodes.popitem(last=False)
+            self.discardOldest()
         return True
 
     @property
     def retainedBytes(self) -> int:
-        return sum(encodedBytes(value) for value in self._nodes.values())
+        return sum(self._nodeBytes.values())
 
 
 def _text(value: object, limit: int) -> str:

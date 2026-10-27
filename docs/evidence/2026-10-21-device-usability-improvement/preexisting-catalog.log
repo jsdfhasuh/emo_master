@@ -1,0 +1,34 @@
+F..........F..FF..                                                       [100%]
+================================== FAILURES ===================================
+_________________ testWizardCommitAndUndoAreSingleTransaction _________________
+tests\designer\test_device_catalog.py:36: in testWizardCommitAndUndoAreSingleTransaction
+    assert session.document().schemaVersion == "2.6"
+E   AssertionError: assert '2.7' == '2.6'
+E     
+E     - 2.6
+E     + 2.7
+_____________ testCanvasAndStoreRoundtripPreserveAllDeviceSources _____________
+tests\designer\test_device_catalog.py:136: in testCanvasAndStoreRoundtripPreserveAllDeviceSources
+    assert result["schemaVersion"] == "2.6"
+E   AssertionError: assert '2.7' == '2.6'
+E     
+E     - 2.6
+E     + 2.7
+________________ testWorkflowExportIncludesDeviceDependencies _________________
+tests\designer\test_device_catalog.py:166: in testWorkflowExportIncludesDeviceDependencies
+    assert package.schemaVersion == "1.2"
+E   AssertionError: assert '1.4' == '1.2'
+E     
+E     - 1.2
+E     + 1.4
+________________ testCompilerCannotFallBackToPrivateConnection ________________
+tests\designer\test_device_catalog.py:175: in testCompilerCannotFallBackToPrivateConnection
+    assert any(issue.code == "E_DEVICE_RUNTIME_UNAVAILABLE" for issue in caught.value.issues)
+E   assert False
+E    +  where False = any(<generator object testCompilerCannotFallBackToPrivateConnection.<locals>.<genexpr> at 0x0000023A05B511C0>)
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_catalog.py::testWizardCommitAndUndoAreSingleTransaction
+FAILED tests/designer/test_device_catalog.py::testCanvasAndStoreRoundtripPreserveAllDeviceSources
+FAILED tests/designer/test_device_catalog.py::testWorkflowExportIncludesDeviceDependencies
+FAILED tests/designer/test_device_catalog.py::testCompilerCannotFallBackToPrivateConnection
+4 failed, 14 passed in 1.77s

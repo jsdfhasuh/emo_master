@@ -1,0 +1,5 @@
+Protocol generated-code check
+Ruff changed Python source/tests and renderer (generated and unrelated files excluded)
+All checks passed!
+git diff --check
+Exit codes: proto=0 ruff=0 diff=0

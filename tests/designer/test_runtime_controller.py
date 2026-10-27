@@ -3,6 +3,7 @@ from emo_master.core.contracts.execution import RuntimeEventDTO
 import emo_master.apps.designer.controllers.runtime_controller as runtimeControllerModule
 import threading
 import time
+import pytest
 
 
 class _Panel:
@@ -11,6 +12,24 @@ class _Panel:
 
     def applyEvent(self, event) -> None:
         self.events.append(event)
+
+
+def testRuntimeControllerPassesJobTimingToCurrentRun():
+    from types import SimpleNamespace
+    from emo_master.apps.designer.ui.runtime_panel import RuntimePanelState
+
+    panel = RuntimePanelState()
+    panel.setActiveJob('current')
+    controller = RuntimeController(
+        runtimeClient=None, runtimePanelState=panel,
+        appendLog=lambda *args: None, refreshRuntimePanelView=lambda: None,
+        updateToolbarState=lambda: None, syncRuntimeProjectBeforeRun=lambda: True,
+        applyRuntimeEventToNode=lambda event: None, setCurrentJobId=lambda job: None,
+        setIsJobRunning=lambda running: None, getLoadedProjectPath=lambda: None,
+        getCurrentJobId=lambda: 'current')
+    controller._onJobStatus(SimpleNamespace(status='FAILED', message='failed',
+                                           started_at_ms=100000, ended_at_ms=114200))
+    assert panel.jobStatus == 'FAILED' and panel.jobElapsedMs() == 14200
 
 
 def testRuntimeControllerPreservesEventCorrelationMetadata() -> None:
@@ -303,6 +322,55 @@ def testRuntimeControllerCanForceStopAfterGracefulStop() -> None:
     assert client.modes == ["graceful", "force"]
     assert running[-1] is False
     assert panel.jobStatus == "ABORTED"
+
+
+def testNormalStopRetainsObserverAndLateStoppingCannotReplaceTerminal(monkeypatch) -> None:
+    from types import SimpleNamespace
+    from emo_master.apps.designer.ui.runtime_panel import RuntimePanelState
+    panel = RuntimePanelState()
+    panel.updateJob('RUNNING', 'running')
+    running, cancelled, stopped = [], [], []
+    controller = RuntimeController(runtimeClient=None, runtimePanelState=panel,
+        appendLog=lambda *_: None, refreshRuntimePanelView=lambda: None, updateToolbarState=lambda: None,
+        syncRuntimeProjectBeforeRun=lambda: True, applyRuntimeEventToNode=lambda _: None,
+        setCurrentJobId=lambda _: None, setIsJobRunning=running.append,
+        getLoadedProjectPath=lambda: 'project', getCurrentJobId=lambda: 'job')
+    controller._worker = SimpleNamespace(requestStop=lambda: cancelled.append(True))
+    monkeypatch.setattr(controller, '_beginStop', lambda *args: stopped.append(args))
+    controller.stopJob()
+    assert stopped == [('job', 'graceful')] and not cancelled
+    replyWorker = SimpleNamespace(resultHandled=False)
+    controller._stopWorker = replyWorker
+    controller._onJobStatus(SimpleNamespace(status='ABORTED', message='terminal observed'))
+    controller._onStopReply(replyWorker, SimpleNamespace(ok=True, status='STOPPING', message='earlier accepted stop'))
+    assert panel.jobStatus == 'ABORTED' and panel.lastMessage == 'terminal observed'
+    assert replyWorker.resultHandled and not controller._jobActive and running[-1] is False
+
+
+@pytest.mark.parametrize('failure', ['transport', 'reply'])
+@pytest.mark.parametrize('terminal', ['ABORTED', 'COMPLETED', 'FAILED'])
+def testStopFailureCannotReplaceObservedTerminal(failure, terminal):
+    from types import SimpleNamespace
+    from emo_master.apps.designer.ui.runtime_panel import RuntimePanelState
+
+    panel = RuntimePanelState()
+    panel.updateJob('STOPPING', 'stop submitted')
+    running, logs = [], []
+    controller = RuntimeController(runtimeClient=None, runtimePanelState=panel,
+        appendLog=lambda *entry: logs.append(entry), refreshRuntimePanelView=lambda: None, updateToolbarState=lambda: None,
+        syncRuntimeProjectBeforeRun=lambda: True, applyRuntimeEventToNode=lambda _: None,
+        setCurrentJobId=lambda _: None, setIsJobRunning=running.append,
+        getLoadedProjectPath=lambda: 'project', getCurrentJobId=lambda: 'job')
+    worker = SimpleNamespace(resultHandled=False)
+    controller._stopWorker = worker
+    controller._onJobStatus(SimpleNamespace(status=terminal, message='terminal already observed'))
+    if failure == 'transport':
+        controller._onStopFailed(worker, 'stop reply unavailable')
+    else:
+        controller._onStopReply(worker, SimpleNamespace(ok=False, status='FAILED', message='stop reply rejected'))
+    assert panel.jobStatus == terminal and panel.lastMessage == 'terminal already observed'
+    assert worker.resultHandled and not controller._jobActive and running[-1] is False
+    assert logs[-1][0] == 'ERROR' and '停止作业失败' in logs[-1][1]
 
 
 def testRuntimeControllerRunsStopRpcOutsideQtThreadAndEscalates() -> None:

@@ -1,0 +1,25 @@
+{
+  "reason": "Correct pytest truncated-directory glob; original logs and validation.json are unchanged.",
+  "artifacts": [
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-2imjg138\\counterexamples\\testTcpOnceResultLogsKeepBound0\\once-byte-logs\\runtime-20261021-084840-33652-0001.jsonl",
+      "retained": "once-byte-logs\\testTcpOnceResultLogsKeepBound0\\once-byte-logs\\runtime-20261021-084840-33652-0001.jsonl",
+      "sha256": "f959fc8c0bd48e5eb6da506e9cc1358ba907fa04795a826ac958f89177d75ec7"
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-2imjg138\\counterexamples\\testTcpOnceResultLogsKeepBound1\\once-byte-logs\\runtime-20261021-084840-33652-0001.jsonl",
+      "retained": "once-byte-logs\\testTcpOnceResultLogsKeepBound1\\once-byte-logs\\runtime-20261021-084840-33652-0001.jsonl",
+      "sha256": "6fad61485b521f361aeab1a125eebca021dc1192ab4412d5401670f1dc3cf643"
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-2imjg138\\counterexamples\\testTcpOnceResultLogsKeepBound2\\once-byte-logs\\runtime-20261021-084841-33652-0001.jsonl",
+      "retained": "once-byte-logs\\testTcpOnceResultLogsKeepBound2\\once-byte-logs\\runtime-20261021-084841-33652-0001.jsonl",
+      "sha256": "0e0f29e57c9bdcb81fb70140bd1d9411cfbb5f23edd40f328f6384b934ee9891"
+    },
+    {
+      "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-2imjg138\\counterexamples\\testTcpOnceResultLogsKeepBound3\\once-byte-logs\\runtime-20261021-084841-33652-0001.jsonl",
+      "retained": "once-byte-logs\\testTcpOnceResultLogsKeepBound3\\once-byte-logs\\runtime-20261021-084841-33652-0001.jsonl",
+      "sha256": "26423093cbbdf4792b9cd378aabf7f680cb88fa0de5fb51a20b09821352e0346"
+    }
+  ]
+}

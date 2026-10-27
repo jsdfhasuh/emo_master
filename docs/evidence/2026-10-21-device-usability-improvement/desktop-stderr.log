@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\docs\evidence\2026-10-21-device-usability-improvement\desktop_demo.py", line 102, in <module>
+    raise SystemExit(main())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\docs\evidence\2026-10-21-device-usability-improvement\desktop_demo.py", line 62, in main
+    assert state.status == 'COMPLETED', state
+AssertionError: status: "UNKNOWN"
+error_code: "E_JOB_NOT_FOUND"
+message: "job not found"
+

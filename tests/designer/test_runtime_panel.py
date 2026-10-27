@@ -1,3 +1,5 @@
+import pytest
+
 from emo_master.apps.designer.ui.runtime_panel import RuntimePanelState
 
 
@@ -153,3 +155,52 @@ def testRuntimePanelStateKeepsSameNodeIsolatedAcrossWorkflowRuns() -> None:
 
     assert state.nodeStatusByWorkflowRun[("body", "run-one", "node")] == "COMPLETED"
     assert state.nodeStatusByWorkflowRun[("body", "run-two", "node")] == "RUNNING"
+
+
+@pytest.mark.parametrize('status,eventType', [('COMPLETED', 'job.completed'),
+    ('FAILED', 'job.failed'), ('ABORTED', 'job.aborted')])
+def testCurrentRunClockUsesJobTimestampsAndFreezesAtTerminal(monkeypatch, status, eventType):
+    now = [100.0]
+    monkeypatch.setattr('emo_master.apps.designer.ui.runtime_panel.monotonic', lambda: now[0])
+    state = RuntimePanelState()
+    state.setActiveJob('current')
+    state.updateJob('ACCEPTED')
+    assert state.jobElapsedMs() is None
+    state.applyEvent(dict(jobId='current', eventType='job.started', timestampMs=100000))
+    now[0] += 3
+    assert state.jobElapsedMs() == 3000
+    state.applyEvent(dict(jobId='other', eventType='job.failed', timestampMs=101000))
+    assert state.jobStatus == 'RUNNING'
+    state.applyEvent(dict(jobId='current', eventType='job.stopping', timestampMs=103000))
+    now[0] += 10
+    state.applyEvent(dict(jobId='current', eventType=eventType, timestampMs=105500))
+    assert state.jobStatus == status
+    assert state.jobElapsedMs() == 5500
+    now[0] += 60
+    state.updateJob(status, 'repeated terminal reply')
+    assert state.jobElapsedMs() == 5500
+    state.setActiveJob('next')
+    assert state.jobElapsedMs() is None
+    state.updateJob('RUNNING')
+    now[0] += 1
+    assert state.jobElapsedMs() == 1000
+
+
+def testStatusOnlyClockFreezesAndAuthoritativeReplyCorrectsDuration(monkeypatch):
+    now = [0.0]
+    monkeypatch.setattr('emo_master.apps.designer.ui.runtime_panel.monotonic', lambda: now[0])
+    state = RuntimePanelState()
+    state.updateJob('RUNNING')
+    now[0] = 5
+    state.updateJob('FAILED')
+    now[0] = 100
+    assert state.jobElapsedMs() == 5000
+    state.updateJobTiming(10000, 12500)
+    state.updateJob('FAILED')
+    assert state.jobElapsedMs() == 2500
+    state.updateJob('STARTING')
+    assert state.jobElapsedMs() is None
+    state.updateJob('REJECTED')
+    assert state.jobElapsedMs() is None
+    state.updateJob('READY')
+    assert state.jobElapsedMs() is None

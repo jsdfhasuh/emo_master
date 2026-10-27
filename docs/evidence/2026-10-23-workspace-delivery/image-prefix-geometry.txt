@@ -1,0 +1,32 @@
+........................................................................ [ 22%]
+........................................................................ [ 44%]
+............................................s........................... [ 66%]
+........................................................................ [ 88%]
+..................................FF                                     [100%]
+================================== FAILURES ===================================
+______ testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs[shape0] ______
+tests\designer\test_node_image_viewer.py:250: in testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs
+    firstPacket = wait(designerApplication, firstDisplayedInvocation, timeout=20)
+tests\designer\test_node_image_viewer.py:23: in wait
+    assert time.monotonic() < deadline, 'Qt condition was not reached before the outer watchdog'
+E   AssertionError: Qt condition was not reached before the outer watchdog
+E   assert 242562.156 < 242562.156
+E    +  where 242562.156 = <built-in function monotonic>()
+E    +    where <built-in function monotonic> = time.monotonic
+---------------------------- Captured stdout call -----------------------------
+LIVE_NODE_FIRST_PAINT {'job': 'e35d19c9-b611-4df4-9078-7b4b816f6e86', 'message': 'job.started', 'workflow': 'body', 'node': 'image', 'packet': True, 'visible': True, 'painted': 0, 'region': (0, 0, 0, 0), 'geometry': (0, 46, 261, 94), 'windowGeometry': (14, 38, 776, 552), 'updatesEnabled': True, 'windowExposed': True, 'font': 'Helvetica,10.5,-1,5,50,0,0,0,0,0', 'imageNotice': '', 'values': 'image = 图像 12 × 16 × 3（仅显示尺寸摘要）  [image]\ncount = 3  [integer]', 'logs': [('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat')]}
+______ testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs[shape1] ______
+tests\designer\test_node_image_viewer.py:250: in testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs
+    firstPacket = wait(designerApplication, firstDisplayedInvocation, timeout=20)
+tests\designer\test_node_image_viewer.py:23: in wait
+    assert time.monotonic() < deadline, 'Qt condition was not reached before the outer watchdog'
+E   AssertionError: Qt condition was not reached before the outer watchdog
+E   assert 242583.984 < 242583.984
+E    +  where 242583.984 = <built-in function monotonic>()
+E    +    where <built-in function monotonic> = time.monotonic
+---------------------------- Captured stdout call -----------------------------
+LIVE_NODE_FIRST_PAINT {'job': 'b2826216-5c29-4180-b747-6d112afe11b2', 'message': 'job.started', 'workflow': 'body', 'node': 'image', 'packet': True, 'visible': True, 'painted': 0, 'region': (0, 0, 0, 0), 'geometry': (0, 46, 251, 90), 'windowGeometry': (14, 38, 776, 552), 'updatesEnabled': True, 'windowExposed': True, 'font': 'Helvetica,10.5,-1,5,50,0,0,0,0,0', 'imageNotice': '', 'values': 'image = 图像 2160 × 3840 × 3（仅显示尺寸摘要）  [image]\ncount = 3  [integer]', 'logs': [('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat')]}
+=========================== short test summary info ===========================
+FAILED tests/designer/test_node_image_viewer.py::testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs[shape0]
+FAILED tests/designer/test_node_image_viewer.py::testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs[shape1]
+2 failed, 321 passed, 1 skipped in 243.26s (0:04:03)

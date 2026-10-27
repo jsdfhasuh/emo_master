@@ -1,0 +1,12 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+________________ testC1ThroughC6PendingDraftPublicationAndRun _________________
+tests\runtime\test_device_usability_chain.py:41: in testC1ThroughC6PendingDraftPublicationAndRun
+    waitUntil(lambda: wizard.pendingButton.isEnabled())
+tests\designer\test_device_workspace.py:29: in waitUntil
+    assert predicate()
+E   assert False
+E    +  where False = <function testC1ThroughC6PendingDraftPublicationAndRun.<locals>.<lambda> at 0x0000026F5F58D1B0>()
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_device_usability_chain.py::testC1ThroughC6PendingDraftPublicationAndRun
+1 failed in 7.27s

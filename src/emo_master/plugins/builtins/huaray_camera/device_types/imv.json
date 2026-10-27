@@ -11,7 +11,13 @@
   ],
   "driverEntry": "emo_master.apps.runtime.devices.imv_host:ManagedImv",
   "executionLocation": "camera_host",
-  "cancellableWait": {"action": "capture", "timeoutPath": "captureTimeoutMs", "requires": {"triggerMode": "hardware"}},
+  "cancellableWait": {
+    "action": "capture",
+    "timeoutPath": "captureTimeoutMs",
+    "requires": {
+      "triggerMode": "hardware"
+    }
+  },
   "connectionSchema": {
     "type": "object",
     "additionalProperties": false,
@@ -31,7 +37,8 @@
         "type": "integer",
         "minimum": 1,
         "maximum": 134217728,
-        "default": 67108864
+        "default": 67108864,
+        "xAdvanced": true
       }
     },
     "required": [
@@ -51,7 +58,12 @@
           "software",
           "freeRun"
         ],
-        "default": "hardware"
+        "default": "hardware",
+        "xOptionLabels": {
+          "hardware": "硬件触发（hardware）",
+          "software": "软件触发（software）",
+          "freeRun": "连续采集（freeRun）"
+        }
       },
       "triggerSource": {
         "title": "触发输入线",
@@ -62,7 +74,13 @@
           "Line3",
           "Line4"
         ],
-        "default": "Line1"
+        "default": "Line1",
+        "xOptionLabels": {
+          "Line1": "线路 1（Line1）",
+          "Line2": "线路 2（Line2）",
+          "Line3": "线路 3（Line3）",
+          "Line4": "线路 4（Line4）"
+        }
       },
       "triggerActivation": {
         "title": "触发边沿",
@@ -71,7 +89,11 @@
           "RisingEdge",
           "FallingEdge"
         ],
-        "default": "RisingEdge"
+        "default": "RisingEdge",
+        "xOptionLabels": {
+          "RisingEdge": "上升沿（RisingEdge）",
+          "FallingEdge": "下降沿（FallingEdge）"
+        }
       },
       "captureTimeoutMs": {
         "title": "取图超时 (ms，0=可取消硬件等待)",
@@ -87,7 +109,12 @@
           "off",
           "contiguous"
         ],
-        "default": "off"
+        "default": "off",
+        "xAdvanced": true,
+        "xOptionLabels": {
+          "off": "不检查（off）",
+          "contiguous": "检查连续帧（contiguous）"
+        }
       },
       "outputColor": {
         "title": "输出颜色",
@@ -96,7 +123,11 @@
           "bgr",
           "gray"
         ],
-        "default": "bgr"
+        "default": "bgr",
+        "xOptionLabels": {
+          "bgr": "彩色 BGR（bgr）",
+          "gray": "灰度（gray）"
+        }
       },
       "demosaic": {
         "title": "去马赛克算法",
@@ -106,7 +137,13 @@
           "bilinear",
           "edgeSensing"
         ],
-        "default": "bilinear"
+        "default": "bilinear",
+        "xAdvanced": true,
+        "xOptionLabels": {
+          "nearest": "最近邻（nearest）",
+          "bilinear": "双线性（bilinear）",
+          "edgeSensing": "边缘感知（edgeSensing）"
+        }
       },
       "exposureMode": {
         "title": "曝光设置",
@@ -115,7 +152,11 @@
           "keep",
           "manual"
         ],
-        "default": "manual"
+        "default": "manual",
+        "xOptionLabels": {
+          "keep": "保留当前值（keep）",
+          "manual": "手动（manual）"
+        }
       },
       "exposureUs": {
         "title": "曝光时间 (us)",
@@ -131,7 +172,11 @@
           "keep",
           "manual"
         ],
-        "default": "manual"
+        "default": "manual",
+        "xOptionLabels": {
+          "keep": "保留当前值（keep）",
+          "manual": "手动（manual）"
+        }
       },
       "gainRaw": {
         "title": "增益值",
@@ -147,14 +192,20 @@
           "keep",
           "manual"
         ],
-        "default": "keep"
+        "default": "keep",
+        "xAdvanced": true,
+        "xOptionLabels": {
+          "keep": "保留当前值（keep）",
+          "manual": "手动（manual）"
+        }
       },
       "frameRate": {
         "title": "帧率 (fps)",
         "type": "number",
         "exclusiveMinimum": 0,
         "maximum": 100000,
-        "default": 30
+        "default": 30,
+        "xAdvanced": true
       },
       "roiMode": {
         "title": "采集区域",
@@ -164,7 +215,12 @@
           "full",
           "custom"
         ],
-        "default": "keep"
+        "default": "keep",
+        "xOptionLabels": {
+          "keep": "保留当前值（keep）",
+          "full": "全幅（full）",
+          "custom": "自定义（custom）"
+        }
       },
       "width": {
         "title": "宽度 (px)",
@@ -207,7 +263,18 @@
           "RGB8",
           "BGR8"
         ],
-        "default": "keep"
+        "default": "keep",
+        "xAdvanced": true,
+        "xOptionLabels": {
+          "keep": "保留当前值（keep）",
+          "Mono8": "像素格式 Mono8（Mono8）",
+          "BayerGR8": "像素格式 BayerGR8（BayerGR8）",
+          "BayerRG8": "像素格式 BayerRG8（BayerRG8）",
+          "BayerGB8": "像素格式 BayerGB8（BayerGB8）",
+          "BayerBG8": "像素格式 BayerBG8（BayerBG8）",
+          "RGB8": "像素格式 RGB8（RGB8）",
+          "BGR8": "像素格式 BGR8（BGR8）"
+        }
       }
     },
     "required": [
@@ -240,7 +307,10 @@
         "title": "连接策略",
         "type": "string",
         "enum": [
-          "on_first_use", "on_project_open", "on_project_run", "manual"
+          "on_first_use",
+          "on_project_open",
+          "on_project_run",
+          "manual"
         ],
         "default": "on_first_use"
       },
@@ -248,24 +318,36 @@
         "title": "释放策略",
         "type": "string",
         "enum": [
-          "on_project_close", "when_unused", "idle_timeout", "manual"
+          "on_project_close",
+          "when_unused",
+          "idle_timeout",
+          "manual"
         ],
         "default": "on_project_close"
       },
-      "idleTimeoutMs": {"title": "空闲释放时长 (ms)", "type": "integer", "minimum": 1, "maximum": 86400000, "default": 30000},
+      "idleTimeoutMs": {
+        "title": "空闲释放时长 (ms)",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 86400000,
+        "default": 30000,
+        "xAdvanced": true
+      },
       "deviceWaitTimeoutMs": {
         "title": "排队超时 (ms)",
         "type": "integer",
         "minimum": 1,
         "maximum": 600000,
-        "default": 5000
+        "default": 5000,
+        "xAdvanced": true
       },
       "operationTimeoutMs": {
         "title": "操作超时 (ms)",
         "type": "integer",
         "minimum": 1,
         "maximum": 600000,
-        "default": 15000
+        "default": 15000,
+        "xAdvanced": true
       }
     },
     "required": [
@@ -302,15 +384,76 @@
   ],
   "nextCyclePaths": [],
   "parameterRules": [
-    {"present": "exposureUs", "requires": {"exposureMode": "manual"}, "whenOverridden": true},
-    {"present": "gainRaw", "requires": {"gainMode": "manual"}, "whenOverridden": true},
-    {"present": "frameRate", "requires": {"frameRateMode": "manual"}, "whenOverridden": true},
-    {"present": "width", "requires": {"roiMode": "custom"}, "whenOverridden": true},
-    {"present": "height", "requires": {"roiMode": "custom"}, "whenOverridden": true},
-    {"present": "offsetX", "requires": {"roiMode": "custom"}, "whenOverridden": true},
-    {"present": "offsetY", "requires": {"roiMode": "custom"}, "whenOverridden": true}
+    {
+      "present": "exposureUs",
+      "requires": {
+        "exposureMode": "manual"
+      },
+      "whenOverridden": true
+    },
+    {
+      "present": "gainRaw",
+      "requires": {
+        "gainMode": "manual"
+      },
+      "whenOverridden": true
+    },
+    {
+      "present": "frameRate",
+      "requires": {
+        "frameRateMode": "manual"
+      },
+      "whenOverridden": true
+    },
+    {
+      "present": "width",
+      "requires": {
+        "roiMode": "custom"
+      },
+      "whenOverridden": true
+    },
+    {
+      "present": "height",
+      "requires": {
+        "roiMode": "custom"
+      },
+      "whenOverridden": true
+    },
+    {
+      "present": "offsetX",
+      "requires": {
+        "roiMode": "custom"
+      },
+      "whenOverridden": true
+    },
+    {
+      "present": "offsetY",
+      "requires": {
+        "roiMode": "custom"
+      },
+      "whenOverridden": true
+    }
   ],
   "capabilities": [
-    "capture", "discover"
-  ]
+    "capture"
+  ],
+  "schemaVersion": "1.1",
+  "driverApiVersion": "1.1",
+  "operationScheduling": "serial",
+  "connectionLifetime": "persistent",
+  "controlCapabilities": [
+    "connect",
+    "disconnect",
+    "maintenance",
+    "resume",
+    "recover",
+    "test_connection"
+  ],
+  "actionSchemas": {
+    "capture": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  }
 }

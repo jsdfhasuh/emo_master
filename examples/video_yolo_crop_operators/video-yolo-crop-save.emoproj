@@ -1,0 +1,1495 @@
+{
+  "schemaVersion": "2.4",
+  "project": {
+    "projectId": "video-yolo-crop-save-example",
+    "name": "\u672c\u5730\u89c6\u9891 YOLO \u88c1\u526a\u5206\u6587\u4ef6\u4fdd\u5b58",
+    "revision": 1,
+    "createdAt": "2026-10-21T00:00:00Z",
+    "updatedAt": "2026-10-21T00:00:00Z"
+  },
+  "entryWorkflowId": "main",
+  "workflowOrder": [
+    "main",
+    "video_frame",
+    "one_target",
+    "process_crop"
+  ],
+  "workflows": {
+    "main": {
+      "name": "\u4e3b\u6d41\u7a0b",
+      "inputs": {},
+      "outputs": {
+        "hasNext": "boolean"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "displayName": "\u6d41\u7a0b\u8f93\u5165",
+          "outputPorts": {}
+        },
+        {
+          "nodeId": "one",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "\u542f\u52a8\u503c",
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "\u6570\u503c",
+                "type": "number",
+                "default": 0,
+                "xExample": 0.5,
+                "description": "\u586b\u5199\u6709\u9650\u6570\u503c\uff0c\u53ef\u4f7f\u7528\u6574\u6570\u3001\u5c0f\u6570\u6216\u79d1\u5b66\u8ba1\u6570\u6cd5\uff0c\u4f8b\u5982 0.5 \u6216 1e-6\uff1b\u4e0d\u63a5\u53d7 NaN \u6216\u65e0\u7a77\u5927\u3002"
+              }
+            }
+          },
+          "params": {
+            "value": 1
+          }
+        },
+        {
+          "nodeId": "initial",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "\u9996\u6b21\u8fdb\u5165\u5faa\u73af",
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "\u6bd4\u8f83\u8fd0\u7b97\u7b26",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "\u53f3\u4fa7\u6bd4\u8f83\u503c",
+                "type": "number",
+                "default": 0
+              }
+            }
+          },
+          "params": {
+            "operator": "eq",
+            "rightValue": 1
+          }
+        },
+        {
+          "nodeId": "video_loop",
+          "kind": "loop",
+          "displayName": "\u9010\u5e27\u5904\u7406\u89c6\u9891",
+          "inputPorts": {
+            "hasNext": "boolean"
+          },
+          "outputPorts": {
+            "hasNext": "boolean"
+          },
+          "loop": {
+            "contractVersion": 2,
+            "mode": "while",
+            "bodyWorkflowId": "video_frame",
+            "maxIterations": 100000,
+            "timeoutMs": 0,
+            "conditionMode": "boolean",
+            "conditionPort": "hasNext"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "displayName": "\u6d41\u7a0b\u8f93\u51fa",
+          "inputPorts": {
+            "hasNext": "boolean"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "one",
+          "fromPort": "value",
+          "toNode": "initial",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "initial",
+          "fromPort": "result",
+          "toNode": "video_loop",
+          "toPort": "hasNext"
+        },
+        {
+          "fromNode": "video_loop",
+          "fromPort": "hasNext",
+          "toNode": "output",
+          "toPort": "hasNext"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 0,
+            "y": 0
+          },
+          "one": {
+            "x": 0,
+            "y": 200
+          },
+          "initial": {
+            "x": 480,
+            "y": 200
+          },
+          "video_loop": {
+            "x": 1000,
+            "y": 200
+          },
+          "output": {
+            "x": 1530,
+            "y": 200
+          }
+        }
+      }
+    },
+    "video_frame": {
+      "name": "\u53d6\u5e27\u5e76\u68c0\u6d4b",
+      "inputs": {
+        "hasNext": "boolean"
+      },
+      "outputs": {
+        "hasNext": "boolean"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "displayName": "\u6d41\u7a0b\u8f93\u5165",
+          "outputPorts": {
+            "hasNext": "boolean"
+          }
+        },
+        {
+          "nodeId": "video",
+          "kind": "operator",
+          "operatorId": "vision.io.video_loader",
+          "displayName": "\u672c\u5730\u89c6\u9891\u53d6\u5e27",
+          "inputPorts": {
+            "reset": "boolean"
+          },
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d",
+            "videoPath": "string",
+            "index": "integer",
+            "frameIndex": "integer",
+            "timestampSec": "number",
+            "hasNext": "boolean"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "videoPath": {
+                "title": "\u89c6\u9891\u6587\u4ef6",
+                "type": "string",
+                "default": "",
+                "xWidget": "file",
+                "xFileMode": "open",
+                "xFilter": "\u89c6\u9891\u6587\u4ef6 (*.mp4 *.avi *.mkv *.mov *.wmv *.m4v *.webm *.mpg *.mpeg);;\u6240\u6709\u6587\u4ef6 (*)"
+              },
+              "intervalSec": {
+                "title": "\u53d6\u5e27\u95f4\u9694\uff08\u79d2\uff09",
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "default": 1
+              },
+              "colorMode": {
+                "title": "\u989c\u8272\u6a21\u5f0f",
+                "type": "string",
+                "enum": [
+                  "color",
+                  "grayscale"
+                ],
+                "default": "color"
+              }
+            },
+            "required": [
+              "videoPath"
+            ]
+          },
+          "params": {
+            "videoPath": "",
+            "intervalSec": 1,
+            "colorMode": "color"
+          }
+        },
+        {
+          "nodeId": "yolo",
+          "kind": "operator",
+          "operatorId": "vision.inference.yolo",
+          "displayName": "YOLO \u68c0\u6d4b\u5168\u90e8\u76ee\u6807",
+          "inputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "outputPorts": {
+            "detections": "detectionCollection",
+            "overlay": "image",
+            "croppedImage": "image",
+            "croppedFrame": "bbox2d",
+            "frame": "bbox2d"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "modelPath": {
+                "title": "\u6a21\u578b\u8def\u5f84",
+                "type": "string",
+                "default": "",
+                "xWidget": "file",
+                "xFileMode": "open",
+                "xFilter": "YOLO ONNX \u6a21\u578b (*.onnx)"
+              },
+              "confidence": {
+                "title": "\u7f6e\u4fe1\u5ea6\u9608\u503c",
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0.25,
+                "xExample": 0.25,
+                "description": "\u4fdd\u7559\u7f6e\u4fe1\u5ea6\u4e0d\u4f4e\u4e8e\u6b64\u503c\u7684\u68c0\u6d4b\u7ed3\u679c\uff0c\u8303\u56f4\u4e3a 0\uff5e1\u3002"
+              },
+              "iou": {
+                "title": "\u975e\u6781\u5927\u503c\u6291\u5236 IoU \u9608\u503c",
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0.45,
+                "xExample": 0.45,
+                "description": "\u975e\u6781\u5927\u503c\u6291\u5236\u7684\u4ea4\u5e76\u6bd4\u9608\u503c\uff0c\u8303\u56f4\u4e3a 0\uff5e1\u3002"
+              },
+              "imageSize": {
+                "title": "\u63a8\u7406\u56fe\u50cf\u5c3a\u5bf8",
+                "type": "integer",
+                "minimum": 1,
+                "default": 640,
+                "xUnit": "\u50cf\u7d20",
+                "xExample": 640,
+                "description": "\u6a21\u578b\u8f93\u5165\u7684\u76ee\u6807\u56fe\u50cf\u5c3a\u5bf8\uff0c\u586b\u5199\u6b63\u6574\u6570\u3002"
+              },
+              "maxDetections": {
+                "title": "\u6700\u5927\u68c0\u6d4b\u6570\u91cf",
+                "type": "integer",
+                "minimum": 1,
+                "default": 300,
+                "xUnit": "\u4e2a",
+                "xExample": 300,
+                "description": "\u5355\u6b21\u63a8\u7406\u6700\u591a\u4fdd\u7559\u7684\u68c0\u6d4b\u7ed3\u679c\u6570\u91cf\u3002"
+              },
+              "device": {
+                "title": "\u63a8\u7406\u8bbe\u5907",
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "cpu"
+                ],
+                "default": "auto",
+                "xOptionLabels": {
+                  "auto": "\u81ea\u52a8\uff08\u5f53\u524d\u4f7f\u7528 CPU\uff09",
+                  "cpu": "CPU"
+                },
+                "description": "\u5f53\u524d ONNX \u63a8\u7406\u4f7f\u7528 CPU \u6267\u884c\u63d0\u4f9b\u7a0b\u5e8f\u3002"
+              },
+              "classes": {
+                "title": "\u68c0\u6d4b\u7c7b\u522b\uff08\u53ef\u9009\uff09",
+                "description": "\u7559\u7a7a\u6216 [] \u8868\u793a\u68c0\u6d4b\u6a21\u578b\u652f\u6301\u7684\u5168\u90e8\u7c7b\u522b\uff1b\u586b\u5199 [0, 1] \u7b49\u7c7b\u522b\u7f16\u53f7\u65f6\u4ec5\u4fdd\u7559\u6307\u5b9a\u7c7b\u522b\u3002\u7c7b\u522b\u540d\u79f0\u81ea\u52a8\u4ece\u6a21\u578b\u8bfb\u53d6\u3002",
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "default": [],
+                "xBlankMeansEmpty": true,
+                "xExample": [
+                  0,
+                  1
+                ]
+              },
+              "agnosticNms": {
+                "title": "\u4e0d\u533a\u5206\u7c7b\u522b\u7684\u975e\u6781\u5927\u503c\u6291\u5236",
+                "type": "boolean",
+                "default": false
+              },
+              "drawOverlay": {
+                "title": "\u7ed8\u5236\u53e0\u52a0\u56fe",
+                "type": "boolean",
+                "default": false
+              },
+              "outputCrop": {
+                "title": "\u8f93\u51fa\u88c1\u526a\u56fe",
+                "type": "boolean",
+                "default": false,
+                "description": "\u8f93\u51fa\u6240\u9009\u68c0\u6d4b\u6846\u5185\u7684\u539f\u59cb\u50cf\u7d20\u548c\u88c1\u526a\u5750\u6807\u6846\uff1b\u4e0d\u662f\u5206\u5272\u63a9\u7801\uff0c\u4e5f\u4e0d\u88c1\u526a\u53e0\u52a0\u56fe\u3002"
+              },
+              "cropTargetIndex": {
+                "title": "\u88c1\u526a\u76ee\u6807\u5e8f\u53f7\uff08\u4ece 1 \u5f00\u59cb\uff09",
+                "type": "integer",
+                "minimum": 1,
+                "default": 1,
+                "xEnabledWhen": {
+                  "outputCrop": [
+                    true
+                  ]
+                },
+                "description": "\u6309\u7c7b\u522b\u8fc7\u6ee4\u3001\u7f6e\u4fe1\u5ea6\u7b5b\u9009\u548c NMS \u540e\u7684\u6709\u6548\u68c0\u6d4b\u6846\u6392\u5e8f\uff1a\u7f6e\u4fe1\u5ea6\u4ece\u9ad8\u5230\u4f4e\uff0c\u7b2c 1 \u4e2a\u6700\u9ad8\uff1b\u540c\u5206\u4fdd\u7559\u540e\u7aef\u987a\u5e8f\u3002\u5e8f\u53f7\u4ec5\u5c5e\u4e8e\u5f53\u524d\u56fe\u50cf\uff0c\u8d85\u51fa\u6570\u91cf\u65f6\u62a5\u9519\u3002"
+              }
+            },
+            "required": [
+              "modelPath"
+            ]
+          },
+          "params": {
+            "modelPath": "",
+            "confidence": 0.25,
+            "iou": 0.45,
+            "imageSize": 640,
+            "maxDetections": 300,
+            "device": "cpu",
+            "classes": [],
+            "agnosticNms": false,
+            "drawOverlay": false,
+            "outputCrop": false,
+            "cropTargetIndex": 1
+          }
+        },
+        {
+          "nodeId": "count",
+          "kind": "operator",
+          "operatorId": "vision.collection.count",
+          "displayName": "\u68c0\u6d4b\u76ee\u6807\u6570\u91cf",
+          "inputPorts": {
+            "blobs": "blobCollection",
+            "detections": "detectionCollection",
+            "contours": "contourCollection",
+            "measurements": "shapeMeasurementCollection",
+            "lines": "lineCollection",
+            "circles": "circleCollection",
+            "matches": "templateMatchCollection"
+          },
+          "outputPorts": {
+            "count": "integer"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {}
+          },
+          "params": {}
+        },
+        {
+          "nodeId": "reset_index",
+          "kind": "operator",
+          "operatorId": "vision.state.variable_write",
+          "displayName": "\u6bcf\u5e27\u91cd\u7f6e\u76ee\u6807\u7d22\u5f15",
+          "inputPorts": {
+            "after": "any"
+          },
+          "outputPorts": {
+            "value": "integer"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "variableId": {
+                "type": "string",
+                "title": "\u5168\u5c40\u53d8\u91cf",
+                "minLength": 1
+              },
+              "operation": {
+                "type": "string",
+                "title": "\u53d8\u91cf\u64cd\u4f5c",
+                "enum": [
+                  "set",
+                  "increment",
+                  "reset"
+                ],
+                "default": "set",
+                "xGlobalVariableBindingDisabled": true,
+                "xOptionLabels": {
+                  "set": "\u8d4b\u503c",
+                  "increment": "\u539f\u5b50\u81ea\u589e",
+                  "reset": "\u6062\u590d\u521d\u59cb\u503c"
+                }
+              },
+              "delta": {
+                "type": "integer",
+                "title": "\u6574\u6570\u589e\u91cf",
+                "default": 1,
+                "minimum": -9223372036854776000,
+                "maximum": 9223372036854776000,
+                "xEnabledWhen": {
+                  "operation": [
+                    "increment"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "variableId"
+            ]
+          },
+          "params": {
+            "variableId": "targetIndex",
+            "operation": "reset"
+          }
+        },
+        {
+          "nodeId": "has_target",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "\u662f\u5426\u8fd8\u6709\u76ee\u6807",
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "\u6bd4\u8f83\u8fd0\u7b97\u7b26",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "\u53f3\u4fa7\u6bd4\u8f83\u503c",
+                "type": "number",
+                "default": 0
+              }
+            }
+          },
+          "params": {
+            "operator": "lt",
+            "rightValue": 0
+          }
+        },
+        {
+          "nodeId": "target_loop",
+          "kind": "loop",
+          "displayName": "\u9010\u4e2a\u88c1\u526a\u5e76\u5904\u7406\u76ee\u6807",
+          "inputPorts": {
+            "image": "image",
+            "frame": "bbox2d",
+            "detections": "detectionCollection",
+            "count": "integer",
+            "frameIndex": "integer",
+            "timestampSec": "number",
+            "hasTarget": "boolean"
+          },
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d",
+            "detections": "detectionCollection",
+            "count": "integer",
+            "frameIndex": "integer",
+            "timestampSec": "number",
+            "hasTarget": "boolean"
+          },
+          "loop": {
+            "contractVersion": 2,
+            "mode": "while",
+            "bodyWorkflowId": "one_target",
+            "maxIterations": 1000,
+            "timeoutMs": 0,
+            "conditionMode": "boolean",
+            "conditionPort": "hasTarget"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "displayName": "\u6d41\u7a0b\u8f93\u51fa",
+          "inputPorts": {
+            "hasNext": "boolean"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "video",
+          "fromPort": "image",
+          "toNode": "yolo",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "video",
+          "fromPort": "frame",
+          "toNode": "yolo",
+          "toPort": "frame"
+        },
+        {
+          "fromNode": "yolo",
+          "fromPort": "detections",
+          "toNode": "count",
+          "toPort": "detections"
+        },
+        {
+          "fromNode": "count",
+          "fromPort": "count",
+          "toNode": "reset_index",
+          "toPort": "after"
+        },
+        {
+          "fromNode": "reset_index",
+          "fromPort": "value",
+          "toNode": "has_target",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "count",
+          "fromPort": "count",
+          "toNode": "has_target",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "video",
+          "fromPort": "image",
+          "toNode": "target_loop",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "video",
+          "fromPort": "frame",
+          "toNode": "target_loop",
+          "toPort": "frame"
+        },
+        {
+          "fromNode": "yolo",
+          "fromPort": "detections",
+          "toNode": "target_loop",
+          "toPort": "detections"
+        },
+        {
+          "fromNode": "count",
+          "fromPort": "count",
+          "toNode": "target_loop",
+          "toPort": "count"
+        },
+        {
+          "fromNode": "video",
+          "fromPort": "frameIndex",
+          "toNode": "target_loop",
+          "toPort": "frameIndex"
+        },
+        {
+          "fromNode": "video",
+          "fromPort": "timestampSec",
+          "toNode": "target_loop",
+          "toPort": "timestampSec"
+        },
+        {
+          "fromNode": "has_target",
+          "fromPort": "result",
+          "toNode": "target_loop",
+          "toPort": "hasTarget"
+        },
+        {
+          "fromNode": "video",
+          "fromPort": "hasNext",
+          "toNode": "output",
+          "toPort": "hasNext"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 0,
+            "y": 0
+          },
+          "video": {
+            "x": 0,
+            "y": 220
+          },
+          "yolo": {
+            "x": 510,
+            "y": 220
+          },
+          "count": {
+            "x": 1040,
+            "y": 220
+          },
+          "reset_index": {
+            "x": 1550,
+            "y": 220
+          },
+          "has_target": {
+            "x": 2070,
+            "y": 220
+          },
+          "target_loop": {
+            "x": 2600,
+            "y": 220
+          },
+          "output": {
+            "x": 3150,
+            "y": 0
+          }
+        }
+      }
+    },
+    "one_target": {
+      "name": "\u5355\u4e2a\u76ee\u6807\u88c1\u526a",
+      "inputs": {
+        "image": "image",
+        "frame": "bbox2d",
+        "detections": "detectionCollection",
+        "count": "integer",
+        "frameIndex": "integer",
+        "timestampSec": "number",
+        "hasTarget": "boolean"
+      },
+      "outputs": {
+        "image": "image",
+        "frame": "bbox2d",
+        "detections": "detectionCollection",
+        "count": "integer",
+        "frameIndex": "integer",
+        "timestampSec": "number",
+        "hasTarget": "boolean"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "displayName": "\u6d41\u7a0b\u8f93\u5165",
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d",
+            "detections": "detectionCollection",
+            "count": "integer",
+            "frameIndex": "integer",
+            "timestampSec": "number",
+            "hasTarget": "boolean"
+          }
+        },
+        {
+          "nodeId": "select",
+          "kind": "operator",
+          "operatorId": "vision.collection.select",
+          "displayName": "\u6309\u5f53\u524d\u7d22\u5f15\u9009\u62e9\u4e00\u4e2a\u76ee\u6807",
+          "inputPorts": {
+            "blobs": "blobCollection",
+            "detections": "detectionCollection",
+            "contours": "contourCollection",
+            "measurements": "shapeMeasurementCollection",
+            "lines": "lineCollection",
+            "circles": "circleCollection",
+            "matches": "templateMatchCollection"
+          },
+          "outputPorts": {
+            "selectedBlobs": "blobCollection",
+            "selectedDetections": "detectionCollection",
+            "selectedContours": "contourCollection",
+            "selectedMeasurements": "shapeMeasurementCollection",
+            "selectedLines": "lineCollection",
+            "selectedCircles": "circleCollection",
+            "selectedMatches": "templateMatchCollection",
+            "selectedCount": "integer"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "title": "\u9009\u62e9\u6a21\u5f0f",
+                "type": "string",
+                "enum": [
+                  "first",
+                  "last",
+                  "index",
+                  "topK"
+                ],
+                "default": "first"
+              },
+              "index": {
+                "title": "\u5143\u7d20\u7d22\u5f15",
+                "type": "integer",
+                "minimum": 0,
+                "default": 0
+              },
+              "count": {
+                "title": "\u6570\u91cf",
+                "type": "integer",
+                "minimum": 1,
+                "default": 1
+              },
+              "onOutOfRange": {
+                "title": "\u7d22\u5f15\u8d8a\u754c\u5904\u7406",
+                "type": "string",
+                "enum": [
+                  "empty",
+                  "error"
+                ],
+                "default": "empty"
+              }
+            }
+          },
+          "params": {
+            "mode": "index",
+            "index": 0,
+            "count": 1,
+            "onOutOfRange": "error"
+          },
+          "globalVariableBindings": [
+            {
+              "parameterPath": [
+                "index"
+              ],
+              "variableId": "targetIndex"
+            }
+          ]
+        },
+        {
+          "nodeId": "bbox",
+          "kind": "operator",
+          "operatorId": "vision.geometry.detection_bbox",
+          "displayName": "\u63d0\u53d6\u5355\u4e2a\u68c0\u6d4b\u6846",
+          "inputPorts": {
+            "detections": "detectionCollection"
+          },
+          "outputPorts": {
+            "bbox": "bbox2d"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "params": {}
+        },
+        {
+          "nodeId": "crop",
+          "kind": "operator",
+          "operatorId": "vision.preprocess.crop",
+          "displayName": "\u6309\u68c0\u6d4b\u6846\u88c1\u526a\u539f\u56fe",
+          "inputPorts": {
+            "image": "image",
+            "roi": "bbox2d",
+            "frame": "bbox2d"
+          },
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "title": "X \u5750\u6807",
+                "type": "number",
+                "default": 0
+              },
+              "y": {
+                "title": "Y \u5750\u6807",
+                "type": "number",
+                "default": 0
+              },
+              "width": {
+                "title": "\u5bbd\u5ea6\uff08\u50cf\u7d20\uff09",
+                "type": "number",
+                "minimum": 0,
+                "default": 0
+              },
+              "height": {
+                "title": "\u9ad8\u5ea6\uff08\u50cf\u7d20\uff09",
+                "type": "number",
+                "minimum": 0,
+                "default": 0
+              },
+              "clip": {
+                "title": "\u88c1\u526a\u5230\u56fe\u50cf\u8fb9\u754c",
+                "type": "boolean",
+                "default": true
+              },
+              "paddingLeft": {
+                "title": "\u5de6\u4fa7\u586b\u5145\uff08\u50cf\u7d20\uff09",
+                "type": "integer",
+                "minimum": 0,
+                "default": 0
+              },
+              "paddingTop": {
+                "title": "\u9876\u90e8\u586b\u5145\uff08\u50cf\u7d20\uff09",
+                "type": "integer",
+                "minimum": 0,
+                "default": 0
+              },
+              "paddingRight": {
+                "title": "\u53f3\u4fa7\u586b\u5145\uff08\u50cf\u7d20\uff09",
+                "type": "integer",
+                "minimum": 0,
+                "default": 0
+              },
+              "paddingBottom": {
+                "title": "\u5e95\u90e8\u586b\u5145\uff08\u50cf\u7d20\uff09",
+                "type": "integer",
+                "minimum": 0,
+                "default": 0
+              },
+              "padValue": {
+                "title": "\u586b\u5145\u503c",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255,
+                "default": 0
+              }
+            }
+          },
+          "params": {
+            "clip": true,
+            "paddingLeft": 0,
+            "paddingTop": 0,
+            "paddingRight": 0,
+            "paddingBottom": 0,
+            "padValue": 0
+          }
+        },
+        {
+          "nodeId": "process",
+          "kind": "subflow",
+          "displayName": "\u88c1\u526a\u540e\u5904\u7406",
+          "targetWorkflowId": "process_crop",
+          "inputPorts": {
+            "image": "image",
+            "frame": "bbox2d",
+            "detections": "detectionCollection",
+            "frameIndex": "integer",
+            "timestampSec": "number"
+          },
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          }
+        },
+        {
+          "nodeId": "next_index",
+          "kind": "operator",
+          "operatorId": "vision.state.variable_write",
+          "displayName": "\u4e0b\u6e38\u5b8c\u6210\u540e\u7d22\u5f15\u52a0\u4e00",
+          "inputPorts": {
+            "after": "any"
+          },
+          "outputPorts": {
+            "value": "integer"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "variableId": {
+                "type": "string",
+                "title": "\u5168\u5c40\u53d8\u91cf",
+                "minLength": 1
+              },
+              "operation": {
+                "type": "string",
+                "title": "\u53d8\u91cf\u64cd\u4f5c",
+                "enum": [
+                  "set",
+                  "increment",
+                  "reset"
+                ],
+                "default": "set",
+                "xGlobalVariableBindingDisabled": true,
+                "xOptionLabels": {
+                  "set": "\u8d4b\u503c",
+                  "increment": "\u539f\u5b50\u81ea\u589e",
+                  "reset": "\u6062\u590d\u521d\u59cb\u503c"
+                }
+              },
+              "delta": {
+                "type": "integer",
+                "title": "\u6574\u6570\u589e\u91cf",
+                "default": 1,
+                "minimum": -9223372036854776000,
+                "maximum": 9223372036854776000,
+                "xEnabledWhen": {
+                  "operation": [
+                    "increment"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "variableId"
+            ]
+          },
+          "params": {
+            "variableId": "targetIndex",
+            "operation": "increment",
+            "delta": 1
+          }
+        },
+        {
+          "nodeId": "has_target",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "\u662f\u5426\u8fd8\u6709\u4e0b\u4e00\u4e2a\u76ee\u6807",
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "\u6bd4\u8f83\u8fd0\u7b97\u7b26",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "\u53f3\u4fa7\u6bd4\u8f83\u503c",
+                "type": "number",
+                "default": 0
+              }
+            }
+          },
+          "params": {
+            "operator": "lt",
+            "rightValue": 0
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "displayName": "\u6d41\u7a0b\u8f93\u51fa",
+          "inputPorts": {
+            "image": "image",
+            "frame": "bbox2d",
+            "detections": "detectionCollection",
+            "count": "integer",
+            "frameIndex": "integer",
+            "timestampSec": "number",
+            "hasTarget": "boolean"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "detections",
+          "toNode": "select",
+          "toPort": "detections"
+        },
+        {
+          "fromNode": "select",
+          "fromPort": "selectedDetections",
+          "toNode": "bbox",
+          "toPort": "detections"
+        },
+        {
+          "fromNode": "bbox",
+          "fromPort": "bbox",
+          "toNode": "crop",
+          "toPort": "roi"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "crop",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "frame",
+          "toNode": "crop",
+          "toPort": "frame"
+        },
+        {
+          "fromNode": "crop",
+          "fromPort": "image",
+          "toNode": "process",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "crop",
+          "fromPort": "frame",
+          "toNode": "process",
+          "toPort": "frame"
+        },
+        {
+          "fromNode": "select",
+          "fromPort": "selectedDetections",
+          "toNode": "process",
+          "toPort": "detections"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "frameIndex",
+          "toNode": "process",
+          "toPort": "frameIndex"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "timestampSec",
+          "toNode": "process",
+          "toPort": "timestampSec"
+        },
+        {
+          "fromNode": "process",
+          "fromPort": "image",
+          "toNode": "next_index",
+          "toPort": "after"
+        },
+        {
+          "fromNode": "next_index",
+          "fromPort": "value",
+          "toNode": "has_target",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "count",
+          "toNode": "has_target",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "output",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "frame",
+          "toNode": "output",
+          "toPort": "frame"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "detections",
+          "toNode": "output",
+          "toPort": "detections"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "count",
+          "toNode": "output",
+          "toPort": "count"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "frameIndex",
+          "toNode": "output",
+          "toPort": "frameIndex"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "timestampSec",
+          "toNode": "output",
+          "toPort": "timestampSec"
+        },
+        {
+          "fromNode": "has_target",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "hasTarget"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 0,
+            "y": 0
+          },
+          "select": {
+            "x": 540,
+            "y": 260
+          },
+          "bbox": {
+            "x": 1080,
+            "y": 260
+          },
+          "crop": {
+            "x": 1600,
+            "y": 260
+          },
+          "process": {
+            "x": 2130,
+            "y": 260
+          },
+          "next_index": {
+            "x": 2660,
+            "y": 260
+          },
+          "has_target": {
+            "x": 3190,
+            "y": 260
+          },
+          "output": {
+            "x": 3720,
+            "y": 0
+          }
+        }
+      }
+    },
+    "process_crop": {
+      "name": "\u88c1\u526a\u540e\u5904\u7406",
+      "inputs": {
+        "image": "image",
+        "frame": "bbox2d",
+        "detections": "detectionCollection",
+        "frameIndex": "integer",
+        "timestampSec": "number"
+      },
+      "outputs": {
+        "image": "image",
+        "frame": "bbox2d"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "displayName": "\u6d41\u7a0b\u8f93\u5165",
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d",
+            "detections": "detectionCollection",
+            "frameIndex": "integer",
+            "timestampSec": "number"
+          }
+        },
+        {
+          "nodeId": "statistics",
+          "kind": "operator",
+          "operatorId": "vision.color.rgb_statistics",
+          "displayName": "\u4e0b\u6e38\u793a\u4f8b\uff1a\u88c1\u526a\u533a\u57df RGB \u7edf\u8ba1",
+          "inputPorts": {
+            "image": "image",
+            "roi": "geometry2d",
+            "frame": "bbox2d"
+          },
+          "outputPorts": {
+            "statistics": "colorStatistics",
+            "mask": "image",
+            "frame": "bbox2d"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "ddof": {
+                "title": "\u6807\u51c6\u5dee\u81ea\u7531\u5ea6\u4fee\u6b63\u503c",
+                "type": "integer",
+                "enum": [
+                  0,
+                  1
+                ],
+                "default": 0
+              },
+              "clipRoi": {
+                "title": "\u88c1\u526a ROI \u5230\u56fe\u50cf\u8fb9\u754c",
+                "type": "boolean",
+                "default": true
+              },
+              "emitMask": {
+                "title": "\u8f93\u51fa\u63a9\u819c",
+                "type": "boolean",
+                "default": false
+              }
+            }
+          },
+          "params": {
+            "ddof": 0,
+            "clipRoi": true,
+            "emitMask": false
+          }
+        },
+        {
+          "nodeId": "target_index",
+          "kind": "operator",
+          "operatorId": "vision.state.variable_read",
+          "displayName": "\u8bfb\u53d6\u5f53\u524d\u76ee\u6807\u5e8f\u53f7",
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "integer"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "variableId": {
+                "type": "string",
+                "title": "\u5168\u5c40\u53d8\u91cf",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "variableId"
+            ]
+          },
+          "params": {
+            "variableId": "targetIndex"
+          }
+        },
+        {
+          "nodeId": "file_name",
+          "kind": "operator",
+          "operatorId": "communication.coordinate_message_format",
+          "displayName": "\u6587\u4ef6\u540d\uff1a\u5e27\u53f7,\u76ee\u6807\u5e8f\u53f7.png",
+          "inputPorts": {
+            "x": "number",
+            "y": "number"
+          },
+          "outputPorts": {
+            "data": "string"
+          },
+          "paramSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "decimals": {
+                "title": "\u820d\u5165\u5c0f\u6570\u4f4d\u6570",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9,
+                "default": 3
+              },
+              "numberFormat": {
+                "title": "\u6570\u503c\u8868\u793a",
+                "type": "string",
+                "enum": [
+                  "round",
+                  "fixed"
+                ],
+                "default": "round"
+              },
+              "quote": {
+                "title": "\u5305\u56f4\u5f15\u53f7",
+                "type": "string",
+                "enum": [
+                  "single",
+                  "double",
+                  "none"
+                ],
+                "default": "single"
+              },
+              "suffix": {
+                "title": "\u62a5\u6587\u540e\u7f00",
+                "type": "string",
+                "default": "EY",
+                "maxLength": 80
+              }
+            }
+          },
+          "params": {
+            "decimals": 0,
+            "numberFormat": "fixed",
+            "quote": "none",
+            "suffix": ".png"
+          }
+        },
+        {
+          "nodeId": "save",
+          "kind": "operator",
+          "operatorId": "vision.io.image_saver",
+          "displayName": "\u6309\u4f20\u5165\u6587\u4ef6\u540d\u4fdd\u5b58\u88c1\u526a\u56fe",
+          "inputPorts": {
+            "image": "image",
+            "fileName": "string"
+          },
+          "outputPorts": {
+            "result": "json"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "outputPath": {
+                "title": "\u8f93\u51fa\u8def\u5f84",
+                "description": "\u672a\u8fde\u63a5 fileName \u65f6\u4f7f\u7528\u5b8c\u6574\u8def\u5f84\uff1b\u8fde\u63a5\u540e\u4f7f\u7528\u6b64\u8def\u5f84\u7684\u6240\u5728\u76ee\u5f55\uff0c\u6587\u4ef6\u540d\u7531\u8f93\u5165\u63d0\u4f9b\uff0c\u672a\u5e26\u6269\u5c55\u540d\u65f6\u6cbf\u7528\u6b64\u8def\u5f84\u7684\u6269\u5c55\u540d\u3002",
+                "type": "string",
+                "default": "",
+                "xWidget": "file",
+                "xFileMode": "save",
+                "xFilter": "\u56fe\u7247\u6587\u4ef6 (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)"
+              },
+              "overwrite": {
+                "title": "\u8986\u76d6\u5df2\u6709\u6587\u4ef6",
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "outputPath"
+            ]
+          },
+          "params": {
+            "outputPath": "outputs/crops/default.png",
+            "overwrite": false
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "displayName": "\u6d41\u7a0b\u8f93\u51fa",
+          "inputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "statistics",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "frame",
+          "toNode": "statistics",
+          "toPort": "frame"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "output",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "statistics",
+          "fromPort": "frame",
+          "toNode": "output",
+          "toPort": "frame"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "frameIndex",
+          "toNode": "file_name",
+          "toPort": "x"
+        },
+        {
+          "fromNode": "target_index",
+          "fromPort": "value",
+          "toNode": "file_name",
+          "toPort": "y"
+        },
+        {
+          "fromNode": "file_name",
+          "fromPort": "data",
+          "toNode": "save",
+          "toPort": "fileName"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "save",
+          "toPort": "image"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 0,
+            "y": 40
+          },
+          "statistics": {
+            "x": 530,
+            "y": 40
+          },
+          "target_index": {
+            "x": 530,
+            "y": 350
+          },
+          "file_name": {
+            "x": 1040,
+            "y": 350
+          },
+          "save": {
+            "x": 1550,
+            "y": 350
+          },
+          "output": {
+            "x": 2060,
+            "y": 40
+          }
+        }
+      }
+    }
+  },
+  "runtime": {
+    "maxConcurrentJobs": 2,
+    "gracefulStopTimeoutMs": 5000,
+    "heartbeatTimeoutMs": 5000,
+    "eventRetentionPerJob": 10000
+  },
+  "dependencies": {
+    "operators": []
+  },
+  "devices": {
+    "bindings": {}
+  },
+  "presentation": {
+    "schemaVersion": "1.0",
+    "defaultPageId": null,
+    "pageOrder": [],
+    "navigation": {
+      "mode": "tabs"
+    },
+    "resultScopes": {},
+    "dataSources": {},
+    "pages": {}
+  },
+  "resources": {
+    "schemaVersion": "1.0",
+    "items": {},
+    "parameterBindings": [],
+    "siteBindings": []
+  },
+  "production": {
+    "autoStart": false,
+    "mode": "single",
+    "cycleIntervalMs": 100,
+    "inputs": {}
+  },
+  "globalVariables": {
+    "targetIndex": {
+      "name": "\u5f53\u524d\u76ee\u6807\u7d22\u5f15",
+      "type": "integer",
+      "kind": "variable",
+      "initialValue": 0,
+      "lifetime": "job"
+    }
+  }
+}

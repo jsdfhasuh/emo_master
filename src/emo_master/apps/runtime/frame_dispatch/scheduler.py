@@ -3,10 +3,12 @@ from collections import OrderedDict, deque
 from copy import deepcopy
 from dataclasses import dataclass, field
 from threading import RLock
+import time
 from uuid import uuid4
 
 from emo_master.apps.runtime.devices.executor import DeviceError
 from emo_master.core.project.snapshots import revisionOf
+from emo_master.apps.runtime.jobs.models import nowMs
 
 
 def frameIds(value):
@@ -39,6 +41,13 @@ class Slot:
     retired: bool = False
     queue: deque = field(default_factory=deque)
     active: str = ""
+    acceptedTotal: int = 0
+    completedTotal: int = 0
+    failedTotal: int = 0
+    cancelledTotal: int = 0
+    rejectedTotal: int = 0
+    skippedTotal: int = 0
+    lastErrorCode: str = ""
 
 
 class RunGroup:
@@ -57,6 +66,9 @@ class RunGroup:
         self.highWater = {}
         self.closedCycles = set()
         self.retired = set()
+        self.waiting = {}
+        self.createdAtMs = nowMs()
+        self.policies: dict[str, list[str]] | None = None
 
     @property
     def members(self):
@@ -81,9 +93,19 @@ class RunGroup:
             raise DeviceError("E_DISPATCH_ACTION", "unsupported scheduling action")
 
     def submit(self, owner, request):
+        try:
+            return self._submit(owner, request)
+        except BaseException as error:
+            pending = self.waiting.pop(owner, None)
+            if pending is not None:
+                for target in pending["targets"]:
+                    self.slots[target].lastErrorCode = getattr(error, "code", "E_DISPATCH_INPUT")
+            raise
+
+    def _submit(self, owner, request):
         # Transport sequence protects the pipe; logical dispatch identity survives
         # retransmission on a later envelope without replaying accepted targets.
-        request = {key: value for key, value in request.items() if key not in {"sequence", "action"}}
+        request = {key: value for key, value in request.items() if key not in {"sequence", "action", "kind", "requestId"}}
         sequence = request["dispatchSequence"]
         if type(sequence) is not int or sequence < 1:
             raise DeviceError("E_DISPATCH_SEQUENCE", "invalid dispatch sequence")
@@ -112,6 +134,40 @@ class RunGroup:
         configuration = self.devices.configuration
         if configuration is None or configuration.requireCycle(owner, cycleId) != revision:
             raise DeviceError("E_DISPATCH_PLAN", "dispatch requires its source cycle plan")
+        policy = node.params.get("queueFullPolicy", "error")
+        if policy in {"wait", "skip"}:
+            pending = self.waiting.get(owner)
+            if pending is not None and pending["request"] != request:
+                raise DeviceError("E_DISPATCH_IDENTITY", "waiting delivery changed its identity or payload")
+            targets = [target["targetSlotId"] for target in node.params["targets"]]
+            if any(self.slots[key].retired or not self.slots[key].ready for key in targets):
+                raise DeviceError("E_DISPATCH_UNAVAILABLE", "consumer is unavailable; capacity wait ended")
+            timeout = node.params.get("waitTimeoutMs", 0)
+            if pending is not None and timeout and time.monotonic() - pending["started"] >= timeout / 1000:
+                raise DeviceError("E_DISPATCH_WAIT_TIMEOUT", "queue capacity wait timed out: " + ", ".join(pending["targets"]))
+            blocked = [key for key in targets if len(self.slots[key].queue) >= self.slots[key].capacity]
+            if blocked and policy == "skip":
+                # Skip the whole fan-out before retaining any frame or cycle.
+                token = dict(status="SKIPPED", accepted=False, runGroupId=self.groupId,
+                             dispatchId=uuid4().hex, cycleId=cycleId, planRevision=revision,
+                             nodeId=node.nodeId, workflowId=request["workflowId"], targets={})
+                for target in targets:
+                    self.slots[target].skippedTotal += 1
+                    token["targets"][target] = dict(status="SKIPPED", code="E_DISPATCH_QUEUE_FULL")
+                self.highWater[owner] = sequence
+                self.joinReceipts[key] = dict(token=deepcopy(token), fingerprint=revisionOf(request),
+                                             result=dict(status="SKIPPED", results={}))
+                while len(self.joinReceipts) > 256:
+                    self.joinReceipts.popitem(last=False)
+                return token
+            if blocked:
+                if pending is None:
+                    pending = dict(request=deepcopy(request), started=time.monotonic(), sinceMs=nowMs())
+                    self.waiting[owner] = pending
+                pending["targets"] = blocked
+                return dict(status="WAITING", runGroupId=self.groupId, blockedTargetSlotIds=blocked,
+                            waitingSinceMs=pending["sinceMs"])
+        self.waiting.pop(owner, None)
         token = dict(runGroupId=self.groupId, dispatchId=uuid4().hex, cycleId=cycleId,
                      planRevision=revision, nodeId=node.nodeId, workflowId=request["workflowId"], targets={})
         record = dict(owner=owner, request=deepcopy(request), token=token, deliveries=[])
@@ -142,11 +198,15 @@ class RunGroup:
                 validateFrames(dict(kind="dict", value=values), descriptors)
                 cycle = configuration.retainCycle(owner, cycleId, deliveryId)
                 invocation.update(inputs=deepcopy(values), frames=descriptors, cycle=cycle, status="QUEUED")
+                invocation["queuedAtMs"] = nowMs()
                 slot.queue.append(deliveryId)
+                slot.acceptedTotal += 1
             except Exception as error:
                 self.devices.frames.retireOwner(deliveryId)
                 configuration.retireOwner(deliveryId)
                 invocation.update(code=getattr(error, "code", "E_DISPATCH_INPUT"), message=str(error))
+                slot.rejectedTotal += 1
+                slot.lastErrorCode = invocation["code"]
             token["targets"][slotId] = {k: deepcopy(invocation[k]) for k in (
                 "deliveryId", "invocationId", "status", "code")}
         token["accepted"] = all(v["status"] == "QUEUED" for v in token["targets"].values())
@@ -167,6 +227,7 @@ class RunGroup:
                 self.devices.frames.retain(frame, deliveryId, owner)
             slot.active = deliveryId
             invocation["status"] = "RUNNING"
+            invocation["startedAtMs"] = nowMs()
             return deepcopy(invocation)
         pending = any(s.queue or s.active for s in self.slots.values())
         return dict(status="CLOSED" if self.stopping or (self.sourceEnded and not pending) else "IDLE")
@@ -191,7 +252,8 @@ class RunGroup:
                 raise DeviceError("E_DISPATCH_FRAME_SOURCE", "output belongs to another cycle/plan")
         if outputs is not None:
             validateFrames(outputs, descriptors)
-        invocation.update(status=request["status"], outputs=outputs, code=request.get("code", ""),
+        self._terminal(slot, invocation, request["status"], request.get("code", ""))
+        invocation.update(outputs=outputs,
                           message=request.get("message", ""))
         for frame in invocation["frames"]:
             if frame not in outputFrames:
@@ -247,6 +309,9 @@ class RunGroup:
 
     def endCycle(self, owner, cycleId):
         with self.lock:
+            pending = self.waiting.get(owner)
+            if pending is not None and pending["request"]["cycleId"] == cycleId:
+                self.waiting.pop(owner, None)
             for key, receipt in list(self.joinReceipts.items()):
                 if key[0] == owner and receipt["token"]["cycleId"] == cycleId:
                     del self.joinReceipts[key]
@@ -267,10 +332,11 @@ class RunGroup:
     def stop(self):
         with self.lock:
             self.stopping = True
+            self.waiting.clear()
             for slot in self.slots.values():
                 while slot.queue:
                     invocation = self.deliveries[slot.queue.popleft()]
-                    invocation.update(status="CANCELLED", code="E_CANCELLED")
+                    self._terminal(slot, invocation, "CANCELLED", "E_CANCELLED")
                     self.devices.frames.retireOwner(invocation["deliveryId"])
                     self.devices.configuration.retireOwner(invocation["deliveryId"])
 
@@ -278,6 +344,7 @@ class RunGroup:
         """Only supervisor process retirement may release an interrupted reader."""
         with self.lock:
             self.retired.add(owner)
+            self.waiting.pop(owner, None)
             for key in list(self.joinReceipts):
                 if key[0] == owner:
                     del self.joinReceipts[key]
@@ -289,10 +356,54 @@ class RunGroup:
                 slot.retired = True
                 for deliveryId in [*slot.queue, *([slot.active] if slot.active else [])]:
                     invocation = self.deliveries[deliveryId]
-                    invocation.update(status="FAILED", code="E_DISPATCH_WORKER_EXITED",
-                                      message="consumer exited; effects may be unknown; no replay")
+                    self._terminal(slot, invocation, "FAILED", "E_DISPATCH_WORKER_EXITED")
+                    invocation["message"] = "consumer exited; effects may be unknown; no replay"
                     self.devices.frames.retireOwner(deliveryId)
                     self.devices.configuration.retireOwner(deliveryId)
                 slot.active = ""
                 slot.queue.clear()
             self._expire()
+
+    @staticmethod
+    def _terminal(slot, invocation, status, code):
+        if invocation["status"] in {"QUEUED", "RUNNING"}:
+            field = {"COMPLETED": "completedTotal", "FAILED": "failedTotal", "CANCELLED": "cancelledTotal"}[status]
+            setattr(slot, field, getattr(slot, field) + 1)
+        invocation.update(status=status, code=code)
+        if code:
+            slot.lastErrorCode = code
+
+    def snapshot(self, detailSlotId=""):
+        """Copy only metadata; observation never acquires an image or cycle."""
+        with self.lock:
+            if self.policies is None:
+                self.policies = {key: sorted({node.params.get("queueFullPolicy", "error")
+                    for flow in self.document.workflows.values() for node in flow.nodes if node.kind == "dispatch"
+                    for target in node.params.get("targets", []) if target["targetSlotId"] == key}) for key in self.slots}
+            state = "STOPPING" if self.stopping else "DRAINING" if self.sourceEnded else "RUNNING"
+            rows = []
+            for key, slot in self.slots.items():
+                blocked = [dict(jobId=owner, sinceMs=value["sinceMs"])
+                    for owner, value in self.waiting.items() if key in value["targets"]]
+                row = dict(targetSlotId=key, workflowId=slot.workflowId,
+                    workflowName=self.document.workflows[slot.workflowId].name, jobId=slot.jobId,
+                    capacity=slot.capacity, queued=len(slot.queue), processing=int(bool(slot.active)),
+                    state=("RETIRED" if slot.retired else "STARTING" if not slot.ready else state),
+                    queueFullPolicies=list(self.policies[key]), waitingProducers=blocked, lastErrorCode=slot.lastErrorCode,
+                    **{name: getattr(slot, name) for name in ("acceptedTotal", "completedTotal", "failedTotal",
+                                                            "cancelledTotal", "rejectedTotal", "skippedTotal")})
+                if key == detailSlotId:
+                    row["items"] = ([self._item(self.deliveries[slot.active], 0)] if slot.active else []) + [
+                        self._item(self.deliveries[delivery], index) for index, delivery in enumerate(slot.queue, 1)]
+                rows.append(row)
+            return dict(runGroupId=self.groupId, sourceJobId=self.source, projectId=self.document.project.projectId,
+                        createdAtMs=self.createdAtMs, state=state, slots=rows, snapshotAtMs=nowMs())
+
+    @staticmethod
+    def _item(invocation, index):
+        descriptors = list(invocation.get("frames", {}).values())
+        return dict(invocationId=invocation["invocationId"], deliveryId=invocation["deliveryId"],
+            state=invocation["status"], position=index, queuedAtMs=invocation.get("queuedAtMs"),
+            startedAtMs=invocation.get("startedAtMs"), frameCount=len(descriptors),
+            frames=[{key: deepcopy(value[key]) for key in ("frameId", "shape", "dtype") if key in value}
+                    for value in descriptors[:16]])

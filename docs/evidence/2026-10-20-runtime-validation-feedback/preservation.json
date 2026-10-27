@@ -1,0 +1,333 @@
+{
+  "head": "ef5af5066599bc57a5182067e31775f8798e8107",
+  "allUnrelatedDirtyPreserved": true,
+  "untouchedDirtyCount": 29,
+  "unexpected": [],
+  "files": [
+    {
+      "path": "docs/guides/device-dispatch-online-configuration.md",
+      "before": "E62816DD47A28CB05279276A20AAACC3F715CDDD9D1A702716429F60EDF65442",
+      "after": "88FF9195BB4693A3ED648FF623D689F964E02B92C56477AC8D95E4AD1F8F554C",
+      "unchanged": false,
+      "inScope": true
+    },
+    {
+      "path": "docs/plans/2026-10-20-runtime-validation-feedback-connection-state-plan.md",
+      "before": "9FFCD5DFD2B837480ABF63B86FB3E63658B5C7AC5B85ED9835AA2E43E1446D2B",
+      "after": "372C5066D4C104E44100463386544B84177838A69E0207766981D22A4F3561D5",
+      "unchanged": false,
+      "inScope": true
+    },
+    {
+      "path": "proto/runtime.proto",
+      "before": "C70D4A773157D45D1A1685ABACD0E894DF747A57076131D1F4700F9C8E55C8EA",
+      "after": "C70D4A773157D45D1A1685ABACD0E894DF747A57076131D1F4700F9C8E55C8EA",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "src/emo_master/apps/designer/controllers/runtime_controller.py",
+      "before": "118795C3A9C85BE1CEBB43A7DFE7A12182D2E93B07674539224816657371ED57",
+      "after": "118795C3A9C85BE1CEBB43A7DFE7A12182D2E93B07674539224816657371ED57",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/chrome.py",
+      "before": "5E1964D3730BFD98C950EDC2A163E5C54E52ACB702F2CF63D084240FC40C2A78",
+      "after": "01B3D662BFE974B90E4F1075B6AC679FBCF76B998FCC3E2E111505777C40876A",
+      "unchanged": false,
+      "inScope": true
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/coordinator.py",
+      "before": "43BF09A173AD200245BDFEF958742A6E6A330CFB03F418F4F70814CF5AB66BBB",
+      "after": "43BF09A173AD200245BDFEF958742A6E6A330CFB03F418F4F70814CF5AB66BBB",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/preview.py",
+      "before": "171E8B582C4ADDC945AA50691A0BD4B30C96A5E8E2C5F6B972C3601326D767B5",
+      "after": "171E8B582C4ADDC945AA50691A0BD4B30C96A5E8E2C5F6B972C3601326D767B5",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "src/emo_master/apps/designer/services/runtime_client.py",
+      "before": "C61ECB5652042101FF014594BC70A252A104A1A6C32E3D1412080F4EC1BB6539",
+      "after": "8D996C6157F1C3902ABA2FA1820870F411A9B61B4BE1DEA5834A6D3C2A306414",
+      "unchanged": false,
+      "inScope": true
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/designer_actions.py",
+      "before": "B69A21D71A256C749E6AFABB7F7DB165DA6CB4067EE58AF742D09AF4E8694A27",
+      "after": "B69A21D71A256C749E6AFABB7F7DB165DA6CB4067EE58AF742D09AF4E8694A27",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/device_workspace.py",
+      "before": "8E0F6E3B5EA18C79DD78F344E81D1D0C2443B5115CF291BAF7CF8EF3C0A1EBA1",
+      "after": "8E0F6E3B5EA18C79DD78F344E81D1D0C2443B5115CF291BAF7CF8EF3C0A1EBA1",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/main_window.py",
+      "before": "B8E558D093CC147D7037EA0AF74418DFA9CCC1B803A32B446D741EE8FEF3B03F",
+      "after": "B8E558D093CC147D7037EA0AF74418DFA9CCC1B803A32B446D741EE8FEF3B03F",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/online_graph.py",
+      "before": "5C22D0FECE36C37A549EDC3081AE8B1E28613BAE1565B08229098F175A3902B2",
+      "after": "5C22D0FECE36C37A549EDC3081AE8B1E28613BAE1565B08229098F175A3902B2",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/project_configuration.py",
+      "before": "30460589815D491010AC13FB5FF2450AFD67892B81991D092C355422FCE8663C",
+      "after": "009E2A6CE7380235C1CB7C8F8F8B0DAFA22C502D8400FB284F6773112BD5805A",
+      "unchanged": false,
+      "inScope": true
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/project_entry_dialog.py",
+      "before": "C55ECE45F7F3474EB49D04B514C6CDB2217F2149763982821E3D99A109B2C40D",
+      "after": "C55ECE45F7F3474EB49D04B514C6CDB2217F2149763982821E3D99A109B2C40D",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/runtime_connection.py",
+      "before": "5B1DB252CAFFE695636AC5CD2F3961D54EF0E07B7F728DFBBBA5EEA1C9FFBE12",
+      "after": "DBB7AFAB67337D4CCC76798F900EE659156416D26AEBD79045FB8791175A748D",
+      "unchanged": false,
+      "inScope": true
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2_grpc.py",
+      "before": "4C0CE193F58793161B1C89DD2683107F3808A819D1AA18931DFB936AEEC2526D",
+      "after": "4C0CE193F58793161B1C89DD2683107F3808A819D1AA18931DFB936AEEC2526D",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2.py",
+      "before": "0DBF7E86658F0579F04D9FFD61959E7EC622CE9FE875B2727D70DC99A91F792D",
+      "after": "0DBF7E86658F0579F04D9FFD61959E7EC622CE9FE875B2727D70DC99A91F792D",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/service.py",
+      "before": "6B685C76C365BACC1BF1CEA4C92431E904903A8FF6E5518F027AD62C43E68CD8",
+      "after": "6B685C76C365BACC1BF1CEA4C92431E904903A8FF6E5518F027AD62C43E68CD8",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/coordinator.py",
+      "before": "DC464742479CEE31F97D50B3450387F80936EF09C88467CAC8B34947C45D69E9",
+      "after": "7FDC6C680154396F54C637B9AC094E69DC221E17AEE963E57EFA342510048672",
+      "unchanged": false,
+      "inScope": true
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/rpc.py",
+      "before": "7D511F96E016662D73040B4171FFBA50345F191768614B5C1615077D6CFE5E15",
+      "after": "F50BABB6C6A9677A1594F1DA4B092BCFF4DA0D4F0260515A1CC3BE0AD7F145CE",
+      "unchanged": false,
+      "inScope": true
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/store.py",
+      "before": "8B86C523B512559432E81DB58465184414414A15557A77EA0FDDCAE1BB1B5593",
+      "after": "8B86C523B512559432E81DB58465184414414A15557A77EA0FDDCAE1BB1B5593",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/designer/test_designer_shortcuts.py",
+      "before": "677B3F0A7292C6F63EDE5BD90157C82ABE39D9F35D1382A5FE67445455C4F27B",
+      "after": "677B3F0A7292C6F63EDE5BD90157C82ABE39D9F35D1382A5FE67445455C4F27B",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/designer/test_device_plan_completion_ui.py",
+      "before": "033C293DAD0A6DB80C4CAB9F1F7C5AFF12D603BAE3870E6EE99D8A60C84F45CA",
+      "after": "033C293DAD0A6DB80C4CAB9F1F7C5AFF12D603BAE3870E6EE99D8A60C84F45CA",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/designer/test_device_workspace_sizing.py",
+      "before": "330430AEFF7D6A41CE1ABAE978B864FFEBC6E74DB4F93B4DD878C80E006B4E6A",
+      "after": "330430AEFF7D6A41CE1ABAE978B864FFEBC6E74DB4F93B4DD878C80E006B4E6A",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/designer/test_device_workspace_usability.py",
+      "before": "3CBD21CC7F6144D4ED596FF29F78972504C6204C6A15F2D3A9C4230B0051EA68",
+      "after": "3CBD21CC7F6144D4ED596FF29F78972504C6204C6A15F2D3A9C4230B0051EA68",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/designer/test_device_workspace.py",
+      "before": "5114F70694B09070292DD11A6B9ED91112C52634944D5D374CA125D91FDEBBB8",
+      "after": "5114F70694B09070292DD11A6B9ED91112C52634944D5D374CA125D91FDEBBB8",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/designer/test_flow_layout_qt.py",
+      "before": "11C64CA50F099BD9E96B32BCC617A15A291F373AACAC2A82BA1BF29D49951732",
+      "after": "11C64CA50F099BD9E96B32BCC617A15A291F373AACAC2A82BA1BF29D49951732",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/designer/test_main_window_layout.py",
+      "before": "1307DBFB43EB74A31891F5EEFF8676D01F63F5BDA520043BBFDCB7F5851484E2",
+      "after": "1307DBFB43EB74A31891F5EEFF8676D01F63F5BDA520043BBFDCB7F5851484E2",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/designer/test_main_window_menubar.py",
+      "before": "2F1474866BA5ACE6B4B77DC85EF1B437768CDA6C002735683160BA008958FDCD",
+      "after": "2F1474866BA5ACE6B4B77DC85EF1B437768CDA6C002735683160BA008958FDCD",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/designer/test_project_configuration_ui.py",
+      "before": "B96FFA63E8B547CB74809F80CEA92C63A9269B23E0FE2BE3CB97EDC449302594",
+      "after": "848E0595170FCB6E0CED2F197131BC8C6041A785FCC6187163284662FBC9DB1F",
+      "unchanged": false,
+      "inScope": true
+    },
+    {
+      "path": "tests/designer/test_runtime_connection_ui.py",
+      "before": "D7C720781954599E6493E63F59BB1454E9C71F9F7B7118BDEB328BB3354B7048",
+      "after": "F8BD1D4001FC63774B2099118B414831A22DF671C246BA342992E8B361BD70FA",
+      "unchanged": false,
+      "inScope": true
+    },
+    {
+      "path": "tests/designer/test_runtime_controller.py",
+      "before": "060F1FAD849A8FE0173F9812D77BC624F1D706A694D46FCA27CA6A2A245DEBD7",
+      "after": "060F1FAD849A8FE0173F9812D77BC624F1D706A694D46FCA27CA6A2A245DEBD7",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/designer/test_small_window_layout_repair.py",
+      "before": "6961E159B542AB5B720E0E5432E1A3372D7259405EC04FE89DF9089452CFE557",
+      "after": "6961E159B542AB5B720E0E5432E1A3372D7259405EC04FE89DF9089452CFE557",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/designer/test_startup_project_entry.py",
+      "before": "D0CBA92F078B17ABA249D01FB8F5C6D61FD12CCD294B080A4406E8FBD9D54FDE",
+      "after": "D0CBA92F078B17ABA249D01FB8F5C6D61FD12CCD294B080A4406E8FBD9D54FDE",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/designer/test_toolbar_width.py",
+      "before": "4A482E74D938867B5FE988D0B0F60D152F43D2588743FFC43788DB23533D707A",
+      "after": "4A482E74D938867B5FE988D0B0F60D152F43D2588743FFC43788DB23533D707A",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/designer/test_visual_layout.py",
+      "before": "DE67225CCF11E6AAEB16B44BF5D80070F20B889411BDAD6F8606313747EC104B",
+      "after": "DE67225CCF11E6AAEB16B44BF5D80070F20B889411BDAD6F8606313747EC104B",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/runtime/test_device_runtime.py",
+      "before": "6017C1E7BAE83D33FC772A6F942A151CC5CB82AD6F289635639EC35C2005AE95",
+      "after": "6017C1E7BAE83D33FC772A6F942A151CC5CB82AD6F289635639EC35C2005AE95",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/ui/page_designer/test_parallel_runtime.py",
+      "before": "A1FFD6FD7F5839DABC36F5EDF8C8DCC922EE3171F4C921C40E75F32B7A16C5B9",
+      "after": "A1FFD6FD7F5839DABC36F5EDF8C8DCC922EE3171F4C921C40E75F32B7A16C5B9",
+      "unchanged": true,
+      "inScope": false
+    },
+    {
+      "path": "tests/ui/page_designer/test_workspace_modes.py",
+      "before": "9321B83541FA93162961ABBB22E5298E5F36C7E782C5C9C6A7E1B9B756C4846F",
+      "after": "9321B83541FA93162961ABBB22E5298E5F36C7E782C5C9C6A7E1B9B756C4846F",
+      "unchanged": true,
+      "inScope": false
+    }
+  ],
+  "gitStatus": [
+    " M docs/guides/device-dispatch-online-configuration.md",
+    " M proto/runtime.proto",
+    " M src/emo_master/apps/designer/controllers/runtime_controller.py",
+    " M src/emo_master/apps/designer/page_designer/chrome.py",
+    " M src/emo_master/apps/designer/page_designer/coordinator.py",
+    " M src/emo_master/apps/designer/page_designer/preview.py",
+    " M src/emo_master/apps/designer/services/runtime_client.py",
+    " M src/emo_master/apps/designer/ui/designer_actions.py",
+    " M src/emo_master/apps/designer/ui/device_workspace.py",
+    " M src/emo_master/apps/designer/ui/main_window.py",
+    " M src/emo_master/apps/designer/ui/online_graph.py",
+    " M src/emo_master/apps/designer/ui/project_configuration.py",
+    " M src/emo_master/apps/designer/ui/project_entry_dialog.py",
+    " M src/emo_master/apps/designer/ui/runtime_connection.py",
+    " M src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2.py",
+    " M src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2_grpc.py",
+    " M src/emo_master/apps/runtime/grpc_server/service.py",
+    " M src/emo_master/apps/runtime/project_config/coordinator.py",
+    " M src/emo_master/apps/runtime/project_config/rpc.py",
+    " M src/emo_master/apps/runtime/project_config/store.py",
+    " M src/emo_master/core/project/runtime_directory.py",
+    " M tests/designer/test_designer_shortcuts.py",
+    " M tests/designer/test_device_plan_completion_ui.py",
+    " M tests/designer/test_device_workspace.py",
+    " M tests/designer/test_device_workspace_sizing.py",
+    " M tests/designer/test_device_workspace_usability.py",
+    " M tests/designer/test_flow_layout_qt.py",
+    " M tests/designer/test_main_window_layout.py",
+    " M tests/designer/test_main_window_menubar.py",
+    " M tests/designer/test_project_configuration_ui.py",
+    " M tests/designer/test_runtime_connection_ui.py",
+    " M tests/designer/test_runtime_controller.py",
+    " M tests/designer/test_small_window_layout_repair.py",
+    " M tests/designer/test_startup_project_entry.py",
+    " M tests/designer/test_targeted_resource_repair_ui.py",
+    " M tests/designer/test_toolbar_width.py",
+    " M tests/designer/test_visual_layout.py",
+    " M tests/runtime/test_device_runtime.py",
+    " M tests/ui/page_designer/test_parallel_runtime.py",
+    " M tests/ui/page_designer/test_workspace_modes.py",
+    "?? docs/evidence/2026-10-20-runtime-menu/",
+    "?? docs/evidence/2026-10-20-runtime-validation-feedback/",
+    "?? docs/plans/2026-10-20-device-manager-layout-runtime-entry-plan.md",
+    "?? docs/plans/2026-10-20-runtime-validation-feedback-connection-state-plan.md",
+    "?? docs/testing/2026-10-20-runtime-menu-device-layout.md",
+    "?? docs/testing/2026-10-20-runtime-validation-feedback.md",
+    "?? tests/designer/runtime_feedback_fixture.py",
+    "?? tests/designer/test_runtime_menu_publication.py",
+    "?? tests/designer/test_runtime_validation_feedback.py",
+    "?? tests/runtime/test_initial_project_configuration.py"
+  ]
+}

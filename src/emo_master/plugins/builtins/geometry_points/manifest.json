@@ -39,6 +39,45 @@
     "type": "object",
     "additionalProperties": false,
     "properties": {
+      "inputType": {
+        "title": "处理对象",
+        "type": "string",
+        "enum": [
+          "",
+          "circles",
+          "measurements",
+          "bbox"
+        ],
+        "default": "",
+        "xOptionLabels": {
+          "": "请选择处理对象",
+          "circles": "圆",
+          "measurements": "形状测量",
+          "bbox": "包围框"
+        },
+        "xEnumBy": {
+          "parameter": "feature",
+          "options": {
+            "circleCenter": [
+              "circles"
+            ],
+            "bboxCenter": [
+              "bbox",
+              "measurements"
+            ],
+            "bboxTopLeft": [
+              "bbox",
+              "measurements"
+            ],
+            "minAreaRectCenter": [
+              "measurements"
+            ],
+            "centroid": [
+              "measurements"
+            ]
+          }
+        }
+      },
       "feature": {
         "title": "取点特征",
         "type": "string",
@@ -58,7 +97,8 @@
           "centroid": "轮廓质心（不是 Blob 内心）"
         }
       }
-    }
+    },
+    "xModeOperator": "vision.geometry.extract_points"
   },
   "entry": "emo_master.plugins.builtins._geometry_bridges:GeometryPointsOperator",
   "category": "几何",

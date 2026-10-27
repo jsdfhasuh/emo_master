@@ -24,7 +24,7 @@ FORMAT = 'emo-pages-test-1'
 OPERATORS = {'vision.io.image_loader': ('image_loader', '1.1.0'),
              'vision.analysis.blob': ('blob_analysis', '1.2.0'),
              'vision.collection.count': ('collection_count', '1.1.0'),
-             'vision.io.image_saver': ('image_saver', '1.0.0')}
+             'vision.io.image_saver': ('image_saver', '1.1.0')}
 
 
 def packagePath(name):
@@ -65,7 +65,7 @@ def trustedRegistry():
 
 def portableDocument(document):
     result = ProjectDocument.model_validate(document.model_dump())
-    if result.schemaVersion == "2.6":
+    if result.schemaVersion in {"2.6", "2.7"}:
         raise ValueError('device projects require managed Runtime delivery, not a local page test package')
     if result.resources is None or result.presentation is None:
         raise ValueError('test delivery requires explicit project 2.2')

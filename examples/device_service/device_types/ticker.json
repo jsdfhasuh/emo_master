@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.1", "driverApiVersion": "1.1",
+  "deviceTypeId": "device.example.ticker", "version": "1.0.0", "displayName": "后台计数服务",
+  "category": "示例服务", "minCoreVersion": "0.6.1", "maxCoreVersion": "1.x",
+  "platforms": ["windows", "linux"], "driverEntry": "examples.device_service.driver:Ticker",
+  "connectionSchema": {"type": "object", "properties": {}, "additionalProperties": false},
+  "defaultsSchema": {"type": "object", "properties": {}, "additionalProperties": false},
+  "policiesSchema": {"type": "object", "additionalProperties": false, "properties": {
+    "connect": {"type": "string", "enum": ["manual", "on_project_open", "on_project_run"], "default": "on_project_run"},
+    "release": {"type": "string", "enum": ["on_project_close"], "default": "on_project_close"}
+  }},
+  "operationScheduling": "managed_service", "connectionLifetime": "persistent",
+  "capabilities": ["sample"], "managementActions": ["sample"],
+  "actionSchemas": {"sample": {"type": "object", "properties": {"reject": {"type": "boolean", "default": false}}, "additionalProperties": false}},
+  "controlCapabilities": ["connect", "disconnect", "maintenance", "resume", "recover"]
+}

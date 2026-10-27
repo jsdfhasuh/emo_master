@@ -181,7 +181,9 @@ def testFailedProjectLoadPreservesCurrentWorkflowAndTabs(tmp_path: Path) -> None
     window.currentProjectDir = previousProjectDir
     previousTabs = window.getWorkflowTabs()
 
-    runtimeClient.loadOk = False
+    # Current drafts do not call Runtime LoadProject. Exercise an actual local
+    # open failure rather than a rejection from an API no longer on this path.
+    (targetProjectDir / "project.json").write_text("{", encoding="utf-8")
     assert window.loadProjectDirectory(str(targetProjectDir)) is False
 
     assert window.getWorkflowTabs() == previousTabs

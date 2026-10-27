@@ -1,0 +1,32 @@
+........................................................................ [ 22%]
+........................................................................ [ 44%]
+............................................s........................... [ 66%]
+........................................................................ [ 88%]
+..................................FF                                     [100%]
+================================== FAILURES ===================================
+______ testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs[shape0] ______
+tests\designer\test_node_image_viewer.py:250: in testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs
+    firstPacket = wait(designerApplication, firstDisplayedInvocation, timeout=20)
+tests\designer\test_node_image_viewer.py:23: in wait
+    assert time.monotonic() < deadline, 'Qt condition was not reached before the outer watchdog'
+E   AssertionError: Qt condition was not reached before the outer watchdog
+E   assert 241948.125 < 241948.125
+E    +  where 241948.125 = <built-in function monotonic>()
+E    +    where <built-in function monotonic> = time.monotonic
+---------------------------- Captured stdout call -----------------------------
+LIVE_NODE_FIRST_PAINT {'job': '812d50e8-ddd9-4e2f-aa70-4c8ed93bb501', 'message': 'job.started', 'workflow': 'body', 'node': 'image', 'packet': True, 'visible': True, 'painted': 0, 'imageNotice': '', 'values': 'image = ͼ�� 12 �� 16 �� 3������ʾ�ߴ�ժҪ��  [image]\ncount = 3  [integer]', 'logs': [('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat')]}
+______ testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs[shape1] ______
+tests\designer\test_node_image_viewer.py:250: in testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs
+    firstPacket = wait(designerApplication, firstDisplayedInvocation, timeout=20)
+tests\designer\test_node_image_viewer.py:23: in wait
+    assert time.monotonic() < deadline, 'Qt condition was not reached before the outer watchdog'
+E   AssertionError: Qt condition was not reached before the outer watchdog
+E   assert 241969.453 < 241969.453
+E    +  where 241969.453 = <built-in function monotonic>()
+E    +    where <built-in function monotonic> = time.monotonic
+---------------------------- Captured stdout call -----------------------------
+LIVE_NODE_FIRST_PAINT {'job': '7faa9c78-b13c-421e-84d8-59976031a7e0', 'message': 'job.started', 'workflow': 'body', 'node': 'image', 'packet': True, 'visible': True, 'painted': 0, 'imageNotice': '', 'values': 'image = ͼ�� 2160 �� 3840 �� 3������ʾ�ߴ�ժҪ��  [image]\ncount = 3  [integer]', 'logs': [('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat'), ('process.heartbeat', 'process.heartbeat')]}
+=========================== short test summary info ===========================
+FAILED tests/designer/test_node_image_viewer.py::testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs[shape0]
+FAILED tests/designer/test_node_image_viewer.py::testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs[shape1]
+2 failed, 321 passed, 1 skipped in 239.02s (0:03:59)

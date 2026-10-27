@@ -1,4 +1,6 @@
 """Normal setup and camera diagnostic paths using simulated hardware only."""
+from copy import deepcopy
+import socket
 import time
 import json
 import pytest
@@ -6,12 +8,16 @@ import pytest
 from emo_master.apps.runtime.devices.imv_capture import ImvCapture
 from emo_master.apps.runtime.devices.imv_host import ManagedImv
 from emo_master.apps.runtime.devices.manager import DeviceManager
+from emo_master.apps.designer.state.workflow_store import WorkflowStore
+from emo_master.core.contracts.device_driver import DeviceError
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.models import ProjectDocument
+from emo_master.core.project.devices import DeviceDefinition
 from tests.runtime.test_managed_imv import ROOT, definition
 from tests.plugins.test_camera_configuration import ConfigurationApi
 from tests.runtime.test_device_runtime import simulatedProject
 from tests.runtime.imv_test_support import SimulatedImvRuntimeService
+from tests.runtime.test_tcp_device_integration import definition as tcpDefinition, freePort
 
 
 def testActualReadDoesNotAcquireAndTrialRestoresNativeValues():
@@ -108,6 +114,86 @@ def testConnectionTestDoesNotPublishAndReusesExistingOwner():
         assert result['reused'] and result['deviceId'] == 'camera'
         assert manager.executors['camera'] is executor and manager.drivers['camera'] is driver
         assert manager.lifecycles['camera'].connected
+        assert not manager.permissions and not manager.maintenanceOwners
+    finally:
+        manager.close()
+
+
+def testTcpDraftEndpointTestReusesRenamedServerWithoutPublishing():
+    types, rejected = PluginRegistry('0.6.1').scanDeviceTypes([ROOT])
+    assert not rejected
+    manager = DeviceManager(types)
+    payload = WorkflowStore().toPayload()
+    original = tcpDefinition(types['device.tcp.server'], port=freePort(), channels=[
+        dict(channelId='a', name='Channel A', allowedIps=['127.0.0.1'])])
+    payload['devices']['definitions'] = dict(server=original)
+    try:
+        manager.load(ProjectDocument.model_validate(payload))
+        lifecycle = manager.lifecycles['server']
+        lifecycle.connect(lambda: False, time.monotonic()+5)
+        driver = manager.drivers['server']
+        backend, listener = driver.backend, driver.backend._listener
+        executor = manager.executors['server']
+        generation, serviceGeneration = executor.generation, backend.serviceGeneration
+        published = manager.definitions['server'].model_dump()
+        threads = set(backend._threads)
+        assert manager.testConnection(original)['reused']
+        draft = deepcopy(original)
+        draft['connection']['channels'][0]['name'] = 'Renamed A'
+        types['device.tcp.server'].validateDefinition(DeviceDefinition.model_validate(draft))
+        result = manager.testConnection(draft)
+        assert result['endpointAvailable'] and result['reused'] and result['deviceId'] == 'server'
+        assert '未验证外部客户端' in result['message']
+        assert '不应用草稿通道规则' in result['message']
+        assert manager.definitions['server'].model_dump() == published
+        assert manager.drivers['server'] is driver and manager.executors['server'] is executor
+        assert manager.lifecycles['server'] is lifecycle and lifecycle.connected
+        assert driver.backend is backend and backend._listener is listener
+        assert executor.generation == generation and backend.serviceGeneration == serviceGeneration
+        assert backend._threads == threads
+        assert backend.snapshot()['channels'][0]['name'] == 'Channel A'
+        # A different device type cannot borrow a Server just because its endpoint matches.
+        receive = tcpDefinition(types['device.tcp.receive_once'],
+            bindHost=original['connection']['bindAddress'], port=original['connection']['port'])
+        with pytest.raises(DeviceError) as caught:
+            manager.testConnection(receive)
+        assert caught.value.code == 'E_DEVICE_IDENTITY'
+        temporary = deepcopy(draft)
+        temporary['connection']['port'] = freePort()
+        result = manager.testConnection(temporary)
+        assert result['endpointAvailable'] and not result['reused'] and result['deviceId'] == ''
+        for mapping in (manager.definitions, manager.identities, manager.drivers,
+                        manager.executors, manager.services, manager.lifecycles):
+            assert set(mapping) == {'server'}
+        assert not manager.permissions and not manager.maintenanceOwners and not lifecycle.keepAlive
+        with socket.socket() as probe:
+            probe.bind(('127.0.0.1', temporary['connection']['port']))
+        with socket.create_connection(('127.0.0.1', original['connection']['port']), timeout=3):
+            assert backend._listener is listener and driver.snapshot()['ready']
+        assert manager.definitions['server'].model_dump() == published
+    finally:
+        manager.close()
+
+
+def testNonTcpDraftConnectionSettingsRemainProtected(monkeypatch):
+    types, rejected = PluginRegistry('0.6.1').scanDeviceTypes([ROOT])
+    assert not rejected
+    manager = DeviceManager(types)
+    payload = WorkflowStore().toPayload()
+    original = tcpDefinition(types['device.plc.mitsubishi_slmp'])
+    payload['devices']['definitions'] = dict(plc=original)
+    try:
+        manager.load(ProjectDocument.model_validate(payload))
+        driver = manager.drivers['plc']
+        published = manager.definitions['plc'].model_dump()
+        monkeypatch.setattr(driver, 'testConnection', lambda *_: pytest.fail('mismatched connection must not perform I/O'))
+        draft = deepcopy(original)
+        draft['connection']['frameEncoding'] = 'ascii'
+        types['device.plc.mitsubishi_slmp'].validateDefinition(DeviceDefinition.model_validate(draft))
+        with pytest.raises(DeviceError) as caught:
+            manager.testConnection(draft, deviceId='plc')
+        assert caught.value.code == 'E_DEVICE_IDENTITY'
+        assert manager.definitions['plc'].model_dump() == published
         assert not manager.permissions and not manager.maintenanceOwners
     finally:
         manager.close()

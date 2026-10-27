@@ -5,7 +5,7 @@ from copy import deepcopy
 import json
 import math
 import re
-from typing import Any
+from typing import Any, Iterable, cast
 
 from emo_master.apps.designer.state.schema_utils import applySchemaDefaults
 
@@ -182,8 +182,10 @@ try:
         QScrollArea,
         QSpinBox,
         QTextEdit,
+        QToolButton,
         QWidget,
     )
+    from emo_master.apps.designer.ui.file_patterns_control import FilePatternsControl
 
     class _IntegerValueControl(QLineEdit):
         """Exact integer input for schemas wider than Qt's signed int32 spin box.
@@ -222,6 +224,22 @@ try:
                 return float(text)
             except ValueError:
                 return text
+
+    class _IntegerListControl(QLineEdit):
+        """Compact list editing; the saved value remains a JSON integer array."""
+
+        def __init__(self, value: object, placeholder: str) -> None:
+            super().__init__()
+            values = value if isinstance(value, list) else []
+            self.setText(", ".join(json.dumps(item, ensure_ascii=False) for item in values))
+            self.setPlaceholderText(placeholder)
+            self.setClearButtonEnabled(True)
+
+        def value(self) -> object:
+            text = self.text().strip().replace("，", ",")
+            if not text:
+                return []
+            return json.loads(text if text.startswith("[") else f"[{text}]")
 
     def applyParameterLabel(
         label: QLabel, control: QWidget, name: str,
@@ -267,7 +285,7 @@ try:
             currentPath = self._lineEdit.text().strip()
             if self._fileMode == "directory":
                 selectedPath = QFileDialog.getExistingDirectory(
-                    self, "选择图片文件夹", currentPath
+                    self, "选择文件夹", currentPath
                 )
             elif self._fileMode == "save":
                 selectedPath, _ = QFileDialog.getSaveFileName(
@@ -298,8 +316,13 @@ try:
             self.setLayout(layout)
 
     class SchemaParamForm(QWidget):
-        def __init__(self) -> None:
+        valuesChanged: Any = Signal()
+
+        def __init__(self, *, deviceMode=False) -> None:
             super().__init__()
+            self.deviceMode = deviceMode
+            self._advancedFields: set[str] = set()
+            self.advancedButton: QToolButton | None = None
             self._layout = QFormLayout()
             self._layout.setRowWrapPolicy(QFormLayout.WrapLongRows)
             self._layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
@@ -308,6 +331,7 @@ try:
             self._layout.setVerticalSpacing(10)
             self.setLayout(self._layout)
             self._controls: dict[str, QWidget] = {}
+            self._rowLabels: dict[str, QLabel] = {}
             self._fieldContainers: dict[str, QWidget] = {}
             self._variableSources: dict[str, QComboBox] = {}
             self._fieldsByName: dict[str, FieldDefinition] = {}
@@ -346,20 +370,68 @@ try:
         def setSchema(
             self, paramSchema: dict[str, object], values: dict[str, object]
         ) -> None:
+            operatorId = paramSchema.get("xModeOperator")
+            if operatorId:
+                from emo_master.plugins.builtins._operator_modes import INPUT_CHOICES, inferredInputType
+                values = deepcopy(values)
+                if operatorId in INPUT_CHOICES:
+                    selector = INPUT_CHOICES[operatorId][0]
+                    dynamic = cast(Iterable[str], paramSchema.get("xDynamicParameters", ()))
+                    if not values.get(selector) and selector not in dynamic:
+                        values[selector] = paramSchema.get("xInferredInputType") or inferredInputType(operatorId, values, "", [], dynamic)
+            self._enumSources: dict[str, object] = {}
+            if paramSchema.get("xCollectionFilter"):
+                from emo_master.plugins.builtins.collection_filter.configuration import prepareFilterParams
+                values = prepareFilterParams(values, cast(str, paramSchema.get("xCollectionFilterType", "")),
+                                             cast(Iterable[str], paramSchema.get("xCollectionFilterDynamicParameters", ())))
             self._rawSchema = deepcopy(paramSchema)
             self._suppliedFields = set(values)
+            for name, control in self._controls.items():
+                container = self._fieldContainers.get(name, control)
+                if self._layout.indexOf(container) < 0:
+                    container.deleteLater()
+                    self._rowLabels[name].deleteLater()
             self._controls = {}
+            self._rowLabels = {}
             self._fieldContainers = {}
             self._variableSources = {}
             self._fieldsByName = {}
             self._nestedFormsByControlId = {}
+            # Refresh can run inside a field's signal handler. Keep its
+            # QObject alive until Qt has finished dispatching that signal.
+            while self._layout.count():
+                item = self._layout.takeAt(0)
+                if item.widget() is not None:
+                    item.widget().hide()
+                    item.widget().deleteLater()
             while self._layout.rowCount() > 0:
                 self._layout.removeRow(0)
+
+            properties = paramSchema.get('properties', {})
+            compactFiles = isinstance(properties, dict) and any(
+                isinstance(spec, dict) and spec.get("xWidget") == "file-patterns" for spec in properties.values())
+            self._layout.setAlignment(Qt.AlignTop if compactFiles else Qt.Alignment())
+            self._advancedFields = {name for name, spec in properties.items()
+                                    if self.deviceMode and isinstance(spec, dict) and spec.get('xAdvanced')
+                                    } if isinstance(properties, dict) else set()
+            self.advancedButton = None
+            if self.deviceMode:
+                defaultHint = QLabel('有默认值的字段可使用默认值；按需调整。')
+                defaultHint.setWordWrap(True)
+                self._layout.addRow(defaultHint)
+            if self._advancedFields:
+                self.advancedButton = QToolButton()
+                self.advancedButton.setText(f'高级设置（{len(self._advancedFields)} 项）')
+                self.advancedButton.setCheckable(True)
+                self.advancedButton.toggled.connect(self._updateDependentFields)
+                self._layout.addRow(self.advancedButton)
 
             valuesWithDefaultsRaw = applySchemaDefaults(paramSchema, values)
             valuesWithDefaults = (
                 valuesWithDefaultsRaw if isinstance(valuesWithDefaultsRaw, dict) else {}
             )
+            if paramSchema.get("xCollectionFilter") or operatorId:
+                valuesWithDefaults.update(values)
 
             for field in getFieldDefinitions(paramSchema):
                 control = self._createControl(field, valuesWithDefaults)
@@ -369,8 +441,18 @@ try:
                 self._fieldsByName[field.name] = field
                 from emo_master.apps.designer.ui.widgets import WrapLabel
                 label = WrapLabel()
+                self._rowLabels[field.name] = label
                 applyParameterLabel(label, control, field.name, paramSchema)
                 self._layout.addRow(label, control)
+                if self.deviceMode and 'default' in field.schema:
+                    label.setToolTip(label.toolTip() + '\n可使用默认值：' + str(field.schema['default']))
+                for signal in ('textChanged', 'valueChanged', 'currentIndexChanged', 'toggled'):
+                    if hasattr(control, signal):
+                        def changed(*_args, name=field.name):
+                            self._showFieldError(name, '')
+                            self.valuesChanged.emit()
+                        getattr(control, signal).connect(changed)
+                        break
                 if field.name in {f"case{i}Value" for i in range(4)} and field.schema.get("xOptionalPresence"):
                     valueControl = control.valueControl if isinstance(control, _OptionalFieldControl) else control
                     if isinstance(valueControl, QLineEdit):
@@ -388,11 +470,11 @@ try:
                     control.hide()
 
             if len(self._controls) == 0:
-                tip = QLabel("No schema fields")
+                tip = QLabel("无可配置参数")
                 tip.setAlignment(Qt.AlignLeft)
                 self._layout.addRow(tip)
             if "xForEachInputs" in self._rawSchema or "xWhileBooleanPorts" in self._rawSchema or any(
-                    "xEnabledWhen" in field.schema or "xVisibleWhen" in field.schema or "xRequiredWhen" in field.schema
+                    "xEnabledWhen" in field.schema or "xVisibleWhen" in field.schema or "xRequiredWhen" in field.schema or "xEnumBy" in field.schema
                     for field in self._fieldsByName.values()):
                 for control in self._controls.values():
                     if isinstance(control, QComboBox):
@@ -460,42 +542,83 @@ try:
             return values
 
         def _dynamicCondition(self, condition: object) -> bool:
+            external = (*cast(Iterable[str], self._rawSchema.get("xCollectionFilterDynamicParameters", ())),
+                        *cast(Iterable[str], self._rawSchema.get("xDynamicParameters", ())))
             return isinstance(condition, dict) and any(
-                self._variableSources.get(key) is not None and self._variableSources[key].currentData()
+                (self._variableSources[key].currentData() if key in self._variableSources else key in external)
                 for key in condition)
 
         def _conditionApplies(self, condition: object, values: dict[str, object]) -> bool:
-            if not isinstance(condition, dict) or self._dynamicCondition(condition):
+            if not isinstance(condition, dict):
                 return True
-            return all(key not in self._controls or isinstance(allowed, list) and values.get(key) in allowed
+            return all(self._dynamicCondition({key: allowed}) or key not in self._controls
+                       or isinstance(allowed, list) and values.get(key) in allowed
                        for key, allowed in condition.items())
 
         def _updateDependentFields(self, *_args) -> None:
             values = self._dependencyValues()
             for name, field in self._fieldsByName.items():
+                rule = field.schema.get("xEnumBy")
+                enumControl = self._controls[name]
+                if not isinstance(rule, dict) or not isinstance(enumControl, QComboBox):
+                    continue
+                selector = rule["parameter"]
+                source = values.get(selector)
+                dynamic = self._dynamicCondition({selector: []})
+                enumOptions = field.enumValues if dynamic else rule["options"].get(source, field.enumValues)
+                selected = values.get(name)
+                if name == "inputType" and not dynamic and not self._dynamicCondition({name: []}) and (
+                        not selected or selected not in enumOptions and name in self._enumSources and self._enumSources[name] != source):
+                    selected = enumOptions[0] if len(enumOptions) == 1 else ""
+                self._enumSources[name] = source
+                labels = cast(dict, field.schema.get("xOptionLabels", {}))
+                enumControl.blockSignals(True)
+                enumControl.clear()
+                for option in enumOptions:
+                    enumControl.addItem(str(labels.get(str(option), option)), option)
+                if selected not in enumOptions:
+                    enumControl.addItem(f"当前对象不适用：{selected}" if selected else "请选择处理对象", selected)
+                self._setComboValue(enumControl, selected)
+                enumControl.blockSignals(False)
+                values[name] = selected
+            for name, field in self._fieldsByName.items():
                 control = self._controls[name]
                 container = self._fieldContainers.get(name, control)
                 requirement = field.schema.get("xRequiredWhen")
                 if isinstance(requirement, dict):
-                    requiredLabel = self._layout.labelForField(container)
+                    requiredLabel = self._rowLabels.get(name)
                     if isinstance(requiredLabel, QLabel):
                         requiredLabel.setText(parameterTitle(name, field.schema) + (" *" if self._conditionApplies(requirement, values) else ""))
                 visibility = field.schema.get("xVisibleWhen")
                 visible = self._conditionApplies(visibility, values)
-                if isinstance(visibility, dict) and not field.schema.get("xHidden"):
-                    container.setVisible(visible)
-                    rowLabel = self._layout.labelForField(container)
+                if (isinstance(visibility, dict) or name in self._advancedFields) and not field.schema.get("xHidden"):
+                    expanded = name not in self._advancedFields or bool(self.advancedButton and self.advancedButton.isChecked())
+                    container.setVisible(visible and expanded)
+                    if container is not control:
+                        control.setVisible(visible and expanded)
+                    rowLabel = self._rowLabels.get(name)
                     if rowLabel is not None:
-                        rowLabel.setVisible(visible)
+                        rowLabel.setVisible(visible and expanded)
                 condition = field.schema.get("xEnabledWhen")
                 source = self._variableSources.get(name)
-                if condition is not None or visibility is not None or source is not None:
-                    enabled = visible and self._conditionApplies(condition, values)
+                if condition is not None or visibility is not None or source is not None or field.schema.get("xReadOnly"):
+                    enabled = visible and self._conditionApplies(condition, values) and not field.schema.get("xReadOnly", False)
                     if source is not None:
                         source.setEnabled(enabled)
                     control.setEnabled(enabled and not (source is not None and source.currentData()))
                     if not control.isEnabled() and control.accessibleDescription():
                         self._showFieldError(name, "")
+            if self._rawSchema.get("xCollectionFilter") or self._rawSchema.get("xModeOperator"):
+                # Qt5 keeps row gaps for hidden fields. Detach rows, not widgets,
+                # so toggling groups preserves their values and inline bindings.
+                while self._layout.count():
+                    self._layout.takeAt(0)
+                while self._layout.rowCount():
+                    self._layout.removeRow(0)
+                for name, control in self._controls.items():
+                    container = self._fieldContainers.get(name, control)
+                    if not container.isHidden():
+                        self._layout.addRow(self._rowLabels[name], container)
             portsByWorkflow = self._rawSchema.get("xWhileBooleanPorts")
             combo = self._controls.get("conditionPort")
             if isinstance(portsByWorkflow, dict) and isinstance(combo, QComboBox):
@@ -538,7 +661,7 @@ try:
             control.setAccessibleDescription(message)
             control.setToolTip(parameterToolTip(name, self._fieldsByName[name].schema) + ("\n" + message if message else ""))
             if message:
-                control.setFocus(Qt.OtherFocusReason)
+                self.focusField(name)
             return message
 
         def validationMessage(self) -> str:
@@ -547,6 +670,8 @@ try:
             for name, control in self._controls.items():
                 field = self._fieldsByName[name]
                 if not control.isEnabled() or field.schema.get("xHidden") and name not in self._suppliedFields:
+                    continue
+                if (self._rawSchema.get("xModeOperator") or self._rawSchema.get("xCollectionFilter")) and self._dynamicCondition({name: []}):
                     continue
                 if isinstance(control, _OptionalFieldControl) and not control.enabledCheckBox.isChecked():
                     continue
@@ -561,17 +686,56 @@ try:
                 except ValueError as error:
                     return self._showFieldError(name, str(error))
                 schema = dict(field.schema)
+                rule = schema.get("xEnumBy")
+                if isinstance(rule, dict) and not self._dynamicCondition({rule["parameter"]: []}):
+                    schema["enum"] = rule["options"].get(self._dependencyValues().get(rule["parameter"]), schema.get("enum", []))
                 if self._dynamicCondition(schema.get("xEnabledWhen")) or self._dynamicCondition(schema.get("xVisibleWhen")):
                     schema = {"type": field.fieldType}
                 elif schema.get("xWidget") == "port-select":
                     schema.pop("enum", None)  # Workflow options, not the saved enum, are authoritative.
                 message = _valueError(value, schema, _parameterErrorTitle(name, field.schema))
+                if not message and self.deviceMode and isinstance(value, str):
+                    title = _parameterErrorTitle(name, field.schema)
+                    minimum, maximum, pattern = schema.get('minLength'), schema.get('maxLength'), schema.get('pattern')
+                    if isinstance(minimum, int) and len(value) < minimum:
+                        message = ('请填写 SDK 设备唯一标识，或通过设备发现选择' if name == 'cameraKey'
+                                   else title + '：请填写此字段')
+                    elif isinstance(maximum, int) and len(value) > maximum:
+                        message = title + '：内容过长'
+                    elif isinstance(pattern, str) and not re.search(pattern, value):
+                        message = title + '：格式不符合要求'
                 if message:
                     return self._showFieldError(name, message)
             try:
                 values = self.getValues()
             except ValueError as error:
                 return str(error)
+            operatorId = self._rawSchema.get("xModeOperator")
+            if operatorId:
+                from emo_master.plugins.builtins._operator_modes import INPUT_CHOICES, inputChoiceError
+                if operatorId in INPUT_CHOICES:
+                    modeSelector = INPUT_CHOICES[operatorId][0]
+                    if not self._dynamicCondition({modeSelector: []}):
+                        if not values.get(modeSelector):
+                            return self._showFieldError(modeSelector, "请选择处理对象")
+                        if not self._dynamicCondition({"feature": []}):
+                            choiceError = inputChoiceError(operatorId, values)
+                            if choiceError:
+                                return self._showFieldError(modeSelector, choiceError["message"])
+            if self._rawSchema.get("xCollectionFilter"):
+                if not values.get("collectionType") and not self._dynamicCondition({"collectionType": []}):
+                    return self._showFieldError("collectionType", "请选择筛选对象")
+                dynamic = {name for name in self._controls if self._dynamicCondition({name: []})}
+                if "collectionType" not in dynamic:
+                    from emo_master.plugins.builtins.collection_filter.configuration import FILTER_GROUPS
+                    from emo_master.plugins.builtins.collection_filter.operator import CollectionFilterOperator
+                    validationValues = dict(values)
+                    for flag, group in FILTER_GROUPS.items():
+                        if dynamic.intersection((flag, *group["fields"])):
+                            validationValues[flag] = False
+                    paramError = CollectionFilterOperator().validateParams(validationValues)
+                    if paramError:
+                        return paramError["message"]
             channelBounds = self._rawSchema.get("xChannelBounds")
             if isinstance(channelBounds, dict):
                 selector, lower, upper = (channelBounds.get(key) for key in ("selector", "lower", "upper"))
@@ -618,6 +782,23 @@ try:
                 return "元素输入端口和索引输入端口不能相同，请选择不同端口或不传入索引"
             return ""
 
+        def focusField(self, name):
+            control = self._controls.get(name)
+            if control is not None:
+                if name in self._advancedFields and self.advancedButton is not None:
+                    self.advancedButton.setChecked(True)
+                parent = control.parentWidget()
+                while parent is not None:
+                    if isinstance(parent, QScrollArea):
+                        parent.ensureWidgetVisible(control)
+                    parent = parent.parentWidget()
+                control.setFocus()
+
+        def setFieldEnabled(self, name, enabled):
+            control = self._controls.get(name)
+            if control is not None:
+                control.setEnabled(enabled)
+
         def getValues(self) -> dict[str, object]:
             values: dict[str, object] = {}
             for fieldName, control in self._controls.items():
@@ -629,6 +810,12 @@ try:
                 try:
                     values[fieldName] = self._readControlValue(control, field)
                 except ValueError as error:
+                    if (self._rawSchema.get("xCollectionFilter") or self._rawSchema.get("xModeOperator")) and field and (
+                            self._dynamicCondition({fieldName: []}) or not self._conditionApplies(
+                                field.schema.get("xVisibleWhen"), self._dependencyValues())):
+                        # Inactive or bound literals remain editable without blocking Apply.
+                        values[fieldName] = control.toPlainText() if isinstance(control, QTextEdit) else control.text()
+                        continue
                     self._showFieldError(fieldName, str(error))
                     raise
             return values
@@ -686,16 +873,20 @@ try:
 
             if field.fieldType == "boolean":
                 checkbox = QCheckBox()
+                checkbox.toggled.connect(lambda checked: checkbox.setText("已开启" if checked else "已关闭"))
                 checkbox.setChecked(bool(selectedValue))
+                checkbox.setText("已开启" if checkbox.isChecked() else "已关闭")
                 return checkbox
 
             if field.fieldType == "integer":
-                if (any(bound is not None and not -2147483648 <= bound <= 2147483647
+                if (isinstance(selectedValue, str) or any(bound is not None and not -2147483648 <= bound <= 2147483647
                         for bound in (field.minimum, field.maximum)) or
                         isinstance(selectedValue, int) and not -2147483648 <= selectedValue <= 2147483647):
                     return _IntegerValueControl(selectedValue)
                 spin = QSpinBox()
                 spin.setRange(-2147483648, 2147483647)
+                if field.schema.get("xUnit"):
+                    spin.setSuffix(" " + str(field.schema["xUnit"]))
                 if isinstance(selectedValue, (int, float)):
                     spin.setValue(int(selectedValue))
                 return spin
@@ -707,7 +898,7 @@ try:
                 rawProperties = field.schema.get("properties", {})
                 if isinstance(rawProperties, dict) and len(rawProperties) > 0:
                     groupBox = QGroupBox()
-                    nestedForm = SchemaParamForm()
+                    nestedForm = SchemaParamForm(deviceMode=self.deviceMode)
                     nestedValue = (
                         selectedValue if isinstance(selectedValue, dict) else {}
                     )
@@ -729,17 +920,27 @@ try:
                 return textEditor
 
             if field.fieldType == "array":
+                if field.schema.get("xWidget") == "file-patterns":
+                    return FilePatternsControl(selectedValue)
+                if field.schema.get("xWidget") == "integer-list":
+                    control = _IntegerListControl(selectedValue, str(field.schema.get("xPlaceholder", "")))
+                    if (self._rawSchema.get("xCollectionFilter") or self._rawSchema.get("xModeOperator")) and isinstance(selectedValue, str):
+                        control.setText(selectedValue)
+                    return control
                 textEditor = QTextEdit()
                 textEditor.setAcceptRichText(False)
                 textEditor.setMaximumHeight(140)
                 textEditor.setPlaceholderText('例如 [0, 255]（数组）或 {"key": 1}（对象）')
                 arrayValue = selectedValue if isinstance(selectedValue, list) else []
                 textEditor.setPlainText(
-                    json.dumps(arrayValue, ensure_ascii=True, indent=2)
+                    selectedValue if (self._rawSchema.get("xCollectionFilter") or self._rawSchema.get("xModeOperator")) and isinstance(selectedValue, str)
+                    else json.dumps(arrayValue, ensure_ascii=True, indent=2)
                 )
                 return textEditor
 
             lineEdit = QLineEdit()
+            if field.schema.get("xWidget") == "password":
+                lineEdit.setEchoMode(QLineEdit.Password)
             if selectedValue is not None:
                 lineEdit.setText(str(selectedValue))
             return lineEdit
@@ -754,6 +955,8 @@ try:
             self, control: QWidget, field: FieldDefinition | None
         ) -> object:
             _ = field
+            if isinstance(control, FilePatternsControl):
+                return control.value()
             if isinstance(control, _OptionalFieldControl):
                 return self._readControlValue(control.valueControl, field)
             if isinstance(control, QCheckBox):
@@ -773,6 +976,16 @@ try:
                 return value
             if isinstance(control, _IntegerValueControl):
                 return control.value()
+            if isinstance(control, _IntegerListControl):
+                title = _parameterErrorTitle(field.name, field.schema) if field else "整数列表"
+                try:
+                    value = control.value()
+                except json.JSONDecodeError as error:
+                    raise ValueError(f"{title}：编号格式错误，请用逗号分隔整数") from error
+                message = _valueError(value, field.schema if field else {"type": "array"}, title)
+                if message:
+                    raise ValueError(message)
+                return value
             if isinstance(control, QLineEdit):
                 return control.text()
             if isinstance(control, _FilePickerControl):

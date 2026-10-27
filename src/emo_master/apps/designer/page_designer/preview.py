@@ -156,6 +156,7 @@ class PreviewController(QObject):
         self.error = None
         self.coverage = None
         self.selectedJob = None
+        self.selectedWorkflows = ()
         self.observationLabel = ''
         self.coverageDetails = ''
         self.observer = None
@@ -169,7 +170,7 @@ class PreviewController(QObject):
         self.coordinator.window.appendRuntimeLog('INFO', text)
         text = editorMessage(text)
         for original, readable in [
-                ('当前 Runtime 尚无页面服务；请先明确运行工程', '尚未运行：请切换到流程设计，运行流程或开始图片测试'),
+                ('当前 Runtime 尚无页面服务；请先明确运行工程', '页面结果服务未启用；请在运行面板确认流程状态'),
                 ('当前 Runtime 不支持工程任务/来源元数据协商；页面设计仍可使用，请升级 Runtime 或使用高级只读连接',
                  '当前运行服务不支持查看项目结果，请更新运行服务；也可通过“高级连接”查看已有结果'),
                 ('当前 Runtime 尚未提供只读任务目录；页面可继续编辑，不会为观看启动 Runtime',
@@ -225,7 +226,8 @@ class PreviewController(QObject):
         job = job.strip()
         if self.observer is None:
             self.openObserver()
-        projectId = self.coordinator.session.document().project.projectId
+        document = self.coordinator.session.document().model_copy(deep=True)
+        projectId = document.project.projectId
         def attach():
             # Negotiate using the supplied endpoint only. Viewing never creates a
             # local Runtime/service, prepares a snapshot, or starts a Job.
@@ -241,7 +243,8 @@ class PreviewController(QObject):
                 if modern and metadata.project_id != projectId:
                     raise ValueError('指定任务不属于当前工程')
                 coverage = self._coverage(metadata, capabilities) if modern else None
-            return self._attach(address, metadata, coverage)
+            pair = self._dispatchPair(document, metadata, jobs) if modern else None
+            return self._attach(address, metadata, coverage, pair=pair, document=document)
         self.launch(attach)
 
     @staticmethod
@@ -304,11 +307,23 @@ class PreviewController(QObject):
             raise ValueError('工程已切换，忽略旧工程任务列表')
         jobs = value['jobs']
         if not jobs:
-            raise ValueError('尚未运行：请切换到流程设计并运行或进行图片测试')
+            raise ValueError('未找到当前工程的页面运行记录；请在运行面板确认任务及页面采集状态')
         current = self.coordinator.window.currentJobId
         # Preserve an explicitly selected page observer independently of the
         # controller's owned Job; never assign currentJobId and inherit Stop rights.
         preferred = (self.backend.jobId if self.backend else current) or getattr(self.selectedJob, 'job_id', '')
+        consumers = [item for item in jobs if getattr(item, 'source_job_id', '') == preferred
+                     and getattr(item, 'target_slot_id', '') and item.capture_enabled and item.source_ids]
+        if consumers:
+            # Observation follows the producer's group without acquiring Stop ownership.
+            roots = [item for item in jobs if item.job_id == preferred and item.source_ids]
+            jobs = roots + consumers
+        document = self.coordinator.session.document().model_copy(deep=True)
+        # Shared pages are selected by their consumer slot, not twice as a root
+        # and a consumer. Independent Job pages keep the existing chooser.
+        pairedSources = {item.source_job_id for item in jobs if item.source_job_id and item.target_slot_id
+                         and self._dispatchPair(document, item, value['jobs'])}
+        jobs = [item for item in jobs if item.job_id not in pairedSources]
         index = next((i for i, item in enumerate(jobs) if item.job_id == preferred), 0)
         if len(jobs) > 1:
             labels = [self._jobLabel(item) for item in jobs]
@@ -320,7 +335,33 @@ class PreviewController(QObject):
             index = labels.index(label)
         metadata = jobs[index]
         coverage = self._coverage(metadata, value['capabilities'])
-        self.launch(lambda: self._attach(value['address'], metadata, coverage))
+        pair = self._dispatchPair(document, metadata, value['jobs'])
+        self.launch(lambda: self._attach(value['address'], metadata, coverage, pair=pair, document=document))
+
+    @staticmethod
+    def _dispatchPair(document, metadata, jobs):
+        from emo_master.core.presentation.validation import pageScopes
+        from emo_master.core.presentation.coverage import DispatchCoverage
+        presentation = document.presentation
+        if presentation is None:
+            return None
+        shared = [{presentation.resultScopes[key].entryWorkflowId for key in pageScopes(presentation, page)
+                   if key in presentation.resultScopes} for page in presentation.pages]
+        candidates = []
+        for consumer in jobs:
+            if not consumer.source_job_id or not consumer.target_slot_id:
+                continue
+            producer = next((item for item in jobs if item.job_id == consumer.source_job_id), None)
+            if producer is None or metadata.job_id not in (producer.job_id, consumer.job_id):
+                continue
+            roots = {producer.workflow_id, consumer.workflow_id}
+            if len(roots) != 2 or roots not in shared:
+                continue
+            DispatchCoverage.fromMetadata(producer, consumer)
+            candidates.append((producer, consumer))
+        if len(candidates) > 1:
+            raise ValueError('此生产任务有多个消费槽位，请选择要查看的消费任务')
+        return candidates[0] if candidates else None
 
     @staticmethod
     def _jobLabel(metadata, *, includeStatus=True):
@@ -328,16 +369,28 @@ class PreviewController(QObject):
             getattr(metadata, 'mode', ''), '旧任务（语义未声明）')
         capture = '已采集页面来源' if getattr(metadata, 'capture_enabled', False) else '未采集页面来源'
         status = ' · ' + STATUS_LABELS.get(metadata.status, metadata.status) if includeStatus else ''
-        return f'{mode}{status} · {capture} · {metadata.job_id[:8]}'
+        source = getattr(metadata, 'workflow_id', '')
+        slot = getattr(metadata, 'target_slot_id', '')
+        label = f'{source} / {slot} · ' if slot else f'{source} · ' if source else ''
+        return f'{label}{mode}{status} · {capture} · {metadata.job_id[:8]}'
 
-    def _attach(self, address, metadata, coverage):
-        if coverage is None:
+    def _attach(self, address, metadata, coverage, *, pair=None, document=None):
+        roots = (metadata.workflow_id,)
+        if pair:
+            from emo_master.clients.runtime.dispatch_display import DispatchDisplaySession
+            from emo_master.core.presentation.workflow_view import presentationForWorkflows
+            roots = tuple(item.workflow_id for item in pair)
+            presentation = presentationForWorkflows(document, roots)
+            self.session = DispatchDisplaySession(address, *pair, presentation)
+            coverage = self.session.coverage
+            metadata = pair[1]
+        elif coverage is None:
             self.session = DisplaySession(address, metadata.job_id, imageDemand=True)
         else:
             self.session = DisplaySession(address, metadata.job_id, imageDemand=True,
                 expectedRuntimeInstanceId=metadata.runtime_instance_id, projectId=metadata.project_id,
                 readResults=bool(metadata.capture_enabled and not metadata.resources_released))
-        return {'kind': 'attached', 'metadata': metadata, 'coverage': coverage}
+        return {'kind': 'attached', 'metadata': metadata, 'coverage': coverage, 'roots': roots}
 
     def _observerDestroyed(self, token):
         # No native Qt calls here: destruction can follow the Designer owner.
@@ -405,20 +458,12 @@ class PreviewController(QObject):
         root = getattr(self.selectedJob, 'workflow_id', '')
         if root not in document.workflows:
             return presentation
-        from emo_master.core.presentation.workflow_view import presentationForWorkflow
-        return presentationForWorkflow(document.model_copy(update={'presentation': presentation}), root)
+        from emo_master.core.presentation.workflow_view import presentationForWorkflows
+        return presentationForWorkflows(document.model_copy(update={'presentation': presentation}),
+                                        self.selectedWorkflows or (root,))
 
     def refreshJobStatus(self):
         from emo_master.ui.presentation.job_status import jobStatusText
-        backend = self.backend
-        runtime = getattr(backend, 'runtime', None)
-        job = runtime.jobRepository.getCurrentSnapshot(backend.jobId) if runtime and backend.jobId else None
-        if hasattr(self.coordinator, 'chrome'):
-            status = self.coordinator.chrome.testStatus
-            if backend is not None:
-                label = STATUS_LABELS.get(job.status, job.status) if job else '正在准备'
-                status.setText('图片测试：' + label + (' · ' + job.message if job and job.message else ''))
-            status.setVisible(backend is not None and not self.coordinator.pageActive())
         observer = self.observer
         if observer is None or not isValid(observer):
             return
@@ -499,6 +544,7 @@ class PreviewController(QObject):
                 self.message('无法查看：' + str(error))
             return
         self.selectedJob = value['metadata']
+        self.selectedWorkflows = value['roots']
         self.coverage = value['coverage']
         self.observationLabel = self._jobLabel(self.selectedJob, includeStatus=False)
         self.hub = DisplayHub(self.session, self) if self.session is not None else None
@@ -519,7 +565,13 @@ class PreviewController(QObject):
                     self.error = str(error)
                     self.message('无法查看：' + str(error))
                     return
-            observer.banner.setText('运行结果')
+            slot = getattr(self.selectedJob, 'target_slot_id', '')
+            observer.banner.setText('运行结果' + (f' · {self.selectedJob.workflow_id} / {slot}'
+                f' · Job {self.selectedJob.job_id[:8]}' if slot else ''))
+            if len(self.selectedWorkflows) == 2:
+                observer.banner.setText('采集画面与检测结果 · ' + ' / '.join(self.selectedWorkflows))
+            observer.banner.setToolTip((f'运行组：{self.selectedJob.run_group_id}\n'
+                f'生产 Job：{self.selectedJob.source_job_id}\n消费 Job：{self.selectedJob.job_id}') if slot else '')
             self.refreshCoverage()
         self.message('已连接运行结果')
 
@@ -556,6 +608,7 @@ class PreviewController(QObject):
             self.hub = None
         self.coverage = None
         self.selectedJob = None
+        self.selectedWorkflows = ()
         self.observationLabel = ''
         observer = self.observer
         if observer is not None and isValid(observer):

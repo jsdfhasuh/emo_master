@@ -1,6 +1,9 @@
 """Whole-project migration inventory using the normal per-node binding wizard."""
 from copy import deepcopy
 
+from emo_master.apps.designer.state.rtsp_migration import (
+    LEGACY_OPERATOR, MANAGED_OPERATOR, migrationDraft, redactDeviceValues,
+)
 from PySide2.QtWidgets import (QDialog, QDialogButtonBox, QLabel, QPushButton,
     QTableWidget, QTableWidgetItem, QTextEdit, QVBoxLayout)
 
@@ -42,16 +45,19 @@ class DeviceMigrationDialog(QDialog):
 
     def refresh(self):
         import json
+        candidates = set(self.requirements)
+        if MANAGED_OPERATOR in candidates:
+            candidates.add(LEGACY_OPERATOR)
         self.rows = [(wid, deepcopy(node)) for wid, flow in self.session.workflows.workflows.items()
-                     for node in flow.nodes if node.get("operatorId") in self.requirements]
+                     for node in flow.nodes if node.get("operatorId") in candidates]
         pending = sum(not n.get("deviceBindings") for _wid, n in self.rows)
         self.status.setText(f"设备节点 {len(self.rows)} 个；未绑定 {pending} 个。修改仅进入草稿；保存时保留原工程 .bak。")
         self.table.setRowCount(len(self.rows))
         for row, (wid, node) in enumerate(self.rows):
             values = [wid + "/" + node["nodeId"], node["operatorId"],
                       json.dumps(node.get("deviceBindings") or "待迁移", ensure_ascii=False),
-                      json.dumps({key: node.get(key, {}) for key in (
-                          "params", "deviceOverrides", "deviceValueBindings", "globalVariableBindings")}, ensure_ascii=False)]
+                      json.dumps(redactDeviceValues({key: node.get(key, {}) for key in (
+                          "params", "deviceOverrides", "deviceValueBindings", "globalVariableBindings")}), ensure_ascii=False)]
             for col, text in enumerate(values):
                 item = QTableWidgetItem(text)
                 item.setToolTip(text)
@@ -62,7 +68,7 @@ class DeviceMigrationDialog(QDialog):
     def showDetails(self):
         import json
         row = self.table.currentRow()
-        self.details.setPlainText(json.dumps(self.rows[row][1], ensure_ascii=False, indent=2)
+        self.details.setPlainText(json.dumps(redactDeviceValues(self.rows[row][1]), ensure_ascii=False, indent=2)
                                   if 0 <= row < len(self.rows) else "")
 
     def configureSelected(self):
@@ -74,6 +80,8 @@ class DeviceMigrationDialog(QDialog):
         window.activateWorkflow(wid)
         from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
         definition = window._operatorDefinition(node["operatorId"])
+        if node['operatorId'] == LEGACY_OPERATOR:
+            node = migrationDraft(node, definition)
         if not node.get("paramSchema"):
             node["paramSchema"] = definition.get("paramSchema", {})
         requirements = {key: value.model_dump() if hasattr(value, "model_dump") else value

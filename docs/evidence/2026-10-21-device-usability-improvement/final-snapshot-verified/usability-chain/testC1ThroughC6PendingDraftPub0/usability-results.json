@@ -1,0 +1,322 @@
+{
+  "server": "device-0266f3f79c304c1c97667bc503f6d97c",
+  "jobId": "cca045a5-302f-4815-9f52-817ad9974a33",
+  "cameraJobId": "c2b7e395-9eac-484a-8a26-a79549aba288",
+  "cameraImage": "[[[0 1 1]\n  [1 1 1]\n  [2 1 1]\n  [3 1 1]\n  [4 1 1]\n  [5 1 1]\n  [6 1 1]\n  [7 1 1]]\n\n [[0 1 1]\n  [1 1 1]\n  [2 1 1]\n  [3 1 1]\n  [4 1 1]\n  [5 1 1]\n  [6 1 1]\n  [7 1 1]]\n\n [[0 1 1]\n  [1 1 1]\n  [2 1 1]\n  [3 1 1]\n  [4 1 1]\n  [5 1 1]\n  [6 1 1]\n  [7 1 1]]\n\n [[0 1 1]\n  [1 1 1]\n  [2 1 1]\n  [3 1 1]\n  [4 1 1]\n  [5 1 1]\n  [6 1 1]\n  [7 1 1]]\n\n [[0 1 1]\n  [1 1 1]\n  [2 1 1]\n  [3 1 1]\n  [4 1 1]\n  [5 1 1]\n  [6 1 1]\n  [7 1 1]]\n\n [[0 1 1]\n  [1 1 1]\n  [2 1 1]\n  [3 1 1]\n  [4 1 1]\n  [5 1 1]\n  [6 1 1]\n  [7 1 1]]]",
+  "template": {
+    "schemaVersion": "1.4",
+    "packageType": "emo-master.workflow",
+    "rootWorkflowId": "main",
+    "workflowOrder": [
+      "main"
+    ],
+    "workflows": {
+      "main": {
+        "name": "Main",
+        "inputs": {},
+        "outputs": {},
+        "nodes": [
+          {
+            "nodeId": "__workflow_input__",
+            "kind": "workflow_input",
+            "operatorId": "",
+            "displayName": "Workflow Input",
+            "inputPorts": {},
+            "outputPorts": {},
+            "paramSchema": {},
+            "params": {},
+            "targetWorkflowId": null,
+            "loop": {}
+          },
+          {
+            "nodeId": "__workflow_output__",
+            "kind": "workflow_output",
+            "operatorId": "",
+            "displayName": "Workflow Output",
+            "inputPorts": {},
+            "outputPorts": {},
+            "paramSchema": {},
+            "params": {},
+            "targetWorkflowId": null,
+            "loop": {}
+          },
+          {
+            "nodeId": "acquire",
+            "kind": "operator",
+            "operatorId": "communication.tcp.session",
+            "displayName": "communication.tcp.session",
+            "inputPorts": {},
+            "outputPorts": {
+              "session": "tcpSessionRef"
+            },
+            "paramSchema": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false,
+              "required": [],
+              "xDeviceActionFields": []
+            },
+            "params": {},
+            "deviceBindings": {
+              "tcp": {
+                "deviceId": "device-0266f3f79c304c1c97667bc503f6d97c",
+                "selectors": {}
+              }
+            },
+            "targetWorkflowId": null,
+            "loop": {}
+          }
+        ],
+        "edges": [],
+        "layout": {
+          "nodePositions": {
+            "__workflow_input__": {
+              "x": 20.0,
+              "y": 20.0
+            },
+            "__workflow_output__": {
+              "x": 360.0,
+              "y": 20.0
+            },
+            "acquire": {
+              "x": 20.0,
+              "y": 30.0
+            }
+          }
+        }
+      }
+    },
+    "requiredOperators": [
+      "communication.tcp.session"
+    ],
+    "globalVariables": {},
+    "devices": {
+      "device-0266f3f79c304c1c97667bc503f6d97c": {
+        "name": "TCP 常驻服务",
+        "deviceTypeId": "device.tcp.server",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "bindAddress": "127.0.0.1",
+          "port": 53869,
+          "channels": []
+        },
+        "defaults": {
+          "timeoutMs": 5000,
+          "encoding": "utf-8",
+          "appendNewline": false
+        },
+        "policies": {
+          "deviceWaitTimeoutMs": 5000,
+          "connect": "on_project_run",
+          "release": "on_project_close",
+          "sendTimeoutMs": 2000,
+          "maxMessageBytes": 1048576
+        }
+      }
+    },
+    "resources": {
+      "schemaVersion": "1.0",
+      "items": {},
+      "parameterBindings": [],
+      "siteBindings": []
+    },
+    "resourceData": {}
+  },
+  "diagnostics": {
+    "runtimeInstanceId": "0afa1e64-5566-4558-8894-609f84b86028",
+    "projectId": "a4a39f62-1899-4a02-bd6d-002973b99f96",
+    "projectLoadGeneration": "5f0adfe1436f49d3b06a9efad2f67379",
+    "deviceId": "device-0266f3f79c304c1c97667bc503f6d97c",
+    "records": [
+      {
+        "sequence": 1,
+        "kind": "event",
+        "channelId": "",
+        "serviceGeneration": 1,
+        "deviceGeneration": "393148cafc5f447583416767908a7262",
+        "runtimeInstanceId": "0afa1e64-5566-4558-8894-609f84b86028",
+        "projectId": "a4a39f62-1899-4a02-bd6d-002973b99f96",
+        "projectLoadGeneration": "5f0adfe1436f49d3b06a9efad2f67379",
+        "deviceId": "device-0266f3f79c304c1c97667bc503f6d97c",
+        "cursor": 1,
+        "eventType": "device.tcp.event",
+        "message": "开始监听 127.0.0.1:53869",
+        "timestampMs": 1792591453839
+      },
+      {
+        "deviceGeneration": "393148cafc5f447583416767908a7262",
+        "runtimeInstanceId": "0afa1e64-5566-4558-8894-609f84b86028",
+        "projectId": "a4a39f62-1899-4a02-bd6d-002973b99f96",
+        "projectLoadGeneration": "5f0adfe1436f49d3b06a9efad2f67379",
+        "deviceId": "device-0266f3f79c304c1c97667bc503f6d97c",
+        "cursor": 2,
+        "eventType": "device.connect.completed",
+        "message": "设备连接已就绪",
+        "timestampMs": 1792591453839
+      },
+      {
+        "sequence": 2,
+        "kind": "event",
+        "channelId": "a",
+        "serviceGeneration": 1,
+        "connectionGeneration": 1,
+        "deviceGeneration": "393148cafc5f447583416767908a7262",
+        "runtimeInstanceId": "0afa1e64-5566-4558-8894-609f84b86028",
+        "projectId": "a4a39f62-1899-4a02-bd6d-002973b99f96",
+        "projectLoadGeneration": "5f0adfe1436f49d3b06a9efad2f67379",
+        "deviceId": "device-0266f3f79c304c1c97667bc503f6d97c",
+        "cursor": 3,
+        "eventType": "device.tcp.event",
+        "message": "客户端连接 127.0.0.1:53872",
+        "timestampMs": 1792591454472
+      },
+      {
+        "ownerId": "cca045a5-302f-4815-9f52-817ad9974a33",
+        "cycleId": "eb545f0fcfda40c4976649bf945c87a0",
+        "requestId": "459b5b2f28c740ddae4ca499a9c094df",
+        "source": {
+          "workflowId": "main",
+          "nodeId": "acquire",
+          "nodeRunId": "a3a347fb-bd0a-43d9-854c-f520c1f2737a",
+          "workflowRunId": "64fef648-4ecc-481a-8c55-8ba99a9ad16e",
+          "iterationPath": [],
+          "slot": "tcp"
+        },
+        "selectors": {
+          "channelId": "a"
+        },
+        "result": {
+          "schemaVersion": "1.1",
+          "deviceId": "device-0266f3f79c304c1c97667bc503f6d97c",
+          "type": "tcpSessionRef",
+          "runtimeInstanceId": "0afa1e64-5566-4558-8894-609f84b86028",
+          "projectId": "a4a39f62-1899-4a02-bd6d-002973b99f96",
+          "projectLoadGeneration": "5f0adfe1436f49d3b06a9efad2f67379",
+          "serviceId": "tcp-server",
+          "serviceGeneration": 1,
+          "configRevision": "19a7b940da663971b24c98261c9edb3af38e05375698e1399183cd0bc1f3d989",
+          "channelId": "a",
+          "connectionGeneration": 1,
+          "leaseId": "ed121ebd22a143d298b7cf3362f7ab02",
+          "jobId": "cca045a5-302f-4815-9f52-817ad9974a33"
+        },
+        "deviceGeneration": "393148cafc5f447583416767908a7262",
+        "runtimeInstanceId": "0afa1e64-5566-4558-8894-609f84b86028",
+        "projectId": "a4a39f62-1899-4a02-bd6d-002973b99f96",
+        "projectLoadGeneration": "5f0adfe1436f49d3b06a9efad2f67379",
+        "deviceId": "device-0266f3f79c304c1c97667bc503f6d97c",
+        "cursor": 4,
+        "eventType": "device.action.completed",
+        "message": "acquire_session",
+        "timestampMs": 1792591455622
+      },
+      {
+        "sequence": 3,
+        "kind": "tx",
+        "channelId": "a",
+        "serviceGeneration": 1,
+        "outcome": "SENT_TO_TRANSPORT",
+        "code": "",
+        "requestId": "54767dddd6df4d99b35e1fd7fbe88504",
+        "source": {
+          "workflowId": "main",
+          "nodeId": "send",
+          "nodeRunId": "2804902d-37a7-4b85-ab45-aea8df1a6be5",
+          "workflowRunId": "64fef648-4ecc-481a-8c55-8ba99a9ad16e",
+          "iterationPath": [],
+          "slot": "tcp"
+        },
+        "receipt": {
+          "schemaVersion": "1.1",
+          "deviceId": "device-0266f3f79c304c1c97667bc503f6d97c",
+          "type": "tcpSendReceipt",
+          "requestId": "54767dddd6df4d99b35e1fd7fbe88504",
+          "jobId": "cca045a5-302f-4815-9f52-817ad9974a33",
+          "channelId": "a",
+          "serviceGeneration": 1,
+          "connectionGeneration": 1,
+          "outcome": "SENT_TO_TRANSPORT",
+          "bytesRequested": 15,
+          "bytesSent": 15,
+          "deviceConfirmed": false,
+          "code": "",
+          "message": "本机 TCP 栈已接收全部字节；设备确认未启用"
+        },
+        "connectionGeneration": 1,
+        "bytes": 15,
+        "dataHex": "55 53 41 42 49 4C 49 54 59 2D 42 59 54 45 53",
+        "truncated": false,
+        "deviceGeneration": "393148cafc5f447583416767908a7262",
+        "runtimeInstanceId": "0afa1e64-5566-4558-8894-609f84b86028",
+        "projectId": "a4a39f62-1899-4a02-bd6d-002973b99f96",
+        "projectLoadGeneration": "5f0adfe1436f49d3b06a9efad2f67379",
+        "deviceId": "device-0266f3f79c304c1c97667bc503f6d97c",
+        "cursor": 5,
+        "eventType": "device.tcp.tx",
+        "message": "本机 TCP 栈已接收全部字节；设备确认未启用",
+        "timestampMs": 1792591455626
+      },
+      {
+        "ownerId": "cca045a5-302f-4815-9f52-817ad9974a33",
+        "cycleId": "eb545f0fcfda40c4976649bf945c87a0",
+        "requestId": "54767dddd6df4d99b35e1fd7fbe88504",
+        "source": {
+          "workflowId": "main",
+          "nodeId": "send",
+          "nodeRunId": "2804902d-37a7-4b85-ab45-aea8df1a6be5",
+          "workflowRunId": "64fef648-4ecc-481a-8c55-8ba99a9ad16e",
+          "iterationPath": [],
+          "slot": "tcp"
+        },
+        "selectors": {},
+        "result": {
+          "schemaVersion": "1.1",
+          "deviceId": "device-0266f3f79c304c1c97667bc503f6d97c",
+          "type": "tcpSendReceipt",
+          "requestId": "54767dddd6df4d99b35e1fd7fbe88504",
+          "jobId": "cca045a5-302f-4815-9f52-817ad9974a33",
+          "channelId": "a",
+          "serviceGeneration": 1,
+          "connectionGeneration": 1,
+          "outcome": "SENT_TO_TRANSPORT",
+          "bytesRequested": 15,
+          "bytesSent": 15,
+          "deviceConfirmed": false,
+          "code": "",
+          "message": "本机 TCP 栈已接收全部字节；设备确认未启用"
+        },
+        "deviceGeneration": "393148cafc5f447583416767908a7262",
+        "runtimeInstanceId": "0afa1e64-5566-4558-8894-609f84b86028",
+        "projectId": "a4a39f62-1899-4a02-bd6d-002973b99f96",
+        "projectLoadGeneration": "5f0adfe1436f49d3b06a9efad2f67379",
+        "deviceId": "device-0266f3f79c304c1c97667bc503f6d97c",
+        "cursor": 6,
+        "eventType": "device.action.completed",
+        "message": "send",
+        "timestampMs": 1792591455626
+      },
+      {
+        "sequence": 4,
+        "kind": "event",
+        "channelId": "a",
+        "serviceGeneration": 1,
+        "connectionGeneration": 1,
+        "deviceGeneration": "393148cafc5f447583416767908a7262",
+        "runtimeInstanceId": "0afa1e64-5566-4558-8894-609f84b86028",
+        "projectId": "a4a39f62-1899-4a02-bd6d-002973b99f96",
+        "projectLoadGeneration": "5f0adfe1436f49d3b06a9efad2f67379",
+        "deviceId": "device-0266f3f79c304c1c97667bc503f6d97c",
+        "cursor": 7,
+        "eventType": "device.tcp.event",
+        "message": "客户端断开",
+        "timestampMs": 1792591455863
+      }
+    ],
+    "cursor": 7,
+    "more": false,
+    "dropped": 0,
+    "truncated": false
+  }
+}

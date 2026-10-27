@@ -8,6 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from emo_master.plugins.builtins._operator_modes import inputChoiceError, modeSchema
+
 import cv2
 import numpy as np
 
@@ -99,21 +101,24 @@ class GeometryPointsOperator:
          "measurements": port("shapeMeasurementCollection", "1.2", False),
          "bbox": port("bbox2d", required=False)},
         {"points": port("list<point2d>"), "pointCount": {"type": "integer", "required": True, "nullable": False}},
-        {"type": "object", "additionalProperties": False, "properties": {
+        modeSchema("vision.geometry.extract_points", {"type": "object", "additionalProperties": False, "properties": {
             "feature": {"title": "取点特征", "type": "string", "default": "circleCenter",
                 "enum": ["circleCenter", "bboxCenter", "bboxTopLeft", "minAreaRectCenter", "centroid"],
                 "xOptionLabels": {"circleCenter": "圆心", "bboxCenter": "轴对齐包围框中心", "bboxTopLeft": "轴对齐包围框左上角",
-                    "minAreaRectCenter": "最小面积旋转矩形中心", "centroid": "轮廓质心（不是 Blob 内心）"}}}})
+                    "minAreaRectCenter": "最小面积旋转矩形中心", "centroid": "轮廓质心（不是 Blob 内心）"}}}}))
 
     def validateParams(self, params):
         allowed = self.meta.paramSchema["properties"]["feature"]["enum"]
-        if set(params) - {"feature"} or params.get("feature", "circleCenter") not in allowed:
+        if set(params) - {"feature", "inputType"} or params.get("feature", "circleCenter") not in allowed:
             return {"code": "E_PARAM_INVALID", "message": "unsupported feature"}
-        return None
+        return inputChoiceError(self.meta.operatorId, params)
 
     def executeNode(self, inputs, params, runtimeContext):
         if self.validateParams(params):
             return {"status": "error", "error": self.validateParams(params)}
+        choiceError = inputChoiceError(self.meta.operatorId, params, inputs)
+        if choiceError:
+            return {"status": "error", "error": choiceError}
         names = [name for name in ("circles", "measurements", "bbox") if name in inputs]
         if len(names) != 1:
             return error("E_INPUT_SHAPE", "exactly one geometry collection or bbox is required")

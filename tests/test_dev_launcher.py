@@ -60,6 +60,20 @@ def test_child_failure_is_propagated():
     assert dev.runCommand([sys.executable, "-c", "raise SystemExit(7)"]) == 7
 
 
+def test_designer_passes_fresh_timing_origin_without_changing_parent(monkeypatch, capsys):
+    calls = []
+    monkeypatch.setenv("EMO_DESIGNER_LAUNCH_STARTED", "12")
+    monkeypatch.setattr(dev, "perf_counter", lambda: 42.5)
+    monkeypatch.setattr(dev, "runCommand", lambda command, **kwargs: calls.append((command, kwargs)) or 0)
+    assert dev.runDesigner(local=True) == 0
+    command, options = calls[0]
+    assert command == [sys.executable, "-m", "emo_master.apps.designer.main"]
+    assert options["environment"]["EMO_DESIGNER_LAUNCH_STARTED"] == "42.5"
+    assert options["environment"]["EMO_RUNTIME_DATA_DIR"] == str(ROOT / "manual_test_workspace/runtime-embedded")
+    assert os.environ["EMO_DESIGNER_LAUNCH_STARTED"] == "12"
+    assert "[designer:start] launch start" in capsys.readouterr().out
+
+
 def test_environment_check_is_real_and_does_not_construct_runtime(tmp_path, monkeypatch):
     monkeypatch.setenv("EMO_RUNTIME_DATA_DIR", str(tmp_path / "unused-data"))
     assert dev.runDesigner(check=True) == 0

@@ -1,0 +1,24 @@
+{
+  "operatorId": "vision.io.file_list",
+  "displayName": "文件列表",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.file_list.operator:FileListOperator",
+  "category": "预处理",
+  "iconKey": "source",
+  "summary": "按文件名自然顺序列出 Runtime 文件夹中的文件路径，连接 ForEach 逐文件处理。",
+  "inputPorts": {},
+  "outputPorts": {"paths": "list<string>", "count": "integer"},
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "folderPath": {"title": "文件夹", "type": "string", "default": "", "xWidget": "file", "xFileMode": "directory"},
+      "patterns": {"title": "文件类型", "type": "array", "default": ["*"], "minItems": 1,
+        "items": {"type": "string", "minLength": 1}, "xWidget": "file-patterns",
+        "description": "选择视频或图片格式；特殊文件名可使用自定义规则。"},
+      "recursive": {"title": "包含子文件夹", "type": "boolean", "default": false}
+    },
+    "required": ["folderPath"]
+  },
+  "minCoreVersion": "0.1.0",
+  "maxCoreVersion": "1.x"
+}

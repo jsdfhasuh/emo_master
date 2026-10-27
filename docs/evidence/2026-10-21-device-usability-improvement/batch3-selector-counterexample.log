@@ -1,0 +1,9 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_____________ testMissingSelectorAllowedButWrongSelectorRejected ______________
+tests\designer\test_device_usability_drafts.py:47: in testMissingSelectorAllowedButWrongSelectorRejected
+    assert validateDeviceBinding(requirement, binding, definition, declaration, allowMissingSelectors=True) == {}
+E   TypeError: validateDeviceBinding() got an unexpected keyword argument 'allowMissingSelectors'
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_usability_drafts.py::testMissingSelectorAllowedButWrongSelectorRejected
+1 failed, 4 deselected in 0.98s

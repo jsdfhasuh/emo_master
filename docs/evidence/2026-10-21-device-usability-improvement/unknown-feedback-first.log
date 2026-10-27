@@ -1,0 +1,27 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+____________ testUnknownDefinitionValidationKeepsTechnicalDetails _____________
+
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x156a2cb8570) at 0x00000156A41B0D80>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000156A41B13F0>
+
+    def testUnknownDefinitionValidationKeepsTechnicalDetails(retainedQtApplication, monkeypatch):
+        from emo_master.apps.designer.ui.device_wizard import DeviceDefinitionDialog
+        from tests.designer.test_device_identity_reuse import builtin
+        dialog = DeviceDefinitionDialog(builtin('simulated'))
+        try:
+            def invalid(*_args):
+                raise ValueError('vendor validation diagnostic retained verbatim')
+            monkeypatch.setattr(DeviceType, 'validateDefinition', invalid)
+            dialog.accept()
+            assert dialog.value is None
+>           assert dialog.error.text() == '设备配置校验未通过，请查看详情'
+E           AssertionError: assert 'vendor valid...ined verbatim' == '设备配置校验未通过，请查看详情'
+E             
+E             - 设备配置校验未通过，请查看详情
+E             + vendor validation diagnostic retained verbatim
+
+tests\designer\test_device_usability_drafts.py:144: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_usability_drafts.py::testUnknownDefinitionValidationKeepsTechnicalDetails
+1 failed in 1.06s

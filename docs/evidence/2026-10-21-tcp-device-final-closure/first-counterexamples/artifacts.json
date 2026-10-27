@@ -1,0 +1,17 @@
+[
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-c0hrdfqs\\counterexamples\\testTcpByteLogsKeepChannelAndE0\\byte-logs\\runtime-20261021-073243-45176-0001.jsonl",
+    "retained": "byte-logs\\testTcpByteLogsKeepChannelAndE0\\byte-logs\\runtime-20261021-073243-45176-0001.jsonl",
+    "sha256": "5e7772d26785b75fd887185646a1c40a8795119da0a2b1dba72055ab8c0b66ed"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-c0hrdfqs\\counterexamples\\testTcpByteLogsKeepChannelAndE1\\byte-logs\\runtime-20261021-073244-45176-0001.jsonl",
+    "retained": "byte-logs\\testTcpByteLogsKeepChannelAndE1\\byte-logs\\runtime-20261021-073244-45176-0001.jsonl",
+    "sha256": "67a9fb85efa018466a334643b58ca1ed81bc913b9a989ca729bb641e0bb87285"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-c0hrdfqs\\counterexamples\\testTcpByteLogsKeepChannelAndE2\\byte-logs\\runtime-20261021-073244-45176-0001.jsonl",
+    "retained": "byte-logs\\testTcpByteLogsKeepChannelAndE2\\byte-logs\\runtime-20261021-073244-45176-0001.jsonl",
+    "sha256": "0b239a574ac994c341e71ee24ba02af1de7d7bc0122c4d1c5f9d5b9dc3e7b118"
+  }
+]

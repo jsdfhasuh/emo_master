@@ -14,28 +14,31 @@ from emo_master.core.presentation.models import Action
 
 def navigate(editor, pageId, route):
     row = editor.store.snapshot().pageOrder.index(pageId)
-    if route == 'list':
-        editor.pageList.setCurrentRow(row)
+    bar = editor.pageTabs.tabBar()
+    if route == 'picker':
+        editor.pageTabs._showPicker()
+        picker = editor.pageTabs._picker
+        picker.search.setText(pageId)
+        QTest.keyClick(picker.search, Qt.Key_Return)
     elif route == 'keyboard':
-        editor.pageList.setFocus()
-        key = Qt.Key_Down if row > editor.pageList.currentRow() else Qt.Key_Up
-        QTest.keyClick(editor.pageList, key)
+        bar.setFocus()
+        key = Qt.Key_Right if row > bar.currentIndex() else Qt.Key_Left
+        QTest.keyClick(bar, key)
     else:
-        rect = editor.pageList.visualItemRect(editor.pageList.item(row))
-        QTest.mouseClick(editor.pageList.viewport(), Qt.LeftButton, pos=rect.center())
+        QTest.mouseClick(bar, Qt.LeftButton, pos=bar.tabRect(row).center())
     QApplication.processEvents()
 
 
 def assertCurrent(editor, pageId):
     assert editor.pageId == editor.renderer.currentPageId == pageId
-    assert editor.pageList.currentItem().data(Qt.UserRole) == pageId
+    assert editor.pageTabs.pageId(editor.pageTabs.currentIndex()) == pageId
     assert editor.renderer.stack.currentWidget() is editor.renderer.pages[pageId]
     assert editor.tools._loadedPage == pageId
     assert all(button.isChecked() == (key == pageId)
                for key, button in editor.renderer.buttons.items())
 
 
-@pytest.mark.parametrize('route', ['mouse', 'keyboard', 'list'])
+@pytest.mark.parametrize('route', ['mouse', 'keyboard', 'picker'])
 def testNavigationTargetsVisiblePageForNativeAdd(designer, route):  # noqa: F811
     coordinator = designer.pageCoordinator
     coordinator.showPages()
@@ -77,7 +80,7 @@ def testTopNavigationTargetsVisibleComponentForNativeBinding(designer, monkeypat
     assert _component(editor.store.snapshot(), second, target).bindings
 
 
-@pytest.mark.parametrize('route', ['mouse', 'keyboard', 'list'])
+@pytest.mark.parametrize('route', ['mouse', 'keyboard', 'picker'])
 def testNavigationCommitsPendingInputToOriginalPage(designer, route):  # noqa: F811
     _, editor, original = setupPage(designer)
     first = editor.pageId
@@ -100,7 +103,7 @@ def testNavigationCommitsPendingInputToOriginalPage(designer, route):  # noqa: F
     assert editor.tools.fields['title'].text() == '仅属于 A 的未应用标题'
 
 
-@pytest.mark.parametrize('route', ['mouse', 'keyboard', 'list'])
+@pytest.mark.parametrize('route', ['mouse', 'keyboard', 'picker'])
 def testInvalidInputBlocksNavigationAndRetainsOriginalTarget(designer, route):  # noqa: F811
     coordinator, editor, original = setupPage(designer, 'indicator')
     first = editor.pageId
@@ -145,7 +148,7 @@ def testPreviewNavigationDoesNotChangeEditingPage(designer, state, route):  # no
     assertCurrent(editor, first)
     assert editor.renderer.editing
     assert _component(editor.store.snapshot(), first, original).props.text == '预览前保存 A'
-    navigate(editor, second, 'list')
+    navigate(editor, second, 'picker')
     assert sendDrop(editor.renderer.pages[second].widget(), {'kind': 'text'})
     assert len(editor.store.snapshot().pages[first].components) == 1
     assert len(editor.store.snapshot().pages[second].components) == 1

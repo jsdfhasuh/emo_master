@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="17.022" timestamp="2026-10-21T11:34:40.909578+08:00" hostname="视觉电脑"><testcase classname="tests.runtime.test_project_configuration" name="testSpawnedContinuousCyclesApplyNextRevisionWithoutRestartingDriver" time="11.249"><failure message="assert ([])">tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-r2base-9472_w4_/tests/testSpawnedContinuousCyclesApp0')
+
+    def testSpawnedContinuousCyclesApplyNextRevisionWithoutRestartingDriver(tmp_path):
+        payload = simulatedProject()
+        payload["production"]["mode"] = "continuous"
+        payload["production"]["cycleIntervalMs"] = 10
+        payload["devices"]["definitions"]["camera"]["defaults"]["exposureUs"] = 100000
+        path = tmp_path / "project.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        service = RuntimeService(dbPath=tmp_path / "runtime.db", workspaceRoot=tmp_path / "jobs")
+        try:
+            reply = service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None)
+            assert reply.ok, reply.message
+            # Exercise the real continuous spawn path, not deployment resource preparation.
+            service.productionMode = True
+            driver = service.deviceManager.drivers["camera"]
+            execute = driver.execute
+            parameters = []
+            def record(action, params, cancelled, deadline):
+                parameters.append(params["exposureUs"])
+                return execute(action, params, cancelled, deadline)
+            driver.execute = record
+            started = service.StartJob(pb.StartJobRequest(project_id=service.loadedProjectId, workflow_id="main"), None)
+            assert started.ok, started.message
+            deadline = time.monotonic() + 10
+            while not parameters and time.monotonic() &lt; deadline:
+                time.sleep(.01)
+&gt;           assert parameters and parameters[0] == 100000
+E           assert ([])
+
+tests\runtime\test_project_configuration.py:241: AssertionError</failure></testcase><testcase classname="tests.runtime.test_project_configuration" name="testRemoteWriteAndLegacyMutationFence" time="0.634"><failure message="AssertionError: code: &quot;E_DEVICE_MANAGEMENT_REQUIRED&quot;&#10;  message: &quot;请使用统一设备控制；配置变更从 Runtime 菜单写入&quot;&#10;  &#10;assert (not False and 'E_DEVICE_MANAGEMENT_REQUIRED' == 'E_CONFIG_UNIFIED_WRITE'&#10; +  where False = code: &quot;E_DEVICE_MANAGEMENT_REQUIRED&quot;\nmessage: &quot;请使用统一设备控制；配置变更从 Runtime 菜单写入&quot;\n.ok&#10;  &#10;  - E_CONFIG_UNIFIED_WRITE&#10;  + E_DEVICE_MANAGEMENT_REQUIRED)">tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-r2base-9472_w4_/tests/testRemoteWriteAndLegacyMutati0')
+
+    def testRemoteWriteAndLegacyMutationFence(tmp_path):
+        path = tmp_path / "project.json"
+        path.write_text(json.dumps(simulatedProject()), encoding="utf-8")
+        service = RuntimeService(dbPath=tmp_path / "runtime.db", workspaceRoot=tmp_path / "jobs")
+        server, port, _ = createRuntimeServer(port=0, runtimeService=service)
+        server.start()
+        channel = grpc.insecure_channel(f"127.0.0.1:{port}")
+        try:
+            grpc.channel_ready_future(channel).result(timeout=5)
+            stub = runtime_pb2_grpc.RuntimeServiceStub(channel)
+            assert stub.LoadProject(pb.LoadProjectRequest(project_path=str(path)), timeout=5).ok
+            client = RuntimeClient(stub)
+            snapshot = client.getOnlineProjectSnapshot()
+            local = deepcopy(snapshot["payload"])
+            local["devices"]["definitions"]["camera"]["defaults"]["gain"] = 4
+            client.writeProjectConfiguration(snapshot, local, ["/devices/definitions/camera/defaults/gain"], "remote-write")
+            assert finish(service.projectConfiguration, "remote-write")["state"] == "COMMITTED"
+            assert client.getProjectWriteStatus("remote-write")["documentRevision"] == 2
+            state = service.communicationManager.snapshot()
+            before = service.loadedDocument.model_dump(mode="json")
+            for action in ("SYNC", "UNLOAD"):
+                rejected = stub.ControlCommunication(pb.CommunicationRequest(protocol_version="1.1",
+                    runtime_instance_id=service.runtimeInstanceId, project_id=service.loadedProjectId,
+                    project_path=str(path), project_load_generation=state["projectLoadGeneration"], request_id="old-" + action,
+                    action=action, expected_config_revision=state["desiredRevision"], config_json="{}"), timeout=5)
+&gt;               assert not rejected.ok and rejected.code == "E_CONFIG_UNIFIED_WRITE", rejected
+E               AssertionError: code: "E_DEVICE_MANAGEMENT_REQUIRED"
+E                 message: "请使用统一设备控制；配置变更从 Runtime 菜单写入"
+E                 
+E               assert (not False and 'E_DEVICE_MANAGEMENT_REQUIRED' == 'E_CONFIG_UNIFIED_WRITE'
+E                +  where False = code: "E_DEVICE_MANAGEMENT_REQUIRED"\nmessage: "请使用统一设备控制；配置变更从 Runtime 菜单写入"\n.ok
+E                 
+E                 - E_CONFIG_UNIFIED_WRITE
+E                 + E_DEVICE_MANAGEMENT_REQUIRED)
+
+tests\runtime\test_project_configuration.py:369: AssertionError</failure></testcase><testcase classname="tests.designer.test_runtime_validation_feedback" name="testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[embedded]" time="1.962"><failure message="assert (1 == 1 and 'main/load/imagePath' in 'E_CONFIG_INVALID\nparams.imagePath: input file not found: C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-r2base-9472...8e0c28cb&quot;,\n      &quot;workflowId&quot;: &quot;main&quot;,\n      &quot;nodeId&quot;: &quot;load&quot;,\n      &quot;fieldPath&quot;: &quot;params.imagePath&quot;\n    }\n  ]\n}')&#10; +  where 1 = len([{'title': '工程校验未通过', 'text': '工程校验未通过，尚未写入 Runtime；本地文件未改变。\nparams.imagePath: input file not found: C:\\Users\\jsdfh...n      &quot;nodeId&quot;: &quot;load&quot;,\n      &quot;fieldPath&quot;: &quot;params.imagePath&quot;\n    }\n  ]\n}', 'buttons': ['关闭', 'Show Details...']}])">ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000012F36E925C0&gt;
+initialRuntime = (&lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x0000012F36E92AA0&gt;, &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000012F36E9D210&gt;)
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-r2base-9472_w4_/tests/testUpgradedDraftResourceFailu0')
+messages = [{'title': '工程校验未通过', 'text': '工程校验未通过，尚未写入 Runtime；本地文件未改变。\nparams.imagePath: input file not found: C:\\Users\\jsdfh...n      "nodeId": "load",\n      "fieldPath": "params.imagePath"\n    }\n  ]\n}', 'buttons': ['关闭', 'Show Details...']}]
+
+    def testUpgradedDraftResourceFailureCanBeFixedAndRevalidated(ownedDesignerWindow, initialRuntime, tmp_path, messages):
+        service, client = initialRuntime
+        window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+        disk = path.read_bytes()
+        try:
+            window.flowModel.nodes['load'].params['imagePath'] = 'missing.png'
+            window.pageCoordinator.sync()
+            dialog.poll()
+            dialog.upgradeButton.click()
+            waitUntil(lambda: dialog.pending is None)
+            assert window.pageCoordinator.session.document().schemaVersion == '2.6'
+&gt;           assert len(messages) == 1 and 'main/load/imagePath' in messages[0]['detail']
+E           assert (1 == 1 and 'main/load/imagePath' in 'E_CONFIG_INVALID\nparams.imagePath: input file not found: C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-r2base-9472...8e0c28cb",\n      "workflowId": "main",\n      "nodeId": "load",\n      "fieldPath": "params.imagePath"\n    }\n  ]\n}')
+E            +  where 1 = len([{'title': '工程校验未通过', 'text': '工程校验未通过，尚未写入 Runtime；本地文件未改变。\nparams.imagePath: input file not found: C:\\Users\\jsdfh...n      "nodeId": "load",\n      "fieldPath": "params.imagePath"\n    }\n  ]\n}', 'buttons': ['关闭', 'Show Details...']}])
+
+tests\designer\test_runtime_validation_feedback.py:620: AssertionError</failure></testcase><testcase classname="tests.designer.test_runtime_validation_feedback" name="testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[loopback]" time="0.924"><failure message="assert (1 == 1 and 'main/load/imagePath' in 'E_CONFIG_INVALID\nparams.imagePath: input file not found: C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-r2base-9472...868188d2&quot;,\n      &quot;workflowId&quot;: &quot;main&quot;,\n      &quot;nodeId&quot;: &quot;load&quot;,\n      &quot;fieldPath&quot;: &quot;params.imagePath&quot;\n    }\n  ]\n}')&#10; +  where 1 = len([{'title': '工程校验未通过', 'text': '工程校验未通过，尚未写入 Runtime；本地文件未改变。\nparams.imagePath: input file not found: C:\\Users\\jsdfh...n      &quot;nodeId&quot;: &quot;load&quot;,\n      &quot;fieldPath&quot;: &quot;params.imagePath&quot;\n    }\n  ]\n}', 'buttons': ['关闭', 'Show Details...']}])">ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000012F0DDF83D0&gt;
+initialRuntime = (&lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x0000012F39636560&gt;, &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000012F37261D80&gt;)
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-r2base-9472_w4_/tests/testUpgradedDraftResourceFailu1')
+messages = [{'title': '工程校验未通过', 'text': '工程校验未通过，尚未写入 Runtime；本地文件未改变。\nparams.imagePath: input file not found: C:\\Users\\jsdfh...n      "nodeId": "load",\n      "fieldPath": "params.imagePath"\n    }\n  ]\n}', 'buttons': ['关闭', 'Show Details...']}]
+
+    def testUpgradedDraftResourceFailureCanBeFixedAndRevalidated(ownedDesignerWindow, initialRuntime, tmp_path, messages):
+        service, client = initialRuntime
+        window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+        disk = path.read_bytes()
+        try:
+            window.flowModel.nodes['load'].params['imagePath'] = 'missing.png'
+            window.pageCoordinator.sync()
+            dialog.poll()
+            dialog.upgradeButton.click()
+            waitUntil(lambda: dialog.pending is None)
+            assert window.pageCoordinator.session.document().schemaVersion == '2.6'
+&gt;           assert len(messages) == 1 and 'main/load/imagePath' in messages[0]['detail']
+E           assert (1 == 1 and 'main/load/imagePath' in 'E_CONFIG_INVALID\nparams.imagePath: input file not found: C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-r2base-9472...868188d2",\n      "workflowId": "main",\n      "nodeId": "load",\n      "fieldPath": "params.imagePath"\n    }\n  ]\n}')
+E            +  where 1 = len([{'title': '工程校验未通过', 'text': '工程校验未通过，尚未写入 Runtime；本地文件未改变。\nparams.imagePath: input file not found: C:\\Users\\jsdfh...n      "nodeId": "load",\n      "fieldPath": "params.imagePath"\n    }\n  ]\n}', 'buttons': ['关闭', 'Show Details...']}])
+
+tests\designer\test_runtime_validation_feedback.py:620: AssertionError</failure></testcase></testsuite></testsuites>

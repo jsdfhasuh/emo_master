@@ -27,6 +27,7 @@ from emo_master.plugins.builtins._classic_vision import (
     requireImage,
 )
 from emo_master.plugins.builtins._image_frame import frameForInput, frameMask
+from emo_master.plugins.builtins._operator_modes import inputChoiceError, modeSchema
 
 
 @dataclass(frozen=True)
@@ -219,7 +220,7 @@ class ContourExtractionOperator:
 
 
 class ShapeMeasurementOperator:
-    _PARAM_SCHEMA = {"type": "object", "properties": {}}
+    _PARAM_SCHEMA = modeSchema("vision.analysis.shape_measurement", {"type": "object", "properties": {}})
     meta = OperatorMeta(
         operatorId="vision.analysis.shape_measurement",
         displayName="Shape Measurement",
@@ -250,8 +251,7 @@ class ShapeMeasurementOperator:
     )
 
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
-        _ = params
-        return None
+        return inputChoiceError(self.meta.operatorId, params)
 
     def executeNode(
         self,
@@ -261,6 +261,9 @@ class ShapeMeasurementOperator:
     ) -> dict[str, Any]:
         _ = params, runtimeContext
         started = perf_counter()
+        choiceError = inputChoiceError(self.meta.operatorId, params, inputs)
+        if choiceError:
+            return {"status": "error", "error": choiceError}
         present = [name for name in ("contours", "blobs") if name in inputs]
         if not present:
             return errorResult(

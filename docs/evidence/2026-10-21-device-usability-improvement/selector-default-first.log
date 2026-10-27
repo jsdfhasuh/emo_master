@@ -1,0 +1,29 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_ testPendingSelectorsPreserveOptionalDefaultsWithoutFillingRequiredSelector __
+
+    def testPendingSelectorsPreserveOptionalDefaultsWithoutFillingRequiredSelector():
+        typeDecl = DeviceType.model_validate_json((Path(__file__).resolve().parents[2] /
+            'src/emo_master/plugins/builtins/tcp_session/device_types/server.json').read_text(encoding='utf-8'))
+        declarationValue = typeDecl.model_dump()
+        declarationValue['bindingSelectors']['backupChannelId'] = deepcopy(declarationValue['bindingSelectors']['channelId'])
+        typeDecl = DeviceType.model_validate(declarationValue)
+        deviceDef = DeviceDefinition.model_validate(tcpDefinition(typeDecl, channels=[
+            dict(channelId='a', name='本机通道', allowedIps=['127.0.0.1'])]))
+        requirement = dict(deviceTypeId=typeDecl.deviceTypeId, selectorSchema=dict(type='object', properties={
+            'channelId': dict(type='string', default='a'),
+            'backupChannelId': dict(type='string', default='a')}, required=['channelId'], additionalProperties=False))
+        binding = dict(deviceId='tcp', selectors={})
+        original = deepcopy(requirement)
+>       assert validateDeviceBinding(requirement, binding, deviceDef, typeDecl,
+                                     allowMissingSelectors=True) == {'backupChannelId': 'a'}
+E       AssertionError: assert {} == {'backupChannelId': 'a'}
+E         
+E         Right contains 1 more item:
+E         {'backupChannelId': 'a'}
+E         Use -v to get more diff
+
+tests\designer\test_device_usability_drafts.py:68: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_usability_drafts.py::testPendingSelectorsPreserveOptionalDefaultsWithoutFillingRequiredSelector
+1 failed in 0.96s

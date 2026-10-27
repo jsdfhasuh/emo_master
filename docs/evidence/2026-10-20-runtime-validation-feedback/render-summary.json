@@ -1,0 +1,47 @@
+{
+  "captures": {
+    "legacy-format.png": {
+      "width": 987,
+      "height": 552
+    },
+    "popup-1.png": {
+      "width": 394,
+      "height": 128
+    },
+    "validation-passed.png": {
+      "width": 987,
+      "height": 552
+    },
+    "main-runtime-summary.png": {
+      "width": 776,
+      "height": 552
+    },
+    "current-embedded-runtime.png": {
+      "width": 620,
+      "height": 420
+    },
+    "popup-2.png": {
+      "width": 493,
+      "height": 94
+    },
+    "candidate-failed-current-retained.png": {
+      "width": 620,
+      "height": 420
+    }
+  },
+  "popups": [
+    {
+      "title": "工程校验未通过",
+      "text": "当前工程格式为 2.1，在线配置写入需要 2.6。\n本次没有写入 Runtime，也没有保存本地工程。\n可升级当前草稿后重新校验；升级可撤销。",
+      "details": "E_CONFIG_INVALID: online writes require schema 2.6"
+    },
+    {
+      "title": "读取目标 Runtime 失败",
+      "text": "读取失败，原连接未改变：模拟候选连接拒绝；未访问网络设备",
+      "details": "UNAVAILABLE\n模拟候选连接拒绝；未访问网络设备"
+    }
+  ],
+  "temporary": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-feedback-render-4_j0m_19",
+  "nativeDesktop": "NOT_RUN",
+  "modalExec": "CONTROLLED_WIDGET_RUNNER"
+}

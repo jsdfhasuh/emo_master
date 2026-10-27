@@ -24,8 +24,22 @@ def testOpenSaveAndRuntimeSyncKeepExactFileInSharedDirectory(tmp_path, ownedDesi
     assert window.currentProjectDir == tmp_path
     assert window.loadedProjectPath == str(named)
     window.saveProjectAction()
+    # Current blank projects stay local. A first run must use the explicit
+    # publication dialog, never load either sibling through the legacy API.
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+    from PySide2.QtWidgets import QDialog
+    def noOnline(_):
+        raise RuntimeClientError('E_CONFIG_NOT_LOADED', 'not published')
+    monkeypatch.setattr(window.runtimeClient, 'getOnlineProjectSnapshot', noOnline, raising=False)
+    publications = []
+    def publish(*, allowRun):
+        publications.append((allowRun, window.projectController.currentProjectFile,
+                             window.pageCoordinator.session.payload()['project']['projectId']))
+        return QDialog.Accepted
+    monkeypatch.setattr(window.pageCoordinator, 'configureRuntime', publish)
     assert window._syncRuntimeProjectBeforeRun()
-    assert calls == [str(named), str(named)]
+    assert calls == []
+    assert publications == [(True, named, loadProject(named)['project']['projectId'])]
     assert legacy.read_bytes() == legacyBytes
     assert loadProject(named)["project"]["name"] == "Named"
     assert window.getRecentProjects()[0] == {"projectName": named.stem, "projectPath": named.as_posix()}

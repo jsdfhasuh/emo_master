@@ -1,0 +1,28 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+____________ testDefinitionsRenameUndoDeleteProtectionAndPackages _____________
+
+    def testDefinitionsRenameUndoDeleteProtectionAndPackages():
+        payload = boundProject()
+        session = ProjectEditSession(payload)
+        original = session.payload()
+        values = deepcopy(payload["globalVariables"])
+        values["v"]["name"] = "renamed"
+        with session.transaction():
+            editDefinitions(session.workflows, values)
+        assert session.dirty
+        assert session.undo()
+        assert session.payload() == original
+        with pytest.raises(ValueError, match="不能删除"):
+            editDefinitions(session.workflows, {})
+        package = buildWorkflowPackage(session.workflows, "main")
+>       assert package.schemaVersion == "1.1"
+E       AssertionError: assert '1.4' == '1.1'
+E         
+E         - 1.1
+E         + 1.4
+
+tests\designer\test_global_variables_ui.py:32: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_global_variables_ui.py::testDefinitionsRenameUndoDeleteProtectionAndPackages
+1 failed in 3.32s

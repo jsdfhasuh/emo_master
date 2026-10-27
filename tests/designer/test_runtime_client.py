@@ -335,7 +335,7 @@ def testReadOnlyDisplayLookupNeverProvisionsEmbeddedService(monkeypatch) -> None
 
     client = RuntimeClient(object())
     assert client.displayAddress() == ""
-    with pytest.raises(RuntimeClientError, match="页面服务"):
+    with pytest.raises(RuntimeClientError, match="页面结果服务未启用"):
         client.getDisplayCapabilities()
     assert client._presentationServer is None
     assert client._presentationService is None

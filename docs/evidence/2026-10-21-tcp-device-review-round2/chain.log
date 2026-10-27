@@ -1,0 +1,102 @@
+...............................................                          [100%]
+=================================== PASSES ====================================
+__ testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication ___
+---------------------------- Captured stdout setup ----------------------------
+TCP_ACCEPTANCE_ROOT=C:\Users\jsdfhasuh\AppData\Local\Temp\emo-r2-g1kfqaom\chain\tcp-device-chain0
+______ testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure ______
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-9b4aac1c-b3bb-43e3-acda-ca6b426eda6d:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-r2-g1kfqaom\source\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-r2-g1kfqaom\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 140, in runJobProcess
+    runCycle(context, inputs)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-r2-g1kfqaom\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-r2-g1kfqaom\source\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-r2-g1kfqaom\source\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-r2-g1kfqaom\source\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-r2-g1kfqaom\source\src\emo_master\apps\runtime\execution\operator_executor.py", line 222, in invoke
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: 等待连接已取消
+_________ testA6ThirdPartyServiceUsesSameFactoryJobStateAndDeviceLogs _________
+---------------------------- Captured stdout call -----------------------------
+THIRD_PARTY_ACCEPTANCE_ROOT=C:\Users\jsdfhasuh\AppData\Local\Temp\emo-r2-g1kfqaom\chain\testA6ThirdPartyServiceUsesSam0
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-57716bf7-1980-4025-a37b-eceabd907a54:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-r2-g1kfqaom\source\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-r2-g1kfqaom\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 140, in runJobProcess
+    runCycle(context, inputs)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-r2-g1kfqaom\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-r2-g1kfqaom\source\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-r2-g1kfqaom\source\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-r2-g1kfqaom\source\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-r2-g1kfqaom\source\src\emo_master\apps\runtime\execution\operator_executor.py", line 222, in invoke
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: 示例采样被拒绝；服务可继续使用
+=========================== short test summary info ===========================
+PASSED tests/runtime/test_tcp_device_integration.py::testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication
+PASSED tests/runtime/test_tcp_device_integration.py::testA2CameraProcessingThenPlcWriteInTheSameSavedProject
+PASSED tests/runtime/test_tcp_device_integration.py::testA3ServerAndBothSingleTransactionsUseRealJobEntry
+PASSED tests/runtime/test_tcp_device_integration.py::testNormal16MiBMessageCrossesTheBoundedTcpBridge
+PASSED tests/runtime/test_tcp_device_integration.py::testBindingRejectsMissingChannelAndClientIdentityIsNotExclusive
+PASSED tests/runtime/test_tcp_device_integration.py::testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure
+PASSED tests/runtime/test_tcp_device_integration.py::testUnavailableReplyPreservesUnknownReceiptAndNeverReplays
+PASSED tests/runtime/test_tcp_device_integration.py::testA5AllThreePackagesImportAndRunFromNewDirectories
+PASSED tests/runtime/test_tcp_device_integration.py::testA6ThirdPartyServiceUsesSameFactoryJobStateAndDeviceLogs
+PASSED tests/runtime/test_tcp_device_closure.py::testF02NewServerReferenceIsAddedBeforeSelectorValidation
+PASSED tests/runtime/test_tcp_device_closure.py::testF02SelectorDependencyUsesDeviceDeclaration[True]
+PASSED tests/runtime/test_tcp_device_closure.py::testF02SelectorDependencyUsesDeviceDeclaration[False]
+PASSED tests/runtime/test_tcp_device_closure.py::testF03ThirdPartyTcpGetsBridgeInSpawnedJob[False]
+PASSED tests/runtime/test_tcp_device_closure.py::testF03ThirdPartyTcpGetsBridgeInSpawnedJob[True]
+PASSED tests/runtime/test_tcp_device_closure.py::testF02NewServerAndBoundNodeSelectedPublicationRuns
+PASSED tests/runtime/test_tcp_device_closure.py::testF04StopSingleTransactionAbortsAndReleases[client_once]
+PASSED tests/runtime/test_tcp_device_closure.py::testF04StopSingleTransactionAbortsAndReleases[receive_once]
+PASSED tests/runtime/test_tcp_device_closure.py::testF05ReceiveTwiceAndListenerRemainsExclusive
+PASSED tests/runtime/test_device_contract_closure.py::testF06BusinessReleaseAndFrameworkFrameReleaseHaveDifferentRoutes
+PASSED tests/runtime/test_device_contract_closure.py::testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error0]
+PASSED tests/runtime/test_device_contract_closure.py::testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error1]
+PASSED tests/runtime/test_device_contract_closure.py::testF07BusinessRejectionLeavesServiceUsable
+PASSED tests/runtime/test_device_contract_closure.py::testF08OrdinaryChannelsUseGenericCreateEditAndSave
+PASSED tests/runtime/test_device_feedback_closure.py::testF09ProjectionPreservesFrozenIdentityAndOriginalEvent[False]
+PASSED tests/runtime/test_device_feedback_closure.py::testF09ProjectionPreservesFrozenIdentityAndOriginalEvent[True]
+PASSED tests/runtime/test_device_feedback_closure.py::testF09LifecycleLoggerKeepsCreationIdentityWhileExecutionUsesNewSnapshot
+PASSED tests/runtime/test_device_feedback_closure.py::testF10ConcurrentServiceOwnersAppearInAuthoritativeState
+PASSED tests/runtime/test_device_feedback_closure.py::testF11SelectorIssueHasWorkflowNodeSlotAndSelector
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DefinitionIssueHasDeviceAndExactFieldWithoutIO
+PASSED tests/runtime/test_device_feedback_closure.py::testF11InitialRpcAndUiReceiveStructuredDeviceLocation
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DeviceParameterSourcesKeepExactPositions[override]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DeviceParameterSourcesKeepExactPositions[dynamic]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DeviceParameterSourcesKeepExactPositions[address]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DevicePackageShowsTypeAndRequiredVersion
+PASSED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[operator_missing]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[operator_version]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[device_missing]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[device_version]
+PASSED tests/runtime/test_device_feedback_closure.py::testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[embedded]
+PASSED tests/runtime/test_device_feedback_closure.py::testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[grpc]
+PASSED tests/runtime/test_device_feedback_closure.py::testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[designer]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpShortcutAppliesAfterMetadataAndDoesNotChooseFirstServer
+PASSED tests/designer/test_tcp_closure_ui.py::testDraftAndConnectedServerSummaryUseSameSnapshot
+PASSED tests/designer/test_tcp_closure_ui.py::testDeviceDetailShowsAllActiveOwners[owners0]
+PASSED tests/designer/test_tcp_closure_ui.py::testDeviceDetailShowsAllActiveOwners[owners1]
+PASSED tests/designer/test_tcp_closure_ui.py::testDeviceDetailShowsAllActiveOwners[owners2]
+PASSED tests/designer/test_tcp_closure_ui.py::testSelectiveChannelRemovalLocatesOldBindingAndUiCanPublishAfterSelection
+47 passed in 74.42s (0:01:14)

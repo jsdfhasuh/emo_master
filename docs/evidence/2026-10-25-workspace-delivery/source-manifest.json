@@ -1,0 +1,426 @@
+{
+  "codeHead": "3ebc90954d6514b4e5681eaf7b57812a63d23461",
+  "files": [
+    {
+      "path": "src/emo_master/apps/designer/controllers/layout_controller.py",
+      "size": 7352,
+      "sha256": "ceaa1c7be2d300fccda282ca3d06a15d03320a6cb66ec553876db85e8b6c3024"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/chrome.py",
+      "size": 14151,
+      "sha256": "acb30b64013b1f7ced118ed58c2997e8098cfb3f94425cd05e99d137cf450c81"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/navigation.py",
+      "size": 935,
+      "sha256": "63d558b5e4f2ffcf4dc28c2ea3812f0df7c7d411c5e45caa9c18282da583e66d"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/tools.py",
+      "size": 47237,
+      "sha256": "23cd135c91fe3c4c78e21b1bbd0344554f5351876a7c039e209bf3718b633ad5"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/workspace.py",
+      "size": 14670,
+      "sha256": "2d9e7d6280253f9974d364fb2413396a093953354e437f2741229fd223f21629"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/_lucide_data.py",
+      "size": 14457,
+      "sha256": "2149579e929da015f0ec42ce53ccbc5a24686e337c71925c83d652c9e5013ac3"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/canvas_overlay.py",
+      "size": 10387,
+      "sha256": "39c1c87237aaeb16f085246712b6afa46661e98db11b3be504c9de7adbe7ebf4"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/designer_actions.py",
+      "size": 15967,
+      "sha256": "7501de872928ffe1f0c17876d39cfbf52bbd2c278d1edd5a5688ab461ca627ea"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/floating_run_panel.py",
+      "size": 3167,
+      "sha256": "23934b3697f086d6ed7e1aa49015fb40a0ea7d03cc32eb6088664b860d323f4b"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/floating_toolbox.py",
+      "size": 6437,
+      "sha256": "db5ce2e9af32fa3c6f083c1581069c948d38dfb216b014e9edf0a3c098b11257"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/main_window.py",
+      "size": 242818,
+      "sha256": "3c94394fdeb56ac1c1a582d875e7b269111a8706c613374dc89ef6a69e41763e"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/node_context_menu.py",
+      "size": 7107,
+      "sha256": "5691337cdfed996e8b3fc657f140dfb2151ab6de58d5b48e5492bdbd023b42e5"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/node_result_coordinator.py",
+      "size": 14513,
+      "sha256": "6d8b7b3b30dd5d3b98fe4f4ad929ef11efc3f468eac92883dc5610a4d79a7278"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/workflow_navigation.py",
+      "size": 18677,
+      "sha256": "e19c2dad60cb4a9637c707cef00e0d44bf2414f95edfce5d5beb280d883bedee"
+    },
+    {
+      "path": "src/emo_master/apps/operator_runtime/controller.py",
+      "size": 24077,
+      "sha256": "cf37f3c5bfd52b0f74998ff081a93945132eb343645761ab44762355e33d17b4"
+    },
+    {
+      "path": "src/emo_master/apps/operator_runtime/main.py",
+      "size": 29170,
+      "sha256": "b450dac84c06a06dc4b549515b596e689824e277551af1569143d961274de150"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/tcp.py",
+      "size": 12878,
+      "sha256": "0254732adeb1ba188d9847cc299453a831ad81e2603d18d580a2722a9709e2ac"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/execution/operator_executor.py",
+      "size": 24032,
+      "sha256": "7e543b6436e5a814f251a485e6b7518293212acd664b1541b21ea93ef84489bf"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/jobs/worker_main.py",
+      "size": 18019,
+      "sha256": "b66fb306c63dad34e119819e512cb7460877d0b5111d3548291c8829fe655071"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/operator_debug/contracts.py",
+      "size": 14058,
+      "sha256": "ce615ae5209834939bd5a5cf0821aee5c8ac8674045704887c0c324194fa8fa0"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/operator_debug/resources.py",
+      "size": 6887,
+      "sha256": "73c12fc4e9bb439875ce6a0d97a512d6868d881ed10ff9e705992b641702b9c9"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/coordinator.py",
+      "size": 22025,
+      "sha256": "d8332ddc6ce766f242fb385f54a8b1e62520b9e222c041b430684e32ea821fd5"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/rpc.py",
+      "size": 37870,
+      "sha256": "d2ec10e013b8ae810565eab37cc0aadd6df3457062b7b54c722e5cddeeba2354"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/transition.py",
+      "size": 8702,
+      "sha256": "e6a089e1993f8d6feca447f6546817becd9c1810a143beb0b9ad8f63ea24bfdf"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/workflow/runner.py",
+      "size": 24130,
+      "sha256": "183750c08c15f68f5558da426d50a8a634754bb9f43bc3cfd096fc0361f98b9a"
+    },
+    {
+      "path": "src/emo_master/core/project/runtime_package.py",
+      "size": 20460,
+      "sha256": "20ae94316f68e95462b60f83f387e78611f59dca0843ec0ca35ae63191eaed00"
+    },
+    {
+      "path": "src/emo_master/core/workflow/compiler.py",
+      "size": 29355,
+      "sha256": "3fd62a2f905ff50c2279087a67a578ed82e7b0d28afe303e743f07ca46f730f5"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_communication_operators.py",
+      "size": 38809,
+      "sha256": "8f0bff9c7da8168f7ae24afc5e2901f5d09daade266adcb5fad869a6a53bbcc9"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_operator_modes.py",
+      "size": 8448,
+      "sha256": "0082ca135e8940e9c86b77690a38d561368769bae134a50ad37f3864ea70a9e6"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/collection_select/operator.py",
+      "size": 7534,
+      "sha256": "6df06dcf2d0889e54fbf50120d25766365ca480f90943e7d224f35ee2f7d8bcd"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/detection_archive/operator.py",
+      "size": 7716,
+      "sha256": "cbe75b02f85c87152969e61c1d9990bf2b104d0ca273341020dd0141f454fbb6"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/__init__.py",
+      "size": 79,
+      "sha256": "60ba96056ea42a6c0929598278b46d5c3681eb030404f19eaef5b8806ac7bd72"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/assets/icon.svg",
+      "size": 425,
+      "sha256": "bdbecc9fc3f0cc0d8d33bc970dd396923cc453c0c18978b87f5afe97497559d4"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/bundle.py",
+      "size": 16934,
+      "sha256": "9fda28d96c327d84742717bce0faa99e444b56a2a537fade022a6e885ea253c5"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/manifest.json",
+      "size": 3206,
+      "sha256": "a23b131e144e2b3e3bee595c2dade0a745fad132a04da16d69b44095e80467b8"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/numeric.py",
+      "size": 3042,
+      "sha256": "2728f414a811fb3273fa7150bbb3d076fbd28ad6cae7589dd2896dcc4375852b"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/onnx_backend.py",
+      "size": 3533,
+      "sha256": "f33200374249aea58c8307547a5e7f562b7fc159c5856117e7bf489fa628e678"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/operator.py",
+      "size": 11435,
+      "sha256": "795b7cdeea2c6334b2931dde410ee89f35e40aaac9f16a8e5603eca79e654166"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/patchcore_inference/visualization.py",
+      "size": 982,
+      "sha256": "d0f9840cf0952d8a29d7994fb7008f9869139d314e392d700a1a941421716763"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/yolo_inference/manifest.json",
+      "size": 5683,
+      "sha256": "07a7e85acc0a66baac4cb9a200fae4b5c443e7cc880bdb498844b16631eb1bfe"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/yolo_inference/operator.py",
+      "size": 20554,
+      "sha256": "5e0b80d3a4227eae571bff21c64d76e7fb8bc01cdd0eeb964361e5c4e720658a"
+    },
+    {
+      "path": "tests/conftest.py",
+      "size": 2464,
+      "sha256": "24ef3723eacba744e850d67be99a6b643b7788d2a7cf2d493588da2982bed956"
+    },
+    {
+      "path": "tests/core/plugin/test_builtin_parameter_titles.py",
+      "size": 1086,
+      "sha256": "4a03fac904e4fd83362b82fec8723c42f4b459c5c39f7358bc2a1a3be7b4112c"
+    },
+    {
+      "path": "tests/core/plugin/test_operator_development_examples.py",
+      "size": 6337,
+      "sha256": "76b9950842d49cf96e07bc2272425a88215c057b2a343298d5f7496e4771c095"
+    },
+    {
+      "path": "tests/designer/conftest.py",
+      "size": 2350,
+      "sha256": "b60776271a29d015353470d084d114f89730dc92f909400607328a7819a3726b"
+    },
+    {
+      "path": "tests/designer/test_designer_shortcuts.py",
+      "size": 18499,
+      "sha256": "f771122aac025031c1ed00551e8bd530dfb9d92c127b49fe467201c6cc8dfc41"
+    },
+    {
+      "path": "tests/designer/test_floating_run_panel.py",
+      "size": 8662,
+      "sha256": "4cd3bcb33c72d74dd1a15d5d4341e80822fdee5d23ca03b79aa0f4b778c359a3"
+    },
+    {
+      "path": "tests/designer/test_floating_toolbox.py",
+      "size": 14349,
+      "sha256": "918bd6a43f4c8e6c54e281aecdad984eda2d907ff8f609311f9d265de6aae140"
+    },
+    {
+      "path": "tests/designer/test_main_window_layout.py",
+      "size": 8697,
+      "sha256": "3cfb79b4d5f0ed8f2cfda27f6d0b8d741948984017bbf89cbc0082d39686442b"
+    },
+    {
+      "path": "tests/designer/test_node_image_viewer.py",
+      "size": 19650,
+      "sha256": "6396f20215e543467fbe3a6b6b6d65102913401f1b7b0f85f49348cc4f5a651f"
+    },
+    {
+      "path": "tests/designer/test_node_result_panel.py",
+      "size": 12379,
+      "sha256": "b7fc8ac32fae700b796a3240db04c80610c80fa5696910bc852c91e597090371"
+    },
+    {
+      "path": "tests/designer/test_patchcore_inference.py",
+      "size": 11855,
+      "sha256": "32aa219ae9729d065501dd131ebb54749957ca484ab1a82644e651c3aea12d62"
+    },
+    {
+      "path": "tests/designer/test_visual_layout.py",
+      "size": 16368,
+      "sha256": "e7d4614b24efa09ee91dac25036e0bb5802a4c2a3e7573eaa2a7ba3b5a6f1021"
+    },
+    {
+      "path": "tests/designer/test_yolo_parameter_presentation.py",
+      "size": 9192,
+      "sha256": "19f4e98d856ee0e1ce80a09b071bb6523b2c8d735457fe00e6271e2cb522512f"
+    },
+    {
+      "path": "tests/plugins/patchcore_fixture.py",
+      "size": 10140,
+      "sha256": "f9eb3dfba4a7099c4de08a6f81fb49ad415da2d3404bc58eeb4a65c47038c15b"
+    },
+    {
+      "path": "tests/plugins/test_collection_select_dynamic_index.py",
+      "size": 4016,
+      "sha256": "5098be888fa9467257eae15848959dea8ec80da97c7c7218e173af262666c839"
+    },
+    {
+      "path": "tests/plugins/test_communication_operators.py",
+      "size": 33254,
+      "sha256": "1aeb9bea277e6f205459ed5fa346334166164312d5790c75b867e3639a690e32"
+    },
+    {
+      "path": "tests/plugins/test_detection_archive_operator.py",
+      "size": 7753,
+      "sha256": "5da3227380a1f1719bf92b188fd1bbea71b59c88ef571377574dc9bd006fa3cd"
+    },
+    {
+      "path": "tests/plugins/test_operator_modes.py",
+      "size": 6456,
+      "sha256": "12961c7e60bcabd0bd37a048a16a70dae4ccd45a3f96331ee793ca0445a75f6c"
+    },
+    {
+      "path": "tests/plugins/test_patchcore_highlight.py",
+      "size": 8748,
+      "sha256": "c1972481f9d3b4c11c43c31ef567ae3607200b9c9fa1a62f02a09ab4fd45be85"
+    },
+    {
+      "path": "tests/plugins/test_patchcore_inference_operator.py",
+      "size": 17127,
+      "sha256": "b96697caa0e7f2c6f1e8c1b8b209084e93a70b7225d31be007abcb7da258785e"
+    },
+    {
+      "path": "tests/plugins/test_patchcore_numeric.py",
+      "size": 2555,
+      "sha256": "5e8e96069dd118fe819895fceeb77fce2c4ae38bb071037d4b1319c3a18ef4d8"
+    },
+    {
+      "path": "tests/plugins/test_yolo_inference_operator.py",
+      "size": 17751,
+      "sha256": "bd30d403d41d0c7dd9f719536fb86f3ab4e6c9423d3d614687ec27381416eb28"
+    },
+    {
+      "path": "tests/runtime/current_production_fixture.py",
+      "size": 3186,
+      "sha256": "0ad94cd95c4713900e38fc0be73da1ebe08bb0c01c066081a7e991bceaf17393"
+    },
+    {
+      "path": "tests/runtime/patchcore_fixture.py",
+      "size": 3067,
+      "sha256": "3bf3ade33082895247e99d33a49c2f05ea072edf27a8078f25b494dc76353143"
+    },
+    {
+      "path": "tests/runtime/test_operator_error_propagation.py",
+      "size": 7553,
+      "sha256": "bee55c7983ce4f6f345b9be15a4f18bf07b18a718d22e66eccbacf6ac9c5b54e"
+    },
+    {
+      "path": "tests/runtime/test_operator_executor_shared.py",
+      "size": 23225,
+      "sha256": "a9f8b5cd1add5b5eb5802807faf72bc856c1226436bccdc28dc0e884ce6e1a59"
+    },
+    {
+      "path": "tests/runtime/test_operator_registration.py",
+      "size": 5965,
+      "sha256": "9afb93d89fa8db72ef5915e986738568fd58adcce341f9cdc5ab13cc455376c2"
+    },
+    {
+      "path": "tests/runtime/test_optional_output_execution.py",
+      "size": 5742,
+      "sha256": "e58c299a795c5e7c9f4231f071061c73d1528657614eed8ea74de545582f9b2e"
+    },
+    {
+      "path": "tests/runtime/test_patchcore_debug.py",
+      "size": 4394,
+      "sha256": "195586c5bd906c608e17ff5cd97012ff82d54965ceaa5a89bcc7a21d57f9b7fb"
+    },
+    {
+      "path": "tests/runtime/test_patchcore_workflow.py",
+      "size": 8911,
+      "sha256": "559f92f7b0b81d3c26fc5dfb8825d56a05aef05019bdd4a1a84f399369485432"
+    },
+    {
+      "path": "tests/runtime/test_production_project_configuration.py",
+      "size": 10799,
+      "sha256": "46a1a8ba9f492f7764ebf1d234f08fc4ae749f1a05d87a131f461c356bd4bfdd"
+    },
+    {
+      "path": "tests/runtime/test_runtime_workflow_architecture.py",
+      "size": 20639,
+      "sha256": "3d6faf8fcb312f1e18a127805c61153707a813c51e4a6f6c1ba181a8a7f123b2"
+    },
+    {
+      "path": "tests/runtime/test_worker_capture_diagnostics.py",
+      "size": 2912,
+      "sha256": "f5e08850dca7ab52b3ca5981dad9f28c5de0b7645ccae48758e1940548ada176"
+    },
+    {
+      "path": "tests/runtime/test_yolo_inspection_outputs.py",
+      "size": 11602,
+      "sha256": "b965bb12be1855ba3afefc36dd6dff3037c56dbc798b04cc690d41cd22181031"
+    },
+    {
+      "path": "tests/ui/operator_view/test_production_configuration_window.py",
+      "size": 7188,
+      "sha256": "19053d5f8039234fcc6bfb91b4a1cf9645ea4ad8996f0e8bb893290f27e9d98a"
+    },
+    {
+      "path": "tests/ui/page_designer/conftest.py",
+      "size": 1200,
+      "sha256": "6af1e9fb847c3f62168d6d82c9c85c3b9052847b4efcf9f9c2c3926ed260b2f8"
+    },
+    {
+      "path": "tests/ui/page_designer/test_delivery_path.py",
+      "size": 8815,
+      "sha256": "61173b3d7309d396ee0b5a1d22c0fc581adb02a56bf039545b913e406c8a8488"
+    },
+    {
+      "path": "tests/ui/page_designer/test_floating_workspace.py",
+      "size": 8268,
+      "sha256": "04db1182e3be0af3ffdce7c62df1534371fc1777e4fba0253f4beb0bc8bd8df4"
+    },
+    {
+      "path": "tests/ui/page_designer/test_page_navigation.py",
+      "size": 11319,
+      "sha256": "466aea3a2de9ddcb8f9870ba35ba51c171fc77de5051dee4a05c467f80a8e3ed"
+    },
+    {
+      "path": "tests/ui/page_designer/test_parallel_runtime.py",
+      "size": 12950,
+      "sha256": "ce4e766f80a880a4de9e8fd02583b298602521aadf8bb68a96e462ada4f9f018"
+    },
+    {
+      "path": "tests/ui/page_designer/test_user_path.py",
+      "size": 13223,
+      "sha256": "c7bed8c4b113b00ab7d0d386171e2f7edd1ccb588b188c957eaeb69b3956bae4"
+    },
+    {
+      "path": "tests/ui/page_designer/test_visual_editor.py",
+      "size": 6755,
+      "sha256": "955de7993bf2e150dc4171f4077eb76a70d36185c3b2ea52a96c6087bf9706da"
+    },
+    {
+      "path": "tests/ui/page_designer/test_workspace_modes.py",
+      "size": 8898,
+      "sha256": "1f9c75e67fd32920c7291b6f70afd018b546279e4eaee809c3753445b696ab54"
+    }
+  ],
+  "note": "Includes the documentation-example test staged with the final documentation commit. SHA-256 is over working-file bytes, not normalized Git blob bytes."
+}

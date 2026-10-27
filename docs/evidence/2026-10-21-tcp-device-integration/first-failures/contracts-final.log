@@ -1,0 +1,184 @@
+........F.FFFFFFFFFF....................F....F....................F..FF. [ 45%]
+........................................................................ [ 91%]
+.........FFFF                                                            [100%]
+================================== FAILURES ===================================
+________________ testOperatorRequirementsAreOptionalAndStrict _________________
+tests\core\plugin\test_device_registry.py:86: in testOperatorRequirementsAreOptionalAndStrict
+    payload.pop("deviceBindingSince")
+E   KeyError: 'deviceBindingSince'
+_____ testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.0] ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:49: in testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings
+    upgraded = migrateProjectPayload(payload, enableDevices=True)
+src\emo_master\core\project\migration.py:70: in migrateProjectPayload
+    upgraded = migrateProjectPayload(payload, enableCommunication=True)
+src\emo_master\core\project\migration.py:79: in migrateProjectPayload
+    upgraded = migrateProjectPayload(payload, enableGlobalVariables=True)
+src\emo_master\core\project\migration.py:85: in migrateProjectPayload
+    upgraded = migrateProjectPayload(payload, enableProduction=True)
+src\emo_master\core\project\migration.py:91: in migrateProjectPayload
+    upgraded = migrateProjectPayload(payload, enablePresentation=True)
+src\emo_master\core\project\migration.py:99: in migrateProjectPayload
+    upgraded = migrateProjectPayload(payload)
+src\emo_master\core\project\migration.py:123: in migrateProjectPayload
+    upgraded = ProjectDocument.model_validate(source).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, presentation/resources require explicit project 2.2 migration [type=value_error, input_value={'schemaVersion': '2.0', ....0', 'definitions': {}}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_____ testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.1] ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:49: in testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings
+    upgraded = migrateProjectPayload(payload, enableDevices=True)
+src\emo_master\core\project\migration.py:70: in migrateProjectPayload
+    upgraded = migrateProjectPayload(payload, enableCommunication=True)
+src\emo_master\core\project\migration.py:79: in migrateProjectPayload
+    upgraded = migrateProjectPayload(payload, enableGlobalVariables=True)
+src\emo_master\core\project\migration.py:85: in migrateProjectPayload
+    upgraded = migrateProjectPayload(payload, enableProduction=True)
+src\emo_master\core\project\migration.py:91: in migrateProjectPayload
+    upgraded = migrateProjectPayload(payload, enablePresentation=True)
+src\emo_master\core\project\migration.py:99: in migrateProjectPayload
+    upgraded = migrateProjectPayload(payload)
+src\emo_master\core\project\migration.py:118: in migrateProjectPayload
+    return ProjectDocument.model_validate(source).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, presentation/resources require explicit project 2.2 migration [type=value_error, input_value={'schemaVersion': '2.1', ....0', 'definitions': {}}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+_____ testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.2] ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:51: in testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings
+    assert upgraded["schemaVersion"] == "2.6"
+E   AssertionError: assert '2.7' == '2.6'
+E     
+E     - 2.6
+E     + 2.7
+_____ testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.3] ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:51: in testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings
+    assert upgraded["schemaVersion"] == "2.6"
+E   AssertionError: assert '2.7' == '2.6'
+E     
+E     - 2.6
+E     + 2.7
+_____ testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.4] ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:51: in testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings
+    assert upgraded["schemaVersion"] == "2.6"
+E   AssertionError: assert '2.7' == '2.6'
+E     
+E     - 2.6
+E     + 2.7
+_____ testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.5] ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:51: in testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings
+    assert upgraded["schemaVersion"] == "2.6"
+E   AssertionError: assert '2.7' == '2.6'
+E     
+E     - 2.6
+E     + 2.7
+_________________ testLegacySerializationDoesNotAddNewFields __________________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:64: in testLegacySerializationDoesNotAddNewFields
+    assert normalized["devices"] == {"bindings": {}}
+E   AssertionError: assert {'bindings': ...initions': {}} == {'bindings': {}}
+E     
+E     Omitting 1 identical items, use -vv to show
+E     Left contains 2 more items:
+E     {'definitions': {}, 'schemaVersion': '1.0'}
+E     Use -v to get more diff
+________________ testNewFieldsCannotHideInOldVersion[catalog] _________________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:79: in testNewFieldsCannotHideInOldVersion
+    with pytest.raises(ValueError, match="2.6"):
+E   Failed: DID NOT RAISE ValueError
+______________ testNewFieldsCannotHideInOldVersion[emptySources] ______________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:79: in testNewFieldsCannotHideInOldVersion
+    with pytest.raises(ValueError, match="2.6"):
+E   Failed: DID NOT RAISE ValueError
+________________ testNewFieldsCannotHideInOldVersion[binding] _________________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:79: in testNewFieldsCannotHideInOldVersion
+    with pytest.raises(ValueError, match="2.6"):
+E   AssertionError: Regex pattern did not match.
+E     Expected regex: '2.6'
+E     Actual message: "1 validation error for ProjectDocument\n  Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.5', ..., 'globalVariables': {}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+_____________________ testFileRoundtripAndExplicitBackup ______________________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\core\project\test_devices.py:201: in testFileRoundtripAndExplicitBackup
+    assert json.loads(path.with_suffix(path.suffix + ".bak").read_text())["schemaVersion"] == "2.1"
+E   AssertionError: assert '2.7' == '2.1'
+E     
+E     - 2.1
+E     + 2.7
+__________________ testDeviceTargetVersionAndReferenceGates ___________________
+tests\core\project\test_device_resources.py:97: in testDeviceTargetVersionAndReferenceGates
+    with pytest.raises(ValueError, match="device resource targets.*2.6"):
+E   AssertionError: Regex pattern did not match.
+E     Expected regex: 'device resource targets.*2.6'
+E     Actual message: "1 validation error for ProjectDocument\n  Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.5', ..., 'globalVariables': {}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+_______ testWorkflowPackageCannotSilentlyDropDeviceResourceDeclarations _______
+tests\core\project\test_device_resources.py:251: in testWorkflowPackageCannotSilentlyDropDeviceResourceDeclarations
+    assert portable.schemaVersion == "1.3"
+E   AssertionError: assert '1.4' == '1.3'
+E     
+E     - 1.3
+E     + 1.4
+___ testInstalledDeviceResourcesReachSpawnedJobAndRestartRechecksIntegrity ____
+tests\core\project\test_device_resources.py:357: in testInstalledDeviceResourcesReachSpawnedJobAndRestartRechecksIntegrity
+    assert not recovered.onlineRecoveryError
+E   assert not "'requestId'"
+E    +  where "'requestId'" = <emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001734043DC60>.onlineRecoveryError
+___ testProductionReopenUsesCommittedVersionAndRefusesInPlacePackageUpdate ____
+tests\core\project\test_device_resources.py:399: in testProductionReopenUsesCommittedVersionAndRefusesInPlacePackageUpdate
+    loaded = second.load(source)
+src\emo_master\apps\operator_runtime\controller.py:33: in call
+    return method(self, *args, **kwargs)
+src\emo_master\apps\operator_runtime\controller.py:109: in load
+    raise ValueError("E_CONFIG_NOT_READY: " + (self.runtime.onlineRecoveryError
+E   ValueError: E_CONFIG_NOT_READY: 'requestId'
+__________ testFormatterStrictParametersAndNoProductionSessionDebug ___________
+tests\plugins\test_managed_tcp_operators.py:21: in testFormatterStrictParametersAndNoProductionSessionDebug
+    assert error["error"]["code"] == "E_TCP_UNSUPPORTED"
+E   AssertionError: assert 'E_PARAM_INVALID' == 'E_TCP_UNSUPPORTED'
+E     
+E     - E_TCP_UNSUPPORTED
+E     + E_PARAM_INVALID
+___ testLiveCancellationWinsTransportRaceWithoutLosingReceipt[E_CANCELLED] ____
+tests\plugins\test_managed_tcp_operators.py:38: in testLiveCancellationWinsTransportRaceWithoutLosingReceipt
+    assert error.value.diagnostics == dict(tcpReceipt=receipt)
+E   AssertionError: assert {} == {'tcpReceipt'...ve not sent'}}
+E     
+E     Right contains 1 more item:
+E     {'tcpReceipt': {'message': 'cannot prove not sent',
+E                     'outcome': 'OUTCOME_UNKNOWN'}}
+E     Use -v to get more diff
+_ testLiveCancellationWinsTransportRaceWithoutLosingReceipt[E_TCP_IPC_CLOSED] _
+tests\plugins\test_managed_tcp_operators.py:38: in testLiveCancellationWinsTransportRaceWithoutLosingReceipt
+    assert error.value.diagnostics == dict(tcpReceipt=receipt)
+E   AssertionError: assert {} == {'tcpReceipt'...ve not sent'}}
+E     
+E     Right contains 1 more item:
+E     {'tcpReceipt': {'message': 'cannot prove not sent',
+E                     'outcome': 'OUTCOME_UNKNOWN'}}
+E     Use -v to get more diff
+_ testLiveCancellationWinsTransportRaceWithoutLosingReceipt[E_TCP_OUTCOME_UNKNOWN] _
+tests\plugins\test_managed_tcp_operators.py:38: in testLiveCancellationWinsTransportRaceWithoutLosingReceipt
+    assert error.value.diagnostics == dict(tcpReceipt=receipt)
+E   AssertionError: assert {} == {'tcpReceipt'...ve not sent'}}
+E     
+E     Right contains 1 more item:
+E     {'tcpReceipt': {'message': 'cannot prove not sent',
+E                     'outcome': 'OUTCOME_UNKNOWN'}}
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED tests/core/plugin/test_device_registry.py::testOperatorRequirementsAreOptionalAndStrict
+FAILED tests/core/project/test_devices.py::testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.0]
+FAILED tests/core/project/test_devices.py::testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.1]
+FAILED tests/core/project/test_devices.py::testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.2]
+FAILED tests/core/project/test_devices.py::testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.3]
+FAILED tests/core/project/test_devices.py::testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.4]
+FAILED tests/core/project/test_devices.py::testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings[2.5]
+FAILED tests/core/project/test_devices.py::testLegacySerializationDoesNotAddNewFields
+FAILED tests/core/project/test_devices.py::testNewFieldsCannotHideInOldVersion[catalog]
+FAILED tests/core/project/test_devices.py::testNewFieldsCannotHideInOldVersion[emptySources]
+FAILED tests/core/project/test_devices.py::testNewFieldsCannotHideInOldVersion[binding]
+FAILED tests/core/project/test_devices.py::testFileRoundtripAndExplicitBackup
+FAILED tests/core/project/test_device_resources.py::testDeviceTargetVersionAndReferenceGates
+FAILED tests/core/project/test_device_resources.py::testWorkflowPackageCannotSilentlyDropDeviceResourceDeclarations
+FAILED tests/core/project/test_device_resources.py::testInstalledDeviceResourcesReachSpawnedJobAndRestartRechecksIntegrity
+FAILED tests/core/project/test_device_resources.py::testProductionReopenUsesCommittedVersionAndRefusesInPlacePackageUpdate
+FAILED tests/plugins/test_managed_tcp_operators.py::testFormatterStrictParametersAndNoProductionSessionDebug
+FAILED tests/plugins/test_managed_tcp_operators.py::testLiveCancellationWinsTransportRaceWithoutLosingReceipt[E_CANCELLED]
+FAILED tests/plugins/test_managed_tcp_operators.py::testLiveCancellationWinsTransportRaceWithoutLosingReceipt[E_TCP_IPC_CLOSED]
+FAILED tests/plugins/test_managed_tcp_operators.py::testLiveCancellationWinsTransportRaceWithoutLosingReceipt[E_TCP_OUTCOME_UNKNOWN]
+20 failed, 137 passed in 39.49s

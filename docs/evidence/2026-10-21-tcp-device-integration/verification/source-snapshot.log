@@ -1,0 +1,51 @@
+SOURCE_SHA=ba779fe356e61997b1b776802aa06b363412d037
+SOURCE_TREE=a3f5ef2c24722589daf75580b88f24265aa64922
+SNAPSHOT_IMPORT=D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\__init__.py
+COMMAND: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m pytest -q -s tests/runtime/test_tcp_device_integration.py tests/designer/test_workflow_package_devices.py tests/core/plugin/test_device_registry.py tests/runtime/test_initial_project_configuration.py tests/runtime/test_device_manager.py tests/runtime/test_device_replacement.py tests/runtime/test_device_lifecycle.py --tb=short
+TCP_ACCEPTANCE_ROOT=C:\Users\jsdfhasuh\AppData\Local\Temp\pytest-of-jsdfhasuh\pytest-2672\tcp-device-chain0
+Process emo-master-job-572af62c-8a23-4695-b499-423de49afecc:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\apps\runtime\jobs\worker_main.py", line 140, in runJobProcess
+    runCycle(context, inputs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\apps\runtime\execution\operator_executor.py", line 221, in invoke
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: 等待连接已取消
+Process emo-master-job-8543afe4-c044-4642-afdf-54936cc56715:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\apps\runtime\jobs\worker_main.py", line 140, in runJobProcess
+    runCycle(context, inputs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\source-snapshot-lf\src\emo_master\apps\runtime\execution\operator_executor.py", line 221, in invoke
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: 示例采样被拒绝；服务可继续使用
+........THIRD_PARTY_ACCEPTANCE_ROOT=C:\Users\jsdfhasuh\AppData\Local\Temp\pytest-of-jsdfhasuh\pytest-2672\testA6ThirdPartyServiceUsesSam0
+..................................................................................................
+106 passed in 50.93s
+SNAPSHOT_PROTO_CHECK=PASS

@@ -5,6 +5,7 @@ from PySide2.QtWidgets import QDialogButtonBox
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
 from emo_master.apps.designer.ui.runtime_connection import RuntimeConnectionDialog, connectCandidate
 from tests.designer.test_device_workspace import windowFor, waitUntil
+from tests.designer.runtime_feedback_fixture import messages  # noqa: F401
 from tests.core.project.test_devices import declaration, definition  # noqa: F401
 
 
@@ -29,7 +30,7 @@ def testConnectionDialogProbesBeforeSwitchAndKeepsDraft(ownedDesignerWindow, tmp
     assert window.pageCoordinator.session.payload() == before
 
 
-def testFailedProbeKeepsOriginalConnection(ownedDesignerWindow, tmp_path, definition, declaration, monkeypatch):  # noqa: F811
+def testFailedProbeKeepsOriginalConnection(ownedDesignerWindow, tmp_path, definition, declaration, monkeypatch, messages):  # noqa: F811
     from emo_master.apps.designer.ui import runtime_connection
     window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
     original = window.runtimeClient
@@ -42,6 +43,7 @@ def testFailedProbeKeepsOriginalConnection(ownedDesignerWindow, tmp_path, defini
     dialog.buttons.button(QDialogButtonBox.Ok).click()
     waitUntil(lambda: dialog.pending is None)
     assert window.runtimeClient is original and '原连接未改变' in dialog.status.text()
+    assert len(messages) == 1 and '原连接未改变' in messages[0]['text']
     dialog.reject()
 
 
@@ -66,3 +68,23 @@ def testRealTransportSwitchKeepsClientReferencesAndOldEmbeddedOwner(tmp_path):
         server.stop(0).wait(5)
         remote.close()
     assert old._closing
+
+
+def testSwitchClosesReadonlyMonitorWithoutChangingDraftOrWorkspace(
+        ownedDesignerWindow, tmp_path, definition, declaration, monkeypatch):  # noqa: F811
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+    window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+    c = window.pageCoordinator
+    def unloaded(*_args):
+        raise RuntimeClientError('E_CONFIG_NOT_LOADED', 'empty isolated Runtime')
+    monkeypatch.setattr(window.runtimeClient, 'getOnlineGraphSnapshot', unloaded, raising=False)
+    switched = []
+    monkeypatch.setattr(window.runtimeClient, 'switchConnection', switched.append, raising=False)
+    before, active = c.session.payload(), c.stack.currentWidget()
+    c.chrome.monitorAction.trigger()
+    monitor = c.monitor
+    waitUntil(lambda: monitor.pending is None)
+    candidate = object()
+    c.attachRuntime(candidate)
+    assert switched == [candidate] and c.monitor is None and not monitor.timer.isActive()
+    assert c.session.payload() == before and c.stack.currentWidget() is active

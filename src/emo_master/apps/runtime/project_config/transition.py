@@ -6,7 +6,7 @@ from .store import ConfigurationError
 
 
 class DeviceTransition:
-    def __init__(self, runtime, payload, cancelled, policy):
+    def __init__(self, runtime, payload, cancelled, policy, *, sourcePath=None):
         if policy not in {"stopAffected", "drainAffected"}:
             raise ConfigurationError("E_CONFIG_POLICY", "unknown replacement policy")
         self.runtime, self.cancelled = runtime, cancelled
@@ -15,18 +15,11 @@ class DeviceTransition:
         self.communicationListening = False
         self.configuration = runtime.projectConfiguration
         self.projectChanged = payload["project"]["projectId"] != self.configuration.current["payload"]["project"]["projectId"]
-        _document, prepared = runtime._validateProjectConfiguration(payload, checkAdmission=False)
-        if runtime._supportsCycleChange(payload):
+        _document, prepared = runtime._validateProjectConfiguration(payload, checkAdmission=False, sourcePath=sourcePath)
+        if sourcePath is None and runtime._supportsCycleChange(payload):
             return
         if runtime.operatorDebugManager.ownsResources() or runtime.livePreviewManager.hasConfigurationSession():
             raise ConfigurationError("E_CONFIG_REQUIRES_STOP", "close diagnostic sessions before automatic transition")
-        self.communicationChanged = self.projectChanged or runtime.loadedDocument is None or prepared.communication != runtime.loadedDocument.communication
-        if self.communicationChanged:
-            state = runtime.communicationManager.snapshot()
-            if state.get("savePending"):
-                raise ConfigurationError("E_CONFIG_WRITER_BUSY", "communication save is pending")
-            self.communicationListening = not self.projectChanged and state["state"] == "LISTENING"
-            self.communicationControlRevision = runtime.communicationManager.controlRevision
         manager = runtime.deviceManager
         definitions, _identities, _classes = manager._validatedDefinitions(prepared)
         changed = set(manager.definitions) ^ set(definitions)
@@ -87,12 +80,12 @@ class DeviceTransition:
                 self._check(deadline)
                 runtime.jobSupervisor.finishRetirements()
                 time.sleep(.02)
-            if self.communicationChanged:
-                self._check(deadline)
-                runtime.communicationManager.stop()
             for key in self.previous:
                 self._check(deadline)
                 lifecycle, executor = manager.lifecycles[key], manager.executors[key]
+                manager.drivers[key].requestStop("configuration_replace")
+                manager.services[key].cancelOwner()
+                manager.services[key].wait(deadline=deadline)
                 operation = executor.submit("__configuration_drain__",
                     lambda _cancel, _deadline, _generation, lifecycle=lifecycle: lifecycle.disconnect(),
                     waitTimeout=max(.01, deadline - time.monotonic()), operationTimeout=5)
@@ -117,50 +110,37 @@ class DeviceTransition:
         if status["state"] != "COMMITTED":
             status["transitionMessage"] = "stopped Jobs are not restarted; disconnected devices remain disconnected"
             return
-        status["connections"] = {}
-        if getattr(self, "projectChanged", False):
-            status["transitionMessage"] = "project replaced; old connection intents and Jobs are not restarted"
-            self.configuration.store.recordTransition(status)
-            return
-        if self.communicationChanged and self.communicationListening and self.runtime.loadedDocument.communication.enabled:
-            try:
-                if self.runtime.communicationManager.controlRevision != self.communicationControlRevision:
-                    status["connections"]["communication"] = "SUPERSEDED"
-                else:
-                    self.runtime.communicationManager.start()
-                    status["connections"]["communication"] = "LISTENING"
-            except Exception as error:
-                status["connections"]["communication"] = "FAILED: " + str(error)
+        status.setdefault('connections', {})
+        if getattr(self, 'projectChanged', False):
+            status['transitionMessage'] = 'project replaced; old Jobs are not restarted'
         manager = self.runtime.deviceManager
-        for key, (connected, paused) in self.previous.items():
-            if not connected or paused or key not in manager.lifecycles or not manager.definitions[key].enabled:
-                continue
-            lifecycle, executor = manager.lifecycles[key], manager.executors[key]
-            expectedControl = lifecycle.controlRevision
-            revision = status["executionRevision"]
-            status["connections"][key] = "PENDING"
-            def reconnect(cancel, deadline, _generation, key=key, lifecycle=lifecycle,
-                          expectedControl=expectedControl, revision=revision):
-                # Check on the FIFO thread, not merely when enqueuing R11. R12
-                # supersedes an unexecuted connection intent, never an old capture.
-                current = self.configuration.current
-                if (current is None or current["executionRevision"] != revision
-                        or manager.lifecycles.get(key) is not lifecycle
-                        or lifecycle.controlRevision != expectedControl or lifecycle.paused):
-                    return "SUPERSEDED"
-                lifecycle.connect(cancel, deadline)
-                return "CONNECTED"
-            operation = executor.submit("__configuration_connect__", reconnect, waitTimeout=30, operationTimeout=5)
-            def completed(future, key=key):
+        operations = dict(manager.activate())
+        if not self.projectChanged:
+            with manager.lock:
+                for key, (connected, paused) in self.previous.items():
+                    if connected and not paused and key in manager.lifecycles and manager.definitions[key].enabled:
+                        operations[key] = manager._connectEvent(key, '__configuration_connect__')
+        observeConnections(self.configuration, status, operations)
+
+
+def observeConnections(configuration, status, operations):
+    """Attach actual future outcomes to the original durable committed receipt."""
+    connections = status.setdefault('connections', {})
+    for key, operation in operations.items():
+        connections[key] = 'PENDING' if operation is not None else 'SUPERSEDED'
+    configuration.store.recordTransition(status)
+    for key, operation in operations.items():
+        if operation is None:
+            continue
+        def completed(future, key=key):
+            try:
+                result = future.result() or 'CONNECTED'
+            except Exception as error:
+                result = 'FAILED: ' + str(error)
+            with configuration.lock:
+                connections[key] = result
                 try:
-                    result = future.result()
+                    configuration.store.recordTransition(status)
                 except Exception as error:
-                    result = "FAILED: " + str(error)
-                with self.configuration.lock:
-                    status["connections"][key] = result
-                    try:
-                        self.configuration.store.recordTransition(status)
-                    except Exception as error:
-                        status["connectionError"] = "connection observation persistence failed: " + str(error)
-            operation.future.add_done_callback(completed)
-        self.configuration.store.recordTransition(status)
+                    status['connectionError'] = 'connection observation persistence failed: ' + str(error)
+        operation.future.add_done_callback(completed)

@@ -21,6 +21,8 @@ def closureDiagnostic(key, item, sources, terminal, stage, error=None):
         "path": "local-presentation-store", "workflowId": item.get("workflowId"),
         "iterationPath": item.get("iterationPath", [])[:16], "callPath": item.get("callPath", [])[:16],
         "resultKey": key, "identity": dict(item.get("identity", {})), "executionTerminal": terminal,
+        "dispatch": {name: str(item.get("dispatch", {}).get(name, ""))[:128] for name in
+                     ("runGroupId", "targetSlotId", "invocationId", "deliveryId")},
         "expectedSourceIds": expected, "missingSourceIds": [name for name in expected if name not in actual],
         "unavailableSourceIds": [source.get("sourceId") for source in rows if source.get("state") != "AVAILABLE"],
         "sourceOrigins": {name: item.get("sourceOrigins", {}).get(name, {}) for name in expected},

@@ -5,6 +5,8 @@ import struct
 import threading
 import time
 from collections.abc import Callable
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -27,6 +29,50 @@ from emo_master.plugins.builtins._tcp_transport import (
     TcpTimeoutError,
     receiveFramed,
 )
+
+
+@lru_cache
+def _tcpDeclarations():
+    from emo_master.core.plugin.registry import PluginRegistry
+    return PluginRegistry('0.6.1').scanRoots([
+        Path(__file__).resolve().parents[2] / 'src/emo_master/plugins/builtins']).deviceTypes
+
+
+def _runTcp(operator, inputs, params):
+    """Keep wire-level cases while supplying the current managed-device contract."""
+    from emo_master.apps.designer.state.schema_utils import applySchemaDefaults
+    from emo_master.apps.runtime.devices.tcp import ManagedTcpClientOnce, ManagedTcpReceiveOnce
+    from emo_master.core.contracts.device_driver import DeviceOperationContext
+    from emo_master.core.project.devices import DeviceDefinition
+    client = isinstance(operator, TcpClientOperator)
+    declaration = _tcpDeclarations()['device.tcp.client_once' if client else 'device.tcp.receive_once']
+    nodeKeys = operator.meta.paramSchema['properties']
+    connectionKeys = declaration.connectionSchema['properties']
+    workKeys = declaration.defaultsSchema['properties']
+    assert set(params) <= set(nodeKeys) | set(connectionKeys) | set(workKeys)
+    connection = applySchemaDefaults(declaration.connectionSchema,
+        {key: value for key, value in params.items() if key in connectionKeys})
+    assert connection['host' if client else 'bindHost'] == '127.0.0.1'
+    work = applySchemaDefaults(declaration.defaultsSchema,
+        {key: value for key, value in params.items() if key in workKeys})
+    definition = DeviceDefinition(name='TCP loopback', deviceTypeId=declaration.deviceTypeId,
+        driverVersion=declaration.version, connection=connection, defaults=work)
+    driver = (ManagedTcpClientOnce if client else ManagedTcpReceiveOnce)(definition)
+    operation = DeviceOperationContext(ownerId='test', cycleId='cycle', planRevision=1, slot='tcp')
+
+    def execute(slot, action, arguments):
+        assert slot == 'tcp'
+        driver.validateAction(action, arguments)
+        return driver.execute(action, work, lambda: False, time.monotonic() + 10,
+            arguments=arguments, operationContext=operation)
+
+    try:
+        nodeParams = {key: value for key, value in params.items() if key in nodeKeys}
+        assert operator.validateParams(nodeParams) is None
+        return operator.executeNode(inputs, nodeParams,
+            dict(executeDevice=execute, deviceParameters={'tcp': work}))
+    finally:
+        driver.dispose()
 
 
 class _ScriptedSlmpServer:
@@ -368,7 +414,7 @@ def testTcpClientExchangeUsesNewlineFramingWithoutLeakingDelimiter() -> None:
         client.sendall(b"OK ready\r\ntrailing")
 
     port, thread, errors = _startTcpPeer(handler)
-    result = TcpClientOperator().executeNode(
+    result = _runTcp(TcpClientOperator(),
         {"text": "hello"},
         {
             "host": "127.0.0.1",
@@ -380,7 +426,6 @@ def testTcpClientExchangeUsesNewlineFramingWithoutLeakingDelimiter() -> None:
             "responseFraming": "newline",
             "responseTextEncoding": "utf-8",
         },
-        {},
     )
     _joinPeer(thread, errors)
     assert result["status"] == "ok"
@@ -410,7 +455,7 @@ def testTcpClientTextOutputDecodesRawBytesIndependentlyOfDtoEncoding(
         client.sendall(payload + b"\n")
 
     port, thread, errors = _startTcpPeer(handler)
-    result = TcpClientOperator().executeNode(
+    result = _runTcp(TcpClientOperator(),
         {"text": "x"},
         {
             "host": "127.0.0.1",
@@ -419,7 +464,6 @@ def testTcpClientTextOutputDecodesRawBytesIndependentlyOfDtoEncoding(
             "responseEncoding": storageEncoding,
             "responseTextEncoding": encoding,
         },
-        {},
     )
     _joinPeer(thread, errors)
     assert result["status"] == "ok"
@@ -439,7 +483,7 @@ def testTcpClientTextOutputValidationAndDecodeFailure() -> None:
         client.sendall(b"\xff\n")
 
     port, thread, errors = _startTcpPeer(handler)
-    invalidText = TcpClientOperator().executeNode(
+    invalidText = _runTcp(TcpClientOperator(),
         {"text": "x"},
         {
             "host": "127.0.0.1",
@@ -448,11 +492,79 @@ def testTcpClientTextOutputValidationAndDecodeFailure() -> None:
             "responseEncoding": "hex",
             "responseTextEncoding": "ascii",
         },
-        {},
     )
     _joinPeer(thread, errors)
     assert invalidText["status"] == "error"
     assert invalidText["error"]["code"] == "E_RESULT_INVALID"
+    transaction = invalidText['diagnostics']['tcpTransaction']
+    assert transaction['outcome'] == 'COMPLETED'
+    assert transaction['phase'] == 'decode' and transaction['action'] == 'exchange'
+    assert transaction['bytesSent'] == 1 and transaction['bytesReceived'] == 1
+    assert transaction['automaticRetry'] is False
+
+
+def testTcpReceiveDecodeFailureRetainsConfirmedAck():
+    port = _unusedTcpPort()
+    resultBox = {}
+    def receive():
+        resultBox['result'] = _runTcp(TcpReceiveOnceOperator(), {}, {
+            'bindHost': '127.0.0.1', 'port': port, 'acceptTimeoutMs': 1000, 'readTimeoutMs': 500,
+            'messageEncoding': 'hex', 'messageTextEncoding': 'ascii',
+            'ackText': 'OK', 'ackAppendNewline': True})
+    thread = threading.Thread(target=receive)
+    thread.start()
+    try:
+        with _connectEventually(port) as peer:
+            peer.sendall(b'\xff\n')
+            assert _recvExact(peer, 3) == b'OK\n'
+    finally:
+        thread.join(3)
+    assert not thread.is_alive()
+    result = resultBox['result']
+    assert result['error']['code'] == 'E_RESULT_INVALID'
+    transaction = result['diagnostics']['tcpTransaction']
+    assert transaction['outcome'] == 'COMPLETED'
+    assert transaction['phase'] == 'decode' and transaction['action'] == 'receive'
+    assert transaction['bytesSent'] == 3 and transaction['bytesReceived'] == 1
+    assert transaction['automaticRetry'] is False
+
+
+@pytest.mark.parametrize('operatorClass,action,sent', [
+    (TcpClientOperator, 'exchange', 1), (TcpReceiveOnceOperator, 'receive', 3),
+])
+def testTcpDecodeCancellationPreservesTransactionWithoutLeakingToNextCall(operatorClass, action, sent):
+    from emo_master.apps.runtime.workflow.cancellation import CancellationRequested, CancellationToken
+    from emo_master.core.contracts.device_driver import DeviceError
+
+    token = CancellationToken()
+    calls = []
+    transaction = dict(action=action, outcome='COMPLETED', bytesSent=sent, bytesReceived=1, automaticRetry=False)
+    def execute(slot, calledAction, arguments):
+        calls.append((slot, calledAction, arguments))
+        if len(calls) == 2:
+            raise DeviceError('E_DEVICE_CONNECT', 'unavailable')
+        token.cancel()
+        return dict(sentBytes=sent, dataBase64='/w==', peerHost='127.0.0.1', peerPort=9000,
+                    tcpTransaction=transaction)
+    work = dict(textEncoding='ascii', appendNewline=False, responseEncoding='hex', responseTextEncoding='ascii',
+                messageEncoding='hex', messageTextEncoding='ascii')
+    runtime = dict(executeDevice=execute, deviceParameters={'tcp': work},
+                   raiseIfCancellationRequested=token.raise_if_cancelled)
+    op = operatorClass()
+    params = dict(operation=action, text='X') if operatorClass is TcpClientOperator else {}
+    with pytest.raises(CancellationRequested) as failure:
+        op.executeNode({}, params, runtime)
+    assert failure.value.code == 'E_CANCELLED'
+    assert failure.value.diagnostics['tcpTransaction'] == {**transaction, 'phase': 'decode'}
+    assert len(calls) == 1
+    assert calls[0][0:2] == ('tcp', action)
+    assert 'phase' not in transaction
+
+    runtime['raiseIfCancellationRequested'] = CancellationToken().raise_if_cancelled
+    result = op.executeNode({}, params, runtime)
+    assert result['error'] == dict(code='E_DEVICE_CONNECT', message='unavailable')
+    assert 'tcpTransaction' not in result['diagnostics']
+    assert len(calls) == 2
 
 
 def testTcpClientSupportsBinaryMessageInputAndTimeoutErrors() -> None:
@@ -463,10 +575,9 @@ def testTcpClientSupportsBinaryMessageInputAndTimeoutErrors() -> None:
 
     port, thread, errors = _startTcpPeer(binaryHandler)
     message = TcpMessage.fromBytes(b"\x00\xFF\x10", encoding="base64").toPayload()
-    result = TcpClientOperator().executeNode(
+    result = _runTcp(TcpClientOperator(),
         {"message": message},
         {"host": "127.0.0.1", "port": port},
-        {},
     )
     _joinPeer(thread, errors)
     assert result["status"] == "ok"
@@ -477,7 +588,7 @@ def testTcpClientSupportsBinaryMessageInputAndTimeoutErrors() -> None:
         time.sleep(0.1)
 
     slowPort, slowThread, slowErrors = _startTcpPeer(slowHandler)
-    timeout = TcpClientOperator().executeNode(
+    timeout = _runTcp(TcpClientOperator(),
         {"text": "x"},
         {
             "host": "127.0.0.1",
@@ -485,29 +596,31 @@ def testTcpClientSupportsBinaryMessageInputAndTimeoutErrors() -> None:
             "operation": "exchange",
             "responseTimeoutMs": 20,
         },
-        {},
     )
     _joinPeer(slowThread, slowErrors)
     assert timeout["status"] == "error"
     assert timeout["error"]["code"] == "E_COMM_TIMEOUT"
 
 
-def testTcpOutboundPayloadsEnforceConfiguredLimits() -> None:
-    client = TcpClientOperator().executeNode(
-        {"text": "abcd"},
-        {"maxRequestBytes": 3},
-        {},
-    )
-    assert client["status"] == "error"
-    assert client["error"]["code"] == "E_INPUT_SHAPE"
-
-    receiver = TcpReceiveOnceOperator().executeNode(
-        {},
-        {"ackText": "abcd", "ackAppendNewline": False, "maxAckBytes": 3},
-        {},
-    )
-    assert receiver["status"] == "error"
-    assert receiver["error"]["code"] == "E_INPUT_SHAPE"
+@pytest.mark.parametrize('kind', ['client', 'receiver'])
+def testTcpOutboundPayloadsEnforceConfiguredLimits(monkeypatch, kind) -> None:
+    from emo_master.apps.runtime.devices import tcp
+    opened = []
+    def unexpectedIo(*args):
+        opened.append(True)
+        raise AssertionError('invalid outbound data must be rejected before network I/O')
+    monkeypatch.setattr(tcp, 'connectCancellable', unexpectedIo)
+    monkeypatch.setattr(tcp, 'configureListener', unexpectedIo)
+    if kind == 'client':
+        result = _runTcp(TcpClientOperator(), {'text': 'abcd'}, {'maxRequestBytes': 3})
+        code = 'E_TCP_MESSAGE_SIZE'
+    else:
+        result = _runTcp(TcpReceiveOnceOperator(), {},
+            {'ackText': 'abcd', 'ackAppendNewline': False, 'maxAckBytes': 3})
+        code = 'E_TCP_ACK_SIZE'
+    assert not opened
+    assert result['status'] == 'error' and result['error']['code'] == code
+    assert result['diagnostics']['tcpTransaction']['outcome'] == 'NOT_SENT'
 
 
 def testTcpReceiveOnceAcceptsSplitQuotedMessageAndSendsFixedAck() -> None:
@@ -515,7 +628,7 @@ def testTcpReceiveOnceAcceptsSplitQuotedMessageAndSendsFixedAck() -> None:
     resultBox: dict[str, dict[str, Any]] = {}
 
     def runOperator() -> None:
-        resultBox["result"] = TcpReceiveOnceOperator().executeNode(
+        resultBox["result"] = _runTcp(TcpReceiveOnceOperator(),
             {},
             {
                 "bindHost": "127.0.0.1",
@@ -528,7 +641,6 @@ def testTcpReceiveOnceAcceptsSplitQuotedMessageAndSendsFixedAck() -> None:
                 "ackText": "OK",
                 "ackAppendNewline": True,
             },
-            {},
         )
 
     thread = threading.Thread(target=runOperator, daemon=True)
@@ -554,7 +666,7 @@ def testTcpReceiveTextOutputIsIndependentOfMessageEncoding() -> None:
     resultBox: dict[str, dict[str, Any]] = {}
 
     def runOperator() -> None:
-        resultBox["result"] = TcpReceiveOnceOperator().executeNode(
+        resultBox["result"] = _runTcp(TcpReceiveOnceOperator(),
             {},
             {
                 "bindHost": "127.0.0.1",
@@ -564,7 +676,6 @@ def testTcpReceiveTextOutputIsIndependentOfMessageEncoding() -> None:
                 "messageEncoding": "base64",
                 "messageTextEncoding": "latin-1",
             },
-            {},
         )
 
     thread = threading.Thread(target=runOperator, daemon=True)
@@ -586,7 +697,7 @@ def testTcpReceiveTextOutputRejectsInvalidBytesAsResultError() -> None:
     resultBox: dict[str, dict[str, Any]] = {}
 
     def runOperator() -> None:
-        resultBox["result"] = TcpReceiveOnceOperator().executeNode(
+        resultBox["result"] = _runTcp(TcpReceiveOnceOperator(),
             {},
             {
                 "bindHost": "127.0.0.1",
@@ -596,7 +707,6 @@ def testTcpReceiveTextOutputRejectsInvalidBytesAsResultError() -> None:
                 "messageEncoding": "hex",
                 "messageTextEncoding": "ascii",
             },
-            {},
         )
 
     thread = threading.Thread(target=runOperator, daemon=True)
@@ -611,17 +721,16 @@ def testTcpReceiveTextOutputRejectsInvalidBytesAsResultError() -> None:
 
 
 def testTcpReceiveOnceIsBoundedByAcceptTimeout() -> None:
-    result = TcpReceiveOnceOperator().executeNode(
+    result = _runTcp(TcpReceiveOnceOperator(),
         {},
         {
             "bindHost": "127.0.0.1",
             "port": _unusedTcpPort(),
             "acceptTimeoutMs": 20,
         },
-        {},
     )
     assert result["status"] == "error"
-    assert result["error"]["code"] == "E_COMM_TIMEOUT"
+    assert result["error"]["code"] == "E_TCP_ACCEPT_TIMEOUT"
 
 
 def testTcpFramingHonorsPayloadLimitAndTotalDeadline() -> None:
@@ -685,14 +794,13 @@ def testTcpReceiveOnceReportsBindConflict() -> None:
         occupied.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         occupied.bind(("127.0.0.1", 0))
         occupied.listen(1)
-        result = TcpReceiveOnceOperator().executeNode(
+        result = _runTcp(TcpReceiveOnceOperator(),
             {},
             {
                 "bindHost": "127.0.0.1",
                 "port": int(occupied.getsockname()[1]),
                 "acceptTimeoutMs": 20,
             },
-            {},
         )
     assert result["status"] == "error"
     assert result["error"]["code"] == "E_COMM_CONNECT_FAILED"

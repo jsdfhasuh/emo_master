@@ -55,6 +55,17 @@ def projectChanges(online, local):
     return changes
 
 
+def projectConfigurationChanges(online, local):
+    """Compare publishable settings without treating node placement as a change."""
+    changes = projectChanges(online, local)
+    if online["project"]["projectId"] != local["project"]["projectId"]:
+        return changes  # Replacing a project still requires its complete document.
+    # WorkflowLayout stores node positions; the broader layout category also
+    # contains names, which must remain visible and explicitly publishable.
+    return [change for change in changes if not (
+        len(change["parts"]) >= 3 and change["parts"][0] == "workflows" and change["parts"][2] == "layout")]
+
+
 def selectedCandidate(online, local, selected):
     if not selected or len(selected) != len(set(selected)):
         raise ValueError("select at least one unique change")
@@ -98,7 +109,7 @@ def requiredDeviceChanges(online, local, selected):
     return required
 
 
-def requiredProjectChanges(online, local, selected):
+def requiredProjectChanges(online, local, selected, *, deviceTypes=None, operatorRegistry=None):
     """Find missing references transitively, offering exact changes for confirmation.
 
     Never copy edits to an existing dependency implicitly. Atomic list changes
@@ -158,7 +169,7 @@ def requiredProjectChanges(online, local, selected):
                 if node.get("kind") == "dispatch":
                     for target in node.get("params", {}).get("targets", []):
                         workflow(target.get("workflowId"), owner)
-                for binding in node.get("deviceBindings", {}).values():
+                for slot, binding in node.get("deviceBindings", {}).items():
                     require(("devices", "definitions", binding["deviceId"]), owner)
         resources = candidate.get("resources") or {}
         for binding in [*resources.get("parameterBindings", []), *resources.get("siteBindings", [])]:
@@ -206,9 +217,46 @@ def requiredProjectChanges(online, local, selected):
         if presentation:
             order(("presentation", "pageOrder"), presentation.get("pages", {}))
         additions = {path: owners for path, owners in found.items() if path not in required}
-        if not additions:
+        if additions:
+            required.update(additions)
+            continue
+        # References now exist. Resolve selector collections from device metadata,
+        # then let the shared compiler/editor binding rule validate the candidate.
+        from emo_master.core.plugin.devices import selectorCandidates, validateDeviceBinding
+        from emo_master.core.project.devices import DeviceDefinition
+        for wid, flow in candidate.get('workflows', {}).items():
+            for node in flow.get('nodes', []):
+                descriptor = (operatorRegistry or {}).get(node.get('operatorId'), {})
+                manifest = getattr(descriptor, 'manifest', descriptor)
+                requirements = (manifest.get('deviceRequirements', manifest) if isinstance(manifest, dict)
+                                else getattr(manifest, 'deviceRequirements', {}))
+                for slot, binding in node.get('deviceBindings', {}).items():
+                    key = binding['deviceId']
+                    definition = candidate['devices']['definitions'][key]
+                    declaration = (deviceTypes or {}).get(definition['deviceTypeId'])
+                    if declaration is None:
+                        continue  # Runtime compilation remains authoritative without metadata.
+                    for name, value in binding.get('selectors', {}).items():
+                        spec = declaration.bindingSelectors.get(name)
+                        if spec is None or value in {item for item, _ in selectorCandidates(declaration, definition, name)}:
+                            continue
+                        parts = ('devices', 'definitions', key, *spec['itemsPath'].split('.'))
+                        path = _pointer(parts)
+                        localDefinition = local.get('devices', {}).get('definitions', {}).get(key, {})
+                        if (path in changes and path not in selected and path not in required
+                                and value in {item for item, _ in selectorCandidates(declaration, localDefinition, name)}):
+                            found.setdefault(path, []).append(f'{wid}/{node["nodeId"]}/{slot}: {name}={value}')
+                    if slot in requirements and not found:
+                        from emo_master.core.workflow.errors import locatedValidationError
+                        try:
+                            validateDeviceBinding(requirements[slot], binding, DeviceDefinition.model_validate(definition), declaration)
+                        except ValueError as error:
+                            raise locatedValidationError(error, 'E_DEVICE_BINDING',
+                                projectId=candidate['project']['projectId'], workflowId=wid, nodeId=node['nodeId'],
+                                prefix=f'deviceBindings.{slot}') from error
+        if not found:
             return required
-        required.update(additions)
+        required.update(found)
 
 
 def changeCategory(parts):

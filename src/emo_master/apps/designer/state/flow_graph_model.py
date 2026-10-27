@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from copy import deepcopy
+from typing import cast
 from uuid import uuid4
 
 from emo_master.apps.designer.state.schema_utils import collectSchemaErrors
@@ -96,6 +97,8 @@ class FlowGraphModel:
         toNode: str,
         toPort: str,
         replaceInputPort: bool = True,
+        *,
+        newInputPortType: str | None = None,
     ) -> FlowEdge:
         if fromNode not in self.nodes or toNode not in self.nodes:
             raise ValueError("connectNodes references unknown node")
@@ -104,15 +107,18 @@ class FlowGraphModel:
         targetNode = self.nodes[toNode]
         if fromPort not in sourceNode.outputPorts:
             raise ValueError(f"unknown source port: {fromNode}.{fromPort}")
-        if toPort not in targetNode.inputPorts:
+        targetType = targetNode.inputPorts.get(toPort, newInputPortType)
+        if targetType is None:
             raise ValueError(f"unknown target port: {toNode}.{toPort}")
         sourceType = sourceNode.outputPorts[fromPort]
-        targetType = targetNode.inputPorts[toPort]
         if not arePortTypesCompatible(sourceType, targetType):
             raise ValueError(
                 f"port type mismatch: {fromNode}.{fromPort}({sourceType}) -> {toNode}.{toPort}({targetType})"
             )
 
+        # Persist a catalog-supported extension only after successful validation,
+        # in the same editing command as its first edge. Existing types win.
+        targetNode.inputPorts.setdefault(toPort, targetType)
         if replaceInputPort:
             self._removeInputEdge(toNode=toNode, toPort=toPort)
 
@@ -366,11 +372,33 @@ class FlowGraphModel:
     def _validateNodeParamsBySchema(self) -> list[str]:
         errors: list[str] = []
         for node in self.nodes.values():
-            schema = node.paramSchema
+            from emo_master.plugins.builtins._operator_modes import currentModeSchema, effectiveModeParams
+            modeSchema = currentModeSchema(node.operatorId)
+            schema = modeSchema if modeSchema is not None else node.paramSchema
             if not isinstance(schema, dict) or len(schema) == 0:
                 continue
+            params = node.params
+            if node.operatorId == "vision.io.video_loader" and any(
+                    edge.toNode == node.nodeId and edge.toPort == "videoPath" for edge in self.edges):
+                schema = {**schema, "properties": {key: value for key, value in cast(dict, schema.get("properties", {})).items()
+                                                   if key != "videoPath"},
+                          "required": [key for key in cast(list, schema.get("required", [])) if key != "videoPath"]}
+            if modeSchema is not None:
+                params = effectiveModeParams(params, modeSchema)
+            if node.operatorId == "vision.collection.filter":
+                from emo_master.plugins.builtins.collection_filter.configuration import effectiveFilterParams
+                params = effectiveFilterParams(params)
+            if modeSchema is not None or node.operatorId == "vision.collection.filter":
+                dynamic = {cast(list[str], binding["parameterPath"])[0] for binding in node.globalVariableBindings
+                           if binding.get("parameterPath")}
+                properties = cast(dict[str, dict], schema["properties"])
+                deferred = {name for name, field in properties.items()
+                            if name in dynamic or dynamic.intersection(field.get("xValidateWhen", {}))}
+                # The graph has no variable snapshot. Apply/Runtime validate the resolved values.
+                schema = {**schema, "properties": {name: field for name, field in properties.items() if name not in deferred},
+                          "required": [name for name in cast(list[str], schema.get("required", [])) if name not in deferred]}
             nodeErrors = collectSchemaErrors(
-                schema, node.params, f"{node.nodeId} params"
+                schema, params, f"{node.nodeId} params"
             )
             errors.extend(nodeErrors)
         return errors

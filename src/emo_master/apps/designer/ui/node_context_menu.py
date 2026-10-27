@@ -83,6 +83,9 @@ class NodeContextMenu(QObject):
         self._select(nodeId)
         context = (self.version, self.window._currentProjectId(), self.window.activeWorkflowId, nodeId, node)
         self.context = context
+        # QMenu.clear() removes submenu actions, but does not delete child menus.
+        for submenu in self.menu.findChildren(QMenu, options=Qt.FindDirectChildrenOnly):
+            submenu.deleteLater()
         self.menu.clear()
         title = node.displayName or node.operatorId or nodeId
         section = self.menu.addSection(QFontMetrics(self.menu.font()).elidedText(title, Qt.ElideRight, 280))
@@ -107,6 +110,8 @@ class NodeContextMenu(QObject):
             action.triggered.connect(lambda _checked=False, key=key, action=action:
                                      self._invoke(key, context, action))
             self.menu.addAction(action)
+        self.menu.addSeparator()
+        self.window.flowScene.addPortVisibilityActions(self.menu, nodeId)
         return self.menu
 
     def open(self, nodeId, screenX, screenY):
@@ -131,11 +136,7 @@ class NodeContextMenu(QObject):
         elif key == 'results':
             # Reuse the current/previous selection and decoded image. No Job,
             # subscription or second image cache is created by this action.
-            self.window.onNodeSelectionChanged()
-            self.window.rightPanelContainer.show()
-            coordinator = self.window.nodeResultCoordinator
-            coordinator.panelScroll.ensureWidgetVisible(coordinator.panel)
-            coordinator.panel.tabs.setFocus(Qt.OtherFocusReason)
+            self.window.nodeResultCoordinator.showPanel()
 
     def _selectionChanged(self):
         if self.context is not None and not self._valid(self.context):

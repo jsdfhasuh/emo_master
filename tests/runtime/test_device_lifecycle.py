@@ -10,7 +10,7 @@ import time
 import grpc
 import pytest
 
-from emo_master.apps.designer.services.runtime_client import RuntimeClient
+from emo_master.apps.designer.services.runtime_client import RuntimeClient, RuntimeClientError
 from emo_master.apps.runtime.devices.executor import DeviceError
 from emo_master.apps.runtime.devices.imv_capture import ImvCapture
 from emo_master.apps.runtime.devices.imv_host import ManagedImv
@@ -212,13 +212,14 @@ def testQueuedAcquisitionKeepsOldCycleParametersAfterCommit(makeManager, tmp_pat
     try:
         with ThreadPoolExecutor(2) as pool:
             first = pool.submit(manager.execute, "job", "camera", "capture", manager.definitions["camera"].defaults,
-                                cycleId=old["cycleId"])
+                                cycleId=old["cycleId"], source=dict(workflowId='main', nodeId='capture', slot='camera'))
             until(lambda: len(executor.queue) == 1)
             configuration.start(request(configuration))
             assert finish(configuration)["state"] == "COMMITTED"
             new = configuration.beginCycle("next", 1)
             params = dict(manager.definitions["camera"].defaults, exposureUs=12000)
-            second = pool.submit(manager.execute, "next", "camera", "capture", params, cycleId=new["cycleId"])
+            second = pool.submit(manager.execute, "next", "camera", "capture", params, cycleId=new["cycleId"],
+                                 source=dict(workflowId='main', nodeId='capture', slot='camera'))
             until(lambda: len(executor.queue) == 2)
             release.set()
             executor.wait(holder)
@@ -263,11 +264,11 @@ def testMaintenanceWaitsForRealExitButDoesNotBlockOtherDevices(makeManager):
     driver = manager.drivers["camera"]
     closed = []
     originalClose = driver.close
-    def close():
+    def close(deadline=None):
         closed.append(get_ident())
-        originalClose()
+        originalClose(deadline)
     driver.close = close
-    def held(*_args):
+    def held(*_args, **_kwargs):
         entered.set()
         assert exitAllowed.wait(3)
         raise DeviceError("E_DEVICE_CANCELLED", "native exit confirmed")
@@ -275,8 +276,7 @@ def testMaintenanceWaitsForRealExitButDoesNotBlockOtherDevices(makeManager):
     with ThreadPoolExecutor(2) as pool:
         pending = pool.submit(capture, manager)
         assert entered.wait(2)
-        with pytest.raises(DeviceError, match="in use"):
-            control(manager, "disconnect")
+        assert 'disconnect' in manager.availableControls('camera')
         executor, operation = manager.beginControl("camera", manager.executors["camera"].generation, "maintenance")
         try:
             assert not closed and not operation.future.done()
@@ -297,7 +297,7 @@ def testIdleCloseFailureIsVisibleAndQuarantinesInsteadOfPretendingReleased(makeM
     manager = makeManager(release="when_unused")
     driver = manager.drivers["camera"]
     original = driver.close
-    def fail():
+    def fail(deadline=None):
         raise RuntimeError("cleanup rejected")
     driver.close = fail
     try:
@@ -363,17 +363,17 @@ def testRemoteControlsAreConfirmedFencedAndDoNotModifyConfiguration(tmp_path):
         client = RuntimeClient(runtime_pb2_grpc.RuntimeServiceStub(channel))
         runtimeId, states = client.getDeviceStates(service.loadedProjectId)
         args = (service.loadedProjectId, runtimeId, "camera", states["camera"])
-        with pytest.raises(ValueError, match="unconfirmed"):
+        with pytest.raises(RuntimeClientError, match="unconfirmed"):
             client.controlDevice(*args, "connect")
         assert not service.deviceManager.drivers["camera"].connected
         _, connected = client.controlDevice(*args, "connect", confirmed=True)
-        assert connected["camera"]["connectionState"] == "CONNECTED"
-        with pytest.raises(ValueError, match="control intent changed"):
+        assert connected["camera"]["driverState"]["connectionState"] == "CONNECTED"
+        with pytest.raises(RuntimeClientError, match="control changed"):
             client.controlDevice(*args, "disconnect", confirmed=True)
         _, stopped = client.controlDevice(service.loadedProjectId, runtimeId, "camera", connected["camera"],
                                            "disconnect", confirmed=True)
         assert stopped["camera"]["admissionState"] == "PAUSED"
-        with pytest.raises(ValueError, match="generation"):
+        with pytest.raises(RuntimeClientError, match="generation"):
             client.controlDevice(service.loadedProjectId, runtimeId, "camera", dict(states["camera"], generation="old"),
                                  "connect", confirmed=True)
         assert service.deviceManager.drivers["camera"].sequence == 0 and service.loadedPayload == before

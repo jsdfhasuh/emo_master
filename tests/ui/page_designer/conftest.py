@@ -16,7 +16,7 @@ def qtApp():
 
 
 @pytest.fixture(autouse=True)
-def cleanWindows(qtApp):
+def cleanWindows(qtApp, isolatedDesignerSettings):
     before = set(qtApp.topLevelWidgets())
     yield
     import shiboken2

@@ -7,6 +7,7 @@ from PySide2.QtTest import QTest
 
 from emo_master.apps.designer.state.project_store import saveProject
 from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
+from emo_master.apps.designer.ui.device_workspace import DeviceWorkspace
 from tests.core.project.test_devices import declaration, definition, project  # noqa: F401
 
 
@@ -74,7 +75,7 @@ def testDeviceMenuOpensDialogWithoutChangingWorkspace(ownedDesignerWindow, tmp_p
     assert c.stack.currentWidget() is active and c.stack.count() == count
     assert len(c.chrome.selector.buttons) == 2 and c.chrome.workspaceActions[0].isChecked()
     action.trigger()
-    assert c.devices is devices and len(window.findChildren(QDialog)) == 1
+    assert c.devices is devices and window.findChildren(DeviceWorkspace) == [devices]
     devices.table.setCurrentCell(0, 0)
     QApplication.processEvents()
     assert devices.rect().contains(devices.closeButton.geometry())
@@ -82,7 +83,9 @@ def testDeviceMenuOpensDialogWithoutChangingWorkspace(ownedDesignerWindow, tmp_p
     print('DEVICE_DIALOG_SCREENSHOT=' + str(tmp_path / 'device-dialog.png'))
     QTest.keyClick(devices, Qt.Key_Escape)
     assert not devices.isVisible() and c.flowActive() and not c.deviceActive()
-    assert window.deleteShortcut.isEnabled()
+    # The canonical QAction owns Delete; the legacy QShortcut stays disabled.
+    assert not window.deleteShortcut.isEnabled()
+    assert not window.designerActions.blockedReason('layout')
     action.trigger()
     assert c.devices is devices and devices.isVisible()
     assert devices.close() and not devices.isVisible()
@@ -170,14 +173,18 @@ def testDeviceControlNeedsConfirmationAndNeverEditsDraft(ownedDesignerWindow, tm
     waitUntil(lambda: devices.pending is None)
     devices.table.setCurrentCell(0, 0)
     before = c.session.payload()
-    state = dict(state="IDLE", generation="g1", definitionRevision="r1", queued=0, activeOwner=None)
+    state = dict(state="IDLE", generation="g1", definitionRevision="r1", queued=0, activeOwner=None,
+                 lifecycleConnected=True, driverState={'connectionState': 'CONNECTED'},
+                 availableControls=['disconnect', 'maintenance', 'recover'])
     devices.states = {"camera": state}
     devices.stateRuntimeId = "runtime"
     calls = []
     def control(*args, **kwargs):
         calls.append((args, kwargs))
-        return "runtime", {"camera": dict(state, admissionState="PAUSED", connectionState="DISCONNECTED")}
+        return "runtime", {"camera": dict(state, admissionState="PAUSED", lifecycleConnected=False,
+            driverState={'connectionState': 'DISCONNECTED'}, availableControls=['connect', 'resume', 'recover'])}
     window.runtimeClient.controlDevice = control
+    devices._showStates()
     monkeypatch.setattr(QMessageBox, "question", lambda *_: QMessageBox.No)
     devices.control("disconnect")
     assert not calls
@@ -255,7 +262,7 @@ def testNormalDropWizardAtomicFinishAndCancel(ownedDesignerWindow, tmp_path, def
     window.addNodeFromOperatorDrop(payload, 160, 240)
     assert len(c.session._undo) == depth + 1
     newId = next(key for key in window.flowModel.nodes if key not in {n["nodeId"] for n in before["workflows"]["main"]["nodes"]})
-    assert window.flowModel.nodes[newId].deviceBindings == {"camera": {"deviceId": "camera"}}
+    assert window.flowModel.nodes[newId].deviceBindings == {"camera": {"deviceId": "camera", "selectors": {}}}
     assert c.session.workflows.get("main").layout["nodePositions"][newId] == dict(x=160., y=240.)
     c.history()
     assert newId not in window.flowModel.nodes

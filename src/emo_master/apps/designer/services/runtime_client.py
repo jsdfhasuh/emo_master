@@ -21,6 +21,22 @@ from emo_master.core.contracts.port_types import (
 
 runtime_pb2: Any = _runtime_pb2
 
+
+def runtimeConnectionDescription(client):
+    """Describe the existing transport without provisioning any display endpoint."""
+    from emo_master.apps.runtime.grpc_server.generated.runtime_pb2_grpc import RuntimeServiceServicer, RuntimeServiceStub
+    service = getattr(client, 'runtimeService', None)
+    if getattr(client, '_closed', False) or service is None:
+        return dict(kind='unknown', label='未连接 / 连接类型未知', target='')
+    if getattr(client, '_ownedRuntimeService', None) is not None or isinstance(service, RuntimeServiceServicer):
+        root = getattr(service, 'workspaceRoot', None)
+        directory = str(root.parent) if root is not None else ''
+        return dict(kind='embedded', label='本机内嵌 Runtime（随程序启动）' + (' · ' + directory if directory else ''), target='')
+    if getattr(client, '_ownedChannel', None) is not None or isinstance(service, RuntimeServiceStub):
+        target = getattr(client, '_runtimeTarget', '')
+        return dict(kind='grpc', label='独立 Runtime（gRPC）' + (' · ' + target if target else ' · 地址不可用'), target=target)
+    return dict(kind='unknown', label='连接类型未知', target='')
+
 try:
     import grpc
 except Exception:  # pragma: no cover
@@ -45,7 +61,6 @@ class OperatorDefinition:
     icon: dict[str, object] = field(default_factory=dict)
     iconIssues: tuple[dict[str, object], ...] = ()
     deviceRequirements: dict[str, object] = field(default_factory=dict)
-    deviceBindingSince: str = ""
 
 
 @dataclass(frozen=True)
@@ -67,6 +82,8 @@ class PreviewSource:
     snapshotState: str = "UNKNOWN"
     workflowRunId: str = ""
     nodeRunId: str = ""
+    originalWidth: int = 0
+    originalHeight: int = 0
 
 
 @dataclass(frozen=True)
@@ -99,6 +116,7 @@ class RuntimeClientError(RuntimeError):
         self.code = code
         self.sqliteReply: Any = None
         self.resourceResult: dict[str, Any] | None = None
+        self.diagnostics: dict[str, Any] = {}
         super().__init__(message)
 
 
@@ -389,7 +407,6 @@ class RuntimeClient:
                 OperatorDefinition(
                     operatorId=str(getattr(operatorInfo, "operator_id", "")),
                     deviceRequirements=self._parseSchema(getattr(operatorInfo, "device_requirements_json", "{}")),
-                    deviceBindingSince=getattr(operatorInfo, "device_binding_since", ""),
                     displayName=str(getattr(operatorInfo, "display_name", "")),
                     version=str(getattr(operatorInfo, "version", "")),
                     category=rawCategory or "Other",
@@ -433,12 +450,30 @@ class RuntimeClient:
     def _projectConfigurationCall(self, method, request):
         reply = self._call(method, request)
         if not reply.ok:
-            raise RuntimeClientError(reply.code, reply.message)
+            error = RuntimeClientError(reply.code, reply.message)
+            if reply.result_json:
+                error.diagnostics = json.loads(reply.result_json)
+            raise error
         return json.loads(reply.result_json)
 
     def getOnlineProjectSnapshot(self, projectId=""):
         return self._projectConfigurationCall("GetOnlineProjectSnapshot",
             runtime_pb2.OnlineProjectRequest(project_id=projectId))
+
+    def initializeProjectConfiguration(self, payload, resourceRoot, requestId, *, validate=False, runtimeInstanceId='',
+                                       projectPath=''):
+        # This entry passes a local filesystem root, not an upload protocol.
+        # Remote installation needs its own import path; never pretend that a
+        # Designer path is available on another machine.
+        from urllib.parse import urlsplit
+        target = self._runtimeTarget
+        if target and urlsplit('//' + target).hostname not in {'localhost', '127.0.0.1', '::1'}:
+            raise RuntimeClientError('E_CONFIG_INITIAL_REMOTE',
+                '远程 Runtime 尚无在线工程；请先在执行端导入工程，再比较、上传及写入。不会发送 Designer 本地路径。')
+        return self._projectConfigurationCall('InitializeProjectConfiguration',
+            runtime_pb2.InitialProjectConfigurationRequest(request_id=requestId,
+                local_payload_json=json.dumps(payload, ensure_ascii=True), resource_root=str(resourceRoot or ''),
+                validate_only=validate, expected_runtime_instance_id=runtimeInstanceId, project_path=str(projectPath or '')))
 
     def getOnlineGraphSnapshot(self, projectId="", documentRevision=0, jobId=""):
         return self._projectConfigurationCall("GetOnlineGraphSnapshot", runtime_pb2.OnlineGraphRequest(
@@ -616,41 +651,49 @@ class RuntimeClient:
                 error.resourceResult = results
                 raise
             wrapped = RuntimeClientError('E_RESOURCE_UPLOAD', str(error))
+            if getattr(error, 'issues', None):
+                from dataclasses import asdict
+                wrapped.diagnostics = {'issues': [asdict(issue) for issue in error.issues]}
             wrapped.resourceResult = results
             raise wrapped from error
         return results
 
-    def listDeviceTypes(self):
-        from emo_master.core.plugin.devices import DeviceType, DeviceRequirement
+    def _deviceManagement(self):
+        from emo_master.clients.runtime.devices import DeviceManagementClient
+        return DeviceManagementClient(self.runtimeService, call=self._deviceManagementCall)
 
-        reply = self._call("ListDeviceTypes", runtime_pb2.ListDeviceTypesRequest())
-        types = {key: DeviceType.model_validate(value) for key, value in json.loads(reply.types_json).items()}
-        requirements = {key: {slot: DeviceRequirement.model_validate(value) for slot, value in slots.items()}
-                        for key, slots in json.loads(reply.requirements_json).items()}
-        return types, requirements, json.loads(reply.rejected_json)
+    def _deviceManagementCall(self, name, request, *, timeoutMs, cancellation):
+        return self._displayCall(name, request, timeoutMs, cancellation, 'device-management')
+
+    def _deviceCall(self, method, *args, **kwargs):
+        from emo_master.clients.runtime.devices import DeviceClientError
+        try:
+            return getattr(self._deviceManagement(), method)(*args, **kwargs)
+        except DeviceClientError as error:
+            raise RuntimeClientError(error.code, str(error)) from error
+
+    def listDeviceTypes(self):
+        return self._deviceCall('listDeviceTypes')
 
     def getDeviceStates(self, projectId):
-        reply = self._call("GetDeviceStates", runtime_pb2.GetDeviceStatesRequest(project_id=projectId))
-        if not reply.ok:
-            raise ValueError(reply.message)
-        return reply.runtime_instance_id, json.loads(reply.states_json)
+        return self._deviceCall('getDeviceStates', projectId)
+
+    def getDeviceOverview(self, projectId, *, cancellation=None):
+        return self._deviceCall('getDeviceOverview', projectId, cancellation=cancellation)
+
+    def getDeviceDiagnostics(self, scope, deviceId, cursor=0):
+        return self._deviceCall('getDeviceDiagnostics', scope, deviceId, cursor)
 
     def controlDevice(self, projectId, runtimeInstanceId, deviceId, state, action, *, confirmed=False):
-        reply = self._call("ControlDevice", runtime_pb2.ControlDeviceRequest(project_id=projectId,
-            runtime_instance_id=runtimeInstanceId, device_id=deviceId, expected_generation=state["generation"],
-            expected_definition_revision=state["definitionRevision"], action=action, confirmed=confirmed,
-            expected_control_revision=state.get("controlRevision", "")))
-        if not reply.ok:
-            raise ValueError(reply.message)
-        return reply.runtime_instance_id, json.loads(reply.states_json)
+        return self._deviceCall('controlDevice', projectId, runtimeInstanceId, deviceId, state, action,
+                                                       confirmed=confirmed)
+
+    def executeDeviceAction(self, projectId, runtimeInstanceId, deviceId, state, action, arguments):
+        return self._deviceCall('executeDeviceAction', projectId, runtimeInstanceId, deviceId, state, action, arguments)
 
     def recoverDevice(self, projectId, runtimeInstanceId, deviceId, state, *, hardwareSynchronized=False):
-        reply = self._call("RecoverDevice", runtime_pb2.RecoverDeviceRequest(project_id=projectId,
-            runtime_instance_id=runtimeInstanceId, device_id=deviceId, expected_generation=state["generation"],
-            expected_definition_revision=state["definitionRevision"], hardware_synchronized=hardwareSynchronized))
-        if not reply.ok:
-            raise ValueError(reply.message)
-        return reply.runtime_instance_id, json.loads(reply.states_json)
+        return self._deviceCall('recoverDevice', projectId, runtimeInstanceId, deviceId, state,
+                                                       hardwareSynchronized=hardwareSynchronized)
 
     def cameraDiagnostic(self, projectId, runtimeInstanceId, deviceId, state, action, *, sessionId="", sequence=0,
                          confirmed=False, changes=None):
@@ -743,6 +786,8 @@ class RuntimeClient:
         jobId: str = "",
         inspectionSessionId: str = "",
         cancellation: DisplayCallContext | None = None,
+        workflowRunId: str = "",
+        nodeRunId: str = "",
     ) -> PreviewSourceListing:
         request = runtime_pb2.ListNodePreviewSourcesRequest(
                 project_id=projectId,
@@ -750,6 +795,8 @@ class RuntimeClient:
                 node_id=nodeId,
                 job_id=jobId,
                 inspection_session_id=inspectionSessionId,
+                workflow_run_id=workflowRunId,
+                node_run_id=nodeRunId,
             )
         reply = (self._call("ListNodePreviewSources", request) if cancellation is None else
                  self._displayCall("ListNodePreviewSources", request, 5000, cancellation, 'node-inspection'))
@@ -787,6 +834,8 @@ class RuntimeClient:
                 snapshotState=state,
                 workflowRunId=str(getattr(source, "workflow_run_id", "")),
                 nodeRunId=str(getattr(source, "node_run_id", "")),
+                originalWidth=int(getattr(source, 'original_width', 0)),
+                originalHeight=int(getattr(source, 'original_height', 0)),
             ))
         return PreviewSourceListing(
             sources=tuple(sources), jobId=replyJobId,
@@ -1182,6 +1231,20 @@ class RuntimeClient:
             raise RuntimeClientError(reply.code, reply.message)
         return json.loads(reply.variables_json)
 
+    def dispatchQueueState(self, projectId, runGroupId="", targetSlotId="", includeItems=False):
+        try:
+            reply = self._call("GetDispatchQueueState", runtime_pb2.DispatchQueueRequest(
+                project_id=projectId, run_group_id=runGroupId, target_slot_id=targetSlotId, include_items=includeItems))
+        except AttributeError as error:
+            raise RuntimeClientError("E_DISPATCH_MONITOR_UNSUPPORTED", "当前 Runtime 不支持队列监控") from error
+        except RuntimeClientError as error:
+            if "UNIMPLEMENTED" in error.code:
+                raise RuntimeClientError("E_DISPATCH_MONITOR_UNSUPPORTED", "当前 Runtime 不支持队列监控") from error
+            raise
+        if not reply.ok:
+            raise RuntimeClientError(reply.code, reply.message)
+        return json.loads(reply.state_json)
+
     def listGlobalVariables(self, projectId, jobId=""):
         return self._variableCall("ListGlobalVariables", projectId, jobId=jobId)
 
@@ -1270,7 +1333,7 @@ class RuntimeClient:
 
     def _callPresentation(self, methodName: str, request):
         if self._displayService is None:
-            raise RuntimeClientError("UNIMPLEMENTED", "当前 Runtime 尚无页面服务；请先明确运行工程")
+            raise RuntimeClientError("UNIMPLEMENTED", "页面结果服务未启用；请在运行面板确认流程状态")
         method = getattr(self._displayService, methodName)
         try:
             return method(request, timeout=self.deadlineMs / 1000.0)

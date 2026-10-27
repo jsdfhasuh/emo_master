@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pytest
 
 from emo_master.apps.runtime.context.global_counters import ProjectGlobalCounters
 from emo_master.apps.runtime.context.sqlite_store import SqliteStore
@@ -16,6 +18,7 @@ from emo_master.core.contracts.geometry2d import BBox2D, CoordinateSpace2D
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.compiler import WorkflowCompiler
+from emo_master.core.workflow.errors import WorkflowCompileError
 
 
 PROJECT_ID = "global-counter-field-hardware"
@@ -134,7 +137,7 @@ class _FakePlcWriteOperator:
         return {"status": "ok", "outputs": {"receipt": receipt.toPayload()}}
 
 
-def testHardwareFieldProjectCompilesAndRunsWithSimulatedDevices(
+def testLegacyFieldProjectRequiresMigrationAndRunsWithDeclaredFakeHardware(
     tmp_path: Path,
 ) -> None:
     repositoryRoot = Path(__file__).resolve().parents[2]
@@ -144,13 +147,20 @@ def testHardwareFieldProjectCompilesAndRunsWithSimulatedDevices(
     )
     pluginRoot = repositoryRoot / "src" / "emo_master" / "plugins"
     activeOperators = PluginRegistry(coreVersion="0.6.1").scan(pluginRoot).activeOperators
-    compiled = WorkflowCompiler(operatorRegistry=activeOperators).compile(document)
+    with pytest.raises(WorkflowCompileError) as error:
+        WorkflowCompiler(operatorRegistry=activeOperators).compile(document)
+    assert error.value.issues and all(issue.code == 'E_DEVICE_BINDING' for issue in error.value.issues)
 
     state = _FakeHardwareState()
     runtimeOperators = dict(activeOperators)
     runtimeOperators["vision.io.huaray_camera"] = _FakeCameraOperator(state)
     runtimeOperators["communication.plc.slmp_read"] = _FakePlcReadOperator(state)
     runtimeOperators["communication.plc.slmp_write"] = _FakePlcWriteOperator(state)
+    # This historical counter fixture uses explicit fake operators, not current
+    # device-bound hardware declarations. The real registry rejects it above.
+    for key in ('vision.io.huaray_camera', 'communication.plc.slmp_read', 'communication.plc.slmp_write'):
+        runtimeOperators[key].manifest = replace(activeOperators[key].manifest, deviceRequirements={})
+    compiled = WorkflowCompiler(operatorRegistry=runtimeOperators).compile(document)
     store = SqliteStore(tmp_path / "runtime.db")
     store.initialize()
     runner = WorkflowRunner(

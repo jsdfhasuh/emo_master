@@ -51,11 +51,11 @@ OperatorDropHandler = Callable[[dict[str, object], float, float], None]
 
 
 try:
-    from PySide2.QtCore import QEvent, QPointF, QRectF, Qt, QTimer
+    from PySide2.QtCore import QEvent, QPoint, QPointF, QRectF, Qt, QTimer
     from shiboken2 import isValid
     from PySide2.QtGui import QBrush, QColor, QFontMetricsF, QPainter, QPainterPath, QPainterPathStroker, QPen, QPolygonF, QTransform
     from emo_master.apps.designer.ui.theme import uiFont
-    from emo_master.apps.designer.ui.icon_map import operatorIcon
+    from emo_master.apps.designer.ui.icon_map import operatorIcon, icon
     from PySide2.QtWidgets import (
         QApplication,
         QGraphicsEllipseItem,
@@ -91,6 +91,14 @@ try:
 
         def shape(self):
             return QPainterPath()
+
+        def boundingRect(self):
+            # Qt's default bounds use shape(), which is empty for this paint-only layer.
+            path = self.path()
+            if path.isEmpty():
+                return QRectF()
+            padding = self.pen().widthF() / 2
+            return path.controlPointRect().adjusted(-padding, -padding, padding, padding)
 
         def paint(self, painter, option, widget=None):
             painter.setPen(self.pen())
@@ -217,6 +225,30 @@ try:
             super().focusOutEvent(event)
             self._finish()
 
+    class _PortVisibilityButton(QGraphicsRectItem):
+        def __init__(self, node, scene):
+            super().__init__(QRectF(0, 0, 24, 24), node)
+            self.node = node
+            self.sceneRef = scene
+            self.isPortVisibilityButton = True
+            self.setCursor(Qt.PointingHandCursor)
+            self.setZValue(5)
+            self.setPos(node.geometry.width - 30, 8)
+
+        def paint(self, painter, option, widget=None):
+            icon('plus').paint(painter, 3, 3, 18, 18)
+
+        def mousePressEvent(self, event):
+            event.accept()
+
+        def mouseReleaseEvent(self, event):
+            if event.button() == Qt.LeftButton and self.contains(event.pos()):
+                self.sceneRef.showAllPorts(self.node.model.nodeId)
+            event.accept()
+
+        def mouseDoubleClickEvent(self, event):
+            event.accept()
+
     class _NodeItem(QGraphicsRectItem):
         def __init__(self, model: FlowNodeViewModel, scene: object) -> None:
             self.bodyFont = uiFont()
@@ -224,6 +256,7 @@ try:
             metrics = QFontMetricsF(self.bodyFont)
             self.geometry = measureNode(model, metrics.horizontalAdvance,
                                         QFontMetricsF(self.titleFont).horizontalAdvance, metrics.height())
+            self.expandedGeometry = self.geometry
             super().__init__(QRectF(0.0, 0.0, self.geometry.width, self.geometry.height))
             self.model = model
             self._sceneRef = scene
@@ -231,6 +264,7 @@ try:
             variant = self._resolveVariant(model)
             self._variant = variant
             self._runtimeState = "IDLE"
+            self._comparisonColor: str | None = None
             self._bindingSource = False
             self._sqliteSummary = None
             self._operatorIcon = operatorIcon("default" if getattr(model, "kind", "operator") == "operator" else "flow")
@@ -255,6 +289,8 @@ try:
             titleText.setPos(44.0, 10.0)
             titleText.setAcceptedMouseButtons(Qt.NoButton)
             self.setToolTip(tooltip)
+            self.portVisibilityButton = _PortVisibilityButton(self, scene)
+            self.portVisibilityButton.hide()
             if getattr(model, 'operatorId', '') == 'vision.io.sqlite_writer':
                 self._sqliteSummary = QGraphicsSimpleTextItem('未配置目标 · 0 个映射', self)
                 self._sqliteSummary.setFont(self.bodyFont)
@@ -287,6 +323,25 @@ try:
             painter.setPen(QPen(QColor("#2563eb"), 2.0) if self.isSelected() else
                            QPen(QColor('#8b5cf6'), 2.5) if self._bindingSource else self.pen())
             painter.drawRoundedRect(self.rect(), 6.0, 6.0)
+            if self._comparisonColor:
+                painter.setBrush(Qt.NoBrush)
+                painter.setPen(QPen(QColor(self._comparisonColor), 2))
+                painter.drawRoundedRect(self.rect().adjusted(3, 3, -3, -3), 4, 4)
+            # Wires stay behind nodes; draw only their in-node ends above the fill.
+            scene = self.scene()
+            if isinstance(scene, FlowScene):
+                for direction, ports in (("input", self.model.inputPorts), ("output", self.model.outputPorts)):
+                    for name in ports:
+                        key = (self.model.nodeId, direction, name)
+                        style = scene._portWireStyles.get(key)
+                        port = scene._portItems.get(key)
+                        if style is None or port is None or not port.isVisible():
+                            continue
+                        _rank, color, width, blocked = style
+                        painter.setPen(QPen(QColor(color), width, Qt.DashLine if blocked else Qt.SolidLine))
+                        center = port.pos() + port.rect().center()
+                        boundary = self.rect().left() if direction == "input" else self.rect().right()
+                        painter.drawLine(center, QPointF(boundary, center.y()))
             self._operatorIcon.paint(painter, 16, 10, 20, 20)
             painter.setPen(QPen(QColor("#e5e7eb"), 1.0))
             painter.drawLine(QPointF(1, self.geometry.header),
@@ -385,12 +440,22 @@ try:
                     event.accept()
                     return
                 else:
-                    handleNodeDoubleClick(self.model.nodeId)
+                    # Saving a modal editor can synchronously rebuild the scene
+                    # and delete this native item. Finish input ownership first;
+                    # never call the base handler (or this item) after dispatch.
+                    scene = self.scene()
+                    if scene is not None and scene.mouseGrabberItem() is self:
+                        self.ungrabMouse()
+                    nodeId = self.model.nodeId
+                    event.accept()
+                    handleNodeDoubleClick(nodeId)
+                    return
             super().mouseDoubleClickEvent(event)
 
         def setTitle(self, title: str) -> None:
             self.model.title = title
-            self.titleText.setText(QFontMetricsF(self.titleFont).elidedText(title, Qt.ElideRight, self.geometry.width - 60))
+            available = self.geometry.width - (80 if self.portVisibilityButton.isVisible() else 60)
+            self.titleText.setText(QFontMetricsF(self.titleFont).elidedText(title, Qt.ElideRight, available))
             self.titleText.setToolTip(title)
             self.setToolTip(title)
 
@@ -406,7 +471,7 @@ try:
             self._titleProxy = proxy
             editor = _TitleEditor(self.model.title, self._finishRename)
             editor.setFont(self.titleFont)
-            editor.setFixedSize(int(self.geometry.width - 48), int(QFontMetricsF(self.titleFont).height() + 12))
+            editor.setFixedSize(int(self.geometry.width - (80 if self.portVisibilityButton.isVisible() else 48)), int(QFontMetricsF(self.titleFont).height() + 12))
             proxy.setWidget(editor)
             proxy.setPos(40, 4)
             proxy.setZValue(10)
@@ -496,7 +561,10 @@ try:
             self.setHoverHint(False)
 
         def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
-            if self.direction == "output":
+            if event.button() == Qt.RightButton:
+                event.accept()
+                return
+            if event.button() == Qt.LeftButton and self.direction == "output":
                 startConnectionDrag = getattr(
                     self._sceneRef, "startConnectionDrag", None
                 )
@@ -652,6 +720,10 @@ try:
             self._iconProvider = None
             self._iconContext: Callable[[], tuple] = lambda: ()
             self._portItems: dict[tuple[str, str, str], _PortItem] = {}
+            self._hiddenPorts: dict[str, set[tuple[str, str]]] = {}
+            self.hiddenPortsLoader: Callable[[str], set[tuple[str, str]]] | None = None
+            self.hiddenPortsChanged: Callable[[str, set[tuple[str, str]]], None] | None = None
+            self._portMenu: QMenu | None = None
             self._edgeItems: dict[tuple[str, str, str, str], _EdgeItem] = {}
             self._inputEdgeIndex: dict[tuple[str, str], tuple[str, str, str, str]] = {}
             self._connectionHandler: ConnectionHandler | None = None
@@ -680,6 +752,7 @@ try:
             self._hoverEdgeKeys: frozenset[EdgeKey] | None = None
             self._menuPreview: frozenset[EdgeKey] | None = None
             self._portEmphasis: dict[tuple[str, str, str], str] = {}
+            self._portWireStyles: dict[tuple[str, str, str], tuple[int, str, float, bool]] = {}
             self._focusedEdges: frozenset[EdgeKey] = frozenset()
             self._branchMenu: QMenu | None = None
             self._presentationSignature: tuple[frozenset[EdgeKey], frozenset[EdgeKey], bool] | None = None
@@ -717,6 +790,7 @@ try:
             self._presentationSignature = signature
             styles = {}
             oldPorts, self._portEmphasis = self._portEmphasis, {}
+            oldWireStyles, self._portWireStyles = self._portWireStyles, {}
             for key, edge in self._edgeItems.items():
                 color, width, rank = edgeStyle(selected=key in selected, focused=key in self._focusedEdges,
                                                dimmed=active, blocked=edge.route.blocked)
@@ -727,10 +801,16 @@ try:
                 if edge.pen() != pen:
                     edge.setPen(pen)
                 edge.setZValue(-.25 if key in selected else -.5 if edge._focused else -1)
-                if edge._focused:
-                    for portKey in ((key[0], "output", key[1]), (key[2], "input", key[3])):
+                for portKey in ((key[0], "output", key[1]), (key[2], "input", key[3])):
+                    if portKey not in self._portWireStyles or styles[key] > self._portWireStyles[portKey]:
+                        self._portWireStyles[portKey] = styles[key]
+                    if edge._focused:
                         if self._portEmphasis.get(portKey) != SELECTED_COLOR:
                             self._portEmphasis[portKey] = SELECTED_COLOR if key in selected else FOCUS_COLOR
+            for nodeId in {key[0] for key in oldWireStyles.keys() | self._portWireStyles.keys()
+                           if oldWireStyles.get(key) != self._portWireStyles.get(key)}:
+                if nodeId in self._nodeItems:
+                    self._nodeItems[nodeId].update()
             for portKey in oldPorts.keys() | self._portEmphasis.keys():
                 if portKey in self._portItems:
                     self._portItems[portKey].update()
@@ -915,6 +995,7 @@ try:
                 if item._titleProxy is not None:
                     item._titleProxy.widget().finished = True
             self._closeEdgeMenu()
+            self._closePortMenu()
             self._routeTimer.stop()
             self._cancelRouteRefinement()
             self._routesDirty = False
@@ -935,6 +1016,7 @@ try:
             self._bindingTarget = None
             self._bindingSources = ()
             self._portItems = {}
+            self._hiddenPorts.clear()
             self._edgeItems = {}
             self._wireGeometry = WireGeometry((), ())
             self._wirePaths = []
@@ -944,6 +1026,7 @@ try:
             self._hoverEdgeKeys = None
             self._menuPreview = None
             self._portEmphasis = {}
+            self._portWireStyles = {}
             self._focusedEdges = frozenset()
             self._presentationSignature = None
             self._inputEdgeIndex = {}
@@ -970,6 +1053,8 @@ try:
             nodeItem = _NodeItem(model, self)
             self.addItem(nodeItem)
             self._nodeItems[model.nodeId] = nodeItem
+            if model.nodeId not in self._hiddenPorts:
+                self._hiddenPorts[model.nodeId] = self.hiddenPortsLoader(model.nodeId) if self.hiddenPortsLoader else set()
             self._bindOperatorIcon(nodeItem)
 
             geometry = nodeItem.geometry
@@ -985,6 +1070,7 @@ try:
                     labels = model.outputPortLabels if direction == "output" else model.inputPortLabels
                     displayName = labels.get(portName, portName)
                     label = QGraphicsSimpleTextItem(metrics.elidedText(displayName, Qt.ElideRight, available), nodeItem)
+                    label.portItem = portItem
                     label.setFont(nodeItem.bodyFont)
                     label.setBrush(QColor("#475569"))
                     label.setToolTip(f"{displayName}\n{portName}: {portType}")
@@ -999,8 +1085,138 @@ try:
                     rect = label.boundingRect()
                     labelX = 28.0 if direction == "input" else geometry.width - 28.0 - rect.width()
                     label.setPos(labelX, centerY - rect.height() / 2)
+                    portItem.label = label
                     self._portItems[(model.nodeId, direction, portName)] = portItem
+            self._refreshPortVisibility(model.nodeId)
             self._scheduleRoutes()
+
+        def _connectedPorts(self, nodeId: str) -> set[tuple[str, str]]:
+            used = set()
+            for source, output, target, inputName in self._edgeItems:
+                if source == nodeId:
+                    used.add(('output', output))
+                if target == nodeId:
+                    used.add(('input', inputName))
+            return used
+
+        def _nodePorts(self, nodeId: str) -> list[tuple[str, str]]:
+            node = self._nodeItems[nodeId].model
+            return [('input', name) for name in node.inputPorts] + [('output', name) for name in node.outputPorts]
+
+        def _setHiddenPorts(self, nodeId: str, hidden: set[tuple[str, str]]) -> None:
+            if nodeId not in self._nodeItems:
+                return
+            hidden = hidden.intersection(self._nodePorts(nodeId)) - self._connectedPorts(nodeId)
+            if hidden == self._hiddenPorts.get(nodeId, set()):
+                return
+            self._hiddenPorts[nodeId] = hidden
+            if self.hiddenPortsChanged:
+                self.hiddenPortsChanged(nodeId, set(hidden))
+            self._refreshPortVisibility(nodeId)
+            self._scheduleRoutes()
+
+        def setPortHidden(self, nodeId: str, direction: str, name: str, hidden: bool) -> None:
+            ports = set(self._hiddenPorts.get(nodeId, set()))
+            if hidden:
+                ports.add((direction, name))
+            else:
+                ports.discard((direction, name))
+            self._setHiddenPorts(nodeId, ports)
+
+        def hideUnusedPorts(self, nodeId: str) -> None:
+            if nodeId in self._nodeItems:
+                self._setHiddenPorts(nodeId, set(self._nodePorts(nodeId)))
+
+        def showAllPorts(self, nodeId: str) -> None:
+            self._setHiddenPorts(nodeId, set())
+
+        def addPortVisibilityActions(self, menu, nodeId: str) -> None:
+            hidden = self._hiddenPorts.get(nodeId, set())
+            submenu = menu.addMenu('显示引脚')
+            submenu.menuAction().setData('showPorts')
+            submenu.setEnabled(bool(hidden))
+            model = self._nodeItems[nodeId].model
+            for direction, name in self._nodePorts(nodeId):
+                if (direction, name) not in hidden:
+                    continue
+                labels = model.inputPortLabels if direction == 'input' else model.outputPortLabels
+                label = labels.get(name, name)
+                action = submenu.addAction(('输入' if direction == 'input' else '输出') + ' · ' + label)
+                action.setToolTip(f'{name}: {(model.inputPorts if direction == "input" else model.outputPorts)[name]}')
+                action.setData(('showPort', direction, name))
+                action.triggered.connect(lambda _checked=False, direction=direction, name=name:
+                                         self.setPortHidden(nodeId, direction, name, False))
+            show = menu.addAction('显示全部引脚')
+            show.setData('showAllPorts')
+            show.setEnabled(bool(hidden))
+            show.triggered.connect(lambda _checked=False: self.showAllPorts(nodeId))
+            hide = menu.addAction('隐藏未连接引脚')
+            hide.setData('hideUnusedPorts')
+            hide.setEnabled(bool(set(self._nodePorts(nodeId)) - self._connectedPorts(nodeId) - hidden))
+            hide.triggered.connect(lambda _checked=False: self.hideUnusedPorts(nodeId))
+
+        def _closePortMenu(self) -> None:
+            if self._portMenu is not None:
+                self._portMenu.close()
+                self._portMenu.deleteLater()
+                self._portMenu = None
+
+        def buildPortContextMenu(self, nodeId: str, direction: str, name: str):
+            self._closePortMenu()
+            menu = QMenu()
+            self._portMenu = menu
+            menu.setObjectName('portContextMenu')
+            menu.setToolTipsVisible(True)
+            connected = (direction, name) in self._connectedPorts(nodeId)
+            action = menu.addAction('隐藏此引脚')
+            action.setData('hidePort')
+            action.setEnabled(not connected)
+            action.setToolTip('已连接的引脚保持可见' if connected else '仅隐藏此引脚，不删除接口')
+            action.triggered.connect(lambda _checked=False: self.setPortHidden(nodeId, direction, name, True))
+            return menu
+
+        def _refreshPortVisibility(self, *nodeIds: str) -> None:
+            # Do not move the source or target ports during a connection gesture.
+            if self._dragSourcePort is not None:
+                return
+            for nodeId in nodeIds:
+                node = self._nodeItems.get(nodeId)
+                if node is None:
+                    continue
+                stored = self._hiddenPorts.get(nodeId, set())
+                hidden = stored.intersection(self._nodePorts(nodeId)) - self._connectedPorts(nodeId)
+                if hidden != stored:
+                    self._hiddenPorts[nodeId] = hidden
+                    if self.hiddenPortsChanged:
+                        self.hiddenPortsChanged(nodeId, set(hidden))
+                node.portVisibilityButton.setVisible(bool(hidden))
+                node.portVisibilityButton.setToolTip(f'已隐藏 {len(hidden)} 个引脚，点击显示全部')
+                node.portVisibilityButton.update()
+                rows = 1
+                for direction, ports in (('input', node.model.inputPorts), ('output', node.model.outputPorts)):
+                    index = 0
+                    for name in ports:
+                        port = self._portItems[(nodeId, direction, name)]
+                        visible = (direction, name) not in hidden
+                        port.setVisible(visible)
+                        port.label.setVisible(visible)
+                        if visible:
+                            y = node.geometry.header + (index + .5) * node.geometry.rowHeight
+                            port.setY(y - 6)
+                            port.label.setY(y - port.label.boundingRect().height() / 2)
+                            index += 1
+                    rows = max(rows, index)
+                height = node.geometry.header + rows * node.geometry.rowHeight + 12
+                node.geometry = replace(node.geometry, height=height)
+                node.setRect(0, 0, node.geometry.width, height)
+                available = node.geometry.width - (80 if hidden else 60)
+                node.titleText.setText(QFontMetricsF(node.titleFont).elidedText(node.model.title, Qt.ElideRight, available))
+
+        def setNodeComparisonColor(self, nodeId: str, color: str) -> None:
+            node = self._nodeItems.get(nodeId)
+            if node is not None:
+                node._comparisonColor = color
+                node.update()
 
         def refreshPresentations(self) -> None:
             if self.presentationProvider is None:
@@ -1032,6 +1248,7 @@ try:
             finally:
                 self.blockSignals(previous)
             self._hoverPort = None
+            self._refreshPortVisibility(*self._nodeItems)
             self._refreshEdgePresentation()
             self._scheduleRoutes()
 
@@ -1054,6 +1271,10 @@ try:
             self._inputEdgeIndex[inputKey] = edgeKey
             if existingEdgeKey is not None:
                 self.refreshPresentations()
+            affected = {edge.fromNodeId, edge.toNodeId}
+            if existingEdgeKey is not None:
+                affected.add(existingEdgeKey[0])
+            self._refreshPortVisibility(*affected)
             self._wireGeometryChanged()
             self._scheduleRoutes()
 
@@ -1225,6 +1446,7 @@ try:
                     self._iconProvider.unbind(nodeItem)
                 self.removeItem(nodeItem)
                 del self._nodeItems[nodeId]
+                self._hiddenPorts.pop(nodeId, None)
                 self._hoverPort = None
                 self._wireGeometryChanged()
                 self._scheduleRoutes()
@@ -1242,6 +1464,7 @@ try:
             existing = self._inputEdgeIndex.get(inputKey)
             if existing == edgeKey:
                 del self._inputEdgeIndex[inputKey]
+            self._refreshPortVisibility(fromNodeId, toNodeId)
             self._wireGeometryChanged()
             self._scheduleRoutes()
 
@@ -1261,7 +1484,7 @@ try:
             return edgeKeys
 
         def layoutNodesGrid(self, columns: int = 4) -> None:
-            self._applyPositions(gridPositions({key: item.geometry for key, item in self._nodeItems.items()}, columns))
+            self._applyPositions(gridPositions({key: item.expandedGeometry for key, item in self._nodeItems.items()}, columns))
 
         def _applyPositions(self, positions: dict[str, tuple[float, float]]) -> None:
             self._routeTimer.stop()
@@ -1283,13 +1506,15 @@ try:
                     source.mapToParent(source.boundingRect().center()).y(),
                     target.mapToParent(target.boundingRect().center()).y()))
             positions = flowPositions(
-                {key: LayoutNode(item.geometry.width, item.geometry.height, item.model.kind)
+                # Reserve expansion space without moving neighbours when ports are shown.
+                {key: LayoutNode(item.expandedGeometry.width, item.expandedGeometry.height, item.model.kind)
                  for key, item in self._nodeItems.items()},
                 links)
             self._applyPositions(positions)
 
         def nextNodePosition(self) -> tuple[float, float]:
-            bottom = max((item.sceneBoundingRect().bottom() for item in self._nodeItems.values()), default=-28)
+            bottom = max((item.sceneBoundingRect().bottom() + item.expandedGeometry.height - item.geometry.height
+                          for item in self._nodeItems.values()), default=-28)
             return (20.0, float(bottom + 48))
 
         def startConnectionDrag(self, sourcePort: _PortItem) -> None:
@@ -1329,15 +1554,26 @@ try:
             self._nodeDoubleClickHandler(nodeId)
 
         def handleNodeContextMenu(self, nodeId: str, screenX: int, screenY: int) -> bool:
-            if self._nodeContextMenuHandler is None or not self.hasNode(nodeId):
+            if not self.hasNode(nodeId):
                 return False
-            self._nodeContextMenuHandler(nodeId, screenX, screenY)
+            self._closePortMenu()
+            if self._nodeContextMenuHandler is not None:
+                self._nodeContextMenuHandler(nodeId, screenX, screenY)
+            else:
+                self._portMenu = QMenu()
+                self.addPortVisibilityActions(self._portMenu, nodeId)
+                self._portMenu.popup(QPoint(screenX, screenY))
             return True
 
         def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent) -> None:
             nodeId = self.getSelectedNodeId() if event.reason() == QGraphicsSceneContextMenuEvent.Keyboard else None
             if nodeId is None and event.reason() != QGraphicsSceneContextMenuEvent.Keyboard:
                 for item in self.items(event.scenePos()):
+                    port = item if isinstance(item, _PortItem) else getattr(item, 'portItem', None)
+                    if port is not None:
+                        self.buildPortContextMenu(port.nodeId, port.direction, port.portName).popup(event.screenPos())
+                        event.accept()
+                        return
                     current = item
                     while current is not None and not isinstance(current, _NodeItem):
                         current = current.parentItem()
@@ -1419,6 +1655,8 @@ try:
             self._hoverPort = None
             self._clearInputHints()
             self._setDragHint("", None)
+            self._refreshPortVisibility(*self._nodeItems)
+            self._scheduleRoutes()
             grabber = self.mouseGrabberItem()
             if isinstance(grabber, _PortItem):
                 grabber.ungrabMouse()
@@ -1815,7 +2053,7 @@ try:
             nearest: _PortItem | None = None
             minDistanceSquared = radius * radius
             for portItem in self._portItems.values():
-                if portItem.direction != "input":
+                if portItem.direction != "input" or not portItem.isVisible():
                     continue
                 center = portItem.sceneBoundingRect().center()
                 dx = center.x() - position.x()

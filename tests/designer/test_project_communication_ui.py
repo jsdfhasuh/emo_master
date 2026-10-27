@@ -56,45 +56,44 @@ def testStatusDistinguishesEnabledListenerAndClients(state, count, expected):
     assert summary(dict(projectId="p", enabled=False, state="STOPPED")) == "TCP 未启用"
 
 
-def testNativeDesignerSaveSyncNoLoadAndPendingConfig(retainedQtApplication, ownedDesignerWindow, tmp_path, monkeypatch):
+def testNativeTcpShortcutEditsManagedDraftWithoutPublishing(retainedQtApplication, ownedDesignerWindow, tmp_path, monkeypatch):
+    from examples.project_tcp_service import sampleProject
+
     service = RuntimeService(dbPath=tmp_path / "runtime.db", workspaceRoot=tmp_path / "jobs")
     client = RuntimeClient(service)
     path = tmp_path / "test.emoproj"
-    initial = project()
-    initial["workflows"]["main"]["nodes"] = [dict(nodeId="input", kind="workflow_input"), dict(nodeId="output", kind="workflow_output")]
-    path.write_text(json.dumps(initial), encoding="utf-8")
+    path.write_text(sampleProject(port=freePort()).model_dump_json(), encoding="utf-8")
+    disk = path.read_bytes()
     window = ownedDesignerWindow(client)
+    calls = []
     try:
         assert window.loadProjectDirectory(str(path), confirmed=True), window.projectController.lastLoadError
+        for name in ("LoadProject", "StartJob", "ControlCommunication"):
+            original = getattr(service, name)
+            def tracked(*args, _name=name, _original=original, **kwargs):
+                calls.append(_name)
+                return _original(*args, **kwargs)
+            monkeypatch.setattr(service, name, tracked)
         window.openCommunicationPanel()
-        controller = window.communicationController
-        spin(retainedQtApplication, lambda: controller.state is not None and controller.state.get("projectId") == "tcp-project" and controller.thread is None)
-        calls = []
-        originalLoad = service.LoadProject
-        monkeypatch.setattr(service, "LoadProject", lambda *args: (calls.append(1), originalLoad(*args))[1])
-        config = settings(freePort()).model_dump()
-        assert "尚未写入" in controller.saveSettings(config)
-        spin(retainedQtApplication, lambda: not controller.unsynced and controller.thread is None)
-        assert calls == []
-        assert json.loads(path.read_text(encoding="utf-8"))["communication"] == config
-        assert service.communicationManager.state == "STOPPED"
-        controller.control("START")
-        spin(retainedQtApplication, lambda: controller.thread is None and controller.state and controller.state["state"] == "LISTENING")
-        with socket.create_connection(("127.0.0.1", config["tcpServer"]["port"]), timeout=3):
-            ref = service.communicationManager.acquire("test", "tcp-server", "front", 1000, lambda: False)
-            changed = deepcopy(config)
-            changed["tcpServer"]["port"] = freePort()
-            assert "尚未写入" in controller.saveSettings(changed)
-            spin(retainedQtApplication, lambda: controller.thread is None and controller.state and controller.state["pending"])
-            assert calls == [] and service.communicationManager._peers["front"].generation == ref["connectionGeneration"]
-            assert f"{config['tcpServer']['port']} → {changed['tcpServer']['port']}" in controller.panel.notice.text()
-            disabled = deepcopy(changed)
-            disabled["enabled"] = False
-            assert "停止服务" in controller.saveSettings(disabled)
-            assert json.loads(path.read_text(encoding="utf-8"))["communication"]["enabled"]
-        retire(retainedQtApplication, controller)
+        panel = window.pageCoordinator.devices
+        spin(retainedQtApplication, lambda: panel.pending is None and bool(panel.deviceTypes))
+        assert panel.isVisible() and window.communicationController is None
+        panel.table.setCurrentCell(0, 0)
+        panel.name.setText("Draft TCP server")
+        panel.buttons["apply"].click()
+        draft = window.pageCoordinator.session.document()
+        assert draft.devices.definitions["tcp-server"].name == "Draft TCP server"
+        assert not draft.devices.definitions["tcp-server"].enabled
+        assert path.read_bytes() == disk and window.pageCoordinator.session.dirty
+        panel.closeButton.click()
+        assert window.saveProjectToDirectory(str(path))
+        saved = json.loads(path.read_text(encoding="utf-8"))
+        assert saved["devices"]["definitions"]["tcp-server"]["name"] == "Draft TCP server"
+        assert saved["schemaVersion"] == "2.7" and saved.get("communication") is None
+        assert not calls and service.loadedDocument is None and not service.jobRepository.all()
+        assert service.communicationManager.state == "STOPPED" and not service.deviceManager.drivers
     finally:
-        retire(retainedQtApplication, window.communicationController)
+        client.close()
         service.close()
 
 
@@ -227,7 +226,6 @@ def testEditableProjectReplacementReleasesOnlyAfterValidDifferentCandidate(retai
             assert not service.communicationManager._threads and not service.communicationManager._peers
             assert window._currentProjectId() == "other-project"
             assert robot.recv(1) == b""
-        retire(retainedQtApplication, window.communicationController)
     finally:
-        retire(retainedQtApplication, window.communicationController)
+        client.close()
         service.close()

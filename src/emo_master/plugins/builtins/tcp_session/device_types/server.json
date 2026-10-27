@@ -1,0 +1,235 @@
+{
+  "schemaVersion": "1.1",
+  "driverApiVersion": "1.1",
+  "deviceTypeId": "device.tcp.server",
+  "version": "1.0.0",
+  "displayName": "TCP 常驻服务",
+  "category": "TCP 通信",
+  "iconKey": "tcp-client",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x",
+  "platforms": [
+    "windows",
+    "linux"
+  ],
+  "driverEntry": "emo_master.apps.runtime.devices.tcp:ManagedTcpServer",
+  "connectionSchema": {
+    "type": "object",
+    "properties": {
+      "bindAddress": {
+        "title": "Runtime 监听 IPv4",
+        "type": "string",
+        "default": "127.0.0.1",
+        "xAddressLiteral": true,
+        "xDeviceIdentity": true
+      },
+      "port": {
+        "title": "端口",
+        "type": "integer",
+        "default": 10000,
+        "minimum": 1,
+        "maximum": 65535,
+        "xDeviceIdentity": true
+      },
+      "channels": {
+        "type": "array",
+        "title": "客户端通道",
+        "default": [],
+        "maxItems": 64,
+        "items": {
+          "type": "object",
+          "properties": {
+            "channelId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "allowedIps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "maxItems": 16
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "channelId",
+            "name",
+            "allowedIps"
+          ]
+        }
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "bindAddress",
+      "port",
+      "channels"
+    ]
+  },
+  "defaultsSchema": {
+    "type": "object",
+    "properties": {
+      "timeoutMs": {
+        "title": "等待连接超时（毫秒）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 60000,
+        "default": 5000
+      },
+      "encoding": {
+        "title": "发送编码",
+        "type": "string",
+        "enum": [
+          "utf-8",
+          "ascii",
+          "latin-1",
+          "hex",
+          "base64"
+        ],
+        "default": "utf-8",
+        "xOptionLabels": {
+          "utf-8": "UTF-8 文本（utf-8）",
+          "ascii": "ASCII 文本（ascii）",
+          "latin-1": "Latin-1 文本（latin-1）",
+          "hex": "十六进制（hex）",
+          "base64": "Base64（base64）"
+        }
+      },
+      "appendNewline": {
+        "title": "追加换行",
+        "type": "boolean",
+        "default": false
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "timeoutMs",
+      "encoding",
+      "appendNewline"
+    ]
+  },
+  "policiesSchema": {
+    "type": "object",
+    "properties": {
+      "deviceWaitTimeoutMs": {
+        "title": "排队超时 (ms)",
+        "type": "integer",
+        "default": 5000,
+        "minimum": 1,
+        "maximum": 600000,
+        "xAdvanced": true
+      },
+      "connect": {
+        "title": "服务启动方式",
+        "type": "string",
+        "enum": [
+          "manual",
+          "on_project_open",
+          "on_project_run"
+        ],
+        "default": "on_project_run"
+      },
+      "release": {
+        "type": "string",
+        "title": "释放方式",
+        "enum": [
+          "on_project_close"
+        ],
+        "default": "on_project_close"
+      },
+      "sendTimeoutMs": {
+        "title": "发送超时 (ms)",
+        "type": "integer",
+        "default": 2000,
+        "minimum": 1,
+        "maximum": 60000,
+        "xAdvanced": true
+      },
+      "maxMessageBytes": {
+        "title": "最大报文字节数",
+        "type": "integer",
+        "default": 1048576,
+        "minimum": 1,
+        "maximum": 16777216,
+        "xAdvanced": true
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "deviceWaitTimeoutMs",
+      "connect",
+      "release",
+      "sendTimeoutMs",
+      "maxMessageBytes"
+    ]
+  },
+  "overridePaths": [
+    "timeoutMs",
+    "encoding",
+    "appendNewline"
+  ],
+  "dynamicPaths": [
+    "timeoutMs",
+    "encoding",
+    "appendNewline"
+  ],
+  "nextCyclePaths": [
+    "timeoutMs",
+    "encoding",
+    "appendNewline"
+  ],
+  "capabilities": [
+    "acquire_session",
+    "send"
+  ],
+  "actionSchemas": {
+    "acquire_session": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false,
+      "required": []
+    },
+    "send": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "dataBase64": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "session",
+        "dataBase64"
+      ]
+    }
+  },
+  "operationScheduling": "managed_service",
+  "connectionLifetime": "persistent",
+  "controlCapabilities": [
+    "connect",
+    "disconnect",
+    "maintenance",
+    "resume",
+    "recover",
+    "test_connection"
+  ],
+  "bindingSelectors": {
+    "channelId": {
+      "itemsPath": "connection.channels",
+      "valueField": "channelId",
+      "labelField": "name"
+    }
+  }
+}

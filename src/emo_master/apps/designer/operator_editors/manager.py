@@ -61,8 +61,11 @@ class OperatorEditorManager:
         applyConfiguration=None,
     ) -> OperatorWorkspaceWindow:
         key = EditorKey(projectId, workflowId, nodeId)
+        definition = operatorDefinition or {}
+        operatorName = str(definition.get("displayName") or "")
         existing = self._windows.get(key)
         if existing is not None:
+            existing.setNodeIdentity(displayName, operatorName)
             refreshSchema = getattr(existing, "refreshSchema", None)
             if callable(refreshSchema):
                 refreshSchema(schema)
@@ -71,7 +74,6 @@ class OperatorEditorManager:
             existing.activateWindow()
             return existing
 
-        definition = operatorDefinition or {}
         version = str(definition.get("version", ""))
         rawEditor = definition.get("editorSpec", {})
         editorSpec = dict(rawEditor) if isinstance(rawEditor, dict) else {}
@@ -167,6 +169,7 @@ class OperatorEditorManager:
                 parent=parent,
                 onClosed=self._onWindowClosed,
             )
+        window.setNodeIdentity(displayName, operatorName)
         self._windows[key] = window
         window.show()
         window.raise_()
@@ -184,9 +187,9 @@ class OperatorEditorManager:
 
     def renameNode(self, projectId: str, workflowId: str, nodeId: str, name: str) -> None:
         window = self.get(EditorKey(projectId, workflowId, nodeId))
-        setter = getattr(window, "setWindowTitle", None)
+        setter = getattr(window, "setNodeIdentity", None)
         if callable(setter):
-            setter(f"{name} · {nodeId}")
+            setter(name)
 
     def closeNode(self, projectId: str, workflowId: str, nodeId: str) -> bool:
         return self._closeKeys(

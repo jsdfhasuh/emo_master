@@ -74,6 +74,10 @@ class OperatorExecutor:
                 outcome=error.outcome, message=str(error))}
         if node.operatorId == "communication.tcp.session_send" and "tcpReceipt" in nodeDiagnostics:
             diagnostics = {**diagnostics, "tcpReceipt": nodeDiagnostics["tcpReceipt"]}
+        if node.operatorId in {"communication.tcp.client", "communication.tcp.receive_once"} and "tcpTransaction" in nodeDiagnostics:
+            diagnostics = {**diagnostics, "tcpTransaction": nodeDiagnostics["tcpTransaction"]}
+        if node.operatorId == "vision.io.detection_archive" and "archiveProgress" in nodeDiagnostics:
+            diagnostics = {**diagnostics, "archiveProgress": nodeDiagnostics["archiveProgress"]}
         if node.operatorId == "vision.io.sqlite_writer" and "sqliteReceipt" in nodeDiagnostics:
             # A later validation/cancellation failure cannot undo an external commit.
             from emo_master.core.contracts.sqlite_writer import receiptSummary
@@ -138,7 +142,9 @@ class OperatorExecutor:
             params = resolveParams(params, node.globalVariableBindings, values)
             params = validateEffectiveParams(params, node.globalVariableBindings, node.paramSchema)
             validator = getattr(operator, "validateParams", None)
-            error = validator(params) if callable(validator) else None
+            connectedValidator = getattr(operator, "validateNodeParams", None)
+            error = (connectedValidator(params, nodeInput) if callable(connectedValidator)
+                     else validator(params) if callable(validator) else None)
             if isinstance(error, dict):
                 raise WorkflowExecutionError(str(error.get("code", "E_PARAM_INVALID")),
                                              str(error.get("message", "invalid bound parameters")), node.nodeId)
@@ -146,6 +152,7 @@ class OperatorExecutor:
             context,
             str(node.operatorId or ""),
             "execute",
+            self.bindingSnapshot(node),
         )
         runtimeContext = {
             "jobId": context.jobId,
@@ -169,11 +176,30 @@ class OperatorExecutor:
             "communication": self.communication,
         }
         if node.devicePlans:
-            runtimeContext["executeDevice"] = lambda slot, action, arguments: self.devices.call(
-                action, deviceId=node.devicePlans[slot]["deviceId"], params=deviceParameters[slot],
-                arguments=arguments, cycleId=context.cycleId or context.workflowRunId)
-            runtimeContext["captureDevice"] = lambda slot: self.devices.capture(
-                node.devicePlans[slot]["deviceId"], deviceParameters[slot], context.cycleId or context.workflowRunId)
+            runtimeContext['deviceParameters'] = deviceParameters
+            def executeDevice(slot, action, arguments):
+                plan = node.devicePlans[slot]
+                source = {key: runtimeContext[key] for key in ('workflowId', 'nodeId', 'nodeRunId', 'workflowRunId', 'iterationPath')}
+                source['slot'] = slot
+                fields = dict(deviceId=plan['deviceId'], params=deviceParameters[slot], arguments=arguments,
+                              cycleId=context.cycleId or context.workflowRunId, source=source,
+                              selectors=dict(plan.get('selectors', {})))
+                try:
+                    from emo_master.core.project.tcp_dependencies import isTcpDeviceType
+                    if isTcpDeviceType(plan['definition']['deviceTypeId']):
+                        if self.communication is None:
+                            raise WorkflowExecutionError('E_DEVICE_RUNTIME_UNAVAILABLE', 'TCP data bridge missing', node.nodeId)
+                        return self.communication.call(action, deviceTypeId=plan['definition']['deviceTypeId'],
+                            policies=dict(plan['definition']['policies']), **fields)
+                    return self.devices.call(action, **fields)
+                except Exception as error:
+                    error.diagnostics = dict(getattr(error, 'diagnostics', {}), deviceSlot=slot)
+                    raise
+            runtimeContext['executeDevice'] = executeDevice
+            runtimeContext['captureDevice'] = lambda slot: self.devices.capture(
+                node.devicePlans[slot]['deviceId'], deviceParameters[slot], context.cycleId or context.workflowRunId,
+                source=dict(workflowId=context.workflowId, nodeId=node.nodeId, slot=slot),
+                selectors=dict(node.devicePlans[slot].get('selectors', {})))
         if node.operatorId == "vision.io.sqlite_writer":
             from emo_master.apps.runtime.business_sqlite.backend import insert
             runtimeContext["sqliteInsert"] = insert
@@ -239,6 +265,7 @@ class OperatorExecutor:
             context,
             str(node.operatorId or ""),
             "lifecycle",
+            self.bindingSnapshot(node),
         )
         init = getattr(operator, "initOperator", None)
         if callable(init):
@@ -279,6 +306,16 @@ class OperatorExecutor:
         self._lifecycleOrder.append(key)
         self._lifecycleLoggers[key] = lifecycleLogger
         return operator
+
+    def bindingSnapshot(self, node):
+        result = {}
+        for slot, plan in node.devicePlans.items():
+            identity = getattr(self, 'deviceIdentities', {}).get(plan['deviceId'], {})
+            result[slot] = dict(deviceId=plan['deviceId'], selectors=deepcopy(plan.get('selectors', {})),
+                scope={key: identity[key] for key in ('runtimeInstanceId', 'projectId', 'projectLoadGeneration')
+                       if key in identity} or dict(getattr(self, 'deviceScope', {})),
+                deviceGeneration=identity.get('deviceGeneration', ''))
+        return result
 
     def disposeOperators(self) -> WorkflowExecutionError | None:
         self.coordinateSnapshots.clear()

@@ -1,0 +1,62 @@
+{
+  "operatorId": "vision.inference.patchcore",
+  "displayName": "PatchCore Inference",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins.patchcore_inference.operator:PatchCoreInferenceOperator",
+  "category": "推理",
+  "iconKey": "scan",
+  "iconResource": "assets/icon.svg",
+  "summary": "使用 CPU 加载 Vision Workshop DINO ONNX 完整部署包，输出原始分数、OK/NG、相对热图及可选疑似缺陷高亮。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "score": {"type": "number", "required": true, "nullable": false},
+    "threshold": {"type": "number", "required": true, "nullable": false},
+    "isAnomaly": {"type": "boolean", "required": true, "nullable": false},
+    "label": {"type": "string", "required": true, "nullable": false},
+    "heatmap": {"type": "image", "required": false, "nullable": false},
+    "overlay": {"type": "image", "required": false, "nullable": false},
+    "anomalyMap": {"type": "object", "required": false, "nullable": false},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "modelPath": {
+        "title": "模型部署目录", "type": "string", "default": "",
+        "xWidget": "file", "xFileMode": "directory",
+        "description": "Runtime 所在电脑上的完整 DINO ONNX 部署目录，或包含 transfer.json 和 payload 的导出目录；不会自动上传。"
+      },
+      "drawHeatmap": {
+        "title": "输出彩色热图", "type": "boolean", "default": true,
+        "description": "每张图相对响应的彩色显示，不是像素缺陷判定。"
+      },
+      "drawOverlay": {"title": "输出叠加图", "type": "boolean", "default": true},
+      "overlayMode": {
+        "title": "叠加显示", "type": "string", "default": "heatmap",
+        "enum": ["heatmap", "highlight"],
+        "xOptionLabels": {"heatmap": "整图热图", "highlight": "疑似缺陷高亮"},
+        "description": "高亮模式仅标出 NG 图中的相对高响应位置；OK 图保留原图。不是像素级缺陷判定。",
+        "xVisibleWhen": {"drawOverlay": [true]},
+        "xValidateWhen": {"drawOverlay": [true]}
+      },
+      "highlightThreshold": {
+        "title": "高亮相对阈值", "type": "number", "default": 0.7,
+        "exclusiveMinimum": 0, "maximum": 1,
+        "description": "仅用于显示，范围 (0, 1]；数值越大，高亮范围越小。不修改模型判定阈值。",
+        "xVisibleWhen": {"drawOverlay": [true], "overlayMode": ["highlight"]},
+        "xValidateWhen": {"drawOverlay": [true], "overlayMode": ["highlight"]}
+      },
+      "outputAnomalyMap": {
+        "title": "输出原始异常数值", "type": "boolean", "default": false,
+        "description": "输出原始 256×256 float32 数值和几何还原信息；不进行色彩归一化。"
+      }
+    },
+    "required": ["modelPath"],
+    "xModeOperator": "vision.inference.patchcore"
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

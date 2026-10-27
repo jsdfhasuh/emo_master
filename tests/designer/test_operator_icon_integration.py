@@ -129,7 +129,14 @@ def testWorkflowProjectAndRuntimeSessionRebindConsumers():
         oldScope = provider.scope
         client.runtimeScope = "reconnected"
         waitUntil(lambda: provider.scope != oldScope)
-        waitUntil(lambda: item._operatorIconSource == "custom")
+        # Catalog invalidation can replace scene items as presentation metadata
+        # disappears and returns. Observe the live consumer, not its retired item.
+        waitUntil(lambda: window.flowScene._nodeItems[nodeId]._operatorIconSource == "custom")
+        current = window.flowScene._nodeItems[nodeId]
+        binding = provider._bindings[provider._targets[id(current)]]
+        assert binding.context == (window._projectInstanceToken, "main", nodeId)
+        if current is not item:
+            assert id(item) not in provider._targets
         assert provider.scope == "reconnected" and client.calls == 2
         assert all(binding.request is None or binding.request.scope == "reconnected" for binding in provider._bindings.values())
     finally:
@@ -202,8 +209,9 @@ def testPendingCardBindingTimerDiesWithItsWidget():
         QCoreApplication.processEvents()
 
 
-def testStartupCancellationShutsDownDisplayBeforeClient(monkeypatch):
+def testStartupCancellationShutsDownDisplayBeforeClient(monkeypatch, confirmedStartupSettings):
     from emo_master.apps.designer import main
+    from emo_master.apps.designer import startup
     from PySide2 import QtWidgets
     from PySide2.QtWidgets import QApplication
 
@@ -211,8 +219,10 @@ def testStartupCancellationShutsDownDisplayBeforeClient(monkeypatch):
     client = SimpleNamespace(close=lambda: events.append("client"))
 
     class Window:
-        def __init__(self, actualClient, showStartupEntry):
+        def __init__(self, actualClient, showStartupEntry, projectEntryDialogFactory, settingsStore):
             assert actualClient is client and showStartupEntry
+            assert callable(projectEntryDialogFactory)
+            assert settingsStore is not None
 
         def showStartupProjectEntry(self):
             events.append("cancel")
@@ -229,8 +239,7 @@ def testStartupCancellationShutsDownDisplayBeforeClient(monkeypatch):
     monkeypatch.setattr(main, "configureHighDpi", lambda: None)
     monkeypatch.setattr(main, "applyDesignerStyle", lambda *_args: None)
     monkeypatch.setattr(main, "resolveRuntimeTarget", lambda: "")
-    monkeypatch.setattr(main, "RuntimeService", lambda: object())
-    monkeypatch.setattr(main, "RuntimeClient", lambda **_kwargs: client)
+    monkeypatch.setattr(startup, "prepareRuntime", lambda *_args, **_kwargs: client)
     monkeypatch.setattr(mainWindowModule, "MainWindow", Window)
     main.runDesigner()
     assert events == ["cancel", "display", "client"]

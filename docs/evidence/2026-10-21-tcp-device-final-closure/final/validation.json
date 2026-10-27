@@ -1,0 +1,229 @@
+{
+  "baseline": "31b5de4a604e4facdf636ad39795da0869d908d4",
+  "sourceSha": "325f60e4fe7b9210eaf50abddc13d0b2086e8bcb",
+  "sourceTree": "0df69ebe7a7eeee7d631009de8e78cc2091cc2fe",
+  "workingTree": false,
+  "workingTreeStatus": "M src/emo_master/apps/runtime/operator_debug/contracts.py\n M src/emo_master/apps/runtime/operator_debug/resources.py\n M tests/core/plugin/test_builtin_parameter_titles.py\n M tests/runtime/test_operator_debug_resources.py\n M tests/runtime/test_operator_registration.py\n?? docs/evidence/2026-10-21-tcp-device-final-closure/\n?? docs/video-loader.md\n?? examples/video_sample_while/\n?? src/emo_master/plugins/builtins/video_loader/\n?? tests/designer/test_video_loader_form.py\n?? tests/plugins/test_video_loader_operator.py\n?? tests/runtime/test_video_sample_while.py",
+  "snapshot": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-5_r7z73q\\source",
+  "temporaryRoot": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-5_r7z73q",
+  "executable": "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "exported": [
+    {
+      "path": "src/emo_master/apps/designer/ui/tcp_device_form.py",
+      "blob": "2fe45b95a5a60425b78c5cade470c238705bb0c5",
+      "committedBlob": "2fe45b95a5a60425b78c5cade470c238705bb0c5",
+      "matchesSourceCommit": true,
+      "sha256": "991d17313a898ac2a58c2476bc248cc2d467c13c99517a9337267d735f7a9acf"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/diagnostics.py",
+      "blob": "8e1fd899181037b1bfe557a0c69ab2fec3a9d2a8",
+      "committedBlob": "8e1fd899181037b1bfe557a0c69ab2fec3a9d2a8",
+      "matchesSourceCommit": true,
+      "sha256": "b7d1d119218ed692652f8d42ed90fdb30b69f4c03ef9c642fd9a84e0cfd8461a"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/manager.py",
+      "blob": "e842ca69e5263a690c1e72999b03209f7e113ab3",
+      "committedBlob": "e842ca69e5263a690c1e72999b03209f7e113ab3",
+      "matchesSourceCommit": true,
+      "sha256": "9a0e2f26b92b3fa94bd522a71c5d7330dc626b410ea23aa46633e87589e8e4ae"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/tcp.py",
+      "blob": "b186ccbbc1bc281b394870e1eb8f3da105e6808c",
+      "committedBlob": "b186ccbbc1bc281b394870e1eb8f3da105e6808c",
+      "matchesSourceCommit": true,
+      "sha256": "b8ec57395c1223b83bde26f5820bab028af82411a9aa92bc4d6689d929065da5"
+    },
+    {
+      "path": "src/emo_master/ui/communication_panel.py",
+      "blob": "f1ee553caddb1104a1826e16e8f361f409e79a14",
+      "committedBlob": "f1ee553caddb1104a1826e16e8f361f409e79a14",
+      "matchesSourceCommit": true,
+      "sha256": "a81f899a37de22779a3b083cd7abf5164107c6b98ec7aa8ceb15b06446d09a81"
+    },
+    {
+      "path": "tests/designer/test_device_definition_feedback.py",
+      "blob": "c71ca418eee7d3a27ebb73b9526c72c428bed141",
+      "committedBlob": "c71ca418eee7d3a27ebb73b9526c72c428bed141",
+      "matchesSourceCommit": true,
+      "sha256": "f04e5f13f2ec678b5ce988c0fb752fc84aa769fc669d54145a80d47e289dcfa8"
+    },
+    {
+      "path": "tests/designer/test_tcp_closure_ui.py",
+      "blob": "4dad14be18dceb27e613bb9eb0fc915a48a1f823",
+      "committedBlob": "4dad14be18dceb27e613bb9eb0fc915a48a1f823",
+      "matchesSourceCommit": true,
+      "sha256": "d8bc8c3ce48b01faf98d1edeb531ec0b083f5399a021039784bc565dbfdde648"
+    },
+    {
+      "path": "tests/runtime/test_device_feedback_closure.py",
+      "blob": "c4686fe792ee215a0ff4884b4e51ce2af9442d59",
+      "committedBlob": "c4686fe792ee215a0ff4884b4e51ce2af9442d59",
+      "matchesSourceCommit": true,
+      "sha256": "1e9f0f538c65d96237f857d2fb3c8b94e8c5d8c0523774be901b5cda70fca4d2"
+    },
+    {
+      "path": "tests/runtime/test_device_plan_completion.py",
+      "blob": "be5694ced167fdce4d09966f3298d68859c99f6c",
+      "committedBlob": "be5694ced167fdce4d09966f3298d68859c99f6c",
+      "matchesSourceCommit": true,
+      "sha256": "7d8fc488c94e273c1213b20e97c30fad0e2f2240d4a35d97c85d6b0a6ab6f029"
+    },
+    {
+      "path": "tests/runtime/test_tcp_device_integration.py",
+      "blob": "41fe77cb54a91cd191a71e05eb44a535e5b78587",
+      "committedBlob": "41fe77cb54a91cd191a71e05eb44a535e5b78587",
+      "matchesSourceCommit": true,
+      "sha256": "013309afa31a7a103fa92f0830e6cbb7dcd7c883828546aaa57a0a13a0ea85da"
+    }
+  ],
+  "runnerSha256": "0f2de3c37ad5a1b30a5027052d89b34550feb5124cbe3d379cd749267a307e3f",
+  "environment": {
+    "PYTHONPATH": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-5_r7z73q\\source\\src;C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-5_r7z73q\\source",
+    "PYTHONIOENCODING": "utf-8",
+    "QT_QPA_PLATFORM": "windows",
+    "EMO_TEST_SOURCE_SHA": "325f60e4fe7b9210eaf50abddc13d0b2086e8bcb"
+  },
+  "commands": [
+    {
+      "label": "environment",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-c",
+        "import emo_master,sys,json,PySide2; from PySide2.QtCore import qVersion; from pathlib import Path; print(json.dumps(dict(python=sys.version,PySide2=PySide2.__version__,Qt=qVersion(),importPath=emo_master.__file__),indent=2)); import os; assert os.path.samefile(Path(emo_master.__file__).parent.parent, Path.cwd()/'src'); assert sys.version_info[:2]==(3,10) and PySide2.__version__=='5.15.2.1'"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-5_r7z73q\\source",
+      "started": "2026-10-21T15:40:20.344533+08:00",
+      "elapsedSeconds": 0.407,
+      "exitCode": 0,
+      "log": "environment.log"
+    },
+    {
+      "label": "chain",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "--basetemp=C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-5_r7z73q\\chain",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-tcp-device-final-closure\\final\\chain.xml",
+        "tests/runtime/test_tcp_device_integration.py",
+        "tests/runtime/test_tcp_device_closure.py",
+        "tests/runtime/test_device_contract_closure.py",
+        "tests/runtime/test_device_feedback_closure.py",
+        "tests/designer/test_tcp_closure_ui.py"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-5_r7z73q\\source",
+      "started": "2026-10-21T15:40:20.753675+08:00",
+      "elapsedSeconds": 79.5,
+      "exitCode": 0,
+      "log": "chain.log"
+    },
+    {
+      "label": "regression",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "--basetemp=C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-5_r7z73q\\regression",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-tcp-device-final-closure\\final\\regression.xml",
+        "--deselect=tests/designer/test_runtime_validation_feedback.py::testUpgradedDraftResourceFailureCanBeFixedAndRevalidated",
+        "tests/runtime/test_frame_dispatch.py",
+        "tests/runtime/test_project_configuration.py",
+        "tests/runtime/test_loop_cycle_configuration.py",
+        "tests/runtime/test_operator_logging.py",
+        "tests/runtime/test_device_runtime.py",
+        "tests/runtime/test_device_ipc_retirement.py",
+        "tests/runtime/test_configuration_owners.py",
+        "tests/runtime/test_initial_project_configuration.py",
+        "tests/designer/test_runtime_validation_feedback.py",
+        "tests/designer/test_project_configuration_ui.py",
+        "tests/designer/test_device_workspace.py",
+        "tests/core/project/test_configuration.py",
+        "tests/runtime/test_device_plan_completion.py",
+        "tests/designer/test_device_definition_feedback.py"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-5_r7z73q\\source",
+      "started": "2026-10-21T15:41:40.256046+08:00",
+      "elapsedSeconds": 116.281,
+      "exitCode": 0,
+      "log": "regression.log"
+    },
+    {
+      "label": "ruff",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "ruff",
+        "check",
+        "src/emo_master/apps/designer/ui/tcp_device_form.py",
+        "src/emo_master/apps/runtime/devices/diagnostics.py",
+        "src/emo_master/apps/runtime/devices/manager.py",
+        "src/emo_master/apps/runtime/devices/tcp.py",
+        "src/emo_master/ui/communication_panel.py",
+        "tests/designer/test_device_definition_feedback.py",
+        "tests/designer/test_tcp_closure_ui.py",
+        "tests/runtime/test_device_feedback_closure.py",
+        "tests/runtime/test_device_plan_completion.py",
+        "tests/runtime/test_tcp_device_integration.py"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-5_r7z73q\\source",
+      "started": "2026-10-21T15:43:36.531573+08:00",
+      "elapsedSeconds": 0.125,
+      "exitCode": 0,
+      "log": "ruff.log"
+    },
+    {
+      "label": "mypy",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "mypy",
+        "src/emo_master/apps/designer/ui/tcp_device_form.py",
+        "src/emo_master/apps/runtime/devices/diagnostics.py",
+        "src/emo_master/apps/runtime/devices/manager.py",
+        "src/emo_master/apps/runtime/devices/tcp.py",
+        "src/emo_master/ui/communication_panel.py"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-5_r7z73q\\source",
+      "started": "2026-10-21T15:43:36.651996+08:00",
+      "elapsedSeconds": 5.875,
+      "exitCode": 0,
+      "log": "mypy.log"
+    },
+    {
+      "label": "proto",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "scripts/gen_proto.py",
+        "--check"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-5_r7z73q\\source",
+      "started": "2026-10-21T15:43:42.534243+08:00",
+      "elapsedSeconds": 0.219,
+      "exitCode": 0,
+      "log": "proto.log"
+    },
+    {
+      "label": "diff-check",
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "31b5de4a604e4facdf636ad39795da0869d908d4",
+        "325f60e4fe7b9210eaf50abddc13d0b2086e8bcb"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "started": "2026-10-21T15:43:42.754065+08:00",
+      "elapsedSeconds": 0.062,
+      "exitCode": 0,
+      "log": "diff-check.log"
+    }
+  ]
+}

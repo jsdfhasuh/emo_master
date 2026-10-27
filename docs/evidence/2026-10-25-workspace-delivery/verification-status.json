@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-25",
+  "timezone": "Asia/Shanghai",
+  "base": "577450fc19c60ac86989475d76838e952bcc3e86",
+  "codeHead": "3ebc90954d6514b4e5681eaf7b57812a63d23461",
+  "initialChangedFiles": 147,
+  "ruff": {
+    "command": "python -m ruff check src tests",
+    "exitCode": 0
+  },
+  "mypy": {
+    "command": "python -m mypy --config-file mypy.ini --no-incremental src",
+    "exitCode": 0,
+    "sourceFiles": 536,
+    "initialExitCode": 1,
+    "initialErrors": 2
+  },
+  "protobuf": {
+    "command": "python scripts/gen_proto.py --check",
+    "exitCode": 0
+  },
+  "registration": {
+    "counts": {
+      "operators": 77,
+      "deviceTypes": 6,
+      "entrySourceFiles": 54,
+      "managedOperators": 8
+    },
+    "rejectedOperators": {},
+    "rejectedDeviceTypes": {},
+    "assetIssues": {}
+  },
+  "historicalEvidence": {
+    "files": 49,
+    "indexBytesMatchInitialHashes": true
+  },
+  "notRun": [
+    "full-repository pytest",
+    "frozen EXE self-test",
+    "package build or release",
+    "real DINO business-model qualification",
+    "physical device access",
+    "deployment"
+  ]
+}

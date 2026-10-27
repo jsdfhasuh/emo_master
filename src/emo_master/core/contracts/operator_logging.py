@@ -98,3 +98,10 @@ def getOperatorLogger(context: Mapping[str, object] | None) -> OperatorLoggerPro
     if isinstance(logger, OperatorLoggerProtocol):
         return cast(OperatorLoggerProtocol, logger)
     return _NULL_LOGGER
+
+
+def getDeviceLogger(context: Mapping[str, object] | None, slot: str) -> OperatorLoggerProtocol:
+    """Log against a frozen device slot, including for operators with several devices."""
+    logger = context.get('logger') if isinstance(context, Mapping) else None
+    factory = getattr(logger, 'forDevice', None)
+    return factory(slot) if callable(factory) else _NULL_LOGGER

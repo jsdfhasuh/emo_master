@@ -1,0 +1,28 @@
+{
+  "baseline": "4550d46e34e508cbb2774f7bcda8863d293541e6",
+  "branch": "agent/runtime-workflow-architecture-v1",
+  "status": "M src/emo_master/apps/runtime/operator_debug/contracts.py\n M src/emo_master/apps/runtime/operator_debug/resources.py\n M tests/core/plugin/test_builtin_parameter_titles.py\n M tests/designer/test_tcp_closure_ui.py\n M tests/runtime/test_device_feedback_closure.py\n M tests/runtime/test_operator_debug_resources.py\n M tests/runtime/test_operator_registration.py\n?? docs/evidence/2026-10-21-tcp-once-log-preview/\n?? docs/testing/2026-10-21-video-loader-validation.md\n?? docs/video-loader.md\n?? examples/video_sample_while/\n?? examples/video_yolo_crop_operators/\n?? src/emo_master/plugins/builtins/video_loader/\n?? tests/designer/test_video_loader_form.py\n?? tests/plugins/test_video_loader_operator.py\n?? tests/runtime/test_video_sample_while.py",
+  "preservedTracked": [
+    {
+      "path": "src/emo_master/apps/runtime/operator_debug/contracts.py",
+      "sha256": "39c756152c2233e10740712773bea232b692dd3e04c13b0560678595447d936f"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/operator_debug/resources.py",
+      "sha256": "6d51bd74d03ad2ec14b8d2ad1a2c73bdd0791fe476364c7c721ae6d533510c6f"
+    },
+    {
+      "path": "tests/core/plugin/test_builtin_parameter_titles.py",
+      "sha256": "d59f97c5325f271c4c15d33974286ba23434f25c3d099742c3e22f8552765f32"
+    },
+    {
+      "path": "tests/runtime/test_operator_debug_resources.py",
+      "sha256": "992d5430295fea438f913490816134f52194f626469ebfa2db29d30563ff5442"
+    },
+    {
+      "path": "tests/runtime/test_operator_registration.py",
+      "sha256": "267539e69e3f7f8da06abee36c7f26f6c51c1e34a2e409177bdcf2572fac9852"
+    }
+  ],
+  "historicalEvidenceTree": "f77e733583242b8ed086626ead960e5b2952621e"
+}

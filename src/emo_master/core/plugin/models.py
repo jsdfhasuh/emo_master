@@ -31,7 +31,6 @@ class PluginManifest:
   editor: OperatorEditorSpec | None = None
   iconResource: str = ""
   deviceRequirements: dict[str, DeviceRequirement] = field(default_factory=dict)
-  deviceBindingSince: str = ""
   nextCycleParameterPaths: tuple[str, ...] = ()
 
 

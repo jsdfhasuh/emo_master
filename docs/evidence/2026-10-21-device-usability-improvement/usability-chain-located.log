@@ -1,0 +1,298 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+________________ testC1ThroughC6PendingDraftPublicationAndRun _________________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x0000025F4C373550>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000025F4C3736D0>)
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000025F4C960D60>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2743/testC1ThroughC6PendingDraftPub0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000025F4C373520>
+
+    def testC1ThroughC6PendingDraftPublicationAndRun(runtime, ownedDesignerWindow, tmp_path, monkeypatch):  # noqa: F811
+        service, client = runtime
+        types, requirements, _ = client.listDeviceTypes()
+        requirements = {operator: {slot: value.model_dump() for slot, value in slots.items()}
+                        for operator, slots in requirements.items()}
+        root = tmp_path/'engineering'
+        root.mkdir()
+        source = root/'usability.emoproj'
+        source.write_text(json.dumps(WorkflowStore().toPayload()), encoding='utf-8')
+        window = ownedDesignerWindow(client)
+        window.show()
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+        c = window.pageCoordinator
+        draftNode = node('acquire', 'communication.tcp.session', 'unused')
+        draftNode.pop('deviceBindings')
+        manifest = service.pluginScanResult.activeOperators[draftNode['operatorId']].manifest
+        ports = lambda values: {key: value if isinstance(value, str) else value['type'] for key, value in values.items()}
+        draftNode.update(inputPorts=ports(manifest.inputPorts), outputPorts=ports(manifest.outputPorts),
+                         paramSchema=manifest.paramSchema)
+        wizard = DeviceNodeDialog(c, draftNode, requirements[draftNode['operatorId']], window, position=dict(x=20., y=30.))
+        wizard.show()
+        waitUntil(lambda: wizard.pendingButton.isEnabled())
+        def create(dialog):
+            dialog.enabled.setChecked(False)
+            dialog.forms['connection'].fields._controls['port'].setValue(freePort())
+            dialog.accept()
+            return dialog.result()
+        with monkeypatch.context() as patch:
+            patch.setattr(DeviceDefinitionDialog, 'exec_', create)
+            wizard._create('tcp')
+        server = wizard.slots['tcp'][0].currentData()
+        assert server and wizard.selectors['tcp']['channelId'].currentData() is None
+        before = len(c.session._undo)
+        wizard.accept()
+        assert wizard.isVisible() and 'selectors.channelId' in wizard.error.text()
+        wizard.savePending()
+        assert wizard.result() == wizard.Accepted and len(c.session._undo) == before+1
+        pending = c.session.document().workflows['main'].nodes[-1]
+        assert pending.deviceBindings['tcp'].deviceId == server and not pending.deviceBindings['tcp'].selectors
+        assert not c.session.document().devices.definitions[server].enabled
+        assert window.saveProjectToDirectory(str(source))
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+        savedPending = source.read_bytes()
+        assert c.session.document().workflows['main'].nodes[-1].nodeId == 'acquire'
+        with pytest.raises(WorkflowCompileError) as invalid:
+            WorkflowCompiler(service.pluginScanResult.activeOperators, deviceTypes=types).compile(c.session.payload())
+        assert any(issue.nodeId == 'acquire' and issue.fieldPath == 'deviceBindings.tcp.selectors.channelId'
+                   for issue in invalid.value.issues)
+        with pytest.raises(WorkflowCompileError):
+            buildRuntimePackage(root, tmp_path/'incomplete-runtime', registry=service.pluginScanResult.activeOperators, deviceTypes=types)
+        template = buildWorkflowPackage(c.session.workflows, 'main', sourceRoot=root)
+        target = WorkflowStore()
+        imported = importWorkflowPackage(target, template, deviceMapping={server: None})
+        copied = next(n for n in target.get(imported.rootWorkflowId).nodes if n['nodeId'] == 'acquire')
+        assert copied['deviceBindings']['tcp']['deviceId'] == imported.deviceIdMap[server]
+        assert copied['deviceBindings']['tcp'].get('selectors', {}) == {}
+        # A disabled, empty-channel definition is a valid executable configuration
+        # when no incomplete node is selected into that configuration.
+        online = c.session.payload()
+        online['workflows']['main'] = graph([])
+        client.initializeProjectConfiguration(online, root, 'usability-initial', runtimeInstanceId=service.runtimeInstanceId)
+        assert waitWrite(service, client, 'usability-initial')['state'] == 'COMMITTED'
+        port = online['devices']['definitions'][server]['connection']['port']
+        assert not service.deviceManager.drivers[server].snapshot().get('ready')
+        with socket.socket() as available:
+            available.bind(('127.0.0.1', port))
+        tested = service.deviceManager.testConnection(online['devices']['definitions'][server])
+        assert '未验证外部客户端' in tested['message']
+        assert not service.deviceManager.maintenanceOwners
+        assert set(service.deviceManager.drivers) == {server}
+        editor = DeviceCatalogEditor(c.session, types, requirements)
+        value = deepcopy(c.session.payload()['devices']['definitions'][server])
+        value['connection']['channels'] = [dict(channelId='a', name='本机测试', allowedIps=['127.0.0.1'])]
+        value['enabled'] = True
+        value['policies']['connect'] = 'on_project_open'
+        editor.put(value, deviceId=server)  # Missing channel in the node does not block a legal device edit.
+        pending = next(n.model_dump() for n in c.session.document().workflows['main'].nodes if n.nodeId == 'acquire')
+        pending['deviceBindings']['tcp']['selectors'] = dict(channelId='a')
+        editor.commitNode('main', pending)
+        payload = c.session.payload()
+        payload['workflows']['main'] = graph([pending, node('send', 'communication.tcp.session_send', server)],
+            [edge('acquire', 'session', 'send', 'session'), edge('input', 'text', 'send', 'data'),
+             edge('send', 'receipt', 'output', 'receipt')], outputs=dict(receipt='tcpSendReceipt'), inputs=dict(text='string'))
+        payload['devices']['definitions']['camera'] = definition(types['device.simulated.camera'], serial='USABILITY-SIM')
+        payload['devices']['definitions']['camera']['defaults'].update(width=8, height=6)
+        payload['workflows']['camera'] = graph([dict(nodeId='capture', operatorId='vision.io.simulated_camera',
+            deviceBindings={'camera': dict(deviceId='camera')})], [edge('capture', 'image', 'output', 'image')], outputs=dict(image='image'))
+        payload['workflowOrder'].append('camera')
+        with c.session.transaction():
+            c.session._restore(payload)
+        window.workflowController._renderActive()
+        c.showDevices()
+        observer = c.devices
+        waitUntil(lambda: observer.pending is None)
+        observer.selectedId = server
+        observer.refresh()
+        observer.resize(1200, 760)
+        assert observer.grab().save(str(tmp_path/'C2-fixed-actions.png'))
+        modalErrors, dialogs = [], []
+        originalExec = ProjectConfigurationDialog.exec_
+        monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+        def publish(dialog):
+            dialogs.append(dialog)
+            stage = 0
+            def step():
+                nonlocal stage
+                try:
+                    if dialog.pending is not None or dialog.writePending:
+                        QTimer.singleShot(30, step)
+                        return
+                    assert not observer.isVisible() and dialog.parentWidget() is window
+                    if stage == 0:
+                        assert not dialog.initial
+                        for row in range(dialog.table.rowCount()):
+                            dialog.table.item(row, 0).setCheckState(Qt.Checked)
+                        assert dialog.grab().save(str(tmp_path/'C3-publication-summary.png'))
+                        dialog.write(validate=True)
+                    elif stage == 1:
+                        dialog.write()
+                    else:
+                        assert client.getProjectWriteStatus(dialog.requestId)['state'] == 'COMMITTED'
+                        dialog.reject()
+                        return
+                    stage += 1
+                    QTimer.singleShot(30, step)
+                except BaseException as error:
+                    modalErrors.append(error)
+                    dialog.reject()
+            QTimer.singleShot(30, step)
+            return originalExec(dialog)
+        with monkeypatch.context() as patch:
+            patch.setattr(ProjectConfigurationDialog, 'exec_', publish)
+            c.configureFromDevices()
+            waitUntil(lambda: bool(dialogs) and observer.isVisible() and not c._devicePublishPending)
+        assert not modalErrors, modalErrors
+        assert c.session.dirty and source.read_bytes() == savedPending
+        waitUntil(lambda: observer.pending is None)
+        observer.closeButton.click()
+        waitUntil(lambda: bool(service.deviceManager.drivers[server].snapshot().get('ready')))
+        with socket.create_connection(('127.0.0.1', port), timeout=5) as peer:
+>           job = run(service, client, 'main', dict(text='USABILITY-BYTES'))
+
+tests\runtime\test_device_usability_chain.py:164: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+service = <emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x0000025F4C373550>
+client = <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000025F4C3736D0>
+workflow = 'main', inputs = {'text': 'USABILITY-BYTES'}
+
+    def run(service, client, workflow, inputs=None):
+        reply = client.startJob(service.loadedProjectId, workflow, inputs=inputs or {})
+        assert reply.ok, reply
+        job = reply.job_id
+        result = waitForTerminal(service, job, timeoutSeconds=30)
+>       assert result.status == 'COMPLETED', result
+E       AssertionError: ok: true
+E         status: "FAILED"
+E         error_code: "E_INPUT_MISSING"
+E         message: "node inputs are missing: data"
+E         project_id: "507597a0...72
+E         accepted_at_ms: 1792585883617
+E         started_at_ms: 1792585884583
+E         ended_at_ms: 1792585884596
+E         legacy_snapshot_policy: "ALL"
+E         
+E       assert 'FAILED' == 'COMPLETED'
+E         
+E         - COMPLETED
+E         + FAILED
+
+tests\runtime\test_tcp_device_integration.py:64: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 310, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1081, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in <listcomp>
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+AttributeError: 'NoneType' object has no attribute 'text'
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 310, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1081, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 108, in <listcomp>
+    allowedIps=[ip for ip in re.split(r'[,，;；\s]+', self.table.item(row, 2).text().strip()) if ip])
+AttributeError: 'NoneType' object has no attribute 'text'
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 310, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1081, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in <listcomp>
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+AttributeError: 'NoneType' object has no attribute 'text'
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 310, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1081, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 108, in <listcomp>
+    allowedIps=[ip for ip in re.split(r'[,，;；\s]+', self.table.item(row, 2).text().strip()) if ip])
+AttributeError: 'NoneType' object has no attribute 'text'
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 310, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1081, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in <listcomp>
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+AttributeError: 'NoneType' object has no attribute 'text'
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 310, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1081, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 108, in <listcomp>
+    allowedIps=[ip for ip in re.split(r'[,，;；\s]+', self.table.item(row, 2).text().strip()) if ip])
+AttributeError: 'NoneType' object has no attribute 'text'
+Process emo-master-job-b0ec76d4-1d84-4c57-9a78-fc61d32e8900:
+
+Traceback (most recent call last):
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+
+    self.run()
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+
+    self._target(*self._args, **self._kwargs)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+
+    target(*args)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 140, in runJobProcess
+
+    runCycle(context, inputs)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+
+    result = self._runWorkflow(
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\execution\operator_executor.py", line 105, in invoke
+
+    raise WorkflowExecutionError(
+
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: node inputs are missing: data
+
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_device_usability_chain.py::testC1ThroughC6PendingDraftPublicationAndRun
+1 failed in 4.80s

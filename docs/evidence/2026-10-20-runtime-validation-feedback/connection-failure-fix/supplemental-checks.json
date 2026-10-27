@@ -1,0 +1,25 @@
+{
+  "ruff-followup": {
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "-m",
+      "ruff",
+      "check",
+      "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\docs\\evidence\\2026-10-20-runtime-validation-feedback\\connection-failure-fix\\verify_followup.py",
+      "src/emo_master/apps/designer/ui/project_configuration.py",
+      "tests/designer/test_runtime_validation_feedback.py"
+    ],
+    "exitCode": 0
+  },
+  "final-diff": {
+    "command": [
+      "git",
+      "-c",
+      "core.safecrlf=false",
+      "diff",
+      "--check"
+    ],
+    "exitCode": 0
+  },
+  "verificationScriptSha256": "c389ad1446051fc0ca35356be8d505d49697598197db0688577518af1dce2d64"
+}

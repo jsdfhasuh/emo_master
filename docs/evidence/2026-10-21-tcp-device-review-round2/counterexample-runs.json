@@ -1,0 +1,104 @@
+{
+  "environment": {
+    "PYTHONPATH": "src;.",
+    "PYTHONIOENCODING": "utf-8",
+    "QT_QPA_PLATFORM": "windows"
+  },
+  "commands": [
+    {
+      "label": "first-counterexamples",
+      "productSource": "b86d0162dcde14b9c19ec19eee838dc114eeca98 + new tests only",
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "tests/runtime/test_frame_dispatch.py::testConsumerDeviceLogsKeepRetainedCycleIdentityAndPersistOnce",
+        "tests/designer/test_tcp_closure_ui.py::testDeviceDetailShowsAllActiveOwners",
+        "tests/designer/test_tcp_closure_ui.py::testSelectiveChannelRemovalLocatesOldBindingAndUiCanPublishAfterSelection",
+        "--junitxml=docs\\evidence\\2026-10-21-tcp-device-review-round2\\first-counterexamples.xml"
+      ],
+      "exitCode": 1,
+      "result": "4 failed, 2 passed in 10.47s",
+      "log": "first-counterexamples.log",
+      "testFiles": "This round regression files; baseline product code was unchanged during baseline runs."
+    },
+    {
+      "label": "r02-baseline",
+      "productSource": "b86d0162dcde14b9c19ec19eee838dc114eeca98 + corrected Runtime ID fixture",
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "tests/designer/test_tcp_closure_ui.py::testSelectiveChannelRemovalLocatesOldBindingAndUiCanPublishAfterSelection",
+        "--junitxml=docs\\evidence\\2026-10-21-tcp-device-review-round2\\r02-baseline.xml"
+      ],
+      "exitCode": 1,
+      "result": "1 failed in 2.05s",
+      "log": "r02-baseline.log",
+      "testFiles": "This round regression files; baseline product code was unchanged during baseline runs."
+    },
+    {
+      "label": "r02-baseline-corrected",
+      "productSource": "b86d0162dcde14b9c19ec19eee838dc114eeca98 + valid loopback channels fixture",
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "tests/designer/test_tcp_closure_ui.py::testSelectiveChannelRemovalLocatesOldBindingAndUiCanPublishAfterSelection",
+        "--junitxml=docs\\evidence\\2026-10-21-tcp-device-review-round2\\r02-baseline-corrected.xml"
+      ],
+      "exitCode": 1,
+      "result": "1 failed in 2.27s",
+      "log": "r02-baseline-corrected.log",
+      "testFiles": "This round regression files; baseline product code was unchanged during baseline runs."
+    },
+    {
+      "label": "fixed-counterexamples",
+      "productSource": "working source later committed as 23c0186cb4b91c56725cb667726e4c4972f0a65b",
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "tests/runtime/test_frame_dispatch.py::testConsumerDeviceLogsKeepRetainedCycleIdentityAndPersistOnce",
+        "tests/designer/test_tcp_closure_ui.py::testDeviceDetailShowsAllActiveOwners",
+        "tests/designer/test_tcp_closure_ui.py::testSelectiveChannelRemovalLocatesOldBindingAndUiCanPublishAfterSelection",
+        "--junitxml=docs\\evidence\\2026-10-21-tcp-device-review-round2\\fixed-counterexamples.xml"
+      ],
+      "exitCode": 0,
+      "result": "6 passed in 9.73s",
+      "log": "fixed-counterexamples.log",
+      "testFiles": "This round regression files; baseline product code was unchanged during baseline runs."
+    },
+    {
+      "label": "configuration-fixtures-fixed",
+      "productSource": "23c0186 product src + test fixture changes later committed as 2db1913021d764ddbe175b73a28c8623ffe9df82",
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "tests/runtime/test_project_configuration.py::testSpawnedContinuousCyclesApplyNextRevisionWithoutRestartingDriver",
+        "tests/runtime/test_project_configuration.py::testRemoteWriteAndLegacyMutationFence",
+        "--junitxml=docs\\evidence\\2026-10-21-tcp-device-review-round2\\configuration-fixtures-fixed.xml"
+      ],
+      "exitCode": 0,
+      "result": "2 passed in 3.04s",
+      "log": "configuration-fixtures-fixed.log",
+      "testFiles": "This round regression files; baseline product code was unchanged during baseline runs."
+    }
+  ]
+}

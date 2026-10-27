@@ -15,7 +15,7 @@ def testOpeningAndRefreshingReadsKnownStatesWithoutLosingEdits(ownedDesignerWind
     window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
     calls = []
     state = dict(state='IDLE', generation='g', definitionRevision='r', queued=0, activeOwner=None,
-                 connectionState='DISCONNECTED')
+                 connectionState='DISCONNECTED', lifecycleConnected=False)
     def states(project):
         calls.append(project)
         return 'instance', {'camera': deepcopy(state)}
@@ -26,7 +26,7 @@ def testOpeningAndRefreshingReadsKnownStatesWithoutLosingEdits(ownedDesignerWind
     assert calls and '未连接' in d.table.item(0, 3).text()
     d.table.setCurrentCell(0, 0)
     d.name.setText('Unapplied editor value')
-    state.update(queued=2, activeOwner='simulated-job', connectionState='CONNECTED')
+    state.update(queued=2, activeOwner='simulated-job', connectionState='CONNECTED', lifecycleConnected=True)
     d.stateTimer.timeout.emit()
     waitUntil(lambda: d.pending is None)
     assert d.name.text() == 'Unapplied editor value'
@@ -104,9 +104,11 @@ def testValidatedEffectsAreNextToSelectedChanges(ownedDesignerWindow, tmp_path):
         waitUntil(lambda: d.pending is None)
         assert d.table.columnCount() == 6
         assert '下一检测周期' in d.table.item(row, 4).text()
-        assert 'camera' in d.table.item(row, 5).text() and 'job-1' in d.table.item(row, 5).text()
+        assert d.local['devices']['definitions']['camera']['name'] in d.table.item(row, 5).text()
+        assert d.local['workflows']['main']['name'] in d.table.item(row, 5).text()
+        assert 'job-1' in d.table.item(row, 5).text()
         d.table.item(row, 0).setCheckState(Qt.Unchecked)
-        assert '未校验' in d.impact.text()
+        assert d.impact.text() == '尚未检查选中改动的影响'
     finally:
         d.reject()
 
@@ -228,7 +230,8 @@ def testNativeDeviceDialogProductionViewingWithRealRuntime(ownedDesignerWindow, 
                 manager.authorize('simulated-production', ['camera'])
                 cycle = service.projectConfiguration.beginCycle('simulated-production', -1)
                 descriptor = manager.execute('simulated-production', 'camera', 'capture',
-                    manager.definitions['camera'].defaults, cycleId=cycle['cycleId'])
+                    manager.definitions['camera'].defaults, cycleId=cycle['cycleId'],
+                    source=dict(workflowId='main', nodeId='capture', slot='camera'))
                 manager.frames.release(descriptor['frameId'], 'simulated-production')
                 monitor.previewTimer.timeout.emit()
                 waitUntil(lambda: monitor.pending is None)
@@ -256,7 +259,7 @@ def testNativeDeviceDialogProductionViewingWithRealRuntime(ownedDesignerWindow, 
             return original(monitor)
         monkeypatch.setattr(ManagedCameraDebugDialog, 'exec_', nativeExec)
         monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
-        d.buttons['diagnostics'].click()
+        d.buttons['diagnostics'].trigger()
         assert not errors, errors
         waitUntil(lambda: not manager.maintenanceOwners)
         assert window.pageCoordinator.session.payload() == before

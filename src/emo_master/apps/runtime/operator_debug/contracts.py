@@ -28,18 +28,21 @@ SUPPORTED_FOLDERS = (
     "rotate", "shape_measurement", "template_match", "threshold", "variable_read", "variable_write",
     "coordinate_calculator", "value_select",
     "point_components", "number_absolute", "number_exact_integer", "number_pair", "number_truncate",
-    "coordinate_message_format",
+    "coordinate_message_format", "elapsed_time", "percentage",
 )
 # Explicit user-triggered resource operations. Runtime owns file/socket access and
 # its debug reservation excludes competing execution owners.
 # These entries must not also admit automatic workflow execution or trials.
 SINGLE_NODE_FOLDERS = (
-    "plc_slmp_read", "image_loader", "coordinate_reader", "image_batch_loader",
-    "yolo_inference", "image_saver", "result_writer", "sqlite_writer",
+    "plc_slmp_read", "image_loader", "coordinate_reader", "image_batch_loader", "video_loader", "file_list",
+    "yolo_inference", "yolo_classification", "patchcore_inference", "image_saver", "result_writer", "sqlite_writer",
     "tcp_client", "tcp_receive_once", "plc_slmp_write", "huaray_camera",
+    "rtsp_camera", "hikvision_audio",
 )
 
 EXECUTION_WARNINGS = {
+    "vision.io.rtsp_camera": "本次将从 Runtime 连接 RTSP 摄像头并读取一帧，请确认设备可用于调试。",
+    "communication.camera.hikvision_audio": "本次可能使摄像头现场发声，使用设备当前音量和播放次数。取消不能撤销已发送的播放请求；结果不明时禁止自动重试。",
     "communication.plc.slmp_write": "本次将解锁一次 PLC 写入并真实写入配置的设备。取消或超时不能撤销已发送的数据；禁止自动重试。",
     "communication.tcp.client": "本次将向配置的 TCP 地址真实发送数据。取消或超时不能撤销已发送的数据。",
     "communication.tcp.receive_once": "本次将在 Runtime 监听 TCP 端口，并可能发送配置的应答。请确认监听地址及应答内容。",
@@ -146,6 +149,8 @@ def trustedEntries(registry):
         descriptor = registry.get(operatorId)
         manifest = getattr(descriptor, "manifest", None)
         resource = getattr(descriptor, "resourceRoot", None)
+        if manifest is not None and manifest.deviceRequirements:
+            continue
         if (getattr(descriptor, "operatorClass", None) is operator
                 and manifest is not None and manifest.entry == entry
                 and manifest.version == operator.meta.version
@@ -157,7 +162,7 @@ def trustedEntries(registry):
                 "entry": entry, "version": manifest.version,
                 "inputPorts": manifest.inputPorts, "outputPorts": manifest.outputPorts,
                 "paramSchema": manifest.paramSchema, "displayName": manifest.displayName,
-                "stateful": folder in {"global_counter", "variable_read", "variable_write", "image_batch_loader", "coordinate_reader"},
+                "stateful": folder in {"global_counter", "variable_read", "variable_write", "image_batch_loader", "video_loader", "coordinate_reader", "patchcore_inference", "yolo_classification", "elapsed_time"},
                 "singleNodeOnly": folder in SINGLE_NODE_FOLDERS,
                 "executionWarning": EXECUTION_WARNINGS.get(operatorId, ""),
             }
@@ -169,7 +174,7 @@ def draft(raw, projectId, workflowId, nodeId, operatorId, admitted):
         identifier(value)
     payload = parse(raw, MAX_REQUEST_BYTES)
     try:
-        if payload["schemaVersion"] not in {"2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6"}:
+        if payload["schemaVersion"] not in {"2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7"}:
             raise ValueError("unsupported project version")
         if payload["project"]["projectId"] != projectId:
             raise ValueError("project identity changed")
@@ -185,9 +190,6 @@ def draft(raw, projectId, workflowId, nodeId, operatorId, admitted):
             raise ValueError("target is not the requested operator")
         if node.deviceBindings:
             raise ValueError("device-bound debug requires the managed device Runtime")
-        if payload["schemaVersion"] == "2.6" and node.operatorId in {
-                "communication.plc.slmp_read", "communication.plc.slmp_write", "vision.io.huaray_camera"}:
-            raise ValueError("managed PLC diagnostics must use the device entry point")
     except (KeyError, TypeError, ValueError) as error:
         raise DebugError("E_DEBUG_CONTEXT_INVALID", "invalid target draft: " + str(error)[:256]) from error
     if operatorId not in admitted:

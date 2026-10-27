@@ -1,0 +1,30 @@
+..................................................FF.................... [ 69%]
+............................F..                                          [100%]
+================================== FAILURES ===================================
+_______ testLegacyValidationOffersUpgradeWithoutMutatingDraft[embedded] _______
+tests\designer\test_runtime_validation_feedback.py:116: in testLegacyValidationOffersUpgradeWithoutMutatingDraft
+    assert len(messages) == 1 and '2.1' in messages[0]['text'] and '2.6' in messages[0]['text']
+E   AssertionError: assert (1 == 1 and '2.1' in '��ǰ���̸�ʽΪ 2.1�����½���ǰ 2.7 ���̣����ֲ��ṩ�ɹ���ת����\n����û��д�� Runtime��Ҳû�б��汾�ع��̡�\n��������ǰ�ݸ������У�飻�����ɳ�����' and '2.6' in '��ǰ���̸�ʽΪ 2.1�����½���ǰ 2.7 ���̣����ֲ��ṩ�ɹ���ת����\n����û��д�� Runtime��Ҳû�б��汾�ع��̡�\n��������ǰ�ݸ������У�飻�����ɳ�����')
+E    +  where 1 = len([{'title': '����У��δͨ��', 'text': '��ǰ���̸�ʽΪ 2.1�����½���ǰ 2.7 ���̣����ֲ��ṩ�ɹ���ת����\n����û��д�� Runtime��Ҳû�б��汾�ع��̡�\n��������ǰ�ݸ������У�飻�����ɳ�����', 'detail': 'E_CONFIG_INVALID: online writes require schema 2.6', 'buttons': ['�ر�', 'Show Details...', '�����ݸ岢����У��']}])
+_______ testLegacyValidationOffersUpgradeWithoutMutatingDraft[loopback] _______
+tests\designer\test_runtime_validation_feedback.py:116: in testLegacyValidationOffersUpgradeWithoutMutatingDraft
+    assert len(messages) == 1 and '2.1' in messages[0]['text'] and '2.6' in messages[0]['text']
+E   AssertionError: assert (1 == 1 and '2.1' in '��ǰ���̸�ʽΪ 2.1�����½���ǰ 2.7 ���̣����ֲ��ṩ�ɹ���ת����\n����û��д�� Runtime��Ҳû�б��汾�ع��̡�\n��������ǰ�ݸ������У�飻�����ɳ�����' and '2.6' in '��ǰ���̸�ʽΪ 2.1�����½���ǰ 2.7 ���̣����ֲ��ṩ�ɹ���ת����\n����û��д�� Runtime��Ҳû�б��汾�ع��̡�\n��������ǰ�ݸ������У�飻�����ɳ�����')
+E    +  where 1 = len([{'title': '����У��δͨ��', 'text': '��ǰ���̸�ʽΪ 2.1�����½���ǰ 2.7 ���̣����ֲ��ṩ�ɹ���ת����\n����û��д�� Runtime��Ҳû�б��汾�ع��̡�\n��������ǰ�ݸ������У�飻�����ɳ�����', 'detail': 'E_CONFIG_INVALID: online writes require schema 2.6', 'buttons': ['�ر�', 'Show Details...', '�����ݸ岢����У��']}])
+_____ testRealConnectionDialogSwitchUpdatesChromeAndRetainsEmbeddedOwner ______
+tests\designer\test_runtime_validation_feedback.py:720: in testRealConnectionDialogSwitchUpdatesChromeAndRetainsEmbeddedOwner
+    assert dialog.closed and window.runtimeClient is client and not old._closing and not messages
+E   assert (False)
+E    +  where False = <emo_master.apps.designer.ui.runtime_connection.RuntimeConnectionDialog(0x263e859b090) at 0x00000263E16DCD80>.closed
+---------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\runtime_connection.py", line 142, in connect
+    self.c.attachRuntime(self.candidate)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\coordinator.py", line 192, in attachRuntime
+    if communication:
+NameError: name 'communication' is not defined
+=========================== short test summary info ===========================
+FAILED tests/designer/test_runtime_validation_feedback.py::testLegacyValidationOffersUpgradeWithoutMutatingDraft[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testLegacyValidationOffersUpgradeWithoutMutatingDraft[loopback]
+FAILED tests/designer/test_runtime_validation_feedback.py::testRealConnectionDialogSwitchUpdatesChromeAndRetainsEmbeddedOwner
+3 failed, 100 passed in 86.46s (0:01:26)

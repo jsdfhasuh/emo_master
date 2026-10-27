@@ -1,0 +1,89 @@
+{
+  "sourceSha": "24fcc827de18085f432fababa679acb0d382e940",
+  "sourceTree": "4dd9d4dd3ebcb5dfcff1a4ddc110dca05c658319",
+  "snapshot": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\final-24fcc827",
+  "executable": "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "temporaryRoot": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso",
+  "environment": {
+    "PYTHONPATH": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\final-24fcc827\\src;D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\final-24fcc827",
+    "PYTHONIOENCODING": "utf-8",
+    "QT_QPA_PLATFORM": "windows",
+    "EMO_TEST_SOURCE_SHA": "24fcc827de18085f432fababa679acb0d382e940"
+  },
+  "commands": [
+    {
+      "label": "final-environment",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-c",
+        "import json,sys,PySide2,emo_master; from PySide2.QtCore import qVersion; from pathlib import Path; print(json.dumps(dict(python=sys.version,executable=sys.executable,PySide2=PySide2.__version__,Qt=qVersion(),importPath=emo_master.__file__),indent=2)); assert Path(emo_master.__file__).resolve().is_relative_to(Path.cwd()/'src'); assert sys.version_info[:2]==(3,10) and PySide2.__version__=='5.15.2.1'"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\final-24fcc827",
+      "started": "2026-10-21T10:24:02.906887+08:00",
+      "ended": "2026-10-21T10:24:04.964253+08:00",
+      "elapsedSeconds": 2.062,
+      "exitCode": 0,
+      "log": "final-environment.log"
+    },
+    {
+      "label": "final-chain",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "--basetemp=C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-chain",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-tcp-device-closure\\final-chain.xml",
+        "tests/runtime/test_tcp_device_integration.py",
+        "tests/runtime/test_tcp_device_closure.py",
+        "tests/runtime/test_device_contract_closure.py",
+        "tests/runtime/test_device_feedback_closure.py",
+        "tests/designer/test_tcp_closure_ui.py"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\final-24fcc827",
+      "started": "2026-10-21T10:24:04.965255+08:00",
+      "ended": "2026-10-21T10:25:11.196596+08:00",
+      "elapsedSeconds": 66.235,
+      "exitCode": 0,
+      "log": "final-chain.log"
+    },
+    {
+      "label": "final-regression",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "--basetemp=C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emotcp-dc_w6gso\\final-regression",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-tcp-device-closure\\final-regression.xml",
+        "tests/core/project/test_configuration.py",
+        "tests/core/project/test_devices.py",
+        "tests/core/project/test_device_resources.py",
+        "tests/core/test_runtime_directory.py",
+        "tests/core/test_runtime_package.py",
+        "tests/runtime/test_device_executor.py",
+        "tests/runtime/test_device_manager.py",
+        "tests/runtime/test_device_lifecycle.py",
+        "tests/runtime/test_device_ipc_retirement.py",
+        "tests/runtime/test_frame_dispatch.py",
+        "tests/runtime/test_loop_cycle_configuration.py",
+        "tests/runtime/test_operator_logging.py",
+        "tests/runtime/test_initial_project_configuration.py",
+        "tests/designer/test_project_configuration_ui.py",
+        "tests/designer/test_device_definition_feedback.py",
+        "tests/designer/test_device_workspace.py",
+        "tests/designer/test_device_package.py",
+        "tests/designer/test_workflow_package_devices.py"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\final-24fcc827",
+      "started": "2026-10-21T10:25:11.197597+08:00",
+      "ended": "2026-10-21T10:26:32.268051+08:00",
+      "elapsedSeconds": 81.062,
+      "exitCode": 0,
+      "log": "final-regression.log"
+    }
+  ]
+}

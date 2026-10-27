@@ -1,0 +1,14 @@
+..........                                                               [100%]
+=================================== PASSES ====================================
+=========================== short test summary info ===========================
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpByteLogsKeepChannelAndExactBoundedPreview[32]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpByteLogsKeepChannelAndExactBoundedPreview[512]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpByteLogsKeepChannelAndExactBoundedPreview[1025]
+PASSED tests/runtime/test_device_plan_completion.py::testTcpDraftEndpointTestReusesRenamedServerWithoutPublishing
+PASSED tests/runtime/test_device_plan_completion.py::testNonTcpDraftConnectionSettingsRemainProtected
+PASSED tests/runtime/test_device_plan_completion.py::testConnectionTestDoesNotPublishAndReusesExistingOwner
+PASSED tests/designer/test_device_definition_feedback.py::testTcpOuterValidationFocusesExactConnectionFieldAndRetainsDraft[address]
+PASSED tests/designer/test_device_definition_feedback.py::testTcpOuterValidationFocusesExactConnectionFieldAndRetainsDraft[address-multicast]
+PASSED tests/designer/test_device_definition_feedback.py::testTcpOuterValidationFocusesExactConnectionFieldAndRetainsDraft[channel]
+PASSED tests/designer/test_device_definition_feedback.py::testTcpOuterValidationFocusesExactConnectionFieldAndRetainsDraft[duplicate-route]
+10 passed in 2.96s

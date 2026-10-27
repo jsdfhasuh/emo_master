@@ -203,6 +203,7 @@ def _isSupportedSchemaVersionSelector(value: object, semanticType: object) -> bo
     supportedVersions = (
         SUPPORTED_VISION_PAYLOAD_SCHEMA_VERSIONS
         if semanticType in VISION_PAYLOAD_PORT_TYPES
+        else frozenset({"1.1"}) if semanticType in {"tcpSessionRef", "tcpSendReceipt"}
         else SUPPORTED_COMMUNICATION_PAYLOAD_SCHEMA_VERSIONS
     )
     if value.endswith(".x"):

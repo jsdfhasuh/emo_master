@@ -1,0 +1,206 @@
+{
+  "baseline": "b86d0162dcde14b9c19ec19eee838dc114eeca98",
+  "sourceSha": "2db1913021d764ddbe175b73a28c8623ffe9df82",
+  "sourceTree": "e71aba961e0a9f8e0e0ea8d1357dbb6fdebb5978",
+  "snapshot": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-g1kfqaom\\source",
+  "temporaryRoot": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-g1kfqaom",
+  "executable": "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "exported": [
+    {
+      "path": "src/emo_master/apps/designer/ui/device_workspace.py",
+      "blob": "1d51063d3e5cf940e8d314ac5163ee34bb6307d0",
+      "sha256": "b3306f8dcd189dc3c5a2fae23e50b9a67b70cea5724c642c1f11f5b4309f8cb7"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/project_configuration.py",
+      "blob": "925c8e6f1415f92c5eed2e247fdd6b38b880489a",
+      "sha256": "4072c73e277f1276d9b481dee77e6ef7e0171234a76acf1abcd05326ddcebd71"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/ipc.py",
+      "blob": "b8e0696ef14780940f43fd30f728914ed23e58df",
+      "sha256": "9f48fbcfe0118ff9bda00dbfacbfa4089d436227fee718f955b31e2a0392dc48"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/manager.py",
+      "blob": "fc4c670a6f3989ce5f7a361e1a3869c22c9cb4c5",
+      "sha256": "b8334e7e64ae1f95c09644d60e6c6b985c0578b036eb630886f2629e594e68ba"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/coordinator.py",
+      "blob": "c86e751d465749c11ecf5bc4c2d0791db453beae",
+      "sha256": "807cc020a18d5665fccf55933ac49d89bec64da1f3706617148f6d86e5c66aa2"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/rpc.py",
+      "blob": "01ccefaf8266b89baf25591de047dff777b97996",
+      "sha256": "c6c91d32537b1a34805f6bdef83269ce5a12b394121422798333a76fb66e8b0c"
+    },
+    {
+      "path": "src/emo_master/core/project/configuration.py",
+      "blob": "53af4ab8c531bb50676cb22a583c913eaa0d580d",
+      "sha256": "afcac0b915df52de9ffb8dbec4d41a4326c263ccfbdaaeef2cda64885ed5964a"
+    },
+    {
+      "path": "tests/designer/test_tcp_closure_ui.py",
+      "blob": "d7b74e0e4a470f80a552694645d46aaca07e00f9",
+      "sha256": "2457ab94e763fc461de9aa49ba4b6fbe4db6814c4bd3dd939c3cae685095e16a"
+    },
+    {
+      "path": "tests/runtime/test_frame_dispatch.py",
+      "blob": "c1208a15400558974a995d9cb030dba21acc1a68",
+      "sha256": "cec387646721f6846ccb20b623e1cc568f98616cee2fd321da05f6a2a20f4d8c"
+    },
+    {
+      "path": "tests/runtime/test_project_configuration.py",
+      "blob": "b4a15252ed5151e06c4691551cb1eab338799dab",
+      "sha256": "a95233407fec8d37469e8eae1e5aba239a742e8bd5e37e07d37b0ccb45e1786f"
+    }
+  ],
+  "environment": {
+    "PYTHONPATH": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-g1kfqaom\\source\\src;C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-g1kfqaom\\source",
+    "PYTHONIOENCODING": "utf-8",
+    "QT_QPA_PLATFORM": "windows",
+    "EMO_TEST_SOURCE_SHA": "2db1913021d764ddbe175b73a28c8623ffe9df82"
+  },
+  "commands": [
+    {
+      "label": "environment",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-c",
+        "import emo_master,sys,json,PySide2; from PySide2.QtCore import qVersion; from pathlib import Path; print(json.dumps(dict(python=sys.version,PySide2=PySide2.__version__,Qt=qVersion(),importPath=emo_master.__file__),indent=2)); import os; assert os.path.samefile(Path(emo_master.__file__).parent.parent, Path.cwd()/'src'); assert sys.version_info[:2]==(3,10) and PySide2.__version__=='5.15.2.1'"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-g1kfqaom\\source",
+      "started": "2026-10-21T11:36:22.220601+08:00",
+      "elapsedSeconds": 0.407,
+      "exitCode": 0,
+      "log": "environment.log"
+    },
+    {
+      "label": "chain",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "--basetemp=C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-g1kfqaom\\chain",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-tcp-device-review-round2\\chain.xml",
+        "tests/runtime/test_tcp_device_integration.py",
+        "tests/runtime/test_tcp_device_closure.py",
+        "tests/runtime/test_device_contract_closure.py",
+        "tests/runtime/test_device_feedback_closure.py",
+        "tests/designer/test_tcp_closure_ui.py"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-g1kfqaom\\source",
+      "started": "2026-10-21T11:36:22.768248+08:00",
+      "elapsedSeconds": 75.438,
+      "exitCode": 0,
+      "log": "chain.log"
+    },
+    {
+      "label": "regression",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "--basetemp=C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-g1kfqaom\\regression",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-tcp-device-review-round2\\regression.xml",
+        "--deselect=tests/designer/test_runtime_validation_feedback.py::testUpgradedDraftResourceFailureCanBeFixedAndRevalidated",
+        "tests/runtime/test_frame_dispatch.py",
+        "tests/runtime/test_project_configuration.py",
+        "tests/runtime/test_loop_cycle_configuration.py",
+        "tests/runtime/test_operator_logging.py",
+        "tests/runtime/test_device_runtime.py",
+        "tests/runtime/test_device_ipc_retirement.py",
+        "tests/runtime/test_configuration_owners.py",
+        "tests/runtime/test_initial_project_configuration.py",
+        "tests/designer/test_runtime_validation_feedback.py",
+        "tests/designer/test_project_configuration_ui.py",
+        "tests/designer/test_device_workspace.py",
+        "tests/core/project/test_configuration.py"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-g1kfqaom\\source",
+      "started": "2026-10-21T11:37:38.199037+08:00",
+      "elapsedSeconds": 109.484,
+      "exitCode": 0,
+      "log": "regression.log"
+    },
+    {
+      "label": "ruff",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "ruff",
+        "check",
+        "src/emo_master/apps/designer/ui/device_workspace.py",
+        "src/emo_master/apps/designer/ui/project_configuration.py",
+        "src/emo_master/apps/runtime/devices/ipc.py",
+        "src/emo_master/apps/runtime/devices/manager.py",
+        "src/emo_master/apps/runtime/project_config/coordinator.py",
+        "src/emo_master/apps/runtime/project_config/rpc.py",
+        "src/emo_master/core/project/configuration.py",
+        "tests/designer/test_tcp_closure_ui.py",
+        "tests/runtime/test_frame_dispatch.py",
+        "tests/runtime/test_project_configuration.py"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-g1kfqaom\\source",
+      "started": "2026-10-21T11:39:27.689474+08:00",
+      "elapsedSeconds": 0.141,
+      "exitCode": 0,
+      "log": "ruff.log"
+    },
+    {
+      "label": "mypy",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "mypy",
+        "src/emo_master/apps/designer/ui/device_workspace.py",
+        "src/emo_master/apps/designer/ui/project_configuration.py",
+        "src/emo_master/apps/runtime/devices/ipc.py",
+        "src/emo_master/apps/runtime/devices/manager.py",
+        "src/emo_master/apps/runtime/project_config/coordinator.py",
+        "src/emo_master/apps/runtime/project_config/rpc.py",
+        "src/emo_master/core/project/configuration.py"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-g1kfqaom\\source",
+      "started": "2026-10-21T11:39:27.825935+08:00",
+      "elapsedSeconds": 6.25,
+      "exitCode": 0,
+      "log": "mypy.log"
+    },
+    {
+      "label": "proto",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "scripts/gen_proto.py",
+        "--check"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-g1kfqaom\\source",
+      "started": "2026-10-21T11:39:34.082002+08:00",
+      "elapsedSeconds": 0.265,
+      "exitCode": 0,
+      "log": "proto.log"
+    },
+    {
+      "label": "diff-check",
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "b86d0162dcde14b9c19ec19eee838dc114eeca98",
+        "2db1913021d764ddbe175b73a28c8623ffe9df82"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "started": "2026-10-21T11:39:34.344002+08:00",
+      "elapsedSeconds": 0.063,
+      "exitCode": 0,
+      "log": "diff-check.log"
+    }
+  ]
+}

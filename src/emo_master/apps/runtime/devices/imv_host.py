@@ -9,6 +9,7 @@ from uuid import uuid4
 import numpy as np
 
 from emo_master.apps.runtime.communication.pipe_io import receiveBytes, sendBytes
+from emo_master.core.contracts.device_driver import DeviceDriver
 from .executor import DeviceError
 
 
@@ -72,7 +73,7 @@ def runImvHost(pipe, cancellation, connection, generation, apiFactory=None):
             pipe.close()
 
 
-class ManagedImv:
+class ManagedImv(DeviceDriver):
     def __init__(self, definition, *, apiFactory=None):
         self.definition = definition
         self.apiFactory = apiFactory
@@ -123,7 +124,7 @@ class ManagedImv:
         finally:
             child.close()
 
-    def execute(self, action, params, cancelled, deadline, *, changes=None):
+    def execute(self, action, params, cancelled, deadline, *, changes=None, arguments=None, operationContext=None):
         if action not in {"capture", "connect", "read_parameters", "trial_capture"}:
             raise DeviceError("E_DEVICE_ACTION", "unsupported camera action")
         if self.unhealthy:
@@ -210,7 +211,7 @@ class ManagedImv:
             raise DeviceError("E_CAMERA_HOST_CLEANUP", "camera Host cleanup failed: exit=" + str(exitCode),
                               outcome="UNKNOWN", unhealthy=True)
 
-    def close(self):
+    def close(self, deadline=None):
         self._stop()
         if self.memory is not None:
             self.memory.close()
@@ -229,6 +230,6 @@ class ManagedImv:
         return self.hardwareStream
 
     def snapshot(self):
-        return dict(connectionState="QUARANTINED" if self.unhealthy else
+        return dict(ready=self.connectionGeneration is not None and not self.unhealthy, ownsResources=self.process is not None, connectionState="QUARANTINED" if self.unhealthy else
                     "CONNECTED" if self.connectionGeneration is not None else "DISCONNECTED",
                     connectionGeneration=self.connectionGeneration, hostGeneration=self.generation)

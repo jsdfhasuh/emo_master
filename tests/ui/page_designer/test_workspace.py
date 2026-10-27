@@ -30,12 +30,12 @@ def testUnifiedPagesFlowSaveReopenAndUndo(designer, monkeypatch, tmp_path):
     w = designer
     c = w.pageCoordinator
     assert c.session.workflows is w.workflowStore
-    assert c.session.document().schemaVersion == '2.1'
+    assert c.session.document().schemaVersion == '2.7'
     assert not c.session.dirty
     assert w.saveProjectToDirectory(str(tmp_path/'original'))
     c.showPages()
     e = c.editor
-    assert c.session.document().schemaVersion == '2.2'
+    assert c.session.document().schemaVersion == '2.7'
     monkeypatch.setattr(QInputDialog, 'getText', lambda *a, **k: ('运行总览', True))
     e.run(e.newPage)
     first = e.pageId
@@ -59,7 +59,7 @@ def testUnifiedPagesFlowSaveReopenAndUndo(designer, monkeypatch, tmp_path):
     assert w.loadProjectDirectory(str(tmp_path/'copy'))
     assert c.session.document().presentation == saved
     assert len(w.workflowStore.workflows) == 2
-    assert json.loads((tmp_path/'copy'/'project.json').read_text())['schemaVersion'] == '2.2'
+    assert json.loads((tmp_path/'copy'/'project.json').read_text())['schemaVersion'] == '2.7'
 
 
 def testSaveFailureAndCancelDoNotLoseDraft(designer, monkeypatch, tmp_path):

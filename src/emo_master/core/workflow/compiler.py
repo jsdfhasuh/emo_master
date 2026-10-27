@@ -9,7 +9,8 @@ from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument, WorkflowDefinition, WorkflowNode
 from emo_master.core.project.resources import ParameterTarget, ResourceBinding, SiteBinding
 from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
-from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError
+from emo_master.core.contracts.port_types import normalizePortType
+from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError, locatedValidationError
 from emo_master.core.workflow.loop_contracts import (
     LoopContract,
     deriveLoopContract,
@@ -61,9 +62,9 @@ class WorkflowCompiler:
                     try:
                         self._devicePlans(document, node, requirements)
                     except ValueError as error:
-                        issues.append(ValidationIssue(
-                            "E_DEVICE_RUNTIME_UNAVAILABLE", str(error),
-                            document.project.projectId, workflowId, node.nodeId))
+                        issues.extend(locatedValidationError(error, 'E_DEVICE_BINDING',
+                            projectId=document.project.projectId, workflowId=workflowId, nodeId=node.nodeId,
+                            fieldPath='deviceBindings').issues)
         if issues:
             raise WorkflowCompileError(issues)
 
@@ -126,41 +127,58 @@ class WorkflowCompiler:
         if requirements is None:
             requirements = (manifest.get("deviceRequirements", {}) if isinstance(manifest, Mapping)
                             else getattr(manifest, "deviceRequirements", {}))
-        since = (manifest.get("deviceBindingSince", "") if isinstance(manifest, Mapping)
-                 else getattr(manifest, "deviceBindingSince", ""))
-        if not node.deviceBindings and (not requirements or (since == "2.6" and document.schemaVersion != "2.6")):
+        if not node.deviceBindings and not requirements:
             return {}
         if set(requirements) != set(node.deviceBindings):
-            raise ValueError("device slots do not match the operator declaration")
+            raise WorkflowCompileError([ValidationIssue('E_DEVICE_BINDING', 'device slots do not match the operator declaration',
+                fieldPath='deviceBindings.'+slot) for slot in sorted(set(requirements) ^ set(node.deviceBindings))])
         schema = _operatorParamSchema(descriptor)
         actionFields = schema.get("xDeviceActionFields")
         if actionFields is not None:
             boundFields = {binding.parameterPath[0] for binding in node.globalVariableBindings}
             if (set(node.params) | boundFields) - set(actionFields):
-                raise ValueError("managed node contains connection/retry parameters; explicitly migrate them to the device")
+                raise WorkflowCompileError([ValidationIssue('E_DEVICE_PARAMETERS',
+                    'managed node contains connection/retry parameters; explicitly migrate them to the device',
+                    fieldPath='params.'+key) for key in sorted((set(node.params)|boundFields)-set(actionFields))])
         result = {}
         for slot, binding in node.deviceBindings.items():
-            definition = document.devices.definitions[binding.deviceId]
+            definition = document.devices.definitions.get(binding.deviceId)
+            if definition is None:
+                raise WorkflowCompileError([ValidationIssue('E_DEVICE_REFERENCE', f'device missing: {binding.deviceId}',
+                    fieldPath=f'deviceBindings.{slot}.deviceId')])
             declaration = self.deviceTypes.get(definition.deviceTypeId)
             if declaration is None or not declaration.driverEntry:
-                raise ValueError("Device-bound execution requires the managed device Runtime")
+                raise WorkflowCompileError([ValidationIssue('E_DEVICE_DRIVER_UNAVAILABLE',
+                    f'Device-bound execution requires the managed device Runtime: {definition.deviceTypeId} @ {definition.driverVersion}',
+                    fieldPath=f'deviceBindings.{slot}.deviceId')])
+            try:
+                declaration.validateDefinition(definition)
+            except ValueError as error:
+                raise locatedValidationError(error, 'E_DEVICE_DEFINITION', prefix=f'devices.definitions.{binding.deviceId}') from error
             requirement = requirements[slot]
-            typeId = requirement.get("deviceTypeId") if isinstance(requirement, Mapping) else requirement.deviceTypeId
-            if definition.deviceTypeId != typeId:
-                raise ValueError("device type does not match operator slot")
+            from emo_master.core.plugin.devices import validateDeviceBinding
+            try:
+                selectors = validateDeviceBinding(requirement, binding, definition, declaration)
+            except ValueError as error:
+                raise locatedValidationError(error, 'E_DEVICE_BINDING', prefix=f'deviceBindings.{slot}') from error
             overrides = node.deviceOverrides.get(slot, {})
             bindings = node.deviceValueBindings.get(slot, {})
-            declaration.validateNodeSources(definition, overrides, bindings)
+            try:
+                declaration.validateNodeSources(definition, overrides, bindings, slot=slot)
+            except ValueError as error:
+                raise locatedValidationError(error, 'E_DEVICE_PARAMETERS', fieldPath=f'deviceOverrides.{slot}') from error
             from emo_master.core.project.global_variables import compatible
             for path, source in bindings.items():
                 expected = declaration.parameterSpec(path)["type"]
                 if source.source == "variable":
                     variable = document.globalVariables.get(source.variableId)
                     if variable is None or not compatible(variable.type, expected):
-                        raise ValueError("invalid dynamic device variable")
-                elif node.inputPorts.get(source.inputName) != expected:
-                    raise ValueError("invalid dynamic device input")
-            result[slot] = dict(deviceId=binding.deviceId, definition=definition.model_dump(),
+                        raise WorkflowCompileError([ValidationIssue('E_DEVICE_PARAMETERS', 'invalid dynamic device variable',
+                            fieldPath=f'deviceValueBindings.{slot}.{path}.variableId')])
+                elif not compatible(normalizePortType(node.inputPorts.get(source.inputName)), expected):
+                    raise WorkflowCompileError([ValidationIssue('E_DEVICE_PARAMETERS', 'invalid dynamic device input',
+                        fieldPath=f'deviceValueBindings.{slot}.{path}.inputName')])
+            result[slot] = dict(deviceId=binding.deviceId, selectors=deepcopy(selectors), definition=definition.model_dump(),
                                 declaration=declaration.model_dump(), overrides=deepcopy(overrides),
                                 bindings={path: source.model_dump() for path, source in bindings.items()})
         return result
@@ -331,7 +349,14 @@ class WorkflowCompiler:
                 return dynamicPorts
             metadata = _operatorMetadata(self.operatorRegistry.get(node.operatorId))
             if metadata is not None:
-                return metadata[0], metadata[1]
+                from emo_master.plugins.builtins._operator_modes import requiredChoiceInput
+                inputs, outputs = metadata
+                required = requiredChoiceInput(node.operatorId, node.params,
+                    {edge.toPort for edge in document.workflows[workflowId].edges if edge.toNode == node.nodeId},
+                    {binding.parameterPath[0] for binding in node.globalVariableBindings})
+                if required in inputs:
+                    inputs[required] = {**cast(Mapping[str, object], inputs[required]), "required": True}
+                return inputs, outputs
         return dict(node.inputPorts), dict(node.outputPorts)
 
     def nodePortDefinitions(self, document: ProjectDocument, workflowId: str, node: WorkflowNode):
@@ -387,6 +412,13 @@ class WorkflowCompiler:
         if operatorClass is None:
             return []
         validate = getattr(operatorClass, "validateParams", None)
+        # Port-aware validators defer only values supplied by graph connections.
+        validationArgs: tuple = ()
+        connectedValidator = getattr(operatorClass, "validateNodeParams", None)
+        if callable(connectedValidator):
+            validate = connectedValidator
+            validationArgs = ({edge.toPort for edge in document.workflows[workflowId].edges
+                               if edge.toNode == node.nodeId},)
         if node.deviceBindings:
             validate = getattr(operatorClass, "validateDeviceParams", validate)
         try:
@@ -397,12 +429,12 @@ class WorkflowCompiler:
             if not callable(validate):
                 return []
             validator = cast(Callable[..., object], validate)
-            result = validator(params)
+            result = validator(params, *validationArgs)
         except TypeError:
             try:
                 validator = cast(Callable[..., object], validate)
                 operatorFactory = cast(Callable[[], object], operatorClass)
-                result = validator(operatorFactory(), params)
+                result = validator(operatorFactory(), params, *validationArgs)
             except Exception as err:
                 return [
                     ValidationIssue(

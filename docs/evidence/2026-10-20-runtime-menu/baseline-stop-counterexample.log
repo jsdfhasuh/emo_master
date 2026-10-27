@@ -1,0 +1,11 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+______ testNormalStopRetainsObserverAndLateStoppingCannotReplaceTerminal ______
+tests\designer\test_stop_observation_regression.py:16: in testNormalStopRetainsObserverAndLateStoppingCannotReplaceTerminal
+    assert stopped == [('job', 'graceful')] and not cancelled
+E   AssertionError: assert ([('job', 'graceful')] == [('job', 'graceful')]
+E     
+E     Use -v to get more diff and not [True])
+=========================== short test summary info ===========================
+FAILED tests/designer/test_stop_observation_regression.py::testNormalStopRetainsObserverAndLateStoppingCannotReplaceTerminal
+1 failed in 3.29s

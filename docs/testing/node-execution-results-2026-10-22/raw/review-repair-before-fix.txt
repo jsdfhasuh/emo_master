@@ -1,0 +1,176 @@
+FFF...FF                                                                 [100%]
+================================== FAILURES ===================================
+_ testTransientReadFailureRecoversOnHealthyRenewalWithoutChangingSelection[list] _
+
+failure = 'list'
+
+    @pytest.mark.parametrize('failure', ['list', 'stream', 'timeout'])
+    def testTransientReadFailureRecoversOnHealthyRenewalWithoutChangingSelection(failure):
+        client = Client()
+        client.release.set()
+        delivered = threading.Event()
+        images = InspectionImages(client, lambda *_args: ('pixels', 4, 'PNG'), lambda *_args: delivered.set())
+        methodName = 'listNodePreviewSourcesWithMetadata' if failure == 'list' else 'readInspectionAsset'
+        method = getattr(client, methodName)
+        attempts = []
+    
+        def failOnce(*args, **kwargs):
+            attempts.append((args, kwargs))
+            if len(attempts) == 1:
+                if failure == 'stream':
+                    raise StreamUnavailable()
+                if failure == 'timeout':
+                    raise DisplayCallError('E_DISPLAY_TIMEOUT', 'read timed out')
+                raise RuntimeClientError('StatusCode.UNAVAILABLE', 'connection temporarily lost')
+            return method(*args, **kwargs)
+    
+        setattr(client, methodName, failOnce)
+        try:
+            images.ensureSession('project')
+            generation = images.select(selection())
+            assert delivered.wait(2)
+            packet = images.take(generation)
+            assert 'image' not in packet and not packet['contextExpired']
+            delivered.clear()
+            for _ in range(10):
+                assert images.select(selection()) == generation
+            assert len(attempts) == 1  # UI refresh must not become a retry loop.
+            forceDueRenewal(images)
+            assert client.renewed.wait(2)
+>           assert delivered.wait(2)
+E           assert False
+E            +  where False = wait(2)
+E            +    where wait = <threading.Event object at 0x0000020569FFBB50>.wait
+
+tests\designer\test_inspection_images.py:183: AssertionError
+_ testTransientReadFailureRecoversOnHealthyRenewalWithoutChangingSelection[stream] _
+
+failure = 'stream'
+
+    @pytest.mark.parametrize('failure', ['list', 'stream', 'timeout'])
+    def testTransientReadFailureRecoversOnHealthyRenewalWithoutChangingSelection(failure):
+        client = Client()
+        client.release.set()
+        delivered = threading.Event()
+        images = InspectionImages(client, lambda *_args: ('pixels', 4, 'PNG'), lambda *_args: delivered.set())
+        methodName = 'listNodePreviewSourcesWithMetadata' if failure == 'list' else 'readInspectionAsset'
+        method = getattr(client, methodName)
+        attempts = []
+    
+        def failOnce(*args, **kwargs):
+            attempts.append((args, kwargs))
+            if len(attempts) == 1:
+                if failure == 'stream':
+                    raise StreamUnavailable()
+                if failure == 'timeout':
+                    raise DisplayCallError('E_DISPLAY_TIMEOUT', 'read timed out')
+                raise RuntimeClientError('StatusCode.UNAVAILABLE', 'connection temporarily lost')
+            return method(*args, **kwargs)
+    
+        setattr(client, methodName, failOnce)
+        try:
+            images.ensureSession('project')
+            generation = images.select(selection())
+            assert delivered.wait(2)
+            packet = images.take(generation)
+            assert 'image' not in packet and not packet['contextExpired']
+            delivered.clear()
+            for _ in range(10):
+                assert images.select(selection()) == generation
+            assert len(attempts) == 1  # UI refresh must not become a retry loop.
+            forceDueRenewal(images)
+            assert client.renewed.wait(2)
+>           assert delivered.wait(2)
+E           assert False
+E            +  where False = wait(2)
+E            +    where wait = <threading.Event object at 0x000002056A0A75B0>.wait
+
+tests\designer\test_inspection_images.py:183: AssertionError
+_ testTransientReadFailureRecoversOnHealthyRenewalWithoutChangingSelection[timeout] _
+
+failure = 'timeout'
+
+    @pytest.mark.parametrize('failure', ['list', 'stream', 'timeout'])
+    def testTransientReadFailureRecoversOnHealthyRenewalWithoutChangingSelection(failure):
+        client = Client()
+        client.release.set()
+        delivered = threading.Event()
+        images = InspectionImages(client, lambda *_args: ('pixels', 4, 'PNG'), lambda *_args: delivered.set())
+        methodName = 'listNodePreviewSourcesWithMetadata' if failure == 'list' else 'readInspectionAsset'
+        method = getattr(client, methodName)
+        attempts = []
+    
+        def failOnce(*args, **kwargs):
+            attempts.append((args, kwargs))
+            if len(attempts) == 1:
+                if failure == 'stream':
+                    raise StreamUnavailable()
+                if failure == 'timeout':
+                    raise DisplayCallError('E_DISPLAY_TIMEOUT', 'read timed out')
+                raise RuntimeClientError('StatusCode.UNAVAILABLE', 'connection temporarily lost')
+            return method(*args, **kwargs)
+    
+        setattr(client, methodName, failOnce)
+        try:
+            images.ensureSession('project')
+            generation = images.select(selection())
+            assert delivered.wait(2)
+            packet = images.take(generation)
+            assert 'image' not in packet and not packet['contextExpired']
+            delivered.clear()
+            for _ in range(10):
+                assert images.select(selection()) == generation
+            assert len(attempts) == 1  # UI refresh must not become a retry loop.
+            forceDueRenewal(images)
+            assert client.renewed.wait(2)
+>           assert delivered.wait(2)
+E           assert False
+E            +  where False = wait(2)
+E            +    where wait = <threading.Event object at 0x0000020569FFBEE0>.wait
+
+tests\designer\test_inspection_images.py:183: AssertionError
+________ testChangingSelectionAfterReadFailureDoesNotRetryTheOldImage _________
+
+    def testChangingSelectionAfterReadFailureDoesNotRetryTheOldImage():
+        client = Client()
+        delivered = threading.Event()
+    
+        def fail(*_args):
+            raise RuntimeClientError('StatusCode.UNAVAILABLE', 'connection temporarily lost')
+    
+        client.readInspectionAsset = fail
+        images = InspectionImages(client, lambda *_args: pytest.fail('no pixels'), lambda *_args: delivered.set())
+        try:
+            images.ensureSession('project')
+            generation = images.select(selection())
+            assert delivered.wait(2)
+            assert 'image' not in images.take(generation)
+>           assert images._disconnected
+E           assert False
+E            +  where False = <emo_master.apps.designer.services.inspection_images.InspectionImages object at 0x000002056A0A22F0>._disconnected
+
+tests\designer\test_inspection_images.py:238: AssertionError
+__________ testWaitReturnsTheSampleWithoutProcessingNewEventsAfterIt __________
+
+    def testWaitReturnsTheSampleWithoutProcessingNewEventsAfterIt():
+        sample = object()
+    
+        class Application:
+            calls = 0
+    
+            def processEvents(self):
+                self.calls += 1
+    
+        app = Application()
+>       assert wait(app, lambda: sample if app.calls == 1 else None) is sample
+E       assert None is <object object at 0x0000020540D33A80>
+E        +  where None = wait(<test_node_image_viewer.testWaitReturnsTheSampleWithoutProcessingNewEventsAfterIt.<locals>.Application object at 0x0000020569FF80A0>, <function testWaitReturnsTheSampleWithoutProcessingNewEventsAfterIt.<locals>.<lambda> at 0x0000020568A65AB0>)
+
+tests\designer\test_node_image_viewer.py:35: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_inspection_images.py::testTransientReadFailureRecoversOnHealthyRenewalWithoutChangingSelection[list]
+FAILED tests/designer/test_inspection_images.py::testTransientReadFailureRecoversOnHealthyRenewalWithoutChangingSelection[stream]
+FAILED tests/designer/test_inspection_images.py::testTransientReadFailureRecoversOnHealthyRenewalWithoutChangingSelection[timeout]
+FAILED tests/designer/test_inspection_images.py::testChangingSelectionAfterReadFailureDoesNotRetryTheOldImage
+FAILED tests/designer/test_node_image_viewer.py::testWaitReturnsTheSampleWithoutProcessingNewEventsAfterIt
+5 failed, 3 passed, 18 deselected in 7.60s

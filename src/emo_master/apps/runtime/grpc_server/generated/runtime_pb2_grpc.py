@@ -34,9 +34,19 @@ class RuntimeServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.GetDispatchQueueState = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetDispatchQueueState',
+                request_serializer=runtime__pb2.DispatchQueueRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DispatchQueueReply.FromString,
+                _registered_method=True)
         self.GetOnlineProjectSnapshot = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/GetOnlineProjectSnapshot',
                 request_serializer=runtime__pb2.OnlineProjectRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ProjectConfigurationReply.FromString,
+                _registered_method=True)
+        self.InitializeProjectConfiguration = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/InitializeProjectConfiguration',
+                request_serializer=runtime__pb2.InitialProjectConfigurationRequest.SerializeToString,
                 response_deserializer=runtime__pb2.ProjectConfigurationReply.FromString,
                 _registered_method=True)
         self.GetOnlineGraphSnapshot = channel.unary_unary(
@@ -339,6 +349,11 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.GetDeviceStatesRequest.SerializeToString,
                 response_deserializer=runtime__pb2.GetDeviceStatesReply.FromString,
                 _registered_method=True)
+        self.GetDeviceDiagnostics = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetDeviceDiagnostics',
+                request_serializer=runtime__pb2.GetDeviceDiagnosticsRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GetDeviceDiagnosticsReply.FromString,
+                _registered_method=True)
         self.RecoverDevice = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/RecoverDevice',
                 request_serializer=runtime__pb2.RecoverDeviceRequest.SerializeToString,
@@ -353,6 +368,11 @@ class RuntimeServiceStub(object):
                 '/emo_master.runtime.RuntimeService/ControlDevice',
                 request_serializer=runtime__pb2.ControlDeviceRequest.SerializeToString,
                 response_deserializer=runtime__pb2.GetDeviceStatesReply.FromString,
+                _registered_method=True)
+        self.ExecuteDeviceAction = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ExecuteDeviceAction',
+                request_serializer=runtime__pb2.ExecuteDeviceActionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ExecuteDeviceActionReply.FromString,
                 _registered_method=True)
         self.CameraDiagnostic = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/CameraDiagnostic',
@@ -469,7 +489,19 @@ class RuntimeServiceStub(object):
 class RuntimeServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
+    def GetDispatchQueueState(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def GetOnlineProjectSnapshot(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def InitializeProjectConfiguration(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -835,6 +867,12 @@ class RuntimeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetDeviceDiagnostics(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def RecoverDevice(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -848,6 +886,12 @@ class RuntimeServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ControlDevice(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ExecuteDeviceAction(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -988,9 +1032,19 @@ class RuntimeServiceServicer(object):
 
 def add_RuntimeServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'GetDispatchQueueState': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetDispatchQueueState,
+                    request_deserializer=runtime__pb2.DispatchQueueRequest.FromString,
+                    response_serializer=runtime__pb2.DispatchQueueReply.SerializeToString,
+            ),
             'GetOnlineProjectSnapshot': grpc.unary_unary_rpc_method_handler(
                     servicer.GetOnlineProjectSnapshot,
                     request_deserializer=runtime__pb2.OnlineProjectRequest.FromString,
+                    response_serializer=runtime__pb2.ProjectConfigurationReply.SerializeToString,
+            ),
+            'InitializeProjectConfiguration': grpc.unary_unary_rpc_method_handler(
+                    servicer.InitializeProjectConfiguration,
+                    request_deserializer=runtime__pb2.InitialProjectConfigurationRequest.FromString,
                     response_serializer=runtime__pb2.ProjectConfigurationReply.SerializeToString,
             ),
             'GetOnlineGraphSnapshot': grpc.unary_unary_rpc_method_handler(
@@ -1293,6 +1347,11 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
                     request_deserializer=runtime__pb2.GetDeviceStatesRequest.FromString,
                     response_serializer=runtime__pb2.GetDeviceStatesReply.SerializeToString,
             ),
+            'GetDeviceDiagnostics': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetDeviceDiagnostics,
+                    request_deserializer=runtime__pb2.GetDeviceDiagnosticsRequest.FromString,
+                    response_serializer=runtime__pb2.GetDeviceDiagnosticsReply.SerializeToString,
+            ),
             'RecoverDevice': grpc.unary_unary_rpc_method_handler(
                     servicer.RecoverDevice,
                     request_deserializer=runtime__pb2.RecoverDeviceRequest.FromString,
@@ -1307,6 +1366,11 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
                     servicer.ControlDevice,
                     request_deserializer=runtime__pb2.ControlDeviceRequest.FromString,
                     response_serializer=runtime__pb2.GetDeviceStatesReply.SerializeToString,
+            ),
+            'ExecuteDeviceAction': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExecuteDeviceAction,
+                    request_deserializer=runtime__pb2.ExecuteDeviceActionRequest.FromString,
+                    response_serializer=runtime__pb2.ExecuteDeviceActionReply.SerializeToString,
             ),
             'CameraDiagnostic': grpc.unary_unary_rpc_method_handler(
                     servicer.CameraDiagnostic,
@@ -1430,6 +1494,33 @@ class RuntimeService(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
+    def GetDispatchQueueState(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetDispatchQueueState',
+            runtime__pb2.DispatchQueueRequest.SerializeToString,
+            runtime__pb2.DispatchQueueReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def GetOnlineProjectSnapshot(request,
             target,
             options=(),
@@ -1445,6 +1536,33 @@ class RuntimeService(object):
             target,
             '/emo_master.runtime.RuntimeService/GetOnlineProjectSnapshot',
             runtime__pb2.OnlineProjectRequest.SerializeToString,
+            runtime__pb2.ProjectConfigurationReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def InitializeProjectConfiguration(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/InitializeProjectConfiguration',
+            runtime__pb2.InitialProjectConfigurationRequest.SerializeToString,
             runtime__pb2.ProjectConfigurationReply.FromString,
             options,
             channel_credentials,
@@ -3077,6 +3195,33 @@ class RuntimeService(object):
             _registered_method=True)
 
     @staticmethod
+    def GetDeviceDiagnostics(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetDeviceDiagnostics',
+            runtime__pb2.GetDeviceDiagnosticsRequest.SerializeToString,
+            runtime__pb2.GetDeviceDiagnosticsReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def RecoverDevice(request,
             target,
             options=(),
@@ -3147,6 +3292,33 @@ class RuntimeService(object):
             '/emo_master.runtime.RuntimeService/ControlDevice',
             runtime__pb2.ControlDeviceRequest.SerializeToString,
             runtime__pb2.GetDeviceStatesReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ExecuteDeviceAction(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ExecuteDeviceAction',
+            runtime__pb2.ExecuteDeviceActionRequest.SerializeToString,
+            runtime__pb2.ExecuteDeviceActionReply.FromString,
             options,
             channel_credentials,
             insecure,

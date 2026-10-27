@@ -51,6 +51,8 @@ class Peer:
 class CommunicationManager:
     def __init__(self, runtimeInstanceId):
         self.runtimeInstanceId = runtimeInstanceId
+        self.deviceId = "tcp-server"
+        self.eventSink = None
         self.projectId = ""
         self.projectKey = ""
         self.projectLoadGeneration = str(uuid4())
@@ -95,6 +97,8 @@ class CommunicationManager:
             while len(self._records) > MAX_RECORDS or self._recordBytes > MAX_RECORD_BYTES:
                 self._recordBytes -= self._records.popleft()[1]
                 self._dropped += 1
+            if self.eventSink is not None:
+                self.eventSink("device.tcp." + kind, message, **{k: v for k, v in record.items() if k != "message"})
 
     def configure(self, projectId, projectKey, config, *, saveToken=""):
         config = CommunicationSettings.model_validate(config.model_dump())
@@ -128,7 +132,8 @@ class CommunicationManager:
                 self.desired = config
                 self._disableSaveToken = ""
                 self._saveRequiresDisabled = False
-                if self.state not in {"STARTING", "LISTENING", "STOPPING"}:
+                if (self.state not in {"STARTING", "LISTENING", "STOPPING"}
+                        or revision(config) == revision(self.effective)):
                     self.effective = config.model_copy(deep=True)
                 self._changed.notify_all()
 
@@ -320,6 +325,20 @@ class CommunicationManager:
             except OSError:
                 pass
 
+    def beginStop(self):
+        with self._changed:
+            self._stop.set()
+            self._leases.clear()
+            self._changed.notify_all()
+            listener, peers = self._listener, list(self._peers.values())
+        if listener is not None:
+            try:
+                listener.close()
+            except OSError:
+                pass
+        for peer in peers:
+            self._disconnect(peer)
+
     def stop(self):
         with self._control:
             with self._lock:
@@ -396,7 +415,7 @@ class CommunicationManager:
                     raise TcpServiceError("E_TCP_CONNECT_TIMEOUT", "等待客户端连接超时")
                 peer = self._peers.get(channelId)
                 if peer:
-                    session = TcpSessionRef(runtimeInstanceId=self.runtimeInstanceId, projectId=self.projectId,
+                    session = TcpSessionRef(deviceId=self.deviceId, runtimeInstanceId=self.runtimeInstanceId, projectId=self.projectId,
                         projectLoadGeneration=self.projectLoadGeneration, serviceId=serviceId,
                         serviceGeneration=self.serviceGeneration, configRevision=revision(self.effective),
                         channelId=channelId, connectionGeneration=peer.generation, leaseId=uuid4().hex, jobId=jobId).toPayload()
@@ -411,7 +430,7 @@ class CommunicationManager:
 
     def send(self, jobId, requestId, session, data, cancelled, source=None, *, deadline=None):
         ref = TcpSessionRef.fromPayload(session)
-        receipt = TcpSendReceipt(requestId=requestId, jobId=jobId, channelId=ref.channelId,
+        receipt = TcpSendReceipt(deviceId=self.deviceId, requestId=requestId, jobId=jobId, channelId=ref.channelId,
             serviceGeneration=ref.serviceGeneration, connectionGeneration=ref.connectionGeneration,
             outcome="NOT_SENT", bytesRequested=len(data), bytesSent=0)
         started = False

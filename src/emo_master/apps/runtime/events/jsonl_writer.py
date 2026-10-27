@@ -381,6 +381,9 @@ def _isOperationalEvent(event: RuntimeEvent) -> bool:
         event.eventType == "node.log"
         or event.eventType == "artifact.created"
         or event.eventType == "resource.cleanup.failed"
+        or event.eventType in {"operator.storage.resolved", "operator.runtime.ready",
+                               "operator.runtime.failed", "operator.project.load.failed"}
+        or event.eventType.startswith("device.")
         or event.eventType.startswith("job.")
         or event.eventType.startswith("workflow.")
         or event.eventType.startswith("loop.")

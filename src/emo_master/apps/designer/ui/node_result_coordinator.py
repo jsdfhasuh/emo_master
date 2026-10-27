@@ -22,6 +22,7 @@ class NodeResultCoordinator(QObject):
         self.pending = None
         self.panel = NodeResultPanel(self.history, window)
         self.imageSelection = None
+        self.viewLocation = None
         self.closed = False
         self.image = QImage()
         self.pixmap = QPixmap()
@@ -52,6 +53,17 @@ class NodeResultCoordinator(QObject):
         self.panel.logs.clicked.connect(window.openLogDialog)
         self.panel.configureRequested.connect(self.configure)
         self.panel.enlargeRequested.connect(self.openViewer)
+
+    def showPanel(self):
+        self.window.onNodeSelectionChanged()
+        floating = getattr(self.window, 'floatingRunPanel', None)
+        if floating is not None:
+            floating.setExpanded(True)
+            floating.contentScroll.ensureWidgetVisible(self.panelScroll)
+        else:
+            self.window.rightPanelContainer.show()
+        self.panelScroll.ensureWidgetVisible(self.panel)
+        self.panel.tabs.setFocus(Qt.OtherFocusReason)
 
     def blueprint(self):
         window = self.window
@@ -100,13 +112,19 @@ class NodeResultCoordinator(QObject):
             return context['images']
         if method == 'onInspectionAccepted':
             reply = args[0]
+            images = context['images']
+            if images.sessionId:
+                history.bindContext((images.runtimeId, images.sessionId))
             definitions, revision = context['pending'] or self.blueprint()
             context['pending'] = None
             history.accept(str(reply.job_id), definitions, int(getattr(reply, 'project_revision', 0) or revision))
         elif method == 'onInspectionEvent':
             history.applyEvent(args[0])
+            # RuntimeController requests the shared view refresh after every
+            # event consumer has updated its model.
+            return
         elif method == 'onInspectionStatus' and history.current:
-            history.current.status = str(getattr(args[0], 'status', history.current.status))
+            history.setStatus(history.current.jobId, str(getattr(args[0], 'status', history.current.status)))
             if self.selectedWorkflow == key:
                 self.status(args[0])
         if self.selectedWorkflow == key:
@@ -118,6 +136,8 @@ class NodeResultCoordinator(QObject):
         if not isinstance(reply, str):
             revision = int(getattr(reply, 'project_revision', 0) or revision)
         self.pending = None
+        if self.images.sessionId:
+            self.history.bindContext((self.images.runtimeId, self.images.sessionId))
         self.history.accept(jobId, definitions, revision)
         self.refresh()
 
@@ -127,28 +147,28 @@ class NodeResultCoordinator(QObject):
     def status(self, reply):
         current = self.history.current
         if current and self.window.currentJobId == current.jobId:
-            current.status = str(getattr(reply, 'status', current.status))
+            self.history.setStatus(current.jobId, str(getattr(reply, 'status', current.status)))
             acceptedAt = getattr(reply, 'accepted_at_ms', 0)
             if type(acceptedAt) is int and 0 < acceptedAt < 253402300799000:
                 current.acceptedAtMs = acceptedAt
-            if (current.status in {'COMPLETED', 'FAILED', 'ABORTED'} and self.history.selected is current
-                    and self.imagePacket is None and not self.images.hasWork()):
-                # A five-second waiting request may have ended during a long
-                # run. Terminal readiness permits a new bounded query; a
-                # successful in-flight image is never read again for status.
-                self.imageSelection = None
 
     def refresh(self):
         if self.closed:
             return
         window = self.window
         nodeId = window.flowModel.selectedNodeId or ''
+        location = (window.activeWorkflowId, nodeId, self.history.older, self.panel.ports.currentData())
+        if location == self.viewLocation and self.images.hasWork():
+            # Let one coherent execution reach the screen during a loop.
+            # A node/port/history selection still cancels immediately.
+            return
         node = window.flowModel.nodes.get(nodeId)
         draft = None
-        if node:
+        if node and self.history.current is None:
             draft = next((item for item in self.blueprint()[0]
                           if item['workflowId'] == window.activeWorkflowId and item['nodeId'] == nodeId), None)
         view = self.panel.render(window.activeWorkflowId, nodeId, draft)
+        self.viewLocation = (window.activeWorkflowId, nodeId, self.history.older, self.panel.ports.currentData())
         record = view['record']
         tools = getattr(window, 'runResultTools', None)
         if tools:
@@ -162,16 +182,19 @@ class NodeResultCoordinator(QObject):
             tools.openFile.setEnabled(False)
         identity = (view['job'].jobId if view['job'] else '', window.activeWorkflowId,
                     nodeId, record['nodeRunId'] if record else '', self.panel.ports.currentData(),
-                    record['status'] if record else '')
+                    record['status'] if record else '', record['workflowRunId'] if record else '')
         if identity != self.imageSelection:
             self.imageSelection = identity
-            self._clearImage('尚未运行' if view['job'] is None else
+            imageMessage = (record.get('imageOutputMessages', {}).get(self.panel.ports.currentData(), '')
+                            if record and record['status'] == 'COMPLETED' else '')
+            self._clearImage(imageMessage or ('尚未运行' if view['job'] is None else
                              '所选节点没有图像输出端口' if not self.panel.ports.count() else
-                             '本次执行未产生有效图片' if record and record['status'] in ('FAILED', 'SKIPPED') else
-                             '节点图片尚未发布')
+                             '本次执行未产生有效图片' if record and record['status'] in
+                             ('FAILED', 'SKIPPED', 'CANCELLED', 'INTERRUPTED') else
+                             '节点图片尚未发布'))
             selection = None
-            if record and record['status'] == 'COMPLETED' and self.panel.ports.currentData():
-                selection = ImageSelection(window.loadedProjectPath, view['job'].jobId, window.activeWorkflowId,
+            if record and record['status'] == 'COMPLETED' and self.panel.ports.currentData() and not imageMessage:
+                selection = ImageSelection(self.images.projectId, view['job'].jobId, window.activeWorkflowId,
                     nodeId, record['workflowRunId'], record['nodeRunId'], view['job'].revision,
                     self.panel.ports.currentData())
             self.images.select(selection)
@@ -190,6 +213,11 @@ class NodeResultCoordinator(QObject):
         packet = self.images.take(generation)
         if packet is None:
             return
+        if packet.get('contextExpired'):
+            self.history.clear()
+            self.images.reset()
+            self.imageSelection = None
+            self.refresh()
         self._clearImage(packet.get('message', ''))
         if 'image' not in packet:
             return
@@ -206,7 +234,11 @@ class NodeResultCoordinator(QObject):
                  if source.createdAtMs else '采集时间未提供')
         name = self.panel.title.text()
         compactName = name if len(name) <= 64 else name[:63] + '…'
-        text = (f'{compactName} · {source.port} · {source.width} × {source.height} · {packet["format"]}\n'
+        original = (getattr(source, 'originalWidth', 0) or source.width,
+                    getattr(source, 'originalHeight', 0) or source.height)
+        dimensions = (f'原始 {original[0]} × {original[1]} · 预览 {source.width} × {source.height}'
+                      if original != (source.width, source.height) else f'{source.width} × {source.height}')
+        text = (f'{compactName} · {source.port} · {dimensions} · {packet["format"]}\n'
                 f'{stamp} · 任务 {source.originJobId[:8]} · 执行 {source.nodeRunId[:8]}')
         self.panel.imageMeta.setText(text)
         self.panel.imageMeta.setToolTip(f'{name}\nJob {source.originJobId}\nWorkflowRun {source.workflowRunId}\n'

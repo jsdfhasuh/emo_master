@@ -1,0 +1,81 @@
+{
+  "head": "ef5af5066599bc57a5182067e31775f8798e8107",
+  "requirementEvidence": {
+    "VF-01": {
+      "testValidationHasImmediateBusyAndPassedNotWrittenFeedback": 1
+    },
+    "VF-02": {
+      "testLegacyValidationOffersUpgradeWithoutMutatingDraft": 2
+    },
+    "VF-03": {
+      "testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites": 4
+    },
+    "VF-04": {
+      "testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations": 2,
+      "testUpgradedDraftResourceFailureCanBeFixedAndRevalidated": 2,
+      "testMigrationStructureFailureLeavesNoHalfUpgrade": 2,
+      "testUpgradeRejectsUnknownVersionsAndIllegalFields": 1,
+      "testInitialFailedReceiptRetainsCompilerIssueLocations": 2
+    },
+    "VF-05": {
+      "testPrewriteSuccessHasOnlyExistingImpactConfirmation": 1,
+      "testUpgradeActionFromPopupDoesNotResumePrewrite": 2
+    },
+    "VF-06": {
+      "testLocalSelectionErrorIsVisibleAndRecoverable": 1,
+      "testValidationFailuresPopupEachNewOperationAndRestoreControls": 2,
+      "testReceiptNotificationsRespectActualStateAndDeduplicate": 4,
+      "testValidationErrorModalCannotReenterCommandOrPoll": 1
+    },
+    "VF-07": {
+      "testLostFirstWriteReplyQueriesTheSameReceiptWithoutReplaying": 2,
+      "testFirstWriteDialogCanQueryAndCancelDuringPreparation": 2,
+      "testReceiptNotificationsRespectActualStateAndDeduplicate": 4
+    },
+    "RC-01": {
+      "testCurrentRuntimeDescriptionReadsActualTransportWithoutProvisioning": 2,
+      "testCurrentInfoFailureDoesNotEraseSuccessfulIdentityOrClaimConnected": 2
+    },
+    "RC-02": {
+      "testOpeningCurrentConnectionWithExistingPageEndpointDoesNotProvisionAgain": 1,
+      "testRemoteTargetMetadataUsesIndependentTypeAndShowsCurrentVersions": 1
+    },
+    "RC-03": {
+      "testCandidateFailureDoesNotOverwriteCurrentAreaAndCanRetry": 1,
+      "testRealConnectionDialogSwitchUpdatesChromeAndRetainsEmbeddedOwner": 1
+    },
+    "RC-04": {
+      "testLateCandidateIsReleasedWithoutSwitchOrPopup": 3,
+      "testClosingDuringCurrentInfoReadIgnoresLateReplyAndKeepsOwner": 1,
+      "testLateValidationCannotNotifyOrContinueWritingInNewContext": 4
+    },
+    "REG-01": {
+      "testMenusOwnAllCommandsAndPageModeKeepsRunAndStop": 1,
+      "testRealRuntimeRunAndStopRemainAvailableAfterSwitchToPages": 4
+    }
+  },
+  "tests": 529,
+  "testFiles": 44,
+  "sourceFilesChecked": 65,
+  "currentSourceMatchesTestSnapshot": true,
+  "unrelatedDirtyPreserved": 29,
+  "artifacts": [
+    "docs/plans/2026-10-20-runtime-validation-feedback-connection-state-plan.md",
+    "docs/testing/2026-10-20-runtime-validation-feedback.md",
+    "docs/guides/device-dispatch-online-configuration.md",
+    "docs\\evidence\\2026-10-20-runtime-validation-feedback\\legacy-format.png",
+    "docs\\evidence\\2026-10-20-runtime-validation-feedback\\popup-1.png",
+    "docs\\evidence\\2026-10-20-runtime-validation-feedback\\validation-passed.png",
+    "docs\\evidence\\2026-10-20-runtime-validation-feedback\\main-runtime-summary.png",
+    "docs\\evidence\\2026-10-20-runtime-validation-feedback\\current-embedded-runtime.png",
+    "docs\\evidence\\2026-10-20-runtime-validation-feedback\\popup-2.png",
+    "docs\\evidence\\2026-10-20-runtime-validation-feedback\\candidate-failed-current-retained.png"
+  ],
+  "softwareChecks": "PASS",
+  "nativeDesktop": "NOT_RUN",
+  "nativeOffscreenModalExec": "UNSUPPORTED_BASELINE_REPRODUCED",
+  "frozenProduct": "NOT_RUN",
+  "realDevices": "NOT_RUN",
+  "realRemoteHost": "NOT_RUN",
+  "note": "Requirements and assertions inspected against current source; XML names alone are not the scope claim. See verification report for individual boundaries."
+}

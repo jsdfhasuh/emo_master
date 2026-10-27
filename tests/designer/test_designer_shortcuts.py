@@ -59,7 +59,8 @@ def makePage(window, monkeypatch):
     return editor, key
 
 
-def testCanonicalActionsOwnKeysAndContextMenuOnlyDisplaysThem(canvas):  # noqa: F811
+@pytest.mark.parametrize('hiddenPorts', [False, True])
+def testCanonicalActionsOwnKeysAndContextMenuOnlyDisplaysThem(canvas, hiddenPorts):  # noqa: F811
     window, (first, _second), _client = canvas
     registry = window.designerActions
     assert set(registry.actions) == set(SHORTCUTS)
@@ -67,10 +68,26 @@ def testCanonicalActionsOwnKeysAndContextMenuOnlyDisplaysThem(canvas):  # noqa: 
     assert window._toolbarActions['开始运行'] is registry.actions['run']
     assert window._menuActions['复制所选算子'] is registry.actions['copy']
     assert window.deleteShortcut.key().isEmpty() and window.backspaceDeleteShortcut.key().isEmpty()
+    if hiddenPorts:
+        window.flowScene.hideUnusedPorts(first)
     menu = actions(window.nodeContextMenu.buildMenu(first))
+    canonical = {'configure', 'results', 'operator_debug', 'copy', 'delete'}
+    visibility = {'showPorts', 'showAllPorts', 'hideUnusedPorts'}
+    assert set(menu) == canonical | visibility
+    assert canonical <= set(registry.actions)
+    assert visibility.isdisjoint(registry.actions)
     for key, action in menu.items():
-        assert registry.shortcutLabel(key) in action.text()
-        assert action.shortcut().isEmpty()  # No competing menu shortcut registration.
+        # Port visibility is node-local UI state, not a global keyboard command.
+        if key in canonical:
+            assert registry.shortcutLabel(key) in action.text()
+        else:
+            assert '\t' not in action.text()
+        assert not action.shortcuts()  # No competing menu shortcut registration.
+    portActions = menu['showPorts'].menu().actions()
+    assert bool(portActions) is hiddenPorts
+    for action in portActions:
+        assert action.data()[0] == 'showPort'
+        assert not action.shortcuts() and '\t' not in action.text()
     assert len([a for a in window.actions() if a.shortcut().toString() == 'Ctrl+Z']) == 1
 
 
@@ -236,7 +253,7 @@ def testLayoutFitAndLogsKeysCallExistingCommands(canvas, monkeypatch):  # noqa: 
     press(window, Qt.Key_Home)
     assert called.count('fit') == previous + 1
     press(window, Qt.Key_L, Qt.ControlModifier | Qt.ShiftModifier)
-    assert window.logDock.isVisible()
+    assert window.logDialog.isVisible()
 
 
 def testPageCopyDeleteUndoNeverModifyHiddenWorkflow(canvas, monkeypatch):  # noqa: F811
@@ -288,8 +305,9 @@ def testPageFlowOnlyKeysAndPreviewKeepTaskOwnership(canvas, monkeypatch):  # noq
     editor, _key = makePage(window, monkeypatch)
     window.loadedProjectPath = 'test-project'
     before = window.pageCoordinator.session.payload()
-    for key, modifiers in [(Qt.Key_F5, Qt.NoModifier), (Qt.Key_F6, Qt.NoModifier),
-                           (Qt.Key_F2, Qt.NoModifier), (Qt.Key_Return, Qt.ControlModifier),
+    # Run/stop are now deliberately available in both workspaces. Their page
+    # shortcut ownership is exercised separately, not treated as flow-only.
+    for key, modifiers in [(Qt.Key_F2, Qt.NoModifier), (Qt.Key_Return, Qt.ControlModifier),
                            (Qt.Key_L, Qt.ControlModifier)]:
         press(window, key, modifiers)
     assert window.pageCoordinator.session.payload() == before
@@ -352,7 +370,7 @@ def testClickPageCardTransfersPropertyFocusBeforeCopy(canvas, monkeypatch):  # n
     assert client.starts == client.stops == 0
 
 
-def testPageSidebarAndTableDoNotDeleteCanvasSelection(canvas, monkeypatch):  # noqa: F811
+def testPageNavigationAndTableDoNotDeleteCanvasSelection(canvas, monkeypatch):  # noqa: F811
     window, _nodes, _client = canvas
     editor, key = makePage(window, monkeypatch)
     focusCanvas(window)
@@ -360,7 +378,7 @@ def testPageSidebarAndTableDoNotDeleteCanvasSelection(canvas, monkeypatch):  # n
     table.setItem(0, 0, QTableWidgetItem('文本值'))
     table.show()
     before = window.pageCoordinator.session.payload()
-    for field in (editor.pageList, table):
+    for field in (editor.pageTabs.tabBar(), table):
         field.setFocus()
         QApplication.processEvents()
         for button in (Qt.Key_Delete, Qt.Key_Backspace, Qt.Key_Home):

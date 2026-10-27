@@ -1,0 +1,7 @@
+{
+  "operatorId": "example.ticker.sample", "displayName": "采样后台计数", "version": "1.0.0",
+  "entry": "examples.device_service.driver:Sample", "category": "示例服务", "minCoreVersion": "0.6.1", "maxCoreVersion": "1.x",
+  "inputPorts": {}, "outputPorts": {"ticks": "integer"},
+  "paramSchema": {"type": "object", "additionalProperties": false, "properties": {"reject": {"type": "boolean", "default": false}}, "xDeviceActionFields": ["reject"]},
+  "deviceRequirements": {"service": {"deviceTypeId": "device.example.ticker", "requiredCapabilities": ["sample"]}}
+}

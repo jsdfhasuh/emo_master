@@ -4,6 +4,12 @@ from emo_master.core.workflow.loop_contracts import interfacePortTypes, loopWork
 
 
 def dispatchTargets(node):
+    policy = node.params.get("queueFullPolicy", "error")
+    if not isinstance(policy, str) or policy not in {"error", "wait", "skip"}:
+        raise ValueError("Dispatch queueFullPolicy must be error, wait or skip")
+    timeout = node.params.get("waitTimeoutMs", 0)
+    if type(timeout) is not int or not 0 <= timeout <= 2147483647:
+        raise ValueError("Dispatch waitTimeoutMs must be an integer in 0..2147483647")
     targets = node.params.get("targets", [])
     if not isinstance(targets, list) or not targets or len(targets) > 32:
         raise ValueError("Dispatch requires 1..32 explicit target slots")
@@ -24,7 +30,7 @@ def dispatchTargets(node):
 
 
 def dispatchPorts(document, workflowId, node):
-    if document.schemaVersion != "2.6":
+    if document.schemaVersion not in {"2.6", "2.7"}:
         raise ValueError("Dispatch/Join requires project schema 2.6")
     if node.kind == "join":
         source = next((n for n in document.workflows[workflowId].nodes

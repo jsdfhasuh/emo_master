@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "2.4",
+  "schemaVersion": "2.7",
   "project": {
     "projectId": "dual-mc-field-20261015",
     "name": "双 PLC MC 真机测试（仅 D796 写入）",
@@ -162,17 +162,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 800,
             "dataType": "uint16",
@@ -180,8 +169,20 @@
             "outputIndex": 0
           },
           "displayName": "只读/.50 D800",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -385,17 +386,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -403,8 +393,20 @@
             "outputIndex": 0
           },
           "displayName": "只读/.50 D796 原值记录",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -613,17 +615,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -631,8 +622,20 @@
             "outputIndex": 0
           },
           "displayName": "1 读取原始字",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -1078,17 +1081,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -1096,8 +1088,20 @@
             "outputIndex": 0
           },
           "displayName": "1 读取原始字",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -1543,17 +1547,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -1561,8 +1554,20 @@
             "outputIndex": 0
           },
           "displayName": "1 读取原始字",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -2003,17 +2008,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 800,
             "dataType": "uint16",
@@ -2021,8 +2015,20 @@
             "outputIndex": 0
           },
           "displayName": "只读/.51 D800",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -2226,17 +2232,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -2244,8 +2239,20 @@
             "outputIndex": 0
           },
           "displayName": "只读/.51 D796 原值记录",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -2454,17 +2461,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -2472,8 +2468,20 @@
             "outputIndex": 0
           },
           "displayName": "1 读取原始字",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -2919,17 +2927,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -2937,8 +2934,20 @@
             "outputIndex": 0
           },
           "displayName": "1 读取原始字",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -3384,17 +3393,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -3402,8 +3400,20 @@
             "outputIndex": 0
           },
           "displayName": "1 读取原始字",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -3847,17 +3857,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_write",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -3866,8 +3865,19 @@
             ]
           },
           "displayName": "写入测试值",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "values"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -4063,17 +4073,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -4081,8 +4080,20 @@
             "outputIndex": 0
           },
           "displayName": "内部/写入/.50 D796 uint16 写读恢复/写后读取",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -4291,25 +4302,25 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_write",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
             "values": []
           },
           "displayName": "data 输入恢复原始地址和值",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "values"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -4511,17 +4522,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -4529,8 +4529,20 @@
             "outputIndex": 0
           },
           "displayName": "内部/写入/.50 D796 uint16 写读恢复/恢复后读取",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -4737,17 +4749,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_write",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "int16",
@@ -4756,8 +4757,19 @@
             ]
           },
           "displayName": "写入测试值",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "values"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -4953,17 +4965,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "int16",
@@ -4971,8 +4972,20 @@
             "outputIndex": 0
           },
           "displayName": "内部/写入/.50 D796 int16 写读恢复/写后读取",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -5181,25 +5194,25 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_write",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
             "values": []
           },
           "displayName": "data 输入恢复原始地址和值",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "values"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -5401,17 +5414,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -5419,8 +5421,20 @@
             "outputIndex": 0
           },
           "displayName": "内部/写入/.50 D796 int16 写读恢复/恢复后读取",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -5670,25 +5684,25 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_write",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
             "values": []
           },
           "displayName": "写入测试值",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "values"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -5904,17 +5918,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -5922,8 +5925,20 @@
             "outputIndex": 0
           },
           "displayName": "内部/写入/.50 D796 scalar 写读恢复/写后读取",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -6132,25 +6147,25 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_write",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
             "values": []
           },
           "displayName": "data 输入恢复原始地址和值",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "values"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -6352,17 +6367,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.50",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -6370,8 +6374,20 @@
             "outputIndex": 0
           },
           "displayName": "内部/写入/.50 D796 scalar 写读恢复/恢复后读取",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc50"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -6578,17 +6594,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_write",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -6597,8 +6602,19 @@
             ]
           },
           "displayName": "写入测试值",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "values"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -6794,17 +6810,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -6812,8 +6817,20 @@
             "outputIndex": 0
           },
           "displayName": "内部/写入/.51 D796 uint16 写读恢复/写后读取",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -7022,25 +7039,25 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_write",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
             "values": []
           },
           "displayName": "data 输入恢复原始地址和值",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "values"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -7242,17 +7259,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -7260,8 +7266,20 @@
             "outputIndex": 0
           },
           "displayName": "内部/写入/.51 D796 uint16 写读恢复/恢复后读取",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -7468,17 +7486,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_write",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "int16",
@@ -7487,8 +7494,19 @@
             ]
           },
           "displayName": "写入测试值",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "values"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -7684,17 +7702,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "int16",
@@ -7702,8 +7709,20 @@
             "outputIndex": 0
           },
           "displayName": "内部/写入/.51 D796 int16 写读恢复/写后读取",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -7912,25 +7931,25 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_write",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
             "values": []
           },
           "displayName": "data 输入恢复原始地址和值",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "values"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -8132,17 +8151,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -8150,8 +8158,20 @@
             "outputIndex": 0
           },
           "displayName": "内部/写入/.51 D796 int16 写读恢复/恢复后读取",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -8401,25 +8421,25 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_write",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
             "values": []
           },
           "displayName": "写入测试值",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "values"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -8635,17 +8655,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -8653,8 +8662,20 @@
             "outputIndex": 0
           },
           "displayName": "内部/写入/.51 D796 scalar 写读恢复/写后读取",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -8863,25 +8884,25 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_write",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
             "values": []
           },
           "displayName": "data 输入恢复原始地址和值",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "values"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -9083,17 +9104,6 @@
           "kind": "operator",
           "operatorId": "communication.plc.slmp_read",
           "params": {
-            "host": "192.168.101.51",
-            "port": 4998,
-            "connectTimeoutMs": 2000,
-            "responseTimeoutMs": 2000,
-            "retryCount": 0,
-            "retryDelayMs": 0,
-            "networkNo": 0,
-            "pcNo": 255,
-            "moduleIoNo": 1023,
-            "moduleStationNo": 0,
-            "monitoringTimer": 0,
             "device": "D",
             "startAddress": 796,
             "dataType": "uint16",
@@ -9101,8 +9111,20 @@
             "outputIndex": 0
           },
           "displayName": "内部/写入/.51 D796 scalar 写读恢复/恢复后读取",
+          "deviceBindings": {
+            "plc": {
+              "deviceId": "plc51"
+            }
+          },
           "paramSchema": {
             "type": "object",
+            "xDeviceActionFields": [
+              "device",
+              "startAddress",
+              "dataType",
+              "count",
+              "outputIndex"
+            ],
             "properties": {
               "frameEncoding": {
                 "title": "通信格式",
@@ -9295,7 +9317,70 @@
     ]
   },
   "devices": {
-    "bindings": {}
+    "schemaVersion": "1.0",
+    "bindings": {},
+    "definitions": {
+      "plc50": {
+        "name": "plc50",
+        "deviceTypeId": "device.plc.mitsubishi_slmp",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "host": "192.168.101.50",
+          "port": 4998,
+          "connectTimeoutMs": 2000,
+          "responseTimeoutMs": 2000,
+          "networkNo": 0,
+          "pcNo": 255,
+          "moduleIoNo": 1023,
+          "moduleStationNo": 0,
+          "monitoringTimer": 0,
+          "frameEncoding": "binary"
+        },
+        "defaults": {},
+        "policies": {
+          "connectionRetryCount": 0,
+          "recoveryTimeoutMs": 5000,
+          "recoveryBackoffMs": 100,
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "plc51": {
+        "name": "plc51",
+        "deviceTypeId": "device.plc.mitsubishi_slmp",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "host": "192.168.101.51",
+          "port": 4998,
+          "connectTimeoutMs": 2000,
+          "responseTimeoutMs": 2000,
+          "networkNo": 0,
+          "pcNo": 255,
+          "moduleIoNo": 1023,
+          "moduleStationNo": 0,
+          "monitoringTimer": 0,
+          "frameEncoding": "binary"
+        },
+        "defaults": {},
+        "policies": {
+          "connectionRetryCount": 0,
+          "recoveryTimeoutMs": 5000,
+          "recoveryBackoffMs": 100,
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      }
+    }
   },
   "dependencies": {
     "operators": [

@@ -56,10 +56,16 @@ def testLoopbackGrpcNumericExecutionDoesNotLoadOrCreateJob(runtime):
         stub = rpc.RuntimeServiceStub(channel)
         client = RuntimeClient(stub)
         capabilities = client.operatorDebugCall("GetOperatorDebugCapabilities", pb.OperatorDebugRequest())
-        supported = [item["operatorId"] for item in json.loads(capabilities.snapshot_json)["operators"] if item["supported"]]
-        assert len(supported) == 67
+        operators = {item["operatorId"]: item for item in json.loads(capabilities.snapshot_json)["operators"]}
+        supported = {key for key, item in operators.items() if item["supported"]}
+        managed = {key for key, descriptor in runtime.pluginScanResult.activeOperators.items()
+                   if descriptor.manifest.deviceRequirements}
+        assert supported == set(trustedEntries(runtime.pluginScanResult.activeOperators)) - managed
         assert {"vision.compare.number", "vision.value.number", "vision.image.absdiff",
-                "communication.plc.slmp_read", "vision.io.image_loader"} <= set(supported)
+                "vision.io.image_loader"} <= supported
+        for key in managed:
+            assert not operators[key]["supported"]
+            assert operators[key]["reason"] == "use managed device diagnostics"
         identity = ready(runtime, stub, "vision.compare.number")
         prepared = stub.PrepareOperatorDebugInputs(request(runtime, **identity, request_id="inputs",
             inputs={"left": pb.OperatorDebugValue(inline_json="3")}))

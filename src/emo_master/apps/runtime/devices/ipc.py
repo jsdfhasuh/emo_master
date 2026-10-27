@@ -2,8 +2,10 @@
 import json
 from threading import Event, Lock, Thread
 import time
+from uuid import uuid4
 
 from emo_master.apps.runtime.communication.pipe_io import sendBytes, receiveBytes
+from emo_master.apps.runtime.workflow.cancellation import CancellationRequested
 from .executor import DeviceError
 from .frame_store import copyFrame
 
@@ -33,7 +35,15 @@ class DeviceBridge:
                     if type(sequence) is not int or sequence != self.sequence + 1:
                         raise DeviceError("E_DEVICE_IPC_SEQUENCE", "device request is duplicate or out of order")
                     self.sequence = sequence
-                    if request["action"].startswith("dispatch"):
+                    kind = request.get('kind')
+                    if kind == 'device_action':
+                        result = self.manager.execute(self.owner, request['deviceId'], request['action'],
+                            request['params'], cycleId=request['cycleId'], arguments=request.get('arguments'),
+                            cancelled=self.cancelled, source=request.get('source'), selectors=request.get('selectors'),
+                            requestId=request['requestId'])
+                    elif kind != 'framework_operation':
+                        raise DeviceError('E_DEVICE_IPC_KIND', 'unknown device request kind')
+                    elif request["action"].startswith("dispatch"):
                         group = self.manager.dispatchGroups.get(self.owner)
                         if group is None:
                             raise DeviceError("E_DISPATCH_UNAVAILABLE", "Job has no run group")
@@ -47,11 +57,7 @@ class DeviceBridge:
                         result = self.manager.configuration.beginCycle(self.owner, request["knownRevision"], self.cancelled,
                             parentCycleId=request.get("parentCycleId"))
                     elif request["action"] == "endCycle":
-                        for executor in self.manager.executors.values():
-                            with executor.condition:
-                                if not executor.condition.wait_for(lambda: executor.active is None
-                                        or executor.active.owner != self.owner, timeout=2):
-                                    raise DeviceError("E_DEVICE_RELEASE_PENDING", "cycle device operation has not exited")
+                        self.manager.waitOwner(self.owner, request['cycleId'])
                         self.manager.configuration.endCycle(self.owner, request["cycleId"])
                         group = self.manager.dispatchGroups.get(self.owner)
                         if group is not None:
@@ -65,13 +71,11 @@ class DeviceBridge:
                         self.manager.frames.release(request["frameId"], self.owner)
                         result = None
                     else:
-                        result = self.manager.execute(self.owner, request["deviceId"], request["action"],
-                            request["params"], cycleId=request["cycleId"], arguments=request.get("arguments"),
-                            cancelled=self.cancelled)
+                        raise DeviceError('E_DEVICE_IPC_OPERATION', 'unknown framework operation')
                     reply = dict(ok=True, result=result)
                 except Exception as error:
                     reply = dict(ok=False, code=getattr(error, "code", "E_DEVICE_IPC"), message=str(error),
-                                 outcome=getattr(error, "outcome", "UNKNOWN"))
+                                 outcome=getattr(error, "outcome", "UNKNOWN"), diagnostics=getattr(error, "diagnostics", {}))
                 sendBytes(self.connection, json.dumps(reply).encode(), self.cancelled, time.monotonic() + 2)
         except (OSError, EOFError, ValueError):
             pass
@@ -96,8 +100,35 @@ class DeviceProxy:
         self.frameCopies = {}
 
     def call(self, action, **fields):
+        return self._call('device_action', action, **fields)
+
+    def framework(self, action, **fields):
+        try:
+            return self._call('framework_operation', action, **fields)
+        except DeviceError as error:
+            # Framework cancellation is not a failed device action. Only the
+            # explicit cancellation receipt for this cancelled Job qualifies;
+            # transport uncertainty and real faults keep their original detail.
+            if error.code == "E_DEVICE_CANCELLED" and self.cancellation.is_set():
+                cancelled = CancellationRequested(str(error))
+                cancelled.outcome, cancelled.diagnostics = error.outcome, error.diagnostics
+                raise cancelled from error
+            raise
+
+    def _call(self, kind, action, **fields):
         def cancelled():
             return self.closed or self.cancellation.is_set()
+
+        def interrupted():
+            # pipe_io normally combines cancellation and timeout into OSError.
+            # Keep an observed framework stop distinct from a broken transport,
+            # including cancellation after the admission check but before I/O.
+            # Device actions still retain their possibly unknown native outcome.
+            if kind == 'framework_operation':
+                if self.cancellation.is_set():
+                    raise CancellationRequested("execution cancelled")
+                return self.closed
+            return cancelled()
         while not self.lock.acquire(timeout=.02):
             if cancelled():
                 raise DeviceError("E_DEVICE_CANCELLED", "device proxy cancelled")
@@ -105,37 +136,45 @@ class DeviceProxy:
             if cancelled():
                 raise DeviceError("E_DEVICE_CANCELLED", "device proxy cancelled")
             self.sequence += 1
-            raw = json.dumps(dict(sequence=self.sequence, action=action, **fields)).encode()
+            raw = json.dumps(dict(sequence=self.sequence, kind=kind, action=action, requestId=uuid4().hex, **fields)).encode()
             if len(raw) > MAX_BYTES:
                 raise DeviceError("E_DEVICE_IPC_SIZE", "device request exceeds IPC budget")
             try:
                 deadline = time.monotonic() + 1202
-                if action == "capture" and fields.get("params", {}).get("captureTimeoutMs") == 0:
+                if kind == 'device_action' and action == "capture" and fields.get("params", {}).get("captureTimeoutMs") == 0:
                     # Runtime validates the plugin's cancellable-wait declaration.
                     # EOF and cancellation still retire this non-retrying call.
                     deadline = float("inf")
-                sendBytes(self.connection, raw, cancelled, time.monotonic() + 2)
-                reply = json.loads(receiveBytes(self.connection, MAX_BYTES, cancelled, deadline))
+                sendBytes(self.connection, raw, interrupted, time.monotonic() + 2)
+                reply = json.loads(receiveBytes(self.connection, MAX_BYTES, interrupted, deadline))
             except (OSError, EOFError, ValueError) as error:
                 self.close()
+                if kind == 'framework_operation' and self.cancellation.is_set() and isinstance(error, (OSError, EOFError)):
+                    # A Windows pipe can report closure before invoking the
+                    # cancellation probe. This stops the workflow, never replays
+                    # the request or claims that an admission did not happen.
+                    stopped = CancellationRequested("framework transport closed during cancellation; no replay")
+                    stopped.outcome = "UNKNOWN"
+                    stopped.diagnostics = dict(action=action, transportError=type(error).__name__)
+                    raise stopped from error
                 raise DeviceError("E_DEVICE_OUTCOME_UNKNOWN", "device transport interrupted; do not retry",
                                   outcome="UNKNOWN") from error
             if not reply["ok"]:
-                raise DeviceError(reply["code"], reply["message"], outcome=reply["outcome"])
-            if action == "endCycle":
+                raise DeviceError(reply["code"], reply["message"], outcome=reply["outcome"], diagnostics=reply.get("diagnostics", {}))
+            if kind == 'framework_operation' and action == "endCycle":
                 self.frameCopies = {key: item for key, item in self.frameCopies.items()
                                     if item[0]() is not None and item[1]["cycleId"] != fields["cycleId"]}
             return reply["result"]
         finally:
             self.lock.release()
 
-    def capture(self, deviceId, params, cycleId):
-        descriptor = self.call("capture", deviceId=deviceId, params=params, cycleId=cycleId)
+    def capture(self, deviceId, params, cycleId, *, source=None, selectors=None):
+        descriptor = self.call("capture", deviceId=deviceId, params=params, cycleId=cycleId, source=source, selectors=selectors)
         image = copyFrame(descriptor)
         if self.retainFrames:
             self.rememberFrame(image, descriptor)
         else:
-            self.call("release", frameId=descriptor["frameId"])
+            self.framework("release", frameId=descriptor["frameId"])
         return image, descriptor
 
     def rememberFrame(self, image, descriptor):
@@ -157,7 +196,7 @@ class DeviceProxy:
                     if np.array_equal(value, copyFrame(candidate)):
                         descriptor = candidate
             if descriptor is None:
-                descriptor = self.call("frameBeginWrite", shape=list(value.shape), cycleId=context.cycleId)
+                descriptor = self.framework("frameBeginWrite", shape=list(value.shape), cycleId=context.cycleId)
                 memory = SharedMemory(name=descriptor["name"])
                 try:
                     destination = np.ndarray(value.shape, dtype=np.uint8, buffer=memory.buf)
@@ -165,7 +204,7 @@ class DeviceProxy:
                     del destination
                 finally:
                     memory.close()
-                self.call("frameCommitWrite", frameId=descriptor["frameId"])
+                self.framework("frameCommitWrite", frameId=descriptor["frameId"])
                 self.rememberFrame(value, descriptor)
             return dict(kind="frame", value=descriptor)
         if isinstance(value, dict):

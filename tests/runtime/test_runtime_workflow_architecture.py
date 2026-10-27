@@ -431,6 +431,11 @@ def testWorkerCrashDoesNotAffectOtherJobAndUsesDistinctPids(
         crashedStatus = waitForTerminal(service, crashed.job_id)
         healthyStatus = waitForTerminal(service, healthy.job_id)
         assert crashedStatus.status == "FAILED"
+        assert crashedStatus.error_code == "E_EXEC_FAILED"
+        failed = [event for event in service.eventStore.read(crashed.job_id)
+                  if event.eventType in {"node.failed", "workflow.failed", "job.failed"}]
+        assert [event.eventType for event in failed] == ["node.failed", "workflow.failed", "job.failed"]
+        assert all(event.code == "E_EXEC_FAILED" for event in failed)
         assert healthyStatus.status == "COMPLETED"
         assert crashedStatus.pid > 0
         assert healthyStatus.pid > 0

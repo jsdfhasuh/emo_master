@@ -74,20 +74,60 @@ def _inside(root: Path, relative: str) -> Path:
 
 
 def verifyResources(project: ProjectDocument, root: Path, *, resourcePaths=None) -> dict[str, str]:
+    from emo_master.core.workflow.errors import locatedValidationError, ValidationIssue, WorkflowCompileError
     assert project.resources is not None
     resolved: dict[str, str] = {}
+    issues = []
     for resourceId, item in project.resources.items.items():
-        path = Path(resourcePaths[resourceId]) if resourcePaths and resourceId in resourcePaths else _inside(root, item.path)
-        if not path.is_file() or path.stat().st_size != item.size:
-            raise ValueError(f"resource missing or size mismatch: {resourceId}")
+        location = 'resources.items.'+resourceId
+        try:
+            path = Path(resourcePaths[resourceId]) if resourcePaths and resourceId in resourcePaths else _inside(root, item.path)
+        except FileNotFoundError:
+            # A replacement's managed root is created only when it is published.
+            issues.append(ValidationIssue('E_RESOURCE_MISSING',
+                f'resource unavailable: {resourceId} ({item.path}); resource root not found: {root}',
+                projectId=project.project.projectId, fieldPath=location+'.path'))
+            continue
+        except ValueError as error:
+            issues.extend(locatedValidationError(error, 'E_RESOURCE_INPUT', projectId=project.project.projectId,
+                                                  fieldPath=location+'.path').issues)
+            continue
+        if not path.is_file():
+            exists = path.exists()
+            issues.append(ValidationIssue('E_RESOURCE_INPUT' if exists else 'E_RESOURCE_MISSING',
+                f'resource {"is not a file" if exists else "missing"}: {resourceId} ({path})',
+                projectId=project.project.projectId, fieldPath=location+'.path'))
+            continue
+        size = path.stat().st_size
+        if size != item.size:
+            issues.append(ValidationIssue('E_RESOURCE_SIZE',
+                f'resource size mismatch: {resourceId} ({path}); expected {item.size}, actual {size}',
+                projectId=project.project.projectId, fieldPath=location+'.size'))
+            continue
         digest = hashlib.sha256()
         with path.open("rb") as stream:
             for block in iter(lambda: stream.read(1024 * 1024), b""):
                 digest.update(block)
         if digest.hexdigest() != item.sha256:
-            raise ValueError(f"resource digest mismatch: {resourceId}")
+            issues.append(ValidationIssue('E_RESOURCE_DIGEST', f'resource digest mismatch: {resourceId} ({path})',
+                projectId=project.project.projectId, fieldPath=location+'.sha256'))
+            continue
         resolved[resourceId] = str(path)
+    if issues:
+        raise WorkflowCompileError(issues)
     return resolved
+
+
+def _parameterError(message, path):
+    from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError
+    return WorkflowCompileError([ValidationIssue('E_PARAM_INVALID', message, fieldPath=path)])
+
+
+def parameterValidationApplies(params: Mapping, schema: Mapping) -> bool:
+    """Absent selectors retain legacy validation; explicit inactive groups keep their drafts."""
+    condition = schema.get("xValidateWhen")
+    return not isinstance(condition, Mapping) or all(
+        key not in params or params[key] in allowed for key, allowed in condition.items())
 
 
 def _parameters(value: Any, schema: Mapping, path: str) -> Any:
@@ -101,29 +141,30 @@ def _parameters(value: Any, schema: Mapping, path: str) -> Any:
                  "minLength", "maxLength", "minItems", "maxItems", "pattern", "title", "description"}
     unknown = {key for key in schema if key not in supported and not key.startswith("x")}
     if unknown:
-        raise ValueError(f"{path}: unsupported parameter constraints {sorted(unknown)}")
+        raise _parameterError(f"{path}: unsupported parameter constraints {sorted(unknown)}", path)
     kind = schema.get("type", "object")
     valid = {"object": isinstance(value, dict), "array": isinstance(value, list),
              "string": isinstance(value, str), "integer": type(value) is int,
              "number": type(value) in (int, float), "boolean": type(value) is bool}
     if not valid.get(kind, False):
-        raise ValueError(f"{path}: expected {kind}")
+        raise _parameterError(f"{path}: expected {kind}", path)
     if "enum" in schema and value not in schema["enum"]:
-        raise ValueError(f"{path}: value outside enum")
+        raise _parameterError(f"{path}: value outside enum", path)
     if kind == "object":
         properties = schema.get("properties", {})
         if not schema.get("additionalProperties", True) and set(value) - set(properties):
-            raise ValueError(f"{path}: unknown parameter")
+            raise _parameterError(f"{path}: unknown parameter", path + '.' + sorted(set(value)-set(properties))[0])
         value = deepcopy(value)
         for key, definition in properties.items():
             if key not in value and "default" in definition:
                 value[key] = deepcopy(definition["default"])
-            if key in value:
+        for key, definition in properties.items():
+            if key in value and parameterValidationApplies(value, definition):
                 value[key] = _parameters(value[key], definition, f"{path}.{key}")
         if set(schema.get("required", [])) - set(value):
-            raise ValueError(f"{path}: required parameter missing")
+            raise _parameterError(f"{path}: required parameter missing", path + '.' + sorted(set(schema['required'])-set(value))[0])
     if kind == "array":
-        value = [_parameters(item, schema.get("items", {}), f"{path}[]") for item in value]
+        value = [_parameters(item, schema.get("items", {}), f"{path}.{index}") for index, item in enumerate(value)]
     if kind in {"integer", "number"}:
         if kind == "number":
             value = float(value)
@@ -131,13 +172,13 @@ def _parameters(value: Any, schema: Mapping, path: str) -> Any:
                              ("exclusiveMinimum", lambda a, b: a <= b),
                              ("exclusiveMaximum", lambda a, b: a >= b)]:
             if key in schema and invalid(value, schema[key]):
-                raise ValueError(f"{path}: {key}")
+                raise _parameterError(f"{path}: {key}", path)
     if kind in {"array", "string"}:
         suffix = "Length" if kind == "string" else "Items"
         if len(value) < schema.get("min" + suffix, 0) or len(value) > schema.get("max" + suffix, float("inf")):
-            raise ValueError(f"{path}: size constraint")
+            raise _parameterError(f"{path}: size constraint", path)
     if kind == "string" and "pattern" in schema and re.search(schema["pattern"], value) is None:
-        raise ValueError(f"{path}: pattern constraint")
+        raise _parameterError(f"{path}: pattern constraint", path)
     canonicalJson(value)  # reject non-finite/opaque values even in unconstrained attributes
     return value
 
@@ -160,7 +201,7 @@ def freezeProjectSnapshot(
     parameterPurposes: Mapping[tuple[str, tuple[str, ...]], str] | None = None,
 ) -> ProjectSnapshot:
     project = ProjectDocument.model_validate(project.model_dump())
-    if project.schemaVersion == "2.6":
+    if project.schemaVersion in {"2.6", "2.7"}:
         raise ValueError("device project snapshots require managed device resource mapping")
     if mode not in {"debug", "release"} or (mode == "release") != bool(releaseRevision):
         raise ValueError("release requires releaseRevision; debug forbids it")

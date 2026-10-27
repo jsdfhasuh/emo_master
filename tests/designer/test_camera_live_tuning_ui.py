@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 import time
 from dataclasses import asdict
 
@@ -39,14 +40,21 @@ def cameraEditor(tmp_path, monkeypatch):
     params = _params(triggerMode="hardware")
     payload = {"version": "1.0", "meta": {"name": "camera-ui"}, "runtime": {},
                "designer": {"nodes": [{"nodeId": "camera", "operatorId": "vision.io.huaray_camera", "params": params}], "edges": []}}
-    (project / "project.json").write_text(json.dumps(payload), encoding="utf-8")
+    # The legacy controller remains testable through its explicit draft transport.
+    # Do not formally load an unbound hardware node: current execution requires
+    # managed devices, and these tests exercise the isolated configuration UI.
+    saved = deepcopy(payload)
+    saved["designer"]["nodes"] = []
+    (project / "project.json").write_text(json.dumps(saved), encoding="utf-8")
     service = RuntimeService(dbPath=tmp_path / "runtime.db", workspaceRoot=tmp_path / "jobs")
     assert service.LoadProject(runtime_pb2.LoadProjectRequest(project_path=str(project)), None).ok
     client = RuntimeClient(service)
+    draft = service.loadedDocument.model_dump()
+    draft["workflows"]["main"]["nodes"].extend(payload["designer"]["nodes"])
     applied = []
     manager = OperatorEditorManager(runtimeClient=client, settingsStore=_Settings(),
         applyParams=lambda key, values: not applied.append(values), appendLog=lambda *args: None,
-        cacheRoot=tmp_path / "editors")
+        cacheRoot=tmp_path / "editors", getPreviewProject=lambda _key: deepcopy(draft))
     descriptor = service.pluginScanResult.activeOperators["vision.io.huaray_camera"]
     window = manager.open(projectId=service.loadedProjectId, workflowId="main", nodeId="camera",
         operatorId="vision.io.huaray_camera", displayName="相机", schema=PARAM_SCHEMA, values=params,

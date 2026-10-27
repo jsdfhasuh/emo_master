@@ -27,6 +27,83 @@ class TcpFrameError(TcpTransportError):
     """Raised when TCP bytes do not satisfy the configured message boundary."""
 
 
+class CancellableSocket:
+    """Apply cancellation and an absolute operation ceiling to existing framing helpers."""
+    def __init__(self, sock, cancelled, deadline, timeout):
+        self.sock, self.cancelled, self.deadline, self.timeout = sock, cancelled, deadline, timeout
+        self.bytesSent = 0
+
+    def settimeout(self, timeout):
+        self.timeout = timeout
+
+    def gettimeout(self):
+        return self.timeout
+
+    def _call(self, method, *args):
+        end = min(self.deadline, time.monotonic() + self.timeout)
+        while True:
+            if self.cancelled():
+                from emo_master.core.contracts.device_driver import DeviceError
+                raise DeviceError('E_DEVICE_CANCELLED', 'TCP transaction cancelled', outcome='UNKNOWN' if self.bytesSent else 'NOT_SENT')
+            remaining = end - time.monotonic()
+            if remaining <= 0:
+                raise socket.timeout('TCP phase deadline expired')
+            self.sock.settimeout(min(.05, remaining))
+            try:
+                return method(*args)
+            except socket.timeout:
+                continue
+
+    def recv(self, count):
+        return self._call(self.sock.recv, count)
+
+    def sendall(self, data):
+        end = min(self.deadline, time.monotonic() + self.timeout)
+        view = memoryview(data)
+        sent = 0
+        while sent < len(view):
+            self.timeout = max(.001, end - time.monotonic())
+            count = self._call(self.sock.send, view[sent:])
+            if not count:
+                raise OSError('TCP peer closed while sending')
+            sent += count
+            self.bytesSent += count
+
+
+def connectCancellable(host, port, cancelled, deadline):
+    """Connect-only phase; never retry a transaction or business send."""
+    import errno
+    import select
+    last = None
+    for family, socktype, proto, _, address in socket.getaddrinfo(host, port, type=socket.SOCK_STREAM):
+        sock = socket.socket(family, socktype, proto)
+        try:
+            sock.setblocking(False)
+            status = sock.connect_ex(address)
+            while status:
+                if cancelled():
+                    from emo_master.core.contracts.device_driver import DeviceError
+                    raise DeviceError('E_DEVICE_CANCELLED', 'TCP connection cancelled')
+                if time.monotonic() >= deadline:
+                    raise TcpTimeoutError('TCP connection timed out')
+                if status not in {errno.EINPROGRESS, errno.EWOULDBLOCK, errno.EALREADY, 10035, 10036, 10037}:
+                    raise OSError(status, 'TCP connection failed')
+                _, writable, exceptional = select.select([], [sock], [sock], min(.05, max(0, deadline-time.monotonic())))
+                if writable or exceptional:
+                    status = sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+                    if not status:
+                        break
+            sock.setblocking(True)
+            return sock
+        except OSError as error:
+            last = error
+            sock.close()
+        except BaseException:
+            sock.close()
+            raise
+    raise TcpConnectError(str(last)) from last
+
+
 def openTcpClient(
     host: str,
     port: int,
@@ -126,6 +203,12 @@ def receiveFramed(
             raise TcpFrameError(f"TCP message exceeds maxBytes={maxBytes}")
 
 
+def configureListener(server):
+    """Set listener ownership/rebind semantics before bind on either platform."""
+    exclusive = getattr(socket, 'SO_EXCLUSIVEADDRUSE', None)
+    server.setsockopt(socket.SOL_SOCKET, exclusive if isinstance(exclusive, int) else socket.SO_REUSEADDR, 1)
+
+
 def listenOnce(
     bindHost: str,
     port: int,
@@ -139,11 +222,7 @@ def listenOnce(
 ) -> tuple[bytes, tuple[str, int]]:
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        exclusiveAddressUse = getattr(socket, "SO_EXCLUSIVEADDRUSE", None)
-        if isinstance(exclusiveAddressUse, int):
-            server.setsockopt(socket.SOL_SOCKET, exclusiveAddressUse, 1)
-        else:
-            server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        configureListener(server)
         try:
             server.bind((bindHost, port))
             server.listen(1)

@@ -7,9 +7,10 @@ from emo_master.apps.designer.services.runtime_client import RuntimeClient
 from emo_master.apps.designer.ui.project_configuration import ProjectConfigurationDialog
 from tests.runtime.test_targeted_resource_repair import brokenRuntime, pendingUpload
 from tests.designer.test_device_workspace import waitUntil
+from tests.designer.runtime_feedback_fixture import messages  # noqa: F401
 
 
-def testNativeRealUploadFailureReportsProgressAndContinues(tmp_path, ownedDesignerWindow, monkeypatch):
+def testNativeRealUploadFailureReportsProgressAndContinues(tmp_path, ownedDesignerWindow, monkeypatch, messages):  # noqa: F811
     from PySide2.QtCore import Qt
     from PySide2.QtWidgets import QApplication
     from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
@@ -60,6 +61,7 @@ def testNativeRealUploadFailureReportsProgressAndContinues(tmp_path, ownedDesign
         waitUntil(lambda: dialog.pending is None)
         assert '完成 1 项，取消 0 项，仍待核对 1 项' in dialog.status.text(), dialog.status.text()
         assert 'second CHUNK' in dialog.status.text() and 'upload connection lost' in dialog.status.text()
+        assert len(messages) == 1 and 'upload connection lost' in messages[0]['detail']
         assert '本批已中止' in dialog.status.text() and 'third.bin' not in ids
         tid = ids['second.bin']
         assert tid in client.pendingResourceTransfers and not dialog.uploadButton.isEnabled()
@@ -141,7 +143,7 @@ def testNativeRepairConfirmationAndRecoveryKeepDraftAndDisk(tmp_path, ownedDesig
 
 
 @pytest.mark.parametrize('mode', ['server-cancelled', 'pending-cancel', 'lost-cancel'])
-def testNativeUploadQueryCancelAndContinuePreserveProject(tmp_path, ownedDesignerWindow, monkeypatch, mode):
+def testNativeUploadQueryCancelAndContinuePreserveProject(tmp_path, ownedDesignerWindow, monkeypatch, mode, messages):  # noqa: F811
     from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
     from emo_master.apps.runtime.grpc_server.service import RuntimeService
     from tests.runtime.test_review_resource_lifecycle import resourceProject
@@ -209,6 +211,7 @@ def testNativeUploadQueryCancelAndContinuePreserveProject(tmp_path, ownedDesigne
         assert session.payload() == draft and project.read_bytes() == disk
         assert (session._undo, session._redo) == history
         assert not runtime.jobRepository.all()
+        assert len(messages) == (1 if mode == 'lost-cancel' else 0)
         for button in [dialog.uploadButton, dialog.cancelUploadButton, dialog.queryButton, dialog.cancelButton]:
             assert dialog.rect().contains(button.geometry())
         assert dialog.grab().save(str(tmp_path / 'upload-normal-operation.png'))

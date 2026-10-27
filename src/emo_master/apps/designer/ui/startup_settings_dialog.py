@@ -120,7 +120,6 @@ class DesignerStartupSettingsDialog(QDialog):
         layout.addWidget(self.pages, 1)
         self.errorLabel = _label()
         self.errorLabel.setObjectName("startupSettingsError")
-        self.errorLabel.setAccessibleName("启动错误")
         self.errorLabel.hide()
         layout.addWidget(self.errorLabel)
         footer = QHBoxLayout()

@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 from PySide2.QtCore import QSettings, QTimer
+from PySide2.QtGui import QAccessible
 
 from emo_master.apps.designer.startup_settings import (
     defaultDataRoot, initialStartupOptions, recentValues, saveStartupOptions,
@@ -103,6 +104,24 @@ def test_invalid_local_choice_stays_in_dialog(tmp_path, path):
     dialog.selectDirectory(path)
     dialog.accept()
     assert dialog._selection is None and dialog.errorLabel.text()
+
+
+def test_startup_error_accessibility_tracks_the_visible_message(tmp_path):
+    from emo_master.apps.designer.main import _startupRetryMessage
+    from emo_master.apps.runtime.context.runtime_lock import RuntimeDataInUseError
+    dialog = DesignerStartupSettingsDialog(preferences(tmp_path))
+    message = _startupRetryMessage(RuntimeDataInUseError(tmp_path / 'busy' / '.runtime.lock'))
+    dialog.setStartupError(message)
+    accessible = QAccessible.queryAccessibleInterface(dialog.errorLabel)
+    assert accessible is not None
+    assert accessible.text(QAccessible.Name) == message
+    assert not dialog.errorLabel.isHidden()
+    dialog.setStartupError('permission denied')
+    assert accessible.text(QAccessible.Name) == 'permission denied'
+    dialog.selectDirectory(str(tmp_path / 'other'))
+    assert accessible.text(QAccessible.Name) == ''
+    assert dialog.errorLabel.isHidden()
+    assert not (tmp_path / 'other').exists()
 
 
 def test_explicitly_selecting_same_root_discards_legacy_database_override(tmp_path, monkeypatch):

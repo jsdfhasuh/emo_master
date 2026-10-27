@@ -390,3 +390,53 @@ regressions passed together: **38 passed, 2 subtests passed in 2.04 s**
 (`frozen-startup-regression.log`). These are source/guard tests, not a rebuilt
 EXE acceptance. PR #3 remains a draft pending full remote CI and frozen-package
 validation, and the recurring follow-up now explicitly includes those checks.
+
+### Frozen Startup Error Accessibility Follow-Up
+
+Frozen run [40462530091](https://github.com/jsdfhasuh/emo_master/actions/runs/40462530091)
+on `a4c243f8ce5153668e7919d90cda689d2c067b21` built successfully and passed
+icon verification. The corrected local-mode selector reached project entry in
+the first Designer. The second Designer returned to startup settings when its
+Runtime database initialization encountered the occupied data directory, but
+`busy_designer_settings` timed out while reading the expected warning.
+Runtime frozen acceptance was **NOT_RUN**, not passed.
+
+The current base `7a296c92fd6ee26e17e10ca9f9e92ebff0cdaf08` adds only the
+separate version bump from 0.6.2 to 0.6.3. Its frozen run
+[40462719449](https://github.com/jsdfhasuh/emo_master/actions/runs/40462719449)
+also built successfully, passed icons and reproduced the same Designer timeout.
+Both runs' logs and artifacts remain under `build/ci-followup-40444071101/`
+as `frozen-a4c243f8.log`, `frozen-a4c243f8-evidence/`, `frozen-7a296c92.log`
+and `frozen-7a296c92-evidence/`.
+
+An isolated native source probe established that the error QLabel's fixed
+accessible name hid the actual warning from Windows UI Automation; its HelpText
+was also empty. Removing that redundant name restores QLabel's default
+accessible text, including the occupied directory and instruction not to delete
+the lock/database. The visible message, directory lease, startup retry flow and
+frozen verifier's strict assertions are unchanged. The new QAccessible
+regression checks the initial busy-directory message, a replacement error and
+clearing the error when another directory is selected without creating it.
+
+Verification on Windows, Python 3.10.21:
+
+- The new regression failed before the fix: **1 failed in 1.35 s**.
+- Native source UIA with the unchanged real harness predicate failed before
+  the fix and recognized the warning afterwards. This isolated dialog probe
+  formats the real busy-directory exception but does not start Runtime/devices.
+- A clean public-source export updated to `7a296c92`, with only the two scoped
+  follow-up files copied in, passed **93 tests and 2 subtests in 55.10 s** with
+  offscreen Qt and **93 tests and 2 subtests in 53.93 s** with native Windows Qt.
+  Coverage includes startup settings, directory ownership, connection,
+  cancellation/progress, the frozen harness, release workflow and CI guards.
+- Ruff passed for `src tests`; Mypy passed for **560 source files**;
+  `scripts/gen_proto.py --check` passed on the same clean export.
+
+Local evidence includes `startup-error-accessibility-before.log`,
+`startup-busy-uia-before.log`, `startup-busy-uia-after.log`,
+`startup-accessibility-regression-offscreen.log` and
+`startup-accessibility-regression-windows.log`. These are source/native UIA
+results, not a rebuilt frozen EXE acceptance. Full head/merge-candidate CI and
+frozen checks must still pass on the new commit before PR #3 can be merged.
+Uncommitted RTSP/device work and separately started release activity remain
+outside this fix; no branches were removed during this follow-up.

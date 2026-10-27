@@ -30,6 +30,38 @@ def testZeroTimeoutKeepsDeadlineAndExplainsMissingTerminal():
         waitForTerminal(runtime, "job", timeoutSeconds=0)
 
 
+def testOversizedPresentationDiagnosticsKeepFailedResultAndReason():
+    identity = dict(jobId="job", resultKey="failed-result", resultOrdinal=3,
+                    invocationId="failed-invocation", resultScopeId="scope")
+    source = SimpleNamespace(sourceId="image", state="UNAVAILABLE",
+                             reasonCode="EXPORT_TIMEOUT", reason="snapshot wait expired")
+    result = SimpleNamespace(status="INCOMPLETE", executionTerminal="COMPLETED",
+        identity=SimpleNamespace(model_dump=lambda: identity), expectedSourceIds=("image",), sources=(source,))
+    # Repeated closure/export records can exceed the output budget even when
+    # every retained record is bounded; keep the failed result, not just job ID.
+    exports = [{"jobId": "job", "sourceId": "image", "stage": "snapshot_wait",
+                **{name: 1234567890 for name in (
+                    "captureAcquiredNs", "submittedNs", "ownerStartedNs", "dispatchNs",
+                    "snapshotwaitStartedNs", "snapshotwaitEndedNs", "snapshotReplyNs",
+                    "copiedNs", "encodeStartedNs", "encodedNs", "stagedNs", "replyNs",
+                    "adoptionStartedNs", "adoptionEndedNs", "retirementEndedNs")}}
+               for _ in range(16)]
+    owner = SimpleNamespace(exporter=SimpleNamespace(diagnostics=exports),
+        diagnostics=[{"identity": identity, "exports": exports} for _ in range(8)])
+    runtime = SimpleNamespace(_presentationOwner=owner, jobRepository=SimpleNamespace(
+        _jobs={"job": SimpleNamespace(status="RUNNING", errorCode="", message="")}
+    ))
+    text = jobFailureDetails(runtime, "job", result=result)
+    assert len(text) <= 16384
+    details = json.loads(text)
+    assert details["record"]["status"] == "RUNNING"
+    assert details["result"]["status"] == "INCOMPLETE"
+    assert details["result"]["identity"] == identity
+    assert details["result"]["sources"] == [dict(id="image", state="UNAVAILABLE",
+        reason="EXPORT_TIMEOUT", detail="snapshot wait expired")]
+    assert "budget" in details["diagnostic_error"]
+
+
 def testUnicodeDiagnosticBudgetKeepsValidJsonAndEventDenominator():
     events = [SimpleNamespace(sequence=index, eventType="类型" * 100, code="错误" * 100,
                               message="故障" * 200) for index in range(40)]

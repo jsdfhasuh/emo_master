@@ -91,19 +91,70 @@ def testGlobalCountersDialogNewSetAndResetUseBackgroundClient(
     if timer is not None:
         timer.stop()
 
-    assert dialog.createCounter("new-counter") is True
-    _waitUntil(qapp, lambda: len(dialog.getDisplayedCounters()) == 2)
-    assert dialog.setCounter("parts", 9) is True
-    _waitUntil(qapp, lambda: client.values["parts"] == 9)
-    _waitUntil(qapp, lambda: not dialog.isRequestInFlight())
-    assert dialog.resetCounter("parts") is True
-    _waitUntil(qapp, lambda: client.values["parts"] == 0)
+    try:
+        # A result can be rendered before the worker's finished callback runs.
+        _waitUntil(qapp, lambda: not dialog.isRequestInFlight())
+        assert dialog.createCounter("new-counter") is True
+        _waitUntil(qapp, lambda: len(dialog.getDisplayedCounters()) == 2)
+        _waitUntil(qapp, lambda: not dialog.isRequestInFlight())
+        assert dialog.setCounter("parts", 9) is True
+        _waitUntil(qapp, lambda: client.values["parts"] == 9)
+        _waitUntil(qapp, lambda: not dialog.isRequestInFlight())
+        assert dialog.resetCounter("parts") is True
+        _waitUntil(qapp, lambda: client.values["parts"] == 0)
 
-    assert any(call[0] == "get" for call in client.calls)
-    assert ("set", "project", "parts", 9) in client.calls
-    assert ("reset", "project", "parts", 0) in client.calls
-    dialog.shutdown()
-    dialog.close()
+        assert any(call[0] == "get" for call in client.calls)
+        assert ("set", "project", "parts", 9) in client.calls
+        assert ("reset", "project", "parts", 0) in client.calls
+    finally:
+        dialog.shutdown()
+        dialog.close()
+
+
+def testDisplayedCounterResultKeepsRequestBusyUntilWorkerFinishes(
+    designerApplication, monkeypatch,
+) -> None:
+    import emo_master.apps.designer.services.global_counter_worker as workerModule
+
+    emitted, release = threading.Event(), threading.Event()
+    original = workerModule._runGlobalCounterWorker
+
+    def holdAfterResult(worker):
+        original(worker)
+        if worker.operation == "list":
+            emitted.set()
+            assert release.wait(3)
+
+    monkeypatch.setattr(workerModule, "_runGlobalCounterWorker", holdAfterResult)
+    calls = []
+
+    class Client:
+        def listGlobalCounters(self, projectId):
+            return [GlobalCounterInfo("parts", 5, 1)]
+
+        def getGlobalCounter(self, projectId, name):
+            calls.append((projectId, name))
+            return GlobalCounterInfo(name, 0, 2)
+
+    dialog = GlobalCountersDialog(Client())
+    dialog.bindProject("project")
+    try:
+        dialog.refreshCounters()
+        assert emitted.wait(2)
+        _waitUntil(designerApplication, lambda: len(dialog.getDisplayedCounters()) == 1)
+        assert dialog.isRequestInFlight()
+        assert not dialog.createCounter("new-counter")
+        assert calls == []
+        release.set()
+        _waitUntil(designerApplication, lambda: not dialog.isRequestInFlight())
+        assert dialog.createCounter("new-counter")
+        _waitUntil(designerApplication, lambda: len(dialog.getDisplayedCounters()) == 2)
+        _waitUntil(designerApplication, lambda: not dialog.isRequestInFlight())
+        assert calls == [("project", "new-counter")]
+    finally:
+        release.set()
+        dialog.shutdown()
+        dialog.close()
 
 
 def testGlobalCountersDialogIgnoresReplyFromPreviousProject(

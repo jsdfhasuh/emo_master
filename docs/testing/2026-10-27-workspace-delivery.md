@@ -672,3 +672,66 @@ logs and JUnit are retained as `windows-diagnostics-reporter-regression.{log,xml
 Ruff, Mypy (**560 source files**) and protobuf drift checks passed. No field
 project, credential or real device was accessed. New full-suite head/PR results
 and fresh frozen acceptance remain required before merging PR #3.
+
+## Completed Windows Suite and Remaining Incomplete Result
+
+The older PR run [40477332211](https://github.com/jsdfhasuh/emo_master/actions/runs/40477332211)
+on `462f9bea` eventually completed its Windows suite: **2 failed, 8279 passed,
+5 skipped, 42 subtests passed in 3428.85 s**. Its JUnit contains **8328 records,
+2 failures, zero errors**. The original log and artifacts are retained as
+`windows-462f9bea-pr-full.log` and
+`ci-462f9bea-pr-results/test-results-windows-latest-py3.10/`. The earlier
+late-session-close and retained-native-owner tests passed in this complete run;
+that observation does not erase their older intermittent failure evidence.
+
+- `testGlobalCountersDialogNewSetAndResetUseBackgroundClient` called
+  `createCounter()` after a result was displayed but before the worker-finished
+  callback had retired the in-flight request. The same rejection reproduced
+  locally on `f72d7d3b`. The product correctly serializes requests and keeps its
+  controls disabled until the worker finishes. The test now waits for that
+  actual readiness before new/set operations, preserving all original write
+  and value assertions. A deterministic companion holds the worker after
+  emitting its result and verifies it remains busy, rejects overlapping work
+  without side effects, and accepts exactly one new request once retired.
+  Product worker ownership and request serialization are unchanged.
+- `testBusinessNgDoesNotStopAndSharesInvocationWithImageAndCount` received
+  `INCOMPLETE` instead of `COMPLETE`. Its original failure diagnostic contains
+  only `diagnostic budget exceeded`, so the unavailable source and reason
+  cannot be recovered from that artifact. This remains **OPEN / root cause not
+  established**. The initial two-case local run reproduced the counter failure
+  but this production case passed; it also passed in the related module run
+  and in **10 separately launched processes**. Those passes are not a fix.
+  No image-export deadline, result status or business assertion is changed.
+
+The existing test-only `jobFailureDetails()` helper now retains its core Job
+and failed-result metadata when detailed closure/export context cannot fit
+the existing 16 KiB output budget. It still avoids RPC, file reads, payload
+values and Runtime locks. A synthetic repeated-diagnostics regression first
+reproduced the loss of the result; afterward it retains the precise result
+identity, source state and reason code. The synthetic reason used by that test
+is not evidence of the unrecovered CI failure's actual cause.
+
+Local native Windows regression: **31 passed in 35.01 s**, no skips, covering
+the counter dialog, bounded diagnostics, production boundaries and reporter.
+Related first-result/SQLite diagnostic-wrapper regression: **90 passed in
+1.62 s**, no skips. Ruff and protobuf drift checks passed. Retained evidence
+includes `windows-complete-suite-followup-before.{log,xml}` (1 failed, 1 passed),
+`result-diagnostics-budget-before.{log,xml}` (1 failed),
+`windows-complete-suite-followup-regression.{log,xml}`,
+`diagnostic-helper-followup-regression.{log,xml}`, and
+`business-ng-followup-process-{1..10}.{log,xml}`. The earlier attempted repeated
+node invocation collected only one test and is not counted among those ten.
+
+Before this test-only follow-up, frozen run
+[40484287700](https://github.com/jsdfhasuh/emo_master/actions/runs/40484287700)
+on exact source `f72d7d3b22fa5ac5565f2c2816a2c5805e33110b` passed, with the
+downloaded report in `frozen-f72d7d3b-evidence/`: icons, native packaged Designer
+startup/multi-instance ownership, Runtime Job, native OperatorView, explicit
+stop, worker retirement and reacquirable locks, without forced cleanup.
+The installer was hash-verified only, not executed. Windows display contract
+run [40484279424](https://github.com/jsdfhasuh/emo_master/actions/runs/40484279424)
+also passed on that SHA: downloaded JUnit has **71 passed, zero failures/errors
+or skips**, and the source identity matches. Its artifacts remain under
+`display-contract-f72d7d3b-evidence/`. These are source/native and frozen checks,
+not real-device or field acceptance. Updated head/merge-candidate full CI and
+frozen verification remain necessary before merge; no branch was deleted.

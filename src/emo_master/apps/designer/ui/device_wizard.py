@@ -7,7 +7,7 @@ from PySide2.QtCore import QTimer, Qt
 from PySide2.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit,
     QDialogButtonBox, QTabWidget, QScrollArea, QSplitter, QTableWidget, QWidget,
-    QComboBox, QPushButton, QMessageBox, QCheckBox,
+    QComboBox, QPushButton, QMessageBox, QCheckBox, QTextEdit,
 )
 
 from emo_master.apps.designer.state.device_catalog import (DeviceCatalogEditor, changeParameterSource,
@@ -166,7 +166,8 @@ def deviceErrorMessage(error):
     cameraErrors = {
         'E_CAMERA_CONNECT': 'RTSP 连接失败，请检查流地址、账号密码和摄像头编码格式',
         'E_CAMERA_CONNECT_TIMEOUT': 'RTSP 连接超时，请检查流地址、网络及设备连接超时设置',
-        'E_CAMERA_READ': 'RTSP 已断流或取帧超时，请检查网络后从设备管理器重连',
+        'E_CAMERA_READ': 'RTSP 断流后未能恢复，请检查网络和设备重试策略；已隔离时需恢复设备会话',
+        'E_DEVICE_RECOVERY_TIMEOUT': '连接恢复已超时，请检查网络、设备地址和连接恢复总时限',
         'E_CAMERA_FRAME_TIMEOUT': '未收到符合帧龄要求的新画面，请检查码流及设备取帧超时设置',
         'E_CAMERA_FRAME_SIZE': '摄像头画面超过单帧内存上限，请调整设备的单帧内存上限',
         'E_CAMERA_NOT_CONNECTED': 'RTSP 尚未连接，请在设备管理器连接或恢复设备',
@@ -186,6 +187,32 @@ def deviceValidationMessage(error):
 def deviceErrorDetails(error):
     codes = ', '.join(dict.fromkeys(issue.code for issue in getattr(error, 'issues', ())))
     return (codes or getattr(error, 'code', '')) + '：' + str(error)
+
+
+def showConnectionTestResult(parent, name, message, *, error=None):
+    if not parent.isVisible():
+        return
+    box = QMessageBox(parent)
+    box.setObjectName('deviceConnectionTestResult')
+    box.setAttribute(Qt.WA_DeleteOnClose)
+    box.setWindowTitle('连接测试结果')
+    box.setTextFormat(Qt.PlainText)
+    box.setIcon(QMessageBox.Warning if error is not None else QMessageBox.Information)
+    box.setText('连接测试失败' if error is not None else '连接测试通过')
+    box.setInformativeText(f'设备：{name}\n\n{message}\n\n'
+        '本次仅检查连接，未验证采集或业务读写；未保存或发布配置。')
+    if error is not None:
+        box.setDetailedText(deviceErrorDetails(error))
+        detailButton = next(button for button in box.buttons() if box.buttonRole(button) == QMessageBox.ActionRole)
+        detailView = box.findChild(QTextEdit)
+        detailButton.setText('详细信息')
+        detailButton.clicked.connect(lambda: detailButton.setText(
+            '收起详情' if detailView.isVisible() else '详细信息'), Qt.QueuedConnection)
+    close = box.addButton('关闭', QMessageBox.RejectRole)
+    box.setDefaultButton(close)
+    box.setEscapeButton(close)
+    # Completion feedback must not nest the metadata polling event loop.
+    box.open()
 
 
 def clearNameFeedback(control, feedback):
@@ -323,6 +350,7 @@ class DeviceDefinitionDialog(QDialog):
 
     def testConnection(self):
         if self.setupPending is not None:
+            self.error.setText('正在测试连接' if self.setupKind == 'test' else '正在发现设备，请稍后重试')
             return
         try:
             definition = self.definition()
@@ -348,14 +376,23 @@ class DeviceDefinitionDialog(QDialog):
         self.setupPending = self.setupPool.submit(test)
         self.setupTimer.start(40)
         self.error.setText('正在测试连接')
+        self.error.setToolTip('')
+        self.testButton.setText('测试中…')
+        self.testButton.setEnabled(False)
 
     def setupReady(self):
         if self.setupPending is None or not self.setupPending.done():
             return
         future, self.setupPending = self.setupPending, None
         self.setupTimer.stop()
+        self.testButton.setText('测试连接')
+        self.testButton.setEnabled(self.client is not None and 'test_connection' in self.declaration.controlCapabilities)
         try:
             if self.setupScope is not None and self.setupScope != self._setupScope():
+                if self.setupKind == 'test':
+                    self.error.setText('工程或 Runtime 连接已变化，请重新测试')
+                    self.error.setToolTip(self.error.text())
+                    return
                 raise ValueError('工程或 Runtime 连接已变化，请重新测试')
             if self.setupKind == 'test':
                 try:
@@ -378,9 +415,13 @@ class DeviceDefinitionDialog(QDialog):
                     self.forms['connection'].setSchema(self.declaration.connectionSchema, values)
             else:
                 self.error.setText(result.get('message') or '连接检查通过；未验证采集或业务读写；未保存或发布配置')
+                self.error.setToolTip('')
+                showConnectionTestResult(self, self.name.text(), result.get('message') or '当前连接配置检查通过')
         except Exception as error:
             self.error.setText(deviceErrorMessage(error))
-            self.error.setToolTip(str(error))
+            self.error.setToolTip(deviceErrorDetails(error))
+            if self.setupKind == 'test':
+                showConnectionTestResult(self, self.name.text(), self.error.text(), error=error)
 
     def done(self, result):
         if self.setupPending is not None:

@@ -193,7 +193,10 @@ def testRtspDeviceFormMasksPasswordAndProvidesUsefulErrors(retainedQtApplication
         assert dialog.forms['connection']._controls['password'].echoMode() == QLineEdit.Password
         assert not dialog.discoverButton.isEnabled()
         assert dialog.definition()['policies']['release'] == 'idle_timeout'
-        for code in ('E_CAMERA_CONNECT', 'E_CAMERA_READ', 'E_CAMERA_FRAME_TIMEOUT'):
+        assert dialog.definition()['policies']['connectionRetryCount'] == 3
+        dialog.forms['policies']._controls['connectionRetryCount'].setValue(0)
+        assert dialog.definition()['policies']['connectionRetryCount'] == 0
+        for code in ('E_CAMERA_CONNECT', 'E_CAMERA_READ', 'E_CAMERA_FRAME_TIMEOUT', 'E_DEVICE_RECOVERY_TIMEOUT'):
             assert deviceErrorMessage(DeviceError(code, 'detail')) != '设备操作未完成，请查看详情'
         if os.environ.get('QT_QPA_PLATFORM') == 'windows':
             dialog.setAttribute(Qt.WA_DontShowOnScreen)

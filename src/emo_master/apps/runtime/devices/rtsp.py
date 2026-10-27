@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import hashlib
 from threading import Condition, Event, Thread
-from time import monotonic, time
+from time import monotonic, sleep, time
 from urllib.parse import quote, urlunsplit
 
 import cv2
@@ -14,6 +14,8 @@ from emo_master.plugins.builtins._network_camera import cameraUrl, credentials, 
 
 
 class ManagedRtsp(DeviceDriver):
+    connectionRetryCodes = frozenset({'E_CAMERA_CONNECT', 'E_CAMERA_CONNECT_TIMEOUT'})
+
     def __init__(self, definition):
         self.definition = definition
         self.condition = Condition()
@@ -27,6 +29,15 @@ class ManagedRtsp(DeviceDriver):
         self.error = None
         self.releaseFailed = False
         self.disposed = False
+        self.recovery = dict(state='IDLE', attempt=0)
+
+    def resetConnection(self):
+        self.close()
+
+    def testConnection(self, params, cancelled, deadline):
+        from .recovery import connectWithRecovery
+        connectWithRecovery(self, self.definition, cancelled, deadline)
+        return {'connected': True}
 
     @staticmethod
     def physicalIdentity(definition):
@@ -51,6 +62,9 @@ class ManagedRtsp(DeviceDriver):
 
     def connect(self, params, cancelled, deadline):
         self._check(cancelled, deadline, connecting=True)
+        if self.thread is not None and (self.error is not None or self.stop.is_set()):
+            self.close(deadline)
+            self._check(cancelled, deadline, connecting=True)
         with self.condition:
             if self.disposed:
                 raise DeviceError('E_DEVICE_UNAVAILABLE', 'RTSP driver is disposed')
@@ -156,6 +170,50 @@ class ManagedRtsp(DeviceDriver):
         if action != 'capture':
             raise DeviceError('E_DEVICE_ACTION', 'RTSP supports capture only')
         self.validateAction(action, arguments)
+        self.recovery.update(state='IDLE', attempt=0, lastError='')
+        try:
+            return self._captureWithRecovery(params, cancelled, deadline)
+        except DeviceError as error:
+            self.recovery.update(state='CANCELLED' if error.code == 'E_DEVICE_CANCELLED' else 'FAILED',
+                                 lastError=str(error))
+            raise
+
+    def _captureWithRecovery(self, params, cancelled, deadline):
+        retries = self.definition.policies.get('connectionRetryCount', 0)
+        retryCodes = self.connectionRetryCodes | {'E_CAMERA_READ', 'E_CAMERA_NOT_CONNECTED'}
+        attempt, recoveryDeadline = 0, deadline
+        while True:
+            try:
+                if attempt:
+                    self.recovery.update(state='CONNECTING', attempt=attempt)
+                    self.connect(params, cancelled, recoveryDeadline)
+                result = self._capture(params, cancelled, recoveryDeadline)
+                self.recovery.update(state='CONNECTED', lastError='')
+                return result
+            except DeviceError as error:
+                if (not retries or error.code not in retryCodes or error.outcome != 'NOT_EXECUTED'
+                        or not attempt and self.stop.is_set()):
+                    raise
+                if not attempt:
+                    recoveryDeadline = min(deadline, monotonic() +
+                        self.definition.policies.get('recoveryTimeoutMs', 5000) / 1000)
+                # A new decoder is allowed only after the previous reader exits.
+                # Retrying this frame wait never replays downstream workflow nodes.
+                self.close(recoveryDeadline)
+                self.recovery.update(state='FAILED', lastError=str(error))
+                if attempt >= retries:
+                    raise DeviceError(error.code, str(error), outcome=error.outcome,
+                                      diagnostics=error.diagnostics) from error
+                attempt += 1
+                self.recovery.update(state='BACKOFF', attempt=attempt)
+                wake = min(recoveryDeadline, monotonic() +
+                    self.definition.policies.get('recoveryBackoffMs', 100) / 1000)
+                while monotonic() < wake:
+                    self._check(cancelled, recoveryDeadline, connecting=True)
+                    sleep(min(.01, max(0, wake - monotonic())))
+                self._check(cancelled, recoveryDeadline, connecting=True)
+
+    def _capture(self, params, cancelled, deadline):
         with self.condition:
             self._check(cancelled, deadline)
             self.decoding = True
@@ -208,4 +266,5 @@ class ManagedRtsp(DeviceDriver):
                               'STREAMING' if ready and self.decoding else 'CONNECTED' if ready else 'DISCONNECTED',
                         lastError=str(self.error) if self.error else '',
                         lastErrorCode=self.error.code if self.error else '',
+                        recovery=dict(self.recovery),
                         cachedFrames=int(self.latest is not None))

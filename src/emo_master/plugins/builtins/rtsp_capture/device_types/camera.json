@@ -48,7 +48,10 @@
       "release": {"title": "\u91ca\u653e\u7b56\u7565", "type": "string", "enum": ["idle_timeout", "on_project_close", "when_unused", "manual"], "default": "idle_timeout"},
       "idleTimeoutMs": {"title": "\u7a7a\u95f2\u91ca\u653e\u65f6\u957f", "type": "integer", "minimum": 1, "maximum": 86400000, "default": 5000, "xUnit": "ms", "xAdvanced": true},
       "deviceWaitTimeoutMs": {"title": "\u6392\u961f\u8d85\u65f6", "type": "integer", "minimum": 1, "maximum": 600000, "default": 5000, "xUnit": "ms", "xAdvanced": true},
-      "operationTimeoutMs": {"title": "\u64cd\u4f5c\u8d85\u65f6", "type": "integer", "minimum": 1, "maximum": 600000, "default": 10000, "xUnit": "ms", "xAdvanced": true}
+      "operationTimeoutMs": {"title": "\u64cd\u4f5c\u8d85\u65f6", "type": "integer", "minimum": 1, "maximum": 600000, "default": 10000, "xUnit": "ms", "xAdvanced": true},
+      "connectionRetryCount": {"title": "\u8fde\u63a5\u5931\u8d25\u6216\u65ad\u6d41\u91cd\u8bd5\u6b21\u6570", "type": "integer", "minimum": 0, "maximum": 5, "default": 3},
+      "recoveryTimeoutMs": {"title": "\u8fde\u63a5\u6062\u590d\u603b\u65f6\u9650", "type": "integer", "minimum": 1, "maximum": 60000, "default": 5000, "xUnit": "ms", "xAdvanced": true},
+      "recoveryBackoffMs": {"title": "\u91cd\u8fde\u95f4\u9694", "type": "integer", "minimum": 1, "maximum": 10000, "default": 100, "xUnit": "ms", "xAdvanced": true}
     },
     "required": ["connect", "release", "idleTimeoutMs", "deviceWaitTimeoutMs", "operationTimeoutMs"]
   },

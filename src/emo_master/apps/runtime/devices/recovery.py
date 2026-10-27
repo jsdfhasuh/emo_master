@@ -12,12 +12,13 @@ def connectWithRecovery(driver, definition, cancel, deadline, *, progress=lambda
     attemptSeconds = policies.get("operationTimeoutMs", 5000) / 1000
     recoveryDeadline = None
     attempt = 0
+    unhealthy = True
     while True:
         if cancel():
             raise DeviceError("E_DEVICE_CANCELLED", "connection recovery cancelled before business execution")
         limit = min(deadline, recoveryDeadline) if recoveryDeadline is not None else deadline
         if monotonic() >= limit:
-            raise DeviceError("E_DEVICE_RECOVERY_TIMEOUT", "connection recovery total budget exhausted", unhealthy=True)
+            raise DeviceError("E_DEVICE_RECOVERY_TIMEOUT", "connection recovery total budget exhausted", unhealthy=unhealthy)
         progress(dict(attempt=attempt + 1, state="CONNECTING"))
         try:
             driver.connect(definition.defaults, cancel, min(limit, monotonic() + attemptSeconds))
@@ -31,6 +32,8 @@ def connectWithRecovery(driver, definition, cancel, deadline, *, progress=lambda
             if cancel():
                 raise DeviceError("E_DEVICE_CANCELLED", "connection recovery cancelled before reset") from error
             driver.resetConnection()
+            # Exhausting retries must not turn a clean connection refusal into a resource fault.
+            unhealthy = error.unhealthy
             attempt += 1
             progress(dict(attempt=attempt, state="BACKOFF", lastError=str(error)))
             wake = min(recoveryDeadline, monotonic() + backoff)

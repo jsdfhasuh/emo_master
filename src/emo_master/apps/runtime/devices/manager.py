@@ -331,6 +331,11 @@ class DeviceManager:
                             self.frameObserver(deviceId, owner, result, descriptor)
                         return descriptor
                     return result
+                except DeviceError:
+                    state = driver.snapshot()
+                    if state.get('ready') is False and state.get('ownsResources') is False:
+                        lifecycle.connected = False
+                    raise
                 finally:
                     lifecycle.touched()
                     if reservation:

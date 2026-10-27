@@ -110,6 +110,7 @@ def testStaleUnconsumedFrameIsNotReturned(driver):
 
 def testReadFailureClearsCacheAndSanitizesNativeError(driver):
     d, native = driver
+    d.definition.policies['connectionRetryCount'] = 0
     d.connect({}, lambda: False, monotonic() + 1)
     native.put(1)
     capture(d)
@@ -339,7 +340,9 @@ def testReadFailureCanBeRecoveredWithoutRestartingRuntime(monkeypatch):
     monkeypatch.setattr(rtsp.cv2, 'VideoCapture', lambda: next(instances))
     manager = DeviceManager(scan().deviceTypes)
     try:
-        manager.load(project())
+        document = project()
+        document.devices.definitions['camera'].policies['connectionRetryCount'] = 0
+        manager.load(document)
         manager.authorize('first', ['camera'])
         params = manager.definitions['camera'].defaults
         broken.frames.put(None)

@@ -586,7 +586,11 @@ class DeviceWorkspace(QDialog):
             self.status.setText(str(error))
 
     def testConnection(self):
-        if self.pending is not None or not self.selectedId:
+        if self.pending is not None:
+            self.status.setText('正在测试当前连接草稿' if self.pendingKind == 'test' else '正在读取或操作设备，请稍后重试')
+            return
+        if not self.selectedId:
+            self.status.setText('请先选择要测试的设备')
             return
         try:
             from .device_wizard import validateDeviceDefinition
@@ -612,6 +616,8 @@ class DeviceWorkspace(QDialog):
         self.pendingTest = candidate
         self.pending = self.reader.submit(test)
         self.status.setText('正在测试当前连接草稿')
+        self.status.setToolTip('')
+        self._updateOnlineActions()
         self.timer.start(40)
 
     def recover(self):
@@ -733,6 +739,10 @@ class DeviceWorkspace(QDialog):
         try:
             if self.pendingScope != self._scope():
                 self._tcpCategoryIntent = None
+                if self.pendingKind == 'test':
+                    self.status.setText('工程或 Runtime 连接已变化，请重新测试')
+                    self.status.setToolTip(self.status.text())
+                    return
                 raise ValueError("Runtime 连接已变化，请重新读取")
             if self.pendingKind == 'deviceDiagnostics':
                 page = future.result()
@@ -754,7 +764,11 @@ class DeviceWorkspace(QDialog):
                         self.status.setText('设备或输入已变化；此前测试结果不用于当前输入')
                     return
                 result = future.result()
-                self.status.setText(result.get('message', '端点测试通过') + '；工程草稿和在线配置未改变')
+                message = result.get('message') or '端点测试通过'
+                self.status.setText(message + '；工程草稿和在线配置未改变')
+                self.status.setToolTip('')
+                from .device_wizard import showConnectionTestResult
+                showConnectionTestResult(self, self.pendingTest[1]['name'], message)
                 return
             if self.pendingKind == 'managementAction':
                 self.status.setText('业务动作完成：' + json.dumps(future.result(), ensure_ascii=False))
@@ -803,9 +817,10 @@ class DeviceWorkspace(QDialog):
         except Exception as error:
             notice = ''
             if self.pendingKind == 'test':
-                from .device_wizard import deviceErrorMessage
+                from .device_wizard import deviceErrorMessage, deviceErrorDetails, showConnectionTestResult
                 self.status.setText(deviceErrorMessage(error))
-                self.status.setToolTip(f"{getattr(error, 'code', '')}：{error}")
+                self.status.setToolTip(deviceErrorDetails(error))
+                showConnectionTestResult(self, self.pendingTest[1]['name'], self.status.text(), error=error)
                 return
             if self.pendingKind in {"state", "recover", "control"}:
                 self.states = {}
@@ -887,6 +902,10 @@ class DeviceWorkspace(QDialog):
         definition = self.c.session.workflows.devices.get('definitions', {}).get(self.selectedId, {})
         declaration = self.deviceTypes.get(definition.get('deviceTypeId'))
         capabilities = set(declaration.controlCapabilities) if declaration else set()
+        testing = self.pending is not None and self.pendingKind == 'test'
+        self.buttons['test'].setText('测试中…' if testing else '测试连接')
+        self.buttons['test'].setEnabled(not testing and 'test_connection' in capabilities
+            and callable(getattr(self.c.window.runtimeClient, 'deviceNetworkCommand', None)))
         state = self.states.get(self.selectedId)
         current = (self.stateScope is None or self.stateScope == self._scope()) and not self.stateError
         fresh = current and (not self.stateReadAt or monotonic() - self.stateReadAt < 6)

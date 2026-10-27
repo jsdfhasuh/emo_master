@@ -440,3 +440,38 @@ results, not a rebuilt frozen EXE acceptance. Full head/merge-candidate CI and
 frozen checks must still pass on the new commit before PR #3 can be merged.
 Uncommitted RTSP/device work and separately started release activity remain
 outside this fix; no branches were removed during this follow-up.
+
+## Authorized Local Device Changes Delivery
+
+After startup-accessibility commit `c33289e414cc5fea84c9d8104cf05272c3ecc4b6`
+was pushed, the user explicitly requested committing and pushing the remaining
+local changes. The previously excluded device work is now included in this
+delivery: bounded RTSP connection/stream recovery, lifecycle state after clean
+release, connection-test completion dialogs and their regression tests/docs.
+The earlier reports retain their original scope and failure evidence in
+`2026-10-27-device-connection-test-feedback.md` and
+`2026-10-27-rtsp-connection-recovery.md`.
+
+Verification of the combined working tree based on `c33289e4`, using Python
+3.10.21 on Windows:
+
+- Runtime/device regression: **129 passed in 62.34 s**, no skips. This covers
+  managed RTSP, recovery, lifecycle, manager/executor, SLMP, driver contracts
+  and registry tests with fake devices and local loopback fixtures.
+- Native Windows Qt: **150 passed in 58.90 s**, no skips. This covers connection
+  feedback including actual result-dialog rendering, device workspace/form
+  behavior, RTSP UI and the recent Designer startup settings/accessibility fix.
+- Ruff on `src tests`, Mypy on **560 source files** and protobuf drift checks
+  all passed. Logs are retained locally as `local-delivery-device-regression.log`,
+  `local-delivery-native-designer.log` and `local-delivery-mypy.log` under the
+  existing ignored evidence directory.
+
+The Windows offscreen-only QMessageBox rendering workaround remains scoped to
+the connection-result dialog; its four layout cases were executed on native
+Windows Qt above, not counted as offscreen successes. The two existing manual
+RTSP-recovery tests explicitly select zero retries and retain their quarantine,
+sanitization and recovery assertions. No device/field configuration, ignored
+artifact, credential, stash or local history bundle is added to the delivery.
+No real camera/PLC, frozen EXE, full-suite run, deployment or user-process
+restart was performed for this local delivery. PR #3 remains subject to full
+CI and frozen-package acceptance on the updated commit before merging.

@@ -30,3 +30,10 @@ jobs:
         run: python scripts/gen_proto.py --check
       - name: Run project checks
         run: python scripts/ci_check.py
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: build/ci-results.xml
+          if-no-files-found: ignore

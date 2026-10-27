@@ -103,8 +103,8 @@ class FrozenHarnessTests(unittest.TestCase):
         combo = MagicMock(spec_set=['child_window'])
         edit = MagicMock(spec_set=['set_edit_text'])
         combo.child_window.return_value = edit
-        controls = {'本机运行': localButton, '运行数据目录': combo}
-        settings.child_window.side_effect = lambda **criteria: controls[criteria['title']]
+        controls = {('本机运行', 'CheckBox'): localButton, ('运行数据目录', 'ComboBox'): combo}
+        settings.child_window.side_effect = lambda **criteria: controls[(criteria['title'], criteria['control_type'])]
         desktop = MagicMock(spec_set=['windows', 'window'])
         desktop.windows.return_value = [wrapper]
         desktop.window.return_value = settings
@@ -116,7 +116,7 @@ class FrozenHarnessTests(unittest.TestCase):
         factory.assert_called_once_with(backend='uia')
         desktop.windows.assert_called_once_with(process=123, title='Designer 启动设置', visible_only=True)
         desktop.window.assert_called_once_with(handle=456)
-        settings.child_window.assert_any_call(title="本机运行", control_type="Button")
+        settings.child_window.assert_any_call(title="本机运行", control_type="CheckBox")
         settings.child_window.assert_any_call(title="运行数据目录", control_type="ComboBox")
         localButton.click_input.assert_called_once_with()
         combo.child_window.assert_called_once_with(control_type='Edit')

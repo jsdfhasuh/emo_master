@@ -70,7 +70,7 @@ class FloatingToolbox(CanvasOverlay):
         root.setContentsMargins(8, 6, 8, 8)
         root.setSpacing(4)
         root.setSizeConstraint(QLayout.SetNoConstraint)
-        header = QHBoxLayout()
+        self.header = header = QHBoxLayout()
         header.setContentsMargins(0, 0, 0, 0)
         header.setSpacing(0)
         self.dragHandle = DragHandle(self, self.moveWithinCanvas, self._savePosition)
@@ -139,6 +139,31 @@ class FloatingToolbox(CanvasOverlay):
             self.owner._refreshBubbleOperators()
         elif self._expanded and self.tabs.currentIndex() == 1:
             self.owner.refreshWorkflowDependencyTree()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if not hasattr(self, 'tabs'):
+            return
+        compact = self._expanded and self.height() < 160
+        if compact == getattr(self, '_compact', None):
+            return
+        self._compact = compact
+        # Keep a scrollable body when real font metrics leave a short canvas.
+        self.layout().setContentsMargins(*(6, 2, 6, 2) if compact else (8, 6, 8, 8))
+        self.layout().setSpacing(2 if compact else 4)
+        self.dragHandle.setFixedHeight(24 if compact else 28)
+        self.toggleButton.setVisible(not compact)
+        if compact:
+            self.tabs.setCornerWidget(self.dragHandle, Qt.TopLeftCorner)
+            self.tabs.setCornerWidget(self.closeButton, Qt.TopRightCorner)
+        else:
+            self.tabs.setCornerWidget(None, Qt.TopLeftCorner)
+            self.tabs.setCornerWidget(None, Qt.TopRightCorner)
+            self.header.insertWidget(0, self.dragHandle)
+            self.header.addWidget(self.closeButton)
+        self.dragHandle.show()
+        self.closeButton.setVisible(self._expanded)
+        self.tabs.tabBar().setStyleSheet('QTabBar::tab { padding: 2px 8px; }' if compact else '')
 
     def showEvent(self, event):
         super().showEvent(event)

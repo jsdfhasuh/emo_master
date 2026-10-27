@@ -181,7 +181,8 @@ def window_for(process, title):
 
 def choose_designer_root(process, directory):
     settings = wait_for(lambda: window_for(process, 'Designer 启动设置'), process=process)
-    settings.child_window(title='本机运行', control_type='Button').click_input()
+    # Qt exposes a checkable QPushButton as a UIA CheckBox, not a Button.
+    settings.child_window(title='本机运行', control_type='CheckBox').click_input()
     combo = settings.child_window(title='运行数据目录', control_type='ComboBox')
     combo.child_window(control_type='Edit').set_edit_text(str(directory))
     return settings

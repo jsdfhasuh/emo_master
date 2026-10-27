@@ -24,6 +24,9 @@ class DragHandle(QWidget):
         self.setToolTip(f'拖动{title}；位置只保存在本机')
         self.setAccessibleName(f'拖动{title}')
 
+    def sizeHint(self):
+        return self.minimumSize()
+
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
@@ -163,7 +166,6 @@ class CanvasOverlay(QFrame):
                 and event.type() in (QEvent.Resize, QEvent.Move, QEvent.Show, QEvent.ParentChange)):
             self._watchAncestors()
             self._reposition()
-            self.raise_()
         return super().eventFilter(watched, event)
 
     def showEvent(self, event):

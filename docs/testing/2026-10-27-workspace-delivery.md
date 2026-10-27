@@ -281,3 +281,112 @@ Only this test and this report are included in the follow-up commit. The full
 8241-test collection was not executed in this local follow-up; remote CI must
 still finish on the new pushed SHA before it can be called green. No package
 build, deployment, real camera/PLC test or user-process restart was performed.
+
+## Small-Canvas CI Failure and Main Integration
+
+Run [40457978617](https://github.com/jsdfhasuh/emo_master/actions/runs/40457978617)
+on `d2b8ee8c10171e725478336ed816341d611d1fe7` passed the corrected project test,
+then stopped at
+`tests/designer/test_floating_toolbox.py::testShortCanvasCanScrollToEveryCategoryAndCard`.
+Ubuntu reported **1 failed, 1358 passed in 350.79 s**; Windows reported
+**1 failed, 1357 passed, 1 skipped in 503.00 s**. Both failures asserted that a
+scrolled category button had an empty visible region.
+
+The toolbox module alone initially passed locally (**20 passed in 6.03 s**),
+but running it after `test_canvas_navigation_bounds.py`, which loads a real
+Windows font, reproduced the failure (**1 failed, 36 passed in 19.53 s**).
+Geometry inspection with real text metrics established a product layout bug:
+the short window's visible canvas settled to 75 pixels, while the fixed header
+and tab bar left a zero-height library viewport. Missing fonts in an isolated
+Windows offscreen process masked the issue; this was not treated as proof that
+the CI assertion was wrong.
+
+The short expanded toolbox now places its drag handle and close button beside
+the tab bar, removing the separate title row. Normal-height and collapsed
+layouts restore their original header controls. The fixed-size drag handle now
+provides a size hint so Qt positions it in the tab corner, not over the scroll
+body. Layout-only resize events preserve overlay stacking instead of raising
+inactive panels over the user's active toolbox. The regression checks the
+close button's center remains visible, and reuses the
+existing readable-font fixture, requires room for a complete category button,
+and tests restoration after enlarging the canvas. Screenshot inspection caught
+an intermediate 14-pixel viewport despite passing the old nonempty assertion;
+the final 640x319 rendering has a 43-pixel viewport and fully readable category
+buttons. The 1280x720 rendering restores the normal header and 325-pixel body.
+
+Final regression on a clean public-source export with the follow-up files:
+
+| Environment | Result |
+| --- | --- |
+| Windows offscreen, scale 1 | 62 passed in 27.84 s |
+| Native Windows Qt, scale 1 | 62 passed in 30.73 s |
+| Native Windows Qt, scale 1.5 | 62 passed in 54.60 s |
+| CI command/exit-status unit tests | 3 passed in 0.19 s |
+| Ruff on src, tests and scripts/ci_check.py | Passed |
+| Mypy | Passed, 560 source files |
+
+The GUI collection covers canvas navigation, toolbox, floating run panel and
+floating page workspace. The original and intermediate logs and screenshots
+remain under `build/ci-followup-40444071101/`; final evidence includes
+`toolbox-release-offscreen-1.log`, `toolbox-release-windows-1.log`,
+`toolbox-release-windows-1.5.log`. Intermediate compact-layout screenshots are
+`toolbox-final-319.png` / `toolbox-final-720.png`; the subsequent drag-handle
+placement/click/restore checks are included in the delivery test logs.
+
+CI now executes past ordinary pytest failures instead of using `-x`, retains
+the existing per-test timeout and failure exit status, and writes
+`build/ci-results.xml`. Each platform uploads its JUnit report even when the
+check fails. This improves failure visibility; it does not skip tests, accept
+failures, remove timeouts or establish full-suite success locally.
+
+The user authorized continued CI repair, integration into `main` and branch
+cleanup. [PR #3](https://github.com/jsdfhasuh/emo_master/pull/3) was opened as a
+draft and attached to this chat. Actual head and merge-candidate Ubuntu/Windows
+checks and frozen-package validation must pass before merging, followed by
+verification of main's CI. A
+10-minute thread follow-up is active while this work remains incomplete.
+
+Before branch cleanup, `git bundle create --all` produced
+`build/ci-followup-40444071101/branches-before-main.bundle`; `git bundle verify`
+confirmed a complete-history bundle. The remote
+`fix/windows-package-validation-20261004` branch at `759227a1` was deleted only
+after confirming it is an ancestor of `origin/main` (`32c52fa6`) and is not
+checked out. No other branch was deleted at this stage:
+
+- Four `agent/diagnostic-*-20261020` branches still contain unique diagnostic
+  commits; their changes are not silently merged or discarded.
+- `codex/camera-draft-preview` has unique commit `3f6a256a` and a separate
+  worktree; it is retained pending review.
+- `codex/flow-edge-readability` is already included in main but its worktree
+  retains untracked validation images/XML/JSON, which remain untouched.
+- The primary checkout's uncommitted device/RTSP work, stashes and tags remain
+  intact. The source branch and main have not yet been merged or removed.
+
+### Frozen Startup Selector Follow-Up
+
+PR run [40458907340](https://github.com/jsdfhasuh/emo_master/actions/runs/40458907340)
+built the Windows product from `d2b8ee8c` successfully. Frozen icon verification
+passed, but native Designer startup verification failed while locating the
+local-mode control. Runtime verification was **NOT_RUN**, not passed. Raw
+failure output is retained as `frozen-pr3-before.log` in the same evidence root.
+
+An isolated native source dialog reproduced the selector failure and exposed
+the actual Windows UI Automation roles: the checkable local-mode `QPushButton`
+is a `CheckBox`, while the non-checkable Start button is a `Button`. The harness
+incorrectly required `Button` for both. It now selects local mode with the
+observed `CheckBox` role. The portable guard test also resolves mocked controls
+by both title and control type rather than ignoring the type.
+
+The native probe's new selector resolves the control, but its physical click
+encountered a local `SetCursorPos` desktop/input failure. This is retained in
+`startup-uia-after.log` and is not reported as successful end-to-end native or
+frozen validation. `startup-uia-before.log` retains the original lookup failure.
+Temporary UIA clients were installed only under the ignored evidence directory,
+not into the shared project environment. The probe used its own temporary
+preferences and bounded dialog process; it did not start a Runtime or devices.
+
+The frozen harness, release workflow, Designer startup settings and CI-command
+regressions passed together: **38 passed, 2 subtests passed in 2.04 s**
+(`frozen-startup-regression.log`). These are source/guard tests, not a rebuilt
+EXE acceptance. PR #3 remains a draft pending full remote CI and frozen-package
+validation, and the recurring follow-up now explicitly includes those checks.

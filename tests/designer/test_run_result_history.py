@@ -175,3 +175,56 @@ def testNodeCountEvictionIsExplicitInsteadOfLookingLikeAnUnexecutedNode():
     assert 'E_INSPECTION_METADATA_BUDGET' in history.current.notice
     assert '最早更新的记录已释放' in history.current.notice
     assert history.current.retainedBytes <= RUN_METADATA_LIMIT
+
+
+def _uncachedBytes(history):
+    from emo_master.core.contracts.run_inspection import encodedBytes
+    total = 0
+    for run in history.runs.values():
+        total += sum(encodedBytes(value) for value in run.inspection._nodes.values())
+        total += encodedBytes(dict(jobId=run.jobId, revision=run.revision, acceptedAtMs=run.acceptedAtMs,
+                                  definitions=list(run.definitions.values()), status=run.status,
+                                  artifact=run.artifact, notice=run.notice))
+    if history.executions:
+        total += encodedBytes([[{key: value for key, value in entry.items() if key != 'run'}
+                                for entry in entries] for entries in history.executions.values()])
+    return total
+
+
+def testIncrementalBudgetMatchesStoredRecordsAcrossRotationPruningAndTerminal():
+    history = RunResultHistory()
+    nodes = [{**definitions()[0], 'nodeId': str(index)} for index in range(65)]
+    for job in ('a', 'b', 'c'):
+        history.accept(job, nodes, acceptedAtMs=1234)
+        for index in range(67):
+            node = str(index % 65)
+            for kind, sequence in (('node.started', index * 2 + 1), ('node.completed', index * 2 + 2)):
+                history.applyEvent(event(kind, sequence, job=job, node=node, execution=str(index)))
+                assert history.retainedBytes == _uncachedBytes(history)
+        history.applyEvent(event('node.started', 135, job=job, node='0', execution='interrupted'))
+        history.setStatus(job, 'ABORTED')
+        assert history.retainedBytes == _uncachedBytes(history)
+    history.clear()
+    assert history.retainedBytes == _uncachedBytes(history) == 0
+    assert not history._executionBytes
+
+
+def testReadingBudgetDoesNotSerializeUnchangedDefinitionsOrNodeHistory(monkeypatch):
+    from emo_master.apps.designer.state import node_run_inspection, run_result_history
+    history = RunResultHistory()
+    history.accept('job', definitions())
+    complete(history, 'job', 42)
+    expected = _uncachedBytes(history)
+    encode = run_result_history.encodedBytes
+
+    def smallMetadata(value):
+        assert isinstance(value, dict) and value.get('definitions') == []
+        return encode(value)
+
+    def unchangedNode(_value):
+        pytest.fail('unchanged node records must not be serialized for budget checks')
+
+    monkeypatch.setattr(run_result_history, 'encodedBytes', smallMetadata)
+    monkeypatch.setattr(node_run_inspection, 'encodedBytes', unchangedNode)
+    for _ in range(10):
+        assert history.retainedBytes == expected

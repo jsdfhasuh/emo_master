@@ -1330,17 +1330,24 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             ),
             workflowController=self.workflowController,
         )
+        self._runtimeEventRefreshTimer = None
+        if _nativeQt:
+            self._runtimeEventRefreshTimer = QTimer(self)
+            self._runtimeEventRefreshTimer.setSingleShot(True)
+            self._runtimeEventRefreshTimer.setInterval(100)
+            self._runtimeEventRefreshTimer.timeout.connect(self._flushRuntimeEventViews)
         self.runtimeController = WorkflowRuntimeController(
             getRunTargets=self.effectiveRunTargetIds,
             getWorkflows=lambda: self.workflowStore.workflows,
             getMaxJobs=lambda: self.workflowStore.runtime.get('maxConcurrentJobs', 2),
             selectState=self._selectRuntimeState,
             inspectionRouter=self.nodeResultCoordinator,
+            requestEventRefresh=self._requestRuntimeEventRefresh,
             runtimeClient=self.runtimeClient,
             runtimePanelState=self.runtimePanelState,
             appendLog=self.appendRuntimeLog,
             refreshRuntimePanelView=self._refreshRuntimePanelView,
-            updateToolbarState=self.updateToolbarState,
+            updateToolbarState=self._updateRuntimeToolbarState,
             syncRuntimeProjectBeforeRun=self._syncRuntimeProjectBeforeRun,
             applyRuntimeEventToNode=self.applyRuntimeEventToNode,
             setCurrentJobId=self._setCurrentJobId,
@@ -1503,7 +1510,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         workflows = [entry, *{target for target, _capacity in groupSlots(document, entry).values()}]
         limits = []
         for target in workflows:
-            presentation = presentationForWorkflow(document, target)
+            presentation = presentationForWorkflow(document, target, capture=True)
             if presentation and any(component.bindings for page in presentation.pages.values()
                                     for component in walkComponents(page.components)):
                 limits.append(normalCaptureLimits(presentation))
@@ -2140,6 +2147,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._refreshRuntimePanelView()
 
     def _setIsJobRunning(self, isRunning: bool) -> None:
+        if self.isJobRunning == isRunning:
+            return
         self.isJobRunning = isRunning
         actions = getattr(self, 'designerActions', None)
         if actions is not None:
@@ -3104,6 +3113,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 self.statusBar().showMessage(message)
             event.ignore()
             return
+        if self._runtimeEventRefreshTimer is not None:
+            self._runtimeEventRefreshTimer.stop()
         if self.pageCoordinator is not None:
             self.pageCoordinator.shutdown()
         observer = getattr(self, 'deviceStatusObserver', None)
@@ -3222,7 +3233,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setNodeRuntimeState = getattr(self.flowScene, "setNodeRuntimeState", None)
             if callable(setNodeRuntimeState):
                 setNodeRuntimeState(nodeIdRaw, status)
-            self._refreshRuntimePanelView()
+            self._requestRuntimeEventRefresh()
 
     def _restoreActiveWorkflowRuntimeState(self) -> None:
         expectedJobId = self.currentJobId
@@ -4135,7 +4146,29 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             f"节点提示 {nodeId}：输入[{inputSummary}] 输出[{outputSummary}] 必填[{requiredSummary}]",
         )
 
+    def _requestRuntimeEventRefresh(self) -> None:
+        timer = self._runtimeEventRefreshTimer
+        if timer is None or not self.isJobRunning:
+            self._flushRuntimeEventViews()
+        elif not timer.isActive():
+            # Coalesce rendering, never events; do not postpone an active
+            # deadline when another event arrives.
+            timer.start()
+
+    def _flushRuntimeEventViews(self) -> None:
+        if self._runtimeEventRefreshTimer is not None:
+            self._runtimeEventRefreshTimer.stop()
+        if self.runtimeController._closing or self.runtimeController._closed:
+            return
+        self._refreshRuntimePanelView()
+        self._updateRuntimeToolbarState()
+
+    def _updateRuntimeToolbarState(self) -> None:
+        self.updateToolbarState(projectChanged=False)
+
     def _refreshRuntimePanelView(self) -> None:
+        if self._runtimeEventRefreshTimer is not None:
+            self._runtimeEventRefreshTimer.stop()
         statusMap = {
             "IDLE": "空闲",
             "READY": "就绪",
@@ -4162,7 +4195,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             panel.refreshStatus()
 
         self._refreshNodeDetailsView()
-        self._refreshPreviewImage()
+        if self.nodeResultCoordinator is None or self.nodeResultCoordinator.history.current is None:
+            self._refreshPreviewImage()
 
     def _refreshNodeDetailsView(self) -> None:
         if self.nodeResultCoordinator is not None:
@@ -4393,7 +4427,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         else:
             dialog.hide()
 
-    def updateToolbarState(self) -> None:
+    def updateToolbarState(self, *, projectChanged: bool = True) -> None:
         from emo_master.apps.designer.operator_editors.sqlite_canvas import refreshCanvasHints
         refreshCanvasHints(self)
         new = self._menuActions.get("新建项目…")
@@ -4422,7 +4456,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             panel.refreshStatus()
         coordinator = getattr(self, 'pageCoordinator', None)
         if coordinator is not None and hasattr(coordinator, 'chrome'):
-            coordinator.chrome.update()
+            coordinator.chrome.update(projectChanged=projectChanged)
         actions = getattr(self, 'designerActions', None)
         if actions is not None:
             actions.refresh()

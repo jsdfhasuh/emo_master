@@ -16,11 +16,12 @@ class WorkflowRun:
 
 class WorkflowRuntimeController:
     def __init__(self, *, getRunTargets, getWorkflows, getMaxJobs, selectState,
-                 inspectionRouter=None, **callbacks):
+                 inspectionRouter=None, requestEventRefresh=None, **callbacks):
         self.callbacks = callbacks
         self.getRunTargets, self.getWorkflows, self.getMaxJobs = getRunTargets, getWorkflows, getMaxJobs
         self.selectState = selectState
         self.inspectionRouter = inspectionRouter
+        self.requestEventRefresh = requestEventRefresh
         self.syncRuntimeProjectBeforeRun = callbacks['syncRuntimeProjectBeforeRun']
         self.getCapturePresentation = callbacks.get('getCapturePresentation', lambda: False)
         self.runs = {}
@@ -72,6 +73,14 @@ class WorkflowRuntimeController:
             self.callbacks['refreshRuntimePanelView']()
         self._changed()
 
+    def _refreshEvent(self, run):
+        if self._closing or self._closed:
+            return
+        if self.requestEventRefresh is not None:
+            self.requestEventRefresh()
+        else:
+            self._refresh(run)
+
     def _setJob(self, run, jobId):
         run.jobId = jobId
         run.state.setActiveJob(jobId)
@@ -96,6 +105,7 @@ class WorkflowRuntimeController:
             setCurrentJobId=lambda job: self._setJob(run, job),
             setIsJobRunning=lambda _: self._changed(),
             refreshRuntimePanelView=lambda: self._refresh(run),
+            refreshRuntimeEventView=lambda: self._refreshEvent(run),
             updateToolbarState=self._changed,
             syncRuntimeProjectBeforeRun=lambda: True,
             getEntryWorkflowId=lambda: run.workflowId or self.callbacks['getEntryWorkflowId'](),

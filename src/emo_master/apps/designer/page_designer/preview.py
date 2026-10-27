@@ -170,7 +170,7 @@ class PreviewController(QObject):
         self.coordinator.window.appendRuntimeLog('INFO', text)
         text = editorMessage(text)
         for original, readable in [
-                ('当前 Runtime 尚无页面服务；请先明确运行工程', '尚未运行：请切换到流程设计，运行流程或开始图片测试'),
+                ('当前 Runtime 尚无页面服务；请先明确运行工程', '页面结果服务未启用；请在运行面板确认流程状态'),
                 ('当前 Runtime 不支持工程任务/来源元数据协商；页面设计仍可使用，请升级 Runtime 或使用高级只读连接',
                  '当前运行服务不支持查看项目结果，请更新运行服务；也可通过“高级连接”查看已有结果'),
                 ('当前 Runtime 尚未提供只读任务目录；页面可继续编辑，不会为观看启动 Runtime',
@@ -307,7 +307,7 @@ class PreviewController(QObject):
             raise ValueError('工程已切换，忽略旧工程任务列表')
         jobs = value['jobs']
         if not jobs:
-            raise ValueError('尚未运行：请切换到流程设计并运行或进行图片测试')
+            raise ValueError('未找到当前工程的页面运行记录；请在运行面板确认任务及页面采集状态')
         current = self.coordinator.window.currentJobId
         # Preserve an explicitly selected page observer independently of the
         # controller's owned Job; never assign currentJobId and inherit Stop rights.

@@ -1,8 +1,8 @@
 # 独立 Runtime 起始页、本机目录设置与日志验证
 
-日期：2026-10-25（Asia/Shanghai）。
+日期：2026-10-25；最近复审修复：2026-10-26（Asia/Shanghai）。
 
-状态：P1–P4 已实施。初次交付为 **115 passed，241.64 s** 及原生 Windows QWidget 100% / 150% 检查通过；同日复审的两项局部缺陷已修复，收尾扩大回归为 **119 passed，240.78 s**，两种缩放下原生定点回归各 **5 passed**。复审首失败和修复证据见第 6 节，初次交付记录不覆盖。本报告不代表冻结包、设备或生产验收。
+状态：P1–P4 已实施。最新 2026-10-26 三项复审问题已修复，扩大回归 **125 passed**，原生 Windows QWidget 100% / 150% 定点各 **12 passed**，完整窗口探针各 **9 类检查通过 / 8 张截图**，详情见第 7 节。第 1–5 节保留初次 115 项及原生验证，第 6 节保留上轮 119 项、两种缩放各 5 项及首失败证据，不由最新结果覆盖。本报告不代表冻结包、设备或生产验收。
 
 ## 1. 源码与范围
 
@@ -172,3 +172,56 @@ $env:QT_QPA_PLATFORM = 'offscreen'
 扩大回归复用第 4 节命令，新增案例由原测试文件自动收集。这里的 21 deselected 是定点选择外未执行的用例，不是通过或跳过；扩大回归中全部相关用例均执行。两个产品文件和两个测试文件的 Ruff、语法编译检查通过。
 
 本次原生结果是隔离 QWidget 自动化，不是人工 UI、完整截图探针重跑或真实显示器 DPI 切换验收。所有设置均为临时 INI，未写入用户真实应用设置；日志为合成记录，未访问真实设备或现场工程。初次交付的完整截图证据仍保留，不能将其改称本次新截图。第 5 节未执行的全仓检查、冻结包、系统集成、真实 UNC、真实设备和发布边界不变。两项复审缺陷已在本轮适用源码范围内修复并回归通过，未提交、推送或发布。
+
+## 7. 再次对照计划后的修复（2026-10-26）
+
+### 基线与范围
+
+- 本轮实际 HEAD：`633de0e197f5553168a7786440199f68f3410bed`，分支仍为 `agent/runtime-workflow-architecture-v1`。以下结果针对该 HEAD 加当前未提交源码，不把工作区实现归属于固定提交。
+- 原计划实现与第 6 节两项修复已进入 `b9f3a7bfa640c6794e108f2deceae9a9a8baf17a`，本轮先核对现有实现，没有重复实现这些修改。
+- 本轮仅修改 `log_view.py`、`main.py`、`test_runtime_log_view.py`、`native_runtime_tools_probe.py` 及使用说明、实施计划、本报告。Designer、Runtime 预览、共享页面、打包等其他工作区差异未覆盖、未暂存。
+- 再审时原 119 项相关回归通过，补充普通阅读反例仍发现以下三项 P2 缺陷。前一轮审查记录 `review-20261026-ui-probes.txt`、`review-20261026-native-failure.txt` 保留，不冒充修复后证据。
+
+### 缺陷、改法与计划对照
+
+| 缺陷及触发条件 | 局部修改 | 对应计划 |
+| --- | --- | --- |
+| 手动选择当前 writer 的活动 JSONL，日志页和起始页都误称“历史文件（不是本次故障）”；本次轮转前的文件也不应被断言与当前故障无关 | `LogFeed.fileLabel()` / `sourceText()` 按真实活动路径统一标记，手动固定另外说明不跟随轮转。活动路径变化会更新文件标签，即使文件列表未变；不改变用户选择 | 5.1 数据来源、7 日志基本操作与常规更新 |
+| 初始化失败后阅读/复制启动诊断，定时刷新反复 `setPlainText()` 清空选区与阅读位置 | 内容不变时不修改文档；正常追加通过独立 `QTextCursor` 在末尾插入，保留原有布局，并恢复光标方向、选区和滚动位置。真正替换时只保留仍匹配的选区，不选中无关新文本 | 4.3 初始化失败、5.3 刷新保持、7 退出与 UI |
+| 横向滚到日志后几列后追加一条记录，Qt 表格重绘/纵向定位将横向位置重置；跟随开关两种模式都受影响 | 渲染前记录水平滚动位置，在选择恢复及纵向定位完成后恢复；不改变纵向跟随、可见记录锚点、记录选择或保留上限 | 5.3 刷新保持、7 日志常规更新 |
+
+新增 6 个收集案例：活动路径变化而文件列表不变、真实窗口手选活动日志共 2 项；诊断内容不变/追加 2 项；日志追加时关闭/开启跟随 2 项。原轮转测试仍验证手动文件不被切回，只纠正其旧错误标签预期。初始化失败使用临时根与文件同名的普通冲突，保留无 controller、未落盘原因等断言，没有模拟设备操作。
+
+### 首失败与验证结果
+
+所有证据新增到 `manual_test_workspace/runtime_startup_settings/`，没有覆盖前轮文件。
+
+| 轮次 | 结果与分析 | 证据文件 |
+| --- | --- | --- |
+| 修复前运行新增/更新的定点测试 | **7 failed，12 deselected，5.16 s**；六个新案例及原轮转标签断言均失败 | `review-20261026-fixes-first.txt` |
+| 首次局部修复后 | **6 passed / 1 failed，12 deselected，4.79 s**；诊断追加后延迟布局仍使纵向位置从 9 变为 11。改用末尾增量插入，不再替换整份文档 | `review-20261026-fixes-targeted.txt` |
+| 增量插入后定点回归 | **7 passed，12 deselected，4.54 s** | `review-20261026-fixes-targeted-refined.txt` |
+| 扩大相关源码回归 | **125 passed，0 failed，0 skipped，248.39 s**；原 119 项加 6 项，不是全仓测试 | `review-20261026-fixes-regression.txt` |
+| 原生 100% 首次定点回归 | **11 passed / 1 failed，20 deselected，8.33 s**；追加诊断测试的滚动基线记录早于首次页面布局完成 | `review-20261026-fixes-native-100.txt` |
+| 原生布局追踪 | 原生文本框 viewport 从 66 增至 83，滚动上限从 2 缩至 1；变化发生在 `_renderDiagnostics()` 前，刷新前后均为 1。测试等待首次布局后再记录基线，保留原选区与滚动断言，不修改产品逻辑迁就测试 | `review-20261026-diagnostics-layout-probe.py`、`review-20261026-diagnostics-layout-native-100.txt` |
+| 原生 Windows Qt 100%，修正测试时序后 | **12 passed，20 deselected，8.25 s** | `review-20261026-fixes-native-100-refined.txt` |
+| 原生 Windows Qt 150% | **12 passed，20 deselected，7.73 s** | `review-20261026-fixes-native-150.txt` |
+| 完整原生窗口探针 100% / 150% | 两轮 **PASS**，各 9 类断言与 8 张真实 QWidget 截图；新增手动选择活动文件在日志页与起始页标记一致的检查 | `review-20261026-fixes-native-probe-100/result.json`、`review-20261026-fixes-native-probe-150/result.json` |
+| 最终测试源码的完整相关复跑 | **125 passed，0 failed，0 skipped，220.56 s**；包含首次布局等待修正，没有减少断言或测试范围 | `review-20261026-fixes-regression-final.txt` |
+
+原生定点包含本轮 7 项以及上一轮设置失败重试/日志上限位置保持 5 项；`deselected` 是定点范围外没有执行的测试，不是通过或跳过。源码扩大回归复用第 4 节完整命令。原生定点命令如下，分别设置 `$scale = '1'` 和 `'1.5'`：
+
+```powershell
+$env:QT_QPA_PLATFORM = 'windows'
+$env:QT_SCALE_FACTOR = $scale
+$env:PYTHONPATH = 'src;.'
+& "$env:USERPROFILE/.conda/envs/emo_master/python.exe" -X utf8 -u -m pytest `
+  tests/ui/operator_view/test_startup_settings.py `
+  tests/ui/operator_view/test_runtime_log_view.py `
+  -k 'FileLabelsTrack or ManuallySelectedActive or StartupDiagnosticsPreserve or LogAppendPreservesHorizontal or RotationFollowsActive or PreferenceSyncFailure or ViewCapPreserves' `
+  -q --tb=short
+```
+
+本轮已检查两种缩放的窄起始页及错误详情截图，以及 150% 的展开长路径设置、运行中停止入口、初始化失败日志页截图。新文件标签可见且长路径换行，关键按钮未被遮挡；其余探针截图保留但不额外声称逐张视觉验收。截图使用临时目录和纯图片 2.7 工程，原生自动化不等同于用户人工 UI 验收或真实显示器 DPI 切换。
+
+最终四个 Python 文件 Ruff 与语法编译通过，七个本轮修改文件的 `git diff --check` 未报告空白错误（只有 LF→CRLF 提示）。末次核对 HEAD 仍为 `633de0e197f5553168a7786440199f68f3410bed`。第 5 节的 **NOT_RUN** 边界保持：全仓测试/mypy、实际 Explorer 集成、真实 UNC/SMB、冻结构建和旧 EXE、真实相机/PLC及现场/模型验收均未执行；本轮没有提交、推送、PR 或发布。更新源码需要重启对应源码进程；旧 EXE 需另行构建，不能将本报告当作已更新安装包的证明。

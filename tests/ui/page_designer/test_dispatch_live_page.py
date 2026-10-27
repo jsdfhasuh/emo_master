@@ -4,6 +4,7 @@ from dataclasses import replace
 import pytest
 
 from PySide2.QtCore import QSettings, Qt
+from PySide2.QtWidgets import QMessageBox
 
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
 from emo_master.apps.designer.state.project_store import saveProject
@@ -14,6 +15,71 @@ from emo_master.clients.runtime.dispatch_display import DispatchDisplaySession
 from tests.runtime.dispatch_page_fixture import sharedPageProject
 from tests.runtime.test_dispatch_queue_integration import gateConsumers
 from tests.ui.page_designer.test_normal_run_viewing import waitFor
+
+
+@pytest.mark.parametrize('snapshotPolicy', ['ALL', 'NONE'])
+def testNormalRunEnablesSharedPageCapture(qtApp, tmp_path, monkeypatch, snapshotPolicy):
+    first, rest = gateConsumers(monkeypatch)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Discard)
+    document = sharedPageProject(tmp_path)
+    path = tmp_path / 'normal-live.emoproj'
+    saveProject(path, document.model_dump(mode='json'))
+    runtime = RuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
+    client = RuntimeClient(runtime)
+    window = MainWindow(client, settingsStore=QSettings(str(tmp_path / 'settings.ini'), QSettings.IniFormat))
+    window.setAttribute(Qt.WA_DontShowOnScreen)
+    preview = window.pageCoordinator.preview
+    try:
+        assert window.loadProjectDirectory(str(path), confirmed=True)
+        waitFor(lambda: window.operatorCatalogController.state == 'ready')
+        window.pageCoordinator.sync()
+        draft = window.pageCoordinator.session.payload()
+        checked = client.initializeProjectConfiguration(draft, tmp_path, 'check', validate=True)
+        client.initializeProjectConfiguration(draft, tmp_path, 'publish', runtimeInstanceId=checked['runtimeInstanceId'])
+        waitFor(lambda: client.getProjectWriteStatus('publish')['state'] in {'COMMITTED', 'FAILED'})
+        assert client.getProjectWriteStatus('publish')['state'] == 'COMMITTED'
+        monkeypatch.setattr(window.pageCoordinator, 'configureRuntime',
+                            lambda **kwargs: pytest.fail('unchanged published project must run directly'))
+        window.nextRunLegacySnapshotPolicy = snapshotPolicy
+        # Exercise the user's Run entry, without manually enabling page capture.
+        window.startJob()
+        waitFor(lambda: window.currentJobId or window.runtimePanelState.jobStatus == 'FAILED')
+        job = window.currentJobId
+        assert job, window.runtimePanelState.jobMessage
+        assert client.displayAddress(), 'normal Run did not enable shared-page capture'
+        group = runtime.deviceManager.dispatchGroups[job]
+        consumer = group.slots['detection'].jobId
+        metadata = {item.job_id: item for item in client.listDisplayJobs(document.project.projectId)}
+        assert metadata[job].capture_enabled and set(metadata[job].source_ids) == {'live'}
+        assert metadata[consumer].capture_enabled and set(metadata[consumer].source_ids) == {'image', 'count'}
+        preview.watchCurrent()
+        waitFor(lambda: preview.hub is not None or preview.error)
+        assert preview.error is None
+        assert isinstance(preview.session, DispatchDisplaySession)
+        view = preview.observer
+        waitFor(lambda: not view.widgets['consumer']['live'][1].image.isNull())
+        assert view.widgets['consumer']['image'][1].image.isNull()
+        assert group.slots['detection'].completedTotal == 0
+        first.set()
+        waitFor(lambda: not view.widgets['consumer']['image'][1].image.isNull())
+        assert set(preview.selectedWorkflows) == {'main', 'consumer'}
+        preview.stopViewing()
+        waitFor(lambda: not preview.active())
+        assert not runtime.jobRepository.get(job).isTerminal
+        assert not runtime.jobRepository.get(consumer).isTerminal
+        assert len(runtime.jobRepository.all()) == 2
+    finally:
+        first.set()
+        rest.set()
+        if preview.active():
+            preview.closeAsync()
+            waitFor(lambda: not preview.active())
+        if window.isJobRunning:
+            window.stopJob()
+            waitFor(lambda: not window.isJobRunning)
+        window.close()
+        client.close()
+        runtime.close()
 
 
 @pytest.mark.parametrize('selection', ['producer', 'consumer'])

@@ -37,11 +37,13 @@ class RuntimeController:
         onInspectionClosing=None,
         getRunProjectReference: Callable[[], str | None] | None = None,
         onRunFailed: Callable[[dict[str, object]], None] | None = None,
+        refreshRuntimeEventView: Callable[[], None] | None = None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.runtimePanelState = runtimePanelState
         self.appendLog = appendLog
         self.refreshRuntimePanelView = refreshRuntimePanelView
+        self.refreshRuntimeEventView = refreshRuntimeEventView or refreshRuntimePanelView
         self.updateToolbarState = updateToolbarState
         self.syncRuntimeProjectBeforeRun = syncRuntimeProjectBeforeRun
         self.applyRuntimeEventToNode = applyRuntimeEventToNode
@@ -249,7 +251,10 @@ class RuntimeController:
         if self.onInspectionEvent:
             self.onInspectionEvent(event)
         self.applyRuntimeEventToNode(event)
-        self.refreshRuntimePanelView()
+        if eventType in {"node.failed", "workflow.failed", "job.failed", "job.completed", "job.aborted"}:
+            self.refreshRuntimePanelView()
+        else:
+            self.refreshRuntimeEventView()
 
     def _onJobStatus(self, statusReply) -> None:
         runtimeStatus = str(getattr(statusReply, "status", "UNKNOWN"))

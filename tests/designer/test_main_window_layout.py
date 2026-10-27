@@ -252,9 +252,13 @@ def testRuntimeLogDialogClearAlsoReleasesMainWindowViewCache() -> None:
 def testRuntimeLogDialogReusesWindowWithoutResizingCanvasOrLosingLogs(
     designerApplication,
 ) -> None:
+    from tests.designer.qt_wait import waitUntil
+
     window = MainWindow(RuntimeClientStub(), settingsStore=SettingsStoreStub())
     window.show()
     designerApplication.processEvents()
+    # The asynchronous catalog contributes a real log before this test's history.
+    waitUntil(lambda: window.operatorCatalogController.state == "ready")
     canvasSize = window.centralWidget().size()
     window.logDialog.view.clearView()
     window.appendRuntimeLog("INFO", "first message")

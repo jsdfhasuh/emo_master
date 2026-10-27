@@ -163,8 +163,9 @@ class WorkspaceChrome(QObject):
         for action, value in self.policies:
             action.setChecked(self.window.nextRunLegacySnapshotPolicy == value)
 
-    def update(self):
-        self.c.updateWindowTitle()
+    def update(self, *, projectChanged=True):
+        if projectChanged:
+            self.c.updateWindowTitle()
         observer = getattr(self.window, 'deviceStatusObserver', None)
         if observer is not None:
             observer.refresh()
@@ -183,7 +184,8 @@ class WorkspaceChrome(QObject):
             action.setEnabled(pages)
         self.previewButton.setVisible(pages)
         if pages:
-            self.previewAction.setEnabled(bool(self.c.editor.store.snapshot().pages))
+            if projectChanged:
+                self.previewAction.setEnabled(bool(self.c.editor.store.snapshot().pages))
             for action, index in zip(self.pageActions[1:3], (0, 2)):
                 action.setChecked(self.c.editor.panel(index).isExpanded())
         runtime = self.window.runtimeController
@@ -192,7 +194,8 @@ class WorkspaceChrome(QObject):
             self.window._toolbarActions[key].setEnabled(allowed)
         self.window._menuActions['停止全部'].setEnabled(self.window.isJobRunning)
         for action, history in [(self.undo, self.c.session._undo), (self.redo, self.c.session._redo)]:
-            action.setToolTip(action.text() + '项目编辑：' + self.historyDescription(history, redo=action is self.redo))
+            if projectChanged:
+                action.setToolTip(action.text() + '项目编辑：' + self.historyDescription(history, redo=action is self.redo))
             action.setEnabled(bool(history) and not self.window.isJobRunning)
         client = self.window.runtimeClient
         from emo_master.apps.designer.services.runtime_client import runtimeConnectionDescription

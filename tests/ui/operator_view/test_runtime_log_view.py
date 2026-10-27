@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 from PySide2.QtCore import QEventLoop, QTimer, Qt
+from PySide2.QtGui import QTextCursor
 from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QAbstractItemView
 
@@ -90,7 +91,8 @@ def testRotationFollowsActiveButHistoryStaysSelectedAndReadFailureCanRefresh(qtA
         feed.refresh()
         waitFor(lambda: feed.worker is None)
         assert feed.historyPath == first and feed.records[0].data["message"] == "first"
-        assert "历史文件（不是本次故障）" in view.statusLabel.text()
+        assert "历史文件（手动固定，不跟随轮转）" in view.statusLabel.text()
+        assert "不是本次故障" not in view.statusLabel.text()
         missing = tmp_path / "runtime-missing.jsonl"
         feed.selectFile(missing)
         waitFor(lambda: bool(feed.error))
@@ -99,6 +101,133 @@ def testRotationFollowsActiveButHistoryStaysSelectedAndReadFailureCanRefresh(qtA
         feed.refresh()
         waitFor(lambda: feed.records and feed.records[0].data["message"] == "retry success")
         assert not feed.error
+    finally:
+        closeFeed(feed)
+
+
+def testFileLabelsTrackActiveWriterWithUnchangedFileList(qtApp, tmp_path):
+    feed, first = fixtureFeed(tmp_path)
+    second = tmp_path / "runtime-second.jsonl"
+    first.write_bytes(line("first file"))
+    second.write_bytes(line("second file"))
+    view = RuntimeLogView(feed)
+    view.show()
+    feed.setVisible(True)
+    try:
+        waitFor(lambda: len(feed.files) == 2 and feed.worker is None)
+        files = feed.files
+        firstIndex = view.fileCombo.findData(str(first))
+        secondIndex = view.fileCombo.findData(str(second))
+        assert view.fileCombo.itemText(firstIndex).startswith("本次活动文件")
+        assert view.fileCombo.itemText(secondIndex).startswith("历史文件")
+        view.fileCombo.setCurrentIndex(firstIndex)
+        waitFor(lambda: feed.records and feed.worker is None)
+        assert view.statusLabel.text().startswith("本次活动文件（手动固定，不跟随轮转）")
+
+        feed.writer.activePath = second
+        feed.refresh()
+        waitFor(lambda: feed.worker is None)
+        assert feed.files == files and feed.historyPath == first
+        assert view.fileCombo.currentData() == str(first)
+        assert view.fileCombo.itemText(firstIndex).startswith("历史文件")
+        assert view.fileCombo.itemText(secondIndex).startswith("本次活动文件")
+        assert view.statusLabel.text().startswith("历史文件（手动固定，不跟随轮转）")
+        assert "不是本次故障" not in view.statusLabel.text()
+        assert feed.records[0].data["message"] == "first file"
+    finally:
+        closeFeed(feed)
+
+
+def testManuallySelectedActiveLogMatchesWindowRecentLogs(qtApp, tmp_path):
+    window = OperatorWindow(dataRoot=tmp_path / "data", preferences=preferences(tmp_path))
+    window.show()
+    try:
+        waitFor(lambda: window.controller is not None and not window.busy
+                and window.logFeed.records and window.logFeed.worker is None)
+        window.showLogs()
+        waitFor(lambda: window.logFeed.worker is None)
+        active = window.controller.runtime.operationalLogWriter.activePath
+        index = window.logView.fileCombo.findData(str(active))
+        assert index > 0
+        window.logView.fileCombo.setCurrentIndex(index)
+        waitFor(lambda: window.logFeed.records and window.logFeed.worker is None)
+        assert window.logFeed.historyPath == active
+        prefix = "本次活动文件（手动固定，不跟随轮转）"
+        assert window.logView.statusLabel.text().startswith(prefix)
+        recent = window.startupPage.recentLogs.toPlainText()
+        assert recent.startswith(prefix) and active.name in recent
+        assert "不是本次故障" not in recent
+        assert not window.controller.runtime.jobRepository.all()
+    finally:
+        closeWindow(window)
+
+
+@pytest.mark.parametrize("appendDiagnostic", [False, True], ids=["unchanged", "appended"])
+def testStartupDiagnosticsPreserveReadingStateOnRefresh(qtApp, tmp_path, appendDiagnostic):
+    target = tmp_path / "runtime-data"
+    target.write_text("ordinary directory conflict")
+    window = OperatorWindow(dataRoot=target, preferences=preferences(tmp_path))
+    window.show()
+    try:
+        waitFor(lambda: window.initializationFailed and not window.busy)
+        window.showLogs()
+        waitFor(lambda: window.logFeed.worker is None and window.logView.diagnostics.toPlainText())
+        waitMs(100)  # Finish the initial native page layout before recording scroll state.
+        edit = window.logView.diagnostics
+        text = edit.toPlainText()
+        assert "未写入日志文件" in text and edit.verticalScrollBar().maximum() > 0
+        cursor = edit.textCursor()
+        cursor.setPosition(50)
+        cursor.setPosition(10, QTextCursor.KeepAnchor)
+        edit.setTextCursor(cursor)
+        edit.verticalScrollBar().setValue(edit.verticalScrollBar().maximum())
+        before = (cursor.position(), cursor.anchor(), cursor.selectedText(), edit.verticalScrollBar().value())
+        updates = []
+        window.logFeed.updated.connect(lambda: updates.append(1))
+        if appendDiagnostic:
+            window._diagnostic("operator.runtime.failed", "Additional synthetic startup detail", level="ERROR")
+        waitFor(lambda: bool(updates))
+        assert edit.toPlainText().startswith(text)
+        assert ("Additional synthetic startup detail" in edit.toPlainText()) is appendDiagnostic
+        cursor = edit.textCursor()
+        assert (cursor.position(), cursor.anchor(), cursor.selectedText(), edit.verticalScrollBar().value()) == before
+        assert window.controller is None
+    finally:
+        closeWindow(window)
+
+
+@pytest.mark.parametrize("followLatest", [False, True], ids=["reading", "following"])
+def testLogAppendPreservesHorizontalScroll(qtApp, tmp_path, followLatest):
+    feed, path = fixtureFeed(tmp_path)
+    path.write_bytes(b"".join(line(f"record-{index}") for index in range(100)))
+    view = RuntimeLogView(feed)
+    view.resize(1060, 800)
+    view.show()
+    view.followLatest.setChecked(followLatest)
+    feed.setVisible(True)
+    try:
+        waitFor(lambda: view.table.rowCount() == 100 and feed.worker is None)
+        view.table.setColumnWidth(0, 900)
+        view.table.setColumnWidth(2, 500)
+        view.table.selectRow(40)
+        qtApp.processEvents()
+        horizontal = view.table.horizontalScrollBar()
+        horizontal.setValue(horizontal.maximum())
+        before = horizontal.value()
+        assert before > 0
+        selected = view._shownRecords[view.table.currentRow()].identity
+        anchor = view._shownRecords[view.table.rowAt(0)].identity
+        with path.open("ab") as handle:
+            handle.write(line("appended record"))
+        feed.refresh()
+        waitFor(lambda: view.table.rowCount() == 101 and feed.worker is None)
+        assert horizontal.value() == before
+        assert view._shownRecords[view.table.currentRow()].identity == selected
+        if followLatest:
+            vertical = view.table.verticalScrollBar()
+            assert vertical.value() == vertical.maximum() and vertical.maximum() > 0
+        else:
+            assert view._shownRecords[view.table.rowAt(0)].identity == anchor
     finally:
         closeFeed(feed)
 

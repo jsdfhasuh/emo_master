@@ -3,6 +3,7 @@ from collections import deque
 from dataclasses import replace
 import json
 import math
+import sys
 import time
 from types import MappingProxyType
 
@@ -41,7 +42,8 @@ def surfaceBounds(width, height, ratio):
 
 def appearanceStyle(props):
     # Every interpolated token is a validated enum or bounded integer.
-    family = {'system': QApplication.font().family(), 'sans': 'sans-serif',
+    family = {'system': QApplication.font().family(),
+              'sans': 'Microsoft YaHei UI' if sys.platform == 'win32' else 'sans-serif',
               'serif': 'serif', 'monospace': QFontDatabase.systemFont(QFontDatabase.FixedFont).family()}[props.fontFamily]
     family = family.replace("'", '').replace(';', '')
     size = f'font-size:{props.fontSize}px;' if props.fontSize else ''
@@ -403,6 +405,8 @@ class RuntimePages(QWidget):
         from .editor_grid import EditorGridLayout
         layout = (EditorGridLayout if self.editorHost else QGridLayout)(parent)
         layout.setSpacing(grid.spacing)
+        fixedRows = {row for c in components if c.type not in {'image', 'table', 'container'}
+                     for row in range(c.layout.row, c.layout.row + c.layout.rowSpan)}
         if self.editorHost:
             # A real stretch row keeps Qt's cellRect valid during native DnD.
             # AlignTop on QGridLayout can leave zero-height cell geometry until
@@ -484,9 +488,10 @@ class RuntimePages(QWidget):
             p = component.layout
             layout.addWidget(card, p.row, p.column, p.rowSpan, p.columnSpan)
             if not self.editorHost and component.type in {'image', 'table'}:
-                # Honor image row spans instead of giving spare height to labels.
+                # A spanning image must not stretch an adjacent scalar footer.
                 for row in range(p.row, p.row + p.rowSpan):
-                    layout.setRowStretch(row, 1)
+                    if row not in fixedRows:
+                        layout.setRowStretch(row, 1)
 
     def imageSources(self, pageId=None):
         page = self.config.pages.get(pageId or self.currentPageId)
@@ -662,10 +667,59 @@ class RuntimePages(QWidget):
             self.hub.lastToken = None
             self.submit(self.hub.session.readSnapshot())
 
+    def _pendingImageScopes(self, view, previous):
+        if (self.frozen or previous is None or view.connection != 'CONNECTED'
+                or (view.generation, view.runtimeInstanceId, view.jobId)
+                != (previous.generation, previous.runtimeInstanceId, previous.jobId)):
+            return set()
+        images = {}
+        for component, widget in self.widgets.get(self.currentPageId, {}).values():
+            if not isinstance(widget, ImageView) or component.props.imageResourceId:
+                continue
+            sourceId = next(iter(component.bindings.values()), '')
+            source = self.config.dataSources.get(sourceId)
+            if source is not None:
+                images.setdefault(source.resultScopeId, []).append((sourceId, widget))
+        held = set()
+        for scopeId, rows in images.items():
+            old = self.displayed.get(scopeId)
+            if (old is None or scopeId in view.expiredScopes or scopeId in view.scopeErrors
+                    or any(widget.image.isNull() or widget.key != old.result.identity.resultKey for _, widget in rows)):
+                continue
+            current = view.scopes.get(scopeId)
+            pending = current.result if current else view.loading.get(scopeId)
+            if pending is None or pending.status != 'COMPLETE':
+                continue
+            if current and (current.failures or not any(current.imageStates.get(sourceId) == 'LOADING' for sourceId, _ in rows)):
+                continue
+            identity, before = pending.identity, old.result.identity
+            if (identity.resultOrdinal <= before.resultOrdinal
+                    or any(getattr(identity, field) != getattr(before, field) for field in
+                           ('runtimeInstanceId', 'jobId', 'executionRevision', 'capturePlanRevision'))):
+                continue
+            if self.captureCoverage is not None and (not self.captureCoverage.matches(identity)
+                    or any(self.captureCoverage.sourceProblem(self.config, sourceId) for sourceId, _ in rows)):
+                continue
+            held.add(scopeId)
+        return held
+
+    def releaseReplacedImages(self, view):
+        if self.frozen:
+            return
+        held = self._pendingImageScopes(view, self.lastView)
+        for component, widget in self.widgets.get(self.currentPageId, {}).values():
+            if not isinstance(widget, ImageView) or component.props.imageResourceId:
+                continue
+            source = self.config.dataSources.get(next(iter(component.bindings.values()), ''))
+            scope = view.scopes.get(source.resultScopeId) if source else None
+            if scope and source.resultScopeId not in held and widget.key != scope.result.identity.resultKey:
+                widget.setImage(QImage(), '')
+
     def submit(self, view):
         assertGuiThread()
         if self.detached:
             return
+        held = self._pendingImageScopes(view, self.lastView)
         self.setDesignExamples(False)
         # A real session, including its initial empty/disconnected snapshot,
         # retires legacy offline simulations even without a capture manifest.
@@ -698,6 +752,8 @@ class RuntimePages(QWidget):
         else:
             self.modeLabel.setText('模拟 · 无可冻结的真实结果' if self.simulationState else "实时 · 下一件处理中" if any(view.started.get(s, 0) > r.result.identity.resultOrdinal for s, r in view.scopes.items())
                                    else "实时 · 等待触发")
+        if held:
+            self.modeLabel.setText('实时 · 图像更新中，显示上一结果')
         page = self.currentPageId
         if page is None:
             return
@@ -713,6 +769,12 @@ class RuntimePages(QWidget):
                 continue
             if component.type == 'runtime_status' and not component.bindings:
                 widget.setText('客户端连接：' + self.lastView.connection + ' · ' + self.lastView.detail)
+                continue
+            source = self.config.dataSources.get(next(iter(component.bindings.values()), ''))
+            if source is not None and source.resultScopeId in held:
+                # Retain the whole committed scope, not an old image paired
+                # with new values. The live session snapshot remains untouched.
+                shown[source.resultScopeId] = self.displayed[source.resultScopeId]
                 continue
             scope, value, error = self._value(component, view)
             if view.connection != "CONNECTED":
@@ -735,7 +797,8 @@ class RuntimePages(QWidget):
                 widget.setText(error or (component.props.emptyText if value is None else
                     (f"{value:.{component.props.decimals}f}" if type(value) is float else str(value)) + component.props.unit))
             elif component.type == "text":
-                text = error or (component.props.emptyText if value is None else json.dumps(value, ensure_ascii=False))
+                text = error or (component.props.emptyText if value is None else
+                                 value if isinstance(value, str) else json.dumps(value, ensure_ascii=False))
                 widget.setText(text if len(text) <= 4096 else text[:4096] + '…（显示截断）')
             elif component.type == 'indicator':
                 state = component.props.indicatorStates.get(json.dumps(value, ensure_ascii=False)) if not error else None
@@ -755,7 +818,9 @@ class RuntimePages(QWidget):
         self.displayed = shown
         self.identity.setText(" | ".join(f"{scope}: #{item.result.identity.resultOrdinal} · {item.result.status} · {item.result.identity.resultKey}"
                                          for scope, item in shown.items()) or "尚无当前有效结果")
-        for scope in shown.values():
+        for scopeId, scope in shown.items():
+            if scopeId in held:
+                continue
             self.records.append({"key": scope.result.identity.resultKey, "ready_ns": scope.readyNs,
                                  "gui_ns": time.perf_counter_ns(), "scope_end_ns": scope.result.timing.scopeEndedNs if scope.result.timing else None})
 

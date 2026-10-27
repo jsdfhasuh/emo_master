@@ -12,6 +12,7 @@ from shiboken2 import isValid
 
 from emo_master.apps.designer.ui.main_window import MainWindow
 from emo_master.apps.designer.page_designer import preview as preview_module
+from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.clients.runtime.view_state import JobView, SessionView
 from emo_master.core.project.snapshots import captureDefinition, revisionOf
 from emo_master.core.presentation.models import walkComponents
@@ -34,7 +35,7 @@ def metadata(document, job='current', *, capture=True, project=None):
     used = {key for page in presentation.pages.values() for component in walkComponents(page.components)
             for key in component.bindings.values()}
     definition = captureDefinition(presentation)
-    return SimpleNamespace(job_id=job, project_id=project or document.project.projectId,
+    return pb.DisplayJob(job_id=job, project_id=project or document.project.projectId,
         workflow_id=document.entryWorkflowId, status='COMPLETED', mode='runtime',
         runtime_instance_id='runtime', capture_enabled=capture, source_ids=sorted(used) if capture else [],
         sources_json=json.dumps({key: presentation.dataSources[key].model_dump() for key in used}) if capture else '{}',
@@ -211,8 +212,34 @@ def testNoGlobalLastJobFallback(designer):
     preview = window.pageCoordinator.preview
     preview.watchCurrent()
     waitFor(lambda: preview.error is not None)
-    assert '尚未运行' in preview.error
+    assert '未找到当前工程的页面运行记录' in preview.error
     assert preview.session is None
+
+
+@pytest.mark.parametrize('legacyMessage', [False, True])
+def testMissingDisplayServiceDoesNotReportWorkflowNotRunning(designer, monkeypatch, legacyMessage):
+    from emo_master.apps.designer.services.runtime_client import RuntimeClient, RuntimeClientError
+    window, client, _document = designer
+    window.currentJobId = 'running-job'
+    unconnected = RuntimeClient(SimpleNamespace())
+    def missingService():
+        if legacyMessage:
+            raise RuntimeClientError('UNIMPLEMENTED', '当前 Runtime 尚无页面服务；请先明确运行工程')
+        return unconnected.getDisplayCapabilities()
+    monkeypatch.setattr(client, 'getDisplayCapabilities', missingService)
+    preview = window.pageCoordinator.preview
+    try:
+        preview.watchCurrent()
+        waitFor(lambda: preview.error is not None)
+        assert '页面结果服务未启用' in preview.observer.status.text()
+        assert '尚未运行' not in preview.observer.status.text()
+        assert preview.observer.displayMessage('OFFLINE') == '尚未连接运行结果'
+        assert window.currentJobId == 'running-job'
+        assert preview.backend is preview.session is None
+        assert not Session.instances and not client.calls
+        assert unconnected.displayAddress() == '' and unconnected._presentationServer is None
+    finally:
+        unconnected.close()
 
 
 def testCancelledSelectionAndOpeningChangingClosingDoNotExecute(designer, monkeypatch):

@@ -175,16 +175,17 @@ class NodeResultPanel(QWidget):
         else:
             self.origin.setText('尚未运行 · 明确启动后查看真实结果')
         unavailable = '所选任务没有此节点' if run and not definition else '本次尚未收到此节点的执行记录'
-        self.values.setPlainText(portText(record['io']['outputs'], definition.get('outputPorts')) if record else unavailable)
+        values = portText(record['io']['outputs'], definition.get('outputPorts')) if record else unavailable
         if definition.get('operatorId') == 'vision.io.sqlite_writer' and record and record.get('sqliteReceipt'):
             from emo_master.apps.designer.presenters.node_run_presenter import sqliteReceiptText
-            self.values.setPlainText(sqliteReceiptText(record['sqliteReceipt']))
-        self.inputs.setPlainText(portText(record['io']['inputs'], definition.get('inputPorts')) if record else unavailable)
+            values = sqliteReceiptText(record['sqliteReceipt'])
+        self._setPlainText(self.values, values)
+        self._setPlainText(self.inputs, portText(record['io']['inputs'], definition.get('inputPorts')) if record else unavailable)
         execution = inspectionText(record, run.jobId if run else None, bool(nodeId))
         execution = execution.replace('本次运行', '上一次执行（只读）' if view['history'] else '本次执行')
         if record:
             execution += '\n流程执行：' + record['workflowRunId'] + '\n节点执行完整标识：' + record['nodeRunId']
-        self.execution.setPlainText(execution)
+        self._setPlainText(self.execution, execution)
         self.configure.setEnabled(bool(nodeId))
         self.notice.setText(self.history.notice or (run.notice if run else ''))
         self.notice.setVisible(bool(self.notice.text()))
@@ -210,6 +211,11 @@ class NodeResultPanel(QWidget):
             self.tabs.setCurrentIndex(0 if ports or saved else 1 if definition.get('outputPorts') else 2)
             self._defaulted = defaultKey
         return view
+
+    @staticmethod
+    def _setPlainText(widget, text):
+        if widget.toPlainText() != text:
+            widget.setPlainText(text)
 
     def clearImage(self, message):
         self.image.setText(message)

@@ -1,0 +1,12 @@
+............F........................................................... [ 85%]
+............                                                             [100%]
+================================== FAILURES ===================================
+______________ testManualScrollPausesFollowingAndCheckboxResumes ______________
+tests\designer\test_runtime_log_refresh.py:94: in testManualScrollPausesFollowingAndCheckboxResumes
+    assert bar.value() == bar.maximum()
+E   assert 71 == 73
+E    +  where 71 = <built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000015205F57740>()
+E    +    where <built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000015205F57740> = <PySide2.QtWidgets.QScrollBar(0x15209b41350) at 0x0000015205F57740>.value
+E    +  and   73 = <built-in method maximum of PySide2.QtWidgets.QScrollBar object at 0x0000015205F57740>()
+E    +    where <built-in method maximum of PySide2.QtWidgets.QScrollBar object at 0x0000015205F57740> = <PySide2.QtWidgets.QScrollBar(0x15209b41350) at 0x0000015205F57740>.maximum
+1 failed, 83 passed in 33.93s

@@ -62,6 +62,13 @@ def main():
                                level="ERROR", payload={"phase": "synthetic native probe", "diagnostics": {"code": "E_SYNTHETIC_NATIVE"}})
             QTest.mouseClick(window.logsButton, Qt.LeftButton)
             waitFor(lambda: bool(window.logFeed.records) and window.logView.table.rowCount() > 0)
+            active = window.controller.runtime.operationalLogWriter.activePath
+            index = window.logView.fileCombo.findData(str(active))
+            assert index > 0
+            window.logView.fileCombo.setCurrentIndex(index)
+            waitFor(lambda: bool(window.logFeed.records) and window.logFeed.worker is None)
+            assert window.logView.statusLabel.text().startswith("本次活动文件（手动固定，不跟随轮转）")
+            assert window.startupPage.recentLogs.toPlainText().startswith("本次活动文件（手动固定，不跟随轮转）")
             window.logView.levelCombo.setCurrentIndex(1)
             waitFor(lambda: window.logView.table.rowCount() > 0)
             window.logView.table.selectRow(window.logView.table.rowCount() - 1)
@@ -74,7 +81,7 @@ def main():
             assert "未保存" in panel.feedback.text()
             assert panel.nextEdit.hasFocus()
             evidence["checks"].extend(["home-default-and-narrow", "long-path-settings-draft", "log-error-and-raw",
-                                       "back-preserves-draft", "keyboard-focus"])
+                                       "manual-active-log-label", "back-preserves-draft", "keyboard-focus"])
         finally:
             closeWindow(window)
         assert window.logFeed.idle and window.controller.closed

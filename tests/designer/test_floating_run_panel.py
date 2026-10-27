@@ -8,6 +8,7 @@ from PySide2.QtWidgets import QApplication
 from shiboken2 import isValid
 
 from tests.designer.test_floating_toolbox import makeWindow, Settings
+from tests.designer.qt_wait import waitUntil
 from tests.designer.test_run_inspector_ui import windowWithNode, deliver
 
 
@@ -92,6 +93,8 @@ def testResultsAndRunningStateContinueWhileWholePanelIsCollapsed(designerApplica
         assert '运行中 1' == overlay.status.text()
         deliver(window, node, 'node.started', 3, 'second')
         deliver(window, node, sequence=4, execution='second', value=27)
+        assert window.runtimePanelState.nodeInspection.get('main', node, 'job')['nodeRunId'] == 'second'
+        waitUntil(lambda: 'count = 27' in results.values.toPlainText())
         assert not overlay.isExpanded()
         assert 'count = 27' in results.values.toPlainText()
         assert results.tabs.currentWidget() is results.inputs

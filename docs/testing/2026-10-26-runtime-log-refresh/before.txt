@@ -1,0 +1,103 @@
+FFFFFFFFFFFFF.F.                                                         [100%]
+================================== FAILURES ===================================
+__________ testRepeatedContextDoesNotRebuildFilterOptions[jobFilter] __________
+tests\designer\test_runtime_log_refresh.py:49: in testRepeatedContextDoesNotRebuildFilterOptions
+    assert changes == []
+E   AssertionError: assert ['remove', 'insert', 'insert'] == []
+E
+E     Left contains 3 more items, first extra item: 'remove'
+E     Use -v to get more diff
+_______ testRepeatedContextDoesNotRebuildFilterOptions[workflowFilter] ________
+tests\designer\test_runtime_log_refresh.py:49: in testRepeatedContextDoesNotRebuildFilterOptions
+    assert changes == []
+E   AssertionError: assert ['remove', 'i...'insert', ...] == []
+E
+E     Left contains 82 more items, first extra item: 'remove'
+E     Use -v to get more diff
+_________ testRepeatedContextDoesNotRebuildFilterOptions[nodeFilter] __________
+tests\designer\test_runtime_log_refresh.py:49: in testRepeatedContextDoesNotRebuildFilterOptions
+    assert changes == []
+E   AssertionError: assert ['remove', 'i...'insert', ...] == []
+E
+E     Left contains 82 more items, first extra item: 'remove'
+E     Use -v to get more diff
+_______ testRepeatedContextDoesNotRebuildFilterOptions[eventTypeFilter] _______
+tests\designer\test_runtime_log_refresh.py:49: in testRepeatedContextDoesNotRebuildFilterOptions
+    assert changes == []
+E   AssertionError: assert ['remove', 'insert', 'insert'] == []
+E
+E     Left contains 3 more items, first extra item: 'remove'
+E     Use -v to get more diff
+_ testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches[False-jobFilter] _
+tests\designer\test_runtime_log_refresh.py:79: in testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches
+    assert popup.currentIndex().row() == 7
+E   assert -1 == 7
+E    +  where -1 = <built-in method row of PySide2.QtCore.QModelIndex object at 0x0000023017E66CC0>()
+E    +    where <built-in method row of PySide2.QtCore.QModelIndex object at 0x0000023017E66CC0> = <PySide2.QtCore.QModelIndex(-1,-1,0x0,QObject(0x0)) at 0x0000023017E66CC0>.row
+E    +      where <PySide2.QtCore.QModelIndex(-1,-1,0x0,QObject(0x0)) at 0x0000023017E66CC0> = <built-in method currentIndex of PySide2.QtWidgets.QListView object at 0x000002301A0C3A40>()
+E    +        where <built-in method currentIndex of PySide2.QtWidgets.QListView object at 0x000002301A0C3A40> = <PySide2.QtWidgets.QListView(0x23016e6e260) at 0x000002301A0C3A40>.currentIndex
+_ testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches[False-workflowFilter] _
+tests\designer\test_runtime_log_refresh.py:79: in testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches
+    assert popup.currentIndex().row() == 7
+E   assert -1 == 7
+E    +  where -1 = <built-in method row of PySide2.QtCore.QModelIndex object at 0x0000023017E83F40>()
+E    +    where <built-in method row of PySide2.QtCore.QModelIndex object at 0x0000023017E83F40> = <PySide2.QtCore.QModelIndex(-1,-1,0x0,QObject(0x0)) at 0x0000023017E83F40>.row
+E    +      where <PySide2.QtCore.QModelIndex(-1,-1,0x0,QObject(0x0)) at 0x0000023017E83F40> = <built-in method currentIndex of PySide2.QtWidgets.QListView object at 0x000002301A0A1E00>()
+E    +        where <built-in method currentIndex of PySide2.QtWidgets.QListView object at 0x000002301A0A1E00> = <PySide2.QtWidgets.QListView(0x23018fcc3b0) at 0x000002301A0A1E00>.currentIndex
+_ testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches[False-nodeFilter] _
+tests\designer\test_runtime_log_refresh.py:79: in testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches
+    assert popup.currentIndex().row() == 7
+E   assert -1 == 7
+E    +  where -1 = <built-in method row of PySide2.QtCore.QModelIndex object at 0x0000023017ED82C0>()
+E    +    where <built-in method row of PySide2.QtCore.QModelIndex object at 0x0000023017ED82C0> = <PySide2.QtCore.QModelIndex(-1,-1,0x0,QObject(0x0)) at 0x0000023017ED82C0>.row
+E    +      where <PySide2.QtCore.QModelIndex(-1,-1,0x0,QObject(0x0)) at 0x0000023017ED82C0> = <built-in method currentIndex of PySide2.QtWidgets.QListView object at 0x000002307F238800>()
+E    +        where <built-in method currentIndex of PySide2.QtWidgets.QListView object at 0x000002307F238800> = <PySide2.QtWidgets.QListView(0x23016e7f720) at 0x000002307F238800>.currentIndex
+_ testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches[False-eventTypeFilter] _
+tests\designer\test_runtime_log_refresh.py:79: in testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches
+    assert popup.currentIndex().row() == 7
+E   assert -1 == 7
+E    +  where -1 = <built-in method row of PySide2.QtCore.QModelIndex object at 0x000002301A09C740>()
+E    +    where <built-in method row of PySide2.QtCore.QModelIndex object at 0x000002301A09C740> = <PySide2.QtCore.QModelIndex(-1,-1,0x0,QObject(0x0)) at 0x000002301A09C740>.row
+E    +      where <PySide2.QtCore.QModelIndex(-1,-1,0x0,QObject(0x0)) at 0x000002301A09C740> = <built-in method currentIndex of PySide2.QtWidgets.QListView object at 0x0000023017B41000>()
+E    +        where <built-in method currentIndex of PySide2.QtWidgets.QListView object at 0x0000023017B41000> = <PySide2.QtWidgets.QListView(0x230190e3b30) at 0x0000023017B41000>.currentIndex
+_ testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches[True-jobFilter] __
+tests\designer\test_runtime_log_refresh.py:78: in testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches
+    assert combo.count() == oldCount
+E   assert 82 == 81
+E    +  where 82 = <built-in method count of PySide2.QtWidgets.QComboBox object at 0x000002301A0901C0>()
+E    +    where <built-in method count of PySide2.QtWidgets.QComboBox object at 0x000002301A0901C0> = <PySide2.QtWidgets.QComboBox(0x23016ebf970) at 0x000002301A0901C0>.count
+_ testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches[True-workflowFilter] _
+tests\designer\test_runtime_log_refresh.py:78: in testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches
+    assert combo.count() == oldCount
+E   assert 82 == 81
+E    +  where 82 = <built-in method count of PySide2.QtWidgets.QComboBox object at 0x000002301A0DC440>()
+E    +    where <built-in method count of PySide2.QtWidgets.QComboBox object at 0x000002301A0DC440> = <PySide2.QtWidgets.QComboBox(0x23018f51f40) at 0x000002301A0DC440>.count
+_ testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches[True-nodeFilter] _
+tests\designer\test_runtime_log_refresh.py:78: in testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches
+    assert combo.count() == oldCount
+E   assert 82 == 81
+E    +  where 82 = <built-in method count of PySide2.QtWidgets.QComboBox object at 0x000002301A11FBC0>()
+E    +    where <built-in method count of PySide2.QtWidgets.QComboBox object at 0x000002301A11FBC0> = <PySide2.QtWidgets.QComboBox(0x230192f9d00) at 0x000002301A11FBC0>.count
+_ testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches[True-eventTypeFilter] _
+tests\designer\test_runtime_log_refresh.py:78: in testOpenFilterKeepsHoveredChoiceAndScrollAcrossLiveBatches
+    assert combo.count() == oldCount
+E   assert 82 == 81
+E    +  where 82 = <built-in method count of PySide2.QtWidgets.QComboBox object at 0x000002301A0A2080>()
+E    +    where <built-in method count of PySide2.QtWidgets.QComboBox object at 0x000002301A0A2080> = <PySide2.QtWidgets.QComboBox(0x230192f27c0) at 0x000002301A0A2080>.count
+______________ testManualScrollPausesFollowingAndCheckboxResumes ______________
+tests\designer\test_runtime_log_refresh.py:103: in testManualScrollPausesFollowingAndCheckboxResumes
+    assert not logView.autoScrollCheck.isChecked()
+E   assert not True
+E    +  where True = <built-in method isChecked of PySide2.QtWidgets.QCheckBox object at 0x0000023017E83380>()
+E    +    where <built-in method isChecked of PySide2.QtWidgets.QCheckBox object at 0x0000023017E83380> = <PySide2.QtWidgets.QCheckBox(0x230192f98a0) at 0x0000023017E83380>.isChecked
+E    +      where <PySide2.QtWidgets.QCheckBox(0x230192f98a0) at 0x0000023017E83380> = <emo_master.apps.designer.ui.log_dialog.StructuredLogView(0x230192fcf50) at 0x0000023017E521C0>.autoScrollCheck
+______________ testHistoryAnchorAndDetailsSurviveOldRowEviction _______________
+tests\designer\test_runtime_log_refresh.py:138: in testHistoryAnchorAndDetailsSurviveOldRowEviction
+    assert logView.table.item(logView.table.rowAt(0), 9).text() == first
+E   AssertionError: assert 'message-050' == 'message-040'
+E
+E     - message-040
+E     ?          ^
+E     + message-050
+E     ?          ^
+14 failed, 2 passed in 4.63s

@@ -7,6 +7,7 @@ from datetime import datetime
 import json
 import re
 import time
+from typing import Any
 
 
 _LINE_PATTERN = re.compile(r"^\[(?P<time>[^]]+)]\[(?P<level>[^]]+)]\s?(?P<message>.*)$")
@@ -137,7 +138,7 @@ class StructuredLogEntry:
 
 
 try:
-    from PySide2.QtCore import QTimer, Qt
+    from PySide2.QtCore import QTimer, Qt, Signal
     from PySide2.QtWidgets import (
         QAbstractItemView,
         QCheckBox,
@@ -159,6 +160,14 @@ try:
     )
     from emo_master.apps.designer.ui.icon_map import icon
 
+    class _LogFilterComboBox(QComboBox):
+        popupClosed: Any = Signal()
+
+        def hidePopup(self) -> None:
+            super().hidePopup()
+            self.popupClosed.emit()
+
+
     class StructuredLogView(QWidget):
         columns = ("时间", "级别", "来源", "Job", "工作流", "节点", "迭代", "事件", "错误码", "消息")
 
@@ -179,6 +188,13 @@ try:
             self._pendingEntries: list[StructuredLogEntry] = []
             self._pendingEvicted: list[StructuredLogEntry] = []
             self._detailEntry: StructuredLogEntry | None = None
+            self._viewDirty = False
+            self._filterCounts: dict[str, Counter[Any]] = {
+                name: Counter() for name in ("jobId", "eventType", "workflow", "node")}
+            self._workflowNames: dict[tuple[str, ...], str] = {}
+            self._nodeNames: dict[tuple[str, ...], str] = {}
+            self._errorCount = 0
+            self._visibleErrorCount = 0
             root = QVBoxLayout()
             filters = QGridLayout()
             self.levelFilter = _combo(("全部", "DEBUG", "INFO", "WARN", "ERROR"))
@@ -230,6 +246,7 @@ try:
             self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
             self.table.setSelectionMode(QAbstractItemView.SingleSelection)
             self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            self.table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
             self.table.verticalHeader().setVisible(False)
             header = self.table.horizontalHeader()
             header.setStretchLastSection(False)
@@ -278,6 +295,8 @@ try:
             self.nodeFilter.currentIndexChanged.connect(self._refreshTable)
             self.searchInput.textChanged.connect(self._refreshTable)
             self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
+            self.table.verticalScrollBar().valueChanged.connect(self._onScrollChanged)
+            self.table.verticalScrollBar().rangeChanged.connect(self._onScrollRangeChanged)
             self.table.currentCellChanged.connect(self._showDetails)
             self.table.cellDoubleClicked.connect(self._navigateFromRow)
             self.locateButton.clicked.connect(self._navigateSelected)
@@ -287,24 +306,73 @@ try:
             self._refreshTimer = QTimer(self)
             self._refreshTimer.setSingleShot(True)
             self._refreshTimer.setInterval(_BATCH_INTERVAL_MS)
-            self._refreshTimer.timeout.connect(self._applyPendingEntries)
+            self._refreshTimer.timeout.connect(self._flushVisibleEntries)
+            for combo in (self.jobFilter, self.workflowFilter, self.nodeFilter, self.eventTypeFilter):
+                combo.popupClosed.connect(self._refreshTimer.start)
             self._updateFilterStatus()
 
         def appendEntry(self, entry: StructuredLogEntry) -> None:
             self._entries.append(entry)
-            self._pendingEntries.append(entry)
+            self._countEntry(entry, 1)
             overflow = len(self._entries) - self.maximumEntries
+            evicted = self._entries[:max(0, overflow)]
             if overflow > 0:
-                self._pendingEvicted.extend(self._entries[:overflow])
+                for previous in evicted:
+                    self._countEntry(previous, -1)
                 del self._entries[:overflow]
+            if not self.isVisible() or self._viewDirty:
+                self._viewDirty = True
+                return
+            self._pendingEntries.append(entry)
+            self._pendingEvicted.extend(evicted)
+            if len(self._pendingEntries) > self.maximumEntries:
+                self._pendingEntries.clear()
+                self._pendingEvicted.clear()
+                self._viewDirty = True
             if not self._refreshTimer.isActive():
                 self._refreshTimer.start()
+
+        def _countEntry(self, entry: StructuredLogEntry, delta: int) -> None:
+            self._errorCount += delta * _isError(entry)
+            for name, key in (("jobId", entry.jobId), ("eventType", entry.eventType),
+                              ("workflow", entry.workflowKey() if entry.workflowId else None),
+                              ("node", entry.nodeKey() if entry.nodeId else None)):
+                if not key:
+                    continue
+                counts = self._filterCounts[name]
+                counts[key] += delta
+                if counts[key] == 0:
+                    del counts[key]
+                names = self._workflowNames if name == "workflow" else self._nodeNames if name == "node" else None
+                if names is not None and isinstance(key, tuple):
+                    if delta > 0:
+                        names[key] = entry.displayWorkflow() if name == "workflow" else entry.displayNode()
+                    elif key not in counts:
+                        names.pop(key, None)
+
+        def hideEvent(self, event) -> None:
+            self._refreshTimer.stop()
+            self._viewDirty = self._viewDirty or bool(self._pendingEntries or self._pendingEvicted)
+            self._pendingEntries.clear()
+            self._pendingEvicted.clear()
+            super().hideEvent(event)
+
+        def showEvent(self, event) -> None:
+            super().showEvent(event)
+            self._applyPendingEntries()
 
         def setEntries(self, entries: list[StructuredLogEntry]) -> None:
             self._refreshTimer.stop()
             self._entries = list(entries[-self.maximumEntries :])
             self._pendingEntries.clear()
             self._pendingEvicted.clear()
+            for counts in self._filterCounts.values():
+                counts.clear()
+            self._workflowNames.clear()
+            self._nodeNames.clear()
+            self._errorCount = 0
+            for entry in self._entries:
+                self._countEntry(entry, 1)
             self._refreshDynamicFilters()
             self._refreshTable()
 
@@ -358,13 +426,7 @@ try:
             self._refreshTable()
 
         def _clearLogs(self) -> None:
-            self._refreshTimer.stop()
-            self._entries.clear()
-            self._visibleEntries.clear()
-            self._pendingEntries.clear()
-            self._pendingEvicted.clear()
-            self.table.setRowCount(0)
-            self.detailViewer.clear()
+            self.setEntries([])
             self._refreshDynamicFilters(preserveUnknown=False)
             self._updateFilterStatus()
             self._showDetails(-1, 0)
@@ -377,21 +439,18 @@ try:
         def _refreshDynamicFilters(self, *, preserveUnknown: bool = True) -> None:
             _replaceComboValues(
                 self.jobFilter,
-                _values(self._entries, "jobId"),
+                sorted(self._filterCounts["jobId"]),
                 preserveUnknown=preserveUnknown,
             )
             self._refreshContextFilters(preserveUnknown=preserveUnknown)
             _replaceComboValues(
                 self.eventTypeFilter,
-                _values(self._entries, "eventType"),
+                sorted(self._filterCounts["eventType"]),
                 preserveUnknown=preserveUnknown,
             )
 
         def _refreshContextFilters(self, *, preserveUnknown: bool = True) -> None:
-            workflows = {
-                entry.workflowKey(): entry.displayWorkflow()
-                for entry in self._entries if entry.workflowId
-            }
+            workflows = self._workflowNames
             counts = Counter(workflows.values())
             workflowLabels = {
                 key: (f"{label} · {key[1]}" if counts[label] > 1 else label)
@@ -405,9 +464,9 @@ try:
             _replaceContextChoices(self.workflowFilter, workflowLabels, preserveUnknown=preserveUnknown)
             workflowKey = _contextKey(self.workflowFilter)
             nodes = {
-                entry.nodeKey(): f"{workflowLabels.get(entry.workflowKey(), '未关联工作流')} / {entry.displayNode()}"
-                for entry in self._entries if entry.nodeId
-                and (workflowKey is None or entry.workflowKey() == workflowKey)
+                key: f"{workflowLabels.get(key[:2], '未关联工作流')} / {name}"
+                for key, name in self._nodeNames.items()
+                if workflowKey is None or key[:2] == workflowKey
             }
             counts = Counter(nodes.values())
             nodeLabels = {
@@ -425,7 +484,16 @@ try:
             self._refreshContextFilters()
             self._refreshTable()
 
+        def _flushVisibleEntries(self) -> None:
+            if self.isVisible():
+                self._applyPendingEntries()
+
         def _applyPendingEntries(self) -> None:
+            self._refreshTimer.stop()
+            if self._viewDirty:
+                self._refreshDynamicFilters()
+                self._refreshTable()
+                return
             pending = list(self._pendingEntries)
             self._pendingEntries.clear()
             evicted = list(self._pendingEvicted)
@@ -433,8 +501,7 @@ try:
             self._refreshDynamicFilters()
             if not pending and not evicted:
                 return
-            activeEntryIds = {id(entry) for entry in self._entries}
-            pending = [entry for entry in pending if id(entry) in activeEntryIds]
+            pending = [entry for entry in pending[-self.maximumEntries:] if self._matches(entry)]
             visibleEvictions = 0
             for entry in evicted:
                 if (
@@ -442,48 +509,74 @@ try:
                     and self._visibleEntries[visibleEvictions] is entry
                 ):
                     visibleEvictions += 1
+            if not pending and not visibleEvictions:
+                self._updateFilterStatus()
+                return
+            scrollBar = self.table.verticalScrollBar()
+            scrollPosition = scrollBar.value()
+            scrollBlocked = scrollBar.blockSignals(True)
+            tableBlocked = self.table.blockSignals(True)
             self.table.setUpdatesEnabled(False)
             try:
                 if visibleEvictions:
+                    self._visibleErrorCount -= sum(_isError(entry) for entry in self._visibleEntries[:visibleEvictions])
                     del self._visibleEntries[:visibleEvictions]
                     for _ in range(visibleEvictions):
                         self.table.removeRow(0)
                 for entry in pending:
-                    if not self._matches(entry):
-                        continue
                     row = len(self._visibleEntries)
                     self._visibleEntries.append(entry)
+                    self._visibleErrorCount += _isError(entry)
                     self.table.insertRow(row)
                     self._setTableRow(row, entry)
+                if self.autoScrollCheck.isChecked() and self._visibleEntries:
+                    self.table.scrollToBottom()
+                else:
+                    # The table scrolls by row; retain the same historical entry
+                    # when the bounded buffer removes rows above the viewport.
+                    scrollBar.setValue(max(0, scrollPosition - visibleEvictions))
             finally:
                 self.table.setUpdatesEnabled(True)
-            if self.autoScrollCheck.isChecked() and self._visibleEntries:
-                self.table.scrollToBottom()
+                self.table.blockSignals(tableBlocked)
+                scrollBar.blockSignals(scrollBlocked)
             self._updateFilterStatus()
             self._showDetails(self.table.currentRow(), 0)
 
         def _refreshTable(self, *_args) -> None:
-            self._refreshTimer.stop()
+            # A popup close may have queued a filter refresh. Keep it armed
+            # even when this selection consumes the pending rows immediately.
             self._pendingEntries.clear()
             self._pendingEvicted.clear()
+            selected = self._detailEntry
+            scrollBar = self.table.verticalScrollBar()
+            position = scrollBar.value()
+            anchor = self._visibleEntries[position] if position < len(self._visibleEntries) else None
             self._visibleEntries = [entry for entry in self._entries if self._matches(entry)]
+            self._visibleErrorCount = sum(_isError(entry) for entry in self._visibleEntries)
+            self._viewDirty = False
+            scrollBlocked = scrollBar.blockSignals(True)
+            tableBlocked = self.table.blockSignals(True)
             self.table.setUpdatesEnabled(False)
             try:
                 self.table.setRowCount(len(self._visibleEntries))
                 for row, entry in enumerate(self._visibleEntries):
                     self._setTableRow(row, entry)
+                selectedRow = next((row for row, entry in enumerate(self._visibleEntries) if entry is selected), -1)
+                self.table.setCurrentCell(selectedRow, 0)
+                if self.autoScrollCheck.isChecked() and self._visibleEntries:
+                    self.table.scrollToBottom()
+                else:
+                    scrollBar.setValue(next((row for row, entry in enumerate(self._visibleEntries)
+                                            if entry is anchor), position))
             finally:
                 self.table.setUpdatesEnabled(True)
-            if self.autoScrollCheck.isChecked() and self._visibleEntries:
-                self.table.scrollToBottom()
+                self.table.blockSignals(tableBlocked)
+                scrollBar.blockSignals(scrollBlocked)
             self._updateFilterStatus()
             self._showDetails(self.table.currentRow(), 0)
 
         def _updateFilterStatus(self) -> None:
-            hiddenErrors = sum(
-                1 for entry in self._entries
-                if _isError(entry) and not self._matches(entry)
-            )
+            hiddenErrors = self._errorCount - self._visibleErrorCount
             filtered = any(combo.currentIndex() > 0 for combo in (
                 self.levelFilter, self.sourceFilter, self.jobFilter, self.workflowFilter,
                 self.nodeFilter, self.eventTypeFilter,
@@ -616,6 +709,13 @@ try:
             if enabled and self._visibleEntries:
                 self.table.scrollToBottom()
 
+        def _onScrollChanged(self, value: int) -> None:
+            if value < self.table.verticalScrollBar().maximum():
+                self.autoScrollCheck.setChecked(False)
+
+        def _onScrollRangeChanged(self, _minimum: int, _maximum: int) -> None:
+            self._onAutoScrollChanged(self.autoScrollCheck.isChecked())
+
 
     class RuntimeLogDock(QDockWidget):
         def __init__(
@@ -702,8 +802,8 @@ try:
             self.view.setLogs(lines)
 
 
-    def _combo(values: tuple[str, ...]) -> QComboBox:
-        combo = QComboBox()
+    def _combo(values: tuple[str, ...]) -> _LogFilterComboBox:
+        combo = _LogFilterComboBox()
         combo.addItems(list(values))
         return combo
 
@@ -737,21 +837,17 @@ try:
 
     def _replaceContextChoices(combo, choices, *, preserveUnknown=True) -> None:
         selected, label = _contextKey(combo), combo.currentText()
-        blocked = combo.blockSignals(True)
-        try:
-            combo.clear()
-            combo.addItem("全部")
-            for key, text in sorted(choices.items(), key=lambda item: (item[1], item[0])):
-                # QVariantList compares by value; Python tuple user data does not.
-                combo.addItem(text, list(key))
-            data = list(selected) if isinstance(selected, tuple) else selected
-            index = combo.findData(data) if selected is not None else 0
-            if preserveUnknown and selected is not None and index < 0:
-                combo.addItem(label, data)
-                index = combo.count() - 1
-            combo.setCurrentIndex(max(0, index))
-        finally:
-            combo.blockSignals(blocked)
+        # QVariantList compares by value; Python tuple user data does not.
+        items = [("全部", None)] + [
+            (text, list(key))
+            for key, text in sorted(choices.items(), key=lambda item: (item[1], item[0]))
+        ]
+        data = list(selected) if isinstance(selected, tuple) else selected
+        index = next((i for i, (_, key) in enumerate(items) if key == data), -1)
+        if preserveUnknown and selected is not None and index < 0:
+            items.append((label, data))
+            index = len(items) - 1
+        _replaceFilterItems(combo, items, max(0, index))
 
 
     def _replaceComboValues(
@@ -761,16 +857,29 @@ try:
         preserveUnknown: bool = True,
     ) -> None:
         selected = combo.currentText()
-        combo.blockSignals(True)
-        combo.clear()
-        combo.addItem("全部")
-        combo.addItems(values)
-        index = combo.findText(selected)
+        labels = ["全部", *values]
+        index = labels.index(selected) if selected in labels else -1
         if preserveUnknown and index < 0 and selected not in {"", "全部"}:
-            combo.addItem(selected)
-            index = combo.findText(selected)
-        combo.setCurrentIndex(index if index >= 0 else 0)
-        combo.blockSignals(False)
+            labels.append(selected)
+            index = len(labels) - 1
+        _replaceFilterItems(combo, [(label, None) for label in labels], max(0, index))
+
+
+    def _replaceFilterItems(combo, items, selectedIndex) -> None:
+        # Never reset an open popup's hover/scroll state. Closing it schedules
+        # another batch so deferred options arrive even if logging has stopped.
+        if combo.view().isVisible():
+            return
+        if items == [(combo.itemText(i), combo.itemData(i)) for i in range(combo.count())]:
+            return
+        blocked = combo.blockSignals(True)
+        try:
+            combo.clear()
+            for text, data in items:
+                combo.addItem(text, data)
+            combo.setCurrentIndex(selectedIndex)
+        finally:
+            combo.blockSignals(blocked)
 
 except Exception:  # pragma: no cover
 

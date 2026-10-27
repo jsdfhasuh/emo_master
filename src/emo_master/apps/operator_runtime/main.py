@@ -168,7 +168,7 @@ class OperatorWindow(QWidget):
         rows = self.logFeed.records[-5:]
         text = "\n".join(f"{row.data.get('timestamp', '')} · {row.data.get('level', '')} · {row.data.get('message', '')}" for row in rows)
         if text and self.logFeed.historyPath:
-            text = "历史文件（不是本次故障）：" + safeText(self.logFeed.historyPath.name) + "\n" + text
+            text = self.logFeed.sourceText(fullPath=False) + "\n" + text
         if not text:
             text = self.logFeed.statusText()
         if self.startupPage.recentLogs.toPlainText() != text:

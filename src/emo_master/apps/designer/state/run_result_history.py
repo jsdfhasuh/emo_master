@@ -20,17 +20,25 @@ class RunResultRecord:
     status: str = 'ACCEPTED'
     artifact: dict = field(default_factory=dict)
     notice: str = ''
+    _definitionBytes: int = field(init=False, repr=False)
+
+    def __post_init__(self):
+        self.setDefinitions(self.definitions)
+
+    def setDefinitions(self, definitions):
+        self.definitions = definitions
+        self._definitionBytes = encodedBytes(list(definitions.values())) - 2
 
     @property
     def retainedBytes(self):
-        return self.inspection.retainedBytes + encodedBytes({
+        return self.inspection.retainedBytes + self._definitionBytes + encodedBytes({
             'jobId': self.jobId, 'revision': self.revision, 'acceptedAtMs': self.acceptedAtMs,
-            'definitions': list(self.definitions.values()), 'status': self.status,
+            'definitions': [], 'status': self.status,
             'artifact': self.artifact, 'notice': self.notice})
 
     def enforceLimit(self):
         while self.inspection._nodes and self.retainedBytes > RUN_METADATA_LIMIT:
-            self.inspection._nodes.popitem(last=False)
+            self.inspection.discardOldest()
             self.notice = 'E_INSPECTION_METADATA_BUDGET: 节点摘要超过会话额度，最早更新的记录已释放'
 
 
@@ -40,6 +48,7 @@ class RunResultHistory:
         self.viewJobId: str | None = None
         self.notice = ''
         self.executions = OrderedDict()
+        self._executionBytes = {}
         self.nodeIdentity = None
         self.older = False
         self.contextId = None
@@ -62,15 +71,22 @@ class RunResultHistory:
 
     @property
     def retainedBytes(self):
-        return sum(run.retainedBytes for run in self.runs.values()) + (encodedBytes([
-            [{key: value for key, value in entry.items() if key != 'run'} for entry in entries]
-            for entries in self.executions.values()]) if self.executions else 0)
+        # Each node owns at most two frozen records. Re-encode only that node
+        # when it changes, not every retained invocation on every event.
+        executions = sum(self._executionBytes.values()) + len(self.executions) + 1 if self.executions else 0
+        return sum(run.retainedBytes for run in self.runs.values()) + executions
+
+    def _measureExecution(self, key):
+        self._executionBytes[key] = encodedBytes([
+            {name: value for name, value in entry.items() if name != 'run'}
+            for entry in self.executions[key]])
 
     def clear(self):
         self.runs.clear()
         self.viewJobId = None
         self.notice = ''
         self.executions.clear()
+        self._executionBytes.clear()
         self.nodeIdentity = None
         self.older = False
         self.contextId = None
@@ -129,9 +145,9 @@ class RunResultHistory:
                 run = self.runs[jobId]
                 nodes = {key for key, entries in self.executions.items()
                          if any(entry['run'] is run for entry in entries)}
-                run.definitions = {key: value for key, value in run.definitions.items() if key in nodes}
-                run.inspection._nodes = OrderedDict((key, value) for key, value in run.inspection._nodes.items()
-                                                    if key in nodes)
+                if any(key not in nodes for key in run.definitions):
+                    run.setDefinitions({key: value for key, value in run.definitions.items() if key in nodes})
+                run.inspection.retainNodes(nodes)
 
     def setStatus(self, jobId, status):
         run = self.runs.get(jobId)
@@ -140,12 +156,16 @@ class RunResultHistory:
         run.status = status
         if status not in {'COMPLETED', 'FAILED', 'ABORTED'}:
             return
-        for entries in self.executions.values():
+        for key, entries in self.executions.items():
+            changed = False
             for entry in entries:
                 record = entry['record']
                 if record['jobId'] == jobId and record['status'] == 'RUNNING':
                     record['status'] = 'CANCELLED' if status == 'ABORTED' else 'INTERRUPTED'
                     record['message'] = '任务已结束，本次节点执行未完成'
+                    changed = True
+            if changed:
+                self._measureExecution(key)
 
     def applyEvent(self, event):
         run = self.runs.get(event.get('jobId', ''))
@@ -195,9 +215,11 @@ class RunResultHistory:
                 if all(artifact.get(key) == record[key] for key in ('workflowId', 'nodeId', 'workflowRunId', 'nodeRunId')):
                     entries[-1]['artifact'] = deepcopy(artifact)
                 self.executions.move_to_end(identifiers)
+                self._measureExecution(identifiers)
                 self._pruneJobs()
                 while self.executions and (len(self.executions) > 64 or self.retainedBytes > 2 * RUN_METADATA_LIMIT):
-                    self.executions.popitem(last=False)
+                    removed, _ = self.executions.popitem(last=False)
+                    self._executionBytes.pop(removed, None)
                     self._pruneJobs()
                     run.notice = 'E_INSPECTION_METADATA_BUDGET: 节点摘要超过额度，最早更新的记录已释放'
         run.enforceLimit()

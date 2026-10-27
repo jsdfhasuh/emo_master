@@ -120,6 +120,9 @@ class NodeResultCoordinator(QObject):
             history.accept(str(reply.job_id), definitions, int(getattr(reply, 'project_revision', 0) or revision))
         elif method == 'onInspectionEvent':
             history.applyEvent(args[0])
+            # RuntimeController requests the shared view refresh after every
+            # event consumer has updated its model.
+            return
         elif method == 'onInspectionStatus' and history.current:
             history.setStatus(history.current.jobId, str(getattr(args[0], 'status', history.current.status)))
             if self.selectedWorkflow == key:
@@ -161,7 +164,7 @@ class NodeResultCoordinator(QObject):
             return
         node = window.flowModel.nodes.get(nodeId)
         draft = None
-        if node:
+        if node and self.history.current is None:
             draft = next((item for item in self.blueprint()[0]
                           if item['workflowId'] == window.activeWorkflowId and item['nodeId'] == nodeId), None)
         view = self.panel.render(window.activeWorkflowId, nodeId, draft)

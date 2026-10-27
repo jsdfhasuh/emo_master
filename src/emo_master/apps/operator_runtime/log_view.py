@@ -7,7 +7,7 @@ import threading
 from typing import Any
 
 from PySide2.QtCore import QObject, Qt, QTimer, QUrl, Signal
-from PySide2.QtGui import QDesktopServices
+from PySide2.QtGui import QDesktopServices, QTextCursor
 from PySide2.QtWidgets import (
     QAbstractItemView, QCheckBox, QComboBox, QHBoxLayout, QHeaderView, QLabel,
     QPlainTextEdit, QPushButton, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
@@ -133,10 +133,18 @@ class LogFeed(QObject):
     def idle(self):
         return self.worker is None or not self.worker.is_alive()
 
+    def fileLabel(self, path):
+        return "本次活动文件" if path == self.activePath else "历史文件"
+
+    def sourceText(self, *, fullPath=True):
+        path = self.historyPath or self.activePath
+        if path is None:
+            return "暂无本次活动日志文件；可选择日志目录中的历史文件。"
+        mode = "（手动固定，不跟随轮转）" if self.historyPath is not None else ""
+        return self.fileLabel(path) + mode + "：" + safeText(path if fullPath else path.name)
+
     def statusText(self):
-        lines = ["历史文件（不是本次故障）：" + safeText(self.historyPath) if self.historyPath else
-                 ("本次活动文件：" + safeText(self.activePath) if self.activePath else
-                  "暂无本次活动日志文件；可选择日志目录中的历史文件。")]
+        lines = [self.sourceText()]
         if self.error:
             lines.append("读取失败（可刷新重试）：" + self.error)
         elif not self.files and not self.records:
@@ -246,27 +254,53 @@ class RuntimeLogView(QWidget):
     def _selectFile(self, index):
         self.feed.selectFile(self.fileCombo.itemData(index))
 
+    def _renderDiagnostics(self):
+        text = "\n".join(self.feed.diagnostics)
+        edit = self.diagnostics
+        previous = edit.toPlainText()
+        if previous != text:
+            cursor = edit.textCursor()
+            position, anchor, selected = cursor.position(), cursor.anchor(), cursor.selectedText()
+            horizontal, vertical = edit.horizontalScrollBar().value(), edit.verticalScrollBar().value()
+            if text.startswith(previous):
+                # Keep the existing document layout and viewport on normal appends.
+                insertion = QTextCursor(edit.document())
+                insertion.movePosition(QTextCursor.End)
+                insertion.insertText(text[len(previous):])
+            else:
+                edit.setPlainText(text)
+            cursor = edit.textCursor()
+            limit = edit.document().characterCount() - 1
+            cursor.setPosition(min(anchor, limit))
+            cursor.setPosition(min(position, limit), QTextCursor.KeepAnchor)
+            # Replaced diagnostics must not leave a selection over unrelated text.
+            if cursor.selectedText() != selected:
+                cursor.clearSelection()
+            edit.setTextCursor(cursor)
+            edit.horizontalScrollBar().setValue(horizontal)
+            edit.verticalScrollBar().setValue(vertical)
+        edit.setVisible(bool(text))
+
     def render(self):
         feed = self.feed
-        fileSelection = feed.files, feed.historyPath
+        fileSelection = feed.files, feed.historyPath, feed.activePath
         if self._filePaths != fileSelection:
             self._filePaths = fileSelection
             self.fileCombo.blockSignals(True)
             self.fileCombo.clear()
             self.fileCombo.addItem("本次活动文件（跟随轮转）", None)
             for path in feed.files:
-                self.fileCombo.addItem("历史 · " + safeText(path.name), str(path))
+                self.fileCombo.addItem(feed.fileLabel(path) + " · " + safeText(path.name), str(path))
                 self.fileCombo.setItemData(self.fileCombo.count() - 1, safeText(path), Qt.ToolTipRole)
             if feed.historyPath is not None:
                 index = self.fileCombo.findData(str(feed.historyPath))
                 if index < 0:  # Keep a removed/unreadable selected file visible for diagnosis.
-                    self.fileCombo.addItem("历史 · " + safeText(feed.historyPath.name), str(feed.historyPath))
+                    self.fileCombo.addItem(feed.fileLabel(feed.historyPath) + " · " + safeText(feed.historyPath.name), str(feed.historyPath))
                     index = self.fileCombo.count() - 1
                 self.fileCombo.setCurrentIndex(index)
             self.fileCombo.blockSignals(False)
         self.statusLabel.setText(feed.statusText())
-        self.diagnostics.setPlainText("\n".join(feed.diagnostics))
-        self.diagnostics.setVisible(bool(feed.diagnostics))
+        self._renderDiagnostics()
         level = self.levelCombo.currentData()
         records = [row for row in feed.records if not level or str(row.data.get("level", "")).upper().replace("WARNING", "WARN") == level]
         signature = (feed.generation, level, tuple((id(row), row.identity) for row in records))
@@ -278,6 +312,7 @@ class RuntimeLogView(QWidget):
         top = self.table.rowAt(0)
         anchor = self._shownRecords[top].identity if 0 <= top < len(self._shownRecords) else None
         topOffset = self.table.rowViewportPosition(top) if top >= 0 else 0
+        horizontal = self.table.horizontalScrollBar().value()
         self.table.blockSignals(True)
         self.table.setRowCount(len(records))
         for rowIndex, record in enumerate(records):
@@ -308,6 +343,7 @@ class RuntimeLogView(QWidget):
                     scrollbar.setValue(scrollbar.value() - topOffset)
             else:
                 self.table.scrollToTop()
+        self.table.horizontalScrollBar().setValue(horizontal)
         self.emptyLabel.setText("无匹配记录；点击“恢复全部”查看其他级别。" if not records and level else
                                 "暂无记录。" if not records else "")
         if selection < 0:

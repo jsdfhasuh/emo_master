@@ -21,6 +21,42 @@ def testStrictPropsDefaultsAndMappings():
             Props.model_validate(invalid)
 
 
+@pytest.mark.parametrize('value,expected', [('"00:03:42"', '00:03:42'),
+                                         ('{"n":2}', '{"n": 2}'), ('null', '--')])
+def testBoundTextDisplaysStringsWithoutJsonQuotes(qtApp, tmp_path, value, expected):
+    config = sampleProjectP3(tmp_path).presentation
+    component = next(c for c in config.pages['overview'].components if c.type == 'number')
+    component.type = 'text'
+    component.props.emptyText = '--'
+    config.dataSources['count'].expectedType = 'string'
+    window = RuntimePages(config)
+    window.submit(resultView(count=value, capture=window.expectedCapture))
+    assert window.widgets['overview']['overview-count'][1].text() == expected
+    window.close()
+
+
+def testSansUsesWindowsCjkSansFamily(qtApp, monkeypatch):
+    from emo_master.ui.presentation import renderer
+    monkeypatch.setattr(renderer.sys, 'platform', 'win32')
+    assert "font-family:'Microsoft YaHei UI'" in renderer.appearanceStyle(Props(fontFamily='sans'))
+
+
+def testSpanningImageKeepsAdjacentScalarFooterCompact(qtApp, tmp_path):
+    config = sampleProjectP3(tmp_path).presentation
+    page = config.pages['overview']
+    page.layout.columns = 2
+    page.components = [
+        Component(componentId='live', type='image', layout=Placement(row=0, column=0, rowSpan=2)),
+        Component(componentId='crop', type='image', layout=Placement(row=0, column=1)),
+        Component(componentId='value', type='number', layout=Placement(row=1, column=1)),
+    ]
+    window = RuntimePages(config)
+    grid = window.pages['overview'].widget().layout()
+    assert grid.rowStretch(0) == 1
+    assert grid.rowStretch(1) == 0
+    window.close()
+
+
 def testCollectionPagingSortingEmptyAndNewIdentity(qtApp):
     widget=CollectionView(Props.model_validate({'pageSize':2,'columns':[{'title':'值','fieldPath':['v']}]}))
     widget.submit({'items':[{'v':10},{'v':2},{'v':0}]},'N','')

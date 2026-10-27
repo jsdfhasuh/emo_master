@@ -557,3 +557,60 @@ Original logs/JUnit and new local logs remain under
 the new pushed SHA still requires full head/merge-candidate CI and fresh frozen
 acceptance. No merge, branch deletion, release publication or real-device
 operation was performed during this follow-up.
+
+## Native Windows Desktop and Interrupted-Suite Evidence
+
+Target `8fc4b5229dbb7c6f112e0ab646b9a91d2c2272da` passed both Ubuntu jobs
+in branch run [40468735659](https://github.com/jsdfhasuh/emo_master/actions/runs/40468735659)
+and PR run [40468740035](https://github.com/jsdfhasuh/emo_master/actions/runs/40468740035).
+Both downloaded JUnit reports contain 8325 records, zero failures/errors and
+31 skips. Frozen run [40468740762](https://github.com/jsdfhasuh/emo_master/actions/runs/40468740762)
+also passed: the downloaded report matches that source SHA and confirms icons,
+Designer startup/multi-instance ownership, the Runtime Job and native
+OperatorView, explicit stop and ownership release, without forced cleanup.
+Installer execution and field acceptance remain untested.
+
+Both native Windows full-suite jobs exceeded their 60-minute job budget while
+still progressing at 99%; GitHub annotations explicitly report the one-hour
+limit. Neither produced final JUnit. This is **not** an all-tests-passed result:
+both logs record six failures in device status/dialog geometry, log-dialog
+geometry restoration and workflow-entry markers. The branch job additionally
+failed `testClosingDuringConnectionCleansLateSessionWithoutStoppingTest` and
+`testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners`; those two
+passed in the PR job. All original logs remain as
+`windows-8fc4b522-{branch,pr}-full.log` in the ignored evidence directory.
+
+The eight affected cases passed locally on native Windows Qt with a 1920x1080
+desktop (**8 passed in 43.81 s**). A separate process using
+`QT_SCALE_FACTOR=2`, without changing the user's display, reproduced all six
+geometry failures (**6 failed in 9.47 s**): native Windows constrained requested
+1060/1280/1920-pixel windows to the smaller logical desktop; restoring a larger
+saved dialog similarly clamps it. This corroborates a desktop prerequisite,
+but the original CI assertions were lost to cancellation, so their exact
+failure details were not recovered. The two intermittent cases remain **OPEN**;
+isolated local success does not resolve them. No product or existing UI-test
+assertion was changed based on those incomplete reports.
+
+The CI follow-up configures its disposable Windows runner to 1920x1080 and
+checks the actual native Qt platform, screen geometry, available area and
+scale before tests. It increases only the complete Windows job budget from
+60 to 90 minutes. Every test retains the 120-second timeout; Ubuntu remains
+45 minutes. Test collection/order, assertions and failure exit codes remain
+unchanged. An explicitly loaded pytest reporter writes original failure
+tracebacks and captured output immediately to `build/ci-failures.log`, anchored
+to the invocation directory even when a test changes cwd. Both that file and
+final JUnit are uploaded, so a later interruption does not erase prior failures.
+
+Local evidence also includes `windows-native-full-followup-before.{log,xml}`,
+`windows-native-small-screen-before.{log,xml}` and
+`windows-native-followup-regression.{log,xml}`. The complete affected native
+test modules passed **95 tests in 48.27 s**, without skips. The reporter's
+subprocess regression deliberately fails a call and fixture setup, verifies
+the first failure is saved before the next test starts, and retains pytest's
+nonzero result. New remote full-suite results, runner desktop verification
+and frozen acceptance are still required before merging PR #3.
+
+The CI/reporter regression passed **8 tests in 0.88 s** with the real reporter
+plugin enabled. Ruff, Mypy (**560 source files**) and protobuf drift checks
+passed. The local display was not reconfigured; `Set-DisplayResolution` runs
+only on GitHub's disposable Windows runner and still requires remote validation.

@@ -21,7 +21,8 @@ def main() -> int:
     ([sys.executable, "scripts/gen_proto.py", "--check"], "proto-drift"),
     ([sys.executable, "-m", "ruff", "check", "src", "tests"], "ruff"),
     ([sys.executable, "-m", "mypy", "--config-file", "mypy.ini", "src"], "mypy"),
-    ([sys.executable, "-m", "pytest", "-vv", "--tb=short", "--junitxml=build/ci-results.xml", "--timeout=120",
+    ([sys.executable, "-m", "pytest", "-p", "scripts.ci_pytest_reports", "-vv", "--tb=short",
+      "--junitxml=build/ci-results.xml", "--timeout=120",
       "--timeout-method=thread", "-o", "faulthandler_timeout=60"], "pytest")
   ]
 

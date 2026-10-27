@@ -373,8 +373,9 @@ def testInstalledDeviceResourcesReachSpawnedJobAndRestartRechecksIntegrity(bundl
         recovered.close()
 
 
-def testProductionReopenUsesCommittedVersionAndRefusesInPlacePackageUpdate(tmp_path):
+def testProductionRestoreAndExplicitUpdatesPreserveDeviceConfigurationAndOwnership(tmp_path):
     from emo_master.apps.operator_runtime.controller import ProductionRuntime
+    from emo_master.core.project.delivery_store import DirectoryOwner
     source = tmp_path / "project"
     source.mkdir()
     document = ProjectDocument.model_validate(simulatedProject())
@@ -383,29 +384,39 @@ def testProductionReopenUsesCommittedVersionAndRefusesInPlacePackageUpdate(tmp_p
     data = tmp_path / "runtime"
     first = ProductionRuntime(data)
     try:
-        first.load(source)
+        loaded = first.load(source)
         lease = first.projectOwner.stream
         first.load(source)
         assert first.projectOwner.stream is lease
-        before = (source / "project.json").read_bytes()
-        with pytest.raises(ValueError, match="no files changed"):
-            first.installPackage(package)
-        assert (source / "project.json").read_bytes() == before
-        assert first.document is not None
+        installed = first.installPackage(package)
+        assert first.projectOwner.stream is lease
+        assert installed == first.document == first.runtime.loadedDocument
+        assert installed.devices == loaded.devices
+        assert ProjectDocument.model_validate_json((source / "project.json").read_bytes()) == document
     finally:
         first.close()
     document.devices.definitions["camera"].defaults["exposureUs"] = 12345
     save(source, document)
     second = ProductionRuntime(data)
     try:
-        loaded = second.load(source)
+        loaded = second.load(source, restoreOnline=True)
         assert loaded.devices.definitions["camera"].defaults["exposureUs"] == 8000
+        assert ProjectDocument.model_validate_json((source / "project.json").read_bytes()) == document
+        lease = second.projectOwner.stream
+        loaded = second.load(source)
+        assert loaded.devices.definitions["camera"].defaults["exposureUs"] == 12345
+        assert second.projectOwner.stream is lease
         other = tmp_path / "other"
         other.mkdir()
+        document.devices.definitions["camera"].defaults["exposureUs"] = 54321
         save(other, document)
-        lease = second.projectOwner.stream
-        with pytest.raises(ValueError, match="E_CONFIG_ACTIVE"):
-            second.load(other)
-        assert second.projectOwner.stream is lease and second.document == loaded
+        loaded = second.load(other)
+        assert loaded.devices.definitions["camera"].defaults["exposureUs"] == 54321
+        assert second.document == second.runtime.loadedDocument == loaded
+        assert second.projectOwner.root == other.resolve()
+        assert second.runtime.loadedProjectFile == str((other / "project.json").resolve())
+        assert lease.closed
+        with DirectoryOwner(source):
+            pass
     finally:
         second.close()

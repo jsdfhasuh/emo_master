@@ -212,3 +212,72 @@ Raw remote failure output and local before/after evidence are retained under
 failure and the earlier native-hover uncertainty are not relabeled as passes.
 A new push reruns CI on the corrected commit; collection success locally does
 not establish full Ubuntu or Windows CI success.
+
+## CI Execution Follow-Up
+
+Run [40444071101](https://github.com/jsdfhasuh/emo_master/actions/runs/40444071101)
+tested `970107639a23a665c10e840cbbc1fd7f32e61c6d`. The collection collision above
+was resolved. Dependency installation, protobuf validation, Ruff and Mypy passed
+on both platforms; pytest then reached the same execution failure on both:
+
+`tests/core/project/test_device_resources.py::testProductionReopenUsesCommittedVersionAndRefusesInPlacePackageUpdate`
+
+At line 391 the test expected `installPackage()` to raise `ValueError` containing
+`no files changed`, but installation succeeded. Ubuntu reported **1 failed,
+454 passed in 42.69 s**; Windows reported **1 failed, 454 passed in 50.60 s**.
+This is a test-contract failure, not a binary compilation failure or an
+Ubuntu-only dependency problem. `scripts/ci_check.py` uses `pytest -x`, so each
+run stops at its first execution failure. The preceding collection-only check
+did not execute this assertion.
+
+Commit `f4fc44b6006bfa66f9279f9606a4075ea169e9d2` deliberately added explicit
+project reload/switch and stopped package updates. The controller, current
+production regression tests and `docs/operator-runtime.md` already agree on
+that contract, but this older test still expected all three operations to be
+refused or to ignore the selected disk configuration. Product behavior is not
+reverted to those obsolete restrictions.
+
+The renamed test now verifies successful stopped installation with the same
+directory lease, unchanged persisted project content and consistent effective
+device configuration. It explicitly uses `restoreOnline=True` to check that
+remembered startup retains the committed version without overwriting a disk
+draft, then checks that explicit reload applies that draft and explicit switch
+adopts the selected directory and releases the previous owner. Effective
+Runtime device settings include normalized policy defaults; persisted project
+content is compared with the original persisted document, not that normalized
+execution representation. Existing running-job rejection and failed-update
+rollback tests remain unchanged and are included in the regression.
+
+Verification on Windows, Python 3.10.21, offscreen Qt:
+
+- The original failing test reproduced locally: **1 failed in 2.16 s**.
+- The corrected test passed alone: **1 passed in 2.74 s**.
+- A clean `git archive` export of `97010763`, with only the corrected test
+  copied in, executed all of `tests/core` plus the five modules below without
+  `-x`: **681 passed, 1 skipped in 205.15 s**. This excludes concurrent,
+  uncommitted device/RTSP work and ignored/private tests from the tested source.
+- The existing `testSymlinkCannotEscapeRoot` skipped because symlink creation
+  was unavailable in this Windows environment. It is not counted as passed.
+- On the same clean export, Ruff passed for `src tests`, Mypy passed for
+  **560 source files**, and `scripts/gen_proto.py --check` passed.
+
+The additional regression modules were:
+
+```text
+tests/runtime/test_production_project_configuration.py
+tests/runtime/test_production_boundaries.py
+tests/runtime/test_project_configuration.py
+tests/runtime/test_initial_project_configuration.py
+tests/ui/operator_view/test_production_configuration_window.py
+```
+
+Raw logs are retained under `build/ci-followup-40444071101/`: `ubuntu.log`,
+`windows.log`, `local-before.log`, `contract-final.log` and
+`clean-core-regression.log`. Intermediate test-refinement failures involving
+raw versus normalized device policies are also retained in
+`project-regression.log`, `project-regression-final.log` and
+`contract-refinement.log`; the final clean result does not erase those runs.
+Only this test and this report are included in the follow-up commit. The full
+8241-test collection was not executed in this local follow-up; remote CI must
+still finish on the new pushed SHA before it can be called green. No package
+build, deployment, real camera/PLC test or user-process restart was performed.

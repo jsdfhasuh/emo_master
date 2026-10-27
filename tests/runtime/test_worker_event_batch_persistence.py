@@ -87,6 +87,28 @@ def testBatchUsesOneFullCommitAndPersistsCompleteContext(tmp_path, monkeypatch):
     assert EventStore(persistence).readMerged('job') == result
 
 
+def testCommittedCohortTrimsAndNotifiesOnceWithoutDroppingSinkEvents(monkeypatch):
+    class Bucket(list):
+        trims = 0
+
+        def __delitem__(self, key):
+            self.trims += 1
+            return super().__delitem__(key)
+
+    store = EventStore(retentionPerJob=4)
+    store._events['job'] = bucket = Bucket()
+    received, notifications = [], []
+    store.addSink(received.append)
+    monkeypatch.setattr(store._condition, 'notify_all', lambda: notifications.append(True))
+    batch = store.appendBatch(events(32))
+    assert received == batch
+    assert store.read('job') == batch[-4:]
+    assert bucket.trims == 1 and notifications == [True]
+    terminal = store.append('job', 'job.completed', 'done')
+    assert terminal.sequence == 33
+    assert received == [*batch, terminal]
+
+
 def testNothingPublishedOrAcknowledgedBeforeCommit(tmp_path, monkeypatch):
     persistence, store = stores(tmp_path)
     entered, release, finished = Event(), Event(), Event()

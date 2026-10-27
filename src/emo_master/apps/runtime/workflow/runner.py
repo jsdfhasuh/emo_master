@@ -228,7 +228,7 @@ class WorkflowRunner:
                     if self.resultCollector is not None:
                         self._capture("observe", node, nodeInput, nodeOutputs)
                         self._capture("output", nodeContext, nodeOutputs)
-                    self._capturePreviewSnapshot(
+                    previewCapture = self._capturePreviewSnapshot(
                         node, nodeOutputs, nodeContext
                     )
                     self._publishArtifacts(node, nodeOutputs, nodeContext)
@@ -280,6 +280,8 @@ class WorkflowRunner:
                     "diagnostics": _jsonSafe(nodeDiagnostics),
                     "ioSummary": finishInspection(inspection, nodeOutputs),
                 }
+                if previewCapture is not None:
+                    payload["previewCapture"] = previewCapture
                 branch = _branchName(node.operatorId, nodeOutputs)
                 if branch:
                     payload["branch"] = branch
@@ -399,14 +401,14 @@ class WorkflowRunner:
                         self.publish('preview.snapshot.failed', context, str(error), level='WARN',
                                      code='E_PREVIEW_SNAPSHOT_FAILED')
 
-    def _capturePreviewSnapshot(self, node, outputs, context) -> None:
+    def _capturePreviewSnapshot(self, node, outputs, context):
         if node.kind != "operator" or self.previewSnapshotStore is None:
             return
         capture = getattr(self.previewSnapshotStore, "capture", None)
         if not callable(capture):
             return
         try:
-            capture(node, outputs, context)
+            return capture(node, outputs, context)
         except Exception as err:
             self.publish(
                 "preview.snapshot.failed",

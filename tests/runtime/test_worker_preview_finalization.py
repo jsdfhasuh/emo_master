@@ -32,6 +32,7 @@ def testTerminalWaitsForSnapshotRetirementAndHeartbeatsContinue(monkeypatch, tmp
 
     class HeldWriter(AsyncPreviewSnapshotWriter):
         def __init__(self, *args, **kwargs):
+            assert kwargs["inlineInspection"] is False  # No PNG bytes on the business event queue.
             super().__init__(*args, **kwargs)
             writers.append(self)
             persist = self._writer.captureLegacy

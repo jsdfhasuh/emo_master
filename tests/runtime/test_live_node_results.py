@@ -24,9 +24,15 @@ def waitForGate(runtime, job):
 
 
 def invocationSource(client, project, session, record, *, node='image', port='image'):
-    listing = client.listNodePreviewSourcesWithMetadata(project, 'body', node,
-        jobId=record['jobId'], inspectionSessionId=session,
-        workflowRunId=record['workflowRunId'], nodeRunId=record['nodeRunId'])
+    deadline = time.monotonic() + 5
+    while True:
+        listing = client.listNodePreviewSourcesWithMetadata(project, 'body', node,
+            jobId=record['jobId'], inspectionSessionId=session,
+            workflowRunId=record['workflowRunId'], nodeRunId=record['nodeRunId'])
+        if listing.captureState != 'PREPARING':
+            break
+        assert time.monotonic() < deadline, listing
+        time.sleep(.01)
     assert listing.captureState == 'CURRENT_AVAILABLE', listing
     return next(source for source in listing.sources if source.port == port)
 

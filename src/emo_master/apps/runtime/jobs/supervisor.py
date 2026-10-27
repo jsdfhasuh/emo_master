@@ -191,6 +191,7 @@ class JobSupervisor:
                 child = replace(spec, jobId=slot.jobId, workflowId=slot.workflowId,
                     runGroupId=group.groupId, targetSlotId=key, dispatchSlots=(),
                     jobWorkspacePath=str(workspace), continuous=False, presentation=None, inspectionEnabled=False,
+                    inspectionCredits=None,
                     inputsJson="{}", deviceIds=workflowDeviceIds(document, slot.workflowId),
                     usesCommunication=bool(communicationNodes(document, slot.workflowId)))
                 if consumerPresentation is not None:

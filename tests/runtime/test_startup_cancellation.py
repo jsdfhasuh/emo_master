@@ -248,7 +248,7 @@ def testUncancelledSpawnedDeviceActionFailureStaysFailed(monkeypatch, tmp_path):
         terminal = [json.loads(row.payloadJson) for row in service._eventsAfter(started.job_id, 0)
                     if row.eventType == 'job.failed']
         assert terminal == [dict(outcome='UNKNOWN', diagnostics=dict(diagnostics, deviceOutcome=detail),
-            previewSnapshots=dict(submitted=0, coalesced=0, written=0, failed=0, discarded=0,
+            previewSnapshots=dict(submitted=0, coalesced=0, written=0, failed=0, discarded=0, inspectionFailed=0,
                                   peakPending=0, peakBufferedBytes=0))]
         assert not service.deviceManager.workers and not service.projectConfiguration.cycles
     finally:

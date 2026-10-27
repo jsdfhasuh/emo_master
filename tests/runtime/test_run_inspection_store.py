@@ -1,5 +1,7 @@
 """Leased physical ownership, immutable identities and failure cleanup."""
 import json
+from pathlib import Path
+import threading
 from types import SimpleNamespace
 
 import numpy as np
@@ -137,6 +139,7 @@ def testQuotaAndFailedUnlinkRemainChargedAndBlockNewCopies(owner, tmp_path, monk
     monkeypatch.setattr(module.shutil, 'rmtree', fail)
     publish(store, session, tmp_path, 'c')
     assert store.stats()['retiredJobs'] == 1 and store.usage() > 0
+    assert not store.list(session, 'project', 'c', 'main', 'load')[0]
     monkeypatch.setattr(module, 'JOB_BYTES', 1)
     publish(store, session, tmp_path, 'd')
     assert not store.list(session, 'project', 'd', 'main', 'load')[0]
@@ -232,9 +235,10 @@ def testInlineReaderKeepsEvictedBytesQuotaChargedUntilIteratorCloses(owner, tmp_
 
 
 @pytest.mark.parametrize('scope', ['JOB_BYTES', 'SESSION_BYTES', '_PROJECT_LIMIT_BYTES', '_GLOBAL_LIMIT_BYTES'])
-def testInlineImagesShareExistingStorageBudgets(owner, tmp_path, monkeypatch, scope):
+@pytest.mark.parametrize('inline', [False, True])
+def testImagesShareExistingStorageBudgets(owner, tmp_path, monkeypatch, scope, inline):
     store, session = owner
-    writer = publish(store, session, tmp_path, invocation='first', terminal=False, inline=True)
+    writer = publish(store, session, tmp_path, invocation='first', terminal=False, inline=inline)
     size = store.usage()
     monkeypatch.setattr(module.legacy if scope.startswith('_') else module, scope, size)
     publish(store, session, tmp_path, invocation='second', terminal=False, writer=writer)
@@ -251,3 +255,198 @@ def testInlineAndFileImagesUseOneCombinedBudget(owner, tmp_path, monkeypatch):
     publish(store, session, tmp_path, 'b', inline=True)
     assert 'ASSET_BUDGET' in store.list(session, 'project', 'b', 'main', 'load')[2]
     assert store.usage() == size
+
+
+def testInspectionHotPathUsesOwnedSizesWithoutDirectoryWalks(owner, tmp_path, monkeypatch):
+    store, session = owner
+    writer = publish(store, session, tmp_path, invocation='first', terminal=False)
+    store._publicUsage()  # Populate public-storage view before the steady path.
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError('per-image quota accounting must not walk storage trees')
+
+    monkeypatch.setattr(Path, 'rglob', forbidden)
+    for invocation in ('second', 'third', 'fourth'):
+        publish(store, session, tmp_path, invocation=invocation, terminal=False, writer=writer)
+        executions = store.sessions[session].executions[('main', 'load')]
+        actual = sum(asset.path.stat().st_size for execution in executions for asset in execution.sources)
+        assert store.usage() == actual > 0
+    store.closeSession(session)
+    assert store.usage() == 0
+
+
+def testPublicUsageRefreshesOnPromotionUploadAndRemoval(owner, tmp_path, monkeypatch):
+    store, session = owner
+    publish(store, session, tmp_path, 'a')
+    inspection = store.usage()
+    assert store._publicUsage() == inspection
+    image = store.assets.addTransientImage(np.zeros((12, 15, 3), np.uint8), projectKey='project')
+    size = image.path.stat().st_size
+    assert store._publicUsage('project') == inspection + size
+    assert store._publicUsage() == inspection + size
+    store.assets.promote(tmp_path / 'a' / 'preview_staging', 'project')
+    persistent = sum(path.stat().st_size for path in (store.assets.root / 'project').rglob('*') if path.is_file())
+    assert store._publicUsage('project') == inspection + persistent + size
+    unlink = Path.unlink
+
+    def fail(path, *args, **kwargs):
+        if path == image.path:
+            raise OSError('controlled pending deletion')
+        return unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'unlink', fail)
+    store.assets.removeTransient(image.assetId)
+    assert store._publicUsage() == inspection + persistent + size
+    monkeypatch.setattr(Path, 'unlink', unlink)
+    store.assets.close()
+    assert store._publicUsage() == inspection + persistent
+    store.closeSession(session)
+    assert store._publicUsage('project') == persistent
+
+
+@pytest.mark.parametrize('status', ['COMPLETED', 'FAILED', 'ABORTED'])
+def testTerminalDrainsReceiverBeforeDroppingWatch(owner, tmp_path, monkeypatch, status):
+    store, session = owner
+    store.attach(session, 'project', 'a', document())
+    entered, release, done = (threading.Event() for _ in range(3))
+    errors = []
+    credits = store.prepareReceiver('a', tmp_path / 'a', errors.append)
+    receiver = store._receivers['a']
+    original = store._copy
+
+    def slow(*args, **kwargs):
+        entered.set()
+        assert release.wait(5)
+        return original(*args, **kwargs)
+
+    def send(**event):
+        assert credits.acquire(timeout=1)
+        store.enqueue('a', event)
+
+    monkeypatch.setattr(store, '_copy', slow)
+    writer = PreviewSnapshotWriter(tmp_path / 'a', jobId='a', projectRevision=7, inspectionPublisher=send)
+    terminal = threading.Thread(target=lambda: (store.terminal('a', tmp_path / 'a', status), done.set()))
+    try:
+        publish(store, session, tmp_path, terminal=False, writer=writer)
+        assert entered.wait(1)
+        terminal.start()
+        assert not done.wait(.1)
+        assert 'a' in store._watches
+    finally:
+        release.set()
+        terminal.join(3)
+    assert done.is_set() and not receiver.thread.is_alive() and not errors
+    assert not store._receivers and 'a' not in store._watches
+    source = store.list(session, 'project', 'a', 'main', 'load')[0][0]
+    assert source.path.is_file()
+    assert not list(writer.inspectionRoot.glob('*.png'))
+
+
+def testClosedSessionStillDrainsJobImagesAndAbandonedStartClosesReceiver(owner, tmp_path):
+    store, session = owner
+    store.attach(session, 'project', 'a', document())
+    errors = []
+    credits = store.prepareReceiver('a', tmp_path / 'a', errors.append, capacity=1)
+    receiver = store._receivers['a']
+    store.closeSession(session)
+
+    def send(**event):
+        assert credits.acquire(timeout=1)
+        store.enqueue('a', event)
+
+    writer = PreviewSnapshotWriter(tmp_path / 'a', jobId='a', projectRevision=7, inspectionPublisher=send)
+    context = SimpleNamespace(workflowId='main', workflowRunId='flow', nodeRunId='node', iterationPath=())
+    for value in range(4):
+        writer.capture(document().workflows['main'].nodes[0], {'image': np.full((20, 20, 3), value, np.uint8)}, context)
+    store.terminal('a', tmp_path / 'a', 'COMPLETED')
+    assert not receiver.thread.is_alive() and not errors
+    assert not list(writer.inspectionRoot.glob('*.png'))
+    assert store.usage() == 0
+    session = store.open('project')
+    store.attach(session, 'project', 'rejected', document(), accepted=False)
+    store.prepareReceiver('rejected', tmp_path / 'rejected', errors.append)
+    receiver = store._receivers['rejected']
+    store.abandon(session, 'project', 'rejected')
+    assert not receiver.thread.is_alive() and not store._receivers
+
+
+@pytest.mark.parametrize('saved', [False, True])
+def testQueuedImagesStayPreparingUntilReceiverSettles(owner, tmp_path, monkeypatch, saved):
+    store, session = owner
+    store.attach(session, 'project', 'a', document())
+    entered, release = threading.Event(), threading.Event()
+    original = store.publish
+    errors = []
+
+    def slow(*args, **kwargs):
+        entered.set()
+        assert release.wait(5)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(store, 'publish', slow)
+    credits = store.prepareReceiver('a', tmp_path / 'a', errors.append)
+
+    def send(**event):
+        if saved:
+            entry = event['payload']['entries'][0]
+            entry['port'] = '__saved_result__'
+            execution = store.sessions[session].executions[('main', 'load')][-1]
+            execution.artifact = dict(artifactId=entry['captureId'], checksum='controlled',
+                                     path=str(tmp_path / 'a' / 'artifacts' / 'result.png'))
+        assert credits.acquire(timeout=1)
+        store.enqueue('a', event)
+
+    writer = PreviewSnapshotWriter(tmp_path / 'a', jobId='a', projectRevision=7, inspectionPublisher=send)
+    try:
+        publish(store, session, tmp_path, terminal=False, writer=writer)
+        assert entered.wait(1)
+        assert store.list(session, 'project', 'a', 'main', 'load')[1] == 'PREPARING'
+    finally:
+        release.set()
+        store.terminal('a', tmp_path / 'a', 'COMPLETED')
+    sources, state, _ = store.list(session, 'project', 'a', 'main', 'load')
+    assert not errors and state == 'CURRENT_AVAILABLE'
+    assert sources[0].port == ('__saved_result__' if saved else 'image')
+    assert store.sessions[session].executions[('main', 'load')][-1].pendingImages == 0
+
+
+def testNewlyRetiredImageDuringAdoptionIsNotMistakenForFailedCleanup(owner, tmp_path, monkeypatch):
+    store, session = owner
+    writer = publish(store, session, tmp_path, invocation='first', terminal=False)
+    original = store._publicUsage
+    advanced = False
+
+    def usage(*args):
+        nonlocal advanced
+        if not advanced:
+            advanced = True
+            for sequence, kind, invocation in [(4, 'node.completed', 'second'), (5, 'node.started', 'third')]:
+                store.observe(RuntimeEvent('a', kind, '', workflowId='main', nodeId='load',
+                    workflowRunId='a-flow', nodeRunId=invocation, sequence=sequence))
+        return original(*args)
+
+    monkeypatch.setattr(store, '_publicUsage', usage)
+    publish(store, session, tmp_path, invocation='second', terminal=False, writer=writer)
+    sources, state, reason = store.list(session, 'project', 'a', 'main', 'load', 'a-flow', 'second')
+    assert state == 'CURRENT_AVAILABLE' and sources and not reason
+
+
+def testExecutionRetiredDuringCleanupCannotAcquireUnownedPixels(owner, tmp_path, monkeypatch):
+    store, session = owner
+    original = store._cleanup
+    advanced = False
+
+    def cleanup(current):
+        nonlocal advanced
+        if not advanced and current.executions:
+            advanced = True
+            for sequence, invocation in [(2, 'second'), (3, 'third')]:
+                store.observe(RuntimeEvent('a', 'node.started', '', workflowId='main', nodeId='load',
+                    workflowRunId='a-flow', nodeRunId=invocation, sequence=sequence))
+        return original(current)
+
+    monkeypatch.setattr(store, '_cleanup', cleanup)
+    writer = publish(store, session, tmp_path, invocation='first', terminal=False)
+    assert advanced and store.usage() == 0
+    assert not list(store.root.rglob('*.png'))
+    assert not list(writer.inspectionRoot.glob('*.png'))

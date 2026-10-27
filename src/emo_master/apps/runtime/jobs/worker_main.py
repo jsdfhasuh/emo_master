@@ -91,7 +91,8 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
         inputs = json.loads(spec.inputsJson or "{}")
         if not isinstance(inputs, dict):
             raise ValueError("inputs_json must contain an object")
-        publisher = _eventPublisher(spec.jobId, spec.projectId, eventQueue)
+        publisher = _eventPublisher(spec.jobId, spec.projectId, eventQueue,
+                                    inspectionCredits=spec.inspectionCredits, cancellation=token)
         globalCounters = (
             ProjectGlobalCounters(SqliteStore(Path(spec.runtimeDbPath)), spec.projectId)
             if spec.runtimeDbPath and spec.projectId
@@ -107,8 +108,11 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
             previewWriter = AsyncPreviewSnapshotWriter(Path(spec.jobWorkspacePath), jobId=spec.jobId,
                 projectRevision=document.project.revision,
                 inspectionPublisher=publisher if spec.inspectionEnabled else None,
-                inlineInspection=True,
-                errorPublisher=publisher, cancellation=token)
+                # The encoder thread stages immutable PNGs. Only descriptors
+                # share the ordered node-event channel, never large image bytes.
+                inlineInspection=False,
+                errorPublisher=publisher, cancellation=token,
+                minIntervalMs=50 if spec.continuous or spec.targetSlotId else 0)
         runner = WorkflowRunner(
             compiledProject=compiled,
             operatorRegistry=registry,
@@ -303,11 +307,17 @@ def _collector(spec, eventQueue):
     return ResultCollector(spec.presentation, spec.presentation["queue"].put_nowait)
 
 
-def _eventPublisher(jobId: str, projectId: str, eventQueue):
+def _eventPublisher(jobId: str, projectId: str, eventQueue, *, inspectionCredits=None, cancellation=None):
     def publish(eventType, context, message, level="INFO", code="", payload=None):
-        _put(
-            eventQueue,
-            {
+        reserved = eventType == 'inspection.snapshot' and inspectionCredits is not None
+        if reserved:
+            while not inspectionCredits.acquire(timeout=.05):
+                if cancellation is not None:
+                    cancellation.raise_if_cancelled()
+        try:
+            if reserved and cancellation is not None:
+                cancellation.raise_if_cancelled()
+            _put(eventQueue, {
                 "eventType": eventType,
                 "jobId": jobId,
                 "projectId": context.projectId or projectId,
@@ -324,8 +334,11 @@ def _eventPublisher(jobId: str, projectId: str, eventQueue):
                     runGroupId=context.runGroupId, dispatchId=context.dispatchId, deliveryId=context.deliveryId,
                     invocationId=context.invocationId, targetSlotId=context.targetSlotId,
                     documentRevision=context.documentRevision),
-            },
-        )
+            })
+        except BaseException:
+            if reserved:
+                inspectionCredits.release()
+            raise
 
     return publish
 

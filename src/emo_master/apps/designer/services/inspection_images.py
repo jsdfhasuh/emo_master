@@ -237,7 +237,9 @@ class InspectionImages:
             if listing.captureState != 'PREPARING':
                 break
             with self._condition:
-                self._condition.wait(.02)
+                # Encoding is asynchronous even after node.completed. Poll the
+                # exact invocation at display cadence; selection changes wake us.
+                self._condition.wait(.1)
             context.check()
         source = next((source for source in listing.sources if source.port == selection.port), None)
         if source is None:

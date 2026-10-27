@@ -115,8 +115,14 @@ class EventStore:
             sequences = (appendMany(events) if callable(appendMany) else
                          range(self._sequences.get(jobId, 0) + 1, self._sequences.get(jobId, 0) + 1 + len(events)))
             committed = [replace(event, sequence=sequence) for event, sequence in zip(events, sequences)]
+            self._sequences[jobId] = committed[-1].sequence
+            bucket = self._events.setdefault(jobId, [])
+            bucket.extend(committed)
+            if len(bucket) > self.retentionPerJob:
+                del bucket[:len(bucket) - self.retentionPerJob]
             for event in committed:
-                self._publish(event, True)
+                self._notifySinks(event)
+            self._condition.notify_all()
             return committed
 
     def _publish(self, event: RuntimeEvent, notifySinks: bool) -> None:
@@ -137,11 +143,14 @@ class EventStore:
         # order is still serialized so concurrent producers cannot put a
         # later SQLite sequence into JSONL before an earlier one.
         if notifySinks:
-            for sink in tuple(self._sinks):
-                try:
-                    sink(event)
-                except BaseException:
-                    pass
+            self._notifySinks(event)
+
+    def _notifySinks(self, event: RuntimeEvent) -> None:
+        for sink in tuple(self._sinks):
+            try:
+                sink(event)
+            except BaseException:
+                pass
 
     def addSink(self, sink: Callable[[RuntimeEvent], object]) -> None:
         with self._condition:

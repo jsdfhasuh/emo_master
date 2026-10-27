@@ -730,6 +730,8 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                     planRevision=(self.projectConfiguration.current["executionRevision"] if self.projectConfiguration.current else 0),
                     legacySnapshotPolicy=legacyPolicy,
                     inspectionEnabled=bool(inspectionId),
+                    inspectionCredits=(self.runInspectionStore.prepareReceiver(record.jobId, workspacePath,
+                        lambda error: self._inspectionFailed(record.jobId, error)) if inspectionId else None),
                     continuous=(self.productionMode and document.production is not None
                                 and document.production.mode == "continuous"),
                     cycleIntervalMs=(document.production.cycleIntervalMs if document.production else 100),
@@ -2233,12 +2235,14 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
         return snapshot, workspace
 
     def _onInspectionSnapshot(self, jobId, event):
-        workspace = self._workspacePaths.get(jobId, self.workspaceRoot / jobId)
         try:
-            self.runInspectionStore.publish(jobId, event, workspace)
+            self.runInspectionStore.enqueue(jobId, event)
         except Exception as error:
-            self.eventStore.append(jobId, 'preview.snapshot.failed', str(error), level='WARN',
-                                   code='E_INSPECTION_TAKEOVER')
+            self._inspectionFailed(jobId, error)
+
+    def _inspectionFailed(self, jobId, error):
+        self.eventStore.append(jobId, 'preview.snapshot.failed', str(error), level='WARN',
+                               code='E_INSPECTION_TAKEOVER')
 
     def _onJobTerminal(self, jobId: str, status: str) -> None:
         if self.loadedDocument is not None and self.loadedDocument.schemaVersion != '2.7':

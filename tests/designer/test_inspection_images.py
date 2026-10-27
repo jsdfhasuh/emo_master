@@ -147,6 +147,46 @@ def testSameSelectionDoesNotReadTwiceAndQueriesExactInvocation():
         images.close()
 
 
+@pytest.mark.parametrize('outcome', ['ready', 'skipped'])
+def testCompletedNodeCanPrepareAsynchronouslyWithoutReadingWrongPixels(outcome):
+    client = Client()
+    client.release.set()
+    entered, finish, delivered = (threading.Event() for _ in range(3))
+    listing = client.listNodePreviewSourcesWithMetadata
+    queries = []
+
+    def pending(*args, **kwargs):
+        queries.append(kwargs)
+        entered.set()
+        if not finish.is_set():
+            return SimpleNamespace(sources=(), captureState='PREPARING', message='encoding')
+        if outcome == 'skipped':
+            return SimpleNamespace(sources=(), captureState='NO_CURRENT_SNAPSHOT', message='E_INSPECTION_SKIPPED')
+        return listing(*args, **kwargs)
+
+    client.listNodePreviewSourcesWithMetadata = pending
+    images = InspectionImages(client, lambda *_args: ('pixels', 4, 'PNG'), lambda *_args: delivered.set())
+    try:
+        images.ensureSession('project')
+        generation = images.select(selection())
+        assert entered.wait(1)
+        assert not delivered.is_set() and not client.calls
+        assert images.hasWork()
+        finish.set()
+        assert delivered.wait(2)
+        packet = images.take(generation)
+        if outcome == 'ready':
+            assert packet['image'] == 'pixels' and packet['selection'] == selection()
+            assert client.calls == ['asset']
+        else:
+            assert 'image' not in packet and 'SKIPPED' in packet['message'] and not client.calls
+        assert all(query['nodeRunId'] == 'invocation' and query['workflowRunId'] == 'flow' for query in queries)
+        assert images.select(selection()) == generation
+    finally:
+        finish.set()
+        images.close()
+
+
 @pytest.mark.parametrize('failure', ['list', 'stream', 'timeout'])
 def testTransientReadFailureRecoversOnHealthyRenewalWithoutChangingSelection(failure):
     client = Client()

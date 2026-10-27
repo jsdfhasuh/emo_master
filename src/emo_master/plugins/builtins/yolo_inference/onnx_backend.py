@@ -55,8 +55,13 @@ class OnnxYoloSession:
             ) from err
 
         try:
+            options = ort.SessionOptions()
+            # Keep inference parallelism without busy-waiting between frames.
+            options.add_session_config_entry("session.intra_op.allow_spinning", "0")
+            options.add_session_config_entry("session.inter_op.allow_spinning", "0")
             self._session = ort.InferenceSession(
                 str(self.modelPath),
+                sess_options=options,
                 providers=["CPUExecutionProvider"],
             )
         except Exception as err:

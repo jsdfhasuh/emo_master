@@ -1,0 +1,104 @@
+{
+  "operatorId": "vision.inference.yolo_classification",
+  "displayName": "YOLO Classification",
+  "version": "1.0.0",
+  "inputPorts": {
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "classId": {
+      "type": "integer",
+      "required": true,
+      "nullable": false
+    },
+    "label": {
+      "type": "string",
+      "required": true,
+      "nullable": false
+    },
+    "confidence": {
+      "type": "number",
+      "required": true,
+      "nullable": false
+    },
+    "accepted": {
+      "type": "boolean",
+      "required": true,
+      "nullable": false
+    },
+    "acceptedLabel": {
+      "type": "string",
+      "required": true,
+      "nullable": false
+    },
+    "result": {
+      "type": "json",
+      "required": true,
+      "nullable": false
+    },
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "modelPath": {
+        "title": "\u5206\u7c7b\u6a21\u578b\u8def\u5f84",
+        "type": "string",
+        "default": "",
+        "xWidget": "file",
+        "xFileMode": "open",
+        "xFilter": "YOLO Classification (*.onnx)"
+      },
+      "confidence": {
+        "title": "\u5206\u7c7b\u7f6e\u4fe1\u5ea6\u9608\u503c",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+        "default": 0.8,
+        "description": "\u4f4e\u4e8e\u9608\u503c\u4ecd\u4fdd\u7559 Top-1\uff0caccepted=false\uff0cacceptedLabel \u4e3a\u7a7a\u5b57\u7b26\u4e32\u3002"
+      },
+      "preprocess": {
+        "title": "\u9884\u5904\u7406\u534f\u8bae",
+        "type": "string",
+        "enum": [
+          "resize_full_frame_v1"
+        ],
+        "default": "resize_full_frame_v1",
+        "xOptionLabels": {
+          "resize_full_frame_v1": "\u8bad\u7ec3\u5e73\u53f0\u6574\u56fe\u7f29\u653e"
+        },
+        "description": "PIL \u53cc\u7ebf\u6027\u6574\u56fe\u7f29\u653e\uff0cRGB / 255\u3002\u4e0d\u652f\u6301\u4e2d\u5fc3\u88c1\u526a\u8bad\u7ec3\u7684\u6a21\u578b\u3002"
+      }
+    },
+    "required": [
+      "modelPath"
+    ],
+    "additionalProperties": false
+  },
+  "entry": "emo_master.plugins.builtins.yolo_classification.operator:YoloClassificationOperator",
+  "category": "\u63a8\u7406",
+  "iconKey": "yolo",
+  "summary": "YOLO ONNX \u6574\u56fe\u5206\u7c7b\uff1a\u4fdd\u7559 Top-1 \u548c\u7f6e\u4fe1\u5ea6\uff0c\u4f4e\u7f6e\u4fe1\u5ea6 acceptedLabel \u4e3a\u7a7a\uff0c\u4f9b\u4e0b\u6e38\u8fdb\u5165\u5f85\u786e\u8ba4\u5206\u652f\u3002",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x"
+}

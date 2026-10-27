@@ -69,7 +69,7 @@ class DebugResources:
             runtimePath(params.get("folderPath"), directory=True)
         elif operatorId == "vision.io.video_loader":
             runtimePath(values["videoPath"] if "videoPath" in values else params.get("videoPath"))
-        elif operatorId == "vision.inference.yolo":
+        elif operatorId in {"vision.inference.yolo", "vision.inference.yolo_classification"}:
             runtimePath(params.get("modelPath"))
         elif operatorId == "vision.inference.patchcore":
             runtimePath(params.get("modelPath"), directory=True)

@@ -28,14 +28,14 @@ SUPPORTED_FOLDERS = (
     "rotate", "shape_measurement", "template_match", "threshold", "variable_read", "variable_write",
     "coordinate_calculator", "value_select",
     "point_components", "number_absolute", "number_exact_integer", "number_pair", "number_truncate",
-    "coordinate_message_format",
+    "coordinate_message_format", "elapsed_time", "percentage",
 )
 # Explicit user-triggered resource operations. Runtime owns file/socket access and
 # its debug reservation excludes competing execution owners.
 # These entries must not also admit automatic workflow execution or trials.
 SINGLE_NODE_FOLDERS = (
     "plc_slmp_read", "image_loader", "coordinate_reader", "image_batch_loader", "video_loader", "file_list",
-    "yolo_inference", "patchcore_inference", "image_saver", "result_writer", "sqlite_writer",
+    "yolo_inference", "yolo_classification", "patchcore_inference", "image_saver", "result_writer", "sqlite_writer",
     "tcp_client", "tcp_receive_once", "plc_slmp_write", "huaray_camera",
     "rtsp_camera", "hikvision_audio",
 )
@@ -162,7 +162,7 @@ def trustedEntries(registry):
                 "entry": entry, "version": manifest.version,
                 "inputPorts": manifest.inputPorts, "outputPorts": manifest.outputPorts,
                 "paramSchema": manifest.paramSchema, "displayName": manifest.displayName,
-                "stateful": folder in {"global_counter", "variable_read", "variable_write", "image_batch_loader", "video_loader", "coordinate_reader", "patchcore_inference"},
+                "stateful": folder in {"global_counter", "variable_read", "variable_write", "image_batch_loader", "video_loader", "coordinate_reader", "patchcore_inference", "yolo_classification", "elapsed_time"},
                 "singleNodeOnly": folder in SINGLE_NODE_FOLDERS,
                 "executionWarning": EXECUTION_WARNINGS.get(operatorId, ""),
             }

@@ -168,6 +168,7 @@ def testVideoLoaderDebugUsesDynamicPath(runtime, tmp_path):
 @pytest.mark.parametrize("operatorId,key", [
     ("vision.io.coordinate_reader", "filePath"), ("vision.io.image_batch_loader", "folderPath"),
     ("vision.inference.yolo", "modelPath"),
+    ("vision.inference.yolo_classification", "modelPath"),
     ("vision.io.video_loader", "videoPath"),
     ("vision.io.file_list", "folderPath"),
 ])
@@ -189,6 +190,18 @@ def testYoloUsesRealOnnxSession(runtime, tmp_path):
         assert record["status"] == "SUCCEEDED", record
         assert record["metrics"]["detectionCount"] == 1
         assert record["outputs"]["detections"]["items"][0]["label"] == "screw"
+
+
+def testYoloClassificationUsesRealOnnxSession(runtime, tmp_path):
+    from tests.plugins.test_yolo_classification_operator import makeModel
+    model = makeModel(tmp_path / "classifier.onnx", (.1, .9))
+    with connected(runtime, "vision.inference.yolo_classification") as debug:
+        record = run(debug, {"modelPath": str(model)}, {"image": uploadImage(debug)})
+        assert record["status"] == "SUCCEEDED", record
+        assert record["outputs"]["label"] == "with_helmet"
+        assert record["outputs"]["accepted"] is True
+        assert record["outputs"]["confidence"] == pytest.approx(.9)
+        assert record["outputAssets"]["image"]
 
 
 def testFileWriterConfirmationIsBoundToParamsAndPreparedInputs(runtime, tmp_path):

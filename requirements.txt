@@ -10,4 +10,5 @@ uvicorn>=0.29
 onnxruntime==1.23.2
 onnx==1.16.0
 numpy<2
+Pillow>=10,<13
 defusedxml==0.7.1

@@ -54,6 +54,10 @@ def testOnnxSessionRunsTinyModelAndMapsLetterboxToGrayImage(tmp_path) -> None:
     modelPath.write_bytes(base64.b64decode(_TINY_YOLO_ONNX))
 
     session = OnnxYoloSession(modelPath)
+    options = session._session.get_session_options()
+    assert options.get_session_config_entry("session.intra_op.allow_spinning") == "0"
+    assert options.get_session_config_entry("session.inter_op.allow_spinning") == "0"
+    assert options.intra_op_num_threads == options.inter_op_num_threads == 0
     result = session.predict(
         np.zeros((4, 8), dtype=np.uint8),
         confidence=0.25,
@@ -160,9 +164,10 @@ def testDynamicOnnxInputUsesRequestedImageSize(monkeypatch, tmp_path) -> None:
     captured: dict[str, object] = {}
 
     class FakeSession:
-        def __init__(self, modelPath: str, providers: list[str]) -> None:
+        def __init__(self, modelPath: str, providers: list[str], *, sess_options) -> None:
             captured["modelPath"] = modelPath
             captured["providers"] = providers
+            captured["options"] = sess_options
 
         def get_providers(self):
             return ["CPUExecutionProvider"]

@@ -87,7 +87,7 @@ def main(argv: list[str]) -> int:
   parser = argparse.ArgumentParser(description="Run tools from this source checkout.")
   parser.add_argument("action", choices=["proto", "test", "run-runtime", "run-designer"])
   parser.add_argument("--local", action="store_true",
-                      help="Designer: visible embedded Runtime with isolated local data")
+                      help="Designer: prefill visible local startup with isolated data; UI may override")
   parser.add_argument("--check", action="store_true",
                       help="Designer: check imports and configuration without opening a window")
   arguments = parser.parse_args(argv[1:])

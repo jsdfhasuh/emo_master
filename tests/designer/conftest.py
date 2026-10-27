@@ -31,9 +31,16 @@ def cleanupDesignerWidgets(designerApplication, monkeypatch, isolatedDesignerSet
     if designerApplication is None:
         yield
         return
+    for key in ("EMO_RUNTIME_TARGET", "EMO_MASTER_RUNTIME_DB_PATH", "EMO_RUNTIME_LOG_DIR", "EMO_DESIGNER_SETTINGS_PATH"):
+        monkeypatch.delenv(key, raising=False)
     from PySide2.QtCore import QCoreApplication, QEvent
     import shiboken2
     from PySide2.QtWidgets import QMessageBox
+    from PySide2.QtCore import QSettings
+    from emo_master.apps.designer.ui import startup_settings_dialog
+
+    monkeypatch.setattr(startup_settings_dialog, "QSettings",
+                        lambda *_: QSettings(str(isolatedDesignerSettings), QSettings.IniFormat))
 
     # PageCoordinator is now part of the normal Designer. Legacy flow tests
     # deliberately discard their synthetic edits; dedicated page tests cover
@@ -62,3 +69,15 @@ def cleanupDesignerWidgets(designerApplication, monkeypatch, isolatedDesignerSet
         if shiboken2.isValid(widget):
             widget.deleteLater()
     QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+
+
+@pytest.fixture
+def confirmedStartupSettings(monkeypatch):
+    from emo_master.apps.designer.ui.startup_settings_dialog import DesignerStartupSettingsDialog
+
+    def select(dialog):
+        dialog.accept()
+        assert dialog._selection is not None, dialog.errorLabel.text()
+        return dialog._selection
+
+    monkeypatch.setattr(DesignerStartupSettingsDialog, "execSelection", select)

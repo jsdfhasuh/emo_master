@@ -3,9 +3,12 @@ from __future__ import annotations
 
 import math
 import os
+from concurrent.futures import CancelledError
 from queue import SimpleQueue
 from threading import Event
 from time import perf_counter
+
+from emo_master.apps.designer.startup_settings import DesignerStartupOptions
 
 
 class StartupTiming:
@@ -39,34 +42,40 @@ class StartupTiming:
         self.stage = ""
 
 
-def prepareRuntime(timing: StartupTiming, cancelled: Event):
+def prepareRuntime(timing: StartupTiming, cancelled: Event, *, options: DesignerStartupOptions | None = None):
+    if cancelled.is_set():
+        return None
     timing.begin("runtime-imports")
     from emo_master.apps.designer.services.runtime_client import RuntimeClient
 
-    target = os.getenv("EMO_RUNTIME_TARGET", "").strip()
+    if options is None:
+        target = os.getenv("EMO_RUNTIME_TARGET", "").strip()
+    else:
+        target = options.runtimeTarget if options.mode == "remote" else ""
     if target:
-        import grpc
-        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
+        from emo_master.apps.designer.services.runtime_connection import connectCandidate
 
         if cancelled.is_set():
             return None
         timing.begin("runtime-channel")
-        channel = grpc.insecure_channel(target)
         try:
-            return RuntimeClient(
-                runtimeService=runtime_pb2_grpc.RuntimeServiceStub(channel),
-                ownedChannel=channel, runtimeTarget=target,
-            )
-        except BaseException:
-            channel.close()
-            raise
+            return connectCandidate(target, cancelled=cancelled)[0]
+        except CancelledError:
+            return None
 
     from emo_master.apps.runtime.grpc_server.service import RuntimeService
 
     if cancelled.is_set():
         return None
-    service = RuntimeService(startupProgress=timing.begin)
+    if options is None:
+        service = RuntimeService(startupProgress=timing.begin)
+    else:
+        service = RuntimeService(startupProgress=timing.begin, dbPath=options.dbPath,
+                                 workspaceRoot=options.workspaceRoot, logDirectory=options.logDirectory)
     try:
+        if cancelled.is_set():
+            service.close()
+            return None
         timing.begin("runtime-client")
         return RuntimeClient(runtimeService=service, ownedRuntimeService=service)
     except BaseException:

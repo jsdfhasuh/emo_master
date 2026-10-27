@@ -64,21 +64,43 @@ def runDesigner() -> None:
     configureHighDpi()
     from PySide2.QtWidgets import QApplication
     from emo_master.apps.designer.ui.startup_dialog import DesignerStartupDialog
+    from emo_master.apps.designer.ui.startup_settings_dialog import DesignerStartupSettingsDialog
 
     app = QApplication([])
     timing.begin("theme")
     applyDesignerStyle(app)
-    timing.begin("startup-window")
-    startup = DesignerStartupDialog(timing)
+    selection = DesignerStartupSettingsDialog()
+    startup = None
     quitOnClose = app.quitOnLastWindowClosed()
     app.setQuitOnLastWindowClosed(False)
     runtimeClient = None
     window = None
     try:
-        runtimeClient = startup.prepare(lambda cancelled: prepareRuntime(timing, cancelled))
-        timing.finish()
-        if startup.cancelled.is_set():
-            return
+        while True:
+            timing.begin("startup-settings")
+            options = selection.execSelection()
+            timing.finish()
+            if options is None:
+                return
+            timing.begin("startup-window")
+            startup = DesignerStartupDialog(timing)
+            try:
+                runtimeClient = startup.prepare(lambda cancelled: prepareRuntime(timing, cancelled, options=options))
+            except Exception as error:
+                timing.finish("failed")
+                startup.finish()
+                if startup.cancelled.is_set():
+                    return
+                if not _canRetryStartup(error):
+                    raise
+                selection.setStartupError(_startupRetryMessage(error))
+                startup.deleteLater()
+                startup = None
+                continue
+            timing.finish()
+            if startup.cancelled.is_set():
+                return
+            break
 
         def advance(stage):
             timing.begin(stage)
@@ -102,12 +124,21 @@ def runDesigner() -> None:
                     timing.finish()
                     timing.mark("ready")
 
+        startupNotice = ""
+
+        def projectEntry():
+            dialog = TimedProjectEntryDialog(window)
+            if startupNotice:
+                dialog.setStartupNotice(startupNotice)
+            return dialog
+
         if not advance("editor-ui"):
             return
         window = MainWindow(runtimeClient, showStartupEntry=True,
-                            projectEntryDialogFactory=lambda: TimedProjectEntryDialog(window))
+                            projectEntryDialogFactory=projectEntry, settingsStore=selection.preferences)
         if not advance("project-entry"):
             return
+        startupNotice = selection.rememberSuccessful(options)
         startup.finish()
         shouldShow = window.showStartupProjectEntry()
         if not shouldShow:
@@ -117,7 +148,8 @@ def runDesigner() -> None:
         app.exec_()
     except Exception as error:
         timing.finish("failed")
-        startup.finish()
+        if startup is not None:
+            startup.finish()
         _showStartupError(error)
     finally:
         try:
@@ -128,11 +160,30 @@ def runDesigner() -> None:
                 if runtimeClient is not None:
                     runtimeClient.close()
             finally:
-                startup.finish()
+                selection.close()
+                if startup is not None:
+                    startup.finish()
                 app.setQuitOnLastWindowClosed(quitOnClose)
-                if startup.cancelled.is_set():
+                if startup is not None and startup.cancelled.is_set():
                     timing.finish("cancelled")
                     timing.mark("cancelled")
+
+
+def _canRetryStartup(error) -> bool:
+    import sqlite3
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+    from emo_master.apps.runtime.context.runtime_lock import RuntimeDataInUseError
+
+    return isinstance(error, (OSError, sqlite3.Error, RuntimeDataInUseError, RuntimeClientError))
+
+
+def _startupRetryMessage(error) -> str:
+    from emo_master.apps.runtime.context.runtime_lock import RuntimeDataInUseError
+
+    if isinstance(error, RuntimeDataInUseError):
+        return (f"运行目录已被另一个 Designer 或 Runtime 使用：\n{error.directory}\n"
+                "请选择其他目录，或等待原实例正常退出后重试。不要删除锁文件或数据库。")
+    return "启动未完成，可修改设置后重试：\n" + str(error)
 
 
 def _showStartupError(error) -> None:

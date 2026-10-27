@@ -109,6 +109,7 @@ def isolated_environment(root):
         env[key] = str(path)
     env['QT_ACCESSIBILITY'] = '1'
     env['HUARAY_CAMERA_SMOKE'] = '0'
+    env['EMO_DESIGNER_SETTINGS_PATH'] = str(root / 'designer-settings.ini')
     return env
 
 
@@ -172,20 +173,75 @@ class Product:
 
 def window_for(process, title):
     from pywinauto import Desktop
-    matches = Desktop(backend='uia').windows(process=process.pid, title=title, visible_only=True)
-    return matches[0] if matches else None
+    desktop = Desktop(backend='uia')
+    matches = desktop.windows(process=process.pid, title=title, visible_only=True)
+    # windows() returns wrappers; child_window() belongs to WindowSpecification.
+    return desktop.window(handle=matches[0].handle) if matches else None
+
+
+def choose_designer_root(process, directory):
+    settings = wait_for(lambda: window_for(process, 'Designer 启动设置'), process=process)
+    settings.child_window(title='本机运行', control_type='Button').click_input()
+    combo = settings.child_window(title='运行数据目录', control_type='ComboBox')
+    combo.child_window(control_type='Edit').set_edit_text(str(directory))
+    return settings
+
+
+def start_designer_selection(process, settings):
+    settings.child_window(title='启动', control_type='Button').click_input()
+    return wait_for(lambda: window_for(process, '项目入口'), process=process)
+
+
+def close_designer_entry(process, entry):
+    entry.close()
+    require(process.wait(timeout=30) == 0, 'Designer chooser cancellation did not exit cleanly')
+
+
+def busy_designer_settings(process, directory):
+    settings = window_for(process, 'Designer 启动设置')
+    if settings is None:
+        return None
+    texts = '\n'.join(settings.texts() + [item.window_text() for item in settings.descendants()])
+    return settings if '不要删除锁文件' in texts and str(directory) in texts else None
 
 
 def designer(product, report):
-    process = product.start('designer', [])
-    window = wait_for(lambda: window_for(process, '项目入口'), process=process)
-    require(window.is_visible(), 'Designer chooser not visible')
-    capture_window(window, product.output / 'designer-startup.png')
-    # Cancel only this owned chooser. No project or user data is changed.
-    window.close()
-    require(process.wait(timeout=30) == 0, 'Designer startup cancellation did not exit cleanly')
-    report.update(status='PASS', pid=process.pid, window_title='项目入口',
-                  scope='native startup chooser visibility and clean cancellation; main editing not tested')
+    firstRoot, secondRoot = product.output / 'designer-first', product.output / 'designer-second'
+    cancelledRoot = product.output / 'designer-cancelled'
+    cancelled = product.start('designer-cancel', [])
+    chooser = choose_designer_root(cancelled, cancelledRoot)
+    capture_window(chooser, product.output / 'designer-settings.png')
+    chooser.close()
+    require(cancelled.wait(timeout=30) == 0 and not cancelledRoot.exists(),
+            'cancelling settings created a Runtime or did not exit cleanly')
+
+    first = product.start('designer-first', [])
+    firstSettings = choose_designer_root(first, firstRoot)
+    require(not firstRoot.exists(), 'settings selection initialized data before Start')
+    firstEntry = start_designer_selection(first, firstSettings)
+    capture_window(firstEntry, product.output / 'designer-startup.png')
+    second = product.start('designer-second', [])
+    secondSettings = choose_designer_root(second, firstRoot)
+    secondSettings.child_window(title='启动', control_type='Button').click_input()
+    busy = wait_for(lambda: busy_designer_settings(second, firstRoot), process=second)
+    require(first.poll() is None and firstEntry.is_visible(), 'first Designer was disturbed by second startup')
+    capture_window(busy, product.output / 'designer-busy-directory.png')
+    secondEntry = start_designer_selection(second, choose_designer_root(second, secondRoot))
+    require((firstRoot / 'emo_master.db').is_file() and (secondRoot / 'emo_master.db').is_file(),
+            'two Designers did not initialize distinct databases')
+    capture_window(secondEntry, product.output / 'designer-second-startup.png')
+    close_designer_entry(second, secondEntry)
+    require(first.poll() is None and firstEntry.is_visible(), 'closing second Designer stopped the first')
+    close_designer_entry(first, firstEntry)
+
+    reopened = product.start('designer-reopen', [])
+    reopenedEntry = start_designer_selection(reopened, choose_designer_root(reopened, firstRoot))
+    close_designer_entry(reopened, reopenedEntry)
+    report.update(status='PASS', pids=[cancelled.pid, first.pid, second.pid, reopened.pid],
+                  window_title='Designer 启动设置 / 项目入口', data_roots=[str(firstRoot), str(secondRoot)],
+                  scenarios=['settings cancellation', 'independent databases', 'busy root then reselect',
+                             'independent close', 'root reusable after close'],
+                  scope='native packaged startup and multi-instance ownership; main editing not tested')
 
 
 def runtime(product, report):

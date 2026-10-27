@@ -29,7 +29,9 @@ def runtimeConnectionDescription(client):
     if getattr(client, '_closed', False) or service is None:
         return dict(kind='unknown', label='未连接 / 连接类型未知', target='')
     if getattr(client, '_ownedRuntimeService', None) is not None or isinstance(service, RuntimeServiceServicer):
-        return dict(kind='embedded', label='本机内嵌 Runtime（随程序启动）', target='')
+        root = getattr(service, 'workspaceRoot', None)
+        directory = str(root.parent) if root is not None else ''
+        return dict(kind='embedded', label='本机内嵌 Runtime（随程序启动）' + (' · ' + directory if directory else ''), target='')
     if getattr(client, '_ownedChannel', None) is not None or isinstance(service, RuntimeServiceStub):
         target = getattr(client, '_runtimeTarget', '')
         return dict(kind='grpc', label='独立 Runtime（gRPC）' + (' · ' + target if target else ' · 地址不可用'), target=target)
@@ -1331,7 +1333,7 @@ class RuntimeClient:
 
     def _callPresentation(self, methodName: str, request):
         if self._displayService is None:
-            raise RuntimeClientError("UNIMPLEMENTED", "当前 Runtime 尚无页面服务；请先明确运行工程")
+            raise RuntimeClientError("UNIMPLEMENTED", "页面结果服务未启用；请在运行面板确认流程状态")
         method = getattr(self._displayService, methodName)
         try:
             return method(request, timeout=self.deadlineMs / 1000.0)

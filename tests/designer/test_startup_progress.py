@@ -118,7 +118,7 @@ def test_prepare_failure_returns_to_gui_thread_and_finishes_worker():
         dialog.finish()
 
 
-def test_cancelled_bootstrap_closes_prepared_client_without_building_editor(monkeypatch, designerApplication):
+def test_cancelled_bootstrap_closes_prepared_client_without_building_editor(monkeypatch, designerApplication, confirmedStartupSettings):
     from PySide2 import QtWidgets
     from emo_master.apps.designer.ui import main_window
 
@@ -127,7 +127,8 @@ def test_cancelled_bootstrap_closes_prepared_client_without_building_editor(monk
     client = SimpleNamespace(close=lambda: closed.append("client"))
     originalQuit = designerApplication.quitOnLastWindowClosed()
 
-    def prepare(_timing, cancelled):
+    def prepare(_timing, cancelled, *, options):
+        assert options.mode == "local"
         started.set()
         assert release.wait(3)
         assert cancelled.is_set()
@@ -158,15 +159,15 @@ def test_cancelled_bootstrap_closes_prepared_client_without_building_editor(monk
     assert designerApplication.quitOnLastWindowClosed() is originalQuit
 
 
-def test_bootstrap_error_is_visible_and_restores_quit_policy(monkeypatch, designerApplication, capsys):
+def test_bootstrap_error_is_visible_and_restores_quit_policy(monkeypatch, designerApplication, capsys, confirmedStartupSettings):
     from PySide2 import QtWidgets
 
     originalQuit = designerApplication.quitOnLastWindowClosed()
     messages = []
 
-    def fail(timing, _cancelled):
+    def fail(timing, _cancelled, *, options):
         timing.begin("runtime-plugins")
-        raise OSError("startup test failure")
+        raise RuntimeError("startup test failure")
 
     monkeypatch.setattr(QtWidgets, "QApplication", lambda _: designerApplication)
     monkeypatch.setattr(startup, "prepareRuntime", fail)
@@ -187,13 +188,33 @@ import sys
 from pathlib import Path
 from emo_master.apps.designer import main, startup
 from emo_master.apps.designer.ui.startup_dialog import DesignerStartupDialog
+from emo_master.apps.designer.ui.startup_settings_dialog import DesignerStartupSettingsDialog
 from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
 from PySide2 import QtCore
 
 assert 'emo_master.apps.runtime.grpc_server.service' not in sys.modules
 assert 'emo_master.apps.designer.ui.main_window' not in sys.modules
 settingsType = QtCore.QSettings
-QtCore.QSettings = lambda *_: settingsType(str(Path(sys.argv[1])/'designer.ini'), settingsType.IniFormat)
+def isolated_settings(*_):
+    return settingsType(str(Path(sys.argv[1])/'designer.ini'), settingsType.IniFormat)
+isolated_settings.NoError = settingsType.NoError
+QtCore.QSettings = isolated_settings
+import emo_master.apps.designer.ui.startup_settings_dialog as settingsDialog
+settingsDialog.QSettings = QtCore.QSettings
+originalSettingsExec = DesignerStartupSettingsDialog.execSelection
+originalSettingsPaint = DesignerStartupSettingsDialog.paintEvent
+def settings_paint(self, event):
+    assert 'emo_master.apps.runtime.grpc_server.service' not in sys.modules
+    assert 'emo_master.apps.designer.ui.main_window' not in sys.modules
+    print('SETTINGS_PAINT_BEFORE_HEAVY_IMPORTS', flush=True)
+    originalSettingsPaint(self, event)
+DesignerStartupSettingsDialog.paintEvent = settings_paint
+def select_settings(self):
+    assert 'emo_master.apps.runtime.grpc_server.service' not in sys.modules
+    assert 'emo_master.apps.designer.ui.main_window' not in sys.modules
+    QtCore.QTimer.singleShot(50, self.accept)
+    return originalSettingsExec(self)
+DesignerStartupSettingsDialog.execSelection = select_settings
 originalPaint = DesignerStartupDialog.paintEvent
 def paint(self, event):
     if not self._painted:
@@ -234,6 +255,7 @@ print('STARTUP_CLEANLY_CLOSED', flush=True)
                             env=environment, capture_output=True, text=True, encoding="utf-8", timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "PAINT_BEFORE_HEAVY_IMPORTS" in result.stdout
+    assert "SETTINGS_PAINT_BEFORE_HEAVY_IMPORTS" in result.stdout
     assert "runtime-online-configuration done" in result.stdout
     assert "STARTUP_CLEANLY_CLOSED" in result.stdout
     assert result.stdout.count("[designer:start] ready total=") == 1

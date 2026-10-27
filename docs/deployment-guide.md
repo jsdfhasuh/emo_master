@@ -11,9 +11,9 @@
 | 场景 | 当前方式 | 边界 |
 | --- | --- | --- |
 | 开发、修改和调试 | Python 3.10 源码环境，启动 Designer 或独立 Runtime | 需要依赖与 `src` 路径配置 |
-| 单机交付 | 完整便携 ZIP 或当前用户安装包；无参数启动 `EmoMaster.exe` | 默认 Designer + 内嵌 Runtime |
+| 单机交付 | 完整便携 ZIP 或当前用户安装包；无参数启动 `EmoMaster.exe` | Designer 启动设置选择本机目录或外部 Runtime；新增源码尚未据此重建 EXE |
 | 独立操作员运行 | 源码 `start_runtime.cmd` / `scripts/run_operator.py`；对应冻结目标 `EmoMasterRuntime.exe` | 工程加载/自动开始和工具页见[独立 Runtime](operator-runtime.md)，本轮未重建 EXE |
-| 同机分离验证 | 源码启动 Runtime；Designer 设置 `EMO_RUNTIME_TARGET` 连接 | 默认 `127.0.0.1:50051`，详细双终端步骤见开发指南 |
+| 同机分离验证 | 源码启动 Runtime；Designer 启动设置选择外部连接，或用 `EMO_RUNTIME_TARGET` 预填 | 默认 `127.0.0.1:50051`，详细双终端步骤见开发指南 |
 | 跨机、后台常驻、开机自动检测 | 不作为本版可直接照抄的部署流程 | 操作员窗口不是 Windows 服务或开机自启安装器；外部服务仍需独立部署验收 |
 
 Windows 产品入口 `src/emo_master/apps/windows_entry.py` 无参数启动 Designer，支持 `--self-test` 与生产 `--run-project` 分支；旧 `--runtime` / `--operator-view` 是受限测试宿主/查看器，不能当作生产操作员入口。独立操作员已支持记忆工程、在线版本恢复和 `production.autoStart`，不等于已交付后台服务、开机自启或跨机安全部署。
@@ -28,6 +28,8 @@ Windows 产品入口 `src/emo_master/apps/windows_entry.py` 无参数启动 Desi
 
 默认启动 Designer 后先打开项目、核对路径和设备参数，再进行离线验证。只有确认安全条件后才连接相机、执行 PLC 写入或联动设备。新版本上线前保留旧程序和数据备份，异常时先停止任务再回退。
 
+2026-10-27 启动设置源码变更：每次打开 Designer 先选择“本机运行”或“连接外部 Runtime”，初始化成功后进入原项目入口。双开时为两个本机实例选择不同运行目录；连接同一个外部 Runtime 则共享其配置与任务。目录占用可直接重选，不需要删除锁或数据库。本轮不构建、不发布，已安装旧 EXE 不会因源码修改自动获得此功能。
+
 ## 3. 数据目录、备份与回退
 
 ### 独立操作员入口
@@ -41,6 +43,10 @@ Windows 产品入口 `src/emo_master/apps/windows_entry.py` 无参数启动 Desi
 ### 底层 RuntimeService / Designer 内嵌及外部服务
 
 以下规则不是独立操作员默认值：未覆盖配置的底层服务使用 `~/.emo_master/runtime/emo_master.db`，Windows 通常位于 `%USERPROFILE%\.emo_master\runtime\emo_master.db`。Job workspace 使用底层服务自己的目录规则，不在安装目录；本次未批量修改这些默认位置。
+
+Designer 启动界面优先按环境配置预填，其次读取 `QSettings("emo_master", "designer")` 下的 `startup/` 成功记录，最后沿用上述默认值。手动选择本机目录后，以显式参数统一指定该目录下的 `emo_master.db`、`jobs/`、`logs/`，本次不再沿用其他数据库或日志环境覆盖。未改目录时保留并显示原覆盖路径。设置按本机保存，不写入工程，不搬迁历史数据；选择或连接失败不会覆盖上次成功记录。
+
+自动化/冻结验收可用 `EMO_DESIGNER_SETTINGS_PATH` 指定临时 INI，启动设置和后续 Designer 共用该文件，不读写用户注册表偏好；这不会跳过启动选择或改变 Runtime 路径。冻结验收脚本已适配启动设置、双开、占用后重选、独立关闭及目录重用。本轮仅进行源码/脚本测试，真实 EXE 与安装器验收仍需使用新构建单独执行。
 
 | 配置 | 含义与优先级 |
 | --- | --- |

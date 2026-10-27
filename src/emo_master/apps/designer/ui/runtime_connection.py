@@ -5,17 +5,9 @@ from PySide2.QtCore import Qt, QTimer
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QFormLayout, QLineEdit, QLabel, QDialogButtonBox, QGroupBox, QMessageBox
 
 from emo_master.apps.designer.services.runtime_client import runtimeConnectionDescription
-
-
-def readCurrentConnection(client):
-    info = client.deviceNetworkCommand('', '', 'info')
-    snapshot, versionError = None, ''
-    if info['projectId']:
-        try:
-            snapshot = client.getOnlineProjectSnapshot()
-        except Exception as error:
-            versionError = str(error)
-    return info, snapshot, versionError
+from emo_master.apps.designer.services.runtime_connection import (
+    connectCandidate, readCurrentConnection, validateRuntimeTarget,
+)
 
 
 def discardCandidate(future):
@@ -25,22 +17,6 @@ def discardCandidate(future):
             future.result()[0].close()
         except Exception:
             pass  # connectCandidate already closes failed probes
-
-
-def connectCandidate(target):
-    import grpc
-    from emo_master.apps.runtime.grpc_server.generated.runtime_pb2_grpc import RuntimeServiceStub
-    from emo_master.apps.designer.services.runtime_client import RuntimeClient
-    channel = grpc.insecure_channel(target)
-    client = RuntimeClient(RuntimeServiceStub(channel), ownedChannel=channel, runtimeTarget=target, deadlineMs=5000)
-    try:
-        info = client.deviceNetworkCommand('', '', 'info')
-        snapshot = client.getOnlineProjectSnapshot() if info['projectId'] else None
-        types, _requirements, _rejected = client.listDeviceTypes()
-        return client, info, snapshot, types
-    except BaseException:
-        client.close()
-        raise
 
 
 class RuntimeConnectionDialog(QDialog):
@@ -145,15 +121,10 @@ class RuntimeConnectionDialog(QDialog):
             except (ValueError, RuntimeError) as error:
                 self._error('切换 Runtime 未完成', '原连接未改变：' + str(error), error)
             return
-        target = self.target.text().strip()
-        from urllib.parse import urlsplit
         try:
-            address = urlsplit('//' + target)
-            valid = bool(address.hostname and address.port and not address.path and not address.username and not address.password)
-        except ValueError:
-            valid = False
-        if not valid:
-            self._error('候选地址不正确', '请输入独立 Runtime 的主机:端口，例如 主机名:端口。当前连接未改变；不切换可点取消。')
+            target = validateRuntimeTarget(self.target.text())
+        except ValueError as error:
+            self._error('候选地址不正确', str(error) + '当前连接未改变；不切换可点取消。')
             return
         self.target.setEnabled(False)
         self.buttons.button(QDialogButtonBox.Ok).setEnabled(False)

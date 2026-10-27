@@ -107,6 +107,8 @@ QDockWidget#runtimeLogDock::title { background: #f5f6f8; padding: 7px 10px; bord
 QTextEdit#runtimeLogDetails { background: #fafbfc; color: #374151; }
 QLabel#startupHeroTitle { font-size: 16pt; font-weight: 600; }
 QLabel#startupHeroSubtitle { color: #626b78; }
+QLabel#startupSettingsError { color: #b42318; }
+QPlainTextEdit#startupPaths { background: transparent; color: #626b78; border: none; padding: 0; }
 QWidget#startupHeroSection, QWidget#startupActionSection, QWidget#startupRecentSection { background: transparent; border: none; }
 QListWidget#recentProjectsList::item { padding: 10px 12px; border-bottom: 1px solid #edf0f4; }
 QPushButton#operatorBubbleItem, QPushButton#operatorBubbleItemPre,

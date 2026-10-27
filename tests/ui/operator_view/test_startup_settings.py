@@ -172,6 +172,28 @@ def testFailedInitializationKeepsToolsAndCanRetrySameTarget(qtApp, tmp_path, fai
     waitFor(lambda: {thread.ident for thread in threading.enumerate() if thread.name.startswith(("runtime-", "display-"))}.issubset(before))
 
 
+def testFailedInitializationDiagnosticsDoNotWaitForLogReader(qtApp, tmp_path):
+    target = tmp_path / "target"
+    (target / "runtime.sqlite3").mkdir(parents=True)
+    window = OperatorWindow(dataRoot=target, preferences=preferences(tmp_path))
+    try:
+        # Initialize while hidden so no asynchronous file refresh can render diagnostics.
+        waitFor(lambda: window.initializationFailed and not window.busy)
+        assert window.controller is None
+        assert not window.logFeed.visible and window.logFeed.worker is None
+        assert not window.logFeed.records
+        text = window.logView.diagnostics.toPlainText()
+        assert window.error in text
+        assert "未写入日志文件" in text
+        window.show()
+        window.showLogs()
+        assert window.contentStack.currentWidget() is window.logView
+        assert window.logView.diagnostics.toPlainText() == text
+        assert window.logView.diagnostics.isVisible()
+    finally:
+        closeWindow(window)
+
+
 def testStorageDisplaysOwnersNotDraftAndUnusedEnvironmentValues(qtApp, tmp_path):
     resolution = resolveDataRoot(tmp_path / "effective", environment={"EMO_RUNTIME_LOG_DIR": "ignored"})
     panel = StorageSettings(preferences(tmp_path), resolution)

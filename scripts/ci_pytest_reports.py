@@ -7,6 +7,7 @@ class FailureReports:
         self.path = path.resolve()
 
     def pytest_sessionstart(self, session):
+        self.terminalWriter = session.config.get_terminal_writer()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text("", encoding="utf-8")
 
@@ -19,7 +20,7 @@ class FailureReports:
         detail = "\n".join(lines) + "\n"
         with self.path.open("a", encoding="utf-8") as stream:
             stream.write(detail)
-        print("\n" + detail, flush=True)
+        self.terminalWriter.write("\n" + detail, flush=True)
 
 
 def pytest_configure(config):

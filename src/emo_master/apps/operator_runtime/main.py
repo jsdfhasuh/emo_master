@@ -154,6 +154,7 @@ class OperatorWindow(QWidget):
             + ("（已提交 writer；落盘以实际文件为准）" if accepted and writer and writer.enabled and not writer.failureMessage
                else "（未写入日志文件 / writer 未确认写入）")
             for event, accepted in self.startupDiagnostics]
+        self.logFeed.updated.emit()
 
     def _runtimeReady(self):
         self.logFeed.setSource(self.controller)

@@ -614,3 +614,61 @@ The CI/reporter regression passed **8 tests in 0.88 s** with the real reporter
 plugin enabled. Ruff, Mypy (**560 source files**) and protobuf drift checks
 passed. The local display was not reconfigured; `Set-DisplayResolution` runs
 only on GitHub's disposable Windows runner and still requires remote validation.
+
+## Startup Diagnostics and Windows Failure Reporter
+
+This follow-up starts from `462f9bea19ac67a26031066aadc898e6c0cc2e6a`.
+Both Windows jobs passed the desktop configuration and actual native Qt geometry
+checks. Both Ubuntu jobs passed in branch run
+[40477322086](https://github.com/jsdfhasuh/emo_master/actions/runs/40477322086)
+and PR run [40477332211](https://github.com/jsdfhasuh/emo_master/actions/runs/40477332211):
+each downloaded JUnit contains **8328 records, zero failures/errors, 31 skips**.
+Frozen run [40477333331](https://github.com/jsdfhasuh/emo_master/actions/runs/40477333331)
+also passed. Its downloaded `frozen-462f9bea-evidence/frozen-validation.json`
+matches that exact SHA and confirms icons, Designer startup and multi-instance
+ownership, the frozen Runtime Job and native OperatorView, explicit stop,
+worker retirement and reacquirable locks, without forced cleanup. As before,
+the installer was only hash-verified, and no physical-device or field acceptance
+is implied. These results do not validate the subsequent source change.
+
+The branch Windows job failed after **1 failed, 7959 passed, 5 skipped and
+42 subtests passed in 2286.97 s**. JUnit has **8008 records, 1 failure and
+1 internal error**; the suite did not finish. The original full log, JUnit and
+UTF-8 failure artifact remain under `windows-462f9bea-branch-full.log` and
+`ci-462f9bea-branch-results/` in the ignored evidence directory.
+
+- `testFailedInitializationKeepsToolsAndCanRetrySameTarget[database]` found an
+  empty startup-diagnostic view. The Runtime window updated its in-memory
+  diagnostics but never emitted the existing log-feed update signal. Rendering
+  therefore depended on an unrelated asynchronous log-file read completing.
+  A new deterministic regression initializes against the same database path
+  collision while the window is hidden, verifies no file reader has run, and
+  requires the error text to be ready before opening the log tool. It reproduced
+  the empty view before the fix. The local fix emits the existing update signal;
+  it does not add sleeps, alter retries or weaken the original assertion.
+- The immediate reporter added in `462f9bea` successfully saved that original
+  failure as UTF-8, then its plain `print()` raised `UnicodeEncodeError` on the
+  Windows CP1252 console. That reporter bug, not another product test, caused
+  pytest's internal error and prevented the remaining suite from running.
+  The reporter now uses pytest's existing terminal writer, which escapes text
+  unsupported by the console, while preserving the original UTF-8 artifact.
+  Real subprocess regressions exercise both strict CP1252 and UTF-8, retain
+  failure exit code 1, verify the next test executes, and preserve full Chinese
+  assertion, setup-error and captured-output evidence even after cwd changes.
+
+The combined new regressions produced **2 failed, 2 passed in 3.03 s** before
+the fixes and **4 passed in 2.71 s** afterward with the actual reporter plugin
+enabled. Evidence is retained as `windows-diagnostics-reporter-before.{log,xml}`
+and `windows-diagnostics-reporter-focused.{log,xml}`. Historical Windows
+late-session-close and retained-native-owner failures remain open: the branch
+run stopped before reaching them, so this interrupted run cannot resolve them.
+
+The related native Windows regression passed **95 tests in 134.84 s**, with
+no skips: all OperatorView/window tests, Runtime settings and log-reader tests,
+CI command/reporter tests and Runtime validation guards. This includes reading
+state preservation, failed initialization and same-target retry, tool navigation,
+parallel workflow ownership and shutdown. The actual reporter was enabled;
+logs and JUnit are retained as `windows-diagnostics-reporter-regression.{log,xml}`.
+Ruff, Mypy (**560 source files**) and protobuf drift checks passed. No field
+project, credential or real device was accessed. New full-suite head/PR results
+and fresh frozen acceptance remain required before merging PR #3.

@@ -173,3 +173,42 @@ shown in the table and a fresh temporary directory for each run.
   branch, without a tag, release, force push or merge into main.
 - Remote CI must be checked against the actual pushed SHA. Local results do not
   establish a successful remote CI run.
+
+## Ubuntu CI Collection Follow-Up
+
+The Ubuntu job for delivered SHA
+`1ca69d3697c54a300237a81eca55fe15cf05bdf6` failed during pytest collection,
+after dependency installation, protobuf validation, Ruff and Mypy had passed.
+Run: [40443182615, Ubuntu job 121988098759](https://github.com/jsdfhasuh/emo_master/actions/runs/40443182615/job/121988098759).
+It collected 7910 items before stopping with one `import file mismatch` error.
+
+The new `tests/designer/test_startup_settings.py` collided with the existing
+`tests/ui/operator_view/test_startup_settings.py` under pytest's default import
+mode. Collecting those two files together reproduced the same error locally on
+Windows, so this is not an Ubuntu dependency or operating-system-only failure.
+The previous targeted delivery batch did not include the operator-view file and
+therefore missed this collection interaction.
+
+The fix renames only the new Designer module to
+`tests/designer/test_designer_startup_settings.py`. Git recognizes a 100% rename:
+test content and assertions are unchanged. No test is removed or skipped, and
+neither the global pytest import mode nor product code is changed. Historical
+pre-rename paths in earlier reports remain evidence of their original commands.
+
+Follow-up verification on Windows, Python 3.10.21 and offscreen Qt:
+
+- Before rename: the two-file collection reproduced one import mismatch.
+- After rename: both modules executed together, **32 passed in 7.73 s**.
+- All **619 tracked public test modules** collected successfully:
+  **8241 tests collected in 64.22 s**, no collection errors. This uses tracked
+  files matching pytest's `test_*.py` / `*_test.py` patterns and excludes local
+  ignored/private tests and unrelated new untracked files.
+- Ruff passed for both startup-setting test modules; staged whitespace checks
+  passed. The 8241 tests were collected, not all executed in this follow-up.
+
+Raw remote failure output and local before/after evidence are retained under
+`build/ubuntu-ci-20261027/`: `ubuntu-1ca69d36.log`, `collection-before.log`,
+`startup-pair.log/xml` and `collection-all-tracked.log`. The original remote
+failure and the earlier native-hover uncertainty are not relabeled as passes.
+A new push reruns CI on the corrected commit; collection success locally does
+not establish full Ubuntu or Windows CI success.

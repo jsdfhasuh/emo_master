@@ -475,3 +475,85 @@ artifact, credential, stash or local history bundle is added to the delivery.
 No real camera/PLC, frozen EXE, full-suite run, deployment or user-process
 restart was performed for this local delivery. PR #3 remains subject to full
 CI and frozen-package acceptance on the updated commit before merging.
+
+## Complete-Suite and Native Windows Follow-Up
+
+The next independent change, `c745d97cd5a9ddec872c0ac58e52ab5aa03357f7`,
+only advances the application version from 0.6.3 to 0.6.4. This follow-up is
+based on that commit and preserves it.
+
+### Verified Frozen Acceptance
+
+Frozen runs [40465969703](https://github.com/jsdfhasuh/emo_master/actions/runs/40465969703)
+on `eb17b77d` and
+[40466371782](https://github.com/jsdfhasuh/emo_master/actions/runs/40466371782)
+on `c745d97c` both built and passed actual packaged validation. Downloaded
+reports confirm icons, Designer startup and Runtime **PASS**, with no forced
+process cleanup. Designer scenarios include cancellation, independent data
+directories, an occupied directory followed by reselection, independent close
+and directory reuse. Runtime validation confirms the frozen worker executes a
+Job, the native OperatorView connects, closing it preserves Runtime, explicit
+stop retires the worker and directory locks can be reacquired.
+
+These checks do not cover physical cameras, GPU, Designer main editing,
+OperatorView image pixel fidelity or field acceptance. The installer was
+hash-verified, not executed. Evidence is retained in `frozen-eb17b77d-evidence/`
+and `frozen-c745d97c-evidence/` under the existing local CI evidence directory.
+
+### Remaining Full-Suite Failures
+
+The completed Ubuntu job in PR run
+[40462529481](https://github.com/jsdfhasuh/emo_master/actions/runs/40462529481)
+on `a4c243f8` reported **4 failed, 8208 passed, 31 skipped, 42 subtests passed**
+in 1842.92 s. The later `7a296c92` PR run `40462718941` repeated three failures;
+the RTSP timing case did not fail in that run. The matching four tests on the
+current local source reproduced **3 failed, 1 passed in 7.60 s** before edits.
+
+- PLC migration lost its warning about removed node-level retries when RTSP
+  migration was added. Restore it specifically for SLMP, distinguish device
+  connection recovery from replaying business reads/writes, and retain the
+  original warning assertion with additional checks for that distinction.
+- The log view intentionally gained workflow and node names before its message
+  column in `64c334fc`. Update the stale ordinal assertion to check the actual
+  five leading columns while retaining the initial 200-pixel visibility guard.
+- Five newer operators declare `minCoreVersion=0.6.1` but were missing from the
+  old-core rejection fixture. Add those exact IDs; preserve the exact rejection
+  set, rejection codes and current-core acceptance assertions. No version gate
+  or plugin implementation is relaxed.
+- A fake decoder's release event is emitted before its reader thread returns.
+  The spawned RTSP stop test now also waits for actual reader ownership to end,
+  keeping its final frame, reservation and resource-release assertions. A new
+  deterministic test holds the release callback after the event and verifies
+  ownership stays true until close can join the reader. The driver is unchanged.
+
+The Windows job of `40462718941` reached the Dispatch page tests and then exited
+with access violation `3221225477` while opening the run-failure QMessageBox
+during stop cleanup. No JUnit file was produced. A separate minimal local
+QMessageBox probe, without Runtime or devices, reproduced the same access
+violation under Windows offscreen QPA; identical code rendered and closed under
+native Windows QPA. Windows CI now selects `windows`, while Ubuntu keeps
+`offscreen`. No tests are deselected and timeouts/failure exit handling remain
+unchanged; existing native-only dialog tests become executable on Windows CI.
+The CI command regression verifies an explicitly selected backend is preserved.
+
+Validation of the combined follow-up on Windows/Python 3.10.21:
+
+- Four affected cases plus the new reader-ownership case: **5 passed in 7.75 s**.
+- Related native GUI, RTSP/SLMP, SQLite writer and plugin regression:
+  **473 passed, 1 skipped in 127.40 s**. The skip is the existing icon-resource
+  symlink test because local symlink creation is unavailable, not a pass.
+- Native Dispatch/normal viewing, failure/resource/connection dialogs, editing
+  feedback and CI guards: **160 passed in 95.20 s**, no skips.
+- Ruff, Mypy (**560 source files**) and protobuf drift checks passed.
+
+Original logs/JUnit and new local logs remain under
+`build/ci-followup-40444071101/`, including `ubuntu-a4c243f8-pr-full.log`,
+`ubuntu-a4c243f8-pr-results/`, `ci-7a296c92-pr-results/`,
+`windows-7a296c92-pr-full.log`, `full-suite-followup-before.log`,
+`full-suite-followup-focused.log`, `full-suite-followup-regression-native.log`,
+`full-suite-followup-skip-detail.log`, `windows-offscreen-messagebox-probe.log`,
+`windows-native-messagebox-probe.log` and
+`windows-native-dialog-dispatch-regression.log`. Prior failures remain evidence;
+the new pushed SHA still requires full head/merge-candidate CI and fresh frozen
+acceptance. No merge, branch deletion, release publication or real-device
+operation was performed during this follow-up.

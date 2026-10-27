@@ -944,6 +944,8 @@ class DeviceNodeDialog(QDialog):
                 lines += [f"{key}: {safeOld.get(key, '(默认)')} -> {value}" for key, value in safeConnection.items()]
                 if moved:
                     lines += ["", "以下资源/现场绑定将移到共享设备属性，影响所有使用该设备的节点：", *moved]
+                if selected["deviceTypeId"] == "device.plc.mitsubishi_slmp":
+                    lines += ["", "旧节点的自动重试取消；连接恢复由设备策略控制，业务读写不自动重放。"]
                 if selected["deviceTypeId"] == "device.camera.huaray_imv":
                     lines += ['自动重试取消。']
                     lines += ["", "旧 keep 表示保留设备当前值，不等于固定默认值。共享设备可能受其他节点覆写影响。",

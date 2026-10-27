@@ -18,7 +18,8 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         python-version: ["3.10"]
     env:
-      QT_QPA_PLATFORM: offscreen
+      # Windows offscreen QPA crashes while rendering QMessageBox.
+      QT_QPA_PLATFORM: ${{ matrix.os == 'windows-latest' && 'windows' || 'offscreen' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

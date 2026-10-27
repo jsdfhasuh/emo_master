@@ -166,6 +166,29 @@ def testCancellationBeforeOpenDoesNotCreateDecoder(driver):
     assert not native.calls
 
 
+def testReleaseSignalDoesNotRetireReaderOwnershipBeforeReturn(driver, monkeypatch):
+    d, native = driver
+    finishRelease = Event()
+    originalRelease = native.release
+
+    def heldRelease():
+        originalRelease()
+        assert finishRelease.wait(2)
+
+    monkeypatch.setattr(native, 'release', heldRelease)
+    d.connect({}, lambda: False, monotonic() + 1)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        closing = pool.submit(d.close, monotonic() + 2)
+        try:
+            assert native.released.wait(1)
+            assert d.snapshot()['ownsResources']
+            assert not closing.done()
+        finally:
+            finishRelease.set()
+        closing.result(2)
+    assert not d.snapshot()['ownsResources']
+
+
 def testCancelledOpenReleasesAfterNativeOpenReturns(monkeypatch):
     native = FakeCapture()
     entered, releaseOpen, cancel = Event(), Event(), Event()
@@ -471,6 +494,7 @@ def testSpawnedWhileReusesConnectionBeyondFrameCapacityAndStops(tmp_path, monkey
         assert (record.status, record.errorCode) in {
             ('ABORTED', 'E_CANCELLED'), ('FAILED', 'E_DEVICE_CANCELLED'), ('FAILED', 'E_DEVICE_OUTCOME_UNKNOWN')}, record
         waitFor(lambda: native.released.is_set())
+        waitFor(lambda: not driver.snapshot()['ownsResources'])
         assert not service.deviceManager.frames.frames and not service.deviceManager.frames.reservations
         assert not driver.snapshot()['ownsResources']
     finally:

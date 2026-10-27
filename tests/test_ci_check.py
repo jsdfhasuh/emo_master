@@ -1,3 +1,5 @@
+import pytest
+
 from scripts import ci_check
 
 
@@ -34,3 +36,13 @@ def testCiPreservesFailedPytestExitCodeAfterAllChecks(monkeypatch):
     monkeypatch.setattr(ci_check, "runStep", failPytest)
     assert ci_check.main() == 1
     assert calls == ["proto-drift", "ruff", "mypy", "pytest"]
+
+
+@pytest.mark.parametrize("platform", ["windows", "offscreen"])
+def testCiPreservesSelectedQtPlatform(monkeypatch, platform):
+    monkeypatch.setenv("QT_QPA_PLATFORM", platform)
+    platforms = []
+    monkeypatch.setattr(ci_check, "runStep", lambda *_:
+        platforms.append(ci_check.os.environ["QT_QPA_PLATFORM"]) or 0)
+    assert ci_check.main() == 0
+    assert platforms == [platform] * 4

@@ -331,7 +331,7 @@ def testLogMessageAppearsInInitialViewport(styledApp):
         view.show()
         styledApp.processEvents()
         header = view.table.horizontalHeader()
-        assert header.visualIndex(9) == 3
+        assert [header.logicalIndex(index) for index in range(5)] == [0, 1, 4, 5, 9]
         assert header.sectionViewportPosition(9) < view.table.viewport().width() - 200
     finally:
         view.close()

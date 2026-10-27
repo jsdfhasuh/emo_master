@@ -105,6 +105,8 @@ def testBuiltinSqlitePreservesActualCoreCapabilityGate():
         "vision.math.exact_integer", "vision.math.truncate", "vision.collection.number_pair",
         "communication.coordinate_message_format", "communication.tcp.session", "communication.tcp.session_send",
         "vision.io.simulated_camera",
+        "vision.io.rtsp_capture", "vision.inference.yolo_classification",
+        "vision.math.integer_add", "vision.math.percentage", "vision.state.elapsed_time",
     }
     managedOperators = {
         "vision.io.huaray_camera", "communication.plc.slmp_read", "communication.plc.slmp_write",

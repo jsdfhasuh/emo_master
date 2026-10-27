@@ -78,5 +78,7 @@ def testLegacyPlcWizardShowsActionOnlyAndRequiresExplicitMigration(ownedDesigner
     assert "host" not in node.params and "retryCount" not in node.params
     assert node.params["startAddress"] == 800
     assert "自动重试取消" in prompts[0]
+    assert "连接恢复由设备策略控制" in prompts[0]
+    assert "业务读写不自动重放" in prompts[0]
     c.history()
     assert c.session.payload() == before

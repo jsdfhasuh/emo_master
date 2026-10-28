@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WindowsPerformanceRecorder Version="1.0">
+  <Profiles>
+    <SystemCollector Id="A18Collector" Name="EmoA18ThreadCreation">
+      <BufferSize Value="64" />
+      <Buffers Value="512" PercentageOfTotalMemory="false" />
+    </SystemCollector>
+    <SystemProvider Id="A18System">
+      <Keywords>
+        <Keyword Value="ProcessThread" />
+        <Keyword Value="Loader" />
+      </Keywords>
+      <Stacks>
+        <Stack Value="ThreadCreate" />
+      </Stacks>
+    </SystemProvider>
+    <Profile Id="A18Creation.Light.Memory" Name="A18Creation"
+             Description="Diagnostic thread creation stacks around one A18 call"
+             DetailLevel="Light" LoggingMode="Memory">
+      <Collectors>
+        <SystemCollectorId Value="A18Collector">
+          <SystemProviderId Value="A18System" />
+        </SystemCollectorId>
+      </Collectors>
+    </Profile>
+  </Profiles>
+</WindowsPerformanceRecorder>

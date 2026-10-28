@@ -26,6 +26,11 @@ def main() -> int:
       "--timeout-method=thread", "-o", "faulthandler_timeout=60"], "pytest")
   ]
 
+  if os.environ.get("EMO_A18_CREATION_TRACE") == "1":
+    # Scope the temporary observer to this pytest process, not nested pytest
+    # subprocesses through an inherited PYTEST_ADDOPTS environment variable.
+    steps[-1][0].extend(["-p", "scripts.r3_a18_creation_trace"])
+
   for command, name in steps:
     code = runStep(command, name)
     if code != 0:

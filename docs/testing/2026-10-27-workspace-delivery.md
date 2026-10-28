@@ -981,3 +981,47 @@ New private evidence: `52fb7fd-windows-failure-evidence-0728.json`,
 `windows-pr-52fb7fd-full.log`, `ci-52fb7fd-pr-results/`, and
 `multiscope-export-owner-native-combination-0733.{log,xml,json}`. PR #6 remains
 a diagnostic draft rather than a claimed product correction.
+
+### 2026-10-28: native-owner recurrence and bounded creation-stack capture
+
+Full CI 40651063012 at diagnostic source
+`3ab56134d97d72392bfdce562820d0fadfbbe480` (candidate
+`9efccd3889a0f56210bbccb9ac94a1345df5212c`) passed Ubuntu with 8289 passed,
+31 existing skips and 42 passing subtests. Windows job 122690969789 failed
+only the native-owner test: 8314 passed, one failed, five existing skips and
+42 passing subtests. Both JUnit reports contain 8362 tests and no errors.
+Windows navigation index 99 observed handles 21683 -> 21687 and native
+threads 43 -> 44, with Python threads 45, widgets 296 and windows 4 unchanged.
+The post-cleanup query found new thread 7196 at ntdll.dll + 0x845d0. This
+again identifies an entry module, not the creator or reason for retention.
+The two-scope image test passed in 5.156 s; no new failed export timeline was
+captured. Neither intermittent cause is established as fixed.
+
+PR6 now temporarily enables WPR only around the original native-owner test
+call in its normal Windows full-suite order. A 32 MiB memory profile records
+process/thread and loader events with ThreadCreate stacks; there is no file,
+network or sampling provider. A separate short smoke capture verifies WPR
+start/stop before spending time on the full run. Each capture owns a fresh
+named instance; stop/cancel always specifies that name. The artifact includes
+the original ETL, command outcomes, target PID and wall/monotonic boundaries.
+Original assertions, 1000 navigations, 30 floating cycles, timeout and exit
+status are preserved. A failed capture cannot turn a failing test green, and
+an otherwise successful suite with invalid capture is reported as invalid.
+The observer changes timing and is diagnostic only; lost events, missing
+stacks or a passing instrumented run cannot establish a fix. It is enabled
+only for this investigation PR on Windows Actions, not local/native release
+acceptance. Remove these temporary CI hooks and reassess the bounded
+two-scope workflow before final acceptance and delivery.
+
+Private original logs, JUnit and immediate failure output are retained as
+`windows-pr-3ab56134-full.log`, `ci-3ab56134-pr-results/`, and
+`3ab56134-windows-failure-evidence-0840.json`. No product change, merge,
+release or branch cleanup accompanies this diagnostic revision.
+
+Local validation of the new observer and existing CI/report integration:
+23 tests passed, with no skipped tests. This uses mocked WPR commands for
+ownership and failure-path checks, not a local kernel capture. The installed
+WPR accepted the profile and confirmed ProcessThread/Loader plus ThreadCreate
+stacks. Focused Ruff, workflow/embedded-Python validation and diff checks
+passed. Actual capture capability is checked by the Windows Actions smoke
+step; no local system-wide trace was started.

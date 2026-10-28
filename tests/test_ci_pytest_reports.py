@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -7,6 +8,75 @@ from types import SimpleNamespace
 import pytest
 
 from scripts import ci_pytest_reports
+
+
+@pytest.mark.parametrize("handlesGrow", [False, True])
+def testNativeOwnerFailureCollectsOriginalSnapshotsEvenWhenHandlesFailFirst(monkeypatch, handlesGrow):
+    from scripts import r3_native_thread_origins
+    from tests.ui.presentation import test_retained_acceptance_lifecycle as owners
+
+    before = {"handles": 10, "widgets": 5, "windows": 1, "native_threads": 1,
+              "python_threads": 1, "native_thread_ids": frozenset((1,)),
+              "python_thread_objects": frozenset()}
+    after = dict(before, handles=14 if handlesGrow else 10,
+                 native_threads=2, native_thread_ids=frozenset((1, 7)))
+    monkeypatch.setattr(owners, "nativeCounts", lambda *_args, **_kwargs: after)
+    calls = []
+    monkeypatch.setattr(r3_native_thread_origins, "collect", lambda ids: calls.append(ids) or {
+        "status": "queried", "threads": [{"native_thread_id": 7, "module": "test.dll"}]})
+    with pytest.raises(AssertionError, match="handles" if handlesGrow else "native_thread_ids") as failure:
+        owners.assertStableOwners(None, before, None, None, phase="navigation", index=299)
+    originalFailure = failure.value
+    report = SimpleNamespace(when="call", failed=True, sections=[])
+    hook = ci_pytest_reports.FailureReports(Path("unused")).pytest_runtest_makereport(
+        SimpleNamespace(nodeid=ci_pytest_reports.NATIVE_OWNER_TEST), SimpleNamespace(excinfo=failure))
+    next(hook)
+    with pytest.raises(StopIteration) as returned:
+        hook.send(report)
+    assert returned.value.value is report and report.failed
+    assert failure.value is originalFailure and calls == [[7]]
+    name, text = report.sections[0]
+    evidence = json.loads(text)
+    assert name == "A18 post-failure native origins"
+    assert evidence["phase"] == "navigation" and evidence["index"] == 299
+    assert evidence["before"]["handles"] == 10
+    assert evidence["after"]["handles"] == after["handles"]
+    assert evidence["selected_native_thread_ids"] == [7]
+    assert evidence["evidence"]["threads"][0]["module"] == "test.dll"
+    assert "python_thread_objects" not in text
+
+
+@pytest.mark.parametrize("nodeid,when,failed", [
+    (ci_pytest_reports.NATIVE_OWNER_TEST, "call", False),
+    (ci_pytest_reports.NATIVE_OWNER_TEST, "setup", True),
+    ("other.py::testOther", "call", True),
+])
+def testNativeEvidenceOnlyRunsForTheFailedTargetCall(monkeypatch, nodeid, when, failed):
+    monkeypatch.setattr(ci_pytest_reports, "nativeOwnerFailureEvidence",
+                        lambda *_: pytest.fail("unexpected native query"))
+    report = SimpleNamespace(when=when, failed=failed, sections=[])
+    hook = ci_pytest_reports.FailureReports(Path("unused")).pytest_runtest_makereport(
+        SimpleNamespace(nodeid=nodeid), SimpleNamespace(excinfo=object()))
+    next(hook)
+    with pytest.raises(StopIteration) as returned:
+        hook.send(report)
+    assert returned.value.value is report and report.sections == []
+
+
+@pytest.mark.parametrize("error", [RuntimeError, KeyboardInterrupt])
+def testNativeEvidenceErrorsKeepTheOriginalFailedReport(monkeypatch, error):
+    def unavailable(_excinfo):
+        raise error("private failure details")
+    monkeypatch.setattr(ci_pytest_reports, "nativeOwnerFailureEvidence", unavailable)
+    report = SimpleNamespace(when="call", failed=True, sections=[])
+    hook = ci_pytest_reports.FailureReports(Path("unused")).pytest_runtest_makereport(
+        SimpleNamespace(nodeid=ci_pytest_reports.NATIVE_OWNER_TEST), SimpleNamespace(excinfo=object()))
+    next(hook)
+    with pytest.raises(StopIteration) as returned:
+        hook.send(report)
+    assert returned.value.value is report and report.failed
+    assert json.loads(report.sections[0][1])["status"] == "diagnostic_unavailable"
+    assert "private failure" not in report.sections[0][1]
 
 
 def testSuccessfulReportsDoNotCreateFalseFailureEvidence(tmp_path, monkeypatch, capsys, pytestconfig):

@@ -66,9 +66,9 @@ def testRuntimeSubtractsTwoCoordinateFilesAsStronglyTypedVectors(
     assert isinstance(vectorPayloads, list)
     assert isinstance(magnitudes, list)
     vectors = [Vector2D.fromPayload(value) for value in vectorPayloads]
-    assert [(vector.dx, vector.dy) for vector in vectors] == pytest.approx(
-        [(3.0, 4.0), (5.0, -5.0)]
-    )
+    assert [(vector.dx, vector.dy) for vector in vectors] == [
+        pytest.approx((3.0, 4.0)), pytest.approx((5.0, -5.0))
+    ]
     assert magnitudes == pytest.approx([5.0, 50.0**0.5])
     assert result.outputs["resultCount"] == 2
 

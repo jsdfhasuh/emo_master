@@ -949,3 +949,35 @@ Private evidence remains under `build/ci-followup-40444071101/`, including
 the numbered private trace JSON files, and
 `multiscope-diagnostics-native-regression.{log,xml}`. No branch cleanup is
 permitted while the actual latest main has a failing platform.
+
+The diagnostic PR's full Windows job 122673055292 (run 40645439287,
+source `52fb7fd1506dca87f5e32e5df875be6542b722ff`, merge candidate
+`bea21c08ab0b997886178cfa91cc851f3bfae4e5`) reproduced the same missing
+second-cycle `a-image`: 8314 passed, one failed, five skipped and 42 passing
+subtests. The captured Runtime result is `INCOMPLETE`; its image source is
+`UNAVAILABLE / EXPORT_TIMEOUT`, with reason "assembler waiting for export
+callback exceeded seal deadline". The scope ended 666.9631 ms before closure.
+There is no image reference, client read failure or pending image-demand
+state in that failed view. This identifies a Runtime export/closure failure,
+not a client decode-readiness failure. It does not yet distinguish export
+queueing, encoding, callback contention or scheduling delays. The earlier
+Ubuntu main failure lacks these fields and cannot be assigned this cause
+with certainty.
+
+The matching Runtime closure diagnostic already retains the export owner's
+state at closure, but the first assertion did not include it. The failure
+message now also retains that existing record and matching export retirement
+records. The temporary bounded job moves to native Windows at 1920 x 1080,
+where the detailed failure actually reproduced. All original deadlines,
+assertions and production code remain unchanged. Seven native normal-viewing
+and multi-scope tests pass locally in 32.49 s; a private observation probe
+records all four successful exports, with no failed closure. That observation
+does not establish the CI cause or a fix.
+
+The diagnostic PR's Ubuntu full suite passed 8289 tests with 31 existing skips
+and 42 passing subtests. The Windows native-owner and two-Designer startup
+targets also passed in this run; their historical failures remain unresolved.
+New private evidence: `52fb7fd-windows-failure-evidence-0728.json`,
+`windows-pr-52fb7fd-full.log`, `ci-52fb7fd-pr-results/`, and
+`multiscope-export-owner-native-combination-0733.{log,xml,json}`. PR #6 remains
+a diagnostic draft rather than a claimed product correction.

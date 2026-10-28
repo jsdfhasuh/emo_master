@@ -202,6 +202,10 @@ def testNormalTwoScopeOverviewButtonsPinGuiNgDespiteNewerBackgroundOk(qtApp, tmp
                 "image_states": dict(newer[scope].imageStates),
                 "decode_records": [record for record in observedSession.records
                     if record["key"] == newer[scope].result.identity.resultKey],
+                "runtime_closure": [record for record in runtime._presentationOwner.diagnostics
+                    if record["resultKey"] == newer[scope].result.identity.resultKey],
+                "export_retirements": [record for record in runtime._presentationOwner.exporter.diagnostics
+                    if record.get("resultKey") == newer[scope].result.identity.resultKey],
             }
             assert not np.array_equal(newer[scope].images[f"{scope}-image"], displayed[scope].images[f"{scope}-image"])
             assert next(source.valueJson for source in newer[scope].result.sources if source.sourceId == f"{scope}-judge") == "true"

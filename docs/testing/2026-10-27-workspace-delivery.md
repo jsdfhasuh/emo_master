@@ -906,3 +906,46 @@ are retained as evidence for that exact earlier source. The uninstrumented
 native viewer and Runtime/workflow-controller regression passed **31 tests
 in 27.04 s**, without skips; evidence is
 `node-viewer-readiness-regression.{log,xml}`. Focused Ruff and diff checks passed.
+
+## Main 0.6.6 Two-Scope Image Failure Investigation
+
+PR #5 merged as `58d859b0b813645a068ec8201c4ef2f3e9f40305` after both
+platforms and exact-source frozen validation passed. Its main Windows run
+40628072588 still reported one retained-native-owner failure: navigation
+index 699, four extra handles and one native thread. The post-failure query
+located its entry in ntdll.dll; that does not identify the creator or cause.
+The local full suite later passed that target, but failed the separate
+30-second two-Designer startup test. Both intermittent causes remain open.
+
+The independent release task advanced main to
+`25c82042ce3cfb83e16ede8ea2cb2bcbb2110ce4`, changing only the version to
+0.6.6. Exact-source frozen validation 40640654916 passed icons, native
+Designer startup/multi-instance, Runtime Job and OperatorView, with explicit
+stop, worker retirement and reacquired owner locks, without forced cleanup.
+Installer verification remains hash-only.
+
+Main CI 40639949885's Ubuntu job 122655518469 failed
+`testNormalTwoScopeOverviewButtonsPinGuiNgDespiteNewerBackgroundOk` at the
+second-cycle image comparison with `KeyError: 'a-image'`: 8288 passed,
+one failed, 31 skipped and 42 passing subtests. The old report does not retain
+the failed view's source outcomes, read errors or image-demand state, so it
+does not establish why the image was missing. A single local offscreen run
+and eight bounded repetitions passed; their 36 total image reads succeeded.
+These results do not resolve the Ubuntu failure.
+
+The diagnostic change checks image presence immediately before the original
+pixel assertion and includes the same immutable result, decoded source IDs,
+read failures, image states and matching decode records on failure. It adds
+no retry, wait, product change or replacement snapshot. All existing identity,
+pixel, navigation, pin, resume and retirement assertions remain. A temporary
+PR-only Ubuntu workflow executes at most eight original cases and stops at
+the first failure, preserving its exit status and reports. This diagnostic
+run is not a replacement for either full platform suite. The original module
+passes locally on native Windows (2 tests); focused Ruff and diff checks pass.
+
+Private evidence remains under `build/ci-followup-40444071101/`, including
+`ubuntu-main-25c82042-full.log`, `ci-main-25c82042-results/`,
+`multiscope-25c82042-before.{log,xml}`, `multiscope-25c82042-bounded.{log,xml}`,
+the numbered private trace JSON files, and
+`multiscope-diagnostics-native-regression.{log,xml}`. No branch cleanup is
+permitted while the actual latest main has a failing platform.

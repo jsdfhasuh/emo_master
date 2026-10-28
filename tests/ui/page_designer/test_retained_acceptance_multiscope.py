@@ -193,6 +193,16 @@ def testNormalTwoScopeOverviewButtonsPinGuiNgDespiteNewerBackgroundOk(qtApp, tmp
         newer = observedSession.readSnapshot().scopes
         for scope in ("a", "b"):
             assert newer[scope].result.identity.resultKey != displayed[scope].result.identity.resultKey
+            # Keep the actual failed view: cleanup can retire the live session
+            # before the CI reporter inspects it. Do not retry a failed read.
+            assert f"{scope}-image" in newer[scope].images, {
+                "result": newer[scope].result.model_dump(mode="json"),
+                "decoded_sources": list(newer[scope].images),
+                "read_failures": dict(newer[scope].failures),
+                "image_states": dict(newer[scope].imageStates),
+                "decode_records": [record for record in observedSession.records
+                    if record["key"] == newer[scope].result.identity.resultKey],
+            }
             assert not np.array_equal(newer[scope].images[f"{scope}-image"], displayed[scope].images[f"{scope}-image"])
             assert next(source.valueJson for source in newer[scope].result.sources if source.sourceId == f"{scope}-judge") == "true"
             assertScopeWidgets(renderer, "overview", scope, displayed[scope])

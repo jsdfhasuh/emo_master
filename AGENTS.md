@@ -55,3 +55,73 @@
 审查时记录实际源码 SHA，不用移动分支冒充固定提交。执行者发现后续提交时先核对差异，不重复实现已完成的修复。开发测试使用模拟设备和临时工程；未经明确授权，不访问真实相机 / PLC，不执行网络改址，不修改现场工程或凭据。
 
 当前 R2.1 收尾范围见 `docs/plans/2026-10-19-r2_1-normal-operation-followup.md`。
+
+## 接手时先确认
+
+- 在当前检出运行 `git status --short --branch`、`git rev-parse HEAD`，检查改动目录内更具体的 `AGENTS.md`；保留用户未提交内容。不要把旧工作副本、报告中的 SHA 或其他分支当作当前源码。
+- 先读与本轮有关的入口、测试及契约；历史计划（包括上面的 R2.1）只限定其原任务，不是每轮重新执行的清单。小改动不要求额外设计文档或全仓重构。
+- 技术栈和命令以当前 `pyproject.toml`、`requirements*.txt`、`scripts/ci_check.py`、`.github/workflows/ci.yml` 为准；文档旧分支示例不构成切换分支或覆盖工作区的指令。
+
+## 技术栈与架构落点
+
+- Python **3.10**（`>=3.10,<3.11`）、PySide2 **5.15+ / Qt5 QWidget**；Pydantic v2 管工程模型，gRPC/protobuf 管服务适配，SQLite 管运行记录，OpenCV/NumPy 与 ONNX Runtime 管图像和推理。普通开发不引入 PyTorch/CUDA。
+- 沿用依赖文件里的版本约束；协议工具、protobuf、ONNX Runtime 等已固定版本，不能靠任意升级/降级让测试暂时通过。只有任务需要时才更新依赖，并同步相关声明和验证。
+- 下表源码路径均相对 `src/emo_master/`：
+
+| 区域 | 应放什么 / 不应做什么 |
+| --- | --- |
+| `core/` | 工程模型、编译规则、插件和执行 DTO；不得 import `apps`，不得依赖 Qt UI 或把 protobuf 对象变成领域模型 |
+| `apps/designer/` | 编辑、展示、撤销和明确用户操作；工程草稿走 `state/workflow_store.py`，不要用 MainWindow 临时字段另建一份工程真相 |
+| `apps/runtime/` | RuntimeService 组织服务；工作流执行在 `workflow/runner.py`，Job 的 spawn、停止与退役在 `jobs/supervisor.py`；不要把执行器塞进 Designer 或薄 RPC 层 |
+| `apps/runtime/devices/` | DeviceManager 统一持有设备身份、驱动、串行执行/服务调度及生命周期；算子通过声明的设备绑定和 Runtime 通道使用设备，不另开旁路连接 |
+| `plugins/` | 算子及设备插件能力；沿用 manifest、DeviceType、公共 driver API 和现有注册路径，不为第三方插件添加 DeviceManager 类型特判 |
+| `apps/runtime/grpc_server/` | 协议适配；`generated/` 只能由 `scripts/gen_proto.py` 生成，不手改 |
+
+- TCP Server、单次客户端、单次接收都是普通受管设备，沿用设备定义、slot/selectors、调度和诊断，不恢复第二套顶层 `communication` 或绕过 DeviceManager 的特殊通道。
+- 保持“编辑草稿 / 保存文件 / 校验候选 / 上传资源 / 明确写入 Runtime / 启动任务”分离。校验和上传不等于提交，已提交不等于已启动；打开/刷新观察窗口不偷偷发现、连接或运行，关闭观察不停止它不拥有的 Job/listener。
+- 内嵌与外部 Runtime 是服务部署方式；正式 Job 仍由 Runtime 的 spawn worker 执行。跨机路径不能当作共享本机文件，客户端路径不能伪装成已上传的远端资源。
+- 新项目字段核对模型、迁移、Designer store、Runtime loader 和格式文档；新算子核对端口、参数、依赖及注册；新 RPC 同步 `proto/runtime.proto` 和生成物。仅有意改协议时重生成，干净检出的 drift 应先查依赖/差异。
+- Qt 控件只在 GUI 线程操作；QObject/QThread、场景、定时器和异步请求须有明确所有者与退役路径。沿用现有 queued slot、scope/generation 身份检查，拒绝旧请求迟到结果；实际线程退出前不销毁 QThread，不靠全局关闭 GC、吞异常或无限等待掩盖生命周期错误。
+- 停止/取消、重复关闭、项目/Runtime 切换按受影响正常路径回归；不把取消视为物理操作从未发生，不自动重放结果未知的 PLC 写入、相机触发或配置提交。
+
+## 常用命令与验证选择
+
+以下命令在仓库根目录、已选好的 Python 3.10 环境执行。已有环境不重复重建；首次准备或依赖变化才安装：
+
+```text
+python -m pip install -r requirements-dev.txt
+python scripts/dev.py run-designer --local --check
+```
+
+`--check` 只核对真实入口和依赖导入，不开窗口、不创建 Runtime/Job。需要实际界面时才运行 `python scripts/dev.py run-designer --local`；独立底层服务入口是 `python scripts/dev.py run-runtime`，不是独立操作员窗口。
+
+先按平台设置测试环境，避免在 Windows 全套 Qt 测试中套用 Linux offscreen：
+- Linux / Bash：`export QT_QPA_PLATFORM=offscreen HUARAY_CAMERA_SMOKE=0`
+- Windows / PowerShell：`$env:QT_QPA_PLATFORM = "windows"; $env:HUARAY_CAMERA_SMOKE = "0"`。当前 CI 使用原生 Windows 桌面，核验至少 1920×1080；没有相应桌面时如实标记未执行，不冒充原生 Qt 验收。
+
+| 目的 | 命令 |
+| --- | --- |
+| 聚焦回归 | `python -m pytest <受影响的测试文件或目录> -q`（替换占位符） |
+| 全量 pytest 快捷入口 | `python scripts/dev.py test` |
+| 协议一致性（只检查） | `python scripts/gen_proto.py --check` |
+| 静态检查 | `python -m ruff check src tests` |
+| 类型检查 | `python -m mypy --config-file mypy.ini src` |
+| 完整源码检查 | `python scripts/ci_check.py` |
+| 补丁空白检查 | `git diff --check` |
+
+`ci_check.py` 顺序执行 proto → Ruff → mypy → pytest，遇首个失败即停止。后续阶段没有运行就记 `NOT_RUN`，不能因为前序检查通过而称全套通过。当前 pytest 阶段带 120 秒单测超时，输出 `build/ci-results.xml` 与失败日志；保留原始失败和退出码，不删断言、放宽门槛或跳过失败来造绿。
+
+- 业务修复先跑相关回归；按本次改动及仓库门禁选择适用静态检查与回归，涉及跨模块、公共执行/线程机制或明确要求全套验收时运行完整聚合。未运行全套须注明，不能称源码全过；不能执行的检查写明原因及已覆盖范围。仅文档修改可检查路径、命令来源和 `git diff --check`，不必无关地重跑硬件/全套测试。
+- UI 变更除逻辑测试外，按实际影响验证可见窗口、重复操作、关闭/取消与布局；offscreen 截图不能代替原生 Windows 人工体验。无显示环境时保留 `NOT_RUN`。
+- 构建/冻结包只在本轮涉及交付包时按 `docs/deployment-guide.md` 执行；中央构建在 `jsdfhasuh/python_build_scripts`，不在应用仓臆造 build 命令。源码通过、包生成、冻结自检、安装验收和实机通过是不同结论。
+
+## 数据保护与交付标准
+
+- 测试使用临时工程、独立 Runtime 数据目录和模拟设备；`--local` 默认预填 `manual_test_workspace/runtime-embedded`，实际以启动设置显示的路径为准。独立实例用不同运行目录，不删除数据库、锁文件或现场工程来排错。
+- 不因“未跟踪”就清理或上传 `manual_test_workspace/`、数据库、日志、原始图像、模型、现场参数或验收资料；提交前逐项审查 diff。凭据不得写入代码、样例、日志或报告；凭证字段沿用带版本的 `secret://...@...` 引用，不复制实际密钥。
+- 默认不访问真实相机/PLC、不发现现场设备、不改 IP、不执行生产写入；需要时先取得覆盖设备与动作的明确授权。普通 CI 不启用 `HUARAY_CAMERA_SMOKE`。不要把无硬件条件记为软件失败或实机通过。
+- 只清理本次创建且确认不再被使用的临时资源；保留历史证据、用户数据和其他版本仍引用的资源。不用 `reset --hard`、强推、删锁或批量终止 Python 进程解决冲突。
+- 完成说明至少包含：改了什么及边界；源码 SHA/工作区状态；实际命令、平台、退出码和结果（`PASS / FAIL / SKIP / NOT_RUN`）；尚未验证/已接受风险。小改动可简写，不强制另建报告文件。
+- “实现完成”不等于“测试全过”；“源码全过”不等于“已构建/已发布/设备可用”。远端推送核对实际 SHA，CI 核对该 SHA 的结果；不得沿用旧提交的绿灯。合并、打 tag、发布 Release 或部署不是完成普通代码修改的默认步骤。
+
+需要细节时阅读：[开发入口](docs/development-guide.md)、[架构](docs/engineer-guide.md)、[设备契约](docs/guides/device-catalog-contract-v1.md)、[在线配置](docs/guides/device-dispatch-online-configuration.md)、[工程格式](docs/project-json-spec.md)、[部署与发布](docs/deployment-guide.md)。

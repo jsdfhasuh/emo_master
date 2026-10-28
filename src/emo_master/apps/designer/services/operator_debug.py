@@ -72,13 +72,27 @@ class DebugConnection:
             except Exception as error:
                 self.leaseError = str(error)
 
-    def snapshot(self, executionId="", sequence=0):
+    def _sessionState(self):
         state = self.call("GetOperatorDebugSession")
         if state["generation"] != self.identity["generation"]:
             self.identity = dict(self.identity, generation=state["generation"])
-        result = self.call("GetOperatorDebugExecution", execution_id=executionId) if executionId else None
-        events = self.call("ReadOperatorDebugEvents", after_sequence=sequence)
-        return dict(session=state, result=result, events=events, leaseError=self.leaseError)
+        return state
+
+    def snapshot(self, executionId="", sequence=0):
+        # Reset can finish between these RPCs. Refresh the read once, keeping
+        # the Runtime/session pinned and every component on one generation.
+        for attempt in range(2):
+            state = self._sessionState()
+            try:
+                result = self.call("GetOperatorDebugExecution", execution_id=executionId,
+                    generation=state["generation"]) if executionId else None
+                events = self.call("ReadOperatorDebugEvents", after_sequence=sequence,
+                    generation=state["generation"])
+            except RuntimeClientError as error:
+                if attempt or error.code != "E_DEBUG_STALE_SESSION":
+                    raise
+                continue
+            return dict(session=state, result=result, events=events, leaseError=self.leaseError)
 
     def upload(self, raw, mime, provenance):
         if not 0 < len(raw) <= VALUE_BYTES:
@@ -174,7 +188,16 @@ class DebugConnection:
                         return
                     raise
                 self.identity.update(session_id=state["sessionId"], generation=state["generation"])
-            self.mutation("CloseOperatorDebugSession")
+            requestId = uuid4().hex
+            try:
+                self.call("CloseOperatorDebugSession", request_id=requestId)
+            except RuntimeClientError as error:
+                if error.code != "E_DEBUG_STALE_SESSION":
+                    raise
+                # A generation rejection precedes close dispatch. Refresh only
+                # that rejection, never a lost reply or an execution command.
+                self._sessionState()
+                self.call("CloseOperatorDebugSession", request_id=requestId)
             deadline = time.monotonic() + 10
             while time.monotonic() < deadline:
                 state = self.call("GetOperatorDebugSession")

@@ -122,7 +122,10 @@ def testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime(tm
                 assert len(readAttempts) == 1 and len(runtime.jobRepository.all()) == 1
                 from tests.designer.test_inspection_images import forceDueRenewal
                 forceDueRenewal(coordinator.images)
-            wait(designerApplication, lambda: coordinator.imagePacket is not None and not window.runtimeController._jobActive)
+            # A terminal Job can precede its monitor's queued finished signal.
+            # Wait for the same readiness gate as the Run action before rerunning.
+            wait(designerApplication, lambda: coordinator.imagePacket is not None
+                 and not window.runtimeController._jobActive and window.runtimeController.canStart())
             if readDisconnect:
                 assert len(readAttempts) == 2 and not coordinator.images._disconnected
                 assert len(runtime.jobRepository.all()) == 1

@@ -25,7 +25,9 @@ def testMinimumCircleIsNotCentroidOrHoughAndPreservesProvenance():
     result = MinimumEnclosingCircleOperator().executeNode({"contours": contours}, {}, {})
     assert result["status"] == "ok"
     circles = CircleCollection.fromPayload(result["outputs"]["circles"])
-    assert [(i.circle.center.x, i.circle.center.y) for i in circles.items] == pytest.approx([(3, 4), (23, 4)])
+    assert [(i.circle.center.x, i.circle.center.y) for i in circles.items] == [
+        pytest.approx((3, 4)), pytest.approx((23, 4))
+    ]
     assert [i.circle.radius for i in circles.items] == pytest.approx([5, 5], abs=0.001)
     assert [i.circleId for i in circles.items] == ["enclosing:triangle", "enclosing:other"]
     for i, contour in zip(circles.items, ContourCollection.fromPayload(contours).items):

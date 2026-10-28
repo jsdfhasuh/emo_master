@@ -792,3 +792,117 @@ workflow-debug cleanup; logs/JUnit are retained as
 `debug-reset-generation-regression.{log,xml}`. New remote CI and frozen-package
 validation remain pending. No physical device was accessed, and these local
 passes do not authorize branch cleanup while main CI is failing.
+
+## Pytest 9.2 Coordinate Assertions and Recurrent Native-Owner Evidence
+
+PR #4 merged normally as `1aef380fd0528f1484461aaa2f23da596eb35b89`.
+Before merge, CI [40505503943](https://github.com/jsdfhasuh/emo_master/actions/runs/40505503943)
+passed both platforms (8342 JUnit records each, no failures/errors; Ubuntu 31
+and Windows 5 existing skips), and frozen run 40505519920 passed on exact
+source `50495e92b2c9bc23a2190a94dd5ed41db7de8fc1`, without forced cleanup.
+
+Post-merge run [40609824498](https://github.com/jsdfhasuh/emo_master/actions/runs/40609824498)
+installed pytest **9.2.0** on both platforms. Ubuntu finished with **6 failed,
+8263 passed, 31 skipped, 42 subtests passed**; Windows finished with **7 failed,
+8288 passed, 5 skipped, 42 subtests passed**. Each downloaded JUnit has 8342
+records and no errors. Full logs and JUnit/immediate failure logs are retained
+in the primary checkout's `build/ci-followup-40444071101/`, under
+`{ubuntu,windows}-main-1aef380f-full.log` and `ci-main-1aef380f-results/`.
+
+Both platforms rejected the same six `pytest.approx(list_of_tuples)` calls
+in coordinate calculator, minimum enclosing circle and Runtime coordinate
+workflow tests. An isolated pytest 9.2.0 installation reproduced **6 failed,
+12 passed** on current main `443f1d5555bb7812a11afb5d991a190622f84724`; the
+shared project interpreter remains on pytest 9.1.1. Comparing a list of
+individual `pytest.approx(tuple)` values preserves list length/order, both
+coordinates, the expected numbers and the default numeric tolerances. The
+three affected modules then passed **18 tests** under each pytest version.
+No product code, dependency constraint or test selection was changed.
+
+Windows' seventh failure was again
+`testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners`: during
+navigation, handles rose from **21534 to 21538** and native thread ID **8328**
+appeared (44 to 45 native threads; Python threads remained 43). The handle
+assertion ran before the existing thread diagnostic checkpoint, so the exact
+navigation index and start module were not recorded. This remains **OPEN**;
+it is not evidence of a particular Qt/backend cause. The older floating-cycle
+failure with thread ID 9772 also remains preserved and unexplained.
+
+The CI failure reporter now reuses the existing bounded, read-only native
+thread helper only after this exact test's call fails. It extracts the failed
+snapshot pair and phase from the traceback, including a handle failure before
+the thread assertion, and adds a diagnostic section to the existing immediate
+failure log. It performs no replacement census or successful-test query and
+does not alter the test, assertion, result, timeout or cleanup. Collection is
+after the test's `finally` cleanup: an ID may have retired/reused, and a start
+module does not prove the creator, owner or retention cause.
+
+Local native Windows validation retained an initial combined run of **88
+passed, 1 failed**: the owner test saw a `(0, 0)` image instead of `(1920,
+1080)`. This additional observation is not claimed fixed. A comparison run
+using the unchanged main reporter/test modules passed **64 tests**, and the
+candidate with seven new reporter regressions passed **71 tests**. The
+original owner module also passed separately (16 tests). Keep these distinct
+from the remote failures; passing reruns do not establish intermittent causes.
+Evidence files include `coordinate-approx-before.{log,xml}`,
+`coordinate-approx-after-pytest{920,911}.xml`,
+`coordinate-and-native-diagnostic-regression.{log,xml}`,
+`native-diagnostic-order-{baseline,candidate}.{log,xml}` and
+`retained-owners-local-followup.{log,xml}`. Ruff, Mypy (560 source files) and
+protobuf checks passed. Full candidate CI and frozen acceptance remain pending.
+
+Another authorized release task advanced main through `07a16092` to
+`443f1d55` and version 0.6.5; those commits, the release tag/workflow and its
+primary `codex/release-v0.6.5` checkout are preserved. This follow-up uses
+the separate `codex/ci-coordinate-assertions` worktree. No branches have been
+deleted, and cleanup still requires the actual latest main to pass both full
+platform suites.
+
+## Node Viewer Repeated-Run Readiness
+
+PR #5 source `e422fa359598f57fbbf5f4fd278a5f8198203531` completed full CI
+[40617456311](https://github.com/jsdfhasuh/emo_master/actions/runs/40617456311):
+both downloaded JUnit files have **8362 records, zero failures/errors**, with
+31 existing Ubuntu skips and 5 existing Windows skips. Both platforms executed
+the original two-run viewer, BusinessNg and retained-native-owner cases.
+Frozen [40617468778](https://github.com/jsdfhasuh/emo_master/actions/runs/40617468778)
+also passed on exact e422fa35: icons, packaged Designer startup/multi-instance,
+Runtime Job and OperatorView, without forced cleanup. Installer validation was
+hash-only. Evidence is in `ci-e422fa35-pr-results/`,
+`frozen-e422fa35-evidence/` and `e422fa35-gate-evidence-0204.json`.
+
+The concurrent v0.6.5 release run
+[40614916357](https://github.com/jsdfhasuh/emo_master/actions/runs/40614916357)
+on older main `443f1d55` stopped at source validation; packaging/publication
+was skipped. Alongside the six old coordinate assertion errors, it exposed
+`testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime[False]`
+waiting for a second Job ID that never appeared. Its JUnit has 8355 records,
+7 failures, 0 errors and 5 skips (8301 passed, 42 subtests passed). The same
+main's ordinary Windows CI had only the six coordinate failures; its native
+owner test passed. Logs/JUnit remain in `release-443f1d55-source-results/`,
+`windows-release-443f1d55-full.log` and `ci-main-443f1d55-results/`.
+
+The viewer failure reproduced locally without instrumentation (1 failed,
+1 passed). The test waited for an image and `_jobActive == False`, which can
+precede the monitor's queued `finished` delivery. A bounded, test-only probe
+held the first real RuntimeWorker after its normal run returned: the attempted
+second start observed `jobActive=False`, `workerPresent=True`,
+`workerRunning=True`, `canStart=False`, and reproduced the same timeout.
+Releasing the old monitor did not replay the rejected start. The probe is
+retained privately as `viewer_start_probe.py`; it is not installed in CI or
+the product. The earlier trace-only probe passed and is also preserved.
+
+The original test now also waits for `runtimeController.canStart()`, the same
+gate used by the Run action, before advancing to the next run. Its watchdog,
+terminal-state check, image identity/pixels, read counts, two-Job count and
+Runtime-preserving close assertions are unchanged. The identical held-exit
+probe then passed, with no worker present at the second start. This is a test
+precondition repair, not a change to scheduling or side-effect retry policy.
+Evidence: `node-viewer-two-runs-before.{log,xml}`,
+`node-viewer-start-probe-before.{log,xml}` and
+`node-viewer-held-exit-{before,after}.{log,xml}`. The changed source still needs
+fresh full CI and frozen validation before PR #5 is merged; e422fa35 results
+are retained as evidence for that exact earlier source. The uninstrumented
+native viewer and Runtime/workflow-controller regression passed **31 tests
+in 27.04 s**, without skips; evidence is
+`node-viewer-readiness-regression.{log,xml}`. Focused Ruff and diff checks passed.

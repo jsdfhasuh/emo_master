@@ -162,9 +162,9 @@ def testCoordinateCalculatorAppliesImageClockwiseRotationScaleAndOffset() -> Non
 
     assert result["status"] == "ok"
     points = [Point2D.fromPayload(value) for value in result["outputs"]["points"]]
-    assert [(point.x, point.y) for point in points] == pytest.approx(
-        [(10.0, 7.0), (10.0, 9.0)]
-    )
+    assert [(point.x, point.y) for point in points] == [
+        pytest.approx((10.0, 7.0)), pytest.approx((10.0, 9.0))
+    ]
     assert result["outputs"]["pathLength"] == pytest.approx(2.0)
     assert result["outputs"]["firstToLastAngleDegrees"] == pytest.approx(90.0)
     assert "polygon" not in result["outputs"]
@@ -190,9 +190,9 @@ def testCoordinateCalculatorSubtractsPointPairsIntoVectors() -> None:
     assert result["status"] == "ok"
     outputs = result["outputs"]
     vectors = [Vector2D.fromPayload(value) for value in outputs["vectors"]]
-    assert [(vector.dx, vector.dy) for vector in vectors] == pytest.approx(
-        [(3.0, 4.0), (5.0, -5.0)]
-    )
+    assert [(vector.dx, vector.dy) for vector in vectors] == [
+        pytest.approx((3.0, 4.0)), pytest.approx((5.0, -5.0))
+    ]
     assert outputs["magnitudes"] == pytest.approx([5.0, 50.0**0.5])
     assert outputs["resultCount"] == 2
     assert "points" not in outputs
@@ -247,9 +247,9 @@ def testCoordinateCalculatorScalarParameterAndInputOverride() -> None:
     assert (parameterPoint.x, parameterPoint.y) == pytest.approx((-4.0, 6.0))
     assert result["status"] == "ok"
     points = [Point2D.fromPayload(value) for value in result["outputs"]["points"]]
-    assert [(point.x, point.y) for point in points] == pytest.approx(
-        [(5.0, -7.5), (-10.0, 12.5)]
-    )
+    assert [(point.x, point.y) for point in points] == [
+        pytest.approx((5.0, -7.5)), pytest.approx((-10.0, 12.5))
+    ]
     assert result["outputs"]["resultCount"] == 2
 
 
@@ -279,9 +279,9 @@ def testCoordinateCalculatorSupportsBroadcastPairing() -> None:
     vectors = [
         Vector2D.fromPayload(value) for value in broadcast["outputs"]["vectors"]
     ]
-    assert [(vector.dx, vector.dy) for vector in vectors] == pytest.approx(
-        [(9.0, 8.0), (7.0, 6.0)]
-    )
+    assert [(vector.dx, vector.dy) for vector in vectors] == [
+        pytest.approx((9.0, 8.0)), pytest.approx((7.0, 6.0))
+    ]
 
 
 def testCoordinateCalculatorRejectsMismatchedPairSpacesAndUnusedInputs() -> None:

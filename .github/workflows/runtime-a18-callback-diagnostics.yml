@@ -1,0 +1,67 @@
+name: One A18 callback and creation diagnostic
+
+on:
+  push:
+    branches: [codex/ci-threadpool-provider-smoke]
+    paths:
+      - scripts/r3_a18_callback_trace.py
+      - .github/workflows/runtime-a18-callback-diagnostics.yml
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    if: github.run_attempt == 1
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: windows
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install project dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Configure native Windows test desktop
+        shell: pwsh
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+      - name: Verify native Windows desktop
+        shell: python
+        env:
+          PYTHONPATH: src
+        run: |
+          import json
+          import emo_master
+          from PySide2.QtWidgets import QApplication
+          app = QApplication([])
+          screen = app.primaryScreen()
+          geometry = screen.geometry()
+          print(json.dumps({"platform": app.platformName(), "geometry": geometry.getRect(),
+                            "scale": screen.devicePixelRatio()}), flush=True)
+          assert app.platformName() == "windows"
+          assert geometry.width() == 1920 and geometry.height() == 1080
+          assert screen.devicePixelRatio() == 1
+      - name: Observe the original A18 test once
+        env:
+          EMO_A18_CALLBACK_TRACE: '1'
+        run: >-
+          python -m pytest
+          tests/ui/presentation/test_retained_acceptance_lifecycle.py::testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners
+          -vv --tb=short --junitxml=build/a18-callback-results.xml
+          -p scripts.ci_pytest_reports -p scripts.r3_a18_callback_trace
+          --timeout=120 --timeout-method=thread -o faulthandler_timeout=60
+      - name: Preserve trace and original result regardless of outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a18-callback-diagnostic
+          path: |
+            build/a18-callback-trace/
+            build/a18-callback-results.xml
+            build/ci-failures.log
+          if-no-files-found: warn
+          retention-days: 7

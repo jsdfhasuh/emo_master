@@ -20,10 +20,15 @@ class OnnxClassificationSession:
     def __init__(self, modelPath: Path) -> None:
         try:
             import onnxruntime as ort
+        except ImportError as error:
+            raise OnnxBackendUnavailableError(
+                f"YOLO classification could not load onnxruntime: {type(error).__name__}: {error}"
+            ) from error
+        try:
             from PIL import Image
         except ImportError as error:
             raise OnnxBackendUnavailableError(
-                "YOLO classification requires onnxruntime and Pillow"
+                f"YOLO classification could not load Pillow (PIL.Image): {type(error).__name__}: {error}"
             ) from error
         self._imageModule = Image
         try:

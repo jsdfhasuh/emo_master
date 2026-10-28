@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-28",
+  "recordStage": "Investigation snapshot before release preparation; commit and publication status below describe that snapshot.",
+  "scope": "YOLO classification dependency failure in the released Windows Designer",
+  "sourceHead": "50495e92b2c9bc23a2190a94dd5ed41db7de8fc1",
+  "packagerHead": "558823d5706e9aef5af62c0299c5e455fb8f7c51",
+  "changesCommitted": false,
+  "releaseInspection": {
+    "tag": "v0.6.4",
+    "url": "https://github.com/jsdfhasuh/emo_master/releases/tag/v0.6.4",
+    "asset": "emo-master-windows-v0.6.4.zip",
+    "bytes": 125167236,
+    "sha256": "7195674a2682428734b3a78200de972d7fd2750c1a66d4b48d668e9120d78d0b",
+    "matchesPublishedDigest": true,
+    "method": "ZIP member inspection and PyInstaller CArchiveReader embedded PYZ inspection; executable not run",
+    "pillowFiles": [],
+    "pilModulesInPyz": [],
+    "classificationModulesInPyz": [],
+    "classificationPythonFilesPresentAsData": true,
+    "onnxruntimeModuleInPyz": true,
+    "onnxruntimeNativeFilesPresent": true
+  },
+  "rootCause": "Spec-level collect_submodules runs before Analysis applies --paths. The source package is unavailable to the collector. Classification Python files are copied as data, but their Pillow dependency is not analyzed or bundled.",
+  "collectorComparison": {
+    "beforeCount": 0,
+    "afterCount": 161,
+    "fix": "Make existing --paths/-p entries available in the PyInstaller child process PYTHONPATH before spec collectors run; preserve inherited PYTHONPATH and parent environment.",
+    "regression": "A temporary external classification plugin is collected and the real PyInstaller modulegraph resolves PIL.Image."
+  },
+  "applicationFixes": [
+    "Classification import errors identify onnxruntime or Pillow and preserve the underlying exception type and message.",
+    "Designer and Runtime package self-tests run an embedded input-dependent classification ONNX model through Pillow preprocessing and CPU inference.",
+    "Both windowed executable entries supply missing stdout/stderr before freeze_support; worker job.failed reporting remains unchanged."
+  ],
+  "validation": {
+    "python": "3.10.21",
+    "diagnosticRegressionBeforeFix": {"failed": 4, "deselected": 23, "reason": "Old combined error message discards the actual import failure."},
+    "classificationOperatorAfterFix": {"passed": 27},
+    "packageEntrySelftestAndWorkerDiagnostics": {"passed": 25},
+    "operatorRuntimeValidation": {"passed": 3},
+    "changedPythonRuff": "PASS",
+    "gitDiffCheck": "PASS",
+    "packagerBuildTests": {"passed": 64},
+    "packagerBrandingBuildTests": {"passed": 27, "skipped": 1, "skipReason": "Directory symlink unavailable"},
+    "packagerFullUnittestSuite": {"total": 419, "passed": 418, "skipped": 1, "seconds": 390.925, "exitCode": 0, "skipReason": "test_linked_cache_is_rejected_without_touching_target: Directory symlinks unavailable"},
+    "initialPackagerBrandingInvocation": "FAILED to import branding_fixtures when invoked by module name; corrected unittest discovery invocation passed. This was a test invocation error, not a business assertion failure.",
+    "designerAndRuntimePackagerDryRun": "PASS"
+  },
+  "notRun": [
+    "Full application source suite",
+    "Rebuilt frozen EXE and installer validation",
+    "Internal-network computer acceptance",
+    "Real camera or PLC acceptance"
+  ],
+  "releaseFollowUp": "Build and verify new packages using both the application fixes and the fixed packager. The application release workflow still pins packager 3ef28d7f581dfff09fc900ba64df34b275cc1dcd; no release, workflow pin, installed application, or field project was changed."
+}

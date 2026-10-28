@@ -1,3 +1,4 @@
+import builtins
 from dataclasses import asdict
 from pathlib import Path
 
@@ -178,3 +179,30 @@ def testMissingModelAndInvalidInputs(tmp_path):
     assert operator.executeNode({"image": "wrong"}, params, {})["error"]["code"] == "E_INPUT_TYPE"
     assert operator.executeNode({"image": np.zeros((1, 1, 4), dtype=np.uint8)}, params, {})["error"]["code"] == "E_INPUT_SHAPE"
     assert operator.executeNode({"image": np.zeros((1, 1, 3), dtype=np.uint8)}, params, {})["error"]["code"] == "E_MODEL_NOT_FOUND"
+
+
+@pytest.mark.parametrize("moduleName,dependency,error", [
+    ("onnxruntime", "onnxruntime", ModuleNotFoundError("No module named 'onnxruntime'")),
+    ("onnxruntime", "onnxruntime", ImportError("DLL load failed while importing onnxruntime_pybind11_state")),
+    ("PIL", "Pillow (PIL.Image)", ModuleNotFoundError("No module named 'PIL'")),
+    ("PIL", "Pillow (PIL.Image)", ImportError("DLL load failed while importing _imaging")),
+])
+def testDependencyFailurePreservesComponentAndOriginalError(tmp_path, monkeypatch, moduleName, dependency, error):
+    model = tmp_path / "model.onnx"
+    model.touch()
+    originalImport = builtins.__import__
+
+    def importDependency(name, *args, **kwargs):
+        if name == moduleName:
+            raise error
+        return originalImport(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", importDependency)
+    result = YoloClassificationOperator().executeNode(
+        {"image": np.zeros((8, 8, 3), dtype=np.uint8)}, {"modelPath": str(model)}, {}
+    )
+
+    assert result["status"] == "error"
+    assert result["error"]["code"] == "E_BACKEND_UNAVAILABLE"
+    assert dependency in result["error"]["message"]
+    assert f"{type(error).__name__}: {error}" in result["error"]["message"]

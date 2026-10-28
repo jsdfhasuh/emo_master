@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import multiprocessing
+import os
 import sys
 from typing import Sequence
 
 
 def main(arguments: Sequence[str] | None = None) -> int:
+    # Windowed executables have no console streams. Child bootstrap still
+    # writes to stderr when a worker fails, including inside freeze_support.
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w")
     multiprocessing.freeze_support()
     commandArguments = list(sys.argv[1:] if arguments is None else arguments)
     if "--self-test" in commandArguments:

@@ -18,7 +18,7 @@ from PySide2.QtWidgets import QApplication
 
 from emo_master import __version__
 from emo_master.apps.operator_runtime.main import OperatorWindow
-from emo_master.apps.package_selftest import _checkBuiltins, _checkMigrations, _checkOnnxRuntime
+from emo_master.apps.package_selftest import _checkBuiltins, _checkMigrations, _checkOnnxRuntime, _checkYoloClassification
 from emo_master.core.project.delivery_store import atomicJson
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.project.runtime_package import buildRuntimePackage, installRuntimePackage
@@ -183,7 +183,8 @@ def runValidationCommand(arguments) -> int:
             nextReport = time.monotonic() + .5
     from emo_master.apps.targeted_repair_selftest import checkTargetedRepairs
     for name, check in (("builtins", _checkBuiltins), ("migrations", _checkMigrations),
-                        ("onnxruntime", _checkOnnxRuntime), ("targetedRepairs", checkTargetedRepairs)):
+                        ("onnxruntime", _checkOnnxRuntime), ("yoloClassification", _checkYoloClassification),
+                        ("targetedRepairs", checkTargetedRepairs)):
         report(name)
         try:
             checks[name] = dict(status="ok", **check())

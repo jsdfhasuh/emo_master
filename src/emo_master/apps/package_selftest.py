@@ -18,6 +18,7 @@ import emo_master
 from emo_master.apps.runtime.context.sqlite_store import SqliteStore
 from emo_master.core.contracts.geometry2d import DetectionCollection
 from emo_master.core.plugin.registry import PluginRegistry
+from emo_master.plugins.builtins.yolo_classification.operator import YoloClassificationOperator
 from emo_master.plugins.builtins.yolo_inference.onnx_backend import OnnxYoloSession
 from emo_master.plugins.builtins.yolo_inference.operator import YoloInferenceOperator
 
@@ -42,6 +43,17 @@ _TINY_YOLO_ONNX = (
     "WiAKBmltYWdlcxIWChQIARIQCgIIAQoCCAMKAggICgIICGIdCgdvdXRwdXQwEhIKEAgBEgwK"
     "AggBCgIIBQoCCAJCBAoAEA1yFQoFbmFtZXMSDHswOiAnc2NyZXcnfXIOCgR0YXNrEgZkZXRl"
     "Y3RyEAoHZW5kMmVuZBIFRmFsc2VyFgoEYXJncxIOeydubXMnOiBGYWxzZX0="
+)
+# Input-dependent probabilities [1 - mean(images), mean(images)], with the same
+# metadata and input/output contract as an exported YOLO classification model.
+_TINY_CLASSIFICATION_ONNX = (
+    "CAg6rQIKPAoGaW1hZ2VzEgRtZWFuIgpSZWR1Y2VNZWFuKg8KBGF4ZXNAAUACQAOgAQcqDwoI"
+    "a2VlcGRpbXMYAKABAgoaCgNvbmUKBG1lYW4SCG5lZ2F0aXZlIgNTdWIKLQoIbmVnYXRpdmUK"
+    "BG1lYW4SBnNjb3JlcyIGQ29uY2F0KgsKBGF4aXMYAKABAgohCgZzY29yZXMKBGF4aXMSBm91"
+    "dHB1dCIJVW5zcXVlZXplEhxjbGFzc2lmaWNhdGlvbi1wYWNrYWdlLXByb2JlKg8IARABQgNv"
+    "bmVKBAAAgD8qFAgBEAdCBGF4aXNKCAAAAAAAAAAAWiAKBmltYWdlcxIWChQIARIQCgIIAQoCCAMK"
+    "AggICgIICGIYCgZvdXRwdXQSDgoMCAESCAoCCAEKAggCQgQKABANchAKBHRhc2sSCGNsYXNzaWZ5"
+    "ciEKBW5hbWVzEhh7MDogJ2RhcmsnLCAxOiAnYnJpZ2h0J30="
 )
 
 
@@ -228,6 +240,42 @@ def _checkOnnxRuntime() -> dict[str, object]:
     }
 
 
+def _checkYoloClassification() -> dict[str, object]:
+    """Exercise Pillow preprocessing and real CPU inference without field assets."""
+    operator = YoloClassificationOperator()
+    labels = []
+    with TemporaryDirectory(prefix="emo-master-classification-self-test-") as tempDirectory:
+        modelPath = Path(tempDirectory) / "tiny-classification.onnx"
+        modelPath.write_bytes(base64.b64decode(_TINY_CLASSIFICATION_ONNX))
+        try:
+            for value, expectedLabel in ((64, "dark"), (192, "bright")):
+                result = operator.executeNode(
+                    {"image": np.full((5, 11, 3), value, dtype=np.uint8)},
+                    {"modelPath": str(modelPath), "confidence": 0.5},
+                    {},
+                )
+                if result.get("status") != "ok":
+                    raise RuntimeError(f"tiny classification inference failed: {result.get('error')}")
+                outputs = result["outputs"]
+                expected = [1 - value / 255, value / 255]
+                actual = [outputs["result"]["probabilities"][label] for label in ("dark", "bright")]
+                if (outputs["label"] != expectedLabel or not outputs["accepted"]
+                        or not np.allclose(actual, expected, atol=1e-5, rtol=0)):
+                    raise RuntimeError("tiny classification inference returned unexpected probabilities")
+                labels.append(outputs["label"])
+            diagnostics = result["diagnostics"]
+        finally:
+            operator.disposeOperator()
+    from PIL import __version__ as pillowVersion
+    return {
+        "pillowVersion": pillowVersion,
+        "provider": diagnostics["provider"],
+        "inputShape": diagnostics["inputShape"],
+        "preprocess": diagnostics["preprocess"],
+        "labels": labels,
+    }
+
+
 def _runExternalInference(
     modelPath: Path,
     imagePath: Path,
@@ -303,6 +351,7 @@ def runSelfTest(
         ("designerQss", _checkDesignerStyle),
         ("migrations", _checkMigrations),
         ("onnxruntime", _checkOnnxRuntime),
+        ("yoloClassification", _checkYoloClassification),
     )
     if guiIcons:
         checkFunctions += (("guiIcons", _checkGuiIcons),)

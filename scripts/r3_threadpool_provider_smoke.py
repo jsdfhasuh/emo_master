@@ -24,7 +24,7 @@ PROFILE = '''<?xml version="1.0" encoding="utf-8"?>
     <BufferSize Value="64" /><Buffers Value="64" />
   </EventCollector>
   <EventProvider Id="TpProvider" Name="C861D0E2-A2C1-4D36-9F9C-970BAB943A12"
-                 Level="5" ProcessExeFilter="python.exe" />
+                 Level="5" />
   <Profile Id="A18Creation.Light.Memory" Name="A18Creation"
            Description="Synthetic callback provider validation only"
            DetailLevel="Light" LoggingMode="Memory">
@@ -124,16 +124,28 @@ def validateTrace(path, workerRecord):
                 value = data.get(key, "0") or "0"
                 return int(value, 16 if value.strip().lower().startswith("0x") else 10)
             if (pid == workerRecord["pid"] and integer("CallbackFunction") == workerRecord["callback_address"]
-                    and integer("TaskId") == workerRecord["work_address"] and integer("CallbackContext") == 0xA18):
+                    and integer("CallbackContext") == 0xA18):
                 matches.append(dict(opcode=int(event.findtext("e:System/e:Opcode", "-1", ns)),
-                                    tid=int(execution["ThreadID"]), pool=integer("PoolId"), data=data))
+                                    tid=int(execution["ThreadID"]), pool=integer("PoolId"),
+                                    task=integer("TaskId"),
+                                    qpc=int(event.find("e:System/e:TimeCreated", ns).get("RawTime")), data=data))
         event.clear()
-    enqueuedPools = {row["pool"] for row in matches if row["opcode"] == 32 and row["pool"]
-                     and row["tid"] == workerRecord["main_tid"]}
+    # The actual ETL uses an internal TaskId, not the public PTP_WORK pointer.
+    # Correlate the opaque TaskId across enqueue/dequeue/start/stop; never bake
+    # the observed +0xc8 difference into a Windows-version-dependent decoder.
+    callbacks = workerRecord["callbacks"]
+    lifecycle = len(callbacks) == 1 and callbacks[0]["work"] == workerRecord["work_address"]
+    lifecycle = lifecycle and callbacks[0]["context"] == 0xA18 and len(matches) == 4
+    if lifecycle:
+        matches.sort(key=lambda row: row["qpc"])
+        lifecycle = ([row["opcode"] for row in matches] == [32, 33, 34, 35]
+            and matches[0]["tid"] == workerRecord["main_tid"]
+            and all(row["tid"] == callbacks[0]["tid"] for row in matches[1:])
+            and len({(row["pool"], row["task"]) for row in matches}) == 1
+            and bool(matches[0]["pool"] and matches[0]["task"]))
     return {"headers": headers, "providerPids": sorted(pids), "matchingCallbacks": matches,
             "valid": bool(headers) and all(not h["EventsLost"] and not h["BuffersLost"] for h in headers)
-                and any(row["opcode"] == 34 and row["pool"] in enqueuedPools
-                        and row["tid"] == workerRecord["callbacks"][0]["tid"] for row in matches)}
+                and lifecycle}
 
 
 def capture(root):
@@ -145,7 +157,8 @@ def capture(root):
     root.mkdir(parents=True, exist_ok=False)
     result = {"role": "synthetic_provider_validation", "source": os.environ.get("GITHUB_SHA"),
               "providerSessionsBefore": providerSessions(), "valid": False,
-              "limits": "4 MiB, one provider, requested python.exe filter. This is not an A18 reproduction or product acceptance."}
+              "limits": "4 MiB, one classic provider across the disposable runner; decode by PID. "
+                        "ProcessExeFilter was ineffective in the actual ETL. Not A18 reproduction or product acceptance."}
     if any(row["enabled"] for row in result["providerSessionsBefore"]):
         raise RuntimeError("an existing session owns the classic provider")
     profile = root / "provider.wprp"

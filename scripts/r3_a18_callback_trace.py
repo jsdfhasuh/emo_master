@@ -30,6 +30,10 @@ def combinedProfile():
     tree = ET.parse(Path(__file__).with_name("a18_thread_creation.wprp"))
     profiles = tree.getroot().find("Profiles")
     callback = ET.fromstring(PROFILE).find("Profiles")
+    # The real 23-second call retained only the last 3 seconds in 4 MiB.
+    # Bound this collector at 128 MiB; offline review must still inspect every
+    # LastDroppedTimes value, since circular overwrite leaves EventsLost at 0.
+    callback.find("EventCollector/Buffers").set("Value", "2048")
     profiles.insert(1, callback.find("EventCollector"))
     profiles.insert(3, callback.find("EventProvider"))
     profiles.find("Profile/Collectors").append(callback.find("Profile/Collectors/EventCollectorId"))
@@ -54,7 +58,7 @@ def pytest_runtest_call(item):
             trace.profile.write_text(combinedProfile(), encoding="utf-8")
             trace.record.update(role="original_a18_callback_diagnostic", source=os.environ.get("GITHUB_SHA"),
                 provider_sessions_before=before,
-                limits="32 MiB kernel + 4 MiB Thread Pool memory; one original test call. "
+                limits="32 MiB kernel + 128 MiB Thread Pool memory; one original test call. "
                        "No sampling/file/network providers. Classic events span the disposable runner.")
             trace.start()
             if trace.started:

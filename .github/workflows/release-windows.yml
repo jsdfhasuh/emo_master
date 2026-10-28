@@ -12,8 +12,9 @@ jobs:
   validate:
     name: Validate source and release version
     runs-on: windows-latest
+    timeout-minutes: 90
     env:
-      QT_QPA_PLATFORM: offscreen
+      QT_QPA_PLATFORM: windows
 
     steps:
       - name: Checkout source
@@ -30,6 +31,28 @@ jobs:
 
       - name: Install development dependencies
         run: python -m pip install -r requirements-dev.txt
+
+      - name: Configure native Windows test desktop
+        shell: pwsh
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+
+      - name: Verify native Windows test desktop
+        shell: python
+        env:
+          PYTHONPATH: src
+        run: |
+          import json
+          import emo_master
+          from PySide2.QtWidgets import QApplication
+          app = QApplication([])
+          screen = app.primaryScreen()
+          geometry = screen.geometry()
+          print(json.dumps({"platform": app.platformName(),
+              "geometry": geometry.getRect(),
+              "available": screen.availableGeometry().getRect(),
+              "scale": screen.devicePixelRatio()}), flush=True)
+          assert app.platformName() == "windows"
+          assert geometry.width() >= 1920 and geometry.height() >= 1080
 
       - name: Validate tag matches application version
         shell: pwsh
@@ -52,12 +75,22 @@ jobs:
       - name: Run project checks and ONNX tests
         run: python scripts/ci_check.py
 
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-source-test-results
+          path: |
+            build/ci-results.xml
+            build/ci-failures.log
+          if-no-files-found: ignore
+
   package:
     name: Build and publish Designer and Runtime
     needs: validate
-    uses: jsdfhasuh/python_build_scripts/.github/workflows/release-emo-master.yml@3ef28d7f581dfff09fc900ba64df34b275cc1dcd
+    uses: jsdfhasuh/python_build_scripts/.github/workflows/release-emo-master.yml@91766f6d18ca9a333f64cf1c6030202457ec4a8a
     with:
-      packager_ref: 3ef28d7f581dfff09fc900ba64df34b275cc1dcd
+      packager_ref: 91766f6d18ca9a333f64cf1c6030202457ec4a8a
       source_ref: ${{ github.sha }}
       release_tag: ${{ github.ref_name }}
       publish_release: true

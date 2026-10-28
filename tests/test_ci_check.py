@@ -68,3 +68,21 @@ def testNativeWindowsCiProvidesDesktopWithoutReducingTestSelection():
     upload = steps["Upload test results"]
     assert upload["if"] == "always()"
     assert upload["with"]["path"].splitlines() == ["build/ci-results.xml", "build/ci-failures.log"]
+
+
+def testReleaseUsesNativeWindowsDesktopAndPreservesFullSourceGate():
+    workflow = yaml.safe_load((Path(__file__).resolve().parents[1] / ".github/workflows/release-windows.yml").read_text())
+    job = workflow["jobs"]["validate"]
+    assert job["runs-on"] == "windows-latest"
+    assert job["env"]["QT_QPA_PLATFORM"] == "windows"
+    assert job["timeout-minutes"] == 90
+    steps = {step["name"]: step for step in job["steps"] if "name" in step}
+    assert steps["Configure native Windows test desktop"]["run"] == "Set-DisplayResolution -Width 1920 -Height 1080 -Force"
+    check = steps["Verify native Windows test desktop"]
+    compile(check["run"], "release-native-desktop", "exec")
+    assert 'geometry.width() >= 1920 and geometry.height() >= 1080' in check["run"]
+    assert steps["Run project checks and ONNX tests"]["run"] == "python scripts/ci_check.py"
+    assert workflow["jobs"]["package"]["needs"] == "validate"
+    upload = steps["Upload test results"]
+    assert upload["if"] == "always()"
+    assert upload["with"]["path"].splitlines() == ["build/ci-results.xml", "build/ci-failures.log"]

@@ -50,13 +50,13 @@ jobs:
 
   package:
     needs: prepare
-    uses: jsdfhasuh/python_build_scripts/.github/workflows/release-windows.yml@3ef28d7f581dfff09fc900ba64df34b275cc1dcd
+    uses: jsdfhasuh/python_build_scripts/.github/workflows/release-windows.yml@91766f6d18ca9a333f64cf1c6030202457ec4a8a
     with:
       target: emo-master
       source_ref: ${{ needs.prepare.outputs.source_sha }}
       release_tag: ${{ needs.prepare.outputs.release_tag }}
       release_repo: jsdfhasuh/emo_master
-      packager_ref: 3ef28d7f581dfff09fc900ba64df34b275cc1dcd
+      packager_ref: 91766f6d18ca9a333f64cf1c6030202457ec4a8a
       publish_release: false
 
   verify:

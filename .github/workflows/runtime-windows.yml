@@ -10,7 +10,7 @@ on:
       packager_ref:
         description: Packager commit containing configs/emo-master-runtime.json
         required: true
-        default: 3ef28d7f581dfff09fc900ba64df34b275cc1dcd
+        default: 91766f6d18ca9a333f64cf1c6030202457ec4a8a
         type: string
 
 permissions:
@@ -74,7 +74,7 @@ jobs:
           if-no-files-found: warn
   package:
     needs: validate
-    uses: jsdfhasuh/python_build_scripts/.github/workflows/release-windows.yml@3ef28d7f581dfff09fc900ba64df34b275cc1dcd
+    uses: jsdfhasuh/python_build_scripts/.github/workflows/release-windows.yml@91766f6d18ca9a333f64cf1c6030202457ec4a8a
     with:
       target: emo-master-runtime
       source_ref: ${{ needs.validate.outputs.source_sha }}

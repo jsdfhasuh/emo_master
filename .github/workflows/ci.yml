@@ -51,32 +51,7 @@ jobs:
           assert geometry.width() >= 1920 and geometry.height() >= 1080
       - name: Validate generated protobuf
         run: python scripts/gen_proto.py --check
-      - name: Verify temporary WPR capture before the full diagnostic run
-        if: runner.os == 'Windows' && github.head_ref == 'codex/ci-native-owner-investigation'
-        shell: python
-        env:
-          EMO_A18_CREATION_TRACE: '1'
-          PYTHONPATH: '.'
-        run: |
-          import threading
-          from scripts.r3_a18_creation_trace import Trace, enabled
-          assert enabled()
-          trace = Trace()
-          trace.record['role'] = 'diagnostic_smoke'
-          try:
-              trace.start()
-              assert trace.started, trace.record
-              worker = threading.Thread(target=lambda: None)
-              worker.start()
-              worker.join()
-          finally:
-              trace.finish()
-          assert trace.record['retired'] and not trace.record['errors'], trace.record
       - name: Run project checks
-        # Temporary PR6 observation, removed before final acceptance/delivery.
-        # Original full order; WPR runs only around the existing A18 test call.
-        env:
-          EMO_A18_CREATION_TRACE: ${{ runner.os == 'Windows' && github.head_ref == 'codex/ci-native-owner-investigation' && '1' || '0' }}
         run: python scripts/ci_check.py
       - name: Upload test results
         if: always()
@@ -87,11 +62,3 @@ jobs:
             build/ci-results.xml
             build/ci-failures.log
           if-no-files-found: ignore
-      - name: Preserve temporary A18 thread creation trace
-        if: always() && runner.os == 'Windows' && github.head_ref == 'codex/ci-native-owner-investigation'
-        uses: actions/upload-artifact@v4
-        with:
-          name: a18-thread-creation-diagnostic
-          path: build/a18-creation-trace/
-          if-no-files-found: warn
-          retention-days: 7

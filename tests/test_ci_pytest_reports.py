@@ -12,6 +12,7 @@ from scripts import ci_pytest_reports
 
 @pytest.mark.parametrize("handlesGrow", [False, True])
 def testNativeOwnerFailureCollectsOriginalSnapshotsEvenWhenHandlesFailFirst(monkeypatch, handlesGrow):
+    monkeypatch.setenv("EMO_A18_STRICT_PROCESS_RESOURCES", "1")
     from scripts import r3_native_thread_origins
     from tests.ui.presentation import test_retained_acceptance_lifecycle as owners
 

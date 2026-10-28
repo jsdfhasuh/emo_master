@@ -1025,3 +1025,61 @@ WPR accepted the profile and confirmed ProcessThread/Loader plus ThreadCreate
 stacks. Focused Ruff, workflow/embedded-Python validation and diff checks
 passed. Actual capture capability is checked by the Windows Actions smoke
 step; no local system-wide trace was started.
+
+### 2026-10-28: normal-use resource acceptance after user-requested gate reduction
+
+The user explicitly requested a lower acceptance threshold. Normal A18
+acceptance now checks the resources the exercised feature actually owns:
+the same live session thread and file throughout navigation, the exact thread
+and descriptor retired on close, no retained fixture references, deleted Qt
+objects, and restored widget/window sets. The 1000 navigations, 30 floating
+windows, image dimensions/pixels, displayed values, identity, hidden-window
+behavior and all functional assertions remain exercised.
+
+Growth in the entire pytest process's native/Python thread census or handle
+count becomes diagnostic evidence in JUnit properties, rather than a failure
+by itself. The observations still detect newly introduced identities even
+when other threads retire and the total count decreases. They retain only
+primitive values so reporting cannot keep the fixture alive. A deliberate
+strict investigation can opt into the original global predicates with
+`EMO_A18_STRICT_PROCESS_RESOURCES=1`. This is a change in the acceptance
+contract, not proof that historical thread 7196 or 3824 was harmless or that
+all process-wide leaks have been fixed.
+
+The temporary WPR smoke/capture hooks and automatic eight-case image workflow
+are removed from this PR, together with their temporary capture implementation
+and mock tests. Their committed history remains on the separate
+`codex/ci-threadpool-provider-smoke` branch, most recently
+`e3dee3cada48eb571eed42bf93358b37d3e9baea`, and all private artifacts remain
+under the original evidence directory. Nothing in this change runs a local
+system trace or deletes that diagnostic branch.
+
+That branch's original A18 call passed on native Windows at 1920 x 1080,
+scale 1, with 46 retained resource checkpoints and no post-warmup growth.
+The first 4 MiB callback capture had circular overwrite despite reporting
+zero EventsLost; the corrected bounded capture preserved all reported
+LastDroppedTimes values as zero. These observations did not reproduce the
+historical failing worker and are not a product fix.
+
+Unreproduced historical native-owner/startup investigations do not each add
+an independent delivery milestone. Normal functional failures still fail CI:
+the existing two-scope image presence, pixels, result identity and pin/lease
+checks remain intact, with no timeout or product-code change. A passing
+candidate is not required to repeat frozen-package checks for this test-only
+contract adjustment; the unchanged production tree retains the previously
+recorded package validation boundary. The actual latest-main CI condition
+for the already authorized branch cleanup remains in force.
+
+Validation of the revised contract: 33 lifecycle, CI-report and CI-command
+tests passed with pytest 9.2.0 on native Windows at 1920 x 1080, scale 1,
+in 33.07 s, with no skips. This includes the original A18 exercise, diagnostic
+growth handling, opt-in strict failures, and failures for missing owned
+thread identity, closed session and retained widgets. Ruff for `src` and
+`tests` and diff checks passed. The first local run exposed one strict-mode
+unit fixture still using the default mode; its explicit opt-in was corrected
+and the complete related selection passed. Both runs remain in private
+`normal-resource-gate-native-regression*` evidence; no local WPR capture ran.
+The passing native exercise actually recorded handles 616 -> 618 during
+navigation, then 605 -> 607 after fixture release, with no new thread IDs.
+Those process-wide differences remain visible in JUnit while the exact owned
+file, thread, references and Qt objects all satisfy their lifecycle checks.

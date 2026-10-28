@@ -906,3 +906,180 @@ are retained as evidence for that exact earlier source. The uninstrumented
 native viewer and Runtime/workflow-controller regression passed **31 tests
 in 27.04 s**, without skips; evidence is
 `node-viewer-readiness-regression.{log,xml}`. Focused Ruff and diff checks passed.
+
+## Main 0.6.6 Two-Scope Image Failure Investigation
+
+PR #5 merged as `58d859b0b813645a068ec8201c4ef2f3e9f40305` after both
+platforms and exact-source frozen validation passed. Its main Windows run
+40628072588 still reported one retained-native-owner failure: navigation
+index 699, four extra handles and one native thread. The post-failure query
+located its entry in ntdll.dll; that does not identify the creator or cause.
+The local full suite later passed that target, but failed the separate
+30-second two-Designer startup test. Both intermittent causes remain open.
+
+The independent release task advanced main to
+`25c82042ce3cfb83e16ede8ea2cb2bcbb2110ce4`, changing only the version to
+0.6.6. Exact-source frozen validation 40640654916 passed icons, native
+Designer startup/multi-instance, Runtime Job and OperatorView, with explicit
+stop, worker retirement and reacquired owner locks, without forced cleanup.
+Installer verification remains hash-only.
+
+Main CI 40639949885's Ubuntu job 122655518469 failed
+`testNormalTwoScopeOverviewButtonsPinGuiNgDespiteNewerBackgroundOk` at the
+second-cycle image comparison with `KeyError: 'a-image'`: 8288 passed,
+one failed, 31 skipped and 42 passing subtests. The old report does not retain
+the failed view's source outcomes, read errors or image-demand state, so it
+does not establish why the image was missing. A single local offscreen run
+and eight bounded repetitions passed; their 36 total image reads succeeded.
+These results do not resolve the Ubuntu failure.
+
+The diagnostic change checks image presence immediately before the original
+pixel assertion and includes the same immutable result, decoded source IDs,
+read failures, image states and matching decode records on failure. It adds
+no retry, wait, product change or replacement snapshot. All existing identity,
+pixel, navigation, pin, resume and retirement assertions remain. A temporary
+PR-only Ubuntu workflow executes at most eight original cases and stops at
+the first failure, preserving its exit status and reports. This diagnostic
+run is not a replacement for either full platform suite. The original module
+passes locally on native Windows (2 tests); focused Ruff and diff checks pass.
+
+Private evidence remains under `build/ci-followup-40444071101/`, including
+`ubuntu-main-25c82042-full.log`, `ci-main-25c82042-results/`,
+`multiscope-25c82042-before.{log,xml}`, `multiscope-25c82042-bounded.{log,xml}`,
+the numbered private trace JSON files, and
+`multiscope-diagnostics-native-regression.{log,xml}`. No branch cleanup is
+permitted while the actual latest main has a failing platform.
+
+The diagnostic PR's full Windows job 122673055292 (run 40645439287,
+source `52fb7fd1506dca87f5e32e5df875be6542b722ff`, merge candidate
+`bea21c08ab0b997886178cfa91cc851f3bfae4e5`) reproduced the same missing
+second-cycle `a-image`: 8314 passed, one failed, five skipped and 42 passing
+subtests. The captured Runtime result is `INCOMPLETE`; its image source is
+`UNAVAILABLE / EXPORT_TIMEOUT`, with reason "assembler waiting for export
+callback exceeded seal deadline". The scope ended 666.9631 ms before closure.
+There is no image reference, client read failure or pending image-demand
+state in that failed view. This identifies a Runtime export/closure failure,
+not a client decode-readiness failure. It does not yet distinguish export
+queueing, encoding, callback contention or scheduling delays. The earlier
+Ubuntu main failure lacks these fields and cannot be assigned this cause
+with certainty.
+
+The matching Runtime closure diagnostic already retains the export owner's
+state at closure, but the first assertion did not include it. The failure
+message now also retains that existing record and matching export retirement
+records. The temporary bounded job moves to native Windows at 1920 x 1080,
+where the detailed failure actually reproduced. All original deadlines,
+assertions and production code remain unchanged. Seven native normal-viewing
+and multi-scope tests pass locally in 32.49 s; a private observation probe
+records all four successful exports, with no failed closure. That observation
+does not establish the CI cause or a fix.
+
+The diagnostic PR's Ubuntu full suite passed 8289 tests with 31 existing skips
+and 42 passing subtests. The Windows native-owner and two-Designer startup
+targets also passed in this run; their historical failures remain unresolved.
+New private evidence: `52fb7fd-windows-failure-evidence-0728.json`,
+`windows-pr-52fb7fd-full.log`, `ci-52fb7fd-pr-results/`, and
+`multiscope-export-owner-native-combination-0733.{log,xml,json}`. PR #6 remains
+a diagnostic draft rather than a claimed product correction.
+
+### 2026-10-28: native-owner recurrence and bounded creation-stack capture
+
+Full CI 40651063012 at diagnostic source
+`3ab56134d97d72392bfdce562820d0fadfbbe480` (candidate
+`9efccd3889a0f56210bbccb9ac94a1345df5212c`) passed Ubuntu with 8289 passed,
+31 existing skips and 42 passing subtests. Windows job 122690969789 failed
+only the native-owner test: 8314 passed, one failed, five existing skips and
+42 passing subtests. Both JUnit reports contain 8362 tests and no errors.
+Windows navigation index 99 observed handles 21683 -> 21687 and native
+threads 43 -> 44, with Python threads 45, widgets 296 and windows 4 unchanged.
+The post-cleanup query found new thread 7196 at ntdll.dll + 0x845d0. This
+again identifies an entry module, not the creator or reason for retention.
+The two-scope image test passed in 5.156 s; no new failed export timeline was
+captured. Neither intermittent cause is established as fixed.
+
+PR6 now temporarily enables WPR only around the original native-owner test
+call in its normal Windows full-suite order. A 32 MiB memory profile records
+process/thread and loader events with ThreadCreate stacks; there is no file,
+network or sampling provider. A separate short smoke capture verifies WPR
+start/stop before spending time on the full run. Each capture owns a fresh
+named instance; stop/cancel always specifies that name. The artifact includes
+the original ETL, command outcomes, target PID and wall/monotonic boundaries.
+Original assertions, 1000 navigations, 30 floating cycles, timeout and exit
+status are preserved. A failed capture cannot turn a failing test green, and
+an otherwise successful suite with invalid capture is reported as invalid.
+The observer changes timing and is diagnostic only; lost events, missing
+stacks or a passing instrumented run cannot establish a fix. It is enabled
+only for this investigation PR on Windows Actions, not local/native release
+acceptance. Remove these temporary CI hooks and reassess the bounded
+two-scope workflow before final acceptance and delivery.
+
+Private original logs, JUnit and immediate failure output are retained as
+`windows-pr-3ab56134-full.log`, `ci-3ab56134-pr-results/`, and
+`3ab56134-windows-failure-evidence-0840.json`. No product change, merge,
+release or branch cleanup accompanies this diagnostic revision.
+
+Local validation of the new observer and existing CI/report integration:
+23 tests passed, with no skipped tests. This uses mocked WPR commands for
+ownership and failure-path checks, not a local kernel capture. The installed
+WPR accepted the profile and confirmed ProcessThread/Loader plus ThreadCreate
+stacks. Focused Ruff, workflow/embedded-Python validation and diff checks
+passed. Actual capture capability is checked by the Windows Actions smoke
+step; no local system-wide trace was started.
+
+### 2026-10-28: normal-use resource acceptance after user-requested gate reduction
+
+The user explicitly requested a lower acceptance threshold. Normal A18
+acceptance now checks the resources the exercised feature actually owns:
+the same live session thread and file throughout navigation, the exact thread
+and descriptor retired on close, no retained fixture references, deleted Qt
+objects, and restored widget/window sets. The 1000 navigations, 30 floating
+windows, image dimensions/pixels, displayed values, identity, hidden-window
+behavior and all functional assertions remain exercised.
+
+Growth in the entire pytest process's native/Python thread census or handle
+count becomes diagnostic evidence in JUnit properties, rather than a failure
+by itself. The observations still detect newly introduced identities even
+when other threads retire and the total count decreases. They retain only
+primitive values so reporting cannot keep the fixture alive. A deliberate
+strict investigation can opt into the original global predicates with
+`EMO_A18_STRICT_PROCESS_RESOURCES=1`. This is a change in the acceptance
+contract, not proof that historical thread 7196 or 3824 was harmless or that
+all process-wide leaks have been fixed.
+
+The temporary WPR smoke/capture hooks and automatic eight-case image workflow
+are removed from this PR, together with their temporary capture implementation
+and mock tests. Their committed history remains on the separate
+`codex/ci-threadpool-provider-smoke` branch, most recently
+`e3dee3cada48eb571eed42bf93358b37d3e9baea`, and all private artifacts remain
+under the original evidence directory. Nothing in this change runs a local
+system trace or deletes that diagnostic branch.
+
+That branch's original A18 call passed on native Windows at 1920 x 1080,
+scale 1, with 46 retained resource checkpoints and no post-warmup growth.
+The first 4 MiB callback capture had circular overwrite despite reporting
+zero EventsLost; the corrected bounded capture preserved all reported
+LastDroppedTimes values as zero. These observations did not reproduce the
+historical failing worker and are not a product fix.
+
+Unreproduced historical native-owner/startup investigations do not each add
+an independent delivery milestone. Normal functional failures still fail CI:
+the existing two-scope image presence, pixels, result identity and pin/lease
+checks remain intact, with no timeout or product-code change. A passing
+candidate is not required to repeat frozen-package checks for this test-only
+contract adjustment; the unchanged production tree retains the previously
+recorded package validation boundary. The actual latest-main CI condition
+for the already authorized branch cleanup remains in force.
+
+Validation of the revised contract: 33 lifecycle, CI-report and CI-command
+tests passed with pytest 9.2.0 on native Windows at 1920 x 1080, scale 1,
+in 33.07 s, with no skips. This includes the original A18 exercise, diagnostic
+growth handling, opt-in strict failures, and failures for missing owned
+thread identity, closed session and retained widgets. Ruff for `src` and
+`tests` and diff checks passed. The first local run exposed one strict-mode
+unit fixture still using the default mode; its explicit opt-in was corrected
+and the complete related selection passed. Both runs remain in private
+`normal-resource-gate-native-regression*` evidence; no local WPR capture ran.
+The passing native exercise actually recorded handles 616 -> 618 during
+navigation, then 605 -> 607 after fixture release, with no new thread IDs.
+Those process-wide differences remain visible in JUnit while the exact owned
+file, thread, references and Qt objects all satisfy their lifecycle checks.

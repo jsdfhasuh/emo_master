@@ -37,6 +37,15 @@ def runtimeConnectionDescription(client):
         return dict(kind='grpc', label='独立 Runtime（gRPC）' + (' · ' + target if target else ' · 地址不可用'), target=target)
     return dict(kind='unknown', label='连接类型未知', target='')
 
+
+def localProjectSourceChange(client, snapshot, projectFile):
+    """An embedded Runtime shares the Designer filesystem; gRPC never assumes it."""
+    from pathlib import Path
+    if not projectFile or not snapshot.get('sourcePath') or runtimeConnectionDescription(client)['kind'] != 'embedded':
+        return ''
+    local = Path(projectFile).resolve()
+    return str(local) if local != Path(snapshot['sourcePath']).resolve() else ''
+
 try:
     import grpc
 except Exception:  # pragma: no cover
@@ -479,12 +488,18 @@ class RuntimeClient:
         return self._projectConfigurationCall("GetOnlineGraphSnapshot", runtime_pb2.OnlineGraphRequest(
             project_id=projectId, document_revision=documentRevision, job_id=jobId))
 
-    def writeProjectConfiguration(self, snapshot, localPayload, selectedPaths, requestId, *, validate=False, replacementPolicy="reject"):
+    def writeProjectConfiguration(self, snapshot, localPayload, selectedPaths, requestId, *, validate=False, replacementPolicy="reject",
+                                  localProjectPath=''):
+        if localProjectPath:
+            if runtimeConnectionDescription(self)['kind'] != 'embedded':
+                raise RuntimeClientError('E_CONFIG_SOURCE_REMOTE', '独立 Runtime 的工程目录由执行端管理，不能使用 Designer 本地目录')
+            if snapshot.get('projectSourceWrite') != 1:
+                raise RuntimeClientError('E_CONFIG_SOURCE_UNSUPPORTED', '当前 Runtime 不支持工程目录切换，请升级 Runtime 后重新比较')
         return self._projectConfigurationCall("ValidateProjectWrite" if validate else "WriteProjectConfiguration",
             runtime_pb2.ProjectConfigurationWriteRequest(request_id=requestId,
                 expected_runtime_instance_id=snapshot["runtimeInstanceId"], expected_revision=snapshot["documentRevision"],
                 local_payload_json=json.dumps(localPayload, ensure_ascii=True), selected_paths=selectedPaths,
-                replacement_policy=replacementPolicy))
+                replacement_policy=replacementPolicy, local_project_path=str(localProjectPath or '')))
 
     def getProjectWriteStatus(self, requestId):
         return self._projectConfigurationCall("GetProjectWriteStatus", runtime_pb2.ProjectWriteLookup(request_id=requestId))

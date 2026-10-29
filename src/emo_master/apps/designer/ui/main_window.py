@@ -3646,7 +3646,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                     self.appendRuntimeLog('ERROR', str(error))
                     return False
             else:
-                if not online.get('recoveryError') and not projectConfigurationChanges(
+                from emo_master.apps.designer.services.runtime_client import localProjectSourceChange
+                if not online.get('recoveryError') and not localProjectSourceChange(
+                        self.runtimeClient, online, self.projectController.currentProjectFile) and not projectConfigurationChanges(
                         online['payload'], self.pageCoordinator.session.payload()):
                     return True
             from PySide2.QtWidgets import QDialog

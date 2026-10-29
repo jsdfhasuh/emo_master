@@ -423,9 +423,9 @@ def freezeTargets(document, projectRoot: Path, protected=(), *, debugRoot: Path 
             path = resolveTarget(config["databasePath"], projectRoot, protected)
             target = inspect(path, config["table"], cancelled)
             if not target["exists"]:
-                raise SqliteWriterError("E_SQLITE_TARGET", "数据库不存在；请明确初始化")
+                raise SqliteWriterError("E_SQLITE_TARGET", f"数据库不存在：{path}（流程 {wid} / 节点 {node.nodeId}）；请核对工程目录或明确初始化")
             if target['structure'] is None:
-                raise SqliteWriterError('E_SQLITE_SCHEMA', '目标表不存在；请明确初始化')
+                raise SqliteWriterError('E_SQLITE_SCHEMA', f"目标表 {config['table']} 不存在：{path}（流程 {wid} / 节点 {node.nodeId}）；请明确初始化")
             validateMappings(config, target["structure"])
             writers.append(_WriterTarget(node, config, path, target["structure"]))
     groups: dict[tuple[int, int], list[_WriterTarget]] = {}

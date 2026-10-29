@@ -41,6 +41,8 @@ message ProjectConfigurationWriteRequest {
   string local_payload_json = 4;
   repeated string selected_paths = 5;
   string replacement_policy = 6;
+  // Explicit embedded-Designer relocation; never a remote client's filesystem path.
+  string local_project_path = 7;
 }
 message ProjectWriteLookup { string request_id = 1; }
 message ProjectResourceTransferRequest {

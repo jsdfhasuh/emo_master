@@ -60,6 +60,10 @@ class ConfigurationCoordinator:
                 raise ConfigurationError('E_CONFIG_PROJECT_REPLACEMENT', 'local loading requires a source and explicit replacement policy')
             from emo_master.core.project.models import ProjectDocument
             return ProjectDocument.model_validate(request['localPayload']).model_dump(mode='json')
+        if request.get('sourcePath') and not request['selectedPaths']:
+            if request['localPayload']['project']['projectId'] != self.current['payload']['project']['projectId']:
+                raise ConfigurationError('E_CONFIG_PROJECT_REPLACEMENT', 'switching projects requires selecting the complete candidate')
+            return deepcopy(self.current['payload'])
         candidate = selectedCandidate(self.current["payload"], request["localPayload"], request["selectedPaths"])
         if candidate["project"]["projectId"] != self.current["payload"]["project"]["projectId"]:
             from emo_master.core.project.models import ProjectDocument
@@ -73,7 +77,8 @@ class ConfigurationCoordinator:
     def validate(self, request):
         with self.lock:
             candidate = self._candidate(request)
-        prepared = self.prepare(candidate, Event())
+        source = {'sourcePath': request['sourcePath']} if request.get('sourcePath') else {}
+        prepared = self.prepare(candidate, Event(), **source)
         if self.discard is not None:
             self.discard(prepared)
         return candidate
@@ -213,7 +218,7 @@ class ConfigurationCoordinator:
                     if len({value["snapshot"]["executionRevision"] for value in leases}) >= 16:
                         raise ConfigurationError("E_CONFIG_PLAN_CAPACITY", "in-flight plan capacity reached")
                 if self.beforeCommit is not None:
-                    self.beforeCommit(candidate)
+                    self.beforeCommit(candidate, **source)
                 sourcePath = getattr(prepared, "sourcePath", "") or self.current["sourcePath"]
                 if initial:
                     receipt = dict(state='COMMITTED', requestId=request['requestId'], runtimeInstanceId=self.runtimeInstanceId,

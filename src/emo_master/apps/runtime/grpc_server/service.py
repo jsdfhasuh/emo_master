@@ -605,7 +605,9 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 document = self.sqliteManagement.run(lambda cancelled: freezeTargets(document, Path(self.loadedProjectPath),
                     self.sqliteProtectedPaths(), cancelled=cancelled), context)
         except Exception as error:
-            return runtime_pb2.StartJobReply(ok=False, status="REJECTED", message=str(error))
+            return runtime_pb2.StartJobReply(ok=False, status="REJECTED", message=str(error),
+                diagnostics_json=json.dumps(dict(code=getattr(error, 'code', 'E_SQLITE_TARGET'),
+                    projectSource=self.loadedProjectFile, projectDirectory=self.loadedProjectPath), ensure_ascii=False))
 
         capture = None
         consumerCaptures = {}

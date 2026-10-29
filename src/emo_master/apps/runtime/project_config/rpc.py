@@ -106,7 +106,11 @@ class ProjectConfigurationRpcMixin:
         identity = sha256(payload["project"]["projectId"].encode("utf-8")).hexdigest()
         return str(runtime.workspaceRoot.parent / "online-projects" / identity / "project.emoproj")
 
-    def _validateProjectConfiguration(self, payload, *, checkAdmission=True, sourcePath=None):
+    def _configurationSourceChanged(self, sourcePath):
+        current = self.projectConfiguration.current
+        return bool(sourcePath and current and Path(sourcePath).resolve() != Path(current['sourcePath']).resolve())
+
+    def _validateProjectConfiguration(self, payload, *, checkAdmission=True, sourcePath=None, cancelled=lambda: False):
         runtime: Any = self
         document = ProjectDocument.model_validate(payload)
         with runtime._projectStateLock:
@@ -131,13 +135,20 @@ class ProjectConfigurationRpcMixin:
                 ProjectGlobalVariables(runtime.sqliteStore, document.project.projectId,
                     document.globalVariables).validateDefinitions(connection)
             if checkAdmission:
-                self._checkConfigurationAdmission(payload)
+                self._checkConfigurationAdmission(payload, sourcePath=sourcePath)
         from emo_master.core.project.runtime_directory import prepareRuntimeProject
         prepared = prepareRuntimeProject(document, Path(sourcePath or self._configurationSourcePath(payload)).parent,
             runtime.pluginScanResult.activeOperators, deviceTypes=runtime.pluginScanResult.deviceTypes,
             resourcePaths=runtime.projectResourceTransfers.resolve(document),
             allowMissingRoot=True,
             protectedPaths=(*runtime.sqliteProtectedPaths(), runtime.operationalLogWriter.directory))
+        if self._configurationSourceChanged(sourcePath) and any(
+                node.operatorId == 'vision.io.sqlite_writer' for flow in prepared.workflows.values() for node in flow.nodes):
+            from emo_master.apps.runtime.business_sqlite.backend import freezeTargets
+            # Validate the new target; publication never creates or copies business databases.
+            prepared = runtime.sqliteManagement.run(lambda stopped: freezeTargets(
+                prepared, Path(sourcePath).parent, runtime.sqliteProtectedPaths(),
+                cancelled=lambda: cancelled() or stopped()))
         from .resources import retainDeviceInputs
         if not recovering and not projectChanged:
             prepared = retainDeviceInputs(prepared, current, runtime.pluginScanResult.deviceTypes,
@@ -238,7 +249,7 @@ class ProjectConfigurationRpcMixin:
 
     def _preparePinnedProjectConfiguration(self, payload, cancelled, *, sourcePath=None):
         runtime: Any = self
-        document, prepared = self._validateProjectConfiguration(payload, sourcePath=sourcePath)
+        document, prepared = self._validateProjectConfiguration(payload, sourcePath=sourcePath, cancelled=cancelled.is_set)
         if cancelled.is_set():
             raise ConfigurationError("E_CONFIG_CANCELLED", "configuration preparation cancelled")
         from .resources import prepareResources, discardResources
@@ -312,7 +323,7 @@ class ProjectConfigurationRpcMixin:
                                      journal=runtime.configurationResourceJournal)
                     runtime._ownedConfigurationResources.remove(path)
 
-    def _checkConfigurationAdmission(self, payload):
+    def _checkConfigurationAdmission(self, payload, *, sourcePath=None):
         runtime: Any = self
         if runtime._closing:
             raise ConfigurationError("E_RUNTIME_CLOSING", "Runtime is closing")
@@ -325,11 +336,18 @@ class ProjectConfigurationRpcMixin:
                 raise ConfigurationError('E_PREVIEW_RELEASE_FAILED', '; '.join(errors))
             runtime.pureDraftPreviewSessions.closeAll()
             return
-        executionChanged = executionDigest(payload) != executionDigest(runtime.projectConfiguration.current["payload"])
+        sourceChanged = self._configurationSourceChanged(sourcePath)
+        if sourceChanged:
+            from .impact import sourceCycleOwners
+            with runtime.deviceManager.lock:
+                maintenance = bool(runtime.deviceManager.maintenanceOwners)
+            if maintenance or sourceCycleOwners(runtime):
+                raise ConfigurationError('E_CONFIG_REQUIRES_STOP', '工程目录切换需等待当前任务、检测周期和设备操作结束并释放资源')
+        executionChanged = sourceChanged or executionDigest(payload) != executionDigest(runtime.projectConfiguration.current["payload"])
         scopedDevices = self._supportsDeviceReplacement(payload)
         from .impact import affectedJobs
-        affected = affectedJobs(runtime, payload)
-        if executionChanged and not self._supportsCycleChange(payload) and (any((not record.isTerminal or runtime.jobSupervisor.ownsJobResources(record.jobId)) and record.jobId in affected
+        affected = affectedJobs(runtime, payload, sourceChanged=sourceChanged)
+        if executionChanged and (sourceChanged or not self._supportsCycleChange(payload)) and (any((not record.isTerminal or runtime.jobSupervisor.ownsJobResources(record.jobId)) and record.jobId in affected
                 for record in runtime.jobRepository.all()) or runtime.operatorDebugManager.ownsResources()
                 or runtime.livePreviewManager.hasConfigurationSession()
                 or runtime.deviceManager.maintenanceOwners and not scopedDevices):
@@ -424,6 +442,7 @@ class ProjectConfigurationRpcMixin:
             result["retainedResourceCount"] = len(runtime.configurationResourceJournal.retainedAfterCrash())
             result["versionedStart"] = True
             result['resourceRepair'] = True
+            result['projectSourceWrite'] = 1 if context is None else 0
             result['exportCopyError'] = runtime.projectConfiguration.store.exportError
             result['resourceRecoveryAvailable'] = runtime.onlineRecoveryKind == 'resource' and not runtime.projectConfiguration.publicationError
             return result
@@ -468,7 +487,7 @@ class ProjectConfigurationRpcMixin:
         return self._configurationReply(read)
 
     @staticmethod
-    def _writeRequest(request):
+    def _writeRequest(request, context=None):
         if request.ByteSize() > 3 * 1024 * 1024 or len(request.selected_paths) > 4096:
             raise ConfigurationError("E_CONFIG_LIMIT", "configuration request exceeds budget")
         payload = json.loads(request.local_payload_json)
@@ -477,21 +496,32 @@ class ProjectConfigurationRpcMixin:
         policy = request.replacement_policy or "reject"
         if policy not in {"reject", "stopAffected", "drainAffected"}:
             raise ConfigurationError("E_CONFIG_POLICY", "unknown replacement policy")
+        source = {}
+        if request.local_project_path:
+            if context is not None:
+                raise ConfigurationError('E_CONFIG_SOURCE_REMOTE', '工程目录切换仅适用于本机内嵌 Runtime；远程目录由执行端管理')
+            from emo_master.core.project.files import resolveProjectFile
+            path = Path(request.local_project_path)
+            if not path.is_absolute() or not path.is_file():
+                raise ConfigurationError('E_CONFIG_SOURCE', '请选择已保存的本机工程文件：' + str(path))
+            source['sourcePath'] = str(resolveProjectFile(path).resolve())
         return dict(requestId=request.request_id, expectedRuntimeInstanceId=request.expected_runtime_instance_id,
                     expectedRevision=request.expected_revision, localPayload=payload, selectedPaths=list(request.selected_paths),
-                    replacementPolicy=policy)
+                    replacementPolicy=policy, **source)
 
     def ValidateProjectWrite(self, request, context):
         runtime: Any = self
         def validate():
-            write = self._writeRequest(request)
+            write = self._writeRequest(request, context)
             with runtime._projectStateLock:
                 candidate = runtime.projectConfiguration._candidate(write)
                 _document, prepared = self._validateProjectConfiguration(candidate,
-                    checkAdmission=write["replacementPolicy"] == "reject")
+                    checkAdmission=write["replacementPolicy"] == "reject", sourcePath=write.get('sourcePath'),
+                    cancelled=lambda: context is not None and not context.is_active())
                 from .impact import affectedJobs, changeEffects
                 from emo_master.apps.runtime.devices.replacement import requiresReplacement
-                affected = affectedJobs(runtime, candidate)
+                sourceChanged = self._configurationSourceChanged(write.get('sourcePath'))
+                affected = affectedJobs(runtime, candidate, sourceChanged=sourceChanged)
                 active = [r.jobId for r in runtime.jobRepository.all() if r.jobId in affected
                           and (not r.isTerminal or runtime.jobSupervisor.ownsJobResources(r.jobId))]
                 before, after = runtime.deviceManager.definitions, prepared.devices.definitions
@@ -499,10 +529,11 @@ class ProjectConfigurationRpcMixin:
                 disconnect = [key for key, lifecycle in runtime.deviceManager.lifecycles.items() if lifecycle.connected
                     and (projectChanged or key not in after or requiresReplacement(before[key], after[key],
                         runtime.pluginScanResult.deviceTypes[after[key].deviceTypeId]))]
-                return dict(candidate=candidate, cycleSafe=self._supportsCycleChange(candidate),
+                return dict(candidate=candidate, cycleSafe=not sourceChanged and self._supportsCycleChange(candidate),
                     changeEffects=changeEffects(runtime, candidate),
                     affectedJobs=sorted(active), disconnectDevices=sorted(disconnect),
-                    projectChanged=projectChanged,
+                    projectChanged=projectChanged, sourcePath=write.get('sourcePath', runtime.projectConfiguration.current['sourcePath']),
+                    sourceChanged=sourceChanged,
                     restartDevices=sorted(key for key in disconnect if key in after and after[key].enabled
                         and runtime.pluginScanResult.deviceTypes[after[key].deviceTypeId].connectionLifetime == 'persistent'))
         return self._configurationReply(validate)
@@ -511,7 +542,7 @@ class ProjectConfigurationRpcMixin:
         runtime: Any = self
         def start():
             runtime.jobSupervisor.assertMutationAllowed()
-            return runtime.projectConfiguration.start(self._writeRequest(request))
+            return runtime.projectConfiguration.start(self._writeRequest(request, context))
         return self._configurationReply(start)
 
     def GetProjectWriteStatus(self, request, context):

@@ -1,5 +1,6 @@
 """Configuration and committed receipt share one SQLite commit boundary."""
 import json
+from pathlib import Path
 from threading import Lock
 
 from emo_master.core.project.configuration import canonical, executionDigest
@@ -143,10 +144,12 @@ class ConfigurationStore:
             if self.commitState is not None:
                 self.commitState(connection, current["payload"], payload)
             revision = expectedRevision + 1
-            execution = current["executionRevision"] + int(executionDigest(payload) != executionDigest(current["payload"]))
+            sourcePath = sourcePath or current["sourcePath"]
+            execution = current["executionRevision"] + int(
+                executionDigest(payload) != executionDigest(current["payload"])
+                or Path(sourcePath).resolve() != Path(current["sourcePath"]).resolve())
             receipt = dict(state="COMMITTED", requestId=requestId, runtimeInstanceId=runtimeInstanceId,
                            documentRevision=revision, executionRevision=execution, code="", message="configuration committed")
-            sourcePath = sourcePath or current["sourcePath"]
             connection.execute("UPDATE onlineProject SET documentRevision=?, executionRevision=?, payload=?, sourcePath=? WHERE singleton=1",
                                (revision, execution, canonical(payload), sourcePath))
             connection.execute("INSERT INTO projectWriteReceipts VALUES (?,?,?)",

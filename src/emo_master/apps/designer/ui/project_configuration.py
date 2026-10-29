@@ -14,6 +14,7 @@ from PySide2.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushB
     QStyledItemDelegate, QStyleOptionViewItem, QTreeWidget, QTreeWidgetItem)
 
 from emo_master.core.project.configuration import projectConfigurationChanges, requiredProjectChanges, changeCategory
+from emo_master.apps.designer.services.runtime_client import localProjectSourceChange
 
 
 class ChangeLocationDelegate(QStyledItemDelegate):
@@ -141,6 +142,7 @@ class ProjectConfigurationDialog(QDialog):
         self.initial = False
         self.initialRuntimeId = ''
         self.initialValidated = False
+        self._sourceCandidate = ''
         self.selectCategories = set(selectCategories)
         self.requestId = ""
         self.writePending = False
@@ -161,6 +163,17 @@ class ProjectConfigurationDialog(QDialog):
         statusRow.addWidget(self.statusIcon, 0, Qt.AlignTop)
         statusRow.addWidget(self.status, 1)
         layout.addLayout(statusRow)
+        self.sourceLocation = QLabel()
+        self.sourceLocation.setWordWrap(True)
+        self.sourceLocation.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.sourceLocation.hide()
+        layout.addWidget(self.sourceLocation)
+        self.useLocalSource = QCheckBox('写入时将 Runtime 工程目录切换到当前本地工程')
+        self.useLocalSource.setObjectName('useLocalProjectSource')
+        self.useLocalSource.setToolTip('相对模型、图片输出和数据库路径按新工程目录解析；不会复制或清空已有数据。')
+        self.useLocalSource.hide()
+        self.useLocalSource.toggled.connect(self._sourceSelectionChanged)
+        layout.addWidget(self.useLocalSource)
         diagnosticRow = QHBoxLayout()
         self.diagnosticChoice = QComboBox()
         self.diagnosticChoice.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
@@ -277,6 +290,13 @@ class ProjectConfigurationDialog(QDialog):
                 id(getattr(self.c.window.runtimeClient, "stub", None)),
                 id(getattr(self.c.window.runtimeClient, "runtimeService", None)))
 
+    def _selectedSourcePath(self):
+        return self._sourceCandidate if self.useLocalSource.isChecked() else ''
+
+    def _sourceSelectionChanged(self):
+        self._invalidateEffects()
+        self._controls()
+
     def openGraph(self):
         if not self._valid():
             return
@@ -285,7 +305,8 @@ class ProjectConfigurationDialog(QDialog):
         self.c.showOnline(projectId)
 
     def runOnline(self):
-        if not self._valid() or self.pending is not None or self.writePending or not self.snapshot or self.snapshot.get("recoveryError"):
+        if (not self._valid() or self.pending is not None or self.writePending or not self.snapshot
+                or self.snapshot.get("recoveryError") or self._selectedSourcePath()):
             return
         if not self.snapshot.get("versionedStart"):
             self.status.setText("Runtime 不支持按在线版本校验启动，请先升级 Runtime")
@@ -525,8 +546,10 @@ class ProjectConfigurationDialog(QDialog):
         writable = ready
         self.refreshButton.setEnabled(idle and not self.writePending)
         self.readButton.setEnabled(ready)
-        self.writeButton.setEnabled((writable or initialReady and initialSupported) and self.table.rowCount() > 0)
-        self.validateButton.setEnabled((writable or initialReady and initialSupported) and self.table.rowCount() > 0)
+        hasChanges = self.table.rowCount() > 0 or bool(self._selectedSourcePath())
+        self.writeButton.setEnabled((writable or initialReady and initialSupported) and hasChanges)
+        self.validateButton.setEnabled((writable or initialReady and initialSupported) and hasChanges)
+        self.useLocalSource.setEnabled(ready and self.snapshot.get('projectSourceWrite') == 1)
         self.writeButton.setText('首次写入当前工程' if self.initial else '写入 Runtime')
         validating = self.pending is not None and self.kind in {'initialValidate', 'initialPrewrite', 'validate', 'prewrite'}
         self.validateButton.setText('正在校验…' if validating else '校验完整工程' if self.initial else '校验选中变更')
@@ -545,7 +568,7 @@ class ProjectConfigurationDialog(QDialog):
         self._syncSelectAll()
         self.replacementPolicy.setEnabled(ready)
         if self.runButton:
-            self.runButton.setEnabled(ready and not self.snapshot.get("recoveryError"))
+            self.runButton.setEnabled(ready and not self.snapshot.get("recoveryError") and not self._selectedSourcePath())
             self.runButton.setToolTip("运行在线配置并打开独立只读监视图；本地草稿保持不变")
 
     def _submit(self, kind, action, *args):
@@ -842,6 +865,12 @@ class ProjectConfigurationDialog(QDialog):
     def _showInitial(self):
         self.snapshot = None
         self.initial = True
+        self._sourceCandidate = ''
+        self.sourceLocation.hide()
+        self.useLocalSource.hide()
+        self.useLocalSource.blockSignals(True)
+        self.useLocalSource.setChecked(False)
+        self.useLocalSource.blockSignals(False)
         self.initialValidated = False
         self.initialRuntimeId = ''
         self.replacementPolicy.hide()
@@ -876,6 +905,18 @@ class ProjectConfigurationDialog(QDialog):
         self.initial = False
         self.replacementPolicy.show()
         self.snapshot = snapshot
+        localFile = self.c.window.projectController.currentProjectFile
+        sourceCandidate = localProjectSourceChange(self.client, snapshot, localFile)
+        if sourceCandidate != self._sourceCandidate:
+            self._sourceCandidate = sourceCandidate
+            self.useLocalSource.blockSignals(True)
+            self.useLocalSource.setChecked(bool(sourceCandidate) and snapshot.get('projectSourceWrite') == 1)
+            self.useLocalSource.blockSignals(False)
+        self.sourceLocation.setVisible(bool(snapshot.get('sourcePath')))
+        self.sourceLocation.setText('本地工程：' + str(localFile or '尚未保存') + '\nRuntime 在线工程：' + str(snapshot.get('sourcePath', ''))
+            + ('\n目录变化将在明确写入后生效；相对路径会跟随新目录。' if sourceCandidate else '')
+            + ('\n当前 Runtime 不支持目录切换，请升级后重新比较。' if sourceCandidate and snapshot.get('projectSourceWrite') != 1 else ''))
+        self.useLocalSource.setVisible(bool(sourceCandidate))
         changes = projectConfigurationChanges(snapshot["payload"], self.local)
         replacing = snapshot["payload"]["project"]["projectId"] != self.projectId
         if replacing and self.replacementPolicy.currentData() == "reject":
@@ -920,7 +961,8 @@ class ProjectConfigurationDialog(QDialog):
             self.table.blockSignals(False)
         self._showChangeDetails(self.table.currentRow())
         self._invalidateEffects()
-        self._feedback(('当前工程与 Runtime 配置一致，无需写入。' if not changes else
+        self._feedback(('工程内容一致，但本地与 Runtime 工程目录不同，尚未写入。' if not changes and sourceCandidate else
+                        '当前工程与 Runtime 配置一致，无需写入。' if not changes else
                         f'当前工程与 Runtime 有 {len(changes)} 项配置差异，尚未写入。')
                             + (f"；更换工程：{snapshot['payload']['project']['projectId']} → {self.projectId}" if replacing else "")
                             + ("；恢复未完成：" + snapshot["recoveryError"] if snapshot.get("recoveryError") else "")
@@ -928,6 +970,8 @@ class ProjectConfigurationDialog(QDialog):
                             + ('\n' + self.receiptSummary if self.receiptSummary else ''),
                        'warning' if snapshot.get('recoveryError') or snapshot.get('exportCopyError') else 'info')
         self.c.onlineSummary = '上次比较：' + ('配置一致' if not changes else f'有 {len(changes)} 项配置差异')
+        if sourceCandidate:
+            self.c.onlineSummary += ' · 工程目录不同'
         if snapshot.get('recoveryError'):
             self.c.onlineSummary += ' · 恢复未完成'
         if snapshot.get('exportCopyError'):
@@ -960,7 +1004,7 @@ class ProjectConfigurationDialog(QDialog):
     def _invalidateEffects(self, *_args):
         self._syncSelectAll()
         self.validatedSelection = None
-        if not self.initial and self.snapshot is not None and not self.table.rowCount():
+        if not self.initial and self.snapshot is not None and not self.table.rowCount() and not self._selectedSourcePath():
             self.impact.setText('无配置差异，无需校验或写入。')
             return
         if self.status.property('feedbackState') == 'success':
@@ -990,7 +1034,8 @@ class ProjectConfigurationDialog(QDialog):
                 effect = effects.get(item.data(Qt.UserRole))
                 if item.checkState() != Qt.Checked or not effect:
                     continue
-                effectText = labels.get(effect['effect'], '运行端未提供说明')
+                effectText = ('随工程目录切换，待受影响任务及设备操作结束后生效' if result.get('sourceChanged')
+                              else labels.get(effect['effect'], '运行端未提供说明'))
                 self.table.item(row, 4).setText(effectText)
                 self.table.item(row, 4).setToolTip(effectText)
                 details = []
@@ -1005,6 +1050,9 @@ class ProjectConfigurationDialog(QDialog):
             self.table.blockSignals(False)
         self._showChangeDetails(self.table.currentRow())
         consequence = []
+        if result.get('sourceChanged'):
+            consequence.append('工程目录切换到：' + result['sourcePath'])
+            consequence.append('本次选中变更统一在受影响任务及设备操作结束、资源释放后生效')
         if result.get('cycleSafe'):
             consequence.append('无需停止；新检测采用新配置，已受理周期保持原配置')
         elif result.get('affectedJobs'):
@@ -1013,7 +1061,7 @@ class ProjectConfigurationDialog(QDialog):
             consequence.append('需断开的设备：' + '、'.join(result['disconnectDevices']))
         if result.get('restartDevices'):
             consequence.append('需重新激活设备：' + '、'.join(result['restartDevices']))
-        if not effects:
+        if not effects and not result.get('sourceChanged'):
             consequence.append('此 Runtime 未提供逐项生效说明，请升级 Runtime')
         self.impact.setText('选中变更已校验 · ' + ('；'.join(consequence) or '无正在运行的受影响对象'))
 
@@ -1029,14 +1077,15 @@ class ProjectConfigurationDialog(QDialog):
             return
         paths = [self.table.item(row, 0).data(Qt.UserRole) for row in range(self.table.rowCount())
                  if self.table.item(row, 0).checkState() == Qt.Checked]
-        if not paths:
+        sourcePath = self._selectedSourcePath()
+        if not paths and not sourcePath:
             self._notify('工程校验未通过', '请选择要校验或写入的变更；本次未写入 Runtime。')
             return
         if not self._requireFormat():
             return
         try:
-            dependencies = requiredProjectChanges(self.snapshot["payload"], self.local, paths,
-                deviceTypes=self.deviceTypes, operatorRegistry=self.deviceRequirements)
+            dependencies = (requiredProjectChanges(self.snapshot["payload"], self.local, paths,
+                deviceTypes=self.deviceTypes, operatorRegistry=self.deviceRequirements) if paths else {})
         except ValueError as error:
             self._notify('工程校验未通过', self._errorText(error), self._errorDetails(error), diagnostic=error)
             return
@@ -1051,8 +1100,10 @@ class ProjectConfigurationDialog(QDialog):
                 if item.data(Qt.UserRole) in dependencies:
                     item.setCheckState(Qt.Checked)
             paths.extend(path for path in dependencies if path not in paths)
-        selection = (tuple(sorted(paths)), self.replacementPolicy.currentData())
+        selection = (tuple(sorted(paths)), self.replacementPolicy.currentData(), sourcePath)
         options = {} if self.replacementPolicy.currentData() == "reject" else {"replacementPolicy": self.replacementPolicy.currentData()}
+        if sourcePath:
+            options['localProjectPath'] = sourcePath
         if not validate and self.validatedSelection != selection:
             self.validationSelection = selection
             self._submit('prewrite', lambda: self.client.writeProjectConfiguration(
@@ -1065,7 +1116,10 @@ class ProjectConfigurationDialog(QDialog):
                            if self.replacementPolicy.currentData() != "reject" else "")
             if self.snapshot["payload"]["project"]["projectId"] != self.projectId:
                 consequence += f"\n将完整替换工程 {self.snapshot['payload']['project']['projectId']} 为 {self.projectId}；旧任务、连接意图不自动恢复。"
-            answer = self._confirm("写入 Runtime", f"将选中的 {len(paths)} 项变更写入在线工程？\n" + self.impact.text() + consequence)
+            if sourcePath:
+                consequence += '\n同时切换 Runtime 工程来源：\n' + self.snapshot['sourcePath'] + '\n→ ' + sourcePath
+            selected = f'选中的 {len(paths)} 项配置变更' if paths else '工程目录变更'
+            answer = self._confirm("写入 Runtime", f"将{selected}写入在线工程？\n" + self.impact.text() + consequence)
             if answer != QMessageBox.Yes:
                 return
             if not self._valid() or self._draftChanged():
@@ -1358,7 +1412,7 @@ class ProjectConfigurationDialog(QDialog):
         if not self.initial:
             for row in range(self.table.rowCount()):
                 self.table.item(row, 0).setCheckState(Qt.Checked)
-            if not self.table.rowCount():
+            if not self.table.rowCount() and not self._selectedSourcePath():
                 self._feedback('运行配置一致，无需写入。', 'success')
                 return
         self.write(validate=True)

@@ -1,0 +1,26 @@
+[
+  {
+    "Path": "src/emo_master/apps/designer/operator_editors/workspace_window.py",
+    "Hash": "DFC33D228CAB47C317E8D4CD89D65C3A36715885346E6760977BE5B0E6DAEDDE"
+  },
+  {
+    "Path": "src/emo_master/plugins/builtins/sqlite_writer/editor.py",
+    "Hash": "8855AE1921EBE856D5F961AA6EC5B262A7586D17D485AC34A451EC9E6A57A7DC"
+  },
+  {
+    "Path": "src/emo_master/plugins/builtins/sqlite_writer/operator.py",
+    "Hash": "60F348B442DAD3C6E212E923D7D55EF4EEB1675C7824B3640C2A31E8CF5239F1"
+  },
+  {
+    "Path": "src/emo_master/plugins/builtins/sqlite_writer/manifest.json",
+    "Hash": "703F57E25BD60AD3F0B1B623DB9D4D844496656E2A82690145A13B7342B41FC8"
+  },
+  {
+    "Path": "tests/sqlite_writer/test_editor_layout.py",
+    "Hash": "948F3EE2FCB17ABB64ADCCF9218635198E1BF3E2A0482150916A3B7787E5E2F1"
+  },
+  {
+    "Path": "tests/sqlite_writer/test_user_path.py",
+    "Hash": "7D611495027C86201F35884239537EEE10FD88571C595F3C6BD6D16262EB3858"
+  }
+]

@@ -120,13 +120,27 @@ try:
                     for source in self._bindingPanel.fields.values():
                         source.currentIndexChanged.connect(self._refreshCustomParameterVisibility)
                     self._refreshCustomParameterVisibility()
-                bindingScroll = scrollContent(self._bindingPanel)
+                sqliteBindings = customRoot is not None and context.operatorId == 'vision.io.sqlite_writer'
+                if sqliteBindings:
+                    self._bindingPanel.setTitle("从变量读取设置（可选）")
+                    bindingContent = QWidget()
+                    bindingLayout = QVBoxLayout(bindingContent)
+                    bindingLayout.addWidget(OptionalWrapLabel(
+                        "平时使用固定值即可。需要让这些设置随全局变量变化时，再在这里选择。"))
+                    bindingLayout.addWidget(self._bindingPanel)
+                    bindingLayout.addStretch(1)
+                else:
+                    bindingContent = self._bindingPanel
+                bindingScroll = scrollContent(bindingContent)
                 self._bindingScroll = bindingScroll
                 if self._scrollablePlcLayout:
                     # Keep parameter bindings accessible without taking half
                     # the height of the dedicated PLC runtime page.
                     tabs = cast(QTabWidget, cast(QWidget, customRoot).findChild(QTabWidget, "plcTabs"))
                     tabs.addTab(bindingScroll, "参数来源")
+                elif sqliteBindings:
+                    tabs = cast(QTabWidget, cast(QWidget, customRoot).findChild(QTabWidget, "sqliteTabs"))
+                    tabs.addTab(bindingScroll, "更多设置")
                 else:
                     bindingScroll.setMaximumHeight(230)
                     layout.addWidget(bindingScroll)
@@ -166,6 +180,11 @@ try:
             title = displayName
             if self._operatorName and self._operatorName != displayName:
                 title += f" · {self._operatorName}"
+            if self.context.operatorId == 'vision.io.sqlite_writer':
+                self.setWindowTitle(title)
+                self.setToolTip(f"算子 ID：{self.context.operatorId}\n节点 ID：{self.key.nodeId}")
+                self._operatorIdentityLabel.setText("")
+                return
             self.setWindowTitle(f"{title} · {self.key.nodeId}")
             self._operatorIdentityLabel.setText(
                 f"原始算子：{self._operatorName}\n算子 ID：{self.context.operatorId}"

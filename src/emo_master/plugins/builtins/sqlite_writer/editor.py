@@ -5,14 +5,14 @@ import json
 from PySide2.QtCore import Qt, QTimer
 from PySide2.QtWidgets import (
     QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog, QFormLayout,
-    QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
+    QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QSizePolicy,
     QPlainTextEdit, QPushButton, QTableWidget, QTableWidgetItem, QTabWidget,
     QToolButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 from shiboken2 import isValid
 
-from emo_master.apps.designer.ui.widgets import WrapLabel, scrollContent
-from emo_master.apps.designer.ui.param_form import applyParameterLabel, parameterToolTip, parameterTitle
+from emo_master.apps.designer.ui.widgets import ElidedLabel, OptionalWrapLabel, WrapLabel, scrollContent
+from emo_master.apps.designer.ui.param_form import applyParameterLabel, parameterToolTip
 from emo_master.apps.designer.operator_editors.sqlite_requests import requests
 from emo_master.apps.designer.operator_editors.sqlite_sources import validateDraftMappings
 from emo_master.core.contracts.port_types import normalizePortType
@@ -32,15 +32,21 @@ def _combo(items, value=None):
     return combo
 
 
+STORAGE_LABELS = {
+    'INTEGER': '整数', 'REAL': '小数', 'TEXT': '文字', 'BOOLEAN': '是 / 否',
+    'JSON': '列表 / 对象', 'UTC_TIME': '日期时间', 'FILE_REFERENCE': '图片 / 文件',
+}
+
+
 class SourceDialog(QDialog):
     def __init__(self, parent, sources, source, storage):
         super().__init__(parent)
-        self.setWindowTitle('选择数据来源 · 同一流程的完整输出')
+        self.setWindowTitle('选择要保存的内容')
         self.resize(580, 450)
         layout = QVBoxLayout(self)
         self.tabs = QTabWidget()
         self.tree = QTreeWidget()
-        self.tree.setHeaderLabels(['节点 / 正式输出端口', '类型与说明'])
+        self.tree.setHeaderLabels(['从哪个步骤取值', '说明'])
         self.tree.header().setSectionResizeMode(0, QHeaderView.Stretch)
         self.tree.setColumnWidth(1, 170)
         for node in sources:
@@ -61,19 +67,19 @@ class SourceDialog(QDialog):
                 if source == item.data(0, Qt.UserRole):
                     self.tree.setCurrentItem(item)
             group.setExpanded(True)
-        self.tabs.addTab(self.tree, '节点 → 输出端口')
+        self.tabs.addTab(self.tree, '从流程中选择')
         self.constant = QPlainTextEdit()
         self.constant.setPlaceholderText('完整 JSON 常量，如 0、false、"文本"、null、[1,2]；不是表达式')
         self.constant.setPlainText(json.dumps(source.get('value', ''), ensure_ascii=False))
-        self.tabs.addTab(self.constant, '常量')
+        self.tabs.addTab(self.constant, '填写固定值')
         self.context = _combo([(key, key) for key in CONTEXT_TYPES], source.get('key'))
         container = QWidget()
         form = QFormLayout(container)
-        form.addRow('执行上下文', self.context)
-        self.tabs.addTab(container, '执行上下文')
+        form.addRow('运行信息', self.context)
+        self.tabs.addTab(container, '运行信息')
         self.tabs.setCurrentIndex({'node_output': 0, 'constant': 1, 'context': 2}.get(source.get('kind'), 0))
         layout.addWidget(self.tabs)
-        self.error = QLabel('只选择完整端口；不支持表达式、JSONPath 或数组索引。')
+        self.error = QLabel('选择一个步骤的输出结果；灰色选项与当前数据格式不匹配。')
         self.error.setWordWrap(True)
         layout.addWidget(self.error)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
@@ -134,17 +140,33 @@ class SqliteWriterEditorController:
 
     def bind(self, rootWidget, context):
         self.root, self.context = rootWidget, context
+        self.tabs = QTabWidget()
+        self.tabs.setObjectName('sqliteTabs')
+        self.root.layout().setContentsMargins(0, 0, 0, 0)
+        self.root.layout().addWidget(self.tabs, 1)
+        self.mappingPage = QWidget()
+        mappingLayout = QVBoxLayout(self.mappingPage)
+        summaryRow = QHBoxLayout()
+        self.targetSummary = ElidedLabel()
+        self.targetSummary.setObjectName('sqliteTargetSummary')
+        summaryRow.addWidget(self.targetSummary, 1)
+        targetButton = QPushButton('修改保存位置')
+        targetButton.clicked.connect(lambda: self.tabs.setCurrentWidget(self.scroll))
+        summaryRow.addWidget(targetButton)
+        mappingLayout.addLayout(summaryRow)
+        self.tabs.addTab(self.mappingPage, '保存内容')
         content = QWidget()
         self.scroll = scrollContent(content, name='sqliteEditorScroll')
-        self.root.layout().addWidget(self.scroll)
+        self.tabs.addTab(self.scroll, '保存位置')
         layout = QVBoxLayout(content)
-        target = QGroupBox('数据库目标 · 文件位于 Runtime 主机')
+        target = QGroupBox('保存到哪里')
+        target.setToolTip('文件保存在运行流程的电脑上。使用远程 Runtime 时，请填写那台电脑上的路径。')
         form = QFormLayout(target)
         form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         form.setRowWrapPolicy(QFormLayout.WrapLongRows)
         self.path = QLineEdit()
         self.path.setObjectName('sqliteDatabasePath')
-        self.path.setPlaceholderText('已有或待明确创建的本地文件；相对原工程目录解析')
+        self.path.setPlaceholderText('选择数据库文件，或填写文件路径')
         pathRow = QWidget()
         pathLayout = QHBoxLayout(pathRow)
         pathLayout.setContentsMargins(0, 0, 0, 0)
@@ -159,60 +181,76 @@ class SqliteWriterEditorController:
         self.table.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
         form.addRow('目标表', self.table)
         self.testPath = QLineEdit()
-        self.testPath.setPlaceholderText('复杂表结构需要专门测试库；草稿调试绝不写正式库')
+        self.testPath.setPlaceholderText('需要调试时可另选测试文件，避免写入正式数据')
         form.addRow('专用测试库（可选）', self.testPath)
         self.location = WrapLabel()
         self.location.setObjectName('sqliteLocation')
         self.location.setWordWrap(True)
-        form.addRow('主机 / 最终路径', self.location)
+        form.addRow('实际保存位置', self.location)
         actions = QWidget()
         row = QHBoxLayout(actions)
         row.setContentsMargins(0, 0, 0, 0)
-        self.inspectButton = QPushButton('测试连接 / 刷新结构')
+        self.inspectButton = QPushButton('检查是否可用')
         self.inspectButton.setObjectName('sqliteInspect')
-        self.previewButton = QPushButton('预览建表方案')
+        self.previewButton = QPushButton('预览新建表')
         self.previewButton.setObjectName('sqlitePreviewPlan')
-        self.createButton = QPushButton('明确创建数据库 / 表')
+        self.createButton = QPushButton('创建数据库或表')
         self.createButton.setObjectName('sqliteInitialize')
         self.createButton.setEnabled(False)
         for button in (self.inspectButton, self.previewButton, self.createButton):
             row.addWidget(button)
         form.addRow(actions)
-        self.structure = WrapLabel('尚未检查。普通运行不自动建库、建表或迁移。')
+        self.structure = WrapLabel('尚未检查。首次使用时，请先检查文件和表是否可用。')
         self.structure.setObjectName('sqliteStructure')
         self.structure.setWordWrap(True)
         self.structure.setTextFormat(Qt.PlainText)
-        form.addRow(self.structure)
+        structureRow = QHBoxLayout()
+        structureRow.addWidget(self.structure, 1)
+        self.structureButton = QPushButton('查看各列说明')
+        self.structureButton.setObjectName('sqliteStructureDetails')
+        self.structureButton.setEnabled(False)
+        self.structureButton.clicked.connect(self._showStructure)
+        structureRow.addWidget(self.structureButton)
+        form.addRow(structureRow)
         layout.addWidget(target)
-        fields = QGroupBox('字段映射 · 无需为每个字段增加连线')
+        fields = QWidget()
         fieldsLayout = QVBoxLayout(fields)
+        fieldsLayout.setContentsMargins(0, 0, 0, 0)
         self.fields = QTableWidget(0, 6)
         self.fields.setMinimumHeight(180)
         self.fields.setObjectName('sqliteMappings')
-        self.fields.setHorizontalHeaderLabels(['数据库列', '数据来源', '存储类型', '缺失处理', '新列允许 NULL', '新列默认值 JSON'])
+        self.fields.setHorizontalHeaderLabels(['保存到哪一列', '保存什么内容', '数据格式', '没有数据时', '新列允许留空', '新列默认值'])
+        self.fields.horizontalHeaderItem(5).setToolTip('仅用于新建表。填写 JSON 值，例如 0、false、"文字"。')
         self.fields.verticalHeader().setVisible(False)
         self.fields.setSelectionBehavior(QTableWidget.SelectRows)
         self.fields.setSelectionMode(QTableWidget.SingleSelection)
         self.fields.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        for col, width in ((0, 130), (2, 110), (3, 115), (4, 105), (5, 130)):
+        self.fields.horizontalHeader().setMinimumSectionSize(100)
+        for col, width in ((0, 150), (2, 150), (3, 160), (4, 120), (5, 150)):
             self.fields.setColumnWidth(col, width)
+        for col in (4, 5):
+            self.fields.setColumnHidden(col, True)
         fieldsLayout.addWidget(self.fields, 1)
         fieldActions = QHBoxLayout()
-        self.addButton = QPushButton('添加字段')
-        self.deleteButton = QPushButton('删除字段')
+        self.addButton = QPushButton('添加一列')
+        self.deleteButton = QPushButton('删除所选列')
         self.upButton = QPushButton('上移')
         self.downButton = QPushButton('下移')
         for button in (self.addButton, self.deleteButton, self.upButton, self.downButton):
             fieldActions.addWidget(button)
         fieldActions.addStretch(1)
+        self.planOptions = QCheckBox('显示建表选项')
+        self.planOptions.setToolTip('仅新建表时使用：允许空值、列默认值。不会修改已有表。')
+        self.planOptions.toggled.connect(self._showPlanOptions)
+        fieldActions.addWidget(self.planOptions)
         fieldsLayout.addLayout(fieldActions)
-        note = WrapLabel('“使用默认值”省略该列，与写入 NULL 不同。新列设置仅用于明确建表，不进入算子映射。')
+        note = WrapLabel('点击“保存什么内容”选择来源。“使用表内默认值”由数据库决定填入什么。')
         note.setWordWrap(True)
         fieldsLayout.addWidget(note)
-        layout.addWidget(fields, 1)
-        rules = QGroupBox('写入规则')
+        mappingLayout.addWidget(fields, 1)
+        rules = QGroupBox('保存失败时怎么处理')
         rulesLayout = QFormLayout(rules)
-        self.failure = _combo([('写入失败停止任务（默认）', 'stop'), ('继续任务，保留失败回执和 ERROR 日志', 'continue')])
+        self.failure = _combo([('停止任务，提示错误（推荐）', 'stop'), ('记录错误，继续后续步骤', 'continue')])
         rulesLayout.addRow('失败策略', self.failure)
         for paramLayout, rowControl, inputControl, name in (
             (form, pathRow, self.path, 'databasePath'),
@@ -224,19 +262,20 @@ class SqliteWriterEditorController:
                 paramLayout.labelForField(rowControl), inputControl, name, context.paramSchema,
             )
         mappingSchema = context.paramSchema.get('properties', {}).get('mappings', {})
-        fields.setTitle(parameterTitle('mappings', mappingSchema))
         fields.setToolTip(parameterToolTip('mappings', mappingSchema))
         self.fields.setToolTip(fields.toolTip())
-        rule = WrapLabel('每次调用写一条；集合存 JSON。enabled 未连接默认启用。只有 commit 成功才返回 COMMITTED。取消不会被“继续”吞掉。')
+        rule = WrapLabel('每次执行新增一条记录。取消任务后，不再继续写入。')
+        rule.setToolTip('集合保存为 JSON；enabled 未连接时默认启用。只有数据库提交成功才返回 COMMITTED。')
         rule.setWordWrap(True)
         rulesLayout.addRow(rule)
         layout.addWidget(rules)
-        self.error = WrapLabel('')
+        layout.addStretch(1)
+        self.error = OptionalWrapLabel('')
         self.error.setObjectName('sqliteValidationError')
         self.error.setWordWrap(True)
         self.error.setStyleSheet('color: #c0392b')
         self.error.setTextFormat(Qt.PlainText)
-        layout.addWidget(self.error)
+        self.root.layout().addWidget(self.error)
         self.path.textChanged.connect(self._changed)
         self.table.currentTextChanged.connect(self._changed)
         self.testPath.textChanged.connect(self._changed)
@@ -256,7 +295,56 @@ class SqliteWriterEditorController:
         address, local = context.sqliteLocation()
         self.browse.setEnabled(local)
         self.browse.setToolTip('本机文件选择器' if local else '远程 Runtime：请填写服务端本地路径')
-        self.location.setText(address + '\n最终路径：等待 Runtime 检查')
+        self.location.setText(address + '\n文件位置：检查后显示')
+
+    def _updateTargetSummary(self):
+        self.targetSummary.setText(
+            f"保存到：{self.table.currentText().strip() or '尚未填写表名'}    ·    "
+            f"{self.path.text().strip() or '尚未选择数据库文件'}")
+
+    def _showPlanOptions(self, visible):
+        for column in (4, 5):
+            self.fields.setColumnHidden(column, not visible)
+
+    def _showStructure(self):
+        if not self._alive() or self._schema is None:
+            return
+        dialog = QDialog(self.root)
+        dialog.setWindowTitle('各列说明 · ' + self.table.currentText())
+        dialog.resize(860, 520)
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(WrapLabel('这里显示数据库中各列的要求，仅供查看。'))
+        columns = self._schema['columns']
+        table = QTableWidget(len(columns), 5)
+        table.setObjectName('sqliteStructureTable')
+        table.setHorizontalHeaderLabels(['列名', '数据类型', '允许留空', '默认值（SQL）', '说明'])
+        table.setEditTriggers(QTableWidget.NoEditTriggers)
+        table.setSelectionBehavior(QTableWidget.SelectRows)
+        table.verticalHeader().hide()
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
+        table.horizontalHeader().setStretchLastSection(True)
+        for row, column in enumerate(columns):
+            notes = []
+            if column.get('primaryKey'):
+                notes.append('主键')
+            if column.get('autoPrimaryKey'):
+                notes.append('自动赋值')
+            if column.get('generated'):
+                notes.append('生成列')
+            values = [column['name'], column['declaredType'], '是' if column['nullable'] else '否',
+                      str(column['defaultSql']) if column['defaultSql'] is not None else '无',
+                      ' / '.join(notes)]
+            for index, value in enumerate(values):
+                item = QTableWidgetItem(value)
+                item.setToolTip(value)
+                table.setItem(row, index, item)
+        for column, width in enumerate((190, 110, 90, 160, 160)):
+            table.setColumnWidth(column, width)
+        layout.addWidget(table, 1)
+        buttons = QDialogButtonBox(QDialogButtonBox.Close)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        self._openDialog(dialog)
 
     def _browse(self):
         path, _ = QFileDialog.getSaveFileName(self.root, '选择已有文件或待创建的 SQLite 文件（此操作不创建）',
@@ -292,16 +380,19 @@ class SqliteWriterEditorController:
         self._preview = None
         self._schema = None
         self.createButton.setEnabled(False)
+        self.structureButton.setEnabled(False)
+        self.structure.setText('设置已修改，请重新检查。')
+        self._updateTargetSummary()
         address, _ = self.context.sqliteLocation()
-        self.location.setText(address + '\n最终路径：配置已变更，需重新检查')
+        self.location.setText(address + '\n文件位置：请重新检查')
         self.context.markDirty()
 
     def _sourceLabel(self, source):
         if source.get('kind') == 'constant':
             value = json.dumps(source.get('value'), ensure_ascii=False)
-            return '常量 ' + value[:64], value
+            return '固定值：' + value[:64], value
         if source.get('kind') == 'context':
-            return '上下文 · ' + source.get('key', ''), source.get('key', '')
+            return '运行信息 · ' + source.get('key', ''), source.get('key', '')
         try:
             sources = self.context.sqliteDraft()['sources']
         except Exception:
@@ -325,11 +416,14 @@ class SqliteWriterEditorController:
         text, tooltip = self._sourceLabel(value['source'])
         source.setText(text)
         source.setToolTip(tooltip)
-        source.setMaximumWidth(380)
+        source.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Expanding)
+        source.setMinimumWidth(0)
         self.fields.setCellWidget(row, 1, source)
         source.clicked.connect(lambda: self._chooseSource(source))
-        storage = _combo([(kind, kind) for kind in STORAGE_TYPES], value['storageType'])
-        missing = _combo([('报错', 'error'), ('写入 NULL', 'null'), ('使用数据库默认值', 'default')], value.get('missing', 'error'))
+        storage = _combo([(STORAGE_LABELS[kind], kind) for kind in STORAGE_TYPES], value['storageType'])
+        for index, kind in enumerate(STORAGE_TYPES):
+            storage.setItemData(index, kind, Qt.ToolTipRole)
+        missing = _combo([('提示错误', 'error'), ('留空', 'null'), ('使用表内默认值', 'default')], value.get('missing', 'error'))
         self.fields.setCellWidget(row, 2, storage)
         self.fields.setCellWidget(row, 3, missing)
         nullable = QCheckBox()
@@ -401,7 +495,10 @@ class SqliteWriterEditorController:
         except SqliteWriterError as error:
             self.error.setText(str(error))
             if error.row is not None:
+                self.tabs.setCurrentWidget(self.mappingPage)
+                self.planOptions.setChecked(True)
                 self.fields.selectRow(error.row)
+                self.fields.scrollToItem(self.fields.item(error.row, 5))
             return
         rows[row], rows[target] = rows[target], rows[row]
         plan[row], plan[target] = plan[target], plan[row]
@@ -424,6 +521,8 @@ class SqliteWriterEditorController:
         self._preview = None
         self._schema = None
         self.createButton.setEnabled(False)
+        self.structureButton.setEnabled(False)
+        self.structure.setText('尚未检查。首次使用时，请先检查文件和表是否可用。')
         self._loading = True
         try:
             self.path.setText(params.get('databasePath', ''))
@@ -431,8 +530,13 @@ class SqliteWriterEditorController:
             self.table.setCurrentText(params.get('table', 'records'))
             self.failure.setCurrentIndex(max(0, self.failure.findData(params.get('failurePolicy', 'stop'))))
             self._loadRows(params.get('mappings', []))
+            if self.fields.rowCount():
+                self.fields.selectRow(0)
+                self.fields.scrollToTop()
         finally:
             self._loading = False
+        self._updateTargetSummary()
+        self.tabs.setCurrentWidget(self.mappingPage if self.fields.rowCount() else self.scroll)
 
     def collectParams(self):
         params = {'configVersion': 1, 'databasePath': self.path.text().strip(), 'table': self.table.currentText().strip(),
@@ -452,6 +556,7 @@ class SqliteWriterEditorController:
             self.error.setText(str(error))
             row = getattr(error, 'row', None)
             if row is not None and row < self.fields.rowCount():
+                self.tabs.setCurrentWidget(self.mappingPage)
                 self.fields.selectRow(row)
                 self.fields.scrollToItem(self.fields.item(row, 0))
             return str(error)
@@ -487,10 +592,16 @@ class SqliteWriterEditorController:
             future, token = requests.submit(operation)
             self._pending = (future, token, self._generation, action)
             self._setBusy(True)
-            self.context.setStatus('正在 Runtime 后台处理；等待实际操作退出后归还额度')
+            self.context.setStatus('正在创建，请稍候…' if action == 'initialize' else '正在检查，请稍候…')
             self.timer.start()
         except Exception as error:
             self.error.setText(str(error))
+            row = getattr(error, 'row', None)
+            if row is not None and row < self.fields.rowCount():
+                self.tabs.setCurrentWidget(self.mappingPage)
+                self.planOptions.setChecked(True)
+                self.fields.selectRow(row)
+                self.fields.scrollToItem(self.fields.item(row, 5))
 
     def _poll(self):
         if not self._alive() or self._pending is None:
@@ -502,11 +613,11 @@ class SqliteWriterEditorController:
         self.timer.stop()
         self._setBusy(False)
         if generation != self._generation:
-            self.context.setStatus('配置已变化，已拒绝迟到的检查结果；请重新检查')
+            self.context.setStatus('设置已修改，请重新检查。')
             return
         try:
             reply = future.result()
-            self.location.setText(f'Runtime 主机：{reply.runtime_host}\n最终路径：{reply.resolved_path}')
+            self.location.setText(f'运行电脑：{reply.runtime_host}\n文件位置：{reply.resolved_path}')
             self.location.setToolTip(self.location.text())
             self._loading = True
             selected = self.table.currentText()
@@ -515,12 +626,11 @@ class SqliteWriterEditorController:
             self.table.setCurrentText(selected)
             self._loading = False
             self._schema = json.loads(reply.structure_json) or None
+            self.structureButton.setEnabled(self._schema is not None)
             if self._schema:
-                text = '真实结构：' + '；'.join(c['name'] + ' ' + c['declaredType'] + (' NULL' if c['nullable'] else ' 必填') + (' / 数据库默认值' if c['defaultSql'] is not None else '') for c in self._schema['columns'])
-                self.structure.setText(text[:900] + ('…完整结构见提示' if len(text) > 900 else ''))
-                self.structure.setToolTip(text)
+                self.structure.setText(f"已找到这张表，共 {len(self._schema['columns'])} 列。")
             else:
-                self.structure.setText('数据库或目标表不存在；检查没有创建文件。请预览后明确创建。')
+                self.structure.setText('还没有找到数据库或这张表。需要新建时，请先预览，再点击创建。')
             if action == 'preview':
                 self._preview = (self._generation, reply.resolved_path, reply.runtime_host, reply.preview_sql, deepcopy(self._plan()))
                 self.createButton.setEnabled(True)
@@ -528,17 +638,33 @@ class SqliteWriterEditorController:
                 dialog.setWindowTitle('建表预览 · 尚未执行')
                 dialog.resize(780, 420)
                 layout = QVBoxLayout(dialog)
-                label = QLabel(self.location.text() + '\n目标表：' + self.table.currentText() + '\n列、空值及默认值由下方 SQL 明确展示。')
+                label = QLabel(self.location.text() + '\n新建表：' + self.table.currentText() + '\n确认下方内容后，关闭预览并点击“创建数据库或表”。')
                 label.setWordWrap(True)
                 layout.addWidget(label)
+                tabs = QTabWidget()
+                summary = QTableWidget(len(self._preview[4]), 4)
+                summary.setHorizontalHeaderLabels(['新列名称', '数据格式', '允许留空', '默认值'])
+                summary.verticalHeader().hide()
+                summary.setEditTriggers(QTableWidget.NoEditTriggers)
+                summary.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+                for row, column in enumerate(self._preview[4]):
+                    values = [column['name'], STORAGE_LABELS[column['storageType']],
+                              '是' if column['nullable'] else '否',
+                              json.dumps(column['default'], ensure_ascii=False) if 'default' in column else '未设置']
+                    for index, value in enumerate(values):
+                        item = QTableWidgetItem(value)
+                        item.setToolTip(value)
+                        summary.setItem(row, index, item)
+                tabs.addTab(summary, '要创建的列')
                 text = QPlainTextEdit(reply.preview_sql)
                 text.setReadOnly(True)
-                layout.addWidget(text)
+                tabs.addTab(text, '建表语句（高级）')
+                layout.addWidget(tabs)
                 buttons = QDialogButtonBox(QDialogButtonBox.Close)
                 buttons.rejected.connect(dialog.reject)
                 layout.addWidget(buttons)
                 self._openDialog(dialog)
-            self.context.setStatus('初始化完成；数据库外部操作不随项目撤销' if action == 'initialize' else '只读检查完成；未启动检测')
+            self.context.setStatus('创建完成。数据库修改不会随工程撤销。' if action == 'initialize' else '检查完成，没有写入数据。')
             self.error.clear()
         except Exception as error:
             if not self._alive():
@@ -564,7 +690,8 @@ class SqliteWriterEditorController:
     def onOpen(self):
         try:
             draft = self.context.sqliteDraft()
-            self.structure.setText('相对路径基准：' + (draft['directory'] or '尚未保存工程，请使用 Runtime 绝对路径') + '\n普通运行写实际目标；专门草稿调试使用隔离测试库。')
+            self.path.setToolTip(self.path.toolTip() + '\n相对路径基准：' +
+                                 (draft['directory'] or '尚未保存工程，请使用 Runtime 绝对路径'))
         except Exception as error:
             self.error.setText(str(error))
 

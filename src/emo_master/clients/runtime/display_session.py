@@ -17,6 +17,7 @@ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rpc
 from emo_master.core.presentation.results import ClosedResult
 from emo_master.clients.runtime.view_state import JobView, ScopeView, SessionView
+from emo_master.clients.runtime.display_logs import DisplayLog
 
 
 def decodeResult(wire):
@@ -89,6 +90,7 @@ class DisplaySession:
         if bool(expectedRuntimeInstanceId) != bool(projectId):
             raise ValueError("Runtime and project identity must be supplied together")
         self.channel = grpc.insecure_channel(address, options=[("grpc.max_receive_message_length", 9 * 1024 * 1024)])
+        self.address = address
         self.stub = rpc.DisplayServiceStub(self.channel)
         self.jobId = jobId
         self.instanceId = expectedRuntimeInstanceId
@@ -123,6 +125,7 @@ class DisplaySession:
         self.seen = deque(maxlen=32)
         self.records = deque(maxlen=128)
         self.errors = deque(maxlen=64)
+        self.logs = DisplayLog()
         self.stats = {"received": 0, "decoded": 0, "dropped": 0, "read_failed": 0, "resets": 0,
                       "expired_scopes": 0}
         self.listeners = set()
@@ -246,9 +249,50 @@ class DisplaySession:
 
     def _connection(self, state, detail=""):
         with self.lock:
+            if not self.stop.is_set():
+                context = self._logContext()
+                context['payload'].update(connection=state, reason=detail)
+                if state == 'CONNECTED':
+                    self.logs.healthy(('connection', self.jobId), context)
+                elif state not in {'CONNECTING', 'CLOSED'}:
+                    level = 'WARN' if state in {'UNAVAILABLE', 'DEADLINE_EXCEEDED', 'RESOURCE_EXHAUSTED', 'NOT_FOUND', 'CANCELLED'} else 'ERROR'
+                    self.logs.failed(('connection', self.jobId), state, level,
+                                     '页面展示连接异常：' + state + ('；' + detail if detail else ''), context)
             if (state, detail) != (self.connection, self.connectionDetail):
                 self.connection, self.connectionDetail = state, detail
                 self.revision += 1
+
+    def _logContext(self, result=None, sourceId=''):
+        identity = result.identity if result is not None else None
+        return dict(jobId=identity.jobId if identity else self.jobId, projectId=self.projectId,
+                    payload=dict(address=self.address, runtimeInstanceId=identity.runtimeInstanceId if identity else self.instanceId,
+                                 sourceId=sourceId, identity=identity.model_dump(mode='json') if identity else {}))
+
+    def reportImageIssue(self, result, sourceId, code='', reason='', *, level='ERROR', stage='read_decode'):
+        with self.lock:
+            if self.stop.is_set() or result.identity.jobId != self.jobId:
+                return
+            context = self._logContext(result, sourceId)
+            context['payload'].update(stage=stage, reason=reason)
+            key = (stage, result.identity.resultScopeId, sourceId)
+            if code:
+                self.logs.failed(key, code, level, '页面图片不可用：' + sourceId + '；' + reason, context)
+            else:
+                self.logs.healthy(key, context)
+
+    def takeLogEvents(self):
+        return self.logs.take()
+
+    def reportImageError(self, result, sourceId, error, *, stage='read_decode'):
+        if isinstance(error, grpc.RpcError):
+            code = error.code().name
+            with self.lock:
+                if code == 'CANCELLED' and not self._canReadResults():
+                    return
+        else:
+            code = 'PIN_BUDGET' if str(error) == 'PIN_BUDGET' else 'IMAGE_DECODE_FAILED'
+        level = 'WARN' if code in {'UNAVAILABLE', 'DEADLINE_EXCEEDED', 'RESOURCE_EXHAUSTED', 'NOT_FOUND', 'PIN_BUDGET', 'CANCELLED'} else 'ERROR'
+        self.reportImageIssue(result, sourceId, code, str(error)[:2048], level=level, stage=stage)
 
     def _token(self):
         return self._selectionEpoch, self._connectionEpoch, self.jobId
@@ -334,7 +378,6 @@ class DisplaySession:
             if self.expectedRuntimeInstanceId and snapshot.runtime_instance_id != self.expectedRuntimeInstanceId:
                 self._resetRequired()
                 return
-            self._connection("CONNECTED")
             self.revision += 1
             changed = snapshot.runtime_instance_id != self.instanceId
             if not changed and snapshot.cursor < self._acceptedCursor:
@@ -389,6 +432,7 @@ class DisplaySession:
                     self.seen.append(result.identity.resultKey)
                 else:
                     self.stats["dropped"] += 1
+            self._connection("CONNECTED")
 
     def _controlRead(self, method, request):
         # These read-only calls were rejected before execution. Share their
@@ -699,6 +743,7 @@ class DisplaySession:
             except (grpc.RpcError, ValueError) as error:
                 failures[source.sourceId] = str(error)
                 self.stats["read_failed"] += 1
+                self.reportImageError(result, source.sourceId, error)
         with self.lock:
             decision = self._liveDecision(generation, result)
             applied = decision["live_decision"] == "APPLIED"
@@ -712,6 +757,8 @@ class DisplaySession:
                 "received_to_model_ms": (time.perf_counter_ns() - receivedAt) / 1e6, **decision})
             if not applied:
                 return
+            for sourceId in images:
+                self.reportImageIssue(result, sourceId)
             self.latest[scopeId] = (result, images, failures)
             self.loading.pop(scopeId, None)
             self.readyAt[scopeId] = decodedNs
@@ -724,6 +771,9 @@ class DisplaySession:
                 scope = next(key for key, (_, frames, _) in self.latest.items() if frames)
                 oldResult, oldFrames, oldFailures = self.latest[scope]
                 self.latest[scope] = (oldResult, {}, {**oldFailures, **{key: "CLIENT_BUDGET" for key in oldFrames}})
+                for sourceId in oldFrames:
+                    self.reportImageIssue(oldResult, sourceId, 'CLIENT_BUDGET',
+                                          '客户端图像缓存超过 16777216 字节', level='WARN')
             # Loading another image of an already published result changes the
             # view revision, not the formal-result observer stream.
             callbacks = () if self.imageDemand and sameResult else tuple(self.listeners)
@@ -745,6 +795,7 @@ class DisplaySession:
                 raise ValueError("Runtime and project identity must be supplied together")
             if instance != self.expectedRuntimeInstanceId:
                 self._statusUnimplemented = False
+            self.logs.finish()
             self.expectedRuntimeInstanceId, self.projectId = instance, project
             self.instanceId = instance or self.instanceId
             self.readResults = bool(readResults)
@@ -790,5 +841,6 @@ class DisplaySession:
             self._connection("CLOSED", "会话已关闭")
             while not self.pending.empty():
                 self.pending.get_nowait()
+            self.logs.finish()
         if pinError is not None:
             raise pinError

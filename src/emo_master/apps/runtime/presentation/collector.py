@@ -159,10 +159,12 @@ class ResultCollector:
                             item["values"][key] = frozenSources[signature] = self.image(key, value, item)
                         continue
                     frozen = freezeValue(value)
-                    if item["bytes"] + len(frozen.encode()) > 1024 * 1024:
-                        item["values"][key] = unavailable(key, "BUDGET_EXCEEDED")
+                    totalBytes = item["bytes"] + len(frozen.encode())
+                    if totalBytes > 1024 * 1024:
+                        item["values"][key] = unavailable(key, "BUDGET_EXCEEDED",
+                            f"result values {totalBytes} bytes exceeds result limit {1024 * 1024}")
                     else:
-                        item["bytes"] += len(frozen.encode())
+                        item["bytes"] = totalBytes
                         item["values"][key] = {"sourceId": key, "state": "AVAILABLE", "valueJson": frozen}
                 except (ValueError, TypeError, KeyError, IndexError) as error:
                     self._trace("source.freeze_failed", item["identity"], sourceId=key, errorType=type(error).__name__)
@@ -173,8 +175,13 @@ class ResultCollector:
         if (not isinstance(value, np.ndarray) or value.dtype != np.uint8 or value.ndim not in (2, 3)
                 or (value.ndim == 3 and value.shape[2] not in (1, 3, 4)) or not value.size):
             return unavailable(key, "INVALID_VALUE")
-        if value.nbytes > 8 * 1024 * 1024 or item["rawBytes"] + value.nbytes > 16 * 1024 * 1024:
-            return unavailable(key, "BUDGET_EXCEEDED")
+        if value.nbytes > 8 * 1024 * 1024:
+            return unavailable(key, "BUDGET_EXCEEDED",
+                f"raw image {value.nbytes} bytes exceeds image limit {8 * 1024 * 1024}; no implicit resize")
+        totalBytes = item["rawBytes"] + value.nbytes
+        if totalBytes > 16 * 1024 * 1024:
+            return unavailable(key, "BUDGET_EXCEEDED",
+                f"raw images {totalBytes} bytes exceeds result limit {16 * 1024 * 1024}; no implicit resize")
         for slot in self.config.get("slots", []):
             lane = self.config.get("imageLaneBySource", {}).get(key, 0)
             if slot.get("lane", 0) != lane:

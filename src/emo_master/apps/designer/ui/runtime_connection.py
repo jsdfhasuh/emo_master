@@ -87,6 +87,8 @@ class RuntimeConnectionDialog(QDialog):
         self.status.setText(text)
         if not self._valid() or self.notifying:
             return
+        if error is not None:
+            self._logFailure(title, error, self.target.text())
         box = QMessageBox(self)
         box.setWindowTitle(title)
         box.setIcon(QMessageBox.Critical)
@@ -102,6 +104,14 @@ class RuntimeConnectionDialog(QDialog):
         finally:
             self.notifying = False
             self.buttons.button(QDialogButtonBox.Ok).setEnabled(self._valid() and self.pending is None)
+
+    def _logFailure(self, operation, error, target):
+        self.c.window.appendLocalEvent(dict(
+            eventType='designer.runtime_connection.failed', level='ERROR',
+            message=f'{operation}：{error}', projectId=self.projectId,
+            code=str(getattr(error, 'code', '')),
+            payload=dict(operation=operation, target=target, errorType=type(error).__name__, reason=str(error))),
+            source='designer')
 
     def targetChanged(self):
         if self.candidate is not None:
@@ -148,6 +158,7 @@ class RuntimeConnectionDialog(QDialog):
                     self.currentStatus.setText('状态：已连接\n实例：' + info['runtimeInstanceId'] + '\n' + detail)
                 except Exception as error:
                     self.currentStatus.setText('当前连接信息读取失败：' + str(error) + '\n未切换连接，可关闭后重试。')
+                    self._logFailure('当前连接信息读取失败', error, runtimeConnectionDescription(self.client)['target'])
             else:
                 self.currentStatus.setText('连接上下文已变化，请重新打开窗口。')
         if self.pending is None or not self.pending.done():

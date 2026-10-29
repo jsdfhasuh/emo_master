@@ -63,6 +63,12 @@ class DispatchDisplaySession:
         for session in self.sessions.values():
             session.removeImageDemand(consumerId)
 
+    def takeLogEvents(self):
+        return [event for session in self.sessions.values() for event in session.takeLogEvents()]
+
+    def reportImageIssue(self, result, sourceId, *args, **kwargs):
+        self.sessions[result.identity.jobId].reportImageIssue(result, sourceId, *args, **kwargs)
+
     def pins(self):
         if self._pinStore is None:
             self._pinStore = DispatchPins(self)

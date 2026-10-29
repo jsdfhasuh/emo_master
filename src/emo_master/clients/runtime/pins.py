@@ -201,11 +201,14 @@ class PinStore:
                 except Exception as error:
                     failures[source.sourceId] = str(error)
                     self.session.stats["read_failed"] += 1
+                    self.session.reportImageError(scope.result, source.sourceId, error, stage='pinned_read')
                 states.pop(source.sourceId, None)
                 with self.lock:
                     entry["size"] = sum({id(image): image.nbytes for image in images.values()}.values())
             with self.lock:
                 if self._valid(entry):
+                    for sourceId in images:
+                        self.session.reportImageIssue(scope.result, sourceId, stage='pinned_read')
                     entry["scope"] = replace(scope, images=MappingProxyType(images), failures=MappingProxyType(failures),
                                              imageStates=MappingProxyType(states), readyNs=time.perf_counter_ns())
                     entry["size"] = sum({id(image): image.nbytes for image in images.values()}.values())

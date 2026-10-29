@@ -522,7 +522,7 @@ class EditingTools(QObject):
             message = str(error)
             self.propertyError.setText(editorMessage(message))
             self.propertyError.setToolTip(message)
-            self.w.coordinator.window.appendRuntimeLog('ERROR', message)
+            self.w.coordinator.window.appendPageLog('ERROR', message)
             self.propertyError.show()
             self.w.floatingProperties.setExpanded(True)
             field = next((widget for name, widget in self.fields.items() if name in message), self.extra

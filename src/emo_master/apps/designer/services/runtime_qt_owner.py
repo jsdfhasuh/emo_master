@@ -28,6 +28,7 @@ class _RuntimeWorkerDelivery(QObject):
         else:
             _connect(worker, 'jobAccepted(PyObject)', self, 'jobAccepted(PyObject)')
             _connect(worker, 'eventReceived(PyObject)', self, 'eventReceived(PyObject)')
+            _connect(worker, 'diagnosticReceived(PyObject)', self, 'diagnosticReceived(PyObject)')
             _connect(worker, 'statusChanged(PyObject)', self, 'statusChanged(PyObject)')
             _connect(worker, 'uncertain(QString)', self, 'uncertain(QString)')
         _connect(worker, 'failed(QString)', self, 'failed(QString)')
@@ -58,6 +59,12 @@ class _RuntimeWorkerDelivery(QObject):
         controller = self._currentController()
         if controller is not None:
             controller._onRuntimeEvent(event)
+
+    @Slot(object)  # type: ignore[operator]
+    def diagnosticReceived(self, event):
+        controller = self._currentController()
+        if controller is not None:
+            controller._onLocalDiagnostic(event)
 
     @Slot(object)  # type: ignore[operator]
     def statusChanged(self, reply):

@@ -147,6 +147,8 @@ class PreviewController(QObject):
         super().__init__(coordinator.window)
         self.coordinator = coordinator
         self.session = self.hub = self.backend = None
+        self.runtimeLogs = None
+        self.logCursors = {}
         self.busy = False
         self.worker = None
         self.events = queue.Queue(maxsize=1)
@@ -165,9 +167,9 @@ class PreviewController(QObject):
         self.timer.timeout.connect(self.poll)
         self.timer.start(25)
 
-    def message(self, text):
+    def message(self, text, level='INFO'):
         from .property_panel import editorMessage
-        self.coordinator.window.appendRuntimeLog('INFO', text)
+        self.coordinator.window.appendPageLog(level, text)
         text = editorMessage(text)
         for original, readable in [
                 ('当前 Runtime 尚无页面服务；请先明确运行工程', '页面结果服务未启用；请在运行面板确认流程状态'),
@@ -244,7 +246,8 @@ class PreviewController(QObject):
                     raise ValueError('指定任务不属于当前工程')
                 coverage = self._coverage(metadata, capabilities) if modern else None
             pair = self._dispatchPair(document, metadata, jobs) if modern else None
-            return self._attach(address, metadata, coverage, pair=pair, document=document)
+            return self._attach(address, metadata, coverage, pair=pair, document=document,
+                                logs='presentation_logs' in capabilities.capabilities)
         self.launch(attach)
 
     @staticmethod
@@ -336,7 +339,8 @@ class PreviewController(QObject):
         metadata = jobs[index]
         coverage = self._coverage(metadata, value['capabilities'])
         pair = self._dispatchPair(document, metadata, value['jobs'])
-        self.launch(lambda: self._attach(value['address'], metadata, coverage, pair=pair, document=document))
+        self.launch(lambda: self._attach(value['address'], metadata, coverage, pair=pair, document=document,
+                                        logs='presentation_logs' in value['capabilities'].capabilities))
 
     @staticmethod
     def _dispatchPair(document, metadata, jobs):
@@ -374,7 +378,7 @@ class PreviewController(QObject):
         label = f'{source} / {slot} · ' if slot else f'{source} · ' if source else ''
         return f'{label}{mode}{status} · {capture} · {metadata.job_id[:8]}'
 
-    def _attach(self, address, metadata, coverage, *, pair=None, document=None):
+    def _attach(self, address, metadata, coverage, *, pair=None, document=None, logs=False):
         roots = (metadata.workflow_id,)
         if pair:
             from emo_master.clients.runtime.dispatch_display import DispatchDisplaySession
@@ -390,7 +394,9 @@ class PreviewController(QObject):
             self.session = DisplaySession(address, metadata.job_id, imageDemand=True,
                 expectedRuntimeInstanceId=metadata.runtime_instance_id, projectId=metadata.project_id,
                 readResults=bool(metadata.capture_enabled and not metadata.resources_released))
-        return {'kind': 'attached', 'metadata': metadata, 'coverage': coverage, 'roots': roots}
+        return {'kind': 'attached', 'metadata': metadata, 'coverage': coverage, 'roots': roots,
+                'logAddress': address if logs else '',
+                'logJobs': tuple(item.job_id for item in pair) if pair else (metadata.job_id,)}
 
     def _observerDestroyed(self, token):
         # No native Qt calls here: destruction can follow the Designer owner.
@@ -501,6 +507,12 @@ class PreviewController(QObject):
         self.refreshJobStatus()
 
     def poll(self):
+        if self.runtimeLogs is not None:
+            self._appendLogEvents(self.runtimeLogs.take())
+        session = self.session
+        takeLogs = getattr(session, 'takeLogEvents', None)
+        if callable(takeLogs):
+            self._appendClientLogEvents(takeLogs())
         self.refreshJobStatus()
         try:
             kind, value = self.events.get_nowait()
@@ -510,7 +522,7 @@ class PreviewController(QObject):
         self.busy = False
         if kind == 'error':
             self.error = value
-            self.message('操作失败：' + value)
+            self.message('操作失败：' + value, 'ERROR')
             if self.closing and not self.cleaning:
                 self._finishClose()
                 return
@@ -519,6 +531,12 @@ class PreviewController(QObject):
             self.onClosed = None
             return
         if value['kind'] == 'closed':
+            self.runtimeLogs = None
+            self._appendLogEvents(value.get('logEvents', ()))
+            self._appendClientLogEvents(value.get('clientLogEvents', ()))
+            self.logCursors.update(value.get('logCursors', {}))
+            while len(self.logCursors) > 128:
+                self.logCursors.pop(next(iter(self.logCursors)))
             if self.closeExecution and not value['execution']:
                 self._finishClose()
                 return
@@ -541,11 +559,18 @@ class PreviewController(QObject):
                 self._chooseJob(value)
             except ValueError as error:
                 self.error = str(error)
-                self.message('无法查看：' + str(error))
+                self.message('无法查看：' + str(error), 'ERROR')
             return
         self.selectedJob = value['metadata']
         self.selectedWorkflows = value['roots']
         self.coverage = value['coverage']
+        address = value.get('logAddress')
+        # Run-command Jobs already reach this window through RuntimeWorker.
+        knownJobs = getattr(self.coordinator.window, '_runtimeLogJobProjects', {})
+        logJobs = [job for job in value.get('logJobs', ()) if job not in knownJobs]
+        if address and logJobs:
+            from .runtime_logs import PreviewRuntimeLogs
+            self.runtimeLogs = PreviewRuntimeLogs(address, logJobs, self.logCursors)
         self.observationLabel = self._jobLabel(self.selectedJob, includeStatus=False)
         self.hub = DisplayHub(self.session, self) if self.session is not None else None
         observer = self.observer
@@ -563,7 +588,7 @@ class PreviewController(QObject):
                     observer.hub = None
                     self.retireObserver()
                     self.error = str(error)
-                    self.message('无法查看：' + str(error))
+                    self.message('无法查看：' + str(error), 'ERROR')
                     return
             slot = getattr(self.selectedJob, 'target_slot_id', '')
             observer.banner.setText('运行结果' + (f' · {self.selectedJob.workflow_id} / {slot}'
@@ -574,6 +599,18 @@ class PreviewController(QObject):
                 f'生产 Job：{self.selectedJob.source_job_id}\n消费 Job：{self.selectedJob.job_id}') if slot else '')
             self.refreshCoverage()
         self.message('已连接运行结果')
+
+    def _appendLogEvents(self, rows):
+        window = self.coordinator.window
+        for kind, value in rows:
+            if kind == 'event':
+                window.appendRuntimeEvent(value)
+            else:
+                window.appendPageLog('WARN', value)
+
+    def _appendClientLogEvents(self, events):
+        for event in events:
+            self.coordinator.window.appendLocalEvent(event, source='page_designer')
 
     def stopViewing(self, callback=None):
         self._requestClose(False, callback)
@@ -599,6 +636,7 @@ class PreviewController(QObject):
             self._finishClose()
 
     def _finishClose(self):
+        logs = self.runtimeLogs
         if self.hub:
             for renderer in tuple(self.hub.windows):
                 self.hub.detach(renderer)
@@ -620,13 +658,21 @@ class PreviewController(QObject):
             observer.banner.setText('运行结果 · 已停止查看')
         execution = self.closeExecution
         def close():
+            logEvents, logCursors, clientLogEvents = [], {}, []
+            if logs is not None:
+                logs.close()
+                logEvents, logCursors = logs.take(), logs.positions()
             if self.session:
                 self.session.close()
+                takeLogs = getattr(self.session, 'takeLogEvents', None)
+                if callable(takeLogs):
+                    clientLogEvents = takeLogs()
                 self.session = None
             if execution and self.backend:
                 self.backend.close()
                 self.backend = None
-            return {'kind': 'closed', 'execution': execution}
+            return {'kind': 'closed', 'execution': execution,
+                    'logEvents': logEvents, 'logCursors': logCursors, 'clientLogEvents': clientLogEvents}
         self.message('正在结束图片测试' if self.closeExecution else '正在停止查看，流程继续运行')
         self.launch(close, cleanup=True)
 

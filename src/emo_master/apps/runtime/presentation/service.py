@@ -20,6 +20,7 @@ from emo_master.apps.runtime.presentation.exporter import ExportPool
 from emo_master.apps.runtime.presentation.collector import unavailable
 from emo_master.apps.runtime.presentation.mailbox import SharedMailbox
 from emo_master.apps.runtime.presentation.diagnostics import closureDiagnostic
+from emo_master.apps.runtime.presentation.operational_log import PresentationLog
 
 
 def _guardMutation(method):
@@ -63,6 +64,7 @@ class PresentationService:
             self.exporter: ExportPool | None = None
             self.pending: dict = {}
             self.diagnostics: deque[dict] = deque(maxlen=64)
+            self.logs: dict[str, PresentationLog] = {}
             self.phaseTraces: dict = {}
             self.timings: dict = {}
             self.readers: dict = {}
@@ -229,6 +231,8 @@ class PresentationService:
                 self.phaseTraces[jobId] = parentTrace
             except Exception as error:
                 config["phaseTraceUnavailable"] = type(error).__name__
+        job = self.runtime.jobRepository.get(jobId)
+        self.logs[jobId] = PresentationLog(self.runtime.eventStore.append, job.projectId if job else '')
         self.jobs[jobId] = config
         self.timings[jobId] = deque(maxlen=128)
         reader = threading.Thread(target=self._read, args=(jobId, config), name=f"display-ipc-{jobId}")
@@ -354,6 +358,7 @@ class PresentationService:
             return
         sources = []
         terminal = seal.get("terminal", "UNKNOWN")
+        diagnostic = None
         try:
             for source in seal["sources"]:
                 if source.get("pendingImage"):
@@ -375,16 +380,18 @@ class PresentationService:
             self.store.close(key, sources, terminal)
         except (ValueError, TypeError, KeyError, AttributeError) as error:
             self._trace(pending["job"], "store.validation_error", identity=item["identity"], errorType=type(error).__name__)
-            self._diagnose(key, item, seal.get("sources", []), terminal, "result_validation", error)
+            diagnostic = self._diagnose(key, item, seal.get("sources", []), terminal, "result_validation", error)
             # No invalid payload is published as COMPLETE. Keep the original
             # identity/expected manifest and a visible failure for every source.
             # Atomic store.close left the open item intact for this closure.
             detail = f"result closure validation failed: {type(error).__name__}; see Runtime diagnostics"
             terminal = terminal if terminal in {"COMPLETED", "FAILED", "CANCELLED", "UNKNOWN"} else "UNKNOWN"
-            self.store.close(key, [unavailable(name, "INVALID_VALUE", detail) for name in item["expected"]], terminal)
+            sources = [unavailable(name, "INVALID_VALUE", detail) for name in item["expected"]]
+            self.store.close(key, sources, terminal)
         else:
             if terminal != "COMPLETED" or any(source["state"] != "AVAILABLE" for source in sources):
-                self._diagnose(key, item, sources, terminal, "result_closed")
+                diagnostic = self._diagnose(key, item, sources, terminal, "result_closed")
+        self._logResult(pending['job'], item, sources, diagnostic)
         self._trace(pending["job"], "store.closed", identity=item["identity"], terminal=terminal)
         self._retirePending(key, pending)
 
@@ -423,6 +430,20 @@ class PresentationService:
         self.diagnostics.append(record)
         if error is not None:
             logging.getLogger(__name__).warning("presentation closure failure %s", json.dumps(record))
+        return record
+
+    def _logResult(self, jobId, item=None, sources=None, diagnostic=None):
+        log = getattr(self, 'logs', {}).get(jobId)
+        if log is None:
+            return
+        try:
+            if item is None:
+                log.finish()
+            else:
+                log.observe(item, sources, diagnostic)
+        except Exception as error:
+            # Observability must never prevent result retirement/credit return.
+            self.runtime.jobSupervisor.presentationErrors.append('presentation log: ' + repr(error))
 
     def _retirePending(self, key, pending):
         if self.pending.get(key) is not pending:
@@ -450,7 +471,31 @@ class PresentationService:
                             self.store._notify()
                 for key in list(self.pending):
                     self._finish(key)
+                for jobId in list(self.terminalStates):
+                    reader = self.readers.get(jobId)
+                    if (reader is None or not reader.is_alive()) and not any(
+                            value['job'] == jobId for value in self.pending.values()):
+                        self._logResult(jobId)
                 self.assets.stats()  # expire abandoned finite leases without another request
+
+    def waitForLogDrain(self, jobId, timeoutSeconds=2.0, isActive=lambda: True):
+        """Late display closures must reach the terminal event stream's final read."""
+        deadline = time.monotonic() + timeoutSeconds
+        while isActive():
+            reader = self.readers.get(jobId)
+            with self.store.lock:
+                if (reader is None or not reader.is_alive()) and not any(
+                        value['job'] == jobId for value in self.pending.values()):
+                    self._logResult(jobId)
+                    return True
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return False
+            if reader is not None and reader.is_alive():
+                reader.join(min(.02, remaining))
+            else:
+                time.sleep(min(.02, remaining))
+        return False
 
     @_guardMutation
     def terminal(self, jobId, status):
@@ -501,6 +546,8 @@ class PresentationService:
                 if config and self.exporter:
                     for index in {descriptor["index"] for descriptor in config["slots"]}:
                         self.exporter.releaseSlot(index)
+                self._logResult(jobId)
+                self.logs.pop(jobId, None)
                 self.jobs.pop(jobId, None)
                 getattr(self, "phaseTraces", {}).pop(jobId, None)
                 self.timings.pop(jobId, None)

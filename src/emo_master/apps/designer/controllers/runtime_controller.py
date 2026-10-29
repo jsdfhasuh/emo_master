@@ -38,10 +38,12 @@ class RuntimeController:
         getRunProjectReference: Callable[[], str | None] | None = None,
         onRunFailed: Callable[[dict[str, object]], None] | None = None,
         refreshRuntimeEventView: Callable[[], None] | None = None,
+        appendLocalEvent: Callable[[dict[str, object]], None] | None = None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.runtimePanelState = runtimePanelState
         self.appendLog = appendLog
+        self.appendLocalEvent = appendLocalEvent
         self.refreshRuntimePanelView = refreshRuntimePanelView
         self.refreshRuntimeEventView = refreshRuntimeEventView or refreshRuntimePanelView
         self.updateToolbarState = updateToolbarState
@@ -130,6 +132,9 @@ class RuntimeController:
         if not self._bindQtWorker(worker):
             worker.jobAccepted.connect(self._onJobAccepted)
             worker.eventReceived.connect(self._onRuntimeEvent)
+            diagnostic = getattr(worker, 'diagnosticReceived', None)
+            if diagnostic is not None:
+                diagnostic.connect(self._onLocalDiagnostic)
             worker.statusChanged.connect(self._onJobStatus)
             worker.failed.connect(self._onWorkerFailed)
             uncertain = getattr(worker, "uncertain", None)
@@ -194,6 +199,12 @@ class RuntimeController:
             self._stopJobId = ""
             self._stopMode = ""
             self._stopEscalateToForce = False
+
+    def _onLocalDiagnostic(self, event) -> None:
+        if self.appendLocalEvent is not None:
+            self.appendLocalEvent(event)
+        else:
+            self.appendLog(event['level'], event['message'])
 
     def _onRuntimeEvent(self, jobEvent) -> None:
         eventType = str(getattr(jobEvent, "event_type", getattr(jobEvent, "eventType", "")))

@@ -2,6 +2,7 @@ from emo_master.apps.designer.page_designer.commands import draftCommand
 from emo_master.apps.designer.ui.action_state import flowEditAllowed
 from datetime import datetime
 from dataclasses import replace
+from collections import deque
 from pathlib import Path
 import json
 from typing import Any, Callable, cast
@@ -787,6 +788,17 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.logDialog: LogDialog | None = None
         self.logBuffer: list[str] = []
         self.logEntries: list[StructuredLogEntry] = []
+        from emo_master.apps.designer.services.local_log import designerLogDirectory, closeLogResources
+        self._localLogDirectory = designerLogDirectory(self.settingsStore)
+        self._localLogFailures: deque[str] = deque(maxlen=8)
+        self._logResources = {"writer": None, "reader": None}
+        self._globalLogTransport = None
+        self._globalLogCursor = 0
+        self._logPollingTimer = None
+        self._loggingClosed = False
+        if _nativeQt:
+            resources = self._logResources
+            self.destroyed.connect(lambda: closeLogResources(resources))
         self._runtimeLogProjectToken = uuid4().hex
         self._runtimeLogJobProjects: dict[str, tuple[str, str]] = {}
         self.operatorCatalog: list[dict[str, object]] = []
@@ -1305,6 +1317,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             maximumEntries=DEFAULT_MAX_LOG_ENTRIES,
         )
         self.logDialog.hide()
+        if _nativeQt:
+            self.logDialog.view.setLogDirectory(self._localLogDirectory,
+                                               lambda message: self.appendRuntimeLog("ERROR", message))
+            self.logDialog.view.diagnosticCreated.connect(self.appendLocalEvent)
 
         self.workflowController = WorkflowController(
             workflowStore=self.workflowStore,
@@ -1345,7 +1361,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             requestEventRefresh=self._requestRuntimeEventRefresh,
             runtimeClient=self.runtimeClient,
             runtimePanelState=self.runtimePanelState,
-            appendLog=self.appendRuntimeLog,
+            appendLog=self.appendFlowLog,
+            appendLocalEvent=lambda event: self.appendLocalEvent(event, source="flow_designer"),
             refreshRuntimePanelView=self._refreshRuntimePanelView,
             updateToolbarState=self._updateRuntimeToolbarState,
             syncRuntimeProjectBeforeRun=self._syncRuntimeProjectBeforeRun,
@@ -1371,7 +1388,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
         self.operatorCatalogController = OperatorCatalogController(
             runtimeClient=self.runtimeClient,
-            appendLog=self.appendRuntimeLog,
+            appendLog=self.appendFlowLog,
         )
         self.operatorEditorManager: OperatorEditorManager = OperatorEditorManager(
             runtimeClient=self.runtimeClient,
@@ -1478,6 +1495,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.statusBar().addPermanentWidget(self.communicationStatus)
             from .device_status import DeviceStatusObserver
             self.deviceStatusObserver = DeviceStatusObserver(self.pageCoordinator, self.communicationStatus)
+        if _nativeQt:
+            self._logPollingTimer = QTimer(self)
+            self._logPollingTimer.setInterval(100)
+            self._logPollingTimer.timeout.connect(self._pollOperationalLogs)
+            self._logPollingTimer.start()
 
     def openCommunicationPanel(self):
         coordinator = self.pageCoordinator
@@ -2495,7 +2517,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         try:
             workflow = self.workflowStore.get(workflowId)
         except KeyError:
-            self.appendRuntimeLog("ERROR", f"导出工作流失败：{workflowId} 不存在")
+            self.appendFlowLog("ERROR", f"导出工作流失败：{workflowId} 不存在")
             return None
         suggestedName = f"{workflowId}{WORKFLOW_PACKAGE_EXTENSION}"
         defaultPath = (
@@ -2510,7 +2532,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             "EmoMaster 工作流包 (*.emowf.json)",
         )
         if selectedPath == "":
-            self.appendRuntimeLog("INFO", "已取消导出工作流")
+            self.appendFlowLog("INFO", "已取消导出工作流")
             return None
         try:
             result = self.workflowController.exportWorkflowPackage(
@@ -2518,10 +2540,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             )
         except (KeyError, OSError, TypeError, ValueError) as err:
             message = f"导出工作流失败：{err}"
-            self.appendRuntimeLog("ERROR", message)
+            self.appendFlowLog("ERROR", message)
             QMessageBox.warning(self, "导出工作流失败", message)
             return None
-        self.appendRuntimeLog(
+        self.appendFlowLog(
             "INFO",
             f"工作流已导出：{result.packagePath} | 根工作流：{workflow.name} | "
             f"包含 {len(result.workflowIds)} 个工作流",
@@ -2540,7 +2562,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             "EmoMaster 工作流包 (*.emowf.json);;JSON 文件 (*.json)",
         )
         if selectedPath == "":
-            self.appendRuntimeLog("INFO", "已取消导入工作流")
+            self.appendFlowLog("INFO", "已取消导入工作流")
             return None
         selectedParentWorkflowId = parentWorkflowId or self.activeWorkflowId
         availableOperatorIds = [
@@ -2565,13 +2587,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             )
         except (OSError, TypeError, ValueError) as err:
             message = f"导入工作流失败：{err}"
-            self.appendRuntimeLog("ERROR", message)
+            self.appendFlowLog("ERROR", message)
             QMessageBox.warning(self, "导入工作流失败", message)
             return None
         dialog = self._createWorkflowPackagePreviewDialog(preview)
         accepted, insertSubflow = dialog.execSelection()
         if not accepted:
-            self.appendRuntimeLog("INFO", "已在预览中取消导入工作流")
+            self.appendFlowLog("INFO", "已在预览中取消导入工作流")
             return None
         try:
             result = self._commitWorkflowPackageImport(
@@ -2587,10 +2609,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             )
         except (KeyError, OSError, TypeError, ValueError) as err:
             message = f"导入工作流失败：{err}"
-            self.appendRuntimeLog("ERROR", message)
+            self.appendFlowLog("ERROR", message)
             QMessageBox.warning(self, "导入工作流失败", message)
             return None
-        self.appendRuntimeLog(
+        self.appendFlowLog(
             "INFO",
             f"工作流已导入：{selectedPath} | 包含 {len(result.workflowIds)} 个工作流"
             + (
@@ -2602,7 +2624,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             + " | 请保存项目以持久化更改",
         )
         if preview.missingOperators:
-            self.appendRuntimeLog(
+            self.appendFlowLog(
                 "WARN",
                 "导入的工作流包含未加载算子："
                 + ", ".join(preview.missingOperators),
@@ -2611,7 +2633,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             item for item in preview.externalPaths if item.status != "available"
         ]
         if pathWarnings:
-            self.appendRuntimeLog(
+            self.appendFlowLog(
                 "WARN",
                 f"导入的工作流有 {len(pathWarnings)} 个外部路径需要核对",
             )
@@ -2659,7 +2681,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         try:
             self.workflowController.switchWorkflow(workflowId)
         except KeyError:
-            self.appendRuntimeLog("ERROR", f"工作流不存在：{workflowId}")
+            self.appendFlowLog("ERROR", f"工作流不存在：{workflowId}")
             return
         self.activeWorkflowId = workflowId
         self._restoreActiveWorkflowRuntimeState()
@@ -2706,7 +2728,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         try:
             currentName = self.workflowStore.get(workflowId).name
         except KeyError:
-            self.appendRuntimeLog("ERROR", f"重命名工作流失败：{workflowId} 不存在")
+            self.appendFlowLog("ERROR", f"重命名工作流失败：{workflowId} 不存在")
             return False
         name = self._promptWorkflowName("重命名工作流", currentName)
         if name is None:
@@ -2714,7 +2736,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         try:
             self.renameWorkflow(workflowId, name)
         except (KeyError, ValueError) as err:
-            self.appendRuntimeLog("ERROR", f"重命名工作流失败：{err}")
+            self.appendFlowLog("ERROR", f"重命名工作流失败：{err}")
             return False
         return True
 
@@ -2730,7 +2752,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return None
         name = str(text).strip()
         if name == "":
-            self.appendRuntimeLog("WARN", "工作流名称不能为空")
+            self.appendFlowLog("WARN", "工作流名称不能为空")
             return None
         return name
 
@@ -2745,7 +2767,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.workflowController.deleteWorkflow(workflowId)
         except (KeyError, ValueError) as err:
             message = self._formatWorkflowDeleteFailure(workflowId, err)
-            self.appendRuntimeLog("ERROR", message)
+            self.appendFlowLog("ERROR", message)
             QMessageBox.warning(self, "无法删除工作流", message)
             return
         self.activeWorkflowId = self.workflowController.activeWorkflowId
@@ -2776,7 +2798,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         try:
             self.workflowController.setEntryWorkflow(selected)
         except KeyError as err:
-            self.appendRuntimeLog("ERROR", f"入口工作流不存在：{err}")
+            self.appendFlowLog("ERROR", f"入口工作流不存在：{err}")
             return
         self._refreshWorkflowTabs()
 
@@ -2801,7 +2823,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         try:
             workflow = self.workflowStore.get(workflowId)
         except KeyError:
-            self.appendRuntimeLog("ERROR", f"工作流接口设置失败：{workflowId} 不存在")
+            self.appendFlowLog("ERROR", f"工作流接口设置失败：{workflowId} 不存在")
             return
         if inputs is None or outputs is None:
             availableTypes: set[str] = set()
@@ -2835,12 +2857,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 workflowId, inputs, outputs
             )
         except (TypeError, ValueError) as err:
-            self.appendRuntimeLog("ERROR", f"工作流接口设置失败：{err}")
+            self.appendFlowLog("ERROR", f"工作流接口设置失败：{err}")
             return
-        self.appendRuntimeLog("INFO", f"工作流接口已更新：{workflowId}")
+        self.appendFlowLog("INFO", f"工作流接口已更新：{workflowId}")
         if refreshReport:
             message = "接口同步时发现以下变化：\n" + "\n".join(refreshReport)
-            self.appendRuntimeLog("WARN", message.replace("\n", " | "))
+            self.appendFlowLog("WARN", message.replace("\n", " | "))
             QMessageBox.warning(self, "工作流引用已更新", message)
         self._refreshWorkflowTabs()
 
@@ -2853,14 +2875,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     ) -> str | None:
         target = targetWorkflowId or self._firstOtherWorkflow()
         if target is None:
-            self.appendRuntimeLog("WARN", "请先创建一个可调用的工作流")
+            self.appendFlowLog("WARN", "请先创建一个可调用的工作流")
             return None
         nodeId = self.flowModel.addNode("", "Subflow", {}, {}, kind="subflow")
         try:
             self.workflowController.configureSubflowNode(nodeId, target)
         except (KeyError, ValueError) as err:
             self.flowModel.removeNode(nodeId)
-            self.appendRuntimeLog("ERROR", f"Subflow 节点创建失败：{err}")
+            self.appendFlowLog("ERROR", f"Subflow 节点创建失败：{err}")
             return None
         self._addControlNodeToScene(nodeId, sceneX=sceneX, sceneY=sceneY)
         return nodeId
@@ -2873,7 +2895,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     ) -> str | None:
         target = self._firstOtherWorkflow()
         if target is None:
-            self.appendRuntimeLog("WARN", "请先创建 Repeat 的 body 工作流")
+            self.appendFlowLog("WARN", "请先创建 Repeat 的 body 工作流")
             return None
         loopConfig = config or {
             "contractVersion": 2,
@@ -2893,7 +2915,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     ) -> str | None:
         target = self._firstOtherWorkflow()
         if target is None:
-            self.appendRuntimeLog("WARN", "请先创建 ForEach 的 body 工作流")
+            self.appendFlowLog("WARN", "请先创建 ForEach 的 body 工作流")
             return None
         loopConfig = config or {
             "contractVersion": 2,
@@ -2913,13 +2935,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         targets = self._otherWorkflowIds()
         if config is None:
             if not targets:
-                self.appendRuntimeLog(
+                self.appendFlowLog(
                     "WARN", "请先创建 While 的循环体工作流；不需要独立条件工作流"
                 )
                 return None
             config = self._findCompatibleWhileConfig(targets)
             if config is None:
-                self.appendRuntimeLog(
+                self.appendFlowLog(
                     "WARN",
                     "没有兼容的 While 循环体：状态输入/输出必须同名同类型，"
                     "并提供一个布尔状态端口作为继续条件",
@@ -2974,7 +2996,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.workflowController.configureLoopNode(nodeId, config)
         except (KeyError, ValueError) as err:
             self.flowModel.removeNode(nodeId)
-            self.appendRuntimeLog("ERROR", f"{title} 节点创建失败：{err}")
+            self.appendFlowLog("ERROR", f"{title} 节点创建失败：{err}")
             return None
         self._addControlNodeToScene(nodeId, sceneX=sceneX, sceneY=sceneY)
         return nodeId
@@ -3102,10 +3124,15 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if callable(shutdown):
                 shutdown()
         try:
+            if self._logPollingTimer is not None:
+                self._logPollingTimer.stop()
+            self._stopGlobalLogs()
             self.runtimeController.close()
         except Exception as error:
             message = f'关闭未完成，保留窗口和运行时资源；请再次关闭重试：{error}'
             self.appendRuntimeLog('ERROR', message)
+            if self._logPollingTimer is not None:
+                self._logPollingTimer.start()
             if self.pageCoordinator is not None:
                 self.pageCoordinator.preview.message(message)
                 self.pageCoordinator.preview.timer.start(25)
@@ -3123,6 +3150,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.runtimePanelState.nodeInspection.clear()
         self._displayedRunImage = None
         self._saveRuntimeLogSettings()
+        self._loggingClosed = True
+        writer = self._logResources.get("writer")
+        if writer is not None:
+            failure = writer.close()
+            if failure:
+                self._localLogFailures.append(str(failure))
+            self._drainLocalLogFailures()
         if self.logDialog is not None:
             self.logDialog.close()
         try:
@@ -3628,7 +3662,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     def _syncRuntimeProjectBeforeRun(self) -> bool:
         if self.hasActiveDebugSession():
-            self.appendRuntimeLog("WARN", "请先结束当前调试，再启动正式运行")
+            self.appendFlowLog("WARN", "请先结束当前调试，再启动正式运行")
             return False
         if self.currentProjectDir is None:
             return True
@@ -3643,7 +3677,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 online = self.runtimeClient.getOnlineProjectSnapshot('')
             except RuntimeClientError as error:
                 if error.code != 'E_CONFIG_NOT_LOADED':
-                    self.appendRuntimeLog('ERROR', str(error))
+                    self.appendFlowLog('ERROR', str(error))
                     return False
             else:
                 from emo_master.apps.designer.services.runtime_client import localProjectSourceChange
@@ -3700,7 +3734,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if self.operatorCatalogController.hasCatalog:
             return True
         message = "算子目录尚未就绪，请等待加载完成；加载失败时请刷新算子。"
-        self.appendRuntimeLog("WARNING", message)
+        self.appendFlowLog("WARNING", message)
         if _nativeQt:
             self.statusBar().showMessage(message, 5000)
         return False
@@ -3723,20 +3757,20 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 continue
             if result.code:
                 self._setOperatorCatalogState("failed")
-                self.appendRuntimeLog("WARNING", f"算子目录加载失败：{result.code}: {result.message}")
+                self.appendFlowLog("WARNING", f"算子目录加载失败：{result.code}: {result.message}")
                 continue
             try:
                 self.operatorCatalog = self.operatorCatalogController.applyOperators(result.payload, self._classifyOperator)
             except (TypeError, ValueError, AttributeError) as err:
                 self._setOperatorCatalogState("failed")
-                self.appendRuntimeLog("WARNING", f"算子目录无效：{err}")
+                self.appendFlowLog("WARNING", f"算子目录无效：{err}")
                 continue
             provider.setCatalog(self.operatorCatalog)
             warnings = getattr(self.runtimeClient, "cameraRecoveryWarnings", [])
             if warnings and not getattr(self, "_cameraRecoveryWarningShown", False):
                 self._cameraRecoveryWarningShown = True
                 message = "检测到上次未完成的相机调整，请人工核查设备当前配置；系统不会自动重放写入。\n" + "\n".join(str(item) for item in warnings)
-                self.appendRuntimeLog("WARN", message)
+                self.appendFlowLog("WARN", message)
                 QMessageBox.warning(self, "相机配置需要核查", message)
             self._setOperatorCatalogState("ready")
             self._refreshBubbleOperators()
@@ -3776,7 +3810,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if not flowEditAllowed(self):
             return
         if not isinstance(payload, dict):
-            self.appendRuntimeLog("ERROR", "算子数据无效")
+            self.appendFlowLog("ERROR", "算子数据无效")
             return
 
         systemNodeKind = payload.get("systemNodeKind")
@@ -3786,7 +3820,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             )
             if nodeId is not None:
                 operatorId = str(payload.get("operatorId", systemNodeKind))
-                self.appendRuntimeLog("INFO", f"已添加节点：{nodeId}")
+                self.appendFlowLog("INFO", f"已添加节点：{nodeId}")
                 self._recordRecentOperator(operatorId)
             self.collapseOperatorBubble()
             return
@@ -3812,7 +3846,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 enableVariables(self.workflowStore)
             except (TypeError, ValueError) as error:
                 message = f"无法添加变量节点，请先修正项目草稿后重试：{error}"
-                self.appendRuntimeLog("ERROR", message)
+                self.appendFlowLog("ERROR", message)
                 if _nativeQt:
                     self.statusBar().showMessage(message, 10000)
                 return
@@ -3838,7 +3872,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 kind="operator",
             )
         )
-        self.appendRuntimeLog("INFO", f"已添加节点：{nodeId}")
+        self.appendFlowLog("INFO", f"已添加节点：{nodeId}")
         self._recordRecentOperator(operatorId)
         self.flowModel.selectNode(nodeId)
         self.flowScene.setNodeSelected(nodeId)
@@ -3863,7 +3897,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return self.addForEachNode(sceneX=sceneX, sceneY=sceneY)
         if systemNodeKind == "loop:while":
             return self.addWhileNode(sceneX=sceneX, sceneY=sceneY)
-        self.appendRuntimeLog("ERROR", f"未知系统节点类型：{systemNodeKind}")
+        self.appendFlowLog("ERROR", f"未知系统节点类型：{systemNodeKind}")
         return None
 
     def addNodeFromOperatorDrop(
@@ -3897,7 +3931,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def connectSelectedNodes(self) -> None:
         selectedNodeIds = self.flowScene.getSelectedNodeIds()
         if len(selectedNodeIds) != 2:
-            self.appendRuntimeLog("WARN", "请恰好选择 2 个节点")
+            self.appendFlowLog("WARN", "请恰好选择 2 个节点")
             return
 
         sourceNodeId = selectedNodeIds[0]
@@ -3910,7 +3944,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             edge = self.flowModel.connectNodes(sourceNodeId, fromPort, targetNodeId, toPort,
                                                newInputPortType=inputs[toPort])
         except ValueError as err:
-            self.appendRuntimeLog("ERROR", str(err))
+            self.appendFlowLog("ERROR", str(err))
             return
         edgeViewModel = FlowEdgeViewModel(
             fromNodeId=edge.fromNode,
@@ -3921,7 +3955,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.flowScene.renderEdge(edgeViewModel)
         self.refreshWorkflowDependencyTree()
         self._refreshWorkflowEditorSchemas()
-        self.appendRuntimeLog(
+        self.appendFlowLog(
             "INFO",
             f"连线成功：{edge.fromNode}.{edge.fromPort} -> {edge.toNode}.{edge.toPort}",
         )
@@ -3960,7 +3994,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 newInputPortType=inputs[toPort],
             )
         except ValueError as err:
-            self.appendRuntimeLog("ERROR", self._formatConnectionError(str(err)))
+            self.appendFlowLog("ERROR", self._formatConnectionError(str(err)))
             return None
 
         edgeViewModel = FlowEdgeViewModel(
@@ -3969,7 +4003,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             toNodeId=edge.toNode,
             toPort=edge.toPort,
         )
-        self.appendRuntimeLog(
+        self.appendFlowLog(
             "INFO",
             f"连线成功：{edge.fromNode}.{edge.fromPort} -> {edge.toNode}.{edge.toPort}",
         )
@@ -3980,13 +4014,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def validateGraph(self) -> None:
         result = self.flowModel.validateGraph()
         if result.get("ok") is True:
-            self.appendRuntimeLog("INFO", "流程图校验通过")
+            self.appendFlowLog("INFO", "流程图校验通过")
             return
         rawErrors = result.get("errors", [])
         errors = rawErrors if isinstance(rawErrors, list) else []
-        self.appendRuntimeLog("ERROR", f"流程图校验失败（{len(errors)} 个错误）")
+        self.appendFlowLog("ERROR", f"流程图校验失败（{len(errors)} 个错误）")
         for errorText in errors:
-            self.appendRuntimeLog("ERROR", f"  - {errorText}")
+            self.appendFlowLog("ERROR", f"  - {errorText}")
 
     @draftCommand
     def deleteSelectedElements(self) -> None:
@@ -4006,7 +4040,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         selectedNodeIds = self.flowScene.getSelectedNodeIds()
         for nodeId in selectedNodeIds:
             if self.flowModel.isBoundaryNode(nodeId):
-                self.appendRuntimeLog("WARN", "Workflow Input/Output 节点不能删除")
+                self.appendFlowLog("WARN", "Workflow Input/Output 节点不能删除")
                 continue
             self.flowModel.removeNode(nodeId)
             self.flowScene.removeFlowNode(nodeId)
@@ -4019,7 +4053,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self._refreshWorkflowEditorSchemas()
             if _nativeQt:
                 self.flowScene.refreshPresentations()
-            self.appendRuntimeLog("INFO", f"已删除选中元素：{deletedCount}")
+            self.appendFlowLog("INFO", f"已删除选中元素：{deletedCount}")
             self.refreshSidebarNodeList()
             self._refreshRuntimePanelView()
         self.updateToolbarState()
@@ -4032,7 +4066,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         try:
             title = self.flowModel.renameNode(nodeId, name)
         except ValueError as err:
-            self.appendRuntimeLog("WARN", str(err))
+            self.appendFlowLog("WARN", str(err))
             return original
         if title != original:
             self.flowScene.updateNodeTitle(nodeId, title)
@@ -4055,7 +4089,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
         self.flowScene.layoutNodesFlow()
         self.focusGraphContent()
-        self.appendRuntimeLog("INFO", "已按数据流整理节点")
+        self.appendFlowLog("INFO", "已按数据流整理节点")
 
     def focusGraphContent(self, checked: bool = False, *, automatic: bool = False) -> None:
         workflowId = (str(self.workflowStore.project.get("projectId", "")), self.workflowStore.activeWorkflowId)
@@ -4143,7 +4177,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
         requiredSummary = ", ".join(requiredParams)
 
-        self.appendRuntimeLog(
+        self.appendFlowLog(
             "INFO",
             f"节点提示 {nodeId}：输入[{inputSummary}] 输出[{outputSummary}] 必填[{requiredSummary}]",
         )
@@ -4287,6 +4321,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._displayedRunImage = imageIdentity
 
     def openLogDialog(self) -> None:
+        self._pollOperationalLogs(retry=True)
         if self.logDialog is None:
             self.logDialog = LogDialog(
                 self,
@@ -4295,6 +4330,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 maximumEntries=DEFAULT_MAX_LOG_ENTRIES,
             )
             self.logDialog.setEntries(self.logEntries)
+            if _nativeQt:
+                self.logDialog.view.setLogDirectory(self._localLogDirectory,
+                                                   lambda message: self.appendRuntimeLog("ERROR", message))
+                self.logDialog.view.diagnosticCreated.connect(self.appendLocalEvent)
         if _nativeQt and self.logDialog.isMinimized():
             self.logDialog.setWindowState(self.logDialog.windowState() & ~Qt.WindowMinimized)
         self.logDialog.show()
@@ -4310,6 +4349,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     def appendEditorLog(self, level: str, message: str) -> None:
         self._appendLocalLog("editor", level, message)
+
+    def appendFlowLog(self, level: str, message: str) -> None:
+        self._appendLocalLog("flow_designer", level, message)
+
+    def appendPageLog(self, level: str, message: str) -> None:
+        self._appendLocalLog("page_designer", level, message)
 
     def _appendLocalLog(self, source: str, level: str, message: str) -> None:
         now = datetime.now()
@@ -4328,6 +4373,73 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._storeRuntimeLogEntry(entry, logLine)
         if self.logDialog is not None:
             self.logDialog.appendEntry(entry)
+        self._persistLocalEntry(entry)
+
+    def appendLocalEvent(self, event: dict[str, object], source: str = "designer", *, persist=True) -> None:
+        entry = replace(self._runtimeLogEntry(event), source=source)
+        if not entry.projectId:
+            entry = replace(entry, projectId=self._currentProjectId())
+        self._storeRuntimeLogEntry(entry, entry.displayLine())
+        if self.logDialog is not None:
+            self.logDialog.appendEntry(entry)
+        if persist:
+            self._persistLocalEntry(entry)
+
+    def _persistLocalEntry(self, entry):
+        if self._loggingClosed:
+            return
+        writer = self._logResources.get("writer")
+        if writer is None:
+            from emo_master.apps.designer.services.local_log import DesignerLogWriter
+            failures = self._localLogFailures
+            writer = DesignerLogWriter(self._localLogDirectory,
+                                      failureCallback=lambda _event, message: failures.append(message))
+            self._logResources["writer"] = writer
+        writer.appendEntry(entry)
+
+    def _drainLocalLogFailures(self):
+        while self._localLogFailures:
+            message = self._localLogFailures.popleft()
+            self.appendLocalEvent(dict(level="ERROR", code="DESIGNER_LOGFILE_FAILED",
+                eventType="designer.logfile.failed", message="Designer 本机日志写入失败：" + message,
+                payload={"directory": str(self._localLogDirectory)}), persist=False)
+
+    def _drainGlobalLogs(self, reader):
+        for kind, event in reader.take():
+            if kind == "event":
+                self.appendRuntimeEvent(event)
+            else:
+                self.appendLocalEvent(event)
+
+    def _stopGlobalLogs(self):
+        reader = self._logResources.get("reader")
+        if reader is not None:
+            reader.close()
+            self._drainGlobalLogs(reader)
+            self._globalLogCursor = reader.cursor
+            self._logResources["reader"] = None
+
+    def _pollOperationalLogs(self, *, retry=False):
+        self._drainLocalLogFailures()
+        if self._loggingClosed:
+            return
+        service = getattr(self.runtimeClient, "runtimeService", None)
+        reader = self._logResources.get("reader")
+        if service is not self._globalLogTransport:
+            self._stopGlobalLogs()
+            reader = None
+            self._globalLogCursor = 0
+            self._globalLogTransport = service
+        if not getattr(self.runtimeClient, "_closed", False) and callable(getattr(service, "StreamJobEvents", None)):
+            if reader is None or (retry and reader.finished.is_set()):
+                from emo_master.apps.designer.services.global_logs import RuntimeGlobalLogs
+                cursor = reader.cursor if reader is not None else self._globalLogCursor
+                if reader is not None:
+                    self._drainGlobalLogs(reader)
+                reader = RuntimeGlobalLogs(service, afterSequence=cursor)
+                self._logResources["reader"] = reader
+        if reader is not None:
+            self._drainGlobalLogs(reader)
 
     def _rememberRuntimeLogJob(self, reply: object) -> None:
         jobId = str(getattr(reply, "job_id", ""))
@@ -4478,7 +4590,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self._toolbarActions["开始运行"].setToolTip(launchHint if canRun else blockedReason)
 
         if blockedReason != "" and blockedReason != self._lastRunBlockedReason:
-            self.appendRuntimeLog("WARN", blockedReason)
+            self.appendFlowLog("WARN", blockedReason)
         if canRun:
             self._lastRunBlockedReason = ""
             return
@@ -4596,7 +4708,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def onConnectionError(self, reason: str) -> None:
         if reason == "":
             return
-        self.appendRuntimeLog("WARN", self._formatConnectionError(reason))
+        self.appendFlowLog("WARN", self._formatConnectionError(reason))
 
     def _formatConnectionError(self, rawReason: str) -> str:
         if rawReason.startswith("port type mismatch:"):
@@ -4655,7 +4767,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
         node = self.flowModel.nodes.get(nodeId)
         if node is None:
-            self.appendRuntimeLog("ERROR", "未找到所选节点")
+            self.appendFlowLog("ERROR", "未找到所选节点")
             return
 
         if node.kind in {"dispatch", "join"}:
@@ -4794,7 +4906,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                     currentDraft=lambda: self._livePreviewProject(EditorKey(projectId, workflowId, "")))
                 self._workflowDebugWindow = debug
             except Exception as error:
-                self.appendRuntimeLog("ERROR", "流程调试打开失败：" + str(error))
+                self.appendFlowLog("ERROR", "流程调试打开失败：" + str(error))
                 return
         debug.show()
         debug.raise_()
@@ -4811,7 +4923,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return None
         if (self.pageCoordinator.session is not session or session._signature() != signature
                 or self.activeWorkflowId != workflowId):
-            self.appendRuntimeLog("ERROR", "工程草稿已变化，请重新打开 Dispatch / Join 编辑器")
+            self.appendFlowLog("ERROR", "工程草稿已变化，请重新打开 Dispatch / Join 编辑器")
             return None
         payload = dialog.resultPayload
         if nodeId is None:
@@ -4830,7 +4942,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     @draftCommand
     def applyNodeParams(self, nodeId: str, params: dict[str, object]) -> bool:
         if nodeId not in self.flowModel.nodes:
-            self.appendRuntimeLog("ERROR", "参数应用失败：节点不存在")
+            self.appendFlowLog("ERROR", "参数应用失败：节点不存在")
             return False
         node = self.flowModel.nodes[nodeId]
         try:
@@ -4847,7 +4959,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             else:
                 self.flowModel.setNodeParams(nodeId, params)
         except (KeyError, TypeError, ValueError) as err:
-            self.appendRuntimeLog("ERROR", f"节点配置失败：{err}")
+            self.appendFlowLog("ERROR", f"节点配置失败：{err}")
             return False
         if node.kind in {"subflow", "loop"}:
             refresh = getattr(self.workflowController, "refreshActiveWorkflow", None)
@@ -4861,7 +4973,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.refreshWorkflowDependencyTree()
         if _nativeQt:
             self.flowScene.refreshPresentations()
-        self.appendRuntimeLog("INFO", f"参数已更新：{nodeId}")
+        self.appendFlowLog("INFO", f"参数已更新：{nodeId}")
         self.updateToolbarState()
         self._refreshRuntimePanelView()
         return True
@@ -4886,7 +4998,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.onNodeSelectionChanged()
             return nodeId
         except (ValueError, KeyError) as error:
-            self.appendRuntimeLog('ERROR', str(error))
+            self.appendFlowLog('ERROR', str(error))
             return None
 
     @draftCommand
@@ -4963,27 +5075,27 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self, key: EditorKey, params: dict[str, object]
     ) -> bool:
         if key.projectId != self._currentProjectId():
-            self.appendRuntimeLog("ERROR", "参数应用失败：编辑器所属项目已关闭")
+            self.appendFlowLog("ERROR", "参数应用失败：编辑器所属项目已关闭")
             return False
         if key.workflowId == self.activeWorkflowId:
             return self.applyNodeParams(key.nodeId, params)
         workflow = self.workflowStore.workflows.get(key.workflowId)
         if workflow is None:
-            self.appendRuntimeLog("ERROR", "参数应用失败：编辑器所属工作流已关闭")
+            self.appendFlowLog("ERROR", "参数应用失败：编辑器所属工作流已关闭")
             return False
         for rawNode in workflow.nodes:
             if rawNode.get("nodeId") != key.nodeId:
                 continue
             if rawNode.get("kind", "operator") != "operator":
-                self.appendRuntimeLog(
+                self.appendFlowLog(
                     "ERROR", "参数应用失败：请切回对应工作流配置控制节点"
                 )
                 return False
             rawNode["params"] = dict(params)
-            self.appendRuntimeLog("INFO", f"参数已更新：{key.nodeId}")
+            self.appendFlowLog("INFO", f"参数已更新：{key.nodeId}")
             self.updateToolbarState()
             return True
-        self.appendRuntimeLog("ERROR", "参数应用失败：节点不存在")
+        self.appendFlowLog("ERROR", "参数应用失败：节点不存在")
         return False
 
     def _livePreviewProject(self, key: EditorKey) -> dict[str, object]:

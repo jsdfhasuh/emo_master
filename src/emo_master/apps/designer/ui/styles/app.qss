@@ -104,7 +104,15 @@ QSplitter::handle:hover { background: #c5d7fc; }
 PreviewLabel, QLabel#previewCard, QLabel#previewImage { background: #f0f2f5; border: 1px solid #e1e4e9; border-radius: 4px; color: #626b78; }
 QDockWidget#runtimeLogDock { background: #ffffff; }
 QDockWidget#runtimeLogDock::title { background: #f5f6f8; padding: 7px 10px; border-bottom: 1px solid #d8dce3; }
-QTextEdit#runtimeLogDetails { background: #fafbfc; color: #374151; }
+QTreeWidget#runtimeLogDetails { background: #fafbfc; color: #374151; }
+QTabBar#runtimeLogAreaTabs::tab {
+  background: #edf0f4; color: #626b78; border: none;
+  border-bottom: 2px solid transparent; padding: 8px 18px;
+}
+QTabBar#runtimeLogAreaTabs::tab:selected {
+  background: #ffffff; color: #1748b5; border-bottom-color: #2563eb;
+}
+QTabBar#runtimeLogAreaTabs::tab:hover { background: #e5eeff; }
 QLabel#startupHeroTitle { font-size: 16pt; font-weight: 600; }
 QLabel#startupHeroSubtitle { color: #626b78; }
 QLabel#startupSettingsError { color: #b42318; }

@@ -228,6 +228,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
         self.deviceManager.runtimeInstanceId = self.runtimeInstanceId
         self.deviceManager.scope['runtimeInstanceId'] = self.runtimeInstanceId
         self.deviceManager.diagnostics.writer = self.operationalLogWriter
+        self.deviceManager.diagnostics.eventPublisher = self.eventStore.append
         self.eventStore.addSink(self.deviceManager.diagnostics.projectEvent)
         from emo_master.apps.runtime.devices.imv_debug import CameraDiagnostics
         self.cameraDiagnostics = CameraDiagnostics(self.deviceManager)
@@ -848,12 +849,16 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
         )
         cursor = afterSequence
         terminalSequence = 0
+        presentationSequence = 0
+        presentationLogs = {"presentation.source.unavailable", "presentation.source.recovered"}
         for event in events:
             if context is not None and hasattr(context, "is_active") and not context.is_active():
                 return
             cursor = max(cursor, event.sequence)
             if event.eventType in {"job.completed", "job.failed", "job.aborted"}:
                 terminalSequence = event.sequence
+            if event.eventType in presentationLogs:
+                presentationSequence = max(presentationSequence, event.sequence)
             yield self._toProtoEvent(event)
         if not follow:
             return
@@ -870,9 +875,21 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
         self.jobSupervisor.waitForRetirement(timeoutSeconds=None, jobId=jobId, cancellation=context)
         if context is not None and hasattr(context, "is_active") and not context.is_active():
             return
+        # Display results use a separate reader/export path and may close after
+        # the worker's terminal event. Include its final diagnostics in this
+        # stream, without holding EventStore's append lock or waiting on other Jobs.
+        drain = getattr(getattr(self, "_presentationOwner", None), "waitForLogDrain", None)
+        if callable(drain):
+            drain(jobId, timeoutSeconds=2.0, isActive=lambda: (
+                context is None or not hasattr(context, "is_active") or context.is_active()))
+        if context is not None and hasattr(context, "is_active") and not context.is_active():
+            return
+        presentationSequence = max(presentationSequence, max(
+            (event.sequence for event in self._eventsAfter(jobId, cursor) if event.eventType in presentationLogs),
+            default=0))
         self.operationalLogWriter.waitUntilProcessed(
             jobId,
-            terminalSequence,
+            max(terminalSequence, presentationSequence),
             timeoutSeconds=3.0,
         )
         for event in self._eventsAfter(jobId, cursor):
@@ -2098,6 +2115,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
         except PreviewTransientCleanupPending:
             self._closeStages["preview-assets"] = "TRANSIENT_CLEANUP_PENDING"
             raise
+        self._closeStep("device-logs", self.deviceManager.diagnostics.flushOperational)
         self._closeStep("event-sink", lambda: self.eventStore.removeSink(self._operationalLogSink))
         def closeWriter():
             writerError = self.operationalLogWriter.close(timeoutSeconds=3.0)

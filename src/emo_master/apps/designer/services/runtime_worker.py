@@ -18,6 +18,7 @@ try:
 
         jobAccepted: Any = Signal(object)
         eventReceived: Any = Signal(object)
+        diagnosticReceived: Any = Signal(object)
         statusChanged: Any = Signal(object)
         failed: Any = Signal(str)
         uncertain: Any = Signal(str)
@@ -144,6 +145,7 @@ except Exception:  # pragma: no cover
             self.uncertain = _Signal()
             self.jobAccepted = _Signal()
             self.eventReceived = _Signal()
+            self.diagnosticReceived = _Signal()
             self.statusChanged = _Signal()
             self.failed = _Signal()
             self.finished = _Signal()
@@ -400,8 +402,23 @@ def _releasePreviousCapture(worker: RuntimeWorker) -> None:
 def _followJobEvents(worker: RuntimeWorker, jobId: str) -> None:
     lastSequence = 0
     reconnectDelay = 0.1
+    disconnected = False
+
+    def connectionIssue(error):
+        nonlocal disconnected
+        if not disconnected and not worker.stopRequested():
+            _streamDiagnostic(worker, jobId, lastSequence, error)
+            disconnected = True
+
+    def connectionRecovered():
+        nonlocal disconnected
+        if disconnected and not worker.stopRequested():
+            _streamDiagnostic(worker, jobId, lastSequence)
+            disconnected = False
+
     while not worker.stopRequested():
         events = None
+        streamHealthy = False
         streamError: BaseException | None = None
         try:
             events = _streamEventsCompat(
@@ -415,14 +432,17 @@ def _followJobEvents(worker: RuntimeWorker, jobId: str) -> None:
                 sequence = _eventSequence(event)
                 if sequence > 0 and sequence <= lastSequence:
                     continue
+                connectionRecovered()
                 worker.eventReceived.emit(event)
                 if sequence > 0:
                     lastSequence = sequence
             reconnectDelay = 0.1
+            streamHealthy = True
         except BaseException as err:
             if worker.stopRequested():
                 break
             streamError = err
+            connectionIssue(err)
         finally:
             if events is not None:
                 close = getattr(events, "close", None)
@@ -435,7 +455,7 @@ def _followJobEvents(worker: RuntimeWorker, jobId: str) -> None:
 
         if worker.stopRequested():
             break
-        status = _jobStatusOrNone(worker.runtimeClient, jobId)
+        status = _jobStatusOrNone(worker.runtimeClient, jobId, onError=connectionIssue)
         if status is not None and _isTerminalStatus(status):
             if lastSequence > 0:
                 try:
@@ -444,13 +464,17 @@ def _followJobEvents(worker: RuntimeWorker, jobId: str) -> None:
                         jobId,
                         lastSequence,
                     )
-                except BaseException:
+                    streamHealthy = True
+                except BaseException as error:
                     if worker.stopRequested():
                         break
+                    connectionIssue(error)
                     if worker._stopEvent.wait(reconnectDelay):
                         break
                     reconnectDelay = min(2.0, reconnectDelay * 2.0)
                     continue
+            if streamHealthy:
+                connectionRecovered()
             worker.statusChanged.emit(status)
             return
         if streamError is not None and not callable(
@@ -495,13 +519,33 @@ def _replayAvailableEvents(
     return lastSequence
 
 
-def _jobStatusOrNone(runtimeClient, jobId: str):
+def _streamDiagnostic(worker, jobId, sequence, error=None):
+    signal = getattr(worker, 'diagnosticReceived', None)
+    if signal is None:
+        return
+    code = getattr(error, 'code', '') if error is not None else ''
+    if callable(code):
+        code = code()
+    detail = str(error) if error is not None else ''
+    signal.emit(dict(
+        eventType='designer.job_log.disconnected' if error is not None else 'designer.job_log.recovered',
+        level='WARN' if error is not None else 'INFO',
+        message=(f'任务日志连接中断，正在重连；任务 {jobId}：{detail}' if error is not None else
+                 f'任务日志连接已恢复；任务 {jobId}'),
+        jobId=jobId, workflowId=getattr(worker, 'workflowId', ''), code=str(code),
+        payload=dict(afterSequence=sequence, errorType=type(error).__name__ if error else '',
+                     reason=detail, phase='job_events')))
+
+
+def _jobStatusOrNone(runtimeClient, jobId: str, onError=None):
     getStatus = getattr(runtimeClient, "getJobStatus", None)
     if not callable(getStatus):
         return None
     try:
         return getStatus(jobId)
-    except BaseException:
+    except BaseException as error:
+        if onError is not None:
+            onError(error)
         return None
 
 

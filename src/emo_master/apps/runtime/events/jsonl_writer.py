@@ -27,6 +27,8 @@ class _QueuedEvent:
 class RuntimeJsonlLogWriter:
     """Best-effort asynchronous operational log sink with bounded rotation."""
 
+    filePrefix = "runtime"
+
     def __init__(
         self,
         directory: Path,
@@ -99,7 +101,7 @@ class RuntimeJsonlLogWriter:
             return self._reportedFailure
 
     def enqueue(self, event: RuntimeEvent) -> bool:
-        if not self._enabled or self._stop.is_set() or not _isOperationalEvent(event):
+        if not self._enabled or self._stop.is_set() or not self.acceptsEvent(event):
             return False
         target = self._priority if _isPriorityEvent(event) else self._normal
         with self._stateLock:
@@ -123,6 +125,12 @@ class RuntimeJsonlLogWriter:
                 )
             self._markProcessed(event)
             return False
+
+    def acceptsEvent(self, event: RuntimeEvent) -> bool:
+        return _isOperationalEvent(event)
+
+    def projectEvent(self, event: RuntimeEvent) -> dict[str, object]:
+        return _projectEvent(event)
 
     def waitUntilProcessed(
         self,
@@ -198,7 +206,7 @@ class RuntimeJsonlLogWriter:
     def _writeEvent(self, event: RuntimeEvent) -> None:
         successful = False
         try:
-            record = _projectEvent(event)
+            record = self.projectEvent(event)
             encoded = (
                 json.dumps(record, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
                 + "\n"
@@ -244,7 +252,7 @@ class RuntimeJsonlLogWriter:
         while True:
             self._fileIndex += 1
             filename = (
-                f"runtime-{stamp}-{os.getpid()}-{self._fileIndex:04d}.jsonl"
+                f"{self.filePrefix}-{stamp}-{os.getpid()}-{self._fileIndex:04d}.jsonl"
             )
             path = self.directory / filename
             if not path.exists():
@@ -304,7 +312,7 @@ class RuntimeJsonlLogWriter:
         active = self.activePath
         files = [
             path
-            for path in self.directory.glob("runtime-*.jsonl")
+            for path in self.directory.glob(f"{self.filePrefix}-*.jsonl")
             if path.is_file() and path != active
         ]
         for path in files:
@@ -319,7 +327,7 @@ class RuntimeJsonlLogWriter:
         files = sorted(
             (
                 path
-                for path in self.directory.glob("runtime-*.jsonl")
+                for path in self.directory.glob(f"{self.filePrefix}-*.jsonl")
                 if path.is_file() and path != active
             ),
             key=lambda path: (path.stat().st_mtime, path.name),
@@ -381,6 +389,8 @@ def _isOperationalEvent(event: RuntimeEvent) -> bool:
         event.eventType == "node.log"
         or event.eventType == "artifact.created"
         or event.eventType == "resource.cleanup.failed"
+        or event.eventType == "preview.snapshot.failed"
+        or event.eventType in {"presentation.source.unavailable", "presentation.source.recovered"}
         or event.eventType in {"operator.storage.resolved", "operator.runtime.ready",
                                "operator.runtime.failed", "operator.project.load.failed"}
         or event.eventType.startswith("device.")

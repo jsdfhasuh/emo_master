@@ -3,7 +3,7 @@ from collections import OrderedDict, deque
 from copy import deepcopy
 import json
 from threading import RLock
-from time import time
+from time import monotonic, time
 
 
 MAX_BYTE_PREVIEW = 1024
@@ -26,7 +26,7 @@ def compactResult(value):
 
 
 class DeviceDiagnostics:
-    def __init__(self):
+    def __init__(self, *, clock=monotonic, logInterval=30.0):
         self.lock = RLock()
         self.rows = OrderedDict()
         self.cursor = 0
@@ -34,8 +34,18 @@ class DeviceDiagnostics:
         self.count = 0
         self.dropped = 0
         self.writer = None
+        self.eventPublisher = None
+        self.clock = clock
+        self.logInterval = logInterval
+        self._operationalIssues = OrderedDict()
+        self.logErrors = deque(maxlen=64)
 
     def append(self, scope, deviceId, eventType, message, *, write=True, timestampMs=None, **fields):
+        defaultLevel = 'ERROR' if eventType.endswith('.failed') else 'INFO'
+        level = str(fields.get('level', defaultLevel)).upper().replace('WARNING', 'WARN')
+        fields['level'] = level if level in {'DEBUG', 'INFO', 'WARN', 'ERROR'} else defaultLevel
+        if fields.get('code') == 'E_DEVICE_CANCELLED':
+            fields['level'] = 'INFO'
         # Keep previews bounded; receipts have compact count/outcome metadata.
         if isinstance(fields.get('dataHex'), str):
             data = bytes.fromhex(fields['dataHex'])
@@ -48,7 +58,7 @@ class DeviceDiagnostics:
             retained = {key: fields[key] for key in ('ownerId', 'jobId', 'cycleId', 'requestId', 'source',
                         'slot', 'selectors', 'code', 'workflowId', 'nodeId', 'deviceGeneration', 'level', 'phase',
                         'planRevision', 'workflowRunId', 'parentWorkflowRunId', 'nodeRunId', 'iterationPath',
-                        'operatorId', 'sequence', 'kind', 'channelId', 'bytes', 'dataHex', 'truncated',
+                        'operatorId', 'sequence', 'kind', 'channelId', 'bytes', 'dataHex', 'truncated', 'action',
                         'serviceGeneration', 'connectionGeneration', 'outcome', 'receipt') if key in fields}
             result = fields.get('result')
             if isinstance(result, dict) and isinstance(result.get('dataHex'), str):
@@ -85,12 +95,98 @@ class DeviceDiagnostics:
                 if not self.rows[firstKey]:
                     del self.rows[firstKey]
             writer = self.writer if write else None
-        if writer is not None:
-            from emo_master.apps.runtime.events.models import RuntimeEvent
-            writer.enqueue(RuntimeEvent(jobId='', eventType=eventType, message=row['message'],
-                projectId=scope['projectId'], payloadJson=json.dumps(row, ensure_ascii=True),
-                timestampMs=row['timestampMs'], sequence=0))
+            publisher = self.eventPublisher if write else None
+            routed, operational = self._operationalRows(row) if publisher is not None else (False, [])
+        # EventStore also projects node logs into this class. Publish after
+        # releasing the device lock to preserve that existing lock order.
+        self._publishRows(writer, publisher, operational)
+        if writer is not None and not routed:
+            self._write(writer, self._event(row, row.get('jobId', '')))
         return row
+
+    def _publishRows(self, writer, publisher, operational):
+        for entry in operational:
+            event = self._event(entry, '__runtime__')
+            try:
+                publisher(event.jobId, event.eventType, event.message, level=event.level,
+                    code=event.code, projectId=event.projectId, workflowId=event.workflowId,
+                    nodeId=event.nodeId, workflowRunId=event.workflowRunId,
+                    parentWorkflowRunId=event.parentWorkflowRunId, nodeRunId=event.nodeRunId,
+                    iterationPath=tuple(json.loads(event.iterationPathJson)),
+                    timestampMs=event.timestampMs, payload=entry)
+            except Exception as error:
+                self.logErrors.append(repr(error))
+                self._write(writer, event)
+
+    def flushOperational(self):
+        with self.lock:
+            pending = [self._summary(issue) for issue in self._operationalIssues.values()
+                       if issue['count'] > issue['reported']]
+            self._operationalIssues.clear()
+            writer, publisher = self.writer, self.eventPublisher
+        self._publishRows(writer, publisher, pending)
+
+    def _operationalRows(self, row):
+        """Summarize native failures; normal device data stays in its own log."""
+        if row.get('code') == 'E_DEVICE_CANCELLED':
+            return False, []
+        eventType = row['eventType']
+        family = eventType.rsplit('.', 1)[0]
+        key = (row['projectLoadGeneration'], row['deviceId'], family, row.get('action', ''))
+        previous = self._operationalIssues.get(key)
+        now = self.clock()
+        output = []
+        if row['level'] in {'WARN', 'ERROR'}:
+            if previous is None or previous['row'].get('code') != row.get('code'):
+                if previous is not None and previous['count'] > previous['reported']:
+                    output.append(self._summary(previous))
+                previous = dict(row=row, count=0, reported=0, firstAt=now, loggedAt=now)
+                self._operationalIssues[key] = previous
+            previous['row'] = row
+            previous['count'] += 1
+            if previous['count'] == 1 or now - previous['loggedAt'] >= self.logInterval:
+                previous['loggedAt'] = now
+                output.append(self._summary(previous))
+            self._operationalIssues.move_to_end(key)
+            while len(self._operationalIssues) > 512:
+                _, old = self._operationalIssues.popitem(last=False)
+                if old['count'] > old['reported']:
+                    output.append(self._summary(old))
+            return True, output
+        if previous is not None and eventType.endswith('.completed'):
+            self._operationalIssues.pop(key)
+            if previous['count'] > previous['reported']:
+                output.append(self._summary(previous))
+            recoveredMessage = ('设备后续操作成功：' if family == 'device.action' else '设备已恢复：')
+            output.append(dict(row, eventType=family + '.recovered', level='INFO',
+                code='DEVICE_RECOVERED', message=recoveredMessage + row['message'],
+                previousCode=previous['row'].get('code', ''),
+                previousRequestId=previous['row'].get('requestId', ''), occurrences=previous['count']))
+            return True, output
+        return False, output
+
+    def _summary(self, issue):
+        count = issue['count'] - issue['reported']
+        issue['reported'] = issue['count']
+        return dict(issue['row'], occurrences=issue['count'], occurrencesSinceLastLog=count,
+                    durationMs=int((self.clock() - issue['firstAt']) * 1000))
+
+    @staticmethod
+    def _event(row, jobId):
+        from emo_master.apps.runtime.events.models import RuntimeEvent
+        return RuntimeEvent(jobId=jobId, eventType=row['eventType'], message=row['message'],
+            level=row['level'], code=row.get('code', ''), projectId=row['projectId'],
+            workflowId=row.get('workflowId', ''), nodeId=row.get('nodeId', ''),
+            workflowRunId=row.get('workflowRunId', ''), parentWorkflowRunId=row.get('parentWorkflowRunId', ''),
+            nodeRunId=row.get('nodeRunId', ''), iterationPathJson=json.dumps(row.get('iterationPath', [])),
+            payloadJson=json.dumps(row, ensure_ascii=True), timestampMs=row['timestampMs'])
+
+    def _write(self, writer, event):
+        if writer is not None:
+            try:
+                writer.enqueue(event)
+            except Exception as error:
+                self.logErrors.append(repr(error))
 
     def _drop(self, bucket):
         _, size = bucket.popleft()

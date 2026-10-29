@@ -187,7 +187,7 @@ class PageCoordinator:
         try:
             types, _requirements, _rejected = self.window.runtimeClient.listDeviceTypes()
         except Exception as error:
-            self.preview.message('设备类型读取失败：' + str(error))
+            self.preview.message('设备类型读取失败：' + str(error), 'ERROR')
             return
         operators = {item['operatorId']: item for item in self.window.operatorCatalogController.getCatalog()}
         ResourceBindingsDialog(self, types, operators, self.window).exec_()

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from collections import Counter
+from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
 import json
+from pathlib import Path
 import re
 import time
 from typing import Any
@@ -105,6 +107,14 @@ class StructuredLogEntry:
     def displayNode(self) -> str:
         return self.nodeName or self.nodeId
 
+    def designArea(self) -> str:
+        if self.source == "page_designer" or self.eventType.startswith("presentation."):
+            return "page"
+        if self.source in {"editor", "flow_designer"} or self.eventType.startswith(
+                ("node.", "workflow.", "loop.", "job.", "artifact.", "preview.")):
+            return "flow"
+        return "general"
+
     def displayMessage(self) -> str:
         lifecycle = {
             "node.started": (f"node started: {self.nodeId}", "开始执行节点"),
@@ -145,20 +155,24 @@ try:
         QComboBox,
         QDialog,
         QDockWidget,
+        QFileDialog,
         QHBoxLayout,
         QGridLayout,
         QLabel,
         QLineEdit,
+        QMenu,
+        QMessageBox,
         QPushButton,
         QSplitter,
+        QTabBar,
         QTableWidget,
         QTableWidgetItem,
-        QTextEdit,
         QVBoxLayout,
         QWidget,
         QSizePolicy,
     )
     from emo_master.apps.designer.ui.icon_map import icon
+    from emo_master.apps.designer.ui.log_json_tree import LogJsonTree
 
     class _LogFilterComboBox(QComboBox):
         popupClosed: Any = Signal()
@@ -169,6 +183,7 @@ try:
 
 
     class StructuredLogView(QWidget):
+        diagnosticCreated: Any = Signal(object)
         columns = ("时间", "级别", "来源", "Job", "工作流", "节点", "迭代", "事件", "错误码", "消息")
 
         def __init__(
@@ -195,10 +210,13 @@ try:
             self._nodeNames: dict[tuple[str, ...], str] = {}
             self._errorCount = 0
             self._visibleErrorCount = 0
+            self._exportDirectory = Path.home()
             root = QVBoxLayout()
             filters = QGridLayout()
             self.levelFilter = _combo(("全部", "DEBUG", "INFO", "WARN", "ERROR"))
             self.sourceFilter = _combo(("全部", "runtime", "designer", "editor"))
+            self.sourceFilter.addItem("流程设计", "flow_designer")
+            self.sourceFilter.addItem("页面设计", "page_designer")
             self.jobFilter = _combo(("全部",))
             self.workflowFilter = _combo(("全部",))
             self.nodeFilter = _combo(("全部",))
@@ -229,6 +247,20 @@ try:
             self.resetFiltersButton.setToolTip("恢复显示全部日志，不删除日志内容")
             searchRow.addWidget(self.resetFiltersButton)
             root.addLayout(searchRow)
+            self.areaTabs = QTabBar()
+            self.areaTabs.setObjectName("runtimeLogAreaTabs")
+            self.areaTabs.setAccessibleName("日志分类")
+            self.areaTabs.setExpanding(True)
+            self.areaTabs.setDrawBase(False)
+            for label, area, hint in (
+                ("全部", "all", "显示所有日志，包括工程、连接和设备等通用记录"),
+                ("流程设计", "flow", "工作流、节点执行和算子编辑日志"),
+                ("页面设计", "page", "页面设计操作、结果展示异常与恢复日志"),
+            ):
+                index = self.areaTabs.addTab(label)
+                self.areaTabs.setTabData(index, area)
+                self.areaTabs.setTabToolTip(index, hint)
+            root.addWidget(self.areaTabs)
             filterStatus = QHBoxLayout()
             self.filterStatusLabel = QLabel()
             self.filterStatusLabel.setObjectName("runtimeLogFilterStatus")
@@ -257,14 +289,26 @@ try:
                 self.table.setColumnWidth(column, width)
             self.table.setAlternatingRowColors(True)
             self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
-            self.detailViewer = QTextEdit()
+            self.detailViewer = LogJsonTree()
             self.detailViewer.setObjectName("runtimeLogDetails")
-            self.detailViewer.setReadOnly(True)
             self._logViewer = self.detailViewer
+            details = QWidget()
+            detailLayout = QVBoxLayout(details)
+            detailLayout.setContentsMargins(0, 0, 0, 0)
+            detailActions = QHBoxLayout()
+            detailActions.addWidget(QLabel("日志详情 · JSON"))
+            detailActions.addStretch(1)
+            self.copyDetailsButton = QPushButton("复制完整 JSON")
+            self.copyDetailsButton.setAutoDefault(False)
+            self.copyDetailsButton.setEnabled(False)
+            self.copyDetailsButton.clicked.connect(self.detailViewer.copyJson)
+            detailActions.addWidget(self.copyDetailsButton)
+            detailLayout.addLayout(detailActions)
+            detailLayout.addWidget(self.detailViewer)
             splitter = QSplitter(Qt.Vertical)
             splitter.addWidget(self.table)
-            splitter.addWidget(self.detailViewer)
-            splitter.setSizes([300, 120])
+            splitter.addWidget(details)
+            splitter.setSizes([300, 200])
             root.addWidget(splitter)
             self.navigationHint = QLabel("选择一条日志，可查看详情或定位节点")
             self.navigationHint.setObjectName("runtimeLogNavigationHint")
@@ -278,7 +322,23 @@ try:
             self.clearButton = QPushButton("清空视图")
             self.clearButton.setIcon(icon("trash-2"))
             actions.addWidget(self.autoScrollCheck)
+            self.logDirectoryButton = QPushButton("本机日志目录")
+            self.logDirectoryButton.setAutoDefault(False)
+            self.logDirectoryButton.setEnabled(False)
+            actions.addWidget(self.logDirectoryButton)
             actions.addStretch(1)
+            self.exportButton = QPushButton("导出日志")
+            self.exportButton.setObjectName("runtimeLogExport")
+            self.exportButton.setAutoDefault(False)
+            self.exportButton.setToolTip("导出窗口当前保留的日志及完整详情；不含已清空或超过缓存上限的历史记录")
+            self.exportMenu = QMenu(self.exportButton)
+            self.exportFilteredAction = self.exportMenu.addAction("导出当前筛选结果…")
+            self.exportAllAction = self.exportMenu.addAction("导出全部缓存日志…")
+            self.exportFilteredAction.triggered.connect(lambda: self.exportLogs(filtered=True))
+            self.exportAllAction.triggered.connect(lambda: self.exportLogs(filtered=False))
+            self.exportMenu.aboutToShow.connect(self._updateExportActions)
+            self.exportButton.setMenu(self.exportMenu)
+            actions.addWidget(self.exportButton)
             actions.addWidget(self.locateButton)
             actions.addWidget(self.clearButton)
             root.addLayout(actions)
@@ -294,6 +354,7 @@ try:
             self.workflowFilter.currentIndexChanged.connect(self._onWorkflowFilterChanged)
             self.nodeFilter.currentIndexChanged.connect(self._refreshTable)
             self.searchInput.textChanged.connect(self._refreshTable)
+            self.areaTabs.currentChanged.connect(self._refreshTable)
             self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
             self.table.verticalScrollBar().valueChanged.connect(self._onScrollChanged)
             self.table.verticalScrollBar().rangeChanged.connect(self._onScrollRangeChanged)
@@ -310,6 +371,86 @@ try:
             for combo in (self.jobFilter, self.workflowFilter, self.nodeFilter, self.eventTypeFilter):
                 combo.popupClosed.connect(self._refreshTimer.start)
             self._updateFilterStatus()
+
+        def _updateExportActions(self):
+            filteredCount = sum(self._matches(entry) for entry in self._entries)
+            self.exportFilteredAction.setText(f"导出当前筛选结果（{filteredCount} 条）…")
+            self.exportAllAction.setText(f"导出全部缓存日志（{len(self._entries)} 条）…")
+            self.exportFilteredAction.setEnabled(filteredCount > 0)
+            self.exportAllAction.setEnabled(bool(self._entries))
+
+        def exportLogs(self, filtered=True):
+            from emo_master.apps.designer.services.log_export import exportLogs as writeLogExport
+
+            # The table may still have a pending batch. Capture the underlying
+            # cache before the native save dialog starts its nested event loop.
+            retainedCount = len(self._entries)
+            records = deepcopy([entry.detailPayload() for entry in self._entries
+                                if not filtered or self._matches(entry)])
+            if not records:
+                self.navigationHint.setText("当前筛选结果没有可导出的日志" if filtered else "当前没有可导出的缓存日志")
+                return
+            filters = {key: value for key, value in self.settings().items()
+                       if key not in {"autoScroll", "columnWidths"}} if filtered else {}
+            scope = "filtered" if filtered else "all_cached"
+            label = "当前筛选结果" if filtered else "全部缓存日志"
+            formats = {"JSON 日志 (*.json)": "json", "JSON Lines 日志 (*.jsonl)": "jsonl",
+                       "文本日志 (*.txt)": "txt"}
+            initial = self._exportDirectory / f"日志-{label}-{datetime.now():%Y%m%d-%H%M%S}.json"
+            selected, selectedFilter = QFileDialog.getSaveFileName(
+                self, "导出日志 · " + label, str(initial), ";;".join(formats))
+            if not selected:
+                return
+            path = Path(selected)
+            formatName = formats.get(selectedFilter, "json")
+            # Respect an explicit supported extension. Only the suffix we add
+            # needs another overwrite check; the save dialog owns other checks.
+            if path.suffix.lower().lstrip(".") in formats.values():
+                formatName = path.suffix.lower().lstrip(".")
+            else:
+                path = Path(str(path) + "." + formatName)
+                if path.exists() and QMessageBox.question(self, "覆盖日志文件", f"文件已存在，是否覆盖？\n{path}",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
+                    return
+            context = dict(path=str(path), format=formatName, scope=scope, count=len(records),
+                           retainedCount=retainedCount, filters=filters)
+            try:
+                writeLogExport(path, records, formatName=formatName, scope=scope,
+                               filters=filters, retainedCount=retainedCount)
+            except (OSError, ValueError, TypeError) as error:
+                message = f"日志导出失败：{error}\n保存位置：{path}"
+                self.navigationHint.setText(message)
+                self.diagnosticCreated.emit(dict(level="ERROR", code="DESIGNER_LOG_EXPORT_FAILED",
+                    eventType="designer.log_export.failed", message=message,
+                    payload=dict(context, reason=str(error), errorType=type(error).__name__)))
+                QMessageBox.warning(self, "日志导出失败", message)
+                return
+            self._exportDirectory = path.parent
+            message = f"已导出 {len(records)} 条日志：{path}"
+            self.navigationHint.setText(message)
+            self.diagnosticCreated.emit(dict(level="INFO", code="DESIGNER_LOG_EXPORTED",
+                eventType="designer.log_export.completed", message=message, payload=context))
+
+        def setLogDirectory(self, directory, onError=None):
+            self._logDirectory = directory
+            self._directoryError = onError
+            self.logDirectoryButton.setEnabled(True)
+            self.logDirectoryButton.setToolTip(
+                f"Designer 操作和客户端异常日志：{directory}\n任务执行日志保存在 Runtime 的日志目录。")
+            self.logDirectoryButton.clicked.connect(self._openLogDirectory)
+
+        def _openLogDirectory(self):
+            from PySide2.QtCore import QUrl
+            from PySide2.QtGui import QDesktopServices
+            try:
+                self._logDirectory.mkdir(parents=True, exist_ok=True)
+                if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(self._logDirectory))):
+                    raise OSError("系统无法打开目录")
+            except OSError as error:
+                message = f"无法打开日志目录 {self._logDirectory}：{error}"
+                self.navigationHint.setText(message)
+                if self._directoryError is not None:
+                    self._directoryError(message)
 
         def appendEntry(self, entry: StructuredLogEntry) -> None:
             self._entries.append(entry)
@@ -384,8 +525,9 @@ try:
 
         def settings(self) -> dict[str, object]:
             return {
+                "area": self.areaTabs.tabData(self.areaTabs.currentIndex()),
                 "level": self.levelFilter.currentText(),
-                "source": self.sourceFilter.currentText(),
+                "source": self.sourceFilter.currentData() or self.sourceFilter.currentText(),
                 "job": self.jobFilter.currentText(),
                 "workflow": _contextSetting(self.workflowFilter),
                 "workflowLabel": self.workflowFilter.currentText(),
@@ -398,6 +540,9 @@ try:
             }
 
         def restoreSettings(self, value: dict[str, object]) -> None:
+            area = value.get("area", "all")
+            self.areaTabs.setCurrentIndex(next((index for index in range(self.areaTabs.count())
+                                               if self.areaTabs.tabData(index) == area), 0))
             self._refreshDynamicFilters()
             for combo, key, allowUnknown in (
                 (self.levelFilter, "level", False),
@@ -406,7 +551,9 @@ try:
                 (self.eventTypeFilter, "event", True),
             ):
                 requested = str(value.get(key, "全部"))
-                index = combo.findText(requested)
+                index = combo.findData(requested) if combo is self.sourceFilter else -1
+                if index < 0:
+                    index = combo.findText(requested)
                 if index < 0 and allowUnknown and requested != "全部":
                     combo.addItem(requested)
                     index = combo.findText(requested)
@@ -580,7 +727,7 @@ try:
             filtered = any(combo.currentIndex() > 0 for combo in (
                 self.levelFilter, self.sourceFilter, self.jobFilter, self.workflowFilter,
                 self.nodeFilter, self.eventTypeFilter,
-            )) or bool(self.searchInput.text().strip())
+            )) or bool(self.searchInput.text().strip()) or self.areaTabs.currentIndex() > 0
             suffix = (
                 f"；当前筛选隐藏了 {hiddenErrors} 条错误"
                 if filtered else "；未设置筛选"
@@ -593,7 +740,7 @@ try:
 
         def _resetFilters(self) -> None:
             controls = (
-                self.levelFilter, self.sourceFilter, self.jobFilter, self.workflowFilter,
+                self.areaTabs, self.levelFilter, self.sourceFilter, self.jobFilter, self.workflowFilter,
                 self.nodeFilter, self.eventTypeFilter, self.searchInput,
             )
             for control in controls:
@@ -620,7 +767,7 @@ try:
             values = (
                 entry.displayTime(),
                 entry.level,
-                entry.source,
+                {"page_designer": "页面设计", "flow_designer": "流程设计"}.get(entry.source, entry.source),
                 entry.jobId,
                 entry.displayWorkflow(),
                 entry.displayNode(),
@@ -641,12 +788,15 @@ try:
                 self.table.setItem(row, column, item)
 
         def _matches(self, entry: StructuredLogEntry) -> bool:
+            area = self.areaTabs.tabData(self.areaTabs.currentIndex())
+            if area != "all" and area != entry.designArea():
+                return False
             for combo, value in (
                 (self.levelFilter, entry.level), (self.sourceFilter, entry.source),
                 (self.jobFilter, entry.jobId),
                 (self.eventTypeFilter, entry.eventType),
             ):
-                selected = combo.currentText()
+                selected = combo.currentData() or combo.currentText()
                 if selected != "全部" and selected != value:
                     return False
             workflowKey = _contextKey(self.workflowFilter)
@@ -673,6 +823,7 @@ try:
             if not 0 <= row < len(self._visibleEntries):
                 self._detailEntry = None
                 self.detailViewer.clear()
+                self.copyDetailsButton.setEnabled(False)
                 self.locateButton.setEnabled(False)
                 self.navigationHint.setText("选择一条日志，可查看详情或定位节点")
                 return
@@ -680,10 +831,8 @@ try:
             if entry is self._detailEntry:
                 return
             self._detailEntry = entry
-            self.detailViewer.setPlainText(json.dumps(
-                entry.detailPayload(),
-                ensure_ascii=False, indent=2, default=str,
-            ))
+            self.detailViewer.setPayload(entry.detailPayload())
+            self.copyDetailsButton.setEnabled(True)
             self.locateButton.setEnabled(bool(entry.nodeId) and self._onNavigate is not None)
             if not entry.nodeId:
                 self.navigationHint.setText("此日志未提供节点关联，无法定位。请查看错误详情与相关节点日志。")

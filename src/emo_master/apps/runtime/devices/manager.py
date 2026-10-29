@@ -362,9 +362,10 @@ class DeviceManager:
             def completed(future):
                 error = future.exception()
                 fields = dict(ownerId=owner, cycleId=cycleId, requestId=requestId,
-                    source=source, selectors=selectors)
+                    source=source, selectors=selectors, action=action)
                 if error is not None:
                     events('device.action.failed', str(error), **fields,
+                        level='INFO' if getattr(error, 'code', '') == 'E_DEVICE_CANCELLED' else 'ERROR',
                         code=getattr(error, 'code', 'E_DEVICE_ERROR'), diagnostics=getattr(error, 'diagnostics', {}))
                 else:
                     from .diagnostics import compactResult
@@ -636,7 +637,9 @@ class DeviceManager:
                 try:
                     lifecycle.connect(cancel, deadline)
                 except Exception as error:
-                    lifecycle.driver.runtimeContext.events('device.connect.failed', str(error), code=getattr(error, 'code', 'E_DEVICE_CONNECT'))
+                    lifecycle.driver.runtimeContext.events('device.connect.failed', str(error),
+                        level='INFO' if getattr(error, 'code', '') == 'E_DEVICE_CANCELLED' else 'ERROR',
+                        code=getattr(error, 'code', 'E_DEVICE_CONNECT'))
                     raise
                 lifecycle.driver.runtimeContext.events('device.connect.completed', '设备连接已就绪')
                 return 'LISTENING' if lifecycle.driver.snapshot().get('state') == 'LISTENING' else 'CONNECTED'

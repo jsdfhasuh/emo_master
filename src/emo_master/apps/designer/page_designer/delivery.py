@@ -18,6 +18,11 @@ def exportDialog(coordinator):
     try:
         package = exportTestPackage(coordinator, directory)
     except Exception as error:
+        coordinator.window.appendLocalEvent(dict(
+            eventType='designer.page_export.failed', level='WARN' if coordinator.directory is None else 'ERROR',
+            message=f'测试包导出失败：{error}', code=str(getattr(error, 'code', '')),
+            payload=dict(outputDirectory=directory, errorType=type(error).__name__, reason=str(error))),
+            source='page_designer')
         QMessageBox.warning(coordinator.window, '测试包导出失败', str(error))
         return
     QMessageBox.information(coordinator.window, '测试包已导出',

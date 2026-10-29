@@ -132,6 +132,7 @@ class ProjectConfigurationDialog(QDialog):
         self.submittedCheckpoint = None
         self.revalidateAfterSnapshot = False
         self.notifiedWrites = set()
+        self._lastOperationLog = None
         self.receiptSummary = ''
         self.connectionObserve = None
         self.projectId = self.session.document().project.projectId
@@ -332,6 +333,17 @@ class ProjectConfigurationDialog(QDialog):
         self.status.setProperty('feedbackState', level)
         self.status.setStyleSheet('font-weight: bold;' if level in {'success', 'error', 'warning'} else '')
         self.statusIcon.setPixmap(self.style().standardIcon(icons[level]).pixmap(20, 20))
+
+    def _logOperation(self, kind, message, *, level='ERROR', code='', details=None, state='failed'):
+        key = (self.requestId, kind, state, code)
+        if key == self._lastOperationLog:
+            return
+        self._lastOperationLog = key
+        self.c.window.appendLocalEvent(dict(
+            eventType='designer.configuration.' + state, level=level, message=message, code=code,
+            projectId=self.projectId,
+            payload=dict(operation=kind, requestId=self.requestId, state=state, details=details)),
+            source='designer')
 
     def _notify(self, title, text, details='', *, warning=False, key=None, upgrade=False, diagnostic=None,
                 localResources=False):
@@ -1280,11 +1292,21 @@ class ProjectConfigurationDialog(QDialog):
         snapshotReceived = False
         try:
             result = future.result()
+            previousIssue = self._lastOperationLog
+            if kind not in {'write', 'connectionObserve'} and result.get('state') != 'FAILED':
+                self._lastOperationLog = None
+            if (previousIssue is not None and previousIssue[0] == self.requestId
+                    and previousIssue[2] == 'unknown'
+                    and result.get('state') in {'COMMITTED', 'RECOVERED', 'FAILED', 'CANCELLED'}):
+                self._logOperation(kind, f'写入结果已确认；请求 {self.requestId}；状态 {result["state"]}',
+                    level='INFO', state='confirmed', details=dict(state=result['state']))
             if result.get('state') == 'FAILED':
                 self.writePending = False
                 self.initialValidated = False
                 self._invalidateEffects()
                 validating = kind in {'initialValidate', 'initialPrewrite', 'validate', 'prewrite'}
+                self._logOperation(kind, 'Runtime 操作失败：' + result.get('message', '请查看详细信息'),
+                    code=str(result.get('code', '')), details=result)
                 self._notify('工程校验未通过' if validating else 'Runtime 操作失败',
                     ('校验失败，尚未写入 Runtime：' if validating else 'Runtime 操作失败：') + result.get('message', '请查看详细信息'),
                     json.dumps(result, ensure_ascii=False, indent=2),
@@ -1294,6 +1316,7 @@ class ProjectConfigurationDialog(QDialog):
                 snapshotReceived = True
                 self._showSnapshot(result)
                 self._revalidateUpgraded()
+                self._lastOperationLog = None
             elif kind in {'initialValidate', 'initialPrewrite'}:
                 self.initialRuntimeId = result['runtimeInstanceId']
                 self.initialValidated = True
@@ -1337,9 +1360,13 @@ class ProjectConfigurationDialog(QDialog):
                     if failedConnections:
                         errors['connections'] = failedConnections
                     if errors:
+                        self._logOperation(kind, '配置已提交，但后续操作异常；请求 ' + self.requestId,
+                            level='WARN', state='followup_failed', details=errors)
                         self._notify('配置已提交，但后续操作异常', self.receiptSummary + '\n已提交事实保留，请先处理后续问题，不要重复写入。',
                             json.dumps(errors, ensure_ascii=False, indent=2), warning=True,
                             key=(self.requestId, state, json.dumps(errors, sort_keys=True)))
+                    elif kind == 'connectionObserve':
+                        self._lastOperationLog = None
                     if kind != 'connectionObserve':
                         self.connectionObserve = (dict(requestId=self.requestId, deadline=monotonic()+30, nextRead=monotonic()+.3)
                             if 'PENDING' in result.get('connections', {}).values() else None)
@@ -1351,6 +1378,9 @@ class ProjectConfigurationDialog(QDialog):
         except Exception as error:
             if kind == 'connectionObserve':
                 self._feedback('已提交；设备连接结果读取暂未完成，可继续查询原请求或查看设备状态。')
+                self._logOperation(kind, f'已提交；设备连接结果读取失败；请求 {self.requestId}：{error}',
+                    level='WARN', code=str(getattr(error, 'code', '')),
+                    details=dict(reason=str(error), errorType=type(error).__name__))
                 self._controls()
                 return
             if kind == 'snapshot' and getattr(error, 'code', '') == 'E_CONFIG_NOT_LOADED':
@@ -1397,6 +1427,9 @@ class ProjectConfigurationDialog(QDialog):
                 else:
                     text = '未能读取 Runtime 在线配置，请检查连接后重新比较。\n' + text
                 text += '\n本次未写入 Runtime，未启动流程；本地工程文件未改变。'
+            self._logOperation(kind, title + '：' + text, level='WARN' if unknown else 'ERROR',
+                code=str(getattr(error, 'code', '')), state='unknown' if unknown else 'failed',
+                details=dict(reason=str(error), errorType=type(error).__name__, detail=self._errorDetails(error)))
             self._notify(title, text, self._errorDetails(error),
                 warning=unknown, key=(self.requestId, 'UNKNOWN', str(error)) if unknown else None,
                 diagnostic=error if validating or localResourceError else None, localResources=localResourceError)

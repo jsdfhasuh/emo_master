@@ -11,10 +11,11 @@ from PySide2.QtCore import Qt, QRect, Signal, QEvent
 from PySide2.QtGui import QPainter, QColor, QImage, QFontDatabase, QIcon, QPixmap
 from PySide2.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout,
-    QStackedWidget, QScrollArea, QFrame, QSizePolicy, QApplication,
+    QStackedWidget, QScrollArea, QFrame, QSizePolicy, QApplication, QMenu,
 )
 
 from emo_master.core.presentation.models import Presentation, walkComponents
+from emo_master.core.presentation.messages import budgetMessage
 from emo_master.core.presentation.values import readValue
 from emo_master.core.project.snapshots import captureDefinition, revisionOf
 from emo_master.core.presentation.validation import pageScopes
@@ -66,6 +67,20 @@ class ImageView(QWidget):
             return
         self.image, self.key, self.message = image, key, message
         self.update()
+
+    def contextMenuEvent(self, event):
+        details = self.toolTip()
+        if not details:
+            event.ignore()
+            return
+        menu = QMenu(self)
+        # Capture the displayed diagnostic before live updates can replace it.
+        copyAction = menu.addAction('复制提示详情')
+        copyAction.triggered.connect(lambda _checked=False: QApplication.clipboard().setText(details))
+        try:
+            menu.exec_(event.globalPos())
+        finally:
+            menu.deleteLater()
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -641,7 +656,10 @@ class RuntimePages(QWidget):
         if value is None:
             return scope, None, "SOURCE_MISSING"
         if value.state != "AVAILABLE":
-            return scope, None, value.reasonCode or value.reason
+            error = value.reasonCode or value.reason
+            if value.reasonCode and value.reason and value.reason != value.reasonCode:
+                error += ' · ' + value.reason
+            return scope, None, error
         if sourceId in scope.failures:
             return scope, None, scope.failures[sourceId]
         if component.type == "image":
@@ -780,8 +798,10 @@ class RuntimePages(QWidget):
             if view.connection != "CONNECTED":
                 value, error, scope = None, view.connection + ": " + view.detail, None
             widget.setToolTip(error)
+            diagnostic = error
+            errorCode = error.split(' · ', 1)[0].split(':', 1)[0]
             error = (component.props.emptyText if component.type == 'image'
-                     and error in {'OPTIONAL_ABSENT', 'BRANCH_SKIPPED'} and component.props.emptyText != '—'
+                     and errorCode in {'OPTIONAL_ABSENT', 'BRANCH_SKIPPED'} and component.props.emptyText != '—'
                      else self.displayMessage(error))
             if scope:
                 shown[scope.result.identity.resultScopeId] = scope
@@ -792,6 +812,25 @@ class RuntimePages(QWidget):
                         image = self.hub.image(scope, next(iter(component.bindings.values())), value) if self.hub else ownedImage(value)
                     except ValueError as problem:
                         error = str(problem)
+                        diagnostic = error
+                if error:
+                    details = [error, '诊断：' + diagnostic]
+                    if source is not None:
+                        details.append(f'数据源：{next(iter(component.bindings.values()))}')
+                        if source.workflowId:
+                            details.append(f'流程 / 节点 / 端口：{source.workflowId} / {source.nodeId or "—"} / {source.port or "—"}')
+                    if scope is not None:
+                        identity = scope.result.identity
+                        details.extend([f'Runtime：{identity.runtimeInstanceId}', f'任务：{identity.jobId}',
+                                        f'结果范围：{identity.resultScopeId}',
+                                        f'结果：{identity.resultKey}（序号 {identity.resultOrdinal}）',
+                                        f'执行版本：{identity.executionRevision}',
+                                        f'采集版本：{identity.capturePlanRevision}'])
+                    widget.setToolTip('\n'.join(details))
+                    if errorCode == 'BUDGET_EXCEEDED':
+                        error += '\n右键可复制提示详情'
+                else:
+                    widget.setToolTip('')
                 widget.setImage(image, scope.result.identity.resultKey if scope else "", error)
             elif component.type == "number":
                 widget.setText(error or (component.props.emptyText if value is None else
@@ -863,7 +902,7 @@ class RuntimePages(QWidget):
             'EXPORT_TIMEOUT': '结果读取超时，请检查连接',
             'EXPORT_FAILED': '结果读取失败，请联系技术人员',
             'RESOURCE_EXPIRED': '此结果已过期，请等待新的结果',
-            'BUDGET_EXCEEDED': '结果超过显示容量，请联系技术人员',
+            'BUDGET_EXCEEDED': '显示资源受限，本次结果未显示',
             'INVALID_VALUE': '结果数据异常，请联系技术人员',
             'IPC_ERROR': '结果服务通信异常，请联系技术人员',
             'IMAGE_UNAVAILABLE': '本次图像暂不可用',
@@ -875,6 +914,8 @@ class RuntimePages(QWidget):
         # Match a complete diagnostic token, not arbitrary text with a similar
         # prefix. Unknown diagnostics stay visible rather than becoming OK.
         token = message.split(' · ', 1)[0].split(':', 1)[0]
+        if token == 'BUDGET_EXCEEDED':
+            return budgetMessage(message.partition(' · ')[2])
         if token in messages:
             return messages[token]
         if token == 'CONNECTED':

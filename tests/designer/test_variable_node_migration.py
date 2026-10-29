@@ -236,7 +236,7 @@ def testRejectedMigrationDoesNotInsertOrDirtyDraft(designerApplication, monkeypa
     positions = window.flowScene.getNodePositions()
     undoDepth = len(session._undo)
     messages = []
-    monkeypatch.setattr(window, "appendRuntimeLog", lambda level, text: messages.append((level, text)))
+    monkeypatch.setattr(window, "appendFlowLog", lambda level, text: messages.append((level, text)))
 
     def reject(store):
         raise ValueError("migration unavailable")

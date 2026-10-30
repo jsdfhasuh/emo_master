@@ -2,6 +2,8 @@
 
 日期：2026-10-30。状态：**P1—P4 开发完成；停在 P5 人工验收之前**。
 
+后续工作区整理已将实现固定为 `7ef125996c46c58bf7d7bd87252be347f8b5117d`，见 [提交交接记录](../2026-10-30-workspace-delivery.md)。下一步由 Dot 按 [桌面第一轮计划](../../plans/2026-10-30-dot-desktop-canvas-acceptance-plan.md) 执行；下文关于基线加未提交修改的描述保留当时开发记录语境。
+
 用户在计划后授权“连续推进完成任务到 P5 之前，然后我人工验收”。本记录区分阶段开发测试与正式人工验收，不将自动化通过写成人工拖动手感已通过。
 
 仓库：`C:\Users\jsdfhasuh\my_scripts\emo_master`；分支：`codex/logging-and-designer-improvements`；固定 HEAD：`1d4a200f262bc2f15b14a555bf78f286930ba760`。本次能力来自此 HEAD 加当前未提交工作区。开始时已有页面、SQLite、图片来源等改动，已保留；没有提交、合并、推送、发布或修改现场工程。

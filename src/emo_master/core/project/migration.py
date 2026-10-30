@@ -64,7 +64,7 @@ def migrateProjectPayload(
     enableDevices: bool = False,
 ) -> dict[str, object]:
     """Validate before migration; preserve 2.1 unless page editing is explicit."""
-    if enableDevices and payload.get("schemaVersion") not in {"2.6", "2.7"}:
+    if enableDevices and payload.get("schemaVersion") not in {"2.6", "2.7", "2.8"}:
         from emo_master.core.project.models import ProjectDocument
 
         upgraded = migrateProjectPayload(payload, enableCommunication=True)
@@ -73,25 +73,25 @@ def migrateProjectPayload(
         assert isinstance(devices, dict)
         devices.update(schemaVersion="1.0", definitions={})
         return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
-    if enableCommunication and payload.get("schemaVersion") not in {"2.5", "2.6", "2.7"}:
+    if enableCommunication and payload.get("schemaVersion") not in {"2.5", "2.6", "2.7", "2.8"}:
         from emo_master.core.project.models import ProjectDocument
         from emo_master.core.project.communication import CommunicationSettings
         upgraded = migrateProjectPayload(payload, enableGlobalVariables=True)
         upgraded.update(schemaVersion="2.5", communication=CommunicationSettings().model_dump())
         return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
-    if enableGlobalVariables and payload.get("schemaVersion") not in {"2.4", "2.5", "2.6", "2.7"}:
+    if enableGlobalVariables and payload.get("schemaVersion") not in {"2.4", "2.5", "2.6", "2.7", "2.8"}:
         from emo_master.core.project.models import ProjectDocument
 
         upgraded = migrateProjectPayload(payload, enableProduction=True)
         upgraded.update(schemaVersion="2.4", globalVariables={})
         return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
-    if enableProduction and payload.get("schemaVersion") not in {"2.3", "2.4", "2.5", "2.6", "2.7"}:
+    if enableProduction and payload.get("schemaVersion") not in {"2.3", "2.4", "2.5", "2.6", "2.7", "2.8"}:
         from emo_master.core.project.models import ProjectDocument, ProductionSettings
 
         upgraded = migrateProjectPayload(payload, enablePresentation=True)
         upgraded.update(schemaVersion="2.3", production=ProductionSettings().model_dump())
         return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
-    if enablePresentation and payload.get("schemaVersion") not in {"2.2", "2.3", "2.4", "2.5", "2.6", "2.7"}:
+    if enablePresentation and payload.get("schemaVersion") not in {"2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8"}:
         from emo_master.core.project.models import ProjectDocument
         from emo_master.core.presentation.models import Presentation
         from emo_master.core.project.resources import ResourcePlan
@@ -99,7 +99,7 @@ def migrateProjectPayload(
         upgraded = migrateProjectPayload(payload)
         # Legacy migration must also pass the original strict project contract.
         upgraded = ProjectDocument.model_validate(upgraded).model_dump(mode="python")
-        upgraded.update(schemaVersion="2.2", presentation=Presentation().model_dump(),
+        upgraded.update(schemaVersion="2.2", presentation=Presentation(schemaVersion='1.0').model_dump(),
                         resources=ResourcePlan().model_dump())
         return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
     source = deepcopy(payload)
@@ -110,7 +110,7 @@ def migrateProjectPayload(
             "unsupported project schemaVersion: legacy-shaped '2.2' document; "
             "presentation and resources are required"
         )
-    if source.get("schemaVersion") in {SCHEMA_VERSION, "2.2", "2.3", "2.4", "2.5", "2.6", "2.7"}:
+    if source.get("schemaVersion") in {SCHEMA_VERSION, "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8"}:
         # v2.1 is already the canonical source. Validate it before returning so
         # unknown fields and invalid kinds cannot disappear in normalization.
         from emo_master.core.project.models import ProjectDocument

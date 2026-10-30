@@ -1,0 +1,1879 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="32" skipped="0" tests="78" time="54.464" timestamp="2026-10-30T16:01:12.818836+08:00" hostname="视觉电脑"><testcase classname="tests.ui.page_designer.test_canvas_resize" name="testNativeResizeIsSingleUndoAndSaveReopen[x]" time="0.335"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27821506780) at 0x0000027823717B80&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3914/testNativeResizeIsSingleUndoAn0')
+axes = 'x'
+
+    @pytest.mark.parametrize('axes', ['x', 'y', 'xy'])
+    def testNativeResizeIsSingleUndoAndSaveReopen(designer, tmp_path, axes):  # noqa: F811
+        c, e, key = setupPage(designer, 'number')
+&gt;       c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 3))
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_canvas_resize.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_canvas_resize.py:22: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 3))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 3
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_canvas_resize" name="testNativeResizeIsSingleUndoAndSaveReopen[y]" time="0.237"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x278244bf4b0) at 0x00000278227D7CC0&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3914/testNativeResizeIsSingleUndoAn1')
+axes = 'y'
+
+    @pytest.mark.parametrize('axes', ['x', 'y', 'xy'])
+    def testNativeResizeIsSingleUndoAndSaveReopen(designer, tmp_path, axes):  # noqa: F811
+        c, e, key = setupPage(designer, 'number')
+&gt;       c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 3))
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_canvas_resize.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_canvas_resize.py:22: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 3))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 3
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_canvas_resize" name="testNativeResizeIsSingleUndoAndSaveReopen[xy]" time="0.299"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823a4a720) at 0x0000027824842FC0&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3914/testNativeResizeIsSingleUndoAn2')
+axes = 'xy'
+
+    @pytest.mark.parametrize('axes', ['x', 'y', 'xy'])
+    def testNativeResizeIsSingleUndoAndSaveReopen(designer, tmp_path, axes):  # noqa: F811
+        c, e, key = setupPage(designer, 'number')
+&gt;       c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 3))
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_canvas_resize.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_canvas_resize.py:22: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 3))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 3
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_canvas_resize" name="testInvalidOrCancelledResizeLeavesNoHistory[escape]" time="0.310"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823e2c090) at 0x000002782480C740&gt;
+cancel = 'escape'
+
+    @pytest.mark.parametrize('cancel', ['escape', 'overlap', 'bounds', 'rebuild'])
+    def testInvalidOrCancelledResizeLeavesNoHistory(designer, cancel):  # noqa: F811
+        c, e, key = setupPage(designer, 'number')
+&gt;       c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_canvas_resize.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_canvas_resize.py:55: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_canvas_resize" name="testInvalidOrCancelledResizeLeavesNoHistory[overlap]" time="0.345"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823a416c0) at 0x0000027822855940&gt;
+cancel = 'overlap'
+
+    @pytest.mark.parametrize('cancel', ['escape', 'overlap', 'bounds', 'rebuild'])
+    def testInvalidOrCancelledResizeLeavesNoHistory(designer, cancel):  # noqa: F811
+        c, e, key = setupPage(designer, 'number')
+&gt;       c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_canvas_resize.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_canvas_resize.py:55: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_canvas_resize" name="testInvalidOrCancelledResizeLeavesNoHistory[bounds]" time="0.262"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823e26d00) at 0x0000027824D1ED40&gt;
+cancel = 'bounds'
+
+    @pytest.mark.parametrize('cancel', ['escape', 'overlap', 'bounds', 'rebuild'])
+    def testInvalidOrCancelledResizeLeavesNoHistory(designer, cancel):  # noqa: F811
+        c, e, key = setupPage(designer, 'number')
+&gt;       c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_canvas_resize.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_canvas_resize.py:55: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_canvas_resize" name="testInvalidOrCancelledResizeLeavesNoHistory[rebuild]" time="0.301"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823a49c30) at 0x00000278227FA900&gt;
+cancel = 'rebuild'
+
+    @pytest.mark.parametrize('cancel', ['escape', 'overlap', 'bounds', 'rebuild'])
+    def testInvalidOrCancelledResizeLeavesNoHistory(designer, cancel):  # noqa: F811
+        c, e, key = setupPage(designer, 'number')
+&gt;       c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_canvas_resize.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_canvas_resize.py:55: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_canvas_resize" name="testRefreshTimerAndHandlesRetireOnClose" time="0.356" /><testcase classname="tests.ui.page_designer.test_resize_properties" name="testPendingAppearanceKeepsGestureAndSingleLayoutTransaction[commit]" time="1.489"><failure message="AttributeError: 'NoneType' object has no attribute 'card'">styled = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x278215069b0) at 0x0000027824E1F180&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3914/testPendingAppearanceKeepsGest0')
+finish = 'commit'
+
+    @pytest.mark.parametrize('finish', ['commit', 'escape', 'rebuild', 'close'])
+    def testPendingAppearanceKeepsGestureAndSingleLayoutTransaction(styled, tmp_path, finish):
+        c, e, key = setupPage(styled, 'number')
+        styled.resize(1280, 720)
+        settle()
+        e.tools.select(key)
+        before = len(c.session._undo)
+        e.tools.fields['title'].setText('本次检测数量与流程状态，请核对图像和数值是否属于同一次检测。' * 3)
+        e.tools.fields['fontSize'].setValue(32)
+&gt;       selection, oldCard = e.tools.selection, e.tools.selection.card
+E       AttributeError: 'NoneType' object has no attribute 'card'
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:49: AttributeError</failure></testcase><testcase classname="tests.ui.page_designer.test_resize_properties" name="testPendingAppearanceKeepsGestureAndSingleLayoutTransaction[escape]" time="1.297"><failure message="AttributeError: 'NoneType' object has no attribute 'card'">styled = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x2782546ee60) at 0x0000027825E7D2C0&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3914/testPendingAppearanceKeepsGest1')
+finish = 'escape'
+
+    @pytest.mark.parametrize('finish', ['commit', 'escape', 'rebuild', 'close'])
+    def testPendingAppearanceKeepsGestureAndSingleLayoutTransaction(styled, tmp_path, finish):
+        c, e, key = setupPage(styled, 'number')
+        styled.resize(1280, 720)
+        settle()
+        e.tools.select(key)
+        before = len(c.session._undo)
+        e.tools.fields['title'].setText('本次检测数量与流程状态，请核对图像和数值是否属于同一次检测。' * 3)
+        e.tools.fields['fontSize'].setValue(32)
+&gt;       selection, oldCard = e.tools.selection, e.tools.selection.card
+E       AttributeError: 'NoneType' object has no attribute 'card'
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:49: AttributeError</failure></testcase><testcase classname="tests.ui.page_designer.test_resize_properties" name="testPendingAppearanceKeepsGestureAndSingleLayoutTransaction[rebuild]" time="1.386"><failure message="AttributeError: 'NoneType' object has no attribute 'card'">styled = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823e2f970) at 0x0000027824DA0480&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3914/testPendingAppearanceKeepsGest2')
+finish = 'rebuild'
+
+    @pytest.mark.parametrize('finish', ['commit', 'escape', 'rebuild', 'close'])
+    def testPendingAppearanceKeepsGestureAndSingleLayoutTransaction(styled, tmp_path, finish):
+        c, e, key = setupPage(styled, 'number')
+        styled.resize(1280, 720)
+        settle()
+        e.tools.select(key)
+        before = len(c.session._undo)
+        e.tools.fields['title'].setText('本次检测数量与流程状态，请核对图像和数值是否属于同一次检测。' * 3)
+        e.tools.fields['fontSize'].setValue(32)
+&gt;       selection, oldCard = e.tools.selection, e.tools.selection.card
+E       AttributeError: 'NoneType' object has no attribute 'card'
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:49: AttributeError</failure></testcase><testcase classname="tests.ui.page_designer.test_resize_properties" name="testPendingAppearanceKeepsGestureAndSingleLayoutTransaction[close]" time="1.469"><failure message="AttributeError: 'NoneType' object has no attribute 'card'">styled = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823dd9d20) at 0x0000027824E3D980&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3914/testPendingAppearanceKeepsGest3')
+finish = 'close'
+
+    @pytest.mark.parametrize('finish', ['commit', 'escape', 'rebuild', 'close'])
+    def testPendingAppearanceKeepsGestureAndSingleLayoutTransaction(styled, tmp_path, finish):
+        c, e, key = setupPage(styled, 'number')
+        styled.resize(1280, 720)
+        settle()
+        e.tools.select(key)
+        before = len(c.session._undo)
+        e.tools.fields['title'].setText('本次检测数量与流程状态，请核对图像和数值是否属于同一次检测。' * 3)
+        e.tools.fields['fontSize'].setValue(32)
+&gt;       selection, oldCard = e.tools.selection, e.tools.selection.card
+E       AttributeError: 'NoneType' object has no attribute 'card'
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:49: AttributeError</failure></testcase><testcase classname="tests.ui.page_designer.test_resize_properties" name="testInvalidPendingAppearanceDoesNotStartResize" time="1.370"><failure message="AttributeError: 'NoneType' object has no attribute 'handles'">styled = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823e29bd0) at 0x0000027824E0FEC0&gt;
+
+    def testInvalidPendingAppearanceDoesNotStartResize(styled):
+        c, e, key = setupPage(styled, 'number')
+        settle()
+        e.tools.select(key)
+        before, history = c.session.payload(), len(c.session._undo)
+        e.tools.fields['fontSize'].setValue(1)  # Model permits automatic or 8..48.
+        selection = e.tools.selection
+&gt;       handle, start = press(selection, 'y')
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:98: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+selection = None, axes = 'y'
+
+    def press(selection, axes):
+&gt;       handle = next(h for h in selection.handles if h.axes == axes)
+E       AttributeError: 'NoneType' object has no attribute 'handles'
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:26: AttributeError</failure></testcase><testcase classname="tests.ui.page_designer.test_resize_properties" name="testContainerTitleWrapUsesSameLiveAndPreviewLayout[0-False]" time="1.219"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">styled = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823dd2d20) at 0x0000027825E65800&gt;
+nested = False, fontSize = 0
+
+    @pytest.mark.parametrize('nested', [False, True])
+    @pytest.mark.parametrize('fontSize', [0, 24])
+    def testContainerTitleWrapUsesSameLiveAndPreviewLayout(styled, nested, fontSize):
+        c, e, key = setupPage(styled, 'container')
+        if nested:
+            outer = e.tools.commands().add(e.pageId, 'container', 1, 0)
+            c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, outer).grid, 'columns', 2))
+            e.tools.commands().move(e.pageId, key, 0, 0, outer)
+        else:
+&gt;           c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:117: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_resize_properties" name="testContainerTitleWrapUsesSameLiveAndPreviewLayout[0-True]" time="1.370"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">styled = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823e328b0) at 0x0000027825E932C0&gt;
+nested = True, fontSize = 0
+
+    @pytest.mark.parametrize('nested', [False, True])
+    @pytest.mark.parametrize('fontSize', [0, 24])
+    def testContainerTitleWrapUsesSameLiveAndPreviewLayout(styled, nested, fontSize):
+        c, e, key = setupPage(styled, 'container')
+        if nested:
+            outer = e.tools.commands().add(e.pageId, 'container', 1, 0)
+&gt;           c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, outer).grid, 'columns', 2))
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:114: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:114: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, outer).grid, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='wrap', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_resize_properties" name="testContainerTitleWrapUsesSameLiveAndPreviewLayout[24-False]" time="1.348"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">styled = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823dd9a80) at 0x0000027825E67F80&gt;
+nested = False, fontSize = 24
+
+    @pytest.mark.parametrize('nested', [False, True])
+    @pytest.mark.parametrize('fontSize', [0, 24])
+    def testContainerTitleWrapUsesSameLiveAndPreviewLayout(styled, nested, fontSize):
+        c, e, key = setupPage(styled, 'container')
+        if nested:
+            outer = e.tools.commands().add(e.pageId, 'container', 1, 0)
+            c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, outer).grid, 'columns', 2))
+            e.tools.commands().move(e.pageId, key, 0, 0, outer)
+        else:
+&gt;           c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:117: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_resize_properties" name="testContainerTitleWrapUsesSameLiveAndPreviewLayout[24-True]" time="1.379"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">styled = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823e29700) at 0x0000027825FC9D40&gt;
+nested = True, fontSize = 24
+
+    @pytest.mark.parametrize('nested', [False, True])
+    @pytest.mark.parametrize('fontSize', [0, 24])
+    def testContainerTitleWrapUsesSameLiveAndPreviewLayout(styled, nested, fontSize):
+        c, e, key = setupPage(styled, 'container')
+        if nested:
+            outer = e.tools.commands().add(e.pageId, 'container', 1, 0)
+&gt;           c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, outer).grid, 'columns', 2))
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:114: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:114: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, outer).grid, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='wrap', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_resize_properties" name="testTitledContainerGridAcceptsDropAndChildResize" time="1.414"><failure message="AttributeError: 'NoneType' object has no attribute 'card'">styled = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823dd0e80) at 0x0000027825E6A0C0&gt;
+
+    def testTitledContainerGridAcceptsDropAndChildResize(styled):
+        c, e, parent = setupPage(styled, 'container')
+        e.tools.fields['title'].setText('Named container')
+        e.tools.fields['columns'].setValue(2)
+        e.tools.apply()
+        e.refresh()
+        settle()
+        e.tools.select(parent)
+&gt;       grid = e.tools.selection.card.containerTitle.body
+E       AttributeError: 'NoneType' object has no attribute 'card'
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\page_designer\test_resize_properties.py:158: AttributeError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testUnequalColumnsUseActualCellsForDropAndPreview" time="0.270"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823a3b990) at 0x0000027825E51A80&gt;
+
+    def testUnequalColumnsUseActualCellsForDropAndPreview(designer):  # noqa: F811
+        c, e, key = setupPage(designer, 'navigation_button')
+        def configure(p):
+            p.pages[e.pageId].layout.columns = 3
+            _component(p, e.pageId, key).props.text = 'A long navigation button label forcing its minimum width'
+&gt;       c.session.editPresentation(configure)
+
+tests\ui\page_designer\test_grid_geometry.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+tests\ui\page_designer\test_grid_geometry.py:22: in configure
+    p.pages[e.pageId].layout.columns = 3
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 3
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets[False-y-number]" time="0.370"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x2782407db40) at 0x0000027825F54D40&gt;
+kind = 'number', axes = 'y', nested = False
+
+    @pytest.mark.parametrize('kind', ['number', 'image', 'table'])
+    @pytest.mark.parametrize('axes', ['y', 'xy'])
+    @pytest.mark.parametrize('nested', [False, True])
+    def testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets(designer, kind, axes, nested):  # noqa: F811
+        c, e, key = setupPage(designer, kind)
+        if nested:
+            parent = e.tools.commands().add(e.pageId, 'container', 1, 0)
+            c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+            e.tools.commands().move(e.pageId, key, 0, 0, parent)
+        else:
+&gt;           c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+
+tests\ui\page_designer\test_grid_geometry.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+tests\ui\page_designer\test_grid_geometry.py:53: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets[False-y-image]" time="0.381"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823ddb290) at 0x00000278227D7800&gt;
+kind = 'image', axes = 'y', nested = False
+
+    @pytest.mark.parametrize('kind', ['number', 'image', 'table'])
+    @pytest.mark.parametrize('axes', ['y', 'xy'])
+    @pytest.mark.parametrize('nested', [False, True])
+    def testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets(designer, kind, axes, nested):  # noqa: F811
+        c, e, key = setupPage(designer, kind)
+        if nested:
+            parent = e.tools.commands().add(e.pageId, 'container', 1, 0)
+            c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+            e.tools.commands().move(e.pageId, key, 0, 0, parent)
+        else:
+&gt;           c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+
+tests\ui\page_designer\test_grid_geometry.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+tests\ui\page_designer\test_grid_geometry.py:53: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets[False-y-table]" time="0.384"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27824065960) at 0x00000278260E2580&gt;
+kind = 'table', axes = 'y', nested = False
+
+    @pytest.mark.parametrize('kind', ['number', 'image', 'table'])
+    @pytest.mark.parametrize('axes', ['y', 'xy'])
+    @pytest.mark.parametrize('nested', [False, True])
+    def testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets(designer, kind, axes, nested):  # noqa: F811
+        c, e, key = setupPage(designer, kind)
+        if nested:
+            parent = e.tools.commands().add(e.pageId, 'container', 1, 0)
+            c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+            e.tools.commands().move(e.pageId, key, 0, 0, parent)
+        else:
+&gt;           c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+
+tests\ui\page_designer\test_grid_geometry.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+tests\ui\page_designer\test_grid_geometry.py:53: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets[False-xy-number]" time="0.331"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823e25bf0) at 0x00000278260BC440&gt;
+kind = 'number', axes = 'xy', nested = False
+
+    @pytest.mark.parametrize('kind', ['number', 'image', 'table'])
+    @pytest.mark.parametrize('axes', ['y', 'xy'])
+    @pytest.mark.parametrize('nested', [False, True])
+    def testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets(designer, kind, axes, nested):  # noqa: F811
+        c, e, key = setupPage(designer, kind)
+        if nested:
+            parent = e.tools.commands().add(e.pageId, 'container', 1, 0)
+            c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+            e.tools.commands().move(e.pageId, key, 0, 0, parent)
+        else:
+&gt;           c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+
+tests\ui\page_designer\test_grid_geometry.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+tests\ui\page_designer\test_grid_geometry.py:53: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets[False-xy-image]" time="0.370"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x278243339e0) at 0x0000027825F637C0&gt;
+kind = 'image', axes = 'xy', nested = False
+
+    @pytest.mark.parametrize('kind', ['number', 'image', 'table'])
+    @pytest.mark.parametrize('axes', ['y', 'xy'])
+    @pytest.mark.parametrize('nested', [False, True])
+    def testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets(designer, kind, axes, nested):  # noqa: F811
+        c, e, key = setupPage(designer, kind)
+        if nested:
+            parent = e.tools.commands().add(e.pageId, 'container', 1, 0)
+            c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+            e.tools.commands().move(e.pageId, key, 0, 0, parent)
+        else:
+&gt;           c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+
+tests\ui\page_designer\test_grid_geometry.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+tests\ui\page_designer\test_grid_geometry.py:53: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets[False-xy-table]" time="0.332"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823ddd600) at 0x00000278261C0D00&gt;
+kind = 'table', axes = 'xy', nested = False
+
+    @pytest.mark.parametrize('kind', ['number', 'image', 'table'])
+    @pytest.mark.parametrize('axes', ['y', 'xy'])
+    @pytest.mark.parametrize('nested', [False, True])
+    def testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets(designer, kind, axes, nested):  # noqa: F811
+        c, e, key = setupPage(designer, kind)
+        if nested:
+            parent = e.tools.commands().add(e.pageId, 'container', 1, 0)
+            c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+            e.tools.commands().move(e.pageId, key, 0, 0, parent)
+        else:
+&gt;           c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+
+tests\ui\page_designer\test_grid_geometry.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+tests\ui\page_designer\test_grid_geometry.py:53: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets[True-y-number]" time="0.373"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823e2a3b0) at 0x00000278261C66C0&gt;
+kind = 'number', axes = 'y', nested = True
+
+    @pytest.mark.parametrize('kind', ['number', 'image', 'table'])
+    @pytest.mark.parametrize('axes', ['y', 'xy'])
+    @pytest.mark.parametrize('nested', [False, True])
+    def testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets(designer, kind, axes, nested):  # noqa: F811
+        c, e, key = setupPage(designer, kind)
+        if nested:
+            parent = e.tools.commands().add(e.pageId, 'container', 1, 0)
+&gt;           c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+
+tests\ui\page_designer\test_grid_geometry.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+tests\ui\page_designer\test_grid_geometry.py:50: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='wrap', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets[True-y-image]" time="0.356"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27824069b00) at 0x0000027826133E00&gt;
+kind = 'image', axes = 'y', nested = True
+
+    @pytest.mark.parametrize('kind', ['number', 'image', 'table'])
+    @pytest.mark.parametrize('axes', ['y', 'xy'])
+    @pytest.mark.parametrize('nested', [False, True])
+    def testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets(designer, kind, axes, nested):  # noqa: F811
+        c, e, key = setupPage(designer, kind)
+        if nested:
+            parent = e.tools.commands().add(e.pageId, 'container', 1, 0)
+&gt;           c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+
+tests\ui\page_designer\test_grid_geometry.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+tests\ui\page_designer\test_grid_geometry.py:50: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='wrap', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets[True-y-table]" time="0.370"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823dd7390) at 0x00000278261D7E40&gt;
+kind = 'table', axes = 'y', nested = True
+
+    @pytest.mark.parametrize('kind', ['number', 'image', 'table'])
+    @pytest.mark.parametrize('axes', ['y', 'xy'])
+    @pytest.mark.parametrize('nested', [False, True])
+    def testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets(designer, kind, axes, nested):  # noqa: F811
+        c, e, key = setupPage(designer, kind)
+        if nested:
+            parent = e.tools.commands().add(e.pageId, 'container', 1, 0)
+&gt;           c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+
+tests\ui\page_designer\test_grid_geometry.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+tests\ui\page_designer\test_grid_geometry.py:50: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='wrap', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets[True-xy-number]" time="0.434"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823e2f190) at 0x0000027826240BC0&gt;
+kind = 'number', axes = 'xy', nested = True
+
+    @pytest.mark.parametrize('kind', ['number', 'image', 'table'])
+    @pytest.mark.parametrize('axes', ['y', 'xy'])
+    @pytest.mark.parametrize('nested', [False, True])
+    def testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets(designer, kind, axes, nested):  # noqa: F811
+        c, e, key = setupPage(designer, kind)
+        if nested:
+            parent = e.tools.commands().add(e.pageId, 'container', 1, 0)
+&gt;           c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+
+tests\ui\page_designer\test_grid_geometry.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+tests\ui\page_designer\test_grid_geometry.py:50: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='wrap', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets[True-xy-image]" time="0.521"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823dd4a00) at 0x00000278262ADF40&gt;
+kind = 'image', axes = 'xy', nested = True
+
+    @pytest.mark.parametrize('kind', ['number', 'image', 'table'])
+    @pytest.mark.parametrize('axes', ['y', 'xy'])
+    @pytest.mark.parametrize('nested', [False, True])
+    def testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets(designer, kind, axes, nested):  # noqa: F811
+        c, e, key = setupPage(designer, kind)
+        if nested:
+            parent = e.tools.commands().add(e.pageId, 'container', 1, 0)
+&gt;           c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+
+tests\ui\page_designer\test_grid_geometry.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+tests\ui\page_designer\test_grid_geometry.py:50: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='wrap', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets[True-xy-table]" time="0.479"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x2782432e8f0) at 0x00000278262BB4C0&gt;
+kind = 'table', axes = 'xy', nested = True
+
+    @pytest.mark.parametrize('kind', ['number', 'image', 'table'])
+    @pytest.mark.parametrize('axes', ['y', 'xy'])
+    @pytest.mark.parametrize('nested', [False, True])
+    def testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets(designer, kind, axes, nested):  # noqa: F811
+        c, e, key = setupPage(designer, kind)
+        if nested:
+            parent = e.tools.commands().add(e.pageId, 'container', 1, 0)
+&gt;           c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+
+tests\ui\page_designer\test_grid_geometry.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+tests\ui\page_designer\test_grid_geometry.py:50: in &lt;lambda&gt;
+    c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='wrap', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 2
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testContainerTitleSurvivesChildrenReopenAndStandaloneRendering" time="0.548"><failure message="AttributeError: 'ResponsiveWidgetLayout' object has no attribute 'getItemPosition'">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823e27a20) at 0x000002782633D640&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3914/testContainerTitleSurvivesChil0')
+
+    def testContainerTitleSurvivesChildrenReopenAndStandaloneRendering(designer, tmp_path):  # noqa: F811
+        c, e, key = setupPage(designer, 'container')
+        e.tools.fields['title'].setText('Container &lt;title&gt;')
+        e.tools.apply()
+        child = e.tools.commands().add(e.pageId, 'text', 0, 0, key)
+        e.refresh()
+        settle()
+        title = e.renderer.pages[e.pageId].findChild(QLabel, 'containerTitle')
+        assert title.text() == 'Container &lt;title&gt;' and title.textFormat() == Qt.PlainText
+        card = e.renderer.widgets[e.pageId][child][1].parentWidget()
+        assert card.mapTo(title.parentWidget(), QPoint()).y() &gt; title.geometry().bottom()
+&gt;       assert card.parentWidget().layout().getItemPosition(0) == (0, 0, 1, 1)
+E       AttributeError: 'ResponsiveWidgetLayout' object has no attribute 'getItemPosition'
+
+tests\ui\page_designer\test_grid_geometry.py:89: AttributeError</failure></testcase><testcase classname="tests.ui.page_designer.test_grid_geometry" name="testShrinkingSpanPreviewAndCancellationPreserveState" time="0.322"><failure message="ValueError: &quot;ResponsiveLayout&quot; object has no field &quot;columns&quot;">designer = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x27823dd3490) at 0x00000278262FC740&gt;
+
+    def testShrinkingSpanPreviewAndCancellationPreserveState(designer):  # noqa: F811
+        c, e, key = setupPage(designer, 'image')
+        def configure(p):
+            p.pages[e.pageId].layout.columns = 3
+            _component(p, e.pageId, key).layout = Placement(rowSpan=3, columnSpan=2)
+&gt;       c.session.editPresentation(configure)
+
+tests\ui\page_designer\test_grid_geometry.py:109: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\project_edit_session.py:132: in editPresentation
+    edit(document.presentation)
+tests\ui\page_designer\test_grid_geometry.py:107: in configure
+    p.pages[e.pageId].layout.columns = 3
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1048: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = ResponsiveLayout(type='responsive', direction='vertical', spacing=12, alignment='stretch', justify='start', equalWidth=False)
+name = 'columns', value = 3
+
+    def _setattr_handler(self, name: str, value: Any) -&gt; Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+    
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+    
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+    
+        _check_frozen(cls, name, value)
+    
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+&gt;               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "ResponsiveLayout" object has no field "columns"
+
+..\..\.conda\envs\emo_master\lib\site-packages\pydantic\main.py:1095: ValueError</failure></testcase><testcase classname="tests.ui.page_designer.test_usable_properties" name="testStaticResourcePickerPersistsAndUndoRestores" time="0.509" /><testcase classname="tests.ui.page_designer.test_usable_properties" name="testTypedIndicatorPlainTextFalseAndAppearanceSave" time="0.421" /><testcase classname="tests.ui.page_designer.test_usable_properties" name="testDuplicateTypedValuesPreservePendingFormAndDraft" time="0.443" /><testcase classname="tests.ui.page_designer.test_usable_properties" name="testKnownCollectionFieldsAreSelectedWithoutJsonPaths" time="0.523" /><testcase classname="tests.ui.page_designer.test_usable_properties" name="testAllReadOnlyActionsEditedWithExplicitScope" time="0.443" /><testcase classname="tests.ui.page_designer.test_usable_properties" name="testOfflineStatesDoNotTouchRuntimeOrDirtyDraft" time="0.448" /><testcase classname="tests.ui.page_designer.test_floating_workspace" name="testBothOverlaysLeavePageAndComponentsStationary[size0]" time="0.426" /><testcase classname="tests.ui.page_designer.test_floating_workspace" name="testBothOverlaysLeavePageAndComponentsStationary[size1]" time="0.581" /><testcase classname="tests.ui.page_designer.test_floating_workspace" name="testBothOverlaysLeavePageAndComponentsStationary[size2]" time="0.453" /><testcase classname="tests.ui.page_designer.test_floating_workspace" name="testCollapsingDoesNotCommitOrDiscardFormAndErrorRevealsIt[size0]" time="0.511" /><testcase classname="tests.ui.page_designer.test_floating_workspace" name="testCollapsingDoesNotCommitOrDiscardFormAndErrorRevealsIt[size1]" time="0.511" /><testcase classname="tests.ui.page_designer.test_floating_workspace" name="testCollapsingDoesNotCommitOrDiscardFormAndErrorRevealsIt[size2]" time="0.617" /><testcase classname="tests.ui.page_designer.test_floating_workspace" name="testOverlayEscapeAndWorkspaceSwitchKeepIndependentState" time="0.653" /><testcase classname="tests.ui.page_designer.test_floating_workspace" name="testTopTabsPickerAndExistingPageActionsRemainIdBased" time="0.698" /><testcase classname="tests.ui.page_designer.test_floating_workspace" name="testWorkspaceSwitchCenteredOnWholeWindowInBothModes[480]" time="0.568" /><testcase classname="tests.ui.page_designer.test_floating_workspace" name="testWorkspaceSwitchCenteredOnWholeWindowInBothModes[640]" time="0.437" /><testcase classname="tests.ui.page_designer.test_floating_workspace" name="testWorkspaceSwitchCenteredOnWholeWindowInBothModes[1000]" time="0.542" /><testcase classname="tests.ui.page_designer.test_floating_workspace" name="testWorkspaceSwitchCenteredOnWholeWindowInBothModes[1600]" time="0.501" /><testcase classname="tests.ui.page_designer.test_floating_workspace" name="testFloatingPageOwnersRetireWithWindow" time="0.311" /><testcase classname="tests.ui.page_designer.test_workspace_switch" name="testConfirmedSelectionSlidesAndRepeatedRefreshDoesNotRestart" time="0.009" /><testcase classname="tests.ui.page_designer.test_workspace_switch" name="testRapidReverseContinuesFromCurrentPositionAndHideSettles" time="0.005" /><testcase classname="tests.ui.page_designer.test_workspace_switch" name="testDestroyDuringAnimationRetiresNativeOwner" time="0.005" /><testcase classname="tests.ui.page_designer.test_workspace_switch" name="testDirectButtonsSwitchWorkspacesWithoutAddingHistoryOrJobs" time="0.289" /><testcase classname="tests.ui.page_designer.test_workspace_switch" name="testInvalidPendingInputCannotMoveSelectionPill" time="0.344" /><testcase classname="tests.ui.page_designer.test_workspace_switch" name="testKeyboardAndDisabledChoiceRespectExistingActions" time="0.360" /><testcase classname="tests.ui.page_designer.test_workspace_switch" name="testDecliningFirstPageEnableKeepsFlowAndOriginalProject" time="0.151" /><testcase classname="tests.ui.page_designer.test_palette" name="testPaletteLayoutSettles[220-400-False]" time="1.552" /><testcase classname="tests.ui.page_designer.test_palette" name="testPaletteLayoutSettles[220-400-True]" time="1.564" /><testcase classname="tests.ui.page_designer.test_palette" name="testPaletteLayoutSettles[230-400-False]" time="1.572" /><testcase classname="tests.ui.page_designer.test_palette" name="testPaletteLayoutSettles[230-400-True]" time="1.571" /><testcase classname="tests.ui.page_designer.test_palette" name="testPaletteLayoutSettles[240-400-False]" time="1.569" /><testcase classname="tests.ui.page_designer.test_palette" name="testPaletteLayoutSettles[240-400-True]" time="1.571" /><testcase classname="tests.ui.page_designer.test_palette" name="testPaletteLayoutSettles[300-390-False]" time="1.568" /><testcase classname="tests.ui.page_designer.test_palette" name="testPaletteLayoutSettles[300-390-True]" time="1.563" /><testcase classname="tests.ui.page_designer.test_palette" name="testPaletteLayoutSettles[460-400-False]" time="1.572" /><testcase classname="tests.ui.page_designer.test_palette" name="testPaletteLayoutSettles[460-400-True]" time="1.571" /><testcase classname="tests.ui.page_designer.test_image_path_properties" name="testFixedPathModeSwitchKeepsPendingTextAndSavesWithoutReading" time="0.393" /><testcase classname="tests.ui.page_designer.test_image_path_properties" name="testSelectedRowAcceptsHiddenFieldAndRetainsMissingSource" time="0.468" /><testcase classname="tests.ui.page_designer.test_image_path_properties" name="testUnfinishedSelectedRowKeepsPendingFormAndOriginalDraft" time="0.338" /><testcase classname="tests.ui.page_designer.test_image_path_properties" name="testApplyingWorkflowModeClearsOnlyLocalImageSource" time="0.333" /><testcase classname="tests.ui.page_designer.test_sqlite_properties" name="testMetadataIsExplicitAndSelectionsHaveCorrectFields" time="0.036" /><testcase classname="tests.ui.page_designer.test_sqlite_properties" name="testReadFailurePreservesSavedChoices" time="0.014" /><testcase classname="tests.ui.page_designer.test_sqlite_properties" name="testSqliteChoicesApplyUndoCopyAndSave" time="0.437" /><testcase classname="tests.ui.page_designer.test_sqlite_properties" name="testSqliteStatisticsRequireValueFieldAndKeepPendingValues" time="0.370" /><testcase classname="tests.ui.page_designer.test_sqlite_properties" name="testPageTitleDefaultsAndTextCanFollowPageName" time="0.474" /></testsuite></testsuites>

@@ -1,7 +1,7 @@
 """Page management around the shared production renderer."""
 from PySide2.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QInputDialog,
-    QLabel, QMessageBox, QTabWidget, QToolButton, QMenu,
+    QLabel, QMessageBox, QTabWidget, QToolButton, QMenu, QSpinBox,
 )
 from PySide2.QtCore import QSize, Qt
 from shiboken2 import isValid
@@ -35,7 +35,14 @@ class EditorPages(RuntimePages):
         self.reloading = False
         from emo_master.core.presentation.assets import pageAssets
         kwargs['assets'] = pageAssets(workspace.session.document(), workspace.coordinator.directory)
+        kwargs['projectRoot'] = workspace.coordinator.directory
         super().__init__(*args, **kwargs)
+
+    def fitToAvailableScreen(self, *, resize=True, screen=None):
+        if hasattr(self.workspace, 'canvas'):
+            self.workspace.canvas.updatePageSize()
+            return
+        return super().fitToAvailableScreen(resize=resize, screen=screen)
 
     def navigate(self, pageId, keepFrozen=False):
         if self.reloading or not hasattr(self.workspace, 'tools'):
@@ -61,9 +68,8 @@ class EditorPages(RuntimePages):
         try:
             from emo_master.core.presentation.assets import pageAssets
             self.assets = pageAssets(self.workspace.session.document(), self.workspace.coordinator.directory)
+            self.setProjectRoot(self.workspace.coordinator.directory)
             super().reload(presentation)
-            for button in self.buttons.values():
-                button.hide()
         finally:
             self.reloading = False
 
@@ -119,7 +125,9 @@ class PageWorkspace(QWidget):
         self.centerLayout.addWidget(self.canvasHost, 1)
         self.renderer = EditorPages(self, self.store.snapshot(), label='模拟布局预览 · 不运行算子、不写生产状态')
         self.renderer.editing = True
-        canvasLayout.addWidget(self.renderer, 1)
+        from .page_canvas import PageCanvas
+        self.canvas = PageCanvas(self, self.renderer)
+        canvasLayout.addWidget(self.canvas, 1)
         self.renderer.setEditorHost()
         pageInfo = QHBoxLayout()
         self.pageCaption = ElidedLabel()
@@ -146,7 +154,23 @@ class PageWorkspace(QWidget):
         canvasLayout.addWidget(self.empty, 1)
         self.renderer.fitButton.setParent(self.centerPanel)
         self.renderer.fitButton.setText('适应画布')
+        self.renderer.fitButton.clicked.disconnect()
+        self.renderer.fitButton.clicked.connect(self.canvas.fitPage)
         canvasTools = QHBoxLayout()
+        canvasTools.addWidget(QLabel('预览宽度'))
+        self.previewWidth = QSpinBox()
+        self.previewWidth.setRange(0, 2400)
+        self.previewWidth.setSpecialValueText('跟随窗口')
+        self.previewWidth.setSingleStep(40)
+        self.previewWidth.setSuffix(' px')
+        self.previewWidth.setToolTip('0 跟随窗口；改变预览宽度只重新排版，不修改工程')
+        self.previewWidth.valueChanged.connect(self.canvas.setPreviewWidth)
+        canvasTools.addWidget(self.previewWidth)
+        for title, width in [('窄', 360), ('中', 768), ('宽', 1280), ('自动', 0)]:
+            button = QPushButton(title)
+            button.setToolTip('跟随当前窗口' if not width else f'预览 {width} 像素宽度')
+            button.clicked.connect(lambda _checked=False, width=width: self.previewWidth.setValue(width))
+            canvasTools.addWidget(button)
         canvasTools.addStretch()
         canvasTools.addWidget(self.renderer.fitButton)
         self.centerLayout.addLayout(canvasTools)
@@ -192,11 +216,12 @@ class PageWorkspace(QWidget):
         if self.pageId == self.pageTabs.pageId(index):
             self.pageMenu.exec_(bar.mapToGlobal(point))
 
-    def run(self, command):
+    def run(self, command, *, refresh=True):
         try:
             self.coordinator.sync()
             command()
-            self.refresh()
+            if refresh:
+                self.refresh()
         except (ValueError, KeyError) as error:
             from .property_panel import editorMessage
             self.message.setText(editorMessage(str(error)))
@@ -220,6 +245,7 @@ class PageWorkspace(QWidget):
         self.pageMenu.setEnabled(bool(p.pages))
         self.pageMore.setEnabled(bool(p.pages))
         self.empty.setVisible(not p.pages)
+        self.canvas.setVisible(bool(p.pages))
         self.renderer.setVisible(bool(p.pages))
         self.renderer.banner.setVisible(bool(p.pages))
         self.renderer.fitButton.setVisible(bool(p.pages))
@@ -229,6 +255,7 @@ class PageWorkspace(QWidget):
             self.renderer.navigate(self.pageId)
         if hasattr(self, 'tools'):
             self.tools.refresh()
+        self.canvas.updatePageSize()
         self.coordinator.preview.refreshCoverage()
         self.coordinator.chrome.update()
 
@@ -242,8 +269,7 @@ class PageWorkspace(QWidget):
         self.pageTabs.blockSignals(True)
         self.pageTabs.selectPage(self.pageId)
         self.pageTabs.blockSignals(False)
-        for key, button in self.renderer.buttons.items():
-            button.setChecked(key == self.pageId)
+        self.renderer.syncNavigation()
 
     def navigatePage(self, pageId, keepFrozen=False):
         if pageId == self.pageId or pageId not in self.renderer.config.pages:

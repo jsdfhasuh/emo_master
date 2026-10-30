@@ -6,7 +6,7 @@ from PySide2.QtWidgets import QApplication
 import pytest
 
 from test_workspace import designer  # noqa: F401
-from test_pending_inputs import setupPage
+from test_grid_geometry import setupGridPage as setupPage
 from emo_master.apps.designer.state.presentation_store import _component
 
 

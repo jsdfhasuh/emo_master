@@ -7,10 +7,10 @@ from PySide2.QtWidgets import QApplication, QWidget
 from shiboken2 import isValid
 
 from test_workspace import designer  # noqa: F401
-from test_pending_inputs import setupPage
-from test_grid_geometry import settle
+from test_grid_geometry import settle, setupGridPage as setupPage
 from emo_master.apps.designer.main import applyDesignerStyle
 from emo_master.apps.designer.state.presentation_store import _component
+from emo_master.core.presentation.models import Grid
 
 
 @pytest.fixture
@@ -111,7 +111,7 @@ def testContainerTitleWrapUsesSameLiveAndPreviewLayout(styled, nested, fontSize)
     c, e, key = setupPage(styled, 'container')
     if nested:
         outer = e.tools.commands().add(e.pageId, 'container', 1, 0)
-        c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, outer).grid, 'columns', 2))
+        c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, outer), 'grid', Grid(columns=2)))
         e.tools.commands().move(e.pageId, key, 0, 0, outer)
     else:
         c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))

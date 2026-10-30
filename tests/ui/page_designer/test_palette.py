@@ -42,7 +42,7 @@ def testPaletteLayoutSettles(qtApp, styled, width, height):
     observeLayout(palette)
 
     # Search removes the need for a scrollbar, then clearing it restores all
-    # eight cards. Resizing must still allow the narrow one-column layout.
+    # cards. Resizing must still allow the narrow one-column layout.
     palette.search('image')
     state = observeLayout(palette)
     assert len(state[-1]) == 1
@@ -52,7 +52,7 @@ def testPaletteLayoutSettles(qtApp, styled, width, height):
     palette.resize(200, 400)
     state = observeLayout(palette)
     assert len({rect[0] for rect in state[-1]}) == 1
-    palette.resize(460, 400)
+    palette.resize(460, 800)
     state = observeLayout(palette)
     assert len({rect[0] for rect in state[-1]}) == 2
     assert not state[2]

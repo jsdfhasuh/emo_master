@@ -128,7 +128,7 @@ class ProjectDevices(StrictModel):
 class ProjectDocument(StrictModel):
     # Execution-only asset locations never enter portable snapshots or digests.
     _pageResourcePaths: dict[str, str] = PrivateAttr(default_factory=dict)
-    schemaVersion: Literal["2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7"]
+    schemaVersion: Literal["2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8"]
     project: ProjectMetadata
     entryWorkflowId: str
     workflowOrder: list[str]
@@ -142,19 +142,33 @@ class ProjectDocument(StrictModel):
     globalVariables: dict[str, VariableDefinition] = Field(default_factory=dict)
     communication: CommunicationSettings | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def legacyPresentationVersion(cls, value):
+        if isinstance(value, dict) and value.get('schemaVersion') != '2.8':
+            presentation = value.get('presentation')
+            if isinstance(presentation, dict) and 'schemaVersion' not in presentation:
+                value = {**value, 'presentation': {**presentation, 'schemaVersion': '1.0'}}
+        return value
+
     @model_validator(mode="after")
     def validateVersion(self) -> "ProjectDocument":
-        if self.schemaVersion not in {"2.2", "2.3", "2.4", "2.5", "2.6", "2.7"}:
+        if self.presentation is not None:
+            if self.schemaVersion == '2.8' and self.presentation.schemaVersion != '1.1':
+                raise ValueError('project 2.8 requires presentation schemaVersion 1.1')
+            if self.schemaVersion != '2.8' and self.presentation.schemaVersion == '1.1':
+                raise ValueError('presentation schemaVersion 1.1 requires project 2.8')
+        if self.schemaVersion not in {"2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8"}:
             if {"presentation", "resources"} & self.model_fields_set:
                 raise ValueError("presentation/resources require explicit project 2.2 migration")
         elif self.presentation is None or self.resources is None:
             raise ValueError("project 2.2/2.3 requires presentation and resources")
-        if self.schemaVersion in {"2.3", "2.4", "2.5", "2.6", "2.7"}:
+        if self.schemaVersion in {"2.3", "2.4", "2.5", "2.6", "2.7", "2.8"}:
             if self.production is None:
                 raise ValueError("project 2.3 requires production settings")
         elif "production" in self.model_fields_set:
             raise ValueError("production requires explicit project 2.3 migration")
-        if self.schemaVersion not in {"2.4", "2.5", "2.6", "2.7"} and (self.globalVariables or
+        if self.schemaVersion not in {"2.4", "2.5", "2.6", "2.7", "2.8"} and (self.globalVariables or
             (self.presentation and any(source.kind == "global_variable" for source in self.presentation.dataSources.values())) or any(
             node.globalVariableBindings or node.loop.get("conditionMode") == "globalVariable"
             or node.operatorId in {"vision.state.variable_read", "vision.state.variable_write"}
@@ -166,7 +180,7 @@ class ProjectDocument(StrictModel):
                 raise ValueError("project 2.5 requires communication settings")
         elif self.communication is not None:
             raise ValueError("communication requires explicit project 2.5 migration")
-        if self.schemaVersion in {"2.6", "2.7"}:
+        if self.schemaVersion in {"2.6", "2.7", "2.8"}:
             if self.devices.schemaVersion != "1.0":
                 raise ValueError("project 2.6 requires device catalog schemaVersion 1.0")
         elif (self.devices.schemaVersion is not None or "definitions" in self.devices.model_fields_set
@@ -185,7 +199,7 @@ class ProjectDocument(StrictModel):
             for resourceBinding in resourceBindings:
                 target = resourceBinding.target
                 if isinstance(target, DeviceParameterTarget):
-                    if self.schemaVersion not in {"2.6", "2.7"}:
+                    if self.schemaVersion not in {"2.6", "2.7", "2.8"}:
                         raise ValueError("device resource targets require explicit project 2.6 migration")
                     if target.deviceId not in self.devices.definitions:
                         raise ValueError(f"unknown device resource target: {target.deviceId}")
@@ -202,12 +216,12 @@ class ProjectDocument(StrictModel):
     @model_serializer(mode="wrap")
     def serializeVersion(self, handler):
         payload = handler(self)
-        if self.schemaVersion not in {"2.2", "2.3", "2.4", "2.5", "2.6", "2.7"}:
+        if self.schemaVersion not in {"2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8"}:
             payload.pop("presentation", None)
             payload.pop("resources", None)
-        if self.schemaVersion not in {"2.3", "2.4", "2.5", "2.6", "2.7"}:
+        if self.schemaVersion not in {"2.3", "2.4", "2.5", "2.6", "2.7", "2.8"}:
             payload.pop("production", None)
-        if self.schemaVersion not in {"2.4", "2.5", "2.6", "2.7"}:
+        if self.schemaVersion not in {"2.4", "2.5", "2.6", "2.7", "2.8"}:
             payload.pop("globalVariables", None)
             for workflow in payload["workflows"].values():
                 for node in workflow["nodes"]:

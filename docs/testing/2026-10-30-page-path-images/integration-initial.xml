@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="7" time="2.111" timestamp="2026-10-30T10:59:40.338924+08:00" hostname="视觉电脑"><testcase classname="tests.ui.presentation.test_selected_row_images" name="testOneSelectedRowDrivesTwoImagesWithoutShowingPathColumns" time="0.769" /><testcase classname="tests.ui.presentation.test_selected_row_images" name="testNewQueryImmediatelyClearsSelectionAndImages[refresh]" time="0.150" /><testcase classname="tests.ui.presentation.test_selected_row_images" name="testNewQueryImmediatelyClearsSelectionAndImages[sort]" time="0.143" /><testcase classname="tests.ui.presentation.test_selected_row_images" name="testNewQueryImmediatelyClearsSelectionAndImages[filter]" time="0.149" /><testcase classname="tests.ui.presentation.test_selected_row_images" name="testSelectionsAreWindowLocalAndNavigationReloadRetiresImages" time="0.186"><failure message="AssertionError: assert (True and '表格不存在' in '等待加载图片')&#10; +  where True = &lt;built-in method isNull of PySide2.QtGui.QImage object at 0x000001D25E6D1CC0&gt;()&#10; +    where &lt;built-in method isNull of PySide2.QtGui.QImage object at 0x000001D25E6D1CC0&gt; = &lt;PySide2.QtGui.QImage(null) at 0x000001D25E6D1CC0&gt;.isNull&#10; +      where &lt;PySide2.QtGui.QImage(null) at 0x000001D25E6D1CC0&gt; = &lt;emo_master.ui.presentation.path_image.PathImageView(0x1d25ecbc530) at 0x000001D25E6D1100&gt;.image&#10; +  and   '等待加载图片' = &lt;emo_master.ui.presentation.path_image.PathImageView(0x1d25ecbc530) at 0x000001D25E6D1100&gt;.message">qtApp = &lt;PySide2.QtWidgets.QApplication(0x1d25b7fc510) at 0x000001D25CADC390&gt;
+history = Presentation(schemaVersion='1.0', defaultPageId='history', pageOrder=['history', 'other', 'third'], navigation=Navigat...eIds=[]), 'third': Page(name='第三页', layout=Grid(type='grid', columns=1, spacing=8), components=[], resultScopeIds=[])})
+
+    def testSelectionsAreWindowLocalAndNavigationReloadRetiresImages(qtApp, history):
+        first, table, image, _ = openHistory(qtApp, history)
+        second, secondTable, secondImage, _ = openHistory(qtApp, history)
+        table.table.selectRow(0)
+        secondTable.table.selectRow(1)
+        settle(qtApp, lambda: not image.image.isNull() and not secondImage.image.isNull())
+        assert image.image.pixelColor(0, 0) == QColor('red')
+        assert secondImage.image.pixelColor(0, 0) == QColor('blue')
+        first.navigate('other')
+        assert table.selectedRow() is None and image.image.isNull()
+        first.navigate('third')  # Evicts history from the two-page cache.
+        first.navigate('history')
+        assert first.widgets['history']['original'][1].image.isNull()
+        changed = history.model_copy(deep=True)
+        changed.pages['history'].components.pop()  # Deleted source remains a visible draft error.
+        first.reload(changed)
+        missing = first.widgets['history']['original'][1]
+&gt;       assert missing.image.isNull() and '表格不存在' in missing.message
+E       AssertionError: assert (True and '表格不存在' in '等待加载图片')
+E        +  where True = &lt;built-in method isNull of PySide2.QtGui.QImage object at 0x000001D25E6D1CC0&gt;()
+E        +    where &lt;built-in method isNull of PySide2.QtGui.QImage object at 0x000001D25E6D1CC0&gt; = &lt;PySide2.QtGui.QImage(null) at 0x000001D25E6D1CC0&gt;.isNull
+E        +      where &lt;PySide2.QtGui.QImage(null) at 0x000001D25E6D1CC0&gt; = &lt;emo_master.ui.presentation.path_image.PathImageView(0x1d25ecbc530) at 0x000001D25E6D1100&gt;.image
+E        +  and   '等待加载图片' = &lt;emo_master.ui.presentation.path_image.PathImageView(0x1d25ecbc530) at 0x000001D25E6D1100&gt;.message
+
+tests\ui\presentation\test_selected_row_images.py:118: AssertionError</failure></testcase><testcase classname="tests.ui.presentation.test_selected_row_images" name="testFixedPathEditorAndSimulationDoNotReadFiles" time="0.154" /><testcase classname="tests.ui.presentation.test_selected_row_images" name="testPagePathBindingsDoNotChangeWorkflowCapture" time="0.015" /></testsuite></testsuites>

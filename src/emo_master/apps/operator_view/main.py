@@ -25,6 +25,7 @@ class OperatorView(QWidget):
         self.resize(650, 260)
         self.readyFile, self.jobId = Path(readyFile), jobId
         self.session = self.hub = self.document = self.info = None
+        self.projectRoot = None
         self.waitingPage = None
         self.busy = self.closing = self.done = False
         self.error = None
@@ -77,6 +78,7 @@ class OperatorView(QWidget):
             if self.jobId and self.jobId not in {j.job_id for j in stub.ListJobs(pb.DisplayEmpty(), timeout=3).jobs}:
                 raise ValueError('explicit Job is not available on this Runtime')
         self.info, self.document = info, document
+        self.projectRoot = store.revisionPath(info['revision'])
         if self.jobId:
             self.session = DisplaySession(info['address'], self.jobId, imageDemand=True)
 
@@ -100,13 +102,15 @@ class OperatorView(QWidget):
             return
         if self.hub is None:
             if self.waitingPage is None:
-                self.waitingPage = RuntimePages(self.document.presentation, label='测试项目 · 页面就绪 · 尚未开始检测')
+                self.waitingPage = RuntimePages(self.document.presentation, label='测试项目 · 页面就绪 · 尚未开始检测',
+                                               projectRoot=self.projectRoot)
             self.waitingPage.show()
             return
         if len(self.hub.windows) >= 2:
             self.message.setText('每会话最多两个共享窗口；关闭一个窗口后可再打开')
             return
-        page = RuntimePages(self.document.presentation, hub=self.hub, label='测试 release · 只读 · 非现场验收')
+        page = RuntimePages(self.document.presentation, hub=self.hub, label='测试 release · 只读 · 非现场验收',
+                            projectRoot=self.projectRoot)
         page.setAttribute(Qt.WA_DeleteOnClose)
         page.show()
 

@@ -25,7 +25,7 @@ def populate(renderer):
     from .renderer import ImageView, COLORS, appearanceStyle
     for component, widget in renderer.widgets.get(renderer.currentPageId, {}).values():
         props = component.props
-        if props.imageResourceId:
+        if props.imageResourceId or props.imagePath is not None or component.type in {'page_navigation', 'page_title', 'clock', 'sqlite_table', 'sqlite_value'}:
             continue
         if isinstance(widget, ImageView):
             if renderer._designImage.isNull():
@@ -68,14 +68,14 @@ def clear(renderer):
     from .renderer import ImageView, appearanceStyle
     for rows in renderer.widgets.values():
         for component, widget in rows.values():
-            if component.props.imageResourceId:
+            if component.props.imageResourceId or component.props.imagePath is not None or component.type in {'page_navigation', 'page_title', 'clock', 'sqlite_table', 'sqlite_value'}:
                 continue
             if isinstance(widget, ImageView):
                 widget.setImage(QImage(), '', '已绑定 · 等待明确任务结果' if component.bindings else '未绑定')
             elif isinstance(widget, CollectionView):
                 widget.model.columns = component.props.columns
                 widget.clear('尚无集合')
-            elif component.type != 'navigation_button':
+            elif component.type not in {'navigation_button', 'page_navigation', 'page_title'}:
                 widget.setStyleSheet(appearanceStyle(component.props))
                 widget.setText(component.props.text if component.type == 'text' and not component.bindings
                                else '已绑定 · 等待明确任务结果' if component.bindings else '未绑定')

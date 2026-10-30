@@ -62,7 +62,7 @@ def testStartupAliasFirstPublicationUsesActualRunAction(initialRuntime, ownedDes
     assert window.showStartupProjectEntry()
     assert window.loadedProjectPath == str(source)
     payload = window.pageCoordinator.session.payload()
-    assert payload['schemaVersion'] == '2.7'
+    assert payload['schemaVersion'] == '2.8'
     original = source.read_bytes()
     client.initializeProjectConfiguration(payload, alias, 'alias-first-publication',
         runtimeInstanceId=service.runtimeInstanceId, projectPath=source)

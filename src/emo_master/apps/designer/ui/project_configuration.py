@@ -450,18 +450,18 @@ class ProjectConfigurationDialog(QDialog):
 
     def _formatFeedback(self):
         version = self.local.get('schemaVersion')
-        old = version not in {'2.6', '2.7'}
-        self.formatStatus.setText(f'当前草稿格式 {version}，当前新工程使用 2.7。升级只修改草稿，可撤销；不会保存或写入。' if old else '')
+        old = version not in {'2.6', '2.7', '2.8'}
+        self.formatStatus.setText(f'当前草稿格式 {version}，当前新工程使用 2.8。升级只修改草稿，可撤销；不会保存或写入。' if old else '')
         self.formatStatus.setVisible(old)
         self.upgradeButton.setVisible(old and version in {'2.0', '2.1', '2.2', '2.3', '2.4', '2.5'})
 
     def _requireFormat(self):
-        if self.local.get('schemaVersion') in {'2.6', '2.7'}:
+        if self.local.get('schemaVersion') in {'2.6', '2.7', '2.8'}:
             return True
         self._notify('工程校验未通过',
-            f"当前工程格式为 {self.local.get('schemaVersion')}，请新建当前 2.7 工程；本轮不提供旧工程转换。\n"
+            f"当前工程格式为 {self.local.get('schemaVersion')}，请新建当前 2.8 工程；本轮不提供旧工程转换。\n"
             '本次没有写入 Runtime，也没有保存本地工程。\n可升级当前草稿后重新校验；升级可撤销。',
-            'E_CONFIG_INVALID: online writes require current schema 2.7', upgrade=not self.upgradeButton.isHidden())
+            'E_CONFIG_INVALID: online writes require current schema 2.8', upgrade=not self.upgradeButton.isHidden())
         return False
 
     def _draftChanged(self):
@@ -510,7 +510,7 @@ class ProjectConfigurationDialog(QDialog):
             from emo_master.core.project.migration import migrateProjectPayload
             from emo_master.core.project.models import ProjectDocument
             payload = self.session.payload()
-            if payload.get('schemaVersion') in {'2.6', '2.7'}:
+            if payload.get('schemaVersion') in {'2.6', '2.7', '2.8'}:
                 self._draftChanged()
                 return
             candidate = migrateProjectPayload(deepcopy(payload), enableDevices=True)

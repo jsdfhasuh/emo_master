@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from emo_master.core.presentation.models import (
-    Action, Component, DataSource, Page, Presentation, walkComponents,
+    Action, Component, DataSource, Grid, Page, Presentation, walkComponents,
 )
 from emo_master.core.presentation.validation import pageScopes
 
@@ -18,6 +18,17 @@ def _component(presentation: Presentation, pageId: str, componentId: str) -> Com
         if component.componentId == componentId:
             return component
     raise KeyError(componentId)
+
+
+def _copyComponentIds(components: list[Component]) -> None:
+    """Retarget references inside one copied page/container; preserve external ones."""
+    copied = list(walkComponents(components))
+    ids = {item.componentId: str(uuid4()) for item in copied}
+    for item in copied:
+        item.componentId = ids[item.componentId]
+        source = item.props.imagePath
+        if source is not None and source.componentId in ids:
+            source.componentId = ids[source.componentId]
 
 
 class PresentationStore:
@@ -43,7 +54,7 @@ class PresentationStore:
         pageId = str(uuid4())
 
         def edit(p: Presentation):
-            p.pages[pageId] = Page(name=name)
+            p.pages[pageId] = Page(name=name, layout=Grid()) if p.schemaVersion == '1.0' else Page(name=name)
             p.pageOrder.append(pageId)
             if p.defaultPageId is None:
                 p.defaultPageId = pageId
@@ -79,8 +90,8 @@ class PresentationStore:
         def edit(p: Presentation):
             copied = p.pages[pageId].model_copy(deep=True)
             copied.name = name or f"{copied.name} (copy)"
+            _copyComponentIds(copied.components)
             for component in walkComponents(copied.components):
-                component.componentId = str(uuid4())
                 for action in component.actions.values():
                     if action.pageId == pageId:
                         action.pageId = copiedId
@@ -123,6 +134,9 @@ class PresentationStore:
                 component.bindings.pop(prop, None)
                 return
             canonical = DataSource.model_validate(source.model_dump())
+            if component.type == "image":
+                component.props.imageResourceId = None
+                component.props.imagePath = None
             sourceId = next((key for key, value in p.dataSources.items() if value == canonical), None)
             if sourceId is None:
                 sourceId = str(uuid4())

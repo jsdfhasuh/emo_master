@@ -65,6 +65,8 @@ class EditingTools(QObject):
         self.bindingMarks = []
         self._loadedFields = None
         self._loadedPage = None
+        from .responsive_tools import ResponsiveTools
+        self.responsive = ResponsiveTools(self)
         self.palette = Palette()
         library = QWidget()
         libraryLayout = QVBoxLayout(library)
@@ -168,11 +170,21 @@ class EditingTools(QObject):
         self.fieldHint = QLabel('已知 Blob / Detection 字段可选择；未知结构不自动推断')
         self.fieldHint.setWordWrap(True)
         self.form.addRow(self.fieldHint)
+        from .image_properties import ImageProperties
+        self.imageProperties = ImageProperties()
+        self.form.addRow(self.imageProperties)
+        from .responsive_properties import ResponsiveProperties
+        self.responsiveProperties = ResponsiveProperties()
+        self.form.addRow(self.responsiveProperties)
+        from .sqlite_properties import SqliteProperties
+        self.sqliteProperties = SqliteProperties(projectRoot=lambda: self.w.coordinator.directory)
+        self.form.addRow(self.sqliteProperties)
         self.captureNotice = QLabel()
         self.captureNotice.setWordWrap(True)
         workspace.detailsLayout.addWidget(self.captureNotice)
         from .property_panel import PropertyGroups
         self.propertyGroups = PropertyGroups(self, panel)
+        self.imageProperties.modeChanged.connect(self.refreshImageMode)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(panel)
@@ -194,6 +206,16 @@ class EditingTools(QObject):
         for button in self.operationButtons:
             action = self.componentMenu.addAction(button.text())
             action.triggered.connect(button.click)
+        self.componentMenu.addSeparator()
+        self.groupActions = []
+        for label, direction in [('横向编组', 'horizontal'), ('纵向编组', 'vertical'), ('自动换行编组', 'wrap')]:
+            action = self.componentMenu.addAction(label)
+            action.triggered.connect(lambda _checked=False, direction=direction:
+                self.w.run(lambda: self.responsive.group(direction), refresh=False))
+            self.groupActions.append(action)
+        self.ungroupAction = self.componentMenu.addAction('取消编组')
+        self.ungroupAction.triggered.connect(lambda: self.w.run(self.responsive.ungroup, refresh=False))
+        self.componentMenu.aboutToShow.connect(self.updateGroupActions)
         self.componentMore = QToolButton()
         self.componentMore.setText('操作')
         self.componentMore.setPopupMode(QToolButton.InstantPopup)
@@ -210,6 +232,36 @@ class EditingTools(QObject):
 
     def commands(self):
         return PageCommands(self.w.session, manifestsFromCatalog(self.w.coordinator.window.operatorCatalog))
+
+    def selectionCount(self):
+        return len(self.responsive.selectedIds) if self.responsive.enabled() else int(self.selected is not None)
+
+    def updateGroupActions(self):
+        enabled = self.responsive.enabled() and bool(self.responsive.selectedIds) and self.w.renderer.editing
+        for action in self.groupActions:
+            action.setVisible(self.responsive.enabled())
+            action.setEnabled(enabled)
+        component = _component(self.w.renderer.config, self.w.pageId, self.selected) if enabled else None
+        self.ungroupAction.setVisible(self.responsive.enabled())
+        self.ungroupAction.setEnabled(enabled and len(self.responsive.selectedIds) == 1 and component.type == 'container')
+
+    def setAlignmentGuidesEnabled(self, enabled):
+        self.responsive.guidesEnabled = bool(enabled)
+        if not enabled and self.responsive.preview:
+            self.responsive.preview.lines = ()
+            self.responsive.preview.update()
+
+    def setAlignmentSnapEnabled(self, enabled):
+        self.responsive.snapEnabled = bool(enabled)
+
+    def arrangementBlockedReason(self, key):
+        return self.responsive.blockedReason(key)
+
+    def alignSelection(self, mode):
+        self.responsive.arrange(alignment=mode)
+
+    def distributeSelection(self, axis):
+        self.responsive.arrange(distribute=axis)
 
     def refreshCatalog(self):
         manifests = self.commands().manifests
@@ -340,6 +392,8 @@ class EditingTools(QObject):
                         content = widget.containerTitle.body if hasattr(widget, 'containerTitle') else widget
                         grids.append((content, item.children))
             for widget, children in grids:
+                if not hasattr(widget.layout(), 'setRowMinimumHeight'):
+                    continue
                 row = max((c.layout.row + c.layout.rowSpan for c in children), default=0)
                 widget.layout().setRowMinimumHeight(row, 64)
                 widget.layout().setGeometry(widget.rect())
@@ -409,7 +463,15 @@ class EditingTools(QObject):
                        for name, field in self.fields.items())
         rows = tuple(tuple(self._cellValue(r, c) for c in range(4)) for r in range(self.extra.rowCount()))
         return (values, self.pageName.text(), self.destination.currentData(), self.actionMode.currentData(), self.actionScope.currentData(),
-                tuple((name, field.currentData()) for name, field in self.appearance.items()), rows)
+                tuple((name, field.currentData()) for name, field in self.appearance.items()), rows,
+                self.sqliteProperties.state(), self.imageProperties.state(), self.responsiveProperties.state())
+
+    def refreshImageMode(self):
+        try:
+            component = _component(self.w.store.snapshot(), self.w.pageId, self.selected)
+        except KeyError:
+            return
+        self.propertyGroups.select(component.type)
 
     def commitPending(self):
         """Save the visible form first; invalid input stays visible and blocks leaving."""
@@ -423,6 +485,11 @@ class EditingTools(QObject):
         if key != self.selected:
             self.commitPending()
         self.selected = key
+        if self.responsive.enabled():
+            if key is None:
+                self.responsive.selectedIds = []
+            elif key not in self.responsive.selectedIds:
+                self.responsive.selectedIds = [key]
         self.componentMore.setEnabled(key is not None)
         self.applyButton.setEnabled(self.w.pageId is not None)
         self.updateSelection()
@@ -431,15 +498,21 @@ class EditingTools(QObject):
         except KeyError:
             self.selected = None
             if self.w.pageId:
-                self.fields['columns'].setValue(self.w.store.snapshot().pages[self.w.pageId].layout.columns)
+                self.fields['columns'].setValue(getattr(self.w.store.snapshot().pages[self.w.pageId].layout, 'columns', 1))
                 self.pageName.setText(self.w.store.snapshot().pages[self.w.pageId].name)
+                self.responsiveProperties.load(self.w.store.snapshot().pages[self.w.pageId].layout, None)
+            self.responsiveProperties.setItemVisible(False)
             self.title.setText('页面属性')
             self.propertyGroups.select(None)
             self._loadedPage = self.w.pageId
             self._loadedFields = self._fieldState()
             return
         from .palette import TITLES
+        self.responsiveProperties.load(component.grid if component.type == 'container' else None, component.responsive)
+        self.responsiveProperties.setItemVisible(True)
         self.propertyGroups.select(component.type)
+        self.sqliteProperties.load(component.props.sqlite, component.type)
+        self.imageProperties.load(component, self.w.store.snapshot(), self.w.pageId)
         self.title.setText(component.props.title or TITLES[component.type])
         self.title.setToolTip(self.title.text() + '\n组件编号：' + component.componentId)
         snapshot = self.w.store.snapshot()
@@ -476,8 +549,8 @@ class EditingTools(QObject):
             self.fields[name].setValue(getattr(component.props, name))
         for name, field in self.appearance.items():
             field.setCurrentIndex(field.findData(getattr(component.props, name)))
-        self.fields['columns'].setValue(component.grid.columns if component.type == 'container'
-                                       else self.w.store.snapshot().pages[self.w.pageId].layout.columns)
+        self.fields['columns'].setValue(getattr(component.grid if component.type == 'container'
+                                       else self.w.store.snapshot().pages[self.w.pageId].layout, 'columns', 1))
         action = component.actions.get('clicked')
         self.destination.setCurrentIndex(max(0, self.destination.findData(action.pageId if action else None)))
         self.destination.setEnabled(component.type == 'navigation_button')
@@ -529,6 +602,10 @@ class EditingTools(QObject):
                          if any(word in message for word in ('boolean', 'duplicate', '字段')) else self.fields['columnSpan'])
             if not self.selected and 'name' in message:
                 field = self.pageName
+            if 'SQLite' in message or 'sqlite' in message:
+                field = self.sqliteProperties
+            if '图片路径' in message or 'imagePath' in message:
+                field = self.imageProperties
             field.setFocus()
             self.errorField = field
             # The caller's error message can resize the canvas after we raise.
@@ -552,7 +629,10 @@ class EditingTools(QObject):
         columns = self.fields['columns'].value()
         if not self.selected:
             def editPage(p):
-                p.pages[self.w.pageId].layout.columns = columns
+                if self.responsive.enabled():
+                    p.pages[self.w.pageId].layout = self.responsiveProperties.layoutPayload()
+                else:
+                    p.pages[self.w.pageId].layout.columns = columns
                 p.pages[self.w.pageId].name = self.pageName.text()
             self.w.session.editPresentation(editPage)
             self._loadedFields = self._fieldState()
@@ -566,6 +646,13 @@ class EditingTools(QObject):
         props.update({key: field.currentData() for key, field in self.appearance.items()})
         props.update({key: self.fields[key].currentData() for key in ['imageResourceId', 'iconResourceId']
                       if key in applicable})
+        if item.type == 'image':
+            imageMode = self.imageProperties.mode.currentData()
+            props['imagePath'] = self.imageProperties.payload()
+            if imageMode != 'resource':
+                props['imageResourceId'] = None
+            elif props['imageResourceId'] is None:
+                raise ValueError('图片路径：请选择静态图片资源。')
         rows = [[self._cellValue(r, c) for c in range(4)]
                 for r in range(self.extra.rowCount())]
         if item.type == 'table':
@@ -574,6 +661,8 @@ class EditingTools(QObject):
             props['columns'] = [{'title': title, 'fieldPath': list(path)} for title, path, _, _ in rows]
         if item.type == 'indicator':
             props['indicatorStates'] = indicatorStatesFromRows(rows)
+        if item.type in ('sqlite_table', 'sqlite_value'):
+            props['sqlite'] = self.sqliteProperties.payload()
         layout = Placement(**{key: self.fields[key].value() for key in ['row', 'column', 'rowSpan', 'columnSpan']})
         actions = item.actions
         if item.type == 'navigation_button':
@@ -583,7 +672,9 @@ class EditingTools(QObject):
                 resultScopeId=self.actionScope.currentData() if mode in ('detail', 'freeze') else None)
             actions = {'clicked': action} if action else {}
         self.commands().update(self.w.pageId, self.selected, props=Props(**props), layout=layout,
-            actions=actions, columns=columns if item.type == 'container' else None)
+            actions=actions, columns=columns if item.type == 'container' and item.grid.type == 'grid' else None,
+            responsive=self.responsiveProperties.itemPayload() if self.responsive.enabled() else None,
+            containerLayout=self.responsiveProperties.layoutPayload() if self.responsive.enabled() and item.type == 'container' else None)
         self._loadedFields = self._fieldState()
 
     def bindChoice(self, index, key):
@@ -595,6 +686,7 @@ class EditingTools(QObject):
 
     def bindSelected(self):
         if self.selected and self.binding.currentIndex() >= 0:
+            self.commitPending()
             self.bindChoice(self.binding.currentData(), self.selected)
 
     def clearBinding(self):
@@ -605,7 +697,11 @@ class EditingTools(QObject):
 
     def delete(self):
         if self.selected:
-            self.commands().delete(self.w.pageId, self.selected)
+            if self.responsive.enabled():
+                self.responsive.commands().delete(self.w.pageId, self.responsive.selectedIds)
+                self.responsive.selectedIds = []
+            else:
+                self.commands().delete(self.w.pageId, self.selected)
             self.selected = None
 
     def copy(self):
@@ -622,6 +718,8 @@ class EditingTools(QObject):
 
     def componentAt(self, widget):
         while widget and widget is not self.w.renderer:
+            if not isValid(widget):
+                return None, None
             key = widget.property('componentId')
             if key:
                 return key, widget
@@ -649,6 +747,8 @@ class EditingTools(QObject):
         self.w.message.setText(message)
 
     def clearSelection(self):
+        self.responsive.cancel()
+        self.responsive.clearDecorations()
         if self.selection and self.selection is not self.retainedSelection:
             self.selection.dispose()
             self.selection = None
@@ -685,6 +785,9 @@ class EditingTools(QObject):
     def updateSelection(self):
         if self.retainedSelection is not None:
             return
+        if self.responsive.enabled():
+            self.responsive.updateSelection()
+            return
         self.clearSelection()
         if self.selected and self.w.renderer.editing and self.w.pageId in self.w.renderer.pages:
             from .canvas_tools import Selection
@@ -704,6 +807,8 @@ class EditingTools(QObject):
     def drop(self, payload, widget, point, *, preview=False):
         if not self.w.renderer.editing or not self.w.pageId:
             raise ValueError('先创建页面并进入编辑模式')
+        if self.responsive.enabled() and 'choice' not in payload:
+            return self.responsive.drop(payload, widget, point, preview=preview)
         key, card = self.componentAt(widget)
         commands = self.commands().preview() if preview else self.commands()
         if 'choice' in payload:
@@ -768,10 +873,12 @@ class EditingTools(QObject):
             self.w.refresh()
 
     def eventFilter(self, obj, event):
-        if self.w.closed or not isValid(self.w.renderer):
+        if self.w.closed or not isValid(obj) or not isValid(self.w.renderer):
             return False
         if obj.property('editorDecoration'):
             return False
+        if self.responsive.eventFilter(obj, event):
+            return True
         kind = event.type()
         if kind in (QEvent.DragEnter, QEvent.DragMove) and event.mimeData().hasFormat(MIME):
             payload = json.loads(bytes(event.mimeData().data(MIME)))

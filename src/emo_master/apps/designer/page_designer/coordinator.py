@@ -354,13 +354,16 @@ class PageCoordinator:
 
     def loaded(self, directory):
         self.shutdown()
-        self.directory = directory
+        self.directory = Path(directory).resolve() if directory is not None else None
         self.window.workflowController.captureActiveWorkflow()
         self.session.acceptLoaded()
         self.showFlow()
 
     def saved(self, directory):
-        self.directory = directory
+        self.directory = Path(directory).resolve() if directory is not None else None
+        if self.editor is not None:
+            self.editor.renderer.setProjectRoot(self.directory)
+        self.preview.refreshObserver(self.session.presentation.snapshot())
         self.session.markSaved()
         self.updateWindowTitle()
 

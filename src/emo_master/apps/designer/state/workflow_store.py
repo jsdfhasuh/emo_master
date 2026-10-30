@@ -107,7 +107,7 @@ class WorkflowStore:
         )
         if document.production is not None:
             self.projectExtensions["production"] = document.production.model_dump()
-        if document.schemaVersion in {"2.4", "2.5", "2.6", "2.7"}:
+        if document.schemaVersion in {"2.4", "2.5", "2.6", "2.7", "2.8"}:
             self.projectExtensions["globalVariables"] = {key: value.model_dump() for key, value in document.globalVariables.items()}
         if document.communication is not None:
             self.projectExtensions["communication"] = document.communication.model_dump()
@@ -619,8 +619,10 @@ class WorkflowStore:
         project["updatedAt"] = utc_now_iso()
         revision = project.get("revision", 1)
         project["revision"] = (revision if isinstance(revision, int) else 1) + 1
+        presentation = self.projectExtensions.get("presentation")
         return {
-            "schemaVersion": ("2.7" if self.devices.get("schemaVersion") == "1.0" and "communication" not in self.projectExtensions
+            "schemaVersion": ("2.8" if isinstance(presentation, dict) and presentation.get("schemaVersion") == "1.1" and self.devices.get("schemaVersion") == "1.0" and "communication" not in self.projectExtensions
+                              else "2.7" if self.devices.get("schemaVersion") == "1.0" and "communication" not in self.projectExtensions
                               else "2.6" if self.devices.get("schemaVersion") == "1.0"
                               else "2.5" if "communication" in self.projectExtensions
                               else "2.4" if "globalVariables" in self.projectExtensions

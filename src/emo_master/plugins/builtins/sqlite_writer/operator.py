@@ -7,7 +7,10 @@ import sqlite3
 import time
 from uuid import uuid4
 
-from emo_master.core.contracts.sqlite_writer import OPERATOR_ID, parseConfig, SqliteWriterError, SqliteCommittedCleanupError, toStorage
+from emo_master.core.contracts.sqlite_writer import (
+    OPERATOR_ID, parseConfig, SqliteWriterError, SqliteCommittedCleanupError, toStorage,
+    projectRelativeFileReference,
+)
 from emo_master.core.contracts.operator_logging import getOperatorLogger
 from emo_master.core.workflow.parameter_bindings import BoundValue
 
@@ -28,11 +31,14 @@ PARAM_SCHEMA: dict[str, Any] = {"type": "object", "properties": {
     "debugDatabasePath": {"title": "调试用文件（可选）", "type": "string"},
     "table": {"title": "保存到哪张表", "type": "string", "default": "records"},
     "mappings": {"title": "要保存的内容", "type": "array", "items": {"type": "object"}, "default": []},
+    "fileReferencePathMode": {"title": "图片引用路径", "description": "工程相对路径仅保存工程目录内的已保存图片，随完整工程目录搬迁；默认保留绝对路径。",
+                              "type": "string", "enum": ["absolute", "project_relative"], "default": "absolute",
+                              "xOptionLabels": {"absolute": "绝对路径", "project_relative": "工程相对路径"}},
     "failurePolicy": {"title": "处理方式", "type": "string", "enum": ["stop", "continue"], "default": "stop"}}}
 
 
 class SqliteWriterOperator:
-    meta = OperatorMeta(OPERATOR_ID, "SQLite 数据库写入", "1.0.0",
+    meta = OperatorMeta(OPERATOR_ID, "SQLite 数据库写入", "1.1.0",
                         {"enabled": {"type": "boolean", "required": False, "nullable": False}},
                         {"receipt": {"type": "json", "required": True, "nullable": False}}, PARAM_SCHEMA)
 
@@ -91,6 +97,13 @@ class SqliteWriterOperator:
                             if bound.errorCode:
                                 raise SqliteWriterError(bound.errorCode, bound.errorMessage, index)
                             values[row["column"]] = bound.value
+                    if (row["storageType"] == "FILE_REFERENCE" and row["column"] in values
+                            and config.get("fileReferencePathMode", "absolute") == "project_relative"):
+                        try:
+                            values[row["column"]] = projectRelativeFileReference(
+                                values[row["column"]], config.get("_fileReferenceProjectRoot"))
+                        except SqliteWriterError as error:
+                            raise SqliteWriterError(error.code, str(error), index) from error
                 insert = context.get("sqliteInsert")
                 if not callable(insert):
                     raise SqliteWriterError("E_SQLITE_UNSUPPORTED", "执行器不支持正式 SQLite 写入能力")

@@ -1,5 +1,10 @@
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 import json
+import re
+from threading import Barrier
+from types import SimpleNamespace
 
 import cv2
 import numpy as np
@@ -157,3 +162,92 @@ def testNonOverwriteUsesExclusiveCreation(tmp_path, monkeypatch):
     )
     assert result["error"]["code"] == "E_OUTPUT_EXISTS"
     assert target.read_bytes() == b"other job"
+
+
+@pytest.mark.parametrize('fileName,stem,suffix', [(None, '结果', '.png'), ('人员 01', '人员 01', '.png'),
+                                               ('人员 01.bmp', '人员 01', '.bmp')])
+def testUniqueNamingKeepsDirectoryAndPrefixWithoutReplacingImages(tmp_path, fileName, stem, suffix):
+    directory = tmp_path / '中文 保存目录'
+    directory.mkdir()
+    base = directory / '结果.png'
+    base.write_bytes(b'previous fixed image')
+    paths = []
+    for value in (30, 70):
+        inputs = {'image': np.full((8, 12, 3), value, np.uint8)}
+        if fileName is not None:
+            inputs['fileName'] = fileName
+        result = ImageSaverOperator().executeNode(inputs, {'outputPath': str(base), 'namingMode': 'unique'}, {})
+        assert result['status'] == 'ok', result
+        path = Path(result['outputs']['result']['path'])
+        assert path.parent == directory and path.suffix == suffix
+        assert re.fullmatch(re.escape(stem) + r'_\d{8}T\d{12}Z_[0-9a-f]{32}' + re.escape(suffix), path.name)
+        image = cv2.imdecode(np.frombuffer(path.read_bytes(), np.uint8), cv2.IMREAD_COLOR)
+        assert np.all(image == value)
+        paths.append(path)
+    assert paths[0] != paths[1]
+    assert base.read_bytes() == b'previous fixed image'
+
+
+def testConcurrentUniqueSavesKeepBothImages(tmp_path):
+    barrier = Barrier(2)
+    def save(value):
+        barrier.wait(timeout=5)
+        return ImageSaverOperator().executeNode({'image': np.full((8, 12, 3), value, np.uint8)},
+            {'outputPath': str(tmp_path / 'same.png'), 'namingMode': 'unique'}, {})
+    with ThreadPoolExecutor(max_workers=2) as workers:
+        results = list(workers.map(save, (40, 80)))
+    assert all(result['status'] == 'ok' for result in results), results
+    paths = [Path(result['outputs']['result']['path']) for result in results]
+    assert len(set(paths)) == 2 and len(list(tmp_path.iterdir())) == 2
+    for value, path in zip((40, 80), paths):
+        assert np.all(cv2.imread(str(path)) == value)
+
+
+def testUniqueCollisionNeverOverwritesOrRetriesEvenWithOverwriteEnabled(tmp_path, monkeypatch):
+    import emo_master.plugins.builtins.image_saver.operator as module
+    stamp = datetime(2026, 10, 30, 8, 10, 12, 345678, tzinfo=timezone.utc)
+    monkeypatch.setattr(module, 'datetime', SimpleNamespace(now=lambda zone: stamp))
+    monkeypatch.setattr(module, 'uuid4', lambda: SimpleNamespace(hex='a' * 32))
+    target = tmp_path / 'saved_20261030T081012345678Z_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.png'
+    encode = cv2.imencode
+    encodes = []
+    def competingWriter(*args):
+        encodes.append(True)
+        encoded = encode(*args)
+        target.write_bytes(b'other job')
+        return encoded
+    monkeypatch.setattr(cv2, 'imencode', competingWriter)
+    result = ImageSaverOperator().executeNode({'image': np.zeros((8, 12, 3), np.uint8)},
+        {'outputPath': str(tmp_path / 'saved.png'), 'namingMode': 'unique', 'overwrite': True}, {})
+    assert result['error']['code'] == 'E_OUTPUT_EXISTS'
+    assert target.read_bytes() == b'other job' and encodes == [True]
+    assert list(tmp_path.iterdir()) == [target]
+
+
+@pytest.mark.parametrize('mode', ['', 'automatic', None, True, 1, [], {}])
+def testInvalidNamingModeDoesNotWrite(tmp_path, mode):
+    result = ImageSaverOperator().executeNode({'image': np.zeros((8, 12, 3), np.uint8)},
+        {'outputPath': str(tmp_path / 'images/saved.png'), 'namingMode': mode}, {})
+    assert result['error']['code'] == 'E_PARAM_INVALID'
+    assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize('mode', ['fixed', 'unique'])
+@pytest.mark.parametrize('stage', ['before', 'encoding'])
+def testCancellationBeforeWritePropagatesWithoutCreatingOutput(tmp_path, monkeypatch, mode, stage):
+    from emo_master.apps.runtime.workflow.cancellation import CancellationRequested, CancellationToken
+    token = CancellationToken()
+    if stage == 'before':
+        token.cancel()
+    else:
+        encode = cv2.imencode
+        def cancelDuringEncoding(*args):
+            encoded = encode(*args)
+            token.cancel()
+            return encoded
+        monkeypatch.setattr(cv2, 'imencode', cancelDuringEncoding)
+    with pytest.raises(CancellationRequested):
+        ImageSaverOperator().executeNode({'image': np.zeros((8, 12, 3), np.uint8)},
+            {'outputPath': str(tmp_path / 'images/saved.png'), 'namingMode': mode},
+            {'raiseIfCancellationRequested': token.raise_if_cancelled})
+    assert not list(tmp_path.iterdir())

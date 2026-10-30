@@ -1,11 +1,11 @@
 {
   "operatorId": "vision.io.image_saver",
   "displayName": "Image Saver",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "entry": "emo_master.plugins.builtins.image_saver.operator:ImageSaverOperator",
   "category": "输出",
   "iconKey": "output",
-  "summary": "将输入图像写出到本地路径，可通过 fileName 输入逐张指定保存文件名。",
+  "summary": "将输入图像写出到本地路径，支持固定文件名或自动唯一命名，可通过 fileName 输入指定文件名主体。",
   "inputPorts": {
     "image": "image",
     "fileName": {
@@ -29,10 +29,20 @@
         "xFileMode": "save",
         "xFilter": "图片文件 (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)"
       },
+      "namingMode": {
+        "title": "文件命名",
+        "description": "固定名称沿用 outputPath 或 fileName 输入；自动唯一命名在该文件名主体后追加 UTC 时间和唯一标识，保留目录和扩展名，每次创建新文件，不覆盖已有文件。",
+        "type": "string",
+        "enum": ["fixed", "unique"],
+        "default": "fixed",
+        "xOptionLabels": {"fixed": "固定名称", "unique": "自动唯一命名"}
+      },
       "overwrite": {
         "title": "覆盖已有文件",
+        "description": "仅固定名称模式使用；自动唯一命名始终创建新文件。",
         "type": "boolean",
-        "default": true
+        "default": true,
+        "xEnabledWhen": {"namingMode": ["fixed"]}
       }
     },
     "required": ["outputPath"]

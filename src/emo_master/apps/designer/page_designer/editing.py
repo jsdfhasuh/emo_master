@@ -4,8 +4,8 @@ from uuid import uuid4
 
 from emo_master.core.plugin.models import PluginManifest
 from emo_master.core.presentation.catalog import buildOutputCatalog, presentationType, resolveCallPath, sourceType
-from emo_master.core.presentation.models import Component, DataSource, ResultScope, Presentation, walkComponents
-from emo_master.apps.designer.state.presentation_store import _component
+from emo_master.core.presentation.models import Component, DataSource, Grid, ResultScope, Presentation, Props, walkComponents
+from emo_master.apps.designer.state.presentation_store import _component, _copyComponentIds
 from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields
 from emo_master.ui.workflow_labels import workflowDisplayNames
 
@@ -162,15 +162,25 @@ class PageCommands:
 
     def add(self, pageId, kind, row, column, parentId=None):
         component = Component(componentId=str(uuid4()), type=kind,
-                              layout={'row': row, 'column': column})
+                              layout={'row': row, 'column': column},
+                              props=Props(fontSize=24, fontWeight='bold') if kind == 'page_title' else Props())
+        if self.session.document().presentation.schemaVersion == '1.0':
+            component.grid = Grid()
         self.session.editPresentation(lambda p: self.children(p, pageId, parentId).append(component))
         return component.componentId
 
-    def update(self, pageId, componentId, *, props, layout, actions=None, columns=None):
+    def update(self, pageId, componentId, *, props, layout, actions=None, columns=None,
+               responsive=None, containerLayout=None):
         def edit(p):
             item = _component(p, pageId, componentId)
             item.props = props
+            if item.type == 'image' and (props.imagePath is not None or props.imageResourceId):
+                item.bindings.clear()
             item.layout = layout
+            if responsive is not None:
+                item.responsive = responsive
+            if containerLayout is not None:
+                item.grid = containerLayout
             if actions is not None:
                 item.actions = actions
             if columns is not None:
@@ -204,8 +214,7 @@ class PageCommands:
 
     def copy(self, pageId, componentId):
         copied = _component(self.session.presentation.snapshot(), pageId, componentId).model_copy(deep=True)
-        for item in walkComponents([copied]):
-            item.componentId = str(uuid4())
+        _copyComponentIds([copied])
         # Copy into an explicit free root row, keeping all original bindings immutable.
         def edit(p):
             children = p.pages[pageId].components
@@ -231,6 +240,7 @@ class PageCommands:
             p.resultScopes[key] = choice.scope
             target = _component(p, pageId, componentId)
             target.props.imageResourceId = None
+            target.props.imagePath = None
             prop = {'image': 'image', 'table': 'rows'}.get(target.type, 'value')
             sourceId = next((k for k, value in p.dataSources.items() if value == source), None) or str(uuid4())
             p.dataSources[sourceId] = source

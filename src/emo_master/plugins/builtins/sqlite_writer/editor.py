@@ -183,6 +183,9 @@ class SqliteWriterEditorController:
         self.testPath = QLineEdit()
         self.testPath.setPlaceholderText('需要调试时可另选测试文件，避免写入正式数据')
         form.addRow('专用测试库（可选）', self.testPath)
+        self.fileReferenceMode = _combo([('绝对路径', 'absolute'), ('工程相对路径', 'project_relative')])
+        self.fileReferenceMode.setObjectName('sqliteFileReferencePathMode')
+        form.addRow('图片引用路径', self.fileReferenceMode)
         self.location = WrapLabel()
         self.location.setObjectName('sqliteLocation')
         self.location.setWordWrap(True)
@@ -256,6 +259,7 @@ class SqliteWriterEditorController:
             (form, pathRow, self.path, 'databasePath'),
             (form, self.table, self.table, 'table'),
             (form, self.testPath, self.testPath, 'debugDatabasePath'),
+            (form, self.fileReferenceMode, self.fileReferenceMode, 'fileReferencePathMode'),
             (rulesLayout, self.failure, self.failure, 'failurePolicy'),
         ):
             applyParameterLabel(
@@ -280,6 +284,7 @@ class SqliteWriterEditorController:
         self.table.currentTextChanged.connect(self._changed)
         self.testPath.textChanged.connect(self._changed)
         self.failure.currentIndexChanged.connect(self._changed)
+        self.fileReferenceMode.currentIndexChanged.connect(self._changed)
         self.fields.itemChanged.connect(self._changed)
         self.browse.clicked.connect(self._browse)
         self.addButton.clicked.connect(lambda: self.addMapping())
@@ -529,6 +534,7 @@ class SqliteWriterEditorController:
             self.testPath.setText(params.get('debugDatabasePath', ''))
             self.table.setCurrentText(params.get('table', 'records'))
             self.failure.setCurrentIndex(max(0, self.failure.findData(params.get('failurePolicy', 'stop'))))
+            self.fileReferenceMode.setCurrentIndex(max(0, self.fileReferenceMode.findData(params.get('fileReferencePathMode', 'absolute'))))
             self._loadRows(params.get('mappings', []))
             if self.fields.rowCount():
                 self.fields.selectRow(0)
@@ -543,6 +549,8 @@ class SqliteWriterEditorController:
                   'mappings': self._rows(), 'failurePolicy': self.failure.currentData()}
         if self.testPath.text().strip():
             params['debugDatabasePath'] = self.testPath.text().strip()
+        if self.fileReferenceMode.currentData() != 'absolute':
+            params['fileReferencePathMode'] = self.fileReferenceMode.currentData()
         return params
 
     def validate(self):

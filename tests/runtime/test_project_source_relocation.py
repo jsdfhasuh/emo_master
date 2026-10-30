@@ -17,6 +17,7 @@ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.core.project.configuration import projectConfigurationChanges
 from emo_master.core.project.models import ProjectDocument
+from emo_master.plugins.builtins.sqlite_writer.operator import SqliteWriterOperator
 from tests.runtime.current_production_fixture import currentProductionProject, imageBytes, savedPixels
 from tests.runtime.test_initial_project_configuration import waitForWrite
 from tests.runtime.runtime_test_utils import waitForTerminal
@@ -32,7 +33,7 @@ def relocatedProjects(tmp_path):
         configVersion=1, databasePath=DB, table='records', failurePolicy='stop', mappings=[dict(
             column='image_path', storageType='FILE_REFERENCE', missing='error',
             source=dict(kind='node_output', nodeId='save', port='result'))])))
-    payload['dependencies']['operators'].append(dict(operatorId='vision.io.sqlite_writer', version='1.0.0'))
+    payload['dependencies']['operators'].append(dict(operatorId='vision.io.sqlite_writer', version=SqliteWriterOperator.meta.version))
     document = ProjectDocument.model_validate(payload)
     initialize(first.parent / DB, 'records', [dict(name='image_path', storageType='FILE_REFERENCE', nullable=False)])
     saveProject(first, payload)

@@ -453,7 +453,8 @@ class OperatorWindow(QWidget):
         if self.session:
             self.hub = DisplayHub(self.session, self)
         self.pages = RuntimePages(self.controller.presentationForWorkflow(document.entryWorkflowId),
-            hub=self.hub, label=document.project.name, parent=self, assets=pageAssets(document))
+            hub=self.hub, label=document.project.name, parent=self, assets=pageAssets(document),
+            projectRoot=getattr(getattr(self.controller, 'runtime', None), 'loadedProjectPath', None))
         self.pages.banner.hide()
         self.pageLayout.addWidget(self.pages)
         self.pages.show()
@@ -519,7 +520,8 @@ class OperatorWindow(QWidget):
             if hub:
                 self.workflowHubs[key] = hub
             pages = RuntimePages(self.controller.presentationForWorkflow(key), hub=hub,
-                                 label=workflow.name, parent=self.workflowTabs, assets=pageAssets(self.controller.document))
+                                 label=workflow.name, parent=self.workflowTabs, assets=pageAssets(self.controller.document),
+                                 projectRoot=getattr(getattr(self.controller, 'runtime', None), 'loadedProjectPath', None))
             pages.banner.hide()
             self.workflowPages[key] = pages
             self.workflowControls[key]["layout"].addWidget(pages)

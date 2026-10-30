@@ -118,12 +118,26 @@ def testSqliteParameterLabelsUseSchemaAndKeepKeys(editor):
     for name, control in (
         ('databasePath', controller.path), ('table', controller.table),
         ('debugDatabasePath', controller.testPath), ('failurePolicy', controller.failure),
+        ('fileReferencePathMode', controller.fileReferenceMode),
     ):
         title = controller.context.paramSchema['properties'][name]['title']
         assert f'参数键：{name}' in control.toolTip()
         assert any(label.text() == title and f'参数键：{name}' in label.toolTip()
                    for label in window.findChildren(QLabel))
     assert '参数键：mappings' in controller.fields.toolTip()
+
+
+def testFileReferenceModeSurvivesEditorLoadAndApply(editor):
+    window, controller, applied, _draft, _manager = editor
+    params = {**config(rows=[{'column': 'value', 'storageType': 'TEXT', 'missing': 'error',
+                             'source': {'kind': 'constant', 'value': 'kept'}}]),
+              'fileReferencePathMode': 'project_relative'}
+    controller.loadParams(params)
+    assert controller.fileReferenceMode.currentData() == 'project_relative'
+    assert controller.collectParams() == params
+    controller.fileReferenceMode.setCurrentIndex(controller.fileReferenceMode.findData('absolute'))
+    assert window.applyChanges()
+    assert applied[-1].get('fileReferencePathMode', 'absolute') == 'absolute'
 
 
 def testRowAddDeleteOrderFalsyConstantsTypesAndApplication(editor):

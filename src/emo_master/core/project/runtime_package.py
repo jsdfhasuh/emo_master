@@ -195,7 +195,7 @@ def buildRuntimePackage(projectDir: Path, outputDir: Path, *, registry=None, dev
             archive.writestr("project.json", metadata)
             manifest = dict(format=FORMAT, application=__version__, projectSchema=document.schemaVersion,
                 projectId=document.project.projectId, requiredOperators=_operators(document, registry), files=checksums)
-            if document.schemaVersion in {"2.6", "2.7"}:
+            if document.schemaVersion in {"2.6", "2.7", "2.8"}:
                 manifest["requiredDeviceTypes"] = _devices(document, deviceTypes)
             archive.writestr("manifest.json", canonicalJson(manifest))
         # Validate the copied bytes, not just the source's earlier hash.
@@ -243,7 +243,7 @@ def _extract(package, stage, registry, deviceTypes=None):
         if any(archive.getinfo(name).file_size > MAX_METADATA for name in ("manifest.json", "project.json")):
             raise ValueError("runtime package metadata limit")
         manifest = readJson(archive.read("manifest.json"))
-        if manifest.get("format") != FORMAT or manifest.get("projectSchema") not in {"2.3", "2.4", "2.5", "2.6", "2.7"}:
+        if manifest.get("format") != FORMAT or manifest.get("projectSchema") not in {"2.3", "2.4", "2.5", "2.6", "2.7", "2.8"}:
             raise ValueError("unsupported runtime package format")
         files = manifest.get("files")
         if not isinstance(files, dict) or set(files) | {"manifest.json"} != set(names.values()):
@@ -269,7 +269,7 @@ def _extract(package, stage, registry, deviceTypes=None):
         if (document.schemaVersion != manifest["projectSchema"] or document.project.projectId != manifest.get("projectId")
                 or _operators(document, registry) != manifest.get("requiredOperators")):
             raise ValueError("incompatible operator versions or project identity")
-        if document.schemaVersion in {"2.6", "2.7"} and _devices(document, deviceTypes) != manifest.get("requiredDeviceTypes"):
+        if document.schemaVersion in {"2.6", "2.7", "2.8"} and _devices(document, deviceTypes) != manifest.get("requiredDeviceTypes"):
             raise ValueError("incompatible device metadata lock")
         _validate(document, stage, registry, deviceTypes, portable=True)
         return document, manifest

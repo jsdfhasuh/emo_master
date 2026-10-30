@@ -13,11 +13,13 @@ def testNativeFloatingPaletteAndSearch(designer):  # noqa: F811
     QApplication.processEvents()
     assert e.floatingToolbox.parentWidget() is e.canvasHost
     assert e.floatingProperties.parentWidget() is e.canvasHost
-    assert e.tools.palette.count() == 8
+    assert e.tools.palette.count() == 13
+    assert {'page_title', 'page_navigation', 'clock', 'sqlite_table', 'sqlite_value'} <= {
+        e.tools.palette.item(i).data(Qt.UserRole) for i in range(e.tools.palette.count())}
     assert e.libraryTabs.count() == 2
     history = len(c.session._undo)
     e.tools.search.setText('图像')
-    assert [e.tools.palette.item(i).data(Qt.UserRole) for i in range(8)
+    assert [e.tools.palette.item(i).data(Qt.UserRole) for i in range(e.tools.palette.count())
             if not e.tools.palette.item(i).isHidden()] == ['image']
     e.tools.search.clear()
     e.floatingToolbox.setExpanded(True)

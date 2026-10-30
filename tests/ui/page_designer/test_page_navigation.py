@@ -34,8 +34,7 @@ def assertCurrent(editor, pageId):
     assert editor.pageTabs.pageId(editor.pageTabs.currentIndex()) == pageId
     assert editor.renderer.stack.currentWidget() is editor.renderer.pages[pageId]
     assert editor.tools._loadedPage == pageId
-    assert all(button.isChecked() == (key == pageId)
-               for key, button in editor.renderer.buttons.items())
+    assert editor.renderer.pageNavigation.picker.currentData() == pageId
 
 
 @pytest.mark.parametrize('route', ['mouse', 'keyboard', 'picker'])
@@ -141,7 +140,9 @@ def testPreviewNavigationDoesNotChangeEditingPage(designer, state, route):  # no
     preview = coordinator.preview.openObserver()
     preview.simulation.setCurrentIndex(preview.simulation.findData(state))
     if route == 'top':
-        QTest.mouseClick(preview.buttons[second], Qt.LeftButton)
+        picker = preview.pageNavigation.picker
+        picker.setCurrentIndex(picker.findData(second))
+        picker.activated.emit(picker.currentIndex())
     else:
         preview.act(Action(type='navigate', pageId=second))
     assert preview.currentPageId == second

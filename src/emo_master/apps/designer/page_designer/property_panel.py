@@ -7,6 +7,8 @@ CONTENT = {
     'text': {'title', 'text', 'emptyText'}, 'indicator': {'title', 'emptyText'},
     'table': {'title', 'pageSize', 'emptyText'}, 'navigation_button': {'title', 'text', 'iconResourceId'},
     'container': {'title'}, 'runtime_status': {'title'},
+    'page_title': {'text'}, 'page_navigation': {'title'}, 'clock': {'title'},
+    'sqlite_table': {'title', 'pageSize'}, 'sqlite_value': {'title', 'unit', 'decimals'},
 }
 LAYOUT = {'row', 'column', 'rowSpan', 'columnSpan', 'columns'}
 
@@ -81,7 +83,9 @@ class PropertyGroups:
                 widget.hide()
                 continue
             name = reverse.get(widget)
-            group = ('位置与大小' if name in LAYOUT else '外观' if name == 'fontSize' or widget in tools.appearance.values()
+            group = ('图片来源' if widget is tools.imageProperties or name == 'imageResourceId' else
+                     '本地数据库' if widget is tools.sqliteProperties else
+                     '位置与大小' if name in LAYOUT or widget is tools.responsiveProperties else '外观' if name == 'fontSize' or widget in tools.appearance.values()
                      else '数据来源' if widget is tools.binding or widget in tools.bindingButtons else '内容')
             if group not in self.groups:
                 box = QGroupBox(group)
@@ -119,7 +123,7 @@ class PropertyGroups:
             if widget in tools.bindingButtons:
                 widget.setFlat(True)
             self.rows.append((wrapper, widget, name, group))
-        for group in ('内容', '位置与大小', '外观', '数据来源'):
+        for group in ('内容', '图片来源', '本地数据库', '位置与大小', '外观', '数据来源'):
             if group in self.groups:
                 tools.form.addRow(self.groups[group][0])
 
@@ -143,6 +147,18 @@ class PropertyGroups:
                 visible = kind in ('table', 'indicator')
             if widget is t.binding or widget in t.bindingButtons:
                 visible = kind in ('image', 'number', 'text', 'indicator', 'table')
+                if kind == 'image':
+                    visible = t.imageProperties.mode.currentData() == 'workflow'
+            if name == 'imageResourceId':
+                visible = kind == 'image' and t.imageProperties.mode.currentData() == 'resource'
+            if widget is t.imageProperties:
+                visible = kind == 'image'
+            if widget is t.sqliteProperties:
+                visible = kind in ('sqlite_table', 'sqlite_value')
+            if name in LAYOUT and t.responsive.enabled():
+                visible = False
+            if widget is t.responsiveProperties:
+                visible = t.responsive.enabled()
             wrapper.setVisible(visible)
         for group, (box, _form) in self.groups.items():
             box.setVisible(any(not row.isHidden() for row, _, _, g in self.rows if g == group))

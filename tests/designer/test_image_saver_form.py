@@ -24,7 +24,7 @@ def testSavePickerPreservesLegacyParameters(retainedQtApplication, monkeypatch, 
         assert calls and calls[0][0] == "C:/outputs/default.png"
         assert "*.png" in calls[0][1]
         assert form.getValues() == {
-            "outputPath": selected or "C:/outputs/default.png", "overwrite": False,
+            "outputPath": selected or "C:/outputs/default.png", "overwrite": False, "namingMode": "fixed",
         }
     finally:
         form.close()
@@ -42,3 +42,22 @@ def testDesignerShowsStringFileNameInput(ownedFlowScene):
     assert ("save", "input", "image") in scene._portItems
     assert ("save", "input", "fileName") in scene._portItems
     assert "string" in scene._portItems[("save", "input", "fileName")].toolTip()
+
+
+def testUniqueNamingSelectorPreservesFixedOverwritePreference(retainedQtApplication):
+    form = SchemaParamForm()
+    try:
+        form.setSchema(ImageSaverOperator.meta.paramSchema,
+                       {'outputPath': 'C:/outputs/result.png', 'namingMode': 'unique', 'overwrite': False})
+        selector = form._controls['namingMode']
+        assert selector.currentText() == '自动唯一命名'
+        assert not form._controls['overwrite'].isEnabled()
+        selector.setCurrentIndex(selector.findData('fixed'))
+        assert form._controls['overwrite'].isEnabled()
+        assert form.getValues()['overwrite'] is False
+        selector.setCurrentIndex(selector.findData('unique'))
+        assert form.getValues()['namingMode'] == 'unique'
+        assert form.getValues()['overwrite'] is False
+    finally:
+        form.close()
+        form.deleteLater()

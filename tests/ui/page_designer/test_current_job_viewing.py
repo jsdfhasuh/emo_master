@@ -472,6 +472,91 @@ def testPreviewStartsWithSamplesAndCommitsFormBeforeOpening(designer):
     assert observer.hub is None and not Session.instances
 
 
+def testLocalDataPreviewDoesNotRequireRuntimeJobAndReturnsToSamples(designer, monkeypatch):
+    from emo_master.core.presentation.models import Component, Props, SqliteSource
+    from emo_master.ui.presentation import sqlite_widgets
+    window, client, _document = designer
+    coordinator = window.pageCoordinator
+    reads = []
+    monkeypatch.setattr(sqlite_widgets, 'readValue', lambda source, *, projectRoot=None: reads.append(source.table) or 7)
+    component = Component(componentId='local-count', type='sqlite_value', props=Props(
+        sqlite=SqliteSource(databasePath='C:/preview-only.db', table='history')))
+    coordinator.session.editPresentation(lambda p: setattr(p.pages[p.defaultPageId], 'components', [component]))
+    coordinator.editor.refresh()
+    preview = coordinator.preview
+    observer = preview.openObserver()
+    assert reads == []
+    calls = list(client.calls)
+    monkeypatch.setattr(preview, 'watchCurrent', lambda: pytest.fail('local data must not request a Runtime job'))
+    observer.source.setCurrentIndex(2)
+    waitFor(lambda: not preview.busy and not preview.closing)
+    assert observer.source.currentText() == '本地数据'
+    assert not observer.designExamples and not observer.localPreviewOnly
+    assert observer.simulationState is None
+    assert '本地数据库查阅' in observer.banner.text()
+    assert not observer.simulation.isVisible()
+    assert observer.hub is None and preview.session is None and not Session.instances
+    assert client.calls == calls
+    database = observer.widgets[observer.currentPageId]['local-count'][1]
+    assert not database.preview and database.refreshButton.isEnabled()
+    database.refreshButton.click()
+    waitFor(lambda: database.loaded)
+    assert database.value.text() == '7' and reads == ['history']
+    observer.setSource(False)
+    assert observer.source.currentIndex() == 2
+    observer.source.setCurrentIndex(0)
+    waitFor(lambda: not preview.busy and not preview.closing)
+    assert observer.designExamples and observer.localPreviewOnly
+    assert observer.source.currentIndex() == 0
+    assert client.calls == calls
+    assert reads == ['history']
+    database = observer.widgets[observer.currentPageId]['local-count'][1]
+    assert database.preview and not database.refreshButton.isEnabled()
+
+
+def testLocalDataRestoresPagesOmittedByWorkflowObservationBeforeReading(designer, monkeypatch):
+    from emo_master.core.presentation.models import Component, Page, Props, ResultScope, SqliteSource
+    from emo_master.core.presentation.workflow_view import presentationForWorkflows
+    from emo_master.ui.presentation import sqlite_widgets
+    window, client, _document = designer
+    coordinator = window.pageCoordinator
+    reads = []
+    monkeypatch.setattr(sqlite_widgets, 'readValue', lambda source, *, projectRoot=None: reads.append(source.table) or 11)
+
+    def configure(presentation):
+        source = SqliteSource(databasePath='C:/preview-only.db', table='history')
+        presentation.pages['overview'].components = [Component(
+            componentId='overview-local', type='sqlite_value', props=Props(sqlite=source))]
+        presentation.pages['overview'].resultScopeIds = ['root']
+        presentation.resultScopes['other'] = ResultScope(entryWorkflowId='detect', scopeWorkflowId='detect')
+        presentation.pages['local-history'] = Page(name='本地历史', resultScopeIds=['other'], components=[
+            Component(componentId='history-local', type='sqlite_value', props=Props(sqlite=source))])
+        presentation.pageOrder.append('local-history')
+
+    coordinator.session.editPresentation(configure)
+    coordinator.editor.refresh()
+    preview = coordinator.preview
+    observer = preview.openObserver()
+    filtered = presentationForWorkflows(coordinator.session.document(), {'main'})
+    assert 'local-history' not in filtered.pages
+    observer.reload(filtered)
+    observer.setDesignExamples(False)
+    observer.setSource(True)
+    assert reads == []
+    calls = list(client.calls)
+    observer.source.setCurrentIndex(2)
+    waitFor(lambda: not preview.busy and not preview.closing)
+    assert observer.config == coordinator.session.presentation.snapshot()
+    assert observer.pageNavigation.picker.findData('local-history') >= 0
+    assert reads == []
+    assert client.calls == calls
+    database = observer.widgets['overview']['overview-local'][1]
+    assert not database.preview and database.refreshButton.isEnabled()
+    database.refreshButton.click()
+    waitFor(lambda: database.loaded)
+    assert database.value.text() == '11' and reads == ['history']
+
+
 def testAdvancedModernConnectionFiltersProjectAndSupportsUncapturedJob(designer, monkeypatch):
     window, client, document = designer
     item = metadata(document, capture=False)

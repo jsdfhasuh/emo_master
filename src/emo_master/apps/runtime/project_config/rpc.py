@@ -128,8 +128,8 @@ class ProjectConfigurationRpcMixin:
                                for r in runtime.jobRepository.all())):
                     raise ConfigurationError("E_CONFIG_REQUIRES_STOP", "retire execution before repairing online recovery")
             projectChanged = document.project.projectId != current.project.projectId
-            if document.schemaVersion not in {"2.6", "2.7"}:
-                raise ConfigurationError("E_CONFIG_PROJECT", "online writes require current schema 2.7")
+            if document.schemaVersion not in {"2.6", "2.7", "2.8"}:
+                raise ConfigurationError("E_CONFIG_PROJECT", "online writes require current schema 2.8")
             from emo_master.apps.runtime.context.global_variables import ProjectGlobalVariables
             with runtime.sqliteStore.connection() as connection:
                 ProjectGlobalVariables(runtime.sqliteStore, document.project.projectId,

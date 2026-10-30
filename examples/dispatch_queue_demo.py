@@ -48,7 +48,7 @@ def demoProject(root, *, iterations=None, slots=("detection",)):
         workflow["layout"] = dict(nodePositions={node["nodeId"]: dict(x=40 + 240 * index, y=120)
                                                  for index, node in enumerate(workflow["nodes"])})
     versions = {"vision.io.simulated_camera": "1.0.0", "vision.preprocess.flip": "1.0.0",
-                "vision.value.number": "1.0.0", "vision.io.image_saver": "1.1.0"}
+                "vision.value.number": "1.0.0", "vision.io.image_saver": "1.2.0"}
     payload["dependencies"]["operators"] = [dict(operatorId=key, version=value) for key, value in versions.items()]
     payload["presentation"].update(defaultPageId="consumer", pageOrder=["consumer"],
         resultScopes={"consumption": dict(entryWorkflowId="consumer", scopeWorkflowId="consumer")},

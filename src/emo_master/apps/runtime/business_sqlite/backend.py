@@ -420,6 +420,13 @@ def freezeTargets(document, projectRoot: Path, protected=(), *, debugRoot: Path 
             if node.operatorId != OPERATOR_ID:
                 continue
             config = parseConfig(node.params)
+            # This is the detached execution snapshot, never the saved draft.
+            # Carry the original root across workers; their cwd is a job workspace.
+            config.pop("_fileReferenceProjectRoot", None)
+            if config.get("fileReferencePathMode", "absolute") == "project_relative":
+                if not projectRoot.is_absolute():
+                    raise SqliteWriterError("E_SQLITE_TARGET", "工程相对图片引用需要原工程的绝对目录")
+                config["_fileReferenceProjectRoot"] = str(projectRoot.resolve())
             path = resolveTarget(config["databasePath"], projectRoot, protected)
             target = inspect(path, config["table"], cancelled)
             if not target["exists"]:

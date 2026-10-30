@@ -1,6 +1,5 @@
 """A single independent preview; closing this window never owns execution."""
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QToolButton, QMenu, QComboBox, QInputDialog, QScrollArea, QFrame
+from PySide2.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QToolButton, QMenu, QComboBox, QInputDialog
 
 from .workspace import ObserverPages
 
@@ -11,28 +10,18 @@ class PreviewWindow(ObserverPages):
     def reload(self, presentation):
         from emo_master.core.presentation.assets import pageAssets
         self.assets = pageAssets(self.controller.coordinator.session.document(), self.controller.coordinator.directory)
+        self.setProjectRoot(self.controller.coordinator.directory)
         super().reload(presentation)
 
     def __init__(self, controller, presentation):
         self.controller = controller
         self.retiring = False
         self.pendingPresentation = None
+        self.localPreviewOnly = True
         from emo_master.core.presentation.assets import pageAssets
         super().__init__(presentation, parent=controller.coordinator.window, label='页面预览',
-                         assets=pageAssets(controller.coordinator.session.document(), controller.coordinator.directory))
-        # Preserve native page buttons but let many/long page names scroll
-        # horizontally without enlarging the preview beyond the screen.
-        self.layout().removeItem(self.navigationLayout)
-        navigation = QWidget()
-        navigation.setLayout(self.navigationLayout)
-        self.navigationLayout.setContentsMargins(0, 0, 0, 0)
-        self.navigationScroll = QScrollArea()
-        self.navigationScroll.setFrameShape(QFrame.NoFrame)
-        self.navigationScroll.setWidgetResizable(True)
-        self.navigationScroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.navigationScroll.setWidget(navigation)
-        self.navigationScroll.setFixedHeight(54)
-        self.layout().insertWidget(self.layout().indexOf(self.stack), self.navigationScroll)
+                         assets=pageAssets(controller.coordinator.session.document(), controller.coordinator.directory),
+                         projectRoot=controller.coordinator.directory)
         self.setStyleSheet(self.styleSheet().replace("font-family: 'Microsoft YaHei'; font-size: 13px; ", '')
                           .replace('padding:9px 14px;', 'padding:6px 12px;'))
         self.setObjectName('pagePreview')
@@ -40,7 +29,7 @@ class PreviewWindow(ObserverPages):
         row = QHBoxLayout(self.bar)
         row.setContentsMargins(0, 0, 0, 0)
         self.source = QComboBox()
-        self.source.addItems(['示例数据', '运行结果'])
+        self.source.addItems(['示例数据', '运行结果', '本地数据'])
         self.source.currentIndexChanged.connect(self.chooseSource)
         row.addWidget(self.source)
         self.simulation = QComboBox()
@@ -58,6 +47,7 @@ class PreviewWindow(ObserverPages):
         self.stop.clicked.connect(lambda: self.run(controller.stopViewing))
         row.addWidget(self.stop)
         row.addWidget(self.fitButton)
+        row.addWidget(self.pageNavigation)
         row.addStretch()
         self.more = QToolButton()
         self.more.setText('更多')
@@ -118,26 +108,52 @@ class PreviewWindow(ObserverPages):
             self.status.setText('仅演示显示效果，不会运行流程')
 
     def setSource(self, real):
+        index = 1 if real else (2 if self.source.currentIndex() == 2 else 0)
         self.source.blockSignals(True)
-        self.source.setCurrentIndex(int(real))
+        self.source.setCurrentIndex(index)
         self.source.blockSignals(False)
-        self.simulation.setVisible(not real)
+        self.localPreviewOnly = index == 0
+        self._syncLocalPreviews()
+        self.simulation.setVisible(index == 0)
         self.stop.setEnabled(real)
         self.stop.setVisible(real)
         self.resumeButton.setVisible(real)
         self.modeLabel.setVisible(real)
 
     def chooseSource(self, index):
-        if index:
+        if index == 1:
             self.run(self.controller.watchCurrent)
         else:
-            self.run(lambda: self.controller.stopViewing(self.showSamples))
+            # Keep the previous samples/connection teardown from triggering a
+            # local query before the selected source mode has been applied.
+            self.localPreviewOnly = True
+            self._syncLocalPreviews()
+            callback = self.showLocalData if index == 2 else self.showSamples
+            self.run(lambda: self.controller.stopViewing(callback))
 
     def showSamples(self):
+        self.source.blockSignals(True)
+        self.source.setCurrentIndex(0)
+        self.source.blockSignals(False)
         self.reload(self.controller.coordinator.session.presentation.snapshot())
         self.setSource(False)
         self.simulate()
         self.status.setText('预览页面外观和按钮跳转，不会启动流程')
+
+    def showLocalData(self):
+        # Job observation may retain only its workflow's pages. Restore the
+        # full draft while database components are still in preview mode.
+        self.localPreviewOnly = True
+        self._syncLocalPreviews()
+        self.reload(self.controller.coordinator.session.presentation.snapshot())
+        self.setDesignExamples(False)
+        self.setSimulationState(None)
+        self.source.blockSignals(True)
+        self.source.setCurrentIndex(2)
+        self.source.blockSignals(False)
+        self.setSource(False)
+        self.banner.setText('本地数据库查阅')
+        self.status.setText('本地数据库查阅 · 点击组件刷新读取')
 
     def simulate(self, *_args):
         if self.hub is not None or self.captureCoverage is not None:

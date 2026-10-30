@@ -14,13 +14,14 @@ from PySide2.QtWidgets import (
     QStackedWidget, QScrollArea, QFrame, QSizePolicy, QApplication, QMenu,
 )
 
-from emo_master.core.presentation.models import Presentation, walkComponents
+from emo_master.core.presentation.models import Presentation, ResponsiveLayout, walkComponents
 from emo_master.core.presentation.messages import budgetMessage
 from emo_master.core.presentation.values import readValue
 from emo_master.core.project.snapshots import captureDefinition, revisionOf
 from emo_master.core.presentation.validation import pageScopes
 from emo_master.ui.presentation.images import assertGuiThread, ownedImage
 from emo_master.ui.presentation.table import CollectionView
+from emo_master.ui.presentation.page_navigation import PageNavigation
 
 
 COLORS = {'default': '#223247', 'neutral': '#576477', 'green': '#176f42',
@@ -105,10 +106,11 @@ class RuntimePages(QWidget):
     """
     designExamplesChanged = Signal(bool)
 
-    def __init__(self, presentation, *, hub=None, label="只读运行页面", parent=None, assets=None):
+    def __init__(self, presentation, *, hub=None, label="只读运行页面", parent=None, assets=None, projectRoot=None):
         super().__init__(parent)
         assertGuiThread()
         self.assets = dict(assets or {})
+        self.projectRoot = projectRoot
         self.config = Presentation.model_validate(presentation.model_dump()) if presentation is not None else Presentation()
         try:
             self.expectedCapture = revisionOf(captureDefinition(self.config))
@@ -125,6 +127,8 @@ class RuntimePages(QWidget):
         self.currentPageId = None
         self.pages = {}
         self.widgets = {}
+        self.cards = {}
+        self.layoutHosts = {}
         self.displayed = {}
         self.lastView = None
         self.frozen = None
@@ -164,17 +168,11 @@ class RuntimePages(QWidget):
         controls.addWidget(self.fitButton)
         self.modeLabel = QLabel("实时 · 冻结仅影响本窗口")
         controls.addWidget(self.modeLabel, 1)
+        self.pageNavigation = PageNavigation(self.config)
+        self.pageNavigation.setMaximumWidth(320)
+        self.pageNavigation.pageRequested.connect(self.navigate)
+        controls.addWidget(self.pageNavigation)
         layout.addLayout(controls)
-        navigation = QHBoxLayout()
-        self.navigationLayout = navigation
-        self.buttons = {}
-        for pageId in self.config.pageOrder:
-            button = QPushButton(self.config.pages[pageId].name)
-            button.setCheckable(True)
-            button.clicked.connect(lambda _checked=False, key=pageId: self.navigate(key))
-            navigation.addWidget(button)
-            self.buttons[pageId] = button
-        layout.addLayout(navigation)
         self.stack = QStackedWidget()
         layout.addWidget(self.stack, 1)
         self.identity = QLabel("尚无已显示结果")
@@ -186,6 +184,7 @@ class RuntimePages(QWidget):
             self.navigate(self.config.defaultPageId)
         else:
             self.stack.addWidget(QLabel("此项目尚无运行页面"))
+            self.syncNavigation()
         if hub:
             hub.attach(self)
 
@@ -273,6 +272,8 @@ class RuntimePages(QWidget):
     def setEditorHost(self):
         """Keep the embedded editor native-sized, separate from screen fitting."""
         self.editorHost = True
+        self.syncNavigation()
+        self._syncLocalPreviews()
         self.setMinimumSize(0, 0)
         self.setStyleSheet(self.styleSheet().replace("font-family: 'Microsoft YaHei'; font-size: 13px; ", ''))
         self.fitButton.setText('适配编辑区')
@@ -293,6 +294,7 @@ class RuntimePages(QWidget):
             design_examples.clear(self)
         changed = self.designExamples != bool(enabled)
         self.designExamples = bool(enabled)
+        self._syncLocalPreviews()
         if enabled:
             self.simulationState = None
             self.lastView = None
@@ -315,6 +317,7 @@ class RuntimePages(QWidget):
         if state is not None and (self.hub or self.captureCoverage is not None):
             raise ValueError('请先断开任务观察，再使用离线模拟；模拟不读取 Runtime')
         self.simulationState = state
+        self._syncLocalPreviews()
         self.displayed.clear()
         self.lastView = None
         from emo_master.clients.runtime.view_state import SessionView
@@ -342,6 +345,16 @@ class RuntimePages(QWidget):
             return None, [], ''
         return None, (1 if self.simulationState == 'OK' else 0) if component.type == 'number' else '模拟 · ' + self.simulationState, ''
 
+    def setProjectRoot(self, projectRoot):
+        """Rebase local file readers without changing portable page configuration."""
+        if self.projectRoot == projectRoot:
+            return
+        self.projectRoot = projectRoot
+        for rows in self.widgets.values():
+            for component, widget in rows.values():
+                if component.props.imagePath is not None or component.type in {'sqlite_table', 'sqlite_value'}:
+                    widget.setProjectRoot(projectRoot)
+
     def reload(self, presentation):
         """Replace only widgets/configuration; retain the borrowed hub/session."""
         assertGuiThread()
@@ -353,6 +366,8 @@ class RuntimePages(QWidget):
         for rows in self.widgets.values():
             for _component, widget in rows.values():
                 if isinstance(widget, ImageView):
+                    if _component.props.imagePath is not None:
+                        widget.dispose()
                     widget.painted = None
                     widget.setImage(QImage(), '')
                 elif _component.props.iconResourceId:
@@ -366,28 +381,21 @@ class RuntimePages(QWidget):
             widget.deleteLater()
         self.pages.clear()
         self.widgets.clear()
-        while self.navigationLayout.count():
-            widget = self.navigationLayout.takeAt(0).widget()
-            widget.hide()
-            widget.deleteLater()
-        self.buttons.clear()
+        self.cards.clear()
+        self.layoutHosts.clear()
         self.config = config
+        self.pageNavigation.setPages(config)
         try:
             self.expectedCapture = revisionOf(captureDefinition(config))
         except KeyError:
             self.expectedCapture = None
         self.currentPageId = None
-        for key in config.pageOrder:
-            button = QPushButton(config.pages[key].name)
-            button.setCheckable(True)
-            button.clicked.connect(lambda _checked=False, target=key: self.navigate(target))
-            self.navigationLayout.addWidget(button)
-            self.buttons[key] = button
         target = pageId if pageId in config.pages else config.defaultPageId
         if target:
             self.navigate(target)
         else:
             self.stack.addWidget(QLabel('此项目尚无运行页面'))
+            self.syncNavigation()
         if self.hub:
             self.hub.updateImageDemand()
             self.hub.lastToken = None
@@ -401,7 +409,11 @@ class RuntimePages(QWidget):
         if len(self.pages) >= 2:
             old = next(key for key in self.pages if key != self.currentPageId)
             widget = self.pages.pop(old)
-            self.widgets.pop(old)
+            self.cards.pop(old, None)
+            self.layoutHosts.pop(old, None)
+            for component, child in self.widgets.pop(old).values():
+                if component.props.imagePath is not None:
+                    child.dispose()
             self.stack.removeWidget(widget)
             widget.deleteLater()
         page = self.config.pages[pageId]
@@ -411,25 +423,34 @@ class RuntimePages(QWidget):
         body.setProperty('pageGrid', pageId)
         body.setMinimumHeight(240)
         self.widgets[pageId] = {}
+        self.cards[pageId] = {}
+        self.layoutHosts[pageId] = {}
         self._children(body, page.components, page.layout, pageId)
+        self._connectLocalImages(pageId)
         scroll.setWidget(body)
         self.stack.addWidget(scroll)
         self.pages[pageId] = scroll
 
-    def _children(self, parent, components, grid, pageId):
+    def _children(self, parent, components, grid, pageId, parentId=None):
         from .editor_grid import EditorGridLayout
-        layout = (EditorGridLayout if self.editorHost else QGridLayout)(parent)
+        responsive = isinstance(grid, ResponsiveLayout)
+        if responsive:
+            from .responsive_layout import ResponsiveWidgetLayout
+            layout = ResponsiveWidgetLayout(parent, grid)
+        else:
+            layout = (EditorGridLayout if self.editorHost else QGridLayout)(parent)
+        self.layoutHosts[pageId][parentId] = parent
         layout.setSpacing(grid.spacing)
-        fixedRows = {row for c in components if c.type not in {'image', 'table', 'container'}
+        fixedRows = {row for c in components if c.type not in {'image', 'table', 'sqlite_table', 'container'}
                      for row in range(c.layout.row, c.layout.row + c.layout.rowSpan)}
-        if self.editorHost:
+        if self.editorHost and not responsive:
             # A real stretch row keeps Qt's cellRect valid during native DnD.
             # AlignTop on QGridLayout can leave zero-height cell geometry until
             # a later activation when transient child widgets are inserted.
             layout.setRowStretch(max((c.layout.row + c.layout.rowSpan for c in components), default=0), 1)
             for row in range(max((c.layout.row + c.layout.rowSpan for c in components), default=0)):
                 layout.setRowMinimumHeight(row, 64)
-        for column in range(grid.columns):
+        for column in range(grid.columns if not responsive else 0):
             layout.setColumnStretch(column, 1)
         for component in components:
             card = QFrame()
@@ -437,6 +458,7 @@ class RuntimePages(QWidget):
             if self.editorHost:
                 card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
             card.setProperty('componentId', component.componentId)
+            self.cards[pageId][component.componentId] = card
             backgrounds = {'plain': 'white', 'soft': '#edf3fa', 'outlined': 'transparent'}
             card.setStyleSheet('QFrame#card {background:' + backgrounds[component.props.cardStyle] +
                 ';border:1px solid #c4d0de;border-radius:6px;}')
@@ -447,10 +469,13 @@ class RuntimePages(QWidget):
                     card.containerTitle = ContainerTitle(card, component.props.title,
                         appearanceStyle(component.props), editing=self.editorHost)
                     content = card.containerTitle.body
-                self._children(content, component.children, component.grid, pageId)
+                self._children(content, component.children, component.grid, pageId, component.componentId)
                 if self.editorHost and not component.children:
                     card.setMinimumHeight(90)
-                    content.layout().addWidget(QLabel('容器 · 拖入组件'), 0, 0)
+                    if isinstance(component.grid, ResponsiveLayout):
+                        content.layout().addWidget(QLabel('容器 · 拖入组件'))
+                    else:
+                        content.layout().addWidget(QLabel('容器 · 拖入组件'), 0, 0)
             else:
                 box = QVBoxLayout(card)
                 if self.editorHost:
@@ -462,18 +487,50 @@ class RuntimePages(QWidget):
                     title.setWordWrap(True)
                     box.addWidget(title)
                 if component.type == "image":
-                    widget = ImageView()
+                    if component.props.imagePath is not None:
+                        from .path_image import PathImageView
+                        source = component.props.imagePath
+                        widget = PathImageView(baseDirectory=source.baseDirectory,
+                            preview=self._localPreviewEnabled(), availableBytes=self._localImageAvailableBytes,
+                            projectRoot=self.projectRoot)
+                        if source.kind == 'fixed':
+                            widget.setPath(source.path)
+                    else:
+                        widget = ImageView()
+                        widget.painted = self._painted
                     if self.editorHost:
                         widget.setMinimumSize(100, 96)
                         widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
                     if component.bindings:
                         widget.message = '已绑定 · 等待明确任务结果'
-                    widget.painted = self._painted
                 elif component.type == 'table' and sum(isinstance(w, CollectionView) for rows in self.widgets.values() for _c, w in rows.values()) < 4:
                     widget = CollectionView(component.props)
                 elif component.type == "navigation_button":
                     widget = QPushButton(component.props.text or component.props.title or "导航")
                     widget.clicked.connect(lambda _checked=False, item=component: self.act(item.actions.get("clicked")))
+                elif component.type == 'page_navigation':
+                    widget = PageNavigation(self.config, title=component.props.text)
+                    widget.selectPage(pageId)
+                    widget.pageRequested.connect(self._componentNavigate)
+                elif component.type == 'page_title':
+                    widget = QLabel(component.props.text or self.config.pages[pageId].name)
+                    widget.setTextFormat(Qt.PlainText)
+                    widget.setWordWrap(True)
+                elif component.type == 'clock':
+                    from .clock import ClockView
+                    widget = ClockView()
+                elif component.type in {'sqlite_table', 'sqlite_value'}:
+                    from .sqlite_widgets import SqliteTableView, SqliteValueView
+                    preview = self._localPreviewEnabled()
+                    if component.type == 'sqlite_table':
+                        fields = {c.props.imagePath.field for c in walkComponents(self.config.pages[pageId].components)
+                                  if c.props.imagePath is not None and c.props.imagePath.kind == 'selected_row'
+                                  and c.props.imagePath.componentId == component.componentId}
+                        widget = SqliteTableView(component.props.sqlite, pageSize=component.props.pageSize,
+                                                preview=preview, selectionFields=sorted(fields), projectRoot=self.projectRoot)
+                    else:
+                        widget = SqliteValueView(component.props.sqlite, decimals=component.props.decimals,
+                                                 unit=component.props.unit, preview=preview, projectRoot=self.projectRoot)
                 else:
                     widget = QLabel(component.props.text if component.type == "text" and not component.bindings
                                     else '已绑定 · 等待明确任务结果' if component.bindings else "未绑定")
@@ -487,6 +544,10 @@ class RuntimePages(QWidget):
                     source = self.config.dataSources.get(next(iter(component.bindings.values()), ''))
                     if component.props.imageResourceId:
                         note = '静态资源: ' + component.props.imageResourceId
+                    elif component.props.imagePath is not None:
+                        pathSource = component.props.imagePath
+                        note = ('文件路径: ' + (pathSource.path or '待配置') if pathSource.kind == 'fixed'
+                                else '选中记录: ' + pathSource.componentId + ' / ' + pathSource.field)
                     elif source and source.kind == 'global_variable':
                         note = '来源: 全局变量 ' + source.variableId
                     elif source:
@@ -501,12 +562,44 @@ class RuntimePages(QWidget):
                 widget.setStyleSheet(appearanceStyle(component.props))
                 self.widgets[pageId][component.componentId] = (component, widget)
             p = component.layout
-            layout.addWidget(card, p.row, p.column, p.rowSpan, p.columnSpan)
-            if not self.editorHost and component.type in {'image', 'table'}:
+            if responsive:
+                from PySide2.QtWidgets import QLayout
+                card.setMinimumWidth(0)
+                card.layout().setSizeConstraint(QLayout.SetNoConstraint)
+                layout.addComponent(card, component)
+            else:
+                layout.addWidget(card, p.row, p.column, p.rowSpan, p.columnSpan)
+            if not responsive and not self.editorHost and component.type in {'image', 'table', 'sqlite_table'}:
                 # A spanning image must not stretch an adjacent scalar footer.
                 for row in range(p.row, p.row + p.rowSpan):
                     if row not in fixedRows:
                         layout.setRowStretch(row, 1)
+
+    def _connectLocalImages(self, pageId):
+        """Wire page-local references after all nested components exist."""
+        from emo_master.core.presentation.sqlite_reader import PathValueError
+        from .sqlite_widgets import SqliteTableView
+        rows = self.widgets[pageId]
+        for component, widget in rows.values():
+            source = component.props.imagePath
+            if source is None or source.kind != 'selected_row':
+                continue
+            widget.selectionField = source.field
+            target = rows.get(source.componentId)
+            if target is None or not isinstance(target[1], SqliteTableView):
+                widget.setPath(PathValueError('关联的历史表格不存在，请重新选择图像来源'))
+                continue
+            table = target[1]
+            table.selectedRowChanged.connect(widget.setSelectedRow)
+            widget.setSelectedRow(table.selectedRow())
+
+    def _localImageAvailableBytes(self):
+        if self.hub:
+            return max(0, self.hub.imageLimit - self.hub.imageBytes())
+        images = {widget.image.cacheKey(): widget.image.sizeInBytes()
+                  for rows in self.widgets.values() for _component, widget in rows.values()
+                  if isinstance(widget, ImageView) and not widget.image.isNull()}
+        return max(0, 24 * 1024 * 1024 - sum(images.values()))
 
     def imageSources(self, pageId=None):
         page = self.config.pages.get(pageId or self.currentPageId)
@@ -578,8 +671,7 @@ class RuntimePages(QWidget):
         self.currentPageId = pageId
         self.stack.setCurrentWidget(self.pages[pageId])
         self._renderAssets()
-        for key, button in self.buttons.items():
-            button.setChecked(key == pageId)
+        self.syncNavigation()
         if self.designExamples:
             from .design_examples import populate
             populate(self)
@@ -589,6 +681,33 @@ class RuntimePages(QWidget):
                 self.submit(self.hub.session.readSnapshot())
         elif self.lastView is not None:
             self.submit(self.lastView)
+
+    def syncNavigation(self):
+        page = self.config.pages.get(self.currentPageId)
+        custom = page is not None and any(c.type == 'page_navigation' for c in walkComponents(page.components))
+        self.pageNavigation.selectPage(self.currentPageId)
+        self.pageNavigation.setVisible(not self.editorHost and len(self.config.pages) > 1 and not custom)
+        for rows in self.widgets.values():
+            for component, widget in rows.values():
+                if component.type == 'page_navigation':
+                    widget.selectPage(self.currentPageId)
+
+    def _componentNavigate(self, pageId):
+        if not self.editing:
+            self.navigate(pageId)
+        # Editing selects the component; it must not navigate away or leave a
+        # selection pointing at a page the editor has not accepted.
+        self.syncNavigation()
+
+    def _syncLocalPreviews(self):
+        preview = self._localPreviewEnabled()
+        for rows in self.widgets.values():
+            for component, widget in rows.values():
+                if component.type in {'sqlite_table', 'sqlite_value'} or component.props.imagePath is not None:
+                    widget.setPreview(preview)
+
+    def _localPreviewEnabled(self):
+        return self.editorHost or self.designExamples or bool(self.simulationState) or getattr(self, 'localPreviewOnly', False)
 
     def act(self, action):
         if self.editing:
@@ -692,7 +811,7 @@ class RuntimePages(QWidget):
             return set()
         images = {}
         for component, widget in self.widgets.get(self.currentPageId, {}).values():
-            if not isinstance(widget, ImageView) or component.props.imageResourceId:
+            if not isinstance(widget, ImageView) or component.props.imageResourceId or component.props.imagePath is not None:
                 continue
             sourceId = next(iter(component.bindings.values()), '')
             source = self.config.dataSources.get(sourceId)
@@ -726,7 +845,7 @@ class RuntimePages(QWidget):
             return
         held = self._pendingImageScopes(view, self.lastView)
         for component, widget in self.widgets.get(self.currentPageId, {}).values():
-            if not isinstance(widget, ImageView) or component.props.imageResourceId:
+            if not isinstance(widget, ImageView) or component.props.imageResourceId or component.props.imagePath is not None:
                 continue
             source = self.config.dataSources.get(next(iter(component.bindings.values()), ''))
             scope = view.scopes.get(source.resultScopeId) if source else None
@@ -779,9 +898,9 @@ class RuntimePages(QWidget):
         # QWidget updates coalesce after this GUI-thread submission returns.
         # Toggling the whole window's updates would also repaint unchanged content.
         for component, widget in self.widgets[page].values():
-            if component.props.imageResourceId:
+            if component.props.imageResourceId or component.props.imagePath is not None:
                 continue
-            if component.type == "navigation_button":
+            if component.type in {"navigation_button", "page_navigation", "page_title", "clock", "sqlite_table", "sqlite_value"}:
                 continue
             if component.type == "text" and not component.bindings:
                 continue
@@ -961,6 +1080,8 @@ class RuntimePages(QWidget):
         for rows in self.widgets.values():
             for _component, widget in rows.values():
                 if isinstance(widget, ImageView):
+                    if _component.props.imagePath is not None:
+                        widget.dispose()
                     widget.painted = None
                     widget.setImage(QImage(), "")
                 elif _component.props.iconResourceId:

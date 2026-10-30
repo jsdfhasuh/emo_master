@@ -1,7 +1,9 @@
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from time import perf_counter
 from typing import Any
+from uuid import uuid4
 
 import cv2
 import numpy as np
@@ -21,7 +23,7 @@ class ImageSaverOperator:
     meta = OperatorMeta(
         operatorId="vision.io.image_saver",
         displayName="Image Saver",
-        version="1.1.0",
+        version="1.2.0",
         inputPorts={
             "image": "image",
             "fileName": {"type": "string", "required": False, "nullable": False},
@@ -39,7 +41,14 @@ class ImageSaverOperator:
                     "xFileMode": "save",
                     "xFilter": "图片文件 (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
                 },
-                "overwrite": {"title": "覆盖已有文件", "type": "boolean", "default": True},
+                "namingMode": {
+                    "title": "文件命名",
+                    "description": "固定名称沿用 outputPath 或 fileName 输入；自动唯一命名在该文件名主体后追加 UTC 时间和唯一标识，保留目录和扩展名，每次创建新文件，不覆盖已有文件。",
+                    "type": "string", "enum": ["fixed", "unique"], "default": "fixed",
+                    "xOptionLabels": {"fixed": "固定名称", "unique": "自动唯一命名"},
+                },
+                "overwrite": {"title": "覆盖已有文件", "description": "仅固定名称模式使用；自动唯一命名始终创建新文件。",
+                              "type": "boolean", "default": True, "xEnabledWhen": {"namingMode": ["fixed"]}},
             },
             "required": ["outputPath"],
         },
@@ -48,6 +57,7 @@ class ImageSaverOperator:
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
         outputPath = params.get("outputPath", "")
         overwrite = params.get("overwrite", True)
+        namingMode = params.get("namingMode", "fixed")
         if not isinstance(outputPath, str) or outputPath.strip() == "":
             return {
                 "code": "E_PARAM_INVALID",
@@ -55,6 +65,8 @@ class ImageSaverOperator:
             }
         if not isinstance(overwrite, bool):
             return {"code": "E_PARAM_INVALID", "message": "overwrite must be boolean"}
+        if namingMode not in ("fixed", "unique"):
+            return {"code": "E_PARAM_INVALID", "message": "namingMode must be fixed or unique"}
         return None
 
     def executeNode(
@@ -103,13 +115,23 @@ class ImageSaverOperator:
                 fileName += outputFile.suffix
             outputFile = outputFile.with_name(fileName)
 
+        if params.get("namingMode", "fixed") == "unique":
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+            outputFile = outputFile.with_name(f"{outputFile.stem}_{stamp}_{uuid4().hex}{outputFile.suffix}")
+            overwrite = False
+
         if outputFile.exists() and not overwrite:
             return _error("E_OUTPUT_EXISTS", f"output file exists: {outputFile}")
 
+        checkCancellation = runtimeContext.get("raiseIfCancellationRequested")
+        if callable(checkCancellation):
+            checkCancellation()
         try:
             writeOk, encoded = cv2.imencode(outputFile.suffix, image)
             if not writeOk:
                 return _error("E_OUTPUT_WRITE_FAILED", f"failed to encode image: {outputFile}")
+            if callable(checkCancellation):
+                checkCancellation()
             outputFile.parent.mkdir(parents=True, exist_ok=True)
             # Exclusive creation also honors overwrite=False for concurrent jobs.
             try:

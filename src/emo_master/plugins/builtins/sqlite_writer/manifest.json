@@ -1,7 +1,7 @@
 {
   "operatorId": "vision.io.sqlite_writer",
   "displayName": "SQLite 数据库写入",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "entry": "emo_master.plugins.builtins.sqlite_writer.operator:SqliteWriterOperator",
   "category": "输入输出",
   "iconKey": "save",
@@ -14,6 +14,9 @@
     "debugDatabasePath": {"title": "调试用文件（可选）", "type": "string"},
     "table": {"title": "保存到哪张表", "type": "string", "default": "records"},
     "mappings": {"title": "要保存的内容", "type": "array", "items": {"type": "object"}, "default": []},
+    "fileReferencePathMode": {"title": "图片引用路径", "description": "工程相对路径仅保存工程目录内的已保存图片，随完整工程目录搬迁；默认保留绝对路径。",
+                              "type": "string", "enum": ["absolute", "project_relative"], "default": "absolute",
+                              "xOptionLabels": {"absolute": "绝对路径", "project_relative": "工程相对路径"}},
     "failurePolicy": {"title": "处理方式", "type": "string", "enum": ["stop", "continue"], "default": "stop"}
   }},
   "minCoreVersion": "0.6.1",

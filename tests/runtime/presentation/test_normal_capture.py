@@ -233,7 +233,7 @@ def testImageCountDecisionShareOneNormalResultAndPreserveOutput(channel, tmp_pat
     project.presentation.dataSources["judge"] = DataSource(kind="node_output", resultScopeId="root",
         workflowId="main", nodeId="judge", port="result", expectedType="boolean")
     project.presentation.dataSources["image-alias"] = project.presentation.dataSources["image"].model_copy()
-    project.presentation.pages["second"] = Page(name="Decision", components=[
+    project.presentation.pages["second"] = Page(name="Decision", layout={'type': 'grid'}, components=[
         Component(componentId="decision", type="indicator", bindings={"value": "judge"}),
         Component(componentId="image-again", type="image", bindings={"image": "image-alias"}, layout={"row": 1})])
     project.presentation.pageOrder.append("second")

@@ -80,7 +80,7 @@ class LocalBackend:
         modules = {'vision.io.image_loader': ('image_loader', '1.1.0'),
                    'vision.analysis.blob': ('blob_analysis', '1.2.0'),
                    'vision.collection.count': ('collection_count', '1.1.0'),
-                   'vision.io.image_saver': ('image_saver', '1.0.0')}
+                   'vision.io.image_saver': ('image_saver', '1.2.0')}
         for workflow in document.workflows.values():
             for node in workflow.nodes:
                 if node.kind == 'operator':
@@ -446,6 +446,7 @@ class PreviewController(QObject):
         observer = self.observer
         if observer is None or not isValid(observer) or observer.detached:
             return
+        observer.setProjectRoot(self.coordinator.directory)
         if observer.frozen is not None:
             # Undo may return to the displayed configuration while a result is
             # pinned. Never apply an obsolete intermediate edit on resume.

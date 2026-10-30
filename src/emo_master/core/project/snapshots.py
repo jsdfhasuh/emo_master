@@ -201,7 +201,7 @@ def freezeProjectSnapshot(
     parameterPurposes: Mapping[tuple[str, tuple[str, ...]], str] | None = None,
 ) -> ProjectSnapshot:
     project = ProjectDocument.model_validate(project.model_dump())
-    if project.schemaVersion in {"2.6", "2.7"}:
+    if project.schemaVersion in {"2.6", "2.7", "2.8"}:
         raise ValueError("device project snapshots require managed device resource mapping")
     if mode not in {"debug", "release"} or (mode == "release") != bool(releaseRevision):
         raise ValueError("release requires releaseRevision; debug forbids it")

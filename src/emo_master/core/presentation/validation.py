@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from pathlib import PurePosixPath, PureWindowsPath
 
 from emo_master.core.plugin.models import PluginManifest
 from emo_master.core.project.models import ProjectDocument
@@ -8,6 +9,10 @@ from emo_master.core.presentation.catalog import (
     Issue, buildOutputCatalog, resolveCallPath, sourceType,
 )
 from emo_master.core.presentation.models import Presentation, walkComponents
+
+
+def _absolutePath(value):
+    return PureWindowsPath(value).is_absolute() or PurePosixPath(value).is_absolute()
 
 
 def pageScopes(presentation: Presentation, pageId: str) -> set[str]:
@@ -101,6 +106,7 @@ def validateBindings(
                 "indicator": {"boolean", "string"}, "table": {"collection"},
                 "runtime_status": {"string"}}
     for pageId, page in presentation.pages.items():
+        pageComponents = {item.componentId: item for item in walkComponents(page.components)}
         roots = {presentation.resultScopes[key].entryWorkflowId for key in pageScopes(presentation, pageId)
                  if key in presentation.resultScopes}
         if len(roots) > 1 and dispatchPagePair(project, roots) is None:
@@ -111,8 +117,23 @@ def validateBindings(
         for component in walkComponents(page.components):
             path = f"presentation.pages.{pageId}.components.{component.componentId}"
             static = ((component.type == "text" and bool(component.props.text))
-                      or (component.type == "image" and bool(component.props.imageResourceId))
+                      or (component.type == "image" and (bool(component.props.imageResourceId)
+                                                       or component.props.imagePath is not None))
                       or component.type == "runtime_status")
+            imagePath = component.props.imagePath
+            if imagePath is not None:
+                imageLocation = f"{path}.props.imagePath"
+                if '://' in imagePath.baseDirectory or imagePath.baseDirectory.startswith(('\\\\', '//')):
+                    report(imageLocation, "图片根目录必须使用本地路径", "image_path_invalid")
+                if imagePath.kind == "fixed":
+                    if publish and not imagePath.path:
+                        report(imageLocation, "请选择图片文件路径", "image_path_unconfigured")
+                    elif imagePath.path and not _absolutePath(imagePath.path) and not imagePath.baseDirectory:
+                        report(imageLocation, "相对图片路径需要明确的图片根目录", "image_path_invalid")
+                else:
+                    target = pageComponents.get(imagePath.componentId)
+                    if target is None or target.type != "sqlite_table":
+                        report(imageLocation, "图片来源必须是当前页面的 SQLite 历史表格", "image_path_source_missing")
             for field, purpose in (("imageResourceId", "page_image"), ("iconResourceId", "icon")):
                 resourceId = getattr(component.props, field)
                 if resourceId:
@@ -121,6 +142,14 @@ def validateBindings(
                         report(f"{path}.props.{field}", "static resource missing or incompatible purpose", "resource_invalid")
             if publish and component.type in accepted and not component.bindings and not static:
                 report(path, "unbound component cannot be published", "unbound")
+            if publish and component.type in {"sqlite_table", "sqlite_value"}:
+                query = component.props.sqlite
+                if not query.databasePath or not query.table:
+                    report(path, "请选择 SQLite 数据库和数据表", "sqlite_unconfigured")
+                elif component.type == "sqlite_table" and not query.columns:
+                    report(path, "请选择 SQLite 表格的显示字段", "sqlite_unconfigured")
+                elif component.type == "sqlite_value" and query.aggregate != "count" and not query.valueColumn:
+                    report(path, "请选择 SQLite 统计字段", "sqlite_unconfigured")
             for prop, sourceId in component.bindings.items():
                 source = presentation.dataSources.get(sourceId)
                 if source and source.expectedType not in accepted.get(component.type, set()):

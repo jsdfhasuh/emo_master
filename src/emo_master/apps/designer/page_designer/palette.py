@@ -7,7 +7,12 @@ COMPONENTS = (
     ('image', '图像', '展示绑定的结果图像'), ('number', '数值', '数量、测量值与单位'),
     ('text', '文字', '固定文字或绑定数据'), ('indicator', '判定指示', '按配置映射显示判定'),
     ('table', '集合表格', '按列展示集合并分页'), ('navigation_button', '导航按钮', '切页或查看已显示结果'),
-    ('container', '容器', '组织组件及内部网格'), ('runtime_status', '连接状态', '展示客户端连接状态'),
+    ('container', '容器', '组织组件的排列、换行与间距'), ('runtime_status', '连接状态', '展示客户端连接状态'),
+    ('page_title', '页面标题', '自定义标题或跟随页面名称'),
+    ('page_navigation', '页面导航', '按需放置的页面切换入口'),
+    ('clock', '日期时间', '显示此电脑的当前日期和时间'),
+    ('sqlite_table', 'SQLite 历史表格', '选择已有数据库、表和字段，筛选与分页查阅'),
+    ('sqlite_value', 'SQLite 统计', '已有数据表的记录数、求和、平均值和极值'),
 )
 TITLES = {kind: title for kind, title, _ in COMPONENTS}
 
@@ -19,7 +24,7 @@ def paintSwatch(painter, rect, kind):
     painter.setBrush(QColor('#edf3fa'))
     painter.drawRoundedRect(QRectF(rect), 5, 5)
     painter.setPen(QColor('#2563eb'))
-    if kind in ('image', 'container', 'table'):
+    if kind in ('image', 'container', 'table', 'sqlite_table'):
         if kind == 'image':
             painter.drawEllipse(QRectF(rect.left()+12, rect.top()+8, 10, 10))
             painter.drawLine(rect.left()+8, rect.bottom()-8, rect.center().x(), rect.center().y())
@@ -31,7 +36,9 @@ def paintSwatch(painter, rect, kind):
                 painter.drawLine(rect.left()+5, y, rect.right()-5, y)
     else:
         value = {'number': '128', 'text': 'Aa 文字', 'indicator': '● OK',
-                 'navigation_button': '下一页 →', 'runtime_status': '● 已连接'}[kind]
+                 'navigation_button': '下一页 →', 'runtime_status': '● 已连接',
+                 'page_title': '页面标题', 'page_navigation': '概览 ▾',
+                 'clock': '12:30:00', 'sqlite_value': 'Σ 128'}[kind]
         font = painter.font()
         font.setPointSizeF(16 if kind == 'number' else 10)
         font.setBold(kind in ('number', 'indicator'))
@@ -72,7 +79,7 @@ class Palette(QListWidget):
         for kind, title, description in COMPONENTS:
             item = QListWidgetItem(title)
             item.setData(Qt.UserRole, kind)
-            item.setToolTip(description + ' · 拖入网格')
+            item.setToolTip(description + ' · 拖入页面或容器')
             self.addItem(item)
 
     def resizeEvent(self, event):

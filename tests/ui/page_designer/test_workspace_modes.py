@@ -108,7 +108,7 @@ def testSinglePreviewDefaultsAndCompactPanels(designer):  # noqa: F811
     e.floatingProperties.setExpanded(True)
     assert e.tools.title.text() != key
     assert e.tools.applyButton.isVisible() and e.tools.applyButton.parent() is e.propertyScroll.parent()
-    assert all(not button.isVisible() for button in e.renderer.buttons.values())
+    assert not e.renderer.pageNavigation.isVisible()
     view = c.preview.openObserver()
     assert view.designExamples and view.hub is None and c.preview.backend is None
     assert c.preview.openObserver() is view

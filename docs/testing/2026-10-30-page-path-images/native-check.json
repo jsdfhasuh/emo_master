@@ -1,0 +1,14 @@
+{
+  "platform": "windows",
+  "schema": "2.7",
+  "designerOpen": true,
+  "designerSaveReopen": true,
+  "roundTrip": true,
+  "compile": true,
+  "selectedImages": 2,
+  "hiddenPathColumns": true,
+  "pagingClearsImages": true,
+  "samplesDoNotReadImages": true,
+  "runtimeJobStarted": false,
+  "realDeviceUsed": false
+}

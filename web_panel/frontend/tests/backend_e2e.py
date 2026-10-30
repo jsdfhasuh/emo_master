@@ -1,0 +1,37 @@
+"""Real FastAPI HTTP/WS + explicit mock Runtime + real Chromium. No hardware."""
+import json,os,socket,sys,tempfile,threading,time
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+(ROOT/'test-tmp').mkdir(exist_ok=True)
+sys.path.insert(0,str(ROOT.parent/'backend'))
+import uvicorn
+from emo_web_panel.app import create_app
+from emo_web_panel.auth import AuthStore
+from emo_web_panel.config import Config
+from playwright.sync_api import sync_playwright
+
+def main():
+ with tempfile.TemporaryDirectory(dir=ROOT/'test-tmp') as d:
+  data=Path(d);auth=AuthStore(data/'web.sqlite');password='Temporary-e2e-fixture!';auth.create_user('tester',password,'admin')
+  sock=socket.socket();sock.bind(('127.0.0.1',0));port=sock.getsockname()[1];sock.close()
+  app=create_app(Config(data,mode='mock',port=port));config=uvicorn.Config(app,host='127.0.0.1',port=port,log_level='warning');server=uvicorn.Server(config)
+  thread=threading.Thread(target=server.run,daemon=True);thread.start()
+  for _ in range(100):
+   if server.started:break
+   time.sleep(.05)
+  if not server.started:raise RuntimeError('Backend failed to start')
+  try:
+   with sync_playwright() as p:
+    browser=p.chromium.launch(**({'executable_path':os.environ['CHROMIUM_PATH']} if os.environ.get('CHROMIUM_PATH') else {}),headless=True,args=['--no-sandbox','--disable-dev-shm-usage']);page=browser.new_page(viewport={'width':1280,'height':900});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+    page.goto(f'http://127.0.0.1:{port}');page.get_by_label('用户名',exact=True).fill('tester');page.get_by_label('密码',exact=True).fill(password);page.get_by_role('button',name='登录',exact=True).click()
+    page.get_by_text('99.50',exact=False).wait_for();page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看，后台仍在运行').wait_for();page.get_by_role('button',name='恢复实时',exact=True).click()
+    page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('操作已受理：',exact=False).wait_for()
+    page.get_by_text('账户与 Runtime 管理',exact=True).click();page.get_by_label('新用户名',exact=True).fill('readonly');page.get_by_label('初始密码',exact=True).fill('Readonly-fixture-123!');page.get_by_role('button',name='创建用户',exact=True).click();page.get_by_role('cell',name='readonly',exact=True).wait_for()
+    page.get_by_label('history-table 筛选').fill('NG');page.wait_for_timeout(200)
+    page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
+    page.screenshot(path=str(ROOT/'backend-mobile.png'),full_page=True)
+    page.get_by_role('button',name='退出',exact=True).click();page.get_by_label('用户名',exact=True).fill('readonly');page.get_by_label('密码',exact=True).fill('Readonly-fixture-123!');page.get_by_role('button',name='登录',exact=True).click();page.get_by_text('99.50',exact=False).wait_for();assert page.get_by_role('button',name='启动工作流',exact=True).count()==0
+    assert not errors,errors;browser.close()
+  finally:server.should_exit=True;thread.join(timeout=5)
+ print('PASS: real FastAPI HTTP/WS explicit MOCK Runtime browser integration, login, real-time result, freeze/resume, control, admin create, viewer restriction, mobile; no real Runtime or hardware')
+if __name__=='__main__':main()

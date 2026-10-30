@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+frontend/dist/
+backend/emo_web_panel/static/
+*.egg-info/
+build/
+dist/
+.panel-data/
+*.sqlite*
+
+frontend/test-tmp/
+frontend/*-mobile.png
+frontend/*-desktop.png
+dev/fixtures/*.emoweb

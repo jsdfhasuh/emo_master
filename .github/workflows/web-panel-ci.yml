@@ -1,0 +1,60 @@
+name: Web panel isolated checks
+on:
+  push:
+    branches: [feat/web-operator-panel-20261030]
+    paths: ['web_panel/**', '.github/workflows/web-panel-ci.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  web-panel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web_panel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install only isolated Web dependencies
+        run: python -m pip install -e '.[test]' build playwright
+      - name: Backend tests
+        run: python -m unittest discover -s tests -v
+      - name: Build frontend
+        run: npm --prefix frontend ci && npm --prefix frontend test && npm --prefix frontend run build
+      - name: Install test browser
+        run: python -m playwright install --with-deps chromium
+      - name: Package UI and draft fixture
+        run: python scripts/package_frontend.py && python dev/fixtures/make_demo_package.py
+      - name: Browser fixture checks
+        run: python frontend/tests/browser_smoke.py
+      - name: Browser full Web application checks
+        run: python frontend/tests/backend_e2e.py
+      - name: Build independent distribution
+        run: python -m build --wheel
+      - name: Verify distribution includes UI and does not import Qt
+        run: |
+          python - <<'PY'
+          import sys, zipfile
+          from pathlib import Path
+          import emo_web_panel
+          assert 'PySide2' not in sys.modules and 'emo_master' not in sys.modules
+          wheel=next(Path('dist').glob('*.whl'))
+          with zipfile.ZipFile(wheel) as z:
+              assert 'emo_web_panel/static/index.html' in z.namelist()
+          PY
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: web-panel-development-preview-${{ github.sha }}
+          path: |
+            web_panel/dist/*.whl
+            web_panel/docs/
+            web_panel/README.md
+            web_panel/dev/fixtures/demo.emoweb
+          retention-days: 7

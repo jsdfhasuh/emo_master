@@ -89,6 +89,9 @@ def main():
      assert page.request.get(f'http://127.0.0.1:{port}/api/panels').json()[0]['packageRevision']=='e2e-v1'
      observer.close()
      page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth'),page.evaluate("Array.from(document.querySelectorAll('body *')).filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>({tag:e.tagName,class:e.className,width:e.getBoundingClientRect().width})).slice(0,20)")
+     page.get_by_text('99.50',exact=False).wait_for()
+     page.get_by_role('img',name='检测结果',exact=True).wait_for()
+     page.wait_for_function('(image)=>image.complete && image.naturalWidth>0',arg=page.get_by_role('img',name='检测结果',exact=True).element_handle())
      page.screenshot(path=str(ROOT/'backend-mobile.png'),full_page=True)
      page.get_by_role('button',name='退出',exact=True).click();page.get_by_label('用户名',exact=True).fill('readonly');page.get_by_label('密码',exact=True).fill('Readonly-fixture-123!');page.get_by_role('button',name='登录',exact=True).click();page.get_by_text('99.50',exact=False).wait_for();assert page.get_by_role('button',name='启动工作流',exact=True).count()==0
      assert not errors,errors

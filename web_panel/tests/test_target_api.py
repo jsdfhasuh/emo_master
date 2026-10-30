@@ -31,7 +31,7 @@ class TargetApiTests(unittest.TestCase):
         self.client.post('/api/admin/users',headers=h,json={'username':'temp','password':'safe-test-password','role':'operator'})
         self.client.put('/api/admin/runtimes/configured/grants',headers=h,json={'username':'temp','view':True,'control':True})
         th=self.login('temp')
-        body={'requestId':'old-intent-123','runtimeInstanceId':'mock-instance','projectId':'demo-project','workflowId':'demo-workflow'}
+        body={'requestId':'old-intent-123','configurationRevision':'1','runtimeInstanceId':'mock-instance','projectId':'demo-project','workflowId':'demo-workflow'}
         self.assertEqual(self.client.post('/api/runs/start',headers=th,json=body).status_code,200)
         old=self.client.get('/api/me').json()['userId']
         h=self.login();self.client.delete('/api/admin/users/temp',headers=h)
@@ -70,7 +70,7 @@ class TargetApiTests(unittest.TestCase):
         h=self.login()
         first=self.client.get('/api/runtimes/configured/status').json()
         self.assertEqual(first['events']['events'],[])
-        self.client.post('/api/runs/start',headers=h,json={'requestId':'event-test-123','runtimeInstanceId':'mock-instance','projectId':'demo-project','workflowId':'demo-workflow'})
+        self.client.post('/api/runs/start',headers=h,json={'requestId':'event-test-123','configurationRevision':'1','runtimeInstanceId':'mock-instance','projectId':'demo-project','workflowId':'demo-workflow'})
         status=self.client.get('/api/runtimes/configured/status').json()
         self.assertEqual(len(status['events']['events']),1)
         self.assertEqual(status['counters']['source'],'mock-runtime-authoritative')

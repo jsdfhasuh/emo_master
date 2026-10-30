@@ -36,7 +36,7 @@ class AppTests(unittest.TestCase):
         self.assertEqual(self.client.delete('/api/admin/users/other',headers=h).status_code,200)
         self.assertEqual(self.client.delete('/api/admin/users/admin',headers=h).status_code,422)
         self.assertEqual(self.client.get('/api/operations/by-request/missing-request').status_code,404)
-        b={'requestId':'lookup-123456','runtimeInstanceId':'mock-instance','projectId':'demo-project','workflowId':'demo-workflow'}
+        b={'requestId':'lookup-123456','configurationRevision':'1','runtimeInstanceId':'mock-instance','projectId':'demo-project','workflowId':'demo-workflow'}
         result=self.client.post('/api/runs/start',headers=h,json=b).json()
         self.assertEqual(self.client.get('/api/operations/by-request/lookup-123456').json(),result)
         self.login('viewer')
@@ -77,7 +77,7 @@ class AppTests(unittest.TestCase):
     def test_login_origin(self):
         self.assertEqual(self.client.post('/api/session',headers={'Origin':'https://evil.example'},json={}).status_code,403)
     def test_idempotent_start_and_explicit_new_intent(self):
-        h=self.login();body={'requestId':'intent-123456','runtimeInstanceId':'mock-instance','projectId':'demo-project','workflowId':'demo-workflow'}
+        h=self.login();body={'requestId':'intent-123456','configurationRevision':'1','runtimeInstanceId':'mock-instance','projectId':'demo-project','workflowId':'demo-workflow'}
         a=self.client.post('/api/runs/start',headers=h,json=body)
         self.assertEqual(a.status_code,200);self.assertEqual(a.json()['state'],'succeeded')
         b=self.client.post('/api/runs/start',headers=h,json=body)
@@ -96,8 +96,8 @@ class AppTests(unittest.TestCase):
         self.login('viewer')
         self.assertEqual(self.client.get(f'/api/views/{v}/history/history-table').status_code,404)
     def test_wrong_runtime_no_side_effect(self):
-        h=self.login();r=self.client.post('/api/runs/start',headers=h,json={'requestId':'wrong-123456','runtimeInstanceId':'wrong','projectId':'demo-project','workflowId':'demo-workflow'})
-        self.assertEqual(r.json()['state'],'unknown');self.assertEqual(self.app.state.runtime.control_count,0)
+        h=self.login();r=self.client.post('/api/runs/start',headers=h,json={'requestId':'wrong-123456','configurationRevision':'1','runtimeInstanceId':'wrong','projectId':'demo-project','workflowId':'demo-workflow'})
+        self.assertEqual(r.status_code,422);self.assertEqual(self.app.state.runtime.control_count,0)
     def test_preview_is_readonly_even_admin(self):
         self.app= create_app(Config(Path(self.tmp.name),preview=True))
         with TestClient(self.app) as c:

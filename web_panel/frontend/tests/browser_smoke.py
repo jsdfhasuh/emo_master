@@ -22,10 +22,10 @@ def mock(route):
   data={'username':'tester','role':'admin','csrf':'fixture','mode':'mock'}
  elif path=='/api/panels':data=[panel]
  elif path=='/api/panels/demo-panel':data=panel
- elif path in ['/api/runs','/api/runtimes/configured/runs']:data=[{'id':'demo-run','state':'running','workflowId':'demo-workflow','runtimeInstanceId':'mock-instance','projectId':'demo-project'}]
+ elif path in ['/api/runs','/api/runtimes/configured/runs']:data=[{'id':'demo-run','state':'running','workflowId':'demo-workflow','runtimeInstanceId':'mock-instance','projectId':'demo-project','configurationRevision':'1'}]
  elif path=='/api/runtimes':data=[{'id':'configured','alias':'演示','mode':'mock'}]
  elif path=='/api/runtimes/configured/status':data={'counters':{'source':'mock-authoritative','total':'1','ok':'1','ng':'0','at':'fixture'},'events':{'events':[],'nextSequence':'0','resetRequired':False,'source':'mock-events'}}
- elif path=='/api/runtimes/configured/workflows':data=[{'id':'demo-workflow','name':'Demo workflow','runtimeInstanceId':'mock-instance','projectId':'demo-project'}]
+ elif path=='/api/runtimes/configured/workflows':data=[{'id':'demo-workflow','name':'Demo workflow','runtimeInstanceId':'mock-instance','projectId':'demo-project','configurationRevision':'1'}]
  elif path=='/api/views':data={'id':'view-1'}
  elif path=='/api/views/view-1' and route.request.method=='DELETE':data={}
  elif path=='/api/views/view-1/freeze':state['freeze']+=1;data={'result':result}

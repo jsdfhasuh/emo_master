@@ -1,19 +1,27 @@
-# W1–W6 acceptance audit (development preview)
+# W1–W6 acceptance audit — development contract boundary
 
-Status meanings: IMPLEMENTED = limited functionality exists and has tests; PARTIAL = scope still missing; BLOCKED = exact external contract/input needed; NOT RUN = evidence not obtained. A mock passing test does not count as Runtime acceptance.
+Updated after independent review on 2026-10-30. `IMPLEMENTED` below means the independent draft behavior exists with tests, not formal Runtime acceptance. `BLOCKED` means required authoritative input is missing. `PENDING CI` is not a pass.
 
-| Stage | Implemented development slice | Independent work still incomplete | External blockers / unverified acceptance |
-|---|---|---|---|
-| W1 | Independent FastAPI entry, SQLite accounts, role checks, sessions, CSRF/Origin, mock/real explicit selection; no Qt imports | Multiple Runtime alias CRUD; per-target ACL; comprehensive session/audit admin UI; typed official API model mapping | Official SDK absent. All grpc client methods currently fail closed, including existing operations; no real RPC has been integrated. |
-| W2 | Bounded immutable ZIP import, activate/rollback, draft version gate, 13 renderer cases, loopback temporary-port preview CLI | Full component-property semantics, responsive override schema, sqlite aggregates beyond demo count; Designer launcher workflow | Official package/schema/examples absent. Draft-only package format is not claimed compatible with Designer exports. Windows preview/installation not run. |
-| W3 | Shared single mock upstream per run, bounded per-view queues, owner isolation, single-scope freeze, staged image/value UI | Backend multi-scope freeze and lease lifecycle; comprehensive state/reconnect UX; target switch races and soak coverage | Official results, cursor/replay, resource lease contracts absent. Real image ownership and exactly-once delivery not verified. |
-| W4 | History table filtering/sorting/paging, opaque mock image references, count demo | No-run history browsing, full declared aggregates, counter/event/history semantic coverage | Authoritative Runtime query RPC/schema unavailable; current rows are explicit fixtures. |
-| W5 | Mock start/stop, stable request ID, durable unknown/success state, owner-only lookup, no automatic replay | Workflow selector/no-active-run start UX; complete input forms, per-target authorization, detailed operation logs | Real Dispatch/StopJob identity contract and real state resolution absent. Persisted local intent is not authoritative Runtime completion. |
-| W6 | Frontend build, independent wheel packaging and CI pipeline, startup docs, immutable assets | Windows/Linux installation matrix and endurance/resource budget verification; release-quality manuals and screenshots | First CI: backend/build/fixture-browser passed, full Web browser found missing WS dependency (fixed candidate, rerun required). Clean wheel installation and full browser evidence pending final CI. No deployment performed. |
+| Stage | Independently implemented and locally tested | Still blocked / unverified |
+|---|---|---|
+| W1 | Independent FastAPI, accounts/immutable user identity, password hashing/session revocation, target alias CRUD and per-target role-limited ACL, same-origin app, explicit mock/grpc, no Qt imports | Official SDK/manifest absent. **All real business methods**, existing and proposed, currently fail closed. No real RPC is integrated. Simulator is an internal draft object port, not a certified same-contract gRPC Runtime. |
+| W2 | Immutable bounded ZIP import, per-type allowlists and references, activation/rollback and target association, all 13 draft renderer types, responsive stable ordering, static/fixed/selected image paths, loopback temporary preview with isolated state | Official published-presentation/schema/mobile overrides and complete export sample absent. Formal mobile overrides rejected instead of guessed. Designer process/launcher integration not validated. |
+| W3 | Shared streams per target/run, bounded per-view queues, reliable control notices, per-scope displayed-key freeze, generation guards, byte/TTL budgets, exact cached image pins, SHA256 coalesced resources, snapshot reconnect, blob lifecycle, slow-image/reset tests | Formal resources/lease/Coverage/cursor/replay and Dispatch scope contracts missing. No AcquireLease/ReleaseLease calls or real replay. Frozen missing bytes show unavailable, never latest substitution. |
+| W4 | No-run history view, declared columns/filter/sort/page/refresh/selection, fixed and row-linked images, count/sum/avg/min/max with filter policy, Runtime-owned mock counters and bounded cursor event UI | Official authoritative history/image/counter/event DTOs and semantics absent; all current dataset examples are explicit mock fixtures. No real history database read. |
+| W5 | Separate workflow/start and selected stop targets, revision/identity checks, declared mock input validation, stable request correlation, persistent unknown state/query without replay, granular target permissions, audit UI, package change notification/pinned old versions | Formal StartJob/GetStartRequest, StopJob extended identity, continuous root/Dispatch group membership and allowed-action semantics unavailable. No guessed group or periodic scheduler. Production controls not validated. |
+| W6 | Frontend bundling into independent wheel, CLI/docs/configuration and upgrade instructions, Ubuntu/Windows CI jobs including browser and clean-venv install checks | Latest candidate CI pending terminal green. Prior CI uncovered WS dependency, grant checkbox timing and Windows millisecond-test timing; fixes are in candidate, not assumed passed. User-selected host/real Runtime/Designer/hardware acceptance not run. |
 
-## Acceptance boundaries
-- The implementation is **not all W1–W6 complete** and **not production-ready**.
-- Missing SDK does not excuse independent TODOs above. These must be developed and tested separately.
-- Current permissions are global viewer/operator/admin over one configured Runtime; do not present them as per-project/per-run authorization.
-- Official Panel Contract v1 inputs required: versioned `emo_panel_protocol` distribution, manifest, generated stubs/TS types, schema, error semantics, fixtures, exported package, companion Runtime/Designer plan.
-- Root Runtime/Designer/proto source and existing dependencies remain unchanged.
+## Evidence boundaries
+- Local backend, frontend tests and build have passed during implementation; final counts and final commit belong in the terminal verification report, not inferred from earlier runs.
+- Browser fixture checks already ran in CI; full HTTP/WS browser and clean-install matrix must both finish successfully on the final candidate.
+- Local Chromium cannot create its singleton socket under this cloud sandbox. It was not escalated around or treated as a successful browser run; CI supplies the actual browser evidence.
+- Resource bound test exercises 16 viewers × 2 scopes × 200 updates, plus coalesced concurrent byte reads. This is a reproducible bounded exercise, **not** a day-long production soak or hardware qualification.
+- No Runtime/Designer/proto files or their dependencies are modified. No user machine, network/firewall/service or production deployment is operated.
+
+## Minimum external handoff to unblock final acceptance
+
+1. One versioned `panel-contract-v1/` bundle: manifest/source SHA, `emo_panel_protocol` wheel, TS types, JSON schemas, canonical/Coverage logic, errors and full fixtures/export sample.
+2. Companion Runtime/Designer plan and confirmed implemented capability/version matrix: instance/project/configuration identity, workflow inputs, run/Dispatch/continuous ownership, StartRequest, history definitions, resources/lease, quotas and events.
+3. After adapters are implemented against that bundle, a user-authorized real Runtime test path or a local developer running the same acceptance procedure and returning logs. No permission to operate the user's computer is implied.
+
+Until these are supplied and integration passes, **the complete W1–W6 plan is BLOCKED, not all complete**, even if every independent draft test is green.

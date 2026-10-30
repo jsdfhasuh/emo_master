@@ -5,6 +5,7 @@ import { api, safeAssetUrl } from '../data/api';
 const gridOf = (c: Component) => ({ ...(c.props || {}), ...(typeof c.props?.grid === 'object' ? c.props.grid : {}), ...c.grid }) as NonNullable<Component['grid']>;
 const ordered = (components: Component[]) => [...components].sort((a,b) => (gridOf(a).row || 1) - (gridOf(b).row || 1) || (gridOf(a).column || 1) - (gridOf(b).column || 1));
 const stringify = (v: unknown) => v == null ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+export const historyAggregateText = (data: object) => Object.prototype.hasOwnProperty.call(data, 'value') ? stringify((data as {value:unknown}).value) : '统计能力未就绪';
 function Clock({ format, timezone }: { format?: unknown; timezone?: unknown; }) {
  const [now,setNow]=useState(new Date());useEffect(()=>{const timer=setInterval(()=>setNow(new Date()),1000);return()=>clearInterval(timer)},[]);
  const zone=typeof timezone==='string'&&timezone!=='browser'?timezone:undefined;
@@ -25,23 +26,23 @@ function HistoryTable({ component, viewId, aggregate, onSelection }: {
     const [refresh, setRefresh] = useState(0);
     const [error, setError] = useState('');
     const [selected, setSelected] = useState<Record<string, unknown>>();
-    useEffect(() => { let live = true; const abort = new AbortController(); setSelected(undefined); onSelection(component.id,undefined); setError(''); api<History>(`/api/views/${encodeURIComponent(viewId)}/history/${encodeURIComponent(component.id)}?page=${page}&q=${encodeURIComponent(q)}${sort ? `&sort=${encodeURIComponent(sort)}` : ''}&order=${order}`, { signal: abort.signal }).then(d => { if (live)
+    useEffect(() => { let live = true; const abort = new AbortController(); setSelected(undefined); onSelection(component.id,undefined); setData(undefined); setError(''); api<History>(`/api/views/${encodeURIComponent(viewId)}/history/${encodeURIComponent(component.id)}?page=${page}&q=${encodeURIComponent(q)}${sort ? `&sort=${encodeURIComponent(sort)}` : ''}&order=${order}`, { signal: abort.signal }).then(d => { if (live)
         setData(d); }).catch(e => { if (live) {
         setData(undefined);
         setError(e.message);
     } }); return () => { live = false; abort.abort(); }; }, [viewId, component.id, page, q, sort, order, refresh]);
     if (error)
         return <div><p role="alert">{error}</p><button onClick={()=>{setPage(1);setQ('');setSort('');setRefresh(n=>n+1)}}>重置查询并重试</button></div>;
-    if (!data)
-        return <p>正在读取历史…</p>;
     if (aggregate)
-        return <strong>{stringify((data as unknown as {
-            value?: unknown;
-        }).value ?? data.total)}</strong>;
-    const columns = data.rows.length ? Object.keys(data.rows[0]).filter(k => !k.toLowerCase().includes('imageref')) : [];
+        return !data ? <p>正在读取历史…</p> : <strong>{historyAggregateText(data)}</strong>;
+    const rows = data?.rows || [];
+    const configured = Array.isArray(component.props?.columns) ? component.props.columns : [];
+    const declared = configured.map(c => typeof c === 'string' ? {key:c,title:c} : c && typeof c === 'object' && typeof c.key === 'string' ? {key:c.key,title:typeof c.title==='string'?c.title:c.key} : undefined).filter((c):c is {key:string;title:string}=>!!c);
+    const columns = declared.length ? declared.map(c=>c.key) : rows.length ? Object.keys(rows[0]).filter(k => !k.toLowerCase().includes('imageref')) : [];
+    const title = (key:string) => declared.find(c=>c.key===key)?.title || key;
     const image = selected && safeAssetUrl(selected.imageUrl ?? (typeof selected.imageRef === 'string' ? `/api/history-images/${encodeURIComponent(selected.imageRef)}` : undefined));
-    return <><div className="toolbar"><label>筛选<input aria-label={`${component.id} 筛选`} value={q} onChange={e => { setPage(1); setQ(e.target.value); }}/></label><label>排序<select aria-label={`${component.id} 排序`} value={sort} onChange={e => { setPage(1); setSort(e.target.value); }}><option value="">默认</option>{columns.map(k => <option key={k}>{k}</option>)}</select></label><select aria-label={`${component.id} 顺序`} value={order} onChange={e => { setPage(1); setOrder(e.target.value); }}><option value="asc">升序</option><option value="desc">降序</option></select><button onClick={() => setRefresh(n => n + 1)}>刷新历史</button></div><div className="table-scroll"><table><thead><tr>{columns.map(k => <th key={k}>{k}</th>)}</tr></thead><tbody>{data.rows.map((row, i) => <tr key={i} tabIndex={0} aria-selected={selected === row} onClick={() => {setSelected(row);onSelection(component.id,row)}} onKeyDown={e => { if (e.key === 'Enter')
-        {setSelected(row);onSelection(component.id,row);} }}>{columns.map(k => <td key={k}>{stringify(row[k])}</td>)}</tr>)}</tbody></table></div>{!data.rows.length && <p>暂无记录</p>}<nav><button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>上一页</button><span>第 {page} 页 · 共 {data.total} 条</span><button disabled={page * data.pageSize >= data.total} onClick={() => setPage(p => p + 1)}>下一页</button></nav>{selected && (image ? <SafeImage key={image} url={image} label="选中历史记录"/> : <p>选中记录无可用图片</p>)}</>;
+    return <><div className="toolbar"><label>筛选<input aria-label={`${component.id} 筛选`} value={q} onChange={e => { setPage(1); setQ(e.target.value); }}/></label><label>排序<select aria-label={`${component.id} 排序`} value={sort} onChange={e => { setPage(1); setSort(e.target.value); }}><option value="">默认</option>{columns.map(k => <option key={k} value={k}>{title(k)}</option>)}</select></label><select aria-label={`${component.id} 顺序`} value={order} onChange={e => { setPage(1); setOrder(e.target.value); }}><option value="asc">升序</option><option value="desc">降序</option></select><button onClick={() => setRefresh(n => n + 1)}>刷新历史</button></div><div className="table-scroll"><table><thead><tr>{columns.map(k => <th key={k}>{title(k)}</th>)}</tr></thead><tbody>{rows.map((row, i) => <tr key={i} tabIndex={0} aria-selected={selected === row} onClick={() => {setSelected(row);onSelection(component.id,row)}} onKeyDown={e => { if (e.key === 'Enter')
+        {setSelected(row);onSelection(component.id,row);} }}>{columns.map(k => <td key={k}>{stringify(row[k])}</td>)}</tr>)}</tbody></table></div>{!data && <p>正在读取历史…</p>}{data && !rows.length && <p>暂无记录</p>}<nav><button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>上一页</button><span>第 {page} 页 · 共 {data?.total ?? '—'} 条</span><button disabled={!data || page * data.pageSize >= data.total} onClick={() => setPage(p => p + 1)}>下一页</button></nav>{selected && (image ? <SafeImage key={image} url={image} label="选中历史记录"/> : <p>选中记录无可用图片</p>)}</>;
 }
 function SafeImage({url,label}:{url:string;label:string}) {const [failed,setFailed]=useState(false);return failed?<p>图片读取失败或无权访问</p>:<img className="result-image" src={url} alt={label} onError={()=>setFailed(true)}/>;}
 function ResultTable({value,columns,resultKey}:{value:unknown;columns:unknown;resultKey?:string}) {
@@ -50,7 +51,7 @@ function ResultTable({value,columns,resultKey}:{value:unknown;columns:unknown;re
  const keys=defined.length?defined:rows[0]&&typeof rows[0]==='object'?Object.keys(rows[0]).map(key=>({key,title:key})): [{key:'value',title:'值'}];
  return <><div className="table-scroll"><table><thead><tr>{keys.map(c=><th key={c.key}>{c.title||c.key}</th>)}</tr></thead><tbody>{rows.slice((page-1)*20,page*20).map((row,i)=><tr key={i}>{keys.map(c=><td key={c.key}>{stringify(typeof row==='object'&&row!==null?row[c.key]:row)}</td>)}</tr>)}</tbody></table></div>{!rows.length&&<p>本轮暂无表格数据</p>}{rows.length>20&&<nav><button disabled={page<=1} onClick={()=>setPage(n=>n-1)}>上一页</button><span>{page} / {Math.ceil(rows.length/20)}</span><button disabled={page*20>=rows.length} onClick={()=>setPage(n=>n+1)}>下一页</button></nav>}</>;
 }
-export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, onAction, state }: {
+export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, onAction, state, runtimeState }: {
     panel: Panel;
     pageId: string;
     onPage: (id: string) => void;
@@ -59,6 +60,7 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
     viewId?: string;
     onAction: (a: string) => void;
     state: string;
+    runtimeState?: string;
 }) {
     const [selections,setSelections]=useState<Record<string,Record<string,unknown>|undefined>>({});
     useEffect(()=>setSelections({}),[viewId,panel.packageRevision,pageId]);
@@ -110,7 +112,7 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
                 break;
             }
             case 'runtime_status':
-                body = <p>{state}</p>;
+                body = <p>连接：{state}<br/>运行：{runtimeState || '无运行 / 状态未就绪'}<small>（非产品判定）</small></p>;
                 break;
             case 'table': {body=<ResultTable value={value} columns={p.columns} resultKey={boundResult?.resultKey}/>;break;}
             case 'navigation_button':
@@ -144,7 +146,7 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
         const style = p.style && typeof p.style === 'object' ? p.style as Record<string, unknown> : {};
         const grid = gridOf(c);
         const span = Math.min(columns, Math.max(1, Number(grid.columnSpan) || Math.min(6, columns)));
-        return <section className="panel-card" key={c.id} style={{ fontWeight: ['normal', 'bold', '400', '500', '600', '700', 400, 500, 600, 700].includes(style.fontWeight as string | number) ? style.fontWeight as 'normal' | 'bold' | 400 | 500 | 600 | 700 : undefined, gridColumn: `${grid.column || 'auto'} / span ${span}`, gridRow: `${grid.row || 'auto'} / span ${Math.max(1, Number(grid.rowSpan) || 1)}`, fontSize: typeof style.fontSize === 'number' ? Math.min(128, Math.max(8, style.fontSize)) : undefined, color: typeof style.color === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.color) ? style.color : undefined, backgroundColor: typeof style.backgroundColor === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.backgroundColor) ? style.backgroundColor : undefined, textAlign: ['left', 'center', 'right'].includes(String(style.textAlign)) ? style.textAlign as 'left' | 'center' | 'right' : undefined }}>{(c.label||typeof p.label==='string')&&<h3>{c.label||String(p.label)}</h3>}{body}</section>;
+        return <section className="panel-card" key={c.id} style={{ fontWeight: ['normal', 'bold', '400', '500', '600', '700', 400, 500, 600, 700].includes(style.fontWeight as string | number) ? style.fontWeight as 'normal' | 'bold' | 400 | 500 | 600 | 700 : undefined, gridColumn: `${grid.column || 'auto'} / span ${span}`, gridRow: `${grid.row || 'auto'} / span ${Math.max(1, Number(grid.rowSpan) || 1)}`, fontSize: typeof style.fontSize === 'number' ? Math.min(128, Math.max(8, style.fontSize)) : undefined, color: typeof style.color === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.color) ? style.color : undefined, backgroundColor: typeof style.backgroundColor === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.backgroundColor) ? style.backgroundColor : undefined, textAlign: ['left', 'center', 'right'].includes(String(style.textAlign)) ? style.textAlign as 'left' | 'center' | 'right' : undefined }}>{(c.label||typeof p.label==='string'||(c.type==='container'&&typeof p.title==='string'))&&<h3>{c.label||(typeof p.label==='string'?p.label:String(p.title))}</h3>}{body}</section>;
     }
     return <div className="panel-grid" style={{ gridTemplateColumns: `repeat(${page.grid?.columns || panel.grid?.columns || 12}, minmax(0, 1fr))`, gap: page.grid?.gap ?? panel.grid?.gap }}>{ordered(page.components).map(c => render(c))}</div>;
 }

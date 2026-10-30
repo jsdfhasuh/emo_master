@@ -21,7 +21,7 @@ class ServicesTests(unittest.IsolatedAsyncioTestCase):
     async def test_persisted_intent_not_replayed(self):
         with tempfile.TemporaryDirectory() as t:
             rt=MockRuntime();path=Path(t)/'state.db';a=Operations(path)
-            body={'runtimeInstanceId':'mock-instance','projectId':'demo-project','workflowId':'demo-workflow'}
+            body={'configurationRevision':'1','runtimeInstanceId':'mock-instance','projectId':'demo-project','workflowId':'demo-workflow'}
             x=await a.execute('u','stable-1234','start','',body,rt)
             b=Operations(path);y=await b.execute('u','stable-1234','start','',body,rt)
             self.assertEqual(x,y);self.assertEqual(rt.control_count,1)

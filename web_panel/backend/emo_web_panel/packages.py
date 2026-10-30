@@ -18,6 +18,7 @@ import stat
 import tempfile
 import threading
 import zipfile
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 class PackageError(ValueError):
@@ -30,11 +31,23 @@ TYPES = frozenset({"image", "text", "number", "indicator", "runtime_status", "ta
 MIMES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
 ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 HASH = re.compile(r"^[0-9a-f]{64}$")
-PROPS = {"text", "label", "title", "unit", "decimals", "placeholder", "assetId",
-         "action", "targetPageId", "icon", "sourceMode", "sourceComponentId", "columns", "pageSize", "format", "timezone",
-         "trueLabel", "falseLabel", "trueValue", "falseValue", "mapping", "style",
-         "row", "column", "rowSpan", "columnSpan", "height", "width", "fit",
-         "componentId", "aggregation", "aggregateField", "followsFilter", "aggregate", "sourceId", "emptyText", "value", "grid"}
+# Provisional local renderer matrix, not official Panel Contract schema.
+COMMON_PROPS = {"label", "style", "row", "column", "rowSpan", "columnSpan", "grid"}
+TYPE_PROPS = {
+    "image": {"assetId", "sourceMode", "sourceComponentId"},
+    "text": {"text", "value"},
+    "number": {"text", "value", "unit", "decimals"},
+    "indicator": {"text", "value", "mapping"},
+    "runtime_status": set(),
+    "table": {"value", "columns"},
+    "navigation_button": {"text", "action", "targetPageId", "icon"},
+    "container": {"title"},  # Preserved draft fixture metadata; not HTML.
+    "page_title": set(),
+    "page_navigation": set(),
+    "clock": {"format", "timezone"},
+    "sqlite_table": {"columns"},
+    "sqlite_value": {"aggregation", "aggregate", "aggregateField", "followsFilter"},
+}
 STYLE = {"fontSize", "color", "backgroundColor", "fontWeight", "textAlign"}
 
 
@@ -137,6 +150,7 @@ def _validate_presentation(doc, asset_ids):
     if not isinstance(pages, list) or not 1 <= len(pages) <= 32:
         raise PackageError("Invalid page count")
     page_ids, component_ids, links = set(), set(), []
+    component_types, history_links = {}, []
     count = 0
 
     def component(c, depth=0):
@@ -153,9 +167,51 @@ def _validate_presentation(doc, asset_ids):
         if not isinstance(c.get("type"), str) or c["type"] not in TYPES:
             raise PackageError("Unsupported component type")
         props = c.get("props", {})
-        if not isinstance(props, dict) or set(props) - PROPS:
+        if not isinstance(props, dict) or set(props) - (COMMON_PROPS | TYPE_PROPS[c["type"]]):
             raise PackageError("Unsupported component property")
+        component_types[cid] = c["type"]
         _plain(props)
+        for key in ("text", "label", "title", "unit", "icon"):
+            if key in props and not isinstance(props[key], str):
+                raise PackageError("Invalid text property")
+        if "decimals" in props and (type(props["decimals"]) is not int or not 0 <= props["decimals"] <= 8):
+            raise PackageError("Invalid decimal precision")
+        if "mapping" in props:
+            if not isinstance(props["mapping"], dict) or any(type(v) not in (str, bool, int, float) for v in props["mapping"].values()):
+                raise PackageError("Invalid indicator mapping")
+        if "columns" in props:
+            columns = props["columns"]
+            if not isinstance(columns, list) or len(columns) > 64:
+                raise PackageError("Invalid table columns")
+            keys = set()
+            for column in columns:
+                if not isinstance(column, dict) or set(column) - {"key", "title"}:
+                    raise PackageError("Invalid table column")
+                key = _identifier(column.get("key"), "table column key")
+                if key in keys or ("title" in column and not isinstance(column["title"], str)):
+                    raise PackageError("Duplicate or invalid table column")
+                keys.add(key)
+        if "format" in props and props["format"] not in ("date", "time", "datetime"):
+            raise PackageError("Unsupported clock format")
+        if "timezone" in props:
+            zone = props["timezone"]
+            if not isinstance(zone, str) or len(zone) > 100 or not re.fullmatch(r"[A-Za-z0-9_+/-]+", zone):
+                raise PackageError("Invalid clock timezone")
+            if zone not in ("browser", "UTC"):
+                try:
+                    ZoneInfo(zone)
+                except (ValueError, ZoneInfoNotFoundError) as exc:
+                    raise PackageError("Unknown timezone or timezone database unavailable") from exc
+        if c["type"] == "image":
+            mode = props.get("sourceMode")
+            if mode is not None and mode not in ("history_fixed", "history_selection"):
+                raise PackageError("Invalid history image mode")
+            if mode is not None and ("assetId" in props or "binding" in c):
+                raise PackageError("History image cannot also use static or live source")
+            if mode == "history_selection":
+                history_links.append(_identifier(props.get("sourceComponentId"), "history table reference"))
+            elif "sourceComponentId" in props:
+                raise PackageError("Table reference requires history_selection mode")
         if "icon" in props and (not isinstance(props['icon'],str) or len(props['icon'])>32):raise PackageError('Invalid text icon')
         if 'sourceMode' in props and props['sourceMode'] not in ('history_fixed','history_selection'):raise PackageError('Invalid history image mode')
         if 'sourceComponentId' in props:_identifier(props['sourceComponentId'],'history table reference')
@@ -222,6 +278,8 @@ def _validate_presentation(doc, asset_ids):
             component(c)
     if not isinstance(doc.get("defaultPageId", pages[0]["id"]), str) or doc.get("defaultPageId", pages[0]["id"]) not in page_ids or any(not isinstance(x, str) or x not in page_ids for x in links):
         raise PackageError("Unknown navigation target")
+    if any(component_types.get(ref) != "sqlite_table" for ref in history_links):
+        raise PackageError("History selection must reference an existing sqlite_table")
     if "grid" in doc:
         _grid(doc["grid"])
     _plain({k: v for k, v in doc.items() if k != "pages"})

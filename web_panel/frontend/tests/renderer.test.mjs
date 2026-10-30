@@ -28,3 +28,6 @@ test('clock timezone, navigation plain icon and fixed history image are supporte
  const html=render([{id:'clock',type:'clock',props:{timezone:'UTC',format:'time'}},{id:'nav',type:'navigation_button',props:{icon:'▶',text:'Open',targetPageId:'page'}},{id:'fixed',type:'image',props:{sourceMode:'history_fixed'}}],{viewId:'v'});
  assert.match(html,/UTC/);assert.match(html,/▶/);assert.match(html,/\/api\/views\/v\/images\/fixed/);
 });
+test('aggregate null stays empty, never substitutes row count',()=>{
+ const {historyAggregateText}=require('../src/renderer/PanelRenderer.tsx');assert.equal(historyAggregateText({value:null,total:0}),'—');assert.equal(historyAggregateText({total:100}),'统计能力未就绪');assert.equal(historyAggregateText({value:0,total:9}),'0');
+});

@@ -45,6 +45,7 @@ export interface Panel {
 export interface Run {
     id: string;
     workflowId?: string;
+    configurationRevision?: string;
     state: string;
     name?: string;
     runtimeInstanceId?: string;
@@ -88,4 +89,4 @@ export interface History {
 }
 /** Web adapter draft target discovery; official protocol SDK remains pending. */
 export interface RuntimeTarget { id: string; alias: string; mode: string; address?: string; }
-export interface WorkflowTarget { id: string; name?: string; runtimeInstanceId?: string; projectId?: string; inputSchema?: Record<string, unknown>; inputs?: Record<string, unknown>; canStart?: boolean; }
+export interface WorkflowTarget { id: string; configurationRevision?: string; name?: string; runtimeInstanceId?: string; projectId?: string; inputSchema?: Record<string, unknown>; inputs?: Record<string, unknown>; canStart?: boolean; }

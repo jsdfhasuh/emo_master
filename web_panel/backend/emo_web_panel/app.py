@@ -43,7 +43,10 @@ def create_app(config: Config, runtime=None):
             return [r[0] for r in db.execute('SELECT runtime_id FROM package_targets WHERE package_id=?',(pid,))]
     def associate_package(pid,rids):
         with sqlite3.connect(config.data_dir/'web.sqlite') as db:
-            for rid in rids:db.execute('INSERT OR IGNORE INTO package_targets VALUES (?,?)',(pid,rid))
+            db.execute('DELETE FROM package_targets WHERE package_id=?',(pid,))
+            for rid in rids:db.execute('INSERT INTO package_targets VALUES (?,?)',(pid,rid))
+    def remove_target_associations(rid):
+        with sqlite3.connect(config.data_dir/'web.sqlite') as db:db.execute('DELETE FROM package_targets WHERE runtime_id=?',(rid,))
     async def package_access(who,pid,rid=None):
         if who['role']=='admin':return
         allowed={r['id'] for r in await asyncio.to_thread(registry.list,who)}
@@ -190,6 +193,7 @@ def create_app(config: Config, runtime=None):
             who=await identity(req,'admin',True)
             await asyncio.to_thread(registry.delete,who,rid,revoke_acl=revoke_acl,in_use=any(v.get('runtimeId','configured')==rid for v in views.views.values()))
             if rid in clients:await clients.pop(rid).close()
+            await asyncio.to_thread(remove_target_associations,rid)
             return {'ok':True}
     @app.get('/api/admin/runtimes/{rid}/grants')
     async def target_grants(rid:str,req:Request):
@@ -206,7 +210,7 @@ def create_app(config: Config, runtime=None):
     @app.get('/api/runtimes/{rid}/workflows')
     async def workflows(rid:str,req:Request):
         who=await identity(req);client=await client_for(who,rid);info=await client.info()
-        return [{**w,'runtimeId':rid,'runtimeInstanceId':info['runtimeInstanceId'],'projectId':info['projectId']} for w in await client.workflows()]
+        return [{**w,'runtimeId':rid,'runtimeInstanceId':info['runtimeInstanceId'],'projectId':info['projectId'],'configurationRevision':info.get('configurationRevision')} for w in await client.workflows()]
     @app.get('/api/runs')
     async def runs(req:Request,runtimeId:str='configured'):
         who=await identity(req);client=await client_for(who,runtimeId)
@@ -225,6 +229,7 @@ def create_app(config: Config, runtime=None):
             body=await json_object(req)
             client=await client_for(who,body.get('runtimeId','configured'),'control')
             await client.info() # fail closed before storing unexecutable intent
+            if isinstance(client,MockRuntime):client.validate_control(action,target,body)
             result=await ops.execute(who['userId'],body.get('requestId'),action,target,body,client)
             await asyncio.to_thread(auth.audit,who['username'],action,json.dumps({k:body.get(k) for k in ('requestId','runtimeId','runtimeInstanceId','projectId','workflowId','runGroupId')}|{'runId':target,'operationId':result['operationId']},sort_keys=True),result['state'])
             return result
@@ -281,6 +286,7 @@ def create_app(config: Config, runtime=None):
         who=await identity(req,mutating=True);v=views.get(vid,who['userId'])
         if action not in {'freeze','resume'}:raise HTTPException(404,'Unknown view action')
         await asyncio.to_thread(registry.require,who,v['runtimeId'])
+        await package_access(who,v['panelId'],v['runtimeId'])
         if action=='freeze':
             body=await json_object(req)
             result=views.freeze(v,body.get('resultKeys') or body.get('resultKey'))
@@ -298,6 +304,7 @@ def create_app(config: Config, runtime=None):
     @app.get('/api/views/{vid}/history/{component_id}')
     async def history(vid:str,component_id:str,req:Request,page:int=1,pageSize:int=10,q:str='',sort:str='id',order:str='asc'):
         who=await identity(req);v=views.get(vid,who['userId']);p=v['presentation']
+        await package_access(who,v['panelId'],v['runtimeId'])
         def find(cs):
             for c in cs:
                 if c['id']==component_id and c['type'] in {'sqlite_table','sqlite_value'}:return c
@@ -320,6 +327,7 @@ def create_app(config: Config, runtime=None):
     async def fixed_history_image(vid:str,component_id:str,req:Request):
         who=await identity(req);v=views.get(vid,who['userId'])
         await asyncio.to_thread(registry.require,who,v['runtimeId'])
+        await package_access(who,v['panelId'],v['runtimeId'])
         def declared(cs):
             return any((c['id']==component_id and c['type']=='image' and c.get('props',{}).get('sourceMode')=='history_fixed') or declared(c.get('children',[])) for c in cs)
         if not any(declared(page['components']) for page in v['presentation']['pages']):raise HTTPException(404,'Fixed history image not declared')
@@ -344,7 +352,9 @@ def create_app(config: Config, runtime=None):
         data,mime=await asyncio.to_thread(packages.asset,package_id,asset_id)
         return Response(data,media_type=mime)
     @app.get('/api/packages')
-    async def package_list(req:Request):await identity(req,'admin');return await asyncio.to_thread(packages.list)
+    async def package_list(req:Request):
+        await identity(req,'admin')
+        return [{**p,'runtimeIds':await asyncio.to_thread(package_targets,p['packageId'])} for p in await asyncio.to_thread(packages.list)]
     @app.post('/api/packages')
     async def package_install(req:Request):
         await identity(req,'admin',True)
@@ -379,10 +389,13 @@ def create_app(config: Config, runtime=None):
         try:
             while True:
                 if vid not in views.views or not await asyncio.to_thread(auth.session,token):await ws.close(code=1008);break
-                try:await asyncio.to_thread(registry.require,who,v['runtimeId'])
-                except RegistryDenied:await ws.close(code=1008);break
+                try:
+                    await asyncio.to_thread(registry.require,who,v['runtimeId'])
+                    await package_access(who,v['panelId'],v['runtimeId'])
+                except (RegistryDenied,HTTPException):await ws.close(code=1008);break
                 try:msg=await asyncio.wait_for(views.next_message(v),timeout=2)
                 except asyncio.TimeoutError:msg={'type':'heartbeat','mode':config.mode}
+                if msg.get('type') in {'reset_required','freeze_expired'}:resources.release_owner('view:'+vid)
                 await ws.send_json(msg)
         except (WebSocketDisconnect,RuntimeError):pass
         finally:

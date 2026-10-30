@@ -51,4 +51,9 @@ Frontend builds to static assets served by FastAPI on the same origin. A separat
 
 Package switching changes Web state only. It does not roll back a production project. Removing/closing this app leaves Runtime and Qt unchanged. No branch merge, formal publication or deployment is part of this delivery.
 
-当前是单个管理员配置的 Runtime、全局角色权限演示，不含多 Runtime 注册 CRUD 或逐目标 ACL。草案多 scope 前端分开暂存；后端 mock 只产生单 scope，正式多 scope 一致冻结、资源租约、断线游标回放仍待合同接入验证。
+
+## Current scope and verification
+
+Multiple administrator-configured Runtime aliases and per-target grants are implemented. Ordinary users cannot submit addresses. Admin explicitly includes target control; operator/viewer require grants. Imported package resources are associated with Runtime targets and checked on reads.
+
+See [acceptance matrix](docs/ACCEPTANCE-MATRIX.md), [13-component matrix](docs/COMPONENT-MATRIX.md), and [Windows/Linux install and upgrade instructions](docs/DEPLOYMENT.md). The independent draft supports multi-scope view state, history/aggregates, counters/events and no-run workflow entry. This does not remove the official SDK/Runtime/Designer integration blockers. Final CI and real integration evidence must be reported separately.

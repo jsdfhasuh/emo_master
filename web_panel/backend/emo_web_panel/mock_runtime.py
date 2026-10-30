@@ -36,11 +36,11 @@ class MockRuntime:
     async def start(self): pass
     async def close(self): pass
     async def info(self):
-        return {"runtimeInstanceId":"mock-instance","projectId":"demo-project","mode":"mock","contractStatus":"draft-unverified","capabilities":["display","history","control"]}
+        return {"runtimeInstanceId":"mock-instance","projectId":"demo-project","mode":"mock","configurationRevision":"1","contractStatus":"draft-unverified","capabilities":["display","history","control"]}
     async def runs(self):
-        return [{"id":"demo-run","runId":"demo-run","name":"Demo run","runtimeInstanceId":"mock-instance","projectId":"demo-project","workflowId":"demo-workflow","state":"running" if self.running else "stopped"}]
+        return [{"id":"demo-run","runId":"demo-run","name":"Demo run","runtimeInstanceId":"mock-instance","projectId":"demo-project","workflowId":"demo-workflow","configurationRevision":"1","state":"running" if self.running else "stopped"}]
     async def workflows(self):
-        return [{"id":"demo-workflow","name":"Mock workflow","inputs":{},"canStart":True}]
+        return [{"id":"demo-workflow","name":"Mock workflow","inputs":{},"inputSchema":{"type":"object","properties":{},"additionalProperties":False},"configurationRevision":"1","canStart":True}]
     async def snapshot(self, run_id):
         if run_id != "demo-run": raise ValueError("unknown run")
         if self.running: self.ordinal += 1
@@ -48,8 +48,14 @@ class MockRuntime:
             "image":{"state":"available","image":{"url":f"/api/assets/runtime/{self.runtime_id}/demo-image","ownerResultKey":f"mock-{self.ordinal}","resourceId":"demo-image","mimeType":"image/png","byteSize":len(IMAGE),"sha256":hashlib.sha256(IMAGE).hexdigest()}},
             "score":{"state":"available","value":99.5},"verdict":{"state":"available","value":"OK"},
             "measurements":{"state":"available","value":[{"name":"width","value":10.2}]}}}
+    def validate_control(self, action, target, body):
+        if body.get("runtimeInstanceId") != "mock-instance" or body.get("projectId") != "demo-project" or body.get('configurationRevision')!='1':raise ValueError('Stale or wrong control target/configuration revision')
+        inputs=body.get('inputs',{})
+        if not isinstance(inputs,dict) or inputs:raise ValueError('Mock workflow declares no inputs; expected empty object')
+        if action=='start' and body.get('workflowId')!='demo-workflow':raise ValueError('Unknown workflow')
+        if action=='stop' and target!='demo-run':raise ValueError('Unknown run')
     async def control(self, action, target, body):
-        if body.get("runtimeInstanceId") != "mock-instance" or body.get("projectId") != "demo-project": raise ValueError("stale or wrong control target")
+        self.validate_control(action,target,body)
         async with self.lock:
             if action == "start" and body.get("workflowId") != "demo-workflow": raise ValueError("unknown workflow")
             if action == "stop" and target != "demo-run": raise ValueError("unknown run")

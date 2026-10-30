@@ -177,6 +177,53 @@ class PackageTests(unittest.TestCase):
             self.store.install(bundle(extras={'presentation.json':json.dumps({'pages':[
                 {'id':'main','mobile':{},'components':[]}]}).encode()}))
 
+    def test_per_type_property_matrix(self):
+        cases = [('text', {'action':'freeze'}), ('image', {'aggregate':'count'}),
+                 ('clock', {'assetId':'sample'}), ('number', {'columns':[]}),
+                 ('sqlite_table', {'sourceMode':'history_fixed'}),
+                 ('page_title', {'mapping':{}}), ('navigation_button', {'timezone':'UTC'})]
+        for kind, props in cases:
+            with self.subTest(kind=kind), self.assertRaises(PackageError):
+                self.store.install(bundle(components=[{'id':'x','type':kind,'props':props}]))
+
+    def test_history_selection_requires_real_table(self):
+        image = {'id':'image', 'type':'image', 'props':{'sourceMode':'history_selection','sourceComponentId':'history'}}
+        for target in (None, {'id':'history','type':'table'}, {'id':'history','type':'image'}):
+            with self.subTest(target=target), self.assertRaises(PackageError):
+                self.store.install(bundle(components=[image] + ([target] if target else [])))
+        self.store.install(bundle(components=[image, {'id':'box','type':'container','children':[
+            {'id':'history','type':'sqlite_table'}]}]))
+
+    def test_image_modes_are_exclusive(self):
+        for props in ({'sourceMode':'script'}, {'sourceMode':[]},
+                      {'sourceMode':'history_selection'}, {'sourceComponentId':'history'},
+                      {'sourceMode':'history_fixed','sourceComponentId':'history'},
+                      {'sourceMode':'history_fixed','assetId':'sample'}):
+            with self.subTest(props=props), self.assertRaises(PackageError):
+                self.store.install(bundle(components=[{'id':'x','type':'image','props':props}]))
+        with self.assertRaises(PackageError):
+            self.store.install(bundle(components=[{'id':'x','type':'image','binding':'live',
+                'props':{'sourceMode':'history_fixed'}}]))
+        self.store.install(bundle(components=[{'id':'x','type':'image','props':{'sourceMode':'history_fixed'}}]))
+
+    def test_clock_format_timezone(self):
+        for props in ({'format':'%n<script>'}, {'format':[]}, {'timezone':'../etc/passwd'},
+                      {'timezone':'Not/A_Zone'}, {'timezone':[]}, {'timezone':'https://zone'}):
+            with self.subTest(props=props), self.assertRaises(PackageError):
+                self.store.install(bundle(components=[{'id':'x','type':'clock','props':props}]))
+        for index, zone in enumerate(('UTC','browser')):
+            self.store.install(bundle(str(index), components=[{'id':'x','type':'clock',
+                'props':{'format':'datetime','timezone':zone}}]))
+
+    def test_typed_renderer_properties(self):
+        for kind, props in [('number', {'decimals':True}), ('number',{'decimals':9}),
+                            ('indicator',{'mapping':[]}), ('text',{'text':{}}),
+                            ('table',{'columns':['name']}),
+                            ('table',{'columns':[{'key':'x','path':'/tmp'}]}),
+                            ('table',{'columns':[{'key':'x'},{'key':'x'}]})]:
+            with self.subTest(kind=kind,props=props), self.assertRaises(PackageError):
+                self.store.install(bundle(components=[{'id':'x','type':kind,'props':props}]))
+
     def test_depth_and_children_rejected(self):
         child={'id':'deep','type':'text','props':{}}
         for i in range(10): child={'id':f'container{i}','type':'container','props':{},'children':[child]}

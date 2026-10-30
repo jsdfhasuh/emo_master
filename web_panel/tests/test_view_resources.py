@@ -202,20 +202,22 @@ class CacheTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(cache.pending)
 
     async def test_frozen_exact_bytes_pinned_until_expiry_or_owner_release(self):
-        cache = ResourceCache(max_bytes=4, max_item_bytes=4, ttl=.001,
-                              freeze_ttl=.015, owner_bytes=4)
-        async def load():return b'1234'
-        key=self.key(b'1234')
-        await cache.get(key,load)
-        expiry=cache.pin(key,'view-a')
-        self.assertEqual(cache.pin(key,'view-a'),expiry)  # no indefinite renewal
-        await asyncio.sleep(.003)
-        self.assertEqual(cache.peek(key),b'1234')
-        async def second():return b'zzzz'
-        with self.assertRaises(ValueError):await cache.get(self.key(b'zzzz'),second)
-        cache.release_owner('view-a')
-        with self.assertRaises(KeyError):cache.peek(key)
-        await cache.get(key,load);cache.pin(key,'view-b',ttl=.001)
-        await asyncio.sleep(.003)
-        with self.assertRaises(KeyError):cache.peek(key)
-        await cache.close()
+        from unittest.mock import patch
+        from types import SimpleNamespace
+        now=[100.0]
+        with patch('emo_web_panel.resource_cache.time',SimpleNamespace(monotonic=lambda:now[0])):
+            cache=ResourceCache(max_bytes=4,max_item_bytes=4,ttl=1,freeze_ttl=15,owner_bytes=4)
+            async def load():return b'1234'
+            key=self.key(b'1234');await cache.get(key,load)
+            expiry=cache.pin(key,'view-a')
+            self.assertEqual(cache.pin(key,'view-a'),expiry)
+            now[0]+=3
+            self.assertEqual(cache.peek(key),b'1234')
+            async def second():return b'zzzz'
+            with self.assertRaises(ValueError):await cache.get(self.key(b'zzzz'),second)
+            cache.release_owner('view-a')
+            with self.assertRaises(KeyError):cache.peek(key)
+            await cache.get(key,load);cache.pin(key,'view-b',ttl=1)
+            now[0]+=3
+            with self.assertRaises(KeyError):cache.peek(key)
+            await cache.close()

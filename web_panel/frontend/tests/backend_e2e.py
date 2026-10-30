@@ -31,10 +31,15 @@ def main():
      history=page.locator('section.panel-card').filter(has=page.get_by_label('history-table 筛选'))
      history.get_by_text('共 30 条',exact=False).wait_for();assert history.locator('tbody tr').count()==10
      page.get_by_role('button',name='编辑 / 授权',exact=False).first.click()
-     page.get_by_label('readonly 查看 configured',exact=True).check()
+     with page.expect_response(lambda response:'/api/admin/runtimes/configured/grants' in response.url and response.request.method=='PUT') as grant_response:
+      page.get_by_label('readonly 查看 configured',exact=True).check()
+     assert grant_response.value.ok
+     assert any(g=={'username':'readonly','view':True,'control':False} for g in page.request.get(f'http://127.0.0.1:{port}/api/admin/runtimes/configured/grants').json())
      page.get_by_role('button',name='新建目标',exact=True).click();page.get_by_label('Runtime ID',exact=True).fill('second');page.get_by_label('Runtime 别名',exact=True).fill('Second mock');page.get_by_role('button',name='新增连接',exact=True).click();page.get_by_role('button',name='编辑 / 授权 Second mock',exact=True).wait_for()
      page.get_by_label('Runtime 别名',exact=True).fill('Second edited');page.get_by_role('button',name='保存连接',exact=True).click();page.get_by_role('button',name='编辑 / 授权 Second edited',exact=True).wait_for()
-     page.get_by_label('readonly 查看 second',exact=True).check()
+     with page.expect_response(lambda response:'/api/admin/runtimes/second/grants' in response.url and response.request.method=='PUT') as second_grant:
+      page.get_by_label('readonly 查看 second',exact=True).check()
+     assert second_grant.value.ok
      page.get_by_label('删除时撤销目标授权',exact=True).check();page.once('dialog',lambda dialog:dialog.accept());page.get_by_role('row').filter(has=page.get_by_role('button',name='编辑 / 授权 Second edited',exact=True)).get_by_role('button',name='删除目标',exact=True).click();page.get_by_role('button',name='编辑 / 授权 Second edited',exact=True).wait_for(state='detached')
      page.get_by_label('查看运行',exact=True).select_option('');history.get_by_text('共 30 条',exact=False).wait_for()
      page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('操作已受理：',exact=False).wait_for()

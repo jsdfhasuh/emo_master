@@ -501,6 +501,11 @@ class RuntimePages(QWidget):
                     if self.editorHost:
                         widget.setMinimumSize(100, 96)
                         widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+                    if responsive:
+                        # The responsive card owns the available width. Let
+                        # its image fit that width instead of clipping a wider
+                        # child that retains the legacy grid minimum.
+                        widget.setMinimumWidth(0)
                     if component.bindings:
                         widget.message = '已绑定 · 等待明确任务结果'
                 elif component.type == 'table' and sum(isinstance(w, CollectionView) for rows in self.widgets.values() for _c, w in rows.values()) < 4:

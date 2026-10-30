@@ -68,6 +68,8 @@ class EditingTools(QObject):
         from .responsive_tools import ResponsiveTools
         self.responsive = ResponsiveTools(self)
         self.palette = Palette()
+        self.palette.beforeDrag = self.responsive.prepareDrag
+        self.palette.afterDrag = self.responsive.cancel
         library = QWidget()
         libraryLayout = QVBoxLayout(library)
         libraryLayout.setContentsMargins(0, 0, 0, 0)

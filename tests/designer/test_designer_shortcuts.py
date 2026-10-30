@@ -5,7 +5,7 @@ import time
 
 import pytest
 import emo_master  # noqa: F401 - preserve native Windows bootstrap order
-from PySide2.QtCore import QEvent, Qt
+from PySide2.QtCore import QEvent, QPointF, Qt
 from PySide2.QtGui import QKeyEvent
 from PySide2.QtTest import QTest
 from PySide2.QtWidgets import (
@@ -23,7 +23,7 @@ def focusCanvas(window):
     window.show()
     window.activateWindow()
     editor = window.designerActions.pageEditor()
-    surface = editor.renderer if editor else window.flowView
+    surface = editor.canvas if editor else window.flowView
     surface.setFocusPolicy(Qt.StrongFocus)
     surface.setFocus()
     QApplication.processEvents()
@@ -358,7 +358,10 @@ def testClickPageCardTransfersPropertyFocusBeforeCopy(canvas, monkeypatch):  # n
     QApplication.processEvents()
     assert window.designerActions.inputFocused()
     card = editor.renderer.widgets[editor.pageId][key][1].parentWidget()
-    QTest.mouseClick(card, Qt.LeftButton)
+    # Native input reaches the embedded renderer through its graphics viewport.
+    local = card.mapTo(editor.renderer, card.rect().center())
+    point = editor.canvas.mapFromScene(editor.canvas.proxy.mapToScene(QPointF(local)))
+    QTest.mouseClick(editor.canvas.viewport(), Qt.LeftButton, Qt.NoModifier, point)
     QApplication.processEvents()
     assert not window.designerActions.inputFocused()
     assert window.designerActions.keyboardAllowed('copy')

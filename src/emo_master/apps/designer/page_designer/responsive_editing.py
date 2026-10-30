@@ -47,48 +47,55 @@ def selectionRoots(presentation, pageId, keys):
     return result
 
 
+def placeComponents(p, pageId, *, keys=(), kind=None, parentId=None, index=None,
+                    besideId=None, direction=None, before=False):
+    """Apply one placement to a caller-owned draft, shared by preview and commit."""
+    selected = []
+    items = selectionRoots(p, pageId, keys)
+    if kind is not None:
+        items = [Component(componentId=str(uuid4()), type=kind,
+            props=Props(fontSize=24, fontWeight='bold') if kind == 'page_title' else Props())]
+    if not items:
+        return selected
+    subtree = {c.componentId for item in items for c in walkComponents([item])}
+    if parentId in subtree or besideId in subtree:
+        raise ValueError('容器不能移入自身或子组件')
+    destination = childrenFor(p, pageId, parentId)
+    position = len(destination) if index is None else max(0, min(index, len(destination)))
+    preceding = [c.componentId for c in destination[:position] if c.componentId not in subtree]
+    for item in items:
+        if item.componentId in keys:
+            _parent, siblings, old = parentOf(p, pageId, item.componentId)
+            siblings.pop(old)
+    if besideId is not None:
+        targetParent, siblings, position = parentOf(p, pageId, besideId)
+        target = siblings[position]
+        parentLayout = layoutFor(p, pageId, targetParent)
+        if parentLayout.type == 'responsive' and parentLayout.direction == direction:
+            destination = siblings
+            position += 0 if before else 1
+        else:
+            members = [*items, target] if before else [target, *items]
+            group = Component(componentId=str(uuid4()), type='container',
+                              grid=ResponsiveLayout(direction=direction), children=members)
+            siblings[position] = group
+            selected.extend(item.componentId for item in items)
+            return selected
+    else:
+        position = sum(c.componentId in preceding for c in destination)
+    destination[position:position] = items
+    selected.extend(item.componentId for item in items)
+    return selected
+
+
 class ResponsiveCommands:
     def __init__(self, session):
         self.session = session
 
-    def place(self, pageId, *, keys=(), kind=None, parentId=None, index=None,
-              besideId=None, direction=None, before=False):
+    def place(self, pageId, **placement):
         selected = []
         def edit(p):
-            items = selectionRoots(p, pageId, keys)
-            if kind is not None:
-                items = [Component(componentId=str(uuid4()), type=kind,
-                    props=Props(fontSize=24, fontWeight='bold') if kind == 'page_title' else Props())]
-            if not items:
-                return
-            subtree = {c.componentId for item in items for c in walkComponents([item])}
-            if parentId in subtree or besideId in subtree:
-                raise ValueError('容器不能移入自身或子组件')
-            destination = childrenFor(p, pageId, parentId)
-            position = len(destination) if index is None else max(0, min(index, len(destination)))
-            preceding = [c.componentId for c in destination[:position] if c.componentId not in subtree]
-            for item in items:
-                if item.componentId in keys:
-                    _parent, siblings, old = parentOf(p, pageId, item.componentId)
-                    siblings.pop(old)
-            if besideId is not None:
-                targetParent, siblings, position = parentOf(p, pageId, besideId)
-                target = siblings[position]
-                parentLayout = layoutFor(p, pageId, targetParent)
-                if parentLayout.type == 'responsive' and parentLayout.direction == direction:
-                    destination = siblings
-                    position += 0 if before else 1
-                else:
-                    members = [*items, target] if before else [target, *items]
-                    group = Component(componentId=str(uuid4()), type='container',
-                                      grid=ResponsiveLayout(direction=direction), children=members)
-                    siblings[position] = group
-                    selected.extend(item.componentId for item in items)
-                    return
-            else:
-                position = sum(c.componentId in preceding for c in destination)
-            destination[position:position] = items
-            selected.extend(item.componentId for item in items)
+            selected.extend(placeComponents(p, pageId, **placement))
         self.session.editPresentation(edit)
         return selected
 

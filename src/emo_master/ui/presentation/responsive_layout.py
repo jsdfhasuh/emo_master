@@ -24,6 +24,11 @@ class ResponsiveWidgetLayout(QLayout):
         self._components[widget] = component
         self.addWidget(widget)
 
+    def addComponentItem(self, item, component):
+        """Accept a geometry-only item with the same native measurement contract."""
+        self._components[item.widget()] = component
+        self.addItem(item)
+
     def count(self):
         return len(self._items)
 

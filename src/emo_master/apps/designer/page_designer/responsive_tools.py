@@ -8,7 +8,7 @@ from shiboken2 import isValid
 
 from emo_master.apps.designer.state.presentation_store import _component
 from emo_master.apps.designer.ui.canvas_alignment import Box, snapOffset
-from .responsive_editing import ResponsiveCommands, childrenFor, layoutFor, parentOf, selectionRoots
+from .responsive_editing import ResponsiveCommands, childrenFor, layoutFor, parentOf, selectionRoots, placeComponents
 
 
 class DropOutline(QWidget):
@@ -19,12 +19,21 @@ class DropOutline(QWidget):
         self.box = QRect()
         self.lines = ()
         self.message = ''
+        self.placements = {}
+        self.moving = set()
 
     def paintEvent(self, event):
         painter = QPainter(self)
+        for key, rect in self.placements.items():
+            moving = key in self.moving
+            painter.setPen(QPen(QColor('#2672d9' if moving else '#61758d'), 2,
+                                Qt.SolidLine if moving else Qt.DashLine))
+            painter.setBrush(QColor(38, 114, 217, 35 if moving else 12))
+            painter.drawRect(rect.adjusted(1, 1, -1, -1))
         painter.setPen(QPen(QColor('#2672d9'), 2))
         painter.setBrush(QColor(38, 114, 217, 35))
-        painter.drawRect(self.box.adjusted(1, 1, -1, -1))
+        if not self.box.isEmpty():
+            painter.drawRect(self.box.adjusted(1, 1, -1, -1))
         painter.setPen(QPen(QColor('#ca48b8'), 1, Qt.DashLine))
         for line in self.lines:
             painter.drawLine(*[round(v) for v in line])
@@ -97,6 +106,12 @@ class ResponsiveTools(QObject):
         self.guidesEnabled = True
         self.snapEnabled = True
         self.lastTarget = None
+        self.candidateRects = {}
+        self.candidateSize = QSize()
+        self.candidateIds = []
+        self.prototype = None
+        self.prototypeKind = None
+        self.prototypeScene = None
 
     def enabled(self):
         page = self.w.renderer.config.pages.get(self.w.pageId)
@@ -114,10 +129,14 @@ class ResponsiveTools(QObject):
     def select(self, keys):
         keys = [key for key in dict.fromkeys(keys) if key in self.cards()]
         primary = keys[-1] if keys else None
-        if primary != self.tools.selected:
+        primaryChanged = primary != self.tools.selected
+        if primaryChanged:
             self.tools.commitPending()
         self.selectedIds = keys
-        self.tools.select(primary)
+        # Updating other selected cards does not leave the active property form.
+        # Reloading that same form would overwrite its uncommitted input.
+        if primaryChanged:
+            self.tools.select(primary)
         self.updateSelection()
         actions = getattr(self.w.coordinator.window, 'designerActions', None)
         if actions:
@@ -174,12 +193,14 @@ class ResponsiveTools(QObject):
         self.preview = None
         self.lastTarget = None
 
-    def showPreview(self, host, box, message, lines=()):
+    def showPreview(self, host, box, message, lines=(), *, placements=None, moving=()):
         if self.preview is None or not isValid(self.preview) or self.preview.parentWidget() is not host:
             self.clearPreview()
             self.preview = DropOutline(host)
         self.preview.setGeometry(host.rect())
         self.preview.box, self.preview.lines, self.preview.message = box, lines, message
+        self.preview.placements = placements or {}
+        self.preview.moving = set(moving)
         self.preview.show()
         self.preview.raise_()
         self.preview.update()
@@ -270,15 +291,96 @@ class ResponsiveTools(QObject):
 
     def drop(self, payload, widget, point, preview=False):
         host, box, args, message = self.target(payload, widget, point)
-        if preview:
-            self.showPreview(host, box, message, self.candidateGuides)
-            self.lastTarget = args
-            return args
         keys = payload.get('moves', [payload['move']] if 'move' in payload else [])
+        if preview:
+            from .responsive_preview import candidateGeometry
+            renderer = self.w.renderer
+            pageId = self.w.pageId
+            root = renderer.layoutHosts[pageId][None]
+            scroll = renderer.pages[pageId]
+            signature = (args, tuple(keys), payload.get('kind'), id(renderer.config),
+                         root.size(), scroll.viewport().size())
+            if signature != self.lastTarget:
+                # Copy only this page when the ordered insertion/group changes;
+                # pointer movement within the same candidate just paints guides.
+                page = renderer.config.pages[pageId].model_copy(deep=True)
+                draft = renderer.config.model_copy(update={'pages': {**renderer.config.pages, pageId: page}})
+                self.candidateIds = placeComponents(draft, pageId, keys=keys, kind=payload.get('kind'), **args)
+                prototypes = self.prototypeItems(page, self.candidateIds, payload.get('kind'))
+                self.candidateRects, self.candidateSize = candidateGeometry(renderer, pageId, page, prototypes)
+            viewport = scroll.viewport()
+            offset = QPoint(-min(scroll.horizontalScrollBar().value(), max(0, self.candidateSize.width() - viewport.width())),
+                            -min(scroll.verticalScrollBar().value(), max(0, self.candidateSize.height() - viewport.height())))
+            moving = set(self.candidateIds) | (set(self.candidateRects) - set(self.cards()))
+            placements = {}
+            for key, rect in self.candidateRects.items():
+                card = self.cards().get(key)
+                displayed = rect.translated(offset)
+                if key in moving or card is None or displayed != QRect(card.mapTo(viewport, QPoint()), card.size()):
+                    placements[key] = displayed
+            hostOffset = host.mapTo(viewport, QPoint())
+            guides = [(x1 + hostOffset.x(), y1 + hostOffset.y(), x2 + hostOffset.x(), y2 + hostOffset.y())
+                      for x1, y1, x2, y2 in self.candidateGuides]
+            marker = box.translated(hostOffset)
+            if 'besideId' in args:
+                marker = QRect()  # The candidate outlines show the actual group and card sizes.
+            self.showPreview(viewport, marker, message + ' · 蓝框为放置位置，虚框为其他组件的新位置',
+                             guides, placements=placements, moving=moving)
+            self.lastTarget = signature
+            return args
         selected = self.commands().place(self.w.pageId, keys=keys, kind=payload.get('kind'), **args)
         self.selectedIds = selected
         self.tools.selected = selected[-1] if selected else None
         return args
+
+    def prototypeItems(self, page, keys, kind):
+        """Measure a palette component once, using the real renderer in sample mode."""
+        if kind is None or kind == 'container':
+            return {}
+        if self.prototype is None or self.prototypeKind != kind:
+            self.disposePrototype()
+            from emo_master.core.presentation.models import Page, Presentation, walkComponents
+            from emo_master.ui.presentation.renderer import RuntimePages
+            from PySide2.QtWidgets import QGraphicsScene
+            component = next(item for item in walkComponents(page.components) if item.componentId in keys)
+            self.prototype = RuntimePages(Presentation())
+            # Graphics proxies propagate scene fonts differently from a plain
+            # QWidget parent. Use the same native host without adding preview
+            # items to the real canvas or changing its navigation bounds.
+            self.prototypeScene = QGraphicsScene(self)
+            self.prototypeScene.setFont(self.w.canvas.scene().font())
+            self.prototypeScene.setPalette(self.w.canvas.scene().palette())
+            self.prototypeScene.addWidget(self.prototype)
+            self.prototype.setEditorHost()
+            self.prototype.setStyleSheet(self.w.renderer.styleSheet())
+            self.prototype.resize(self.w.renderer.size())
+            self.prototype.reload(Presentation(defaultPageId='prototype', pageOrder=['prototype'],
+                pages={'prototype': Page(name='Prototype', components=[component.model_copy(deep=True)])}))
+            self.prototype.setDesignExamples(True)
+            self.prototype.ensurePolished()
+            self.prototypeKind = kind
+        item = self.prototype.layoutHosts['prototype'][None].layout().itemAt(0)
+        return {keys[0]: item}
+
+    def disposePrototype(self):
+        if self.prototype is not None:
+            self.prototype.close()
+        if self.prototypeScene is not None:
+            self.prototypeScene.deleteLater()  # Owns its proxy and embedded renderer.
+        self.prototype = None
+        self.prototypeKind = None
+        self.prototypeScene = None
+
+    def prepareDrag(self):
+        """Accept pending properties before the native drag owns any old widgets."""
+        try:
+            self.tools.commitPending()
+        except ValueError as error:
+            self.w.message.setText(str(error))
+            return False
+        if self.w.renderer.config != self.w.store.snapshot():
+            self.w.refresh()
+        return True
 
     def dragImage(self, key, hotspot):
         pixmap = self.cards()[key].grab()
@@ -342,6 +444,8 @@ class ResponsiveTools(QObject):
             if (event.globalPos() - start).manhattanLength() >= QApplication.startDragDistance():
                 self.pointer = None
                 self.tools.dragStart = None
+                if not self.prepareDrag():
+                    return True
                 drag = QDrag(self.w.canvas)
                 drag.setMimeData(mime({'move': key, 'moves': list(self.selectedIds), 'hotspot': [hotspot.x(), hotspot.y()]}))
                 pixmap, dragHotspot = self.dragImage(key, hotspot)
@@ -351,7 +455,7 @@ class ResponsiveTools(QObject):
                     drag.exec_(Qt.MoveAction)
                 finally:
                     drag.deleteLater()
-                    self.clearPreview()
+                    self.cancel()
             return True
         if kind == QEvent.MouseButtonRelease and key:
             self.pointer = None
@@ -453,6 +557,7 @@ class ResponsiveTools(QObject):
         self.resize = None
         self.pointer = None
         self.clearPreview()
+        self.disposePrototype()
         return active
 
     def group(self, direction):

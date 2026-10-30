@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="3" time="2.660" timestamp="2026-10-30T17:05:58.202426+08:00" hostname="视觉电脑"><testcase classname="tests.designer.test_page_package_export" name="testResponsiveDraftExportPreservesPagesDevicesAndSavedProject" time="0.806"><failure message="ValueError: device projects require managed Runtime delivery, not a local page test package">ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000016465D135B0&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3935/testResponsiveDraftExportPrese0')
+
+    def testResponsiveDraftExportPreservesPagesDevicesAndSavedProject(ownedDesignerWindow, tmp_path):
+        client = Client()
+        window = ownedDesignerWindow(client)
+        root = tmp_path / 'engineering'
+        assert window.saveProjectToDirectory(str(root))
+        disk = (root / 'project.json').read_bytes()
+        coordinator = window.pageCoordinator
+        coordinator.showPages()
+        editor = coordinator.editor
+        editor.pageId = editor.store.createPage('Responsive export')
+        key = editor.tools.commands().add(editor.pageId, 'text', 0, 0)
+        coordinator.session.workflows.devices['definitions']['simulated'] = dict(
+            name='Simulated only', deviceTypeId='device.simulated.camera', driverVersion='1.0.0',
+            connection={'serial': 'TEST-ONLY'}, defaults={'width': 7, 'height': 5, 'exposureUs': 8000, 'gain': 0})
+        editor.refresh()
+        editor.tools.select(key)
+        editor.tools.fields['text'].setText('Unapplied draft exported')
+&gt;       package = exportTestPackage(coordinator, tmp_path / 'packages')
+
+tests\designer\test_page_package_export.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\page_designer\delivery.py:11: in exportTestPackage
+    return buildPageTestPackage(coordinator.session.document(), Path(coordinator.directory), Path(output))
+src\emo_master\core\project\package_builder.py:27: in buildPageTestPackage
+    document = portableDocument(document)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+document = ProjectDocument(schemaVersion='2.8', project=ProjectMetadata(projectId='3e83eb84-f81a-4b9e-85b9-f8ebc86d5b3d', name='e...uctionSettings(autoStart=False, mode='single', cycleIntervalMs=100, inputs={}), globalVariables={}, communication=None)
+
+    def portableDocument(document):
+        result = ProjectDocument.model_validate(document.model_dump())
+        if result.schemaVersion in {"2.6", "2.7", "2.8"}:
+&gt;           raise ValueError('device projects require managed Runtime delivery, not a local page test package')
+E           ValueError: device projects require managed Runtime delivery, not a local page test package
+
+src\emo_master\core\project\test_delivery.py:69: ValueError</failure></testcase><testcase classname="tests.designer.test_page_package_export" name="testResponsiveExportMenuUsesRuntimePackageAndExistingImportRoute" time="0.213"><failure message="AssertionError: assert '导出测试项目包…' == '导出 Runtime 项目包…'&#10;  &#10;  - 导出 Runtime 项目包…&#10;  + 导出测试项目包…">ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000016466E8DFC0&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3935/testResponsiveExportMenuUsesRu0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000016466E8E110&gt;
+
+    def testResponsiveExportMenuUsesRuntimePackageAndExistingImportRoute(ownedDesignerWindow, tmp_path, monkeypatch):
+        window = ownedDesignerWindow(Client())
+        assert window.saveProjectToDirectory(str(tmp_path / 'engineering'))
+        coordinator = window.pageCoordinator
+        action = next(action for action in coordinator.chrome.menus['文件'].actions()
+                      if action.text().startswith('导出'))
+&gt;       assert action.text() == '导出 Runtime 项目包…'
+E       AssertionError: assert '导出测试项目包…' == '导出 Runtime 项目包…'
+E         
+E         - 导出 Runtime 项目包…
+E         + 导出测试项目包…
+
+tests\designer\test_page_package_export.py:61: AssertionError</failure></testcase><testcase classname="tests.designer.test_page_package_export" name="testExportRequiresSavedResourceRoot" time="0.279" /></testsuite></testsuites>

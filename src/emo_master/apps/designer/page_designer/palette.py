@@ -103,6 +103,9 @@ class Palette(QListWidget):
         from .tools import mime
         item = self.currentItem()
         if item:
+            prepare = getattr(self, 'beforeDrag', None)
+            if prepare is not None and not prepare():
+                return
             drag = QDrag(self)
             drag.setMimeData(mime({'kind': item.data(Qt.UserRole)}))
             ratio = self.devicePixelRatioF()
@@ -117,3 +120,6 @@ class Palette(QListWidget):
                 drag.exec_(Qt.CopyAction)
             finally:
                 drag.deleteLater()
+                finish = getattr(self, 'afterDrag', None)
+                if finish is not None:
+                    finish()

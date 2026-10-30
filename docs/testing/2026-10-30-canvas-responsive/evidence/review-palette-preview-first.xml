@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="5" time="2.769" timestamp="2026-10-30T17:15:11.518902+08:00" hostname="视觉电脑"><testcase classname="tests.ui.page_designer.test_responsive_drop_preview" name="testPalettePreviewMeasuresNativePrototype[text]" time="0.521" /><testcase classname="tests.ui.page_designer.test_responsive_drop_preview" name="testPalettePreviewMeasuresNativePrototype[number]" time="0.316"><failure message="AssertionError: ('57baf39e-276d-4ed2-a009-cbb670872910', PySide2.QtCore.QRect(9, 125, 324, 100), PySide2.QtCore.QRect(9, 125, 324, 104))&#10;assert 4 &lt;= 2&#10; +  where 4 = max(&lt;generator object compareDrop.&lt;locals&gt;.&lt;genexpr&gt; at 0x0000020940785D90&gt;)">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x00000209407D9270&gt;, &lt;emo_master.apps.d...9e13b9cb-a987-4b92-999c-2822ee7dbd2a', '57baf39e-276d-4ed2-a009-cbb670872910', 'a40ff39d-0894-4691-acdb-03b9319f7341'])
+kind = 'number'
+
+    @pytest.mark.parametrize('kind', ['text', 'number', 'image', 'table', 'container'])
+    def testPalettePreviewMeasuresNativePrototype(responsivePage, kind):  # noqa: F811
+        _coordinator, editor, keys = responsivePage
+        target = editor.renderer.cards[editor.pageId][keys[2]]
+&gt;       compareDrop(editor, {'kind': kind}, target, target.rect().center())
+
+tests\ui\page_designer\test_responsive_drop_preview.py:129: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x2093ff9ab30) at 0x0000020940797DC0&gt;
+payload = {'kind': 'number'}
+target = &lt;PySide2.QtWidgets.QFrame(0x2093fae3c10, name="card") at 0x0000020940AAB700&gt;
+point = PySide2.QtCore.QPoint(161, 51)
+
+    def compareDrop(editor, payload, target, point):
+        tools = editor.tools.responsive
+        cards = dict(editor.renderer.cards[editor.pageId])
+        widgets = dict(editor.renderer.widgets[editor.pageId])
+        originalRects = rootRects(editor)
+        before, history = editor.session.payload(), len(editor.session._undo)
+        tools.drop(payload, target, point, preview=True)
+        rects, size = dict(tools.candidateRects), tools.candidateSize
+        assert editor.session.payload() == before
+        assert len(editor.session._undo) == history
+        assert rootRects(editor) == originalRects
+        assert editor.renderer.cards[editor.pageId] == cards
+        assert editor.renderer.widgets[editor.pageId] == widgets
+        tools.drop(payload, target, point)
+        editor.refresh()
+        settle()
+        actual = rootRects(editor)
+        for key in cards:
+            expectedValues, actualValues = rects[key].getRect(), actual[key].getRect()
+&gt;           assert max(abs(a - b) for a, b in zip(expectedValues, actualValues)) &lt;= 2, (key, rects[key], actual[key])
+E           AssertionError: ('57baf39e-276d-4ed2-a009-cbb670872910', PySide2.QtCore.QRect(9, 125, 324, 100), PySide2.QtCore.QRect(9, 125, 324, 104))
+E           assert 4 &lt;= 2
+E            +  where 4 = max(&lt;generator object compareDrop.&lt;locals&gt;.&lt;genexpr&gt; at 0x0000020940785D90&gt;)
+
+tests\ui\page_designer\test_responsive_drop_preview.py:42: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_drop_preview" name="testPalettePreviewMeasuresNativePrototype[image]" time="0.333"><failure message="AssertionError: ('ebb89f20-069f-4599-9a5c-39d8495a211c', PySide2.QtCore.QRect(9, 125, 324, 154), PySide2.QtCore.QRect(9, 125, 324, 158))&#10;assert 4 &lt;= 2&#10; +  where 4 = max(&lt;generator object compareDrop.&lt;locals&gt;.&lt;genexpr&gt; at 0x0000020940B3E260&gt;)">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x0000020940766EC0&gt;, &lt;emo_master.apps.d...66c60271-af5f-42c1-a0a7-9c1accdf4efa', 'ebb89f20-069f-4599-9a5c-39d8495a211c', 'd10cf43f-6a88-41fa-b97e-9fc2fdec49e8'])
+kind = 'image'
+
+    @pytest.mark.parametrize('kind', ['text', 'number', 'image', 'table', 'container'])
+    def testPalettePreviewMeasuresNativePrototype(responsivePage, kind):  # noqa: F811
+        _coordinator, editor, keys = responsivePage
+        target = editor.renderer.cards[editor.pageId][keys[2]]
+&gt;       compareDrop(editor, {'kind': kind}, target, target.rect().center())
+
+tests\ui\page_designer\test_responsive_drop_preview.py:129: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x2093fe18010) at 0x0000020940A7CE40&gt;
+payload = {'kind': 'image'}
+target = &lt;PySide2.QtWidgets.QFrame(0x2093fa751f0, name="card") at 0x0000020940851040&gt;
+point = PySide2.QtCore.QPoint(161, 51)
+
+    def compareDrop(editor, payload, target, point):
+        tools = editor.tools.responsive
+        cards = dict(editor.renderer.cards[editor.pageId])
+        widgets = dict(editor.renderer.widgets[editor.pageId])
+        originalRects = rootRects(editor)
+        before, history = editor.session.payload(), len(editor.session._undo)
+        tools.drop(payload, target, point, preview=True)
+        rects, size = dict(tools.candidateRects), tools.candidateSize
+        assert editor.session.payload() == before
+        assert len(editor.session._undo) == history
+        assert rootRects(editor) == originalRects
+        assert editor.renderer.cards[editor.pageId] == cards
+        assert editor.renderer.widgets[editor.pageId] == widgets
+        tools.drop(payload, target, point)
+        editor.refresh()
+        settle()
+        actual = rootRects(editor)
+        for key in cards:
+            expectedValues, actualValues = rects[key].getRect(), actual[key].getRect()
+&gt;           assert max(abs(a - b) for a, b in zip(expectedValues, actualValues)) &lt;= 2, (key, rects[key], actual[key])
+E           AssertionError: ('ebb89f20-069f-4599-9a5c-39d8495a211c', PySide2.QtCore.QRect(9, 125, 324, 154), PySide2.QtCore.QRect(9, 125, 324, 158))
+E           assert 4 &lt;= 2
+E            +  where 4 = max(&lt;generator object compareDrop.&lt;locals&gt;.&lt;genexpr&gt; at 0x0000020940B3E260&gt;)
+
+tests\ui\page_designer\test_responsive_drop_preview.py:42: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_drop_preview" name="testPalettePreviewMeasuresNativePrototype[table]" time="0.383"><failure message="AssertionError: ('19ed6393-5480-4259-a14a-a1587bd3f754', PySide2.QtCore.QRect(9, 125, 324, 208), PySide2.QtCore.QRect(9, 125, 324, 228))&#10;assert 20 &lt;= 2&#10; +  where 20 = max(&lt;generator object compareDrop.&lt;locals&gt;.&lt;genexpr&gt; at 0x0000020940B3FED0&gt;)">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x00000209408A8E80&gt;, &lt;emo_master.apps.d...df493e4c-56f2-4fb5-80ab-854829a30e72', '19ed6393-5480-4259-a14a-a1587bd3f754', 'f1fbfed5-b460-4a66-9511-60640d60182e'])
+kind = 'table'
+
+    @pytest.mark.parametrize('kind', ['text', 'number', 'image', 'table', 'container'])
+    def testPalettePreviewMeasuresNativePrototype(responsivePage, kind):  # noqa: F811
+        _coordinator, editor, keys = responsivePage
+        target = editor.renderer.cards[editor.pageId][keys[2]]
+&gt;       compareDrop(editor, {'kind': kind}, target, target.rect().center())
+
+tests\ui\page_designer\test_responsive_drop_preview.py:129: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x2093ffb0000) at 0x000002093F6342C0&gt;
+payload = {'kind': 'table'}
+target = &lt;PySide2.QtWidgets.QFrame(0x2093fa73970, name="card") at 0x00000209408B3E00&gt;
+point = PySide2.QtCore.QPoint(161, 51)
+
+    def compareDrop(editor, payload, target, point):
+        tools = editor.tools.responsive
+        cards = dict(editor.renderer.cards[editor.pageId])
+        widgets = dict(editor.renderer.widgets[editor.pageId])
+        originalRects = rootRects(editor)
+        before, history = editor.session.payload(), len(editor.session._undo)
+        tools.drop(payload, target, point, preview=True)
+        rects, size = dict(tools.candidateRects), tools.candidateSize
+        assert editor.session.payload() == before
+        assert len(editor.session._undo) == history
+        assert rootRects(editor) == originalRects
+        assert editor.renderer.cards[editor.pageId] == cards
+        assert editor.renderer.widgets[editor.pageId] == widgets
+        tools.drop(payload, target, point)
+        editor.refresh()
+        settle()
+        actual = rootRects(editor)
+        for key in cards:
+            expectedValues, actualValues = rects[key].getRect(), actual[key].getRect()
+&gt;           assert max(abs(a - b) for a, b in zip(expectedValues, actualValues)) &lt;= 2, (key, rects[key], actual[key])
+E           AssertionError: ('19ed6393-5480-4259-a14a-a1587bd3f754', PySide2.QtCore.QRect(9, 125, 324, 208), PySide2.QtCore.QRect(9, 125, 324, 228))
+E           assert 20 &lt;= 2
+E            +  where 20 = max(&lt;generator object compareDrop.&lt;locals&gt;.&lt;genexpr&gt; at 0x0000020940B3FED0&gt;)
+
+tests\ui\page_designer\test_responsive_drop_preview.py:42: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_drop_preview" name="testPalettePreviewMeasuresNativePrototype[container]" time="0.339" /></testsuite></testsuites>

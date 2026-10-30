@@ -72,7 +72,8 @@ class WorkspaceChrome(QObject):
         self.menus['视图'].addAction(self.previewAction)
         self.menus['文件'].addAction(w._toolbarActions['校验项目'])
         from .delivery import exportDialog
-        self.menus['文件'].addAction(self.action('导出测试项目包…', lambda: self.command(lambda: exportDialog(coordinator))))
+        self.exportAction = self.action('导出项目包…', lambda: self.command(lambda: exportDialog(coordinator)))
+        self.menus['文件'].addAction(self.exportAction)
         self.menus['运行'].addAction(w._toolbarActions['刷新算子'])
         capture = self.menus['运行'].addMenu('结果采集设置')
         policies = QActionGroup(capture)
@@ -166,6 +167,8 @@ class WorkspaceChrome(QObject):
     def update(self, *, projectChanged=True):
         if projectChanged:
             self.c.updateWindowTitle()
+            from .delivery import exportPackageLabel
+            self.exportAction.setText(exportPackageLabel(self.c) + '…')
         observer = getattr(self.window, 'deviceStatusObserver', None)
         if observer is not None:
             observer.refresh()

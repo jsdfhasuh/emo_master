@@ -122,7 +122,8 @@ def _deviceFiles(document, deviceTypes, visit):
                     node.deviceOverrides[slot] = _files(node.deviceOverrides[slot], declaration.defaultsSchema, visit)
 
 
-def buildRuntimePackage(projectDir: Path, outputDir: Path, *, registry=None, deviceTypes=None) -> Path:
+def buildRuntimePackage(projectDir: Path, outputDir: Path, *, document: ProjectDocument | None = None,
+                        registry=None, deviceTypes=None) -> Path:
     registry = trustedRegistry() if registry is None else registry
     deviceTypes = trustedDeviceTypes() if deviceTypes is None else deviceTypes
     projectFile = resolveProjectFile(Path(projectDir).resolve(strict=True))
@@ -130,7 +131,10 @@ def buildRuntimePackage(projectDir: Path, outputDir: Path, *, registry=None, dev
     outputDir = Path(outputDir).resolve()
     if outputDir.is_relative_to(root):
         raise ValueError("package output must be outside the engineering project")
-    document = ProjectDocument.model_validate(migrateProjectPayload(loadProjectPayload(projectFile), enableProduction=True))
+    # Designer supplies its authoritative draft while assets still belong to
+    # the saved project directory. Validate a copy before making paths portable.
+    payload = loadProjectPayload(projectFile) if document is None else document.model_dump(mode="json")
+    document = ProjectDocument.model_validate(migrateProjectPayload(payload, enableProduction=True))
     prepared = _validate(document, root, registry, deviceTypes)
     assert document.resources is not None
     sources = {item.path: _inside(root, item.path) for item in document.resources.items.values()}

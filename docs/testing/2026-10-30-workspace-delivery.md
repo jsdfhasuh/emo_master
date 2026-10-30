@@ -2,6 +2,8 @@
 
 本轮用户要求整理工作区、提交并推送，再由 Dot 在它自己的桌面先验收一轮。本记录固定源码基准，保留历史验证边界，不代表 Dot 已执行、人工验收通过或安装包已更新。
 
+后续用户要求复查并修正 P1—P4 遗漏，修正实现提交为 `b4eb353d93aab450d1cd7505c999a6acfabdb2b5`，见 [审查修正记录](2026-10-30-canvas-responsive/review-fixes.md)。当前 Dot 入口已更新为 23 项；下文保留首次整理交付的提交、测试与 19 项清单历史，不代表最新待验收范围。
+
 ## 提交范围
 
 功能提交：`7ef125996c46c58bf7d7bd87252be347f8b5117d`，标题为 `feat(designer): add responsive canvases and local page data sources`。

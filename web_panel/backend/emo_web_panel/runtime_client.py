@@ -26,3 +26,6 @@ class GrpcRuntimeClient:
     async def snapshot(self, run_id): return await self.info()
     async def control(self, action, target, body): return await self.info()
     async def history(self, component_id, page, page_size, **query): return await self.info()
+
+    async def counters(self): return await self.info()
+    async def task_events(self, after="0"): return await self.info()

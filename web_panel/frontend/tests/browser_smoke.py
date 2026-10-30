@@ -22,15 +22,19 @@ def mock(route):
   data={'username':'tester','role':'admin','csrf':'fixture','mode':'mock'}
  elif path=='/api/panels':data=[panel]
  elif path=='/api/panels/demo-panel':data=panel
- elif path=='/api/runs':data=[{'id':'demo-run','state':'running','workflowId':'demo-workflow','runtimeInstanceId':'mock-instance','projectId':'demo-project'}]
+ elif path in ['/api/runs','/api/runtimes/configured/runs']:data=[{'id':'demo-run','state':'running','workflowId':'demo-workflow','runtimeInstanceId':'mock-instance','projectId':'demo-project'}]
+ elif path=='/api/runtimes':data=[{'id':'configured','alias':'演示','mode':'mock'}]
+ elif path=='/api/runtimes/configured/status':data={'counters':{'source':'mock-authoritative','total':'1','ok':'1','ng':'0','at':'fixture'},'events':{'events':[],'nextSequence':'0','resetRequired':False,'source':'mock-events'}}
+ elif path=='/api/runtimes/configured/workflows':data=[{'id':'demo-workflow','name':'Demo workflow','runtimeInstanceId':'mock-instance','projectId':'demo-project'}]
  elif path=='/api/views':data={'id':'view-1'}
+ elif path=='/api/views/view-1' and route.request.method=='DELETE':data={}
  elif path=='/api/views/view-1/freeze':state['freeze']+=1;data={'result':result}
  elif path=='/api/views/view-1/resume':data={'result':result}
  elif '/history/' in path:data={'rows':[{'id':1,'result':'OK'}],'total':1,'page':1,'pageSize':20}
  elif path=='/api/packages':data=[]
  elif path=='/api/admin/users':data=[{'username':'tester','role':'admin'}]
- elif path=='/api/admin/runtimes':data=[{'mode':'mock','editable':False}]
- elif path=='/api/runs/start':state['start']+=1;data={'operationId':'op-1'}
+ elif path=='/api/admin/runtimes':data=[{'id':'configured','alias':'演示','mode':'mock','address':''}]
+ elif path=='/api/runs/start':state['start']+=1;data={'operationId':'op-1','state':'succeeded'}
  elif path=='/api/assets/demo-image':route.fulfill(content_type='image/png',body=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a1ioAAAAASUVORK5CYII='));return
  elif path=='/api/logout':state['logged']=False;data={}
  else:route.fulfill(status=404,json={'detail':path});return
@@ -48,6 +52,17 @@ with sync_playwright() as p:
   page.get_by_text('97',exact=True).wait_for();assert page.get_by_text('嵌套内容',exact=True).count()==1
   assert page.evaluate('window.PWNED') is None
   page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看，后台仍在运行').wait_for();assert state['freeze']==1
+  page.get_by_role('button',name='恢复实时',exact=True).click()
+  held=[]
+  page.route('**/api/assets/held-image',lambda route:held.append(route))
+  candidate=json.loads(json.dumps(result));candidate['resultKey']='late';candidate['sources']['score']['value']=888;candidate['sources']['image']['image']={'url':'/api/assets/held-image','ownerResultKey':'late'}
+  sockets[-1].send(json.dumps({'type':'result','result':candidate}))
+  page.wait_for_timeout(100);assert held
+  page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看，后台仍在运行').wait_for()
+  try:held.pop().fulfill(content_type='image/png',body=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a1ioAAAAASUVORK5CYII='))
+  except Exception:pass # Browser may already have cancelled the old candidate fetch.
+  page.wait_for_timeout(100);assert page.get_by_text('888',exact=True).count()==0
+  page.get_by_text('97',exact=True).wait_for()
   page.get_by_role('button',name='恢复实时',exact=True).click();page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('操作已受理：op-1').wait_for();assert state['start']==1
   page.get_by_role('button',name='详情',exact=True).first.click();page.get_by_role('heading',name='详情',exact=True).wait_for()
   page.set_viewport_size({'width':390,'height':844});page.get_by_role('button',name='生产总览',exact=True).first.click();page.get_by_text('97',exact=True).wait_for();assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
@@ -60,6 +75,12 @@ with sync_playwright() as p:
   stale=json.loads(json.dumps(result));stale['resultKey']='stale';stale['sources']['score']['value']=999;stale['sources']['image']['image']={'url':'/api/assets/slow-image','ownerResultKey':'stale'}
   sockets[-1].send(json.dumps({'type':'result','result':stale}))
   page.wait_for_timeout(500);assert page.get_by_text('999',exact=True).count()==0
+  page.get_by_label('停止控制目标',exact=True).select_option('demo-run')
+  page.get_by_label('查看运行',exact=True).select_option('')
+  assert page.get_by_label('停止控制目标',exact=True).input_value()=='demo-run'
+  page.get_by_label('history-table 筛选').wait_for()
+  page.get_by_role('button',name='启动工作流',exact=True).click();page.wait_for_timeout(200);assert state['start']==2
+
 
   assert not errors,errors
  except Exception:

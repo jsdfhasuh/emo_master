@@ -2,6 +2,7 @@
 export type Role = 'admin' | 'operator' | 'viewer';
 export interface Me {
     username: string;
+    userId?: string;
     role: Role;
     csrf: string;
     mode?: string;
@@ -13,7 +14,8 @@ export interface Component {
     label?: string;
     props?: Record<string, unknown>;
     binding?: string | {
-        sourceId: string;
+        sourceId?: string;
+        field?: string;
         scopeId?: string;
     };
     children?: Component[];
@@ -22,18 +24,23 @@ export interface Component {
         row?: number;
         columnSpan?: number;
         rowSpan?: number;
+        columns?: number;
+        gap?: number;
     };
 }
 export interface Page {
     id: string;
     title: string;
     components: Component[];
+    grid?: Component['grid'];
 }
 export interface Panel {
     id: string;
     name: string;
     packageRevision: string;
     pages: Page[];
+    defaultPageId?: string;
+    grid?: Component['grid'];
 }
 export interface Run {
     id: string;
@@ -46,6 +53,9 @@ export interface Run {
 export interface ImageRef {
     url: string;
     ownerResultKey?: string;
+    byteSize?: string | number;
+    sha256?: string;
+    mimeType?: string;
 }
 export interface Source {
     state: string;
@@ -63,6 +73,7 @@ export interface Result {
 export interface Envelope {
     type: string;
     sessionEpoch?: string;
+    viewGeneration?: string;
     targetId?: string;
     pagePackageRevision?: string;
     result?: Result;
@@ -75,3 +86,6 @@ export interface History {
     page: number;
     pageSize: number;
 }
+/** Web adapter draft target discovery; official protocol SDK remains pending. */
+export interface RuntimeTarget { id: string; alias: string; mode: string; address?: string; }
+export interface WorkflowTarget { id: string; name?: string; runtimeInstanceId?: string; projectId?: string; inputSchema?: Record<string, unknown>; inputs?: Record<string, unknown>; canStart?: boolean; }

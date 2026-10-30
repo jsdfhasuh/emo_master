@@ -21,7 +21,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 export function safeAssetUrl(value: unknown): string | undefined { if (typeof value !== 'string')
     return; try {
     const url = new URL(value, location.origin);
-    if (url.origin === location.origin && /^\/api\/(assets|history-images)\//.test(url.pathname))
+    if (url.origin === location.origin && (/^\/api\/(assets|history-images)\//.test(url.pathname) || /^\/api\/views\/[^/]+\/images\/[^/]+$/.test(url.pathname)))
         return url.href;
 }
 catch { } }

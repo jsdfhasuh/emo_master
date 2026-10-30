@@ -31,10 +31,10 @@ MIMES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
 ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 HASH = re.compile(r"^[0-9a-f]{64}$")
 PROPS = {"text", "label", "title", "unit", "decimals", "placeholder", "assetId",
-         "action", "targetPageId", "columns", "pageSize", "format", "timezone",
+         "action", "targetPageId", "icon", "sourceMode", "sourceComponentId", "columns", "pageSize", "format", "timezone",
          "trueLabel", "falseLabel", "trueValue", "falseValue", "mapping", "style",
          "row", "column", "rowSpan", "columnSpan", "height", "width", "fit",
-         "componentId", "aggregation", "aggregate", "sourceId", "emptyText", "value", "grid"}
+         "componentId", "aggregation", "aggregateField", "followsFilter", "aggregate", "sourceId", "emptyText", "value", "grid"}
 STYLE = {"fontSize", "color", "backgroundColor", "fontWeight", "textAlign"}
 
 
@@ -156,6 +156,11 @@ def _validate_presentation(doc, asset_ids):
         if not isinstance(props, dict) or set(props) - PROPS:
             raise PackageError("Unsupported component property")
         _plain(props)
+        if "icon" in props and (not isinstance(props['icon'],str) or len(props['icon'])>32):raise PackageError('Invalid text icon')
+        if 'sourceMode' in props and props['sourceMode'] not in ('history_fixed','history_selection'):raise PackageError('Invalid history image mode')
+        if 'sourceComponentId' in props:_identifier(props['sourceComponentId'],'history table reference')
+        if "followsFilter" in props and type(props["followsFilter"]) is not bool:raise PackageError("Invalid aggregate filter policy")
+        if "aggregateField" in props:_identifier(props["aggregateField"], "aggregate field")
         if "style" in props:
             _style(props["style"])
         # Local draft renderer calls this aggregate; the published SDK will

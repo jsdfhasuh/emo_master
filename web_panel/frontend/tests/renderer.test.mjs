@@ -19,3 +19,12 @@ test('unavailable bound values never render fallback or stale OK business values
  const absent=render([{id:'c',type,binding:'absent',props:{value:'OK'}}]);assert.match(absent,/不可用/);assert.doesNotMatch(absent,/>OK</);
  }
 });
+test('draft nested grid, field selection and all permitted safe styles render',()=>{
+ const html=render([{id:'n',type:'text',binding:{sourceId:'data',field:'verdict'},props:{grid:{column:2,columnSpan:2},style:{color:'red',fontWeight:'600',fontSize:96}}}],{result:{resultKey:'r',sources:{data:{state:'available',value:{verdict:'PASS'}}}}});
+ assert.match(html,/>PASS</);assert.match(html,/grid-column:2 \/ span 2/);assert.match(html,/color:red/);assert.match(html,/font-weight:600/);assert.match(html,/font-size:96px/);
+});
+test('clock timezone, navigation plain icon and fixed history image are supported',()=>{
+ globalThis.location={origin:'http://panel.example'};
+ const html=render([{id:'clock',type:'clock',props:{timezone:'UTC',format:'time'}},{id:'nav',type:'navigation_button',props:{icon:'▶',text:'Open',targetPageId:'page'}},{id:'fixed',type:'image',props:{sourceMode:'history_fixed'}}],{viewId:'v'});
+ assert.match(html,/UTC/);assert.match(html,/▶/);assert.match(html,/\/api\/views\/v\/images\/fixed/);
+});

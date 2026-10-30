@@ -8,11 +8,16 @@ permissions:
   contents: read
 jobs:
   web-panel:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     defaults:
       run:
         working-directory: web_panel
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -38,7 +43,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: browser-evidence-${{ github.sha }}
+          name: browser-evidence-${{ matrix.os }}-${{ github.sha }}
           path: |
             web_panel/frontend/test-tmp/*.png
             web_panel/frontend/test-tmp/*.html
@@ -60,27 +65,11 @@ jobs:
               assert 'emo_web_panel/static/index.html' in z.namelist()
           PY
       - name: Install wheel outside source checkout
-        run: |
-          python -m venv /tmp/emo-web-wheel
-          /tmp/emo-web-wheel/bin/pip install dist/*.whl
-          cd /tmp
-          /tmp/emo-web-wheel/bin/python - <<'PYCODE'
-          import sys, tempfile
-          from pathlib import Path
-          import emo_web_panel
-          from emo_web_panel.app import create_app
-          from emo_web_panel.config import Config
-          assert Path(emo_web_panel.__file__).parent.joinpath('static/index.html').is_file()
-          with tempfile.TemporaryDirectory() as d:
-              app=create_app(Config(Path(d), mode='mock'))
-              assert any(getattr(route,'name','')=='frontend' for route in app.routes)
-          assert 'PySide2' not in sys.modules and 'emo_master' not in sys.modules
-          PYCODE
-          /tmp/emo-web-wheel/bin/emo-web-panel --help
+        run: python scripts/verify_wheel.py
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: web-panel-development-preview-${{ github.sha }}
+          name: web-panel-development-preview-${{ matrix.os }}-${{ github.sha }}
           path: |
             web_panel/dist/*.whl
             web_panel/docs/

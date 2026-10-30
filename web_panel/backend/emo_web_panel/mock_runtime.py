@@ -1,6 +1,7 @@
 """Explicit draft-only demonstration, not Panel Contract v1 certification."""
 import asyncio
 import base64
+import hashlib
 from datetime import datetime, timezone
 
 IMAGE = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=')
@@ -24,7 +25,10 @@ def demo_panel():
     return {"id":"demo-panel","name":"Demo panel","packageRevision":"draft-1","panelContractVersion":"draft-unverified","pages":[{"id":"main","title":"Demo production","components":comps}]}
 
 class MockRuntime:
-    def __init__(self):
+    def __init__(self, runtime_id="configured"):
+        self.runtime_id=runtime_id
+        self.events=[]
+        self.event_sequence=0
         self.running = True
         self.ordinal = 0
         self.lock = asyncio.Lock()
@@ -41,7 +45,7 @@ class MockRuntime:
         if run_id != "demo-run": raise ValueError("unknown run")
         if self.running: self.ordinal += 1
         return {"runtimeInstanceId":"mock-instance","jobId":"demo-run","resultScopeId":"scope-1","resultKey":f"mock-{self.ordinal}","resultOrdinal":str(self.ordinal),"executionRevision":"1","capturePlanRevision":"1","status":"complete","executionTerminal":True,"receivedAt":datetime.now(timezone.utc).isoformat(),"sources":{
-            "image":{"state":"available","image":{"url":"/api/assets/demo-image","ownerResultKey":f"mock-{self.ordinal}","resourceId":"demo-image","mimeType":"image/png","byteSize":len(IMAGE)}},
+            "image":{"state":"available","image":{"url":f"/api/assets/runtime/{self.runtime_id}/demo-image","ownerResultKey":f"mock-{self.ordinal}","resourceId":"demo-image","mimeType":"image/png","byteSize":len(IMAGE),"sha256":hashlib.sha256(IMAGE).hexdigest()}},
             "score":{"state":"available","value":99.5},"verdict":{"state":"available","value":"OK"},
             "measurements":{"state":"available","value":[{"name":"width","value":10.2}]}}}
     async def control(self, action, target, body):
@@ -51,11 +55,26 @@ class MockRuntime:
             if action == "stop" and target != "demo-run": raise ValueError("unknown run")
             self.running = action == "start"
             self.control_count += 1
+            self.event_sequence += 1
+            self.events.append({"sequence":str(self.event_sequence),"at":datetime.now(timezone.utc).isoformat(),"kind":action,"runId":"demo-run","message":"Mock Runtime accepted "+action})
+            self.events=self.events[-100:]
             return {"state":"succeeded","runId":"demo-run","mode":"mock"}
-    async def history(self, component_id, page, page_size, q="", sort="id", order="asc"):
+    async def history(self, component_id, page, page_size, q="", sort="id", order="asc", aggregation="count", field="measurement", follow_filter=False):
         if component_id not in {"history-table","history-count"}: raise ValueError("undeclared history component")
-        rows = [{"id":str(n),"result":"OK" if n%4 else "NG","imageRef":"demo-image"} for n in range(1,31)]
+        rows = [{"id":str(n),"result":"OK" if n%4 else "NG","imageRef":f"{self.runtime_id}:demo-image","measurement":float(n)} for n in range(1,31)]
         if sort not in {"id","result"} or order not in {"asc","desc"} or len(q)>200:raise ValueError("Unsupported history query")
+        all_rows=rows
         rows=[r for r in rows if q.lower() in str(r).lower()]
         rows.sort(key=lambda r:int(r["id"]) if sort=="id" else r["result"],reverse=order=="desc")
-        return {"rows":rows[(page-1)*page_size:page*page_size],"total":len(rows),"page":page,"pageSize":page_size,"value":len(rows),"mode":"mock"}
+        if aggregation not in {'count','sum','avg','min','max'} or field!='measurement':raise ValueError('Unsupported declared aggregate')
+        values=[r[field] for r in (rows if follow_filter else all_rows)]
+        aggregate=len(values) if aggregation=='count' else (None if not values else {'sum':lambda:sum(values),'avg':lambda:sum(values)/len(values),'min':lambda:min(values),'max':lambda:max(values)}[aggregation]())
+        return {"rows":rows[(page-1)*page_size:page*page_size],"total":len(rows),"page":page,"pageSize":page_size,"value":aggregate,"mode":"mock","aggregation":aggregation,"followsFilter":follow_filter}
+
+    async def counters(self):
+        return {"source":"mock-runtime-authoritative", "total":str(self.ordinal), "ok":str(self.ordinal-self.ordinal//4), "ng":str(self.ordinal//4), "at":datetime.now(timezone.utc).isoformat()}
+
+    async def task_events(self, after="0"):
+        if not isinstance(after,str) or not after.isdigit() or len(after)>20:raise ValueError("Invalid event sequence")
+        cursor=int(after)
+        return {"events":[event for event in self.events if int(event['sequence'])>cursor],"nextSequence":str(self.event_sequence),"resetRequired":bool(self.events and cursor<int(self.events[0]['sequence'])-1),"source":"mock-runtime-event-log"}

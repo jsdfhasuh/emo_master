@@ -30,8 +30,17 @@ def main():
      page.get_by_text('账户与 Runtime 管理',exact=True).click();page.get_by_label('新用户名',exact=True).fill('readonly');page.get_by_label('初始密码',exact=True).fill('Readonly-fixture-123!');page.get_by_role('button',name='创建用户',exact=True).click();page.get_by_role('cell',name='readonly',exact=True).wait_for()
      history=page.locator('section.panel-card').filter(has=page.get_by_label('history-table 筛选'))
      history.get_by_text('共 30 条',exact=False).wait_for();assert history.locator('tbody tr').count()==10
+     page.get_by_role('button',name='编辑 / 授权',exact=False).first.click()
+     page.get_by_label('readonly 查看 configured',exact=True).check()
+     page.get_by_role('button',name='新建目标',exact=True).click();page.get_by_label('Runtime ID',exact=True).fill('second');page.get_by_label('Runtime 别名',exact=True).fill('Second mock');page.get_by_role('button',name='新增连接',exact=True).click();page.get_by_role('button',name='编辑 / 授权 Second mock',exact=True).wait_for()
+     page.get_by_label('Runtime 别名',exact=True).fill('Second edited');page.get_by_role('button',name='保存连接',exact=True).click();page.get_by_role('button',name='编辑 / 授权 Second edited',exact=True).wait_for()
+     page.get_by_label('readonly 查看 second',exact=True).check()
+     page.get_by_label('删除时撤销目标授权',exact=True).check();page.once('dialog',lambda dialog:dialog.accept());page.get_by_role('row').filter(has=page.get_by_role('button',name='编辑 / 授权 Second edited',exact=True)).get_by_role('button',name='删除目标',exact=True).click();page.get_by_role('button',name='编辑 / 授权 Second edited',exact=True).wait_for(state='detached')
+     page.get_by_label('查看运行',exact=True).select_option('');history.get_by_text('共 30 条',exact=False).wait_for()
+     page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('操作已受理：',exact=False).wait_for()
+     page.get_by_label('查看运行',exact=True).select_option('demo-run');page.get_by_text('99.50',exact=False).wait_for()
      page.get_by_label('history-table 筛选').fill('NG');history.get_by_text('共 7 条',exact=False).wait_for();assert history.locator('tbody tr').count()==7
-     page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
+     page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth'),page.evaluate("Array.from(document.querySelectorAll('body *')).filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>({tag:e.tagName,class:e.className,width:e.getBoundingClientRect().width})).slice(0,20)")
      page.screenshot(path=str(ROOT/'backend-mobile.png'),full_page=True)
      page.get_by_role('button',name='退出',exact=True).click();page.get_by_label('用户名',exact=True).fill('readonly');page.get_by_label('密码',exact=True).fill('Readonly-fixture-123!');page.get_by_role('button',name='登录',exact=True).click();page.get_by_text('99.50',exact=False).wait_for();assert page.get_by_role('button',name='启动工作流',exact=True).count()==0
      assert not errors,errors

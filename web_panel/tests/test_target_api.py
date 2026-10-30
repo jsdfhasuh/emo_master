@@ -85,3 +85,23 @@ class TargetApiTests(unittest.TestCase):
         result=self.client.post('/api/packages/'+b['packageId']+'/activate',headers=h,json={'runtimeIds':['configured','configured']})
         self.assertEqual(result.status_code,422)
         self.assertEqual(self.client.get('/api/panels').json()[0]['id'],a['packageId'])
+
+    def test_freeze_pins_exact_fetched_bytes_and_resume_releases(self):
+        h=self.login()
+        vid=self.client.post('/api/views',headers=h,json={'panelId':'demo-panel','runId':'demo-run'}).json()['id']
+        with self.client.websocket_connect('/ws/views/'+vid) as ws:
+            message=ws.receive_json();result=message['result']
+            self.assertEqual(self.client.get(result['sources']['image']['image']['url']).status_code,200)
+            response=self.client.post('/api/views/'+vid+'/freeze',headers=h,json={'resultKeys':{result['resultScopeId']:result['resultKey']}})
+            self.assertEqual(response.status_code,200)
+            self.assertTrue(any('view:'+vid in item['pins'] for item in self.app.state.resources.items.values()))
+            self.client.post('/api/views/'+vid+'/resume',headers=h)
+            self.assertFalse(any('view:'+vid in item['pins'] for item in self.app.state.resources.items.values()))
+    def test_declared_fixed_history_image_without_live_run(self):
+        from test_packages import bundle
+        h=self.login()
+        item=self.client.post('/api/packages',headers=h,content=bundle(components=[{'id':'fixed','type':'image','props':{'sourceMode':'history_fixed'}}])).json()
+        self.client.post('/api/packages/'+item['packageId']+'/activate',headers=h)
+        vid=self.client.post('/api/views',headers=h,json={'panelId':item['packageId'],'runId':''}).json()['id']
+        self.assertEqual(self.client.get('/api/views/'+vid+'/images/fixed').status_code,200)
+        self.assertEqual(self.client.get('/api/views/'+vid+'/images/arbitrary').status_code,404)

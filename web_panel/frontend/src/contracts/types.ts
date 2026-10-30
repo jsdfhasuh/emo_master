@@ -89,5 +89,5 @@ export interface History {
     pageSize: number;
 }
 /** Web adapter draft target discovery; official protocol SDK remains pending. */
-export interface RuntimeTarget { id: string; alias: string; mode: string; address?: string; }
+export interface RuntimeTarget { permissions?: string[]; id: string; alias: string; mode: string; address?: string; }
 export interface WorkflowTarget { id: string; configurationRevision?: string; name?: string; runtimeInstanceId?: string; projectId?: string; inputSchema?: Record<string, unknown>; inputs?: Record<string, unknown>; canStart?: boolean; }

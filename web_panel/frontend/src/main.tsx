@@ -71,7 +71,7 @@ function App() {
         const [ps, targets] = await Promise.all([api<Panel[]>('/api/panels'), api<RuntimeTarget[]>('/api/runtimes')]);
         setPanels(ps); setRuntimes(targets);
         setRuntimeId(old => targets.some(t => t.id === old) ? old : targets[0]?.id || '');
-        if (ps.length) setPanel(await api<Panel>(`/api/panels/${encodeURIComponent(ps[0].id)}`));
+        if (ps.length) setPanel(await api<Panel>(`/api/panels/${encodeURIComponent(ps[0].id)}`)); else { setPanel(undefined);setNotice('暂无可访问的已发布页面：页面已移除或当前授权不允许访问，已返回运行首页。'); }
         if (me?.role === 'admin') setPackages(await api('/api/packages'));
     }
     useEffect(() => {
@@ -167,7 +167,13 @@ function App() {
                 socket.close();
                 return;
             }
-            if (message.state) setRuntimeState(typeof message.state === 'string' ? message.state : JSON.stringify(message.state));
+            if (message.state) {
+                if (typeof message.state === 'string') setRuntimeState(message.state);
+                else {
+                    if (typeof message.state.runState === 'string') setRuntimeState(message.state.runState);
+                    if (message.state.connected === false) setStatus('Runtime 未连接 · 显示最后结果');
+                }
+            }
             if (typeof (message as Envelope & {
                 frozen?: boolean;
             }).frozen === 'boolean')
@@ -219,7 +225,7 @@ function App() {
         if (name === 'freeze') { frozenKeys.current = undefined; restagePage.current?.(); } else frozenKeys.current = previousKeys;
         setError((e as Error).message);
     } }
-    async function control(kind: 'start' | 'stop') { if(pending){setError('请先查询上次操作结果或明确结束跟踪，系统不会自动重发。');return}setBusy(true); setError(''); controlId.current ??= Array.from(crypto.getRandomValues(new Uint8Array(16)), x => x.toString(16).padStart(2, '0')).join(''); try {
+    async function control(kind: 'start' | 'stop') { if(!canControl){setError('当前 Runtime 仅有查看权限');return}if(pending){setError('请先查询上次操作结果或明确结束跟踪，系统不会自动重发。');return}setBusy(true); setError(''); controlId.current ??= Array.from(crypto.getRandomValues(new Uint8Array(16)), x => x.toString(16).padStart(2, '0')).join(''); try {
         const run = runs.find(r => r.id === controlRunId);
         const workflow = workflows.find(w => w.id === workflowId);
         const target = kind === 'start' ? workflow : run;
@@ -253,6 +259,7 @@ function App() {
     finally {
         setBusy(false);
     } }
+    const canControl = me?.role !== 'viewer' && Boolean(runtimes.find(r=>r.id===runtimeId)?.permissions?.includes('control'));
     if (!me)
         return <main className="login"><h1>Emo Web 操作员面板</h1><p>独立展示客户端，不执行工作流或控制设备驱动。</p><form onSubmit={login}><label>用户名<input name="username" autoComplete="username" required/></label><label>密码<input name="password" type="password" autoComplete="current-password" required/></label><button disabled={busy}>{busy ? '登录中…' : '登录'}</button></form>{error && <p role="alert">{error}</p>}</main>;
     return <main><header><div><h1>Emo Web 操作员面板</h1><p>{me.mode === 'mock' ? '模拟 Runtime · 草案合同 · 演示数据，不代表生产设备' : '真实 Runtime 模式 · 能力以合同为准'}</p></div><div>{me.username} · {me.role}<button onClick={async () => { await api('/api/logout', { method: 'POST' }); setMe(undefined); setResult(undefined); setScopes({}); setPanel(undefined); setCsrf(''); }}>退出</button></div></header>
@@ -264,9 +271,9 @@ function App() {
         setError((e as Error).message);
     } }}>{panels.map(p => <option key={p.id} value={p.id}>{p.name || p.title || p.id}</option>)}</select></label><label>查看运行<select aria-label="查看运行" value={runId} onChange={e => setRunId(e.target.value)}><option value="">无运行 · 页面 / 历史预览</option>{runs.map(r => <option key={r.id} value={r.id}>{r.name || r.id} · {r.state}</option>)}</select></label><button onClick={() => refresh().catch(e => setError(e.message))}>刷新页面包和状态</button><span className="status">{status} {lastUpdate && `· 最后更新 ${lastUpdate}`}</span></section>
  {pending&&<section className="notice"><strong>待确认操作：{pending.kind} / {pending.target}</strong><button onClick={queryPending}>查询操作结果</button><button onClick={()=>{if(confirm('结束本次跟踪不会停止或重新执行任何命令。请确认已核对运行状态，后续新操作将是新的意图。'))clearPending()}}>结束跟踪（不重发）</button></section>}
- <section className="toolbar"><button disabled={!result || frozen} onClick={() => action('freeze')}>冻结查看</button><button disabled={!frozen} onClick={() => action('resume_live')}>恢复实时</button><span>{frozen ? '已冻结查看，后台仍在运行' : '实时查看'}</span>{me.role !== 'viewer' && <><span className="control-target">控制目标：{controlRunId || '未选择'}（独立于查看运行）</span><label>停止目标<select aria-label="停止控制目标" value={controlRunId} onChange={e=>setControlRunId(e.target.value)}><option value="">明确选择停止对象</option>{runs.map(r=><option key={r.id} value={r.id}>{r.name||r.id} · {r.state}</option>)}</select></label><button className="danger" disabled={busy || !controlRunId} onClick={() => { if (confirm(`停止当前明确选中的运行 ${controlRunId}？`))
+ <section className="toolbar"><button disabled={!result || frozen} onClick={() => action('freeze')}>冻结查看</button><button disabled={!frozen} onClick={() => action('resume_live')}>恢复实时</button><span>{frozen ? '已冻结查看，后台仍在运行' : '实时查看'}</span>{canControl && <><span className="control-target">控制目标：{controlRunId || '未选择'}（独立于查看运行）</span><label>停止目标<select aria-label="停止控制目标" value={controlRunId} onChange={e=>setControlRunId(e.target.value)}><option value="">明确选择停止对象</option>{runs.map(r=><option key={r.id} value={r.id}>{r.name||r.id} · {r.state}</option>)}</select></label><button className="danger" disabled={busy || !controlRunId} onClick={() => { if (confirm(`停止当前明确选中的运行 ${controlRunId}？`))
         control('stop'); }}>停止选中运行</button></>}</section>
- {me.role !== 'viewer' && <section className="toolbar"><label>启动工作流<select aria-label="启动工作流目标" value={workflowId} onChange={e => { setWorkflowId(e.target.value); setWorkflowInputs(JSON.stringify(workflows.find(w=>w.id===e.target.value)?.inputs || {})); }}>{!workflows.length && <option value="">无可用工作流 / 合同能力未就绪</option>}{workflows.map(w => <option key={w.id} value={w.id}>{w.name || w.id}</option>)}</select></label><WorkflowInputs workflow={workflows.find(w=>w.id===workflowId)} value={workflowInputs} onChange={setWorkflowInputs}/><button disabled={busy || !workflowId || !runtimeId || workflows.find(w=>w.id===workflowId)?.canStart === false} onClick={() => control('start')}>启动工作流</button><small>独立启动目标，不使用历史选行；输入由后端再次校验。</small>{workflows.find(w => w.id === workflowId)?.inputSchema && <details><summary>输入约束（草案）</summary><pre>{JSON.stringify(workflows.find(w => w.id === workflowId)?.inputSchema, null, 2)}</pre></details>}</section>}
+ {canControl && <section className="toolbar"><label>启动工作流<select aria-label="启动工作流目标" value={workflowId} onChange={e => { setWorkflowId(e.target.value); setWorkflowInputs(JSON.stringify(workflows.find(w=>w.id===e.target.value)?.inputs || {})); }}>{!workflows.length && <option value="">无可用工作流 / 合同能力未就绪</option>}{workflows.map(w => <option key={w.id} value={w.id}>{w.name || w.id}</option>)}</select></label><WorkflowInputs workflow={workflows.find(w=>w.id===workflowId)} value={workflowInputs} onChange={setWorkflowInputs}/><button disabled={busy || !workflowId || !runtimeId || workflows.find(w=>w.id===workflowId)?.canStart === false} onClick={() => control('start')}>启动工作流</button><small>独立启动目标，不使用历史选行；输入由后端再次校验。</small>{workflows.find(w => w.id === workflowId)?.inputSchema && <details><summary>输入约束（草案）</summary><pre>{JSON.stringify(workflows.find(w => w.id === workflowId)?.inputSchema, null, 2)}</pre></details>}</section>}
  {panel ? <><nav className="page-nav">{panel.pages.map(p => <button key={p.id} aria-current={page === p.id ? 'page' : undefined} onClick={() => changePage(p.id)}>{p.title}</button>)}</nav><PanelRenderer panel={panel} pageId={page} onPage={changePage} result={result} results={scopes} viewId={viewId} onAction={action} state={status} runtimeState={runtimeState || runs.find(r=>r.id===runId)?.state}/></> : <p>暂无已发布页面，请联系管理员。</p>}
  {me.role === 'admin' && <details className="admin"><summary>页面包管理</summary><p>导入不会更改 Runtime 工程；启用 / 切回仅切换 Web 页面版本，并将该包授权关联设置为当前选中的 Runtime（替换此包旧关联，不累加）。</p><input aria-label="导入页面包" type="file" accept=".emoweb,.zip" disabled={busy} onChange={e => { if (e.target.files?.[0])
         upload(e.target.files[0]); }}/>{packages.map(p => <div key={p.id || p.packageId} data-package-id={p.id || p.packageId}>{p.name || (p.manifest ? `${p.manifest.projectId} / ${p.manifest.packageRevision}` : p.id || p.packageId)} · 关联：{p.runtimeIds?.join(', ') || '未关联'} {p.active && '已启用'} <button disabled={!runtimeId} onClick={async () => { if (!confirm(`将此版本启用 / 切回到 ${runtimeId}，并把该包授权关联替换为仅此目标？不会改动生产工程。`)) return; try {
@@ -277,6 +284,7 @@ function App() {
     catch (e) {
         setError((e as Error).message);
     } }}>对当前目标启用 / 切回此版本</button></div>)}</details>}
+ {!canControl && runtimeId && <p>当前目标只读：未授予生产控制权限。</p>}
  <RuntimeStatus runtimeId={runtimeId}/>
  {me.role === 'admin' && <Admin current={me.username}/>}<footer>页面合同适配草案 · {panel?.packageRevision || '—'} · {result?.resultKey || '等待结果'} · 不替代现场设备验收</footer></main>;
 }

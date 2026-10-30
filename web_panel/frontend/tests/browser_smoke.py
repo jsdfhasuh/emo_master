@@ -11,7 +11,7 @@ class Handler(SimpleHTTPRequestHandler):
 server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
 threading.Thread(target=server.serve_forever,daemon=True).start()
 origin=f'http://127.0.0.1:{server.server_port}'
-panel={'id':'demo-panel','name':'演示面板','packageRevision':'draft-1','pages':[{'id':'home','title':'生产总览','components':[{'id':'title','type':'page_title'},{'id':'image','type':'image','label':'本轮图片','binding':'image'},{'id':'score','type':'number','label':'分数','binding':'score'},{'id':'verdict','type':'indicator','label':'判定','binding':'verdict'},{'id':'clock','type':'clock'},{'id':'state','type':'runtime_status'},{'id':'table','type':'table','props':{'value':[{'x':1}]}},{'id':'text','type':'text','props':{'text':'<script>window.PWNED=1</script>'}},{'id':'box','type':'container','children':[{'id':'nested','type':'text','props':{'text':'嵌套内容'}}]},{'id':'nav','type':'page_navigation'},{'id':'button','type':'navigation_button','props':{'action':'navigate','targetPageId':'detail','text':'详情'}},{'id':'history-table','type':'sqlite_table'},{'id':'aggregate','type':'sqlite_value'}]},{'id':'detail','title':'详情','components':[{'id':'detail-title','type':'page_title'}]}]}
+panel={'id':'demo-panel','name':'演示面板','packageRevision':'draft-1','pages':[{'id':'home','title':'生产总览','components':[{'id':'title','type':'page_title'},{'id':'image','type':'image','label':'本轮图片','binding':'image'},{'id':'score','type':'number','label':'分数','binding':'score','props':{'style':{'fontSize':24}}},{'id':'verdict','type':'indicator','label':'判定','binding':'verdict'},{'id':'clock','type':'clock'},{'id':'state','type':'runtime_status'},{'id':'table','type':'table','props':{'value':[{'x':1}]}},{'id':'text','type':'text','props':{'text':'<script>window.PWNED=1</script>'}},{'id':'box','type':'container','children':[{'id':'nested','type':'text','props':{'text':'嵌套内容'}}]},{'id':'nav','type':'page_navigation'},{'id':'button','type':'navigation_button','props':{'action':'navigate','targetPageId':'detail','text':'详情'}},{'id':'history-table','type':'sqlite_table'},{'id':'aggregate','type':'sqlite_value'}]},{'id':'detail','title':'详情','components':[{'id':'detail-title','type':'page_title'}]}]}
 result={'resultKey':'r1','resultScopeId':'scope-1','sources':{'image':{'state':'ready','image':{'url':'/api/assets/demo-image','ownerResultKey':'r1'}},'score':{'state':'ready','value':97},'verdict':{'state':'ready','value':'OK'}}}
 state={'logged':False,'start':0,'freeze':0}
 def mock(route):
@@ -23,7 +23,7 @@ def mock(route):
  elif path=='/api/panels':data=[panel]
  elif path=='/api/panels/demo-panel':data=panel
  elif path in ['/api/runs','/api/runtimes/configured/runs']:data=[{'id':'demo-run','state':'running','workflowId':'demo-workflow','runtimeInstanceId':'mock-instance','projectId':'demo-project','configurationRevision':'1'}]
- elif path=='/api/runtimes':data=[{'id':'configured','alias':'演示','mode':'mock'}]
+ elif path=='/api/runtimes':data=[{'id':'configured','alias':'演示','mode':'mock','permissions':['view','control']}]
  elif path=='/api/runtimes/configured/status':data={'counters':{'source':'mock-authoritative','total':'1','ok':'1','ng':'0','at':'fixture'},'events':{'events':[],'nextSequence':'0','resetRequired':False,'source':'mock-events'}}
  elif path=='/api/runtimes/configured/workflows':data=[{'id':'demo-workflow','name':'Demo workflow','runtimeInstanceId':'mock-instance','projectId':'demo-project','configurationRevision':'1'}]
  elif path=='/api/views':data={'id':'view-1'}
@@ -49,7 +49,7 @@ with sync_playwright() as p:
  page.route_web_socket('**/ws/**',connect)
  try:
   page.goto(origin);page.get_by_label('用户名').fill('tester');page.get_by_label('密码').fill('fixture');page.get_by_role('button',name='登录',exact=True).click()
-  page.get_by_text('97',exact=True).wait_for();assert page.get_by_text('嵌套内容',exact=True).count()==1
+  page.get_by_text('97',exact=True).wait_for();assert page.get_by_text('97',exact=True).evaluate('(element)=>getComputedStyle(element).fontSize')=='24px';assert page.get_by_text('嵌套内容',exact=True).count()==1
   assert page.evaluate('window.PWNED') is None
   page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看，后台仍在运行').wait_for();assert state['freeze']==1
   page.get_by_role('button',name='恢复实时',exact=True).click()

@@ -1,3 +1,4 @@
+import time
 import asyncio
 import hashlib
 import unittest
@@ -64,12 +65,23 @@ class ViewTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotEqual(resumed['viewGeneration'],frozen['viewGeneration'])
         await views.close()
 
+    async def test_frozen_result_keeps_current_runtime_state(self):
+        views=Views(Runtime());view=views.create('u','p','run')
+        views._receive(view,{**result('a','seen'),'runState':'running'})
+        views.freeze(view,{'a':'seen'})
+        views._receive(view,{**result('a','next'),'runState':'stopped'})
+        latest=None
+        while not view['queue'].empty():latest=view['queue'].get_nowait()
+        self.assertEqual(latest['result']['resultKey'],'seen')
+        self.assertEqual(latest['state']['runState'],'stopped')
+        await views.close()
+
     async def test_freeze_ttl_expires_as_missing_not_silently_latest(self):
-        views = Views(Runtime(), freeze_ttl=.001)
+        views = Views(Runtime(), freeze_ttl=120)
         view = views.create('u', 'p', 'run')
         views._receive(view, result('a', 'seen'))
         views.freeze(view, {'a': 'seen'})
-        await asyncio.sleep(.002)
+        view['freezeUntil'] = time.monotonic() - 1
         views._receive(view, result('a', 'new'))
         self.assertTrue(view['frozen'])
         self.assertEqual(view['last']['resultKey'], 'seen')

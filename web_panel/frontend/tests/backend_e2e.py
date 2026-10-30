@@ -1,5 +1,5 @@
 """Real FastAPI HTTP/WS + explicit mock Runtime + real Chromium. No hardware."""
-import json,os,socket,sys,tempfile,threading,time,zipfile
+import json,os,socket,sys,tempfile,threading,time,zipfile,hashlib
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 (ROOT/'test-tmp').mkdir(exist_ok=True)
@@ -71,7 +71,10 @@ def main():
       package_path=make_package(data,revision)
       with page.expect_response(lambda response:response.url.endswith('/api/packages') and response.request.method=='POST') as uploaded:
        page.get_by_label('导入页面包',exact=True).set_input_files(str(package_path))
-      assert uploaded.value.ok;pid=uploaded.value.json()['packageId'];versions.append(pid)
+      assert uploaded.value.ok
+      installed=page.request.get(f'http://127.0.0.1:{port}/api/packages');assert installed.ok
+      matching=[item for item in installed.json() if item['manifest']['packageRevision']==revision]
+      assert len(matching)==1;pid=matching[0]['packageId'];assert pid==hashlib.sha256(package_path.read_bytes()).hexdigest();versions.append(pid)
       row=page.locator(f'[data-package-id="{pid}"]');row.wait_for();page.once('dialog',lambda dialog:dialog.accept())
       with page.expect_response(lambda response:response.url.endswith(f'/api/packages/{pid}/activate')) as activated:
        row.get_by_role('button',name='对当前目标启用 / 切回此版本',exact=True).click()

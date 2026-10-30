@@ -70,6 +70,7 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
         return <p>无可用页面</p>;
     function render(c: Component, columns = page.grid?.columns || panel.grid?.columns || 12) {
         const p = c.props || {};
+        const style = p.style && typeof p.style === 'object' ? p.style as Record<string, unknown> : {};
         const binding = typeof c.binding === 'string' ? c.binding : c.binding?.sourceId;
         const requestedScope = typeof c.binding === 'object' ? c.binding.scopeId : undefined;
         const boundResult = requestedScope ? results?.[requestedScope] : result;
@@ -101,14 +102,14 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
                 break;
             case 'number': {
                 const digits = typeof p.decimals === 'number' ? Math.max(0, Math.min(8, p.decimals)) : 0;
-                body = <strong className="number">{typeof value === 'number' ? value.toFixed(digits) : stringify(value)} <small>{stringify(p.unit ?? '')}</small></strong>;
+                body = <strong className="number" style={{fontSize:typeof style.fontSize==='number'?'inherit':undefined}}>{typeof value === 'number' ? value.toFixed(digits) : stringify(value)} <small>{stringify(p.unit ?? '')}</small></strong>;
                 break;
             }
             case 'indicator': {
                 const map = p.mapping && typeof p.mapping === 'object' ? p.mapping as Record<string, unknown> : {};
                 const mapped = map[String(value)] ?? value;
                 const ok = mapped === true || mapped === 'OK';const ng=mapped===false||mapped==='NG';
-                body = <strong className={`indicator ${ok?'ok':ng?'ng':'unknown'}`}>{ok?'OK':ng?'NG':value==null?'未知':stringify(mapped)}</strong>;
+                body = <strong className={`indicator ${ok?'ok':ng?'ng':'unknown'}`} style={{fontSize:typeof style.fontSize==='number'?'inherit':undefined,color:typeof style.color==='string'?'inherit':undefined}}>{ok?'OK':ng?'NG':value==null?'未知':stringify(mapped)}</strong>;
                 break;
             }
             case 'runtime_status':
@@ -128,7 +129,7 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
                 body = <div className="panel-grid" style={{ gridTemplateColumns: `repeat(${gridOf(c).columns || columns}, minmax(0, 1fr))`, gap: gridOf(c).gap }}>{ordered(c.children || []).map(child => render(child, gridOf(c).columns || columns))}</div>;
                 break;
             case 'page_title':
-                body = <h2>{page.title}</h2>;
+                body = <h2 style={{fontSize:typeof style.fontSize==='number'?'inherit':undefined}}>{page.title}</h2>;
                 break;
             case 'page_navigation':
                 body = <nav>{panel.pages.map(x => <button key={x.id} aria-current={x.id === page.id ? 'page' : undefined} onClick={() => onPage(x.id)}>{x.title}</button>)}</nav>;
@@ -143,7 +144,6 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
             default: body = <p role="alert">不支持的组件：{c.type}</p>;
         }
         if (failed && ['image', 'text', 'number', 'indicator', 'table'].includes(c.type)) body = <p role="status">不可用：{source?.reason || '本轮数据未就绪'}</p>;
-        const style = p.style && typeof p.style === 'object' ? p.style as Record<string, unknown> : {};
         const grid = gridOf(c);
         const span = Math.min(columns, Math.max(1, Number(grid.columnSpan) || Math.min(6, columns)));
         return <section className="panel-card" key={c.id} style={{ fontWeight: ['normal', 'bold', '400', '500', '600', '700', 400, 500, 600, 700].includes(style.fontWeight as string | number) ? style.fontWeight as 'normal' | 'bold' | 400 | 500 | 600 | 700 : undefined, gridColumn: `${grid.column || 'auto'} / span ${span}`, gridRow: `${grid.row || 'auto'} / span ${Math.max(1, Number(grid.rowSpan) || 1)}`, fontSize: typeof style.fontSize === 'number' ? Math.min(128, Math.max(8, style.fontSize)) : undefined, color: typeof style.color === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.color) ? style.color : undefined, backgroundColor: typeof style.backgroundColor === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.backgroundColor) ? style.backgroundColor : undefined, textAlign: ['left', 'center', 'right'].includes(String(style.textAlign)) ? style.textAlign as 'left' | 'center' | 'right' : undefined }}>{(c.label||typeof p.label==='string'||(c.type==='container'&&typeof p.title==='string'))&&<h3>{c.label||(typeof p.label==='string'?p.label:String(p.title))}</h3>}{body}</section>;

@@ -73,6 +73,7 @@ def create_app(config: Config, runtime=None):
     app=FastAPI(title='emo_master independent Web panel',lifespan=lifespan)
     app.state.auth,app.state.views,app.state.runtime=auth,views,rt
     app.state.registry=registry
+    app.state.resources=resources
     def origin_ok(origin,host,scheme):
         if not origin:return True # non-browser command clients still need session and CSRF
         if origin in config.allowed_origins:return True

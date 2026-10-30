@@ -44,7 +44,7 @@ class MockRuntime:
     async def snapshot(self, run_id):
         if run_id != "demo-run": raise ValueError("unknown run")
         if self.running: self.ordinal += 1
-        return {"runtimeInstanceId":"mock-instance","jobId":"demo-run","resultScopeId":"scope-1","resultKey":f"mock-{self.ordinal}","resultOrdinal":str(self.ordinal),"executionRevision":"1","capturePlanRevision":"1","status":"complete","executionTerminal":True,"receivedAt":datetime.now(timezone.utc).isoformat(),"sources":{
+        return {"runtimeInstanceId":"mock-instance","jobId":"demo-run","resultScopeId":"scope-1","resultKey":f"mock-{self.ordinal}","resultOrdinal":str(self.ordinal),"executionRevision":"1","capturePlanRevision":"1","status":"complete","executionTerminal":True,"runState":"running" if self.running else "stopped","receivedAt":datetime.now(timezone.utc).isoformat(),"sources":{
             "image":{"state":"available","image":{"url":f"/api/assets/runtime/{self.runtime_id}/demo-image","ownerResultKey":f"mock-{self.ordinal}","resourceId":"demo-image","mimeType":"image/png","byteSize":len(IMAGE),"sha256":hashlib.sha256(IMAGE).hexdigest()}},
             "score":{"state":"available","value":99.5},"verdict":{"state":"available","value":"OK"},
             "measurements":{"state":"available","value":[{"name":"width","value":10.2}]}}}

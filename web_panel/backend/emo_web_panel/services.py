@@ -130,7 +130,7 @@ class Views:
                 'runtimeId': view['runtimeId'], 'viewGeneration': str(view['generation']),
                 'pagePackageRevision': view['revision'], 'result': result,
                 'frozen': view['frozen'], 'frozenScopes': list(view['frozenScopes']),
-                'state': {'connected': True,
+                'state': {'connected': True, 'runState':view.get('runtimeRunState','unknown'),
                           'mode': 'mock' if hasattr(view['runtime'], 'running') else 'grpc'},
                 **extra}
 
@@ -217,6 +217,7 @@ class Views:
                 view['queue'].get_nowait()
             self.publish_notice(view, self._envelope(view, type='reset_required', reason='Runtime instance changed'))
         view['instanceId'] = instance
+        view['runtimeRunState']=result.get('runState','unknown')
         value = copy.deepcopy(result)
         view['latest'][scope] = value
         recent = view['scopeRecent'].setdefault(scope, {})

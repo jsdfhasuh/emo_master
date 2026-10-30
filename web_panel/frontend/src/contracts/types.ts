@@ -35,6 +35,7 @@ export interface Page {
     grid?: Component['grid'];
 }
 export interface Panel {
+    title?: string;
     id: string;
     name: string;
     packageRevision: string;

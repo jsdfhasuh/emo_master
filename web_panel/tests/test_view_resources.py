@@ -151,7 +151,7 @@ class CacheTests(unittest.IsolatedAsyncioTestCase):
         return ResourceCache.key('instance', 'job', resource, hashlib.sha256(data).hexdigest())
 
     async def test_coalesces_waiters_cancellation_sha_and_ttl(self):
-        cache = ResourceCache(ttl=.01)
+        cache = ResourceCache(ttl=60)
         calls = 0
         gate = asyncio.Event()
         async def load():
@@ -170,7 +170,7 @@ class CacheTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(calls, 1)
         await cache.get(key, load)
         self.assertEqual(calls, 1)
-        await asyncio.sleep(.012)
+        cache.items[key]["expires"] = 0  # deterministic expiry, not OS timer precision
         await cache.get(key, load)
         self.assertEqual(calls, 2)
         with self.assertRaises(ValueError):

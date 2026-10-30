@@ -75,3 +75,13 @@ class TargetApiTests(unittest.TestCase):
         self.assertEqual(len(status['events']['events']),1)
         self.assertEqual(status['counters']['source'],'mock-runtime-authoritative')
         self.assertEqual(self.client.get('/api/runtimes/configured/status?after=1').json()['events']['events'],[])
+
+    def test_duplicate_package_association_does_not_change_active(self):
+        from test_packages import bundle
+        h=self.login()
+        a=self.client.post('/api/packages',headers=h,content=bundle('a')).json()
+        b=self.client.post('/api/packages',headers=h,content=bundle('b')).json()
+        self.client.post('/api/packages/'+a['packageId']+'/activate',headers=h)
+        result=self.client.post('/api/packages/'+b['packageId']+'/activate',headers=h,json={'runtimeIds':['configured','configured']})
+        self.assertEqual(result.status_code,422)
+        self.assertEqual(self.client.get('/api/panels').json()[0]['id'],a['packageId'])

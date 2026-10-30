@@ -163,12 +163,13 @@ def create_app(config: Config, runtime=None):
         return {'ok':True}
     @app.delete('/api/admin/users/{username}')
     async def delete_user(username:str,req:Request):
-        who=await identity(req,'admin',True)
-        if username==who['username']:raise HTTPException(422,'Cannot delete own active administrator')
-        await asyncio.to_thread(registry.revoke_user,who,username)
-        await asyncio.to_thread(auth.delete_user,username)
-        await asyncio.to_thread(auth.audit,who['username'],'delete_user',username,'succeeded')
-        return {'ok':True}
+        async with target_lock:
+            who=await identity(req,'admin',True)
+            if username==who['username']:raise HTTPException(422,'Cannot delete own active administrator')
+            await asyncio.to_thread(registry.revoke_user,who,username)
+            await asyncio.to_thread(auth.delete_user,username)
+            await asyncio.to_thread(auth.audit,who['username'],'delete_user',username,'succeeded')
+            return {'ok':True}
     @app.get('/api/admin/runtimes')
     async def runtimes(req:Request):
         who=await identity(req,'admin');return await asyncio.to_thread(registry.list,who)
@@ -200,9 +201,10 @@ def create_app(config: Config, runtime=None):
         who=await identity(req,'admin');return await asyncio.to_thread(registry.list_acl,who,rid)
     @app.put('/api/admin/runtimes/{rid}/grants')
     async def grant_target(rid:str,req:Request):
-        who=await identity(req,'admin',True);b=await json_object(req)
-        if b.get('username') not in [u['username'] for u in await asyncio.to_thread(auth.users)]:raise HTTPException(404,'User not found')
-        return await asyncio.to_thread(registry.set_acl,who,rid,b['username'],b.get('view'),b.get('control',False))
+        async with target_lock:
+            who=await identity(req,'admin',True);b=await json_object(req)
+            if b.get('username') not in [u['username'] for u in await asyncio.to_thread(auth.users)]:raise HTTPException(404,'User not found')
+            return await asyncio.to_thread(registry.set_acl,who,rid,b['username'],b.get('view'),b.get('control',False))
     @app.get('/api/runtimes/{rid}/status')
     async def runtime_status(rid:str,req:Request,after:str='0'):
         who=await identity(req);client=await client_for(who,rid)
@@ -365,15 +367,18 @@ def create_app(config: Config, runtime=None):
         return await asyncio.to_thread(packages.install,bytes(data))
     @app.post('/api/packages/{pid}/activate')
     async def package_activate(pid:str,req:Request):
-        who=await identity(req,'admin',True);b=await json_object(req,True)
-        rids=b.get('runtimeIds',['configured'])
-        if not isinstance(rids,list) or not 1<=len(rids)<=32 or any(not isinstance(rid,str) for rid in rids):raise HTTPException(422,'Runtime association required')
-        for rid in rids:await asyncio.to_thread(registry.require,who,rid)
-        result=await asyncio.to_thread(packages.activate,pid)
-        await asyncio.to_thread(associate_package,pid,rids)
-        await asyncio.to_thread(auth.audit,who['username'],'activate_package',json.dumps({'packageId':pid,'runtimeIds':rids}), 'succeeded')
-        for v in views.views.values():views.publish_notice(v,{'type':'package_updated','packageId':pid})
-        return result
+        async with target_lock:
+            who=await identity(req,'admin',True);b=await json_object(req,True)
+            rids=b.get('runtimeIds',['configured'])
+            if not isinstance(rids,list) or not 1<=len(rids)<=32 or any(not isinstance(rid,str) for rid in rids):raise HTTPException(422,'Runtime association required')
+            if len(set(rids))!=len(rids):raise HTTPException(422,'Duplicate Runtime associations')
+            for rid in rids:await asyncio.to_thread(registry.require,who,rid)
+            await asyncio.to_thread(packages.get,pid)
+            await asyncio.to_thread(associate_package,pid,rids)
+            result=await asyncio.to_thread(packages.activate,pid)
+            await asyncio.to_thread(auth.audit,who['username'],'activate_package',json.dumps({'packageId':pid,'runtimeIds':rids}), 'succeeded')
+            for v in views.views.values():views.publish_notice(v,{'type':'package_updated','packageId':pid})
+            return result
     @app.websocket('/ws/views/{vid}')
     async def ws(ws:WebSocket,vid:str):
         token=ws.cookies.get(COOKIE);who=await asyncio.to_thread(auth.session,token)

@@ -23,7 +23,7 @@ class AuthStore:
     def hash_password(password, salt):
         return hashlib.scrypt(password.encode(), salt=bytes.fromhex(salt), n=16384, r=8, p=1).hex()
     def create_user(self, username, password, role):
-        if role not in PERMISSIONS or not isinstance(username,str) or not username or len(username) > 80 or not isinstance(password,str) or not 12 <= len(password) <= 1024:
+        if not isinstance(role,str) or role not in PERMISSIONS or not isinstance(username,str) or not username or len(username) > 80 or not isinstance(password,str) or not 12 <= len(password) <= 1024:
             raise ValueError("valid username, role and password of at least 12 characters required")
         salt = secrets.token_hex(16)
         hashed = self.hash_password(password, salt)
@@ -60,7 +60,7 @@ class AuthStore:
             row=db.execute('SELECT role FROM users WHERE username=?',(username,)).fetchone()
             if row is None:raise KeyError('User not found')
             if role is not None:
-                if role not in PERMISSIONS:raise ValueError('Invalid role')
+                if not isinstance(role,str) or role not in PERMISSIONS:raise ValueError('Invalid role')
                 if row['role']=='admin' and role!='admin' and db.execute("SELECT COUNT(*) FROM users WHERE role='admin'").fetchone()[0]<=1:raise ValueError('Cannot remove last administrator')
                 db.execute('UPDATE users SET role=? WHERE username=?',(role,username))
             if password is not None:

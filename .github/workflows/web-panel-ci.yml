@@ -35,6 +35,17 @@ jobs:
         run: python frontend/tests/browser_smoke.py
       - name: Browser full Web application checks
         run: python frontend/tests/backend_e2e.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-evidence-${{ github.sha }}
+          path: |
+            web_panel/frontend/test-tmp/*.png
+            web_panel/frontend/test-tmp/*.html
+            web_panel/frontend/*-mobile.png
+            web_panel/frontend/*-desktop.png
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Build independent distribution
         run: python -m build --wheel
       - name: Verify distribution includes UI and does not import Qt
@@ -48,6 +59,24 @@ jobs:
           with zipfile.ZipFile(wheel) as z:
               assert 'emo_web_panel/static/index.html' in z.namelist()
           PY
+      - name: Install wheel outside source checkout
+        run: |
+          python -m venv /tmp/emo-web-wheel
+          /tmp/emo-web-wheel/bin/pip install dist/*.whl
+          cd /tmp
+          /tmp/emo-web-wheel/bin/python - <<'PYCODE'
+          import sys, tempfile
+          from pathlib import Path
+          import emo_web_panel
+          from emo_web_panel.app import create_app
+          from emo_web_panel.config import Config
+          assert Path(emo_web_panel.__file__).parent.joinpath('static/index.html').is_file()
+          with tempfile.TemporaryDirectory() as d:
+              app=create_app(Config(Path(d), mode='mock'))
+              assert any(getattr(route,'name','')=='frontend' for route in app.routes)
+          assert 'PySide2' not in sys.modules and 'emo_master' not in sys.modules
+          PYCODE
+          /tmp/emo-web-wheel/bin/emo-web-panel --help
       - uses: actions/upload-artifact@v4
         if: success()
         with:

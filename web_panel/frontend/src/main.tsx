@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Me, Panel, Run, Result, Envelope } from './contracts/types';
 import { api, setCsrf } from './data/api';
-import { prepareResult } from './state/prepare';
+import { prepareResult, releaseResult } from './state/prepare';
 import { PanelRenderer } from './renderer/PanelRenderer';
 import './style.css';
 import { Admin } from './components/Admin';
@@ -18,6 +18,12 @@ function App() {
     const [viewId, setViewId] = useState('');
     const [result, setResult] = useState<Result>();
     const [scopes, setScopes] = useState<Record<string, Result>>({});
+    const ownedResults = useRef(new Set<Result>());
+    useEffect(() => {
+        const visible = new Set(Object.values(scopes));
+        for (const old of ownedResults.current) if (!visible.has(old)) { releaseResult(old); ownedResults.current.delete(old); }
+    }, [scopes]);
+    useEffect(() => () => { ownedResults.current.forEach(releaseResult); ownedResults.current.clear(); }, []);
     const [status, setStatus] = useState('尚未连接');
     const [frozen, setFrozen] = useState(false);
     const [lastUpdate, setLastUpdate] = useState('');
@@ -70,6 +76,7 @@ function App() {
                 return;
             }
             if (message.sessionEpoch && epoch && message.sessionEpoch !== epoch) {
+                Object.keys(candidates).forEach(scope => candidates[scope]++);
                 Object.values(aborts).forEach(a => a.abort());
                 setResult(undefined);
                 setScopes({});
@@ -81,6 +88,8 @@ function App() {
                 return;
             }
             if (message.type === 'reset_required') {
+                connection++;
+                Object.values(aborts).forEach(a => a.abort());
                 setResult(undefined);
                 setScopes({});
                 setStatus('目标变化，重新同步');
@@ -103,11 +112,12 @@ function App() {
                 aborts[scope] = new AbortController();
                 const ready = await prepareResult(message.result, aborts[scope].signal);
                 if (!closed && connectionId === connection && gen === generation.current && id === candidates[scope]) {
+                    ownedResults.current.add(ready);
                     setScopes(old => ({ ...old, [scope]: ready }));
                     setResult(ready);
                     setStatus('已连接');
                     setLastUpdate(new Date().toLocaleTimeString());
-                }
+                } else releaseResult(ready);
             }
         }
         catch {
@@ -144,8 +154,8 @@ function App() {
             result?: Result;
         }>(`/api/views/${encodeURIComponent(viewId)}/${name === 'freeze' ? 'freeze' : 'resume'}`, { method: 'POST', body: JSON.stringify({ resultKey: result?.resultKey }) });
         setFrozen(name === 'freeze');
-        if (response.result)
-            setResult(await prepareResult(response.result, new AbortController().signal));
+        // Result snapshots arrive through the generation-checked WebSocket path.
+        void response;
     }
     catch (e) {
         setError((e as Error).message);

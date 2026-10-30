@@ -291,6 +291,8 @@ class PackageStore:
         allowed = {"format", "projectId", "packageRevision", "panelContractVersion", "rendererRequirements", "presentationFile", "assets"}
         if not isinstance(manifest, dict) or set(manifest) - allowed or manifest.get("format") != "emo-web-panel-1":
             raise PackageError("Unsupported package manifest")
+        if manifest.get("panelContractVersion") != "draft-unverified":
+            raise PackageError("Unsupported panel contract; official SDK integration required")
         for name in ("projectId", "packageRevision", "panelContractVersion"):
             _identifier(manifest.get(name), name)
         if manifest.get("presentationFile", "presentation.json") != "presentation.json":

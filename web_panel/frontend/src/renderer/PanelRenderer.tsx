@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Component, Panel, Result, History } from '../contracts/types';
+import { preparedImageUrl } from '../state/prepare';
 import { api, safeAssetUrl } from '../data/api';
 const stringify = (v: unknown) => v == null ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v);
 function Clock({ format }: {
@@ -18,7 +19,7 @@ function HistoryTable({ component, viewId, aggregate }: {
     const [refresh, setRefresh] = useState(0);
     const [error, setError] = useState('');
     const [selected, setSelected] = useState<Record<string, unknown>>();
-    useEffect(() => { let live = true; setSelected(undefined); setError(''); api<History>(`/api/views/${encodeURIComponent(viewId)}/history/${encodeURIComponent(component.id)}?page=${page}&q=${encodeURIComponent(q)}&sort=${encodeURIComponent(sort)}&order=${order}`).then(d => { if (live)
+    useEffect(() => { let live = true; setSelected(undefined); setError(''); api<History>(`/api/views/${encodeURIComponent(viewId)}/history/${encodeURIComponent(component.id)}?page=${page}&q=${encodeURIComponent(q)}${sort ? `&sort=${encodeURIComponent(sort)}` : ''}&order=${order}`).then(d => { if (live)
         setData(d); }).catch(e => { if (live) {
         setData(undefined);
         setError(e.message);
@@ -58,10 +59,10 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
     function render(c: Component) {
         const p = c.props || {};
         const binding = typeof c.binding === 'string' ? c.binding : c.binding?.sourceId;
-        const requestedScope = typeof c.binding === 'object' ? c.binding.resultScopeId : undefined;
+        const requestedScope = typeof c.binding === 'object' ? c.binding.scopeId : undefined;
         const boundResult = requestedScope ? results?.[requestedScope] : result;
         const source = binding ? boundResult?.sources[binding] : undefined;
-        let value = source?.value ?? p.text ?? p.value;
+        let value = binding ? source?.value : p.text ?? p.value;
         if (source?.valueJson !== undefined) {
             try {
                 value = JSON.parse(source.valueJson);
@@ -70,13 +71,13 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
                 value = source.valueJson;
             }
         }
-        const failed = source && !['ready', 'ok', 'available'].includes(source.state);
+        const failed = Boolean(binding) && (!source || !['ready', 'ok', 'available'].includes(source.state));
         let body;
         switch (c.type) {
             case 'image': {
                 const ref = source?.image?.url ?? (typeof p.assetId === 'string' ? `/api/assets/${encodeURIComponent(panel.id)}/${encodeURIComponent(p.assetId)}` : undefined);
-                const url = safeAssetUrl(ref);
-                body = failed ? <p>{source.reason || '本轮图片不可用'}</p> : url ? <img className="result-image" src={url} alt={c.label || '检测结果'}/> : <p>暂无图片</p>;
+                const url = preparedImageUrl(ref);
+                body = failed ? <p>{source?.reason || '本轮图片不可用'}</p> : url ? <img className="result-image" src={url} alt={c.label || '检测结果'}/> : <p>暂无图片</p>;
                 break;
             }
             case 'text':
@@ -125,8 +126,10 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
                 break;
             default: body = <p role="alert">不支持的组件：{c.type}</p>;
         }
+        if (failed && ['image', 'text', 'number', 'indicator', 'table'].includes(c.type)) body = <p role="status">不可用：{source?.reason || '本轮数据未就绪'}</p>;
+        const style = p.style && typeof p.style === 'object' ? p.style as Record<string, unknown> : {};
         const span = Math.min(12, Math.max(1, Number(c.grid?.columnSpan) || 6));
-        return <section className="panel-card" key={c.id} style={{ gridColumn: `${c.grid?.column || 'auto'} / span ${span}`, gridRow: `${c.grid?.row || 'auto'} / span ${Math.max(1, Number(c.grid?.rowSpan) || 1)}`, fontSize: typeof p.fontSize === 'number' ? Math.min(72, Math.max(10, p.fontSize)) : undefined, color: typeof p.color === 'string' && /^#[0-9a-f]{3,8}$/i.test(p.color) ? p.color : undefined, backgroundColor: typeof p.backgroundColor === 'string' && /^#[0-9a-f]{3,8}$/i.test(p.backgroundColor) ? p.backgroundColor : undefined, textAlign: ['left', 'center', 'right'].includes(String(p.textAlign)) ? p.textAlign as 'left' | 'center' | 'right' : undefined }}>{(c.label||typeof p.label==='string')&&<h3>{c.label||String(p.label)}</h3>}{body}</section>;
+        return <section className="panel-card" key={c.id} style={{ fontWeight: ['normal', 'bold', 400, 700].includes(style.fontWeight as string | number) ? style.fontWeight as 'normal' | 'bold' | 400 | 700 : undefined, gridColumn: `${c.grid?.column || 'auto'} / span ${span}`, gridRow: `${c.grid?.row || 'auto'} / span ${Math.max(1, Number(c.grid?.rowSpan) || 1)}`, fontSize: typeof style.fontSize === 'number' ? Math.min(72, Math.max(10, style.fontSize)) : undefined, color: typeof style.color === 'string' && /^#[0-9a-f]{3,8}$/i.test(style.color) ? style.color : undefined, backgroundColor: typeof style.backgroundColor === 'string' && /^#[0-9a-f]{3,8}$/i.test(style.backgroundColor) ? style.backgroundColor : undefined, textAlign: ['left', 'center', 'right'].includes(String(style.textAlign)) ? style.textAlign as 'left' | 'center' | 'right' : undefined }}>{(c.label||typeof p.label==='string')&&<h3>{c.label||String(p.label)}</h3>}{body}</section>;
     }
     return <div className="panel-grid">{page.components.map(render)}</div>;
 }

@@ -2,6 +2,7 @@ import asyncio
 import hmac
 import json
 import time
+import sqlite3
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -45,6 +46,17 @@ def create_app(config: Config, runtime=None):
             if not origin_ok(request.headers.get('origin'),request.headers.get('host'),request.url.scheme): raise HTTPException(403,'Origin denied')
             if not hmac.compare_digest(request.headers.get('x-csrf-token',''),me['csrf']): raise HTTPException(403,'CSRF denied')
         return me
+    async def json_object(req):
+        data=bytearray()
+        async for chunk in req.stream():
+            data.extend(chunk)
+            if len(data)>65536:raise HTTPException(413,'JSON request too large')
+        try:body=json.loads(data)
+        except (ValueError,UnicodeDecodeError):raise HTTPException(422,'JSON object required')
+        if not isinstance(body,dict):raise HTTPException(422,'JSON object required')
+        return body
+    @app.exception_handler(sqlite3.IntegrityError)
+    async def conflict(req,exc):return JSONResponse({'detail':'Record already exists'},status_code=409)
     @app.exception_handler(ContractUnavailable)
     async def contract_error(req,exc): return JSONResponse({'detail':str(exc),'code':'CONTRACT_UNAVAILABLE'},status_code=503)
     @app.exception_handler(ValueError)
@@ -70,7 +82,7 @@ def create_app(config: Config, runtime=None):
         ip=req.client.host if req.client else 'unknown'; now=time.monotonic()
         prior=[v for v in login_failures.get(ip,[]) if now-v<60]
         if len(prior)>=10:raise HTTPException(429,'Try again later')
-        body=await req.json()
+        body=await json_object(req)
         if not isinstance(body.get('username'),str) or not isinstance(body.get('password'),str):raise HTTPException(422,'Credentials required')
         if len(body['password'])>1024:raise HTTPException(422,'Password too long')
         token=await asyncio.to_thread(auth.login,body['username'],body['password'])
@@ -92,12 +104,12 @@ def create_app(config: Config, runtime=None):
     async def users(req:Request):await identity(req,'admin');return await asyncio.to_thread(auth.users)
     @app.post('/api/admin/users')
     async def create_user(req:Request):
-        await identity(req,'admin',True);b=await req.json()
+        await identity(req,'admin',True);b=await json_object(req)
         await asyncio.to_thread(auth.create_user,b.get('username'),b.get('password'),b.get('role'))
         return {'ok':True}
     @app.patch('/api/admin/users/{username}')
     async def update_user(username:str,req:Request):
-        who=await identity(req,'admin',True);b=await req.json()
+        who=await identity(req,'admin',True);b=await json_object(req)
         if username==who['username'] and b.get('role',who['role'])!=who['role']:raise HTTPException(422,'Change your role from another administrator account')
         await asyncio.to_thread(auth.update_user,username,b.get('role'),b.get('password'))
         await asyncio.to_thread(auth.audit,who['username'],'update_user',username,'succeeded')
@@ -122,7 +134,7 @@ def create_app(config: Config, runtime=None):
         who=await identity(req,'control',True)
         if config.preview:raise HTTPException(403,'Preview is read-only')
         if config.mode!='mock':await rt.info() # fail closed before storing unexecutable intent
-        body=await req.json()
+        body=await json_object(req)
         result=await ops.execute(who['username'],body.get('requestId'),action,target,body,rt)
         await asyncio.to_thread(auth.audit,who['username'],action,target,result['state'])
         return result
@@ -157,24 +169,28 @@ def create_app(config: Config, runtime=None):
         raise HTTPException(404,'Panel not active')
     @app.post('/api/views')
     async def new_view(req:Request):
-        who=await identity(req,mutating=True);b=await req.json();p=await find_panel(b.get('panelId'))
+        who=await identity(req,mutating=True);b=await json_object(req);p=await find_panel(b.get('panelId'))
         valid=await rt.runs()
         if b.get('runId') not in [r.get('id',r.get('runId')) for r in valid]:raise HTTPException(404,'Run not found')
-        v=views.create(who['username'],b['panelId'],b['runId'],p['packageRevision']);return {'id':v['id']}
+        v=views.create(who['username'],b['panelId'],b['runId'],p['packageRevision']);v['presentation']=p;return {'id':v['id']}
+    @app.delete('/api/views/{vid}')
+    async def delete_view(vid:str,req:Request):
+        who=await identity(req,mutating=True);views.get(vid,who['username']);await views.remove(vid)
+        return {'ok':True}
     @app.post('/api/views/{vid}/{action}')
     async def view_action(vid:str,action:str,req:Request):
         who=await identity(req,mutating=True);v=views.get(vid,who['username'])
         if action not in {'freeze','resume'}:raise HTTPException(404,'Unknown view action')
         if action=='freeze':
-            body=await req.json()
+            body=await json_object(req)
             key=body.get('resultKey')
-            if key not in v['recent']:raise HTTPException(409,'Displayed result expired; refresh before freezing')
+            if not isinstance(key,str) or key not in v['recent']:raise HTTPException(409,'Displayed result expired; refresh before freezing')
             v['last']=v['recent'][key]
         v['frozen']=action=='freeze';v['freezeUntil']=time.monotonic()+config.freeze_ttl
         return {'frozen':v['frozen'],'resultKey':(v['last'] or {}).get('resultKey')}
     @app.get('/api/views/{vid}/history/{component_id}')
     async def history(vid:str,component_id:str,req:Request,page:int=1,pageSize:int=10,q:str='',sort:str='id',order:str='asc'):
-        who=await identity(req);v=views.get(vid,who['username']);p=await find_panel(v['panelId'])
+        who=await identity(req);v=views.get(vid,who['username']);p=v['presentation']
         def contains(cs):return any(c['id']==component_id and c['type'] in {'sqlite_table','sqlite_value'} or contains(c.get('children',[])) for c in cs)
         if not any(contains(page['components']) for page in p['pages']):raise HTTPException(404,'Undeclared history source')
         if not 1<=page<=10000 or not 1<=pageSize<=100:raise HTTPException(422,'Invalid page')
@@ -191,7 +207,9 @@ def create_app(config: Config, runtime=None):
         return Response(IMAGE,media_type='image/png')
     @app.get('/api/assets/{package_id}/{asset_id}')
     async def asset(package_id:str,asset_id:str,req:Request):
-        await identity(req);await find_panel(package_id)
+        await identity(req)
+        # Imported immutable versions stay readable by authenticated viewers.
+        # Activation changes defaults, not existing view resources.
         data,mime=await asyncio.to_thread(packages.asset,package_id,asset_id)
         return Response(data,media_type=mime)
     @app.get('/api/packages')
@@ -221,7 +239,7 @@ def create_app(config: Config, runtime=None):
         await ws.accept()
         try:
             while True:
-                if not await asyncio.to_thread(auth.session,token):await ws.close(code=1008);break
+                if vid not in views.views or not await asyncio.to_thread(auth.session,token):await ws.close(code=1008);break
                 try:msg=await asyncio.wait_for(v['queue'].get(),timeout=2)
                 except asyncio.TimeoutError:msg={'type':'heartbeat','mode':config.mode}
                 await ws.send_json(msg)

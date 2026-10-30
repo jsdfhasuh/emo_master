@@ -15,7 +15,7 @@ PNG = b'\x89PNG\r\n\x1a\n' + b'safe-test-fixture'
 
 def bundle(revision='1', components=None, changes=None, extras=None):
     manifest = {'format':'emo-web-panel-1', 'projectId':'test-project',
-                'packageRevision':revision, 'panelContractVersion':'draft-1',
+                'packageRevision':revision, 'panelContractVersion':'draft-unverified',
                 'rendererRequirements':['image','text'], 'presentationFile':'presentation.json',
                 'assets':[{'id':'sample','path':'assets/sample.png','mimeType':'image/png',
                            'sha256':hashlib.sha256(PNG).hexdigest()}]}
@@ -53,6 +53,9 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(self.store.active(),first)
         self.assertEqual(self.store.asset(first['packageId'],'sample'),(PNG,'image/png'))
 
+    def test_official_or_unknown_contract_not_misread_as_draft(self):
+        for version in ['1','999','draft-1']:
+            with self.assertRaises(PackageError):self.store.install(bundle(changes={'panelContractVersion':version}))
     def test_same_revision_different_bytes_rejected(self):
         self.store.install(bundle())
         with self.assertRaises(PackageError):

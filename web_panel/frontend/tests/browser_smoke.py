@@ -1,5 +1,5 @@
 """Cloud browser verification using HTTP/WS fixtures, NOT real Runtime acceptance."""
-import json, threading, os
+import json, threading, os, base64
 from http.server import ThreadingHTTPServer,SimpleHTTPRequestHandler
 from pathlib import Path
 from playwright.sync_api import sync_playwright
@@ -31,7 +31,7 @@ def mock(route):
  elif path=='/api/admin/users':data=[{'username':'tester','role':'admin'}]
  elif path=='/api/admin/runtimes':data=[{'mode':'mock','editable':False}]
  elif path=='/api/runs/start':state['start']+=1;data={'operationId':'op-1'}
- elif path=='/api/assets/demo-image':route.fulfill(content_type='image/svg+xml',body='<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100"><rect width="300" height="100" fill="#19aa77"/></svg>');return
+ elif path=='/api/assets/demo-image':route.fulfill(content_type='image/png',body=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a1ioAAAAASUVORK5CYII='));return
  elif path=='/api/logout':state['logged']=False;data={}
  else:route.fulfill(status=404,json={'detail':path});return
  route.fulfill(json=data)
@@ -39,15 +39,34 @@ with sync_playwright() as p:
  browser=p.chromium.launch(**({'executable_path':os.environ['CHROMIUM_PATH']} if os.environ.get('CHROMIUM_PATH') else {}),headless=True,args=['--no-sandbox','--disable-dev-shm-usage'],env={'TMPDIR':str(ROOT/'test-tmp')})
  page=browser.new_page(viewport={'width':1280,'height':900});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  page.route('**/api/**',mock)
- page.route_web_socket('**/ws/**',lambda ws:ws.send(json.dumps({'type':'snapshot','result':result})))
- page.goto(origin);page.get_by_label('用户名').fill('tester');page.get_by_label('密码').fill('fixture');page.get_by_role('button',name='登录',exact=True).click()
- page.get_by_text('97',exact=True).wait_for();assert page.get_by_text('嵌套内容',exact=True).count()==1
- assert page.evaluate('window.PWNED') is None
- page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看，后台仍在运行').wait_for();assert state['freeze']==1
- page.get_by_role('button',name='恢复实时',exact=True).click();page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('操作已受理：op-1').wait_for();assert state['start']==1
- page.get_by_role('button',name='详情',exact=True).first.click();page.get_by_role('heading',name='详情',exact=True).wait_for()
- page.set_viewport_size({'width':390,'height':844});page.get_by_role('button',name='生产总览',exact=True).first.click();page.get_by_text('97',exact=True).wait_for();assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
- page.screenshot(path=str(ROOT/'browser-mobile.png'),full_page=True)
- assert not errors,errors
+ sockets=[]
+ def connect(ws):
+  sockets.append(ws);ws.send(json.dumps({'type':'snapshot','result':result}))
+ page.route_web_socket('**/ws/**',connect)
+ try:
+  page.goto(origin);page.get_by_label('用户名').fill('tester');page.get_by_label('密码').fill('fixture');page.get_by_role('button',name='登录',exact=True).click()
+  page.get_by_text('97',exact=True).wait_for();assert page.get_by_text('嵌套内容',exact=True).count()==1
+  assert page.evaluate('window.PWNED') is None
+  page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看，后台仍在运行').wait_for();assert state['freeze']==1
+  page.get_by_role('button',name='恢复实时',exact=True).click();page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('操作已受理：op-1').wait_for();assert state['start']==1
+  page.get_by_role('button',name='详情',exact=True).first.click();page.get_by_role('heading',name='详情',exact=True).wait_for()
+  page.set_viewport_size({'width':390,'height':844});page.get_by_role('button',name='生产总览',exact=True).first.click();page.get_by_text('97',exact=True).wait_for();assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
+  page.screenshot(path=str(ROOT/'browser-mobile.png'),full_page=True)
+  # Invalidate a candidate while its image is still preparing; it must never commit.
+  def reset_during_image(route):
+   sockets[-1].send(json.dumps({'type':'reset_required'}))
+   route.fulfill(content_type='image/png',body=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a1ioAAAAASUVORK5CYII='))
+  page.route('**/api/assets/slow-image',reset_during_image)
+  stale=json.loads(json.dumps(result));stale['resultKey']='stale';stale['sources']['score']['value']=999;stale['sources']['image']['image']={'url':'/api/assets/slow-image','ownerResultKey':'stale'}
+  sockets[-1].send(json.dumps({'type':'result','result':stale}))
+  page.wait_for_timeout(500);assert page.get_by_text('999',exact=True).count()==0
+
+  assert not errors,errors
+ except Exception:
+  try:
+   page.screenshot(path=str(ROOT/'test-tmp'/'failure.png'),full_page=True)
+   (ROOT/'test-tmp'/'failure.html').write_text(page.content(),encoding='utf-8')
+  except Exception:pass
+  raise
  browser.close()
 server.shutdown();print('PASS: desktop/mobile login, all 13 renderer types, script text escaping, staged result, freeze/resume, control, navigation; HTTP/WS fixtures only')

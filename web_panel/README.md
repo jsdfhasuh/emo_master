@@ -13,7 +13,7 @@ cd web_panel
 python -m venv .venv
 # Windows: .venv\Scripts\activate
 # POSIX: . .venv/bin/activate
-python -m pip install '.[test]'
+python -m pip install -e '.[test]'
 npm --prefix frontend ci
 npm --prefix frontend run build
 python scripts/package_frontend.py
@@ -26,6 +26,7 @@ Choose a unique password interactively (minimum 12 characters); no default admin
 ## Preview launch
 
 ```sh
+python dev/fixtures/make_demo_package.py
 emo-web-panel preview --package dev/fixtures/demo.emoweb
 ```
 
@@ -49,3 +50,5 @@ Frontend builds to static assets served by FastAPI on the same origin. A separat
 - Bounded shared mock subscriptions and per-view queues; closing browser cancels Web subscription, never calls ReleaseJob.
 
 Package switching changes Web state only. It does not roll back a production project. Removing/closing this app leaves Runtime and Qt unchanged. No branch merge, formal publication or deployment is part of this delivery.
+
+当前是单个管理员配置的 Runtime、全局角色权限演示，不含多 Runtime 注册 CRUD 或逐目标 ACL。草案多 scope 前端分开暂存；后端 mock 只产生单 scope，正式多 scope 一致冻结、资源租约、断线游标回放仍待合同接入验证。

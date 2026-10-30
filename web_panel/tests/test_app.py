@@ -47,6 +47,33 @@ class AppTests(unittest.TestCase):
         self.assertEqual(rows['total'],7);self.assertEqual([r['id'] for r in rows['rows']],['28','24'])
         self.assertEqual(self.client.get('/api/history-images/demo-image').headers['content-type'],'image/png')
         self.assertEqual(self.client.get('/api/history-images/arbitrary-file').status_code,404)
+    def test_json_objects_and_duplicate_account(self):
+        self.assertEqual(self.client.post('/api/session',json=[]).status_code,422)
+        self.assertEqual(self.client.post('/api/session',content=b'{'*70000).status_code,413)
+        h=self.login()
+        for path in ['/api/views','/api/runs/start','/api/admin/users']:
+            self.assertEqual(self.client.post(path,headers=h,json=[]).status_code,422)
+        self.assertEqual(self.client.post('/api/admin/users',headers=h,json={'username':'admin','password':'safe-test-password','role':'admin'}).status_code,409)
+        self.assertEqual(self.client.post('/api/admin/users',headers=h,json={'username':'other','password':'safe-test-password','role':[]}).status_code,422)
+    def test_pending_views_expire_and_delete(self):
+        h=self.login()
+        for i in range(32):self.app.state.views.create('admin','demo-panel','demo-run')
+        for v in self.app.state.views.views.values():v['created']-=61
+        response=self.client.post('/api/views',headers=h,json={'panelId':'demo-panel','runId':'demo-run'})
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(len(self.app.state.views.views),1)
+        self.assertEqual(self.client.delete('/api/views/'+response.json()['id'],headers=h).status_code,200)
+    def test_package_switch_preserves_existing_view_revision_and_assets(self):
+        from test_packages import bundle
+        h=self.login()
+        a=self.client.post('/api/packages',headers=h,content=bundle('1',components=[{'id':'history-table','type':'sqlite_table'}])).json()
+        self.client.post('/api/packages/'+a['packageId']+'/activate',headers=h)
+        vid=self.client.post('/api/views',headers=h,json={'panelId':a['packageId'],'runId':'demo-run'}).json()['id']
+        b=self.client.post('/api/packages',headers=h,content=bundle('2')).json()
+        self.client.post('/api/packages/'+b['packageId']+'/activate',headers=h)
+        self.assertEqual(self.client.get(f'/api/views/{vid}/history/history-table').status_code,200)
+        self.assertEqual(self.client.get('/api/assets/'+a['packageId']+'/sample').status_code,200)
+        self.assertEqual(self.app.state.views.views[vid]['revision'],'1')
     def test_login_origin(self):
         self.assertEqual(self.client.post('/api/session',headers={'Origin':'https://evil.example'},json={}).status_code,403)
     def test_idempotent_start_and_explicit_new_intent(self):

@@ -14,7 +14,7 @@ export interface Component {
     props?: Record<string, unknown>;
     binding?: string | {
         sourceId: string;
-        resultScopeId?: string;
+        scopeId?: string;
     };
     children?: Component[];
     grid?: {

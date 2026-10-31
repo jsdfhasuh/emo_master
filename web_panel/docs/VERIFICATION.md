@@ -24,13 +24,45 @@ remain covered. The combined browser test requires formal Start HTTP result,
 selected-Job WS change, Stop WS result and original-Job ABORTED WS state; the
 former SDK-pending success path no longer exists.
 
-Current execution status: local integrity, focused backend and frontend checks
-completed; exact-head dual-OS, independent-install and actual Windows software
-Runtime browser regression are awaiting CI in this integration commit. This is
-not yet a CI pass claim. Final evidence will be appended after terminal results.
-Native Designer, another physical host, devices and field deployment remain
-NOT RUN in this Web task. Earlier records below remain historical evidence, not
-current SDK version or blocker statements.
+### Verified SDK 1.1.1 application
+
+Application SHA: `938eb8c48e7a7ff4eaf53c2334c592615d6d39ba`.
+[CI 41170406171](https://github.com/jsdfhasuh/emo_master/actions/runs/41170406171)
+completed **SUCCESS, all three jobs**. The following documentation and fresh-install
+assertion update retains this application code; its exact-head workflow is checked
+before final delivery as well.
+
+| Scope | Actual evidence |
+|---|---|
+| Backend, each Ubuntu/Windows | 143 discovered: 141 executed PASS, 2 opt-in product tests skipped in ordinary job |
+| Frontend, each OS | 58 tests, generated TypeScript and Vite build PASS |
+| Browser A–E, each OS | Four suites PASS: accepted/UNKNOWN/ABORTED commands without replay; full catalog refresh; A/B activation/rollback, ACL and pinned assets; official read-only preview |
+| Formal identity F | Official ordinary/grouped message validation, missing/null rules and exact Stop field presence PASS |
+| Combined actual Windows Runtime | Real Chromium → Web HTTP/WS → repository Runtime Start → rendered result → exact Stop → formal ABORTED PASS |
+| Independent installation, each OS | Built Web and SDK wheels, fresh outside-checkout installation, packaged UI/CLI, no Qt/Runtime imports PASS |
+
+The actual combined ordinary Job was `892cb4dd-fe55-4270-8f1f-981dc49dcaf6`.
+Captured official Start control_result, selected-Job job_changed, Stop control_result
+and terminal job_state all carry `runGroupId=""` and matching Runtime/project/Job.
+The browser rendered `12.00`; exactly one Start and one Stop, confirmed by owning
+Runtime acceptance logs. Final state is `ABORTED`, active=false, ownsResources=false,
+displayResourcesReleased=false; both UI status locations display the real state.
+The downloaded artifact hash was verified and stopped screenshot inspected.
+The previous workaround/pending gate is absent; official empty-group acceptance
+is now **PASS**, not assumed from a fixture or the owner's prior local tests.
+
+A–E retain their appropriate synthetic/real-Web labels. B/C response-loss checks
+are not claimed as actual packet loss or physical faults. No new concrete software
+blocker remains from this integration. Native Designer, another physical host,
+real cameras/PLC, production database and field deployment remain **NOT RUN**.
+Earlier records below remain historical evidence, not current SDK blockers.
+
+### SDK 1.1.1 evidence artifacts (7-day retention)
+
+- [Combined owning Runtime/browser report, HTTP/WS payloads, logs and screenshots](https://github.com/jsdfhasuh/emo_master/actions/runs/41170406171/artifacts/13031300667): 274291 bytes, SHA256 `15e86933b181ba09f53d007699775b64d8e6f43ae1ff7a734ba689155ae67602`.
+- [Windows Web + SDK wheels/docs](https://github.com/jsdfhasuh/emo_master/actions/runs/41170406171/artifacts/13030044386): SHA256 `9c19deb003b835bbe470e2ddd0067a5c64ff934b40306c586d0b21dfedafa49e`.
+- [Ubuntu Web + SDK wheels/docs](https://github.com/jsdfhasuh/emo_master/actions/runs/41170406171/artifacts/13030897053): SHA256 `d7ac4a1eee33978ec315ca4be6ac51136cf5b64072fa3112be23f4ab2ab63672`.
+- [Windows browser regression evidence](https://github.com/jsdfhasuh/emo_master/actions/runs/41170406171/artifacts/13030568556), [Ubuntu browser regression evidence](https://github.com/jsdfhasuh/emo_master/actions/runs/41170406171/artifacts/13031201195).
 
 ## Historical W1–W3 functional repair round — 2026-10-31, after reviewed 8286336
 

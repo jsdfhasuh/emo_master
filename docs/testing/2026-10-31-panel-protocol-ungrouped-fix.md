@@ -50,3 +50,25 @@ python -m pytest tests/core/presentation/test_panel_contract.py tests/runtime/te
 
 没有执行全项目 pytest、Dot 浏览器集成、另一台实体电脑、冻结程序、真实相机/PLC 或现场部署。
 Web 依赖更新、临时消息分支移除和 Web 操作状态处理由 Dot 接入本交付后完成。
+
+## 固定交付结果
+
+源码实现提交：`95c6371542f73a725c0ca2fd585152c728338dbf`。
+生成产物交付提交：`b9a741f31a7304a3b2902530a9b6acd98755285d`。
+交接文档随后记录这两个实际 SHA；完整 [SDK 1.1.1 交接入口](../handoffs/runtime-web-panel-v1/sdk-1.1.1/README.md)
+包含版本、ZIP/wheel 摘要、manifest 和 Web 消费步骤。
+
+在源码提交后，干净工作区使用 `scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.1.1
+--archive build/panel-contract-v1-sdk-1.1.1.zip` 完整生成。manifest 记录实际源码 SHA、`sourceDirty=false`、
+SDK 1.1.1 / Panel Contract 1.0 / 工程 2.9 / Presentation 1.2，39 个交付文件及其摘要。
+ZIP 为 90,424 字节，wheel 为 38,038 字节；旧 1.1.0 包字节与摘要保持不变。
+
+正式产物检查通过：manifest 每个文件的长度和摘要、ZIP 全内容/testzip、wheel 每个 Python 源文件与 owning source、
+wheel 元数据版本、全部普通 Job fixtures 的正式 JSON schema 校验。
+与旧交付比较，原分组 fixtures 及 browser-message 以外的所有 schema 均逐字节相同。
+
+新 wheel 已在干净临时 venv 中安装，仅使用其声明依赖，以 `-I` 并阻断 emo_master、PySide2、cv2、numpy、
+onnxruntime、PIL 导入运行 DTO 校验；三类空组身份、可空控制结果、ABORTED 与精确 Stop 的空组 presence 均通过。
+该独立环境实际使用 Pydantic 2.14.2 / grpcio 1.78.0 / protobuf 6.33.6。
+日志和结构化结果在本地 `build/panel-protocol-ungrouped-fix/delivery-verification.log`、`delivery-verification.json`。
+生成类型经 TypeScript 5.8.3 `tsc --noEmit --target ES2020` 检查通过。

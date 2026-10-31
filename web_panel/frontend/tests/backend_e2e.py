@@ -7,17 +7,98 @@ sys.path.insert(0,str(ROOT.parent/'backend'))
 import uvicorn
 from emo_web_panel.app import create_app
 from emo_web_panel.auth import AuthStore
-from emo_web_panel.mock_runtime import demo_panel
+from emo_web_panel.mock_runtime import demo_panel, IMAGE
 from emo_web_panel.config import Config
 from playwright.sync_api import sync_playwright
 
 def make_package(directory,revision):
  panel=demo_panel();panel['pages'][0]['title']=f'Package {revision}'
- manifest={'format':'emo-web-panel-1','projectId':'demo-project','packageRevision':revision,'panelContractVersion':'draft-unverified','rendererRequirements':[],'presentationFile':'presentation.json','assets':[]}
+ panel['pages'][0]['components'].append({'id':'package-static','type':'image','label':'Package asset','props':{'assetId':'pinned'}})
+ manifest={'format':'emo-web-panel-1','projectId':'demo-project','packageRevision':revision,'panelContractVersion':'draft-unverified','rendererRequirements':[],'presentationFile':'presentation.json','assets':[{'id':'pinned','path':'assets/pinned.png','mimeType':'image/png','sha256':hashlib.sha256(IMAGE).hexdigest()}]}
  path=directory/f'{revision}.emoweb'
  with zipfile.ZipFile(path,'w',compression=zipfile.ZIP_DEFLATED) as archive:
-  archive.writestr('manifest.json',json.dumps(manifest));archive.writestr('presentation.json',json.dumps({'title':f'Package {revision}','pages':panel['pages']}))
+  archive.writestr('assets/pinned.png',IMAGE);archive.writestr('manifest.json',json.dumps(manifest));archive.writestr('presentation.json',json.dumps({'title':f'Package {revision}','pages':panel['pages']}))
  return path
+
+def target_isolation_check(page,browser,base,data,versions,password,errors):
+ """W5-E: actual browser target contexts; synthetic Runtime data, no hardware."""
+ from playwright.sync_api import expect
+ headers={'X-CSRF-Token':page.request.get(base+'/api/me').json()['csrf']}
+ def post(path,payload):
+  response=page.request.post(base+path,headers=headers,data=payload)
+  assert response.ok,(path,response.status,response.text())
+  return response.json()
+ post('/api/admin/runtimes',{'id':'line-b','alias':'Independent B','mode':'mock','address':''})
+ post('/api/admin/users',{'username':'bviewer','password':'B-viewer-fixture-123!','role':'viewer'})
+ grant=page.request.put(base+'/api/admin/runtimes/line-b/grants',headers=headers,
+                       data={'username':'bviewer','view':True,'control':False})
+ assert grant.ok
+ page.get_by_role('button',name='刷新页面包和状态',exact=True).click()
+ expect(page.get_by_label('Runtime 目标',exact=True).locator('option[value="line-b"]')).to_have_count(1)
+ page.get_by_label('Runtime 目标',exact=True).select_option('line-b')
+ page.get_by_role('heading',name='Demo production',exact=True).wait_for()
+ path=make_package(data,'b-v1')
+ with page.expect_response(lambda r:r.url.endswith('/api/packages') and r.request.method=='POST') as upload:
+  page.get_by_label('导入页面包',exact=True).set_input_files(str(path))
+ assert upload.value.ok
+ bid=upload.value.json()['packageId']
+ def activate(pid,title):
+  row=page.locator(f'[data-package-id="{pid}"]');row.wait_for()
+  page.once('dialog',lambda dialog:dialog.accept())
+  with page.expect_response(lambda r:r.url.endswith(f'/api/packages/{pid}/activate')) as response:
+   row.get_by_role('button',name='对当前目标启用 / 切回此版本',exact=True).click()
+  assert response.value.ok,response.value.text()
+  page.get_by_role('heading',name=title,exact=True).wait_for()
+ activate(bid,'Package b-v1')
+ assert page.request.get(base+'/api/panels?runtimeId=configured&projectId=demo-project').json()[0]['id']==versions[0]
+ aobserver=browser.new_page();bobserver=browser.new_page();bmessages=[]
+ for observer in (aobserver,bobserver):observer.on('pageerror',lambda error:errors.append(str(error)))
+ bobserver.on('websocket',lambda ws:ws.on('framereceived',lambda payload:bmessages.append(json.loads(payload))))
+ def login(observer,name,pw):
+  observer.goto(base);observer.get_by_label('用户名',exact=True).fill(name)
+  observer.get_by_label('密码',exact=True).fill(pw);observer.get_by_role('button',name='登录',exact=True).click()
+ try:
+  login(aobserver,'tester',password);aobserver.get_by_role('heading',name='Package e2e-v1',exact=True).wait_for()
+  aobserver.get_by_label('查看运行',exact=True).select_option('demo-run')
+  aobserver.get_by_text('99.50',exact=False).wait_for()
+  login(bobserver,'bviewer','B-viewer-fixture-123!');bobserver.get_by_role('heading',name='Package b-v1',exact=True).wait_for()
+  bobserver.get_by_label('查看运行',exact=True).select_option('demo-run')
+  bobserver.get_by_text('99.50',exact=False).wait_for()
+  expect(bobserver.get_by_label('Runtime 目标',exact=True)).to_have_value('line-b')
+  assert bobserver.get_by_label('Runtime 目标',exact=True).locator('option').count()==1
+  assert bobserver.request.get(base+'/api/panels?runtimeId=configured').status==403
+  assert bobserver.request.get(base+'/api/panels?runtimeId=line-b&projectId=demo-project').json()[0]['id']==bid
+  aobserver.get_by_role('img',name='Package asset',exact=True).wait_for()
+  old_asset=aobserver.get_by_role('img',name='Package asset',exact=True)
+  aobserver.wait_for_function('(image)=>image.complete && image.naturalWidth>0',arg=old_asset.element_handle())
+  assert versions[0] in old_asset.get_attribute('src')
+  page.get_by_label('Runtime 目标',exact=True).select_option('configured')
+  page.get_by_role('heading',name='Package e2e-v1',exact=True).wait_for()
+  for pid,title in [(versions[1],'Package e2e-v2'),(versions[0],'Package e2e-v1')]:
+   before=sum(message.get('type')=='result' for message in bmessages)
+   activate(pid,title)
+   # A's original view remains pinned until its user explicitly refreshes.
+   aobserver.get_by_text('页面包已有更新，请点击刷新页面包',exact=True).wait_for()
+   expect(aobserver.get_by_role('heading',name='Package e2e-v1',exact=True)).to_be_visible()
+   assert versions[0] in old_asset.get_attribute('src')
+   assert aobserver.request.get(base+'/api/assets/'+versions[0]+'/pinned').ok
+   # B continues receiving its own snapshots and never receives A's update.
+   deadline=time.monotonic()+10
+   while sum(message.get('type')=='result' for message in bmessages)<before+2 and time.monotonic()<deadline:
+    bobserver.wait_for_timeout(50)
+   assert sum(message.get('type')=='result' for message in bmessages)>=before+2
+   assert not any(message.get('type')=='package_updated' for message in bmessages)
+   expect(bobserver.get_by_role('heading',name='Package b-v1',exact=True)).to_be_visible()
+   assert bobserver.request.get(base+'/api/panels?runtimeId=line-b&projectId=demo-project').json()[0]['id']==bid
+   assert bobserver.request.get(base+'/api/assets/'+bid+'/pinned').ok
+   active=page.request.get(base+'/api/packages?runtimeId=line-b&projectId=demo-project').json()
+   assert [item['packageId'] for item in active if item['active']]==[bid]
+  bobserver.get_by_role('button',name='刷新页面包和状态',exact=True).click()
+  bobserver.get_by_role('heading',name='Package b-v1',exact=True).wait_for()
+  aobserver.screenshot(path=str(ROOT/'test-tmp'/'target-a-pinned.png'),full_page=True)
+  bobserver.screenshot(path=str(ROOT/'test-tmp'/'target-b-isolated.png'),full_page=True)
+ finally:
+  aobserver.close();bobserver.close()
 
 def main():
  with tempfile.TemporaryDirectory(dir=ROOT/'test-tmp') as d:
@@ -72,7 +153,7 @@ def main():
       with page.expect_response(lambda response:response.url.endswith('/api/packages') and response.request.method=='POST') as uploaded:
        page.get_by_label('导入页面包',exact=True).set_input_files(str(package_path))
       assert uploaded.value.ok
-      installed=page.request.get(f'http://127.0.0.1:{port}/api/packages');assert installed.ok
+      installed=page.request.get(f'http://127.0.0.1:{port}/api/packages?runtimeId=configured&projectId=demo-project');assert installed.ok
       matching=[item for item in installed.json() if item['manifest']['packageRevision']==revision]
       assert len(matching)==1;pid=matching[0]['packageId'];assert pid==hashlib.sha256(package_path.read_bytes()).hexdigest();versions.append(pid)
       row=page.locator(f'[data-package-id="{pid}"]');row.wait_for();page.once('dialog',lambda dialog:dialog.accept())
@@ -86,8 +167,9 @@ def main():
       observer.get_by_role('button',name='刷新页面包和状态',exact=True).click();observer.get_by_role('heading',name=f'Package {revision}',exact=True).wait_for()
       page.get_by_text('99.50',exact=False).wait_for();previous_title=f'Package {revision}'
      page.once('dialog',lambda dialog:dialog.accept());page.locator(f'[data-package-id="{versions[0]}"]').get_by_role('button',name='对当前目标启用 / 切回此版本',exact=True).click();page.get_by_role('heading',name='Package e2e-v1',exact=True).wait_for()
-     assert page.request.get(f'http://127.0.0.1:{port}/api/panels').json()[0]['packageRevision']=='e2e-v1'
+     assert page.request.get(f'http://127.0.0.1:{port}/api/panels?runtimeId=configured&projectId=demo-project').json()[0]['packageRevision']=='e2e-v1'
      observer.close()
+     target_isolation_check(page,browser,f'http://127.0.0.1:{port}',data,versions,password,errors)
      page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth'),page.evaluate("Array.from(document.querySelectorAll('body *')).filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>({tag:e.tagName,class:e.className,width:e.getBoundingClientRect().width})).slice(0,20)")
      page.get_by_text('99.50',exact=False).wait_for()
      page.get_by_role('img',name='检测结果',exact=True).wait_for()
@@ -103,5 +185,5 @@ def main():
      raise
     browser.close()
   finally:server.should_exit=True;thread.join(timeout=5)
- print('PASS: real FastAPI HTTP/WS explicit MOCK Runtime browser integration, login, real-time result, freeze/resume, control, admin create, viewer restriction, mobile; no real Runtime or hardware')
+ print('PASS: real FastAPI HTTP/WS explicit MOCK Runtime browser integration, login, real-time result, freeze/resume, control, admin create, viewer restriction, mobile, A/B contextual activation and rollback, isolated B viewer and pinned A assets; no real Runtime or hardware')
 if __name__=='__main__':main()

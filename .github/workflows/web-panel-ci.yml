@@ -38,6 +38,8 @@ jobs:
         run: python scripts/package_frontend.py && python dev/fixtures/make_demo_package.py
       - name: Browser fixture checks
         run: python frontend/tests/browser_smoke.py
+      - name: Current-target catalog refresh browser checks
+        run: python frontend/tests/catalog_refresh_e2e.py
       - name: Browser full Web application checks
         run: python frontend/tests/backend_e2e.py
       - name: Official preview CLI and browser contract checks
@@ -99,10 +101,22 @@ jobs:
         run: python -m pip install web_panel/contracts/panel-contract-v1/python/*.whl './web_panel[test]'
       - name: Actual software Runtime via loopback (no devices)
         run: python -m unittest discover -s web_panel/tests -p test_product_runtime.py -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build Web UI for combined software Runtime browser acceptance
+        shell: bash
+        run: npm --prefix web_panel/frontend ci && npm --prefix web_panel/frontend run build && python web_panel/scripts/package_frontend.py
+      - name: Install browser for combined software Runtime acceptance
+        run: python -m pip install playwright && python -m playwright install chromium
+      - name: Real Chromium to Web HTTP/WS to owning software Runtime
+        run: python web_panel/frontend/tests/product_runtime_e2e.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: product-runtime-evidence-${{ github.sha }}
-          path: web_panel/test-results/product-runtime/
+          path: |
+            web_panel/test-results/product-runtime/
+            web_panel/test-results/product-browser/
           if-no-files-found: ignore
           retention-days: 7

@@ -1,4 +1,5 @@
 """Per-Runtime/project activation, pinned versions, ACLs and one-time migration."""
+from contextlib import closing
 import json
 from pathlib import Path
 import sqlite3
@@ -83,7 +84,7 @@ class PackageContextTests(unittest.TestCase):
         self.assertEqual(response.status_code,409)
         self.assertIn('formal project',response.json()['detail'])
         self.assertEqual(self.client.get('/api/panels').json()[0]['id'],old)
-        with sqlite3.connect(Path(self.tmp.name)/'web.sqlite') as db:
+        with closing(sqlite3.connect(Path(self.tmp.name)/'web.sqlite')) as db, db:
             self.assertEqual(db.execute('SELECT runtime_id FROM package_targets WHERE package_id=?',(wrong,)).fetchall(),[])
         self.assertEqual(self.client.get('/api/panels?runtimeId=configured&projectId=another-project').status_code,409)
 
@@ -110,7 +111,7 @@ class PackageMigrationTests(unittest.TestCase):
                 store=PackageStore(root, database=dbpath)
                 item=store.install(bundle('old')); pid=item['packageId']
                 (root/'active').write_text(pid)
-                with sqlite3.connect(dbpath) as db:
+                with closing(sqlite3.connect(dbpath)) as db, db:
                     db.execute('CREATE TABLE runtimes (id TEXT PRIMARY KEY)')
                     db.executemany('INSERT INTO runtimes VALUES (?)',[('A',),('B',)])
                     if with_links:

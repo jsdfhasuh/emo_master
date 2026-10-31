@@ -1,6 +1,7 @@
 """Bounded immutable packages: official SDK v1 plus explicitly labelled draft fixtures."""
 from __future__ import annotations
 
+from contextlib import closing
 import hashlib
 import io
 import json
@@ -463,7 +464,7 @@ class PackageStore:
         self.root.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
         self.database = Path(database) if database is not None else self.root / "web.sqlite"
-        with sqlite3.connect(self.database) as db:
+        with closing(sqlite3.connect(self.database)) as db, db:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS package_targets (
                     package_id TEXT, runtime_id TEXT, PRIMARY KEY(package_id,runtime_id));
@@ -621,7 +622,7 @@ class PackageStore:
                 raise PackageError('Package and target project differ')
             if not runtime_ids or any(not isinstance(rid, str) or not rid for rid in runtime_ids):
                 raise PackageError('Explicit Runtime context required')
-            with sqlite3.connect(self.database) as db:
+            with closing(sqlite3.connect(self.database)) as db, db:
                 for rid in runtime_ids:
                     db.execute('INSERT INTO package_activations VALUES (?,?,?) '
                                'ON CONFLICT(runtime_id,project_id) DO UPDATE SET package_id=excluded.package_id',
@@ -632,14 +633,14 @@ class PackageStore:
             return item
 
     def activations(self, package_id=None) -> list:
-        with sqlite3.connect(self.database) as db:
+        with closing(sqlite3.connect(self.database)) as db, db:
             rows = db.execute('SELECT runtime_id,project_id,package_id FROM package_activations' +
                               (' WHERE package_id=?' if package_id else '') + ' ORDER BY runtime_id,project_id',
                               (package_id,) if package_id else ()).fetchall()
         return [{'runtimeId': rid, 'projectId': project, 'packageId': pid} for rid, project, pid in rows]
 
     def active(self, runtime_id, project_id=None) -> dict | None:
-        with self._lock, sqlite3.connect(self.database) as db:
+        with self._lock, closing(sqlite3.connect(self.database)) as db, db:
             rows = db.execute('SELECT package_id FROM package_activations WHERE runtime_id=?' +
                               (' AND project_id=?' if project_id is not None else ''),
                               (runtime_id, project_id) if project_id is not None else (runtime_id,)).fetchall()

@@ -4,6 +4,8 @@
 `2.9` / Presentation `1.2`，发布快照为 `published-1`，ZIP 页面包为
 `emo-web-panel-1`（扩展名 `.emoweb`）。这些版本分别管理不同边界，不互相替代。
 
+2026-10-31 的[固定交接入口](../handoffs/runtime-web-panel-v1/README.md)提供仓库内可直接下载的 ZIP、实现源码 SHA 和文件摘要。
+
 本合同供远程 Designer 与 Web 网关共同使用 Runtime RPC。浏览器使用网关的固定
 HTTP / WebSocket API；网关是普通 Runtime 客户端，不依赖运行中的 Designer。
 执行、设备、正式工程和历史来源均归 Windows Runtime。浏览器登录、角色、网页

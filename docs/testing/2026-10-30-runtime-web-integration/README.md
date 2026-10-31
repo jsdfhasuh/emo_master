@@ -184,3 +184,16 @@ ZIP SHA-256：`d90b4b182cc2b78e095c0f896ef409442b5c7dbf0601b8e1926656426fef1ecb`
 wheel SHA-256：`669135290fcce95c0e25dd8cfd751aa785696dd695e9ed225f84c410ee359b9c`。
 旧交接 ZIP 保留为 `build/panel-contract-v1-before-repairs.zip`，不删除其历史摘要。
 实际校验输出为 `build/runtime-web-plan-repair/contract-verification.json`；样例的 Designer 打开仍为 NOT_RUN。
+
+## 提交与固定交接（2026-10-31）
+
+上述“未提交工作区”描述保留修复记录当时的状态。现已将实现、回归和本记录提交为
+`d4ab96409e43d7ab6ae566820da357508d01658c`，分支为 `codex/logging-and-designer-improvements`。
+提交前暂存检查清理了三个新增文件的末尾空行；没有进一步修改业务行为或扩大测试范围。
+
+从该干净提交重新构建 SDK/合同并校验 manifest 全部文件、wheel 与 owning source、ZIP 内容和 `testzip()`。
+新包记录 `sourceDirty=false`，交接材料纳入仓库的 [docs/handoffs/runtime-web-panel-v1/](../../handoffs/runtime-web-panel-v1/README.md)，
+包含 ZIP 及 Dot 开发入口。新 ZIP 为 87,604 字节，SHA-256 为
+`2ac8435d0aee3323413be980262eeae97a0aa0282f859ca3e77e6753915b2c5c`；
+wheel SHA-256 为 `bb0cff1f007b8c6b850c8e43d792200ee6adebbaa4af23c4a966362b74e697f9`。
+较早工作区交接包及其摘要继续保留在上文，不再作为 Dot 当前交接入口。

@@ -14,6 +14,9 @@
 | L5 | 已提供目标/来源属性、路径隔离的完整 `.emoweb` 发布器；预览可明确选择 fixtures 或当前 Runtime，并传递只读连接上下文；真实浏览器预览待 Dot CLI/renderer |
 | L6 | 本地协议与 Qt 协同已做定向验证；另一台实体电脑、Dot 网关/浏览器、冻结包和真实设备未执行 |
 
+2026-10-31 已将本地实现固定到提交 `d4ab96409e43d7ab6ae566820da357508d01658c`。
+Dot 使用仓库内的[交接入口及合同 ZIP](../handoffs/runtime-web-panel-v1/README.md)开始开发；该包从干净提交生成并记录摘要。
+
 本文由本地 emo_master 开发承担，配套文档为 [Web 面板 Dot 开发计划](./2026-10-30-web-panel-dot-development-plan.md)。
 本地部分先完善其他电脑 Designer 对 Runtime 的正常访问；Web 网关作为另一种普通 RPC 客户端使用同一接口。
 两份计划共同完成远程工程操作、实时查看、历史查询、受控启停和页面发布更新；执行、设备与正式工程配置始终归 Windows Runtime。

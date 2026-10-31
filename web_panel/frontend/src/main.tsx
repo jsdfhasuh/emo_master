@@ -4,7 +4,7 @@ import type { Me, Panel, Run, Result, Envelope, RuntimeTarget, WorkflowTarget } 
 import { api, setCsrf } from './data/api';
 import { parseLosslessJSON } from './data/lossless';
 import { normalizeMessage, applySourceProblems } from './data/contract';
-import { LatestScopeQueue } from './state/latest';
+import { LatestScopeQueue, resumeExpiredScopes } from './state/latest';
 import { prepareResult, releaseResult, pageImageSources } from './state/prepare';
 import { PanelRenderer } from './renderer/PanelRenderer';
 import './style.css';
@@ -253,7 +253,7 @@ function App() {
         try {
             const response=await api<{viewGeneration?:string}>(`/api/views/${encodeURIComponent(viewId)}/${name==='freeze'?'freeze':'resume'}`,{method:'POST',body:JSON.stringify({resultKey:result?.resultKey,resultKeys:frozenKeys.current})});
             if(attempt!==actionAttempt.current || actionGeneration!==generation.current || !acceptViewGeneration(response.viewGeneration))return false;
-            setFrozen(name==='freeze');if(name!=='freeze'){expiredScopes.current.clear();restagePage.current?.()}return true;
+            setFrozen(name==='freeze');if(name!=='freeze')resumeExpiredScopes(expiredScopes.current,()=>restagePage.current?.());return true;
         } catch(e) {
             if(attempt!==actionAttempt.current || actionGeneration!==generation.current)return false;
             if(name==='freeze'){frozenKeys.current=previousKeys;restagePage.current?.()}else frozenKeys.current=previousKeys;

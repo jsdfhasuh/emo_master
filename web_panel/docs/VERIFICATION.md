@@ -1,4 +1,8 @@
-# Verification record — 2026-10-30
+# Verification record
+
+Current SDK integration evidence is in the final section. The 2026-10-30 record below is historical only.
+
+## Historical draft — 2026-10-30
 
 ## Verified application source
 
@@ -46,9 +50,8 @@ Official handoff uses clean implementation `d4ab96409e43d7ab6ae566820da357508d01
 all34 file sizes/digests verified. Historical 2026-10-30 results above describe the
 old draft only, not the current official adapter.
 
-Local observed checks during integration:79 gateway/package regression tests,
-4 new gateway contract tests,10 synthetic loopback gRPC tests, and27 frontend tests
-passed in their respective existing environments; counts may change with final fixes.
+Local observed checks: 91 gateway/package tests, 17 synthetic loopback/group tests,
+and 39 frontend tests passed in their respective existing environments.
 TypeScript/Vite builds passed. Local full-environment/CLI/browser checks remain
 unverified: isolated dependency installation was blocked by the execution reviewer,
 and the permitted clarified retry failed before execution in the sandbox wrapper.
@@ -58,3 +61,17 @@ normal Windows/Linux install and browser validation environment. Final exact-SHA
 results are pending until recorded below.
 
 No merge, deployment, user-machine operation or physical-device validation performed.
+
+### First integration CI and corrections
+
+[Run 41157631820](https://github.com/jsdfhasuh/emo_master/actions/runs/41157631820)
+at `b3927e10059a97b5d8d8dae251c43e34425696aa` was **not successful**.
+Ubuntu backend ran 115 tests (2 opt-in product tests skipped); frontend/build passed.
+Browser checks caught a Resume regression that discarded the displayed snapshot
+while another image was pending; the implementation now preserves the displayed
+snapshot, with two additional regression tests and the original browser assertion intact.
+Windows exposed implicit text decoding and two legitimate loopback transport timeout
+statuses; fixtures now use explicit UTF-8 and the failed-preview test accepts either
+UNAVAILABLE or DEADLINE_EXCEEDED while still requiring no ready event and nonzero exit.
+The owning Windows Runtime history/image test passed; Start/capture/Stop did not yet
+pass. None of these partial results establishes full W1–W6 acceptance.

@@ -101,7 +101,7 @@ class OfficialPackageTests(unittest.TestCase):
             self.store.install(official_bundle(lambda m,p,f: m['captureRequirements'].update(sources=[])))
 
     def test_canonical_vectors_authoritative_sdk(self):
-        vectors = json.loads((CONTRACT / 'fixtures' / 'canonical-vectors.json').read_text())
+        vectors = json.loads((CONTRACT / 'fixtures' / 'canonical-vectors.json').read_text(encoding='utf-8'))
         self.assertTrue(vectors)
         # Vector wrapper/key details belong to the supplied contract, not JS.
         for vector in vectors.get('vectors', vectors) if isinstance(vectors, dict) else vectors:

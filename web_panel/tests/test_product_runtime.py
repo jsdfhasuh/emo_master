@@ -10,6 +10,8 @@ import json
 import os
 from pathlib import Path
 import queue
+import shutil
+import time
 import subprocess
 import sys
 import tempfile
@@ -60,6 +62,8 @@ def run_product_server(root):
 class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         from emo_web_panel.runtime_client import GrpcRuntimeClient
+        self.observations = []
+        self.stdout_lines = []
         self.directory = tempfile.TemporaryDirectory(prefix='web-product-runtime-')
         self.log = open(Path(self.directory.name) / 'runtime.log', 'w+')
         env = os.environ.copy()
@@ -77,6 +81,15 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
             data = json.loads(line)
             if data.get('event') != 'ready':
                 raise ValueError('Unexpected Runtime startup output')
+            # Drain diagnostics after the ready line so worker stdout cannot
+            # block the Runtime behind an unread pipe. Retain a bounded tail.
+            def drain_stdout():
+                for line in self.process.stdout:
+                    self.stdout_lines.append(line)
+                    if len(self.stdout_lines) > 1000:
+                        del self.stdout_lines[0]
+            self.stdout_thread = threading.Thread(target=drain_stdout, daemon=True)
+            self.stdout_thread.start()
             self.client = GrpcRuntimeClient(data['address'])
             await self.client.start()
         except Exception:
@@ -84,6 +97,7 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
             self.process.wait(timeout=10)
             self.log.flush(); self.log.seek(0)
             diagnostic = self.log.read()
+            self.preserve_evidence()
             self.log.close(); self.directory.cleanup()
             raise AssertionError('Owning Runtime subprocess did not start:\n' + diagnostic)
 
@@ -95,8 +109,49 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
                 await asyncio.to_thread(self.process.wait, timeout=20)
             except subprocess.TimeoutExpired:
                 self.process.kill(); self.process.wait(timeout=10)
+        self.stdout_thread.join(timeout=2)
+        self.preserve_evidence()
         self.process.stdin.close(); self.process.stdout.close()
         self.log.close(); self.directory.cleanup()
+
+    def preserve_evidence(self):
+        destination = Path(os.environ.get('EMO_WEB_PRODUCT_EVIDENCE_DIR',
+            str(ROOT / 'web_panel/test-results/product-runtime'))) / self._testMethodName
+        destination.mkdir(parents=True, exist_ok=True)
+        self.log.flush()
+        root = Path(self.directory.name)
+        # Only synthetic test diagnostics; never production databases or images.
+        remaining = 8 * 1024 * 1024
+        for path in sorted(root.rglob('*')):
+            if path.is_file() and path.suffix.lower() in {'.log','.jsonl','.json'}:
+                size = path.stat().st_size
+                if size <= min(remaining, 2 * 1024 * 1024):
+                    output = destination / path.relative_to(root)
+                    output.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(path, output)
+                    remaining -= size
+        (destination / 'stdout.log').write_text(''.join(self.stdout_lines), encoding='utf-8')
+        (destination / 'gateway-observations.json').write_text(
+            json.dumps(self.observations, ensure_ascii=False, indent=2), encoding='utf-8')
+        print(f'Product Runtime evidence: {destination}', file=sys.stderr)
+
+    async def reconcile_start(self, accepted, body, *, timeout=60):
+        """One Start only. Bounded, read-only correlation after uncertain reply."""
+        import grpc
+        deadline = time.monotonic() + timeout
+        self.observations.append({'operation':'start','reply':accepted})
+        while accepted['outcome'] == 'UNKNOWN' and time.monotonic() < deadline:
+            if self.process.poll() is not None:
+                self.fail('Runtime subprocess exited while reconciling Start')
+            await asyncio.sleep(.2)
+            try:
+                accepted = await self.client.lookup_start(body['requestId'], body['runtimeInstanceId'])
+                self.observations.append({'operation':'lookup_start','reply':accepted})
+            except grpc.RpcError as error:
+                # A read deadline is still inconclusive, never authorization to
+                # repeat Start. Identity/semantic failures are not caught here.
+                self.observations.append({'operation':'lookup_start','transportError':str(error)})
+        return accepted
 
     async def test_actual_runtime_history_without_jobs_and_image_ownership(self):
         info = await self.client.info()
@@ -125,6 +180,7 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
             'configurationRevision':info['configurationRevision'],'workflowId':'main',
             'requestId':'web-product-runtime-start-1','inputs':{}}
         accepted = await self.client.control('start','main',body)
+        accepted = await self.reconcile_start(accepted, body)
         self.assertEqual(accepted['outcome'],'ACCEPTED', accepted)
         job = accepted['runId']
         lookup = await self.client.lookup_start(body['requestId'], info['runtimeInstanceId'])
@@ -135,6 +191,9 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
             if result:
                 break
             await asyncio.sleep(.05)
+        if not result:
+            self.observations.append({'operation':'run_state','reply':await self.client.run_state(job)})
+            self.observations.append({'operation':'job_events','reply':await self.client.job_events(job)})
         self.assertTrue(result, 'Actual Runtime never produced the supplied sample capture')
         self.assertEqual(result[0]['jobId'],job)
         self.assertIn('count',result[0]['sources'])
@@ -142,6 +201,30 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
         stop = await self.client.control('stop',job,body | {'runGroupId':state['runGroupId']})
         self.assertEqual(stop['outcome'],'ACCEPTED', stop)
         self.assertEqual(len(await self.client.runs()),1)
+
+
+class StartReconciliationTests(unittest.IsolatedAsyncioTestCase):
+    async def test_unknown_queries_same_intent_without_another_start(self):
+        from types import SimpleNamespace
+        from unittest.mock import AsyncMock, Mock, patch
+        client = SimpleNamespace(lookup_start=AsyncMock(side_effect=[
+            {'outcome':'UNKNOWN'}, {'outcome':'ACCEPTED','runId':'actual-job'}]), control=AsyncMock())
+        host = SimpleNamespace(client=client, observations=[], process=SimpleNamespace(poll=lambda: None), fail=Mock())
+        with patch('asyncio.sleep', new=AsyncMock()):
+            result = await ProductRuntimeTests.reconcile_start(host, {'outcome':'UNKNOWN'},
+                {'requestId':'same-intent','runtimeInstanceId':'same-instance'})
+        self.assertEqual(result, {'outcome':'ACCEPTED','runId':'actual-job'})
+        self.assertEqual(client.lookup_start.await_count,2)
+        self.assertTrue(all(call.args == ('same-intent','same-instance') for call in client.lookup_start.await_args_list))
+        client.control.assert_not_awaited()
+
+    async def test_reconciliation_timeout_does_not_invent_acceptance(self):
+        from types import SimpleNamespace
+        from unittest.mock import AsyncMock
+        host = SimpleNamespace(observations=[],client=SimpleNamespace(lookup_start=AsyncMock()))
+        result = await ProductRuntimeTests.reconcile_start(host, {'outcome':'UNKNOWN'}, {}, timeout=0)
+        self.assertEqual(result, {'outcome':'UNKNOWN'})
+        host.client.lookup_start.assert_not_awaited()
 
 
 if __name__ == '__main__':

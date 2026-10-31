@@ -12,7 +12,7 @@ class FixtureRuntime:
         self.directory = Path(__file__).parent / 'contract_data' / 'fixtures'
 
     def _fixture(self, name):
-        return json.loads((self.directory / (name + '.json')).read_text())
+        return json.loads((self.directory / (name + '.json')).read_text(encoding='utf-8'))
 
     async def start(self):
         pass

@@ -15,3 +15,10 @@ export class LatestScopeQueue<T> {
  }
  invalidate(){for(const slot of this.slots.values()){slot.epoch++;slot.pending=undefined;slot.active=undefined;slot.shown=undefined;}}
 }
+
+/** Normal Resume retains the displayed snapshot while the next image prepares.
+ * Only expired scopes need explicit restaging after the server confirms Resume.
+ */
+export function resumeExpiredScopes(expired:Set<string>,restage:()=>void):void {
+ const hadExpired=expired.size>0;expired.clear();if(hadExpired)restage();
+}

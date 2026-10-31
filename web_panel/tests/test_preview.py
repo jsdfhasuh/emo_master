@@ -114,7 +114,7 @@ class PreviewTests(unittest.TestCase):
             self.assertNotEqual(process.returncode, 0)
             self.assertEqual(stdout, '')
             self.assertNotIn('"event": "ready"', stdout)
-            self.assertIn('UNAVAILABLE', stderr)
+            self.assertRegex(stderr, r'StatusCode\.(UNAVAILABLE|DEADLINE_EXCEEDED)')
 
     def test_context_identity_validation(self):
         value = json.loads((CONTRACT / 'fixtures' / 'preview-fixtures.json').read_text())

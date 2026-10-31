@@ -1,0 +1,15 @@
+{
+  "previewContextVersion": "1",
+  "mode": "runtime",
+  "readOnly": true,
+  "projectId": "panel-contract-demo",
+  "packageRevision": "33ee5700bfa1d6eef1ce40e225f3abb4d27546cf20609bb89e972d6569462ba7",
+  "historyDefinitionRevision": "ac6f154409d44008c9c7df03794003b979738c85dddb42887788070ea3d661ff",
+  "runtime": {
+    "target": "192.0.2.10:50051",
+    "timeoutSeconds": 5.0,
+    "maxReceiveMessageBytes": 9437184,
+    "runtimeInstanceId": "demo-runtime",
+    "documentRevision": "1"
+  }
+}

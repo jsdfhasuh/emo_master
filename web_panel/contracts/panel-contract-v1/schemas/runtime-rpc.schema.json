@@ -1,0 +1,3698 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "RpcPrepareProjectImportRequest": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "expectedRuntimeInstanceId": {
+          "type": "string"
+        },
+        "projectJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcProjectConfigurationReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "resultJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcRuntimeInfoRequest": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "RpcRuntimeInfoReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "protocolVersion": {
+          "type": "string"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "productionMode": {
+          "type": "boolean"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "documentRevision": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "productionInputsJson": {
+          "type": "string"
+        },
+        "productionExecutionMode": {
+          "type": "string"
+        },
+        "startupWorkflowIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "historyDefinitionRevision": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcListRunsRequest": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "workflowId": {
+          "type": "string"
+        },
+        "includeTerminal": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcListRunsReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "runs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcRunState"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcRunState": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "workflowId": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
+        },
+        "runGroupId": {
+          "type": "string"
+        },
+        "sourceJobId": {
+          "type": "string"
+        },
+        "targetSlotId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "ownsResources": {
+          "type": "boolean"
+        },
+        "captureEnabled": {
+          "type": "boolean"
+        },
+        "displayResourcesReleased": {
+          "type": "boolean"
+        },
+        "workflowName": {
+          "type": "string"
+        },
+        "acceptedAtMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "startedAtMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "endedAtMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "errorCode": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "startRequestId": {
+          "type": "string"
+        },
+        "allowedActions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetRunStateRequest": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetRunStateReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "run": {
+          "$ref": "#/$defs/RpcRunState"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcQueryHistoryPageRequest": {
+      "type": "object",
+      "properties": {
+        "context": {
+          "$ref": "#/$defs/RpcHistoryContext"
+        },
+        "componentId": {
+          "type": "string"
+        },
+        "page": {
+          "type": "integer"
+        },
+        "pageSize": {
+          "type": "integer"
+        },
+        "filterColumn": {
+          "type": "string"
+        },
+        "filterText": {
+          "type": "string"
+        },
+        "orderBy": {
+          "type": "string"
+        },
+        "descending": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcHistoryContext": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "historyDefinitionRevision": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcHistoryReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "resultJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcQueryHistoryAggregateRequest": {
+      "type": "object",
+      "properties": {
+        "context": {
+          "$ref": "#/$defs/RpcHistoryContext"
+        },
+        "componentId": {
+          "type": "string"
+        },
+        "filterColumn": {
+          "type": "string"
+        },
+        "filterText": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcReadHistoryImageRequest": {
+      "type": "object",
+      "properties": {
+        "context": {
+          "$ref": "#/$defs/RpcHistoryContext"
+        },
+        "imageRef": {
+          "type": "string"
+        },
+        "componentId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcHistoryImageReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcReadProjectResourceRequest": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "resourceId": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "offset": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "maxBytes": {
+          "type": "integer"
+        },
+        "expectedDocumentRevision": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcReadProjectResourceReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "offset": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "totalSize": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "eof": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDispatchQueueRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "runGroupId": {
+          "type": "string"
+        },
+        "targetSlotId": {
+          "type": "string"
+        },
+        "includeItems": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDispatchQueueReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "stateJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcOnlineProjectRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcInitialProjectConfigurationRequest": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "localPayloadJson": {
+          "type": "string"
+        },
+        "resourceRoot": {
+          "type": "string"
+        },
+        "validateOnly": {
+          "type": "boolean"
+        },
+        "expectedRuntimeInstanceId": {
+          "type": "string"
+        },
+        "projectPath": {
+          "type": "string"
+        },
+        "importId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcOnlineGraphRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "documentRevision": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "jobId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcProjectConfigurationWriteRequest": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "expectedRuntimeInstanceId": {
+          "type": "string"
+        },
+        "expectedRevision": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "localPayloadJson": {
+          "type": "string"
+        },
+        "selectedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "replacementPolicy": {
+          "type": "string"
+        },
+        "localProjectPath": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcProjectWriteLookup": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcProjectResourceTransferRequest": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "transferId": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "resourceJson": {
+          "type": "string"
+        },
+        "offset": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "data": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "replacementOf": {
+          "type": "string"
+        },
+        "expectedDocumentRevision": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "initialImportId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcRetryProjectResourceRecoveryRequest": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "expectedRuntimeInstanceId": {
+          "type": "string"
+        },
+        "expectedDocumentRevision": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcOperatorDebugRequest": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "openRequestId": {
+          "type": "string"
+        },
+        "projectJson": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "workflowId": {
+          "type": "string"
+        },
+        "nodeId": {
+          "type": "string"
+        },
+        "operatorId": {
+          "type": "string"
+        },
+        "resourceRoot": {
+          "type": "string"
+        },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/RpcOperatorDebugValue"
+          }
+        },
+        "inputSetId": {
+          "type": "string"
+        },
+        "paramsJson": {
+          "type": "string"
+        },
+        "timeoutMs": {
+          "type": "integer"
+        },
+        "executionId": {
+          "type": "string"
+        },
+        "afterSequence": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "assetId": {
+          "type": "string"
+        },
+        "offset": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "totalBytes": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "content": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "provenanceJson": {
+          "type": "string"
+        },
+        "controlJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcOperatorDebugValue": {
+      "type": "object",
+      "properties": {
+        "inlineJson": {
+          "type": "string"
+        },
+        "assetRef": {
+          "type": "string"
+        },
+        "outputRef": {
+          "$ref": "#/$defs/RpcOperatorDebugOutputRef"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcOperatorDebugOutputRef": {
+      "type": "object",
+      "properties": {
+        "executionId": {
+          "type": "string"
+        },
+        "port": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcOperatorDebugReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "state": {
+          "type": "string"
+        },
+        "executionId": {
+          "type": "string"
+        },
+        "inputSetId": {
+          "type": "string"
+        },
+        "snapshotJson": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string",
+          "contentEncoding": "base64"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGlobalVariablesRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
+        },
+        "variableId": {
+          "type": "string"
+        },
+        "valueJson": {
+          "type": "string"
+        },
+        "expectedRevision": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGlobalVariablesReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "variablesJson": {
+          "type": "string"
+        },
+        "jobsJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcOpenPlcDebugSessionRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "workflowId": {
+          "type": "string"
+        },
+        "nodeId": {
+          "type": "string"
+        },
+        "operatorId": {
+          "type": "string"
+        },
+        "paramsJson": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcPlcDebugReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "writeEnabled": {
+          "type": "boolean"
+        },
+        "resultJson": {
+          "type": "string"
+        },
+        "elapsedMs": {
+          "type": "number"
+        },
+        "timestampMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "ttlMs": {
+          "type": "integer"
+        },
+        "writeLockGeneration": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcExecutePlcDebugCommandRequest": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "paramsJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcClosePlcDebugSessionRequest": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcInspectSqliteTargetRequest": {
+      "type": "object",
+      "properties": {
+        "databasePath": {
+          "type": "string"
+        },
+        "projectDirectory": {
+          "type": "string"
+        },
+        "table": {
+          "type": "string"
+        },
+        "proposedColumns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcSqliteColumnPlan"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcSqliteColumnPlan": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "storageType": {
+          "type": "string"
+        },
+        "nullable": {
+          "type": "boolean"
+        },
+        "hasDefault": {
+          "type": "boolean"
+        },
+        "defaultJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcSqliteTargetReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "runtimeHost": {
+          "type": "string"
+        },
+        "resolvedPath": {
+          "type": "string"
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcSqliteColumnInfo"
+          }
+        },
+        "structureJson": {
+          "type": "string"
+        },
+        "previewSql": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcSqliteColumnInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "declaredType": {
+          "type": "string"
+        },
+        "affinity": {
+          "type": "string"
+        },
+        "nullable": {
+          "type": "boolean"
+        },
+        "hasDefault": {
+          "type": "boolean"
+        },
+        "defaultSql": {
+          "type": "string"
+        },
+        "primaryKey": {
+          "type": "integer"
+        },
+        "generated": {
+          "type": "boolean"
+        },
+        "autoPrimaryKey": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcInitializeSqliteTargetRequest": {
+      "type": "object",
+      "properties": {
+        "databasePath": {
+          "type": "string"
+        },
+        "projectDirectory": {
+          "type": "string"
+        },
+        "table": {
+          "type": "string"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcSqliteColumnPlan"
+          }
+        },
+        "confirmed": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcRunInspectionSessionRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "sessionId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcRunInspectionSessionReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "ttlMs": {
+          "type": "integer"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcLoadProjectRequest": {
+      "type": "object",
+      "properties": {
+        "projectPath": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcLoadProjectReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcCommunicationRequest": {
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "projectLoadGeneration": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "configJson": {
+          "type": "string"
+        },
+        "expectedConfigRevision": {
+          "type": "string"
+        },
+        "afterSequence": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "projectPath": {
+          "type": "string"
+        },
+        "saveToken": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcCommunicationReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "stateJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcValidateProjectRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcValidateProjectReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcStartJobRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "workflowId": {
+          "type": "string"
+        },
+        "inputsJson": {
+          "type": "string"
+        },
+        "capturePresentation": {
+          "type": "boolean"
+        },
+        "startRequestId": {
+          "type": "string"
+        },
+        "expectedRuntimeInstanceId": {
+          "type": "string"
+        },
+        "legacySnapshotPolicy": {
+          "type": "string"
+        },
+        "inspectionSessionId": {
+          "type": "string"
+        },
+        "expectedDocumentRevision": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcStartJobReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "jobId": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "startRequestId": {
+          "type": "string"
+        },
+        "legacySnapshotPolicy": {
+          "type": "string"
+        },
+        "projectRevision": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "inspectionSessionId": {
+          "type": "string"
+        },
+        "diagnosticsJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcStartRequestLookup": {
+      "type": "object",
+      "properties": {
+        "startRequestId": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcStopJobRequest": {
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "expectedRuntimeInstanceId": {
+          "type": "string"
+        },
+        "expectedProjectId": {
+          "type": "string"
+        },
+        "expectedRunGroupId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcStopJobReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetJobStatusRequest": {
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetJobStatusReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string"
+        },
+        "errorCode": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "workflowId": {
+          "type": "string"
+        },
+        "pid": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "acceptedAtMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "startedAtMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "endedAtMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "legacySnapshotPolicy": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcStreamJobEventsRequest": {
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string"
+        },
+        "afterSequence": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "follow": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcJobEvent": {
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string"
+        },
+        "nodeId": {
+          "type": "string"
+        },
+        "eventType": {
+          "type": "string"
+        },
+        "level": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "payloadJson": {
+          "type": "string"
+        },
+        "timestampMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "workflowId": {
+          "type": "string"
+        },
+        "workflowRunId": {
+          "type": "string"
+        },
+        "parentWorkflowRunId": {
+          "type": "string"
+        },
+        "nodeRunId": {
+          "type": "string"
+        },
+        "iterationPathJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcListOperatorsRequest": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "RpcListOperatorsReply": {
+      "type": "object",
+      "properties": {
+        "operators": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcOperatorInfo"
+          }
+        },
+        "cameraRecoveryWarningsJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcOperatorInfo": {
+      "type": "object",
+      "properties": {
+        "operatorId": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "inputPorts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "outputPorts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "paramSchemaJson": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "iconKey": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "inputPortSpecsJson": {
+          "type": "string"
+        },
+        "outputPortSpecsJson": {
+          "type": "string"
+        },
+        "editorSpecJson": {
+          "type": "string"
+        },
+        "editorIssuesJson": {
+          "type": "string"
+        },
+        "icon": {
+          "$ref": "#/$defs/RpcOperatorIconInfo"
+        },
+        "iconIssues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcOperatorIconIssue"
+          }
+        },
+        "deviceRequirementsJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcOperatorIconInfo": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "byteSize": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcOperatorIconIssue": {
+      "type": "object",
+      "properties": {
+        "ruleId": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcListDeviceTypesRequest": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "RpcListDeviceTypesReply": {
+      "type": "object",
+      "properties": {
+        "typesJson": {
+          "type": "string"
+        },
+        "requirementsJson": {
+          "type": "string"
+        },
+        "rejectedJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetDeviceStatesRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetDeviceStatesReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "statesJson": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "projectLoadGeneration": {
+          "type": "string"
+        },
+        "runtimeUptimeMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetDeviceDiagnosticsRequest": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "projectLoadGeneration": {
+          "type": "string"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "cursor": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetDeviceDiagnosticsReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "diagnosticsJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcRecoverDeviceRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "expectedGeneration": {
+          "type": "string"
+        },
+        "expectedDefinitionRevision": {
+          "type": "string"
+        },
+        "hardwareSynchronized": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDeviceNetworkRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "payloadJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcControlDeviceRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "expectedGeneration": {
+          "type": "string"
+        },
+        "expectedDefinitionRevision": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "confirmed": {
+          "type": "boolean"
+        },
+        "expectedControlRevision": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcExecuteDeviceActionRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "expectedGeneration": {
+          "type": "string"
+        },
+        "expectedDefinitionRevision": {
+          "type": "string"
+        },
+        "expectedControlRevision": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "argumentsJson": {
+          "type": "string"
+        },
+        "confirmed": {
+          "type": "boolean"
+        },
+        "requestId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcExecuteDeviceActionReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "resultJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcCameraDiagnosticRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "expectedDefinitionRevision": {
+          "type": "string"
+        },
+        "expectedGeneration": {
+          "type": "string"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "confirmed": {
+          "type": "boolean"
+        },
+        "changesJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcCameraDiagnosticReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "metadataJson": {
+          "type": "string"
+        },
+        "previewJpeg": {
+          "type": "string",
+          "contentEncoding": "base64"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetOperatorIconAssetRequest": {
+      "type": "object",
+      "properties": {
+        "operatorId": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "expectedSha256": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetOperatorIconAssetReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "content": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetOperatorEditorAssetRequest": {
+      "type": "object",
+      "properties": {
+        "operatorId": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetOperatorEditorAssetReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "content": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcListNodePreviewSourcesRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "workflowId": {
+          "type": "string"
+        },
+        "nodeId": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
+        },
+        "inspectionSessionId": {
+          "type": "string"
+        },
+        "workflowRunId": {
+          "type": "string"
+        },
+        "nodeRunId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcListNodePreviewSourcesReply": {
+      "type": "object",
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcPreviewSourceInfo"
+          }
+        },
+        "jobId": {
+          "type": "string"
+        },
+        "legacySnapshotPolicy": {
+          "type": "string"
+        },
+        "captureState": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcPreviewSourceInfo": {
+      "type": "object",
+      "properties": {
+        "sourceId": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "sourceKind": {
+          "type": "string"
+        },
+        "workflowId": {
+          "type": "string"
+        },
+        "nodeId": {
+          "type": "string"
+        },
+        "port": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "iterationPathJson": {
+          "type": "string"
+        },
+        "originJobId": {
+          "type": "string"
+        },
+        "originProjectRevision": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "captureId": {
+          "type": "string"
+        },
+        "createdAtMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "snapshotState": {
+          "type": "string"
+        },
+        "workflowRunId": {
+          "type": "string"
+        },
+        "nodeRunId": {
+          "type": "string"
+        },
+        "originalWidth": {
+          "type": "integer"
+        },
+        "originalHeight": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcPreviewUploadChunk": {
+      "type": "object",
+      "properties": {
+        "uploadId": {
+          "type": "string"
+        },
+        "filename": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "draftSessionId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcPreviewAssetReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "assetId": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "mimeType": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetPreviewAssetRequest": {
+      "type": "object",
+      "properties": {
+        "assetId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "inspectionSessionId": {
+          "type": "string"
+        },
+        "draftSessionId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcPreviewDownloadChunk": {
+      "type": "object",
+      "properties": {
+        "assetId": {
+          "type": "string"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string",
+          "contentEncoding": "base64"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcRunOperatorPreviewRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "workflowId": {
+          "type": "string"
+        },
+        "nodeId": {
+          "type": "string"
+        },
+        "operatorId": {
+          "type": "string"
+        },
+        "paramsJson": {
+          "type": "string"
+        },
+        "imageAssetId": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "projectJson": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
+        },
+        "draftSessionId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcRunOperatorPreviewReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "outputsJson": {
+          "type": "string"
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcPreviewOutputAsset"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcPreviewOutputAsset": {
+      "type": "object",
+      "properties": {
+        "port": {
+          "type": "string"
+        },
+        "assetId": {
+          "type": "string"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcCancelOperatorPreviewRequest": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcCancelOperatorPreviewReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcOpenOperatorPreviewSessionRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "workflowId": {
+          "type": "string"
+        },
+        "nodeId": {
+          "type": "string"
+        },
+        "operatorId": {
+          "type": "string"
+        },
+        "paramsJson": {
+          "type": "string"
+        },
+        "projectJson": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
+        },
+        "configurationOnly": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcOpenOperatorPreviewSessionReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcConfigureOperatorSessionRequest": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "deviceIdentity": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "payloadJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcConfigureOperatorSessionReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "stateJson": {
+          "type": "string"
+        },
+        "warningsJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcCloseOperatorPreviewSessionRequest": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcCloseOperatorPreviewSessionReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcStreamOperatorPreviewFramesRequest": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcOperatorPreviewFrame": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "jpeg": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "blockId": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "deviceTimestamp": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "actualExposureUs": {
+          "type": "number"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "state": {
+          "type": "string"
+        },
+        "generation": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcListRejectedOperatorsRequest": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "RpcListRejectedOperatorsReply": {
+      "type": "object",
+      "properties": {
+        "rejected": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcRejectedOperatorInfo"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcRejectedOperatorInfo": {
+      "type": "object",
+      "properties": {
+        "operatorId": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcListWorkflowsRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcListWorkflowsReply": {
+      "type": "object",
+      "properties": {
+        "workflows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcWorkflowInfo"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcWorkflowInfo": {
+      "type": "object",
+      "properties": {
+        "workflowId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "isEntry": {
+          "type": "boolean"
+        },
+        "inputsJson": {
+          "type": "string"
+        },
+        "outputsJson": {
+          "type": "string"
+        },
+        "canStart": {
+          "type": "boolean"
+        },
+        "startBlockReason": {
+          "type": "string"
+        },
+        "defaultInputsJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcListGlobalCountersRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcListGlobalCountersReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "counters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcGlobalCounterInfo"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGlobalCounterInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "updatedAtMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetGlobalCounterRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcGetGlobalCounterReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "counter": {
+          "$ref": "#/$defs/RpcGlobalCounterInfo"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcSetGlobalCounterRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcSetGlobalCounterReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "counter": {
+          "$ref": "#/$defs/RpcGlobalCounterInfo"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcResetGlobalCounterRequest": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcResetGlobalCounterReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "counter": {
+          "$ref": "#/$defs/RpcGlobalCounterInfo"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayEmpty": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayCapabilities": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "protocolVersion": {
+          "type": "string"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "normalCaptureLimitsJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayPrepareRequest": {
+      "type": "object",
+      "properties": {
+        "projectJson": {
+          "type": "string"
+        },
+        "resourceRoot": {
+          "type": "string"
+        },
+        "siteValues": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayPrepared": {
+      "type": "object",
+      "properties": {
+        "preparedId": {
+          "type": "string"
+        },
+        "executionRevision": {
+          "type": "string"
+        },
+        "capturePlanRevision": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayStartRequest": {
+      "type": "object",
+      "properties": {
+        "preparedId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayJob": {
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "workflowId": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "captureEnabled": {
+          "type": "boolean"
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "capturePlanRevision": {
+          "type": "string"
+        },
+        "executionRevision": {
+          "type": "string"
+        },
+        "startRequestId": {
+          "type": "string"
+        },
+        "sourcesJson": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "acceptedAtMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "resourcesReleased": {
+          "type": "boolean"
+        },
+        "captureDefinitionJson": {
+          "type": "string"
+        },
+        "captureLimitsJson": {
+          "type": "string"
+        },
+        "legacySnapshotPolicy": {
+          "type": "string"
+        },
+        "runGroupId": {
+          "type": "string"
+        },
+        "sourceJobId": {
+          "type": "string"
+        },
+        "targetSlotId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayJobs": {
+      "type": "object",
+      "properties": {
+        "jobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcDisplayJob"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayJobRequest": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayRequest": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
+        },
+        "afterCursor": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "replay": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplaySnapshot": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
+        },
+        "cursor": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "resetRequired": {
+          "type": "boolean"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcDisplayResult"
+          }
+        },
+        "latestStartedOrdinals": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^-?[0-9]+$"
+          }
+        },
+        "expiredScopeOrdinals": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^-?[0-9]+$"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayResult": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/RpcDisplayIdentity"
+        },
+        "expectedSourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcDisplaySource"
+          }
+        },
+        "status": {
+          "type": "string"
+        },
+        "executionTerminal": {
+          "type": "string"
+        },
+        "captureStartedNs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "scopeEndedNs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "closedNs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "ownerAgeMs": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayIdentity": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
+        },
+        "resultScopeId": {
+          "type": "string"
+        },
+        "invocationId": {
+          "type": "string"
+        },
+        "resultKey": {
+          "type": "string"
+        },
+        "resultOrdinal": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "executionRevision": {
+          "type": "string"
+        },
+        "capturePlanRevision": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplaySource": {
+      "type": "object",
+      "properties": {
+        "sourceId": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "valueJson": {
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/$defs/RpcDisplayImage"
+        },
+        "reasonCode": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayImage": {
+      "type": "object",
+      "properties": {
+        "resourceId": {
+          "type": "string"
+        },
+        "ownerResultKey": {
+          "type": "string"
+        },
+        "byteSize": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "frameIdentity": {
+          "type": "string"
+        },
+        "coordinateSpaceId": {
+          "type": "string"
+        },
+        "trust": {
+          "type": "string"
+        },
+        "adapterVersion": {
+          "type": "string"
+        },
+        "parentFrameIdentity": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayAssetRequest": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
+        },
+        "resourceId": {
+          "type": "string"
+        },
+        "ttlMs": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayAsset": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "contentEncoding": "base64"
+        },
+        "sha256": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcDisplayLease": {
+      "type": "object",
+      "properties": {
+        "leaseId": {
+          "type": "string"
+        },
+        "resourceId": {
+          "type": "string"
+        },
+        "ttlMs": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "x-rpcMethods": {
+    "RuntimeService/PrepareProjectImport": {
+      "request": "#/$defs/RpcPrepareProjectImportRequest",
+      "response": "#/$defs/RpcProjectConfigurationReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetRuntimeInfo": {
+      "request": "#/$defs/RpcRuntimeInfoRequest",
+      "response": "#/$defs/RpcRuntimeInfoReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ListRuns": {
+      "request": "#/$defs/RpcListRunsRequest",
+      "response": "#/$defs/RpcListRunsReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetRunState": {
+      "request": "#/$defs/RpcGetRunStateRequest",
+      "response": "#/$defs/RpcGetRunStateReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/QueryHistoryPage": {
+      "request": "#/$defs/RpcQueryHistoryPageRequest",
+      "response": "#/$defs/RpcHistoryReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/QueryHistoryAggregate": {
+      "request": "#/$defs/RpcQueryHistoryAggregateRequest",
+      "response": "#/$defs/RpcHistoryReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ReadHistoryImage": {
+      "request": "#/$defs/RpcReadHistoryImageRequest",
+      "response": "#/$defs/RpcHistoryImageReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ReadProjectResource": {
+      "request": "#/$defs/RpcReadProjectResourceRequest",
+      "response": "#/$defs/RpcReadProjectResourceReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetDispatchQueueState": {
+      "request": "#/$defs/RpcDispatchQueueRequest",
+      "response": "#/$defs/RpcDispatchQueueReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetOnlineProjectSnapshot": {
+      "request": "#/$defs/RpcOnlineProjectRequest",
+      "response": "#/$defs/RpcProjectConfigurationReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/InitializeProjectConfiguration": {
+      "request": "#/$defs/RpcInitialProjectConfigurationRequest",
+      "response": "#/$defs/RpcProjectConfigurationReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetOnlineGraphSnapshot": {
+      "request": "#/$defs/RpcOnlineGraphRequest",
+      "response": "#/$defs/RpcProjectConfigurationReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ValidateProjectWrite": {
+      "request": "#/$defs/RpcProjectConfigurationWriteRequest",
+      "response": "#/$defs/RpcProjectConfigurationReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/WriteProjectConfiguration": {
+      "request": "#/$defs/RpcProjectConfigurationWriteRequest",
+      "response": "#/$defs/RpcProjectConfigurationReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetProjectWriteStatus": {
+      "request": "#/$defs/RpcProjectWriteLookup",
+      "response": "#/$defs/RpcProjectConfigurationReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/CancelProjectWrite": {
+      "request": "#/$defs/RpcProjectWriteLookup",
+      "response": "#/$defs/RpcProjectConfigurationReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/TransferProjectResource": {
+      "request": "#/$defs/RpcProjectResourceTransferRequest",
+      "response": "#/$defs/RpcProjectConfigurationReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/RetryProjectResourceRecovery": {
+      "request": "#/$defs/RpcRetryProjectResourceRecoveryRequest",
+      "response": "#/$defs/RpcProjectConfigurationReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetOperatorDebugCapabilities": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/OpenOperatorDebugSession": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetOperatorDebugSession": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/PrepareOperatorDebugInputs": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ExecuteOperatorDebugNode": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetOperatorDebugExecution": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ReadOperatorDebugEvents": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/CancelOperatorDebugExecution": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ResetOperatorDebugSession": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/RenewOperatorDebugSession": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/CloseOperatorDebugSession": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/WriteOperatorDebugAsset": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ReadOperatorDebugAsset": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ListOperatorDebugSources": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ImportOperatorDebugSource": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/CopyOperatorDebugVariables": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetWorkflowDebugCapabilities": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/OpenWorkflowDebugSession": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetWorkflowDebugSession": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/PrepareWorkflowDebugInputs": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/StartWorkflowDebug": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ControlWorkflowDebug": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetWorkflowDebugCommand": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetWorkflowDebugSnapshot": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ReadWorkflowDebugEvents": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/WriteWorkflowDebugAsset": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ReadWorkflowDebugAsset": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/RenewWorkflowDebugSession": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/CloseWorkflowDebugSession": {
+      "request": "#/$defs/RpcOperatorDebugRequest",
+      "response": "#/$defs/RpcOperatorDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ListGlobalVariables": {
+      "request": "#/$defs/RpcGlobalVariablesRequest",
+      "response": "#/$defs/RpcGlobalVariablesReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetGlobalVariable": {
+      "request": "#/$defs/RpcGlobalVariablesRequest",
+      "response": "#/$defs/RpcGlobalVariablesReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/SetGlobalVariable": {
+      "request": "#/$defs/RpcGlobalVariablesRequest",
+      "response": "#/$defs/RpcGlobalVariablesReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ResetGlobalVariable": {
+      "request": "#/$defs/RpcGlobalVariablesRequest",
+      "response": "#/$defs/RpcGlobalVariablesReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/OpenPlcDebugSession": {
+      "request": "#/$defs/RpcOpenPlcDebugSessionRequest",
+      "response": "#/$defs/RpcPlcDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ExecutePlcDebugCommand": {
+      "request": "#/$defs/RpcExecutePlcDebugCommandRequest",
+      "response": "#/$defs/RpcPlcDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ClosePlcDebugSession": {
+      "request": "#/$defs/RpcClosePlcDebugSessionRequest",
+      "response": "#/$defs/RpcPlcDebugReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/InspectSqliteTarget": {
+      "request": "#/$defs/RpcInspectSqliteTargetRequest",
+      "response": "#/$defs/RpcSqliteTargetReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/InitializeSqliteTarget": {
+      "request": "#/$defs/RpcInitializeSqliteTargetRequest",
+      "response": "#/$defs/RpcSqliteTargetReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/OpenRunInspectionSession": {
+      "request": "#/$defs/RpcRunInspectionSessionRequest",
+      "response": "#/$defs/RpcRunInspectionSessionReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/RenewRunInspectionSession": {
+      "request": "#/$defs/RpcRunInspectionSessionRequest",
+      "response": "#/$defs/RpcRunInspectionSessionReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/CloseRunInspectionSession": {
+      "request": "#/$defs/RpcRunInspectionSessionRequest",
+      "response": "#/$defs/RpcRunInspectionSessionReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/LoadProject": {
+      "request": "#/$defs/RpcLoadProjectRequest",
+      "response": "#/$defs/RpcLoadProjectReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetCommunicationState": {
+      "request": "#/$defs/RpcCommunicationRequest",
+      "response": "#/$defs/RpcCommunicationReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ControlCommunication": {
+      "request": "#/$defs/RpcCommunicationRequest",
+      "response": "#/$defs/RpcCommunicationReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ValidateProject": {
+      "request": "#/$defs/RpcValidateProjectRequest",
+      "response": "#/$defs/RpcValidateProjectReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/StartJob": {
+      "request": "#/$defs/RpcStartJobRequest",
+      "response": "#/$defs/RpcStartJobReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetStartRequest": {
+      "request": "#/$defs/RpcStartRequestLookup",
+      "response": "#/$defs/RpcStartJobReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/StopJob": {
+      "request": "#/$defs/RpcStopJobRequest",
+      "response": "#/$defs/RpcStopJobReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetJobStatus": {
+      "request": "#/$defs/RpcGetJobStatusRequest",
+      "response": "#/$defs/RpcGetJobStatusReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/StreamJobEvents": {
+      "request": "#/$defs/RpcStreamJobEventsRequest",
+      "response": "#/$defs/RpcJobEvent",
+      "serverStreaming": true,
+      "clientStreaming": false
+    },
+    "RuntimeService/ListOperators": {
+      "request": "#/$defs/RpcListOperatorsRequest",
+      "response": "#/$defs/RpcListOperatorsReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ListDeviceTypes": {
+      "request": "#/$defs/RpcListDeviceTypesRequest",
+      "response": "#/$defs/RpcListDeviceTypesReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetDeviceStates": {
+      "request": "#/$defs/RpcGetDeviceStatesRequest",
+      "response": "#/$defs/RpcGetDeviceStatesReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetDeviceDiagnostics": {
+      "request": "#/$defs/RpcGetDeviceDiagnosticsRequest",
+      "response": "#/$defs/RpcGetDeviceDiagnosticsReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/RecoverDevice": {
+      "request": "#/$defs/RpcRecoverDeviceRequest",
+      "response": "#/$defs/RpcGetDeviceStatesReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/DeviceNetworkCommand": {
+      "request": "#/$defs/RpcDeviceNetworkRequest",
+      "response": "#/$defs/RpcProjectConfigurationReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ControlDevice": {
+      "request": "#/$defs/RpcControlDeviceRequest",
+      "response": "#/$defs/RpcGetDeviceStatesReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ExecuteDeviceAction": {
+      "request": "#/$defs/RpcExecuteDeviceActionRequest",
+      "response": "#/$defs/RpcExecuteDeviceActionReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/CameraDiagnostic": {
+      "request": "#/$defs/RpcCameraDiagnosticRequest",
+      "response": "#/$defs/RpcCameraDiagnosticReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetOperatorIconAsset": {
+      "request": "#/$defs/RpcGetOperatorIconAssetRequest",
+      "response": "#/$defs/RpcGetOperatorIconAssetReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetOperatorEditorAsset": {
+      "request": "#/$defs/RpcGetOperatorEditorAssetRequest",
+      "response": "#/$defs/RpcGetOperatorEditorAssetReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ListNodePreviewSources": {
+      "request": "#/$defs/RpcListNodePreviewSourcesRequest",
+      "response": "#/$defs/RpcListNodePreviewSourcesReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/UploadPreviewImage": {
+      "request": "#/$defs/RpcPreviewUploadChunk",
+      "response": "#/$defs/RpcPreviewAssetReply",
+      "serverStreaming": false,
+      "clientStreaming": true
+    },
+    "RuntimeService/StreamPreviewAsset": {
+      "request": "#/$defs/RpcGetPreviewAssetRequest",
+      "response": "#/$defs/RpcPreviewDownloadChunk",
+      "serverStreaming": true,
+      "clientStreaming": false
+    },
+    "RuntimeService/RunOperatorPreview": {
+      "request": "#/$defs/RpcRunOperatorPreviewRequest",
+      "response": "#/$defs/RpcRunOperatorPreviewReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/CancelOperatorPreview": {
+      "request": "#/$defs/RpcCancelOperatorPreviewRequest",
+      "response": "#/$defs/RpcCancelOperatorPreviewReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/OpenOperatorPreviewSession": {
+      "request": "#/$defs/RpcOpenOperatorPreviewSessionRequest",
+      "response": "#/$defs/RpcOpenOperatorPreviewSessionReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/OpenDraftOperatorPreviewSession": {
+      "request": "#/$defs/RpcOpenOperatorPreviewSessionRequest",
+      "response": "#/$defs/RpcOpenOperatorPreviewSessionReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/OpenCameraConfigurationSession": {
+      "request": "#/$defs/RpcOpenOperatorPreviewSessionRequest",
+      "response": "#/$defs/RpcOpenOperatorPreviewSessionReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ConfigureOperatorSession": {
+      "request": "#/$defs/RpcConfigureOperatorSessionRequest",
+      "response": "#/$defs/RpcConfigureOperatorSessionReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/OpenDraftPurePreviewSession": {
+      "request": "#/$defs/RpcOpenOperatorPreviewSessionRequest",
+      "response": "#/$defs/RpcOpenOperatorPreviewSessionReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/CloseDraftPurePreviewSession": {
+      "request": "#/$defs/RpcCloseOperatorPreviewSessionRequest",
+      "response": "#/$defs/RpcCloseOperatorPreviewSessionReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/StreamOperatorPreviewFrames": {
+      "request": "#/$defs/RpcStreamOperatorPreviewFramesRequest",
+      "response": "#/$defs/RpcOperatorPreviewFrame",
+      "serverStreaming": true,
+      "clientStreaming": false
+    },
+    "RuntimeService/CloseOperatorPreviewSession": {
+      "request": "#/$defs/RpcCloseOperatorPreviewSessionRequest",
+      "response": "#/$defs/RpcCloseOperatorPreviewSessionReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ListRejectedOperators": {
+      "request": "#/$defs/RpcListRejectedOperatorsRequest",
+      "response": "#/$defs/RpcListRejectedOperatorsReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ListWorkflows": {
+      "request": "#/$defs/RpcListWorkflowsRequest",
+      "response": "#/$defs/RpcListWorkflowsReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ListGlobalCounters": {
+      "request": "#/$defs/RpcListGlobalCountersRequest",
+      "response": "#/$defs/RpcListGlobalCountersReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetGlobalCounter": {
+      "request": "#/$defs/RpcGetGlobalCounterRequest",
+      "response": "#/$defs/RpcGetGlobalCounterReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/SetGlobalCounter": {
+      "request": "#/$defs/RpcSetGlobalCounterRequest",
+      "response": "#/$defs/RpcSetGlobalCounterReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ResetGlobalCounter": {
+      "request": "#/$defs/RpcResetGlobalCounterRequest",
+      "response": "#/$defs/RpcResetGlobalCounterReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "DisplayService/Capabilities": {
+      "request": "#/$defs/RpcDisplayEmpty",
+      "response": "#/$defs/RpcDisplayCapabilities",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "DisplayService/Prepare": {
+      "request": "#/$defs/RpcDisplayPrepareRequest",
+      "response": "#/$defs/RpcDisplayPrepared",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "DisplayService/Start": {
+      "request": "#/$defs/RpcDisplayStartRequest",
+      "response": "#/$defs/RpcDisplayJob",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "DisplayService/ListJobs": {
+      "request": "#/$defs/RpcDisplayEmpty",
+      "response": "#/$defs/RpcDisplayJobs",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "DisplayService/GetJob": {
+      "request": "#/$defs/RpcDisplayJobRequest",
+      "response": "#/$defs/RpcDisplayJob",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "DisplayService/Snapshot": {
+      "request": "#/$defs/RpcDisplayRequest",
+      "response": "#/$defs/RpcDisplaySnapshot",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "DisplayService/Subscribe": {
+      "request": "#/$defs/RpcDisplayRequest",
+      "response": "#/$defs/RpcDisplaySnapshot",
+      "serverStreaming": true,
+      "clientStreaming": false
+    },
+    "DisplayService/ReadAsset": {
+      "request": "#/$defs/RpcDisplayAssetRequest",
+      "response": "#/$defs/RpcDisplayAsset",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "DisplayService/AcquireLease": {
+      "request": "#/$defs/RpcDisplayAssetRequest",
+      "response": "#/$defs/RpcDisplayLease",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "DisplayService/ReleaseLease": {
+      "request": "#/$defs/RpcDisplayLease",
+      "response": "#/$defs/RpcDisplayEmpty",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "DisplayService/ReleaseJob": {
+      "request": "#/$defs/RpcDisplayRequest",
+      "response": "#/$defs/RpcDisplayEmpty",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "DisplayService/DiscardPrepared": {
+      "request": "#/$defs/RpcDisplayStartRequest",
+      "response": "#/$defs/RpcDisplayEmpty",
+      "serverStreaming": false,
+      "clientStreaming": false
+    }
+  }
+}

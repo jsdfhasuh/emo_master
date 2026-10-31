@@ -1,0 +1,891 @@
+{
+  "schemaVersion": "2.9",
+  "project": {
+    "projectId": "panel-contract-demo",
+    "name": "Panel Contract Demo",
+    "revision": 1,
+    "createdAt": "2026-10-30T00:00:00Z",
+    "updatedAt": "2026-10-30T00:00:00Z"
+  },
+  "entryWorkflowId": "main",
+  "workflowOrder": [
+    "main"
+  ],
+  "workflows": {
+    "main": {
+      "name": "Main",
+      "inputs": {},
+      "outputs": {},
+      "nodes": [
+        {
+          "nodeId": "__workflow_input__",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "__workflow_output__",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [],
+      "layout": {
+        "nodePositions": {
+          "__workflow_input__": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "__workflow_output__": {
+            "x": 360.0,
+            "y": 20.0
+          }
+        }
+      }
+    }
+  },
+  "runtime": {
+    "maxConcurrentJobs": 2,
+    "gracefulStopTimeoutMs": 5000,
+    "heartbeatTimeoutMs": 5000,
+    "eventRetentionPerJob": 10000
+  },
+  "dependencies": {
+    "operators": []
+  },
+  "devices": {
+    "bindings": {},
+    "schemaVersion": "1.0",
+    "definitions": {}
+  },
+  "presentation": {
+    "schemaVersion": "1.2",
+    "defaultPageId": "live",
+    "pageOrder": [
+      "live",
+      "history"
+    ],
+    "navigation": {
+      "mode": "tabs"
+    },
+    "resultScopes": {
+      "root": {
+        "entryWorkflowId": "main",
+        "scopeWorkflowId": "main",
+        "callPath": [],
+        "commitPolicy": "workflow_terminal"
+      }
+    },
+    "dataSources": {
+      "count": {
+        "kind": "global_variable",
+        "resultScopeId": "root",
+        "workflowId": null,
+        "callPath": [],
+        "nodeId": null,
+        "port": null,
+        "fieldPath": [],
+        "expectedType": "integer",
+        "name": null,
+        "variableId": "count",
+        "ruleVersion": "1.0"
+      },
+      "verdict": {
+        "kind": "global_variable",
+        "resultScopeId": "root",
+        "workflowId": null,
+        "callPath": [],
+        "nodeId": null,
+        "port": null,
+        "fieldPath": [],
+        "expectedType": "boolean",
+        "name": null,
+        "variableId": "verdict",
+        "ruleVersion": "1.0"
+      }
+    },
+    "pages": {
+      "live": {
+        "name": "Live demo",
+        "layout": {
+          "type": "responsive",
+          "direction": "vertical",
+          "spacing": 12,
+          "alignment": "stretch",
+          "justify": "start",
+          "equalWidth": false
+        },
+        "components": [
+          {
+            "componentId": "title",
+            "type": "page_title",
+            "version": "1.0",
+            "layout": {
+              "row": 0,
+              "column": 0,
+              "rowSpan": 1,
+              "columnSpan": 1
+            },
+            "responsive": {
+              "width": "fill",
+              "minWidth": 160,
+              "preferredWidth": 240,
+              "weight": 1.0,
+              "minHeight": 64,
+              "preferredHeight": 0,
+              "alignSelf": "auto"
+            },
+            "props": {
+              "title": "",
+              "text": "",
+              "emptyText": "\u2014",
+              "unit": "",
+              "decimals": 2,
+              "indicatorStates": {},
+              "columns": [],
+              "pageSize": 20,
+              "fontFamily": "system",
+              "fontSize": 0,
+              "fontWeight": "normal",
+              "textColor": "default",
+              "cardStyle": "plain"
+            },
+            "bindings": {},
+            "actions": {},
+            "children": [],
+            "grid": {
+              "type": "responsive",
+              "direction": "wrap",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            }
+          },
+          {
+            "componentId": "tabs",
+            "type": "page_navigation",
+            "version": "1.0",
+            "layout": {
+              "row": 0,
+              "column": 0,
+              "rowSpan": 1,
+              "columnSpan": 1
+            },
+            "responsive": {
+              "width": "fill",
+              "minWidth": 160,
+              "preferredWidth": 240,
+              "weight": 1.0,
+              "minHeight": 64,
+              "preferredHeight": 0,
+              "alignSelf": "auto"
+            },
+            "props": {
+              "title": "",
+              "text": "",
+              "emptyText": "\u2014",
+              "unit": "",
+              "decimals": 2,
+              "indicatorStates": {},
+              "columns": [],
+              "pageSize": 20,
+              "fontFamily": "system",
+              "fontSize": 0,
+              "fontWeight": "normal",
+              "textColor": "default",
+              "cardStyle": "plain"
+            },
+            "bindings": {},
+            "actions": {},
+            "children": [],
+            "grid": {
+              "type": "responsive",
+              "direction": "wrap",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            }
+          },
+          {
+            "componentId": "clock",
+            "type": "clock",
+            "version": "1.0",
+            "layout": {
+              "row": 0,
+              "column": 0,
+              "rowSpan": 1,
+              "columnSpan": 1
+            },
+            "responsive": {
+              "width": "fill",
+              "minWidth": 160,
+              "preferredWidth": 240,
+              "weight": 1.0,
+              "minHeight": 64,
+              "preferredHeight": 0,
+              "alignSelf": "auto"
+            },
+            "props": {
+              "title": "",
+              "text": "",
+              "emptyText": "\u2014",
+              "unit": "",
+              "decimals": 2,
+              "indicatorStates": {},
+              "columns": [],
+              "pageSize": 20,
+              "fontFamily": "system",
+              "fontSize": 0,
+              "fontWeight": "normal",
+              "textColor": "default",
+              "cardStyle": "plain"
+            },
+            "bindings": {},
+            "actions": {},
+            "children": [],
+            "grid": {
+              "type": "responsive",
+              "direction": "wrap",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            }
+          },
+          {
+            "componentId": "note",
+            "type": "text",
+            "version": "1.0",
+            "layout": {
+              "row": 0,
+              "column": 0,
+              "rowSpan": 1,
+              "columnSpan": 1
+            },
+            "responsive": {
+              "width": "fill",
+              "minWidth": 160,
+              "preferredWidth": 240,
+              "weight": 1.0,
+              "minHeight": 64,
+              "preferredHeight": 0,
+              "alignSelf": "auto"
+            },
+            "props": {
+              "title": "",
+              "text": "Synthetic fixture data; no device connected",
+              "emptyText": "\u2014",
+              "unit": "",
+              "decimals": 2,
+              "indicatorStates": {},
+              "columns": [],
+              "pageSize": 20,
+              "fontFamily": "system",
+              "fontSize": 0,
+              "fontWeight": "normal",
+              "textColor": "default",
+              "cardStyle": "plain"
+            },
+            "bindings": {},
+            "actions": {},
+            "children": [],
+            "grid": {
+              "type": "responsive",
+              "direction": "wrap",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            }
+          },
+          {
+            "componentId": "state",
+            "type": "runtime_status",
+            "version": "1.0",
+            "layout": {
+              "row": 0,
+              "column": 0,
+              "rowSpan": 1,
+              "columnSpan": 1
+            },
+            "responsive": {
+              "width": "fill",
+              "minWidth": 160,
+              "preferredWidth": 240,
+              "weight": 1.0,
+              "minHeight": 64,
+              "preferredHeight": 0,
+              "alignSelf": "auto"
+            },
+            "props": {
+              "title": "",
+              "text": "",
+              "emptyText": "\u2014",
+              "unit": "",
+              "decimals": 2,
+              "indicatorStates": {},
+              "columns": [],
+              "pageSize": 20,
+              "fontFamily": "system",
+              "fontSize": 0,
+              "fontWeight": "normal",
+              "textColor": "default",
+              "cardStyle": "plain"
+            },
+            "bindings": {},
+            "actions": {},
+            "children": [],
+            "grid": {
+              "type": "responsive",
+              "direction": "wrap",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            }
+          },
+          {
+            "componentId": "summary",
+            "type": "container",
+            "version": "1.0",
+            "layout": {
+              "row": 0,
+              "column": 0,
+              "rowSpan": 1,
+              "columnSpan": 1
+            },
+            "responsive": {
+              "width": "fill",
+              "minWidth": 160,
+              "preferredWidth": 240,
+              "weight": 1.0,
+              "minHeight": 64,
+              "preferredHeight": 0,
+              "alignSelf": "auto"
+            },
+            "props": {
+              "title": "",
+              "text": "",
+              "emptyText": "\u2014",
+              "unit": "",
+              "decimals": 2,
+              "indicatorStates": {},
+              "columns": [],
+              "pageSize": 20,
+              "fontFamily": "system",
+              "fontSize": 0,
+              "fontWeight": "normal",
+              "textColor": "default",
+              "cardStyle": "plain"
+            },
+            "bindings": {},
+            "actions": {},
+            "children": [
+              {
+                "componentId": "count",
+                "type": "number",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "weight": 1.0,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "",
+                  "text": "",
+                  "emptyText": "\u2014",
+                  "unit": "",
+                  "decimals": 2,
+                  "indicatorStates": {},
+                  "columns": [],
+                  "pageSize": 20,
+                  "fontFamily": "system",
+                  "fontSize": 0,
+                  "fontWeight": "normal",
+                  "textColor": "default",
+                  "cardStyle": "plain"
+                },
+                "bindings": {
+                  "value": "count"
+                },
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "wrap",
+                  "spacing": 12,
+                  "alignment": "stretch",
+                  "justify": "start",
+                  "equalWidth": false
+                }
+              },
+              {
+                "componentId": "verdict",
+                "type": "indicator",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "weight": 1.0,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "",
+                  "text": "",
+                  "emptyText": "\u2014",
+                  "unit": "",
+                  "decimals": 2,
+                  "indicatorStates": {},
+                  "columns": [],
+                  "pageSize": 20,
+                  "fontFamily": "system",
+                  "fontSize": 0,
+                  "fontWeight": "normal",
+                  "textColor": "default",
+                  "cardStyle": "plain"
+                },
+                "bindings": {
+                  "value": "verdict"
+                },
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "wrap",
+                  "spacing": 12,
+                  "alignment": "stretch",
+                  "justify": "start",
+                  "equalWidth": false
+                }
+              }
+            ],
+            "grid": {
+              "type": "responsive",
+              "direction": "wrap",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            }
+          },
+          {
+            "componentId": "logo",
+            "type": "image",
+            "version": "1.0",
+            "layout": {
+              "row": 0,
+              "column": 0,
+              "rowSpan": 1,
+              "columnSpan": 1
+            },
+            "responsive": {
+              "width": "fill",
+              "minWidth": 160,
+              "preferredWidth": 240,
+              "weight": 1.0,
+              "minHeight": 64,
+              "preferredHeight": 0,
+              "alignSelf": "auto"
+            },
+            "props": {
+              "imageResourceId": "demo",
+              "title": "",
+              "text": "",
+              "emptyText": "\u2014",
+              "unit": "",
+              "decimals": 2,
+              "indicatorStates": {},
+              "columns": [],
+              "pageSize": 20,
+              "fontFamily": "system",
+              "fontSize": 0,
+              "fontWeight": "normal",
+              "textColor": "default",
+              "cardStyle": "plain"
+            },
+            "bindings": {},
+            "actions": {},
+            "children": [],
+            "grid": {
+              "type": "responsive",
+              "direction": "wrap",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            }
+          },
+          {
+            "componentId": "to-history",
+            "type": "navigation_button",
+            "version": "1.0",
+            "layout": {
+              "row": 0,
+              "column": 0,
+              "rowSpan": 1,
+              "columnSpan": 1
+            },
+            "responsive": {
+              "width": "fill",
+              "minWidth": 160,
+              "preferredWidth": 240,
+              "weight": 1.0,
+              "minHeight": 64,
+              "preferredHeight": 0,
+              "alignSelf": "auto"
+            },
+            "props": {
+              "title": "",
+              "text": "History",
+              "emptyText": "\u2014",
+              "unit": "",
+              "decimals": 2,
+              "indicatorStates": {},
+              "columns": [],
+              "pageSize": 20,
+              "fontFamily": "system",
+              "fontSize": 0,
+              "fontWeight": "normal",
+              "textColor": "default",
+              "cardStyle": "plain"
+            },
+            "bindings": {},
+            "actions": {
+              "clicked": {
+                "type": "navigate",
+                "pageId": "history",
+                "context": "live",
+                "resultScopeId": null
+              }
+            },
+            "children": [],
+            "grid": {
+              "type": "responsive",
+              "direction": "wrap",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            }
+          }
+        ],
+        "resultScopeIds": [],
+        "targets": [
+          "desktop",
+          "web"
+        ]
+      },
+      "history": {
+        "name": "History demo",
+        "layout": {
+          "type": "responsive",
+          "direction": "vertical",
+          "spacing": 12,
+          "alignment": "stretch",
+          "justify": "start",
+          "equalWidth": false
+        },
+        "components": [
+          {
+            "componentId": "records",
+            "type": "sqlite_table",
+            "version": "1.0",
+            "layout": {
+              "row": 0,
+              "column": 0,
+              "rowSpan": 1,
+              "columnSpan": 1
+            },
+            "responsive": {
+              "width": "fill",
+              "minWidth": 160,
+              "preferredWidth": 240,
+              "weight": 1.0,
+              "minHeight": 64,
+              "preferredHeight": 0,
+              "alignSelf": "auto"
+            },
+            "props": {
+              "title": "",
+              "text": "",
+              "emptyText": "\u2014",
+              "unit": "",
+              "decimals": 2,
+              "indicatorStates": {},
+              "columns": [],
+              "pageSize": 20,
+              "fontFamily": "system",
+              "fontSize": 0,
+              "fontWeight": "normal",
+              "textColor": "default",
+              "cardStyle": "plain",
+              "sqlite": {
+                "databasePath": "demo-history.sqlite",
+                "table": "records",
+                "columns": [
+                  "id",
+                  "verdict"
+                ],
+                "orderBy": "id",
+                "descending": true,
+                "aggregate": "count",
+                "valueColumn": "",
+                "location": "runtime"
+              }
+            },
+            "bindings": {},
+            "actions": {},
+            "children": [],
+            "grid": {
+              "type": "responsive",
+              "direction": "wrap",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            }
+          },
+          {
+            "componentId": "total",
+            "type": "sqlite_value",
+            "version": "1.0",
+            "layout": {
+              "row": 0,
+              "column": 0,
+              "rowSpan": 1,
+              "columnSpan": 1
+            },
+            "responsive": {
+              "width": "fill",
+              "minWidth": 160,
+              "preferredWidth": 240,
+              "weight": 1.0,
+              "minHeight": 64,
+              "preferredHeight": 0,
+              "alignSelf": "auto"
+            },
+            "props": {
+              "title": "",
+              "text": "",
+              "emptyText": "\u2014",
+              "unit": "",
+              "decimals": 2,
+              "indicatorStates": {},
+              "columns": [],
+              "pageSize": 20,
+              "fontFamily": "system",
+              "fontSize": 0,
+              "fontWeight": "normal",
+              "textColor": "default",
+              "cardStyle": "plain",
+              "sqlite": {
+                "databasePath": "demo-history.sqlite",
+                "table": "records",
+                "columns": [],
+                "orderBy": "",
+                "descending": true,
+                "aggregate": "count",
+                "valueColumn": "",
+                "location": "runtime"
+              }
+            },
+            "bindings": {},
+            "actions": {},
+            "children": [],
+            "grid": {
+              "type": "responsive",
+              "direction": "wrap",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            }
+          },
+          {
+            "componentId": "record-image",
+            "type": "image",
+            "version": "1.0",
+            "layout": {
+              "row": 0,
+              "column": 0,
+              "rowSpan": 1,
+              "columnSpan": 1
+            },
+            "responsive": {
+              "width": "fill",
+              "minWidth": 160,
+              "preferredWidth": 240,
+              "weight": 1.0,
+              "minHeight": 64,
+              "preferredHeight": 0,
+              "alignSelf": "auto"
+            },
+            "props": {
+              "title": "",
+              "text": "",
+              "emptyText": "\u2014",
+              "unit": "",
+              "decimals": 2,
+              "indicatorStates": {},
+              "columns": [],
+              "pageSize": 20,
+              "fontFamily": "system",
+              "fontSize": 0,
+              "fontWeight": "normal",
+              "textColor": "default",
+              "cardStyle": "plain",
+              "imagePath": {
+                "kind": "selected_row",
+                "path": "",
+                "componentId": "records",
+                "field": "image",
+                "baseDirectory": "demo-images"
+              }
+            },
+            "bindings": {},
+            "actions": {},
+            "children": [],
+            "grid": {
+              "type": "responsive",
+              "direction": "wrap",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            }
+          },
+          {
+            "componentId": "fixed-image",
+            "type": "image",
+            "version": "1.0",
+            "layout": {
+              "row": 0,
+              "column": 0,
+              "rowSpan": 1,
+              "columnSpan": 1
+            },
+            "responsive": {
+              "width": "fill",
+              "minWidth": 160,
+              "preferredWidth": 240,
+              "weight": 1.0,
+              "minHeight": 64,
+              "preferredHeight": 0,
+              "alignSelf": "auto"
+            },
+            "props": {
+              "title": "",
+              "text": "",
+              "emptyText": "\u2014",
+              "unit": "",
+              "decimals": 2,
+              "indicatorStates": {},
+              "columns": [],
+              "pageSize": 20,
+              "fontFamily": "system",
+              "fontSize": 0,
+              "fontWeight": "normal",
+              "textColor": "default",
+              "cardStyle": "plain",
+              "imagePath": {
+                "kind": "fixed",
+                "path": "reference.png",
+                "componentId": null,
+                "field": "",
+                "baseDirectory": "demo-images",
+                "location": "runtime"
+              }
+            },
+            "bindings": {},
+            "actions": {},
+            "children": [],
+            "grid": {
+              "type": "responsive",
+              "direction": "wrap",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            }
+          }
+        ],
+        "resultScopeIds": [],
+        "targets": [
+          "desktop",
+          "web"
+        ]
+      }
+    }
+  },
+  "resources": {
+    "schemaVersion": "1.0",
+    "items": {
+      "demo": {
+        "path": "demo.png",
+        "sha256": "a4ee2e10f34181b8f6856e44e232bfa58e69b95fecccdcd87fcc257cb0a8ffbc",
+        "size": 136,
+        "purpose": "page_image"
+      }
+    },
+    "parameterBindings": [],
+    "siteBindings": []
+  },
+  "production": {
+    "autoStart": false,
+    "mode": "single",
+    "cycleIntervalMs": 100,
+    "inputs": {}
+  },
+  "globalVariables": {
+    "count": {
+      "name": "Demo count",
+      "type": "integer",
+      "kind": "variable",
+      "initialValue": 12,
+      "lifetime": "job",
+      "legacyCounterName": null
+    },
+    "verdict": {
+      "name": "Demo verdict",
+      "type": "boolean",
+      "kind": "variable",
+      "initialValue": true,
+      "lifetime": "job",
+      "legacyCounterName": null
+    }
+  }
+}

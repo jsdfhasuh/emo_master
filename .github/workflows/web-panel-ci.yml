@@ -1,0 +1,101 @@
+name: Web panel isolated checks
+on:
+  push:
+    branches: [codex/logging-and-designer-improvements]
+    paths: ['web_panel/**', '.github/workflows/web-panel-ci.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  web-panel:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web_panel
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install only isolated Web dependencies
+        run: python -m pip install contracts/panel-contract-v1/python/*.whl && python -m pip install -e '.[test]' build playwright
+      - name: Backend tests
+        run: python -m unittest discover -s tests -v
+      - name: Build frontend
+        run: npm --prefix frontend ci && npm --prefix frontend test && npm --prefix frontend run build
+      - name: Install test browser
+        run: python -m playwright install --with-deps chromium
+      - name: Package UI and draft fixture
+        run: python scripts/package_frontend.py && python dev/fixtures/make_demo_package.py
+      - name: Browser fixture checks
+        run: python frontend/tests/browser_smoke.py
+      - name: Browser full Web application checks
+        run: python frontend/tests/backend_e2e.py
+      - name: Official preview CLI and browser contract checks
+        run: python frontend/tests/official_e2e.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-evidence-${{ matrix.os }}-${{ github.sha }}
+          path: |
+            web_panel/frontend/test-tmp/*.png
+            web_panel/frontend/test-tmp/*.html
+            web_panel/frontend/*-mobile.png
+            web_panel/frontend/*-desktop.png
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Build independent distribution
+        run: python -m build --wheel
+      - name: Verify distribution includes UI and does not import Qt
+        run: |
+          python - <<'PY'
+          import sys, zipfile
+          from pathlib import Path
+          import emo_web_panel
+          assert 'PySide2' not in sys.modules and 'emo_master' not in sys.modules
+          wheel=next(Path('dist').glob('*.whl'))
+          with zipfile.ZipFile(wheel) as z:
+              assert 'emo_web_panel/static/index.html' in z.namelist()
+          PY
+      - name: Install wheel outside source checkout
+        run: python scripts/verify_wheel.py
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: web-panel-development-preview-${{ matrix.os }}-${{ github.sha }}
+          path: |
+            web_panel/dist/*.whl
+            web_panel/contracts/panel-contract-v1/python/*.whl
+            web_panel/docs/
+            web_panel/README.md
+            web_panel/dev/fixtures/demo.emoweb
+          retention-days: 7
+  product-runtime:
+    name: Owning Runtime integration (synthetic data, Windows)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTHONUTF8: '1'
+      EMO_WEB_PRODUCT_RUNTIME: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install owning Runtime dependencies in separate test environment
+        run: python -m pip install -r requirements.txt
+      - name: Install independent gateway and supplied SDK for contract tests
+        shell: bash
+        run: python -m pip install web_panel/contracts/panel-contract-v1/python/*.whl './web_panel[test]'
+      - name: Actual software Runtime via loopback (no devices)
+        run: python -m unittest discover -s web_panel/tests -p test_product_runtime.py -v

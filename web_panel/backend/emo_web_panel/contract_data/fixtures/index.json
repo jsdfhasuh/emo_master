@@ -1,0 +1,70 @@
+{
+  "preview-fixtures.json": {
+    "schema": "../schemas/preview-context.schema.json",
+    "synthetic": true
+  },
+  "preview-runtime.json": {
+    "schema": "../schemas/preview-context.schema.json",
+    "synthetic": true
+  },
+  "closed-result.json": {
+    "schema": "../schemas/closed-result.schema.json",
+    "synthetic": true
+  },
+  "realtime.json": {
+    "schema": "../schemas/browser-message.schema.json",
+    "synthetic": true
+  },
+  "no-capture.json": {
+    "schema": "../schemas/browser-message.schema.json",
+    "synthetic": true
+  },
+  "terminal.json": {
+    "schema": "../schemas/browser-message.schema.json",
+    "synthetic": true
+  },
+  "job-changed.json": {
+    "schema": "../schemas/browser-message.schema.json",
+    "synthetic": true
+  },
+  "history-page.json": {
+    "schema": "../schemas/history-page.schema.json",
+    "synthetic": true
+  },
+  "history-aggregate.json": {
+    "schema": "../schemas/history-aggregate.schema.json",
+    "synthetic": true
+  },
+  "start-accepted.json": {
+    "schema": "../schemas/browser-message.schema.json",
+    "synthetic": true
+  },
+  "stop-accepted.json": {
+    "schema": "../schemas/browser-message.schema.json",
+    "synthetic": true
+  },
+  "start-unknown.json": {
+    "schema": "../schemas/browser-message.schema.json",
+    "synthetic": true
+  },
+  "history-revision-changed.json": {
+    "schema": "../schemas/browser-message.schema.json",
+    "synthetic": true
+  },
+  "history-image-available.json": {
+    "schema": "../schemas/runtime-rpc.schema.json#/$defs/RpcHistoryImageReply",
+    "synthetic": true
+  },
+  "history-image-empty.json": {
+    "schema": "../schemas/runtime-rpc.schema.json#/$defs/RpcHistoryImageReply",
+    "synthetic": true
+  },
+  "history-image-missing.json": {
+    "schema": "../schemas/runtime-rpc.schema.json#/$defs/RpcHistoryImageReply",
+    "synthetic": true
+  },
+  "history-image-unsupported.json": {
+    "schema": "../schemas/runtime-rpc.schema.json#/$defs/RpcHistoryImageReply",
+    "synthetic": true
+  }
+}

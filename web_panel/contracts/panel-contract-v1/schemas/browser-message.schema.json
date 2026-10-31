@@ -1,0 +1,801 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "BrowserCaptureUnavailable": {
+      "additionalProperties": false,
+      "properties": {
+        "runtimeInstanceId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Runtimeinstanceid",
+          "type": "string"
+        },
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Projectid",
+          "type": "string"
+        },
+        "event": {
+          "const": "capture_unavailable",
+          "default": "capture_unavailable",
+          "title": "Event",
+          "type": "string"
+        },
+        "jobId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Jobid",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "runtimeInstanceId",
+        "projectId",
+        "jobId",
+        "reason"
+      ],
+      "title": "BrowserCaptureUnavailable",
+      "type": "object"
+    },
+    "BrowserControlResult": {
+      "additionalProperties": false,
+      "properties": {
+        "runtimeInstanceId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Runtimeinstanceid",
+          "type": "string"
+        },
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Projectid",
+          "type": "string"
+        },
+        "event": {
+          "const": "control_result",
+          "default": "control_result",
+          "title": "Event",
+          "type": "string"
+        },
+        "operation": {
+          "enum": [
+            "start",
+            "stop"
+          ],
+          "title": "Operation",
+          "type": "string"
+        },
+        "jobId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Jobid"
+        },
+        "runGroupId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rungroupid"
+        },
+        "startRequestId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Startrequestid"
+        },
+        "outcome": {
+          "enum": [
+            "ACCEPTED",
+            "REJECTED",
+            "UNKNOWN"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "runtimeInstanceId",
+        "projectId",
+        "operation",
+        "outcome",
+        "message"
+      ],
+      "title": "BrowserControlResult",
+      "type": "object"
+    },
+    "BrowserError": {
+      "additionalProperties": false,
+      "properties": {
+        "runtimeInstanceId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Runtimeinstanceid",
+          "type": "string"
+        },
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Projectid",
+          "type": "string"
+        },
+        "event": {
+          "const": "error",
+          "default": "error",
+          "title": "Event",
+          "type": "string"
+        },
+        "jobId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Jobid"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "runtimeInstanceId",
+        "projectId",
+        "code",
+        "message"
+      ],
+      "title": "BrowserError",
+      "type": "object"
+    },
+    "BrowserJobChanged": {
+      "additionalProperties": false,
+      "properties": {
+        "runtimeInstanceId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Runtimeinstanceid",
+          "type": "string"
+        },
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Projectid",
+          "type": "string"
+        },
+        "event": {
+          "const": "job_changed",
+          "default": "job_changed",
+          "title": "Event",
+          "type": "string"
+        },
+        "previousJobId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Previousjobid"
+        },
+        "jobId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Jobid",
+          "type": "string"
+        },
+        "runGroupId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Rungroupid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "runtimeInstanceId",
+        "projectId",
+        "jobId",
+        "runGroupId"
+      ],
+      "title": "BrowserJobChanged",
+      "type": "object"
+    },
+    "BrowserJobState": {
+      "additionalProperties": false,
+      "properties": {
+        "runtimeInstanceId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Runtimeinstanceid",
+          "type": "string"
+        },
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Projectid",
+          "type": "string"
+        },
+        "event": {
+          "const": "job_state",
+          "default": "job_state",
+          "title": "Event",
+          "type": "string"
+        },
+        "jobId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Jobid",
+          "type": "string"
+        },
+        "runGroupId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Rungroupid",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "active": {
+          "title": "Active",
+          "type": "boolean"
+        },
+        "ownsResources": {
+          "title": "Ownsresources",
+          "type": "boolean"
+        },
+        "displayResourcesReleased": {
+          "title": "Displayresourcesreleased",
+          "type": "boolean"
+        },
+        "allowedActions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowedactions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "runtimeInstanceId",
+        "projectId",
+        "jobId",
+        "runGroupId",
+        "status",
+        "active",
+        "ownsResources",
+        "displayResourcesReleased",
+        "allowedActions"
+      ],
+      "title": "BrowserJobState",
+      "type": "object"
+    },
+    "BrowserResult": {
+      "additionalProperties": false,
+      "properties": {
+        "runtimeInstanceId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Runtimeinstanceid",
+          "type": "string"
+        },
+        "projectId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Projectid",
+          "type": "string"
+        },
+        "event": {
+          "const": "result",
+          "default": "result",
+          "title": "Event",
+          "type": "string"
+        },
+        "cursor": {
+          "pattern": "^[0-9]+$",
+          "title": "Cursor",
+          "type": "string"
+        },
+        "result": {
+          "$ref": "#/$defs/ClosedResult"
+        }
+      },
+      "required": [
+        "runtimeInstanceId",
+        "projectId",
+        "cursor",
+        "result"
+      ],
+      "title": "BrowserResult",
+      "type": "object"
+    },
+    "ClosedResult": {
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/ResultIdentity"
+        },
+        "expectedSourceIds": {
+          "items": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^\\S+$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Expectedsourceids",
+          "type": "array"
+        },
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/ClosedSource"
+          },
+          "maxItems": 16,
+          "title": "Sources",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "COMPLETE",
+            "INCOMPLETE",
+            "FAILED",
+            "CANCELLED"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "executionTerminal": {
+          "enum": [
+            "COMPLETED",
+            "FAILED",
+            "CANCELLED",
+            "UNKNOWN"
+          ],
+          "title": "Executionterminal",
+          "type": "string"
+        },
+        "timing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResultTiming"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "identity",
+        "expectedSourceIds",
+        "sources",
+        "status",
+        "executionTerminal"
+      ],
+      "title": "ClosedResult",
+      "type": "object"
+    },
+    "ClosedSource": {
+      "additionalProperties": false,
+      "properties": {
+        "sourceId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Sourceid",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "AVAILABLE",
+            "UNAVAILABLE"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "valueJson": {
+          "anyOf": [
+            {
+              "maxLength": 262144,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valuejson"
+        },
+        "image": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImageRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "reasonCode": {
+          "anyOf": [
+            {
+              "enum": [
+                "OPTIONAL_ABSENT",
+                "BRANCH_SKIPPED",
+                "NODE_FAILED",
+                "EXECUTION_CANCELLED",
+                "EXPORT_TIMEOUT",
+                "EXPORT_FAILED",
+                "RESOURCE_EXPIRED",
+                "BUDGET_EXCEEDED",
+                "INVALID_VALUE",
+                "SOURCE_MISSING",
+                "IPC_ERROR"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reasoncode"
+        }
+      },
+      "required": [
+        "sourceId",
+        "state"
+      ],
+      "title": "ClosedSource",
+      "type": "object"
+    },
+    "FrameProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "frameIdentity": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Frameidentity",
+          "type": "string"
+        },
+        "coordinateSpaceId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Coordinatespaceid",
+          "type": "string"
+        },
+        "trust": {
+          "enum": [
+            "proven",
+            "unknown"
+          ],
+          "title": "Trust",
+          "type": "string"
+        },
+        "parentFrameIdentity": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parentframeidentity"
+        },
+        "adapterVersion": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Adapterversion"
+        }
+      },
+      "required": [
+        "frameIdentity",
+        "coordinateSpaceId",
+        "trust"
+      ],
+      "title": "FrameProvenance",
+      "type": "object"
+    },
+    "ImageRef": {
+      "additionalProperties": false,
+      "properties": {
+        "resourceId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Resourceid",
+          "type": "string"
+        },
+        "ownerResultKey": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Ownerresultkey",
+          "type": "string"
+        },
+        "byteSize": {
+          "exclusiveMinimum": 0,
+          "maximum": 8388608,
+          "title": "Bytesize",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "mimeType": {
+          "enum": [
+            "image/png",
+            "image/jpeg"
+          ],
+          "title": "Mimetype",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/FrameProvenance"
+        },
+        "ownership": {
+          "const": "result_store",
+          "default": "result_store",
+          "title": "Ownership",
+          "type": "string"
+        }
+      },
+      "required": [
+        "resourceId",
+        "ownerResultKey",
+        "byteSize",
+        "sha256",
+        "mimeType",
+        "provenance"
+      ],
+      "title": "ImageRef",
+      "type": "object"
+    },
+    "ResultIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "runtimeInstanceId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Runtimeinstanceid",
+          "type": "string"
+        },
+        "jobId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Jobid",
+          "type": "string"
+        },
+        "resultScopeId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Resultscopeid",
+          "type": "string"
+        },
+        "invocationId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Invocationid",
+          "type": "string"
+        },
+        "resultKey": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Resultkey",
+          "type": "string"
+        },
+        "resultOrdinal": {
+          "minimum": 1,
+          "title": "Resultordinal",
+          "type": "integer"
+        },
+        "executionRevision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Executionrevision",
+          "type": "string"
+        },
+        "capturePlanRevision": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Captureplanrevision",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "debug",
+            "release",
+            "runtime"
+          ],
+          "title": "Mode",
+          "type": "string"
+        }
+      },
+      "required": [
+        "runtimeInstanceId",
+        "jobId",
+        "resultScopeId",
+        "invocationId",
+        "resultKey",
+        "resultOrdinal",
+        "executionRevision",
+        "capturePlanRevision",
+        "mode"
+      ],
+      "title": "ResultIdentity",
+      "type": "object"
+    },
+    "ResultTiming": {
+      "additionalProperties": false,
+      "properties": {
+        "captureStartedNs": {
+          "minimum": 0,
+          "title": "Capturestartedns",
+          "type": "integer"
+        },
+        "scopeEndedNs": {
+          "minimum": 0,
+          "title": "Scopeendedns",
+          "type": "integer"
+        },
+        "closedNs": {
+          "minimum": 0,
+          "title": "Closedns",
+          "type": "integer"
+        },
+        "clock": {
+          "const": "runtime_monotonic",
+          "default": "runtime_monotonic",
+          "title": "Clock",
+          "type": "string"
+        }
+      },
+      "required": [
+        "captureStartedNs",
+        "scopeEndedNs",
+        "closedNs"
+      ],
+      "title": "ResultTiming",
+      "type": "object"
+    }
+  },
+  "description": "Gateway notification contract; browser actions use fixed HTTP endpoints.",
+  "discriminator": {
+    "mapping": {
+      "capture_unavailable": "#/$defs/BrowserCaptureUnavailable",
+      "control_result": "#/$defs/BrowserControlResult",
+      "error": "#/$defs/BrowserError",
+      "job_changed": "#/$defs/BrowserJobChanged",
+      "job_state": "#/$defs/BrowserJobState",
+      "result": "#/$defs/BrowserResult"
+    },
+    "propertyName": "event"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/BrowserResult"
+    },
+    {
+      "$ref": "#/$defs/BrowserCaptureUnavailable"
+    },
+    {
+      "$ref": "#/$defs/BrowserJobChanged"
+    },
+    {
+      "$ref": "#/$defs/BrowserJobState"
+    },
+    {
+      "$ref": "#/$defs/BrowserControlResult"
+    },
+    {
+      "$ref": "#/$defs/BrowserError"
+    }
+  ],
+  "title": "BrowserMessage"
+}

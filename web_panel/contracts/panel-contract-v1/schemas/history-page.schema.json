@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "HistoryColumn": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "const": "scalar",
+          "default": "scalar",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "HistoryColumn",
+      "type": "object"
+    },
+    "HistoryImageReference": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "AVAILABLE",
+            "EMPTY",
+            "INVALID_VALUE"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "imageRef": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Imageref"
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Message"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "HistoryImageReference",
+      "type": "object"
+    },
+    "HistoryRow": {
+      "additionalProperties": false,
+      "properties": {
+        "rowId": {
+          "title": "Rowid",
+          "type": "string"
+        },
+        "values": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Values",
+          "type": "array"
+        },
+        "imageRefs": {
+          "patternProperties": {
+            "^\\S+$": {
+              "$ref": "#/$defs/HistoryImageReference"
+            }
+          },
+          "propertyNames": {
+            "maxLength": 160,
+            "minLength": 1
+          },
+          "title": "Imagerefs",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rowId",
+        "values"
+      ],
+      "title": "HistoryRow",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "columns": {
+      "items": {
+        "$ref": "#/$defs/HistoryColumn"
+      },
+      "title": "Columns",
+      "type": "array"
+    },
+    "rows": {
+      "items": {
+        "$ref": "#/$defs/HistoryRow"
+      },
+      "title": "Rows",
+      "type": "array"
+    },
+    "page": {
+      "minimum": 0,
+      "title": "Page",
+      "type": "integer"
+    },
+    "pageSize": {
+      "maximum": 100,
+      "minimum": 1,
+      "title": "Pagesize",
+      "type": "integer"
+    },
+    "hasNext": {
+      "title": "Hasnext",
+      "type": "boolean"
+    },
+    "historyDefinitionRevision": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Historydefinitionrevision",
+      "type": "string"
+    },
+    "stableRowIdentity": {
+      "title": "Stablerowidentity",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "columns",
+    "rows",
+    "page",
+    "pageSize",
+    "hasNext",
+    "historyDefinitionRevision",
+    "stableRowIdentity"
+  ],
+  "title": "HistoryPage",
+  "type": "object"
+}

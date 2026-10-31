@@ -1,0 +1,9 @@
+{
+  "runtimeInstanceId": "demo-runtime-1",
+  "projectId": "panel-contract-demo",
+  "event": "control_result",
+  "operation": "start",
+  "startRequestId": "demo-start-3",
+  "outcome": "UNKNOWN",
+  "message": "Query the same request ID; do not restart"
+}

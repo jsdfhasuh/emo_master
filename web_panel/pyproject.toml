@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "emo-master-web-panel"
+version = "0.1.0a1"
+requires-python = ">=3.10"
+dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "websockets>=13,<17", "emo-panel-protocol==1.1.0", "Pillow>=10,<13", "tzdata>=2024.1"]
+[project.optional-dependencies]
+test = ["httpx>=0.27,<1"]
+[project.scripts]
+emo-web-panel = "emo_web_panel.main:main"
+[tool.setuptools.packages.find]
+where = ["backend"]
+[tool.setuptools.package-data]
+emo_web_panel = ["static/**/*", "contract_data/fixtures/*.json", "contract_data/*.png"]

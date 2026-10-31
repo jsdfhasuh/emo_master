@@ -1,0 +1,151 @@
+"""Opt-in full owning Runtime + gateway RPC integration on synthetic local data.
+
+Run with EMO_WEB_PRODUCT_RUNTIME=1 and Runtime dependencies installed in
+EMO_WEB_PRODUCT_PYTHON (defaults to the test interpreter). This intentionally
+uses a separate Runtime process: the independently installed gateway needs no
+Qt, vision stack, application source imports, or device ownership.
+"""
+import asyncio
+import json
+import os
+from pathlib import Path
+import queue
+import subprocess
+import sys
+import tempfile
+import threading
+import unittest
+
+ROOT = Path(__file__).resolve().parents[2]
+CONTRACT = ROOT / 'web_panel/contracts/panel-contract-v1'
+
+
+def run_product_server(root):
+    # Imports exclusively in the Runtime subprocess, not the gateway process.
+    import contextlib
+    import shutil
+    import sqlite3
+    from emo_master.apps.runtime.grpc_server.service import RuntimeService
+    from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+    from emo_master.apps.runtime.main import createRuntimeServer
+
+    root = Path(root)
+    source = CONTRACT / 'sample-panels/source'
+    shutil.copyfile(source / 'demo.emoproj', root / 'project.emoproj')
+    shutil.copyfile(source / 'demo.png', root / 'demo.png')
+    (root / 'demo-images').mkdir()
+    shutil.copyfile(source / 'demo.png', root / 'demo-images/reference.png')
+    with sqlite3.connect(root / 'demo-history.sqlite') as db:
+        db.execute('CREATE TABLE records (id INTEGER PRIMARY KEY, verdict TEXT, image TEXT)')
+        db.execute('INSERT INTO records VALUES (1, ?, ?)', ('OK', 'reference.png'))
+    with contextlib.redirect_stdout(sys.stderr):
+        service = RuntimeService(dbPath=root / 'runtime.db', workspaceRoot=root / 'jobs')
+        loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(root / 'project.emoproj')), None)
+        if not loaded.ok:
+            service.close()
+            raise RuntimeError(loaded.message)
+        server, port, _ = createRuntimeServer(port=0, runtimeService=service)
+        server.start()
+    try:
+        print(json.dumps({'event':'ready', 'address':f'127.0.0.1:{port}'}), flush=True)
+        sys.stdin.readline()
+    finally:
+        with contextlib.redirect_stdout(sys.stderr):
+            server.stop(0).wait()
+            service.close()
+
+
+@unittest.skipUnless(os.environ.get('EMO_WEB_PRODUCT_RUNTIME') == '1',
+                     'Opt-in full owning Runtime integration; requires its separate dependencies')
+class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        from emo_web_panel.runtime_client import GrpcRuntimeClient
+        self.directory = tempfile.TemporaryDirectory(prefix='web-product-runtime-')
+        self.log = open(Path(self.directory.name) / 'runtime.log', 'w+')
+        env = os.environ.copy()
+        # Deliberately exclude gateway and SDK from the execution host PYTHONPATH.
+        env['PYTHONPATH'] = str(ROOT / 'src')
+        env['PYTHONDONTWRITEBYTECODE'] = '1'
+        env['QT_QPA_PLATFORM'] = 'offscreen'
+        self.process = subprocess.Popen([os.environ.get('EMO_WEB_PRODUCT_PYTHON', sys.executable),
+            str(Path(__file__).resolve()), '--runtime-server', self.directory.name], cwd=ROOT,
+            env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.log, text=True)
+        ready = queue.Queue()
+        threading.Thread(target=lambda: ready.put(self.process.stdout.readline()), daemon=True).start()
+        try:
+            line = await asyncio.to_thread(ready.get, True, 40)
+            data = json.loads(line)
+            if data.get('event') != 'ready':
+                raise ValueError('Unexpected Runtime startup output')
+            self.client = GrpcRuntimeClient(data['address'])
+            await self.client.start()
+        except Exception:
+            self.process.kill()
+            self.process.wait(timeout=10)
+            self.log.flush(); self.log.seek(0)
+            diagnostic = self.log.read()
+            self.log.close(); self.directory.cleanup()
+            raise AssertionError('Owning Runtime subprocess did not start:\n' + diagnostic)
+
+    async def asyncTearDown(self):
+        await self.client.close()
+        if self.process.poll() is None:
+            self.process.stdin.write('\n'); self.process.stdin.flush()
+            try:
+                await asyncio.to_thread(self.process.wait, timeout=20)
+            except subprocess.TimeoutExpired:
+                self.process.kill(); self.process.wait(timeout=10)
+        self.process.stdin.close(); self.process.stdout.close()
+        self.log.close(); self.directory.cleanup()
+
+    async def test_actual_runtime_history_without_jobs_and_image_ownership(self):
+        info = await self.client.info()
+        self.assertEqual(info['projectId'], 'panel-contract-demo')
+        self.assertEqual(await self.client.runs(), [])
+        context = {key: info[key] for key in ('runtimeInstanceId','projectId','historyDefinitionRevision')}
+        page = await self.client.history('records',1,20,context=context,sort='id')
+        self.assertTrue(page['stableRowIdentity'])
+        self.assertEqual(page['rows'][0]['values'], [1, 'OK'])
+        ref = page['rows'][0]['imageRefs']['record-image']['imageRef']
+        self.assertNotIn('reference.png', ref)
+        image, mime, status = await self.client.history_image(image_ref=ref, context=context)
+        self.assertEqual(status, 'AVAILABLE'); self.assertEqual(mime, 'image/png')
+        fixed, _, _ = await self.client.history_image(component_id='fixed-image', context=context)
+        self.assertEqual(image, fixed)
+        total = await self.client.history('total',1,20,context=context,kind='aggregate')
+        self.assertEqual(total['value'], 1)
+        self.assertEqual(await self.client.runs(), [])
+
+    async def test_actual_runtime_start_capture_lookup_stop_and_no_replay(self):
+        info = await self.client.info()
+        workflows = await self.client.workflows()
+        workflow = next(w for w in workflows if w['id'] == 'main')
+        self.assertTrue(workflow['canStart'])
+        body = {'runtimeInstanceId':info['runtimeInstanceId'],'projectId':info['projectId'],
+            'configurationRevision':info['configurationRevision'],'workflowId':'main',
+            'requestId':'web-product-runtime-start-1','inputs':{}}
+        accepted = await self.client.control('start','main',body)
+        self.assertEqual(accepted['outcome'],'ACCEPTED', accepted)
+        job = accepted['runId']
+        lookup = await self.client.lookup_start(body['requestId'], info['runtimeInstanceId'])
+        self.assertEqual(lookup['runId'],job)
+        result = []
+        for _ in range(100):
+            result = await self.client.snapshot(job)
+            if result:
+                break
+            await asyncio.sleep(.05)
+        self.assertTrue(result, 'Actual Runtime never produced the supplied sample capture')
+        self.assertEqual(result[0]['jobId'],job)
+        self.assertIn('count',result[0]['sources'])
+        state = await self.client.run_state(job)
+        stop = await self.client.control('stop',job,body | {'runGroupId':state['runGroupId']})
+        self.assertEqual(stop['outcome'],'ACCEPTED', stop)
+        self.assertEqual(len(await self.client.runs()),1)
+
+
+if __name__ == '__main__':
+    if len(sys.argv) == 3 and sys.argv[1] == '--runtime-server':
+        run_product_server(sys.argv[2])
+    else:
+        unittest.main()

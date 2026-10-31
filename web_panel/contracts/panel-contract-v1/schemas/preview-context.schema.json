@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "PreviewRuntime": {
+      "additionalProperties": false,
+      "properties": {
+        "target": {
+          "title": "Target",
+          "type": "string"
+        },
+        "timeoutSeconds": {
+          "default": 5.0,
+          "exclusiveMinimum": 0,
+          "maximum": 60,
+          "title": "Timeoutseconds",
+          "type": "number"
+        },
+        "maxReceiveMessageBytes": {
+          "default": 9437184,
+          "maximum": 67108864,
+          "minimum": 1024,
+          "title": "Maxreceivemessagebytes",
+          "type": "integer"
+        },
+        "runtimeInstanceId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Runtimeinstanceid",
+          "type": "string"
+        },
+        "documentRevision": {
+          "pattern": "^[1-9][0-9]*$",
+          "title": "Documentrevision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target",
+        "runtimeInstanceId",
+        "documentRevision"
+      ],
+      "title": "PreviewRuntime",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "previewContextVersion": {
+      "const": "1",
+      "default": "1",
+      "title": "Previewcontextversion",
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "fixtures",
+        "runtime"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "readOnly": {
+      "const": true,
+      "default": true,
+      "title": "Readonly",
+      "type": "boolean"
+    },
+    "projectId": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "^\\S+$",
+      "title": "Projectid",
+      "type": "string"
+    },
+    "packageRevision": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Packagerevision",
+      "type": "string"
+    },
+    "historyDefinitionRevision": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Historydefinitionrevision",
+      "type": "string"
+    },
+    "runtime": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PreviewRuntime"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "mode",
+    "projectId",
+    "packageRevision",
+    "historyDefinitionRevision"
+  ],
+  "title": "PreviewContext",
+  "type": "object"
+}

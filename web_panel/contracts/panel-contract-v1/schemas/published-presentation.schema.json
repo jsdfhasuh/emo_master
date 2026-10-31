@@ -1,0 +1,967 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Action": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "navigate",
+            "freeze",
+            "resume_live"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "pageId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pageid"
+        },
+        "context": {
+          "default": "live",
+          "enum": [
+            "live",
+            "displayed_result"
+          ],
+          "title": "Context",
+          "type": "string"
+        },
+        "resultScopeId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resultscopeid"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "Action",
+      "type": "object"
+    },
+    "CallStep": {
+      "additionalProperties": false,
+      "properties": {
+        "nodeId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Nodeid",
+          "type": "string"
+        },
+        "relation": {
+          "default": "subflow",
+          "enum": [
+            "subflow",
+            "loop_body",
+            "loop_condition"
+          ],
+          "title": "Relation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nodeId"
+      ],
+      "title": "CallStep",
+      "type": "object"
+    },
+    "DataSource": {
+      "additionalProperties": false,
+      "description": "Value object: stores return detached copies; rebind replaces the reference.",
+      "properties": {
+        "kind": {
+          "enum": [
+            "node_output",
+            "workflow_output",
+            "global_counter",
+            "global_variable",
+            "runtime_status"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "resultScopeId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Resultscopeid",
+          "type": "string"
+        },
+        "workflowId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workflowid"
+        },
+        "callPath": {
+          "items": {
+            "$ref": "#/$defs/CallStep"
+          },
+          "maxItems": 32,
+          "title": "Callpath",
+          "type": "array"
+        },
+        "nodeId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nodeid"
+        },
+        "port": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Port"
+        },
+        "fieldPath": {
+          "items": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^\\S+$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Fieldpath",
+          "type": "array"
+        },
+        "expectedType": {
+          "enum": [
+            "integer",
+            "number",
+            "string",
+            "boolean",
+            "image",
+            "collection",
+            "geometry",
+            "json"
+          ],
+          "title": "Expectedtype",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "variableId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Variableid"
+        },
+        "ruleVersion": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Ruleversion",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "resultScopeId",
+        "expectedType"
+      ],
+      "title": "DataSource",
+      "type": "object"
+    },
+    "Grid": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "grid",
+          "default": "grid",
+          "title": "Type",
+          "type": "string"
+        },
+        "columns": {
+          "default": 1,
+          "maximum": 24,
+          "minimum": 1,
+          "title": "Columns",
+          "type": "integer"
+        },
+        "spacing": {
+          "default": 8,
+          "maximum": 128,
+          "minimum": 0,
+          "title": "Spacing",
+          "type": "integer"
+        }
+      },
+      "title": "Grid",
+      "type": "object"
+    },
+    "HistoryReference": {
+      "additionalProperties": false,
+      "properties": {
+        "componentId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Componentid",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "table",
+            "aggregate",
+            "fixed_image",
+            "selected_row_image"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "orderBy": {
+          "default": "",
+          "title": "Orderby",
+          "type": "string"
+        },
+        "descending": {
+          "default": true,
+          "title": "Descending",
+          "type": "boolean"
+        },
+        "aggregate": {
+          "default": "count",
+          "enum": [
+            "count",
+            "sum",
+            "avg",
+            "min",
+            "max"
+          ],
+          "title": "Aggregate",
+          "type": "string"
+        },
+        "sourceComponentId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcecomponentid"
+        }
+      },
+      "required": [
+        "componentId",
+        "kind"
+      ],
+      "title": "HistoryReference",
+      "type": "object"
+    },
+    "IndicatorStyle": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "maxLength": 256,
+          "title": "Text",
+          "type": "string"
+        },
+        "color": {
+          "default": "neutral",
+          "enum": [
+            "neutral",
+            "green",
+            "red",
+            "amber"
+          ],
+          "title": "Color",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "IndicatorStyle",
+      "type": "object"
+    },
+    "Navigation": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "default": "tabs",
+          "enum": [
+            "tabs",
+            "buttons"
+          ],
+          "title": "Mode",
+          "type": "string"
+        }
+      },
+      "title": "Navigation",
+      "type": "object"
+    },
+    "Placement": {
+      "additionalProperties": false,
+      "properties": {
+        "row": {
+          "default": 0,
+          "maximum": 4095,
+          "minimum": 0,
+          "title": "Row",
+          "type": "integer"
+        },
+        "column": {
+          "default": 0,
+          "maximum": 23,
+          "minimum": 0,
+          "title": "Column",
+          "type": "integer"
+        },
+        "rowSpan": {
+          "default": 1,
+          "maximum": 128,
+          "minimum": 1,
+          "title": "Rowspan",
+          "type": "integer"
+        },
+        "columnSpan": {
+          "default": 1,
+          "maximum": 24,
+          "minimum": 1,
+          "title": "Columnspan",
+          "type": "integer"
+        }
+      },
+      "title": "Placement",
+      "type": "object"
+    },
+    "PublishedComponent": {
+      "additionalProperties": false,
+      "properties": {
+        "componentId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Componentid",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "image",
+            "text",
+            "number",
+            "indicator",
+            "runtime_status",
+            "table",
+            "navigation_button",
+            "container",
+            "page_title",
+            "page_navigation",
+            "clock",
+            "sqlite_table",
+            "sqlite_value"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Version",
+          "type": "string"
+        },
+        "layout": {
+          "$ref": "#/$defs/Placement"
+        },
+        "responsive": {
+          "$ref": "#/$defs/ResponsiveItem"
+        },
+        "props": {
+          "$ref": "#/$defs/PublishedProps"
+        },
+        "bindings": {
+          "patternProperties": {
+            "^\\S+$": {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            }
+          },
+          "propertyNames": {
+            "maxLength": 160,
+            "minLength": 1
+          },
+          "title": "Bindings",
+          "type": "object"
+        },
+        "actions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Action"
+          },
+          "propertyNames": {
+            "const": "clicked"
+          },
+          "title": "Actions",
+          "type": "object"
+        },
+        "children": {
+          "items": {
+            "$ref": "#/$defs/PublishedComponent"
+          },
+          "title": "Children",
+          "type": "array"
+        },
+        "grid": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Grid"
+            },
+            {
+              "$ref": "#/$defs/ResponsiveLayout"
+            }
+          ],
+          "title": "Grid"
+        },
+        "history": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HistoryReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "componentId",
+        "type"
+      ],
+      "title": "PublishedComponent",
+      "type": "object"
+    },
+    "PublishedPage": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "layout": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Grid"
+            },
+            {
+              "$ref": "#/$defs/ResponsiveLayout"
+            }
+          ],
+          "title": "Layout"
+        },
+        "components": {
+          "items": {
+            "$ref": "#/$defs/PublishedComponent"
+          },
+          "title": "Components",
+          "type": "array"
+        },
+        "resultScopeIds": {
+          "items": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^\\S+$",
+            "type": "string"
+          },
+          "title": "Resultscopeids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "layout",
+        "components"
+      ],
+      "title": "PublishedPage",
+      "type": "object"
+    },
+    "PublishedProps": {
+      "additionalProperties": false,
+      "description": "All ordinary rendering props; local sources belong to the authoring model.",
+      "properties": {
+        "imageResourceId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Imageresourceid"
+        },
+        "iconResourceId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Iconresourceid"
+        },
+        "title": {
+          "default": "",
+          "maxLength": 1024,
+          "title": "Title",
+          "type": "string"
+        },
+        "text": {
+          "default": "",
+          "maxLength": 4096,
+          "title": "Text",
+          "type": "string"
+        },
+        "emptyText": {
+          "default": "—",
+          "maxLength": 256,
+          "title": "Emptytext",
+          "type": "string"
+        },
+        "unit": {
+          "default": "",
+          "maxLength": 64,
+          "title": "Unit",
+          "type": "string"
+        },
+        "decimals": {
+          "default": 2,
+          "maximum": 12,
+          "minimum": 0,
+          "title": "Decimals",
+          "type": "integer"
+        },
+        "indicatorStates": {
+          "additionalProperties": {
+            "$ref": "#/$defs/IndicatorStyle"
+          },
+          "maxProperties": 16,
+          "title": "Indicatorstates",
+          "type": "object"
+        },
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/TableColumn"
+          },
+          "maxItems": 16,
+          "title": "Columns",
+          "type": "array"
+        },
+        "pageSize": {
+          "default": 20,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Pagesize",
+          "type": "integer"
+        },
+        "fontFamily": {
+          "default": "system",
+          "enum": [
+            "system",
+            "sans",
+            "serif",
+            "monospace"
+          ],
+          "title": "Fontfamily",
+          "type": "string"
+        },
+        "fontSize": {
+          "default": 0,
+          "maximum": 48,
+          "minimum": 0,
+          "title": "Fontsize",
+          "type": "integer"
+        },
+        "fontWeight": {
+          "default": "normal",
+          "enum": [
+            "normal",
+            "bold"
+          ],
+          "title": "Fontweight",
+          "type": "string"
+        },
+        "textColor": {
+          "default": "default",
+          "enum": [
+            "default",
+            "neutral",
+            "green",
+            "red",
+            "amber"
+          ],
+          "title": "Textcolor",
+          "type": "string"
+        },
+        "cardStyle": {
+          "default": "plain",
+          "enum": [
+            "plain",
+            "soft",
+            "outlined"
+          ],
+          "title": "Cardstyle",
+          "type": "string"
+        }
+      },
+      "title": "PublishedProps",
+      "type": "object"
+    },
+    "ResponsiveItem": {
+      "additionalProperties": false,
+      "properties": {
+        "width": {
+          "default": "fill",
+          "enum": [
+            "fill",
+            "content"
+          ],
+          "title": "Width",
+          "type": "string"
+        },
+        "minWidth": {
+          "default": 160,
+          "maximum": 4096,
+          "minimum": 0,
+          "title": "Minwidth",
+          "type": "integer"
+        },
+        "preferredWidth": {
+          "default": 240,
+          "maximum": 8192,
+          "minimum": 0,
+          "title": "Preferredwidth",
+          "type": "integer"
+        },
+        "weight": {
+          "default": 1,
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Weight",
+          "type": "number"
+        },
+        "minHeight": {
+          "default": 64,
+          "maximum": 4096,
+          "minimum": 0,
+          "title": "Minheight",
+          "type": "integer"
+        },
+        "preferredHeight": {
+          "default": 0,
+          "maximum": 8192,
+          "minimum": 0,
+          "title": "Preferredheight",
+          "type": "integer"
+        },
+        "alignSelf": {
+          "default": "auto",
+          "enum": [
+            "auto",
+            "start",
+            "center",
+            "end",
+            "stretch"
+          ],
+          "title": "Alignself",
+          "type": "string"
+        }
+      },
+      "title": "ResponsiveItem",
+      "type": "object"
+    },
+    "ResponsiveLayout": {
+      "additionalProperties": false,
+      "description": "Ordered layout rules shared by native and future browser renderers.",
+      "properties": {
+        "type": {
+          "const": "responsive",
+          "default": "responsive",
+          "title": "Type",
+          "type": "string"
+        },
+        "direction": {
+          "default": "vertical",
+          "enum": [
+            "vertical",
+            "horizontal",
+            "wrap"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "spacing": {
+          "default": 12,
+          "maximum": 128,
+          "minimum": 0,
+          "title": "Spacing",
+          "type": "integer"
+        },
+        "alignment": {
+          "default": "stretch",
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "stretch"
+          ],
+          "title": "Alignment",
+          "type": "string"
+        },
+        "justify": {
+          "default": "start",
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "space-between"
+          ],
+          "title": "Justify",
+          "type": "string"
+        },
+        "equalWidth": {
+          "default": false,
+          "title": "Equalwidth",
+          "type": "boolean"
+        }
+      },
+      "title": "ResponsiveLayout",
+      "type": "object"
+    },
+    "ResultScope": {
+      "additionalProperties": false,
+      "properties": {
+        "entryWorkflowId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Entryworkflowid",
+          "type": "string"
+        },
+        "scopeWorkflowId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Scopeworkflowid",
+          "type": "string"
+        },
+        "callPath": {
+          "items": {
+            "$ref": "#/$defs/CallStep"
+          },
+          "maxItems": 32,
+          "title": "Callpath",
+          "type": "array"
+        },
+        "commitPolicy": {
+          "const": "workflow_terminal",
+          "default": "workflow_terminal",
+          "title": "Commitpolicy",
+          "type": "string"
+        }
+      },
+      "required": [
+        "entryWorkflowId",
+        "scopeWorkflowId"
+      ],
+      "title": "ResultScope",
+      "type": "object"
+    },
+    "TableColumn": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "maxLength": 256,
+          "title": "Title",
+          "type": "string"
+        },
+        "fieldPath": {
+          "items": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^\\S+$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Fieldpath",
+          "type": "array"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "title": "TableColumn",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "published-1",
+      "default": "published-1",
+      "title": "Schemaversion",
+      "type": "string"
+    },
+    "defaultPageId": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "^\\S+$",
+      "title": "Defaultpageid",
+      "type": "string"
+    },
+    "pageOrder": {
+      "items": {
+        "maxLength": 160,
+        "minLength": 1,
+        "pattern": "^\\S+$",
+        "type": "string"
+      },
+      "title": "Pageorder",
+      "type": "array"
+    },
+    "navigation": {
+      "$ref": "#/$defs/Navigation"
+    },
+    "resultScopes": {
+      "patternProperties": {
+        "^\\S+$": {
+          "$ref": "#/$defs/ResultScope"
+        }
+      },
+      "propertyNames": {
+        "maxLength": 160,
+        "minLength": 1
+      },
+      "title": "Resultscopes",
+      "type": "object"
+    },
+    "dataSources": {
+      "patternProperties": {
+        "^\\S+$": {
+          "$ref": "#/$defs/DataSource"
+        }
+      },
+      "propertyNames": {
+        "maxLength": 160,
+        "minLength": 1
+      },
+      "title": "Datasources",
+      "type": "object"
+    },
+    "pages": {
+      "patternProperties": {
+        "^\\S+$": {
+          "$ref": "#/$defs/PublishedPage"
+        }
+      },
+      "propertyNames": {
+        "maxLength": 160,
+        "minLength": 1
+      },
+      "title": "Pages",
+      "type": "object"
+    }
+  },
+  "required": [
+    "defaultPageId",
+    "pageOrder",
+    "navigation",
+    "resultScopes",
+    "dataSources",
+    "pages"
+  ],
+  "title": "PublishedPresentation",
+  "type": "object"
+}

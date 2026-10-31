@@ -3,8 +3,8 @@
 Run after building/package_frontend.py, in CI with a separately provisioned
 Runtime interpreter and Chromium. Never substitutes MockRuntime/FixtureRuntime,
 intercepts RPC replies, installs dependencies, or touches a real device.
-EMO_WEB_REQUIRE_OFFICIAL_UNGROUPED=1 additionally requires SDK >=1.1.1 and the
-ordinary Job's empty group ID to arrive in a valid official BrowserJobState.
+SDK >=1.1.1 and the ordinary Job's empty group ID in an official terminal
+BrowserJobState are mandatory; no compatibility fallback can satisfy this test.
 """
 import hashlib
 import importlib.metadata
@@ -130,8 +130,7 @@ def main():
     from playwright.sync_api import sync_playwright, expect
     from emo_panel_protocol.messages import BrowserMessage
     sdk_version = importlib.metadata.version('emo_panel_protocol')
-    require_official = os.environ.get('EMO_WEB_REQUIRE_OFFICIAL_UNGROUPED') == '1'
-    if require_official and tuple(map(int, sdk_version.split('.')[:3])) < (1, 1, 1):
+    if tuple(map(int, sdk_version.split('.')[:3])) < (1, 1, 1):
         raise AssertionError('Final empty-group acceptance requires the delivered official SDK >=1.1.1')
     if not (PANEL / 'backend/emo_web_panel/static/index.html').is_file():
         raise AssertionError('Build and package the real frontend before this acceptance test')
@@ -143,8 +142,8 @@ def main():
         'sdkSourceDirty':manifest['sourceDirty'], 'sdkWheelSha256':hashlib.sha256(wheel.read_bytes()).hexdigest(),
         'verification':'Chromium -> Web HTTP/WS -> repository software Runtime',
         'syntheticOnly':True, 'physicalDevices':False, 'sdkVersion':sdk_version,
-        'officialUngroupedRequired':require_official, 'officialUngroupedVerified':False,
-        'emptyGroupAcceptance':'PENDING_SDK_1_1_1', 'status':'FAILED'}
+        'officialUngroupedRequired':True, 'officialUngroupedVerified':False,
+        'emptyGroupAcceptance':'FAILED', 'status':'FAILED'}
     runtime = gateway = reader = None
     with tempfile.TemporaryDirectory(prefix='web-product-browser-') as temporary, \
             (EVIDENCE / 'runtime-stderr.log').open('w', encoding='utf-8') as runtime_log, \
@@ -232,6 +231,14 @@ def main():
                     accepted = read_json(started.value)
                     assert accepted['state'] == 'accepted' and accepted['runId'], accepted
                     job = accepted['runId']
+                    start_control = accepted['controlMessage']
+                    BrowserMessage.model_validate_json(json.dumps(start_control))
+                    assert (start_control['event'], start_control['operation'], start_control['outcome'],
+                            start_control['runtimeInstanceId'], start_control['projectId'],
+                            start_control['jobId'], start_control['runGroupId']) == (
+                        'control_result', 'start', 'ACCEPTED', initial['runtimeInstanceId'],
+                        initial['projectId'], job, ''), start_control
+                    report['officialStartControlResult'] = start_control
                     report.update(jobId=job, runtimeInstanceId=initial['runtimeInstanceId'], projectId=initial['projectId'],
                                   startReply=accepted, packageId=package_id)
                     # Do not dismiss tracking, click a query, or bypass the UI with
@@ -241,6 +248,13 @@ def main():
                     expect(page.get_by_label('查看运行', exact=True).locator(f'option[value="{job}"]')).to_have_count(1)
                     page.get_by_label('查看运行', exact=True).select_option(job)
                     page.get_by_label('停止控制目标', exact=True).select_option(job)
+                    selected_job = wait_until(page, lambda:next((m for m in messages
+                        if m.get('event') == 'job_changed' and m.get('jobId') == job
+                        and m.get('runtimeInstanceId') == initial['runtimeInstanceId']
+                        and m.get('projectId') == initial['projectId'] and m.get('runGroupId') == ''), None),
+                        'official empty-group selected Job change over WebSocket')
+                    BrowserMessage.model_validate_json(json.dumps(selected_job))
+                    report['officialSelectedJobChanged'] = selected_job
                     def matching_result():
                         return next((m for m in messages if m.get('event') == 'result' and
                             m.get('result',{}).get('identity',{}).get('jobId') == job), None)
@@ -261,6 +275,14 @@ def main():
                     stop_reply = read_json(stopped.value)
                     assert stop_reply['state'] == 'accepted', stop_reply
                     report['stopReply'] = stop_reply
+                    stop_control = wait_until(page, lambda:next((m for m in messages
+                        if m.get('event') == 'control_result' and m.get('operation') == 'stop'
+                        and m.get('outcome') == 'ACCEPTED' and m.get('jobId') == job
+                        and m.get('runtimeInstanceId') == initial['runtimeInstanceId']
+                        and m.get('projectId') == initial['projectId'] and m.get('runGroupId') == ''), None),
+                        'official accepted exact Stop over WebSocket')
+                    BrowserMessage.model_validate_json(json.dumps(stop_control))
+                    report['officialStopControlResult'] = stop_control
                     expect(page.get_by_role('button', name='结束跟踪（不重发）', exact=True)).to_have_count(0)
                     expect(page.get_by_text('停止已受理：', exact=False)).to_be_visible()
                     def retired():
@@ -286,19 +308,28 @@ def main():
                     expect(published_status).to_contain_text('运行：ABORTED')
                     report['renderedPublishedRuntimeStatus'] = published_status.inner_text()
                     assert len(read_json(page.request.get('/api/runtimes/configured/runs'))) == 1
-                    official_state = next((m for m in messages if m.get('event') == 'job_state'
-                        and m.get('jobId') == job and m.get('runGroupId') == ''), None)
-                    if require_official:
-                        official_state = wait_until(page, lambda:next((m for m in messages if m.get('event') == 'job_state'
-                            and m.get('jobId') == job and m.get('runGroupId') == ''), None),
-                            'official empty-group JobState after SDK repair')
-                    if official_state is not None:
-                        BrowserMessage.model_validate_json(json.dumps(official_state))
-                        report['officialUngroupedVerified'] = True
-                        report['emptyGroupAcceptance'] = 'PASS'
+                    official_state = wait_until(page, lambda:next((m for m in messages
+                        if m.get('event') == 'job_state' and m.get('jobId') == job
+                        and m.get('runtimeInstanceId') == initial['runtimeInstanceId']
+                        and m.get('projectId') == initial['projectId']
+                        and m.get('runGroupId') == '' and m.get('status') == 'ABORTED'
+                        and m.get('active') is False and m.get('ownsResources') is False
+                        and m.get('displayResourcesReleased') == terminal['displayResourcesReleased']), None),
+                        'official empty-group terminal JobState over actual WebSocket')
+                    BrowserMessage.model_validate_json(json.dumps(official_state))
+                    assert not any(m.get('contractStatus') == 'UNGROUPED_JOB_SCHEMA_GAP' for m in messages), messages
+                    # Validate any other official control/selection notices that
+                    # this gateway actually emits, without manufacturing them.
+                    for message in messages:
+                        if message.get('event') in {'job_changed', 'control_result'}:
+                            BrowserMessage.model_validate_json(json.dumps(message))
+                    report['officialTerminalJobState'] = official_state
+                    report['officialUngroupedVerified'] = True
+                    report['emptyGroupAcceptance'] = 'PASS'
                     starts = [r for r in requests if r['path'] == '/api/runs/start']
                     stops = [r for r in requests if r['path'].endswith('/stop')]
                     assert len(starts) == 1 and len(stops) == 1, requests
+                    assert start_control['startRequestId'] == starts[0]['body']['requestId']
                     assert stops[0]['path'] == f'/api/runs/{job}/stop'
                     assert stops[0]['body']['runGroupId'] == '', stops[0]
                     assert stops[0]['body']['runtimeInstanceId'] == initial['runtimeInstanceId']
@@ -337,8 +368,7 @@ def main():
                 report['error'] = 'Runtime acceptance log did not confirm exactly the one browser-started Job'
             (EVIDENCE / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     assert report['status'] == 'PASS', report
-    if not report['officialUngroupedVerified']:
-        print('PENDING: official empty-group BrowserMessage acceptance requires delivered SDK1.1.1; this run establishes the real browser/HTTP/WS/software Runtime chain only.')
+    assert report['officialUngroupedVerified'] and report['emptyGroupAcceptance'] == 'PASS', report
     print(json.dumps(report, ensure_ascii=False, indent=2))
 
 

@@ -85,6 +85,7 @@ export interface Result {
     sources: Record<string, Source>;
 }
 export interface Envelope {
+    operation?: 'start' | 'stop';
     latestStartedOrdinals?:Record<string,string>;
     expiredScopeOrdinals?:Record<string,string>;
     type: string;

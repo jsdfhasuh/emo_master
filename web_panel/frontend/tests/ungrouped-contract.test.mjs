@@ -43,3 +43,13 @@ test('initial formal job_changed confirms exact current selection; actual change
  assert.equal(isInitialJobConfirmation(message,'',wire.runtimeInstanceId,wire.projectId),false);
  assert.equal(isInitialJobConfirmation(message,wire.jobId,undefined,wire.projectId),false);
 });
+
+test('formal WS control notices share HTTP acknowledgement wording without implying Job completion',()=>{
+ for(const kind of ['start','stop']){
+  const message=normalize(fixture(`ungrouped-${kind}-accepted`));
+  const wsNotice=commandResolution(message.operation,message).message;
+  const httpNotice=commandResolution(kind,{state:'accepted',runId:message.jobId}).message;
+  assert.equal(wsNotice,httpNotice);assert.match(wsNotice,kind==='stop'?/停止已受理/:/启动已受理/);
+  assert.doesNotMatch(wsNotice,/ABORTED|COMPLETED|已释放/);
+ }
+});

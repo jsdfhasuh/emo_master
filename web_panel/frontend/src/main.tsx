@@ -243,7 +243,7 @@ function App() {
             }
             if (message.type === 'capture_unavailable') {invalidateCandidates.current?.();Object.keys(rawResults).forEach(scope=>{if(!message.jobId || rawResults[scope].jobId===message.jobId)delete rawResults[scope]});setResult(old=>old?.jobId===message.jobId?undefined:old);setScopes(old=>Object.fromEntries(Object.entries(old).filter(([,value])=>message.jobId && value.jobId!==message.jobId)));setNotice(message.reason || '当前运行未启用页面采集，不会自动重启');return;}
             if (message.type === 'error') {setError(message.message || 'Runtime 读取失败');return;}
-            if (message.type === 'control_result') {setNotice(`${message.outcome || 'UNKNOWN'}：${message.message || ''}`);return;}
+            if (message.type === 'control_result') {if(message.operation==='start' || message.operation==='stop')setNotice(commandResolution(message.operation,{outcome:message.outcome,jobId:message.jobId,message:message.message}).message);return;}
             if (message.type === 'job_state') {if(message.jobId===runId)setRuntimeState(message.status || 'unknown');return;}
             if (message.type === 'job_changed') {if(isInitialJobConfirmation(message,runId,infoRef.current?.runtimeInstanceId,infoRef.current?.projectId))return;invalidateCandidates.current?.();Object.keys(rawResults).forEach(scope=>delete rawResults[scope]);setResult(undefined);setScopes({});setNotice('查看运行已变化，请重新选择运行');return;}
             if (closed || gen !== generation.current || connectionId !== connection) return;

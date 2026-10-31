@@ -57,7 +57,7 @@ class GrpcRuntimeClient:
             from emo_panel_protocol.connection import ConnectionProfile, createChannel
             from emo_panel_protocol.generated import runtime_pb2, runtime_pb2_grpc
         except ImportError as exc:
-            raise ContractUnavailable('Install the supplied emo_panel_protocol 1.1.0 SDK and its declared dependencies') from exc
+            raise ContractUnavailable('Install the supplied emo_panel_protocol 1.1.1 SDK and its declared dependencies') from exc
         self.pb = runtime_pb2
         profile = ConnectionProfile(self.address, self.timeout, self.max_receive_bytes)
         if self.preview_context is not None:
@@ -104,7 +104,7 @@ class GrpcRuntimeClient:
                 'historyDefinitionRevision': info.history_definition_revision,
                 'productionMode': info.production_mode, 'productionExecutionMode': info.production_execution_mode,
                 'startupWorkflowIds': list(info.startup_workflow_ids), 'capabilities': list(info.capabilities),
-                'contractStatus': 'panel-contract-1.0-sdk-1.1.0'}
+                'contractStatus': 'panel-contract-1.0-sdk-1.1.1'}
 
     @staticmethod
     def _run(run):
@@ -383,6 +383,30 @@ class GrpcRuntimeClient:
         reply = await self.runtime.GetStartRequest(self.pb.StartRequestLookup(start_request_id=request_id,
             runtime_instance_id=runtime_instance_id), timeout=self.timeout)
         return self._start_result(reply, request_id)
+
+    async def control_message(self, operation, result, intent):
+        """Formal browser acknowledgement, separate from command tracking state."""
+        from emo_panel_protocol.messages import BrowserMessage
+        job_id=result.get('runId') or (intent.get('target') if operation=='stop' else None)
+        group=intent.get('runGroupId') if operation=='stop' and job_id else None
+        if operation=='start' and job_id:
+            try:
+                run=await self.run_state(job_id)
+                if (run['runtimeInstanceId'],run['projectId'],run['jobId']) == (
+                        intent['runtimeInstanceId'],intent['projectId'],job_id):
+                    group=run['runGroupId']
+            except Exception:
+                # Losing a read cannot undo confirmed admission. Null means the
+                # group identity was not returned, never a fabricated Job/group.
+                pass
+        outcome=result.get('outcome')
+        if outcome not in {'ACCEPTED','REJECTED','UNKNOWN'}:
+            outcome={'accepted':'ACCEPTED','rejected':'REJECTED'}.get(result.get('state'),'UNKNOWN')
+        message={'event':'control_result','runtimeInstanceId':intent['runtimeInstanceId'],
+                 'projectId':intent['projectId'],'operation':operation,'jobId':job_id,
+                 'runGroupId':group,'outcome':outcome,'message':result.get('message') or outcome}
+        if operation=='start':message['startRequestId']=intent['requestId']
+        return BrowserMessage.model_validate(message).model_dump(mode='json')
 
     async def _history_context(self, context=None):
         info = await self._info()

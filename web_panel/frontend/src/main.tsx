@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import type { Me, Panel, Run, Result, Envelope, RuntimeTarget, WorkflowTarget } from './contracts/types';
 import { api, setCsrf } from './data/api';
 import { parseLosslessJSON } from './data/lossless';
-import { normalizeMessage, applySourceProblems } from './data/contract';
+import { normalizeMessage, applySourceProblems, isInitialJobConfirmation } from './data/contract';
 import { mergeScopeStatus, isScopeResultExpired, scopeActivity } from './state/scopes';
 import type { ScopeStatuses } from './state/scopes';
 import { reconcileCatalogSelection, selectedViewState, targetContext } from './state/catalog';
@@ -245,7 +245,7 @@ function App() {
             if (message.type === 'error') {setError(message.message || 'Runtime 读取失败');return;}
             if (message.type === 'control_result') {setNotice(`${message.outcome || 'UNKNOWN'}：${message.message || ''}`);return;}
             if (message.type === 'job_state') {if(message.jobId===runId)setRuntimeState(message.status || 'unknown');return;}
-            if (message.type === 'job_changed') {invalidateCandidates.current?.();Object.keys(rawResults).forEach(scope=>delete rawResults[scope]);setResult(undefined);setScopes({});setNotice('查看运行已变化，请重新选择运行');return;}
+            if (message.type === 'job_changed') {if(isInitialJobConfirmation(message,runId,infoRef.current?.runtimeInstanceId,infoRef.current?.projectId))return;invalidateCandidates.current?.();Object.keys(rawResults).forEach(scope=>delete rawResults[scope]);setResult(undefined);setScopes({});setNotice('查看运行已变化，请重新选择运行');return;}
             if (closed || gen !== generation.current || connectionId !== connection) return;
             if (!acceptViewGeneration(message.viewGeneration)) return;
             if (message.pagePackageRevision && message.pagePackageRevision !== panel?.packageRevision) {

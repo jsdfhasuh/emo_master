@@ -47,3 +47,10 @@ export function applySourceProblems(result:Result,problems:Record<string,string>
     for(const [sourceId,problem] of Object.entries(problems)) sources[sourceId]={state:'unavailable',reason:problem || 'SOURCE_NOT_CAPTURED'};
     return {...result,sources};
 }
+
+/** Initial attach confirms an already explicit selection; it is not a Job switch. */
+export function isInitialJobConfirmation(raw:unknown,jobId:string,runtimeInstanceId?:string,projectId?:string):boolean {
+    if(!raw || typeof raw!=='object' || !jobId || !runtimeInstanceId || !projectId)return false;
+    const message=raw as Record<string,unknown>;
+    return message.type==='job_changed' && message.previousJobId===null && message.jobId===jobId && message.runtimeInstanceId===runtimeInstanceId && message.projectId===projectId;
+}

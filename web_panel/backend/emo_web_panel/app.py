@@ -130,7 +130,7 @@ def create_app(config: Config, runtime=None):
         response.headers['Content-Security-Policy']="default-src 'self'; img-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'"
         return response
     @app.get('/api/health')
-    async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':'1.1.0','preview':config.preview}
+    async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':'1.1.1','preview':config.preview}
     @app.post('/api/preview/session')
     async def preview_session(req:Request):
         nonlocal preview_used
@@ -266,6 +266,20 @@ def create_app(config: Config, runtime=None):
         for r in await runs(req,runtimeId):
             if r.get('id',r.get('runId'))==run_id:return r
         raise HTTPException(404,'Run not found')
+    async def with_control_message(who,result,client):
+        if not hasattr(client,'control_message'):return result
+        intent=result.get('intent',{})
+        message=await client.control_message(intent['action'],result,intent)
+        result={**result,'controlMessage':message}
+        # Notifications follow the original acknowledged identity, never the
+        # latest selected Job or another user's viewing window.
+        for view in views.views.values():
+            if (view['owner']==who['userId'] and
+                    (view.get('instanceId'),view.get('projectId'))==(message['runtimeInstanceId'],message['projectId']) and
+                    message.get('jobId') in (view.get('runIds') or [view['runId']])):
+                views._queue(view,{'contractMessage':message})
+        return result
+
     async def control(req,action,target):
         async with target_lock:
             who=await identity(req,'control',True)
@@ -276,7 +290,7 @@ def create_app(config: Config, runtime=None):
             if isinstance(client,MockRuntime):client.validate_control(action,target,body)
             result=await ops.execute(who['userId'],body.get('requestId'),action,target,body,client)
             await asyncio.to_thread(auth.audit,who['username'],action,json.dumps({k:body.get(k) for k in ('requestId','runtimeId','runtimeInstanceId','projectId','workflowId','runGroupId')}|{'runId':target,'operationId':result['operationId']},sort_keys=True),result['state'])
-            return result
+            return await with_control_message(who,result,client)
     @app.post('/api/runs/start')
     async def start(req:Request):return await control(req,'start','')
     @app.post('/api/runs/{run_id}/stop')
@@ -286,13 +300,13 @@ def create_app(config: Config, runtime=None):
         who=await identity(req);r=await asyncio.to_thread(ops.by_request,who['userId'],request_id)
         if not r:raise HTTPException(404,'Operation not found; outcome is not assumed')
         client=await client_for(who,r.get('intent',{}).get('runtimeId','configured'))
-        return await ops.reconcile(r,client)
+        return await with_control_message(who,await ops.reconcile(r,client),client)
     @app.get('/api/operations/{op_id}')
     async def operation(op_id:str,req:Request):
         who=await identity(req);r=await asyncio.to_thread(ops.get,op_id,who['userId'])
         if not r:raise HTTPException(404,'Operation not found')
         client=await client_for(who,r.get('intent',{}).get('runtimeId','configured'))
-        return await ops.reconcile(r,client)
+        return await with_control_message(who,await ops.reconcile(r,client),client)
     async def panel_list(who, rid, project_id=None):
         await asyncio.to_thread(registry.require,who,rid)
         # Empty real targets need no synthetic panel or speculative fallback.

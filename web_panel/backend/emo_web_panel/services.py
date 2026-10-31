@@ -280,7 +280,15 @@ class Views:
     async def attach(self, view):
         if view['connected']:
             raise ValueError('view already connected')
+        selection=None
+        if hasattr(view['runtime'],'run_state'):
+            state=await view['runtime'].run_state(view['runId'])
+            if (state['runtimeInstanceId'],state['projectId'],state['jobId']) != self._key(view):
+                raise ValueError('Selected Job identity changed')
+            selection=self.formal_message({'event':'job_changed','runtimeInstanceId':state['runtimeInstanceId'],
+                'projectId':state['projectId'],'previousJobId':None,'jobId':state['jobId'],'runGroupId':state['runGroupId']})
         view['connected'] = True
+        if selection:self._queue(view,{'contractMessage':selection})
         view['streamKeys']=[]
         for run_id in view.get('runIds') or [view['runId']]:
             key = self._key(view,run_id)
@@ -414,7 +422,13 @@ class Views:
             if scope_status:self._scope_status(view,result)
             else:self._receive(view,result)
 
+    @staticmethod
+    def formal_message(message):
+        from emo_panel_protocol.messages import BrowserMessage
+        return BrowserMessage.model_validate(message).model_dump(mode='json')
+
     def _contract_notice(self,key,message):
+        message=self.formal_message(message)
         for vid in list(self.streams.get(key,{}).get('viewers',())):
             view=self.views.get(vid)
             if view:self._queue(view,{'contractMessage':message})
@@ -425,14 +439,7 @@ class Views:
                 stream=self.streams[key];state=await stream['runtime'].run_state(stream['runId'])
                 if (state['runtimeInstanceId'],state['projectId']) != key[:2]:raise ValueError('Run identity changed')
                 fields={k:state[k] for k in ('runtimeInstanceId','projectId','jobId','runGroupId','status','active','ownsResources','displayResourcesReleased','allowedActions')}
-                if state['runGroupId']:
-                    self._contract_notice(key,{'event':'job_state',**fields})
-                else:
-                    # SDK1.1.0 BrowserJobState forbids the real ungrouped empty ID.
-                    # Expose truthful gateway status, not a fake SDK-valid group.
-                    for vid in list(stream['viewers']):
-                        view=self.views.get(vid)
-                        if view:self._queue(view,{'type':'job_state','contractStatus':'UNGROUPED_JOB_SCHEMA_GAP',**fields})
+                self._contract_notice(key,{'event':'job_state',**fields})
             except asyncio.CancelledError:raise
             except Exception:pass # subscription path emits connection reset; never infer terminal
             await asyncio.sleep(1)

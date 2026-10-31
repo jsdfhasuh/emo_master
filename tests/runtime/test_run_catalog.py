@@ -13,6 +13,7 @@ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rp
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.runtime.jobs.models import JobRecord
 from emo_master.apps.runtime.jobs.repository import JobRepository
+from emo_panel_protocol.messages import BrowserJobState
 from tests.runtime.production_fixture import productionProject, waitFor
 
 
@@ -87,9 +88,19 @@ def testLegacyStopAndExactStopBothPreserveOtherConcurrentRun():
     runtime, _, stopped = runtimeModel()
     add(runtime, 'one')
     add(runtime, 'two')
-    reply = runtime.StopJob(pb.StopJobRequest(job_id='one', expected_runtime_instance_id='instance',
-        expected_project_id='project', expected_run_group_id=''), None)
+    state = runtime.GetRunState(pb.GetRunStateRequest(runtime_instance_id='instance',
+        project_id='project', job_id='one'), None).run
+    message = BrowserJobState(runtimeInstanceId=state.runtime_instance_id, projectId=state.project_id,
+        jobId=state.job_id, runGroupId=state.run_group_id, status=state.status, active=state.active,
+        ownsResources=state.owns_resources, displayResourcesReleased=state.display_resources_released,
+        allowedActions=list(state.allowed_actions))
+    assert message.runGroupId == ''
+    request = pb.StopJobRequest(job_id=message.jobId, expected_runtime_instance_id=message.runtimeInstanceId,
+        expected_project_id=message.projectId, expected_run_group_id=message.runGroupId)
+    assert request.HasField('expected_run_group_id')
+    reply = runtime.StopJob(request, None)
     assert reply.ok and stopped == ['one']
+    assert reply.status == runtime.jobRepository.get('one').status == 'ABORTED'
     assert runtime.jobRepository.get('two').status == 'RUNNING'
     assert runtime.StopJob(pb.StopJobRequest(job_id='two'), None).ok
 

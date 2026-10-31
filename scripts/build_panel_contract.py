@@ -241,6 +241,16 @@ def fixtureValues(manifest):
             jobId='demo-j2', runGroupId='demo-j2', startRequestId='demo-start-2', outcome='ACCEPTED', message='Accepted')),
         'stop-accepted': ('browser-message', dict(context, event='control_result', operation='stop',
             jobId='demo-j2', runGroupId='demo-j2', outcome='ACCEPTED', message='Stop accepted; awaiting resource release')),
+        'ungrouped-running': ('browser-message', dict(context, event='job_state', jobId='demo-ordinary-j2', runGroupId='',
+            status='RUNNING', active=True, ownsResources=True, displayResourcesReleased=False, allowedActions=['stop'])),
+        'ungrouped-job-changed': ('browser-message', dict(context, event='job_changed', previousJobId='demo-ordinary-j1',
+            jobId='demo-ordinary-j2', runGroupId='')),
+        'ungrouped-start-accepted': ('browser-message', dict(context, event='control_result', operation='start',
+            jobId='demo-ordinary-j2', runGroupId='', startRequestId='demo-ordinary-start-2', outcome='ACCEPTED', message='Accepted')),
+        'ungrouped-stop-accepted': ('browser-message', dict(context, event='control_result', operation='stop',
+            jobId='demo-ordinary-j2', runGroupId='', outcome='ACCEPTED', message='Stop accepted; awaiting resource release')),
+        'ungrouped-aborted': ('browser-message', dict(context, event='job_state', jobId='demo-ordinary-j2', runGroupId='',
+            status='ABORTED', active=False, ownsResources=False, displayResourcesReleased=True, allowedActions=[])),
         'start-unknown': ('browser-message', dict(context, event='control_result', operation='start',
             startRequestId='demo-start-3', outcome='UNKNOWN', message='Query the same request ID; do not restart')),
         'history-revision-changed': ('browser-message', dict(context, event='error', code='E_HISTORY_REVISION',
@@ -328,13 +338,31 @@ def buildContract(output, *, wheel=True, regenerateProto=True):
     return contract
 
 
+def archiveContract(output, destination):
+    """Archive exactly the generated manifest and its verified delivery files."""
+    output, destination = Path(output).resolve(), Path(destination).resolve()
+    manifest = json.loads((output / 'contract-manifest.json').read_text(encoding='utf-8'))
+    for name, expected in manifest['files'].items():
+        data = (output / name).read_bytes()
+        if expected != dict(sha256=hashlib.sha256(data).hexdigest(), byteSize=len(data)):
+            raise ValueError('contract artifact changed before archiving: ' + name)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(destination, 'w', zipfile.ZIP_DEFLATED) as archive:
+        for name in sorted(set(manifest['files']) | {'contract-manifest.json'}):
+            archive.write(output / name, name)
+    return destination
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, default=ROOT / 'build/panel-contract-v1')
     parser.add_argument('--no-wheel', action='store_true', help='development only; manifest marks missing wheel')
     parser.add_argument('--skip-proto', action='store_true', help='use already generated protobuf code')
+    parser.add_argument('--archive', type=Path, help='write a complete ZIP from the generated manifest')
     options = parser.parse_args()
     result = buildContract(options.output, wheel=not options.no_wheel, regenerateProto=not options.skip_proto)
+    if options.archive:
+        archiveContract(options.output, options.archive)
     print(json.dumps(dict(output=str(options.output.resolve()), status=result['status'], files=len(result['files']))))
 
 

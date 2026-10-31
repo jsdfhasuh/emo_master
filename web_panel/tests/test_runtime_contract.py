@@ -28,6 +28,8 @@ class Service(rpc.RuntimeServiceServicer, rpc.DisplayServiceServicer):
         self.snapshots = []
         self.definition = None
         self.subscriptions = 0
+        self.latest_started = {}
+        self.expired = {}
 
     async def GetRuntimeInfo(self, request, context):
         return pb.RuntimeInfoReply(ok=True, runtime_instance_id=self.instance, project_id=self.project,
@@ -66,7 +68,8 @@ class Service(rpc.RuntimeServiceServicer, rpc.DisplayServiceServicer):
 
     async def Snapshot(self, request, context):
         return pb.DisplaySnapshot(runtime_instance_id=self.instance, job_id='j1', cursor=9007199254740993,
-                                  results=self.snapshots)
+                                  results=self.snapshots, latest_started_ordinals=self.latest_started,
+                                  expired_scope_ordinals=self.expired)
 
     async def Subscribe(self, request, context):
         self.subscriptions += 1
@@ -228,17 +231,34 @@ class RuntimeContractTests(unittest.IsolatedAsyncioTestCase):
             expected_source_ids=['count'], sources=[pb.DisplaySource(source_id='count',state='AVAILABLE',
             value_json='9007199254740993')],status='COMPLETE',execution_terminal='COMPLETED')
         self.service.snapshots = [wire]
-        result = (await self.client.snapshot('j1'))[0]
+        result = next(item for item in await self.client.snapshot('j1') if item.get('type') != 'scope_status')
         self.assertEqual(result['sources']['count']['valueJson'],'9007199254740993')
         self.assertEqual(result['sources']['count']['value'],'9007199254740993')
         self.assertEqual(result['resultOrdinal'],'9007199254740993')
         self.assertEqual(result['cursor'],'9007199254740993')
         received = [r async for r in self.client.subscribe('j1')]
-        self.assertEqual(len(received),2)
+        self.assertEqual(len(received),4)
+        self.assertEqual(sum(item.get('type') == 'scope_status' for item in received),2)
         self.assertEqual(self.service.subscriptions,1)
         wire.identity.execution_revision = 'c'*64
         with self.assertRaisesRegex(RuntimeRejected,'CAPTURE_MISMATCH'):
             await self.client.snapshot('j1')
+
+    async def test_metadata_only_snapshot_preserves_scope_ordinals(self):
+        source = DataSource.model_validate({'kind':'global_variable','resultScopeId':'root',
+            'variableId':'count','expectedType':'integer'}).model_dump()
+        scope = ResultScope.model_validate({'entryWorkflowId':'wf','scopeWorkflowId':'wf'}).model_dump()
+        self.service.definition = {'ruleVersion':'1.0','sources':[source],'scopes':{'root':scope}}
+        self.service.capture = True
+        self.service.latest_started = {'root':9007199254740995}
+        self.service.expired = {'root':9007199254740993}
+        values = await self.client.snapshot('j1')
+        self.assertEqual(values,[{'type':'scope_status','event':'scope_status',
+            'runtimeInstanceId':'runtime-1','projectId':'project-1','jobId':'j1','cursor':'9007199254740993',
+            'latestStartedOrdinals':{'root':'9007199254740995'},
+            'expiredScopeOrdinals':{'root':'9007199254740993'}}])
+        streamed = [value async for value in self.client.subscribe('j1')]
+        self.assertEqual(streamed,[values[0],values[0]])
 
     def test_browser_safe_never_rounds_large_nested_integer(self):
         self.assertEqual(browser_safe({'x':[2**63,1.0,False]}),{'x':[str(2**63),1.0,False]})

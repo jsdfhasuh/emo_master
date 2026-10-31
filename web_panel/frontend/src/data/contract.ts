@@ -9,6 +9,7 @@ type LosslessBrowserResult = Omit<BrowserResult, 'result'> & {result:LosslessClo
 export function normalizeMessage(raw: unknown, viewId: string, jobId: string, runtimeInstanceId?: string, allowedRunIds:readonly string[] = [jobId]): Envelope {
     if (!raw || typeof raw !== 'object') throw Error('Invalid message');
     const message = raw as Record<string,unknown>;
+    if(message.type==='scope_status' && message.event===undefined)message.event='scope_status';
     if (typeof message.event !== 'string') {
         const internal=message.result as (Result & {gatewayTransformed?:boolean;runtimeInstanceId?:string;projectId?:string}) | undefined;
         if (['freeze_expired','package_updated','permission_changed','reset_required'].includes(String(message.type))) return {...message,sessionEpoch:undefined} as unknown as Envelope; // notices do not switch result identity; reset_required explicitly invalidates
@@ -20,6 +21,10 @@ export function normalizeMessage(raw: unknown, viewId: string, jobId: string, ru
     if (typeof message.runtimeInstanceId !== 'string' || typeof message.projectId !== 'string') throw Error('Missing Runtime identity');
     if (runtimeInstanceId && message.runtimeInstanceId !== runtimeInstanceId) throw Error('Runtime identity changed; reselect the target');
     if (message.jobId && !allowedRunIds.includes(String(message.jobId)) && message.event !== 'job_changed') throw Error('Wrong Job identity');
+    if(message.event==='scope_status'){
+        if(typeof message.jobId!=='string' || !allowedRunIds.includes(message.jobId))throw Error('Wrong scope status Job');
+        for(const field of ['latestStartedOrdinals','expiredScopeOrdinals']){const values=message[field];if(!values || typeof values!=='object' || Array.isArray(values) || Object.values(values).some(v=>typeof v!=='string'||!/^\d{1,20}$/.test(v)))throw Error('Invalid scope ordinal metadata');}
+    }
     if (message.event !== 'result') return {...message,type:message.event} as unknown as Envelope;
     const closed = message.result as LosslessBrowserResult['result'];
     const identity = closed?.identity;

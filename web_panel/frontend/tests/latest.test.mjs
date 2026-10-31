@@ -24,3 +24,8 @@ test('Resume restages expired scopes once after clearing expiry markers',()=>{
  const expired=new Set(['scope']);let calls=0;resumeExpiredScopes(expired,()=>{calls++;assert.equal(expired.size,0)});assert.equal(calls,1);
  resumeExpiredScopes(expired,()=>calls++);assert.equal(calls,1);
 });
+test('scoped expiry invalidates only its pending items, not other live scopes',async()=>{
+ const seen=[],releases={};const queue=new LatestScopeQueue(async value=>{seen.push(value);await new Promise(resolve=>releases[value]=resolve);return true});
+ queue.push('a','a1','a1');queue.push('a','a2','a2');queue.push('b','b1','b1');queue.push('b','b2','b2');
+ queue.invalidateScope('a');releases.a1();releases.b1();await tick();assert.deepEqual(seen,['a1','b1','b2']);releases.b2();await tick();
+});

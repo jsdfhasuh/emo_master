@@ -148,3 +148,32 @@ test('local expiry and package notices never switch the official result epoch',(
  const message=normalizeMessage({type,sessionEpoch:'local-random'},'v','job','runtime');assert.equal(message.sessionEpoch,undefined);assert.equal(message.type,type);
  }
 });
+test('scope progress never retires completed result on newer start; expiry is job/scoped and exact',()=>{
+ const {mergeScopeStatus,isScopeResultExpired,scopeActivity}=require('../src/state/scopes.ts');
+ const result={jobId:'job',resultScopeId:'scope',resultKey:'r',resultOrdinal:'9007199254740993',sources:{image:{state:'available',image:{url:'/exact'}}}};
+ const started=mergeScopeStatus({},'job',{scope:'9007199254740994'},{});
+ assert.equal(isScopeResultExpired(result,started),false);assert.match(scopeActivity(Object.values(started)[0],result),/处理中 #9007199254740994/);
+ const expired=mergeScopeStatus(started,'job',{}, {scope:'9007199254740993'});
+ assert.equal(isScopeResultExpired(result,expired),true);
+ assert.equal(isScopeResultExpired({...result,resultOrdinal:'9007199254740994'},expired),false);
+ assert.equal(isScopeResultExpired({...result,resultScopeId:'other'},expired),false);
+ assert.equal(isScopeResultExpired({...result,jobId:'other'},expired),false);
+ assert.equal(isScopeResultExpired(result,expired,'r'),false);assert.match(scopeActivity(Object.values(expired)[0],result,true),/已冻结查看/);
+ assert.equal(result.sources.image.image.url,'/exact');
+});
+test('gateway scope-status metadata is identity checked and retains decimal strings',()=>{
+ const {normalizeMessage}=require('../src/data/contract.ts');
+ const message={type:'scope_status',runtimeInstanceId:'runtime',projectId:'project',jobId:'consumer',latestStartedOrdinals:{s:'9007199254740994'},expiredScopeOrdinals:{s:'9007199254740993'}};
+ assert.equal(normalizeMessage(message,'v','root','runtime',['root','consumer']).latestStartedOrdinals.s,'9007199254740994');
+ assert.throws(()=>normalizeMessage(message,'v','root','runtime',['root']));
+ assert.throws(()=>normalizeMessage({...message,expiredScopeOrdinals:{s:1}},'v','root','runtime',['consumer']));
+});
+test('Resume removes pinned result whose live ordinal expired even without a new payload',()=>{
+ const {mergeScopeStatus,isScopeResultExpired}=require('../src/state/scopes.ts');
+ const pinned={jobId:'job',resultScopeId:'scope',resultKey:'pinned',resultOrdinal:'10',sources:{}};
+ const status=mergeScopeStatus({},'job',{scope:'11'},{scope:'10'});
+ assert.equal(isScopeResultExpired(pinned,status,'pinned'),false);
+ // Successful Resume removes pin immunity; no new snapshot is needed to retire it.
+ assert.equal(isScopeResultExpired(pinned,status,undefined),true);
+ assert.equal(isScopeResultExpired({...pinned,resultKey:'new',resultOrdinal:'11'},status,undefined),false);
+});

@@ -126,13 +126,13 @@ def main():
                     expect(page.locator('section.panel-card > strong')).to_have_text('2')
                     assert history.get_by_role('columnheader').all_text_contents() == ['id', 'verdict']
                     loaded_image(page, 'img[src*="/history-images/fixed-image"]')
-                    history.get_by_role('row').filter(has=history.get_by_role('cell', name='OK', exact=True)).click()
+                    history.get_by_role('row').filter(has=page.get_by_role('cell', name='OK', exact=True)).click()
                     loaded_image(page, 'img[src*="/history-images/record-image"]')
                     history.get_by_role('button', name='刷新历史', exact=True).click()
                     expect(history.locator('tbody tr[aria-selected="true"]')).to_have_count(1)
                     loaded_image(page, 'img[src*="/history-images/record-image"]')
                     # EMPTY must retire the previously loaded selected-row image.
-                    history.get_by_role('row').filter(has=history.get_by_role('cell', name='NG', exact=True)).click()
+                    history.get_by_role('row').filter(has=page.get_by_role('cell', name='NG', exact=True)).click()
                     expect(page.locator('img[src*="/history-images/record-image"]')).to_have_count(0)
                     page.get_by_label('查看运行', exact=True).select_option('')
                     expect(history.locator('tbody tr')).to_have_count(2)

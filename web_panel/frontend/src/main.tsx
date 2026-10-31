@@ -4,6 +4,8 @@ import type { Me, Panel, Run, Result, Envelope, RuntimeTarget, WorkflowTarget } 
 import { api, setCsrf } from './data/api';
 import { parseLosslessJSON } from './data/lossless';
 import { normalizeMessage, applySourceProblems } from './data/contract';
+import { mergeScopeStatus, isScopeResultExpired, scopeActivity } from './state/scopes';
+import type { ScopeStatuses } from './state/scopes';
 import { LatestScopeQueue, resumeExpiredScopes } from './state/latest';
 import { prepareResult, releaseResult, pageImageSources } from './state/prepare';
 import { PanelRenderer } from './renderer/PanelRenderer';
@@ -39,6 +41,7 @@ function App() {
     const frozenKeys = useRef<Record<string, string> | undefined>(undefined);
     const invalidateCandidates = useRef<(() => void) | undefined>(undefined);
     const restagePage = useRef<(() => void) | undefined>(undefined);
+    const retireExpiredLive = useRef<(() => void) | undefined>(undefined);
     function changePage(id: string) { pageRef.current = id; setPage(id); restagePage.current?.(); }
     const [runs, setRuns] = useState<Run[]>([]);
     const [runId, setRunId] = useState('');
@@ -56,6 +59,7 @@ function App() {
     useEffect(() => { if (!viewId) return; return () => { void api(`/api/views/${encodeURIComponent(viewId)}`, { method: 'DELETE' }).catch(() => {}); }; }, [viewId]);
     const [result, setResult] = useState<Result>();
     const [scopes, setScopes] = useState<Record<string, Result>>({});
+    const [scopeStatuses,setScopeStatuses]=useState<ScopeStatuses>({});
     const ownedResults = useRef(new Set<Result>());
     useEffect(() => {
         const visible = new Set(Object.values(scopes));
@@ -110,6 +114,7 @@ function App() {
     }>('/api/views', { method: 'POST', body: JSON.stringify({ runtimeId, panelId: panel.id, runId: runId || undefined }) }).then(v => { if (valid) {sourceProblems.current=v.sourceProblems || {};viewRunIds.current=v.runIds || (runId?[runId]:[]);setViewId(v.id);}  else void api(`/api/views/${encodeURIComponent(v.id)}`, { method: 'DELETE' }).catch(() => {}); }).catch(e => { if (valid)
         setError(e.message); }); return () => { valid = false; }; }, [me, panel, runtimeId, runId]);
     useEffect(() => {
+        setScopeStatuses({});
         if (!viewId || !runId) { setStatus('历史 / 页面预览 · 未订阅运行'); return; }
         viewGeneration.current = '0';
         let closed = false;
@@ -123,8 +128,10 @@ function App() {
         let epoch: string | undefined;
         const rawResults: Record<string, Result> = {};
         const displayedRaw: Record<string, Result> = {};
+        let ordinalStatus:ScopeStatuses={};
         const stage = async (raw: Result, connectionId: number) => {
             const scope = raw.resultScopeId || 'default';
+            if(isScopeResultExpired(raw,ordinalStatus,frozenKeys.current?.[scope]))return false;
             if(expiredScopes.current.has(scope)){rawResults[scope]=raw;return false;}
             if (frozenKeys.current?.[scope] && frozenKeys.current[scope] !== raw.resultKey) return false;
             rawResults[scope] = raw;
@@ -150,10 +157,21 @@ function App() {
             setResult(undefined); setScopes({});
             Object.values(rawResults).forEach(raw => { enqueue(raw, connection); });
         };
+        retireExpiredLive.current = () => {
+                const expired=(value:Result)=>isScopeResultExpired(value,ordinalStatus,frozenKeys.current?.[value.resultScopeId || 'default']);
+                for(const [scope,value] of Object.entries(rawResults))if(expired(value)){queue.invalidateScope(scope);candidates[scope]=(candidates[scope] || 0)+1;aborts[scope]?.abort();delete rawResults[scope];}
+                for(const [scope,value] of Object.entries(displayedRaw))if(expired(value))delete displayedRaw[scope];
+                for(const value of ownedResults.current)if(expired(value)){releaseResult(value);ownedResults.current.delete(value)}
+                setScopes(old=>Object.fromEntries(Object.entries(old).filter(([,value])=>!expired(value))));setResult(old=>old && !expired(old)?old:undefined);
+        };
         const connect = () => { const connectionId = ++connection; setStatus('正在同步'); socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws/views/${encodeURIComponent(viewId)}`); socket.onopen = () => setStatus('连接已建立，等待快照'); socket.onmessage = async (event) => { try {
             const message = normalizeMessage(parseLosslessJSON(event.data),viewId,runId,runs.find(r=>r.id===runId)?.runtimeInstanceId,viewRunIds.current);
             if (closed || gen !== generation.current || connectionId !== connection) return;
             message.type ||= message.event || '';
+            if(message.type==='scope_status' && message.jobId){
+                ordinalStatus=mergeScopeStatus(ordinalStatus,message.jobId,message.latestStartedOrdinals || {},message.expiredScopeOrdinals || {});setScopeStatuses(ordinalStatus);
+                retireExpiredLive.current?.();return;
+            }
             if (message.type === 'capture_unavailable') {invalidateCandidates.current?.();Object.keys(rawResults).forEach(scope=>{if(!message.jobId || rawResults[scope].jobId===message.jobId)delete rawResults[scope]});setResult(old=>old?.jobId===message.jobId?undefined:old);setScopes(old=>Object.fromEntries(Object.entries(old).filter(([,value])=>message.jobId && value.jobId!==message.jobId)));setNotice(message.reason || '当前运行未启用页面采集，不会自动重启');return;}
             if (message.type === 'error') {setError(message.message || 'Runtime 读取失败');return;}
             if (message.type === 'control_result') {setNotice(`${message.outcome || 'UNKNOWN'}：${message.message || ''}`);return;}
@@ -228,7 +246,7 @@ function App() {
             } }); }, 2000);
         } }; };
         connect();
-        return () => { queue.invalidate(); invalidateCandidates.current = undefined; restagePage.current = undefined; frozenKeys.current = undefined; expiredScopes.current.clear(); closed = true; generation.current++; abort.abort(); Object.values(aborts).forEach(a => a.abort()); clearTimeout(retry); socket?.close(); };
+        return () => { queue.invalidate(); invalidateCandidates.current = undefined; restagePage.current = undefined; retireExpiredLive.current=undefined; frozenKeys.current = undefined; expiredScopes.current.clear(); closed = true; generation.current++; abort.abort(); Object.values(aborts).forEach(a => a.abort()); clearTimeout(retry); socket?.close(); };
     }, [viewId]);
     async function login(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); const f = new FormData(event.currentTarget); setBusy(true); setError(''); try {
         const m = await api<Me>('/api/session', { method: 'POST', body: JSON.stringify({ username: f.get('username'), password: f.get('password') }) });
@@ -253,7 +271,7 @@ function App() {
         try {
             const response=await api<{viewGeneration?:string}>(`/api/views/${encodeURIComponent(viewId)}/${name==='freeze'?'freeze':'resume'}`,{method:'POST',body:JSON.stringify({resultKey:result?.resultKey,resultKeys:frozenKeys.current})});
             if(attempt!==actionAttempt.current || actionGeneration!==generation.current || !acceptViewGeneration(response.viewGeneration))return false;
-            setFrozen(name==='freeze');if(name!=='freeze')resumeExpiredScopes(expiredScopes.current,()=>restagePage.current?.());return true;
+            setFrozen(name==='freeze');if(name!=='freeze'){retireExpiredLive.current?.();resumeExpiredScopes(expiredScopes.current,()=>restagePage.current?.());}return true;
         } catch(e) {
             if(attempt!==actionAttempt.current || actionGeneration!==generation.current)return false;
             if(name==='freeze'){frozenKeys.current=previousKeys;restagePage.current?.()}else frozenKeys.current=previousKeys;
@@ -321,6 +339,7 @@ function App() {
         setError((e as Error).message);
     } }}>对当前目标启用 / 切回此版本</button></div>)}</details>}
  {!canControl && runtimeId && <p>当前目标只读：未授予生产控制权限。</p>}
+ <aside aria-label="作用域进度">{Object.entries(scopeStatuses).map(([key,value])=><p key={key}>{value.jobId} / {value.scopeId}：{scopeActivity(value,scopes[value.scopeId],frozenKeys.current?.[value.scopeId]===scopes[value.scopeId]?.resultKey && Boolean(scopes[value.scopeId]))}</p>)}</aside>
  <RuntimeStatus runtimeId={runtimeId} runId={runId} runtimeInstanceId={runs.find(r=>r.id===runId)?.runtimeInstanceId} projectId={runs.find(r=>r.id===runId)?.projectId}/>
  {me.role === 'admin' && <Admin current={me.username}/>}<footer>Panel Contract v1 · {panel?.packageRevision || '—'} · {result?.resultKey || '等待结果'} · 不替代现场设备验收</footer></main>;
 }

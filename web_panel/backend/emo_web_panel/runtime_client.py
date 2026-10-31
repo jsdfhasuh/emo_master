@@ -204,7 +204,14 @@ class GrpcRuntimeClient:
             raise RuntimeRejected('IDENTITY_MISMATCH', 'Snapshot does not match selected run')
         if snapshot.reset_required:
             raise RuntimeRejected('RESET_REQUIRED', 'Display cursor expired; request a new snapshot')
-        decoded = []
+        # Gateway extension: a snapshot may retire/update scopes without any
+        # newly closed result. Never drop these owner-authoritative high-water
+        # marks merely because the official BrowserResult union has no slot.
+        decoded = [{'type': 'scope_status', 'event': 'scope_status',
+            'runtimeInstanceId': info.runtime_instance_id, 'projectId': info.project_id,
+            'jobId': run.job_id, 'cursor': str(snapshot.cursor),
+            'latestStartedOrdinals': {key: str(value) for key, value in snapshot.latest_started_ordinals.items()},
+            'expiredScopeOrdinals': {key: str(value) for key, value in snapshot.expired_scope_ordinals.items()}}]
         for wire in snapshot.results:
             result = decodeResult(wire)
             if not coverage.matches(result.identity) or result.identity.resultScopeId not in coverage.scopes:

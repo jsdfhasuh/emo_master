@@ -13,6 +13,7 @@ export class LatestScopeQueue<T> {
    try{if(await this.process(item.value) && epoch===slot.epoch)slot.shown=item.signature;}finally{slot.active=undefined;}
   }}finally{slot.running=false;}
  }
+ invalidateScope(scope:string){const slot=this.slots.get(scope);if(slot){slot.epoch++;slot.pending=undefined;slot.active=undefined;slot.shown=undefined;}}
  invalidate(){for(const slot of this.slots.values()){slot.epoch++;slot.pending=undefined;slot.active=undefined;slot.shown=undefined;}}
 }
 

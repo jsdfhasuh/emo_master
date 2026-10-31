@@ -50,8 +50,8 @@ Official handoff uses clean implementation `d4ab96409e43d7ab6ae566820da357508d01
 all34 file sizes/digests verified. Historical 2026-10-30 results above describe the
 old draft only, not the current official adapter.
 
-Local observed checks: 91 gateway/package tests, 17 synthetic loopback/group tests,
-and 39 frontend tests passed in their respective existing environments.
+Local observed checks: 95 gateway/package tests, 18 synthetic loopback/group tests,
+and 43 frontend tests passed in their respective existing environments.
 TypeScript/Vite builds passed. Local full-environment/CLI/browser checks remain
 unverified: isolated dependency installation was blocked by the execution reviewer,
 and the permitted clarified retry failed before execution in the sandbox wrapper.
@@ -75,3 +75,11 @@ statuses; fixtures now use explicit UTF-8 and the failed-preview test accepts ei
 UNAVAILABLE or DEADLINE_EXCEEDED while still requiring no ready event and nonzero exit.
 The owning Windows Runtime history/image test passed; Start/capture/Stop did not yet
 pass. None of these partial results establishes full W1–W6 acceptance.
+
+The follow-up scope-lifecycle review found and fixed dropped snapshot expiry/start
+metadata, including empty snapshots. Focused tests cover lossless ordinals, scoped
+live retirement, frozen pin preservation and Resume without stale resurrection.
+Run 41158645415 passed Ubuntu browser fixtures and full mock Web application E2E;
+the official preview browser reached rendered history but failed a test-only nested
+locator, now corrected. Owning Runtime Start remains under diagnosis; retained thread
+dumps show Windows multiprocessing spawn stalled, not successful capture acceptance.

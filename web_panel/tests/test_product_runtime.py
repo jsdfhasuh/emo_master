@@ -55,7 +55,13 @@ def run_product_server(root):
     faulthandler.dump_traceback_later(15, repeat=True, file=sys.stderr)
     try:
         print(json.dumps({'event':'ready', 'address':f'127.0.0.1:{port}'}), flush=True)
-        sys.stdin.readline()
+        # Do not wait on a piped stdin here. On Windows the spawned worker
+        # inherits that synchronous pipe; an outstanding parent read can block
+        # child interpreter stdio initialization (CPython bpo-34780), leaving
+        # multiprocessing's bootstrap pipe flush stuck before any Job starts.
+        stop_file = root / 'stop-requested'
+        while not stop_file.exists():
+            time.sleep(.05)
     finally:
         faulthandler.cancel_dump_traceback_later()
         with contextlib.redirect_stdout(sys.stderr):
@@ -79,7 +85,7 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
         env['QT_QPA_PLATFORM'] = 'offscreen'
         self.process = subprocess.Popen([os.environ.get('EMO_WEB_PRODUCT_PYTHON', sys.executable),
             str(Path(__file__).resolve()), '--runtime-server', self.directory.name], cwd=ROOT,
-            env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.log, text=True)
+            env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=self.log, text=True)
         ready = queue.Queue()
         threading.Thread(target=lambda: ready.put(self.process.stdout.readline()), daemon=True).start()
         try:
@@ -110,14 +116,14 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
     async def asyncTearDown(self):
         await self.client.close()
         if self.process.poll() is None:
-            self.process.stdin.write('\n'); self.process.stdin.flush()
+            (Path(self.directory.name) / 'stop-requested').touch()
             try:
                 await asyncio.to_thread(self.process.wait, timeout=20)
             except subprocess.TimeoutExpired:
                 self.process.kill(); self.process.wait(timeout=10)
         self.stdout_thread.join(timeout=2)
         self.preserve_evidence()
-        self.process.stdin.close(); self.process.stdout.close()
+        self.process.stdout.close()
         self.log.close(); self.directory.cleanup()
 
     def preserve_evidence(self):
@@ -193,7 +199,7 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(lookup['runId'],job)
         result = []
         for _ in range(100):
-            result = await self.client.snapshot(job)
+            result = [item for item in await self.client.snapshot(job) if item.get('type') != 'scope_status']
             if result:
                 break
             await asyncio.sleep(.05)

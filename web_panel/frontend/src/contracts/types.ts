@@ -84,6 +84,8 @@ export interface Result {
     sources: Record<string, Source>;
 }
 export interface Envelope {
+    latestStartedOrdinals?:Record<string,string>;
+    expiredScopeOrdinals?:Record<string,string>;
     type: string;
     event?: string;
     jobId?: string;

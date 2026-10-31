@@ -42,3 +42,13 @@ SDK BrowserMessage or claim that extension passes the official schema. Grouped
 Jobs use official BrowserJobState. Owner correction needed: permit empty group
 identity for ungrouped Jobs, with regenerated schema/types/fixtures. No vendored
 SDK or owning Runtime source is modified to conceal this mismatch.
+
+## Gateway-only view lifecycle messages
+
+`scope_status` carries the unchanged Display snapshot's latest-started and expired
+ordinal maps, including snapshots with no results. These are gateway-local view
+messages, not fabricated members of the SDK BrowserMessage union. Decimal ordinal
+strings retain full precision. A newly started result does not erase the last
+completed result; expiry retires only live ordinals at or below the supplied scope
+threshold. Already pinned frozen views remain valid until their own lease/TTL,
+and Resume cannot resurrect a retired live result.

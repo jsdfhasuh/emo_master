@@ -103,7 +103,7 @@ class Views:
                 'freezeUntil': 0, 'freezeTimer': None, 'freezeExpired': False, 'generation': 0, 'last': None, 'recent': {},
                 'scopes': {}, 'latest': {}, 'scopeRecent': {}, 'frozenScopes': {},
                 'queue': asyncio.Queue(maxsize=self.max_scopes * 2),
-                'notices': {}, 'wake': asyncio.Event(),
+                'notices': {}, 'scopeNotices': {}, 'scopeStatus': {}, 'wake': asyncio.Event(),
                 'epoch': secrets.token_hex(8), 'connected': False,
                 'created': time.monotonic(), 'instanceId': None}
         self.views[vid] = view
@@ -143,6 +143,9 @@ class Views:
             if view['notices']:
                 kind = next(iter(view['notices']))
                 return view['notices'].pop(kind)
+            if view['scopeNotices']:
+                job=next(iter(view['scopeNotices']))
+                return {**view['scopeNotices'].pop(job),'frozenScopes':list(view['frozenScopes'])}
             if not view['queue'].empty():
                 return view['queue'].get_nowait()
             view['wake'].clear()
@@ -266,14 +269,57 @@ class Views:
             key = self._key(view,run_id)
             view['streamKeys'].append(key)
             if key not in self.streams:
-                stream = {'viewers': set(), 'runtime': view['runtime'], 'runId': run_id, 'task': None, 'stateTask': None, 'latest': {}}
+                stream = {'viewers': set(), 'runtime': view['runtime'], 'runId': run_id, 'task': None, 'stateTask': None, 'latest': {}, 'scopeStatus': None}
                 self.streams[key] = stream
                 stream['task'] = asyncio.create_task(self._pump(key))
                 if hasattr(view['runtime'],'run_state'):stream['stateTask']=asyncio.create_task(self._states(key))
             self.streams[key]['viewers'].add(view['id'])
+            if self.streams[key].get('scopeStatus'):self._scope_status(view,self.streams[key]['scopeStatus'])
             for result in self.streams[key]['latest'].values():self._receive(view,result)
 
+    @staticmethod
+    def _expired(result, expired):
+        ordinal=result.get('resultOrdinal')
+        threshold=expired.get(result.get('resultScopeId'))
+        return ordinal is not None and threshold is not None and int(ordinal)<=int(threshold)
+
+    def _scope_status(self, view, message):
+        """Runtime scope retirement is independent of receiving another result."""
+        job=message['jobId']
+        previous=view['scopeStatus'].get(job,{})
+        merged={**message}
+        for field in ('latestStartedOrdinals','expiredScopeOrdinals'):
+            merged[field]=dict(previous.get(field,{}))
+            for scope,ordinal in message.get(field,{}).items():
+                merged[field][scope]=str(max(int(ordinal),int(merged[field].get(scope,'0'))))
+        view['scopeStatus'][job]=merged
+        expired=merged['expiredScopeOrdinals']
+        for field in ('latest','scopes'):
+            for scope,result in list(view[field].items()):
+                if field=='scopes' and scope in view['frozenScopes']:continue
+                if result.get('jobId')==job and self._expired(result,expired):view[field].pop(scope,None)
+        for scope,recent in view['scopeRecent'].items():
+            for key,result in list(recent.items()):
+                if result.get('jobId')==job and self._expired(result,expired):recent.pop(key,None)
+        for key,result in list(view['recent'].items()):
+            if result.get('jobId')==job and self._expired(result,expired):view['recent'].pop(key,None)
+        last=view.get('last')
+        if last and last.get('jobId')==job and last.get('resultScopeId') not in view['frozenScopes'] and self._expired(last,expired):view['last']=None
+        kept=[]
+        while not view['queue'].empty():
+            pending=view['queue'].get_nowait()
+            raw=(pending.get('contractMessage') or {}).get('result') or pending.get('result') or {}
+            identity=raw.get('identity',raw)
+            if (identity.get('jobId')==job and identity.get('resultScopeId') not in view['frozenScopes']
+                    and self._expired(identity,expired)):continue
+            kept.append(pending)
+        for pending in kept:view['queue'].put_nowait(pending)
+        view['scopeNotices'][job]={**merged,'type':'scope_status','protocolVersion':'1',
+                                  'frozenScopes':list(view['frozenScopes'])}
+        view['wake'].set()
+
     def _receive(self, view, result):
+        if self._expired(result,view['scopeStatus'].get(result.get('jobId'),{}).get('expiredScopeOrdinals',{})):return
         scope, key = result.get('resultScopeId'), result.get('resultKey')
         if not isinstance(scope, str) or not isinstance(key, str):
             raise ValueError('Result scope and key required')
@@ -287,6 +333,7 @@ class Views:
             for field in ('scopes', 'latest', 'recent', 'scopeRecent', 'frozenScopes'):
                 view[field].clear()
             self._cancel_freeze_timer(view)
+            view['scopeStatus'].clear();view['scopeNotices'].clear()
             view['freezeExpired']=False
             view['last'], view['frozen'] = None, False
             while not view['queue'].empty():
@@ -324,15 +371,31 @@ class Views:
             self._queue(view, self._envelope(view, displayed))
 
     def _deliver(self,key,result):
-        if result.get('jobId')==key[2] and result.get('resultScopeId') and key in self.streams and (not key[1] or (result.get('runtimeInstanceId'),result.get('projectId'))==key[:2]):self.streams[key]['latest'][result['resultScopeId']]=result
-        for vid in list(self.streams.get(key,{}).get('viewers',())):
+        stream=self.streams.get(key)
+        matching=(result.get('jobId')==key[2] and (not key[1] or (result.get('runtimeInstanceId'),result.get('projectId'))==key[:2]))
+        scope_status=result.get('type')=='scope_status'
+        if stream and matching:
+            if scope_status:
+                previous=stream.get('scopeStatus') or {}
+                merged={**result}
+                for field in ('latestStartedOrdinals','expiredScopeOrdinals'):
+                    merged[field]=dict(previous.get(field,{}))
+                    for scope,ordinal in result.get(field,{}).items():
+                        merged[field][scope]=str(max(int(ordinal),int(merged[field].get(scope,'0'))))
+                stream['scopeStatus']=result=merged
+                for scope,item in list(stream['latest'].items()):
+                    if self._expired(item,merged['expiredScopeOrdinals']):stream['latest'].pop(scope,None)
+            elif result.get('resultScopeId') and not self._expired(result,(stream.get('scopeStatus') or {}).get('expiredScopeOrdinals',{})):
+                stream['latest'][result['resultScopeId']]=result
+        for vid in list((stream or {}).get('viewers',())):
             view=self.views.get(vid)
             if not view:continue
             if view.get('instanceId') and (result.get('runtimeInstanceId'),result.get('projectId',view.get('projectId'))) != (view['instanceId'],view.get('projectId')):
                 self.publish_notice(view,{'type':'reset_required','reason':'Runtime identity changed; select a run again'})
                 continue
             if result.get('jobId')!=key[2]:continue
-            self._receive(view,result)
+            if scope_status:self._scope_status(view,result)
+            else:self._receive(view,result)
 
     def _contract_notice(self,key,message):
         for vid in list(self.streams.get(key,{}).get('viewers',())):
@@ -398,7 +461,7 @@ class Views:
                     for task in tasks:task.cancel()
                     await asyncio.gather(*tasks, return_exceptions=True)
                     self.streams.pop(key, None)
-        for field in ('scopes', 'latest', 'recent', 'scopeRecent', 'frozenScopes'):
+        for field in ('scopes', 'latest', 'recent', 'scopeRecent', 'frozenScopes','scopeStatus','scopeNotices'):
             view[field].clear()
         while not view['queue'].empty():
             view['queue'].get_nowait()

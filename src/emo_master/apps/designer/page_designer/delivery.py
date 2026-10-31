@@ -16,7 +16,8 @@ def exportTestPackage(coordinator, output):
         raise ValueError('请先保存项目，确定资源所在目录')
     document = coordinator.session.document()
     if document.schemaVersion in {'2.6', '2.7', '2.8', '2.9'}:
-        return buildRuntimePackage(Path(coordinator.directory), Path(output), document=document)
+        project = coordinator.window.projectController.currentProjectFile or coordinator.directory
+        return buildRuntimePackage(Path(project), Path(output), document=document)
     return buildPageTestPackage(document, Path(coordinator.directory), Path(output))
 
 

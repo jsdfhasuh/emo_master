@@ -1,0 +1,123 @@
+{
+  "base_sha": "496d4b78ccd6ac40a4fa37b15fb6e78522627cda",
+  "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+  "sources": [
+    {
+      "path": "src/emo_master/apps/designer/page_designer/responsive_tools.py",
+      "sha256": "110e27c0ac9f690e6b566e279f65c81f5ce2005f2167bc390c4676182add031d"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/page_canvas.py",
+      "sha256": "d57b65037e2a89ed8cfeed492bf76ade5c9f81431054df3a8d5918e7573f71d5"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/workspace.py",
+      "sha256": "d8437b1a4410c8892af0f545c288073a45f269bfaf399ad675cd91706d68f37e"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/delivery.py",
+      "sha256": "06aeac685cd8fb639951f7de8678c600d9f85bec4674a121b33ae4eb22430517"
+    }
+  ],
+  "tests": {
+    "adjacent-recheck.xml": [
+      {
+        "tests": "2",
+        "failures": "1",
+        "errors": "0",
+        "skipped": "0",
+        "time": "2.743"
+      }
+    ],
+    "before.xml": [
+      {
+        "tests": "17",
+        "failures": "13",
+        "errors": "0",
+        "skipped": "0",
+        "time": "8.563"
+      }
+    ],
+    "coordinates.xml": [
+      {
+        "tests": "64",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "25.384"
+      }
+    ],
+    "final-focused.xml": [
+      {
+        "tests": "66",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "25.907"
+      }
+    ],
+    "first-fix.xml": [
+      {
+        "tests": "18",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "8.901"
+      }
+    ],
+    "legacy-baseline.xml": [
+      {
+        "tests": "1",
+        "failures": "1",
+        "errors": "0",
+        "skipped": "0",
+        "time": "3.791"
+      }
+    ],
+    "regression.xml": [
+      {
+        "tests": "359",
+        "failures": "3",
+        "errors": "0",
+        "skipped": "0",
+        "time": "251.586"
+      }
+    ],
+    "resize-fixture-before.xml": [
+      {
+        "tests": "3",
+        "failures": "1",
+        "errors": "0",
+        "skipped": "0",
+        "time": "2.091"
+      }
+    ],
+    "shortcuts-recheck.xml": [
+      {
+        "tests": "29",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "10.712"
+      }
+    ],
+    "windows-qt-final.xml": [
+      {
+        "tests": "18",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "10.060"
+      }
+    ],
+    "windows-qt.xml": [
+      {
+        "tests": "18",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "10.305"
+      }
+    ]
+  }
+}

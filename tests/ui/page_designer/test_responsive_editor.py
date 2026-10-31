@@ -284,9 +284,13 @@ def testInvalidPendingFormRejectsNativeDropAndAllowsCorrection(responsivePage):
     assert len(coordinator.session._undo) == history + 2
 
 
-def testProxyHandleResizeUsesNativePointerAndCommitsOnce(responsivePage):
+@pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+def testProxyHandleResizeUsesNativePointerAndCommitsOnce(responsivePage, zoom):
     coordinator, editor, keys = responsivePage
     editor.tools.responsive.select([keys[0]])
+    coordinator.window.designerActions.actions['alignment_snap'].setChecked(False)
+    coordinator.window.designerActions.applyAlignmentPreferences()
+    editor.canvas.setZoomFactor(zoom)
     settle()
     handle = editor.tools.responsive.handles[0]
     local = handle.mapTo(editor.renderer, handle.rect().center())
@@ -306,6 +310,8 @@ def testProxyHandleResizeUsesNativePointerAndCommitsOnce(responsivePage):
     item = _component(editor.store.snapshot(), editor.pageId, keys[0]).responsive
     assert item.width == 'content' and item.preferredWidth > size.width()
     assert item.preferredHeight > size.height()
+    assert abs(item.preferredWidth - size.width() - 45 / zoom) <= 2
+    assert abs(item.preferredHeight - size.height() - 30 / zoom) <= 2
     assert len(coordinator.session._undo) == history + 1
     coordinator.history()
     assert editor.store.snapshot() == before
@@ -462,9 +468,10 @@ def testArrangementMenusRebuildPageOnlyOnce(responsivePage, monkeypatch, operati
     assert len(reloads) == 1
 
 
-@pytest.mark.parametrize('zoom', [.5, 1.5])
+@pytest.mark.parametrize('zoom', [.5, 1, 1.5])
 @pytest.mark.parametrize('multiple', [False, True])
-def testPageDragImageFollowsZoomAndKeepsLogicalMimeHotspot(responsivePage, monkeypatch, zoom, multiple):
+@pytest.mark.parametrize('grab', ['header', 'center'])
+def testPageDragImageFollowsZoomAndKeepsLogicalMimeHotspot(responsivePage, monkeypatch, zoom, multiple, grab):
     coordinator, editor, keys = responsivePage
     from emo_master.apps.designer.page_designer import responsive_tools
 
@@ -508,7 +515,7 @@ def testPageDragImageFollowsZoomAndKeepsLogicalMimeHotspot(responsivePage, monke
     settle()
     cards = editor.renderer.cards[editor.pageId]
     card = cards[pressed]
-    hotspot = card.rect().center()
+    hotspot = card.rect().center() if grab == 'center' else QPoint(12, 8)
     expectedHotspot = QPoint(round(hotspot.x() * zoom), round(hotspot.y() * zoom))
 
     image, imageHotspot = editor.tools.responsive.dragImage(pressed, hotspot)
@@ -516,22 +523,30 @@ def testPageDragImageFollowsZoomAndKeepsLogicalMimeHotspot(responsivePage, monke
     assert abs(image.height() / image.devicePixelRatioF() - card.height() * zoom) <= 1
     assert (imageHotspot - expectedHotspot).manhattanLength() <= 2
 
-    # Exercise the real move-to-QDrag path without entering an operating-system
-    # drag loop; MIME placement uses layout units while the image uses screen units.
-    start = editor.canvas.viewport().mapToGlobal(editor.canvas.mapFromScene(
-        editor.canvas.proxy.mapToScene(QPointF(card.mapTo(editor.renderer, hotspot)))))
-    editor.tools.responsive.pointer = (pressed, start, hotspot)
+    # Enter through the real viewport/proxy press path. Only the OS drag loop
+    # is captured; pre-filling pointer would hide a wrong press coordinate.
+    viewport = editor.canvas.viewport()
+    start = editor.canvas.mapFromScene(editor.canvas.proxy.mapToScene(
+        QPointF(card.mapTo(editor.renderer, hotspot))))
+    QTest.mousePress(viewport, Qt.LeftButton, Qt.NoModifier, start)
+    assert editor.tools.responsive.pointer is not None
+    actualHotspot = editor.tools.responsive.pointer[2]
+    assert (actualHotspot - hotspot).manhattanLength() <= 2
+    near = start + QPoint(max(1, QApplication.startDragDistance() // 2), 0)
+    QApplication.sendEvent(viewport, QMouseEvent(QEvent.MouseMove, QPointF(near),
+        QPointF(viewport.mapToGlobal(near)), Qt.NoButton, Qt.LeftButton, Qt.NoModifier))
+    assert not captures
     end = start + QPoint(QApplication.startDragDistance() + 10, 0)
-    event = QMouseEvent(QEvent.MouseMove, QPointF(hotspot), QPointF(end),
-        Qt.NoButton, Qt.LeftButton, Qt.NoModifier)
-    assert editor.tools.responsive.eventFilter(card, event)
+    QApplication.sendEvent(viewport, QMouseEvent(QEvent.MouseMove, QPointF(end),
+        QPointF(viewport.mapToGlobal(end)), Qt.NoButton, Qt.LeftButton, Qt.NoModifier))
+    QTest.mouseRelease(viewport, Qt.LeftButton, Qt.NoModifier, end)
     assert captures['source'] is editor.canvas
     assert captures['action'] == Qt.MoveAction
     assert captures['pixmap'].size() == image.size()
-    assert captures['hotspot'] == imageHotspot
+    assert (captures['hotspot'] - imageHotspot).manhattanLength() <= 2
     assert captures['payload']['move'] == pressed
     assert captures['payload']['moves'] == selected
-    assert captures['payload']['hotspot'] == [hotspot.x(), hotspot.y()]
+    assert captures['payload']['hotspot'] == [actualHotspot.x(), actualHotspot.y()]
 
     movingBoxes = []
 

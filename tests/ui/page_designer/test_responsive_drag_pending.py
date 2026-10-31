@@ -4,6 +4,7 @@ import json
 import pytest
 from PySide2.QtCore import QEvent, QPoint, QPointF, Qt
 from PySide2.QtGui import QMouseEvent
+from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QApplication
 
 from test_responsive_editor import responsivePage, settle  # noqa: F401
@@ -56,13 +57,14 @@ def testPendingAppearanceIsResolvedBeforeNativeDrag(responsivePage, monkeypatch,
     monkeypatch.setattr(palette, 'QDrag', CapturedDrag)
     if origin == 'canvas':
         hotspot = originalCard.rect().center()
-        start = editor.canvas.viewport().mapToGlobal(editor.canvas.mapFromScene(
-            editor.canvas.proxy.mapToScene(QPointF(originalCard.mapTo(editor.renderer, hotspot)))))
-        editor.tools.responsive.pointer = (key, start, hotspot)
+        viewport = editor.canvas.viewport()
+        start = editor.canvas.mapFromScene(editor.canvas.proxy.mapToScene(
+            QPointF(originalCard.mapTo(editor.renderer, hotspot))))
+        QTest.mousePress(viewport, Qt.LeftButton, Qt.NoModifier, start)
         end = start + QPoint(QApplication.startDragDistance() + 10, 0)
-        event = QMouseEvent(QEvent.MouseMove, QPointF(hotspot), QPointF(end),
-                           Qt.NoButton, Qt.LeftButton, Qt.NoModifier)
-        assert editor.tools.responsive.eventFilter(originalCard, event)
+        QApplication.sendEvent(viewport, QMouseEvent(QEvent.MouseMove, QPointF(end),
+            QPointF(viewport.mapToGlobal(end)), Qt.NoButton, Qt.LeftButton, Qt.NoModifier))
+        QTest.mouseRelease(viewport, Qt.LeftButton, Qt.NoModifier, end)
     else:
         source = editor.tools.palette
         source.setCurrentRow(next(row for row in range(source.count())

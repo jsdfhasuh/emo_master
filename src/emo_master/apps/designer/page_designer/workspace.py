@@ -62,6 +62,10 @@ class EditorPages(RuntimePages):
         return super().act(action)
 
     def reload(self, presentation):
+        pageId = self.currentPageId
+        scroll = self.pages.get(pageId)
+        position = ((scroll.horizontalScrollBar().value(), scroll.verticalScrollBar().value())
+                    if scroll is not None else None)
         # Rebuilding the canvas is not a request to leave the current form.
         if hasattr(self.workspace, 'tools'):
             self.workspace.tools.clearSelection()
@@ -71,6 +75,15 @@ class EditorPages(RuntimePages):
             self.assets = pageAssets(self.workspace.session.document(), self.workspace.coordinator.directory)
             self.setProjectRoot(self.workspace.coordinator.directory)
             super().reload(presentation)
+            if position is not None and self.currentPageId == pageId:
+                scroll = self.pages[pageId]
+                # Lay out the replacement at its real viewport width before
+                # restoring the view. QScrollBar clamps a shortened page.
+                self.layout().activate()
+                self.stack.layout().activate()
+                scroll.widget().layout().activate()
+                scroll.horizontalScrollBar().setValue(position[0])
+                scroll.verticalScrollBar().setValue(position[1])
         finally:
             self.reloading = False
 

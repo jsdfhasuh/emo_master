@@ -1,5 +1,5 @@
 """Graphics navigation around the same native page used by preview and runtime."""
-from PySide2.QtCore import QPoint, Qt, QTimer
+from PySide2.QtCore import QPoint, QPointF, Qt, QTimer
 from PySide2.QtGui import QColor
 from PySide2.QtWidgets import QGraphicsScene, QRubberBand
 
@@ -45,6 +45,11 @@ class PageCanvas(DesignerGraphicsView):
     def rendererPoint(self, globalPoint):
         point = self.mapToScene(self.viewport().mapFromGlobal(globalPoint))
         return self.proxy.mapFromScene(point).toPoint()
+
+    def widgetScreenPoint(self, widget, point):
+        local = widget.mapTo(self.workspace.renderer, point)
+        scene = self.proxy.mapToScene(QPointF(local))
+        return self.viewport().mapToGlobal(self.mapFromScene(scene))
 
     def rendererAt(self, point):
         renderer = self.workspace.renderer
@@ -104,8 +109,13 @@ class PageCanvas(DesignerGraphicsView):
             self._rubberStart = None
             self.workspace.tools.responsive.selectRect(local)
             event.accept()
-            return
-        super().mouseReleaseEvent(event)
+        else:
+            super().mouseReleaseEvent(event)
+        # Both embedded-card selection and gray-canvas deselection can commit
+        # the property form. Rebuild only after the native receiver has returned.
+        tools = getattr(self.workspace, 'tools', None)
+        if tools and self.workspace.renderer.config != self.workspace.store.snapshot():
+            tools.laterRefresh()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:

@@ -13,12 +13,17 @@ from emo_master.core.project.runtime_package import FORMAT, installRuntimePackag
 from tests.designer.test_node_context_menu import Client
 
 
-def testResponsiveDraftExportPreservesPagesDevicesAndSavedProject(ownedDesignerWindow, tmp_path):
+@pytest.mark.parametrize('filename', ['project.json', 'selected.emoproj'])
+def testResponsiveDraftExportPreservesPagesDevicesAndSavedProject(ownedDesignerWindow, tmp_path, filename):
     client = Client()
     window = ownedDesignerWindow(client)
     root = tmp_path / 'engineering'
-    assert window.saveProjectToDirectory(str(root))
-    disk = (root / 'project.json').read_bytes()
+    project = root / filename
+    assert window.saveProjectToDirectory(str(project))
+    disk = project.read_bytes()
+    sibling = root / 'other.emoproj'
+    saveProject(sibling, window.pageCoordinator.session.payload())
+    siblingDisk = sibling.read_bytes()
     coordinator = window.pageCoordinator
     coordinator.showPages()
     editor = coordinator.editor
@@ -33,13 +38,14 @@ def testResponsiveDraftExportPreservesPagesDevicesAndSavedProject(ownedDesignerW
     package = exportTestPackage(coordinator, tmp_path / 'packages')
     expected = coordinator.session.document()
     assert coordinator.session.dirty
-    assert (root / 'project.json').read_bytes() == disk
+    assert project.read_bytes() == disk
+    assert sibling.read_bytes() == siblingDisk
     assert expected.presentation.pages[editor.pageId].components[0].props.text == 'Unapplied draft exported'
     with zipfile.ZipFile(package) as archive:
         manifest = json.loads(archive.read('manifest.json'))
         payload = json.loads(archive.read('project.json'))
-    assert manifest['format'] == FORMAT and manifest['projectSchema'] == '2.8'
-    assert payload['presentation']['schemaVersion'] == '1.1'
+    assert manifest['format'] == FORMAT and manifest['projectSchema'] == '2.9'
+    assert payload['presentation']['schemaVersion'] == '1.2'
     assert payload['devices']['schemaVersion'] == '1.0'
     assert 'device.simulated.camera' in manifest['requiredDeviceTypes']
     installed = installRuntimePackage(package, tmp_path / 'installed')

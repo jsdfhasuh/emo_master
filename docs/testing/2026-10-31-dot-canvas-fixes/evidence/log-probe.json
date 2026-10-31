@@ -1,0 +1,24 @@
+{
+  "platform": "windows",
+  "cycles": [
+    {
+      "index": 0,
+      "flowViewportValid": true,
+      "pageViewportValid": true,
+      "resizeReleased": true
+    },
+    {
+      "index": 1,
+      "flowViewportValid": true,
+      "pageViewportValid": true,
+      "resizeReleased": true
+    },
+    {
+      "index": 2,
+      "flowViewportValid": true,
+      "pageViewportValid": true,
+      "resizeReleased": true
+    }
+  ],
+  "exceptions": []
+}

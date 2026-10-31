@@ -1,11 +1,13 @@
 """Drop candidates match committed native geometry without touching live controls."""
 import pytest
-from PySide2.QtCore import QPoint, QRect
+from PySide2.QtCore import QPoint, QRect, Qt
+from PySide2.QtGui import QDragEnterEvent, QDropEvent
 from PySide2.QtWidgets import QApplication
 
 from test_workspace import designer  # noqa: F401
 from test_responsive_editor import responsivePage, settle  # noqa: F401
 from emo_master.apps.designer.page_designer import responsive_preview
+from emo_master.apps.designer.page_designer.tools import mime
 from emo_master.core.presentation.models import Component, Props, ResponsiveLayout
 
 
@@ -123,6 +125,37 @@ def testPreviewRecomputesTallPageExtentWhenGroupingReducesRows(responsivePage): 
     _rects, size = compareDrop(editor, {'move': keys[0], 'moves': keys[:3]},
                              target, QPoint(2, target.height() // 2))
     assert size.height() < oldHeight
+    current = editor.renderer.pages[editor.pageId].verticalScrollBar()
+    assert current.value() == current.maximum()
+
+
+def testNativeDropRetainsScrolledViewportAndCandidatePositions(responsivePage):  # noqa: F811
+    _coordinator, editor, keys = responsivePage
+    page = editor.store.snapshot().pages[editor.pageId]
+    page.layout = ResponsiveLayout(direction='vertical')
+    for item in page.components:
+        item.responsive.preferredHeight = 260
+    install(editor, page)
+    scroll = editor.renderer.pages[editor.pageId]
+    scroll.verticalScrollBar().setValue(150)
+    assert scroll.verticalScrollBar().value() == 150
+    target = editor.renderer.cards[editor.pageId][keys[1]]
+    point = QPoint(2, target.height() // 2)
+    data = mime({'move': keys[0]})
+    QApplication.sendEvent(target, QDragEnterEvent(point, Qt.MoveAction, data, Qt.LeftButton, Qt.NoModifier))
+    expected = dict(editor.tools.responsive.candidateRects)
+    zoom, center = editor.canvas.getZoomFactor(), editor.canvas._viewportCenter()
+    drop = QDropEvent(point, Qt.MoveAction, data, Qt.LeftButton, Qt.NoModifier)
+    QApplication.sendEvent(target, drop)
+    assert drop.isAccepted()
+    settle()
+    current = editor.renderer.pages[editor.pageId]
+    assert current.verticalScrollBar().value() == 150
+    assert editor.canvas.getZoomFactor() == zoom
+    assert (editor.canvas._viewportCenter() - center).manhattanLength() <= 2
+    for key, actual in rootRects(editor).items():
+        if key in expected:
+            assert max(abs(a-b) for a, b in zip(actual.getRect(), expected[key].getRect())) <= 2
 
 
 @pytest.mark.parametrize('kind', ['text', 'number', 'image', 'table', 'container'])

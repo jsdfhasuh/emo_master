@@ -68,7 +68,7 @@ class ResponsiveHandle(QWidget):
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             try:
-                self.owner.beginResize(self.key, self, event.globalPos())
+                self.owner.beginResize(self.key, self, self.owner.w.canvas.widgetScreenPoint(self, event.pos()))
                 self.grabMouse()
                 self.grabKeyboard()
             except (ValueError, KeyError) as error:
@@ -76,13 +76,13 @@ class ResponsiveHandle(QWidget):
             event.accept()
 
     def mouseMoveEvent(self, event):
-        self.owner.moveResize(event.globalPos())
+        self.owner.moveResize(self.owner.w.canvas.widgetScreenPoint(self, event.pos()))
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.releaseMouse()
             self.releaseKeyboard()
-            self.owner.finishResize(event.globalPos())
+            self.owner.finishResize(self.owner.w.canvas.widgetScreenPoint(self, event.pos()))
             event.accept()
 
     def keyPressEvent(self, event):
@@ -433,15 +433,20 @@ class ResponsiveTools(QObject):
                 else:
                     if key not in self.selectedIds:
                         self.select([key])
-                    location = card.mapFrom(self.w.renderer, self.point(event.globalPos()))
-                    self.pointer = (key, QPoint(event.globalPos()), location)
-                    self.tools.dragStart = (key, QPoint(event.globalPos()))
+                    # Proxy widgets already receive a logical local position.
+                    # Their synthesized globalPos is not a viewport screen point
+                    # under zoom, so mapping it back through the view scales twice.
+                    location = obj.mapTo(card, event.pos())
+                    screenPoint = self.w.canvas.widgetScreenPoint(obj, event.pos())
+                    self.pointer = (key, screenPoint, location)
+                    self.tools.dragStart = (key, screenPoint)
             except ValueError as error:
                 self.w.message.setText(str(error))
             return True
         if kind == QEvent.MouseMove and self.pointer and event.buttons() & Qt.LeftButton:
             key, start, hotspot = self.pointer
-            if (event.globalPos() - start).manhattanLength() >= QApplication.startDragDistance():
+            position = self.w.canvas.widgetScreenPoint(obj, event.pos())
+            if (position - start).manhattanLength() >= QApplication.startDragDistance():
                 self.pointer = None
                 self.tools.dragStart = None
                 if not self.prepareDrag():

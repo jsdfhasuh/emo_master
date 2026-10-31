@@ -1,8 +1,36 @@
+# Current functional repair scope — 2026-10-31
+
+Baseline reviewed by the user: `828633688aafff301e16333bb0a94d07b0194ed0`.
+Working branch: `codex/logging-and-designer-improvements`. This repair's W1–W5
+labels are distinct from the original delivery plan's W1–W6 below.
+
+- W1: settle accepted commands separately from Job lifetime; common direct/query
+  transitions; original-identity Stop reconciliation including ABORTED and actual
+  resource flags; truthful rejection and UNKNOWN handling without replay.
+- W2: one current-target catalog refresh for identity/project/configuration, Jobs,
+  workflows and contextual packages; generation/abort guards, valid-selection and
+  edited-input preservation; clear old identity controls/resources; reuse after
+  commands/reconnection and manual refresh, not high-frequency full polling.
+- W3: SQLite per-Runtime/project activation, additive package grants, project
+  validation, scoped notices and pinned old views; minimal explicit legacy migration.
+- W4: **awaiting official SDK 1.1.1 delivery**. Integrate its fixed commit/manifest,
+  all wheel/schema/types/fixtures and built-ins without editing authoritative files,
+  then remove the empty-group workaround and assert formal empty-group messages.
+- W5: accepted/UNKNOWN/ABORTED browser flows, external catalog refresh and A/B
+  package isolation; combined real Chromium → Web HTTP/WS → repository software
+  Runtime Start/result/exact Stop; retain dual-OS and independent installation.
+
+Execution evidence and exact commits are recorded in VERIFICATION.md. No source
+change or passing fixture substitutes for the explicit combined software chain;
+Designer/native UI, another physical host and field devices remain separate.
+
+---
+
 # Development scope and status
 
 User approved the 2026-10-30 independent Web plan, then explicitly selected the existing `jsdfhasuh/emo_master` repository and a new feature branch. All Web code lives under `web_panel/`, independently installable. Runtime, Designer and shared protocol source remain owned by the local developer and are not changed here.
 
-## Delivery stages
+## Historical original delivery stages (superseded)
 - W1: standalone ASGI app, local accounts/roles, explicit mock/grpc ports, session identity. Real SDK binding blocked by handoff.
 - W2: bounded ZIP import/activate/rollback, draft component renderer, mobile grid, loopback preview launcher. Formal exported schema and Designer invocation blocked.
 - W3: shared upstream mock subscriptions, per-user views/freeze, bounded images/results, reset and disconnect states. Real lease/cursor replay blocked.

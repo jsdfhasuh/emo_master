@@ -52,3 +52,13 @@ strings retain full precision. A newly started result does not erase the last
 completed result; expiry retires only live ordinals at or below the supplied scope
 threshold. Already pinned frozen views remain valid until their own lease/TTL,
 and Resume cannot resurrect a retired live result.
+
+## Functional repair and pending owner delivery
+
+The accepted-command pending lock, missing ABORTED reconciliation, incomplete
+current-target refresh and global package activation are repaired in Web code.
+They are not reasons to wait for SDK 1.1.1. Formal empty-group BrowserMessage
+acceptance remains a separate W4 gate until the exact owner delivery is supplied.
+No SDK bytes/digests or version claims are locally fabricated. The combined
+software Runtime browser test reports that gate explicitly and will require it
+when the new official package is integrated. See VERIFICATION.md for actual runs.

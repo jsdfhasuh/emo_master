@@ -1,5 +1,32 @@
 # Verification record
 
+## Functional repair round — 2026-10-31, after reviewed 8286336
+
+W1 command-state repair is separately published as
+`1ee81db52d9548f6a1695ce9596622471bd174fe`;
+[CI 41166620413](https://github.com/jsdfhasuh/emo_master/actions/runs/41166620413)
+passed all three jobs. Its browser scenarios now use accepted/UNKNOWN/ABORTED,
+including same-intent query and no duplicate Start/Stop; this is synthetic browser
+control-flow evidence, not the combined owning-Runtime chain below.
+
+W3 activation backend is separately published as
+`92807407baab420cf6314e64e329c0b05e5dfb28`.
+CI 41166767751 passed Ubuntu and owning Runtime, but Windows exposed an unclosed
+SQLite connection in the new migration test's temporary-directory cleanup. The
+connection is explicitly closed; cleanup errors are not ignored and assertions
+remain unchanged. The previous failed run is retained as diagnostic evidence.
+
+W2 refresh and W5 expanded browser tests are implemented. The latter include
+external catalog updates and A/B races, real Web activation isolation, and one
+combined Chromium → Web HTTP/WS → repository software Runtime Start → rendered
+result → exact Stop → authoritative ABORTED/resource state flow. Their exact-head
+CI results are **pending**, not inferred from the earlier separate tests.
+
+SDK 1.1.1 has not been delivered. Only W4/formal empty-group acceptance remains
+an external integration gate; current shipped SDK1.1.0 bytes and hashes are intact.
+Native Designer, cross-physical-machine and field devices have not been exercised.
+
+
 ## Current official-contract verification — 2026-10-31
 
 Application commit: `69e3ec000a4299d16dcf27e19237d102062db77d` on

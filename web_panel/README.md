@@ -23,6 +23,30 @@ Use the actual configured Runtime endpoint, not the example above. Cleartext gRP
 
 The separate `--mode mock` is explicitly synthetic and never a fallback for gRPC. Import and activate a Designer `.emoweb` package in the admin UI. Package updates and rollback change Web presentation only, never Runtime configuration or running Jobs.
 
+## Normal operation and current-target packages
+
+Select a Runtime and refresh to retrieve its current instance/project identity,
+configuration revision, Jobs, workflows and available packages. Valid selections
+and edited workflow inputs are retained; changed input definitions/configuration
+are shown with a review notice. Invalid or old-instance control targets are cleared,
+never silently replaced by another Job.
+
+An accepted Start with a concrete Job identity confirms the command, not Job
+completion: explicitly select that Job to view or Stop it immediately. An accepted
+Stop means stopping; terminal state and resource ownership come from the original
+Job. UNKNOWN uses the original request/identity for queries, never an automatic
+replay. Rejections show their actual reason, including HTTP 200 business rejection.
+
+Package files/versions are shared, but activation is stored in Web SQLite as
+`(runtimeId, projectId) -> packageId`. “对当前目标启用 / 切回此版本” affects only
+the selected Runtime's formal project. A package for another project is rejected;
+other targets' activation and grants are retained. Existing views retain their pinned
+version until explicitly switched. Legacy activation migrates only known explicit
+Runtime associations; unassociated packages are not broadcast to every target.
+
+SDK 1.1.1 integration is pending the protocol owner's exact official delivery.
+Until then the supplied SDK 1.1.0 and its manifest stay unchanged; see CONTRACT-GAPS.
+
 ## Designer preview (same built renderer)
 
 ```sh

@@ -53,12 +53,21 @@ Default loopback URL: `http://127.0.0.1:8780`. Interactive password entry avoids
 
 For an intentionally authorized LAN deployment, the operator may set `--host 0.0.0.0 --allowed-origin http://HOST:8780`. Do not expose the development service or ordinary gRPC to the public Internet. `--secure-cookie` is only for an actual HTTPS reverse-proxy setup; plain LAN HTTP must leave it off. No TLS/mTLS or OS service is automatically configured.
 
-`--mode grpc --runtime-address HOST:PORT` sets the initial configured entry only. Persisted administrator edits are authoritative after restart. All real business RPCs currently return CONTRACT_UNAVAILABLE; no mock fallback is used.
+`--mode grpc --runtime-address HOST:PORT` sets the initial configured entry only. Persisted administrator edits are authoritative after restart. Real RPC uses the supplied SDK and has no mock fallback. CONTRACT_UNAVAILABLE was a retired pre-handoff limitation.
+
+## Activation migration
+
+Back up the entire private Web data directory before upgrading. Activation mappings
+are added to its existing `web.sqlite`; users, grants, history and version files are
+retained. The old active package is migrated only to existing Runtime IDs with an
+explicit association. No association means no automatic publication: select the
+intended target and activate a matching-project package explicitly. Rollback changes
+only that target/project mapping, not other Runtime grants or pinned old views.
 
 ## Preview and daily workflow
 
-`emo-web-panel preview --package FILE.emoweb` starts an isolated loopback temporary port, emits a JSON URL and short-lived viewer login, and cleans temporary state on exit. Treat stdout as credential material; do not log or publish it. Designer process control and the official launcher I/O remain integration blockers.
+`emo-web-panel preview --package FILE.emoweb --context CONTEXT.json --host 127.0.0.1 --port 0 --json --no-control` starts an isolated loopback temporary port, emits a JSON URL and short-lived viewer login, and cleans temporary state on exit. Treat stdout as credential material; do not log or publish it. The official launcher I/O is implemented; native Designer process start/close acceptance remains separate.
 
-Log in → select an authorized Runtime → choose a workflow or an existing viewing run → view results/history. The stop target is selected separately from historical viewing. A history-only view is allowed without an active run. Upload and activate a package as admin; existing views keep their pinned version until they explicitly switch. Activation associates the package with the selected/default Runtime IDs; it never changes the Runtime project.
+Log in → select an authorized Runtime → choose a workflow or an existing viewing run → view results/history. The stop target is selected separately from historical viewing. A history-only view is allowed without an active run. Upload and activate a package as admin; existing views keep their pinned version until they explicitly switch. Activation is an explicit SQLite mapping for the selected Runtime and its formal project; it never changes another target or the Runtime project. Existing package files and grants remain shared.
 
 Stop the Web process before upgrading. Back up its private data directory (contains credential hashes, sessions, ACLs and audit), install the new wheel in the independent environment, then restart. Do not treat this backup as a project/production backup. Retain the prior wheel for software rollback; page-package rollback is a different operation and does not roll back running jobs or production configuration.

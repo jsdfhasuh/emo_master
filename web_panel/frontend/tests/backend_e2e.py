@@ -41,7 +41,11 @@ def target_isolation_check(page,browser,base,data,versions,password,errors):
  with page.expect_response(lambda r:r.url.endswith('/api/packages') and r.request.method=='POST') as upload:
   page.get_by_label('导入页面包',exact=True).set_input_files(str(path))
  assert upload.value.ok
- bid=upload.value.json()['packageId']
+ bid=hashlib.sha256(path.read_bytes()).hexdigest()
+ installed=page.request.get(base+'/api/packages?runtimeId=line-b&projectId=demo-project')
+ assert installed.ok
+ matches=[item for item in installed.json() if item['packageId']==bid and item['manifest']['packageRevision']=='b-v1']
+ assert len(matches)==1
  def activate(pid,title):
   row=page.locator(f'[data-package-id="{pid}"]');row.wait_for()
   page.once('dialog',lambda dialog:dialog.accept())

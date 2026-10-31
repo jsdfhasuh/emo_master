@@ -19,6 +19,7 @@ import sys
 import tempfile
 import threading
 import time
+import zipfile
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -205,7 +206,20 @@ def main():
                     page.get_by_text('页面包管理', exact=True).click()
                     with page.expect_response(lambda r:urlsplit(r.url).path == '/api/packages' and r.request.method == 'POST') as uploaded:
                         page.get_by_label('导入页面包', exact=True).set_input_files(str(CONTRACT / 'sample-panels/demo.emoweb'))
-                    package_id = read_json(uploaded.value)['packageId']
+                    # Chromium may evict multipart POST response bodies from
+                    # its inspector cache. Verify persistence via an independent
+                    # authenticated catalog read, not that transient cache.
+                    assert uploaded.value.ok, uploaded.value.status
+                    sample_path = CONTRACT / 'sample-panels/demo.emoweb'
+                    package_id = hashlib.sha256(sample_path.read_bytes()).hexdigest()
+                    with zipfile.ZipFile(sample_path) as sample:
+                        expected_manifest = json.loads(sample.read('manifest.json'))
+                    installed = read_json(page.request.get(
+                        '/api/packages?runtimeId=configured&projectId=panel-contract-demo'))
+                    matching = [item for item in installed if item['packageId'] == package_id]
+                    assert len(matching) == 1, installed
+                    assert matching[0]['manifest']['packageRevision'] == expected_manifest['packageRevision']
+                    assert matching[0]['manifest']['projectId'] == initial['projectId']
                     page.once('dialog', lambda dialog: dialog.accept())
                     with page.expect_response(lambda r:urlsplit(r.url).path == f'/api/packages/{package_id}/activate') as activated:
                         page.locator(f'[data-package-id="{package_id}"]').get_by_role('button',

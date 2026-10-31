@@ -7,6 +7,10 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 
 Id = Annotated[str, Field(min_length=1, max_length=160, pattern=r"^\S+$")]
+# An ungrouped Job has a real, explicitly empty group identity. Reuse Id for
+# nonempty groups. The schema also forbids whitespace explicitly because JSON
+# Schema regex engines may let '$' match before a trailing newline.
+RunGroupId = Annotated[Literal[""] | Id, Field(json_schema_extra={"not": {"pattern": r"\s"}})]
 ValueType = Literal[
     "integer", "number", "string", "boolean", "image", "collection", "geometry", "json"
 ]

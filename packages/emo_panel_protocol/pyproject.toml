@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "emo_panel_protocol"
-version = "1.1.0"
+version = "1.1.1"
 description = "Shared Runtime RPC, result identities and published panel contract"
 requires-python = ">=3.10"
 dependencies = ["grpcio==1.78.0", "protobuf==6.33.6", "pydantic>=2.6"]

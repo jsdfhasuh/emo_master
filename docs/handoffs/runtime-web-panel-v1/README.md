@@ -1,11 +1,28 @@
 # Runtime / Web Panel：Dot 开发交接
 
-交接日期：2026-10-31。Runtime、Designer、共享 SDK 和本地发布/预览接入已经实现，Dot 从本交接开始开发 Web 网关和浏览器页面。
+当前交接为 **SDK 1.1.1 / Panel Contract 1.0**（2026-10-31），修正普通 Job 的空运行组身份。
+详细变化、固定提交、摘要及 Web 接入步骤见 [SDK 1.1.1 交接说明](./sdk-1.1.1/README.md)。
+
+| 当前交接 | 固定值 |
+| --- | --- |
+| 任务分支 | `codex/panel-protocol-ungrouped-fix` |
+| 源码实现提交 | `95c6371542f73a725c0ca2fd585152c728338dbf` |
+| 产物交付提交 | `b9a741f31a7304a3b2902530a9b6acd98755285d` |
+| SDK | `emo_panel_protocol 1.1.1` |
+| ZIP | [sdk-1.1.1/panel-contract-v1.zip](./sdk-1.1.1/panel-contract-v1.zip) |
+| wheel | [emo_panel_protocol-1.1.1-py3-none-any.whl](./sdk-1.1.1/emo_panel_protocol-1.1.1-py3-none-any.whl) |
+| ZIP SHA-256 | `8f0efaf9b918d44684c5c8c8b3f0d67fee740179ea33d17c2a064c801d9d3b7a` |
+| wheel SHA-256 | `aed06e1badb4f3fedcca121413391dbf88168cc02dc37fc54f65cbf089c92858` |
+
+## 历史交接：SDK 1.1.0
+
+以下保留 2026-10-31 初次交接的文件和摘要，便于追溯。当前 Web 接入使用上面的 1.1.1。
 
 | 项目 | 固定值 |
 | --- | --- |
 | 仓库分支 | `codex/logging-and-designer-improvements` |
 | 实现源码提交 | `d4ab96409e43d7ab6ae566820da357508d01658c` |
+| 原 SDK 交付提交 | `b9f448c18ed297652cddc3e040ca1db847b0fbfa` |
 | Panel Contract | `1.0` |
 | Python SDK | `emo_panel_protocol 1.1.0` |
 | 工程 / Presentation | `2.9` / `1.2` |

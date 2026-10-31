@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field, RootModel, model_validator
 
-from .models import Id, Model
+from .models import Id, Model, RunGroupId
 from .results import ClosedResult
 
 
@@ -86,13 +86,13 @@ class BrowserJobChanged(BrowserContext):
     event: Literal['job_changed'] = 'job_changed'
     previousJobId: Id | None = None
     jobId: Id
-    runGroupId: Id
+    runGroupId: RunGroupId
 
 
 class BrowserJobState(BrowserContext):
     event: Literal['job_state'] = 'job_state'
     jobId: Id
-    runGroupId: Id
+    runGroupId: RunGroupId
     status: str
     active: bool
     ownsResources: bool
@@ -104,7 +104,7 @@ class BrowserControlResult(BrowserContext):
     event: Literal['control_result'] = 'control_result'
     operation: Literal['start', 'stop']
     jobId: Id | None = None
-    runGroupId: Id | None = None
+    runGroupId: RunGroupId | None = None
     startRequestId: Id | None = None
     outcome: Literal['ACCEPTED', 'REJECTED', 'UNKNOWN']
     message: str

@@ -6,6 +6,8 @@ from pathlib import Path
 import zipfile
 
 import pytest
+from jsonschema import Draft202012Validator
+from pydantic import ValidationError
 
 from emo_master.apps.designer.state.project_store import loadProjectDocument
 from emo_panel_protocol.canonical import canonicalJson, revisionOf
@@ -60,6 +62,30 @@ def testFixturesValidateAndCoverIndependentJobAndHistoryLifecycles(contract):
     assert unknown.startRequestId and unknown.outcome == 'UNKNOWN'
 
 
+def testUngroupedFixturesAndArchivePreserveFormalIdentity(contract, tmp_path):
+    output, manifest = contract
+    schema = json.loads((output / 'schemas/browser-message.schema.json').read_text(encoding='utf-8'))
+    Draft202012Validator.check_schema(schema)
+    validator = Draft202012Validator(schema)
+    index = json.loads((output / 'fixtures/index.json').read_text(encoding='utf-8'))
+    for name in ('ungrouped-running', 'ungrouped-job-changed', 'ungrouped-start-accepted',
+                 'ungrouped-stop-accepted', 'ungrouped-aborted'):
+        payload = json.loads((output / 'fixtures' / (name + '.json')).read_text(encoding='utf-8'))
+        validator.validate(payload)
+        value = BrowserMessage.model_validate(payload).root
+        assert value.runGroupId == '' and 'contractStatus' not in payload
+        assert index[name + '.json']['schema'] == '../schemas/browser-message.schema.json'
+        if name == 'ungrouped-aborted':
+            assert value.status == 'ABORTED' and not value.active and not value.ownsResources
+        if name == 'ungrouped-stop-accepted':
+            assert value.outcome == 'ACCEPTED' and value.operation == 'stop'
+    with zipfile.ZipFile(builder.archiveContract(output, tmp_path / 'handoff.zip')) as archive:
+        assert archive.testzip() is None
+        assert set(archive.namelist()) == set(manifest['files']) | {'contract-manifest.json'}
+        for name in archive.namelist():
+            assert archive.read(name) == (output / name).read_bytes()
+
+
 def testGeneratedTypesDeriveFromTheSameSchemasAndPreserveRpc64BitRules(contract):
     output, _ = contract
     schemas = {p.stem: json.loads(p.read_text(encoding='utf-8')) for p in (output / 'schemas').glob('*.json')}
@@ -99,7 +125,7 @@ def testPreviewContractRequiresExplicitReadOnlyModeAndConnection(contract):
     from emo_panel_protocol.preview import PreviewContext
     from pydantic import ValidationError
     output, manifest = contract
-    assert manifest['sdkVersion'] == '1.1.0'
+    assert manifest['sdkVersion'] == '1.1.1'
     fixture = json.loads((output / 'fixtures/preview-fixtures.json').read_text())
     online = json.loads((output / 'fixtures/preview-runtime.json').read_text())
     assert PreviewContext.model_validate(online).runtime.target == '192.0.2.10:50051'
@@ -108,3 +134,64 @@ def testPreviewContractRequiresExplicitReadOnlyModeAndConnection(contract):
                   {**online, 'runtime': {**online['runtime'], 'target': 'https://host:80'}}):
         with pytest.raises(ValidationError):
             PreviewContext.model_validate(value)
+
+
+@pytest.fixture(params=['job_state', 'job_changed', 'control_result'])
+def browserRunMessage(request):
+    context = dict(event=request.param, runtimeInstanceId='runtime', projectId='project', jobId='job', runGroupId='')
+    if request.param == 'job_state':
+        return dict(context, status='ABORTED', active=False, ownsResources=False,
+                    displayResourcesReleased=True, allowedActions=[])
+    if request.param == 'job_changed':
+        return dict(context, previousJobId='previous-job')
+    return dict(context, operation='stop', outcome='ACCEPTED', message='Stop accepted')
+
+
+@pytest.mark.parametrize('group', ['', 'dispatch-group', 'g' * 160])
+def testBrowserRunGroupsPreserveExactIdentityInModelAndGeneratedSchema(contract, browserRunMessage, group):
+    output, _ = contract
+    schema = json.loads((output / 'schemas/browser-message.schema.json').read_text(encoding='utf-8'))
+    validator = Draft202012Validator(schema)
+    payload = dict(browserRunMessage, runGroupId=group)
+    parsed = BrowserMessage.model_validate(payload).root
+    assert parsed.runGroupId == group
+    assert parsed.model_dump(mode='json', exclude_none=True)['runGroupId'] == group
+    validator.validate(payload)
+
+
+@pytest.mark.parametrize('group', [' ', '\t', '\n', 'group id', 'group\n', 'g' * 161, 42, False])
+def testBrowserRunGroupsRejectInvalidIdentityInModelAndGeneratedSchema(contract, browserRunMessage, group):
+    output, _ = contract
+    schema = json.loads((output / 'schemas/browser-message.schema.json').read_text(encoding='utf-8'))
+    payload = dict(browserRunMessage, runGroupId=group)
+    with pytest.raises(ValidationError):
+        BrowserMessage.model_validate(payload)
+    assert not Draft202012Validator(schema).is_valid(payload)
+
+
+@pytest.mark.parametrize('explicitNull', [False, True])
+def testOnlyControlResultsMayOmitRunGroupIdentity(contract, browserRunMessage, explicitNull):
+    output, _ = contract
+    schema = json.loads((output / 'schemas/browser-message.schema.json').read_text(encoding='utf-8'))
+    payload = dict(browserRunMessage)
+    if explicitNull:
+        payload['runGroupId'] = None
+    else:
+        del payload['runGroupId']
+    if payload['event'] == 'control_result':
+        assert BrowserMessage.model_validate(payload).root.runGroupId is None
+        Draft202012Validator(schema).validate(payload)
+    else:
+        with pytest.raises(ValidationError):
+            BrowserMessage.model_validate(payload)
+        assert not Draft202012Validator(schema).is_valid(payload)
+
+
+@pytest.mark.parametrize('field', ['runtimeInstanceId', 'projectId', 'jobId'])
+def testRunGroupFixDoesNotRelaxOtherIdentities(contract, browserRunMessage, field):
+    output, _ = contract
+    schema = json.loads((output / 'schemas/browser-message.schema.json').read_text(encoding='utf-8'))
+    payload = dict(browserRunMessage, runGroupId='dispatch-group', **{field: ''})
+    with pytest.raises(ValidationError):
+        BrowserMessage.model_validate(payload)
+    assert not Draft202012Validator(schema).is_valid(payload)

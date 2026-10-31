@@ -4,7 +4,7 @@
 
 状态：待实施；本文定义完整 Web 功能方向与代码分工，不表示本文的 Web 功能或新增接口已经实现。
 
-本地交接更新（2026-10-31）：Runtime/Designer 增量已提交为 `d4ab96409e43d7ab6ae566820da357508d01658c`，工程格式为 **2.9** / Presentation **1.2**，基础布局复用 2.8/1.1。Dot 从仓库内的[固定交接入口](../handoffs/runtime-web-panel-v1/README.md)取得 SDK 1.1.0、合同 ZIP 和摘要；精确 RPC、schemas、TypeScript、fixtures 和样例包以同一次 manifest 为准。[Panel Contract v1](../development/panel-contract-v1.md)给出业务语义，接入与实施状态分别见 [远程访问指南](../guides/runtime-remote-access.md) 和 [本地实施记录](../testing/2026-10-30-runtime-web-integration/README.md)。本文的 Web 网关、浏览器 renderer、账户、包激活/回退及真正的 preview CLI 仍由 Dot 实现。
+本地交接更新（2026-10-31）：Runtime/Designer 增量已提交为 `d4ab96409e43d7ab6ae566820da357508d01658c`，工程格式为 **2.9** / Presentation **1.2**，基础布局复用 2.8/1.1。Dot 从仓库内的[固定交接入口](../handoffs/runtime-web-panel-v1/README.md)取得 SDK **1.1.1**、合同 ZIP 和摘要；精确 RPC、schemas、TypeScript、fixtures 和样例包以同一次 manifest 为准。空运行组补丁的源码与交付提交、普通 Job 样例和接入步骤见 [1.1.1 交接说明](../handoffs/runtime-web-panel-v1/sdk-1.1.1/README.md)。[Panel Contract v1](../development/panel-contract-v1.md)给出业务语义，接入与实施状态分别见 [远程访问指南](../guides/runtime-remote-access.md) 和 [本地实施记录](../testing/2026-10-30-runtime-web-integration/README.md)。本文的 Web 网关、浏览器 renderer、账户、包激活/回退及真正的 preview CLI 仍由 Dot 实现。
 
 配套计划：[Runtime 远程客户端与 Designer 实施计划](./2026-10-30-runtime-web-integration-plan.md)。
 

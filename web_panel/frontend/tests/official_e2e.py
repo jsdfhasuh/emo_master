@@ -121,7 +121,7 @@ def main():
                     replay = page.request.post('/api/preview/session', data={'token':urlsplit(ready_url).query[6:]})
                     assert replay.status == 403
                     page.get_by_role('button', name='History', exact=True).click()
-                    history = page.locator('section.panel-card').filter(has=page.get_by_label('records 筛选'))
+                    history = page.locator('section.panel-card').filter(has=page.get_by_label('records 筛选', exact=True))
                     expect(history.locator('tbody tr')).to_have_count(2)
                     expect(page.locator('section.panel-card > strong')).to_have_text('2')
                     assert history.get_by_role('columnheader').all_text_contents() == ['id', 'verdict']

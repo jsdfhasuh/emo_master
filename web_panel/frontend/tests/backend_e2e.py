@@ -37,7 +37,7 @@ def main():
      page.get_by_text('99.50',exact=False).wait_for();page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看，后台仍在运行').wait_for();page.get_by_role('button',name='恢复实时',exact=True).click()
      page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('操作已受理：',exact=False).wait_for()
      page.get_by_text('账户与 Runtime 管理',exact=True).click();page.get_by_label('新用户名',exact=True).fill('readonly');page.get_by_label('初始密码',exact=True).fill('Readonly-fixture-123!');page.get_by_role('button',name='创建用户',exact=True).click();page.get_by_role('cell',name='readonly',exact=True).wait_for()
-     history=page.locator('section.panel-card').filter(has=page.get_by_label('history-table 筛选'))
+     history=page.locator('section.panel-card').filter(has=page.get_by_label('history-table 筛选', exact=True))
      history.get_by_text('共 30 条',exact=False).wait_for();assert history.locator('tbody tr').count()==10
      page.get_by_role('button',name='编辑 / 授权',exact=False).first.click()
      with page.expect_response(lambda response:'/api/admin/runtimes/configured/grants' in response.url and response.request.method=='PUT') as grant_response:
@@ -53,7 +53,7 @@ def main():
      page.get_by_label('查看运行',exact=True).select_option('');history.get_by_text('共 30 条',exact=False).wait_for()
      page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('操作已受理：',exact=False).wait_for()
      page.get_by_label('查看运行',exact=True).select_option('demo-run');page.get_by_text('99.50',exact=False).wait_for()
-     page.get_by_label('history-table 筛选').fill('NG');history.get_by_text('共 7 条',exact=False).wait_for();assert history.locator('tbody tr').count()==7
+     page.get_by_label('history-table 筛选', exact=True).fill('NG');history.get_by_text('共 7 条',exact=False).wait_for();assert history.locator('tbody tr').count()==7
      history.locator('tbody tr').first.click();history.get_by_role('img',name='选中历史记录',exact=True).wait_for()
      page.wait_for_function('(image)=>image.complete && image.naturalWidth>0',arg=history.get_by_role('img',name='选中历史记录',exact=True).element_handle())
      page.get_by_label('停止控制目标',exact=True).select_option('demo-run');page.once('dialog',lambda dialog:dialog.accept())

@@ -78,7 +78,7 @@ with sync_playwright() as p:
   page.get_by_label('停止控制目标',exact=True).select_option('demo-run')
   page.get_by_label('查看运行',exact=True).select_option('')
   assert page.get_by_label('停止控制目标',exact=True).input_value()=='demo-run'
-  page.get_by_label('history-table 筛选').wait_for()
+  page.get_by_label('history-table 筛选', exact=True).wait_for()
   page.get_by_role('button',name='启动工作流',exact=True).click();page.wait_for_timeout(200);assert state['start']==2
 
 

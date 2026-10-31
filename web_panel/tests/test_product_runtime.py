@@ -25,6 +25,7 @@ CONTRACT = ROOT / 'web_panel/contracts/panel-contract-v1'
 def run_product_server(root):
     # Imports exclusively in the Runtime subprocess, not the gateway process.
     import contextlib
+    import faulthandler
     import shutil
     import sqlite3
     from emo_master.apps.runtime.grpc_server.service import RuntimeService
@@ -48,10 +49,15 @@ def run_product_server(root):
             raise RuntimeError(loaded.message)
         server, port, _ = createRuntimeServer(port=0, runtimeService=service)
         server.start()
+    # Diagnostic watchdog only: capture all actual owning Runtime threads if
+    # a control call wedges. It neither interrupts nor changes Runtime behavior.
+    faulthandler.enable(file=sys.stderr, all_threads=True)
+    faulthandler.dump_traceback_later(15, repeat=True, file=sys.stderr)
     try:
         print(json.dumps({'event':'ready', 'address':f'127.0.0.1:{port}'}), flush=True)
         sys.stdin.readline()
     finally:
+        faulthandler.cancel_dump_traceback_later()
         with contextlib.redirect_stdout(sys.stderr):
             server.stop(0).wait()
             service.close()

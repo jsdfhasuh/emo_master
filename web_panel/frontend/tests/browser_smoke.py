@@ -24,6 +24,7 @@ def mock(route):
  elif path=='/api/panels/demo-panel':data=panel
  elif path in ['/api/runs','/api/runtimes/configured/runs']:data=[{'id':'demo-run','state':state['job_status'],'status':state['job_status'].upper(),'runGroupId':'','ownsResources':state['job_status']!='aborted','displayResourcesReleased':False,'workflowId':'demo-workflow','runtimeInstanceId':'mock-instance','projectId':'demo-project','configurationRevision':'1'}]
  elif path=='/api/runtimes':data=[{'id':'configured','alias':'演示','mode':'mock','permissions':['view','control']}]
+ elif path=='/api/runtimes/configured/info':data={'runtimeInstanceId':'mock-instance','projectId':'demo-project','configurationRevision':'1'}
  elif path=='/api/runtimes/configured/status':data={'counters':{'source':'mock-authoritative','total':'1','ok':'1','ng':'0','at':'fixture'},'events':{'events':[],'nextSequence':'0','resetRequired':False,'source':'mock-events'}}
  elif path=='/api/runtimes/configured/workflows':data=[{'id':'demo-workflow','name':'Demo workflow','runtimeInstanceId':'mock-instance','projectId':'demo-project','configurationRevision':'1'}]
  elif path=='/api/views':data={'id':'view-1'}

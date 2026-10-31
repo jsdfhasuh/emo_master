@@ -6,6 +6,8 @@ import { parseLosslessJSON } from './data/lossless';
 import { normalizeMessage, applySourceProblems } from './data/contract';
 import { mergeScopeStatus, isScopeResultExpired, scopeActivity } from './state/scopes';
 import type { ScopeStatuses } from './state/scopes';
+import { reconcileCatalogSelection, targetContext } from './state/catalog';
+import type { RuntimeInfo, CatalogSelection } from './state/catalog';
 import { commandResolution } from './state/commands';
 import type { CommandReply } from './state/commands';
 import { LatestScopeQueue, resumeExpiredScopes } from './state/latest';
@@ -53,6 +55,17 @@ function App() {
     const [workflows, setWorkflows] = useState<WorkflowTarget[]>([]);
     const [workflowId, setWorkflowId] = useState('');
     const [workflowInputs, setWorkflowInputs] = useState('{}');
+    const [runtimeInfo,setRuntimeInfo]=useState<RuntimeInfo>();
+    const [catalogBusy,setCatalogBusy]=useState(false);
+    const [viewRefresh,setViewRefresh]=useState(0);
+    const connectionNeedsRefresh=useRef(false);
+    const activeRuntime=useRef('');const catalogGeneration=useRef(0);const catalogAbort=useRef<AbortController | undefined>(undefined);
+    const infoRef=useRef<RuntimeInfo | undefined>(undefined);const inputDirty=useRef(false);
+    const selectionRef=useRef<CatalogSelection>({runId:'',controlRunId:'',workflowId:'',workflowInputs:'{}',dirty:false});
+    selectionRef.current={runId,controlRunId,workflowId,workflowInputs,dirty:inputDirty.current};
+    const panelRef=useRef<Panel | undefined>(undefined);panelRef.current=panel;
+    const workflowRef=useRef<WorkflowTarget[]>([]);workflowRef.current=workflows;
+    const refreshRef=useRef<((options?:{reconnect?:boolean;quiet?:boolean})=>Promise<void>) | undefined>(undefined);
     const [viewId, setViewId] = useState('');
     const sourceProblems = useRef<Record<string,string>>({});
     const viewRunIds = useRef<string[]>([]);
@@ -82,51 +95,92 @@ function App() {
     }[]>([]);
     const [notice, setNotice] = useState('');
     const generation = useRef(0);
-    const [pending,setPending]=useState<{id:string;kind:'start'|'stop';target:string;runtimeId?:string;state?:'submitting'|'unknown'}|undefined>();
-    const [lastCommand,setLastCommand]=useState<{kind:'start'|'stop';runtimeId:string;runId?:string;reply:CommandReply}>();
+    const [pending,setPending]=useState<{id:string;kind:'start'|'stop';target:string;runtimeId?:string;runtimeInstanceId?:string;projectId?:string;state?:'submitting'|'unknown'}|undefined>();
+    const [lastCommand,setLastCommand]=useState<{kind:'start'|'stop';runtimeId:string;runtimeInstanceId?:string;projectId?:string;runId?:string;reply:CommandReply}>();
     const controlId = useRef<string | undefined>(undefined);
     useEffect(()=>{if(!me){setPending(undefined);return}try{const saved=sessionStorage.getItem(`emo-pending:${me.userId || me.username}`);setPending(saved?{...JSON.parse(saved),state:'unknown'}:undefined)}catch{setPending(undefined)}},[me]);
     function clearPending(){if(me)sessionStorage.removeItem(`emo-pending:${me.userId || me.username}`);setPending(undefined);controlId.current=undefined;}
-    async function resolveCommand(kind:'start'|'stop',reply:CommandReply,targetRuntime:string) {
+    function clearIdentityView() {
+        generation.current++;actionAttempt.current++;invalidateCandidates.current?.();
+        ownedResults.current.forEach(releaseResult);ownedResults.current.clear();
+        setViewId('');setResult(undefined);setScopes({});setScopeStatuses({});setFrozen(false);setRuntimeState('');setLastCommand(undefined);
+    }
+    function selectTarget(id:string) {
+        catalogGeneration.current++;catalogAbort.current?.abort();connectionNeedsRefresh.current=false;activeRuntime.current=id;infoRef.current=undefined;setRuntimeInfo(undefined);
+        clearIdentityView();setRunId('');setControlRunId('');setWorkflowId('');setRuns([]);setWorkflows([]);setPanel(undefined);setPanels([]);setPackages([]);
+        inputDirty.current=false;setWorkflowInputs('{}');selectionRef.current={runId:'',controlRunId:'',workflowId:'',workflowInputs:'{}',dirty:false};
+        setRuntimeId(id);
+    }
+    async function refresh(options:{reconnect?:boolean;quiet?:boolean}={}) {
+        const ticket=++catalogGeneration.current;catalogAbort.current?.abort();const abort=new AbortController();catalogAbort.current=abort;
+        const selected=activeRuntime.current;setCatalogBusy(true);
+        const current=()=>ticket===catalogGeneration.current && !abort.signal.aborted;
+        try {
+            const targets=await api<RuntimeTarget[]>('/api/runtimes',{signal:abort.signal});if(!current())return;
+            setRuntimes(targets);const rid=targets.some(target=>target.id===selected)?selected:targets[0]?.id || '';
+            if(!rid){activeRuntime.current='';setRuntimeId('');infoRef.current=undefined;setRuntimeInfo(undefined);clearIdentityView();setRuns([]);setWorkflows([]);setRunId('');setControlRunId('');setWorkflowId('');setPanels([]);setPanel(undefined);setPackages([]);return;}
+            if(rid!==selected){activeRuntime.current=rid;setRuntimeId(rid);infoRef.current=undefined;clearIdentityView();selectionRef.current={...selectionRef.current,runId:'',controlRunId:'',workflowId:''};setRunId('');setControlRunId('');setWorkflowId('');}
+            const oldInfo=infoRef.current;
+            const info=await api<RuntimeInfo>(`/api/runtimes/${encodeURIComponent(rid)}/info`,{signal:abort.signal});if(!current() || activeRuntime.current!==rid)return;
+            if(!info.runtimeInstanceId || !info.projectId)throw Error('Runtime 未提供正式实例和工程身份');
+            const changed=Boolean(oldInfo && (oldInfo.runtimeInstanceId!==info.runtimeInstanceId || oldInfo.projectId!==info.projectId));
+            if(changed){clearIdentityView();setRuns([]);setWorkflows([]);setRunId('');setControlRunId('');setWorkflowId('');setPanel(undefined);setPanels([]);setNotice('Runtime 实例或工程已改变；旧查看和控制选择已清除。');}
+            const context=targetContext(rid,info.projectId);
+            const [rs,ws,ps,pk]=await Promise.all([
+                api<Run[]>(`/api/runtimes/${encodeURIComponent(rid)}/runs`,{signal:abort.signal}),
+                api<WorkflowTarget[]>(`/api/runtimes/${encodeURIComponent(rid)}/workflows`,{signal:abort.signal}),
+                api<Panel[]>(`/api/panels?${context}`,{signal:abort.signal}),
+                me?.role==='admin'?api<typeof packages>(`/api/packages?${context}`,{signal:abort.signal}):Promise.resolve([]),
+            ]);if(!current() || activeRuntime.current!==rid)return;
+            if(rs.some(run=>run.runtimeInstanceId!==info.runtimeInstanceId || run.projectId!==info.projectId) || ws.some(workflow=>workflow.runtimeInstanceId!==info.runtimeInstanceId || workflow.projectId!==info.projectId || workflow.configurationRevision!==info.configurationRevision))throw Error('目录读取期间 Runtime 身份或配置发生变化，请再次刷新。');
+            const previous=selectionRef.current;
+            const reconciled=reconcileCatalogSelection(previous,oldInfo,info,rs,ws,!oldInfo && targets.find(target=>target.id===rid)?.mode==='mock');
+            const chosen=(!changed && ps.find(item=>item.id===panelRef.current?.id)) || ps[0];
+            const nextPanel=chosen?await api<Panel>(`/api/panels/${encodeURIComponent(chosen.id)}?${context}`,{signal:abort.signal}):undefined;
+            if(!current() || activeRuntime.current!==rid)return;
+            const oldWorkflow=workflowRef.current.find(workflow=>workflow.id===previous.workflowId),newWorkflow=ws.find(workflow=>workflow.id===previous.workflowId);
+            if(oldWorkflow && newWorkflow && JSON.stringify([oldWorkflow.inputSchema,oldWorkflow.inputDeclarations,oldWorkflow.inputsJson])!==JSON.stringify([newWorkflow.inputSchema,newWorkflow.inputDeclarations,newWorkflow.inputsJson]))reconciled.notices.push('工作流输入描述或默认值已更新；保留当前输入，请核对后再启动。');
+            // Preserve edits made while the request was in flight.
+            const next={...reconciled.selection,workflowInputs:inputDirty.current?selectionRef.current.workflowInputs:reconciled.selection.workflowInputs};
+            infoRef.current=info;setRuntimeInfo(info);setLastCommand(old=>old && old.runtimeId===rid && (!old.runtimeInstanceId || old.runtimeInstanceId===info.runtimeInstanceId) && (!old.projectId || old.projectId===info.projectId)?{...old,reply:{...old.reply,run:rs.find(run=>run.id===old.runId) || old.reply.run}}:undefined);setRuns(rs);setWorkflows(ws);setPanels(ps);setPackages(pk);
+            selectionRef.current=next;setRunId(next.runId);setControlRunId(next.controlRunId);setWorkflowId(next.workflowId);setWorkflowInputs(next.workflowInputs);
+            setPanel(old=>old?.id===nextPanel?.id && old?.packageRevision===nextPanel?.packageRevision && !changed?old:nextPanel);
+            if(!ps.length)reconciled.notices.push('当前 Runtime／工程暂无可访问的启用页面包。');
+            if(reconciled.notices.length)setNotice(reconciled.notices.join(' '));
+            if(options.reconnect || connectionNeedsRefresh.current){connectionNeedsRefresh.current=false;setViewRefresh(value=>value+1);}
+        } catch(e) {if(current()){setError(`目录刷新失败：${(e as Error).message}`);throw e;}}
+        finally{if(current())setCatalogBusy(false)}
+    }
+    refreshRef.current=refresh;
+    async function resolveCommand(kind:'start'|'stop',reply:CommandReply,intent:{runtimeId:string;runtimeInstanceId?:string;projectId?:string},requestId:string) {
         const resolution=commandResolution(kind,reply);
+        // The original intent can settle while another target is displayed, but it
+        // must not change that target's notice, identity or selected control Job.
+        if(resolution.confirmed)clearPending();else setPending(old=>old?.id===requestId?{...old,state:'unknown'}:old);
+        if(activeRuntime.current!==intent.runtimeId || intent.runtimeInstanceId && infoRef.current?.runtimeInstanceId!==intent.runtimeInstanceId || intent.projectId && infoRef.current?.projectId!==intent.projectId)return;
         setNotice(resolution.message);if(resolution.rejected)setError(resolution.message);
-        setLastCommand({kind,runtimeId:targetRuntime,runId:resolution.runId,reply});
-        if(resolution.confirmed)clearPending();else setPending(old=>old?{...old,state:'unknown'}:old);
-        if(targetRuntime===runtimeId){const updated=await api<Run[]>(`/api/runtimes/${encodeURIComponent(targetRuntime)}/runs`);setRuns(updated);}
+        setLastCommand({kind,...intent,runId:resolution.runId,reply});
+        try{await refreshRef.current?.({quiet:true});}catch{/* A confirmed command stays confirmed even if catalog refresh fails. */}
     }
     async function queryPending(){
-        if(!pending || busy)return;setBusy(true);
-        try{const r=await api<CommandReply>(`/api/operations/by-request/${encodeURIComponent(pending.id)}`);await resolveCommand(pending.kind,r,pending.runtimeId || pending.target.split('/')[0]);}
-        catch(e){setError(`查询未确认：${(e as Error).message}；未重新发送命令。`);setPending(old=>old?{...old,state:'unknown'}:old)}finally{setBusy(false)}
+        if(!pending || busy)return;setBusy(true);const original=pending;
+        try{const r=await api<CommandReply>(`/api/operations/by-request/${encodeURIComponent(original.id)}`);await resolveCommand(original.kind,r,{runtimeId:original.runtimeId || original.target.split('/')[0],runtimeInstanceId:original.runtimeInstanceId,projectId:original.projectId},original.id);}
+        catch(e){if(activeRuntime.current===(original.runtimeId || original.target.split('/')[0]))setError(`查询未确认：${(e as Error).message}；未重新发送命令。`);setPending(old=>old?.id===original.id?{...old,state:'unknown'}:old)}finally{setBusy(false)}
     }
-    async function refresh() {
-        const [ps, targets] = await Promise.all([api<Panel[]>('/api/panels'), api<RuntimeTarget[]>('/api/runtimes')]);
-        setPanels(ps); setRuntimes(targets);
-        setRuntimeId(old => targets.some(t => t.id === old) ? old : targets[0]?.id || '');
-        if (ps.length) setPanel(await api<Panel>(`/api/panels/${encodeURIComponent(ps[0].id)}`)); else { setPanel(undefined);setNotice('暂无可访问的已发布页面：页面已移除或当前授权不允许访问，已返回运行首页。'); }
-        if (me?.role === 'admin') setPackages(await api('/api/packages'));
-    }
-    useEffect(() => {
-        let valid = true; setRuns([]); setWorkflows([]); setRunId(''); setControlRunId(''); setWorkflowId('');
-        if (!runtimeId || !me) return;
-        Promise.all([api<Run[]>(`/api/runtimes/${encodeURIComponent(runtimeId)}/runs`), api<WorkflowTarget[]>(`/api/runtimes/${encodeURIComponent(runtimeId)}/workflows`)])
-            .then(([rs, ws]) => { if (valid) { setRuns(rs); setWorkflows(ws); setRunId(runtimes.find(r=>r.id===runtimeId)?.mode === 'grpc' ? '' : rs[0]?.id || ''); setWorkflowId(ws[0]?.id || ''); setWorkflowInputs(ws[0]?.inputsJson || JSON.stringify(ws[0]?.inputs || {})); } })
-            .catch(e => { if (valid) setError(e.message); });
-        return () => { valid = false; };
-    }, [runtimeId, me]);
+    useEffect(()=>{if(me && activeRuntime.current)void refreshRef.current?.().catch(()=>{});},[runtimeId]);
     useEffect(() => {
         loadSession().then(m=>{setCsrf(m.csrf);setMe(m)}).catch(()=>{});
     }, []);
     useEffect(() => { if (me)
-        refresh().catch(e => setError(e.message)); }, [me]);
+        refresh().catch(()=>{}); }, [me]);
     useEffect(() => { pageRef.current = panel?.defaultPageId || panel?.pages[0]?.id || ''; setPage(pageRef.current); setResult(undefined); setScopes({}); }, [panel]);
-    useEffect(() => { if (!me || !panel || !runtimeId) {
+    useEffect(() => { if (!me || !panel || !runtimeId || !runtimeInfo) {
         setViewId('');
         return;
     } let valid = true; sourceProblems.current={}; viewRunIds.current=[]; setViewId(''); setResult(undefined); setScopes({}); setFrozen(false); setRuntimeState(''); api<{
         id: string; sourceProblems?:Record<string,string>; runIds?:string[];
-    }>('/api/views', { method: 'POST', body: JSON.stringify({ runtimeId, panelId: panel.id, runId: runId || undefined }) }).then(v => { if (valid) {sourceProblems.current=v.sourceProblems || {};viewRunIds.current=v.runIds || (runId?[runId]:[]);setViewId(v.id);}  else void api(`/api/views/${encodeURIComponent(v.id)}`, { method: 'DELETE' }).catch(() => {}); }).catch(e => { if (valid)
-        setError(e.message); }); return () => { valid = false; }; }, [me, panel, runtimeId, runId]);
+    }>('/api/views', { method: 'POST', body: JSON.stringify({ runtimeId, projectId:runtimeInfo?.projectId, panelId: panel.id, runId: runId || undefined }) }).then(v => { if (valid) {sourceProblems.current=v.sourceProblems || {};viewRunIds.current=v.runIds || (runId?[runId]:[]);setViewId(v.id);}  else void api(`/api/views/${encodeURIComponent(v.id)}`, { method: 'DELETE' }).catch(() => {}); }).catch(e => { if (valid)
+        setError(e.message); }); return () => { valid = false; }; }, [me, panel, runtimeId, runId, runtimeInfo?.runtimeInstanceId, runtimeInfo?.projectId,viewRefresh]);
     useEffect(() => {
         setScopeStatuses({});
         if (!viewId || !runId) { setStatus('历史 / 页面预览 · 未订阅运行'); return; }
@@ -178,7 +232,7 @@ function App() {
                 for(const value of ownedResults.current)if(expired(value)){releaseResult(value);ownedResults.current.delete(value)}
                 setScopes(old=>Object.fromEntries(Object.entries(old).filter(([,value])=>!expired(value))));setResult(old=>old && !expired(old)?old:undefined);
         };
-        const connect = () => { const connectionId = ++connection; setStatus('正在同步'); socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws/views/${encodeURIComponent(viewId)}`); socket.onopen = () => setStatus('连接已建立，等待快照'); socket.onmessage = async (event) => { try {
+        const connect = () => { const connectionId = ++connection; setStatus('正在同步'); socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws/views/${encodeURIComponent(viewId)}`); socket.onopen = () => {connectionNeedsRefresh.current=false;setStatus('连接已建立，等待快照')}; socket.onmessage = async (event) => { try {
             const message = normalizeMessage(parseLosslessJSON(event.data),viewId,runId,runs.find(r=>r.id===runId)?.runtimeInstanceId,viewRunIds.current);
             if (closed || gen !== generation.current || connectionId !== connection) return;
             message.type ||= message.event || '';
@@ -246,18 +300,16 @@ function App() {
                 }).frozen));
             if (message.result) enqueue(applySourceProblems(message.result,sourceProblems.current), connectionId);
         }
-        catch {
-            setError('收到无效消息，未更新画面');
+        catch (e) {
+            if((e as Error).message.includes('Runtime identity changed')){setStatus('Runtime 身份变化，重新获取目录');socket.close();}else setError('收到无效消息，未更新画面');
         } }; socket.onerror = () => setStatus('连接中断'); socket.onclose = () => { if (!closed) {
             connection++;
             Object.values(aborts).forEach(a => a.abort());
             setStatus('离线 · 显示最后结果');
-            retry = setTimeout(() => { api<{
-                id: string; sourceProblems?:Record<string,string>; runIds?:string[];
-            }>('/api/views', { method: 'POST', body: JSON.stringify({ runtimeId, panelId: panel?.id, runId: runId || undefined }) }).then(v => { if (!closed) {sourceProblems.current=v.sourceProblems || {};viewRunIds.current=v.runIds || (runId?[runId]:[]);setViewId(v.id);}  else void api(`/api/views/${encodeURIComponent(v.id)}`, { method: 'DELETE' }).catch(() => {}); }).catch(e => { if (!closed) {
-                setError(`重连失败：${e.message}`);
-                setStatus('连接不可用，请重新登录或刷新状态');
-            } }); }, 2000);
+            connectionNeedsRefresh.current=true;
+            let delay=2000;
+            const reconnect=()=>{retry=setTimeout(async()=>{if(closed || activeRuntime.current!==runtimeId)return;try{await refreshRef.current?.({reconnect:true});}catch{if(!closed && activeRuntime.current===runtimeId){setStatus('连接不可用，稍后重试；也可手动刷新目录');delay=Math.min(delay*2,15000);reconnect();}}},delay)};
+            reconnect();
         } }; };
         connect();
         return () => { queue.invalidate(); invalidateCandidates.current = undefined; restagePage.current = undefined; retireExpiredLive.current=undefined; frozenKeys.current = undefined; expiredScopes.current.clear(); closed = true; generation.current++; abort.abort(); Object.values(aborts).forEach(a => a.abort()); clearTimeout(retry); socket?.close(); };
@@ -292,7 +344,7 @@ function App() {
             setError((e as Error).message);return false;
         }
     }
-    async function control(kind: 'start' | 'stop') { if(!canControl){setError('当前 Runtime 仅有查看权限');return}if(pending){setError('请先查询上次操作结果或明确结束跟踪，系统不会自动重发。');return}setBusy(true); setError(''); controlId.current ??= Array.from(crypto.getRandomValues(new Uint8Array(16)), x => x.toString(16).padStart(2, '0')).join(''); try {
+    async function control(kind: 'start' | 'stop') { const commandRuntime=runtimeId,commandInstance=infoRef.current?.runtimeInstanceId,commandProject=infoRef.current?.projectId;if(!canControl){setError('当前 Runtime 仅有查看权限');return}if(pending){setError('请先查询上次操作结果或明确结束跟踪，系统不会自动重发。');return}setBusy(true); setError(''); controlId.current ??= Array.from(crypto.getRandomValues(new Uint8Array(16)), x => x.toString(16).padStart(2, '0')).join(''); try {
         const run = runs.find(r => r.id === controlRunId);
         const workflow = workflows.find(w => w.id === workflowId);
         const target = kind === 'start' ? workflow : run;
@@ -301,23 +353,23 @@ function App() {
         let inputs: unknown = {};
         if (kind === 'start') { inputs = parseLosslessJSON(workflowInputs); if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) throw new Error('工作流输入必须是 JSON 对象'); }
         if (kind === 'stop' && run?.allowedActions && !run.allowedActions.some(a=>a.toLowerCase()==='stop')) throw new Error('Runtime 当前不允许停止此运行');
-        const intent = { id: controlId.current!, kind, runtimeId, state:'submitting' as const, target: `${runtimeId}/${kind === 'start' ? workflowId : controlRunId}` };
+        const intent = { id: controlId.current!, kind, runtimeId,runtimeInstanceId:target.runtimeInstanceId,projectId:target.projectId, state:'submitting' as const, target: `${runtimeId}/${kind === 'start' ? workflowId : controlRunId}` };
         if (me) sessionStorage.setItem(`emo-pending:${me.userId || me.username}`, JSON.stringify(intent)); setPending(intent);
         const r = await api<CommandReply>(kind === 'start' ? '/api/runs/start' : `/api/runs/${encodeURIComponent(controlRunId)}/stop`, {
             method: 'POST', body: JSON.stringify({ requestId: controlId.current, runtimeId, runtimeInstanceId: target.runtimeInstanceId, projectId: target.projectId, runGroupId: run?.runGroupId, configurationRevision:target.configurationRevision, workflowId: kind === 'start' ? workflowId : run?.workflowId, inputsJson:kind === 'start'?workflowInputs:undefined, inputs:workflows.find(w=>w.id===workflowId)?.inputsJson !== undefined?undefined:inputs })
         });
-        await resolveCommand(kind,r,runtimeId);
+        await resolveCommand(kind,r,intent,intent.id);
     }
     catch (e) {
         setPending(old=>old?{...old,state:'unknown'}:old);
-        setError(`${(e as Error).message}。结果未确认时不自动重发，请先刷新运行状态。`);
+        if(activeRuntime.current===commandRuntime && infoRef.current?.runtimeInstanceId===commandInstance && infoRef.current?.projectId===commandProject)setError(`${(e as Error).message}。结果未确认时不自动重发，请先刷新运行状态。`);
     }
     finally {
         setBusy(false);
     } }
     async function upload(file: File) { setBusy(true); setError(''); try {
         await api('/api/packages', { method: 'POST', headers: { 'Content-Type': 'application/zip' }, body: file });
-        setPackages(await api('/api/packages'));
+        await refreshRef.current?.({quiet:true});
         setNotice('页面包已导入，尚未启用');
     }
     catch (e) {
@@ -329,28 +381,27 @@ function App() {
     const canControl = me?.role !== 'viewer' && Boolean(runtimes.find(r=>r.id===runtimeId)?.permissions?.includes('control'));
     if (!me)
         return <main className="login"><h1>Emo Web 操作员面板</h1><p>独立展示客户端，不执行工作流或控制设备驱动。</p><form onSubmit={login}><label>用户名<input name="username" autoComplete="username" required/></label><label>密码<input name="password" type="password" autoComplete="current-password" required/></label><button disabled={busy}>{busy ? '登录中…' : '登录'}</button></form>{error && <p role="alert">{error}</p>}</main>;
-    return <main><header><div><h1>Emo Web 操作员面板</h1><p>{me.preview ? '只读预览 · 不启动或停止生产' : me.mode === 'mock' ? '模拟 Runtime · 演示数据，不代表生产设备' : '真实 Runtime 模式 · 能力以合同为准'}</p></div><div>{me.username} · {me.role}<button onClick={async () => { await api('/api/logout', { method: 'POST' }); setMe(undefined); setResult(undefined); setScopes({}); setPanel(undefined); setCsrf(''); }}>退出</button></div></header>
+    return <main><header><div><h1>Emo Web 操作员面板</h1><p>{me.preview ? '只读预览 · 不启动或停止生产' : me.mode === 'mock' ? '模拟 Runtime · 演示数据，不代表生产设备' : '真实 Runtime 模式 · 能力以合同为准'}</p></div><div>{me.username} · {me.role}<button onClick={async () => { await api('/api/logout', { method: 'POST' }); selectTarget('');setMe(undefined); setResult(undefined); setScopes({}); setPanel(undefined); setCsrf(''); }}>退出</button></div></header>
  {error && <div className="alert" role="alert">{error}<button onClick={() => setError('')}>关闭</button></div>}{notice && <div className="notice" role="status">{notice}</div>}
- <section className="toolbar"><label>Runtime<select aria-label="Runtime 目标" value={runtimeId} onChange={e => setRuntimeId(e.target.value)}>{runtimes.map(r => <option key={r.id} value={r.id}>{r.alias || r.id} · {r.mode}</option>)}</select></label><label>页面包<select aria-label="页面包" value={panel?.id || ''} onChange={async (e) => { try {
-        setPanel(await api(`/api/panels/${encodeURIComponent(e.target.value)}`));
+ <section className="toolbar"><label>Runtime<select aria-label="Runtime 目标" value={runtimeId} onChange={e => selectTarget(e.target.value)}>{runtimes.map(r => <option key={r.id} value={r.id}>{r.alias || r.id} · {r.mode}</option>)}</select></label><label>页面包<select aria-label="页面包" value={panel?.id || ''} onChange={async (e) => { const rid=activeRuntime.current,ticket=catalogGeneration.current;try {
+        const next=await api<Panel>(`/api/panels/${encodeURIComponent(e.target.value)}?${targetContext(rid,infoRef.current?.projectId)}`);if(rid===activeRuntime.current && ticket===catalogGeneration.current)setPanel(next);
     }
     catch (e) {
-        setError((e as Error).message);
-    } }}>{panels.map(p => <option key={p.id} value={p.id}>{p.name || p.title || p.id}</option>)}</select></label><label>查看运行<select aria-label="查看运行" value={runId} onChange={e => setRunId(e.target.value)}><option value="">无运行 · 页面 / 历史预览</option>{runs.map(r => <option key={r.id} value={r.id}>{r.name || r.id} · {r.state}</option>)}</select></label><button onClick={() => refresh().catch(e => setError(e.message))}>刷新页面包和状态</button><span className="status">{status} {lastUpdate && `· 最后更新 ${lastUpdate}`}</span></section>
+        if(rid===activeRuntime.current && ticket===catalogGeneration.current)setError((e as Error).message);
+    } }}>{panels.map(p => <option key={p.id} value={p.id}>{p.name || p.title || p.id}</option>)}</select></label><label>查看运行<select aria-label="查看运行" disabled={catalogBusy} value={runId} onChange={e => setRunId(e.target.value)}><option value="">无运行 · 页面 / 历史预览</option>{runs.map(r => <option key={r.id} value={r.id}>{r.name || r.id} · {r.state}</option>)}</select></label><button disabled={catalogBusy} onClick={() => refresh().catch(()=>{})}>刷新页面包和状态</button><small aria-label="当前 Runtime 身份">{runtimeInfo?.runtimeInstanceId || '—'} / {runtimeInfo?.projectId || '—'} · 配置 {runtimeInfo?.configurationRevision || runtimeInfo?.documentRevision || '—'}</small><span className="status">{status} {lastUpdate && `· 最后更新 ${lastUpdate}`}</span></section>
  {pending&&<section className="notice"><strong>待确认操作：{pending.kind} / {pending.target}</strong><button disabled={busy} onClick={queryPending}>查询操作结果</button>{pending.state!=='submitting'&&<button onClick={()=>{if(confirm('结束本次跟踪不会停止或重新执行任何命令。请确认已核对运行状态，后续新操作将是新的意图。'))clearPending()}}>结束跟踪（不重发）</button>}</section>}
- {lastCommand && lastCommand.runtimeId===runtimeId && lastCommand.runId && (()=>{const authoritative=runs.find(run=>run.id===lastCommand.runId) || lastCommand.reply.run;return <section className="notice" aria-label="原控制运行状态"><strong>原控制 Job：{lastCommand.runId}</strong><p>权威状态：{authoritative?.status || authoritative?.state || lastCommand.reply.status || '待刷新'} · 持有资源：{authoritative?.ownsResources===undefined?'未知':authoritative.ownsResources?'是':'否'} · 展示资源已释放：{authoritative?.displayResourcesReleased===undefined?'未知':authoritative.displayResourcesReleased?'是':'否'}</p><small>命令受理不等于 Job 结束；使用刷新获取后续权威状态。</small></section>})()}
- <section className="toolbar"><button disabled={!result || frozen} onClick={() => action('freeze')}>冻结查看</button><button disabled={!frozen} onClick={() => action('resume_live')}>恢复实时</button><span>{frozen ? '已冻结查看，后台仍在运行' : '实时查看'}</span>{canControl && <><span className="control-target">控制目标：{controlRunId || '未选择'}（独立于查看运行）</span><label>停止目标<select aria-label="停止控制目标" value={controlRunId} onChange={e=>setControlRunId(e.target.value)}><option value="">明确选择停止对象</option>{runs.map(r=><option key={r.id} value={r.id}>{r.name||r.id} · {r.state}</option>)}</select></label><button className="danger" disabled={busy || !controlRunId || Boolean(runs.find(r=>r.id===controlRunId)?.allowedActions && !runs.find(r=>r.id===controlRunId)?.allowedActions?.some(a=>a.toLowerCase()==='stop'))} onClick={() => { if (confirm(`停止当前明确选中的运行 ${controlRunId}？`))
+ {lastCommand && lastCommand.runtimeId===runtimeId && (!lastCommand.runtimeInstanceId || lastCommand.runtimeInstanceId===runtimeInfo?.runtimeInstanceId) && (!lastCommand.projectId || lastCommand.projectId===runtimeInfo?.projectId) && lastCommand.runId && (()=>{const authoritative=lastCommand.reply.run || runs.find(run=>run.id===lastCommand.runId);return <section className="notice" aria-label="原控制运行状态"><strong>原控制 Job：{lastCommand.runId}</strong><p>权威状态：{authoritative?.status || authoritative?.state || lastCommand.reply.status || '待刷新'} · 持有资源：{authoritative?.ownsResources===undefined?'未知':authoritative.ownsResources?'是':'否'} · 展示资源已释放：{authoritative?.displayResourcesReleased===undefined?'未知':authoritative.displayResourcesReleased?'是':'否'}</p><small>命令受理不等于 Job 结束；使用刷新获取后续权威状态。</small></section>})()}
+ <section className="toolbar"><button disabled={!result || frozen} onClick={() => action('freeze')}>冻结查看</button><button disabled={!frozen} onClick={() => action('resume_live')}>恢复实时</button><span>{frozen ? '已冻结查看，后台仍在运行' : '实时查看'}</span>{canControl && <><span className="control-target">控制目标：{controlRunId || '未选择'}（独立于查看运行）</span><label>停止目标<select aria-label="停止控制目标" disabled={catalogBusy} value={controlRunId} onChange={e=>setControlRunId(e.target.value)}><option value="">明确选择停止对象</option>{runs.map(r=><option key={r.id} value={r.id}>{r.name||r.id} · {r.state}</option>)}</select></label><button className="danger" disabled={busy || catalogBusy || !controlRunId || Boolean(runs.find(r=>r.id===controlRunId)?.allowedActions && !runs.find(r=>r.id===controlRunId)?.allowedActions?.some(a=>a.toLowerCase()==='stop'))} onClick={() => { if (confirm(`停止当前明确选中的运行 ${controlRunId}？`))
         control('stop'); }}>停止选中运行</button></>}</section>
- {canControl && <section className="toolbar"><label>启动工作流<select aria-label="启动工作流目标" value={workflowId} onChange={e => { setWorkflowId(e.target.value); setWorkflowInputs(workflows.find(w=>w.id===e.target.value)?.inputsJson || JSON.stringify(workflows.find(w=>w.id===e.target.value)?.inputs || {})); }}>{!workflows.length && <option value="">无可用工作流 / 合同能力未就绪</option>}{workflows.map(w => <option key={w.id} value={w.id}>{w.name || w.id}</option>)}</select></label><WorkflowInputs workflow={workflows.find(w=>w.id===workflowId)} value={workflowInputs} onChange={setWorkflowInputs}/><button disabled={busy || !workflowId || !runtimeId || workflows.find(w=>w.id===workflowId)?.canStart === false} onClick={() => control('start')}>启动工作流</button><small>独立启动目标，不使用历史选行；输入由后端再次校验。</small>{workflows.find(w => w.id === workflowId)?.inputSchema && <details><summary>输入约束</summary><pre>{JSON.stringify(workflows.find(w => w.id === workflowId)?.inputSchema, null, 2)}</pre></details>}</section>}
+ {canControl && <section className="toolbar"><label>启动工作流<select aria-label="启动工作流目标" disabled={catalogBusy} value={workflowId} onChange={e => { inputDirty.current=false;setWorkflowId(e.target.value); setWorkflowInputs(workflows.find(w=>w.id===e.target.value)?.inputsJson || JSON.stringify(workflows.find(w=>w.id===e.target.value)?.inputs || {})); }}><option value="">{workflows.length?'明确选择工作流':'无可用工作流 / 合同能力未就绪'}</option>{workflows.map(w => <option key={w.id} value={w.id}>{w.name || w.id}</option>)}</select></label><WorkflowInputs workflow={workflows.find(w=>w.id===workflowId)} value={workflowInputs} onChange={value=>{inputDirty.current=true;selectionRef.current={...selectionRef.current,workflowInputs:value,dirty:true};setWorkflowInputs(value)}}/><button disabled={busy || catalogBusy || !workflowId || !runtimeId || workflows.find(w=>w.id===workflowId)?.canStart === false} onClick={() => control('start')}>启动工作流</button><small>独立启动目标，不使用历史选行；输入由后端再次校验。</small>{workflows.find(w => w.id === workflowId)?.inputSchema && <details><summary>输入约束</summary><pre>{JSON.stringify(workflows.find(w => w.id === workflowId)?.inputSchema, null, 2)}</pre></details>}</section>}
  {panel ? <><nav className="page-nav">{panel.pages.map(p => <button key={p.id} aria-current={page === p.id ? 'page' : undefined} onClick={() => changePage(p.id)}>{p.title}</button>)}</nav><PanelRenderer panel={panel} pageId={page} onPage={changePage} result={result} results={scopes} viewId={viewId} onAction={action} state={status} runtimeState={runtimeState || runs.find(r=>r.id===runId)?.state}/></> : <p>暂无已发布页面，请联系管理员。</p>}
- {me.role === 'admin' && <details className="admin"><summary>页面包管理</summary><p>导入不会更改 Runtime 工程；启用 / 切回仅切换 Web 页面版本，并将该包授权关联设置为当前选中的 Runtime（替换此包旧关联，不累加）。</p><input aria-label="导入页面包" type="file" accept=".emoweb,.zip" disabled={busy} onChange={e => { if (e.target.files?.[0])
-        upload(e.target.files[0]); }}/>{packages.map(p => <div key={p.id || p.packageId} data-package-id={p.id || p.packageId}>{p.name || (p.manifest ? `${p.manifest.projectId} / ${p.manifest.packageRevision}` : p.id || p.packageId)} · 关联：{p.runtimeIds?.join(', ') || '未关联'} {p.active && '已启用'} <button disabled={!runtimeId} onClick={async () => { if (!confirm(`将此版本启用 / 切回到 ${runtimeId}，并把该包授权关联替换为仅此目标？不会改动生产工程。`)) return; try {
-        await api(`/api/packages/${encodeURIComponent(p.id || p.packageId || '')}/activate`, { method: 'POST', body: JSON.stringify({ runtimeIds: [runtimeId] }) });
-        await refresh();
-        setNotice('页面包已切换');
+ {me.role === 'admin' && <details className="admin"><summary>页面包管理</summary><p>导入不会更改 Runtime 工程；启用 / 切回仅切换 Web 页面版本，仅更新当前 Runtime／正式工程的启用版本，不改变其他目标的版本或访问。</p><input aria-label="导入页面包" type="file" accept=".emoweb,.zip" disabled={busy} onChange={e => { if (e.target.files?.[0])
+        upload(e.target.files[0]); }}/>{packages.map(p => <div key={p.id || p.packageId} data-package-id={p.id || p.packageId}>{p.name || (p.manifest ? `${p.manifest.projectId} / ${p.manifest.packageRevision}` : p.id || p.packageId)} · 关联：{p.runtimeIds?.join(', ') || '未关联'} {p.active && '已启用'} <button disabled={!runtimeId} onClick={async () => { const activatedRuntime=runtimeId,activatedProject=runtimeInfo?.projectId;if (!confirm(`将此版本启用 / 切回到 ${runtimeId}，仅更新该目标当前正式工程的启用版本？其他 Runtime 不受影响。不会改动生产工程。`)) return; try {
+        await api(`/api/packages/${encodeURIComponent(p.id || p.packageId || '')}/activate`, { method: 'POST', body: JSON.stringify({ runtimeId,projectId:runtimeInfo?.projectId }) });
+        if(activeRuntime.current===activatedRuntime && infoRef.current?.projectId===activatedProject){await refresh();setNotice('当前目标页面包已切换；其他目标未改变');}
     }
     catch (e) {
-        setError((e as Error).message);
+        if(activeRuntime.current===activatedRuntime && infoRef.current?.projectId===activatedProject)setError((e as Error).message);
     } }}>对当前目标启用 / 切回此版本</button></div>)}</details>}
  {!canControl && runtimeId && <p>当前目标只读：未授予生产控制权限。</p>}
  <aside aria-label="作用域进度">{Object.entries(scopeStatuses).map(([key,value])=><p key={key}>{value.jobId} / {value.scopeId}：{scopeActivity(value,scopes[value.scopeId],frozenKeys.current?.[value.scopeId]===scopes[value.scopeId]?.resultKey && Boolean(scopes[value.scopeId]))}</p>)}</aside>

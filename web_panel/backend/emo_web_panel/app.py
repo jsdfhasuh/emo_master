@@ -25,8 +25,8 @@ COOKIE='emo_panel_session'
 def create_app(config: Config, runtime=None):
     config.data_dir.mkdir(parents=True,exist_ok=True)
     auth=AuthStore(config.data_dir/'web.sqlite',config.session_ttl)
-    packages=PackageStore(config.data_dir/'packages')
     registry=RuntimeRegistry(config.data_dir/'web.sqlite')
+    packages=PackageStore(config.data_dir/'packages',database=config.data_dir/'web.sqlite')
     service_actor={'username':'web-service','role':'admin'}
     if not registry.list(service_actor):
         registry.create(service_actor,'configured','Configured Runtime',config.mode,config.runtime_address or '')
@@ -48,12 +48,10 @@ def create_app(config: Config, runtime=None):
     def package_targets(pid):
         with sqlite3.connect(config.data_dir/'web.sqlite') as db:
             return [r[0] for r in db.execute('SELECT runtime_id FROM package_targets WHERE package_id=?',(pid,))]
-    def associate_package(pid,rids):
-        with sqlite3.connect(config.data_dir/'web.sqlite') as db:
-            db.execute('DELETE FROM package_targets WHERE package_id=?',(pid,))
-            for rid in rids:db.execute('INSERT INTO package_targets VALUES (?,?)',(pid,rid))
     def remove_target_associations(rid):
-        with sqlite3.connect(config.data_dir/'web.sqlite') as db:db.execute('DELETE FROM package_targets WHERE runtime_id=?',(rid,))
+        with sqlite3.connect(config.data_dir/'web.sqlite') as db:
+            db.execute('DELETE FROM package_targets WHERE runtime_id=?',(rid,))
+            db.execute('DELETE FROM package_activations WHERE runtime_id=?',(rid,))
     async def package_access(who,pid,rid=None):
         if who['role']=='admin' or config.preview and who['username']=='preview':return
         allowed={r['id'] for r in await asyncio.to_thread(registry.list,who)}
@@ -258,6 +256,9 @@ def create_app(config: Config, runtime=None):
     async def runs(req:Request,runtimeId:str='configured'):
         who=await identity(req);client=await client_for(who,runtimeId)
         return [{**r,'runtimeId':runtimeId} for r in await client.runs()]
+    @app.get('/api/runtimes/{rid}/info')
+    async def runtime_info(rid:str,req:Request):
+        return await (await client_for(await identity(req),rid)).info()
     @app.get('/api/runtimes/{rid}/runs')
     async def runtime_runs(rid:str,req:Request):return await runs(req,rid)
     @app.get('/api/runs/{run_id}')
@@ -292,37 +293,52 @@ def create_app(config: Config, runtime=None):
         if not r:raise HTTPException(404,'Operation not found')
         client=await client_for(who,r.get('intent',{}).get('runtimeId','configured'))
         return await ops.reconcile(r,client)
-    def panel_list():
-        active=packages.active()
+    async def panel_list(who, rid, project_id=None):
+        await asyncio.to_thread(registry.require,who,rid)
+        # Empty real targets need no synthetic panel or speculative fallback.
+        relations=await asyncio.to_thread(packages.activations)
+        client=await client_for(who,rid)
+        if not any(row['runtimeId']==rid for row in relations) and not isinstance(client,MockRuntime):return []
+        info=await client.info()
+        formal=info['projectId']
+        if project_id is not None and project_id!=formal:raise HTTPException(409,'Runtime project changed; refresh current target')
+        active=await asyncio.to_thread(packages.active,rid,formal)
         if active:
-            p=active['presentation'];return [{**p,'id':active['packageId'],'packageRevision':active['manifest']['packageRevision'],'officialPresentation':active.get('officialPresentation')}]
-        return [demo_panel()] if config.mode=='mock' else []
+            await package_access(who,active['packageId'],rid)
+            p=active['presentation']
+            return [{**p,'id':active['packageId'],'projectId':formal,'runtimeId':rid,
+                     'packageRevision':active['manifest']['packageRevision'],
+                     'officialPresentation':active.get('officialPresentation')}]
+        if isinstance(client,MockRuntime) and not any(row['runtimeId']==rid for row in relations):
+            return [{**demo_panel(),'runtimeId':rid,'projectId':formal}]
+        return []
     @app.get('/api/panels')
-    async def panels(req:Request):
-        who=await identity(req);result=[]
-        for panel in await asyncio.to_thread(panel_list):
-            try:await package_access(who,panel['id'])
-            except HTTPException:continue
-            result.append(panel)
-        return result
+    async def panels(req:Request,runtimeId:str='configured',projectId:str|None=None):
+        who=await identity(req)
+        # Preserve empty discovery for the unconfigured single-target entrypoint;
+        # explicit contexts fail authorization instead of leaking target state.
+        if 'runtimeId' not in req.query_params:
+            allowed={r['id'] for r in await asyncio.to_thread(registry.list,who)}
+            if runtimeId not in allowed:return []
+        return await panel_list(who,runtimeId,projectId)
     @app.get('/api/panels/{panel_id}')
-    async def panel(panel_id:str,req:Request):
-        who=await identity(req);await package_access(who,panel_id)
-        return await find_panel(panel_id)
-    async def find_panel(panel_id):
-        for p in await asyncio.to_thread(panel_list):
+    async def panel(panel_id:str,req:Request,runtimeId:str='configured',projectId:str|None=None):
+        return await find_panel(await identity(req),panel_id,runtimeId,projectId)
+    async def find_panel(who,panel_id,rid,project_id=None):
+        for p in await panel_list(who,rid,project_id):
             if p['id']==panel_id:return p
-        raise HTTPException(404,'Panel not active')
+        raise HTTPException(404,'Panel not active for this Runtime and project')
     @app.post('/api/views')
     async def new_view(req:Request):
         async with target_lock:
-            who=await identity(req,mutating=True);b=await json_object(req);p=await find_panel(b.get('panelId'))
-            rid=b.get('runtimeId','configured');await package_access(who,b['panelId'],rid);client=await client_for(who,rid)
+            who=await identity(req,mutating=True);b=await json_object(req);rid=b.get('runtimeId','configured')
+            p=await find_panel(who,b.get('panelId'),rid,b.get('projectId'))
+            await package_access(who,b['panelId'],rid);client=await client_for(who,rid)
             if b['panelId']=='demo-panel' and not isinstance(client,MockRuntime):raise HTTPException(404,'Demo panel is mock-only')
             run_id=b.get('runId','')
             if run_id and run_id not in [r.get('id',r.get('runId')) for r in await client.runs()]:raise HTTPException(404,'Run not found')
             info=await client.info()
-            if p.get('officialPresentation') and p.get('projectId') != info['projectId']:raise HTTPException(409,'Page package and Runtime project differ')
+            if p.get('projectId') != info['projectId']:raise HTTPException(409,'Page package and Runtime project differ')
             group={'runIds':[run_id] if run_id else [],'sourceProblems':{}}
             if run_id and p.get('officialPresentation'):
                 if hasattr(client,'validate_group'):
@@ -452,9 +468,21 @@ def create_app(config: Config, runtime=None):
         data,mime=await asyncio.to_thread(packages.asset,package_id,asset_id)
         return Response(data,media_type=mime)
     @app.get('/api/packages')
-    async def package_list(req:Request):
-        await identity(req,'admin')
-        return [{**p,'runtimeIds':await asyncio.to_thread(package_targets,p['packageId'])} for p in await asyncio.to_thread(packages.list)]
+    async def package_list(req:Request,runtimeId:str='configured',projectId:str|None=None):
+        who=await identity(req,'admin')
+        client=await client_for(who,runtimeId)
+        formal=(await client.info())['projectId']
+        if projectId is not None and projectId!=formal:raise HTTPException(409,'Runtime project changed; refresh current target')
+        active=await asyncio.to_thread(packages.active,runtimeId,formal)
+        result=[]
+        for p in await asyncio.to_thread(packages.list):
+            if p['manifest']['projectId']!=formal:continue
+            relations=await asyncio.to_thread(packages.activations,p['packageId'])
+            result.append({**p,'runtimeIds':await asyncio.to_thread(package_targets,p['packageId']),
+                           'active':bool(active and active['packageId']==p['packageId']),
+                           'runtimeId':runtimeId,'projectId':formal,
+                           'activeRuntimeIds':[row['runtimeId'] for row in relations], 'activations':relations})
+        return result
     @app.post('/api/packages')
     async def package_install(req:Request):
         await identity(req,'admin',True)
@@ -467,16 +495,26 @@ def create_app(config: Config, runtime=None):
     async def package_activate(pid:str,req:Request):
         async with target_lock:
             who=await identity(req,'admin',True);b=await json_object(req,True)
-            rids=b.get('runtimeIds',['configured'])
+            if 'runtimeId' in b and 'runtimeIds' in b:raise HTTPException(422,'Use one explicit Runtime context field')
+            rids=b.get('runtimeIds',[b.get('runtimeId','configured')])
             if not isinstance(rids,list) or not 1<=len(rids)<=32 or any(not isinstance(rid,str) for rid in rids):raise HTTPException(422,'Runtime association required')
             if len(set(rids))!=len(rids):raise HTTPException(422,'Duplicate Runtime associations')
-            for rid in rids:await asyncio.to_thread(registry.require,who,rid)
-            await asyncio.to_thread(packages.get,pid)
-            await asyncio.to_thread(associate_package,pid,rids)
-            result=await asyncio.to_thread(packages.activate,pid)
-            await asyncio.to_thread(auth.audit,who['username'],'activate_package',json.dumps({'packageId':pid,'runtimeIds':rids}), 'succeeded')
-            for v in views.views.values():views.publish_notice(v,{'type':'package_updated','packageId':pid})
-            return result
+            item=await asyncio.to_thread(packages.get,pid)
+            project=item['manifest']['projectId']
+            if b.get('projectId',project)!=project:raise HTTPException(409,'Package and selected project differ')
+            # Validate every target before the one SQLite activation transaction.
+            for rid in rids:
+                client=await client_for(who,rid)
+                if (await client.info())['projectId']!=project:raise HTTPException(409,'Package project does not match target Runtime formal project')
+            result=await asyncio.to_thread(packages.activate_many,pid,rids,project)
+            await asyncio.to_thread(auth.audit,who['username'],'activate_package',json.dumps({'packageId':pid,'runtimeIds':rids,'projectId':project}), 'succeeded')
+            for v in views.views.values():
+                if v['runtimeId'] in rids and v.get('projectId')==project:
+                    views.publish_notice(v,{'type':'package_updated','packageId':pid,'runtimeId':v['runtimeId'],'projectId':project})
+            relations=await asyncio.to_thread(packages.activations,pid)
+            return {**result,'runtimeIds':await asyncio.to_thread(package_targets,pid),
+                    'activeRuntimeIds':[row['runtimeId'] for row in relations]}
+
     @app.websocket('/ws/views/{vid}')
     async def ws(ws:WebSocket,vid:str):
         token=ws.cookies.get(COOKIE);who=await asyncio.to_thread(auth.session,token)

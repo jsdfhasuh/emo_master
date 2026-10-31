@@ -5,11 +5,11 @@ import hashlib
 import io
 import json
 import math
-import os
 from pathlib import Path, PurePosixPath
 import re
 import shutil
 import stat
+import sqlite3
 import tempfile
 import threading
 import zipfile
@@ -458,10 +458,35 @@ class PackageStore:
     MAX_ENTRIES = 256
     MAX_RATIO = 100
 
-    def __init__(self, root: Path):
+    def __init__(self, root: Path, database: Path | None = None):
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
+        self.database = Path(database) if database is not None else self.root / "web.sqlite"
+        with sqlite3.connect(self.database) as db:
+            db.executescript("""
+                CREATE TABLE IF NOT EXISTS package_targets (
+                    package_id TEXT, runtime_id TEXT, PRIMARY KEY(package_id,runtime_id));
+                CREATE TABLE IF NOT EXISTS package_activations (
+                    runtime_id TEXT NOT NULL, project_id TEXT NOT NULL, package_id TEXT NOT NULL,
+                    PRIMARY KEY(runtime_id,project_id));
+                CREATE TABLE IF NOT EXISTS package_migrations (name TEXT PRIMARY KEY);
+            """)
+            if not db.execute("SELECT 1 FROM package_migrations WHERE name='context-active-v1'").fetchone():
+                # Old files remain intact. Only explicit old associations authorize
+                # migration; an unassociated global active is not broadcast.
+                old = self.root / 'active'
+                if old.is_file():
+                    pid = old.read_text(encoding='ascii').strip()
+                    if HASH.fullmatch(pid) and (self.root / pid / 'metadata.json').is_file():
+                        item = self.get(pid)
+                        known = {row[0] for row in db.execute('SELECT id FROM runtimes')} if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='runtimes'").fetchone() else set()
+                        for (rid,) in db.execute('SELECT runtime_id FROM package_targets WHERE package_id=?', (pid,)).fetchall():
+                            if rid not in known:
+                                continue
+                            db.execute('INSERT OR IGNORE INTO package_activations VALUES (?,?,?)',
+                                       (rid, item['manifest']['projectId'], pid))
+                db.execute("INSERT INTO package_migrations VALUES ('context-active-v1')")
 
     def _directory(self, package_id):
         if not isinstance(package_id, str) or not HASH.fullmatch(package_id):
@@ -584,28 +609,42 @@ class PackageStore:
             except (OSError, ValueError) as exc:
                 raise PackageError("Stored package unavailable") from exc
 
-    def activate(self, package_id) -> dict:
-        with self._lock:
-            package = self.get(package_id)
-            fd, temporary = tempfile.mkstemp(prefix=".active-", dir=self.root)
-            try:
-                with os.fdopen(fd, "w", encoding="ascii") as file:
-                    file.write(package_id)
-                    file.flush()
-                    os.fsync(file.fileno())
-                os.replace(temporary, self.root / "active")
-            finally:
-                if os.path.exists(temporary):
-                    os.unlink(temporary)
-            return package
+    def activate(self, package_id, runtime_id, project_id=None) -> dict:
+        """Explicit single-target convenience, also used for isolated previews."""
+        item = self.get(package_id)
+        return self.activate_many(package_id, [runtime_id], project_id or item['manifest']['projectId'])
 
-    def active(self) -> dict | None:
+    def activate_many(self, package_id, runtime_ids, project_id) -> dict:
         with self._lock:
-            try:
-                package_id = (self.root / "active").read_text(encoding="ascii")
-            except FileNotFoundError:
-                return None
-            return self.get(package_id)
+            item = self.get(package_id)
+            if item['manifest']['projectId'] != project_id:
+                raise PackageError('Package and target project differ')
+            if not runtime_ids or any(not isinstance(rid, str) or not rid for rid in runtime_ids):
+                raise PackageError('Explicit Runtime context required')
+            with sqlite3.connect(self.database) as db:
+                for rid in runtime_ids:
+                    db.execute('INSERT INTO package_activations VALUES (?,?,?) '
+                               'ON CONFLICT(runtime_id,project_id) DO UPDATE SET package_id=excluded.package_id',
+                               (rid, project_id, package_id))
+                    # Retain old versions and all other target associations for
+                    # pinned views; activation is not an ACL replacement operation.
+                    db.execute('INSERT OR IGNORE INTO package_targets VALUES (?,?)', (package_id, rid))
+            return item
+
+    def activations(self, package_id=None) -> list:
+        with sqlite3.connect(self.database) as db:
+            rows = db.execute('SELECT runtime_id,project_id,package_id FROM package_activations' +
+                              (' WHERE package_id=?' if package_id else '') + ' ORDER BY runtime_id,project_id',
+                              (package_id,) if package_id else ()).fetchall()
+        return [{'runtimeId': rid, 'projectId': project, 'packageId': pid} for rid, project, pid in rows]
+
+    def active(self, runtime_id, project_id=None) -> dict | None:
+        with self._lock, sqlite3.connect(self.database) as db:
+            rows = db.execute('SELECT package_id FROM package_activations WHERE runtime_id=?' +
+                              (' AND project_id=?' if project_id is not None else ''),
+                              (runtime_id, project_id) if project_id is not None else (runtime_id,)).fetchall()
+            # No arbitrary project selection if a Runtime has hosted several.
+            return self.get(rows[0][0]) if len(rows) == 1 else None
 
     def asset(self, package_id, asset_id) -> tuple[bytes, str]:
         with self._lock:

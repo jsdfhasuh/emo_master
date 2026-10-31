@@ -14,7 +14,7 @@ PNG = b'\x89PNG\r\n\x1a\n' + b'safe-test-fixture'
 
 
 def bundle(revision='1', components=None, changes=None, extras=None):
-    manifest = {'format':'emo-web-panel-1', 'projectId':'test-project',
+    manifest = {'format':'emo-web-panel-1', 'projectId':'demo-project',
                 'packageRevision':revision, 'panelContractVersion':'draft-unverified',
                 'rendererRequirements':['image','text'], 'presentationFile':'presentation.json',
                 'assets':[{'id':'sample','path':'assets/sample.png','mimeType':'image/png',
@@ -41,16 +41,16 @@ class PackageTests(unittest.TestCase):
         self.store = PackageStore(Path(self.temp.name))
 
     def test_install_activate_rollback_and_asset(self):
-        self.assertIsNone(self.store.active())
+        self.assertIsNone(self.store.active('configured'))
         first = self.store.install(bundle())
         second = self.store.install(bundle('2'))
         self.assertEqual(first['validationStatus'],'draft-schema-only')
         self.assertEqual(self.store.install(bundle()),first)
         self.assertEqual(len(self.store.list()),2)
-        self.store.activate(first['packageId'])
-        self.store.activate(second['packageId'])
-        self.store.activate(first['packageId'])
-        self.assertEqual(self.store.active(),first)
+        self.store.activate(first['packageId'], runtime_id='configured')
+        self.store.activate(second['packageId'], runtime_id='configured')
+        self.store.activate(first['packageId'], runtime_id='configured')
+        self.assertEqual(self.store.active('configured'),first)
         self.assertEqual(self.store.asset(first['packageId'],'sample'),(PNG,'image/png'))
 
     def test_official_or_unknown_contract_not_misread_as_draft(self):

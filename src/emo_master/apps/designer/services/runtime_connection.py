@@ -1,20 +1,7 @@
 """Qt-free, read-only probes shared by startup and connection switching."""
 from concurrent.futures import CancelledError
-from urllib.parse import urlsplit
-
-
-def validateRuntimeTarget(value: str) -> str:
-    target = value.strip()
-    try:
-        address = urlsplit("//" + target)
-        valid = bool(address.hostname and address.port and not address.path and not address.query
-                     and not address.fragment and not address.username and not address.password
-                     and not any(char.isspace() for char in target))
-    except ValueError:
-        valid = False
-    if not valid:
-        raise ValueError("请输入 Runtime 的主机:端口，例如 127.0.0.1:50051。")
-    return target
+from emo_master.clients.runtime.connection import connectionProfile, createChannel
+from emo_master.clients.runtime.connection import validateRuntimeTarget as validateRuntimeTarget
 
 
 def readCurrentConnection(client):
@@ -33,17 +20,18 @@ def connectCandidate(target, *, cancelled=None):
         if cancelled is not None and cancelled.is_set():
             raise CancelledError()
 
-    target = validateRuntimeTarget(target)
+    profile = connectionProfile(target)
+    target = profile.target
     checkCancelled()
-    import grpc
     from emo_master.apps.runtime.grpc_server.generated.runtime_pb2_grpc import RuntimeServiceStub
     from emo_master.apps.designer.services.runtime_client import RuntimeClient
 
-    channel = grpc.insecure_channel(target)
+    channel = createChannel(profile)
     client = None
     try:
         client = RuntimeClient(runtimeService=RuntimeServiceStub(channel), ownedChannel=channel,
-                               runtimeTarget=target, deadlineMs=5000)
+                               runtimeTarget=target, connectionProfile=profile,
+                               deadlineMs=int(profile.timeoutSeconds * 1000))
         info = client.deviceNetworkCommand('', '', 'info')
         checkCancelled()
         snapshot = client.getOnlineProjectSnapshot() if info['projectId'] else None

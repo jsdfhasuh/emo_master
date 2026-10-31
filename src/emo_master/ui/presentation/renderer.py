@@ -106,16 +106,22 @@ class RuntimePages(QWidget):
     """
     designExamplesChanged = Signal(bool)
 
-    def __init__(self, presentation, *, hub=None, label="只读运行页面", parent=None, assets=None, projectRoot=None):
+    def __init__(self, presentation, *, hub=None, label="只读运行页面", parent=None, assets=None, projectRoot=None,
+                 target='desktop', historyClient=None):
         super().__init__(parent)
         assertGuiThread()
         self.assets = dict(assets or {})
         self.projectRoot = projectRoot
+        self.historyClient = historyClient
+        self.target = target
         self.config = Presentation.model_validate(presentation.model_dump()) if presentation is not None else Presentation()
         try:
             self.expectedCapture = revisionOf(captureDefinition(self.config))
         except KeyError:
             self.expectedCapture = None
+        if self.target is not None:
+            from emo_master.core.presentation.targets import presentationForTarget
+            self.config = presentationForTarget(self.config, self.target)
         self.hub = hub
         self.captureCoverage = None
         self.simulationState = None
@@ -359,6 +365,10 @@ class RuntimePages(QWidget):
         """Replace only widgets/configuration; retain the borrowed hub/session."""
         assertGuiThread()
         config = Presentation.model_validate(presentation.model_dump())
+        captureConfig = config
+        if self.target is not None:
+            from emo_master.core.presentation.targets import presentationForTarget
+            config = presentationForTarget(config, self.target)
         pageId = self.currentPageId
         self.resumeLive(submit=False)
         self.displayed.clear()
@@ -386,7 +396,7 @@ class RuntimePages(QWidget):
         self.config = config
         self.pageNavigation.setPages(config)
         try:
-            self.expectedCapture = revisionOf(captureDefinition(config))
+            self.expectedCapture = revisionOf(captureDefinition(captureConfig))
         except KeyError:
             self.expectedCapture = None
         self.currentPageId = None
@@ -493,8 +503,15 @@ class RuntimePages(QWidget):
                         widget = PathImageView(baseDirectory=source.baseDirectory,
                             preview=self._localPreviewEnabled(), availableBytes=self._localImageAvailableBytes,
                             projectRoot=self.projectRoot)
+                        from emo_master.core.presentation.targets import effectiveImageLocation
+                        if effectiveImageLocation(self.config, pageId, component) == 'runtime':
+                            widget.remoteReader = self._readHistoryImage
                         if source.kind == 'fixed':
-                            widget.setPath(source.path)
+                            if source.location == 'runtime':
+                                from emo_master.clients.runtime.history import HistoryImageRef
+                                widget.setPath(HistoryImageRef(componentId=component.componentId))
+                            else:
+                                widget.setPath(source.path)
                     else:
                         widget = ImageView()
                         widget.painted = self._painted
@@ -536,6 +553,8 @@ class RuntimePages(QWidget):
                     else:
                         widget = SqliteValueView(component.props.sqlite, decimals=component.props.decimals,
                                                  unit=component.props.unit, preview=preview, projectRoot=self.projectRoot)
+                    widget.historyClient = self.historyClient
+                    widget.componentId = component.componentId
                 else:
                     widget = QLabel(component.props.text if component.type == "text" and not component.bindings
                                     else '已绑定 · 等待明确任务结果' if component.bindings else "未绑定")
@@ -589,7 +608,9 @@ class RuntimePages(QWidget):
             source = component.props.imagePath
             if source is None or source.kind != 'selected_row':
                 continue
-            widget.selectionField = source.field
+            from emo_master.core.presentation.targets import effectiveImageLocation
+            widget.selectionField = (component.componentId
+                if effectiveImageLocation(self.config, pageId, component) == 'runtime' else source.field)
             target = rows.get(source.componentId)
             if target is None or not isinstance(target[1], SqliteTableView):
                 widget.setPath(PathValueError('关联的历史表格不存在，请重新选择图像来源'))
@@ -597,6 +618,23 @@ class RuntimePages(QWidget):
             table = target[1]
             table.selectedRowChanged.connect(widget.setSelectedRow)
             widget.setSelectedRow(table.selectedRow())
+
+    def _readHistoryImage(self, ref):
+        if self.historyClient is None:
+            raise ValueError('此图片由 Runtime 读取，请连接对应 Runtime')
+        return self.historyClient.readImage(ref)
+
+    def setHistoryClient(self, client):
+        self.historyClient = client
+        for rows in self.widgets.values():
+            for component, widget in rows.values():
+                if component.type in {'sqlite_table', 'sqlite_value'}:
+                    widget.historyClient = client
+                    widget._generation += 1
+                    widget.loaded = False
+                    widget._clear()
+                elif component.props.imagePath is not None and widget.remoteReader:
+                    widget.reload()
 
     def _localImageAvailableBytes(self):
         if self.hub:

@@ -20,6 +20,8 @@ from tests.ui.page_designer.test_normal_run_viewing import waitFor
 @pytest.mark.parametrize('snapshotPolicy', ['ALL', 'NONE'])
 def testNormalRunEnablesSharedPageCapture(qtApp, tmp_path, monkeypatch, snapshotPolicy):
     first, rest = gateConsumers(monkeypatch)
+    failures = []
+    monkeypatch.setattr(MainWindow, '_showRunFailure', lambda self, failure: failures.append(dict(failure)))
     monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Discard)
     document = sharedPageProject(tmp_path)
     path = tmp_path / 'normal-live.emoproj'
@@ -34,8 +36,9 @@ def testNormalRunEnablesSharedPageCapture(qtApp, tmp_path, monkeypatch, snapshot
         waitFor(lambda: window.operatorCatalogController.state == 'ready')
         window.pageCoordinator.sync()
         draft = window.pageCoordinator.session.payload()
-        checked = client.initializeProjectConfiguration(draft, tmp_path, 'check', validate=True)
-        client.initializeProjectConfiguration(draft, tmp_path, 'publish', runtimeInstanceId=checked['runtimeInstanceId'])
+        checked = client.initializeProjectConfiguration(draft, tmp_path, 'check', validate=True, projectPath=path)
+        client.initializeProjectConfiguration(draft, tmp_path, 'publish', runtimeInstanceId=checked['runtimeInstanceId'],
+            projectPath=path)
         waitFor(lambda: client.getProjectWriteStatus('publish')['state'] in {'COMMITTED', 'FAILED'})
         assert client.getProjectWriteStatus('publish')['state'] == 'COMMITTED'
         monkeypatch.setattr(window.pageCoordinator, 'configureRuntime',
@@ -68,6 +71,7 @@ def testNormalRunEnablesSharedPageCapture(qtApp, tmp_path, monkeypatch, snapshot
         assert not runtime.jobRepository.get(job).isTerminal
         assert not runtime.jobRepository.get(consumer).isTerminal
         assert len(runtime.jobRepository.all()) == 2
+        assert not failures, failures
     finally:
         first.set()
         rest.set()
@@ -80,6 +84,15 @@ def testNormalRunEnablesSharedPageCapture(qtApp, tmp_path, monkeypatch, snapshot
         window.close()
         client.close()
         runtime.close()
+        if failures:
+            import json
+            (tmp_path / 'run-failures.json').write_text(json.dumps(failures, ensure_ascii=False, indent=2), encoding='utf-8')
+    # Existing cancellation contract: a sent capture whose reply was interrupted
+    # can remain UNKNOWN (test_cancellable_device_wait.py:124-132). Do not turn
+    # that cleanup outcome into success or suppress any other failure.
+    assert all(failure.get('code') == 'E_DEVICE_OUTCOME_UNKNOWN'
+        and failure.get('payload', {}).get('diagnostics', {}).get('deviceOutcome', {}).get('outcome') == 'UNKNOWN'
+        for failure in failures), failures
 
 
 @pytest.mark.parametrize('selection', ['producer', 'consumer'])

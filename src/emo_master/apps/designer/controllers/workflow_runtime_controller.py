@@ -196,7 +196,8 @@ class WorkflowRuntimeController:
         if self._closed:
             return
         self._closing = True
-        self.stopAll()
+        if getattr(self.callbacks['runtimeClient'], 'ownsExecutionHost', True):
+            self.stopAll()
         errors = []
         for run in self.runs.values():
             try:

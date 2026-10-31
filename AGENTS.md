@@ -4,10 +4,10 @@
 
 ## 新建工程必须使用最新格式
 
-- 新建、脚本生成或交付给用户的 `.emoproj` / `project.json`、示例工程和工程生成器，必须使用当前正式支持的最新工程格式。当前为 **`schemaVersion: "2.8"`**，页面为 **`presentation.schemaVersion: "1.1"`**；纯图片、视频或无设备工程也不降级使用旧格式。
+- 新建、脚本生成或交付给用户的 `.emoproj` / `project.json`、示例工程和工程生成器，必须使用当前正式支持的最新工程格式。当前为 **`schemaVersion: "2.9"`**，页面为 **`presentation.schemaVersion: "1.2"`**；纯图片、视频或无设备工程也不降级使用旧格式。
 - 创建前先阅读 [工程格式规范](docs/project-json-spec.md)，并核对当前 `ProjectDocument` 模型与 `WorkflowStore.reset()` / `toPayload()` 的新建结果。若源码已推进版本，先同步规范，不照抄历史报告、旧工程或旧测试夹具作为新模板。
 - 优先沿用 `WorkflowStore().toPayload()` 生成完整默认结构，再通过 `ProjectDocument` 校验和 `saveProject()` 保存。`createProjectSkeleton()` 已复用这条创建路径；`migration.SCHEMA_VERSION` 仍是历史迁移基线，不能当作“当前最新格式”的依据。
-- 不允许只改 `schemaVersion` 伪装升级。2.8 必须保留页面、资源、生产设置及 `devices.schemaVersion="1.0"`，新页面使用 1.1 响应式布局；无设备时使用空 `definitions`，不伪造设备，也不带入旧的顶层 `communication` 配置。具体字段与完整示例以规范为准。
+- 不允许只改 `schemaVersion` 伪装升级。2.9 必须保留页面、资源、生产设置及 `devices.schemaVersion="1.0"`，新页面使用 1.2，复用 1.1 响应式布局并声明终端与数据位置；无设备时使用空 `definitions`，不伪造设备，也不带入旧的顶层 `communication` 配置。具体字段与完整示例以规范为准。
 - 旧格式仅用于明确的兼容测试、迁移输入或用户指定的旧版本交付，并标明用途。没有用户要求，不批量改写已有工程和历史夹具；涉及旧 TCP 配置时不通过删除配置来绕过迁移。
 - 新生成的工程至少检查格式校验、保存后重读和工作流编译；包含业务算子时使用当前插件声明核对端口、参数和依赖。声称“可在 Designer 打开”前须验证实际打开入口，直接运行 `WorkflowRunner` 不等于 Designer 打开验收。
 - 后续工程 schema 变更时，同步更新本节版本与 `docs/project-json-spec.md` 的字段表、完整示例、创建方式及迁移边界，避免文档继续引导生成旧格式。

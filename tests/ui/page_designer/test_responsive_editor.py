@@ -47,8 +47,8 @@ def responsivePage(designer, monkeypatch):  # noqa: F811
 def testNewPageUsesProxyCanvasAndWidthPreviewReflowsWithoutMutation(responsivePage):
     coordinator, editor, keys = responsivePage
     document = coordinator.session.document()
-    assert document.schemaVersion == '2.8'
-    assert document.presentation.schemaVersion == '1.1'
+    assert document.schemaVersion == '2.9'
+    assert document.presentation.schemaVersion == '1.2'
     assert editor.canvas.proxy.widget() is editor.renderer
     assert editor.renderer.config.pages[editor.pageId].layout.type == 'responsive'
     cards = dict(editor.renderer.cards[editor.pageId])
@@ -156,7 +156,7 @@ def testCrossContainerPlacementReordersAndSaveReopenRetainsLayout(responsivePage
     directory = tmp_path / 'responsive'
     assert coordinator.window.saveProjectToDirectory(str(directory))
     assert coordinator.window.loadProjectDirectory(str(directory))
-    assert coordinator.session.document().schemaVersion == '2.8'
+    assert coordinator.session.document().schemaVersion == '2.9'
     assert coordinator.session.document().presentation == ordered
 
 

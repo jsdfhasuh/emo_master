@@ -65,7 +65,11 @@ def nextItem(iterator):
 
 
 class AioRuntimeServer:
-    def __init__(self, runtime, presentation, port=0, *, host="127.0.0.1", startImmediately=True):
+    def __init__(self, runtime, presentation, port=0, *, host="127.0.0.1", startImmediately=True,
+                 displaySubscriptionsPerJob=4):
+        if type(displaySubscriptionsPerJob) is not int or not 1 <= displaySubscriptionsPerJob <= 16:
+            raise ValueError("display subscriptions per Job must be between 1 and 16")
+        self.displaySubscriptionsPerJob = displaySubscriptionsPerJob
         self.runtime, self.presentation = runtime, presentation
         self.port = port
         self.host = host
@@ -85,7 +89,7 @@ class AioRuntimeServer:
         if self.startError:
             self.thread.join(2)
             self._shutdownPools()
-            raise RuntimeError("aio startup failed") from self.startError
+            raise RuntimeError(f"Runtime 监听 {self.host}:{self.port} 启动失败：{self.startError}") from self.startError
 
     async def _admit(self, category, context):
         if self.active[category] >= LIMITS[category]:
@@ -224,6 +228,8 @@ class AioRuntimeServer:
                         "OpenDraftPurePreviewSession": "bulk", "CloseDraftPurePreviewSession": "bulk",
                         "OpenOperatorPreviewSession": "bulk", "OpenDraftOperatorPreviewSession": "bulk",
                         "InspectSqliteTarget": "sqlite",
+                        "QueryHistoryPage": "sqlite", "QueryHistoryAggregate": "sqlite",
+                        "ReadHistoryImage": "asset", "ReadProjectResource": "asset",
                         "OpenPlcDebugSession": "plc",
                         "InitializeSqliteTarget": "sqlite"}.get(name, "control")
             handler = getattr(implementation, name)
@@ -250,13 +256,15 @@ class AioRuntimeServer:
 
     async def _start(self):
         from emo_master.apps.runtime.grpc_server.display_subscriptions import DisplaySubscriptions
-        self.displaySubscriptions = DisplaySubscriptions(self, workers=LIMITS["display"])
+        self.displaySubscriptions = DisplaySubscriptions(self, workers=LIMITS["display"],
+            perJobLimit=self.displaySubscriptionsPerJob)
         self.server = grpc.aio.server(options=[("grpc.so_reuseport", 0),
                                               ("grpc.max_receive_message_length", 1024 * 1024),
                                               ("grpc.max_send_message_length", 9 * 1024 * 1024)])
         rpc.add_RuntimeServiceServicer_to_server(self._adapter("RuntimeService", self.runtime, rpc.RuntimeServiceServicer()), self.server)
         rpc.add_DisplayServiceServicer_to_server(self._adapter("DisplayService", DisplayRpc(self.presentation), rpc.DisplayServiceServicer()), self.server)
-        self.port = self.server.add_insecure_port(f"{self.host}:{self.port}")
+        from emo_master.clients.runtime.connection import formatTarget
+        self.port = self.server.add_insecure_port(formatTarget(self.host, self.port))
         if not self.port:
             raise RuntimeError("runtime port unavailable")
         if self.started:

@@ -74,6 +74,20 @@ class WorkspaceChrome(QObject):
         from .delivery import exportDialog
         self.exportAction = self.action('导出项目包…', lambda: self.command(lambda: exportDialog(coordinator)))
         self.menus['文件'].addAction(self.exportAction)
+        from .delivery import exportWebDialog
+        from .web_preview import previewWeb
+        self.exportWebAction = self.action('导出 Web 页面包…',
+            lambda: self.command(lambda: exportWebDialog(coordinator)))
+        self.menus['文件'].addAction(self.exportWebAction)
+        self.previewWebAction = self.action('预览 Web 页面（示例数据）',
+            lambda: self.command(lambda: previewWeb(coordinator)))
+        self.menus['视图'].addAction(self.previewWebAction)
+        self.pageActions.append(self.previewWebAction)
+        self.previewWebRuntimeAction = self.action('预览 Web 页面（当前 Runtime，只读）',
+            lambda: self.command(lambda: previewWeb(coordinator, online=True)))
+        self.previewWebRuntimeAction.setToolTip('使用 Runtime 菜单选择的连接；在网页中选择已有运行记录')
+        self.menus['视图'].addAction(self.previewWebRuntimeAction)
+        self.pageActions.append(self.previewWebRuntimeAction)
         self.menus['运行'].addAction(w._toolbarActions['刷新算子'])
         capture = self.menus['运行'].addMenu('结果采集设置')
         policies = QActionGroup(capture)

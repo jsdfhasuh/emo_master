@@ -184,7 +184,7 @@ def testFirstWriteActivationErrorKeepsCommittedOutcome(initialRuntime, tmp_path,
 def testInitialOnlineWriteDoesNotPretendLegacySchemaWasPersisted(initialRuntime, tmp_path):
     service, client = initialRuntime
     legacy = dict(schemaVersion='2.1')
-    with pytest.raises(RuntimeClientError, match='2.7'):
+    with pytest.raises(RuntimeClientError, match='2.9'):
         client.initializeProjectConfiguration(legacy, tmp_path, 'legacy', validate=True)
     assert service.projectConfiguration.current is None and service.loadedDocument is None
 

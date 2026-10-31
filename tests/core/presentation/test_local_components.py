@@ -25,7 +25,7 @@ def localProject():
 
 def testLocalComponentsPersistInCurrentProjectFormat(tmp_path):
     document = localProject()
-    assert document.schemaVersion == '2.8'
+    assert document.schemaVersion == '2.9'
     assert document.devices.schemaVersion == '1.0' and not document.devices.definitions
     assert validateBindings(document, {}, publish=True) == []
     saveProject(tmp_path, document.model_dump(mode='json'))

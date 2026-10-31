@@ -4,6 +4,8 @@
 
 状态：待实施；本文定义完整 Web 功能方向与代码分工，不表示本文的 Web 功能或新增接口已经实现。
 
+本地交接更新（2026-10-30）：Runtime/Designer 增量已在 emo_master 工作区实现，工程格式为 **2.9** / Presentation **1.2**，基础布局复用 2.8/1.1。Dot 现在可使用 [Panel Contract v1](../development/panel-contract-v1.md) 与生成的 `build/panel-contract-v1.zip` 开始独立开发；精确 RPC、SDK、schemas、TypeScript、fixtures 和样例包以同一次 manifest 为准。接入与实施状态分别见 [远程访问指南](../guides/runtime-remote-access.md) 和 [本地实施记录](../testing/2026-10-30-runtime-web-integration/README.md)。本文的 Web 网关、浏览器 renderer、账户、包激活/回退及真正的 preview CLI 仍由 Dot 实现。
+
 配套计划：[Runtime 远程客户端与 Designer 实施计划](./2026-10-30-runtime-web-integration-plan.md)。
 
 ## 1. 目标与交付形态
@@ -149,6 +151,12 @@ Web 只接受按 ID 引用的包内资源，解析到安装目录中的相对文
 绑定定义更新必须经 Designer／Runtime 正常配置流程生效，Web 不偷偷替用户写入或重启任务。
 
 W2 同时交付 `emo-web-panel preview` 本机预览入口，使用同一 renderer 和已构建前端，不维护第二套预览页面代码。
+
+本地启动器已新增 SDK 1.1.0 `PreviewContext` 交接：CLI 接收 `--package PATH --context CONTEXT_JSON`
+及 `--host 127.0.0.1 --port 0 --json --no-control`。按 `mode=fixtures/runtime` 分别读取示例数据或固定 Runtime；
+核对包摘要、实例、工程和历史声明后，只提供已有运行选择、结果与历史查看。完整字段、两种 fixture、断线后的
+身份检查和 ready 输出见 [Panel Contract v1](../development/panel-contract-v1.md)。不自行推断 Designer 连接，
+不把只读预览接入正式启停/激活接口。
 入口接收 Designer 导出的临时完整快照和示例／只读数据配置，仅绑定 loopback 临时端口，以机器可读结果返回预览 URL 和短期访问凭据。
 Designer 负责进程启动、打开浏览器和退出清理；Dot 负责临时快照装载、预览服务和前端渲染，不要求本机安装 Node。
 预览状态与正式包激活、用户数据库分离，退出后清理临时数据；预览不提供生产启停、不写入 Runtime 配置。

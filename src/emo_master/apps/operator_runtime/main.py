@@ -13,15 +13,18 @@ import time
 
 from PySide2.QtCore import QSettings, QTimer, Qt
 from PySide2.QtWidgets import (
-    QApplication, QFileDialog, QHBoxLayout, QLabel, QPushButton, QStackedWidget, QStyle, QTabWidget, QVBoxLayout, QWidget,
+    QApplication, QFileDialog, QHBoxLayout, QInputDialog, QLabel, QPushButton, QStackedWidget, QStyle, QTabWidget, QVBoxLayout, QWidget,
 )
 
 from emo_master.apps.operator_runtime.controller import ProductionRuntime
 from emo_master.clients.runtime.display_session import DisplaySession
+from emo_master.clients.runtime.history import HistoryClient
 from emo_master.ui.presentation.hub import DisplayHub
 from emo_master.ui.presentation.renderer import RuntimePages
 from emo_master.core.presentation.assets import pageAssets
-from emo_master.apps.operator_runtime.settings import DEFAULT_ROOT_KEY, resolveDataRoot
+from emo_master.apps.operator_runtime.settings import (
+    DEFAULT_ROOT_KEY, LISTENER_SETTINGS_KEY, listenerSettingsJson, readListenerSettings, resolveDataRoot,
+)
 from emo_master.apps.operator_runtime.startup_page import StartupPage
 from emo_master.apps.operator_runtime.log_reader import safeRecord, safeText
 from emo_master.apps.operator_runtime.log_view import LogFeed, RuntimeLogView
@@ -29,16 +32,22 @@ from emo_master.apps.runtime.events.models import RuntimeEvent
 
 
 class OperatorWindow(QWidget):
-    def __init__(self, projectPath=None, *, dataRoot=None, preferences=None, runtimeFactory=ProductionRuntime):
+    def __init__(self, projectPath=None, *, dataRoot=None, preferences=None, runtimeFactory=ProductionRuntime,
+                 listenerSettings=None):
         super().__init__()
         self.setWindowTitle("EmoMaster Runtime")
         self.resize(1060, 800)
         self.preferences = preferences or QSettings("EmoMaster", "Runtime")
+        self.listenerSettings = listenerSettings or readListenerSettings(self.preferences)
         self.resolution = resolveDataRoot(dataRoot, saved=self.preferences.value(DEFAULT_ROOT_KEY, ""))
         self.runtimeFactory, self.explicitProject = runtimeFactory, projectPath
         self.projectPath = str(projectPath or self.preferences.value("projectPath", ""))
         self.controller = self.session = self.hub = self.pages = None
+        self.sessionCoverage = None
+        self.viewSession = self.viewRunInfo = self.viewPresentation = self.viewCoverage = None
+        self.viewNotice = ''
         self.workflowSessions, self.workflowHubs, self.workflowPages, self.workflowControls = {}, {}, {}, {}
+        self.workflowCoverages = {}
         self.workflowTabs = None
         self.selectedWorkflowIds = []
         self.busy = self.closing = self.done = False
@@ -76,10 +85,20 @@ class OperatorWindow(QWidget):
         self.startButton = self._button("开始", QStyle.SP_MediaPlay, self.startDetection)
         self.stopButton = self._button("停止", QStyle.SP_MediaStop, self.stopDetection)
         self.communicationButton = self._button("设备状态与控制…", QStyle.SP_ComputerIcon, self.showCommunication)
+        self.viewRunsButton = self._button("查看已有运行…", QStyle.SP_FileDialogContentsView, self.viewRun)
+        self.returnRunButton = self._button('返回运行页面', QStyle.SP_ArrowBack, self.returnToCurrentRun)
+        self.viewingLabel = QLabel()
+        self.viewingLabel.setTextFormat(Qt.PlainText)
+        self.viewingLabel.setWordWrap(True)
+        self.returnRunButton.hide()
+        self.viewingLabel.hide()
         for button in (self.openButton, self.reloadButton, self.updateButton, self.targetsButton, self.startButton, self.stopButton):
             toolbar.addWidget(button)
         layout.addLayout(toolbar)
         communicationRow = QHBoxLayout()
+        communicationRow.addWidget(self.viewRunsButton)
+        communicationRow.addWidget(self.returnRunButton)
+        communicationRow.addWidget(self.viewingLabel, 1)
         communicationRow.addStretch()
         communicationRow.addWidget(self.communicationButton)
         layout.addLayout(communicationRow)
@@ -96,7 +115,7 @@ class OperatorWindow(QWidget):
         self.businessHost = QWidget()
         self.pageLayout = QVBoxLayout(self.businessHost)
         self.pageLayout.setContentsMargins(0, 0, 0, 0)
-        self.startupPage = StartupPage(self.preferences, self.resolution)
+        self.startupPage = StartupPage(self.preferences, self.resolution, listenerSettings=self.listenerSettings)
         self.startupPage.chooseRequested.connect(self.chooseProject)
         self.startupPage.logsRequested.connect(lambda: self.showLogs(resetFilter=True))
         self.startupPage.retryRequested.connect(self.retryInitialization)
@@ -124,7 +143,8 @@ class OperatorWindow(QWidget):
                          payload={"source": self.resolution.source, "dataRoot": str(self.resolution.path)})
 
         def initialize():
-            self.controller = self.runtimeFactory(self.resolution.path)
+            self.controller = (self.runtimeFactory(self.resolution.path, listenerSettings=self.listenerSettings)
+                if self.runtimeFactory is ProductionRuntime else self.runtimeFactory(self.resolution.path))
             if self.explicitProject:
                 self.controller.load(self.projectPath)
             elif self.projectPath or self.controller.runtime.projectConfiguration.current is not None:
@@ -330,9 +350,10 @@ class OperatorWindow(QWidget):
             self.controller.start()
             document = self.controller.document
             if document.presentation and document.presentation.pageOrder:
-                self.session = DisplaySession(self.controller.address, self.controller.jobId,
+                self.session = DisplaySession(self.controller.connectionProfile, self.controller.jobId,
                     imageDemand=True, expectedRuntimeInstanceId=self.controller.runtime.runtimeInstanceId,
                     projectId=document.project.projectId)
+                self.sessionCoverage = self._captureCoverage(self.controller.jobId)
             return self.controller.status()
         self.launch("started", start)
 
@@ -343,12 +364,85 @@ class OperatorWindow(QWidget):
         if (len(self.controller.sessions) > 1
                 or next(iter(self.controller.sessions), None) != self.controller.document.entryWorkflowId):
             return self.stopWorkflows()
+        target = self._stopChoice(self.controller.document.entryWorkflowId)
+        if not target:
+            return
         self.message.setText("正在停止")
         self._updateBasicPages(operation="stopping")
         def stop():
-            self.controller.stop()
+            self.controller.stop(jobId=target)
             return self.controller.status()
         self.launch("stopped", stop)
+
+    def _stopChoice(self, workflowId):
+        row = self.state.get('workflows', {}).get(workflowId, self.state)
+        runs = [run for run in row.get('runs', []) if run['active']]
+        if len(runs) > 1:
+            labels = [f"{run['jobId']} · {run['state']}" for run in runs]
+            selected = next((i for i, run in enumerate(runs) if run['jobId'] == row.get('jobId')), 0)
+            value, ok = QInputDialog.getItem(self, '停止运行', '选择要停止的运行', labels, selected, False)
+            return runs[labels.index(value)]['jobId'] if ok else ''
+        return runs[0]['jobId'] if runs else row.get('jobId', '')
+
+    def viewRun(self):
+        if self.closing or self._deferCommand(self.viewRun) or not self.controller.document:
+            return
+        runs = self.state.get('runCatalog')
+        if runs is None:
+            runs = [dict(run, workflowId=key) for key, row in self.state.get('workflows', {}).items() for run in row.get('runs', [])]
+        if not runs:
+            self.message.setText('当前工程尚无运行记录；历史数据可直接在页面中查询')
+            return
+        names = {key: workflow.name for key, workflow in self.controller.workflows.items()}
+        labels = [f"{names.get(run['workflowId'], run['workflowId'])} · {run['jobId']} · {run['state']}"
+                  + (f" · 槽位 {run['targetSlotId']}" if run.get('targetSlotId') else '') for run in runs]
+        value, ok = QInputDialog.getItem(self, '查看已有运行', '选择运行记录（查看不改变停止目标）', labels, 0, False)
+        if not ok:
+            return
+        selected = runs[labels.index(value)]
+        workflowId = selected['workflowId']
+        jobId = selected['jobId']
+        self._removePages()
+        def attach():
+            from emo_master.apps.runtime.jobs.read_model import runState
+            from emo_master.apps.runtime.presentation.rpc import DisplayRpc
+            from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+            from emo_master.clients.runtime.dispatch_display import DispatchDisplaySession
+            from emo_master.core.presentation.coverage import CaptureCoverage
+            from emo_master.core.presentation.workflow_view import dispatchPair, presentationForWorkflows
+            self._closeViewedSession()
+            current = runState(self.controller.runtime, jobId)
+            if current is None or current.project_id != self.controller.document.project.projectId:
+                raise ValueError('此运行已不可用，请刷新后重新选择')
+            metadata = list(DisplayRpc(self.controller.presentation).ListJobs(
+                pb.DisplayEmpty(project_id=current.project_id), None).jobs)
+            selectedMetadata = next((item for item in metadata if item.job_id == jobId), None)
+            if selectedMetadata is None:
+                raise ValueError('此运行记录已不可用，请刷新后重新选择')
+            pair = dispatchPair(self.controller.document, selectedMetadata, metadata)
+            roots = tuple(item.workflow_id for item in pair) if pair else (workflowId,)
+            presentation = presentationForWorkflows(self.controller.document, roots)
+            if pair:
+                session = DispatchDisplaySession(self.controller.connectionProfile, *pair, presentation)
+                coverage = session.coverage
+            else:
+                coverage = CaptureCoverage.fromMetadata(selectedMetadata)
+                session = DisplaySession(self.controller.connectionProfile, jobId, imageDemand=True,
+                    expectedRuntimeInstanceId=current.runtime_instance_id, projectId=current.project_id,
+                    readResults=current.capture_enabled and not current.display_resources_released)
+            self.viewSession, self.viewCoverage, self.viewPresentation = session, coverage, presentation
+            self.viewRunInfo = dict(selected, roots=roots)
+            return self.controller.status()
+        self.launch('viewed', attach)
+
+    def returnToCurrentRun(self):
+        if self.closing or self._deferCommand(self.returnToCurrentRun) or self.viewSession is None:
+            return
+        self._removePages()
+        def detach():
+            self._closeViewedSession()
+            return self.controller.status()
+        self.launch('viewed', detach)
 
     def chooseTargets(self):
         if self.closing or self._deferCommand(self.chooseTargets) or not self.controller.document:
@@ -391,9 +485,10 @@ class OperatorWindow(QWidget):
                     continue
                 presentation = self.controller.presentationForWorkflow(key)
                 if presentation and presentation.pageOrder and owned.jobId in self.controller.presentation.jobs:
-                    self.workflowSessions[key] = DisplaySession(self.controller.address, owned.jobId,
+                    self.workflowSessions[key] = DisplaySession(self.controller.connectionProfile, owned.jobId,
                         imageDemand=True, expectedRuntimeInstanceId=self.controller.runtime.runtimeInstanceId,
                         projectId=self.controller.document.project.projectId)
+                    self.workflowCoverages[key] = self._captureCoverage(owned.jobId)
             state = self.controller.status()
             state["operationErrors"] = [f"{self.controller.workflows[key].name}: {row['message']}"
                 for key, row in results.items() if not row["ok"]]
@@ -404,17 +499,20 @@ class OperatorWindow(QWidget):
     def stopWorkflows(self, workflowId=None):
         if self.closing or self._deferCommand(lambda: self.stopWorkflows(workflowId)):
             return
+        target = self._stopChoice(workflowId) if workflowId is not None else None
+        if workflowId is not None and not target:
+            return
         def stop():
             if workflowId is None:
                 results = self.controller.stopAll()
             else:
                 try:
-                    self.controller.stop(workflowId)
+                    self.controller.stop(workflowId, jobId=target)
                     results = {workflowId: dict(ok=True)}
                 except Exception as error:
                     results = {workflowId: dict(ok=False, message=str(error))}
             state = self.controller.status()
-            state["operationErrors"] = [f"{self.controller.workflows[key].name}: {row['message']}"
+            state["operationErrors"] = [f"{self.controller.workflows[key].name if key in self.controller.workflows else key}: {row['message']}"
                 for key, row in results.items() if not row["ok"]]
             return state
         self.error = ""
@@ -444,6 +542,20 @@ class OperatorWindow(QWidget):
         document = self.controller.document
         if document is None:
             return
+        if self.viewSession is not None:
+            self._removePages()
+            self.hub = DisplayHub(self.viewSession, self)
+            self.pages = RuntimePages(self.viewPresentation, hub=self.hub, label='查看已有运行', parent=self,
+                assets=pageAssets(document), projectRoot=self.controller.runtime.loadedProjectPath,
+                historyClient=HistoryClient(lambda name, request: getattr(self.controller.runtime, name)(request, None),
+                    runtimeInstanceId=self.controller.runtime.runtimeInstanceId, projectId=document.project.projectId,
+                    presentation=document.presentation))
+            self.pages.setCaptureCoverage(self.viewCoverage)
+            self.pages.banner.hide()
+            self.pageLayout.addWidget(self.pages)
+            self.pages.show()
+            self._businessReady()
+            return
         if (len(self.controller.sessions) > 1
                 or next(iter(self.controller.sessions), None) != document.entryWorkflowId):
             self._showWorkflowPages()
@@ -454,7 +566,11 @@ class OperatorWindow(QWidget):
             self.hub = DisplayHub(self.session, self)
         self.pages = RuntimePages(self.controller.presentationForWorkflow(document.entryWorkflowId),
             hub=self.hub, label=document.project.name, parent=self, assets=pageAssets(document),
+            historyClient=HistoryClient(lambda name, request: getattr(self.controller.runtime, name)(request, None),
+                runtimeInstanceId=self.controller.runtime.runtimeInstanceId, projectId=document.project.projectId,
+                presentation=document.presentation),
             projectRoot=getattr(getattr(self.controller, 'runtime', None), 'loadedProjectPath', None))
+        self.pages.setCaptureCoverage(self.sessionCoverage)
         self.pages.banner.hide()
         self.pageLayout.addWidget(self.pages)
         self.pages.show()
@@ -483,7 +599,9 @@ class OperatorWindow(QWidget):
         if self.workflowTabs is None:
             if self.session:
                 self.workflowSessions[self.controller.document.entryWorkflowId] = self.session
+                self.workflowCoverages[self.controller.document.entryWorkflowId] = self.sessionCoverage
                 self.session = None
+                self.sessionCoverage = None
             if self.pages:
                 self.pageLayout.removeWidget(self.pages)
                 self.pages.close()
@@ -521,24 +639,73 @@ class OperatorWindow(QWidget):
                 self.workflowHubs[key] = hub
             pages = RuntimePages(self.controller.presentationForWorkflow(key), hub=hub,
                                  label=workflow.name, parent=self.workflowTabs, assets=pageAssets(self.controller.document),
+                                 historyClient=HistoryClient(lambda name, request: getattr(self.controller.runtime, name)(request, None),
+                                     runtimeInstanceId=self.controller.runtime.runtimeInstanceId,
+                                     projectId=self.controller.document.project.projectId,
+                                     presentation=self.controller.document.presentation),
                                  projectRoot=getattr(getattr(self.controller, 'runtime', None), 'loadedProjectPath', None))
+            pages.setCaptureCoverage(self.workflowCoverages.get(key))
             pages.banner.hide()
             self.workflowPages[key] = pages
             self.workflowControls[key]["layout"].addWidget(pages)
             pages.show()
 
     def _closeSession(self):
+        self._closeViewedSession()
         for key in list(self.workflowSessions):
             self._closeWorkflowSession(key)
         if self.session:
             self.session.close()
             self.session = None
+        self.sessionCoverage = None
+
+    def _captureCoverage(self, jobId):
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+        from emo_master.apps.runtime.presentation.rpc import DisplayRpc
+        from emo_master.core.presentation.coverage import CaptureCoverage
+        jobs = DisplayRpc(self.controller.presentation).ListJobs(
+            pb.DisplayEmpty(project_id=self.controller.document.project.projectId), None).jobs
+        return CaptureCoverage.fromMetadata(next(job for job in jobs if job.job_id == jobId))
+
+    def _refreshPublishedSessions(self):
+        from emo_master.apps.runtime.jobs.read_model import runState
+        from emo_master.core.presentation.workflow_view import presentationForWorkflows
+
+        state = self.controller.status()
+        # A publication changes the page, not the user's viewing or stop
+        # selection. Keep active subscriptions and their frozen coverage.
+        # Completed default results are retired as before; an explicit history
+        # selection remains attached to its exact Job (or Dispatch pair).
+        if self.viewSession is not None:
+            roots = self.viewRunInfo['roots']
+            if any(key not in self.controller.workflows for key in roots):
+                self._closeViewedSession()
+                self.viewNotice = '正在查看的流程已从工程删除；已返回当前运行页面'
+            else:
+                self.viewPresentation = presentationForWorkflows(self.controller.document, roots)
+        if self.session is not None:
+            run = runState(self.controller.runtime, self.session.jobId)
+            if run is None or not run.active:
+                self.session.close()
+                self.session = self.sessionCoverage = None
+        for key, session in list(self.workflowSessions.items()):
+            run = runState(self.controller.runtime, session.jobId)
+            if run is None or not run.active:
+                self._closeWorkflowSession(key)
+        return state
+
+    def _closeViewedSession(self):
+        if self.viewSession is not None:
+            self.viewSession.close()
+        self.viewSession = self.viewRunInfo = self.viewPresentation = self.viewCoverage = None
+        self.viewNotice = ''
 
     def _closeWorkflowSession(self, key):
         session = self.workflowSessions.get(key)
         if session:
             session.close()
             del self.workflowSessions[key]
+        self.workflowCoverages.pop(key, None)
 
     def _controls(self):
         enabled = not self.busy and not self.closing and self.controller is not None
@@ -552,8 +719,21 @@ class OperatorWindow(QWidget):
         multi = len(rows) > 1
         self.startButton.setText(f"开始（{len(self.selectedWorkflowIds)} 个流程）" if len(self.selectedWorkflowIds) > 1 else "开始")
         self.stopButton.setText("全部停止" if multi else "停止")
-        self.stopButton.setEnabled(enabled and (any(row["jobId"] and not row["canLoad"] for row in rows.values())
-                                               if multi else bool(self.state["jobId"]) and not self.state["canLoad"]))
+        self.stopButton.setEnabled(enabled and (any(row.get('activeJobIds') or row['jobId'] and not row['canLoad']
+            for row in rows.values()) if multi else bool(self.state.get('activeJobIds') or self.state['jobId'])
+            and not self.state['canLoad']))
+        self.viewRunsButton.setEnabled(enabled and self.controller is not None and self.controller.document is not None)
+        self.returnRunButton.setVisible(self.viewSession is not None)
+        self.returnRunButton.setEnabled(enabled and self.viewSession is not None)
+        self.viewingLabel.setVisible(self.viewSession is not None or bool(self.viewNotice))
+        if self.viewRunInfo is not None:
+            # The status worker may already have adopted a publication while
+            # the GUI is still scheduling retirement of the old viewing page.
+            names = ' / '.join(self.controller.workflows[key].name if key in self.controller.workflows else key
+                               for key in self.viewRunInfo['roots'])
+            self.viewingLabel.setText(f"正在查看：{names} · {self.viewRunInfo['jobId']}")
+        elif self.viewNotice:
+            self.viewingLabel.setText(self.viewNotice)
         self.settingsButton.setEnabled(not self.closing)
         self.logsButton.setEnabled(not self.closing)
         self.startupPage.chooseButton.setEnabled(self.openButton.isEnabled())
@@ -563,7 +743,7 @@ class OperatorWindow(QWidget):
         for key, controls in self.workflowControls.items():
             row = rows.get(key, {})
             controls["start"].setEnabled(enabled and row.get("canStart", False))
-            controls["stop"].setEnabled(enabled and bool(row.get("jobId")) and not row.get("canLoad", True))
+            controls["stop"].setEnabled(enabled and bool(row.get('activeJobIds') or row.get("jobId")) and not row.get("canLoad", True))
             controls["label"].setText(names.get(row.get("state"), "未加载") +
                 (f"\nJob: {row['jobId']}" if row.get("jobId") else "") +
                 (f"\n{row['message']}" if row.get("message") else ""))
@@ -573,7 +753,13 @@ class OperatorWindow(QWidget):
         connected = self.state.get("runtimeConnected", False) if connected is None else connected
         if self.pages is not None and (workflowIds is None
                 or self.controller.document.entryWorkflowId in workflowIds):
-            self.pages.setBasicStatus(self.state, connected=connected,
+            state = self.state
+            if self.viewRunInfo is not None:
+                selected = next((row for row in self.state.get('runCatalog', [])
+                    if row['jobId'] == self.viewRunInfo['jobId']), self.viewRunInfo)
+                state = dict(selected, jobStatus=selected['state'])
+                operation = ''
+            self.pages.setBasicStatus(state, connected=connected,
                 connectionDetail=connectionDetail, operation=operation)
         for key, pages in self.workflowPages.items():
             if workflowIds is None or key in workflowIds:
@@ -636,6 +822,8 @@ class OperatorWindow(QWidget):
                 self._showPages()
             if kind == "status":
                 self._updateBasicPages(connected=False, connectionDetail=error)
+            if kind == 'viewed' and self.controller and self.controller.document:
+                self._showPages()
             if self.controller:
                 # Query off-thread before deciding whether Start is available.
                 self.launch("status", self.controller.status)
@@ -652,13 +840,16 @@ class OperatorWindow(QWidget):
         previousRevision = getattr(self, "_pagePublicationRevision", None)
         if revision is not None:
             self._pagePublicationRevision = revision
+        if revision is not None and previousRevision is None and kind == 'status':
+            # A remote Designer can publish the first project while this
+            # Runtime window is already open. Adopt its pages without taking
+            # the local Load/autoStart action.
+            self.selectedWorkflowIds = self.controller.document.startupWorkflows()
+            kind = 'pagesPublished'
         if (revision is not None and previousRevision is not None and revision != previousRevision
                 and kind not in {"loaded", "started", "workflowsStarted", "pagesPublished"}):
             self._removePages()
-            def retireOldPageSession():
-                self._closeSession()
-                return self.controller.status()
-            self.launch("pagesPublished", retireOldPageSession)
+            self.launch("pagesPublished", self._refreshPublishedSessions)
             return
         self._ensureCommunication()
         if self.closing:
@@ -666,7 +857,7 @@ class OperatorWindow(QWidget):
             return
         if kind == "loaded" and self.controller.document:
             self.selectedWorkflowIds = self.controller.document.startupWorkflows()
-        if kind in {"loaded", "started", "workflowsStarted", "pagesPublished"} and self.controller.document:
+        if kind in {"loaded", "started", "workflowsStarted", "pagesPublished", "viewed"} and self.controller.document:
             document = self.controller.document
             self.projectPath = self.controller.runtime.loadedProjectFile
             self.projectLabel.setText(document.project.name)
@@ -726,7 +917,31 @@ def main(arguments=None):
     actions.add_argument("--export-package", type=Path, metavar="OUTPUT_DIR", help="Export a portable production project")
     actions.add_argument("--install-package", type=Path, metavar="PACKAGE", help="Install/update an offline project directory")
     parser.add_argument("--plugin-root", type=Path, action="append", help="Trusted plugin root; may repeat")
+    access = parser.add_mutually_exclusive_group()
+    access.add_argument("--allow-lan", dest="allow_lan", action="store_true", default=None,
+                        help="Enable the configured fixed Runtime listener for trusted LAN clients")
+    access.add_argument("--local-only", dest="allow_lan", action="store_false",
+                        help="Use loopback and an on-demand dynamic port")
+    parser.add_argument("--listen-host", help="Local listener IP, for example 0.0.0.0 or 192.168.1.20")
+    parser.add_argument("--listen-port", type=int, help="Fixed port used when LAN access is enabled")
+    parser.add_argument("--display-subscriptions-per-job", type=int, help="Display subscriptions per Job, 1 to 16; default 4")
+    parser.add_argument("--save-listener-settings", action="store_true", help="Save listener settings and exit without starting Runtime")
     args = parser.parse_args(arguments)
+    preferences = QSettings("EmoMaster", "Runtime")
+    try:
+        listener = readListenerSettings(preferences, allowLan=args.allow_lan, host=args.listen_host,
+            port=args.listen_port, displaySubscriptionsPerJob=args.display_subscriptions_per_job)
+    except ValueError as error:
+        parser.error(str(error))
+    if args.save_listener_settings:
+        if args.project or args.check or args.export_package or args.install_package:
+            parser.error("--save-listener-settings cannot be combined with project actions")
+        preferences.setValue(LISTENER_SETTINGS_KEY, listenerSettingsJson(listener))
+        preferences.sync()
+        if preferences.status() != preferences.NoError:
+            parser.error("无法保存 Runtime 监听设置：" + preferences.fileName())
+        print("Runtime listener settings saved; no Runtime or Job started.")
+        return 0
     if args.export_package or args.install_package or args.check:
         from emo_master import __version__
         from emo_master.core.plugin.registry import PluginRegistry
@@ -762,7 +977,9 @@ def main(arguments=None):
         return 0
     app = QApplication.instance() or QApplication([])
     window = OperatorWindow(args.project, dataRoot=args.data_root,
-        runtimeFactory=lambda root: ProductionRuntime(root, pluginRootPaths=tuple(map(str, args.plugin_root)) if args.plugin_root else None))
+        preferences=preferences, listenerSettings=listener,
+        runtimeFactory=lambda root: ProductionRuntime(root, listenerSettings=listener,
+            pluginRootPaths=tuple(map(str, args.plugin_root)) if args.plugin_root else None))
     window.show()
     return app.exec_()
 

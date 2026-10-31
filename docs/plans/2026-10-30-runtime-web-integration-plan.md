@@ -1,6 +1,18 @@
 # emo_master Runtime 远程客户端与 Designer 实施计划
 
-日期：2026-10-30。状态：**完整功能的待实施计划；本次仅编写计划，尚未实现本文新增协议、工程格式和功能。**
+日期：2026-10-30。状态：**已进入实施。本地 Runtime、Designer、协议 SDK、历史服务和 Web 页面发布器已落地于工作区；Dot 的真实 Web renderer、网关和跨端联调尚未交付。**
+
+实施基线为 `0fa2115e337e7499688e4d0efd50539e34104a6a`，当前实现含未提交修改，不能把基线 SHA 当作全部功能代码。接入方法见 [Runtime 远程访问指南](../guides/runtime-remote-access.md)，共同开发材料见 [Panel Contract v1](../development/panel-contract-v1.md)，功能与验证边界见 [实施记录](../testing/2026-10-30-runtime-web-integration/README.md)。下载目录中的原始计划仍保留其编写时状态。
+
+| 阶段 | 当前实现状态 |
+| --- | --- |
+| L1 | 已提供独立 `emo_panel_protocol` SDK、统一 proto、schemas、TypeScript、合成 fixtures、canonical 向量和当前格式样例包 |
+| L2a | 已提供显式局域网监听、连接配置贯通、运行读模型、精确停止与桌面已有运行查看 |
+| L2b | 已提供远程首次导入候选、声明资源上传、校验及显式提交，以及按声明下载工程资源 |
+| L3 | 复用 2.8/1.1 响应式布局；本阶段新增字段正式使用工程 2.9 / Presentation 1.2 |
+| L4 | 已提供与 Job 独立的历史分页、筛选、排序、聚合和图片 RPC，并接入 Qt 历史组件 |
+| L5 | 已提供目标/来源属性、路径隔离的完整 `.emoweb` 发布器；预览可明确选择 fixtures 或当前 Runtime，并传递只读连接上下文；真实浏览器预览待 Dot CLI/renderer |
+| L6 | 本地协议与 Qt 协同已做定向验证；另一台实体电脑、Dot 网关/浏览器、冻结包和真实设备未执行 |
 
 本文由本地 emo_master 开发承担，配套文档为 [Web 面板 Dot 开发计划](./2026-10-30-web-panel-dot-development-plan.md)。
 本地部分先完善其他电脑 Designer 对 Runtime 的正常访问；Web 网关作为另一种普通 RPC 客户端使用同一接口。
@@ -169,8 +181,8 @@ Qt 状态刷新、启动判断和停止目标解析都读取 Runtime 权威状�
 
 ## 5. 页面与工程格式
 
-工程 **2.8**／Presentation **1.1** 的基础响应式布局由 [Designer 画布改造](./2026-10-30-designer-canvas-alignment-responsive-plan.md)实施，字段和语义见[共享布局合同](../development/responsive-layout-contract.md)。本计划不再独占预留这两个版本；新增页面目标、来源位置等严格模型字段前，重新核对正式版本并确定相应演进版本，不把尚未交付的 Web 字段解释为响应式版本已经支持。
-本计划本身不改变当前支持版本；每次实际版本落地时同步工程规范、AGENTS.md、新建路径、迁移与兼容提示。
+工程 **2.8**／Presentation **1.1** 的基础响应式布局由 [Designer 画布改造](./2026-10-30-designer-canvas-alignment-responsive-plan.md)实施，字段和语义见[共享布局合同](../development/responsive-layout-contract.md)。本次核对后，页面目标、来源位置等新增严格模型字段已使用工程 **2.9**／Presentation **1.2**，不占用已交付的响应式版本。
+工程规范、AGENTS.md、新建路径、迁移与兼容提示已同步。本次普通打开/保存保留旧工程版本，明确应用新增语义时升级；旧版客户端不保证可读取 2.9/1.2。
 新建仍沿用 `WorkflowStore().toPayload()`、ProjectDocument 校验和 saveProject，不只替换 schemaVersion 字符串。
 同时核对 `WorkflowStore.reset()` 的完整默认结构；`migration.SCHEMA_VERSION` 是历史迁移基线，不能直接当最新版本常量修改。
 保留页面、资源、production 与设备结构，`devices.schemaVersion="1.0"` 不因新增 Web 而删除或降级。
@@ -228,7 +240,9 @@ Runtime 只接受当前正式在线工程中 `location=runtime` 的声明；草�
 数据仍在写入时，分页和统计按各次只读查询得到的当前数据库内容展示，不承诺跨多次请求的长期一致快照。
 表格刷新后选中行由返回的行身份重新核对，不使用浏览器行号去猜测另一页图片。
 
-图片引用由 Runtime 根据已声明来源和查询到的记录生成，浏览器只获得不暴露文件路径的 opaque ref。
+图片引用由 Runtime 根据已声明来源和查询到的记录生成；图片读取接口和 opaque ref 不接受或暴露文件路径。
+仅用于图片关联、未选为表格显示列的字段不随查询结果外发。若作者明确把同一字段选为显示列，
+表格保留该声明列的原值，不静默遮改；不希望显示路径时，应在表格显示列中移除该字段，图片关联仍然有效。
 引用包含或关联来源版本、行 / 图片字段、有效期等必要信息；Runtime 读取时验证并在允许目录内解析。
 引用过期后重新查询生成新引用，不沿用实时 Job 的 lease，也不因实时任务结束销毁历史查看能力。
 图片不存在、字段为空、格式不支持分别返回可显示状态，正常翻页和再次选行仍可继续。
@@ -266,6 +280,10 @@ Dot 交付独立安装的 `emo-web-panel preview` 入口和已构建前端，本
 预览入口仅绑定 loopback 临时端口，返回含短期访问凭据的本机 URL，由 Designer 打开系统浏览器；两端约定机器可读的启动结果。
 预览用独立临时状态，不导入 / 激活生产页面包、不提供生产启停，不要求用户安装 Node，也不向生产 Runtime 启动路径增加 Web 依赖。
 草稿预览中的示例历史数据使用脱敏 fixtures；访问正式 Runtime 历史来源仍要求匹配在线声明。
+
+本地启动器交接已补齐 `--context` 临时 JSON：固定所选主连接地址/参数、实例、工程、包摘要及正式历史声明。
+SDK 1.1.0 的 `PreviewContext`、schema、TS 与两种 fixture 同步生成；后台连接协商不触发启停或工程写入。
+Dot 读取该上下文并按同合同验证后连接；真实 renderer 的消费和浏览器展示仍属于 Dot 交付。
 预览不发布工程、不启动任务、不覆盖在线配置；Designer 关闭后已发布网页不依赖其预览进程。
 组件支持表由合同维护，包含实际 props、动作、数据来源能力，而不是仅判断组件名称。
 已有历史表格、统计、选中行图片及实时组件在完整交付范围内，不以“复杂组件后续再说”替代实现。

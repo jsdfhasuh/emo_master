@@ -34,12 +34,14 @@ pythonpath = ["src"]
 
 [tool.ruff]
 exclude = [
-  "src/emo_master/apps/runtime/grpc_server/generated"
+  "src/emo_master/apps/runtime/grpc_server/generated",
+  "src/emo_panel_protocol/generated"
 ]
 
 [tool.mypy]
 python_version = "3.10"
 ignore_missing_imports = true
 exclude = [
-  "src/emo_master/apps/runtime/grpc_server/generated"
+  "src/emo_master/apps/runtime/grpc_server/generated",
+  "src/emo_panel_protocol/generated"
 ]

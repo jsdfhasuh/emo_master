@@ -26,6 +26,7 @@ class PageCoordinator:
         self.monitor = None
         self.onlineSummary = '未读取在线状态'
         self.closeApproved = None
+        self._closingWebPreview = None
         self._devicePublishPending = False
         from .preview import PreviewController
         self.preview = PreviewController(self)
@@ -228,6 +229,9 @@ class PageCoordinator:
         if not self._canSync():
             raise ValueError('请先修正工程输入')
         self.window.runtimeClient.switchConnection(candidate)
+        if self.preview.observer is not None:
+            from emo_master.clients.runtime.history import LazyHistoryClient
+            self.preview.observer.setHistoryClient(LazyHistoryClient(self.window.runtimeClient, self.session.document()))
         if self.devices:
             self.devices.shutdown()
             self.devices.deleteLater()
@@ -335,7 +339,19 @@ class PageCoordinator:
                 self.preview.closeAsync(self.window.close)
             return False
         self.preview.timer.stop()
+        webPreview = getattr(self, 'webPreview', None)
+        if webPreview and not webPreview.finished:
+            if getattr(self, '_closingWebPreview', None) is not webPreview:
+                self._closingWebPreview = webPreview
+                webPreview.closed.connect(self._finishWebPreviewClose)
+            if not webPreview.closing:
+                webPreview.close()
+            return False
         return True
+
+    def _finishWebPreviewClose(self):
+        self._closingWebPreview = None
+        QTimer.singleShot(0, self.window.close)
 
     def confirmDraft(self):
         if not self._canSync():

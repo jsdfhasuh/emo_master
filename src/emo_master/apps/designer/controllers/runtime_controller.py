@@ -78,6 +78,8 @@ class RuntimeController:
         self._stopJobId = ""
         self._stopMode = ""
         self._stopEscalateToForce = False
+        self._jobStopIdentity: dict[str, str] = {}
+        self._identityJobId = ""
         self._jobActive = False
         self._closing = False
         self._closed = False
@@ -103,6 +105,8 @@ class RuntimeController:
         self._failureNotified = False
         # Preparation failures must not borrow the previous Job's identity.
         self.setCurrentJobId(None)
+        self._jobStopIdentity = {}
+        self._identityJobId = ""
         try:
             # Publication can replace the online copy while leaving the local
             # Designer file association unchanged. Resolve only after sync.
@@ -155,11 +159,15 @@ class RuntimeController:
         self._startUncertain = False
         self._jobActive = True
         currentJobId = str(getattr(reply, "job_id", ""))
+        self._identityJobId = currentJobId
+        self._jobStopIdentity = dict(getattr(self._worker, "stopIdentity", {}))
+        generation = str(getattr(reply, "runtime_instance_id", ""))
+        if generation:
+            self._jobStopIdentity.setdefault("expectedRuntimeInstanceId", generation)
         self.setCurrentJobId(currentJobId or None)
         if self.onInspectionAccepted and getattr(reply, 'ok', False):
             self.onInspectionAccepted(reply)
         self.invalidatePreviewSources()
-        generation = str(getattr(reply, "runtime_instance_id", ""))
         if self._captureCurrentRun and currentJobId and generation:
             self._previousCaptureJob = (currentJobId, generation)
         elif currentJobId:
@@ -376,7 +384,8 @@ class RuntimeController:
             )
             self.refreshRuntimePanelView()
             self.updateToolbarState()
-        worker = RuntimeStopWorker(self.runtimeClient, jobId, mode)
+        identity = self._jobStopIdentity if self._identityJobId == jobId else {}
+        worker = RuntimeStopWorker(self.runtimeClient, jobId, mode, stopIdentity=identity)
         if not self._bindQtWorker(worker, stopWorker=True):
             worker.replyReceived.connect(
                 lambda reply, currentWorker=worker: self._onStopReply(currentWorker, reply)
@@ -483,20 +492,21 @@ class RuntimeController:
         wait(timeoutMs)
         if isRunning():
             self.appendLog("WARN", "等待运行时线程结束")
-            wait(-1)
+            wait()
 
     def close(self, *, closeClient: bool = True) -> None:
-        """Stop the worker subscription before the Designer window closes."""
+        """Detach observers; stop execution only when Designer owns the host."""
         if self._closed:
             return
         self._closing = True
         self._detachWorkerDelivery(self._worker)
         self._detachWorkerDelivery(self._stopWorker)
         stopStarted = False
+        ownsHost = bool(getattr(self.runtimeClient, "ownsExecutionHost", True))
         currentJobId = self.getCurrentJobId()
         currentStatus = str(getattr(self.runtimePanelState, "jobStatus", ""))
         if (
-            currentJobId is not None
+            ownsHost and currentJobId is not None
             and (self._jobActive or currentStatus in {"ACCEPTED", "STARTING", "RUNNING", "STOPPING"})
             and not self._stopWorkerIsRunning()
         ):
@@ -508,12 +518,13 @@ class RuntimeController:
         stopWorker = self._stopWorker
         stopJobId = self._stopJobId or (currentJobId or "")
         stopMode = self._stopMode
+        explicitForce = self._stopEscalateToForce
         if stopWorker is not None:
             self._waitForWorker(stopWorker, 12000)
             self._consumeStopWorkerResult(stopWorker)
             self._onStopWorkerFinished(stopWorker)
 
-        if self._jobActive and stopJobId and stopMode == "graceful":
+        if (ownsHost or explicitForce) and self._jobActive and stopJobId and stopMode == "graceful":
             self._beginStop(stopJobId, "force", updateUi=False)
             forceWorker = self._stopWorker
             if forceWorker is not None:
@@ -523,6 +534,8 @@ class RuntimeController:
 
         worker = self._worker
         if worker is not None:
+            if ownsHost and self._jobActive and currentJobId is None:
+                worker.requestStopAfterStart()
             worker.requestStop()
             self._waitForWorker(worker, 12000 if stopStarted else 2000)
             self._worker = None

@@ -2,14 +2,13 @@
 from __future__ import annotations
 
 import math
-from pathlib import Path
 
 from PySide2.QtCore import QByteArray, QBuffer, QIODevice, QObject, QRunnable, QSize, QThreadPool, QTimer, Qt, Signal, Slot
 from PySide2.QtGui import QImage, QImageIOHandler, QImageReader
 from PySide2.QtWidgets import QMenu
 
-from emo_master.core.presentation.sqlite_reader import PATH_TEXT_LIMIT, PathValueError
-from emo_master.core.presentation.local_paths import resolveLocalPath
+from emo_master.core.presentation.sqlite_reader import PathValueError
+from emo_master.core.presentation.history import imagePath as _path
 # RuntimePages imports this module only when building a path-image component,
 # after ImageView has been defined. This also keeps the existing hub accounting.
 from emo_master.ui.presentation.renderer import ImageView
@@ -18,30 +17,6 @@ from emo_master.ui.presentation.renderer import ImageView
 IMAGE_LIMIT = 8 * 1024 * 1024
 FILE_LIMIT = 8 * 1024 * 1024
 MAX_SOURCE_PIXELS = 32 * 1024 * 1024
-
-
-def _path(value, baseDirectory, projectRoot=None):
-    if isinstance(value, PathValueError):
-        raise ValueError(value.message)
-    if value is None or value == '':
-        raise ValueError('尚未选择记录，或图片路径为空')
-    if not isinstance(value, str):
-        raise ValueError('图片路径必须是文字')
-    if len(value) > PATH_TEXT_LIMIT or '\x00' in value:
-        raise ValueError('图片路径过长或包含无效字符')
-    if '://' in value or value.startswith(('\\\\', '//')):
-        raise ValueError('仅支持本地图片路径，不支持网络地址')
-    path = Path(value).expanduser()
-    if not path.is_absolute():
-        if '://' in baseDirectory or baseDirectory.startswith(('\\\\', '//')):
-            raise ValueError('图片基准目录必须是本地目录')
-        if not baseDirectory:
-            raise ValueError('相对图片路径需要配置明确的基准目录')
-        base = resolveLocalPath(baseDirectory, projectRoot, purpose='图片基准目录')
-        path = base / path
-        if not path.is_absolute():
-            raise ValueError('图片路径与基准目录不能组成完整路径')
-    return path
 
 
 def readPathImage(value, baseDirectory='', targetSize=QSize(1600, 1000), budget=IMAGE_LIMIT, projectRoot=None):
@@ -55,6 +30,13 @@ def readPathImage(value, baseDirectory='', targetSize=QSize(1600, 1000), budget=
             data = stream.read(FILE_LIMIT + 1)
     except FileNotFoundError as error:
         raise ValueError('图片文件不存在：' + str(path)) from error
+    return decodePathImage(data, targetSize, budget), str(path)
+
+
+def decodePathImage(data, targetSize=QSize(1600, 1000), budget=IMAGE_LIMIT):
+    budget = min(IMAGE_LIMIT, budget)
+    if budget < 4:
+        raise ValueError('界面图像容量不足，请关闭其它图像页面后重试')
     if not data or len(data) > FILE_LIMIT:
         raise ValueError('图片为空或超过 8 MiB 文件大小限制')
     buffer = QBuffer()
@@ -94,7 +76,7 @@ def readPathImage(value, baseDirectory='', targetSize=QSize(1600, 1000), budget=
         raise ValueError('图片超过可用图像容量，请先缩小图片')
     if image.width() > target.width() or image.height() > target.height():
         image = image.scaled(target, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-    return image, str(path)
+    return image
 
 
 class _ImageReply(QObject):
@@ -102,15 +84,21 @@ class _ImageReply(QObject):
 
 
 class _ImageRead(QRunnable):
-    def __init__(self, generation, value, base, target, budget, projectRoot):
+    def __init__(self, generation, value, base, target, budget, projectRoot, remoteReader=None):
         super().__init__()
         self.arguments = value, base, target, budget, projectRoot
         self.generation = generation
+        self.remoteReader = remoteReader
         self.reply = _ImageReply()
 
     def run(self):
         try:
-            image, key = readPathImage(*self.arguments)
+            if self.remoteReader:
+                value, _base, target, budget, _root = self.arguments
+                image = decodePathImage(self.remoteReader(value), target, budget)
+                key = value.imageRef or value.componentId
+            else:
+                image, key = readPathImage(*self.arguments)
             message = ''
         except (OSError, ValueError, OverflowError) as error:
             image, key, message = QImage(), '', str(error)
@@ -122,6 +110,7 @@ class PathImageView(ImageView):
         super().__init__(parent)
         self.baseDirectory, self.preview = baseDirectory, bool(preview)
         self.projectRoot = projectRoot
+        self.remoteReader = None
         self.availableBytes = availableBytes or (lambda: IMAGE_LIMIT)
         self.selectionField = ''
         self._desired, self._generation, self._worker = None, 0, None
@@ -144,7 +133,7 @@ class PathImageView(ImageView):
         self.setImage(QImage(), '', message)
         self.setToolTip(message)
 
-    @Slot(object)
+    @Slot(object)  # type: ignore[operator]  # PySide2's Slot stub omits decorator __call__.
     def setSelectedRow(self, row):
         if row is None:
             self.setPath(None)
@@ -162,7 +151,7 @@ class PathImageView(ImageView):
     def reload(self):
         self._generation += 1
         self._empty('设计示例 · 不读取本地图片' if self.preview else '等待加载图片')
-        if not self.preview:
+        if not self.preview and self.remoteReader is None:
             try:
                 _path(self._desired, self.baseDirectory, self.projectRoot)
             except ValueError as error:
@@ -188,7 +177,8 @@ class PathImageView(ImageView):
         if self.preview or self._closed or not self.isVisible() or self._worker is not None:
             return
         try:
-            _path(self._desired, self.baseDirectory, self.projectRoot)
+            if self.remoteReader is None:
+                _path(self._desired, self.baseDirectory, self.projectRoot)
         except ValueError as error:
             self._empty(str(error))
             return
@@ -198,12 +188,13 @@ class PathImageView(ImageView):
             return
         ratio = self.devicePixelRatioF()
         target = QSize(max(1, int(self.width() * ratio)), max(1, int(self.height() * ratio)))
-        worker = self._worker = _ImageRead(self._generation, self._desired, self.baseDirectory, target, budget, self.projectRoot)
+        worker = self._worker = _ImageRead(self._generation, self._desired, self.baseDirectory, target, budget,
+                                         self.projectRoot, self.remoteReader)
         worker.reply.ready.connect(self._finished, Qt.QueuedConnection)
-        self._empty('正在加载本地图片…')
+        self._empty('正在加载 Runtime 图片…' if self.remoteReader else '正在加载本地图片…')
         QThreadPool.globalInstance().start(worker)
 
-    @Slot(int, object, str, str)
+    @Slot(int, object, str, str)  # type: ignore[operator]
     def _finished(self, generation, image, key, message):
         self._worker = None
         if generation != self._generation:

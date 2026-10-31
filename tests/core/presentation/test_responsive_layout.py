@@ -59,8 +59,8 @@ def testContentAlignmentAndHeightForWidthRetainNaturalContent():
 
 def testNewProjectRoundtripCompileAndFormatBoundary(tmp_path):
     payload = WorkflowStore().toPayload('Responsive')
-    assert payload['schemaVersion'] == '2.8'
-    assert payload['presentation']['schemaVersion'] == '1.1'
+    assert payload['schemaVersion'] == '2.9'
+    assert payload['presentation']['schemaVersion'] == '1.2'
     assert payload['devices'] == {'bindings': {}, 'schemaVersion': '1.0', 'definitions': {}}
     assert 'communication' not in payload
     document = ProjectDocument.model_validate(payload)
@@ -76,7 +76,7 @@ def testNewProjectRoundtripCompileAndFormatBoundary(tmp_path):
     assert WorkflowCompiler().compile(reloaded)
     old = deepcopy(document.model_dump())
     old['schemaVersion'] = '2.7'
-    with pytest.raises(ValidationError, match='requires project 2.8'):
+    with pytest.raises(ValidationError, match='requires project 2.9'):
         ProjectDocument.model_validate(old)
 
 

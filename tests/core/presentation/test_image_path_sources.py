@@ -31,7 +31,7 @@ def documentWithPaths():
 
 def testPathImageRoundTripAndCaptureAreIndependent(tmp_path):
     document = documentWithPaths()
-    assert document.schemaVersion == '2.8'
+    assert document.schemaVersion == '2.9'
     assert validateBindings(document, {}, publish=True) == []
     before = captureDefinition(document.presentation)
     saveProject(tmp_path, document.model_dump(mode='json'))

@@ -3,6 +3,7 @@ from threading import RLock
 from types import MappingProxyType
 
 from emo_master.clients.runtime.display_session import DisplaySession
+from emo_master.clients.runtime.connection import connectionProfile
 from emo_master.clients.runtime.pins import PinView
 from emo_master.clients.runtime.view_state import SessionView
 from emo_master.core.presentation.capture_limits import normalCaptureLimits
@@ -13,6 +14,7 @@ class DispatchDisplaySession:
     imageDemand = True
 
     def __init__(self, address, producer, consumer, presentation):
+        self.connectionProfile = connectionProfile(address)
         self.coverage = DispatchCoverage.fromMetadata(producer, consumer)
         normalCaptureLimits(presentation)
         self.lock = RLock()
@@ -22,7 +24,7 @@ class DispatchDisplaySession:
         self._epochs = None
         try:
             for item in (producer, consumer):
-                self.sessions[item.job_id] = DisplaySession(address, item.job_id, imageDemand=True,
+                self.sessions[item.job_id] = DisplaySession(self.connectionProfile, item.job_id, imageDemand=True,
                     expectedRuntimeInstanceId=item.runtime_instance_id, projectId=item.project_id,
                     readResults=bool(item.capture_enabled and not item.resources_released),
                     pinByteLimit=8 * 1024 * 1024)

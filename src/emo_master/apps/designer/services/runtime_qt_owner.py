@@ -128,7 +128,7 @@ class _RuntimeWorkerDelivery(QObject):
             if self.worker.isRunning():
                 self.worker.wait(12000)
                 if self.worker.isRunning():
-                    self.worker.wait(-1)
+                    self.worker.wait()
             self._retire()
 
 

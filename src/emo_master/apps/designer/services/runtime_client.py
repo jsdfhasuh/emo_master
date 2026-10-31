@@ -9,6 +9,7 @@ from typing import Any, Iterable, Protocol, cast
 from uuid import uuid4
 
 from emo_master.apps.designer.services.display_calls import DisplayCallContext, DisplayCallError
+from emo_master.clients.runtime.connection import ConnectionProfile, connectionProfile as resolveConnectionProfile, createChannel
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
 from emo_master.apps.runtime.context.global_counters import MAX_GLOBAL_COUNTER_VALUE
@@ -303,9 +304,10 @@ class RuntimeClient:
         ownedChannel: object | None = None,
         runtimeTarget: str = "",
         displayService: object | None = None,
+        connectionProfile: ConnectionProfile | None = None,
     ) -> None:
         self.runtimeService = runtimeService
-        self.deadlineMs = deadlineMs
+        self.deadlineMs = int(connectionProfile.timeoutSeconds * 1000) if connectionProfile else deadlineMs
         self._ownedRuntimeService = ownedRuntimeService
         self._ownedChannel = ownedChannel
         self._retiredTransports: list[RuntimeClient] = []
@@ -318,13 +320,18 @@ class RuntimeClient:
         self._transportLock = threading.RLock()
         self._rpcCalls = 0
         self.inspectionPeakScratchBytes = 0
-        self._runtimeTarget = runtimeTarget
+        self.connectionProfile = (resolveConnectionProfile(connectionProfile) if connectionProfile is not None
+                                  else ConnectionProfile(runtimeTarget, timeoutSeconds=deadlineMs / 1000)
+                                  if runtimeTarget else None)
+        if runtimeTarget and self.connectionProfile is not None and self.connectionProfile.target != runtimeTarget.strip():
+            raise ValueError("Runtime target and connection profile disagree")
+        self._runtimeTarget = self.connectionProfile.target if self.connectionProfile else ""
         self._displayService = displayService
         self._displayChannel = None
         self._presentationService: Any = None
         self._presentationServer: Any = None
         self._startLock = threading.RLock()
-        if self._displayService is None and runtimeTarget and ownedChannel is not None:
+        if self._displayService is None and self._runtimeTarget and ownedChannel is not None:
             from emo_master.apps.runtime.grpc_server.generated.runtime_pb2_grpc import DisplayServiceStub
             self._displayService = DisplayServiceStub(ownedChannel)
 
@@ -350,6 +357,11 @@ class RuntimeClient:
                 self._displayDisconnected = False
                 self.renewDisplaySession()
 
+    @property
+    def ownsExecutionHost(self) -> bool:
+        """Only an embedded host owned by this Designer follows window lifetime."""
+        return self._ownedRuntimeService is not None
+
     def renewDisplaySession(self) -> None:
         with self._displayLock:
             self.runtimeScope = uuid4().hex
@@ -359,10 +371,10 @@ class RuntimeClient:
 
     def switchConnection(self, candidate):
         """Keep controller references stable; never close an old embedded owner implicitly."""
-        with self._closeLock, self._transportLock, self._streamLock, self._displayLock:
+        with self._closeLock, self._startLock, self._transportLock, self._streamLock, self._displayLock:
             if self._closed or self._closing or self._rpcCalls or self._activeStreams or self._retiringStreams or self._displayCalls:
                 raise RuntimeClientError('E_RUNTIME_BUSY', '当前请求尚未结束，请等待当前操作完成后切换 Runtime')
-            fields = ('runtimeService', '_ownedRuntimeService', '_ownedChannel', '_runtimeTarget', '_displayService',
+            fields = ('runtimeService', '_ownedRuntimeService', '_ownedChannel', '_runtimeTarget', 'connectionProfile', 'deadlineMs', '_displayService',
                       '_displayChannel', '_presentationService', '_presentationServer')
             previous = RuntimeClient(self.runtimeService)
             for field in fields:
@@ -375,7 +387,7 @@ class RuntimeClient:
                 unsubscribe(candidate._onChannelState)
             for field in fields:
                 setattr(self, field, getattr(candidate, field))
-                if field not in {'runtimeService', '_runtimeTarget'}:
+                if field not in {'runtimeService', '_runtimeTarget', 'deadlineMs'}:
                     setattr(candidate, field, None)
             candidate._closed = True
             self._retiredTransports.append(previous)
@@ -471,18 +483,68 @@ class RuntimeClient:
 
     def initializeProjectConfiguration(self, payload, resourceRoot, requestId, *, validate=False, runtimeInstanceId='',
                                        projectPath=''):
-        # This entry passes a local filesystem root, not an upload protocol.
-        # Remote installation needs its own import path; never pretend that a
-        # Designer path is available on another machine.
         from urllib.parse import urlsplit
         target = self._runtimeTarget
-        if target and urlsplit('//' + target).hostname not in {'localhost', '127.0.0.1', '::1'}:
-            raise RuntimeClientError('E_CONFIG_INITIAL_REMOTE',
-                '远程 Runtime 尚无在线工程；请先在执行端导入工程，再比较、上传及写入。不会发送 Designer 本地路径。')
+        remote = target and urlsplit('//' + target).hostname not in {'localhost', '127.0.0.1', '::1'}
+        staged = getattr(self, '_initialImport', None)
+        if remote or staged and staged.get('scope') == self.runtimeScope:
+            if validate:
+                staged = self.prepareProjectImport(payload, requestId)
+            elif not staged or staged.get('scope') != self.runtimeScope:
+                raise RuntimeClientError('E_CONFIG_IMPORT_UNKNOWN', '请先校验首次候选并上传声明资源，再确认写入')
+            elif requestId != staged['importId']:
+                raise RuntimeClientError('E_CONFIG_REQUEST_MISMATCH', '首次写入必须使用已校验候选的请求标识')
+            return self._projectConfigurationCall('InitializeProjectConfiguration',
+                runtime_pb2.InitialProjectConfigurationRequest(request_id=staged['importId'],
+                    import_id=staged['importId'], local_payload_json=json.dumps(payload, ensure_ascii=True),
+                    validate_only=validate, expected_runtime_instance_id=runtimeInstanceId or staged['runtimeInstanceId']))
         return self._projectConfigurationCall('InitializeProjectConfiguration',
             runtime_pb2.InitialProjectConfigurationRequest(request_id=requestId,
                 local_payload_json=json.dumps(payload, ensure_ascii=True), resource_root=str(resourceRoot or ''),
                 validate_only=validate, expected_runtime_instance_id=runtimeInstanceId, project_path=str(projectPath or '')))
+
+    def prepareProjectImport(self, payload, requestId=None):
+        """Declare an initial candidate. This never transfers local file bytes."""
+        from emo_master.core.project.models import ProjectDocument
+        normalized = ProjectDocument.model_validate(payload).model_dump(mode='json')
+        staged = getattr(self, '_initialImport', None)
+        same = staged and staged.get('scope') == self.runtimeScope and staged['payload'] == normalized
+        if same and staged.get('prepared'):
+            return staged
+        if getattr(self, 'pendingResourceTransfers', {}):
+            raise RuntimeClientError('E_RESOURCE_OUTCOME_UNKNOWN', '请先查询或取消原资源上传，再声明另一候选')
+        if not callable(getattr(self.runtimeService, 'PrepareProjectImport', None)):
+            raise RuntimeClientError('E_CONFIG_INITIAL_REMOTE', '当前 Runtime 不支持远程首次导入，请升级 Runtime')
+        try:
+            if not same:
+                info = self.getRuntimeInfo()
+                if not info.ok or 'remote_project_import_v1' not in info.capabilities:
+                    raise RuntimeClientError('E_CONFIG_INITIAL_REMOTE', '当前 Runtime 不支持远程首次导入，请升级 Runtime')
+                staged = dict(importId=requestId or uuid4().hex, runtimeInstanceId=info.runtime_instance_id,
+                    documentRevision=0, payload=normalized, scope=self.runtimeScope)
+            # Keep the request identity before sending; an uncertain reply must
+            # be retried or queried with this identity instead of a new request.
+            self._initialImport = staged
+            self._projectConfigurationCall('PrepareProjectImport', runtime_pb2.PrepareProjectImportRequest(
+                request_id=staged['importId'], expected_runtime_instance_id=staged['runtimeInstanceId'],
+                project_json=json.dumps(normalized, ensure_ascii=True)))
+            staged['prepared'] = True
+            return staged
+        except RuntimeClientError as error:
+            if error.code in {'StatusCode.UNIMPLEMENTED', 'UNIMPLEMENTED'}:
+                raise RuntimeClientError('E_CONFIG_INITIAL_REMOTE', '当前 Runtime 不支持远程首次导入，请升级 Runtime') from error
+            raise
+
+    def uploadInitialProjectResources(self, payload, root, cancelled=None):
+        staged = self.prepareProjectImport(payload)
+        result = self.uploadProjectResources(staged, payload, root, cancelled)
+        return dict(result, importId=staged['importId'], runtimeInstanceId=staged['runtimeInstanceId'])
+
+    def initialProjectImportContext(self):
+        staged = getattr(self, '_initialImport', None)
+        if not staged or staged.get('scope') != self.runtimeScope:
+            return {}
+        return {key: staged[key] for key in ('importId', 'runtimeInstanceId')}
 
     def getOnlineGraphSnapshot(self, projectId="", documentRevision=0, jobId=""):
         return self._projectConfigurationCall("GetOnlineGraphSnapshot", runtime_pb2.OnlineGraphRequest(
@@ -502,7 +564,11 @@ class RuntimeClient:
                 replacement_policy=replacementPolicy, local_project_path=str(localProjectPath or '')))
 
     def getProjectWriteStatus(self, requestId):
-        return self._projectConfigurationCall("GetProjectWriteStatus", runtime_pb2.ProjectWriteLookup(request_id=requestId))
+        result = self._projectConfigurationCall("GetProjectWriteStatus", runtime_pb2.ProjectWriteLookup(request_id=requestId))
+        staged = getattr(self, '_initialImport', None)
+        if staged and staged['importId'] == requestId and result.get('state') in {'FAILED', 'CANCELLED'}:
+            self._initialImport = None
+        return result
 
     def deviceNetworkCommand(self, projectId, runtimeId, action, *, deviceId='', requestId='', payload=None):
         try:
@@ -515,14 +581,19 @@ class RuntimeClient:
             raise
 
     def cancelProjectWrite(self, requestId):
-        return self._projectConfigurationCall("CancelProjectWrite", runtime_pb2.ProjectWriteLookup(request_id=requestId))
+        result = self._projectConfigurationCall("CancelProjectWrite", runtime_pb2.ProjectWriteLookup(request_id=requestId))
+        staged = getattr(self, '_initialImport', None)
+        if staged and staged['importId'] == requestId and result.get('state') == 'CANCELLED':
+            self._initialImport = None
+        return result
 
     def transferProjectResource(self, snapshot, transferId, action, *, resource=None, offset=0, data=b"", replacementOf=""):
         return self._projectConfigurationCall("TransferProjectResource", runtime_pb2.ProjectResourceTransferRequest(
             runtime_instance_id=snapshot["runtimeInstanceId"], project_id=snapshot["payload"]["project"]["projectId"],
             transfer_id=transferId, action=action, resource_json=json.dumps(resource) if resource is not None else "",
             offset=offset, data=data, replacement_of=replacementOf,
-            expected_document_revision=snapshot['documentRevision'] if replacementOf else 0))
+            expected_document_revision=snapshot['documentRevision'] if replacementOf else 0,
+            initial_import_id=snapshot.get('importId', '')))
 
     def retryProjectResourceRecovery(self, snapshot, requestId):
         if not snapshot.get('resourceRepair'):
@@ -1365,6 +1436,31 @@ class RuntimeClient:
         # Do not trust an older endpoint to honor the additive filter field.
         return [job for job in reply.jobs if getattr(job, "project_id", "") == projectId]
 
+    def ensureReadOnlyEndpoint(self) -> ConnectionProfile:
+        """Expose the existing embedded owner for a reader, without starting a Job."""
+        with self._startLock:
+            if self._closed or self._closing:
+                raise RuntimeClientError("E_RUNTIME_CLOSED", "Runtime client is closed")
+            from emo_master.apps.runtime.grpc_server.service import RuntimeService
+            if isinstance(self.runtimeService, RuntimeService) and self._presentationServer is None:
+                from emo_master.apps.runtime.presentation.service import PresentationService
+                from emo_master.apps.runtime.grpc_server.aio_entry import AioRuntimeServer
+                from emo_master.apps.runtime.grpc_server.generated.runtime_pb2_grpc import DisplayServiceStub
+                with self.runtimeService._previewJobLock:
+                    presentation = getattr(self.runtimeService, "_presentationOwner", None)
+                    if presentation is None:
+                        presentation = PresentationService(self.runtimeService,
+                            self.runtimeService.workspaceRoot.parent / "presentation")
+                        self._presentationService = presentation
+                self._presentationServer = AioRuntimeServer(self.runtimeService, presentation)
+                self._runtimeTarget = f"127.0.0.1:{self._presentationServer.port}"
+                self.connectionProfile = ConnectionProfile(self._runtimeTarget)
+                self._displayChannel = createChannel(self.connectionProfile)
+                self._displayService = DisplayServiceStub(self._displayChannel)
+            if self.connectionProfile is None:
+                raise RuntimeClientError("E_RUNTIME_ENDPOINT", "当前 Runtime 没有可供只读客户端连接的 RPC 地址")
+            return self.connectionProfile
+
     def prepareStart(self, capturePresentation: bool = False, *, captureRequirements: dict | None = None,
                      legacySnapshotPolicy: str = "ALL") -> str:
         """Negotiate only on explicit Run; return a generation for start lookup."""
@@ -1381,20 +1477,7 @@ class RuntimeClient:
                     # including their resource cost. Lookup is already provided by
                     # this owned in-process Runtime; no display host is needed.
                     return self.runtimeService.runtimeInstanceId
-                from emo_master.apps.runtime.presentation.service import PresentationService
-                from emo_master.apps.runtime.grpc_server.aio_entry import AioRuntimeServer
-                from emo_master.apps.runtime.grpc_server.generated.runtime_pb2_grpc import DisplayServiceStub
-                with self.runtimeService._previewJobLock:
-                    presentation = getattr(self.runtimeService, "_presentationOwner", None)
-                    if presentation is None:
-                        presentation = PresentationService(self.runtimeService,
-                            self.runtimeService.workspaceRoot.parent / "presentation")
-                        self._presentationService = presentation
-                # Reuse the only execution/device owner, never create another Runtime.
-                self._presentationServer = AioRuntimeServer(self.runtimeService, presentation)
-                self._runtimeTarget = f"127.0.0.1:{self._presentationServer.port}"
-                self._displayChannel = grpc.insecure_channel(self._runtimeTarget)
-                self._displayService = DisplayServiceStub(self._displayChannel)
+                self.ensureReadOnlyEndpoint()
             try:
                 capabilities = self.getDisplayCapabilities()
             except RuntimeClientError as error:
@@ -1483,9 +1566,44 @@ class RuntimeClient:
         )
         return self._call("StartJob", request)
 
-    def stopJob(self, jobId: str, mode: str = "graceful") -> object:
+    def stopJob(self, jobId: str, mode: str = "graceful", *, expectedRuntimeInstanceId=None,
+                expectedProjectId=None, expectedRunGroupId=None) -> object:
         request = runtime_pb2.StopJobRequest(job_id=jobId, mode=mode)
+        for name, value in (("expected_runtime_instance_id", expectedRuntimeInstanceId),
+                            ("expected_project_id", expectedProjectId),
+                            ("expected_run_group_id", expectedRunGroupId)):
+            if value is not None:
+                setattr(request, name, value)
         return self._call("StopJob", request)
+
+    def getStopIdentity(self, jobId: str, runtimeInstanceId: str) -> dict[str, str]:
+        """Resolve a Job within its accepted instance, never the current target's identity."""
+        if not runtimeInstanceId:
+            raise RuntimeClientError("E_JOB_IDENTITY_REQUIRED", "缺少原任务的 Runtime 实例标识，未发送停止请求")
+        status = self.getJobStatus(jobId)
+        if not getattr(status, "ok", False):
+            raise RuntimeClientError("E_JOB_NOT_FOUND", str(getattr(status, "message", "Job not found")))
+        state = self.getRunState(runtimeInstanceId, str(getattr(status, "project_id", "")), jobId)
+        if not state.ok:
+            raise RuntimeClientError(state.code, state.message)
+        return dict(expectedRuntimeInstanceId=runtimeInstanceId,
+                    expectedProjectId=state.run.project_id,
+                    expectedRunGroupId=state.run.run_group_id)
+
+    def getRuntimeInfo(self):
+        return self._call("GetRuntimeInfo", runtime_pb2.RuntimeInfoRequest())
+
+    def downloadProjectResources(self, snapshot, directory, *, cancelled=None, overwrite=False):
+        from emo_master.clients.runtime.project_resources import downloadProjectResources
+        return downloadProjectResources(self._call, snapshot, directory, cancelled=cancelled, overwrite=overwrite)
+
+    def listRuns(self, runtimeInstanceId: str, projectId: str, *, workflowId: str = "", includeTerminal=False):
+        return self._call("ListRuns", runtime_pb2.ListRunsRequest(runtime_instance_id=runtimeInstanceId,
+            project_id=projectId, workflow_id=workflowId, include_terminal=includeTerminal))
+
+    def getRunState(self, runtimeInstanceId: str, projectId: str, jobId: str):
+        return self._call("GetRunState", runtime_pb2.GetRunStateRequest(runtime_instance_id=runtimeInstanceId,
+            project_id=projectId, job_id=jobId))
 
     def getJobStatus(self, jobId: str) -> object:
         return self._call("GetJobStatus", runtime_pb2.GetJobStatusRequest(job_id=jobId))
@@ -1541,7 +1659,7 @@ class RuntimeClient:
     def close(self) -> None:
         # Keep failed owners reachable for an explicit cleanup retry. A timeout
         # is not evidence that a thread/process relinquished its resources.
-        with self._closeLock:
+        with self._closeLock, self._startLock:
             if self._closed:
                 return
             self._closing = True

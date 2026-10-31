@@ -4,6 +4,8 @@
 
 关联：[Designer 画布与响应式页面计划](../plans/2026-10-30-designer-canvas-alignment-responsive-plan.md)、[工程格式规范](../project-json-spec.md)、[Runtime／Designer 接入计划](../plans/2026-10-30-runtime-web-integration-plan.md)、[Web 面板计划](../plans/2026-10-30-web-panel-dot-development-plan.md)。
 
+后续实施说明（2026-10-30）：Runtime/Web 接入增量已在工作区引入工程 **2.9** / Presentation **1.2**，复用本文 2.8/1.1 的基础布局，并补充页面目标、Runtime 历史来源及 `.emoweb` 发布。对应 SDK、schemas、TypeScript、fixtures 和样例包见 [Panel Contract v1](./panel-contract-v1.md)，验证边界见 [接入实施记录](../testing/2026-10-30-runtime-web-integration/README.md)。下文“本轮未生成 Web 交接产物”等表述保留原响应式布局阶段的范围；不代表后续增量尚未实现，也不把新增交接产物视为真实 Web renderer 已完成。
+
 ## 1. 合同归属与版本
 
 工程 `2.8`、Presentation `1.1` 在本轮引入页面基础响应式布局。它们不同时承诺尚未实现的 Web 页面目标、远程历史来源、Web 包发布或新 RPC。

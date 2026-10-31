@@ -35,6 +35,8 @@ class _SqliteView(QWidget):
         super().__init__(parent)
         self.source = source.model_copy(deep=True)
         self.projectRoot = projectRoot
+        self.historyClient = None
+        self.componentId = ''
         self.preview, self.busy, self.loaded = bool(preview), False, False
         self._generation, self._worker, self._closed = 0, None, False
         self.message = QLabel()
@@ -45,7 +47,15 @@ class _SqliteView(QWidget):
         self.message.setText(self._idleMessage())
 
     def _idleMessage(self):
-        return '设计示例 · 不读取数据库' if self.preview else '本机 SQLite · 点击刷新读取'
+        return '设计示例 · 不读取数据库' if self.preview else self._sourceLabel() + ' · 点击刷新读取'
+
+    def _sourceLabel(self):
+        return 'Runtime SQLite' if self.source.location == 'runtime' else '本机 SQLite'
+
+    def _history(self):
+        if self.historyClient is None:
+            raise ValueError('此数据由 Runtime 读取，请连接对应 Runtime')
+        return self.historyClient
 
     def setProjectRoot(self, projectRoot):
         if self.projectRoot == projectRoot:
@@ -83,7 +93,7 @@ class _SqliteView(QWidget):
             return
         self.busy = True
         self._generation += 1
-        self.message.setText('正在查询本机 SQLite…')
+        self.message.setText('正在查询 ' + self._sourceLabel() + '…')
         self._controls()
         worker = self._worker = _Read(self._generation, query)
         worker.reply.ready.connect(self._finished, Qt.QueuedConnection)
@@ -146,6 +156,7 @@ class SqliteTableView(_SqliteView):
         self._filterColumn, self._filterText = '', ''
         self.selectionFields = tuple(dict.fromkeys(selectionFields))
         self._selectionRows, self._selected = (), None
+        self._rowIds, self._selectedRowId, self._restoreRowId = (), '', ''
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.message)
@@ -199,13 +210,16 @@ class SqliteTableView(_SqliteView):
     def refresh(self):
         if self.preview or self.busy or self._closed:
             return
+        selectedRowId = self._selectedRowId
         self.clearSelection()
+        self._restoreRowId = selectedRowId
         source = self.source
         arguments = dict(pageSize=self.pageSize, page=self.page,
                          filterColumn=self._filterColumn, filterText=self._filterText,
                          orderBy=self.orderBy, descending=self.descending,
                          selectionFields=self.selectionFields, projectRoot=self.projectRoot)
-        self._start(lambda: readPage(source, **arguments))
+        self._start(lambda: self._history().readPage(self.componentId, **arguments)
+                    if source.location == 'runtime' else readPage(source, **arguments))
 
     def applyFilter(self):
         if self.preview or self.busy:
@@ -217,6 +231,7 @@ class SqliteTableView(_SqliteView):
     def move(self, delta):
         if self.preview or self.busy or (delta > 0 and not self.hasNext):
             return
+        self.clearSelection()
         self.page = max(0, self.page + delta)
         self.refresh()
 
@@ -232,23 +247,29 @@ class SqliteTableView(_SqliteView):
 
     def _clear(self):
         self.clearSelection()
-        self._selectionRows = ()
+        self._selectionRows, self._rowIds = (), ()
         self.model.replace(())
         self.hasNext = False
         self.pageLabel.setText(f'第 {self.page + 1} 页')
 
     def _accept(self, result):
+        restoreRowId = self._restoreRowId
         self.clearSelection()
         self._selectionRows = result.selectionRows
+        self._rowIds = result.rowIds
         self.model.replace(result.rows)
         self.hasNext, self.page = result.hasNext, result.page
         self.pageLabel.setText(f'第 {self.page + 1} 页 · {len(result.rows)} 行')
-        self.message.setText('本机 SQLite · ' + self.source.table if result.rows else '未找到匹配记录')
+        self.message.setText(self._sourceLabel() + ' · ' + self.source.table if result.rows else '未找到匹配记录')
+        if restoreRowId and self._rowIds.count(restoreRowId) == 1:
+            # Select from this response so image consumers receive its fresh refs.
+            self.table.selectRow(self._rowIds.index(restoreRowId))
 
     def selectedRow(self):
         return None if self._selected is None else dict(self._selected)
 
     def clearSelection(self):
+        self._selectedRowId, self._restoreRowId = '', ''
         self.table.clearSelection()
         self._selected = None
         self.selectedRowChanged.emit(None)
@@ -258,6 +279,8 @@ class SqliteTableView(_SqliteView):
         row = indices[0].row() if indices else -1
         self._selected = (dict(self._selectionRows[row])
                           if not self.preview and not self.busy and 0 <= row < len(self._selectionRows) else None)
+        self._selectedRowId = (self._rowIds[row]
+                               if self._selected is not None and 0 <= row < len(self._rowIds) else '')
         self.selectedRowChanged.emit(self.selectedRow())
 
     def hideEvent(self, event):
@@ -301,7 +324,8 @@ class SqliteValueView(_SqliteView):
     def refresh(self):
         source = self.source
         projectRoot = self.projectRoot
-        self._start(lambda: readValue(source, projectRoot=projectRoot))
+        self._start(lambda: self._history().readValue(self.componentId)
+                    if source.location == 'runtime' else readValue(source, projectRoot=projectRoot))
 
     def _clear(self):
         self.value.setText('—')
@@ -314,4 +338,4 @@ class SqliteValueView(_SqliteView):
         else:
             text = str(result)
         self.value.setText(text + (' ' + self.unit if self.unit and result is not None else ''))
-        self.message.setText('没有可统计的值' if result is None else '本机 SQLite · ' + self.source.table)
+        self.message.setText('没有可统计的值' if result is None else self._sourceLabel() + ' · ' + self.source.table)

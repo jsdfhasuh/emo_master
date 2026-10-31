@@ -96,6 +96,11 @@ class EditingTools(QObject):
         self.form.addRow(self.propertyError)
         self.pageName = QLineEdit()
         self.form.addRow('页面名称', self.pageName)
+        self.pageTargets = QComboBox()
+        for label, value in [('桌面', ['desktop']), ('网页', ['web']), ('桌面和网页', ['desktop', 'web'])]:
+            self.pageTargets.addItem(label, value)
+        self.pageTargets.setToolTip('网页目标需要工程 2.9 / 页面 1.2；应用后通过正常保存持久化。')
+        self.form.addRow('显示终端', self.pageTargets)
         self.fields = {}
         for name, label in [('imageResourceId', '静态图片资源'), ('iconResourceId', '按钮图标资源')]:
             field = QComboBox()
@@ -179,7 +184,8 @@ class EditingTools(QObject):
         self.responsiveProperties = ResponsiveProperties()
         self.form.addRow(self.responsiveProperties)
         from .sqlite_properties import SqliteProperties
-        self.sqliteProperties = SqliteProperties(projectRoot=lambda: self.w.coordinator.directory)
+        self.sqliteProperties = SqliteProperties(projectRoot=lambda: self.w.coordinator.directory,
+                                                 inspectRuntime=self.inspectRuntimeSqlite)
         self.form.addRow(self.sqliteProperties)
         self.captureNotice = QLabel()
         self.captureNotice.setWordWrap(True)
@@ -234,6 +240,22 @@ class EditingTools(QObject):
 
     def commands(self):
         return PageCommands(self.w.session, manifestsFromCatalog(self.w.coordinator.window.operatorCatalog))
+
+    def inspectRuntimeSqlite(self, path, table):
+        from pathlib import Path
+        client = self.w.coordinator.window.runtimeClient
+        snapshot = client.getOnlineProjectSnapshot()
+        # This path is returned by Runtime; never send the Designer's directory.
+        directory = str(Path(snapshot['sourcePath']).parent)
+        reply = client.sqliteTarget('inspect', path, directory, table)
+        names = list(reply.tables)
+        selected = table or next(iter(names), '')
+        if selected and not table:
+            reply = client.sqliteTarget('inspect', path, directory, selected)
+        result = {name: [] for name in names}
+        if selected:
+            result[selected] = [column.name for column in reply.columns]
+        return result
 
     def selectionCount(self):
         return len(self.responsive.selectedIds) if self.responsive.enabled() else int(self.selected is not None)
@@ -466,7 +488,8 @@ class EditingTools(QObject):
         rows = tuple(tuple(self._cellValue(r, c) for c in range(4)) for r in range(self.extra.rowCount()))
         return (values, self.pageName.text(), self.destination.currentData(), self.actionMode.currentData(), self.actionScope.currentData(),
                 tuple((name, field.currentData()) for name, field in self.appearance.items()), rows,
-                self.sqliteProperties.state(), self.imageProperties.state(), self.responsiveProperties.state())
+                self.sqliteProperties.state(), self.imageProperties.state(), self.responsiveProperties.state(),
+                tuple(self.pageTargets.currentData() or []))
 
     def refreshImageMode(self):
         try:
@@ -502,6 +525,7 @@ class EditingTools(QObject):
             if self.w.pageId:
                 self.fields['columns'].setValue(getattr(self.w.store.snapshot().pages[self.w.pageId].layout, 'columns', 1))
                 self.pageName.setText(self.w.store.snapshot().pages[self.w.pageId].name)
+                self.pageTargets.setCurrentIndex(self.pageTargets.findData(self.w.store.snapshot().pages[self.w.pageId].targets))
                 self.responsiveProperties.load(self.w.store.snapshot().pages[self.w.pageId].layout, None)
             self.responsiveProperties.setItemVisible(False)
             self.title.setText('页面属性')
@@ -636,6 +660,7 @@ class EditingTools(QObject):
                 else:
                     p.pages[self.w.pageId].layout.columns = columns
                 p.pages[self.w.pageId].name = self.pageName.text()
+                p.pages[self.w.pageId].targets = list(self.pageTargets.currentData())
             self.w.session.editPresentation(editPage)
             self._loadedFields = self._fieldState()
             return

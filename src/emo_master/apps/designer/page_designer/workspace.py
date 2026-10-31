@@ -36,6 +36,7 @@ class EditorPages(RuntimePages):
         from emo_master.core.presentation.assets import pageAssets
         kwargs['assets'] = pageAssets(workspace.session.document(), workspace.coordinator.directory)
         kwargs['projectRoot'] = workspace.coordinator.directory
+        kwargs['target'] = None  # The editor always retains desktop and web pages.
         super().__init__(*args, **kwargs)
 
     def fitToAvailableScreen(self, *, resize=True, screen=None):

@@ -39,6 +39,9 @@ class JobRecord:
     executionMode: str = "runtime"
     legacySnapshotPolicy: str = "ALL"
     previewProjectKey: str = ""
+    runGroupId: str = ""
+    sourceJobId: str = ""
+    targetSlotId: str = ""
 
     @property
     def isTerminal(self) -> bool:

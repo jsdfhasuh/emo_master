@@ -174,7 +174,7 @@ def observer(monkeypatch):
     monkeypatch.setattr(module.rpc, 'DisplayServiceStub', lambda channel: stub)
     def create(*, pinned=True, **options):
         identity = dict(expectedRuntimeInstanceId='runtime', projectId='project') if pinned else {}
-        session = DisplaySession('loopback', 'current', **identity, **options)
+        session = DisplaySession('127.0.0.1:50051', 'current', **identity, **options)
         sessions.append(session)
         return session
     yield stub, create

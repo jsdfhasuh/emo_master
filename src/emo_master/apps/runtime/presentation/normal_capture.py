@@ -56,8 +56,8 @@ def freezeNormalCapture(document, registry, resourceRoot, workflowId, *, counter
             raise ValueError(f"{sourceId}: output must belong to its explicit invocation scope")
     execution = {"projectId": document.project.projectId,
                  **({"globalVariables": {key: value.model_dump() for key, value in document.globalVariables.items()}}
-                    if document.schemaVersion in {"2.4", "2.5", "2.6", "2.7", "2.8"} else {}),
-                 **({"devices": document.devices.model_dump()} if document.schemaVersion in {"2.6", "2.7", "2.8"} else {}),
+                    if document.schemaVersion in {"2.4", "2.5", "2.6", "2.7", "2.8", "2.9"} else {}),
+                 **({"devices": document.devices.model_dump()} if document.schemaVersion in {"2.6", "2.7", "2.8", "2.9"} else {}),
                  **({"communication": document.communication.model_dump()} if document.communication is not None else {}),
                  "workflowId": workflowId,
                  "workflows": {key: value.model_dump() for key, value in document.workflows.items()},

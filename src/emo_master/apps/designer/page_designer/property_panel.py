@@ -23,6 +23,7 @@ def editorMessage(message):
             ('boolean indicator value', '判定值请填写 true 或 false。'),
             ('indicator key too long', '判定值太长，请缩短后再应用。'),
             ('navigation target page is missing', '请选择存在的目标页面。'),
+            ('navigation target is unavailable', '目标页面在当前页面的部分终端不可见，请调整显示终端或导航目标。'),
             ('current page does not display selected result scope', '当前页面没有显示所选流程的结果，请检查数据来源。'),
             ('target page does not support selected result scope', '目标页面不支持所选流程的结果，请选择其他页面。')]:
         if diagnostic in message:
@@ -84,7 +85,7 @@ class PropertyGroups:
                 continue
             name = reverse.get(widget)
             group = ('图片来源' if widget is tools.imageProperties or name == 'imageResourceId' else
-                     '本地数据库' if widget is tools.sqliteProperties else
+                     '数据库来源' if widget is tools.sqliteProperties else
                      '位置与大小' if name in LAYOUT or widget is tools.responsiveProperties else '外观' if name == 'fontSize' or widget in tools.appearance.values()
                      else '数据来源' if widget is tools.binding or widget in tools.bindingButtons else '内容')
             if group not in self.groups:
@@ -123,7 +124,7 @@ class PropertyGroups:
             if widget in tools.bindingButtons:
                 widget.setFlat(True)
             self.rows.append((wrapper, widget, name, group))
-        for group in ('内容', '图片来源', '本地数据库', '位置与大小', '外观', '数据来源'):
+        for group in ('内容', '图片来源', '数据库来源', '位置与大小', '外观', '数据来源'):
             if group in self.groups:
                 tools.form.addRow(self.groups[group][0])
 
@@ -133,7 +134,7 @@ class PropertyGroups:
             visible = kind is not None
             if widget is t.applyButton:
                 visible = True
-            if widget is t.pageName:
+            if widget in (t.pageName, t.pageTargets):
                 visible = kind is None
             if name in CONTENT.get(kind, set()):
                 visible = True

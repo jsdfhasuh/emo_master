@@ -11,6 +11,8 @@ class PreviewWindow(ObserverPages):
         from emo_master.core.presentation.assets import pageAssets
         self.assets = pageAssets(self.controller.coordinator.session.document(), self.controller.coordinator.directory)
         self.setProjectRoot(self.controller.coordinator.directory)
+        coordinator = self.controller.coordinator
+        self.historyClient = self.controller.historyClient(coordinator.session.document())
         super().reload(presentation)
 
     def __init__(self, controller, presentation):
@@ -21,7 +23,8 @@ class PreviewWindow(ObserverPages):
         from emo_master.core.presentation.assets import pageAssets
         super().__init__(presentation, parent=controller.coordinator.window, label='页面预览',
                          assets=pageAssets(controller.coordinator.session.document(), controller.coordinator.directory),
-                         projectRoot=controller.coordinator.directory)
+                         projectRoot=controller.coordinator.directory,
+                         historyClient=controller.historyClient(controller.coordinator.session.document()))
         self.setStyleSheet(self.styleSheet().replace("font-family: 'Microsoft YaHei'; font-size: 13px; ", '')
                           .replace('padding:9px 14px;', 'padding:6px 12px;'))
         self.setObjectName('pagePreview')
@@ -29,7 +32,7 @@ class PreviewWindow(ObserverPages):
         row = QHBoxLayout(self.bar)
         row.setContentsMargins(0, 0, 0, 0)
         self.source = QComboBox()
-        self.source.addItems(['示例数据', '运行结果', '本地数据'])
+        self.source.addItems(['示例数据', '运行结果', '历史数据'])
         self.source.currentIndexChanged.connect(self.chooseSource)
         row.addWidget(self.source)
         self.simulation = QComboBox()
@@ -152,8 +155,8 @@ class PreviewWindow(ObserverPages):
         self.source.setCurrentIndex(2)
         self.source.blockSignals(False)
         self.setSource(False)
-        self.banner.setText('本地数据库查阅')
-        self.status.setText('本地数据库查阅 · 点击组件刷新读取')
+        self.banner.setText('历史数据查阅')
+        self.status.setText('按组件配置读取本机或 Runtime 数据 · 点击组件刷新读取')
 
     def simulate(self, *_args):
         if self.hub is not None or self.captureCoverage is not None:
@@ -165,7 +168,7 @@ class PreviewWindow(ObserverPages):
             self.setSimulationState(state)
 
     def connectJob(self):
-        address, ok = QInputDialog.getText(self, '高级连接', '本机结果服务地址，例如 127.0.0.1:50051')
+        address, ok = QInputDialog.getText(self, '高级连接', 'Runtime 主机:端口，例如 192.168.1.20:50051')
         if not ok:
             return
         job, ok = QInputDialog.getText(self, '高级连接', '运行编号')

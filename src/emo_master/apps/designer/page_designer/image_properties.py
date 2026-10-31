@@ -28,6 +28,10 @@ class ImageProperties(QWidget):
         self.kind.addItem('固定文件路径', 'fixed')
         self.kind.addItem('表格选中行', 'selected_row')
         self.form.addRow('路径来源', self.kind)
+        self.location = QComboBox()
+        self.location.addItem('显示页面的电脑', 'display_local')
+        self.location.addItem('所连接的 Runtime', 'runtime')
+        self.form.addRow('文件所在位置', self.location)
         self.path = QLineEdit()
         self.path.setPlaceholderText('绝对路径，或相对图片根目录的路径')
         self.pathRow = QWidget()
@@ -62,6 +66,7 @@ class ImageProperties(QWidget):
             combo.setMinimumWidth(0)
         self.mode.currentIndexChanged.connect(self.updateVisibility)
         self.kind.currentIndexChanged.connect(self.updateVisibility)
+        self.location.currentIndexChanged.connect(self.updateVisibility)
         self.component.currentIndexChanged.connect(self.updateFields)
         self.chooseFile.clicked.connect(self.selectFile)
         self.chooseDirectory.clicked.connect(self.selectDirectory)
@@ -71,11 +76,20 @@ class ImageProperties(QWidget):
         isPath = self.mode.currentData() == 'path'
         selected = self.kind.currentData() == 'selected_row'
         for widget, visible in ((self.kind, isPath), (self.pathRow, isPath and not selected),
+                                (self.location, isPath and not selected),
                                 (self.component, isPath and selected), (self.field, isPath and selected),
                                 (self.baseRow, isPath)):
             widget.setVisible(visible)
             self.form.labelForField(widget).setVisible(visible)
         self.hint.setVisible(isPath)
+        table = self.tables.get(self.component.currentData())
+        location = (table.props.sqlite.location if table is not None else 'display_local') if selected else self.location.currentData()
+        remote = location == 'runtime'
+        self.chooseFile.setEnabled(not remote)
+        self.chooseDirectory.setEnabled(not remote)
+        self.hint.setText(('位置继承来源表格。' if selected else '') +
+            ('由 Runtime 读取；图片根目录是允许读取的目录，须随正式工程显式写入。' if remote else
+             '读取显示页面电脑上的 PNG、JPEG、BMP；相对路径以工程目录为根。'))
         self.modeChanged.emit()
 
     def load(self, component, presentation, pageId):
@@ -98,6 +112,7 @@ class ImageProperties(QWidget):
         self.updateFields()
         self.field.setEditText(source.field if source else '')
         self.path.setText(source.path if source else '')
+        self.location.setCurrentIndex(self.location.findData(source.location if source and source.kind == 'fixed' else 'display_local'))
         self.baseDirectory.setText(source.baseDirectory if source else '')
         self.mode.blockSignals(True)
         self.kind.blockSignals(True)
@@ -114,10 +129,11 @@ class ImageProperties(QWidget):
         self.field.clear()
         self.field.addItems(table.props.sqlite.columns if table is not None else [])
         self.field.setEditText(current)
+        self.updateVisibility()
 
     def state(self):
         return (self.mode.currentData(), self.kind.currentData(), self.path.text(),
-                self.component.currentData(), self.field.currentText(), self.baseDirectory.text())
+                self.component.currentData(), self.field.currentText(), self.baseDirectory.text(), self.location.currentData())
 
     def payload(self):
         if self.mode.currentData() != 'path':
@@ -128,15 +144,20 @@ class ImageProperties(QWidget):
         return ImagePathSource(kind=kind, path=self.path.text().strip() if kind == 'fixed' else '',
             componentId=self.component.currentData() if kind == 'selected_row' else None,
             field=self.field.currentText() if kind == 'selected_row' else '',
-            baseDirectory=self.baseDirectory.text().strip())
+            baseDirectory=self.baseDirectory.text().strip(),
+            location=self.location.currentData() if kind == 'fixed' else None)
 
     def selectFile(self):
+        if self.location.currentData() == 'runtime':
+            return
         path, _ = QFileDialog.getOpenFileName(self, '选择图片文件', self.path.text(),
             '图片 (*.png *.jpg *.jpeg *.bmp);;所有文件 (*)')
         if path:
             self.path.setText(path)
 
     def selectDirectory(self):
+        if not self.chooseDirectory.isEnabled():
+            return
         directory = QFileDialog.getExistingDirectory(self, '选择图片根目录', self.baseDirectory.text())
         if directory:
             self.baseDirectory.setText(directory)

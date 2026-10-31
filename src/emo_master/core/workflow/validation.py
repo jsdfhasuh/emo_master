@@ -179,7 +179,7 @@ def validateProjectDocument(
                     )
                 if (
                     node.loop.get("contractVersion") == CURRENT_LOOP_CONTRACT_VERSION
-                    and document.schemaVersion not in {"2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8"}
+                    and document.schemaVersion not in {"2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9"}
                 ):
                     issues.append(
                         ValidationIssue(
@@ -192,7 +192,7 @@ def validateProjectDocument(
                         )
                     )
                 bodyWorkflowId = node.loop.get("bodyWorkflowId")
-                if node.loop.get("cycleBoundary", "inherit") != "inherit" and document.schemaVersion not in {"2.6", "2.7", "2.8"}:
+                if node.loop.get("cycleBoundary", "inherit") != "inherit" and document.schemaVersion not in {"2.6", "2.7", "2.8", "2.9"}:
                     issues.append(ValidationIssue("E_LOOP_CYCLE_SCHEMA", "explicit cycle boundaries require schema 2.6",
                         projectId=projectId, workflowId=workflowId, nodeId=node.nodeId, fieldPath="loop.cycleBoundary"))
                 conditionWorkflowId = node.loop.get("conditionWorkflowId")

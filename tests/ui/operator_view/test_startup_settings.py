@@ -8,8 +8,25 @@ from PySide2.QtTest import QTest
 from emo_master.apps.operator_runtime.main import OperatorWindow
 from emo_master.apps.operator_runtime.settings import DEFAULT_ROOT_KEY, resolveDataRoot
 from emo_master.apps.operator_runtime.startup_page import StorageSettings
+from emo_master.apps.operator_runtime.startup_page import ListenerSettingsPanel
 from tests.ui.operator_view.test_production_window import closeWindow, preferences
 from tests.ui.operator_view.test_view import waitFor
+
+
+def testListenerPanelPersistsNextStartupWithoutChangingCurrent(qtApp, tmp_path):
+    from emo_master.apps.operator_runtime.settings import ListenerSettings, readListenerSettings
+    prefs = preferences(tmp_path)
+    panel = ListenerSettingsPanel(prefs, ListenerSettings())
+    panel.allowLan.setChecked(True)
+    panel.host.setText('127.0.0.1')
+    panel.port.setValue(50056)
+    panel.subscriptions.setValue(6)
+    assert panel.save()
+    assert readListenerSettings(preferences(tmp_path)) == ListenerSettings(True, '127.0.0.1', 50056, 6)
+    assert panel.current == ListenerSettings() and '下次启动' in panel.feedback.text()
+    panel.host.setText('not an IP')
+    assert not panel.save() and '保存失败' in panel.feedback.text()
+    assert readListenerSettings(preferences(tmp_path)).host == '127.0.0.1'
 
 
 @pytest.mark.parametrize("source", ["explicit", "environment", "saved", "system"])

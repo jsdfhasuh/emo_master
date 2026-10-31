@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import dataclass
+import hashlib
+import json
 import sqlite3
 import time
 
@@ -69,6 +71,7 @@ class SqlitePage:
     page: int
     hasNext: bool
     selectionRows: tuple[dict, ...] = ()
+    rowIds: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -138,33 +141,53 @@ def readPage(source, *, pageSize=20, page=0, filterColumn='', filterText='',
             parameters.append('%' + pattern + '%')
         expressions = [_displayExpression(c) for c in columns]
         expressions.extend(expression for field in fields for expression in _selectionExpressions(field, available))
+        primary = sorted((row for row in connection.execute('PRAGMA table_info(' + quoteIdentifier(source.table) + ')')
+                          if row[5]), key=lambda row: row[5])
+        identity = [quoteIdentifier(row[1]) for row in primary]
+        if not identity and connection.execute(
+                "SELECT type FROM sqlite_master WHERE name = ?", (source.table,)).fetchone()[0] == 'table':
+            identity = [next((name for name in ('_rowid_', 'rowid', 'oid') if name not in available), '')]
+            identity = [name for name in identity if name]
+        identityOffset = len(expressions)
+        expressions.extend(identity)
+        sortExpressions = [quoteIdentifier(sort) + (' DESC' if descending else ' ASC')]
+        sortExpressions.extend(identity)
         sql = ('SELECT ' + ', '.join(expressions) +
                ' FROM ' + quoteIdentifier(source.table) + where +
-               ' ORDER BY ' + quoteIdentifier(sort) + (' DESC' if descending else ' ASC') +
+               ' ORDER BY ' + ', '.join(sortExpressions) +
                ' LIMIT ? OFFSET ?')
         rows = connection.execute(sql, (*parameters, pageSize + 1, page * pageSize)).fetchall()
         selected = tuple({field: _selectionValue(row[len(columns) + index * 2], row[len(columns) + index * 2 + 1])
                           for index, field in enumerate(fields)} for row in rows[:pageSize])
         return SqlitePage(tuple(columns), tuple(tuple(row[:len(columns)]) for row in rows[:pageSize]),
-                          page, len(rows) > pageSize, selected)
+                          page, len(rows) > pageSize, selected,
+                          tuple(hashlib.sha256(json.dumps(list(row[identityOffset:]), default=str,
+                              ensure_ascii=True).encode()).hexdigest() if identity else '' for row in rows[:pageSize]))
 
 
-def readValue(source, *, projectRoot=None):
+def readValue(source, *, projectRoot=None, filterColumn='', filterText=''):
     with _connection(source.databasePath, projectRoot) as connection:
         available = _columns(connection, source.table)
         aggregate = source.aggregate
         if aggregate not in {'count', 'sum', 'avg', 'min', 'max'}:
             raise ValueError('统计方式无效')
         table = quoteIdentifier(source.table)
+        parameters = []
+        if filterText:
+            if filterColumn not in source.columns or filterColumn not in available:
+                raise ValueError('请选择要筛选的显示字段')
+            pattern = filterText.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+            table += ' WHERE CAST(' + quoteIdentifier(filterColumn) + " AS TEXT) LIKE ? ESCAPE '\\'"
+            parameters.append('%' + pattern + '%')
         if aggregate == 'count':
-            return connection.execute('SELECT COUNT(*) FROM ' + table).fetchone()[0]
+            return connection.execute('SELECT COUNT(*) FROM ' + table, parameters).fetchone()[0]
         if source.valueColumn not in available:
             raise ValueError('请先选择有效的统计字段')
         column = quoteIdentifier(source.valueColumn)
         if aggregate in {'sum', 'avg'}:
             value, invalid = connection.execute(
                 f'SELECT {aggregate}({column}), MAX(CASE WHEN {column} IS NOT NULL '
-                f"AND typeof({column}) NOT IN ('integer', 'real') THEN 1 ELSE 0 END) FROM {table}").fetchone()
+                f"AND typeof({column}) NOT IN ('integer', 'real') THEN 1 ELSE 0 END) FROM {table}", parameters).fetchone()
             if invalid:
                 raise ValueError('统计字段包含非数值，不能求和或计算平均值')
             return value
@@ -172,4 +195,4 @@ def readValue(source, *, projectRoot=None):
         # truncating each row first would change the minimum/maximum itself.
         expression = _displayExpression('value')
         return connection.execute(
-            f'SELECT {expression} FROM (SELECT {aggregate}({column}) AS value FROM {table})').fetchone()[0]
+            f'SELECT {expression} FROM (SELECT {aggregate}({column}) AS value FROM {table})', parameters).fetchone()[0]

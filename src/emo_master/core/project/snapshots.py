@@ -16,6 +16,7 @@ from typing import Any, Literal
 from uuid import uuid4
 
 from emo_master.core.plugin.models import PluginManifest
+from emo_panel_protocol.canonical import canonicalJson, revisionOf
 from emo_master.core.presentation.models import walkComponents
 from emo_master.core.presentation.validation import validateBindings
 from emo_master.core.project.models import ProjectDocument
@@ -31,14 +32,6 @@ PARAMETER_PURPOSES: dict[tuple[str, tuple[str, ...]], str] = {
     ("vision.io.huaray_camera", ("cameraKey",)): "camera_serial",
     ("communication.tcp.client", ("host",)): "device_address",
 }
-
-
-def canonicalJson(value: object) -> str:
-    return json.dumps(value, sort_keys=True, ensure_ascii=True, separators=(",", ":"), allow_nan=False)
-
-
-def revisionOf(value: object) -> str:
-    return hashlib.sha256(canonicalJson(value).encode("utf-8")).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -201,7 +194,7 @@ def freezeProjectSnapshot(
     parameterPurposes: Mapping[tuple[str, tuple[str, ...]], str] | None = None,
 ) -> ProjectSnapshot:
     project = ProjectDocument.model_validate(project.model_dump())
-    if project.schemaVersion in {"2.6", "2.7", "2.8"}:
+    if project.schemaVersion in {"2.6", "2.7", "2.8", "2.9"}:
         raise ValueError("device project snapshots require managed device resource mapping")
     if mode not in {"debug", "release"} or (mode == "release") != bool(releaseRevision):
         raise ValueError("release requires releaseRevision; debug forbids it")

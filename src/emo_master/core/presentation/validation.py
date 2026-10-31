@@ -134,6 +134,13 @@ def validateBindings(
                     target = pageComponents.get(imagePath.componentId)
                     if target is None or target.type != "sqlite_table":
                         report(imageLocation, "图片来源必须是当前页面的 SQLite 历史表格", "image_path_source_missing")
+                from emo_master.core.presentation.targets import effectiveImageLocation
+                try:
+                    runtimeImage = effectiveImageLocation(presentation, pageId, component) == 'runtime'
+                except ValueError:
+                    runtimeImage = False  # The missing source was already reported above.
+                if publish and runtimeImage and not imagePath.baseDirectory:
+                    report(imageLocation, "Runtime 图片需要明确的允许根目录", "image_path_unconfigured")
             for field, purpose in (("imageResourceId", "page_image"), ("iconResourceId", "icon")):
                 resourceId = getattr(component.props, field)
                 if resourceId:
@@ -160,6 +167,8 @@ def validateBindings(
                 actionPath = f"{path}.actions.{event}"
                 if action.pageId and action.pageId not in presentation.pages:
                     report(actionPath, "navigation target missing", "navigation_invalid")
+                elif action.pageId and not set(page.targets) <= set(presentation.pages[action.pageId].targets):
+                    report(actionPath, "navigation target is unavailable on this page's targets", "navigation_target_invalid")
                 if action.resultScopeId:
                     if action.resultScopeId not in pageScopes(presentation, pageId):
                         report(actionPath, "current page does not display selected result scope")

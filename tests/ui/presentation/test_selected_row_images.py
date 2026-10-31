@@ -94,7 +94,13 @@ def testNewQueryImmediatelyClearsSelectionAndImages(qtApp, history, action):
         table.filterButton.click()
     assert table.selectedRow() is None and original.image.isNull()
     settle(qtApp, lambda: not table.busy)
-    assert original.image.isNull()
+    if action == 'refresh':
+        settle(qtApp, lambda: not original.image.isNull())
+        assert table.table.selectionModel().selectedRows()[0].row() == 0
+        assert original.image.pixelColor(0, 0) == QColor('red')
+    else:
+        # The selected record no longer belongs to this filtered/sorted page.
+        assert table.selectedRow() is None and original.image.isNull()
     window.close()
 
 

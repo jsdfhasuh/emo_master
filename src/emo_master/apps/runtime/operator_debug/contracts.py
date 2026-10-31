@@ -174,7 +174,7 @@ def draft(raw, projectId, workflowId, nodeId, operatorId, admitted):
         identifier(value)
     payload = parse(raw, MAX_REQUEST_BYTES)
     try:
-        if payload["schemaVersion"] not in {"2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8"}:
+        if payload["schemaVersion"] not in {"2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9"}:
             raise ValueError("unsupported project version")
         if payload["project"]["projectId"] != projectId:
             raise ValueError("project identity changed")

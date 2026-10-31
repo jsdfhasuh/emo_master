@@ -128,8 +128,8 @@ class ProjectConfigurationRpcMixin:
                                for r in runtime.jobRepository.all())):
                     raise ConfigurationError("E_CONFIG_REQUIRES_STOP", "retire execution before repairing online recovery")
             projectChanged = document.project.projectId != current.project.projectId
-            if document.schemaVersion not in {"2.6", "2.7", "2.8"}:
-                raise ConfigurationError("E_CONFIG_PROJECT", "online writes require current schema 2.8")
+            if document.schemaVersion not in {"2.6", "2.7", "2.8", "2.9"}:
+                raise ConfigurationError("E_CONFIG_PROJECT", "online writes require current schema 2.9")
             from emo_master.apps.runtime.context.global_variables import ProjectGlobalVariables
             with runtime.sqliteStore.connection() as connection:
                 ProjectGlobalVariables(runtime.sqliteStore, document.project.projectId,
@@ -584,6 +584,11 @@ class ProjectConfigurationRpcMixin:
             with runtime._projectStateLock:
                 if runtime._closing or request.runtime_instance_id != runtime.runtimeInstanceId:
                     raise ConfigurationError("E_CONFIG_INSTANCE", "Runtime changed or is closing")
+                if request.initial_import_id:
+                    if context is not None and not context.is_active():
+                        raise ConfigurationError("E_CONFIG_CANCELLED", "resource transfer cancelled")
+                    from .imports import transferImportResource
+                    return transferImportResource(runtime, request)
                 current = runtime.projectConfiguration.current
                 if current is None or not request.project_id or len(request.project_id) > 160:
                     raise ConfigurationError("E_CONFIG_PROJECT", "resource upload requires an online authority and a bounded candidate project ID")
@@ -591,6 +596,44 @@ class ProjectConfigurationRpcMixin:
                     raise ConfigurationError("E_CONFIG_CANCELLED", "resource transfer cancelled")
             return runtime.projectResourceTransfers.execute(request)
         return self._configurationReply(transfer)
+
+    def ReadProjectResource(self, request, context):
+        """Download a declared input/asset in bounded chunks, never an arbitrary path."""
+        runtime: Any = self
+        try:
+            with runtime._projectStateLock:
+                if request.runtime_instance_id != runtime.runtimeInstanceId:
+                    raise ConfigurationError('E_CONFIG_INSTANCE', 'Runtime instance changed')
+                current = runtime.projectConfiguration.current
+                if current is None or current['payload']['project']['projectId'] != request.project_id:
+                    raise ConfigurationError('E_CONFIG_PROJECT', 'online project does not match')
+                if request.expected_document_revision != current['documentRevision']:
+                    raise ConfigurationError('E_CONFIG_CONFLICT', 'online document changed')
+                document = ProjectDocument.model_validate(current['payload'])
+                resource = document.resources.items.get(request.resource_id) if document.resources else None
+                if resource is None or request.sha256 != resource.sha256:
+                    raise ConfigurationError('E_RESOURCE_DECLARATION', 'resource ID or digest does not match')
+                paths = runtime.projectResourceTransfers.resolve(document)
+                path = paths.get(request.resource_id)
+                if path is None:
+                    root = Path(current['sourcePath']).parent.resolve()
+                    path = (root / resource.path).resolve()
+                    if not path.is_relative_to(root):
+                        raise ConfigurationError('E_RESOURCE_PATH', 'resource escapes its declared project root')
+                if not path.is_file() or path.stat().st_size != resource.size:
+                    raise ConfigurationError('E_RESOURCE_CONTENT', 'declared resource is unavailable or changed')
+                if request.offset > resource.size or request.max_bytes > 512 * 1024:
+                    raise ConfigurationError('E_RESOURCE_RANGE', 'invalid resource download range')
+                # Retain the configuration lock for this single bounded read so
+                # normal configuration retirement cannot reclaim an owned file.
+                with path.open('rb') as stream:
+                    stream.seek(request.offset)
+                    data = stream.read(request.max_bytes or 512 * 1024)
+                return pb.ReadProjectResourceReply(ok=True, data=data, offset=request.offset,
+                    total_size=resource.size, sha256=resource.sha256, eof=request.offset + len(data) >= resource.size)
+        except (ConfigurationError, OSError, ValueError) as error:
+            return pb.ReadProjectResourceReply(ok=False, code=getattr(error, 'code', 'E_RESOURCE_READ'),
+                message=str(error))
 
     def RetryProjectResourceRecovery(self, request, context):
         runtime: Any = self

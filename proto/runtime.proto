@@ -22,6 +22,13 @@ message InitialProjectConfigurationRequest {
   string expected_runtime_instance_id = 5;
   // Source identity only: the in-memory payload is authoritative; never save this file.
   string project_path = 6;
+  string import_id = 7; // Prepared remote candidate; local paths must be empty.
+}
+
+message PrepareProjectImportRequest {
+  string request_id = 1;
+  string expected_runtime_instance_id = 2;
+  string project_json = 3;
 }
 
 message ValidateProjectRequest {
@@ -55,6 +62,7 @@ message ProjectResourceTransferRequest {
   bytes data = 7;
   string replacement_of = 8;
   int64 expected_document_revision = 9;
+  string initial_import_id = 10;
 }
 message RetryProjectResourceRecoveryRequest {
   string request_id = 1;
@@ -107,6 +115,9 @@ message StartRequestLookup {
 message StopJobRequest {
   string job_id = 1;
   string mode = 2;
+  optional string expected_runtime_instance_id = 3;
+  optional string expected_project_id = 4;
+  optional string expected_run_group_id = 5;
 }
 
 message StopJobReply {
@@ -131,6 +142,134 @@ message GetJobStatusReply {
   int64 started_at_ms = 9;
   int64 ended_at_ms = 10;
   string legacy_snapshot_policy = 11;
+}
+
+// Shared by desktop, remote Designer and other Runtime RPC clients.
+message RuntimeInfoRequest {}
+message RuntimeInfoReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string runtime_instance_id = 4;
+  string protocol_version = 5;
+  repeated string capabilities = 6;
+  bool production_mode = 7;
+  string project_id = 8;
+  int64 document_revision = 9;
+  string production_inputs_json = 10;
+  string production_execution_mode = 11;
+  repeated string startup_workflow_ids = 12;
+  string history_definition_revision = 13;
+}
+message ListRunsRequest {
+  string runtime_instance_id = 1;
+  string project_id = 2;
+  string workflow_id = 3;
+  bool include_terminal = 4;
+}
+message RunState {
+  string runtime_instance_id = 1;
+  string project_id = 2;
+  string workflow_id = 3;
+  string job_id = 4;
+  string run_group_id = 5;
+  string source_job_id = 6;
+  string target_slot_id = 7;
+  string status = 8;
+  bool active = 9;
+  bool owns_resources = 10;
+  bool capture_enabled = 11;
+  bool display_resources_released = 12;
+  string workflow_name = 13;
+  int64 accepted_at_ms = 14;
+  int64 started_at_ms = 15;
+  int64 ended_at_ms = 16;
+  string error_code = 17;
+  string message = 18;
+  string start_request_id = 19;
+  repeated string allowed_actions = 20;
+}
+message ListRunsReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string runtime_instance_id = 4;
+  repeated RunState runs = 5;
+}
+message GetRunStateRequest {
+  string runtime_instance_id = 1;
+  string project_id = 2;
+  string job_id = 3;
+}
+message GetRunStateReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  RunState run = 4;
+}
+
+message HistoryContext {
+  string runtime_instance_id = 1;
+  string project_id = 2;
+  string history_definition_revision = 3;
+}
+message QueryHistoryPageRequest {
+  HistoryContext context = 1;
+  string component_id = 2;
+  uint32 page = 3;
+  uint32 page_size = 4;
+  string filter_column = 5;
+  string filter_text = 6;
+  string order_by = 7;
+  optional bool descending = 8;
+}
+message QueryHistoryAggregateRequest {
+  HistoryContext context = 1;
+  string component_id = 2;
+  string filter_column = 3;
+  string filter_text = 4;
+}
+message ReadHistoryImageRequest {
+  HistoryContext context = 1;
+  oneof target {
+    string image_ref = 2;
+    string component_id = 3;
+  }
+}
+message HistoryReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string result_json = 4;
+}
+message HistoryImageReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  bytes data = 4;
+  string mime_type = 5;
+  uint32 width = 6;
+  uint32 height = 7;
+  string status = 8;
+}
+message ReadProjectResourceRequest {
+  string runtime_instance_id = 1;
+  string project_id = 2;
+  string resource_id = 3;
+  string sha256 = 4;
+  uint64 offset = 5;
+  uint32 max_bytes = 6;
+  int64 expected_document_revision = 7;
+}
+message ReadProjectResourceReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  bytes data = 4;
+  uint64 offset = 5;
+  uint64 total_size = 6;
+  string sha256 = 7;
+  bool eof = 8;
 }
 
 message StreamJobEventsRequest {
@@ -532,6 +671,9 @@ message WorkflowInfo {
   bool is_entry = 3;
   string inputs_json = 4;
   string outputs_json = 5;
+  bool can_start = 6; // Basic admission state only; StartJob performs full validation.
+  string start_block_reason = 7;
+  string default_inputs_json = 8;
 }
 
 message ListWorkflowsReply {
@@ -623,6 +765,14 @@ message DispatchQueueReply {
 }
 
 service RuntimeService {
+  rpc PrepareProjectImport(PrepareProjectImportRequest) returns (ProjectConfigurationReply);
+  rpc GetRuntimeInfo(RuntimeInfoRequest) returns (RuntimeInfoReply);
+  rpc ListRuns(ListRunsRequest) returns (ListRunsReply);
+  rpc GetRunState(GetRunStateRequest) returns (GetRunStateReply);
+  rpc QueryHistoryPage(QueryHistoryPageRequest) returns (HistoryReply);
+  rpc QueryHistoryAggregate(QueryHistoryAggregateRequest) returns (HistoryReply);
+  rpc ReadHistoryImage(ReadHistoryImageRequest) returns (HistoryImageReply);
+  rpc ReadProjectResource(ReadProjectResourceRequest) returns (ReadProjectResourceReply);
   rpc GetDispatchQueueState(DispatchQueueRequest) returns (DispatchQueueReply);
   rpc GetOnlineProjectSnapshot(OnlineProjectRequest) returns (ProjectConfigurationReply);
   rpc InitializeProjectConfiguration(InitialProjectConfigurationRequest) returns (ProjectConfigurationReply);

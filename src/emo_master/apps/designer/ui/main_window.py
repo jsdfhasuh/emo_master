@@ -3666,7 +3666,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return False
         if self.currentProjectDir is None:
             return True
-        if self.pageCoordinator is not None and self.pageCoordinator.session.document().schemaVersion in {"2.6", "2.7", "2.8"}:
+        if self.pageCoordinator is not None and self.pageCoordinator.session.document().schemaVersion in {"2.6", "2.7", "2.8", "2.9"}:
             # First publication uses the same explicit draft/resource path as
             # Runtime > Write, never Save-to-disk followed by legacy LoadProject.
             from emo_master.apps.designer.services.runtime_client import RuntimeClientError
@@ -3699,7 +3699,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def _runtimeProjectReference(self) -> str | None:
         if self.pageCoordinator is not None:
             document = self.pageCoordinator.session.document()
-            if document.schemaVersion in {"2.6", "2.7", "2.8"}:
+            if document.schemaVersion in {"2.6", "2.7", "2.8", "2.9"}:
                 # The committed Runtime copy may be managed remotely and need
                 # not share the local file path. UUID mismatch remains an error.
                 snapshot = self.runtimeClient.getOnlineProjectSnapshot(document.project.projectId)
@@ -4791,7 +4791,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if self.pageCoordinator is None or not self.pageCoordinator._canSync():
                 return
             dialog = DeviceNodeDialog(self.pageCoordinator, asdict(node), definition.get("deviceRequirements", {}), self,
-                                      migrateLegacy=self.pageCoordinator.session.document().schemaVersion not in {'2.6', '2.7', '2.8'})
+                                      migrateLegacy=self.pageCoordinator.session.document().schemaVersion not in {'2.6', '2.7', '2.8', '2.9'})
             dialog.exec_()
             return
 

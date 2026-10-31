@@ -44,7 +44,7 @@ class ProjectEditSession:
         self._editing = False
         self._saved = self._signature()
         # An explicit upgrade is a change until persisted, including an empty page set.
-        if enablePresentation and payload.get("schemaVersion") not in {"2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8"}:
+        if enablePresentation and payload.get("schemaVersion") not in {"2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9"}:
             self._saved = "unpersisted-2.2-upgrade"
         from emo_master.apps.designer.state.presentation_store import PresentationStore
 
@@ -55,6 +55,11 @@ class ProjectEditSession:
         if self.document().presentation is None:
             with self.transaction():
                 self._restore(migrateProjectPayload(self.payload(), enablePresentation=True))
+
+    def enableRemotePresentation(self) -> None:
+        """Explicit format upgrade; ordinary opening/saving preserves old formats."""
+        with self.transaction():
+            self._restore(migrateProjectPayload(self.payload(), enableRemotePresentation=True))
 
     def acceptLoaded(self) -> None:
         """Called only after the shared workflow controller has loaded a project."""
@@ -130,6 +135,12 @@ class ProjectEditSession:
             document = self.document()
             assert document.presentation is not None
             edit(document.presentation)
+            from emo_master.core.presentation.targets import usesRemotePresentation
+            if document.presentation.schemaVersion != '1.2' and usesRemotePresentation(document.presentation):
+                if document.schemaVersion not in {'2.7', '2.8'}:
+                    raise ValueError('远程页面需要先通过设备迁移升级到工程 2.7 或更新版本')
+                document.schemaVersion = '2.9'
+                document.presentation.schemaVersion = '1.2'
             # Validate after mutation, not model_copy(update=...) which bypasses validation.
             checked = ProjectDocument.model_validate(document.model_dump())
             assert checked.presentation is not None

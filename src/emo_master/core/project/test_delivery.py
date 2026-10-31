@@ -65,7 +65,7 @@ def trustedRegistry():
 
 def portableDocument(document):
     result = ProjectDocument.model_validate(document.model_dump())
-    if result.schemaVersion in {"2.6", "2.7", "2.8"}:
+    if result.schemaVersion in {"2.6", "2.7", "2.8", "2.9"}:
         raise ValueError('device projects require managed Runtime delivery, not a local page test package')
     if result.resources is None or result.presentation is None:
         raise ValueError('test delivery requires explicit project 2.2')

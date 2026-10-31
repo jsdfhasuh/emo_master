@@ -9,14 +9,20 @@ from PySide2.QtWidgets import (
 
 
 class SqliteProperties(QWidget):
-    def __init__(self, parent=None, *, projectRoot=None):
+    def __init__(self, parent=None, *, projectRoot=None, inspectRuntime=None):
         super().__init__(parent)
         self.schema = {}
         self.projectRoot = projectRoot or (lambda: None)
+        self.inspectRuntime = inspectRuntime
+        self.schemaLocation = 'display_local'
         self.schemaPath = ''
         self.kind = 'sqlite_table'
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        self.location = QComboBox()
+        self.location.addItem('显示页面的电脑', 'display_local')
+        self.location.addItem('所连接的 Runtime', 'runtime')
+        layout.addWidget(self.location)
         self.databasePath = QLineEdit()
         self.databasePath.setPlaceholderText('已有 SQLite 文件；相对路径以工程目录为根')
         layout.addWidget(self.databasePath)
@@ -60,6 +66,16 @@ class SqliteProperties(QWidget):
         self.readButton.clicked.connect(self.readMetadata)
         self.table.currentIndexChanged.connect(self.tableChanged)
         self.aggregate.currentIndexChanged.connect(self.updateValueField)
+        self.location.currentIndexChanged.connect(self.updateLocation)
+
+    def updateLocation(self):
+        remote = self.location.currentData() == 'runtime'
+        self.chooseButton.setEnabled(not remote)
+        self.readButton.setText('读取 Runtime 表和字段' if remote else '读取表和字段')
+        self.databasePath.setPlaceholderText('Runtime 上已有数据库；相对其正式工程目录' if remote
+                                              else '已有 SQLite 文件；相对路径以工程目录为根')
+        self.message.setText('由所连接 Runtime 读取。数据库路径和表字段须显式写入 Runtime 后才用于历史查询。'
+                             if remote else '读取显示页面电脑的已有数据库；数据库文件不会随工程打包。')
 
     @staticmethod
     def _pick(combo, values, current='', empty='未选择'):
@@ -72,8 +88,9 @@ class SqliteProperties(QWidget):
     def load(self, source, kind):
         """Restore a saved choice without probing its file or changing its fields."""
         self.kind = kind
+        self.location.setCurrentIndex(self.location.findData(source.location))
         self.databasePath.setText(source.databasePath)
-        known = self.schema if self.schemaPath == source.databasePath else {}
+        known = self.schema if self.schemaPath == source.databasePath and self.schemaLocation == source.location else {}
         self.table.blockSignals(True)
         self._pick(self.table, known, source.table)
         self.table.blockSignals(False)
@@ -88,7 +105,7 @@ class SqliteProperties(QWidget):
             widget.setVisible(kind == 'sqlite_value')
             self.form.labelForField(widget).setVisible(kind == 'sqlite_value')
         self.updateValueField()
-        self.message.setText('仅查询本机已有数据库；数据库文件不会随工程打包。')
+        self.updateLocation()
 
     def _fields(self, fields, selected=(), orderBy='', valueColumn=''):
         self.columns.clear()
@@ -109,10 +126,10 @@ class SqliteProperties(QWidget):
         return (self.databasePath.text().strip(), self.table.currentData() or '',
                 tuple(self.selectedColumns()), self.orderBy.currentData() or '',
                 self.direction.currentData(), self.aggregate.currentData(),
-                self.valueColumn.currentData() or '')
+                self.valueColumn.currentData() or '', self.location.currentData())
 
     def payload(self):
-        path, table, columns, order, descending, aggregate, value = self.state()
+        path, table, columns, order, descending, aggregate, value, location = self.state()
         if path and not table:
             raise ValueError('SQLite：请读取表和字段，并选择数据表。')
         if table and not path:
@@ -124,9 +141,11 @@ class SqliteProperties(QWidget):
         if len(columns) > 32:
             raise ValueError('SQLite：最多选择 32 个显示字段。')
         return dict(databasePath=path, table=table, columns=list(columns), orderBy=order,
-                    descending=descending, aggregate=aggregate, valueColumn=value)
+                    descending=descending, aggregate=aggregate, valueColumn=value, location=location)
 
     def chooseDatabase(self):
+        if self.location.currentData() == 'runtime':
+            return
         path, _ = QFileDialog.getOpenFileName(self, '选择已有 SQLite 数据库', self.databasePath.text(),
             'SQLite 数据库 (*.db *.sqlite *.sqlite3 *.db3);;所有文件 (*)')
         if path:
@@ -137,15 +156,21 @@ class SqliteProperties(QWidget):
         from emo_master.core.presentation.sqlite_reader import inspectDatabase
         path = self.databasePath.text().strip()
         try:
-            from emo_master.core.presentation.local_paths import resolveLocalPath
-            resolved = str(resolveLocalPath(path, self.projectRoot(), purpose='数据库')) if path else path
-            schema = inspectDatabase(resolved)
+            if self.location.currentData() == 'runtime':
+                if self.inspectRuntime is None:
+                    raise ValueError('请连接 Runtime 后读取其数据库结构')
+                schema = self.inspectRuntime(path, self.table.currentData() or '')
+            else:
+                from emo_master.core.presentation.local_paths import resolveLocalPath
+                resolved = str(resolveLocalPath(path, self.projectRoot(), purpose='数据库')) if path else path
+                schema = inspectDatabase(resolved)
         except (OSError, ValueError, RuntimeError, sqlite3.Error) as error:
             self.message.setText('读取失败：' + str(error))
             return
         old = self.state()
         same = self.schemaPath == path
         self.schema, self.schemaPath = schema, path
+        self.schemaLocation = self.location.currentData()
         table = old[1] if old[1] in schema else next(iter(schema), '')
         self.table.blockSignals(True)
         self._pick(self.table, schema, table)
@@ -158,7 +183,8 @@ class SqliteProperties(QWidget):
                              else '此数据库没有可查询的数据表或视图。')
 
     def tableChanged(self):
-        fields = self.schema.get(self.table.currentData(), []) if self.schemaPath == self.databasePath.text().strip() else []
+        fields = self.schema.get(self.table.currentData(), []) if (self.schemaPath == self.databasePath.text().strip()
+                   and self.schemaLocation == self.location.currentData()) else []
         self._fields(fields, fields[:min(8, len(fields))])
 
     def updateValueField(self):

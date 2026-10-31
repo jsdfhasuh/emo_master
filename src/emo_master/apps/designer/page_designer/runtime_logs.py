@@ -7,6 +7,7 @@ import grpc
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rpc
+from emo_master.clients.runtime.connection import connectionProfile, createChannel
 
 
 def eventPayload(event):
@@ -24,7 +25,8 @@ def eventPayload(event):
 class PreviewRuntimeLogs:
     """At most the selected producer/consumer pair; no extra Runtime or Job start."""
     def __init__(self, address, jobIds, afterSequences=None):
-        self.channel = grpc.insecure_channel(address)
+        self.connectionProfile = connectionProfile(address)
+        self.channel = createChannel(self.connectionProfile)
         self.stub = rpc.RuntimeServiceStub(self.channel)
         self.events = queue.Queue(maxsize=128)
         self.stop = threading.Event()

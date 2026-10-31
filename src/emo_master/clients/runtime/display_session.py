@@ -5,7 +5,6 @@ WorkflowRunner, Supervisor or Runtime service implementation is loaded.
 """
 from collections import deque
 import hashlib
-import json
 import queue
 import threading
 import time
@@ -15,37 +14,10 @@ import grpc
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rpc
-from emo_master.core.presentation.results import ClosedResult
+from emo_panel_protocol.decoding import decodeResult
 from emo_master.clients.runtime.view_state import JobView, ScopeView, SessionView
 from emo_master.clients.runtime.display_logs import DisplayLog
-
-
-def decodeResult(wire):
-    identity = wire.identity
-    sources = []
-    for source in wire.sources:
-        value = {"sourceId": source.source_id, "state": source.state}
-        if source.HasField("value_json"):
-            value["valueJson"] = source.value_json
-        if source.reason_code:
-            value.update(reasonCode=source.reason_code, reason=source.reason or source.reason_code)
-        if source.HasField("image"):
-            image = source.image
-            value["image"] = {"resourceId": image.resource_id, "ownerResultKey": image.owner_result_key,
-                "byteSize": image.byte_size, "sha256": image.sha256, "mimeType": image.mime_type,
-                "provenance": {"frameIdentity": image.frame_identity, "coordinateSpaceId": image.coordinate_space_id,
-                               "trust": image.trust, "adapterVersion": image.adapter_version or None,
-                               "parentFrameIdentity": image.parent_frame_identity or None}}
-        sources.append(value)
-    return ClosedResult.model_validate_json(json.dumps({"identity": {
-        "runtimeInstanceId": identity.runtime_instance_id, "jobId": identity.job_id,
-        "resultScopeId": identity.result_scope_id, "invocationId": identity.invocation_id,
-        "resultKey": identity.result_key, "resultOrdinal": identity.result_ordinal,
-        "executionRevision": identity.execution_revision, "capturePlanRevision": identity.capture_plan_revision,
-        "mode": identity.mode}, "expectedSourceIds": list(wire.expected_source_ids), "sources": sources,
-        "status": wire.status, "executionTerminal": wire.execution_terminal,
-        "timing": {"captureStartedNs": wire.capture_started_ns, "scopeEndedNs": wire.scope_ended_ns,
-                   "closedNs": wire.closed_ns} if wire.capture_started_ns else None}))
+from emo_master.clients.runtime.connection import connectionProfile, createChannel
 
 
 def pngDecodedBytes(content):
@@ -89,8 +61,9 @@ class DisplaySession:
             raise ValueError("an explicitly selected Job is required")
         if bool(expectedRuntimeInstanceId) != bool(projectId):
             raise ValueError("Runtime and project identity must be supplied together")
-        self.channel = grpc.insecure_channel(address, options=[("grpc.max_receive_message_length", 9 * 1024 * 1024)])
-        self.address = address
+        self.connectionProfile = connectionProfile(address)
+        self.channel = createChannel(self.connectionProfile)
+        self.address = self.connectionProfile.target
         self.stub = rpc.DisplayServiceStub(self.channel)
         self.jobId = jobId
         self.instanceId = expectedRuntimeInstanceId
@@ -438,7 +411,7 @@ class DisplaySession:
         # These read-only calls were rejected before execution. Share their
         # original 0.5s budget across brief control-admission contention; never
         # retry a write, a different quota/error, or extend the call deadline.
-        deadline = time.monotonic() + .5
+        deadline = time.monotonic() + min(.5, self.connectionProfile.timeoutSeconds)
         delay = .01
         while True:
             try:
@@ -654,7 +627,8 @@ class DisplaySession:
 
     def _readImage(self, result, image, *, beforeDecode=None):
         reply = self.stub.ReadAsset(pb.DisplayAssetRequest(runtime_instance_id=result.identity.runtimeInstanceId,
-            job_id=result.identity.jobId, resource_id=image.resourceId), timeout=.5)
+            job_id=result.identity.jobId, resource_id=image.resourceId),
+            timeout=min(.5, self.connectionProfile.timeoutSeconds))
         content = reply.content
         if len(content) != image.byteSize or hashlib.sha256(content).hexdigest() != image.sha256 or reply.sha256 != image.sha256:
             raise ValueError("asset digest/size mismatch")

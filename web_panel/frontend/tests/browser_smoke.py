@@ -13,7 +13,7 @@ threading.Thread(target=server.serve_forever,daemon=True).start()
 origin=f'http://127.0.0.1:{server.server_port}'
 panel={'id':'demo-panel','name':'演示面板','packageRevision':'draft-1','pages':[{'id':'home','title':'生产总览','components':[{'id':'title','type':'page_title'},{'id':'image','type':'image','label':'本轮图片','binding':'image'},{'id':'score','type':'number','label':'分数','binding':'score','props':{'style':{'fontSize':24}}},{'id':'verdict','type':'indicator','label':'判定','binding':'verdict'},{'id':'clock','type':'clock'},{'id':'state','type':'runtime_status'},{'id':'table','type':'table','props':{'value':[{'x':1}]}},{'id':'text','type':'text','props':{'text':'<script>window.PWNED=1</script>'}},{'id':'box','type':'container','children':[{'id':'nested','type':'text','props':{'text':'嵌套内容'}}]},{'id':'nav','type':'page_navigation'},{'id':'button','type':'navigation_button','props':{'action':'navigate','targetPageId':'detail','text':'详情'}},{'id':'history-table','type':'sqlite_table'},{'id':'aggregate','type':'sqlite_value'}]},{'id':'detail','title':'详情','components':[{'id':'detail-title','type':'page_title'}]}]}
 result={'resultKey':'r1','resultScopeId':'scope-1','sources':{'image':{'state':'ready','image':{'url':'/api/assets/demo-image','ownerResultKey':'r1'}},'score':{'state':'ready','value':97},'verdict':{'state':'ready','value':'OK'}}}
-state={'logged':False,'start':0,'freeze':0}
+state={'logged':False,'start':0,'stop':0,'freeze':0,'next_start':'accepted','next_stop':'accepted','job_status':'running','operations':{}}
 def mock(route):
  path=route.request.url.replace(origin,'').split('?')[0]
  if path=='/api/session':state['logged']=True
@@ -22,7 +22,7 @@ def mock(route):
   data={'username':'tester','role':'admin','csrf':'fixture','mode':'mock'}
  elif path=='/api/panels':data=[panel]
  elif path=='/api/panels/demo-panel':data=panel
- elif path in ['/api/runs','/api/runtimes/configured/runs']:data=[{'id':'demo-run','state':'running','workflowId':'demo-workflow','runtimeInstanceId':'mock-instance','projectId':'demo-project','configurationRevision':'1'}]
+ elif path in ['/api/runs','/api/runtimes/configured/runs']:data=[{'id':'demo-run','state':state['job_status'],'status':state['job_status'].upper(),'runGroupId':'','ownsResources':state['job_status']!='aborted','displayResourcesReleased':False,'workflowId':'demo-workflow','runtimeInstanceId':'mock-instance','projectId':'demo-project','configurationRevision':'1'}]
  elif path=='/api/runtimes':data=[{'id':'configured','alias':'演示','mode':'mock','permissions':['view','control']}]
  elif path=='/api/runtimes/configured/status':data={'counters':{'source':'mock-authoritative','total':'1','ok':'1','ng':'0','at':'fixture'},'events':{'events':[],'nextSequence':'0','resetRequired':False,'source':'mock-events'}}
  elif path=='/api/runtimes/configured/workflows':data=[{'id':'demo-workflow','name':'Demo workflow','runtimeInstanceId':'mock-instance','projectId':'demo-project','configurationRevision':'1'}]
@@ -34,7 +34,17 @@ def mock(route):
  elif path=='/api/packages':data=[]
  elif path=='/api/admin/users':data=[{'username':'tester','role':'admin'}]
  elif path=='/api/admin/runtimes':data=[{'id':'configured','alias':'演示','mode':'mock','address':''}]
- elif path=='/api/runs/start':state['start']+=1;data={'operationId':'op-1','state':'succeeded'}
+ elif path=='/api/runs/start':
+  state['start']+=1;request=route.request.post_data_json;mode=state['next_start'];state['next_start']='accepted'
+  data={'operationId':'op-1','state':mode,'runId':'demo-run' if mode=='accepted' else None,'message':'fixture admission rejected' if mode=='rejected' else 'Start outcome unknown' if mode=='unknown' else 'accepted'}
+  state['operations'][request['requestId']]={'state':'accepted','runId':'demo-run','message':'Original Start located'}
+ elif path=='/api/runs/demo-run/stop':
+  state['stop']+=1;request=route.request.post_data_json;assert request['runGroupId']=='';mode=state['next_stop'];state['next_stop']='accepted'
+  data={'state':mode,'runId':'demo-run','message':'stop accepted' if mode=='accepted' else 'Stop transport reply lost'}
+  state['operations'][request['requestId']]={'state':'succeeded','runId':'demo-run','status':'ABORTED','message':'Original Job authoritatively ended; no Stop replay','run':{'id':'demo-run','status':'ABORTED','active':False,'ownsResources':False,'displayResourcesReleased':False}}
+ elif path.startswith('/api/operations/by-request/'):
+  data=state['operations'][path.rsplit('/',1)[1]]
+  if data.get('status')=='ABORTED':state['job_status']='aborted'
  elif path=='/api/assets/demo-image':route.fulfill(content_type='image/png',body=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a1ioAAAAASUVORK5CYII='));return
  elif path=='/api/logout':state['logged']=False;data={}
  else:route.fulfill(status=404,json={'detail':path});return
@@ -63,7 +73,7 @@ with sync_playwright() as p:
   except Exception:pass # Browser may already have cancelled the old candidate fetch.
   page.wait_for_timeout(100);assert page.get_by_text('888',exact=True).count()==0
   page.get_by_text('97',exact=True).wait_for()
-  page.get_by_role('button',name='恢复实时',exact=True).click();page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('操作已受理：op-1').wait_for();assert state['start']==1
+  page.get_by_role('button',name='恢复实时',exact=True).click();page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('启动已受理：demo-run',exact=False).wait_for();assert state['start']==1
   page.get_by_role('button',name='详情',exact=True).first.click();page.get_by_role('heading',name='详情',exact=True).wait_for()
   page.set_viewport_size({'width':390,'height':844});page.get_by_role('button',name='生产总览',exact=True).first.click();page.get_by_text('97',exact=True).wait_for();assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
   page.screenshot(path=str(ROOT/'browser-mobile.png'),full_page=True)
@@ -80,6 +90,24 @@ with sync_playwright() as p:
   assert page.get_by_label('停止控制目标',exact=True).input_value()=='demo-run'
   page.get_by_label('history-table 筛选', exact=True).wait_for()
   page.get_by_role('button',name='启动工作流',exact=True).click();page.wait_for_timeout(200);assert state['start']==2
+
+  # Real accepted/unknown/ABORTED response semantics, not an always-succeeded mock.
+  assert page.get_by_role('button',name='结束跟踪（不重发）',exact=True).count()==0
+  page.once('dialog',lambda dialog:dialog.accept());page.get_by_role('button',name='停止选中运行',exact=True).click()
+  page.get_by_text('停止已受理：demo-run',exact=False).wait_for();assert state['stop']==1
+  assert page.get_by_role('button',name='结束跟踪（不重发）',exact=True).count()==0
+  state['next_start']='unknown';page.get_by_role('button',name='启动工作流',exact=True).click()
+  page.get_by_role('button',name='查询操作结果',exact=True).wait_for();assert state['start']==3
+  page.get_by_role('button',name='查询操作结果',exact=True).click();page.get_by_text('启动已受理：demo-run',exact=False).wait_for()
+  assert state['start']==3;assert page.get_by_role('button',name='查询操作结果',exact=True).count()==0
+  state['next_stop']='unknown';page.once('dialog',lambda dialog:dialog.accept());page.get_by_role('button',name='停止选中运行',exact=True).click()
+  page.get_by_role('button',name='查询操作结果',exact=True).wait_for();assert state['stop']==2
+  page.get_by_role('button',name='查询操作结果',exact=True).click();page.get_by_text('原 Job 已确认：ABORTED',exact=False).wait_for()
+  assert state['stop']==2;assert page.get_by_role('button',name='查询操作结果',exact=True).count()==0
+  page.get_by_label('原控制运行状态',exact=True).get_by_text('权威状态：ABORTED',exact=False).wait_for()
+  state['next_start']='rejected';page.get_by_role('button',name='启动工作流',exact=True).click()
+  page.get_by_role('alert').filter(has_text='fixture admission rejected').wait_for()
+  assert page.get_by_role('button',name='结束跟踪（不重发）',exact=True).count()==0
 
 
   assert not errors,errors

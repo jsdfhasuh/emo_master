@@ -371,9 +371,9 @@ class GrpcRuntimeClient:
     @staticmethod
     def _start_result(reply, request_id):
         status = reply.status.upper()
-        outcome = 'ACCEPTED' if reply.ok else ('UNKNOWN' if status in {'UNKNOWN', 'PENDING', 'NOT_FOUND'} else 'REJECTED')
+        outcome = ('ACCEPTED' if reply.job_id else 'UNKNOWN') if reply.ok else ('UNKNOWN' if status in {'UNKNOWN', 'PENDING', 'NOT_FOUND'} else 'REJECTED')
         return {'state': outcome.lower(), 'outcome': outcome, 'runId': reply.job_id or None,
-                'startRequestId': request_id, 'message': reply.message, 'status': reply.status,
+                'startRequestId': request_id, 'message': (reply.message if not reply.ok or reply.job_id else 'Start admission has no confirmed Job identity; query the original request'), 'status': reply.status,
                 'configurationRevision': str(reply.project_revision)}
 
     async def lookup_start(self, request_id, runtime_instance_id):

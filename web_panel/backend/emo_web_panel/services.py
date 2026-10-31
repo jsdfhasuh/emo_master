@@ -51,26 +51,43 @@ class Operations:
             except ValueError as error:
                 result.update(state='rejected',outcome='REJECTED',message=str(error))
             except Exception:
-                result.update(state='unknown', message='Runtime outcome is not confirmed; do not automatically replay.')
+                result.update(state='unknown',outcome='UNKNOWN', message='Runtime outcome is not confirmed; do not automatically replay.')
+            if action=='start' and result.get('state')=='accepted' and not result.get('runId'):
+                result.update(state='unknown',outcome='UNKNOWN',message='Start admission has no confirmed Job identity; query the original request')
+            result['commandConfirmed']=result.get('state') in {'accepted','rejected','succeeded','failed','cancelled'}
             await asyncio.to_thread(self._finish, op_id, result)
             return result
 
     async def reconcile(self, result, runtime):
         intent=result.get('intent',{})
-        if result.get('state')!='unknown':return result
+        action=intent.get('action')
+        # Accepted Start settles the command, not the new Job's lifetime.
+        # An accepted Stop can still be observed without resending that command.
+        if result.get('state')!='unknown' and not (action=='stop' and result.get('state')=='accepted'):return result
         if intent.get('address')!=getattr(runtime,'address',None):return result
         info=await runtime.info()
         if (info['runtimeInstanceId'],info['projectId'])!=(intent.get('runtimeInstanceId'),intent.get('projectId')):return result
-        if intent.get('action')=='start' and hasattr(runtime,'lookup_start'):
+        if action=='start' and hasattr(runtime,'lookup_start'):
             update=await runtime.lookup_start(intent['requestId'],intent['runtimeInstanceId'])
-        elif intent.get('action')=='stop' and hasattr(runtime,'run_state') and intent.get('target'):
-            state=await runtime.run_state(intent['target'])
-            if (state.get('runtimeInstanceId'),state.get('projectId'),state.get('jobId'),state.get('runGroupId')) != (
+            if update.get('state')=='accepted' and not update.get('runId'):
+                update={**update,'state':'unknown','outcome':'UNKNOWN',
+                        'message':'Start admission has no confirmed Job identity; query the original request'}
+            update['commandConfirmed']=update.get('state') in {'accepted','rejected','succeeded','failed','cancelled'}
+        elif action=='stop' and hasattr(runtime,'run_state') and intent.get('target'):
+            run=await runtime.run_state(intent['target'])
+            if (run.get('runtimeInstanceId'),run.get('projectId'),run.get('jobId'),run.get('runGroupId')) != (
                     intent['runtimeInstanceId'],intent['projectId'],intent['target'],intent.get('runGroupId')):return result
-            terminal=state.get('status','').upper()
-            if state.get('active') or terminal not in {'COMPLETED','FAILED','CANCELLED'}:return result
-            update={'state':'succeeded','outcome':'ACCEPTED','runId':intent['target'],'status':terminal,
-                    'message':'Selected Job is authoritatively terminal; no Stop was replayed'}
+            status=run.get('status','').upper()
+            terminal=run.get('active') is False and status in {'COMPLETED','FAILED','CANCELLED','ABORTED'}
+            update={'run':run,'jobTerminal':terminal}
+            if terminal:
+                # Job termination is observable even if the Stop reply was lost;
+                # commandConfirmed closes command tracking; outcome preserves whether
+                # acknowledgement was observed. Never infer resource release.
+                update.update(state='succeeded',commandConfirmed=True,runId=intent['target'],status=status,
+                    message='Selected Job is authoritatively '+status+'; resource state is reported separately. No Stop was replayed.')
+            elif result.get('state')=='accepted':
+                update['message']='Stop accepted; selected Job is still stopping. Resource state is reported separately.'
         else:return result
         result={**result,**update}
         await asyncio.to_thread(self._finish,result['operationId'],result)

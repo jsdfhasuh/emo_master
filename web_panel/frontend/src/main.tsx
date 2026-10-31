@@ -6,6 +6,8 @@ import { parseLosslessJSON } from './data/lossless';
 import { normalizeMessage, applySourceProblems } from './data/contract';
 import { mergeScopeStatus, isScopeResultExpired, scopeActivity } from './state/scopes';
 import type { ScopeStatuses } from './state/scopes';
+import { commandResolution } from './state/commands';
+import type { CommandReply } from './state/commands';
 import { LatestScopeQueue, resumeExpiredScopes } from './state/latest';
 import { prepareResult, releaseResult, pageImageSources } from './state/prepare';
 import { PanelRenderer } from './renderer/PanelRenderer';
@@ -80,11 +82,23 @@ function App() {
     }[]>([]);
     const [notice, setNotice] = useState('');
     const generation = useRef(0);
-    const [pending,setPending]=useState<{id:string;kind:string;target:string}|undefined>();
+    const [pending,setPending]=useState<{id:string;kind:'start'|'stop';target:string;runtimeId?:string;state?:'submitting'|'unknown'}|undefined>();
+    const [lastCommand,setLastCommand]=useState<{kind:'start'|'stop';runtimeId:string;runId?:string;reply:CommandReply}>();
     const controlId = useRef<string | undefined>(undefined);
-    useEffect(()=>{if(!me){setPending(undefined);return}try{const saved=sessionStorage.getItem(`emo-pending:${me.userId || me.username}`);setPending(saved?JSON.parse(saved):undefined)}catch{setPending(undefined)}},[me]);
+    useEffect(()=>{if(!me){setPending(undefined);return}try{const saved=sessionStorage.getItem(`emo-pending:${me.userId || me.username}`);setPending(saved?{...JSON.parse(saved),state:'unknown'}:undefined)}catch{setPending(undefined)}},[me]);
     function clearPending(){if(me)sessionStorage.removeItem(`emo-pending:${me.userId || me.username}`);setPending(undefined);controlId.current=undefined;}
-    async function queryPending(){if(!pending)return;try{const r=await api<{state:string}>(`/api/operations/by-request/${encodeURIComponent(pending.id)}`);setNotice(`操作查询：${r.state}`);if(['succeeded','failed','rejected','cancelled'].includes(r.state))clearPending()}catch(e){setError(`查询未确认：${(e as Error).message}；未重新发送命令。`)}}
+    async function resolveCommand(kind:'start'|'stop',reply:CommandReply,targetRuntime:string) {
+        const resolution=commandResolution(kind,reply);
+        setNotice(resolution.message);if(resolution.rejected)setError(resolution.message);
+        setLastCommand({kind,runtimeId:targetRuntime,runId:resolution.runId,reply});
+        if(resolution.confirmed)clearPending();else setPending(old=>old?{...old,state:'unknown'}:old);
+        if(targetRuntime===runtimeId){const updated=await api<Run[]>(`/api/runtimes/${encodeURIComponent(targetRuntime)}/runs`);setRuns(updated);}
+    }
+    async function queryPending(){
+        if(!pending || busy)return;setBusy(true);
+        try{const r=await api<CommandReply>(`/api/operations/by-request/${encodeURIComponent(pending.id)}`);await resolveCommand(pending.kind,r,pending.runtimeId || pending.target.split('/')[0]);}
+        catch(e){setError(`查询未确认：${(e as Error).message}；未重新发送命令。`);setPending(old=>old?{...old,state:'unknown'}:old)}finally{setBusy(false)}
+    }
     async function refresh() {
         const [ps, targets] = await Promise.all([api<Panel[]>('/api/panels'), api<RuntimeTarget[]>('/api/runtimes')]);
         setPanels(ps); setRuntimes(targets);
@@ -287,16 +301,15 @@ function App() {
         let inputs: unknown = {};
         if (kind === 'start') { inputs = parseLosslessJSON(workflowInputs); if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) throw new Error('工作流输入必须是 JSON 对象'); }
         if (kind === 'stop' && run?.allowedActions && !run.allowedActions.some(a=>a.toLowerCase()==='stop')) throw new Error('Runtime 当前不允许停止此运行');
-        const intent = { id: controlId.current!, kind, target: `${runtimeId}/${kind === 'start' ? workflowId : controlRunId}` };
+        const intent = { id: controlId.current!, kind, runtimeId, state:'submitting' as const, target: `${runtimeId}/${kind === 'start' ? workflowId : controlRunId}` };
         if (me) sessionStorage.setItem(`emo-pending:${me.userId || me.username}`, JSON.stringify(intent)); setPending(intent);
-        const r = await api<{ operationId?: string; state?: string }>(kind === 'start' ? '/api/runs/start' : `/api/runs/${encodeURIComponent(controlRunId)}/stop`, {
+        const r = await api<CommandReply>(kind === 'start' ? '/api/runs/start' : `/api/runs/${encodeURIComponent(controlRunId)}/stop`, {
             method: 'POST', body: JSON.stringify({ requestId: controlId.current, runtimeId, runtimeInstanceId: target.runtimeInstanceId, projectId: target.projectId, runGroupId: run?.runGroupId, configurationRevision:target.configurationRevision, workflowId: kind === 'start' ? workflowId : run?.workflowId, inputsJson:kind === 'start'?workflowInputs:undefined, inputs:workflows.find(w=>w.id===workflowId)?.inputsJson !== undefined?undefined:inputs })
         });
-        setNotice(`操作已受理：${r.operationId || r.state || kind}`);
-        if(r.state&&['succeeded','failed','rejected','cancelled'].includes(r.state))clearPending();
-        setRuns(await api(`/api/runtimes/${encodeURIComponent(runtimeId)}/runs`));
+        await resolveCommand(kind,r,runtimeId);
     }
     catch (e) {
+        setPending(old=>old?{...old,state:'unknown'}:old);
         setError(`${(e as Error).message}。结果未确认时不自动重发，请先刷新运行状态。`);
     }
     finally {
@@ -324,7 +337,8 @@ function App() {
     catch (e) {
         setError((e as Error).message);
     } }}>{panels.map(p => <option key={p.id} value={p.id}>{p.name || p.title || p.id}</option>)}</select></label><label>查看运行<select aria-label="查看运行" value={runId} onChange={e => setRunId(e.target.value)}><option value="">无运行 · 页面 / 历史预览</option>{runs.map(r => <option key={r.id} value={r.id}>{r.name || r.id} · {r.state}</option>)}</select></label><button onClick={() => refresh().catch(e => setError(e.message))}>刷新页面包和状态</button><span className="status">{status} {lastUpdate && `· 最后更新 ${lastUpdate}`}</span></section>
- {pending&&<section className="notice"><strong>待确认操作：{pending.kind} / {pending.target}</strong><button onClick={queryPending}>查询操作结果</button><button onClick={()=>{if(confirm('结束本次跟踪不会停止或重新执行任何命令。请确认已核对运行状态，后续新操作将是新的意图。'))clearPending()}}>结束跟踪（不重发）</button></section>}
+ {pending&&<section className="notice"><strong>待确认操作：{pending.kind} / {pending.target}</strong><button disabled={busy} onClick={queryPending}>查询操作结果</button>{pending.state!=='submitting'&&<button onClick={()=>{if(confirm('结束本次跟踪不会停止或重新执行任何命令。请确认已核对运行状态，后续新操作将是新的意图。'))clearPending()}}>结束跟踪（不重发）</button>}</section>}
+ {lastCommand && lastCommand.runtimeId===runtimeId && lastCommand.runId && (()=>{const authoritative=runs.find(run=>run.id===lastCommand.runId) || lastCommand.reply.run;return <section className="notice" aria-label="原控制运行状态"><strong>原控制 Job：{lastCommand.runId}</strong><p>权威状态：{authoritative?.status || authoritative?.state || lastCommand.reply.status || '待刷新'} · 持有资源：{authoritative?.ownsResources===undefined?'未知':authoritative.ownsResources?'是':'否'} · 展示资源已释放：{authoritative?.displayResourcesReleased===undefined?'未知':authoritative.displayResourcesReleased?'是':'否'}</p><small>命令受理不等于 Job 结束；使用刷新获取后续权威状态。</small></section>})()}
  <section className="toolbar"><button disabled={!result || frozen} onClick={() => action('freeze')}>冻结查看</button><button disabled={!frozen} onClick={() => action('resume_live')}>恢复实时</button><span>{frozen ? '已冻结查看，后台仍在运行' : '实时查看'}</span>{canControl && <><span className="control-target">控制目标：{controlRunId || '未选择'}（独立于查看运行）</span><label>停止目标<select aria-label="停止控制目标" value={controlRunId} onChange={e=>setControlRunId(e.target.value)}><option value="">明确选择停止对象</option>{runs.map(r=><option key={r.id} value={r.id}>{r.name||r.id} · {r.state}</option>)}</select></label><button className="danger" disabled={busy || !controlRunId || Boolean(runs.find(r=>r.id===controlRunId)?.allowedActions && !runs.find(r=>r.id===controlRunId)?.allowedActions?.some(a=>a.toLowerCase()==='stop'))} onClick={() => { if (confirm(`停止当前明确选中的运行 ${controlRunId}？`))
         control('stop'); }}>停止选中运行</button></>}</section>
  {canControl && <section className="toolbar"><label>启动工作流<select aria-label="启动工作流目标" value={workflowId} onChange={e => { setWorkflowId(e.target.value); setWorkflowInputs(workflows.find(w=>w.id===e.target.value)?.inputsJson || JSON.stringify(workflows.find(w=>w.id===e.target.value)?.inputs || {})); }}>{!workflows.length && <option value="">无可用工作流 / 合同能力未就绪</option>}{workflows.map(w => <option key={w.id} value={w.id}>{w.name || w.id}</option>)}</select></label><WorkflowInputs workflow={workflows.find(w=>w.id===workflowId)} value={workflowInputs} onChange={setWorkflowInputs}/><button disabled={busy || !workflowId || !runtimeId || workflows.find(w=>w.id===workflowId)?.canStart === false} onClick={() => control('start')}>启动工作流</button><small>独立启动目标，不使用历史选行；输入由后端再次校验。</small>{workflows.find(w => w.id === workflowId)?.inputSchema && <details><summary>输入约束</summary><pre>{JSON.stringify(workflows.find(w => w.id === workflowId)?.inputSchema, null, 2)}</pre></details>}</section>}

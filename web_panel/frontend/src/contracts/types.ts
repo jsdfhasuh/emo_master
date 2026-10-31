@@ -52,6 +52,7 @@ export interface Panel {
     grid?: Component['grid'];
 }
 export interface Run {
+    status?:string;active?:boolean;ownsResources?:boolean;displayResourcesReleased?:boolean;
     id: string;
     runGroupId?: string;
     allowedActions?: string[];

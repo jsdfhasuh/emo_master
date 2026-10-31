@@ -1,6 +1,42 @@
 # Verification record
 
-Current SDK integration evidence is in the final section. The 2026-10-30 record below is historical only.
+## Current official-contract verification — 2026-10-31
+
+Application commit: `69e3ec000a4299d16dcf27e19237d102062db77d` on
+`codex/logging-and-designer-improvements`.
+[CI 41159087465](https://github.com/jsdfhasuh/emo_master/actions/runs/41159087465):
+**SUCCESS — all three jobs**. The following documentation-only commit preserves
+this application code; its exact-head workflow is checked separately before delivery.
+
+| Check | Verified result |
+|---|---|
+| Ubuntu + Windows gateway | Each 122 tests, 120 executed PASS and 2 opt-in product tests skipped |
+| Frontend | 43 tests PASS; TypeScript and production Vite build PASS on both OSes |
+| Chromium | Renderer fixtures, full HTTP/WS mock application, and official-package preview CLI/browser suites PASS on both OSes |
+| Independent distribution | Web wheel + supplied SDK wheel; fresh outside-checkout install, packaged UI/CLI, no Qt or Runtime imports PASS on both OSes |
+| Owning Windows software Runtime | Separate job: 2 actual Runtime tests plus 2 reconciliation regressions PASS; no-Job history/aggregate/opaque images and one Start → capture → same-ID lookup → exact Stop → one Job |
+| Visual inspection | Official live/history mobile screenshots inspected; responsive layout and no horizontal overflow; synthetic sample images/data |
+| Physical/Designer acceptance | NOT RUN: user's machine, native Designer lifecycle, physical cameras/PLC and production database |
+
+The Runtime subprocess uses unchanged owning source from the selected handoff.
+The earlier Windows spawn failure was the **test harness's piped stdin**, resolved
+with DEVNULL plus a private shutdown marker; no Runtime patch or relaxed acceptance
+assertion was used. UNKNOWN reconciliation never replays Start.
+
+### Matching development artifacts (7-day retention)
+
+- [Windows Web + SDK wheels/docs](https://github.com/jsdfhasuh/emo_master/actions/runs/41159087465/artifacts/13026805895), 187056 bytes, ZIP SHA256 `d205c31d6611b7400fa78c9a799544793debdf1010c045ef9ede53329effcdf7`.
+- [Ubuntu Web + SDK wheels/docs](https://github.com/jsdfhasuh/emo_master/actions/runs/41159087465/artifacts/13026194483), 186728 bytes, ZIP SHA256 `4874e05234444337a0c63ffece050cd6fc12162bf0646053354754fdfedd56fb`.
+- [Ubuntu browser evidence](https://github.com/jsdfhasuh/emo_master/actions/runs/41159087465/artifacts/13026790480), verified ZIP SHA256 `c849baf1f1080afc26050efc678286ef34c5eb4242ceebda0c37cc4d48588b82`.
+- [Actual software Runtime evidence](https://github.com/jsdfhasuh/emo_master/actions/runs/41159087465/artifacts/13025563659), ZIP SHA256 `874af9c432c79373b4fabffb8b6a656bb3c7aaac0a2fcc87e85a3539b833a487`.
+
+These are development artifacts, not a release/deployment. SDK1.1.0's nonempty
+`runGroupId` browser-status mismatch remains disclosed in CONTRACT-GAPS.md;
+passing software checks do not resolve that protocol-owner correction or prove
+physical acceptance. No merge, deployment or user-computer action occurred.
+
+The remaining record below is historical diagnostic evidence, superseded by the
+current results above.
 
 ## Historical draft — 2026-10-30
 

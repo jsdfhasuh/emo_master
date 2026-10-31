@@ -1,8 +1,8 @@
 # emo_master independent Web operator panel
 
-Independent Python 3.10+/FastAPI + React application under `web_panel/`. The gateway consumes **Panel Contract 1.0 / SDK 1.1.0** as an ordinary gRPC client; it does not import Qt, device drivers, inference packages, or `emo_master`.
+Independent Python 3.10+/FastAPI + React application under `web_panel/`. The gateway consumes **Panel Contract 1.0 / SDK 1.1.1** as an ordinary gRPC client; it does not import Qt, device drivers, inference packages, or `emo_master`.
 
-Authoritative handoff: repository commit `b9f448c18ed297652cddc3e040ca1db847b0fbfa`, implementation `d4ab96409e43d7ab6ae566820da357508d01658c`. The unchanged handoff files in `contracts/panel-contract-v1/` include their integrity manifest. Production execution and formal configuration remain owned by Runtime. Nothing here deploys software or changes networking.
+Authoritative handoff: repository delivery `496d4b78ccd6ac40a4fa37b15fb6e78522627cda`, implementation `95c6371542f73a725c0ca2fd585152c728338dbf`. The unchanged handoff files in `contracts/panel-contract-v1/` include their integrity manifest. Production execution and formal configuration remain owned by Runtime. Nothing here deploys software or changes networking.
 
 ## Build and run
 
@@ -10,7 +10,7 @@ Authoritative handoff: repository commit `b9f448c18ed297652cddc3e040ca1db847b0fb
 cd web_panel
 python -m venv .venv
 # Windows: .venv\Scripts\activate; POSIX: . .venv/bin/activate
-python -m pip install contracts/panel-contract-v1/python/emo_panel_protocol-1.1.0-py3-none-any.whl
+python -m pip install contracts/panel-contract-v1/python/emo_panel_protocol-1.1.1-py3-none-any.whl
 python -m pip install -e '.[test]'
 npm --prefix frontend ci
 npm --prefix frontend run build
@@ -44,8 +44,9 @@ other targets' activation and grants are retained. Existing views retain their p
 version until explicitly switched. Legacy activation migrates only known explicit
 Runtime associations; unassociated packages are not broadcast to every target.
 
-SDK 1.1.1 integration is pending the protocol owner's exact official delivery.
-Until then the supplied SDK 1.1.0 and its manifest stay unchanged; see CONTRACT-GAPS.
+SDK 1.1.1 uses formal BrowserMessage for ordinary Jobs with explicit empty
+run-group identity. Exact Stop preserves that empty field; accepted Stop is not
+terminal. The full official manifest and built-in fixtures are pinned unchanged.
 
 ## Designer preview (same built renderer)
 

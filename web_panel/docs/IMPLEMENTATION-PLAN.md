@@ -13,9 +13,10 @@ labels are distinct from the original delivery plan's W1–W6 below.
   commands/reconnection and manual refresh, not high-frequency full polling.
 - W3: SQLite per-Runtime/project activation, additive package grants, project
   validation, scoped notices and pinned old views; minimal explicit legacy migration.
-- W4: **awaiting official SDK 1.1.1 delivery**. Integrate its fixed commit/manifest,
-  all wheel/schema/types/fixtures and built-ins without editing authoritative files,
-  then remove the empty-group workaround and assert formal empty-group messages.
+- W4: official SDK 1.1.1 delivery integrated by a two-parent work-branch merge,
+  preserving both owners’ changes. Exact wheel/schema/types/fixtures and built-ins
+  are updated; ordinary Jobs use formal messages and explicit empty-group Stop.
+  The combined browser gate now requires formal ungrouped messages, not a skip.
 - W5: accepted/UNKNOWN/ABORTED browser flows, external catalog refresh and A/B
   package isolation; combined real Chromium → Web HTTP/WS → repository software
   Runtime Start/result/exact Stop; retain dual-OS and independent installation.

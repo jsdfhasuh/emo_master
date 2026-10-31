@@ -1,4 +1,4 @@
-# Official SDK1.1.0 install update (2026-10-31)
+# Official SDK1.1.1 install update (2026-10-31)
 
 Install the supplied SDK wheel together with the Web wheel. For a source checkout,
 first run `python -m pip install contracts/panel-contract-v1/python/*.whl`, then
@@ -14,7 +14,7 @@ explicit host/operator acceptance appropriate for your environment.
 
 # Independent installation and upgrade
 
-Development preview only. Do not use as a production control surface until the official SDK and Runtime acceptance are completed. No scripts change firewall, services, Runtime configuration or user machines.
+Development distribution only. Software Runtime/browser acceptance does not replace native Designer, cross-physical-machine or field acceptance. No scripts change firewall, services, Runtime configuration or user machines.
 
 ## Build machine
 

@@ -1,6 +1,38 @@
 # Verification record
 
-## Functional repair round — 2026-10-31, after reviewed 8286336
+## SDK 1.1.1 / W4–F integration — 2026-10-31
+
+Baseline: Web `a6e92eeab20b8b5d3623fabd9f897893d328157d`.
+The official branch `496d4b78ccd6ac40a4fa37b15fb6e78522627cda` is normally
+integrated with two parents, retaining the W1–W3 fixes and owner history.
+Owner implementation: `95c6371542f73a725c0ca2fd585152c728338dbf`;
+generated delivery: `b9a741f31a7304a3b2902530a9b6acd98755285d`.
+No locally rewritten SDK or Runtime execution code is substituted.
+
+All 39 files plus manifest are copied from the verified 90,424-byte ZIP,
+SHA256 `8f0efaf9b918d44684c5c8c8b3f0d67fee740179ea33d17c2a064c801d9d3b7a`.
+The sole vendored wheel is 1.1.1, 38,038 bytes,
+SHA256 `aed06e1badb4f3fedcca121413391dbf88168cc02dc37fc54f65cbf089c92858`.
+Embedded fixtures match byte-for-byte; manifest records sourceDirty=false.
+Panel Contract 1.0, project 2.9 and Presentation 1.2 are unchanged.
+
+Ordinary Job state, initial selected-Job confirmation and control acknowledgements
+now use validated official BrowserMessage with explicit empty group. Stop retains
+optional-field presence. Initial confirmation of the same identity does not clear
+the selected view. Grouped messages and W1–W3 acknowledgement/lifecycle separation
+remain covered. The combined browser test requires formal Start HTTP result,
+selected-Job WS change, Stop WS result and original-Job ABORTED WS state; the
+former SDK-pending success path no longer exists.
+
+Current execution status: local integrity, focused backend and frontend checks
+completed; exact-head dual-OS, independent-install and actual Windows software
+Runtime browser regression are awaiting CI in this integration commit. This is
+not yet a CI pass claim. Final evidence will be appended after terminal results.
+Native Designer, another physical host, devices and field deployment remain
+NOT RUN in this Web task. Earlier records below remain historical evidence, not
+current SDK version or blocker statements.
+
+## Historical W1–W3 functional repair round — 2026-10-31, after reviewed 8286336
 
 W1 command-state repair is separately published as
 `1ee81db52d9548f6a1695ce9596622471bd174fe`;
@@ -75,7 +107,7 @@ an external integration gate; current shipped SDK1.1.0 bytes and hashes are inta
 Native Designer, cross-physical-machine and field devices have not been exercised.
 
 
-## Current official-contract verification — 2026-10-31
+## Historical SDK1.1.0 official-contract verification — 2026-10-31
 
 Application commit: `69e3ec000a4299d16dcf27e19237d102062db77d` on
 `codex/logging-and-designer-improvements`.

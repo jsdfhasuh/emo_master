@@ -1,13 +1,16 @@
 # Contract integration boundaries — 2026-10-31
 
-The earlier missing-SDK blocker is resolved. The selected handoff commit is
-`b9f448c18ed297652cddc3e040ca1db847b0fbfa`; its Runtime implementation is
-`d4ab96409e43d7ab6ae566820da357508d01658c`.
+The missing SDK and ordinary-Job empty-group mismatch are resolved by the official
+SDK **1.1.1** delivery `496d4b78ccd6ac40a4fa37b15fb6e78522627cda`.
+Source: `95c6371542f73a725c0ca2fd585152c728338dbf`; generated artifacts:
+`b9a741f31a7304a3b2902530a9b6acd98755285d`. Panel Contract remains 1.0.
 
-- ZIP: `2ac8435d0aee3323413be980262eeae97a0aa0282f859ca3e77e6753915b2c5c`.
-- SDK wheel: `bb0cff1f007b8c6b850c8e43d792200ee6adebbaa4af23c4a966362b74e697f9`.
-- All 34 files match the manifest; `sourceDirty=false`.
-- Earlier uploaded ZIP had different provenance and whitespace-only SDK differences. It is not used as the final dependency.
+- ZIP: `8f0efaf9b918d44684c5c8c8b3f0d67fee740179ea33d17c2a064c801d9d3b7a` (90,424 bytes).
+- SDK wheel: `aed06e1badb4f3fedcca121413391dbf88168cc02dc37fc54f65cbf089c92858` (38,038 bytes).
+- All 39 files plus the ZIP manifest are consumed byte-for-byte; `sourceDirty=false`.
+- The outer Git manifest has normalized LF line endings; its JSON equals the ZIP
+  manifest. The exact ZIP manifest is authoritative for the vendored copy.
+- The older 1.1.0 handoff and verification history remain in the repository.
 
 `runtime_client.py` now consumes generated SDK RPCs, decodeResult, CaptureCoverage,
 canonical models and PreviewContext. Missing SDK installation fails closed; failed
@@ -31,17 +34,16 @@ The old `draft-unverified` package and MockRuntime remain solely regression/deve
 fixtures, clearly labeled. Official package import uses the supplied SDK and the
 unchanged published schema. These draft fixtures are not exported as current .emoproj.
 
-## Confirmed ungrouped browser-status schema mismatch
+## Resolved ordinary-Job identity mismatch
 
-Actual Runtime ordinary Jobs legitimately have `run_group_id=""` (owning
-`tests/runtime/test_run_catalog.py` exact-stop path). SDK1.1.0 `messages.py`
-BrowserJobState/BrowserJobChanged require `runGroupId: Id` (nonempty). Web
-keeps the true empty identity for Stop and exposes gateway-local `type=job_state`
-with `contractStatus=UNGROUPED_JOB_SCHEMA_GAP`; it does not emit a fabricated
-SDK BrowserMessage or claim that extension passes the official schema. Grouped
-Jobs use official BrowserJobState. Owner correction needed: permit empty group
-identity for ungrouped Jobs, with regenerated schema/types/fixtures. No vendored
-SDK or owning Runtime source is modified to conceal this mismatch.
+SDK1.1.0 rejected the Runtime’s legitimate empty group for job_state/job_changed.
+SDK1.1.1 supplies the owner’s dedicated RunGroupId. Both messages now require the
+field and accept exactly `""` for ordinary Jobs, rejecting missing/null. Control
+results allow explicit empty identity and retain nullable/omitted semantics.
+Nonempty group and other identity validation is unchanged. Web uses official
+BrowserMessage validation rather than a fabricated group or local schema fork.
+The temporary `UNGROUPED_JOB_SCHEMA_GAP` emission branch is removed. Exact Stop
+continues to send `expected_run_group_id=""` with protobuf optional-field presence.
 
 ## Gateway-only view lifecycle messages
 
@@ -53,12 +55,11 @@ completed result; expiry retires only live ordinals at or below the supplied sco
 threshold. Already pinned frozen views remain valid until their own lease/TTL,
 and Resume cannot resurrect a retired live result.
 
-## Functional repair and pending owner delivery
+## Functional repair and verification
 
-The accepted-command pending lock, missing ABORTED reconciliation, incomplete
-current-target refresh and global package activation are repaired in Web code.
-They are not reasons to wait for SDK 1.1.1. Formal empty-group BrowserMessage
-acceptance remains a separate W4 gate until the exact owner delivery is supplied.
-No SDK bytes/digests or version claims are locally fabricated. The combined
-software Runtime browser test reports that gate explicitly and will require it
-when the new official package is integrated. See VERIFICATION.md for actual runs.
+W1–W3 command settlement, ABORTED reconciliation, current-target refresh and
+per-Runtime/project activation remain preserved. W4 consumes the official fixed
+source and full delivery without overwriting those repairs. W5’s combined software
+Runtime browser test now requires the formal empty-group contract. See
+VERIFICATION.md for actual executions and retained historical failures; source
+changes alone are not a claim that every acceptance layer ran.

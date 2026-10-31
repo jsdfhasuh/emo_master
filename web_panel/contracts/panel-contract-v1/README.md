@@ -1,8 +1,10 @@
 # Panel Contract v1：Runtime 客户端与 Web 页面交接合同
 
-合同版本 `1.0`，Python SDK `emo_panel_protocol 1.1.0`。工程当前版本为
+合同版本 `1.0`，Python SDK `emo_panel_protocol 1.1.1`。工程当前版本为
 `2.9` / Presentation `1.2`，发布快照为 `published-1`，ZIP 页面包为
 `emo-web-panel-1`（扩展名 `.emoweb`）。这些版本分别管理不同边界，不互相替代。
+
+2026-10-31 的[固定交接入口](../handoffs/runtime-web-panel-v1/README.md)提供仓库内可直接下载的 ZIP、实现源码 SHA 和文件摘要。
 
 本合同供远程 Designer 与 Web 网关共同使用 Runtime RPC。浏览器使用网关的固定
 HTTP / WebSocket API；网关是普通 Runtime 客户端，不依赖运行中的 Designer。
@@ -16,6 +18,14 @@ HTTP / WebSocket API；网关是普通 Runtime 客户端，不依赖运行中的
 ```powershell
 python scripts/build_panel_contract.py
 ```
+
+正式交付可同时生成 ZIP，使用新的版本目录以保持历史产物可追溯：
+
+```powershell
+python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.1.1 --archive build/panel-contract-v1-sdk-1.1.1.zip
+```
+
+`--archive` 归档前核对 manifest 的全部文件摘要，ZIP 仅包含这些文件及 manifest。
 
 默认输出 `build/panel-contract-v1/`，其中包括：
 
@@ -81,6 +91,18 @@ schema 主要描述结构；oneof 互斥、身份和当前状态的业务约束�
 `runtimeInstanceId + projectId + jobId` 确定所查看运行，`runGroupId` 把根运行与 Dispatch
 消费者关联。Job 的终态和资源释放是两件事；`ownsResources`、
 `displayResourcesReleased` 不能从 `COMPLETED` 字符串推断。
+
+SDK 1.1.1 修正普通 Job 的运行组表达：`runGroupId=""` 是正式的未分组身份。
+非空运行组继续使用现有 Id 约束（1–160 个字符、无空白），工程、Job 和 Runtime 实例的 Id 仍不能为空。
+`BrowserJobState` 与 `BrowserJobChanged` 必须提供 `runGroupId`，不能省略、填 null 或用 jobId 伪造组身份。
+`BrowserControlResult` 保留 null/缺省表示尚无组身份的语义，已有普通 Job 身份时明确传 `""`。
+网关序列化、切换查看和构造精确 Stop 请求时须保留空字符串；protobuf 的
+`expected_run_group_id=""` 表示明确核对未分组身份，与不提供该 optional 字段不同。
+
+`fixtures/ungrouped-*.json` 提供普通 Job 的 RUNNING、切换、Start/Stop 接受和 ABORTED 终态样例；
+原有分组 Job 样例保留。停止请求 ACCEPTED 不等于资源已退出；Runtime 的正常停止终态是 `ABORTED`，
+网页应读取权威状态与资源标志，不改写为另一种终态。1.1.1 的空组消息直接使用正式 BrowserMessage，
+Web 更新依赖后可以移除 `contractStatus=UNGROUPED_JOB_SCHEMA_GAP` 临时分支。
 
 同一次明确启动意图始终复用 `start_request_id`。超时后查询这个 ID，不生成新 ID 自动补执行。
 停止准确作用于用户所选 Job；停止整组时选择根 Job。不能把历史 J1 的“停止”静默切换为最新 J2。

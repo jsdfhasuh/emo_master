@@ -94,10 +94,21 @@
         "runGroupId": {
           "anyOf": [
             {
-              "maxLength": 160,
-              "minLength": 1,
-              "pattern": "^\\S+$",
-              "type": "string"
+              "anyOf": [
+                {
+                  "const": "",
+                  "type": "string"
+                },
+                {
+                  "maxLength": 160,
+                  "minLength": 1,
+                  "pattern": "^\\S+$",
+                  "type": "string"
+                }
+              ],
+              "not": {
+                "pattern": "\\s"
+              }
             },
             {
               "type": "null"
@@ -247,11 +258,22 @@
           "type": "string"
         },
         "runGroupId": {
-          "maxLength": 160,
-          "minLength": 1,
-          "pattern": "^\\S+$",
-          "title": "Rungroupid",
-          "type": "string"
+          "anyOf": [
+            {
+              "const": "",
+              "type": "string"
+            },
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            }
+          ],
+          "not": {
+            "pattern": "\\s"
+          },
+          "title": "Rungroupid"
         }
       },
       "required": [
@@ -294,11 +316,22 @@
           "type": "string"
         },
         "runGroupId": {
-          "maxLength": 160,
-          "minLength": 1,
-          "pattern": "^\\S+$",
-          "title": "Rungroupid",
-          "type": "string"
+          "anyOf": [
+            {
+              "const": "",
+              "type": "string"
+            },
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            }
+          ],
+          "not": {
+            "pattern": "\\s"
+          },
+          "title": "Rungroupid"
         },
         "status": {
           "title": "Status",

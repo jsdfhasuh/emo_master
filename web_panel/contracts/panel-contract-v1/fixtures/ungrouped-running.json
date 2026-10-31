@@ -1,0 +1,14 @@
+{
+  "runtimeInstanceId": "demo-runtime-1",
+  "projectId": "panel-contract-demo",
+  "event": "job_state",
+  "jobId": "demo-ordinary-j2",
+  "runGroupId": "",
+  "status": "RUNNING",
+  "active": true,
+  "ownsResources": true,
+  "displayResourcesReleased": false,
+  "allowedActions": [
+    "stop"
+  ]
+}

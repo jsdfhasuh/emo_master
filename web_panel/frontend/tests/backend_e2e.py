@@ -68,6 +68,9 @@ def target_isolation_check(page,browser,base,data,versions,password,errors):
   login(bobserver,'bviewer','B-viewer-fixture-123!');bobserver.get_by_role('heading',name='Package b-v1',exact=True).wait_for()
   bobserver.get_by_label('查看运行',exact=True).select_option('demo-run')
   bobserver.get_by_text('99.50',exact=False).wait_for()
+  live_b_image=bobserver.get_by_role('img',name='检测结果',exact=True)
+  live_b_image.wait_for()
+  bobserver.wait_for_function('(image)=>image.complete && image.naturalWidth>0',arg=live_b_image.element_handle())
   expect(bobserver.get_by_label('Runtime 目标',exact=True)).to_have_value('line-b')
   assert bobserver.get_by_label('Runtime 目标',exact=True).locator('option').count()==1
   assert bobserver.request.get(base+'/api/panels?runtimeId=configured').status==403
@@ -93,6 +96,7 @@ def target_isolation_check(page,browser,base,data,versions,password,errors):
    assert sum(message.get('type')=='result' for message in bmessages)>=before+2
    assert not any(message.get('type')=='package_updated' for message in bmessages)
    expect(bobserver.get_by_role('heading',name='Package b-v1',exact=True)).to_be_visible()
+   bobserver.wait_for_function('(image)=>image.complete && image.naturalWidth>0',arg=live_b_image.element_handle())
    assert bobserver.request.get(base+'/api/panels?runtimeId=line-b&projectId=demo-project').json()[0]['id']==bid
    assert bobserver.request.get(base+'/api/assets/'+bid+'/pinned').ok
    active=page.request.get(base+'/api/packages?runtimeId=line-b&projectId=demo-project').json()

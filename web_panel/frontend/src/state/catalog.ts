@@ -16,3 +16,9 @@ export function reconcileCatalogSelection(previous:CatalogSelection,oldInfo:Runt
  return {selection:next,identityChanged,revisionChanged,notices};
 }
 export const targetContext=(runtimeId:string,projectId?:string)=>`runtimeId=${encodeURIComponent(runtimeId)}${projectId?`&projectId=${encodeURIComponent(projectId)}`:''}`;
+
+/** Catalog status belongs only to the selected view Job, never the Stop target. */
+export function selectedViewState(runId:string,info:RuntimeInfo,runs:Run[]):string {
+ const run=runs.find(item=>item.id===runId && item.runtimeInstanceId===info.runtimeInstanceId && item.projectId===info.projectId);
+ return run?.status || run?.state || '';
+}

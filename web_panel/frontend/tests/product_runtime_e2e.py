@@ -281,6 +281,10 @@ def main():
                     expect(page.get_by_role('button', name='查询操作结果', exact=True)).to_have_count(0)
                     expect(page.get_by_role('button', name='结束跟踪（不重发）', exact=True)).to_have_count(0)
                     report['renderedTerminalStatus'] = original_status.inner_text()
+                    published_status = page.locator('section.panel-card p').filter(has_text='运行：')
+                    expect(published_status).to_have_count(1)
+                    expect(published_status).to_contain_text('运行：ABORTED')
+                    report['renderedPublishedRuntimeStatus'] = published_status.inner_text()
                     assert len(read_json(page.request.get('/api/runtimes/configured/runs'))) == 1
                     official_state = next((m for m in messages if m.get('event') == 'job_state'
                         and m.get('jobId') == job and m.get('runGroupId') == ''), None)

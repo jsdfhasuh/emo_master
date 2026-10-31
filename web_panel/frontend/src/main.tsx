@@ -6,7 +6,7 @@ import { parseLosslessJSON } from './data/lossless';
 import { normalizeMessage, applySourceProblems } from './data/contract';
 import { mergeScopeStatus, isScopeResultExpired, scopeActivity } from './state/scopes';
 import type { ScopeStatuses } from './state/scopes';
-import { reconcileCatalogSelection, targetContext } from './state/catalog';
+import { reconcileCatalogSelection, selectedViewState, targetContext } from './state/catalog';
 import type { RuntimeInfo, CatalogSelection } from './state/catalog';
 import { commandResolution } from './state/commands';
 import type { CommandReply } from './state/commands';
@@ -143,6 +143,7 @@ function App() {
             // Preserve edits made while the request was in flight.
             const next={...reconciled.selection,workflowInputs:inputDirty.current?selectionRef.current.workflowInputs:reconciled.selection.workflowInputs};
             infoRef.current=info;setRuntimeInfo(info);setLastCommand(old=>old && old.runtimeId===rid && (!old.runtimeInstanceId || old.runtimeInstanceId===info.runtimeInstanceId) && (!old.projectId || old.projectId===info.projectId)?{...old,reply:{...old.reply,run:rs.find(run=>run.id===old.runId) || old.reply.run}}:undefined);setRuns(rs);setWorkflows(ws);setPanels(ps);setPackages(pk);
+            setRuntimeState(selectedViewState(next.runId,info,rs));
             selectionRef.current=next;setRunId(next.runId);setControlRunId(next.controlRunId);setWorkflowId(next.workflowId);setWorkflowInputs(next.workflowInputs);
             setPanel(old=>old?.id===nextPanel?.id && old?.packageRevision===nextPanel?.packageRevision && !changed?old:nextPanel);
             if(!ps.length)reconciled.notices.push('当前 Runtime／工程暂无可访问的启用页面包。');

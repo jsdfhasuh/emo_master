@@ -1,9 +1,19 @@
 import test from 'node:test';import assert from 'node:assert/strict';import ts from 'typescript';import {readFileSync} from 'node:fs';
 const js=ts.transpileModule(readFileSync(new URL('../src/state/catalog.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
-const {reconcileCatalogSelection,targetContext}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+const {reconcileCatalogSelection,selectedViewState,targetContext}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
 const info={runtimeInstanceId:'instance',projectId:'project',configurationRevision:'1'};
 const selected={runId:'j1',controlRunId:'j1',workflowId:'w1',workflowInputs:'{"n":9007199254740993}',dirty:true};
 test('normal directory refresh preserves all valid choices and exact edited input',()=>{const r=reconcileCatalogSelection(selected,info,{...info,configurationRevision:'2'},[{id:'j1'},{id:'j2'}],[{id:'w1'},{id:'w2'}]);assert.deepEqual(r.selection,selected);assert.equal(r.revisionChanged,true);assert.match(r.notices.join(' '),/输入文本未覆盖/)});
 test('deleted selections clear instead of switching Stop to another Job',()=>{const r=reconcileCatalogSelection(selected,info,info,[{id:'j2'}],[{id:'w2'}]);assert.equal(r.selection.runId,'');assert.equal(r.selection.controlRunId,'');assert.equal(r.selection.workflowId,'');assert.equal(r.selection.workflowInputs,selected.workflowInputs);assert.match(r.notices.join(' '),/不会改为其他 Job/)});
 test('new Runtime identity clears reused same Job/workflow IDs',()=>{for(const change of [{runtimeInstanceId:'replacement'},{projectId:'replacement'}]){const r=reconcileCatalogSelection(selected,info,{...info,...change},[{id:'j1'}],[{id:'w1'}]);assert.equal(r.identityChanged,true);assert.equal(r.selection.runId,'');assert.equal(r.selection.controlRunId,'');assert.equal(r.selection.workflowId,'')}});
 test('initial defaults do not select Stop and context encodes explicit target/project',()=>{const r=reconcileCatalogSelection({...selected,runId:'',controlRunId:'',workflowId:'',dirty:false},undefined,info,[{id:'j1'}],[{id:'w1',inputsJson:'{"n":1}'}]);assert.equal(r.selection.controlRunId,'');assert.equal(r.selection.runId,'');assert.equal(r.selection.workflowInputs,'{"n":1}');assert.equal(targetContext('A B','p/q'),'runtimeId=A%20B&projectId=p%2Fq')});
+
+test('fresh catalog status updates only the selected view Job and clears missing or replaced identity',()=>{
+ const runs=[{id:'view',runtimeInstanceId:info.runtimeInstanceId,projectId:info.projectId,status:'ABORTED',state:'RUNNING'},{id:'stop',runtimeInstanceId:info.runtimeInstanceId,projectId:info.projectId,status:'STOPPING'}];
+ assert.equal(selectedViewState('view',info,runs),'ABORTED');
+ assert.equal(selectedViewState('stop',info,runs),'STOPPING');
+ assert.equal(selectedViewState('',info,runs),'');
+ assert.equal(selectedViewState('missing',info,runs),'');
+ assert.equal(selectedViewState('view',{...info,runtimeInstanceId:'replacement'},runs),'');
+ assert.equal(selectedViewState('view',{...info,projectId:'replacement'},runs),'');
+});

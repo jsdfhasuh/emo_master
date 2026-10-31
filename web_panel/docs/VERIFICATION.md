@@ -16,11 +16,59 @@ SQLite connection in the new migration test's temporary-directory cleanup. The
 connection is explicitly closed; cleanup errors are not ignored and assertions
 remain unchanged. The previous failed run is retained as diagnostic evidence.
 
-W2 refresh and W5 expanded browser tests are implemented. The latter include
-external catalog updates and A/B races, real Web activation isolation, and one
-combined Chromium → Web HTTP/WS → repository software Runtime Start → rendered
-result → exact Stop → authoritative ABORTED/resource state flow. Their exact-head
-CI results are **pending**, not inferred from the earlier separate tests.
+### Verified repaired application
+
+Application SHA: `ea098be2f97cb4db4140a4f1d208d4021014fec4`.
+[CI 41168261536](https://github.com/jsdfhasuh/emo_master/actions/runs/41168261536)
+completed **SUCCESS, all three jobs**. This evidence-only documentation update
+preserves that application; its exact-head workflow is also checked before delivery.
+
+| Scope | Actual evidence |
+|---|---|
+| W1 command state | Accepted Start → explicit Job Stop without ending tracking; same-request UNKNOWN → accepted; lost-response/ABORTED reconciliation with no repeated Start/Stop; HTTP 200 rejection reason |
+| W2 current target | Manual runs/workflows/configuration refresh, preserved valid stop selection and edited inputs, invalid selection clearing, held A response after B, instance/project replacement; browser fixtures PASS |
+| W3 packages | Real ASGI + browser A/B activation/rollback, B-only authorization and ongoing live images, scoped notifications, pinned A assets; SQLite migration and project-mismatch tests PASS |
+| Backend, both OSes | Each 137 tests: 135 executed PASS, 2 opt-in actual-product tests skipped here |
+| Frontend, both OSes | 53 tests, TypeScript/Vite build PASS |
+| Browser, both OSes | Four suites PASS: renderer/control fixtures; catalog refresh; real Web with mock Runtime including A/B isolation; official package/preview CLI |
+| Owning Windows software Runtime | Separate 2 actual Runtime + 2 reconciliation tests PASS, plus the complete real browser chain below |
+| Distribution, both OSes | Build Web wheel + supplied SDK wheel; fresh outside-checkout installation and packaged UI/CLI checks PASS |
+
+**Combined actual software chain:** real Chromium login/package activation/Start
+through Web HTTP and WS into unchanged repository Runtime using a temporary
+continuous synthetic project. Exactly one Start and one Stop; captured SDK result
+renders `12.00`; the original Job reaches `ABORTED`, `ownsResources=false`.
+`displayResourcesReleased=false` is shown truthfully, not invented as released.
+Both the original-control panel and published runtime_status component show the
+refreshed ABORTED state. No manual end-tracking action or mock Runtime substitutes
+for this chain. B/C response-loss scenarios remain separately labeled synthetic
+control-flow tests; they are not physical network/device fault acceptance.
+
+Visual inspection also caught independent mock targets accidentally sharing an
+instance ID, which routed A's demo-image URL to a B-only viewer. Independent mock
+identities are now distinct; genuine aliases still share their explicit physical
+identity, retaining all stream/client-lifetime assertions. B's live image decoding
+is now asserted and the corrected screenshot was inspected. A fresh catalog now
+also updates the selected viewing Job's status, not an unrelated control target.
+
+The expanded first browser run exposed Chromium inspector upload-response eviction.
+Tests retain HTTP success checks and verify the exact immutable file SHA/project/
+revision through the contextual catalog rather than rereading that transient body.
+Failed CI 41167179956 and alias-fixture CI 41168045256 remain diagnostic history;
+no correctness assertions or cleanup failures were removed to obtain a pass.
+
+### Repaired development artifacts (7-day retention)
+
+- [Windows Web + SDK wheels/docs](https://github.com/jsdfhasuh/emo_master/actions/runs/41168261536/artifacts/13030485934), ZIP SHA256 `4427929c242ccf78936094bd3eb82cb138ae457a9866df67b3a1e97f1227ef39`.
+- [Ubuntu Web + SDK wheels/docs](https://github.com/jsdfhasuh/emo_master/actions/runs/41168261536/artifacts/13029877609), ZIP SHA256 `95d706629b09d4ec8f69a002134d86809d0c67b4a3078bce4b1042336ef2990f`.
+- [Browser A/B and preview evidence](https://github.com/jsdfhasuh/emo_master/actions/runs/41168261536/artifacts/13030341325), downloaded/verified ZIP SHA256 `5be8f5f902cfd4b1ddc64e29edd8be2febc10e85580174c8f84a75541efd48c9`.
+- [Combined actual Runtime browser evidence](https://github.com/jsdfhasuh/emo_master/actions/runs/41168261536/artifacts/13029638193), ZIP SHA256 `afd91a6ce994c72dbec0da5b53d465885474660179b4532a6e2c9cb584d88caf`.
+
+W2 functional commit: `c280e085a89c452665fbd520e150380819de201a`.
+SDK remains the unchanged official **1.1.0**, delivery implementation SHA
+`d4ab96409e43d7ab6ae566820da357508d01658c`, wheel SHA256
+`bb0cff1f007b8c6b850c8e43d792200ee6adebbaa4af23c4a966362b74e697f9`.
+No Runtime, Designer, shared protocol or vendored contract bytes changed in this repair.
 
 SDK 1.1.1 has not been delivered. Only W4/formal empty-group acceptance remains
 an external integration gate; current shipped SDK1.1.0 bytes and hashes are intact.

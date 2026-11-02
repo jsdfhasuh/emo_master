@@ -16,6 +16,7 @@ def demo_panel():
         {"id":"text","type":"text","props":{"text":"MOCK demonstration — not a connected production Runtime"}},
         {"id":"table","type":"table","binding":{"sourceId":"measurements"},"props":{"columns":[{"key":"name","title":"Name"},{"key":"value","title":"Value"}]}},
         {"id":"clock","type":"clock","props":{}},
+        {"id":"space","type":"spacer","props":{}},
         {"id":"nav","type":"page_navigation","props":{}},
         {"id":"freeze","type":"navigation_button","props":{"text":"Freeze","action":"freeze"}},
         {"id":"history-table","type":"sqlite_table","props":{"columns":[{"key":"id","title":"ID"},{"key":"result","title":"Result"}]}},

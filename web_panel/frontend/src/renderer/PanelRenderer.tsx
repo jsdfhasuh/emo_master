@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Component, Panel, Result, History, Layout } from '../contracts/types';
 import { preparedImageUrl } from '../state/prepare';
 import { api, safeAssetUrl } from '../data/api';
@@ -21,13 +21,24 @@ export function restoreHistorySelection(data:History, prior?:Record<string,unkno
     return data.rows.find(row=>row.rowId===prior.rowId);
 }
 function layoutStyle(layout?:Layout,columns=12):CSSProperties {
-    if(layout?.type==='responsive') return {display:'flex',flexDirection:layout.direction==='vertical'?'column':'row',flexWrap:layout.direction==='wrap'?'wrap':'nowrap',gap:layout.spacing,alignItems:layout.alignment==='start'?'flex-start':layout.alignment==='end'?'flex-end':layout.alignment,justifyContent:layout.justify==='start'?'flex-start':layout.justify==='end'?'flex-end':layout.justify};
+    if(layout?.type==='responsive') return {display:'flex',flexDirection:layout.direction==='vertical'?'column':'row',flexWrap:layout.direction==='vertical'?'nowrap':'wrap',gap:layout.spacing,alignItems:layout.alignment==='start'?'flex-start':layout.alignment==='end'?'flex-end':layout.alignment,justifyContent:layout.justify==='start'?'flex-start':layout.justify==='end'?'flex-end':layout.justify};
     return {gridTemplateColumns:`repeat(${layout?.columns || columns}, minmax(0, 1fr))`,gap:layout?.spacing ?? (layout as Component['grid'])?.gap};
 }
-function responsiveStyle(c:Component,parent?:Layout):CSSProperties {
+export function responsiveStyle(c:Component,parent?:Layout,hasVerticalSpacer=false,equalWidthBasis=0):CSSProperties {
     if(parent?.type!=='responsive')return {};
     const r=c.responsive || {};
-    return {minWidth:`min(100%, ${r.minWidth ?? 160}px)`,maxWidth:'100%',minHeight:r.minHeight,height:r.preferredHeight || undefined,flexGrow:parent.equalWidth?1:r.width==='content'?0:r.weight ?? 1,flexShrink:1,flexBasis:parent.direction==='vertical'?'auto':parent.equalWidth?0:r.preferredWidth ?? 240,alignSelf:r.alignSelf==='start'?'flex-start':r.alignSelf==='end'?'flex-end':r.alignSelf as CSSProperties['alignSelf']};
+    if(c.type==='spacer') {
+        const width=Math.max(r.minWidth ?? 24,r.preferredWidth || 24);
+        const height=Math.max(r.minHeight ?? 24,r.preferredHeight ?? 24);
+        const flex=c.props?.spacerMode==='flex';
+        const vertical=parent.direction==='vertical';
+        const alignment=!r.alignSelf || r.alignSelf==='auto'?parent.alignment:r.alignSelf;
+        return {width,maxWidth:'100%',height,minWidth:0,minHeight:r.minHeight ?? 24,
+            flexGrow:flex?r.weight ?? 1:0,flexShrink:vertical?0:1,
+            flexBasis:vertical?height:parent.direction==='horizontal' && flex?r.minWidth ?? 24:width,
+            alignSelf:alignment==='center'?'center':alignment==='end'?'flex-end':'flex-start'};
+    }
+    return {minWidth:`min(100%, ${r.minWidth ?? 160}px)`,maxWidth:'100%',minHeight:r.minHeight,height:r.preferredHeight || undefined,flexGrow:hasVerticalSpacer?0:parent.equalWidth?1:r.width==='content'?0:r.weight ?? 1,flexShrink:hasVerticalSpacer?0:1,flexBasis:parent.direction==='vertical'?'auto':parent.equalWidth?equalWidthBasis:parent.direction==='horizontal' && r.width!=='content'?r.minWidth ?? 160:r.preferredWidth ?? 240,alignSelf:r.alignSelf==='start'?'flex-start':r.alignSelf==='end'?'flex-end':r.alignSelf as CSSProperties['alignSelf']};
 }
 export function fieldValue(row:unknown,path:string[]):unknown {
     let value=row;
@@ -112,6 +123,16 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
     runtimeState?: string;
 }) {
     const navigationAttempt=useRef(0);
+    const pageRoot=useRef<HTMLDivElement>(null);
+    const [availableHeight,setAvailableHeight]=useState<number>();
+    useLayoutEffect(()=>{
+        const element=pageRoot.current;
+        if(!element)return;
+        const measure=()=>setAvailableHeight(Math.max(0,window.innerHeight-element.getBoundingClientRect().top-16));
+        measure();window.addEventListener('resize',measure);
+        const observer=new ResizeObserver(measure);observer.observe(element.parentElement || element);
+        return()=>{window.removeEventListener('resize',measure);observer.disconnect()};
+    },[pageId,panel.packageRevision]);
     useEffect(()=>{navigationAttempt.current++;return()=>{navigationAttempt.current++}},[viewId,pageId,panel.packageRevision]);
     const [selections,setSelections]=useState<Record<string,Record<string,unknown>|undefined>>({});
     useEffect(()=>setSelections({}),[viewId,panel.packageRevision,pageId]);
@@ -119,8 +140,14 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
     const page = panel.pages.find(p => p.id === pageId) || panel.pages[0];
     if (!page)
         return <p>无可用页面</p>;
-    function render(c: Component, columns = page.layout?.columns || page.grid?.columns || panel.grid?.columns || 12, parentLayout?:Layout) {
+    const hasVerticalSpacer=(components:Component[],layout?:Layout)=>layout?.type==='responsive' && layout.direction==='vertical' && components.some(c=>c.type==='spacer' && c.props?.spacerMode==='flex');
+    const equalWidthBasis=(components:Component[],layout?:Layout)=>layout?.equalWidth?Math.max(0,...components.filter(c=>c.type!=='spacer').map(c=>layout.direction==='horizontal' && c.responsive?.width!=='content'?c.responsive?.minWidth ?? 160:Math.max(c.responsive?.minWidth ?? 160,c.responsive?.preferredWidth || 240))):0;
+    function render(c: Component, columns = page.layout?.columns || page.grid?.columns || panel.grid?.columns || 12, parentLayout?:Layout,verticalSpacer=false,equalBasis=0) {
         const p = c.props || {};
+        if(c.type==='spacer') {
+            const grid=c.layout?{...c.layout,row:(c.layout.row || 0)+1,column:(c.layout.column || 0)+1}:gridOf(c);
+            return <div key={c.id} data-component-id={c.id} className="panel-spacer" aria-hidden="true" style={parentLayout?.type==='responsive'?responsiveStyle(c,parentLayout):{minWidth:0,minHeight:c.responsive?.minHeight ?? 24,gridColumn:`${grid.column || 'auto'} / span ${grid.columnSpan || 1}`,gridRow:`${grid.row || 'auto'} / span ${grid.rowSpan || 1}`}}/>;
+        }
         const emptyText=typeof p.emptyText==='string'?p.emptyText:undefined;
         const style: Record<string, unknown> = {fontSize:p.fontSize || undefined,fontWeight:p.fontWeight,color:palette[String(p.textColor)],...(p.style && typeof p.style === 'object' ? p.style as Record<string, unknown> : {})};
         const binding = typeof c.binding === 'string' ? c.binding : c.binding?.sourceId;
@@ -182,7 +209,7 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
                     onAction(a,clicked?.resultScopeId); }}>{typeof p.iconResourceId==='string' && <img className="nav-icon" src={`/api/assets/${encodeURIComponent(panel.id)}/${encodeURIComponent(p.iconResourceId)}`} alt=""/>}{typeof p.icon === 'string' && <span aria-hidden="true">{p.icon} </span>}{stringify(p.text ?? c.label ?? '打开')}</button>;
                 break;
             case 'container':
-                body = <div className={c.grid?.type==='responsive'?'panel-responsive':'panel-grid'} style={layoutStyle(c.grid,columns)}>{(c.grid?.type==='responsive'?c.children || []:ordered(c.children || [])).map(child => render(child, c.grid?.columns || columns,c.grid))}</div>;
+                body = <div className={c.grid?.type==='responsive'?'panel-responsive':'panel-grid'} style={{...layoutStyle(c.grid,columns),...(hasVerticalSpacer(c.children || [],c.grid)?{flex:1,minHeight:0}:{} )}}>{(c.grid?.type==='responsive'?c.children || []:ordered(c.children || [])).map(child => render(child, c.grid?.columns || columns,c.grid,hasVerticalSpacer(c.children || [],c.grid),equalWidthBasis(c.children || [],c.grid)))}</div>;
                 break;
             case 'page_title':
                 body = <h2 style={{fontSize:typeof style.fontSize==='number'?'inherit':undefined}}>{page.title}</h2>;
@@ -202,7 +229,7 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
         if (failed && ['image', 'text', 'number', 'indicator', 'table'].includes(c.type)) body = <p role="status">不可用：{source?.reason || '本轮数据未就绪'}</p>;
         const grid = c.layout ? {...c.layout,row:(c.layout.row || 0)+1,column:(c.layout.column || 0)+1} : gridOf(c);
         const span = Math.min(columns, Math.max(1, Number(grid.columnSpan) || Math.min(6, columns)));
-        return <section className="panel-card" key={c.id} style={{ ...responsiveStyle(c,parentLayout), fontFamily:fontFamilies[String(p.fontFamily)], border:p.cardStyle==='outlined'?'1px solid #64748b':undefined, boxShadow:p.cardStyle==='soft'?'0 2px 12px #0002':undefined, fontWeight: ['normal', 'bold', '400', '500', '600', '700', 400, 500, 600, 700].includes(style.fontWeight as string | number) ? style.fontWeight as 'normal' | 'bold' | 400 | 500 | 600 | 700 : undefined, gridColumn: parentLayout?.type==='responsive'?undefined:`${grid.column || 'auto'} / span ${span}`, gridRow: parentLayout?.type==='responsive'?undefined:`${grid.row || 'auto'} / span ${Math.max(1, Number(grid.rowSpan) || 1)}`, fontSize: typeof style.fontSize === 'number' ? Math.min(128, Math.max(8, style.fontSize)) : undefined, color: typeof style.color === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.color) ? style.color : undefined, backgroundColor: typeof style.backgroundColor === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.backgroundColor) ? style.backgroundColor : undefined, textAlign: ['left', 'center', 'right'].includes(String(style.textAlign)) ? style.textAlign as 'left' | 'center' | 'right' : undefined }}>{(c.label||typeof p.label==='string'||(c.type==='container'&&typeof p.title==='string'))&&<h3>{c.label||(typeof p.label==='string'?p.label:String(p.title))}</h3>}{body}</section>;
+        return <section className="panel-card" data-component-id={c.id} key={c.id} style={{ ...responsiveStyle(c,parentLayout,verticalSpacer,equalBasis), ...(c.type==='container' && hasVerticalSpacer(c.children || [],c.grid)?{display:'flex',flexDirection:'column'} as CSSProperties:{}), fontFamily:fontFamilies[String(p.fontFamily)], border:p.cardStyle==='outlined'?'1px solid #64748b':undefined, boxShadow:p.cardStyle==='soft'?'0 2px 12px #0002':undefined, fontWeight: ['normal', 'bold', '400', '500', '600', '700', 400, 500, 600, 700].includes(style.fontWeight as string | number) ? style.fontWeight as 'normal' | 'bold' | 400 | 500 | 600 | 700 : undefined, gridColumn: parentLayout?.type==='responsive'?undefined:`${grid.column || 'auto'} / span ${span}`, gridRow: parentLayout?.type==='responsive'?undefined:`${grid.row || 'auto'} / span ${Math.max(1, Number(grid.rowSpan) || 1)}`, fontSize: typeof style.fontSize === 'number' ? Math.min(128, Math.max(8, style.fontSize)) : undefined, color: typeof style.color === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.color) ? style.color : undefined, backgroundColor: typeof style.backgroundColor === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.backgroundColor) ? style.backgroundColor : undefined, textAlign: ['left', 'center', 'right'].includes(String(style.textAlign)) ? style.textAlign as 'left' | 'center' | 'right' : undefined }}>{(c.label||typeof p.label==='string'||(c.type==='container'&&typeof p.title==='string'))&&<h3>{c.label||(typeof p.label==='string'?p.label:String(p.title))}</h3>}{body}</section>;
     }
-    return <div className={page.layout?.type==='responsive'?'panel-responsive':'panel-grid'} style={layoutStyle(page.layout || page.grid || panel.grid,12)}>{(page.layout?.type==='responsive'?page.components:ordered(page.components)).map(c => render(c,undefined,page.layout))}</div>;
+    return <div ref={pageRoot} className={page.layout?.type==='responsive'?'panel-responsive':'panel-grid'} style={{...layoutStyle(page.layout || page.grid || panel.grid,12),...(hasVerticalSpacer(page.components,page.layout)?{height:availableHeight}:{} )}}>{(page.layout?.type==='responsive'?page.components:ordered(page.components)).map(c => render(c,undefined,page.layout,hasVerticalSpacer(page.components,page.layout),equalWidthBasis(page.components,page.layout)))}</div>;
 }

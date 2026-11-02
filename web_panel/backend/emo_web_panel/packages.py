@@ -23,7 +23,7 @@ class PackageError(ValueError):
 
 TYPES = frozenset({"image", "text", "number", "indicator", "runtime_status", "table",
                    "navigation_button", "container", "page_title", "page_navigation",
-                   "clock", "sqlite_table", "sqlite_value"})
+                   "clock", "sqlite_table", "sqlite_value", "spacer"})
 MIMES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
 ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 HASH = re.compile(r"^[0-9a-f]{64}$")
@@ -35,6 +35,7 @@ TYPE_PROPS = {
     "number": {"text", "value", "unit", "decimals"},
     "indicator": {"text", "value", "mapping"},
     "runtime_status": set(),
+    "spacer": {"spacerMode"},
     "table": {"value", "columns"},
     "navigation_button": {"text", "action", "targetPageId", "icon"},
     "container": {"title"},  # Preserved draft fixture metadata; not HTML.
@@ -167,6 +168,11 @@ def _validate_presentation(doc, asset_ids):
             raise PackageError("Unsupported component property")
         component_types[cid] = c["type"]
         _plain(props)
+        if c["type"] == "spacer":
+            if props.get("spacerMode", "fixed") != "fixed":
+                raise PackageError("Elastic spacers require a responsive layout")
+            if "binding" in c:
+                raise PackageError("Spacers cannot have data bindings")
         for key in ("text", "label", "title", "unit", "icon"):
             if key in props and not isinstance(props[key], str):
                 raise PackageError("Invalid text property")
@@ -367,10 +373,12 @@ def _official_presentation(manifest, doc, files):
         raise PackageError("Unknown source result scope")
     seen = {}
     history_links = []
-    def component(value, page_ids, depth=0):
+    def component(value, page_ids, parent_layout, depth=0):
         if depth > 8 or len(seen) >= 1024 or value.componentId in seen:
             raise PackageError("Duplicate or excessively nested published component")
         seen[value.componentId] = value.type
+        if value.type == "spacer" and value.props.spacerMode == "flex" and parent_layout.type != "responsive":
+            raise PackageError("Elastic spacers require a responsive layout")
         # PublishedComponent is a transport DTO; Component supplies the binding,
         # static-resource and children semantic validators without local paths.
         shape = value.model_dump(exclude={"history", "children"})
@@ -403,7 +411,7 @@ def _official_presentation(manifest, doc, files):
         elif value.type in {"sqlite_table", "sqlite_value"}:
             raise PackageError("History component missing Runtime declaration")
         for child in value.children:
-            component(child, page_ids, depth + 1)
+            component(child, page_ids, value.grid, depth + 1)
     page_components = {}
     for pid in published.pageOrder:
         page = published.pages[pid]
@@ -411,7 +419,7 @@ def _official_presentation(manifest, doc, files):
             raise PackageError("Unknown page result scope")
         before = set(seen)
         for item in page.components:
-            component(item, pid)
+            component(item, pid, page.layout)
         page_components[pid] = set(seen) - before
     for pid, cid in history_links:
         if cid not in page_components[pid] or seen.get(cid) != "sqlite_table":

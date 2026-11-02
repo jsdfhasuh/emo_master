@@ -431,7 +431,8 @@
             "page_navigation",
             "clock",
             "sqlite_table",
-            "sqlite_value"
+            "sqlite_value",
+            "spacer"
           ],
           "title": "Type",
           "type": "string"
@@ -562,6 +563,15 @@
       "additionalProperties": false,
       "description": "All ordinary rendering props; local sources belong to the authoring model.",
       "properties": {
+        "spacerMode": {
+          "default": "fixed",
+          "enum": [
+            "fixed",
+            "flex"
+          ],
+          "title": "Spacermode",
+          "type": "string"
+        },
         "imageResourceId": {
           "anyOf": [
             {

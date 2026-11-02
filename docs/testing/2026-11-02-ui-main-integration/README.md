@@ -203,3 +203,45 @@ Original Windows logs remain under `build/ci-01d8b72c-windows*`.
 
 Full source/test Ruff, protobuf drift and mypy (609 source files) pass after these
 changes. Fresh cross-platform CI is required for this production follow-up.
+
+## Final Windows test precondition follow-up
+
+The `61e2717456d5fc17d1202709bcd61f7997fa25eb` full Windows job
+`125374696550` in [CI run 41474013539](https://github.com/jsdfhasuh/emo_master/actions/runs/41474013539)
+completed with **9025 passed, five skipped, two failed and 42 passing subtests**.
+Linux completed with **9001 passed, 31 skipped and 42 passing subtests**. The
+Windows failures were the 96-changing-image decision test (both consumers lacked
+verified frame 88) and the `stopAffected` source-relocation precondition (the
+repository still reported `STARTING` after the output file appeared). These
+failures are retained, not replaced by a retry of the old revision.
+
+A controlled worker-event gate demonstrates that a real worker can write its
+output before the parent consumes `job.started`: the same Job is `STARTING`
+with an existing output and becomes `RUNNING` after event delivery. The
+relocation test now waits for both conditions within its original 15-second
+budget, retaining its explicit `RUNNING` assertion and all rejection,
+replacement, retirement, source ownership and no-implicit-restart checks.
+
+The decision test already serializes publication on client audit records, but a
+record does not prove that the server has retired the preceding asset response.
+Delaying the two frame-87 response retirements by 80 ms deterministically makes
+both subsequent readers report `RESOURCE_EXHAUSTED` and fail the original pixel
+assertion. This auxiliary scheduling counterexample is **not proof of the unique
+cause of the historical Windows failure**, whose log lacks the failed audit
+rows. The controlled decision test now waits for the existing two-read quota to
+retire before publishing each frame, as the existing controlled upload test does
+for its quota. No production quota, deadline, ownership or retry logic changes.
+All 96 changing pixels, exact owner keys, all 96 audit rows without failures and
+only the intentional ordinal-2 supersession remain required. A future failure
+now includes unsuccessful decode audit rows rather than only the pixel list.
+The same delayed-retirement counterexample passes after this precondition fix.
+
+Cloud Python 3.10/offscreen verification passes all 26 tests in the two
+affected files plus the network file, nine callback-retirement tests, and all
+13 passive-RPC marker tests (including asset ownership before/after
+serialization). Full source/test Ruff, protobuf drift and mypy (609 source
+files) pass. Auxiliary delayed-retirement and worker-event-gate checks are
+reported separately, not added to those regression counts. Evidence is retained under
+`build/ui-main-integration/final-windows-preconditions/`; it is not native
+Windows or manual desktop acceptance. Fresh complete cross-platform, Web and
+frozen-package checks must validate the subsequent fixed PR revision.

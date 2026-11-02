@@ -197,7 +197,10 @@ def testSourceOnlyChangeRetiresActiveJobWithoutDevices(tmp_path, policy):
         service.productionMode = True
         started = client.startJob(document.project.projectId, 'main')
         assert started.ok, started.message
-        waitFor(lambda: (first.parent / 'outputs/result.png').is_file(), timeout=15)
+        # Worker output and the parent's job.started event are independent.
+        # Wait for both before exercising replacement of a RUNNING Job.
+        waitFor(lambda: (first.parent / 'outputs/result.png').is_file()
+            and service.jobRepository.get(started.job_id).status == 'RUNNING', timeout=15)
         assert service.jobRepository.get(started.job_id).status == 'RUNNING'
         with pytest.raises(RuntimeClientError) as rejected:
             client.writeProjectConfiguration(snapshot, snapshot['payload'], [], 'check', validate=True, localProjectPath=second)

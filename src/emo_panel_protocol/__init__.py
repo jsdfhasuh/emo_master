@@ -1,2 +1,2 @@
 """Panel Contract v1: pure DTOs and gRPC wire types, with no application owners."""
-__version__ = "1.1.1"
+__version__ = "1.2.0"

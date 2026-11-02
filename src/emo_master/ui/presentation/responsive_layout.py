@@ -60,7 +60,8 @@ class ResponsiveWidgetLayout(QLayout):
             height = (lambda width, item=item: max(0, item.heightForWidth(round(width)))) if item.hasHeightForWidth() else None
             result.append(Measurement(component.componentId if component else str(index),
                 component.responsive if component else ResponsiveItem(), hint.width(), hint.height(),
-                0, minimum.height(), height))
+                0, minimum.height(), height,
+                component.props.spacerMode if component and component.type == "spacer" else None))
         return result
 
     def heightForWidth(self, width):

@@ -119,6 +119,13 @@ class EditingTools(QObject):
             field.setRange(minimum, maximum)
             self.fields[name] = field
             self.form.addRow(label, field)
+        self.fields['spacerMode'] = QComboBox()
+        self.fields['spacerMode'].addItem('固定占位', 'fixed')
+        self.fields['spacerMode'].addItem('弹性占位', 'flex')
+        self.form.addRow('空白块方式', self.fields['spacerMode'])
+        self.spacerHint = QLabel('弹性占位沿响应式排列的主轴分配剩余空间；旧网格使用固定占位。')
+        self.spacerHint.setWordWrap(True)
+        self.form.addRow(self.spacerHint)
         self.destination = QComboBox()
         self.form.addRow('目标页面', self.destination)
         self.actionMode = QComboBox()
@@ -396,10 +403,6 @@ class EditingTools(QObject):
         self.select(self.selected)
 
     def install(self):
-        for page in self.w.renderer.pages.values():
-            # Reserve the editing scrollbar lane so resizing a nested component
-            # cannot change its parent grid width midway through the gesture.
-            page.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         for widget in [self.w.renderer, *self.w.renderer.findChildren(QWidget)]:
             if widget.property('editorDecoration'):
                 continue
@@ -419,7 +422,7 @@ class EditingTools(QObject):
                 if not hasattr(widget.layout(), 'setRowMinimumHeight'):
                     continue
                 row = max((c.layout.row + c.layout.rowSpan for c in children), default=0)
-                widget.layout().setRowMinimumHeight(row, 64)
+                widget.layout().setRowMinimumHeight(row, 0)
                 widget.layout().setGeometry(widget.rect())
                 widget.setToolTip('编辑模式下底部空白行为组件拖入区域')
         self.updateSelection()
@@ -536,6 +539,11 @@ class EditingTools(QObject):
         from .palette import TITLES
         self.responsiveProperties.load(component.grid if component.type == 'container' else None, component.responsive)
         self.responsiveProperties.setItemVisible(True)
+        spacerMode = self.fields['spacerMode']
+        spacerMode.setCurrentIndex(spacerMode.findData(component.props.spacerMode))
+        from .responsive_editing import parentOf, layoutFor
+        parentId, _siblings, _index = parentOf(self.w.store.snapshot(), self.w.pageId, key)
+        spacerMode.model().item(1).setEnabled(layoutFor(self.w.store.snapshot(), self.w.pageId, parentId).type == 'responsive')
         self.propertyGroups.select(component.type)
         self.sqliteProperties.load(component.props.sqlite, component.type)
         self.imageProperties.load(component, self.w.store.snapshot(), self.w.pageId)
@@ -673,6 +681,8 @@ class EditingTools(QObject):
         props.update({key: field.currentData() for key, field in self.appearance.items()})
         props.update({key: self.fields[key].currentData() for key in ['imageResourceId', 'iconResourceId']
                       if key in applicable})
+        if item.type == 'spacer':
+            props['spacerMode'] = self.fields['spacerMode'].currentData()
         if item.type == 'image':
             imageMode = self.imageProperties.mode.currentData()
             props['imagePath'] = self.imageProperties.payload()

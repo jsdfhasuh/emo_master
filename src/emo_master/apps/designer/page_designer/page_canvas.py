@@ -1,7 +1,7 @@
 """Graphics navigation around the same native page used by preview and runtime."""
-from PySide2.QtCore import QPoint, QPointF, Qt, QTimer
+from PySide2.QtCore import QPoint, QPointF, QSize, Qt, QTimer
 from PySide2.QtGui import QColor
-from PySide2.QtWidgets import QGraphicsScene, QRubberBand
+from PySide2.QtWidgets import QGraphicsItem, QGraphicsScene, QLayout, QRubberBand
 
 from emo_master.apps.designer.ui.designer_graphics_view import DesignerGraphicsView
 
@@ -10,12 +10,20 @@ class PageCanvas(DesignerGraphicsView):
     def __init__(self, workspace, renderer):
         self.workspace = workspace
         self.previewWidth = 0
+        self.previewHeight = 0
+        self.autoFit = True
+        self._sizing = False
+        self._deferredSize = False
+        self._lastPageId = None
+        self._lastViewportSize = QSize()
         self._rubberStart = None
         scene = QGraphicsScene(workspace)
         super().__init__(scene)
         self.setObjectName('pageCanvas')
         self.setBackgroundBrush(QColor('#e6ebf2'))
         self.proxy = scene.addWidget(renderer)
+        self.proxy.setCacheMode(QGraphicsItem.NoCache)
+        renderer.layout().setSizeConstraint(QLayout.SetNoConstraint)
         renderer.setMinimumSize(0, 0)
         self.rubber = QRubberBand(QRubberBand.Rectangle, self.viewport())
         self.sizeTimer = QTimer(self)
@@ -23,24 +31,111 @@ class PageCanvas(DesignerGraphicsView):
         self.sizeTimer.timeout.connect(self.updatePageSize)
         self.updatePageSize()
 
+    def gestureActive(self):
+        tools = getattr(self.workspace, 'tools', None)
+        responsive = getattr(tools, 'responsive', None)
+        selection = getattr(tools, 'selection', None)
+        return bool(self._rubberStart is not None or self._isPanning
+            or (tools and tools.dragStart)
+            or (responsive and (responsive.resize or responsive.pointer or responsive.preview))
+            or (selection and selection.active))
+
     def updatePageSize(self):
-        from emo_master.ui.presentation.renderer import surfaceBounds
-        width = self.previewWidth or max(320, self.viewport().width() - 32)
-        height = max(360, self.viewport().height() - 32)
-        width, height = surfaceBounds(width, height, self.workspace.renderer.devicePixelRatioF())
-        self.workspace.renderer.setMaximumSize(width, height)
-        self.workspace.renderer.resize(width, height)
-        self.proxy.setPos(16, 16)
-        self._ensureNavigationBounds()
+        if self._sizing:
+            return
+        if self.gestureActive():
+            self._deferredSize = True
+            self.sizeTimer.start(16)
+            return
+        self._deferredSize = False
+        self._sizing = True
+        renderer = self.workspace.renderer
+        previous = QSize(renderer.size())
+        pageId = getattr(self.workspace, 'pageId', None)
+        changedPage = pageId != self._lastPageId
+        viewportChanged = self.viewport().size() != self._lastViewportSize
+        self._lastViewportSize = QSize(self.viewport().size())
+        if changedPage:
+            self._lastPageId = pageId
+            self.autoFit = True
+        try:
+            # Terminal sizes describe the page viewport, excluding editor chrome.
+            for _ in range(3):
+                renderer.layout().activate()
+                renderer.stack.layout().activate()
+                scroll = renderer.pages.get(pageId)
+                if scroll is not None:
+                    scroll.setMinimumSize(0, 0)
+                    extra = renderer.size() - scroll.viewport().size()
+                else:
+                    margins = renderer.layout().contentsMargins()
+                    extra = QSize(margins.left() + margins.right(), margins.top() + margins.bottom())
+                if self.previewWidth:
+                    target = QSize(self.previewWidth, self.previewHeight or 720) + extra
+                else:
+                    target = QSize(max(1, self.viewport().width() - 16),
+                                   max(1, self.viewport().height() - 16))
+                renderer.setMinimumSize(0, 0)
+                renderer.setMaximumSize(target)
+                renderer.resize(target)
+            renderer.layout().activate()
+            renderer.stack.layout().activate()
+            self.proxy.setPos(8, 8)
+            self._ensureNavigationBounds()
+        finally:
+            self._sizing = False
+        if self.autoFit and (changedPage or viewportChanged or renderer.size() != previous):
+            self._requestFit()
+
+    def setPreviewSize(self, width=0, height=0):
+        self.previewWidth = int(width)
+        self.previewHeight = int(height) if width else 0
+        self.autoFit = True
+        self.updatePageSize()
+        self._requestFit()
 
     def setPreviewWidth(self, width):
-        self.previewWidth = int(width)
-        self.updatePageSize()
-        self.fitPage()
+        # Kept for width-preview callers; terminal UI presets set both axes.
+        self.setPreviewSize(width, self.previewHeight or 720)
 
     def fitPage(self):
+        self.autoFit = True
+        self.updatePageSize()
+        self._requestFit()
+
+    def _requestFit(self):
+        if self.gestureActive():
+            self._deferredSize = True
+            self.sizeTimer.start(16)
+            return
         box = self.proxy.sceneBoundingRect()
         self.fitContent((box.x(), box.y(), box.width(), box.height()))
+
+    def _applyPendingFit(self):
+        if self.gestureActive():
+            self._fitTimer.start(16)
+            return
+        if self._pendingFit is None or not self.isVisible():
+            return
+        size = self.viewport().size()
+        if self._fitViewportSize != size:
+            self._fitViewportSize = size
+            self._fitTimer.start(0)
+            return
+        (x, y, width, height), minimum = self._pendingFit
+        self._pendingFit = None
+        target = min(max(1, size.width() - 16) / max(1, width),
+                     max(1, size.height() - 16) / max(1, height), 1.0)
+        self.resetTransform()
+        self.scale(max(minimum, target), max(minimum, target))
+        center = QPointF(x + width / 2, y + height / 2)
+        self._ensureNavigationBounds(center=center, reset=True)
+        self.centerOn(center)
+        self.zoomChanged.emit(self.getZoomFactor())
+
+    def setZoomFactor(self, factor, underMouse=False):
+        self.autoFit = False
+        super().setZoomFactor(factor, underMouse=underMouse)
 
     def rendererPoint(self, globalPoint):
         point = self.mapToScene(self.viewport().mapFromGlobal(globalPoint))
@@ -75,6 +170,7 @@ class PageCanvas(DesignerGraphicsView):
             except ValueError as error:
                 self.workspace.message.setText(str(error))
                 return False
+        self.autoFit = False
         self._isPanning = True
         self._pendingFit = None
         self._fitTimer.stop()
@@ -118,6 +214,10 @@ class PageCanvas(DesignerGraphicsView):
             tools.laterRefresh()
 
     def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Home:
+            self.fitPage()
+            event.accept()
+            return
         if event.key() == Qt.Key_Escape:
             if self._rubberStart is not None:
                 self.rubber.hide()
@@ -142,4 +242,6 @@ class PageCanvas(DesignerGraphicsView):
         if tools:
             tools.responsive.cancel()
         self.sizeTimer.stop()
+        self._fitTimer.stop()
+        self._pendingFit = None
         super().hideEvent(event)

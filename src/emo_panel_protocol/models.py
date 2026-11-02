@@ -180,6 +180,7 @@ class ImagePathSource(Model):
 
 
 class VisualProps(Model):
+    spacerMode: Literal["fixed", "flex"] = "fixed"
     imageResourceId: Id | None = None
     iconResourceId: Id | None = None
     title: str = Field(default="", max_length=1024)
@@ -195,6 +196,13 @@ class VisualProps(Model):
     fontWeight: Literal["normal", "bold"] = "normal"
     textColor: Literal["default", "neutral", "green", "red", "amber"] = "default"
     cardStyle: Literal["plain", "soft", "outlined"] = "plain"
+
+    @model_serializer(mode="wrap")
+    def serializeVisual(self, handler):
+        payload = handler(self)
+        if self.spacerMode == "fixed":
+            payload.pop("spacerMode", None)
+        return payload
 
     @field_validator('fontSize')
     @classmethod
@@ -224,6 +232,8 @@ class Props(VisualProps):
         for field in ("imageResourceId", "iconResourceId", "imagePath"):
             if payload.get(field) is None:
                 payload.pop(field, None)
+        if self.spacerMode == "fixed":
+            payload.pop("spacerMode", None)
         if self.sqlite == SqliteSource():
             payload.pop("sqlite", None)
         return payload
@@ -248,7 +258,7 @@ class Action(Model):
 ComponentType = Literal[
         "image", "text", "number", "indicator", "runtime_status", "table",
         "navigation_button", "container", "page_title", "page_navigation", "clock",
-        "sqlite_table", "sqlite_value"
+        "sqlite_table", "sqlite_value", "spacer"
     ]
 
 
@@ -264,8 +274,19 @@ class Component(Model):
     children: list[Component] = Field(default_factory=list, max_length=1024)
     grid: Grid | ResponsiveLayout = Field(default_factory=lambda: ResponsiveLayout(direction='wrap'))
 
+    @model_validator(mode="before")
+    @classmethod
+    def spacerDefaults(cls, value):
+        if isinstance(value, dict) and value.get("type") == "spacer" and "responsive" not in value:
+            value = dict(value)
+            value["responsive"] = {"width": "content", "minWidth": 24, "preferredWidth": 24,
+                                   "minHeight": 24, "preferredHeight": 24, "alignSelf": "start"}
+        return value
+
     @model_validator(mode="after")
     def checkShape(self) -> Component:
+        if self.type != "spacer" and self.props.spacerMode != "fixed":
+            raise ValueError("spacer mode requires spacer component")
         if self.props.imagePath is not None and (
                 self.type != "image" or self.props.imageResourceId or self.bindings):
             raise ValueError("image path requires image component without static resource or result bindings")
@@ -279,7 +300,7 @@ class Component(Model):
             raise ValueError("SQLite source requires a SQLite component")
         allowed = {"image": {"image"}, "table": {"rows"}, "container": set(),
                    "navigation_button": set(), "page_title": set(), "page_navigation": set(),
-                   "clock": set(), "sqlite_table": set(), "sqlite_value": set()}.get(self.type, {"value"})
+                   "clock": set(), "sqlite_table": set(), "sqlite_value": set(), "spacer": set()}.get(self.type, {"value"})
         if set(self.bindings) - allowed:
             raise ValueError(f"unsupported binding property for {self.type}")
         if self.actions and self.type != "navigation_button":

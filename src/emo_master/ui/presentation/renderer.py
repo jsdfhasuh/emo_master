@@ -11,7 +11,7 @@ from PySide2.QtCore import Qt, QRect, Signal, QEvent
 from PySide2.QtGui import QPainter, QColor, QImage, QFontDatabase, QIcon, QPixmap
 from PySide2.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout,
-    QStackedWidget, QScrollArea, QFrame, QSizePolicy, QApplication, QMenu,
+    QStackedWidget, QFrame, QSizePolicy, QApplication, QMenu,
 )
 
 from emo_master.core.presentation.models import Presentation, ResponsiveLayout, walkComponents
@@ -22,6 +22,7 @@ from emo_master.core.presentation.validation import pageScopes
 from emo_master.ui.presentation.images import assertGuiThread, ownedImage
 from emo_master.ui.presentation.table import CollectionView
 from emo_master.ui.presentation.page_navigation import PageNavigation
+from emo_master.ui.presentation.page_scroll import PageScrollArea
 
 
 COLORS = {'default': '#223247', 'neutral': '#576477', 'green': '#176f42',
@@ -427,11 +428,10 @@ class RuntimePages(QWidget):
             self.stack.removeWidget(widget)
             widget.deleteLater()
         page = self.config.pages[pageId]
-        scroll = QScrollArea()
+        scroll = PageScrollArea()
         scroll.setWidgetResizable(True)
         body = QWidget()
         body.setProperty('pageGrid', pageId)
-        body.setMinimumHeight(240)
         self.widgets[pageId] = {}
         self.cards[pageId] = {}
         self.layoutHosts[pageId] = {}
@@ -463,16 +463,20 @@ class RuntimePages(QWidget):
         for column in range(grid.columns if not responsive else 0):
             layout.setColumnStretch(column, 1)
         for component in components:
-            card = QFrame()
-            card.setObjectName("card")
+            from .spacer import SpacerCard
+            card = SpacerCard(editing=self.editorHost) if component.type == "spacer" else QFrame()
+            card.setObjectName("pageSpacer" if component.type == "spacer" else "card")
             if self.editorHost:
                 card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
             card.setProperty('componentId', component.componentId)
             self.cards[pageId][component.componentId] = card
             backgrounds = {'plain': 'white', 'soft': '#edf3fa', 'outlined': 'transparent'}
-            card.setStyleSheet('QFrame#card {background:' + backgrounds[component.props.cardStyle] +
-                ';border:1px solid #c4d0de;border-radius:6px;}')
-            if component.type == "container":
+            if component.type != 'spacer':
+                card.setStyleSheet('QFrame#card {background:' + backgrounds[component.props.cardStyle] +
+                    ';border:1px solid #c4d0de;border-radius:6px;}')
+            if component.type == "spacer":
+                self.widgets[pageId][component.componentId] = (component, card)
+            elif component.type == "container":
                 content = card
                 if component.props.title:
                     from .container_title import ContainerTitle
@@ -943,7 +947,7 @@ class RuntimePages(QWidget):
         for component, widget in self.widgets[page].values():
             if component.props.imageResourceId or component.props.imagePath is not None:
                 continue
-            if component.type in {"navigation_button", "page_navigation", "page_title", "clock", "sqlite_table", "sqlite_value"}:
+            if component.type in {"navigation_button", "page_navigation", "page_title", "clock", "sqlite_table", "sqlite_value", "spacer"}:
                 continue
             if component.type == "text" and not component.bindings:
                 continue

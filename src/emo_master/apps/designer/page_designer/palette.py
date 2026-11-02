@@ -7,6 +7,7 @@ COMPONENTS = (
     ('image', '图像', '展示绑定的结果图像'), ('number', '数值', '数量、测量值与单位'),
     ('text', '文字', '固定文字或绑定数据'), ('indicator', '判定指示', '按配置映射显示判定'),
     ('table', '集合表格', '按列展示集合并分页'), ('navigation_button', '导航按钮', '切页或查看已显示结果'),
+    ('spacer', '空白块', '固定或弹性占位，运行时透明'),
     ('container', '容器', '组织组件的排列、换行与间距'), ('runtime_status', '连接状态', '展示客户端连接状态'),
     ('page_title', '页面标题', '自定义标题或跟随页面名称'),
     ('page_navigation', '页面导航', '按需放置的页面切换入口'),
@@ -24,7 +25,10 @@ def paintSwatch(painter, rect, kind):
     painter.setBrush(QColor('#edf3fa'))
     painter.drawRoundedRect(QRectF(rect), 5, 5)
     painter.setPen(QColor('#2563eb'))
-    if kind in ('image', 'container', 'table', 'sqlite_table'):
+    if kind == 'spacer':
+        painter.setPen(QPen(QColor('#94a3b8'), 1, Qt.DashLine))
+        painter.drawRect(rect.adjusted(8, 8, -8, -8))
+    elif kind in ('image', 'container', 'table', 'sqlite_table'):
         if kind == 'image':
             painter.drawEllipse(QRectF(rect.left()+12, rect.top()+8, 10, 10))
             painter.drawLine(rect.left()+8, rect.bottom()-8, rect.center().x(), rect.center().y())

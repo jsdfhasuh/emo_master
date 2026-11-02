@@ -1,7 +1,7 @@
 """Page management around the shared production renderer."""
 from PySide2.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QInputDialog,
-    QLabel, QMessageBox, QTabWidget, QToolButton, QMenu, QSpinBox,
+    QLabel, QMessageBox, QTabWidget, QToolButton, QMenu, QSpinBox, QComboBox,
 )
 from PySide2.QtCore import QSize, Qt
 from shiboken2 import isValid
@@ -41,7 +41,10 @@ class EditorPages(RuntimePages):
 
     def fitToAvailableScreen(self, *, resize=True, screen=None):
         if hasattr(self.workspace, 'canvas'):
-            self.workspace.canvas.updatePageSize()
+            if resize:
+                self.workspace.canvas.fitPage()
+            else:
+                self.workspace.canvas.updatePageSize()
             return
         return super().fitToAvailableScreen(resize=resize, screen=screen)
 
@@ -151,9 +154,8 @@ class PageWorkspace(QWidget):
         self.renderer.banner.setWordWrap(False)
         pageInfo.addWidget(self.renderer.banner)
         self.centerLayout.insertLayout(0, pageInfo)
-        # A stable handle lane keeps collapsed panels clear of the first row;
-        # opening panels never changes these margins or the component grid.
-        self.renderer.layout().setContentsMargins(12, 64, 12, 12)
+        # Panel entries live in the toolbar, outside the page viewport.
+        self.renderer.layout().setContentsMargins(12, 12, 12, 12)
         self.empty = QWidget()
         emptyLayout = QVBoxLayout(self.empty)
         emptyLayout.addStretch()
@@ -171,23 +173,47 @@ class PageWorkspace(QWidget):
         self.renderer.fitButton.clicked.disconnect()
         self.renderer.fitButton.clicked.connect(self.canvas.fitPage)
         canvasTools = QHBoxLayout()
-        canvasTools.addWidget(QLabel('预览宽度'))
+        self.canvasTools = canvasTools
+        self.previewMode = QComboBox()
+        self.previewMode.addItem('跟随窗口', 'follow')
+        self.previewMode.addItem('固定终端', 'fixed')
+        self.previewMode.setToolTip('尺寸使用逻辑像素；只改变查看方式，不修改工程')
+        canvasTools.addWidget(self.previewMode)
         self.previewWidth = QSpinBox()
-        self.previewWidth.setRange(0, 2400)
+        self.previewWidth.setRange(0, 4096)
         self.previewWidth.setSpecialValueText('跟随窗口')
         self.previewWidth.setSingleStep(40)
         self.previewWidth.setSuffix(' px')
-        self.previewWidth.setToolTip('0 跟随窗口；改变预览宽度只重新排版，不修改工程')
-        self.previewWidth.valueChanged.connect(self.canvas.setPreviewWidth)
-        canvasTools.addWidget(self.previewWidth)
-        for title, width in [('窄', 360), ('中', 768), ('宽', 1280), ('自动', 0)]:
-            button = QPushButton(title)
-            button.setToolTip('跟随当前窗口' if not width else f'预览 {width} 像素宽度')
-            button.clicked.connect(lambda _checked=False, width=width: self.previewWidth.setValue(width))
-            canvasTools.addWidget(button)
+        self.previewWidth.setToolTip('终端页面可视区宽度（逻辑像素）；0 跟随窗口')
+        self.previewHeight = QSpinBox()
+        self.previewHeight.setRange(1, 4096)
+        self.previewHeight.setValue(720)
+        self.previewHeight.setSingleStep(40)
+        self.previewHeight.setSuffix(' px')
+        self.previewHeight.setToolTip('终端页面可视区高度（逻辑像素）')
+        self.previewHeight.setEnabled(False)
+        self.previewWidth.valueChanged.connect(self.previewSizeChanged)
+        self.previewHeight.valueChanged.connect(self.previewSizeChanged)
+        self.previewMode.currentIndexChanged.connect(self.previewModeChanged)
+        self.previewDimensions = QWidget()
+        dimensions = QHBoxLayout(self.previewDimensions)
+        dimensions.setContentsMargins(0, 0, 0, 0)
+        dimensions.addWidget(QLabel('页面可视区'))
+        dimensions.addWidget(self.previewWidth)
+        dimensions.addWidget(QLabel('×'))
+        dimensions.addWidget(self.previewHeight)
+        dimensions.addStretch()
+        self.previewDimensions.hide()
+        self.terminalPreset = QComboBox()
+        self.terminalPreset.addItem('终端预设', None)
+        for width, height in ((360, 640), (768, 1024), (1280, 720), (1920, 1080)):
+            self.terminalPreset.addItem(f'{width}×{height}', (width, height))
+        self.terminalPreset.activated.connect(self.useTerminalPreset)
+        canvasTools.addWidget(self.terminalPreset)
         canvasTools.addStretch()
         canvasTools.addWidget(self.renderer.fitButton)
         self.centerLayout.addLayout(canvasTools)
+        self.centerLayout.addWidget(self.previewDimensions)
         self.message = QLabel()
         self.message.setWordWrap(True)
         self.centerLayout.addWidget(self.message)
@@ -207,13 +233,52 @@ class PageWorkspace(QWidget):
         settings = coordinator.window.settingsStore
         self.floatingToolbox = FloatingPanel(self.canvasHost, self.canvasHost, settings,
             'pageDesigner/toolbox', '工具区', self.libraryTabs, expandedSize=QSize(308, 560),
-            collapsedSize=QSize(148, 46))
+            collapsedSize=QSize(148, 46), externalToggle=True)
         self.floatingProperties = FloatingPanel(self.canvasHost, self.canvasHost, settings,
             'pageDesigner/properties', '属性面板', self.propertyPanel,
-            right=True, symbol='sliders-horizontal', expanded=True, expandedSize=QSize(340, 620))
+            right=True, symbol='sliders-horizontal', expanded=True, expandedSize=QSize(340, 620),
+            externalToggle=True)
+        self.panelButtons = []
         for panel in (self.floatingToolbox, self.floatingProperties):
+            button = QToolButton()
+            button.setText(panel.title)
+            button.setCheckable(True)
+            button.setChecked(panel.isExpanded())
+            button.setToolTip('展开或收起' + panel.title)
+            button.clicked.connect(panel.setExpanded)
+            panel.expandedChanged.connect(button.setChecked)
             panel.expandedChanged.connect(lambda _: self.coordinator.chrome.update())
+            self.canvasTools.insertWidget(0, button)
+            self.panelButtons.append(button)
         self.refresh()
+
+    def previewModeChanged(self, _index):
+        if self.previewMode.currentData() == 'follow':
+            self.previewWidth.setValue(0)
+        else:
+            self.previewWidth.setValue(self.previewWidth.value() or 1280)
+        self.previewSizeChanged()
+
+    def previewSizeChanged(self, _value=None):
+        fixed = bool(self.previewWidth.value())
+        self.previewMode.blockSignals(True)
+        self.previewMode.setCurrentIndex(1 if fixed else 0)
+        self.previewMode.blockSignals(False)
+        self.previewHeight.setEnabled(fixed)
+        self.previewDimensions.setVisible(fixed)
+        self.canvas.setPreviewSize(self.previewWidth.value(), self.previewHeight.value())
+
+    def useTerminalPreset(self, index):
+        size = self.terminalPreset.itemData(index)
+        if size is None:
+            return
+        self.previewWidth.blockSignals(True)
+        self.previewHeight.blockSignals(True)
+        self.previewWidth.setValue(size[0])
+        self.previewHeight.setValue(size[1])
+        self.previewWidth.blockSignals(False)
+        self.previewHeight.blockSignals(False)
+        self.previewSizeChanged()
 
     def togglePanel(self, index):
         self.panel(index).toggle()
@@ -306,6 +371,7 @@ class PageWorkspace(QWidget):
         self.tools.select(None)
         self.tools.dragStart = None
         self.tools.install()
+        self.canvas.updatePageSize()
 
     def newPage(self):
         name, ok = QInputDialog.getText(self, '新建页面', '页面名称')

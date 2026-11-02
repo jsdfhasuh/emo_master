@@ -171,9 +171,11 @@ def sampleProject(root):
                 dict(componentId='tabs', type='page_navigation'),
                 dict(componentId='clock', type='clock'),
                 dict(componentId='note', type='text', props=dict(text='Synthetic fixture data; no device connected')),
+                dict(componentId='blank', type='spacer'),
                 dict(componentId='state', type='runtime_status'),
                 dict(componentId='summary', type='container', children=[
                     dict(componentId='count', type='number', bindings={'value': 'count'}),
+                    dict(componentId='spring', type='spacer', props=dict(spacerMode='flex')),
                     dict(componentId='verdict', type='indicator', bindings={'value': 'verdict'})]),
                 dict(componentId='logo', type='image', props={'imageResourceId': 'demo'}),
                 dict(componentId='to-history', type='navigation_button', props={'text': 'History'},

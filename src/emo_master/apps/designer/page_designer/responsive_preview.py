@@ -68,7 +68,6 @@ def candidateGeometry(renderer, pageId, candidatePage, prototypes=None):
     root.setAttribute(Qt.WA_ShowWithoutActivating)
     root.setFont(renderer.font())
     root.setStyleSheet(renderer.styleSheet())
-    root.setMinimumHeight(240)
     containers = {}
     borrowed = {}
 
@@ -133,10 +132,10 @@ def candidateGeometry(renderer, pageId, candidatePage, prototypes=None):
     try:
         layout = populate(root, candidatePage.components, candidatePage.layout)
         root.ensurePolished()
-        # Always-on editor scrollbars make the available content width stable.
+        # Floating page scrollbars never take width from the content viewport.
         scroll = renderer.pages[pageId]
         width = scroll.viewport().width()
-        height = max(240, scroll.viewport().height(), layout.heightForWidth(width))
+        height = max(scroll.viewport().height(), layout.heightForWidth(width))
         root.resize(QSize(width, height))
         # Only this disposable shell is shown off-screen. Borrowed item setters
         # record rectangles and never touch the live controls.

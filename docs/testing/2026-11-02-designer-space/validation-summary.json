@@ -1,0 +1,96 @@
+{
+  "date": "2026-11-02",
+  "designerImplementation": "32c2b4efb7ba932636e2145fd423e9b2b484b902",
+  "webImplementation": "06ebe51e97e48d355949eeaf503be4a7c21ff18f",
+  "designerBaseline": "46af63de553f0cf60f64ce0b2f37440362a55da2",
+  "webBaseline": "b1ca6d386e8bb5cf4d21609e52f09acd0803126b",
+  "evidence": {
+    "baseline-legacy.xml": {
+      "sha256": "0bf9b855e0df6df863faffe28ba21773b9aac82815bdda994592632cd70a71a7",
+      "byteSize": 3700,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "baseline-renderer.xml": {
+      "sha256": "ce846246f566102083fe0339f2270dea19587e07c3dd1912a78c58f4ca26387e",
+      "byteSize": 12554,
+      "tests": 5,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0
+    },
+    "browser-geometry.json": {
+      "sha256": "bcd0d95cc7b5dd38e70a62fb10e083100d314c65e19f659f0be894b36df9e14d",
+      "byteSize": 2813
+    },
+    "browser-grid.png": {
+      "sha256": "0f84f0de04d1e45b16bea23ed96b03692e4a8c12cbd0b2f6067b49d535fe5ec6",
+      "byteSize": 46208
+    },
+    "contract.xml": {
+      "sha256": "0d76131dea2b92349adae1e8c7ebc34f340aa9d35a1e9c2e7b26844f7e6a2829",
+      "byteSize": 10284,
+      "tests": 55,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "editor.xml": {
+      "sha256": "395b5c7f19fae99ba8d2c760ae4df9033797d6fa0b5ee534120ef6ce19483a47",
+      "byteSize": 50081,
+      "tests": 314,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "focused.xml": {
+      "sha256": "6b4f957376f985970d0913a2314ce735f2b1cfd8e6ea868d2b1f195894da0ace",
+      "byteSize": 3189,
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "helmet-copy.xml": {
+      "sha256": "d86a9f20ff0b19b02a1670be46bf903597474c2fa7267dbb90e7bae79fe4f774",
+      "byteSize": 386,
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "model-renderer.xml": {
+      "sha256": "d0bf6fbf661414bccd157dac75f1b6c9ae9329dfa42299f3f749b80d8792808e",
+      "byteSize": 95896,
+      "tests": 534,
+      "failures": 5,
+      "errors": 0,
+      "skipped": 0
+    },
+    "web-backend.xml": {
+      "sha256": "e0f518f3bbddc40570e56680ee2b6e10af25991311b697859606585b5683b9f2",
+      "byteSize": 21921,
+      "tests": 390,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2
+    }
+  },
+  "checks": {
+    "ruff": "PASS",
+    "mypy": {
+      "status": "PASS",
+      "sourceFiles": 607
+    },
+    "protobufDrift": "PASS",
+    "sdkIsolatedImports": "PASS",
+    "sdkSourceBytes": "PASS-with-Git-LF-normalization",
+    "startupImport": "PASS",
+    "desktopManual": "NOT_RUN",
+    "windowsDpiManual": "NOT_RUN",
+    "frozenPackage": "NOT_RUN",
+    "ci": "NOT_RUN"
+  }
+}

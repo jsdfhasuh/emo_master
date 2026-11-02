@@ -8,6 +8,7 @@ CONTENT = {
     'table': {'title', 'pageSize', 'emptyText'}, 'navigation_button': {'title', 'text', 'iconResourceId'},
     'container': {'title'}, 'runtime_status': {'title'},
     'page_title': {'text'}, 'page_navigation': {'title'}, 'clock': {'title'},
+    'spacer': {'spacerMode'},
     'sqlite_table': {'title', 'pageSize'}, 'sqlite_value': {'title', 'unit', 'decimals'},
 }
 LAYOUT = {'row', 'column', 'rowSpan', 'columnSpan', 'columns'}
@@ -86,7 +87,7 @@ class PropertyGroups:
             name = reverse.get(widget)
             group = ('图片来源' if widget is tools.imageProperties or name == 'imageResourceId' else
                      '数据库来源' if widget is tools.sqliteProperties else
-                     '位置与大小' if name in LAYOUT or widget is tools.responsiveProperties else '外观' if name == 'fontSize' or widget in tools.appearance.values()
+                     '位置与大小' if name in LAYOUT or name == 'spacerMode' or widget is tools.responsiveProperties else '外观' if name == 'fontSize' or widget in tools.appearance.values()
                      else '数据来源' if widget is tools.binding or widget in tools.bindingButtons else '内容')
             if group not in self.groups:
                 box = QGroupBox(group)
@@ -140,6 +141,10 @@ class PropertyGroups:
                 visible = True
             elif name in {'title', 'text', 'emptyText', 'unit', 'decimals', 'pageSize', 'imageResourceId', 'iconResourceId'}:
                 visible = False
+            if kind == 'spacer' and group == '外观':
+                visible = False
+            if name == 'spacerMode' or widget is t.spacerHint:
+                visible = kind == 'spacer'
             if name == 'columns':
                 visible = kind in (None, 'container')
             if widget in (t.destination, t.actionMode, t.actionScope):

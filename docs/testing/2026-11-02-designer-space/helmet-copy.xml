@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="5.461" timestamp="2026-11-02T10:30:28.934470+08:00" hostname="视觉电脑"><testcase classname="build.test_helmet_grid_acceptance" name="test_existing_grid_copy_uses_space_preview_without_mutation" time="3.784" /></testsuite></testsuites>

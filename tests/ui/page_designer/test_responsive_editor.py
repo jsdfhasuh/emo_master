@@ -2,7 +2,7 @@
 import json
 
 import pytest
-from PySide2.QtCore import QEvent, QPoint, QPointF, Qt
+from PySide2.QtCore import QEvent, QPoint, QPointF, QRect, Qt
 from PySide2.QtGui import QDragEnterEvent, QDragLeaveEvent, QDropEvent, QImage, QColor, QMouseEvent
 from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QApplication, QInputDialog
@@ -20,7 +20,14 @@ def settle():
 
 def clickCard(editor, key, modifiers=Qt.NoModifier):
     card = editor.renderer.cards[editor.pageId][key]
-    point = card.mapTo(editor.renderer, card.rect().center())
+    scroll = editor.renderer.pages[editor.pageId]
+    visible = QRect(card.mapTo(scroll.viewport(), QPoint()), card.size()).intersected(scroll.viewport().rect())
+    if visible.isEmpty():
+        scroll.ensureWidgetVisible(card, 0, 0)
+        settle()
+        visible = QRect(card.mapTo(scroll.viewport(), QPoint()), card.size()).intersected(scroll.viewport().rect())
+    assert not visible.isEmpty(), 'The selected component must have a visible click target'
+    point = scroll.viewport().mapTo(editor.renderer, visible.center())
     scenePoint = editor.canvas.proxy.mapToScene(QPointF(point))
     QTest.mouseClick(editor.canvas.viewport(), Qt.LeftButton, modifiers, editor.canvas.mapFromScene(scenePoint))
     settle()
@@ -56,12 +63,11 @@ def testNewPageUsesProxyCanvasAndWidthPreviewReflowsWithoutMutation(responsivePa
     before, history = coordinator.session.payload(), len(coordinator.session._undo)
     rows = []
     geometry = []
-    # Include page chrome/margins: two 240px cards plus spacing need more
-    # than a 540px outer renderer, whose content area is only 482px wide.
+    # Width describes the terminal viewport, excluding editor chrome.
     for width in (1100, 600, 340, 1100):
         editor.previewWidth.setValue(width)
         settle()
-        assert editor.renderer.width() == width
+        assert editor.renderer.pages[editor.pageId].viewport().width() == width
         assert all(editor.renderer.cards[editor.pageId][key] is cards[key] for key in keys)
         rows.append(len({cards[key].y() for key in keys}))
         host = editor.renderer.layoutHosts[editor.pageId][None]

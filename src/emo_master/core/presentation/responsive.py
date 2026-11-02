@@ -14,6 +14,7 @@ class Measurement:
     minimumWidth: float = 0
     minimumHeight: float = 0
     heightForWidth: Callable[[float], float] | None = None
+    spacerMode: str | None = None
 
 
 @dataclass(frozen=True)
@@ -25,7 +26,8 @@ class LayoutBox:
 
 
 def _height(item, width):
-    measured = item.heightForWidth(width) if item.heightForWidth is not None else item.hintHeight
+    measured = 0 if item.spacerMode else (
+        item.heightForWidth(width) if item.heightForWidth is not None else item.hintHeight)
     return max(0, measured, item.minimumHeight, item.responsive.minHeight, item.responsive.preferredHeight)
 
 
@@ -34,7 +36,8 @@ def _preferred(item):
 
 
 def _alignment(item, layout):
-    return layout.alignment if item.responsive.alignSelf == 'auto' else item.responsive.alignSelf
+    alignment = layout.alignment if item.responsive.alignSelf == 'auto' else item.responsive.alignSelf
+    return 'start' if item.spacerMode and alignment == 'stretch' else alignment
 
 
 def _offset(alignment, space):
@@ -60,11 +63,17 @@ def solveResponsive(layout: ResponsiveLayout, items: list[Measurement], width: f
     if not items:
         return [], 0
     if layout.direction == 'vertical':
-        widths = [width if item.responsive.width == 'fill' or _alignment(item, layout) == 'stretch'
+        widths = [width if not item.spacerMode and (item.responsive.width == 'fill' or _alignment(item, layout) == 'stretch')
                   else min(width, _preferred(item)) for item in items]
         heights = [_height(item, w) for item, w in zip(items, widths)]
         total = sum(heights) + layout.spacing * (len(items) - 1)
-        y, gap = _justify(layout, len(items), max(0, (height or total) - total))
+        remaining = max(0, (height or total) - total)
+        weights = [item.responsive.weight if item.spacerMode == 'flex' else 0 for item in items]
+        totalWeight = sum(weights)
+        if totalWeight:
+            heights = [h + remaining * weight / totalWeight for h, weight in zip(heights, weights)]
+            remaining = 0
+        y, gap = _justify(layout, len(items), remaining)
         boxes = []
         for item, w, h in zip(items, widths, heights):
             boxes.append(LayoutBox(_offset(_alignment(item, layout), width - w), y, w, h))
@@ -73,10 +82,11 @@ def solveResponsive(layout: ResponsiveLayout, items: list[Measurement], width: f
 
     # Horizontal rows wrap using minimum widths; wrap rows use preferred widths.
     bases = [min(width, max(0, item.responsive.minWidth) if layout.direction == 'horizontal'
-                 and item.responsive.width == 'fill' else _preferred(item)) for item in items]
+                 and (item.spacerMode == 'flex' or (not item.spacerMode and item.responsive.width == 'fill'))
+                 else _preferred(item)) for item in items]
     if layout.equalWidth:
-        base = max(bases, default=0)
-        bases = [base] * len(items)
+        base = max((base for base, item in zip(bases, items) if not item.spacerMode), default=0)
+        bases = [base if not item.spacerMode else original for original, item in zip(bases, items)]
     lines, start, used = [], 0, 0.0
     for index, base in enumerate(bases):
         added = base + (layout.spacing if index > start else 0)
@@ -91,7 +101,8 @@ def solveResponsive(layout: ResponsiveLayout, items: list[Measurement], width: f
         row = items[start:stop]
         widths = list(bases[start:stop])
         remaining = max(0, width - sum(widths) - layout.spacing * (len(row) - 1))
-        weights = [1 if layout.equalWidth else item.responsive.weight
+        weights = [0 if item.spacerMode == 'fixed' else item.responsive.weight if item.spacerMode == 'flex'
+                   else 1 if layout.equalWidth else item.responsive.weight
                    if item.responsive.width == 'fill' else 0 for item in row]
         totalWeight = sum(weights)
         if totalWeight:

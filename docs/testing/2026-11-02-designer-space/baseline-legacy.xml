@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="31.397" timestamp="2026-11-02T10:31:14.937872+08:00" hostname="视觉电脑"><testcase classname="tests.ui.page_designer.test_user_path" name="testNativePageEditingAndLegacyPreviewBackend" time="18.527"><failure message="AssertionError">qtApp = &lt;PySide2.QtWidgets.QApplication(0x19bebdca200) at 0x0000019BEDBF10B0&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4071/testNativePageEditingAndLegacy0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000019BEDBF1C30&gt;
+
+    def testNativePageEditingAndLegacyPreviewBackend(qtApp, tmp_path, monkeypatch):
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Yes)
+        out = Path(os.environ['P4_SCREEN_DIR']) if os.environ.get('P4_SCREEN_DIR') else None
+        records = {'platform': QApplication.platformName(), 'steps': [], 'results': [], 'incremental_reload_ms': []}
+        def shot(name):
+            QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+            QApplication.processEvents()
+            if out:
+                assert window.grab().save(str(out/(name+'.png')))
+            records['steps'].append(name)
+        root = tmp_path/'old-project'
+        root.mkdir()
+        runtime = RuntimeService(dbPath=tmp_path/'runtime.sqlite3', workspaceRoot=tmp_path/'jobs')
+        client = RuntimeClient(runtime)
+        doc = sampleProject(root)
+        raw = doc.model_dump()
+        raw['schemaVersion'] = '2.1'
+        raw.pop('presentation')
+        raw.pop('resources')
+        for node in raw['workflows']['main']['nodes']:
+            manifest = runtime.pluginScanResult.activeOperators.get(node.get('operatorId'))
+            if manifest:
+                for key in ('inputPorts', 'outputPorts'):
+                    node[key] = {k: normalizePortType(v) for k, v in getattr(manifest.manifest, key).items()}
+        raw['workflows']['main']['nodes'][1]['params']['imagePath'] = str(root/'input.png')
+        saveProject(root, raw)
+        window = MainWindow(client)
+        window.resize(1500, 980)
+        preview = window.pageCoordinator.preview
+        try:
+            assert window.loadProjectDirectory(str(root))
+            window.show()
+            waitFor(lambda: window.operatorCatalogController.state == 'ready')
+&gt;           assert window.saveProjectToDirectory(str(root))
+
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\ui\page_designer\test_user_path.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1670: in saveProjectToDirectory
+    ok, projectDir = self.projectController.saveProjectToDirectory(
+src\emo_master\apps\designer\controllers\project_controller.py:249: in saveProjectToDirectory
+    self.editCoordinator.saved(projectDir)
+src\emo_master\apps\designer\page_designer\coordinator.py:382: in saved
+    self.preview.refreshObserver(self.session.presentation.snapshot())
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;emo_master.apps.designer.state.presentation_store.PresentationStore object at 0x0000019BEF037AC0&gt;
+
+    def snapshot(self) -&gt; Presentation:
+        presentation = self._session.document().presentation
+&gt;       assert presentation is not None
+E       AssertionError
+
+src\emo_master\apps\designer\state\presentation_store.py:45: AssertionError</failure></testcase></testsuite></testsuites>

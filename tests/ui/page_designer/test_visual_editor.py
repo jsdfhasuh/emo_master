@@ -13,7 +13,8 @@ def testNativeFloatingPaletteAndSearch(designer):  # noqa: F811
     QApplication.processEvents()
     assert e.floatingToolbox.parentWidget() is e.canvasHost
     assert e.floatingProperties.parentWidget() is e.canvasHost
-    assert e.tools.palette.count() == 13
+    assert e.tools.palette.count() == 14
+    assert any(e.tools.palette.item(i).data(Qt.UserRole) == "spacer" for i in range(e.tools.palette.count()))
     assert {'page_title', 'page_navigation', 'clock', 'sqlite_table', 'sqlite_value'} <= {
         e.tools.palette.item(i).data(Qt.UserRole) for i in range(e.tools.palette.count())}
     assert e.libraryTabs.count() == 2

@@ -184,11 +184,14 @@ def testManualViewSurvivesRefreshAndFitRestoresAutomaticMode(responsivePage):  #
     settle()
     assert not canvas.autoFit
     assert canvas.getZoomFactor() == pytest.approx(.75)
-    assert (canvas._viewportCenter() - center).manhattanLength() <= 2
+    # Scrollbar rounding is bounded in viewport pixels, independently of zoom.
+    delta = canvas.mapFromScene(canvas._viewportCenter()) - canvas.mapFromScene(center)
+    assert delta.manhattanLength() <= 2
     coordinator.window.resize(1250, 780)
     settle()
     assert canvas.getZoomFactor() == pytest.approx(.75)
-    assert (canvas._viewportCenter() - center).manhattanLength() <= 2
+    delta = canvas.mapFromScene(canvas._viewportCenter()) - canvas.mapFromScene(center)
+    assert delta.manhattanLength() <= 2
     coordinator.window.designerActions.invoke('fit')
     settle()
     assert canvas.autoFit and canvas.getZoomFactor() == pytest.approx(1)

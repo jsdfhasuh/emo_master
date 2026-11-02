@@ -162,3 +162,44 @@ zoom makes scene units differ from pixel units. The completed Linux failure
 log and XML remain under `build/ci-e592f169-ubuntu*`; no skipped or incomplete run
 is counted as a pass. Final cross-platform checks are required on the follow-up
 revision.
+
+## Rapid remote restart and late Windows findings
+
+The `035f96d7` Linux full run passed all four previous failures and completed with
+**8992 passed, 31 skipped, one failed and 42 passing subtests**. The remaining
+failure was a normal remote restart: after Stop had retired the execution owner,
+the display reader was still inside its terminal-message drain window. A new
+remote capture Start checked display capacity immediately and was rejected.
+This is a product timing gap; the UI test is not changed to wait for a private
+reader or to retry Start.
+
+Normal Start's first capture preflight now gives all already-terminal,
+Supervisor-retired display candidates one shared two-second retirement budget.
+It reuses `waitForLogDrain` and the complete existing `release()` ownership
+checks. The later attachment recheck remains immediate. Live workers retain
+their quota; a reader/exporter that does not retire stays owned and is rejected
+at the deadline. Cancellation during the wait is recorded as
+`REJECTED / E_CANCELLED` without creating another Job. The Start request ledger
+and duplicate-request behavior are unchanged.
+
+Three real loopback RPC tests cover restart, true live-capacity rejection and
+cancelled waiting, including duplicate-request identity. Forty related Runtime
+tests pass; four shared-budget/ownership cases and all four existing Operator
+view-selection tests also pass. A zero-budget auxiliary run reproduces the old
+quota rejection and is retained as a failure, not counted as a passing check.
+Evidence is in `build/ui-main-integration/normal-restart/`.
+
+The earlier `01d8b72c` Windows full run completed without the native access
+violation: **9015 passed, five skipped, four failed and 42 passing subtests**.
+Its two Runtime fixture failures were already corrected by `035f96d7`. The
+other findings were an exporter diagnostic reading a concurrently closed
+`multiprocessing.Process.pid`, and the same scene-versus-pixel tolerance in the
+manual canvas-view test. Diagnostic sampling now uses the exporter's existing
+owner lock and reports retired slots as unavailable; image, ordinal and latency
+assertions remain intact. Its two affected prototype test files pass all 11
+tests, including a real closed Process wrapper. The manual-view checks now use
+viewport pixels with the same two-pixel threshold; all 13 viewport tests pass.
+Original Windows logs remain under `build/ci-01d8b72c-windows*`.
+
+Full source/test Ruff, protobuf drift and mypy (609 source files) pass after these
+changes. Fresh cross-platform CI is required for this production follow-up.

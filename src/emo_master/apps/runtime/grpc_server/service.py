@@ -626,7 +626,8 @@ class RuntimeService(RunReadRpcMixin, HistoryRpcMixin, ProjectConfigurationRpcMi
             try:
                 if presentation is None:
                     raise ValueError("Runtime does not expose normal presentation capture")
-                presentation.checkNormalAdmission()
+                presentation.checkNormalAdmission(retirementTimeoutSeconds=2.0,
+                    isActive=getattr(context, "is_active", lambda: True))
                 from emo_master.apps.runtime.presentation.normal_capture import freezeNormalCapture
                 capture = freezeNormalCapture(document, self.pluginScanResult.activeOperators,
                     Path(self.loadedProjectPath), workflowId,

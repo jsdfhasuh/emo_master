@@ -157,7 +157,8 @@ class PresentationService:
             return job.jobId
 
     @_guardMutation
-    def checkNormalAdmission(self):
+    def checkNormalAdmission(self, *, retirementTimeoutSeconds=0.0, isActive=lambda: True):
+        deadline = time.monotonic() + retirementTimeoutSeconds
         with self.lock:
             if self.closing or self.closed or getattr(self.runtime, "_closing", False):
                 raise RuntimeError("E_RUNTIME_CLOSING")
@@ -171,15 +172,38 @@ class PresentationService:
                 # running Job. Historical captures are not concurrent Jobs.
                 # release() still proves reader/export/worker retirement;
                 # failure leaves all ownership charged, never steals a slab.
+                retiring = []
                 for jobId in list(self.jobs):
                     record = self.runtime.jobRepository.get(jobId)
                     if record is not None and record.isTerminal:
                         try:
                             self.release(jobId)
                         except ValueError:
+                            if not self.runtime.jobSupervisor.ownsJobResources(jobId):
+                                retiring.append(jobId)
                             continue
                         if len(self.jobs) < limit:
                             break
+                # Execution can be idle before the final display messages and
+                # exports drain. Only the initial Start preflight may wait;
+                # attachNormal rechecks without waiting under worker admission.
+                while retiring and len(self.jobs) >= limit and time.monotonic() < deadline:
+                    for jobId in tuple(retiring):
+                        remaining = deadline - time.monotonic()
+                        if remaining <= 0:
+                            break
+                        self.waitForLogDrain(jobId, timeoutSeconds=min(.02, remaining), isActive=isActive)
+                        if not isActive():
+                            raise ValueError("E_CANCELLED: Start cancelled before admission")
+                        try:
+                            self.release(jobId)
+                        except ValueError:
+                            continue
+                        retiring.remove(jobId)
+                        if len(self.jobs) < limit:
+                            break
+                    if len(self.jobs) >= limit:
+                        time.sleep(min(.02, max(0, deadline - time.monotonic())))
             if limit is not None and len(self.jobs) >= limit:
                 raise ValueError("display Job quota exceeded; explicitly release a terminal Job")
 

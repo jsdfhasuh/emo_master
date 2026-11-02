@@ -84,7 +84,7 @@ def legacySelection(tmp_path):
     payload["dependencies"] = dict(operators=[dict(operatorId=key, version=cls.meta.version)
                                               for key, cls in registry.items()])
     document = ProjectDocument.model_validate(payload)
-    assert document.schemaVersion == "2.7"
+    assert document.schemaVersion == "2.9"
     WorkflowCompiler(registry).compile(document)
     path = tmp_path / "legacy-selection.emoproj"
     saveProject(path, document.model_dump(mode="json"))

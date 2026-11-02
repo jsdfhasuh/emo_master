@@ -343,6 +343,8 @@ def testCompilerRequiresManagedCameraAndKeepsUnboundLegacyDraftReadable():
     with pytest.raises(WorkflowCompileError, match="device slots"):
         compiler.compile(payload)
     payload["schemaVersion"] = "2.5"
+    # Intentional legacy input must carry its original presentation format.
+    payload["presentation"]["schemaVersion"] = "1.0"
     payload["devices"] = {"bindings": {}}
     payload["communication"] = {}
     node["params"] = dict(ipAddress="127.0.0.1")

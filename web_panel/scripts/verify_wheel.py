@@ -21,7 +21,7 @@ from emo_web_panel.app import create_app
 from emo_web_panel.config import Config
 package_root=Path(emo_web_panel.__file__).parent
 assert package_root.joinpath('static/index.html').is_file()
-assert version('emo-panel-protocol') == emo_panel_protocol.__version__ == '1.1.1'
+assert version('emo-panel-protocol') == emo_panel_protocol.__version__ == '1.3.0'
 expected={
  'ungrouped-running':('job_state','RUNNING'),
  'ungrouped-aborted':('job_state','ABORTED'),
@@ -45,7 +45,7 @@ with tempfile.TemporaryDirectory() as d:
  app=create_app(Config(Path(d),mode='mock'))
  assert any(getattr(route,'name','')=='frontend' for route in app.routes)
 assert not any(name in sys.modules for name in ('PySide2','PyQt5','emo_master','cv2','torch'))
-print('PASS independent wheel install, SDK1.1.1, five embedded ordinary-Job fixtures including ABORTED, exact empty Stop presence, packaged UI, no Qt/Runtime/model imports')
+print('PASS independent wheel install, SDK1.3.0, five embedded ordinary-Job fixtures including ABORTED, exact empty Stop presence, packaged UI, no Qt/Runtime/model imports')
 '''
     subprocess.run([str(python),'-c',check],check=True,cwd=root)
     subprocess.run([str(python),'-m','emo_web_panel.main','--help'],check=True,cwd=root)

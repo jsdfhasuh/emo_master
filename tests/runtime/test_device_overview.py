@@ -31,7 +31,7 @@ def overviewRuntime(tmp_path):
     camera['policies']['connect'] = 'manual'
     payload['devices']['definitions'] = dict(server=server, camera=camera)
     document = ProjectDocument.model_validate(payload)
-    assert document.schemaVersion == '2.7'
+    assert document.schemaVersion == '2.9'
     WorkflowCompiler().compile(document, 'main')
     path = tmp_path / 'status.emoproj'
     saveProject(path, document.model_dump(mode='json'))

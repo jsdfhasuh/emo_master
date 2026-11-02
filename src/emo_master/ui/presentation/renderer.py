@@ -458,8 +458,12 @@ class RuntimePages(QWidget):
             # A real stretch row keeps Qt's cellRect valid during native DnD.
             # AlignTop on QGridLayout can leave zero-height cell geometry until
             # a later activation when transient child widgets are inserted.
-            layout.setRowStretch(max((c.layout.row + c.layout.rowSpan for c in components), default=0), 1)
-            for row in range(max((c.layout.row + c.layout.rowSpan for c in components), default=0)):
+            end = max((c.layout.row + c.layout.rowSpan for c in components), default=0)
+            layout.setRowStretch(end, 1)
+            # Full-content canvases have no spare viewport height to stretch.
+            # Keep the append target usable even when existing rows overflow.
+            layout.setRowMinimumHeight(end, 64)
+            for row in range(end):
                 layout.setRowMinimumHeight(row, 64)
         for column in range(grid.columns if not responsive else 0):
             layout.setColumnStretch(column, 1)

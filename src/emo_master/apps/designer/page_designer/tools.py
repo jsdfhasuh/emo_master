@@ -434,7 +434,7 @@ class EditingTools(QObject):
                 if not hasattr(widget.layout(), 'setRowMinimumHeight'):
                     continue
                 row = max((c.layout.row + c.layout.rowSpan for c in children), default=0)
-                widget.layout().setRowMinimumHeight(row, 0)
+                widget.layout().setRowMinimumHeight(row, 64)
                 widget.layout().setGeometry(widget.rect())
                 widget.setToolTip('编辑模式下底部空白行为组件拖入区域')
         self.updateSelection()

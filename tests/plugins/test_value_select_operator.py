@@ -72,7 +72,7 @@ def testSelectMergesRealExclusiveBranchesThroughTypedWorkflowOutput(tmp_path, re
     payload = dict(schemaVersion='2.4', project=dict(projectId='selection', name='selection', revision=1,
         createdAt='2026-10-11T00:00:00Z', updatedAt='2026-10-11T00:00:00Z'),
         entryWorkflowId='main', workflowOrder=['main'], workflows={'main': flow},
-        presentation=Presentation().model_dump(), resources=ResourcePlan().model_dump(),
+        presentation=Presentation(schemaVersion='1.0').model_dump(), resources=ResourcePlan().model_dump(),
         production=ProductionSettings().model_dump(), globalVariables={})
     runner = WorkflowRunner(WorkflowCompiler(registry).compile(payload), registry, retainOperators=True)
     context = RunContext.root('selection', 'main', str(tmp_path))

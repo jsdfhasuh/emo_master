@@ -25,7 +25,7 @@ def relocationRuntime(tickerRuntime, tmp_path):  # noqa: F811
     waitFor(lambda: service.deviceManager.lifecycles['ticker'].connected, timeout=5)
     snapshot = client.getOnlineProjectSnapshot()
     document = ProjectDocument.model_validate(snapshot['payload'])
-    assert document.schemaVersion == '2.7'
+    assert document.schemaVersion == '2.9'
     destination = tmp_path / 'relocated ticker' / 'ticker.emoproj'
     saveProject(destination, document.model_dump(mode='json'))
     reloaded = loadProjectDocument(destination)

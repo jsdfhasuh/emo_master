@@ -160,6 +160,11 @@ class ProjectConfigurationDialog(QDialog):
         layout = QVBoxLayout(self)
         self.status = QLabel("正在读取在线配置")
         self.status.setWordWrap(True)
+        # Wrapped upload diagnostics must keep their height as the table shrinks.
+        from PySide2.QtWidgets import QSizePolicy
+        statusPolicy = self.status.sizePolicy()
+        statusPolicy.setVerticalPolicy(QSizePolicy.Minimum)
+        self.status.setSizePolicy(statusPolicy)
         self.status.setTextInteractionFlags(Qt.TextSelectableByMouse)
         statusRow = QHBoxLayout()
         self.statusIcon = QLabel()
@@ -467,9 +472,9 @@ class ProjectConfigurationDialog(QDialog):
         if self.local.get('schemaVersion') in {'2.6', '2.7', '2.8', '2.9'}:
             return True
         self._notify('工程校验未通过',
-            f"当前工程格式为 {self.local.get('schemaVersion')}，请新建当前 2.9 工程；本轮不提供旧工程转换。\n"
+            f"当前工程格式为 {self.local.get('schemaVersion')}，在线配置需要 2.6 或更新格式；当前新工程使用 2.9。\n"
             '本次没有写入 Runtime，也没有保存本地工程。\n可升级当前草稿后重新校验；升级可撤销。',
-            'E_CONFIG_INVALID: online writes require current schema 2.9', upgrade=not self.upgradeButton.isHidden())
+            'E_CONFIG_INVALID: online writes require schema 2.6 or newer', upgrade=not self.upgradeButton.isHidden())
         return False
 
     def _draftChanged(self):

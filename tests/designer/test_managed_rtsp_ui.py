@@ -132,7 +132,7 @@ def testMigrationPreservesPortsEdgesOverridesAndOneUndo(ownedDesignerWindow, tmp
     saved = tmp_path / 'managed-rtsp.emoproj'
     saveProject(saved, after)
     restored = loadProjectDocument(saved)
-    assert restored.schemaVersion == '2.7'
+    assert restored.schemaVersion == '2.9'
     assert window.loadProjectDirectory(str(saved), confirmed=True)
     window.pageCoordinator.sync()
     reopened = next(n for n in window.pageCoordinator.session.document().workflows['main'].nodes if n.nodeId == 'capture')

@@ -118,9 +118,9 @@ def testProjectedCollectionAndBoundedWidgetCount(qtApp,tmp_path):
 
 
 def testEvictHiddenPageBeforeAllocatingTableQuota(qtApp,tmp_path):
-    from emo_master.core.presentation.models import Page
+    from emo_master.core.presentation.models import Grid, Page
     config=sampleProjectP3(tmp_path).presentation
-    config.pages={key:Page(name=key,components=[Component(componentId=f'{key}-{i}',type='table',layout=Placement(row=i)) for i in range(2)])
+    config.pages={key:Page(name=key,layout=Grid(),components=[Component(componentId=f'{key}-{i}',type='table',layout=Placement(row=i)) for i in range(2)])
                   for key in ('a','b','c')}
     config.pageOrder=['a','b','c']
     config.defaultPageId='a'

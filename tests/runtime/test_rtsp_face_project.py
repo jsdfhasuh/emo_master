@@ -33,7 +33,7 @@ def fixtureProject(root):
 
 def testCurrentFormatAndPortableResourceBindings(tmp_path):
     path, document, registry, _ = fixtureProject(tmp_path)
-    assert document.schemaVersion == "2.7"
+    assert document.schemaVersion == "2.9"
     assert document.devices.schemaVersion == "1.0" and not document.devices.definitions
     assert "communication" not in document.model_dump(mode="json")
     assert document.production.autoStart is False

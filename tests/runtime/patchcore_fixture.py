@@ -45,5 +45,5 @@ def project(modelPath, *, outputPath=None, **params):
         for index, node in enumerate(workflow.nodes)
     }
     document = ProjectDocument.model_validate(store.toPayload("PatchCore Test"))
-    assert document.schemaVersion == "2.7" and document.devices.definitions == {}
+    assert document.schemaVersion == "2.9" and document.devices.definitions == {}
     return document

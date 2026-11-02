@@ -364,7 +364,7 @@ def testDefaultNewProjectPreviewsUnsavedNodeAndAfterSaveWithoutRuntimeReload(tmp
         waitForCatalog(window)
         monkeypatch.setattr(window, "_chooseProjectFile", lambda _title: str(projectPath))
         window.newProjectAction()
-        assert json.loads(projectPath.read_text())["schemaVersion"] == "2.7"
+        assert json.loads(projectPath.read_text())["schemaVersion"] == "2.9"
         assert window.activeWorkflowId == "main"
         # Mirror the real default-new workflow with existing unrelated nodes.
         for existing in ("vision.value.number", "vision.segment.in_range"):

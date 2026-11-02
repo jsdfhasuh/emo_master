@@ -81,7 +81,7 @@ def resizeBox(grid, card, columns, placement):
         end = max(end, row + rows)
     for row in range(end):
         measured.setRowMinimumHeight(row, 64)
-    measured.setRowMinimumHeight(end, 0)
+    measured.setRowMinimumHeight(end, 64)
     measured.setRowStretch(end, 1)
     # A styled QFrame's border belongs to the widget, not its child layout.
     # Measuring against rect() can change word wrapping even for a 1px border.

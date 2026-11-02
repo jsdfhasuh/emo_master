@@ -20,7 +20,7 @@ from tests.plugins.test_collection_operators import _detections, _space
 def filterProject(params, *, spatial=False):
     meta = CollectionFilterOperator.meta
     payload = WorkflowStore().toPayload("Collection Filter Regression")
-    assert payload["schemaVersion"] == "2.7"
+    assert payload["schemaVersion"] == "2.9"
     workflow = payload["workflows"]["main"]
     workflow["inputs"] = {name: deepcopy(meta.inputPorts[name])
                           for name in (["detections", "roi"] if spatial else ["detections"])}

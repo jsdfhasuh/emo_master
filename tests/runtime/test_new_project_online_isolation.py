@@ -5,7 +5,7 @@ import time
 import pytest
 from PySide2.QtWidgets import QApplication
 
-from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+from emo_master.apps.designer.services.runtime_client import RuntimeClientError, runtimeConnectionDescription
 from emo_master.apps.designer.state.project_store import loadProject, saveProject
 from emo_master.core.project.configuration import projectChanges
 from tests.designer.test_startup_project_entry import EntryDialogStub
@@ -59,10 +59,10 @@ def testStartupAliasFirstPublicationUsesActualRunAction(initialRuntime, ownedDes
     window = ownedDesignerWindow(client)
     monkeypatch.setattr(window, '_chooseProjectFile', lambda _: str(source))
     monkeypatch.setattr(window, '_projectEntryDialogFactory', lambda: EntryDialogStub('new_blank', ''))
-    assert window.showStartupProjectEntry()
+    assert window.showStartupProjectEntry(), window.projectController.lastLoadError
     assert window.loadedProjectPath == str(source)
     payload = window.pageCoordinator.session.payload()
-    assert payload['schemaVersion'] == '2.8'
+    assert payload['schemaVersion'] == '2.9'
     original = source.read_bytes()
     client.initializeProjectConfiguration(payload, alias, 'alias-first-publication',
         runtimeInstanceId=service.runtimeInstanceId, projectPath=source)
@@ -144,15 +144,20 @@ def testSameWindowReplacementRunsCommittedOnlineCopy(initialRuntime, ownedDesign
             client.uploadProjectResources(snapshot, payload, tmp_path)
             client.writeProjectConfiguration(snapshot, payload,
                 [change['path'] for change in projectChanges(snapshot['payload'], payload)], requestId,
-                replacementPolicy='stopAffected')
+                replacementPolicy='stopAffected',
+                localProjectPath=source if runtimeConnectionDescription(client)['kind'] == 'embedded' else '')
         receipt = waitForWrite(service, client, requestId)
         assert receipt['state'] == 'COMMITTED', receipt
         assert receipt['documentRevision'] == index + 1
         assert window.loadedProjectPath == str(source)
         if index:
-            assert service.loadedProjectFile != str(source)
-            assert 'online-projects' in service.loadedProjectFile
-            assert not client.validateProject(str(source)).ok
+            if runtimeConnectionDescription(client)['kind'] == 'embedded':
+                assert service.loadedProjectFile == str(source.resolve())
+                assert client.validateProject(str(source)).ok
+            else:
+                assert service.loadedProjectFile != str(source)
+                assert 'online-projects' in service.loadedProjectFile
+                assert not client.validateProject(str(source)).ok
 
         QApplication.processEvents()
         window.navigateToNodeFromSidebar('load')

@@ -21,7 +21,10 @@ from tests.ui.page_designer.test_normal_run_viewing import waitFor
 def testNormalRunEnablesSharedPageCapture(qtApp, tmp_path, monkeypatch, snapshotPolicy):
     first, rest = gateConsumers(monkeypatch)
     failures = []
-    monkeypatch.setattr(MainWindow, '_showRunFailure', lambda self, failure: failures.append(dict(failure)))
+    phase = 'running'
+    def recordFailure(self, failure):
+        failures.append({**failure, 'testPhase': phase})
+    monkeypatch.setattr(MainWindow, '_showRunFailure', recordFailure)
     monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Discard)
     document = sharedPageProject(tmp_path)
     path = tmp_path / 'normal-live.emoproj'
@@ -79,6 +82,7 @@ def testNormalRunEnablesSharedPageCapture(qtApp, tmp_path, monkeypatch, snapshot
             preview.closeAsync()
             waitFor(lambda: not preview.active())
         if window.isJobRunning:
+            phase = 'stopping'
             window.stopJob()
             waitFor(lambda: not window.isJobRunning)
         window.close()
@@ -87,12 +91,15 @@ def testNormalRunEnablesSharedPageCapture(qtApp, tmp_path, monkeypatch, snapshot
         if failures:
             import json
             (tmp_path / 'run-failures.json').write_text(json.dumps(failures, ensure_ascii=False, indent=2), encoding='utf-8')
-    # Existing cancellation contract: a sent capture whose reply was interrupted
-    # can remain UNKNOWN (test_cancellable_device_wait.py:124-132). Do not turn
-    # that cleanup outcome into success or suppress any other failure.
-    assert all(failure.get('code') == 'E_DEVICE_OUTCOME_UNKNOWN'
-        and failure.get('payload', {}).get('diagnostics', {}).get('deviceOutcome', {}).get('outcome') == 'UNKNOWN'
-        for failure in failures), failures
+    # Only failures delivered after our explicit Stop qualify as cleanup.
+    # The device proxy either rejects a not-yet-sent capture, or retains UNKNOWN
+    # for an interrupted receipt. Running/viewing failures still fail above.
+    for failure in failures:
+        assert failure.get('testPhase') == 'stopping' and failure.get('eventType') == 'node.failed', failure
+        outcome = failure.get('payload', {}).get('diagnostics', {}).get('deviceOutcome', {}).get('outcome')
+        assert ((failure.get('code') == 'E_DEVICE_OUTCOME_UNKNOWN' and outcome == 'UNKNOWN')
+                or (failure.get('code') == 'E_DEVICE_CANCELLED' and outcome == 'NOT_EXECUTED'
+                    and failure.get('message') == 'device proxy cancelled')), failure
 
 
 @pytest.mark.parametrize('selection', ['producer', 'consumer'])

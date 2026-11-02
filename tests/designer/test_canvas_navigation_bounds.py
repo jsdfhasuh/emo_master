@@ -256,6 +256,8 @@ def testNodeAndPortDragsDoNotBecomeCanvasPans(window):
     from emo_master.apps.designer.ui.flow_scene import FlowNodeViewModel
 
     view, scene = window.flowView, window.flowScene
+    # Measure pointer displacement independently of nearby-node alignment snaps.
+    scene.setAlignmentSnapEnabled(False)
     keys = []
     for name, x in [('source', 7000), ('target', 7600)]:
         key = window.flowModel.addNode('test.echo', name, {'in': 'number'}, {'out': 'number'})

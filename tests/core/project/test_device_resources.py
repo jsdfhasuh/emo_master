@@ -92,6 +92,8 @@ def testDeviceTargetVersionAndReferenceGates(bundle):
         ProjectDocument.model_validate(payload)
     payload = document.model_dump()
     payload["schemaVersion"] = "2.5"
+    # Intentional legacy input must carry its original presentation format.
+    payload["presentation"]["schemaVersion"] = "1.0"
     from emo_master.core.project.communication import CommunicationSettings
     payload['communication'] = CommunicationSettings().model_dump()
     payload["devices"] = {}

@@ -48,7 +48,7 @@ def testYoloInvocationPublishesOverlayOrExactOmissionReason(tmp_path, overlayPar
                       _edge('yolo', 'detections', outputId, 'detections')]
     store.dependencies['operators'] = [{'operatorId': meta.operatorId, 'version': meta.version}]
     document = ProjectDocument.model_validate(store.toPayload('YOLO Inspection'))
-    assert document.schemaVersion == '2.7' and document.devices.definitions == {}
+    assert document.schemaVersion == '2.9' and document.devices.definitions == {}
     path = tmp_path / 'inspection.emoproj'
     saveProject(path, document.model_dump(mode='json'))
     assert loadProjectDocument(path) == document
@@ -128,7 +128,7 @@ def testMissingCropSkipsDynamicFileSaveAndContinuousRunRecoversWithCurrentImages
     document = ProjectDocument.model_validate(store.toPayload())
     path = tmp_path / 'crop-continuous.emoproj'
     saveProject(path, document.model_dump(mode='json'))
-    assert loadProjectDocument(path) == document and document.schemaVersion == '2.7'
+    assert loadProjectDocument(path) == document and document.schemaVersion == '2.9'
     registry = _registry()
     compiled = WorkflowCompiler(operatorRegistry=registry).compile(document)
     variables = ReadOnlyVariables({'confidence': .25})

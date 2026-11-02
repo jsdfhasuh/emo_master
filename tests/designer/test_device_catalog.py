@@ -33,7 +33,7 @@ def testWizardCommitAndUndoAreSingleTransaction(editor, definition):  # noqa: F8
     saved = session.payload()
     assert session.undo() and session.payload() == original
     assert session.redo() and session.payload() == saved
-    assert session.document().schemaVersion == "2.7"
+    assert session.document().schemaVersion == "2.9"
 
 
 def testCancelledDraftHasNoSideEffects(editor, definition):  # noqa: F811
@@ -133,7 +133,7 @@ def testCanvasAndStoreRoundtripPreserveAllDeviceSources(definition):  # noqa: F8
     actual = next(n for n in result["workflows"]["main"]["nodes"] if n["nodeId"] == "capture")
     for key in ("deviceBindings", "deviceOverrides", "deviceValueBindings"):
         assert actual[key] == candidate[key]
-    assert result["schemaVersion"] == "2.7"
+    assert result["schemaVersion"] == "2.9"
     assert result["devices"] == store.devices
 
 

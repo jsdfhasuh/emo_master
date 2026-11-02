@@ -88,7 +88,7 @@ def testActualDesignerOpenParametersSaveReopenAndCompile(runtime, tmp_path, owne
     path = tmp_path / "patchcore.emoproj"
     document = project(model)
     if legacy:
-        # Compatibility input: a 2.7 project with the original four-field node.
+        # Compatibility input: the current project format with the original four-field node.
         node = next(node for node in document.workflows["main"].nodes if node.nodeId == "patchcore")
         node.paramSchema = deepcopy(node.paramSchema)
         for name in ("overlayMode", "highlightThreshold"):
@@ -136,7 +136,7 @@ def testActualDesignerOpenParametersSaveReopenAndCompile(runtime, tmp_path, owne
         editor.forceClose()
     assert window.saveProjectToDirectory(str(path))
     saved = loadProjectDocument(path)
-    assert saved.schemaVersion == "2.7" and saved.devices.definitions == {}
+    assert saved.schemaVersion == "2.9" and saved.devices.definitions == {}
     assert saved.presentation is not None and saved.resources is not None and saved.production is not None
     WorkflowCompiler(operatorRegistry=_registry()).compile(saved)
     assert window.loadProjectDirectory(str(path), confirmed=True)

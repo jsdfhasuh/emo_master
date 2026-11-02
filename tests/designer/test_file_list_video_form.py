@@ -72,7 +72,7 @@ def testConnectedVideoPathPreservesDraftThroughSaveReopenAndUnbind(tmp_path, own
         form.setSchema(window._nodeEditorSchema(node), node.params)
         assert form._controls["videoPath"].isEnabled()
         assert form.getValues()["videoPath"] == "old-missing-draft.mp4"
-        assert loadProjectDocument(path).schemaVersion == "2.7"
+        assert loadProjectDocument(path).schemaVersion == "2.9"
     finally:
         form.close()
         form.deleteLater()

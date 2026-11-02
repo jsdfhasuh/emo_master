@@ -43,7 +43,7 @@ def loopProject(root):
                 node['outputPorts'] = {name: normalizePortType(spec) for name, spec in meta.outputPorts.items()}
                 node['paramSchema'] = meta.paramSchema
     document = ProjectDocument.model_validate(payload)
-    assert document.schemaVersion == '2.7' and document.devices.definitions == {}
+    assert document.schemaVersion == '2.9' and document.devices.definitions == {}
     return document
 
 

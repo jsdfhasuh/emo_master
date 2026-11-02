@@ -77,8 +77,10 @@ def candidateGeometry(renderer, pageId, candidatePage, prototypes=None, *, minim
         layout = ResponsiveWidgetLayout(host, rules, canvasTop=canvasTop) if responsive else QGridLayout(host)
         layout.setSpacing(rules.spacing)
         if not responsive:
-            layout.setRowStretch(max((c.layout.row + c.layout.rowSpan for c in components), default=0), 1)
-            for row in range(max((c.layout.row + c.layout.rowSpan for c in components), default=0)):
+            end = max((c.layout.row + c.layout.rowSpan for c in components), default=0)
+            layout.setRowStretch(end, 1)
+            layout.setRowMinimumHeight(end, 64)
+            for row in range(end):
                 layout.setRowMinimumHeight(row, 64)
             for column in range(rules.columns):
                 layout.setColumnStretch(column, 1)

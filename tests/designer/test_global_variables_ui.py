@@ -34,7 +34,7 @@ def testDefinitionsRenameUndoDeleteProtectionAndPackages():
     target = WorkflowStore()
     result = importWorkflowPackage(target, package)
     before = target.toPayload()
-    assert before["schemaVersion"] == "2.7"
+    assert before["schemaVersion"] == "2.9"
     assert before["devices"]["schemaVersion"] == "1.0"
     assert not before["devices"]["definitions"]
     assert "communication" not in before

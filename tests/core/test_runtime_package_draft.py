@@ -33,7 +33,7 @@ def testAuthoritativeDraftIsCopiedBeforeMakingInputPathsPortable(tmp_path):
         assert reader['params']['imagePath'].startswith('runtime-assets/')
         assert archive.read(reader['params']['imagePath']) == image.read_bytes()
     installed = installRuntimePackage(package, tmp_path / 'installed')
-    assert installed.schemaVersion == '2.8' and installed.presentation.schemaVersion == '1.1'
+    assert installed.schemaVersion == '2.9' and installed.presentation.schemaVersion == '1.2'
     assert installed.devices.schemaVersion == '1.0'
     with pytest.raises(ValueError, match='outside'):
         buildRuntimePackage(root, root / 'packages', document=draft)

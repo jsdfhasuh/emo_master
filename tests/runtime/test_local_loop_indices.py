@@ -78,7 +78,7 @@ def testNestedLocalIndicesSaveReloadResetAndDoNotAccessDatabase(tmp_path, monkey
     document, registry = localIndicesProject()
     path = tmp_path / "local.emoproj"
     saveProject(path, document.model_dump(mode="json"))
-    assert loadProjectDocument(path) == document and document.schemaVersion == "2.7"
+    assert loadProjectDocument(path) == document and document.schemaVersion == "2.9"
     compiled = WorkflowCompiler(registry).compile(loadProjectDocument(path))
     visited = []
     execute = CollectionSelectOperator.executeNode

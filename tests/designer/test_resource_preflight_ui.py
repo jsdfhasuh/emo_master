@@ -71,6 +71,8 @@ def testNativeDialogCanUploadAndRevalidateWithoutChangingOnlineProject(
     try:
         waitUntil(lambda: dialog.pending is None)
         assert dialog.snapshot and not dialog.initial
+        # Exercise missing resources in the existing Runtime root, without relocation.
+        dialog.useLocalSource.setChecked(False)
         dialog.replacementPolicy.setCurrentIndex(dialog.replacementPolicy.findData('stopAffected'))
         dialog.validateButton.click()
         waitUntil(lambda: dialog.pending is None)

@@ -54,6 +54,33 @@ def testUnequalColumnsUseActualCellsForDropAndPreview(designer):  # noqa: F811
     assert cellAt(grid, 3, QPoint(grid.width(), point.y()))[1] == 3
 
 
+@pytest.mark.parametrize('terminal', [False, True], ids=['whole-page', 'fixed-terminal'])
+def testLongGridKeepsAnEmptyRowForNativeAppend(designer, terminal):  # noqa: F811
+    from test_user_path import drop
+
+    coordinator, editor, key = setupGridPage(designer, 'image')
+    coordinator.session.editPresentation(lambda p: setattr(
+        _component(p, editor.pageId, key).layout, 'rowSpan', 15))
+    editor.refresh()
+    editor.canvas.setPreviewSize(768 if terminal else 0, 640 if terminal else 0)
+    settle()
+    before, history = coordinator.session.payload(), len(coordinator.session._undo)
+    body = editor.renderer.pages[editor.pageId].widget()
+    empty = body.layout().cellRect(15, 0)
+    assert empty.height() >= 64
+    columns = editor.store.snapshot().pages[editor.pageId].layout.columns
+    assert cellAt(body, columns, empty.center()) == (15, 0)
+    assert drop(body, {'kind': 'text'}, empty.center()), editor.message.text()
+    settle()
+    added = _component(editor.store.snapshot(), editor.pageId, editor.tools.selected)
+    assert added.layout.row == 15 and added.layout.column == 0
+    assert len(coordinator.session._undo) == history + 1
+    body = editor.renderer.pages[editor.pageId].widget()
+    assert body.layout().cellRect(16, 0).height() >= 64
+    coordinator.history()
+    assert coordinator.session.payload() == before
+
+
 @pytest.mark.parametrize('kind', ['number', 'image', 'table'])
 @pytest.mark.parametrize('axes', ['y', 'xy'])
 @pytest.mark.parametrize('nested', [False, True])

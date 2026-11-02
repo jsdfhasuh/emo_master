@@ -508,7 +508,7 @@ def testActualAioCancellationKeepsTwoAdmissionsUntilSnapshotWorkRetires(monkeypa
         assert release.wait(GUARD)
         return original(self, request, context, incremental)
     monkeypatch.setattr(display_rpc.DisplayRpc, "_snapshot", blocked)
-    server = AioRuntimeServer(rpc.RuntimeServiceServicer(), service)
+    server = AioRuntimeServer(rpc.RuntimeServiceServicer(), service, displaySubscriptionsPerJob=2)
     transport = grpc.insecure_channel(f"127.0.0.1:{server.port}")
     calls = []
     try:

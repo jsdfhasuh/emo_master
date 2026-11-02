@@ -26,7 +26,7 @@ def testDeviceDraftOpenCopySwitchSaveAndReopen(ownedDesignerWindow, tmp_path, de
     window.pageCoordinator.sync()
     assert window.saveProjectToDirectory(str(source))
     saved = loadProject(source)
-    assert saved["schemaVersion"] == "2.7"
+    assert saved["schemaVersion"] == "2.9"
     assert len(saved["devices"]["definitions"]) == 1
     assert window.loadProjectDirectory(str(source), confirmed=True)
     assert window.flowModel.nodes[copiedId].deviceBindings == {"camera": {"deviceId": "camera", "selectors": {}}}

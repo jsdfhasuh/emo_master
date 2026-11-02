@@ -2,6 +2,17 @@
 
 Date: 2026-11-02. User requested a second review followed by consolidation into main.
 
+## Latest consolidation follow-up
+
+The user subsequently requested inclusion of the current uncommitted UI work.
+The Designer `8df8599fc026c424a49e87cc53fb45f6b371f16f` and Web
+`b89826b0841c6b4ef7f9c5f11ac938c6008934c7` tips were merged, followed by their
+captured SDK 1.3.0 / expanded canvas workspaces. The complete source inventory,
+integration repairs, and validation boundaries are recorded in
+[the consolidation report](../testing/2026-11-02-ui-main-integration/README.md).
+The original source worktrees and historical branch dispositions below remain
+preserved; the older fixed-tip table describes the first PR revision.
+
 ## Fixed source inventory
 
 Main starts at `f0675253631f489998056e5af618378e115efc83`.

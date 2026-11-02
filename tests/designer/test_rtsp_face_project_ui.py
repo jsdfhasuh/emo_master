@@ -28,7 +28,7 @@ def testFaceProjectOpensSavesReopensWithMaskedCredential(tmp_path, ownedDesigner
     assert window.saveProjectToDirectory(str(path))
     assert window.loadProjectSelection(str(path))
     reloaded = loadProjectDocument(path)
-    assert reloaded.schemaVersion == "2.7"
+    assert reloaded.schemaVersion == "2.9"
     assert reloaded.resources == document.resources
     assert reloaded.presentation == document.presentation
     assert next(n for n in reloaded.workflows["camera_once"].nodes if n.nodeId == "source").params["password"] == "fixture-only"

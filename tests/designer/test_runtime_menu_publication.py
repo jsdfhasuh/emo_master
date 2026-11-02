@@ -412,7 +412,15 @@ def testRunAndImagesUseOnlineIdentityWhenLocalFileDiffers(
         assert client.getOnlineProjectSnapshot()['payload'] == snapshot['payload']
         assert path.read_bytes() == disk
         return
-    monkeypatch.setattr(ProjectConfigurationDialog, 'exec_', lambda _: pytest.fail('matching draft must run directly'))
+    from emo_master.apps.designer.services.runtime_client import localProjectSourceChange
+    if localProjectSourceChange(client, snapshot, path):
+        # Embedded clients explicitly publish a relocated file before F5 can
+        # use that local draft; matching contents alone do not switch roots.
+        client.writeProjectConfiguration(snapshot, draft, [], 'publish-local-source', localProjectPath=path)
+        assert waitForWrite(service, client, 'publish-local-source')['state'] == 'COMMITTED'
+        snapshot = client.getOnlineProjectSnapshot()
+        assert snapshot['sourcePath'] == str(path.resolve())
+    monkeypatch.setattr(ProjectConfigurationDialog, 'exec_', lambda _: pytest.fail('matching published draft must run directly'))
     window.navigateToNodeFromSidebar('blur')
     window.startJob()
     waitFor(lambda: window.currentJobId is not None or not window.isJobRunning, seconds=30)

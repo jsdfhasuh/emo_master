@@ -58,7 +58,7 @@ def runnerForOptionalData(tmp_path, *, required=True, connected=True, requiredOu
     document = ProjectDocument.model_validate(store.toPayload())
     path = tmp_path / 'optional.emoproj'
     saveProject(path, document.model_dump(mode='json'))
-    assert loadProjectDocument(path) == document and document.schemaVersion == '2.7'
+    assert loadProjectDocument(path) == document and document.schemaVersion == '2.9'
     registry = {'test.source': Source, 'test.action': Action}
     compiled = WorkflowCompiler(operatorRegistry=registry).compile(document)
     return WorkflowRunner(compiled, registry, eventPublisher=lambda **event: events.append(event)), calls, events

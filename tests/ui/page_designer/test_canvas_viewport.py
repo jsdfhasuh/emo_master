@@ -89,7 +89,9 @@ def testContentHeightChangeKeepsViewUntilExplicitFit(responsivePage):  # noqa: F
     editor.refresh()
     settle()
     assert editor.canvas.getZoomFactor() == zoom
-    assert (editor.canvas._viewportCenter() - center).manhattanLength() <= 2
+    # Qt scrollbars quantize camera positions in viewport pixels, at any zoom.
+    delta = editor.canvas.mapFromScene(editor.canvas._viewportCenter()) - editor.canvas.mapFromScene(center)
+    assert delta.manhattanLength() <= 2
     scroll = editor.renderer.pages[editor.pageId]
     assert scroll.verticalScrollBar().maximum() == 0
     history = len(coordinator.session._undo)
@@ -102,8 +104,14 @@ def testContentHeightChangeKeepsViewUntilExplicitFit(responsivePage):  # noqa: F
 def testFollowingPageFillsCanvasAndPanelHeadersFloatAtTop(responsivePage):  # noqa: F811
     coordinator, editor, _keys = responsivePage
     canvas = editor.canvas
+    # This short-page case needs room for the content regardless of screen size.
+    canvas.setFixedSize(1100, 700)
     canvas.fitPage()
     settle()
+    scroll = editor.renderer.pages[editor.pageId]
+    layout = scroll.widget().layout()
+    assert layout.hasHeightForWidth()
+    assert 0 <= layout.heightForWidth(scroll.viewport().width()) <= scroll.viewport().height()
     assert editor.renderer.size() == canvas.viewport().size() - QSize(16, 16)
     center = canvas.mapFromScene(canvas.proxy.sceneBoundingRect().center())
     assert (center - canvas.viewport().rect().center()).manhattanLength() <= 2

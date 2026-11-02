@@ -136,3 +136,29 @@ The original cloud log and local evidence are retained under `build/`:
 `ci-native-debug-owners.{log,xml}` and `ci-native-debug-lifecycle.{log,xml}`.
 The first cloud failure remains recorded; full CI must validate the subsequent
 commit before reporting the consolidation checks as complete.
+
+## Completed Linux full-suite follow-up
+
+The original `e592f169` Ubuntu job completed normally: **8989 passed, 31 skipped,
+4 failed, 42 subtests passed** in 2525.75 seconds. Both startup-alias cases that
+encountered the local Windows symlink limitation passed in this job.
+
+Its four failures exposed outdated test preconditions. The navigation test's
+direct scene flag was restored from the still-checked alignment action when the
+editor refreshed; the test now disables snapping through that action and keeps
+the exact drag-distance assertion. The short-page/panel test needs enough canvas
+height for its content before asserting a 1:1 fit; long-page fitting remains
+covered separately. Runtime port-conflict checking now matches the current
+address-specific startup diagnostic while still requiring rejection and a live
+original host. Stop-all uses real session state plus controlled authoritative
+current runs, retaining uncertain-Start reconciliation, all Stop requests before
+waiting, the deadline, and independent errors.
+
+Both affected Runtime files pass all seven tests. Both affected UI files pass
+all 30 tests locally. Their original exact drag, viewport-fit and no-side-effect
+assertions are retained. The content-growth test's existing two-pixel camera
+tolerance is now measured in viewport pixels, preserving that threshold when
+zoom makes scene units differ from pixel units. The completed Linux failure
+log and XML remain under `build/ci-e592f169-ubuntu*`; no skipped or incomplete run
+is counted as a pass. Final cross-platform checks are required on the follow-up
+revision.

@@ -1,0 +1,95 @@
+{
+  "observedAtUtc": "2026-11-02T17:01:52.627921+00:00",
+  "historicalEvidenceHead": "61e2717456d5fc17d1202709bcd61f7997fa25eb",
+  "note": "The product branch advanced during handoff preparation. Historical failure logs remain pinned to 61e27174; current checks must be evaluated against the actual PR head.",
+  "pullRequest": {
+    "baseRefName": "main",
+    "baseRefOid": "f0675253631f489998056e5af618378e115efc83",
+    "headRefName": "codex/integrate-reviewed-branches-20261102",
+    "headRefOid": "e6342e32d2716f61fcfe884310ccfc85960e3f1c",
+    "state": "OPEN",
+    "statusCheckRollup": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "0001-01-01T00:00:00Z",
+        "conclusion": "",
+        "detailsUrl": "https://github.com/jsdfhasuh/emo_master/actions/runs/41486738201/job/125418981196",
+        "name": "ubuntu-latest / Python 3.10",
+        "startedAt": "2026-11-02T16:59:19Z",
+        "status": "IN_PROGRESS",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-11-02T17:00:30Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/jsdfhasuh/emo_master/actions/runs/41486739418/job/125418985581",
+        "name": "prepare",
+        "startedAt": "2026-11-02T16:59:11Z",
+        "status": "COMPLETED",
+        "workflowName": "Validate frozen Windows package (no release)"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-11-02T17:01:21Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/jsdfhasuh/emo_master/actions/runs/41486738208/job/125418980965",
+        "name": "web-panel (ubuntu-latest)",
+        "startedAt": "2026-11-02T16:59:11Z",
+        "status": "COMPLETED",
+        "workflowName": "Web panel isolated checks"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "0001-01-01T00:00:00Z",
+        "conclusion": "",
+        "detailsUrl": "https://github.com/jsdfhasuh/emo_master/actions/runs/41486738201/job/125418982095",
+        "name": "windows-latest / Python 3.10",
+        "startedAt": "2026-11-02T16:59:16Z",
+        "status": "IN_PROGRESS",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "0001-01-01T00:00:00Z",
+        "conclusion": "",
+        "detailsUrl": "https://github.com/jsdfhasuh/emo_master/actions/runs/41486738208/job/125418981253",
+        "name": "web-panel (windows-latest)",
+        "startedAt": "2026-11-02T16:59:11Z",
+        "status": "IN_PROGRESS",
+        "workflowName": "Web panel isolated checks"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "0001-01-01T00:00:00Z",
+        "conclusion": "",
+        "detailsUrl": "https://github.com/jsdfhasuh/emo_master/actions/runs/41486738208/job/125418980596",
+        "name": "Owning Runtime integration (synthetic data, Windows)",
+        "startedAt": "2026-11-02T16:59:11Z",
+        "status": "IN_PROGRESS",
+        "workflowName": "Web panel isolated checks"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-11-02T17:00:30Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/jsdfhasuh/emo_master/actions/runs/41486739418/job/125419724676",
+        "name": "package / vision_train",
+        "startedAt": "2026-11-02T17:00:30Z",
+        "status": "COMPLETED",
+        "workflowName": "Validate frozen Windows package (no release)"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "0001-01-01T00:00:00Z",
+        "conclusion": "",
+        "detailsUrl": "https://github.com/jsdfhasuh/emo_master/actions/runs/41486739418/job/125419721394",
+        "name": "package / Build emo-master for Windows",
+        "startedAt": "2026-11-02T17:00:33Z",
+        "status": "IN_PROGRESS",
+        "workflowName": "Validate frozen Windows package (no release)"
+      }
+    ],
+    "url": "https://github.com/jsdfhasuh/emo_master/pull/7"
+  }
+}

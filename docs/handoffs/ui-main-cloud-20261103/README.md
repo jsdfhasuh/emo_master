@@ -7,11 +7,23 @@
 - 仓库：<https://github.com/jsdfhasuh/emo_master>
 - 待完成的产品 PR：<https://github.com/jsdfhasuh/emo_master/pull/7>
 - 产品分支：`codex/integrate-reviewed-branches-20261102`
-- 本次固定产品提交：`61e2717456d5fc17d1202709bcd61f7997fa25eb`
+- 原始快照及完整失败证据对应的产品提交：`61e2717456d5fc17d1202709bcd61f7997fa25eb`
+- 推送交接时最新观察到的产品提交：`e6342e32d2716f61fcfe884310ccfc85960e3f1c`
 - 交接时目标 `main`：`f0675253631f489998056e5af618378e115efc83`
 - 交接资料分支：`codex/ui-main-handoff-20261103`
 
-资料分支基于上述完整产品提交，只增加本目录的说明、原始快照和验证证据。产品整合已推送到 PR #7；该 PR 继续承载实际合并。接手时先查询实时分支及 CI 状态，文档记录不是实时状态。
+资料分支基于 `61e27174` 完整产品提交，只增加本目录的说明、原始快照和验证证据。产品整合及随后修复已推送到 PR #7；该 PR 继续承载实际合并。接手时先查询实时分支及 CI 状态，文档记录不是实时状态。
+
+## 推送期间的远端新进展
+
+最终远端核验发现产品分支已在 `61e27174` 之后新增 `e6342e32d2716f61fcfe884310ccfc85960e3f1c`（`test(runtime): fence asynchronous readiness in integration checks`）。该提交更新两个失败测试的异步准备条件及整合报告：每帧发布前等待现有 asset 响应退休，工程源迁移测试则在原 15 秒期限内同时等待输出文件和 `RUNNING`。原有完整像素序列、审计记录和运行状态断言仍保留。
+
+新提交的完整 CI、Web 和冻结包检查正在运行，尚不能算通过。交接者只读核对了这次差异，未独立重跑该提交声称的云端定点验证。接手应先查看新提交与其检查，不要根据下文 `61e27174` 的历史失败重复实现已有修复。
+
+- [最新产品完整 CI](https://github.com/jsdfhasuh/emo_master/actions/runs/41486738201)
+- [最新产品 Web 检查](https://github.com/jsdfhasuh/emo_master/actions/runs/41486738208)
+- [最新产品冻结包检查](https://github.com/jsdfhasuh/emo_master/actions/runs/41486739418)
+- [latest-remote-state.json](latest-remote-state.json) 保存了本次远端查询结果；实时状态以 GitHub 为准。
 
 ## 已完成的整合
 
@@ -45,12 +57,12 @@ Designer `8df8599fc026c424a49e87cc53fb45f6b371f16f` 与 Web `b89826b0841c6b4ef7f
 
 完整源码 CI 已结束：Ubuntu 为 SUCCESS，9001 passed、31 skipped、0 failed，另有 42 passing subtests。Windows 为 FAILURE，9025 passed、5 skipped、2 failed，另有 42 passing subtests，pytest 耗时 3964.19 秒。两平台主测试收集数均为 9032，两个启动目录别名用例在两平台均通过。
 
-Windows 的两个剩余失败待接手方诊断和修复：
+`61e27174` 的两个 Windows 失败现象如下；远端后续 `e6342e32` 已加入上述修正，需查看其实际检查结果：
 
 - `testTwoNetworkConsumersAll96ChangingImagesAndExplicitSupersession`：两个网络消费者的结果序列均缺少第 88 帧，其余 1–96 序号存在。
 - `testSourceOnlyChangeRetiresActiveJobWithoutDevices[stopAffected]`：第 201 行等待检查预期 `RUNNING`，观察到的状态仍是 `STARTING`。
 
-这些是本轮实际失败现象，不代表根因已确定。完整原始日志、JUnit XML 和失败摘要在 `evidence/build/ci-61e27174-windows*`，状态 JSON 包含具体测试路径与诊断信息。不要把当前产品提交报告为全量通过，也不要直接绕过这两个失败合并。
+这些是 `61e27174` 实际失败现象，不代表历史失败的唯一根因已确定。完整原始日志、JUnit XML 和失败摘要在 `evidence/build/ci-61e27174-windows*`，状态 JSON 包含具体测试路径与诊断信息。它们按原样保留，不能作为后续新提交的通过或失败结论。
 
 Web 和冻结包运行均已成功。Web 两个平台各有后端 148 passed / 2 opt-in skipped、前端 63 passed、生产构建通过；浏览器验证、独立软件 Runtime 和隔离 Web wheel 安装通过。冻结包 `vision_train` 为预设跳过。已有本地 Ruff、protobuf drift 和 mypy（609 源码文件）检查通过。
 
@@ -65,11 +77,11 @@ Web 和冻结包运行均已成功。Web 两个平台各有后端 148 passed / 2
 ## 接手执行步骤
 
 1. 在自己的云端环境 clone 仓库，读取 `AGENTS.md`，fetch 产品分支和资料分支。通过 GitHub 查询 PR #7 的真实 head、base、合并状态及所有检查。用户已授权在该仓库修复、提交、推送和完成合并。
-2. 如最后的 Windows 检查失败，读取日志并做与本次整合有关的最小修复；保留正确断言，不通过 skip、弱化断言或盲目重跑掩盖失败。将修复推到现有 PR 的产品分支，按新 HEAD 验证。没有新改动、失败或未解决的问题时，无需重跑已通过的检查。
-3. 所有适用检查通过后，更新 PR 描述，记录最终固定提交及实际结果。若 HEAD 仍为本次产品提交，可执行：
+2. 先审阅已存在的 `e6342e32` 及其检查结果。如果最新提交仍有失败，读取日志并做与本次整合有关的最小修复；保留正确断言，不通过 skip、弱化断言或盲目重跑掩盖失败。将修复推到现有 PR 的产品分支，按新 HEAD 验证。没有新改动、失败或未解决的问题时，无需重跑已通过的检查。
+3. 所有适用检查通过后，更新 PR 描述，记录最终固定提交及实际结果。若 HEAD 仍为新观察到的 `e6342e32` 且其检查通过，可执行：
 
    ```sh
-   gh pr merge 7 --repo jsdfhasuh/emo_master --merge --match-head-commit 61e2717456d5fc17d1202709bcd61f7997fa25eb
+   gh pr merge 7 --repo jsdfhasuh/emo_master --merge --match-head-commit e6342e32d2716f61fcfe884310ccfc85960e3f1c
    ```
 
    若已有必要的新修复，使用经检查的新 SHA。采用正常 merge，保留历史和现有分支，不 force-push，不使用 admin bypass。

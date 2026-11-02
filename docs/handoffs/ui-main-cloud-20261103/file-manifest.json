@@ -563,6 +563,16 @@
       "sha256": "0ccbab19414d3b86006b99673a924ea9b4db537ccf954802eef7fef8b308bd4f"
     },
     {
+      "path": "latest-remote-state.json",
+      "bytes": 3964,
+      "sha256": "0d9c843824241f6ea6e63b3fb59a2e2886636b8fb3e1884d2796ff2b4e0ad213"
+    },
+    {
+      "path": "snapshots/designer.patch",
+      "bytes": 119897,
+      "sha256": "9ff9f436f0e7121897a16742968b8422124c60f397fe645fec066eb34c8f3ae5"
+    },
+    {
       "path": "snapshots/designer/docs/development/panel-contract-v1.md",
       "bytes": 19814,
       "sha256": "a4a868797ff27d2769e1b853f6d3db1dc729347f3a6a8ba7b5b09bc70f38e0c3"
@@ -576,6 +586,11 @@
       "path": "snapshots/designer/docs/handoffs/runtime-web-panel-v1/README.md",
       "bytes": 4305,
       "sha256": "4ffb80ddc8bb39921bbeafd15525e817c054a86836475ae57f9f3a8a1e7283e5"
+    },
+    {
+      "path": "snapshots/designer/docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/README.md",
+      "bytes": 2109,
+      "sha256": "2d7079710ac84846b8c61fac03750059fee48a05c27f9dc3bbf21c232d0dbcc5"
     },
     {
       "path": "snapshots/designer/docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/contract-manifest.json",
@@ -593,11 +608,6 @@
       "sha256": "4cf0bcb59fcd427d5e48a74c3f2082f834682a321364a6cc42234792f5577aca"
     },
     {
-      "path": "snapshots/designer/docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/README.md",
-      "bytes": 2109,
-      "sha256": "2d7079710ac84846b8c61fac03750059fee48a05c27f9dc3bbf21c232d0dbcc5"
-    },
-    {
       "path": "snapshots/designer/docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md",
       "bytes": 4862,
       "sha256": "2599052bf30e2508d7460afd6473d22b1805cc46d8ca5bde7335e85c61188edc"
@@ -606,6 +616,11 @@
       "path": "snapshots/designer/docs/project-json-spec.md",
       "bytes": 30633,
       "sha256": "7513c73415d0a47b6f4f83f974c60a2e6525fe907d8fea4ae4c4f6ccad72da6b"
+    },
+    {
+      "path": "snapshots/designer/docs/testing/2026-11-02-designer-canvas-expansion/README.md",
+      "bytes": 4697,
+      "sha256": "1b62fd2b6343dd98a93509992876c864e738365fb900ea23c135849b6afcdb4a"
     },
     {
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-canvas-expansion/backend-result.txt",
@@ -663,14 +678,14 @@
       "sha256": "7c9e131ff3d238d9f5a6d2d5d133f042113d1d4922e1fc9cc8899e2ce3b3ace2"
     },
     {
-      "path": "snapshots/designer/docs/testing/2026-11-02-designer-canvas-expansion/README.md",
-      "bytes": 4697,
-      "sha256": "1b62fd2b6343dd98a93509992876c864e738365fb900ea23c135849b6afcdb4a"
-    },
-    {
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-canvas-expansion/web-lint-baseline.json",
       "bytes": 1384,
       "sha256": "f511f75aee15545213a365e2166467f238d5c425531b0e61e0bf6bcf4d01933c"
+    },
+    {
+      "path": "snapshots/designer/docs/testing/2026-11-02-designer-fit-whole-page/README.md",
+      "bytes": 3338,
+      "sha256": "82f423f7b63d52410199ad431b8151c2f7ee7558ba80890865920a868bccedd3"
     },
     {
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-fit-whole-page/before.xml",
@@ -688,11 +703,6 @@
       "sha256": "f1c2ad4be5b54be24a4cb057608c5b0376f8f6c08a42e8d64c31a47fdd7139ca"
     },
     {
-      "path": "snapshots/designer/docs/testing/2026-11-02-designer-fit-whole-page/README.md",
-      "bytes": 3338,
-      "sha256": "82f423f7b63d52410199ad431b8151c2f7ee7558ba80890865920a868bccedd3"
-    },
-    {
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-fit-whole-page/regression.xml",
       "bytes": 23774,
       "sha256": "a845defd45d03f8ea43cc3352d2df975fe2942e7f7ef5adf2df3e1233e6bafdd"
@@ -706,6 +716,11 @@
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-fit-whole-page/whole-page.png",
       "bytes": 101957,
       "sha256": "1f16d8d886c39bd8e4dc84c9baad0ef96cde1344614bc78fc2e838f1a4174311"
+    },
+    {
+      "path": "snapshots/designer/docs/testing/2026-11-02-designer-parent-navigation/README.md",
+      "bytes": 1864,
+      "sha256": "c2fb262ac9a716800b3ebc0288832fccf535311824c025cd9c1bc6dc3ec5651a"
     },
     {
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-parent-navigation/entry.png",
@@ -733,9 +748,9 @@
       "sha256": "84c75186a7eee284b2675145059adfbea038545024589877a052c5b8bfdc058d"
     },
     {
-      "path": "snapshots/designer/docs/testing/2026-11-02-designer-parent-navigation/README.md",
-      "bytes": 1864,
-      "sha256": "c2fb262ac9a716800b3ebc0288832fccf535311824c025cd9c1bc6dc3ec5651a"
+      "path": "snapshots/designer/docs/testing/2026-11-02-designer-performance-probe/README.md",
+      "bytes": 8244,
+      "sha256": "280b063f36ce4e23b787421f3add71051d82cab1b13c385f2bf84ed9bab56128"
     },
     {
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-performance-probe/probe-exported.png",
@@ -748,11 +763,6 @@
       "sha256": "cd389fc57149912ee10adfaf518957ec6e6b9e21bc359fca9af8d9a756a5967d"
     },
     {
-      "path": "snapshots/designer/docs/testing/2026-11-02-designer-performance-probe/README.md",
-      "bytes": 8244,
-      "sha256": "280b063f36ce4e23b787421f3add71051d82cab1b13c385f2bf84ed9bab56128"
-    },
-    {
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-performance-probe/sample/report.json",
       "bytes": 297448,
       "sha256": "c3a40b494daba7a4ee6157e4113094c8a97cd3317edd9c990f85ded24f8794bf"
@@ -761,6 +771,11 @@
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-performance-probe/sample/summary.md",
       "bytes": 8323,
       "sha256": "2f896b62fc34f15ab40948569e7fb130e9a33d259c4ea302d1c9e399a0b77cd9"
+    },
+    {
+      "path": "snapshots/designer/docs/testing/2026-11-02-designer-resize-edges/README.md",
+      "bytes": 3458,
+      "sha256": "f251e0b17f6159f589dd053cc074502bb84f666e1e365f3bce9be398321645e9"
     },
     {
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-resize-edges/before.xml",
@@ -778,11 +793,6 @@
       "sha256": "34686908dc672b23454bc848482280992cd809b92e399ab3e561c32b491dae8c"
     },
     {
-      "path": "snapshots/designer/docs/testing/2026-11-02-designer-resize-edges/README.md",
-      "bytes": 3458,
-      "sha256": "f251e0b17f6159f589dd053cc074502bb84f666e1e365f3bce9be398321645e9"
-    },
-    {
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-resize-edges/regression.xml",
       "bytes": 24768,
       "sha256": "e577d5bb770202ab04da619a607b8c276ceda5939f4ccf4a812600fef6298525"
@@ -796,6 +806,11 @@
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-resize-edges/visual.json",
       "bytes": 1486,
       "sha256": "23d6dcb399f5ea5128e73cc5ceb99515002a92fe08baaf4d0bc3c23277c57cb0"
+    },
+    {
+      "path": "snapshots/designer/docs/testing/2026-11-02-designer-resize-layout/README.md",
+      "bytes": 3635,
+      "sha256": "55ef6bd82ac69a8ca3265caefca37ef67008bacffbfd1633bc845d4e74af4511"
     },
     {
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-resize-layout/after.png",
@@ -848,24 +863,19 @@
       "sha256": "0976d8c25f07d79863c87a952a21f068da42cbcf3b0e3e371bb9c630ec956a59"
     },
     {
-      "path": "snapshots/designer/docs/testing/2026-11-02-designer-resize-layout/README.md",
-      "bytes": 3635,
-      "sha256": "55ef6bd82ac69a8ca3265caefca37ef67008bacffbfd1633bc845d4e74af4511"
-    },
-    {
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-resize-layout/visual.json",
       "bytes": 172,
       "sha256": "dacfd182dd9a693f2b9b0c06d37778030ef29a33eca2829300b17aa28141fc43"
     },
     {
-      "path": "snapshots/designer/docs/testing/2026-11-02-designer-space/README.md",
-      "bytes": 11391,
-      "sha256": "10f1cb5ecef120576232c2026b15a306e95b5c9993ddd5fdc6fc16846ad13e9b"
-    },
-    {
       "path": "snapshots/designer/docs/testing/2026-11-02-designer-space-dot-acceptance.md",
       "bytes": 7197,
       "sha256": "0be7e8a33bb5a85e32ae6166d0b42a148c7bcdb301189b3aa9cdb729d644a22e"
+    },
+    {
+      "path": "snapshots/designer/docs/testing/2026-11-02-designer-space/README.md",
+      "bytes": 11391,
+      "sha256": "10f1cb5ecef120576232c2026b15a306e95b5c9993ddd5fdc6fc16846ad13e9b"
     },
     {
       "path": "snapshots/designer/packages/emo_panel_protocol/pyproject.toml",
@@ -1068,14 +1078,14 @@
       "sha256": "7cfc1b16c392dd137152cb24636df2e9cebfc86d1bea79a7d4b99ad787334c8e"
     },
     {
-      "path": "snapshots/designer.patch",
-      "bytes": 119897,
-      "sha256": "9ff9f436f0e7121897a16742968b8422124c60f397fe645fec066eb34c8f3ae5"
-    },
-    {
       "path": "snapshots/manifest.json",
       "bytes": 42958,
       "sha256": "398bfb2e556d3a3254f90ee69de604c36abe4cb132b7b0e7db4af226807bab69"
+    },
+    {
+      "path": "snapshots/web.patch",
+      "bytes": 106912,
+      "sha256": "52a91203eb75a93da2b1bf204991b93f2f1dcc7dffb544befcda6d8455415d21"
     },
     {
       "path": "snapshots/web/docs/development/panel-contract-v1.md",
@@ -1093,6 +1103,11 @@
       "sha256": "4ffb80ddc8bb39921bbeafd15525e817c054a86836475ae57f9f3a8a1e7283e5"
     },
     {
+      "path": "snapshots/web/docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/README.md",
+      "bytes": 2109,
+      "sha256": "2d7079710ac84846b8c61fac03750059fee48a05c27f9dc3bbf21c232d0dbcc5"
+    },
+    {
       "path": "snapshots/web/docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/contract-manifest.json",
       "bytes": 6684,
       "sha256": "3f415552c79a37e56a3a57358b2aba1c5e4283f2c14f23c045566e94ed164589"
@@ -1108,11 +1123,6 @@
       "sha256": "4cf0bcb59fcd427d5e48a74c3f2082f834682a321364a6cc42234792f5577aca"
     },
     {
-      "path": "snapshots/web/docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/README.md",
-      "bytes": 2109,
-      "sha256": "2d7079710ac84846b8c61fac03750059fee48a05c27f9dc3bbf21c232d0dbcc5"
-    },
-    {
       "path": "snapshots/web/docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md",
       "bytes": 3236,
       "sha256": "fad9a104fee17a3c60452bc641876300d5b73688d1d7f76638207457bfd3176f"
@@ -1121,6 +1131,11 @@
       "path": "snapshots/web/docs/project-json-spec.md",
       "bytes": 30633,
       "sha256": "7513c73415d0a47b6f4f83f974c60a2e6525fe907d8fea4ae4c4f6ccad72da6b"
+    },
+    {
+      "path": "snapshots/web/docs/testing/2026-11-02-designer-canvas-expansion/README.md",
+      "bytes": 4697,
+      "sha256": "1b62fd2b6343dd98a93509992876c864e738365fb900ea23c135849b6afcdb4a"
     },
     {
       "path": "snapshots/web/docs/testing/2026-11-02-designer-canvas-expansion/backend-result.txt",
@@ -1178,11 +1193,6 @@
       "sha256": "7c9e131ff3d238d9f5a6d2d5d133f042113d1d4922e1fc9cc8899e2ce3b3ace2"
     },
     {
-      "path": "snapshots/web/docs/testing/2026-11-02-designer-canvas-expansion/README.md",
-      "bytes": 4697,
-      "sha256": "1b62fd2b6343dd98a93509992876c864e738365fb900ea23c135849b6afcdb4a"
-    },
-    {
       "path": "snapshots/web/docs/testing/2026-11-02-designer-canvas-expansion/web-lint-baseline.json",
       "bytes": 1384,
       "sha256": "f511f75aee15545213a365e2166467f238d5c425531b0e61e0bf6bcf4d01933c"
@@ -1213,6 +1223,11 @@
       "sha256": "45f015cfef8fe08da653d46182abbfa9480e1536c784f9630a366bd00aaf6d0a"
     },
     {
+      "path": "snapshots/web/web_panel/README.md",
+      "bytes": 5526,
+      "sha256": "d7eecf459e477c88b012fe2cf63ca66a3a8c4ece027bba13603a5cd45725d105"
+    },
+    {
       "path": "snapshots/web/web_panel/backend/emo_web_panel/contract_data/fixtures/preview-fixtures.json",
       "bytes": 311,
       "sha256": "f37556948415ec357b300bc5caf4ccf84dd5e3bce2866414a9dc6d5ca38b8ae0"
@@ -1226,6 +1241,11 @@
       "path": "snapshots/web/web_panel/backend/emo_web_panel/packages.py",
       "bytes": 37814,
       "sha256": "58767c510cae03b3b06035afb7cfbec49d6ad2d19307d5867b942104b308c28c"
+    },
+    {
+      "path": "snapshots/web/web_panel/contracts/panel-contract-v1/README.md",
+      "bytes": 19814,
+      "sha256": "a4a868797ff27d2769e1b853f6d3db1dc729347f3a6a8ba7b5b09bc70f38e0c3"
     },
     {
       "path": "snapshots/web/web_panel/contracts/panel-contract-v1/contract-manifest.json",
@@ -1246,11 +1266,6 @@
       "path": "snapshots/web/web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.3.0-py3-none-any.whl",
       "bytes": 38789,
       "sha256": "cd86472b5faa74e8fb1048a95fcaf67cf59e5a285e4d5e69763cd9a71bb55295"
-    },
-    {
-      "path": "snapshots/web/web_panel/contracts/panel-contract-v1/README.md",
-      "bytes": 19814,
-      "sha256": "a4a868797ff27d2769e1b853f6d3db1dc729347f3a6a8ba7b5b09bc70f38e0c3"
     },
     {
       "path": "snapshots/web/web_panel/contracts/panel-contract-v1/sample-panels/demo.emoweb",
@@ -1293,11 +1308,6 @@
       "sha256": "87bf3635207c3cfd51b3c32939b75fea2e84f60d4a8b0c0620d8a1682bb68085"
     },
     {
-      "path": "snapshots/web/web_panel/README.md",
-      "bytes": 5526,
-      "sha256": "d7eecf459e477c88b012fe2cf63ca66a3a8c4ece027bba13603a5cd45725d105"
-    },
-    {
       "path": "snapshots/web/web_panel/tests/test_contract_manifest.py",
       "bytes": 3678,
       "sha256": "b7cb6a7e2742f8c22df87c22903a0d246cecc53db78129ff6dc30caaf614fe7f"
@@ -1306,11 +1316,6 @@
       "path": "snapshots/web/web_panel/tests/test_official_packages.py",
       "bytes": 11091,
       "sha256": "8df8f9f50a1e822e0d2037a14ecd9c822d4dbb7b55663d9088b4faa6ce7ddda5"
-    },
-    {
-      "path": "snapshots/web.patch",
-      "bytes": 106912,
-      "sha256": "52a91203eb75a93da2b1bf204991b93f2f1dcc7dffb544befcda6d8455415d21"
     }
   ]
 }

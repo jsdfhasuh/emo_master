@@ -173,7 +173,11 @@ def testImageEmptyTextDoesNotHideFailures(qtApp, reason, custom):
         widget = window.widgets['main']['image'][1]
         assert widget.image.isNull()
         assert (widget.message == 'No face in this result') == custom
-        assert widget.toolTip() == reason
+        details = widget.toolTip().splitlines()
+        assert details[0] == widget.message
+        assert details[1] == '诊断：' + reason
+        assert '数据源：image' in details
+        assert '流程 / 节点 / 端口：main / detect / image' in details
     finally:
         window.close()
 

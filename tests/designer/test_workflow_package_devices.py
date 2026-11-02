@@ -48,7 +48,7 @@ def testImportNewDisabledDevicePreservesSourcesAndLegacyCatalog(definition):  # 
     target.devices["bindings"] = {"old": {"opaque": False}}
     result = importWorkflowPackage(target, package, deviceMapping={"camera": None})
     document = ProjectDocument.model_validate(target.toPayload())
-    assert document.schemaVersion == "2.7"
+    assert document.schemaVersion == "2.9"
     assert document.devices.bindings == {"old": {"opaque": False}}
     targetId = result.deviceIdMap["camera"]
     assert targetId != "camera"

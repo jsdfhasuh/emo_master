@@ -1,0 +1,112 @@
+{
+  "sha": "a28bea27e099b1dadf572d2efea81aca38670b2e",
+  "evidenceLevel": "offscreen native Qt auxiliary probes; no OS drag loop",
+  "cases": [
+    {
+      "name": "ctrl-deselect-nonprimary-valid-input",
+      "beforeTitle": "VALID PENDING TITLE",
+      "beforeFontSize": 0,
+      "actual": {
+        "selected": [
+          "5a3dce48-86b9-415e-8e1f-bba7dfd5c4f1"
+        ],
+        "fieldTitle": "",
+        "fieldFontSize": 0,
+        "storedTitle": "",
+        "storedFontSize": 0
+      },
+      "inputPreserved": false
+    },
+    {
+      "name": "ctrl-deselect-nonprimary-invalid-input",
+      "beforeTitle": "INVALID PENDING TITLE",
+      "beforeFontSize": 1,
+      "actual": {
+        "selected": [
+          "5a3dce48-86b9-415e-8e1f-bba7dfd5c4f1"
+        ],
+        "fieldTitle": "",
+        "fieldFontSize": 0,
+        "storedTitle": "",
+        "storedFontSize": 0
+      },
+      "inputPreserved": false
+    },
+    {
+      "name": "automatic-group-candidate-preview",
+      "args": {
+        "parentId": null,
+        "besideId": "5a3dce48-86b9-415e-8e1f-bba7dfd5c4f1",
+        "direction": "horizontal",
+        "before": true
+      },
+      "previewBox": [
+        9,
+        103,
+        371,
+        82
+      ],
+      "beforeCards": {
+        "db631b56-1639-4938-9b28-4edcf2343814": [
+          9,
+          9,
+          742,
+          82
+        ],
+        "5a3dce48-86b9-415e-8e1f-bba7dfd5c4f1": [
+          9,
+          103,
+          742,
+          82
+        ],
+        "4e2a9e4f-274f-4c7a-bd97-13da5cd39f1e": [
+          9,
+          197,
+          742,
+          82
+        ]
+      },
+      "duringCards": {
+        "db631b56-1639-4938-9b28-4edcf2343814": [
+          9,
+          9,
+          742,
+          82
+        ],
+        "5a3dce48-86b9-415e-8e1f-bba7dfd5c4f1": [
+          9,
+          103,
+          742,
+          82
+        ],
+        "4e2a9e4f-274f-4c7a-bd97-13da5cd39f1e": [
+          9,
+          197,
+          742,
+          82
+        ]
+      },
+      "afterCards": {
+        "db631b56-1639-4938-9b28-4edcf2343814": [
+          10,
+          10,
+          355,
+          82
+        ],
+        "5a3dce48-86b9-415e-8e1f-bba7dfd5c4f1": [
+          377,
+          10,
+          355,
+          82
+        ],
+        "4e2a9e4f-274f-4c7a-bd97-13da5cd39f1e": [
+          9,
+          123,
+          742,
+          82
+        ]
+      },
+      "unselectedSiblingPositionPreviewed": false
+    }
+  ]
+}

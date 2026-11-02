@@ -32,6 +32,16 @@ def drainDeletes(app):
     app.processEvents()
 
 
+def selectPage(window, pageId):
+    picker = window.pageNavigation.picker
+    picker.setFocus()
+    target = picker.findData(pageId)
+    # The exercise visits consecutive pages and wraps to the first, retaining
+    # exactly one user navigation per iteration instead of intermediate hops.
+    assert target == 0 or target == picker.currentIndex() + 1
+    QTest.keyClick(picker, Qt.Key_Home if target == 0 else Qt.Key_Down)
+
+
 def warmTimerBackend(app):
     # Qt 5.15 on Windows uses WINMM for intervals below 20 ms. A real 16 ms
     # timer control retains a process-level thread/handles even after deleting
@@ -315,7 +325,7 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
     try:
         # Warm every supported control and a second native window once.
         for page in config.pageOrder:
-            QTest.mouseClick(window.buttons[page], Qt.LeftButton)
+            selectPage(window, page)
             drainDeletes(qtApp)
         floating = RuntimePages(config, hub=hub)
         floating.show()
@@ -331,7 +341,7 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
         for index in range(1000):
             oldPages = dict(window.pages)
             target = config.pageOrder[index % 5]
-            QTest.mouseClick(window.buttons[target], Qt.LeftButton)
+            selectPage(window, target)
             drainDeletes(qtApp)
             assert window.currentPageId == target
             assert len(window.pages) <= 2 and window.stack.count() <= 2

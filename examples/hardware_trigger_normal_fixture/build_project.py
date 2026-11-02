@@ -5,16 +5,16 @@ intermediate operator runs normally. All formulas/regions and S1's second-shot
 circle are explicit test choices; the unknown Blob-inner-center is NOT emulated.
 """
 from copy import deepcopy
-import json
 from pathlib import Path
 
 from emo_master import __version__
 from emo_master.core.plugin.registry import PluginRegistry
-from emo_master.core.project.models import ProductionSettings
+from emo_master.apps.designer.state.project_store import saveProject
+from emo_master.apps.designer.state.workflow_store import WorkflowStore
+from emo_master.core.project.models import ProjectDocument
 from emo_master.core.project.devices import DeviceDefinition
 from emo_master.core.project.runtime_package import trustedDeviceTypes
 from emo_master.core.presentation.models import Presentation
-from emo_master.core.project.resources import ResourcePlan
 from emo_master.core.contracts.port_types import normalizePortType
 
 
@@ -176,11 +176,12 @@ def buildProject():
                      edge("points", "points", "source", "points"), edge("input", "frame", "source", "frame"),
                      edge("source", "points", "output", "points")]
             workflows[target] = workflow(f"{target}：真实算子测量区域链", dict(after="any", image="image", frame="bbox2d"), dict(points="list<point2d>"), nodes, edges)
-    payload = dict(schemaVersion="2.7", project=dict(projectId="hardware-normal-capability-fixture", name="双工位硬件正常基础链路夹具（非现场算法）",
+    payload = WorkflowStore().toPayload("双工位硬件正常基础链路夹具（非现场算法）")
+    # Stable fixture identity keeps generated business structure reproducible.
+    payload.update(project=dict(projectId="hardware-normal-capability-fixture", name=payload["project"]["name"],
         revision=1, createdAt="2026-10-09T00:00:00Z", updatedAt="2026-10-09T00:00:00Z"),
-        entryWorkflowId="station1-run", workflowOrder=list(workflows), workflows=workflows,
-        devices=dict(schemaVersion="1.0", bindings={}, definitions=definitions),
-        resources=ResourcePlan().model_dump(), presentation=Presentation().model_dump(), production=ProductionSettings().model_dump())
+        entryWorkflowId="station1-run", workflowOrder=list(workflows), workflows=workflows)
+    payload["devices"]["definitions"] = definitions
     payload["globalVariables"] = {f"station{s}-shot-count": dict(name=f"工位{s}拍次", type="integer", kind="variable", lifetime="job", initialValue=0) for s in (1, 2)}
     payload["production"]["mode"] = "single"
     payload["globalVariables"]["run-enabled"] = dict(name="继续等待触发", type="boolean", kind="constant",
@@ -204,18 +205,23 @@ def buildProject():
                                        port="shot", expectedType="integer", callPath=path)
         sources[root + "-count"] = dict(kind="global_variable", resultScopeId=root,
                                         variableId=root + "-shot-count", expectedType="integer")
-        pages[root] = dict(name=f"工位 {s}", resultScopeIds=[root], components=[
+        pages[root] = dict(name=f"工位 {s}", resultScopeIds=[root],
+            layout=dict(type="grid", columns=1, spacing=8), components=[
             dict(componentId=root + "-shot", type="number", bindings={"value": root + "-shot"},
                  props={"title": "本帧拍次 n（不可变输出）"}),
             dict(componentId=root + "-count", type="number", layout={"row": 1}, bindings={"value": root + "-count"},
                  props={"title": "本帧结束时全局拍次（Job 隔离）"}),
             dict(componentId=root + "-image", type="image", layout={"row": 2}, bindings={"image": root + "-image"})])
+    # Preserve this fixture's established one-column layout in the new format.
+    for page in pages.values():
+        for component in page["components"]:
+            component["grid"] = dict(type="grid", columns=1, spacing=8)
     payload["presentation"] = Presentation(defaultPageId="station1", pageOrder=["station1", "station2"],
         resultScopes=scopes, dataSources=sources, pages=pages).model_dump()
     return payload
 
 
-def writeProject():
+def writeProject(destination: Path | None = None):
     payload = buildProject()
     scan = PluginRegistry(coreVersion=__version__).scan(HERE.parents[1] / "src/emo_master/plugins")
     if scan.rejectedOperators:
@@ -228,7 +234,9 @@ def writeProject():
                 for key in ("inputPorts", "outputPorts", "paramSchema"):
                     value = getattr(descriptor.manifest, key)
                     node[key] = deepcopy(value) if key == "paramSchema" else {name: normalizePortType(spec) for name, spec in value.items()}
-    (HERE / "project.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    document = ProjectDocument.model_validate(payload)
+    saveProject(destination if destination is not None else HERE / "project.json", document.model_dump(mode="json"))
+    return document
 
 
 if __name__ == "__main__":

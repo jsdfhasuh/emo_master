@@ -3,6 +3,31 @@ from emo_master.core.presentation.models import walkComponents
 from emo_master.core.presentation.validation import pageScopes
 
 
+def dispatchPair(document, metadata, jobs):
+    """Find the declared shared page for one explicitly selected run group."""
+    from emo_master.core.presentation.coverage import DispatchCoverage
+    presentation = document.presentation
+    if presentation is None:
+        return None
+    shared = [{presentation.resultScopes[key].entryWorkflowId for key in pageScopes(presentation, page)
+               if key in presentation.resultScopes} for page in presentation.pages]
+    candidates = []
+    for consumer in jobs:
+        if not consumer.source_job_id or not consumer.target_slot_id:
+            continue
+        producer = next((item for item in jobs if item.job_id == consumer.source_job_id), None)
+        if producer is None or metadata.job_id not in (producer.job_id, consumer.job_id):
+            continue
+        roots = {producer.workflow_id, consumer.workflow_id}
+        if len(roots) != 2 or roots not in shared:
+            continue
+        DispatchCoverage.fromMetadata(producer, consumer)
+        candidates.append((producer, consumer))
+    if len(candidates) > 1:
+        raise ValueError('此生产任务有多个消费槽位，请选择要查看的消费任务')
+    return candidates[0] if candidates else None
+
+
 def presentationForWorkflow(document, workflowId, *, capture=False):
     return presentationForWorkflows(document, {workflowId}, capture=capture)
 

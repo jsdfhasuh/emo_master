@@ -1,0 +1,107 @@
+{
+  "scope": "Synthetic probes against current dirty source; no field verification",
+  "late_failure": {
+    "closed_results": [
+      {
+        "ordinal": 2,
+        "reason": "BUDGET_EXCEEDED"
+      },
+      {
+        "ordinal": 1,
+        "reason": "EXPORT_FAILED"
+      }
+    ],
+    "operational_events": [
+      {
+        "level": "INFO",
+        "code": "IMAGE_BUSY"
+      },
+      {
+        "level": "ERROR",
+        "code": "EXPORT_FAILED"
+      }
+    ],
+    "credits_returned": 2
+  },
+  "jsonl_filter": {
+    "event_history": [
+      "preview.snapshot.failed",
+      "node.failed",
+      "presentation.source.unavailable"
+    ],
+    "writer_accepted": {
+      "preview.snapshot.failed": true,
+      "node.failed": true,
+      "presentation.source.unavailable": true
+    },
+    "file_events": [
+      "preview.snapshot.failed",
+      "node.failed",
+      "presentation.source.unavailable"
+    ],
+    "writer_close_error": null
+  },
+  "stream_disconnect": {
+    "stream_calls": [
+      {
+        "job": "audit",
+        "after": 0
+      },
+      {
+        "job": "audit",
+        "after": 1
+      },
+      {
+        "job": "audit",
+        "after": 2
+      }
+    ],
+    "emissions": [
+      {
+        "signal": "eventReceived",
+        "eventType": "job.started",
+        "status": ""
+      },
+      {
+        "signal": "diagnosticReceived",
+        "eventType": "designer.job_log.disconnected",
+        "status": ""
+      },
+      {
+        "signal": "diagnosticReceived",
+        "eventType": "designer.job_log.recovered",
+        "status": ""
+      },
+      {
+        "signal": "eventReceived",
+        "eventType": "job.completed",
+        "status": ""
+      },
+      {
+        "signal": "statusChanged",
+        "eventType": "",
+        "status": "COMPLETED"
+      }
+    ]
+  },
+  "observed_job_errors": {
+    "received": [
+      "node.failed",
+      "job.failed",
+      "presentation.source.unavailable"
+    ],
+    "forwarded": [
+      "node.failed",
+      "job.failed",
+      "presentation.source.unavailable"
+    ],
+    "cursor": 3
+  },
+  "device_failure_level": {
+    "eventType": "device.connect.failed",
+    "level": "ERROR",
+    "code": "E_DEVICE_CONNECT",
+    "jobId": "",
+    "payload_code": "E_DEVICE_CONNECT"
+  }
+}

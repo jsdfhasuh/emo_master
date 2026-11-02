@@ -28,7 +28,7 @@ def metadata():
 
 def blank(root):
     document = sampleProject(root)
-    document.presentation = Presentation()
+    document.presentation = Presentation(schemaVersion='1.0')
     return document
 
 

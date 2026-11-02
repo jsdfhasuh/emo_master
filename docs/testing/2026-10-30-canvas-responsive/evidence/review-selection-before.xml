@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="1.791" timestamp="2026-10-30T17:02:44.136867+08:00" hostname="视觉电脑"><testcase classname="tests.ui.page_designer.test_responsive_selection_pending" name="testDeselectOtherCardPreservesPendingPrimaryInputs[False]" time="0.504"><failure message="AssertionError: assert '' == '保留当前组件的未应用标题'&#10;  &#10;  - 保留当前组件的未应用标题">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x000002540528BA00&gt;, &lt;emo_master.apps.d...5773fcc7-6725-4ed3-bd95-76a44703a883', '47a81c31-bda4-47c2-9fc0-9ab30d24cb2e', 'c368962d-1d03-4bd4-a9dc-d52f6e2a603c'])
+invalid = False
+
+    @pytest.mark.parametrize('invalid', [False, True])
+    def testDeselectOtherCardPreservesPendingPrimaryInputs(responsivePage, invalid):  # noqa: F811
+        coordinator, editor, keys = responsivePage
+        clickCard(editor, keys[0])
+        clickCard(editor, keys[1], Qt.ControlModifier)
+        assert editor.tools.responsive.selectedIds == keys[:2]
+        assert editor.tools.selected == keys[1]
+    
+        coordinator.session.markSaved()
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        title = '保留当前组件的未应用标题'
+        editor.tools.fields['title'].setText(title)
+        editor.tools.fields['fontSize'].setValue(1 if invalid else 0)
+    
+        # Removing a different card leaves the form's primary component unchanged.
+        clickCard(editor, keys[0], Qt.ControlModifier)
+        assert editor.tools.responsive.selectedIds == [keys[1]]
+        assert editor.tools.selected == keys[1]
+&gt;       assert editor.tools.fields['title'].text() == title
+E       AssertionError: assert '' == '保留当前组件的未应用标题'
+E         
+E         - 保留当前组件的未应用标题
+
+tests\ui\page_designer\test_responsive_selection_pending.py:28: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_selection_pending" name="testDeselectOtherCardPreservesPendingPrimaryInputs[True]" time="0.329"><failure message="AssertionError: assert '' == '保留当前组件的未应用标题'&#10;  &#10;  - 保留当前组件的未应用标题">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x00000254057E2950&gt;, &lt;emo_master.apps.d...7286d75a-e947-4bb2-87b9-80709d21ca7d', '66cd3f2a-ba80-4fff-b87e-6f0d8d06ed56', 'b8b781b4-85a4-4ceb-88a2-9b4be0f38e6d'])
+invalid = True
+
+    @pytest.mark.parametrize('invalid', [False, True])
+    def testDeselectOtherCardPreservesPendingPrimaryInputs(responsivePage, invalid):  # noqa: F811
+        coordinator, editor, keys = responsivePage
+        clickCard(editor, keys[0])
+        clickCard(editor, keys[1], Qt.ControlModifier)
+        assert editor.tools.responsive.selectedIds == keys[:2]
+        assert editor.tools.selected == keys[1]
+    
+        coordinator.session.markSaved()
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        title = '保留当前组件的未应用标题'
+        editor.tools.fields['title'].setText(title)
+        editor.tools.fields['fontSize'].setValue(1 if invalid else 0)
+    
+        # Removing a different card leaves the form's primary component unchanged.
+        clickCard(editor, keys[0], Qt.ControlModifier)
+        assert editor.tools.responsive.selectedIds == [keys[1]]
+        assert editor.tools.selected == keys[1]
+&gt;       assert editor.tools.fields['title'].text() == title
+E       AssertionError: assert '' == '保留当前组件的未应用标题'
+E         
+E         - 保留当前组件的未应用标题
+
+tests\ui\page_designer\test_responsive_selection_pending.py:28: AssertionError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="13" time="2.448" timestamp="2026-10-29T18:46:34.360267+08:00" hostname="视觉电脑"><testcase classname="tests.designer.test_log_export" name="testFormatsPreserveCompleteChineseNestedDiagnostics[json]" time="0.486" /><testcase classname="tests.designer.test_log_export" name="testFormatsPreserveCompleteChineseNestedDiagnostics[jsonl]" time="0.028" /><testcase classname="tests.designer.test_log_export" name="testFormatsPreserveCompleteChineseNestedDiagnostics[txt]" time="0.031" /><testcase classname="tests.designer.test_log_export" name="testFilteredExportIncludesPendingRowsAndCombinesAreaLevelAndSearch" time="0.397" /><testcase classname="tests.designer.test_log_export" name="testSaveDialogChangesCannotReplaceOrMutateTheCapturedSnapshot" time="0.041" /><testcase classname="tests.designer.test_log_export" name="testExportAllMenuUsesCurrentRetentionAndIgnoresFilters" time="0.036"><failure message="AssertionError: assert 'all_cached' == 'all'&#10;  &#10;  - all&#10;  + all_cached">designerApplication = &lt;PySide2.QtWidgets.QApplication(0x273ac108e00) at 0x00000273AD75DA40&gt;
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000273AE6F5DE0&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3831/testExportAllMenuUsesCurrentRe0')
+
+    def testExportAllMenuUsesCurrentRetentionAndIgnoresFilters(designerApplication, monkeypatch, tmp_path):
+        dialog = LogDialog(maximumEntries=2)
+        records = [entry(index) for index in range(4)]
+        dialog.setEntries(records[:3])
+        view = dialog.view
+        view.appendEntry(records[3])
+        view.areaTabs.setCurrentIndex(1)
+        view.searchInput.setText("不会命中任何记录")
+        target = tmp_path / "全部缓存.json"
+        chooseFile(monkeypatch, target)
+        assert view.exportButton.menu() is not None
+        assert view.exportFilteredAction in view.exportButton.menu().actions()
+        assert view.exportAllAction in view.exportButton.menu().actions()
+
+        view.exportAllAction.trigger()
+
+        document = json.loads(target.read_text(encoding="utf-8"))
+&gt;       assert document["scope"] == "all"
+E       AssertionError: assert 'all_cached' == 'all'
+E
+E         - all
+E         + all_cached
+
+tests\designer\test_log_export.py:164: AssertionError</failure></testcase><testcase classname="tests.designer.test_log_export" name="testEmptyFilterShowsFeedbackWithoutSaveDialogOrDiagnostic" time="0.023" /><testcase classname="tests.designer.test_log_export" name="testCancelIsQuietAndPreservesExistingFiles" time="0.026" /><testcase classname="tests.designer.test_log_export" name="testSaveFailurePreservesPreviousExportAndCleansTemporaryFile[json]" time="0.010" /><testcase classname="tests.designer.test_log_export" name="testSaveFailurePreservesPreviousExportAndCleansTemporaryFile[jsonl]" time="0.008" /><testcase classname="tests.designer.test_log_export" name="testSaveFailurePreservesPreviousExportAndCleansTemporaryFile[txt]" time="0.009" /><testcase classname="tests.designer.test_log_export" name="testAddedDefaultSuffixCannotOverwriteRejectedTarget" time="0.026" /><testcase classname="tests.designer.test_log_export" name="testExportFailureEntersMainWindowAndDurableLocalLog" time="0.320" /></testsuite></testsuites>

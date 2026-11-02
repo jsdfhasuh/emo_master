@@ -150,8 +150,9 @@ def testFollowingSurvivesViewportResize(logView, designerApplication):
 def testHistoryAnchorAndDetailsSurviveOldRowEviction(logView, designerApplication):
     logView.autoScrollCheck.setChecked(False)
     logView.table.setCurrentCell(50, 9)
-    logView.detailViewer.selectAll()
-    details = logView.detailViewer.textCursor().selectedText()
+    root = logView.detailViewer.topLevelItem(0)
+    detailItem = root.child(0)
+    logView.detailViewer.setCurrentItem(detailItem)
     logView.table.verticalScrollBar().setValue(40)
     designerApplication.processEvents()
     first = logView.table.item(logView.table.rowAt(0), 9).text()
@@ -165,7 +166,8 @@ def testHistoryAnchorAndDetailsSurviveOldRowEviction(logView, designerApplicatio
     assert logView.table.rowCount() == 100
     assert logView.table.item(logView.table.rowAt(0), 9).text() == first
     assert logView._detailEntry is selected
-    assert logView.detailViewer.textCursor().selectedText() == details
+    assert logView.detailViewer.currentItem() is detailItem
+    assert root.isExpanded()
 
 
 def testFilteredOutLogsDoNotReplaceExistingTableItems(logView):

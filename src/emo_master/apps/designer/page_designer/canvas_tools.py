@@ -154,7 +154,13 @@ class Selection(QObject):
         self.valid = False
         item = _component(tools.w.store.snapshot(), tools.w.pageId, key)
         source = tools.w.store.snapshot().dataSources.get(next(iter(item.bindings.values()), ''))
-        if source and source.kind == 'global_variable':
+        if item.props.imageResourceId:
+            summary = '静态资源 ' + item.props.imageResourceId
+        elif item.props.imagePath is not None:
+            pathSource = item.props.imagePath
+            summary = (('文件路径' if pathSource.path else '文件路径待配置') if pathSource.kind == 'fixed'
+                       else '表格选中行 · ' + pathSource.field)
+        elif source and source.kind == 'global_variable':
             variable = tools.w.session.document().globalVariables.get(source.variableId)
             summary = '全局变量 ' + (variable.name if variable else source.variableId)
         elif source:

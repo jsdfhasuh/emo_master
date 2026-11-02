@@ -18,6 +18,7 @@ try:
 
         jobAccepted: Any = Signal(object)
         eventReceived: Any = Signal(object)
+        diagnosticReceived: Any = Signal(object)
         statusChanged: Any = Signal(object)
         failed: Any = Signal(str)
         uncertain: Any = Signal(str)
@@ -44,6 +45,7 @@ try:
             self.previousCaptureJob = previousCaptureJob
             self.startRequestId = uuid4().hex
             self.expectedRuntimeInstanceId = ""
+            self.stopIdentity: dict[str, str] = {}
             self.startUncertain = False
             self.cancelAfterStart = False
             self._stopEvent = threading.Event()
@@ -60,6 +62,8 @@ try:
 
         def requestStopAfterStart(self) -> None:
             self.cancelAfterStart = True
+            if self._jobId:
+                self.requestStop()
 
         def requestInterruption(self) -> None:
             self.requestStop()
@@ -76,6 +80,8 @@ try:
         def setActiveStream(self, stream) -> None:
             with self._streamLock:
                 self._stream = stream
+            if self.stopRequested():
+                self.cancelSubscription()
 
         def clearActiveStream(self) -> None:
             with self._streamLock:
@@ -90,11 +96,12 @@ try:
         replyReceived: Any = Signal(object)
         failed: Any = Signal(str)
 
-        def __init__(self, runtimeClient, jobId: str, mode: str) -> None:
+        def __init__(self, runtimeClient, jobId: str, mode: str, *, stopIdentity=None) -> None:
             super().__init__()
             self.runtimeClient = runtimeClient
             self.jobId = jobId
             self.mode = mode
+            self.stopIdentity = dict(stopIdentity or {})
             self.reply: object | None = None
             self.error: str | None = None
             self.resultHandled = False
@@ -139,11 +146,13 @@ except Exception:  # pragma: no cover
             self.previousCaptureJob = previousCaptureJob
             self.startRequestId = uuid4().hex
             self.expectedRuntimeInstanceId = ""
+            self.stopIdentity: dict[str, str] = {}
             self.startUncertain = False
             self.cancelAfterStart = False
             self.uncertain = _Signal()
             self.jobAccepted = _Signal()
             self.eventReceived = _Signal()
+            self.diagnosticReceived = _Signal()
             self.statusChanged = _Signal()
             self.failed = _Signal()
             self.finished = _Signal()
@@ -178,6 +187,8 @@ except Exception:  # pragma: no cover
 
         def requestStopAfterStart(self) -> None:
             self.cancelAfterStart = True
+            if self._jobId:
+                self.requestStop()
 
         def requestInterruption(self) -> None:
             self.requestStop()
@@ -194,6 +205,8 @@ except Exception:  # pragma: no cover
         def setActiveStream(self, stream) -> None:
             with self._streamLock:
                 self._stream = stream
+            if self.stopRequested():
+                self.cancelSubscription()
 
         def clearActiveStream(self) -> None:
             with self._streamLock:
@@ -205,10 +218,11 @@ except Exception:  # pragma: no cover
     class RuntimeStopWorker:  # type: ignore[no-redef]
         """Threaded fallback for headless Designer tests."""
 
-        def __init__(self, runtimeClient, jobId: str, mode: str) -> None:
+        def __init__(self, runtimeClient, jobId: str, mode: str, *, stopIdentity=None) -> None:
             self.runtimeClient = runtimeClient
             self.jobId = jobId
             self.mode = mode
+            self.stopIdentity = dict(stopIdentity or {})
             self.reply: object | None = None
             self.error: str | None = None
             self.resultHandled = False
@@ -251,13 +265,39 @@ def _cancelSubscription(worker: RuntimeWorker) -> None:
 
 def _runStopWorker(worker: RuntimeStopWorker) -> None:
     try:
-        reply = worker.runtimeClient.stopJob(worker.jobId, mode=worker.mode)
+        reply = _stopJob(worker.runtimeClient, worker.jobId, worker.mode, worker.stopIdentity)
     except Exception as err:
         worker.error = str(err)
         worker.failed.emit(str(err))
         return
     worker.reply = reply
     worker.replyReceived.emit(reply)
+
+
+def _stopJob(client, jobId: str, mode: str, identity: dict[str, str]):
+    resolve = getattr(client, "getStopIdentity", None)
+    if callable(resolve) and not {"expectedRuntimeInstanceId", "expectedProjectId", "expectedRunGroupId"}.issubset(identity):
+        identity = resolve(jobId, identity.get("expectedRuntimeInstanceId", ""))
+    # Keep the older in-process test/tool clients on their supported signature.
+    stop = client.stopJob
+    parameters = _parameters(stop)
+    acceptsKeywords = any(parameter.kind is inspect.Parameter.VAR_KEYWORD for parameter in parameters.values())
+    kwargs = {key: value for key, value in dict(mode=mode, **identity).items()
+              if acceptsKeywords or key in parameters}
+    return stop(jobId, **kwargs)
+
+
+def _captureStopIdentity(worker: RuntimeWorker, reply) -> None:
+    generation = worker.expectedRuntimeInstanceId or str(getattr(reply, "runtime_instance_id", ""))
+    worker.stopIdentity = {"expectedRuntimeInstanceId": generation} if generation else {}
+    resolve = getattr(worker.runtimeClient, "getStopIdentity", None)
+    if callable(resolve):
+        try:
+            worker.stopIdentity = resolve(worker._jobId, generation)
+        except Exception:
+            # Accepted Start remains accepted if this read fails. An explicit
+            # Stop can retry the read, pinned to the original instance above.
+            pass
 
 
 def _runWorker(worker: RuntimeWorker) -> None:
@@ -320,24 +360,30 @@ def _runWorker(worker: RuntimeWorker) -> None:
             return
         worker.setJobId(jobId)
         worker.startUncertain = False
+        _captureStopIdentity(worker, reply)
         worker.jobAccepted.emit(reply)
         if worker.stopRequested() or worker.cancelAfterStart:
-            stopJob = getattr(worker.runtimeClient, "stopJob", None)
-            if callable(stopJob):
-                try:
-                    stopJob(jobId)
-                except Exception:
-                    pass
-            _emitStatusAfterStop(worker, jobId)
-            return
+            return  # Cancelling observation must not stop an independent Runtime.
         _followJobEvents(worker, jobId)
-        if worker.stopRequested():
+        if worker.stopRequested() and not worker.cancelAfterStart:
             _emitStatusAfterStop(worker, jobId)
     except Exception as err:
         if worker.stopRequested():
-            _emitStatusAfterStop(worker, worker._jobId)
+            if not worker.cancelAfterStart:
+                _emitStatusAfterStop(worker, worker._jobId)
         else:
             worker.failed.emit(str(err))
+    finally:
+        # Qt may not deliver jobAccepted until after the worker starts following
+        # events. Consume explicit pending Stop on either side of that delivery.
+        if worker.cancelAfterStart and worker._jobId:
+            stopJob = getattr(worker.runtimeClient, "stopJob", None)
+            if callable(stopJob):
+                try:
+                    _stopJob(worker.runtimeClient, worker._jobId, "graceful", worker.stopIdentity)
+                except Exception:
+                    pass
+            _emitStatusAfterStop(worker, worker._jobId)
 
 
 def _markUncertain(worker: RuntimeWorker, message: str) -> None:
@@ -400,8 +446,23 @@ def _releasePreviousCapture(worker: RuntimeWorker) -> None:
 def _followJobEvents(worker: RuntimeWorker, jobId: str) -> None:
     lastSequence = 0
     reconnectDelay = 0.1
+    disconnected = False
+
+    def connectionIssue(error):
+        nonlocal disconnected
+        if not disconnected and not worker.stopRequested():
+            _streamDiagnostic(worker, jobId, lastSequence, error)
+            disconnected = True
+
+    def connectionRecovered():
+        nonlocal disconnected
+        if disconnected and not worker.stopRequested():
+            _streamDiagnostic(worker, jobId, lastSequence)
+            disconnected = False
+
     while not worker.stopRequested():
         events = None
+        streamHealthy = False
         streamError: BaseException | None = None
         try:
             events = _streamEventsCompat(
@@ -415,14 +476,17 @@ def _followJobEvents(worker: RuntimeWorker, jobId: str) -> None:
                 sequence = _eventSequence(event)
                 if sequence > 0 and sequence <= lastSequence:
                     continue
+                connectionRecovered()
                 worker.eventReceived.emit(event)
                 if sequence > 0:
                     lastSequence = sequence
             reconnectDelay = 0.1
+            streamHealthy = True
         except BaseException as err:
             if worker.stopRequested():
                 break
             streamError = err
+            connectionIssue(err)
         finally:
             if events is not None:
                 close = getattr(events, "close", None)
@@ -435,7 +499,7 @@ def _followJobEvents(worker: RuntimeWorker, jobId: str) -> None:
 
         if worker.stopRequested():
             break
-        status = _jobStatusOrNone(worker.runtimeClient, jobId)
+        status = _jobStatusOrNone(worker.runtimeClient, jobId, onError=connectionIssue)
         if status is not None and _isTerminalStatus(status):
             if lastSequence > 0:
                 try:
@@ -444,13 +508,17 @@ def _followJobEvents(worker: RuntimeWorker, jobId: str) -> None:
                         jobId,
                         lastSequence,
                     )
-                except BaseException:
+                    streamHealthy = True
+                except BaseException as error:
                     if worker.stopRequested():
                         break
+                    connectionIssue(error)
                     if worker._stopEvent.wait(reconnectDelay):
                         break
                     reconnectDelay = min(2.0, reconnectDelay * 2.0)
                     continue
+            if streamHealthy:
+                connectionRecovered()
             worker.statusChanged.emit(status)
             return
         if streamError is not None and not callable(
@@ -495,13 +563,33 @@ def _replayAvailableEvents(
     return lastSequence
 
 
-def _jobStatusOrNone(runtimeClient, jobId: str):
+def _streamDiagnostic(worker, jobId, sequence, error=None):
+    signal = getattr(worker, 'diagnosticReceived', None)
+    if signal is None:
+        return
+    code = getattr(error, 'code', '') if error is not None else ''
+    if callable(code):
+        code = code()
+    detail = str(error) if error is not None else ''
+    signal.emit(dict(
+        eventType='designer.job_log.disconnected' if error is not None else 'designer.job_log.recovered',
+        level='WARN' if error is not None else 'INFO',
+        message=(f'任务日志连接中断，正在重连；任务 {jobId}：{detail}' if error is not None else
+                 f'任务日志连接已恢复；任务 {jobId}'),
+        jobId=jobId, workflowId=getattr(worker, 'workflowId', ''), code=str(code),
+        payload=dict(afterSequence=sequence, errorType=type(error).__name__ if error else '',
+                     reason=detail, phase='job_events')))
+
+
+def _jobStatusOrNone(runtimeClient, jobId: str, onError=None):
     getStatus = getattr(runtimeClient, "getJobStatus", None)
     if not callable(getStatus):
         return None
     try:
         return getStatus(jobId)
-    except BaseException:
+    except BaseException as error:
+        if onError is not None:
+            onError(error)
         return None
 
 
@@ -523,7 +611,7 @@ def _emitStatusAfterStop(worker: RuntimeWorker, jobId: str) -> None:
         except Exception:
             return
         worker.statusChanged.emit(status)
-        if str(getattr(status, "status", "")) in {"COMPLETED", "FAILED", "ABORTED"}:
+        if not worker.cancelAfterStart or str(getattr(status, "status", "")) in {"COMPLETED", "FAILED", "ABORTED"}:
             return
         if time.monotonic() >= deadline:
             return

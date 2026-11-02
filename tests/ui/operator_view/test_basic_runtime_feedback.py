@@ -17,7 +17,7 @@ from tests.ui.operator_view.test_view import waitFor
 
 def noPageProject(root, **kwargs):
     document = productionProject(root, **kwargs)
-    document.presentation = Presentation()
+    document.presentation = Presentation(schemaVersion=document.presentation.schemaVersion)
     saveDocument(root, document)
     return document
 
@@ -120,7 +120,7 @@ def testNoPageParallelWorkflowsKeepTheirOwnJobFeedback(qtApp, tmp_path):
     from tests.runtime.two_station_fixture import twoStationProject
     root = tmp_path / "project"
     document = twoStationProject(root)
-    document.presentation = Presentation()
+    document.presentation = Presentation(schemaVersion=document.presentation.schemaVersion)
     document.runtime.startupWorkflowIds = ["main", "second"]
     saveDocument(root, document)
     window = OperatorWindow(root, dataRoot=tmp_path / "data", preferences=preferences(tmp_path))

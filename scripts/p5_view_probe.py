@@ -31,6 +31,17 @@ def renderedImagesReady(renderer):
     return True
 
 
+def selectPage(renderer, pageId):
+    picker = renderer.pageNavigation.picker
+    index = picker.findData(pageId)
+    assert index >= 0
+    picker.showPopup()
+    item = picker.model().index(index, picker.modelColumn(), picker.rootModelIndex())
+    picker.view().scrollTo(item)
+    QTest.mouseClick(picker.view().viewport(), Qt.LeftButton, pos=picker.view().visualRect(item).center())
+    assert renderer.currentPageId == pageId
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--ready-file', required=True)
@@ -64,7 +75,7 @@ def main():
                     assert view.waitingPage is not None and view.session is None
                     assert view.waitingPage.grab().save(str(args.output/'01-ready-not-running.png'))
                     for pageId in view.document.presentation.pageOrder:
-                        QTest.mouseClick(view.waitingPage.buttons[pageId], Qt.LeftButton)
+                        selectPage(view.waitingPage, pageId)
                     QTest.mouseClick(view.startButton, Qt.LeftButton)
                 state['step'] = 1
             elif step == 1:
@@ -86,7 +97,7 @@ def main():
                     mode=scope.result.identity.mode, release_revision=view.info['revision'])
                 state['renderer'] = renderer
                 assert renderer.grab().save(str(args.output/'02-real-overview.png'))
-                QTest.mouseClick(renderer.buttons[renderer.config.pageOrder[1]], Qt.LeftButton)
+                selectPage(renderer, renderer.config.pageOrder[1])
                 state['step'] = 2
             elif step == 2:
                 renderer = state['renderer']

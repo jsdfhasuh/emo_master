@@ -11,6 +11,7 @@ from test_workspace import designer  # noqa: F401
 from test_pending_inputs import setupPage
 from emo_master.apps.designer.page_designer.tools import mime
 from emo_master.apps.designer.state.presentation_store import _component
+from emo_master.core.presentation.models import Grid
 
 
 def setupDropPage(window):
@@ -24,6 +25,12 @@ def setupDropPage(window):
     window.workflowController.loadPayload(payload)
     coordinator.session.acceptLoaded()
     coordinator, editor, key = setupPage(window, 'indicator')
+    # These historical cases deliberately exercise cell-based drops and row
+    # placement. Responsive insertion has its own native pending-input cases.
+    coordinator.session.editPresentation(
+        lambda p: setattr(p.pages[editor.pageId], 'layout', Grid()))
+    editor.refresh()
+    editor.tools.select(key)
     coordinator.sync()
     QApplication.processEvents()
     return coordinator, editor, key

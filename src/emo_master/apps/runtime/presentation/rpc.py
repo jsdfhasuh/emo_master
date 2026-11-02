@@ -44,7 +44,7 @@ class DisplayRpc(rpc.DisplayServiceServicer):
         self.service = service
 
     def Capabilities(self, request, context):
-        capabilities = ["snapshot", "subscribe", "explicit_start", "asset_id", "finite_lease",
+        capabilities = ["snapshot", "subscribe", "explicit_start", "asset_id", "finite_lease", "presentation_logs",
                         "bounded_replay", "project_jobs", "source_coverage", "start_request_lookup", "scope_retention",
                         "job_status_v1"]
         if self.service.supportsNormalCapture:

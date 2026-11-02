@@ -28,6 +28,7 @@ def legacyDialog(ownedDesignerWindow, client, tmp_path, *, badOperator=False, ve
     else:
         from emo_master.core.project.communication import CommunicationSettings
         payload['communication'] = CommunicationSettings().model_dump()
+        payload['presentation']['schemaVersion'] = '1.0'
     payload['devices'] = dict(bindings={})
     if badOperator:
         payload['workflows']['main']['nodes'][2]['operatorId'] = 'missing.operator'
@@ -113,7 +114,7 @@ def testLegacyValidationOffersUpgradeWithoutMutatingDraft(ownedDesignerWindow, i
         assert '2.1' in dialog.formatStatus.text() and not dialog.upgradeButton.isHidden()
         assert not messages
         dialog.validateButton.click()
-        assert len(messages) == 1 and '2.1' in messages[0]['text'] and '2.7' in messages[0]['text']
+        assert len(messages) == 1 and '2.1' in messages[0]['text'] and '2.9' in messages[0]['text']
         assert '升级草稿并重新校验' in messages[0]['buttons']
         assert session.payload() == before and session._undo == history and path.read_bytes() == disk
         assert not service.loadedDocument and not service.jobRepository.all()
@@ -240,6 +241,13 @@ def testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject(ownedDesignerWind
         dialog.upgradeButton.click()
         waitUntil(lambda: dialog.pending is None)
         assert not dialog.initial and dialog.replacementPolicy.currentData() == 'stopAffected'
+        if dialog.useLocalSource.isChecked():
+            # Embedded Runtime can validate against the explicitly selected local
+            # root; turn that choice off to exercise the existing online root.
+            assert dialog.validatedSelection is not None and not dialog.requestId
+            dialog.useLocalSource.setChecked(False)
+            dialog.validateButton.click()
+            waitUntil(lambda: dialog.pending is None)
         # A different online project's managed resource root cannot resolve an
         # unbound local legacy input. Comparing/revalidating is required, not a
         # forced initial install or an invented successful replacement.

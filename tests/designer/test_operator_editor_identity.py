@@ -41,7 +41,7 @@ def saveBboxProject(tmp_path, definition):
                       _edge("person_bbox", "bbox", outputId, "bbox")]
     store.dependencies["operators"] = [{"operatorId": definition["operatorId"], "version": definition["version"]}]
     document = ProjectDocument.model_validate(store.toPayload("Operator identity"))
-    assert document.schemaVersion == "2.7" and document.devices.definitions == {}
+    assert document.schemaVersion == "2.9" and document.devices.definitions == {}
     path = tmp_path / "identity.emoproj"
     saveProject(path, document.model_dump(mode="json"))
     assert loadProjectDocument(path) == document

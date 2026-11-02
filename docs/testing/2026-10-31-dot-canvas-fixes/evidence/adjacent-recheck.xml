@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="2.743" timestamp="2026-10-31T20:24:07.770561+08:00" hostname="视觉电脑"><testcase classname="tests.ui.page_designer.test_user_path" name="testNativePageEditingAndLegacyPreviewBackend" time="0.766"><failure message="AssertionError">C:\Users\jsdfhasuh\my_scripts\emo_master\tests\ui\page_designer\test_user_path.py:93: in testNativePageEditingAndLegacyPreviewBackend
+    assert window.saveProjectToDirectory(str(root))
+src\emo_master\apps\designer\ui\main_window.py:1670: in saveProjectToDirectory
+    ok, projectDir = self.projectController.saveProjectToDirectory(
+src\emo_master\apps\designer\controllers\project_controller.py:249: in saveProjectToDirectory
+    self.editCoordinator.saved(projectDir)
+src\emo_master\apps\designer\page_designer\coordinator.py:382: in saved
+    self.preview.refreshObserver(self.session.presentation.snapshot())
+src\emo_master\apps\designer\state\presentation_store.py:45: in snapshot
+    assert presentation is not None
+E   AssertionError</failure></testcase><testcase classname="tests.designer.test_designer_shortcuts" name="testClickPageCardTransfersPropertyFocusBeforeCopy" time="0.723" /></testsuite></testsuites>

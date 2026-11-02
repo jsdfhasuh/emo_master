@@ -23,6 +23,8 @@ try:
             self._maxZoom = 3.0
             self._zoomStep = 1.15
             self._isPanning = False
+            self._rubberBandSelecting = False
+            self._previousDragMode = self.dragMode()
             self._lastPanPoint: QPoint | None = None
             self._scrollBarVisibility = {"horizontal": "off", "vertical": "off"}
             setHorizontalPolicy = getattr(self, "setHorizontalScrollBarPolicy", None)
@@ -131,6 +133,17 @@ try:
             if self._pendingFit is not None:
                 self._fitTimer.start(0)
 
+        def hideEvent(self, event):
+            scene = self.scene()
+            cancel = getattr(scene, 'cancelAlignmentDrag', None)
+            if callable(cancel):
+                cancel()
+            self.endPan()
+            if self._rubberBandSelecting:
+                self._rubberBandSelecting = False
+                self.setDragMode(self._previousDragMode)
+            super().hideEvent(event)
+
         def resizeEvent(self, event):
             super().resizeEvent(event)
             if hasattr(self, "_navigationTimer"):
@@ -214,6 +227,12 @@ try:
             if callable(buttonMethod) and callable(posMethod):
                 if buttonMethod() == Qt.LeftButton:
                     pos = posMethod()
+                    if event.modifiers() & Qt.ShiftModifier and self.itemAt(pos) is None:
+                        self._rubberBandSelecting = True
+                        self._previousDragMode = self.dragMode()
+                        self.setDragMode(QGraphicsView.RubberBandDrag)
+                        super().mousePressEvent(event)
+                        return
                     xMethod = getattr(pos, "x", None)
                     yMethod = getattr(pos, "y", None)
                     if callable(xMethod) and callable(yMethod):
@@ -243,6 +262,9 @@ try:
                     event.accept()
                     return
             super().mouseReleaseEvent(event)
+            if self._rubberBandSelecting:
+                self._rubberBandSelecting = False
+                self.setDragMode(self._previousDragMode)
 
 except Exception:  # pragma: no cover
 

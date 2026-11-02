@@ -213,7 +213,7 @@ def testDesignerOpenUsesCurrentDraftWithoutSavingOrStarting(designerApplication,
     before = window.pageCoordinator.session.document().model_dump()
 
     def inspect(dialog):
-        assert dialog.document.schemaVersion == "2.7"
+        assert dialog.document.schemaVersion == "2.9"
         assert dialog.minimumJobCount() == 2
         assert "自动消费者" in row(dialog, "consumer").text()
         return False

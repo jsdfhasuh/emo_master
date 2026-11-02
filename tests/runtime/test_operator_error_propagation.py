@@ -83,7 +83,7 @@ def choiceRunner(tmp_path, case, mode='explicit', connected=True):
     document = ProjectDocument.model_validate(store.toPayload())
     path = tmp_path / 'choice-inputs.emoproj'
     saveProject(path, document.model_dump(mode='json'))
-    assert loadProjectDocument(path) == document and document.schemaVersion == '2.7'
+    assert loadProjectDocument(path) == document and document.schemaVersion == '2.9'
     compiled = WorkflowCompiler(registry).compile(document)
     variables = ReadOnlyVariables({'confidence': .25, 'objectType': port})
     events = []

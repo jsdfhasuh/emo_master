@@ -15,8 +15,10 @@ class DeviceTransition:
         self.communicationListening = False
         self.configuration = runtime.projectConfiguration
         self.projectChanged = payload["project"]["projectId"] != self.configuration.current["payload"]["project"]["projectId"]
-        _document, prepared = runtime._validateProjectConfiguration(payload, checkAdmission=False, sourcePath=sourcePath)
-        if sourcePath is None and runtime._supportsCycleChange(payload):
+        _document, prepared = runtime._validateProjectConfiguration(payload, checkAdmission=False,
+            sourcePath=sourcePath, cancelled=cancelled.is_set)
+        sourceChanged = runtime._configurationSourceChanged(sourcePath)
+        if not sourceChanged and runtime._supportsCycleChange(payload):
             return
         if runtime.operatorDebugManager.ownsResources() or runtime.livePreviewManager.hasConfigurationSession():
             raise ConfigurationError("E_CONFIG_REQUIRES_STOP", "close diagnostic sessions before automatic transition")
@@ -30,10 +32,10 @@ class DeviceTransition:
         with manager.lock:
             self.owners = {owner for owner, ids in manager.permissions.items() if changed.intersection(ids)}
             from .impact import affectedJobs
-            self.owners.update(affectedJobs(runtime, payload))
+            self.owners.update(affectedJobs(runtime, payload, sourceChanged=sourceChanged))
             self.owners = {owner for owner in self.owners if runtime.jobSupervisor.ownsJobResources(owner)
                            or owner in manager.permissions}
-            if self.owners & manager.maintenanceOwners:
+            if self.owners & manager.maintenanceOwners or sourceChanged and manager.maintenanceOwners:
                 raise ConfigurationError("E_CONFIG_REQUIRES_STOP", "close affected diagnostic sessions before automatic transition")
             if any(runtime.jobRepository.get(owner) is None for owner in self.owners):
                 raise ConfigurationError("E_CONFIG_REQUIRES_STOP", "affected non-Job owner must retire explicitly")
@@ -47,6 +49,16 @@ class DeviceTransition:
                 if lifecycle.controlPending:
                     raise ConfigurationError("E_DEVICE_BUSY", "affected device control is pending")
                 self.previous[key] = (lifecycle.connected, lifecycle.paused)
+        if sourceChanged:
+            # Delivery leases retire with their run group; diagnostic/non-Job
+            # leases must finish explicitly before any Jobs are stopped.
+            from .impact import sourceCycleOwners
+            leases = sourceCycleOwners(runtime) - self.owners
+            for group in groups:
+                with group.lock:
+                    leases.difference_update(group.deliveries)
+            if leases:
+                raise ConfigurationError('E_CONFIG_REQUIRES_STOP', '工程目录仍由设备操作或诊断周期使用，请等待结束后重试')
         try:
             deadline = time.monotonic() + 30
             if policy == "drainAffected":

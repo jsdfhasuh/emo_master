@@ -1,0 +1,638 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="4.923" timestamp="2026-10-29T17:10:28.619859+08:00" hostname="视觉电脑"><testcase classname="tests.runtime.test_tcp_device_integration" name="testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication" time="2.201"><failure message="AttributeError: 'StructuredLogView' object has no attribute 'setLogDirectory'">chain = {'root': WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3819/tcp-device-chain0'), 'serv...ath': [...]}}]}, 'production': {'autoStart': False, 'mode': 'single', 'cycleIntervalMs': 100, 'inputs': {}}, ...}, ...}
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000021C7B5CD7B0&gt;
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000021C7B5CD5D0&gt;
+
+    def testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication(chain, ownedDesignerWindow, monkeypatch):
+        from PySide2.QtCore import Qt
+        from PySide2.QtTest import QTest
+        from PySide2.QtWidgets import QDialogButtonBox, QMessageBox
+        from emo_master.apps.designer.ui.device_wizard import DeviceDefinitionDialog, DeviceNodeDialog
+        from tests.designer.test_device_workspace import waitUntil
+        from tests.designer.test_runtime_menu_publication import menuDialog
+        c = chain
+&gt;       window = ownedDesignerWindow(RuntimeClient(runtimeService=c['service']))
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_tcp_device_integration.py:154:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x21c794215a0) at 0x0000021C7CA05680&gt;
+runtimeClient = &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000021C7B5CE560&gt;
+showStartupEntry = False, projectEntryDialogFactory = None, settingsStore = None
+workflowPackagePreviewDialogFactory = None, globalCountersDialogFactory = None
+
+    def __init__(
+        self,
+        runtimeClient,
+        showStartupEntry: bool = False,
+        projectEntryDialogFactory: Callable[[], object] | None = None,
+        settingsStore: object | None = None,
+        workflowPackagePreviewDialogFactory: Callable[[object], object]
+        | None = None,
+        globalCountersDialogFactory: Callable[[], object] | None = None,
+    ) -&gt; None:
+        super().__init__()
+        self.runtimeClient = runtimeClient
+        self.operatorIconProvider: Any = None
+        self.operatorCatalogWorker: OperatorCatalogWorker | None = None
+        self._operatorDisplayTimer: Any = None
+        self._operatorDisplayClosed = False
+        self._projectInstanceToken = uuid4().hex
+        self._sidebarIconItems: list[Any] = []
+        self._showStartupEntry = showStartupEntry
+        self._projectEntryDialogFactory = projectEntryDialogFactory
+        self._workflowPackagePreviewDialogFactory = (
+            workflowPackagePreviewDialogFactory
+        )
+        self._globalCountersDialogFactory = globalCountersDialogFactory
+        self._globalCountersDialog: object | None = None
+        self._startupEntryHandled = False
+        self.settingsStore = (
+            settingsStore
+            if settingsStore is not None
+            else QSettings("emo_master", "designer")
+        )
+        self._nodeRuntimeState: dict[str, dict[str, object]] = {}
+        self._nodeRuntimeStateByRun: dict[tuple[str, str], dict[str, object]] = {}
+        self._nodeRuntimeStateByWorkflowRun: dict[
+            tuple[str, str, str], dict[str, object]
+        ] = {}
+        self.flowModel = FlowGraphModel()
+        self.workflowStore = WorkflowStore()
+        self.activeWorkflowId = self.workflowStore.activeWorkflowId
+        self.workflowNavigation = None
+        self.runtimePanelState = RuntimePanelState()
+        self.nodeDetailsPresenter = NodeDetailsPresenter(
+            flowModel=self.flowModel,
+            nodeRuntimeState=self._nodeRuntimeState,
+            getActiveWorkflowId=lambda: self.activeWorkflowId,
+            getInspection=lambda workflowId, nodeId: self.runtimePanelState.nodeInspection.get(
+                workflowId, nodeId, self.currentJobId),
+        )
+        self.nodeParamDialog: NodeParamDialog | None = None
+        self.logDialog: LogDialog | None = None
+        self.logBuffer: list[str] = []
+        self.logEntries: list[StructuredLogEntry] = []
+        from emo_master.apps.designer.services.local_log import designerLogDirectory, closeLogResources
+        self._localLogDirectory = designerLogDirectory(self.settingsStore)
+        self._localLogFailures = deque(maxlen=8)
+        self._logResources = {"writer": None, "reader": None}
+        self._globalLogTransport = None
+        self._logPollingTimer = None
+        self._loggingClosed = False
+        if _nativeQt:
+            resources = self._logResources
+            self.destroyed.connect(lambda: closeLogResources(resources))
+        self._runtimeLogProjectToken = uuid4().hex
+        self._runtimeLogJobProjects: dict[str, tuple[str, str]] = {}
+        self.operatorCatalog: list[dict[str, object]] = []
+        self.recentOperatorIds: list[str] = []
+        self.maxRecentOperators = 6
+        self.activeOperatorCategory = "全部"
+        self.categoryButtons: dict[str, QPushButton] = {}
+        self.isSidebarCollapsed = True
+        self.operatorBubble: OperatorBubble | None = None
+        self.activeParamNodeId: str | None = None
+        self.loadedProjectPath: str | None = None
+        self.currentProjectDir: Path | None = None
+        self.currentJobId: str | None = None
+        # Session-only choice for the next explicit Run; never part of project JSON.
+        self.nextRunLegacySnapshotPolicy = "ALL"
+        self.legacySnapshotPolicyCombo: QComboBox | None = None
+        self._allowRuntimeEventsWithoutActiveJob = True
+        self.isJobRunning = False
+        self.runTargetIds: list[str] = []
+        self._lastRunBlockedReason = ""
+        self._menuActions: dict[str, QAction] = {}
+        self._toolbarActions: dict[str, QAction] = {}
+        self._focusedWorkflowId: tuple[str, str] | None = None
+        self._workflowViewStates: dict[tuple[str, str], tuple[float, QPointF]] = {}
+        self.setWindowTitle("视觉流程设计器")
+        self.resize(1200, 760)
+
+        self.mainToolbar = QToolBar("主工具栏")
+        if _nativeQt:
+            self.mainToolbar.setIconSize(QSize(18, 18))
+        setMovable = getattr(self.mainToolbar, "setMovable", None)
+        if callable(setMovable):
+            setMovable(False)
+        self.addToolBar(self.mainToolbar)
+
+        self.mainMenuBar = QMenuBar()
+        setMenuBar = getattr(self, "setMenuBar", None)
+        if callable(setMenuBar):
+            setMenuBar(self.mainMenuBar)
+
+        rootWidget = QWidget()
+        rootLayout = QVBoxLayout()
+        setRootMargins = getattr(rootLayout, "setContentsMargins", None)
+        if callable(setRootMargins):
+            setRootMargins(12, 12, 12, 12)
+        setRootSpacing = getattr(rootLayout, "setSpacing", None)
+        if callable(setRootSpacing):
+            setRootSpacing(0)
+
+        self.sidebarContainer = QWidget()
+        sideBarLayout = QVBoxLayout()
+        setSidebarMargins = getattr(sideBarLayout, "setContentsMargins", None)
+        if callable(setSidebarMargins):
+            setSidebarMargins(0, 0, 0, 0)
+        setSidebarSpacing = getattr(sideBarLayout, "setSpacing", None)
+        if callable(setSidebarSpacing):
+            setSidebarSpacing(8)
+        self.sidebarToggleButton = QPushButton("&gt;" if self.isSidebarCollapsed else "&lt;")
+        setToggleName = getattr(self.sidebarToggleButton, "setObjectName", None)
+        if callable(setToggleName):
+            setToggleName("sidebarToggleButton")
+        self.sidebarToggleButton.clicked.connect(self.toggleSidebar)
+        if _nativeQt:
+            self.sidebarToggleButton.setFixedHeight(34)
+            self.sidebarToggleButton.setIconSize(QSize(18, 18))
+        sideBarLayout.addWidget(self.sidebarToggleButton)
+
+        self.categoryPanel = QWidget()
+        setCategoryPanelName = getattr(self.categoryPanel, "setObjectName", None)
+        if callable(setCategoryPanelName):
+            setCategoryPanelName("sidebarCategorySection")
+        categoryLayout = QVBoxLayout()
+        setCategoryMargins = getattr(categoryLayout, "setContentsMargins", None)
+        if callable(setCategoryMargins):
+            setCategoryMargins(0, 0, 0, 0)
+        setCategorySpacing = getattr(categoryLayout, "setSpacing", None)
+        if callable(setCategorySpacing):
+            setCategorySpacing(6)
+        categoryNames = [
+            "全部",
+            "预处理",
+            "检测",
+            "测量",
+            "输出",
+            "控制流",
+            "其他",
+        ]
+        for rowStart in range(0, len(categoryNames), 2):
+            categoryRow = QHBoxLayout()
+            setCategoryRowSpacing = getattr(categoryRow, "setSpacing", None)
+            if callable(setCategoryRowSpacing):
+                setCategoryRowSpacing(6)
+            for categoryName in categoryNames[rowStart : rowStart + 2]:
+                categoryButton = QPushButton(categoryName)
+                if _nativeQt:
+                    categoryButton.setIcon(icon({"全部": "layout-grid", "预处理": "sliders-horizontal",
+                                                 "检测": "scan-line", "测量": "ruler", "输出": "upload",
+                                                 "控制流": "git-branch"}.get(categoryName, "layout-grid")))
+                setCategoryName = getattr(categoryButton, "setObjectName", None)
+                if callable(setCategoryName):
+                    setCategoryName("sideCategoryButton")
+                setCheckable = getattr(categoryButton, "setCheckable", None)
+                if callable(setCheckable):
+                    setCheckable(True)
+                categoryButton.clicked.connect(
+                    self._buildCategoryClickHandler(categoryName)
+                )
+                categoryRow.addWidget(categoryButton)
+                self.categoryButtons[categoryName] = categoryButton
+            if len(categoryNames[rowStart : rowStart + 2]) == 1:
+                categoryRow.addStretch(1)
+            categoryLayout.addLayout(categoryRow)
+        self.categoryPanel.setLayout(categoryLayout)
+        sideBarLayout.addWidget(self.categoryPanel)
+
+        self.dependencyTreeContainer = QWidget()
+        setDependencyContainerName = getattr(
+            self.dependencyTreeContainer, "setObjectName", None
+        )
+        if callable(setDependencyContainerName):
+            setDependencyContainerName("sidebarDependencySection")
+        dependencyLayout = QVBoxLayout()
+        setDependencyMargins = getattr(dependencyLayout, "setContentsMargins", None)
+        if callable(setDependencyMargins):
+            setDependencyMargins(0, 0, 0, 0)
+        setDependencySpacing = getattr(dependencyLayout, "setSpacing", None)
+        if callable(setDependencySpacing):
+            setDependencySpacing(6)
+        self.dependencyTreeTitle = QLabel("工作流调用与数据传递")
+        setDependencyTitleName = getattr(
+            self.dependencyTreeTitle, "setObjectName", None
+        )
+        if callable(setDependencyTitleName):
+            setDependencyTitleName("panelTitle")
+        dependencyLayout.addWidget(self.dependencyTreeTitle)
+        self.workflowDependencyTree = WorkflowRelationshipTree() if _nativeQt else QTreeWidget()
+        setDependencyTreeName = getattr(
+            self.workflowDependencyTree, "setObjectName", None
+        )
+        if callable(setDependencyTreeName):
+            setDependencyTreeName("workflowDependencyTree")
+        setHeaderHidden = getattr(self.workflowDependencyTree, "setHeaderHidden", None)
+        if callable(setHeaderHidden):
+            setHeaderHidden(True)
+        setDependencyHeight = getattr(
+            self.workflowDependencyTree, "setFixedHeight", None
+        )
+        if callable(setDependencyHeight):
+            setDependencyHeight(150)
+        self.workflowDependencyTree.itemClicked.connect(
+            self.navigateToWorkflowDependencyItem
+        )
+        self.workflowDependencyTree.itemDoubleClicked.connect(
+            self.navigateToWorkflowDependencyItem
+        )
+        dependencyLayout.addWidget(self.workflowDependencyTree)
+        self.dependencyTreeContainer.setLayout(dependencyLayout)
+        sideBarLayout.addWidget(self.dependencyTreeContainer)
+
+        self.nodeListContainer = QWidget()
+        setNodeListContainerName = getattr(
+            self.nodeListContainer, "setObjectName", None
+        )
+        if callable(setNodeListContainerName):
+            setNodeListContainerName("sidebarNodeSection")
+        nodeListLayout = QVBoxLayout()
+        setNodeListMargins = getattr(nodeListLayout, "setContentsMargins", None)
+        if callable(setNodeListMargins):
+            setNodeListMargins(0, 0, 0, 0)
+        setNodeListSpacing = getattr(nodeListLayout, "setSpacing", None)
+        if callable(setNodeListSpacing):
+            setNodeListSpacing(6)
+        self.nodeListTitle = QLabel("当前节点")
+        setNodeListTitleName = getattr(self.nodeListTitle, "setObjectName", None)
+        if callable(setNodeListTitleName):
+            setNodeListTitleName("panelTitle")
+        nodeListLayout.addWidget(self.nodeListTitle)
+        self.nodeListWidget = QListWidget()
+        setNodeListName = getattr(self.nodeListWidget, "setObjectName", None)
+        if callable(setNodeListName):
+            setNodeListName("sidebarNodeList")
+        setFixedHeight = getattr(self.nodeListWidget, "setFixedHeight", None)
+        if callable(setFixedHeight):
+            setFixedHeight(110)
+        self.nodeListWidget.itemClicked.connect(self.selectNodeFromSidebar)
+        self.nodeListWidget.itemDoubleClicked.connect(self.navigateToSidebarItem)
+        nodeListLayout.addWidget(self.nodeListWidget)
+        self.nodeListContainer.setLayout(nodeListLayout)
+        sideBarLayout.addWidget(self.nodeListContainer)
+        addSidebarStretch = getattr(sideBarLayout, "addStretch", None)
+        if callable(addSidebarStretch):
+            addSidebarStretch(1)
+        if _nativeQt:
+            sideBarLayout.removeWidget(self.sidebarToggleButton)
+            sidebarBody = QWidget()
+            sidebarBody.setLayout(sideBarLayout)
+            sidebarOuter = QVBoxLayout(self.sidebarContainer)
+            sidebarOuter.setContentsMargins(0, 0, 0, 0)
+            sidebarOuter.addWidget(self.sidebarToggleButton)
+            self.sidebarScroll = scrollContent(sidebarBody)
+            sidebarOuter.addWidget(self.sidebarScroll, 1)
+        else:
+            self.sidebarContainer.setLayout(sideBarLayout)
+
+        self.canvasPanel = QWidget()
+        leftPanel = QVBoxLayout()
+        setCanvasMargins = getattr(leftPanel, "setContentsMargins", None)
+        if callable(setCanvasMargins):
+            setCanvasMargins(0, 0, 0, 0)
+        setCanvasSpacing = getattr(leftPanel, "setSpacing", None)
+        if callable(setCanvasSpacing):
+            setCanvasSpacing(8)
+        self.workflowTabs = WorkflowTabs() if _nativeQt else QTabWidget()
+        setWorkflowTabsName = getattr(self.workflowTabs, "setObjectName", None)
+        if callable(setWorkflowTabsName):
+            setWorkflowTabsName("workflowTabs")
+        leftPanel.addWidget(self.workflowTabs)
+        if _nativeQt:
+            from emo_master.apps.designer.ui.workflow_navigation_controls import WorkflowNavigationControls
+            self.workflowNavigationControls = WorkflowNavigationControls()
+            # Back/forward remain fixed beside the tabs, even when the optional
+            # location row is collapsed on a short/high-DPI window.
+            self.workflowTabs.layout().insertWidget(0, self.workflowNavigationControls.back)
+            self.workflowTabs.layout().insertWidget(1, self.workflowNavigationControls.forward)
+            leftPanel.addWidget(self.workflowNavigationControls)
+        self.flowScene = FlowScene()
+        # QGraphicsView borrows the scene; the window must own its GUI lifetime.
+        if _nativeQt:
+            self.flowScene.setParent(self)
+        setSceneRect = getattr(self.flowScene, "setSceneRect", None)
+        if callable(setSceneRect):
+            # Initial scene area only; DesignerGraphicsView extends its own
+            # navigation bounds with content, zoom and manual panning.
+            setSceneRect(-2000.0, -2000.0, 4000.0, 4000.0)
+        selectionChanged = getattr(self.flowScene, "selectionChanged", None)
+        if selectionChanged is not None and hasattr(selectionChanged, "connect"):
+            selectionChanged.connect(self.onNodeSelectionChanged)
+        self.flowScene.setConnectionHandler(self.connectPorts)
+        setConnectionErrorHandler = getattr(
+            self.flowScene, "setConnectionErrorHandler", None
+        )
+        if callable(setConnectionErrorHandler):
+            setConnectionErrorHandler(self.onConnectionError)
+        self.flowScene.setNodeDoubleClickHandler(self.openNodeParamDialog)
+        self.flowScene.setNodeRenameHandler(self.renameNode)
+        self.flowScene.nodeRenameAllowed = lambda: flowEditAllowed(self)
+        if _nativeQt:
+            self.flowScene.presentationProvider = self._controlFlowPresentation
+            self.flowScene.workflowOpenHandler = self._deferWorkflowReference
+            self.flowScene.hiddenPortsLoader = self._readHiddenPorts
+            self.flowScene.hiddenPortsChanged = self._saveHiddenPorts
+        self.flowScene.setCanvasClickHandler(self.collapseOperatorBubble)
+        self.flowScene.setOperatorDropHandler(self.addNodeFromOperatorDrop)
+        self.flowView = DesignerGraphicsView(self.flowScene)
+        setAcceptDrops = getattr(self.flowView, "setAcceptDrops", None)
+        if callable(setAcceptDrops):
+            setAcceptDrops(True)
+        leftPanel.addWidget(self.flowView)
+        if _nativeQt:
+            leftPanel.setStretch(leftPanel.indexOf(self.flowView), 1)
+            canvasTools = QHBoxLayout()
+            canvasTools.setContentsMargins(0, 0, 0, 0)
+            canvasTools.addStretch(1)
+            self.zoomOutButton = QToolButton()
+            self.zoomOutButton.setIcon(icon("minus"))
+            self.zoomOutButton.setToolTip("缩小")
+            self.zoomOutButton.clicked.connect(lambda: self.flowView.zoomByDelta(-1))
+            self.zoomResetButton = QToolButton()
+            self.zoomResetButton.setText("100%")
+            self.zoomResetButton.setFixedWidth(64)
+            self.zoomResetButton.setToolTip("恢复 100%")
+            self.zoomResetButton.clicked.connect(lambda: self.flowView.setZoomFactor(1.0))
+            self.zoomInButton = QToolButton()
+            self.zoomInButton.setIcon(icon("plus"))
+            self.zoomInButton.setToolTip("放大")
+            self.zoomInButton.clicked.connect(lambda: self.flowView.zoomByDelta(1))
+            self.fitCanvasButton = QToolButton()
+            self.fitCanvasButton.setIcon(icon("maximize"))
+            self.fitCanvasButton.setToolTip("适应画布")
+            self.fitCanvasButton.clicked.connect(self.focusGraphContent)
+            for tool in (self.zoomOutButton, self.zoomResetButton, self.zoomInButton, self.fitCanvasButton):
+                canvasTools.addWidget(tool)
+            self.flowView.zoomChanged.connect(lambda value: self.zoomResetButton.setText(f"{value:.0%}"))
+            leftPanel.addLayout(canvasTools)
+        self.canvasPanel.setLayout(leftPanel)
+
+        self.autoLayoutButton = QPushButton("自动布局")
+        self.validateGraphButton = QPushButton("校验流程图")
+
+        self.loadButton = QPushButton("加载项目")
+        self.saveProjectButton = QPushButton("保存项目")
+        self.validateButton = QPushButton("校验项目")
+        self.startButton = QPushButton("开始运行")
+        self.stopButton = QPushButton("停止运行")
+        self.refreshButton = QPushButton("刷新算子")
+        self.openLogsButton = QPushButton("打开日志")
+        setPrimary = getattr(self.loadButton, "setObjectName", None)
+        if callable(setPrimary):
+            setPrimary("primaryButton")
+        setStartName = getattr(self.startButton, "setObjectName", None)
+        if callable(setStartName):
+            setStartName("primaryButton")
+        setLogsName = getattr(self.openLogsButton, "setObjectName", None)
+        if callable(setLogsName):
+            setLogsName("secondaryButton")
+        setStopObjectName = getattr(self.stopButton, "setObjectName", None)
+        if callable(setStopObjectName):
+            setStopObjectName("dangerButton")
+        self._addToolbarGroup(
+            "项目", [self.loadButton, self.saveProjectButton, self.validateButton]
+        )
+        self.mainToolbar.addSeparator()
+        self._addToolbarGroup("运行", [self.startButton, self.stopButton])
+        if _nativeQt:
+            self.runTargetsButton = QPushButton("运行目标…")
+            self.runTargetsButton.clicked.connect(self.openRunTargetsDialog)
+            self.runningWorkflowCombo = QComboBox(self)
+            self.runningWorkflowCombo.setMinimumWidth(150)
+            self.runningWorkflowCombo.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+            self.runningWorkflowCombo.setToolTip("切换查看的工作流 / Job；停止运行只停止当前所选，运行菜单可停止全部")
+            self.runningWorkflowCombo.currentIndexChanged.connect(self._selectRunningWorkflow)
+            combo = QComboBox(self)
+            self.legacySnapshotPolicyCombo = combo
+            combo.setObjectName("legacySnapshotPolicyCombo")
+            combo.addItem("ALL · 全部采集", "ALL")
+            combo.addItem("NONE · 不采集", "NONE")
+            combo.setToolTip("仅影响下一次明确开始运行；不改变当前作业，不保存到项目")
+            combo.currentIndexChanged.connect(
+                lambda _index: self.setNextRunLegacySnapshotPolicy(str(combo.currentData())))
+            combo.hide()
+        self.mainToolbar.addSeparator()
+        self._addToolbarGroup("编辑", [self.autoLayoutButton, self.validateGraphButton])
+        self.mainToolbar.addSeparator()
+        self._addToolbarGroup("辅助", [self.refreshButton, self.openLogsButton])
+
+        self.rightPanelContainer = QWidget()
+        rightPanel = QVBoxLayout()
+        setRightMargins = getattr(rightPanel, "setContentsMargins", None)
+        if callable(setRightMargins):
+            setRightMargins(0, 0, 0, 0)
+        setRightSpacing = getattr(rightPanel, "setSpacing", None)
+        if callable(setRightSpacing):
+            setRightSpacing(8)
+
+        self.summarySection = QWidget()
+        setSummaryName = getattr(self.summarySection, "setObjectName", None)
+        if callable(setSummaryName):
+            setSummaryName("rightPanelSection")
+        summaryLayout = QVBoxLayout()
+        setSummaryMargins = getattr(summaryLayout, "setContentsMargins", None)
+        if callable(setSummaryMargins):
+            setSummaryMargins(12, 4, 12, 10)
+        setSummarySpacing = getattr(summaryLayout, "setSpacing", None)
+        if callable(setSummarySpacing):
+            setSummarySpacing(6)
+        statusTitle = QLabel("运行摘要")
+        setTitleName = getattr(statusTitle, "setObjectName", None)
+        if callable(setTitleName):
+            setTitleName("panelTitle")
+        summaryLayout.addWidget(statusTitle)
+        if _nativeQt:
+            # Persistent summary controls must not disappear when workspace
+            # chrome rebuilds or overflows the main toolbar.
+            runControls = QHBoxLayout()
+            runControls.addWidget(self.runTargetsButton)
+            self.stopAllJobsButton = QPushButton("停止全部")
+            self.stopAllJobsButton.clicked.connect(self.stopAllJobs)
+            runControls.addWidget(self.stopAllJobsButton)
+            summaryLayout.addLayout(runControls)
+            summaryLayout.addWidget(self.runningWorkflowCombo)
+
+        self.jobStatusCard = QLabel("作业状态：空闲")
+        setStatusCardName = getattr(self.jobStatusCard, "setObjectName", None)
+        if callable(setStatusCardName):
+            setStatusCardName("statusCard")
+        summaryLayout.addWidget(self.jobStatusCard)
+
+        self.jobMessageCard = ElidedLabel("消息：-") if _nativeQt else QLabel("消息：-")
+        setMessageCardName = getattr(self.jobMessageCard, "setObjectName", None)
+        if callable(setMessageCardName):
+            setMessageCardName("statusCard")
+        summaryLayout.addWidget(self.jobMessageCard)
+        self.summarySection.setLayout(summaryLayout)
+        rightPanel.addWidget(self.summarySection)
+
+        self.nodeStatusSection = QWidget()
+        setNodeSectionName = getattr(self.nodeStatusSection, "setObjectName", None)
+        if callable(setNodeSectionName):
+            setNodeSectionName("rightPanelSection")
+        nodeStatusLayout = QVBoxLayout()
+        setNodeStatusMargins = getattr(nodeStatusLayout, "setContentsMargins", None)
+        if callable(setNodeStatusMargins):
+            setNodeStatusMargins(12, 4, 12, 10)
+        setNodeStatusSpacing = getattr(nodeStatusLayout, "setSpacing", None)
+        if callable(setNodeStatusSpacing):
+            setNodeStatusSpacing(6)
+        self.runtimeStatusOutput = QTextEdit()
+        self.runtimeStatusOutput.setReadOnly(True)
+        nodeStatusTitle = QLabel("当前节点")
+        setNodeTitleName = getattr(nodeStatusTitle, "setObjectName", None)
+        if callable(setNodeTitleName):
+            setNodeTitleName("panelTitle")
+        nodeStatusLayout.addWidget(nodeStatusTitle)
+        detailLabel = WrapLabel if _nativeQt else QLabel
+        self.nodeDetailTitleCard = detailLabel("未选中节点")
+        self.nodeDetailIcon = QLabel("")
+        if _nativeQt:
+            self.nodeDetailIcon.setFixedSize(20, 20)
+            self.nodeDetailIcon.hide()
+        self.nodeDetailMetaCard = detailLabel("")
+        self.nodeDetailPortsCard = detailLabel("输入: 无\n输出: 无")
+        self.nodeDetailParamsCard = detailLabel("参数:\n- 无")
+        self.nodeRunDetailsCard = detailLabel("选择节点查看本次运行数据")
+        if _nativeQt:
+            self.nodeRunDetailsCard.setTextFormat(Qt.PlainText)
+            self.nodeRunDetailsCard.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        for detailWidget in [
+            self.nodeDetailTitleCard,
+            self.nodeRunDetailsCard,
+            self.nodeDetailMetaCard,
+            self.nodeDetailPortsCard,
+            self.nodeDetailParamsCard,
+        ]:
+            setDetailName = getattr(detailWidget, "setObjectName", None)
+            if callable(setDetailName):
+                setDetailName("statusCard")
+            if _nativeQt and detailWidget is self.nodeDetailTitleCard:
+                titleRow = QHBoxLayout()
+                titleRow.addWidget(self.nodeDetailIcon, 0, Qt.AlignTop)
+                titleRow.addWidget(detailWidget, 1)
+                nodeStatusLayout.addLayout(titleRow)
+            else:
+                nodeStatusLayout.addWidget(detailWidget)
+        self.nodeStatusSection.setLayout(nodeStatusLayout)
+        if _nativeQt:
+            nodeStatusLayout.addStretch(1)
+            self.nodeDetailsScroll = scrollContent(self.nodeStatusSection, name="nodeDetailsScroll")
+            # Let the scroll area's native minimum keep its controls usable on
+            # shorter screens; long node details remain vertically accessible.
+            rightPanel.addWidget(self.nodeDetailsScroll, 1)
+        else:
+            rightPanel.addWidget(self.nodeStatusSection)
+
+        self.previewSection = QWidget()
+        setPreviewSectionName = getattr(self.previewSection, "setObjectName", None)
+        if callable(setPreviewSectionName):
+            setPreviewSectionName("rightPanelSection")
+        previewLayout = QVBoxLayout()
+        setPreviewMargins = getattr(previewLayout, "setContentsMargins", None)
+        if callable(setPreviewMargins):
+            setPreviewMargins(12, 4, 12, 10)
+        setPreviewSpacing = getattr(previewLayout, "setSpacing", None)
+        if callable(setPreviewSpacing):
+            setPreviewSpacing(6)
+        previewTitle = QLabel("结果预览")
+        setPreviewTitleName = getattr(previewTitle, "setObjectName", None)
+        if callable(setPreviewTitleName):
+            setPreviewTitleName("panelTitle")
+        previewLayout.addWidget(previewTitle)
+
+        self.previewImageLabel = PreviewLabel("暂无图片") if _nativeQt else QLabel("暂无图片")
+        setPreviewLabelName = getattr(self.previewImageLabel, "setObjectName", None)
+        if callable(setPreviewLabelName):
+            setPreviewLabelName("previewCard")
+        setMinHeight = getattr(self.previewImageLabel, "setMinimumHeight", None)
+        if callable(setMinHeight):
+            setMinHeight(220)
+        setAlign = getattr(self.previewImageLabel, "setAlignment", None)
+        if callable(setAlign):
+            setAlign(Qt.AlignCenter)
+        previewLayout.addWidget(self.previewImageLabel)
+        if _nativeQt:
+            from emo_master.apps.designer.ui.run_result_tools import RunResultTools
+            self.runResultTools = RunResultTools(self)
+            previewLayout.addWidget(self.runResultTools)
+        self._displayedRunImage: tuple[object, ...] | None = None
+        self.previewSection.setLayout(previewLayout)
+        rightPanel.addWidget(self.previewSection)
+        if _nativeQt:
+            rightPanel.setStretch(rightPanel.indexOf(self.previewSection), 1)
+        addRightStretch = getattr(rightPanel, "addStretch", None)
+        if callable(addRightStretch) and not _nativeQt:
+            addRightStretch(1)
+        self.nodeResultCoordinator = None
+        if _nativeQt:
+            from emo_master.apps.designer.ui.node_result_coordinator import NodeResultCoordinator
+            self.nodeResultCoordinator = NodeResultCoordinator(self, rightPanel)
+            from emo_master.apps.designer.ui.node_context_menu import NodeContextMenu
+            self.nodeContextMenu = NodeContextMenu(self)
+        self.rightPanelContainer.setLayout(rightPanel)
+        self.mainSplitter = QSplitter(Qt.Horizontal)
+        setChildrenCollapsible = getattr(
+            self.mainSplitter, "setChildrenCollapsible", None
+        )
+        if callable(setChildrenCollapsible):
+            setChildrenCollapsible(False)
+        setHandleWidth = getattr(self.mainSplitter, "setHandleWidth", None)
+        if callable(setHandleWidth):
+            setHandleWidth(8)
+        self.mainSplitter.addWidget(self.sidebarContainer)
+        self.mainSplitter.addWidget(self.canvasPanel)
+        self.rightPanelSlot = QWidget() if _nativeQt else self.rightPanelContainer
+        self.mainSplitter.addWidget(self.rightPanelSlot)
+        connectSplitterMoved = getattr(self.mainSplitter, "splitterMoved", None)
+        if connectSplitterMoved is not None and hasattr(
+            connectSplitterMoved, "connect"
+        ):
+            connectSplitterMoved.connect(self.onMainSplitterMoved)
+        rootLayout.addWidget(self.mainSplitter)
+        rootWidget.setLayout(rootLayout)
+        self.setCentralWidget(rootWidget)
+        self.logDialog = LogDialog(
+            self,
+            onClear=self._clearRuntimeLogCache,
+            onNavigate=self.navigateToRuntimeLogEntry,
+            maximumEntries=DEFAULT_MAX_LOG_ENTRIES,
+        )
+        self.logDialog.hide()
+        if _nativeQt:
+&gt;           self.logDialog.view.setLogDirectory(self._localLogDirectory)
+E           AttributeError: 'StructuredLogView' object has no attribute 'setLogDirectory'
+
+src\emo_master\apps\designer\ui\main_window.py:1320: AttributeError</failure></testcase><testcase classname="tests.runtime.test_tcp_device_integration" name="testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure" time="0.036"><failure message="emo_master.clients.runtime.devices.DeviceClientError: Runtime 未加载此工程">chain = {'root': WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3819/tcp-device-chain0'), 'serv...ath': [...]}}]}, 'production': {'autoStart': False, 'mode': 'single', 'cycleIntervalMs': 100, 'inputs': {}}, ...}, ...}
+
+    def testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure(chain):
+        from emo_master.clients.runtime.devices import DeviceManagementClient
+        from emo_master.core.project.configuration import projectChanges, requiredProjectChanges
+        c = chain
+        shared = DeviceManagementClient(c['service'])
+&gt;       runtimeId, states = shared.getDeviceStates(c['service'].loadedProjectId)
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_tcp_device_integration.py:385:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\clients\runtime\devices.py:69: in getDeviceStates
+    return self._states(self._call('GetDeviceStates', pb.GetDeviceStatesRequest(project_id=projectId), cancellation))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;emo_master.clients.runtime.devices.DeviceManagementClient object at 0x0000021C7DC03B80&gt;
+reply = runtime_instance_id: "89396ffe-9f0d-49bb-b635-1897b076924d"
+states_json: "{}"
+message: "Runtime 未加载此工程"
+code: "E_CONFIG_NOT_LOADED"
+runtime_uptime_ms: 3594
+
+
+    def _states(self, reply):
+        if not reply.ok:
+&gt;           raise DeviceClientError(reply.code or 'E_DEVICE_STATE', reply.message)
+E           emo_master.clients.runtime.devices.DeviceClientError: Runtime 未加载此工程
+
+src\emo_master\clients\runtime\devices.py:63: DeviceClientError</failure></testcase></testsuite></testsuites>

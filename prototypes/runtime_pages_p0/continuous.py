@@ -23,6 +23,15 @@ from .pipeline import Pipeline
 from .runner_probe import Source, Mutator, image_project
 
 
+def exporterResources(exporter):
+    # Retirement closes Process wrappers under this same existing owner lock.
+    # Keep unavailable slots visible without reading their closed PID property.
+    with exporter.lock:
+        return [dict(status="UNAVAILABLE", reason="exporter process retired", slot=index)
+                if index in exporter.dead else resources(process.pid)
+                for index, (process, _pipe) in enumerate(exporter.slots)]
+
+
 class NetworkConsumer:
     def __init__(self, target, job, digest, slow=0):
         self.channel = grpc.insecure_channel(target)
@@ -182,7 +191,7 @@ def window(root, service, image_path, digest, count=96, viewers=2, enabled=True,
             if pipeline and (index % 8 == 0 or index == count + warmup - 1):
                 samples.append(dict(index=index, pipeline=pipeline.stats(), host=resources(),
                                     threads=threading.active_count(),
-                                    exporters=[resources(s[0].pid) for s in pipeline.exporter.slots]))
+                                    exporters=exporterResources(pipeline.exporter)))
         if pipeline:
             pipeline.exporter.wait_idle()
             deadline = time.monotonic() + 3

@@ -74,7 +74,7 @@ def testLegacyStartupFailureExplainsAndWaitsForExplicitSelection(
 def testCurrentDraftStartupDoesNotLoadRuntime(ownedDesignerWindow, tmp_path):
     project = tmp_path / 'draft.emoproj'
     payload = WorkflowStore().toPayload()
-    assert payload['schemaVersion'] == '2.7'
+    assert payload['schemaVersion'] == '2.9'
     original = json.dumps(payload).encode('utf-8')
     project.write_bytes(original)
     client = SimpleNamespace(listOperators=lambda: [],
@@ -84,7 +84,7 @@ def testCurrentDraftStartupDoesNotLoadRuntime(ownedDesignerWindow, tmp_path):
         execSelection=lambda: ('open_project', str(project)))
     assert window.showStartupProjectEntry()
     assert window.loadedProjectPath == str(project)
-    assert window.pageCoordinator.session.document().schemaVersion == '2.7'
+    assert window.pageCoordinator.session.document().schemaVersion == '2.9'
     assert project.read_bytes() == original
 
 

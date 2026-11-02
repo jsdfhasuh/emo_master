@@ -23,6 +23,15 @@ SHORTCUTS = {
     'navigate_back': ('Alt+Left',), 'navigate_forward': ('Alt+Right',),
     'definition': ('F12',), 'references': ('Shift+F12',),
 }
+ALIGNMENT_MODES = (('left', '左对齐'), ('hcenter', '水平居中'), ('right', '右对齐'),
+                   ('top', '顶对齐'), ('vcenter', '垂直居中'), ('bottom', '底对齐'))
+ALIGNMENT_PREFERENCES = {
+    'alignment_guides': ('动态参考线', 'ui/canvas/alignment_guides', 'setAlignmentGuidesEnabled'),
+    'alignment_snap': ('轻微吸附', 'ui/canvas/alignment_snap', 'setAlignmentSnapEnabled'),
+}
+ARRANGEMENT_KEYS = {f'align_{mode}' for mode, _title in ALIGNMENT_MODES} | {
+    'distribute_horizontal', 'distribute_vertical'}
+SHORTCUTS.update({key: () for key in (*ALIGNMENT_PREFERENCES, *ARRANGEMENT_KEYS)})
 CANVAS_KEYS = {'copy', 'delete', 'configure', 'results', 'layout', 'fit'}
 NAVIGATION_KEYS = {'navigate_back', 'navigate_forward', 'definition', 'references'}
 TEXT_KEYS = CANVAS_KEYS | NAVIGATION_KEYS | {'undo', 'redo'}
@@ -58,6 +67,7 @@ class DesignerActions(QObject):
                 self.menus['编辑'].addAction(action)
             else:
                 self.adopt(key, action)
+        self.installAlignmentActions()
         self.create('copy', '复制所选算子', self.copy)
         self.replaceMenuAction('复制所选算子', self.actions['copy'])
         self.create('delete', '删除选中元素', self.delete)
@@ -96,6 +106,66 @@ class DesignerActions(QObject):
         app.installEventFilter(self)
         app.focusChanged.connect(self.scheduleRefresh)
         self.refresh()
+
+    def installAlignmentActions(self):
+        menu = self.menus['编辑']
+        existing = menu.actions()
+        redo = self.actions['redo']
+        index = existing.index(redo) + 1 if redo in existing else 0
+        anchor = existing[index] if index < len(existing) else None
+        menu.insertSeparator(anchor)
+        for key, (title, setting, _method) in ALIGNMENT_PREFERENCES.items():
+            action = self.create(key, title, lambda key=key: self.saveAlignmentPreference(key))
+            action.setCheckable(True)
+            value = self.window.settingsStore.value(setting, True)
+            action.setChecked(value if isinstance(value, bool) else str(value).lower() in {'1', 'true'})
+            menu.insertAction(anchor, action)
+        self.alignmentMenu = QMenu('对齐', menu)
+        self.distributionMenu = QMenu('等距分布', menu)
+        menu.insertMenu(anchor, self.alignmentMenu)
+        menu.insertMenu(anchor, self.distributionMenu)
+        for index, (mode, title) in enumerate(ALIGNMENT_MODES):
+            if index == 3:
+                self.alignmentMenu.addSeparator()
+            self.alignmentMenu.addAction(self.create(f'align_{mode}', title,
+                lambda mode=mode: self.arrangeSelection(mode)))
+        for axis, title in (('horizontal', '水平等距分布'), ('vertical', '垂直等距分布')):
+            self.distributionMenu.addAction(self.create(f'distribute_{axis}', title,
+                lambda axis=axis: self.arrangeSelection(axis, distribute=True)))
+        menu.insertSeparator(anchor)
+        for current in (menu, self.alignmentMenu, self.distributionMenu):
+            current.setToolTipsVisible(True)
+            current.aboutToShow.connect(self.refresh)
+        self.applyAlignmentPreferences()
+
+    def applyAlignmentPreferences(self):
+        editor = self.pageEditor()
+        targets = [self.window.flowScene]
+        if editor is not None:
+            targets.append(editor.tools)
+        for key, (_title, _setting, method) in ALIGNMENT_PREFERENCES.items():
+            enabled = self.actions[key].isChecked()
+            for target in targets:
+                setter = getattr(target, method, None)
+                if callable(setter):
+                    setter(enabled)
+
+    def saveAlignmentPreference(self, key):
+        self.window.settingsStore.setValue(ALIGNMENT_PREFERENCES[key][1], self.actions[key].isChecked())
+        self.applyAlignmentPreferences()
+
+    def arrangeSelection(self, mode, *, distribute=False):
+        editor = self.pageEditor()
+        if editor:
+            method = editor.tools.distributeSelection if distribute else editor.tools.alignSelection
+            editor.run(lambda: method(mode), refresh=False)
+            return
+        scene = self.window.flowScene
+        try:
+            method = scene.distributeSelectedNodes if distribute else scene.alignSelectedNodes
+            method(mode)
+        except ValueError as error:
+            self.window.statusBar().showMessage(str(error), 7000)
 
     def adopt(self, key, action):
         self.actions[key] = action
@@ -142,6 +212,27 @@ class DesignerActions(QObject):
             return 'Designer 已关闭'
         editor = self.pageEditor()
         pages = editor is not None
+        if key in ALIGNMENT_PREFERENCES:
+            return ''
+        if key in ARRANGEMENT_KEYS:
+            if pages:
+                required = 'distributeSelection' if key.startswith('distribute_') else 'alignSelection'
+                if not callable(getattr(editor.tools, required, None)):
+                    return '当前页面编辑器尚不支持此排列操作'
+                if not editor.renderer.editing:
+                    return '请返回编辑模式后排列组件'
+                count = editor.tools.selectionCount()
+            else:
+                if not flowEditAllowed(w):
+                    return '请在可编辑的流程画布中排列节点'
+                if w.flowScene.isAlignmentDragging() or w.flowScene.isRenamingNode():
+                    return '请先完成或取消当前拖动或标题编辑'
+                count = len(w.flowScene.getSelectedNodeIds())
+            minimum = 3 if key.startswith('distribute_') else 2
+            if count < minimum:
+                return f'请至少选择 {minimum} 个对象'
+            reason = getattr(editor.tools, 'arrangementBlockedReason', None) if pages else None
+            return reason(key) if callable(reason) else ''
         if key in {'undo', 'redo'}:
             if w.isJobRunning:
                 return '任务运行中不能撤销或重做项目'
@@ -207,6 +298,7 @@ class DesignerActions(QObject):
     def refresh(self):
         if not isValid(self.window):
             return
+        self.applyAlignmentPreferences()
         pages = self.pageEditor() is not None
         self.actions['copy'].setText('复制选中组件' if pages else '复制所选算子')
         self.actions['delete'].setText('删除选中组件' if pages else '删除选中元素')
@@ -270,7 +362,7 @@ class DesignerActions(QObject):
     def fit(self):
         editor = self.pageEditor()
         if editor:
-            editor.renderer.fitToAvailableScreen()
+            editor.canvas.fitPage()
         else:
             self.window.focusGraphContent()
 
@@ -294,8 +386,9 @@ class DesignerActions(QObject):
         if key in CANVAS_KEYS:
             focus = app.focusWidget()
             editor = self.pageEditor()
-            surface = editor.renderer if editor else self.window.flowView
-            return focus is self.window or focus is surface or (focus is not None and surface.isAncestorOf(focus))
+            surfaces = (editor.canvas, editor.renderer) if editor else (self.window.flowView,)
+            return focus is self.window or any(focus is surface or
+                (focus is not None and surface.isAncestorOf(focus)) for surface in surfaces)
         return True
 
     def eventKey(self, event):

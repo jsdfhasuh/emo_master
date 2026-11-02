@@ -201,7 +201,7 @@ def testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication(cha
     assert window.loadProjectDirectory(str(c['path']), confirmed=True)
     c['payload'] = json.loads(c['path'].read_text(encoding='utf-8'))
     stored = ProjectDocument.model_validate_json(c['path'].read_bytes())
-    assert stored.schemaVersion == '2.7' and stored.communication is None
+    assert stored.schemaVersion == '2.9' and stored.communication is None
     reopened = WorkflowStore(stored.model_dump(mode='json')).toPayload()
     assert reopened['devices'] == stored.model_dump()['devices']
     dialog = menuDialog(window, monkeypatch)
@@ -550,7 +550,7 @@ def testA5AllThreePackagesImportAndRunFromNewDirectories(chain):
     destination = c['root']/'runtime-import'
     document = installRuntimePackage(packagePath, destination,
         registry=c['service'].pluginScanResult.activeOperators, deviceTypes=c['types'])
-    assert document.schemaVersion == '2.7' and document.devices.definitions['server'].enabled
+    assert document.schemaVersion == '2.9' and document.devices.definitions['server'].enabled
     runImported(c, destination, document.model_dump(mode='json'), 'main', 'RUNTIME-PACKAGE')
     import subprocess
     import os

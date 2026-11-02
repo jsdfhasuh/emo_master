@@ -71,6 +71,8 @@ def readClient(monkeypatch, *, cancelled=False):
     clock = [0.0]
     monkeypatch.setattr(module, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     client = DisplaySession.__new__(DisplaySession)
+    from emo_master.clients.runtime.connection import connectionProfile
+    client.connectionProfile = connectionProfile("127.0.0.1:1")
     client.stop = ClockStop(clock, cancelled)
     return client, clock
 

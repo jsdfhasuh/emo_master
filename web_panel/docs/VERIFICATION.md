@@ -1,0 +1,260 @@
+# Verification record
+
+## SDK 1.1.1 / W4–F integration — 2026-10-31
+
+Baseline: Web `a6e92eeab20b8b5d3623fabd9f897893d328157d`.
+The official branch `496d4b78ccd6ac40a4fa37b15fb6e78522627cda` is normally
+integrated with two parents, retaining the W1–W3 fixes and owner history.
+Owner implementation: `95c6371542f73a725c0ca2fd585152c728338dbf`;
+generated delivery: `b9a741f31a7304a3b2902530a9b6acd98755285d`.
+No locally rewritten SDK or Runtime execution code is substituted.
+
+All 39 files plus manifest are copied from the verified 90,424-byte ZIP,
+SHA256 `8f0efaf9b918d44684c5c8c8b3f0d67fee740179ea33d17c2a064c801d9d3b7a`.
+The sole vendored wheel is 1.1.1, 38,038 bytes,
+SHA256 `aed06e1badb4f3fedcca121413391dbf88168cc02dc37fc54f65cbf089c92858`.
+Embedded fixtures match byte-for-byte; manifest records sourceDirty=false.
+Panel Contract 1.0, project 2.9 and Presentation 1.2 are unchanged.
+
+Ordinary Job state, initial selected-Job confirmation and control acknowledgements
+now use validated official BrowserMessage with explicit empty group. Stop retains
+optional-field presence. Initial confirmation of the same identity does not clear
+the selected view. Grouped messages and W1–W3 acknowledgement/lifecycle separation
+remain covered. The combined browser test requires formal Start HTTP result,
+selected-Job WS change, Stop WS result and original-Job ABORTED WS state; the
+former SDK-pending success path no longer exists.
+
+### Verified SDK 1.1.1 application
+
+Application SHA: `938eb8c48e7a7ff4eaf53c2334c592615d6d39ba`.
+[CI 41170406171](https://github.com/jsdfhasuh/emo_master/actions/runs/41170406171)
+completed **SUCCESS, all three jobs**. The following documentation and fresh-install
+assertion update retains this application code; its exact-head workflow is checked
+before final delivery as well.
+
+| Scope | Actual evidence |
+|---|---|
+| Backend, each Ubuntu/Windows | 143 discovered: 141 executed PASS, 2 opt-in product tests skipped in ordinary job |
+| Frontend, each OS | 58 tests, generated TypeScript and Vite build PASS |
+| Browser A–E, each OS | Four suites PASS: accepted/UNKNOWN/ABORTED commands without replay; full catalog refresh; A/B activation/rollback, ACL and pinned assets; official read-only preview |
+| Formal identity F | Official ordinary/grouped message validation, missing/null rules and exact Stop field presence PASS |
+| Combined actual Windows Runtime | Real Chromium → Web HTTP/WS → repository Runtime Start → rendered result → exact Stop → formal ABORTED PASS |
+| Independent installation, each OS | Built Web and SDK wheels, fresh outside-checkout installation, packaged UI/CLI, no Qt/Runtime imports PASS |
+
+The actual combined ordinary Job was `892cb4dd-fe55-4270-8f1f-981dc49dcaf6`.
+Captured official Start control_result, selected-Job job_changed, Stop control_result
+and terminal job_state all carry `runGroupId=""` and matching Runtime/project/Job.
+The browser rendered `12.00`; exactly one Start and one Stop, confirmed by owning
+Runtime acceptance logs. Final state is `ABORTED`, active=false, ownsResources=false,
+displayResourcesReleased=false; both UI status locations display the real state.
+The downloaded artifact hash was verified and stopped screenshot inspected.
+The previous workaround/pending gate is absent; official empty-group acceptance
+is now **PASS**, not assumed from a fixture or the owner's prior local tests.
+
+A–E retain their appropriate synthetic/real-Web labels. B/C response-loss checks
+are not claimed as actual packet loss or physical faults. No new concrete software
+blocker remains from this integration. Native Designer, another physical host,
+real cameras/PLC, production database and field deployment remain **NOT RUN**.
+Earlier records below remain historical evidence, not current SDK blockers.
+
+### SDK 1.1.1 evidence artifacts (7-day retention)
+
+- [Combined owning Runtime/browser report, HTTP/WS payloads, logs and screenshots](https://github.com/jsdfhasuh/emo_master/actions/runs/41170406171/artifacts/13031300667): 274291 bytes, SHA256 `15e86933b181ba09f53d007699775b64d8e6f43ae1ff7a734ba689155ae67602`.
+- [Windows Web + SDK wheels/docs](https://github.com/jsdfhasuh/emo_master/actions/runs/41170406171/artifacts/13030044386): SHA256 `9c19deb003b835bbe470e2ddd0067a5c64ff934b40306c586d0b21dfedafa49e`.
+- [Ubuntu Web + SDK wheels/docs](https://github.com/jsdfhasuh/emo_master/actions/runs/41170406171/artifacts/13030897053): SHA256 `d7ac4a1eee33978ec315ca4be6ac51136cf5b64072fa3112be23f4ab2ab63672`.
+- [Windows browser regression evidence](https://github.com/jsdfhasuh/emo_master/actions/runs/41170406171/artifacts/13030568556), [Ubuntu browser regression evidence](https://github.com/jsdfhasuh/emo_master/actions/runs/41170406171/artifacts/13031201195).
+
+## Historical W1–W3 functional repair round — 2026-10-31, after reviewed 8286336
+
+W1 command-state repair is separately published as
+`1ee81db52d9548f6a1695ce9596622471bd174fe`;
+[CI 41166620413](https://github.com/jsdfhasuh/emo_master/actions/runs/41166620413)
+passed all three jobs. Its browser scenarios now use accepted/UNKNOWN/ABORTED,
+including same-intent query and no duplicate Start/Stop; this is synthetic browser
+control-flow evidence, not the combined owning-Runtime chain below.
+
+W3 activation backend is separately published as
+`92807407baab420cf6314e64e329c0b05e5dfb28`.
+CI 41166767751 passed Ubuntu and owning Runtime, but Windows exposed an unclosed
+SQLite connection in the new migration test's temporary-directory cleanup. The
+connection is explicitly closed; cleanup errors are not ignored and assertions
+remain unchanged. The previous failed run is retained as diagnostic evidence.
+
+### Verified repaired application
+
+Application SHA: `ea098be2f97cb4db4140a4f1d208d4021014fec4`.
+[CI 41168261536](https://github.com/jsdfhasuh/emo_master/actions/runs/41168261536)
+completed **SUCCESS, all three jobs**. This evidence-only documentation update
+preserves that application; its exact-head workflow is also checked before delivery.
+
+| Scope | Actual evidence |
+|---|---|
+| W1 command state | Accepted Start → explicit Job Stop without ending tracking; same-request UNKNOWN → accepted; lost-response/ABORTED reconciliation with no repeated Start/Stop; HTTP 200 rejection reason |
+| W2 current target | Manual runs/workflows/configuration refresh, preserved valid stop selection and edited inputs, invalid selection clearing, held A response after B, instance/project replacement; browser fixtures PASS |
+| W3 packages | Real ASGI + browser A/B activation/rollback, B-only authorization and ongoing live images, scoped notifications, pinned A assets; SQLite migration and project-mismatch tests PASS |
+| Backend, both OSes | Each 137 tests: 135 executed PASS, 2 opt-in actual-product tests skipped here |
+| Frontend, both OSes | 53 tests, TypeScript/Vite build PASS |
+| Browser, both OSes | Four suites PASS: renderer/control fixtures; catalog refresh; real Web with mock Runtime including A/B isolation; official package/preview CLI |
+| Owning Windows software Runtime | Separate 2 actual Runtime + 2 reconciliation tests PASS, plus the complete real browser chain below |
+| Distribution, both OSes | Build Web wheel + supplied SDK wheel; fresh outside-checkout installation and packaged UI/CLI checks PASS |
+
+**Combined actual software chain:** real Chromium login/package activation/Start
+through Web HTTP and WS into unchanged repository Runtime using a temporary
+continuous synthetic project. Exactly one Start and one Stop; captured SDK result
+renders `12.00`; the original Job reaches `ABORTED`, `ownsResources=false`.
+`displayResourcesReleased=false` is shown truthfully, not invented as released.
+Both the original-control panel and published runtime_status component show the
+refreshed ABORTED state. No manual end-tracking action or mock Runtime substitutes
+for this chain. B/C response-loss scenarios remain separately labeled synthetic
+control-flow tests; they are not physical network/device fault acceptance.
+
+Visual inspection also caught independent mock targets accidentally sharing an
+instance ID, which routed A's demo-image URL to a B-only viewer. Independent mock
+identities are now distinct; genuine aliases still share their explicit physical
+identity, retaining all stream/client-lifetime assertions. B's live image decoding
+is now asserted and the corrected screenshot was inspected. A fresh catalog now
+also updates the selected viewing Job's status, not an unrelated control target.
+
+The expanded first browser run exposed Chromium inspector upload-response eviction.
+Tests retain HTTP success checks and verify the exact immutable file SHA/project/
+revision through the contextual catalog rather than rereading that transient body.
+Failed CI 41167179956 and alias-fixture CI 41168045256 remain diagnostic history;
+no correctness assertions or cleanup failures were removed to obtain a pass.
+
+### Repaired development artifacts (7-day retention)
+
+- [Windows Web + SDK wheels/docs](https://github.com/jsdfhasuh/emo_master/actions/runs/41168261536/artifacts/13030485934), ZIP SHA256 `4427929c242ccf78936094bd3eb82cb138ae457a9866df67b3a1e97f1227ef39`.
+- [Ubuntu Web + SDK wheels/docs](https://github.com/jsdfhasuh/emo_master/actions/runs/41168261536/artifacts/13029877609), ZIP SHA256 `95d706629b09d4ec8f69a002134d86809d0c67b4a3078bce4b1042336ef2990f`.
+- [Browser A/B and preview evidence](https://github.com/jsdfhasuh/emo_master/actions/runs/41168261536/artifacts/13030341325), downloaded/verified ZIP SHA256 `5be8f5f902cfd4b1ddc64e29edd8be2febc10e85580174c8f84a75541efd48c9`.
+- [Combined actual Runtime browser evidence](https://github.com/jsdfhasuh/emo_master/actions/runs/41168261536/artifacts/13029638193), ZIP SHA256 `afd91a6ce994c72dbec0da5b53d465885474660179b4532a6e2c9cb584d88caf`.
+
+W2 functional commit: `c280e085a89c452665fbd520e150380819de201a`.
+SDK remains the unchanged official **1.1.0**, delivery implementation SHA
+`d4ab96409e43d7ab6ae566820da357508d01658c`, wheel SHA256
+`bb0cff1f007b8c6b850c8e43d792200ee6adebbaa4af23c4a966362b74e697f9`.
+No Runtime, Designer, shared protocol or vendored contract bytes changed in this repair.
+
+SDK 1.1.1 has not been delivered. Only W4/formal empty-group acceptance remains
+an external integration gate; current shipped SDK1.1.0 bytes and hashes are intact.
+Native Designer, cross-physical-machine and field devices have not been exercised.
+
+
+## Historical SDK1.1.0 official-contract verification — 2026-10-31
+
+Application commit: `69e3ec000a4299d16dcf27e19237d102062db77d` on
+`codex/logging-and-designer-improvements`.
+[CI 41159087465](https://github.com/jsdfhasuh/emo_master/actions/runs/41159087465):
+**SUCCESS — all three jobs**. The following documentation-only commit preserves
+this application code; its exact-head workflow is checked separately before delivery.
+
+| Check | Verified result |
+|---|---|
+| Ubuntu + Windows gateway | Each 122 tests, 120 executed PASS and 2 opt-in product tests skipped |
+| Frontend | 43 tests PASS; TypeScript and production Vite build PASS on both OSes |
+| Chromium | Renderer fixtures, full HTTP/WS mock application, and official-package preview CLI/browser suites PASS on both OSes |
+| Independent distribution | Web wheel + supplied SDK wheel; fresh outside-checkout install, packaged UI/CLI, no Qt or Runtime imports PASS on both OSes |
+| Owning Windows software Runtime | Separate job: 2 actual Runtime tests plus 2 reconciliation regressions PASS; no-Job history/aggregate/opaque images and one Start → capture → same-ID lookup → exact Stop → one Job |
+| Visual inspection | Official live/history mobile screenshots inspected; responsive layout and no horizontal overflow; synthetic sample images/data |
+| Physical/Designer acceptance | NOT RUN: user's machine, native Designer lifecycle, physical cameras/PLC and production database |
+
+The Runtime subprocess uses unchanged owning source from the selected handoff.
+The earlier Windows spawn failure was the **test harness's piped stdin**, resolved
+with DEVNULL plus a private shutdown marker; no Runtime patch or relaxed acceptance
+assertion was used. UNKNOWN reconciliation never replays Start.
+
+### Matching development artifacts (7-day retention)
+
+- [Windows Web + SDK wheels/docs](https://github.com/jsdfhasuh/emo_master/actions/runs/41159087465/artifacts/13026805895), 187056 bytes, ZIP SHA256 `d205c31d6611b7400fa78c9a799544793debdf1010c045ef9ede53329effcdf7`.
+- [Ubuntu Web + SDK wheels/docs](https://github.com/jsdfhasuh/emo_master/actions/runs/41159087465/artifacts/13026194483), 186728 bytes, ZIP SHA256 `4874e05234444337a0c63ffece050cd6fc12162bf0646053354754fdfedd56fb`.
+- [Ubuntu browser evidence](https://github.com/jsdfhasuh/emo_master/actions/runs/41159087465/artifacts/13026790480), verified ZIP SHA256 `c849baf1f1080afc26050efc678286ef34c5eb4242ceebda0c37cc4d48588b82`.
+- [Actual software Runtime evidence](https://github.com/jsdfhasuh/emo_master/actions/runs/41159087465/artifacts/13025563659), ZIP SHA256 `874af9c432c79373b4fabffb8b6a656bb3c7aaac0a2fcc87e85a3539b833a487`.
+
+These are development artifacts, not a release/deployment. SDK1.1.0's nonempty
+`runGroupId` browser-status mismatch remains disclosed in CONTRACT-GAPS.md;
+passing software checks do not resolve that protocol-owner correction or prove
+physical acceptance. No merge, deployment or user-computer action occurred.
+
+The remaining record below is historical diagnostic evidence, superseded by the
+current results above.
+
+## Historical draft — 2026-10-30
+
+## Verified application source
+
+- Branch: `feat/web-operator-panel-20261030`
+- Application source commit: `40d2c80982a30364ebb58c2d456faa392a33b475`
+- [CI run 41027918639](https://github.com/jsdfhasuh/emo_master/actions/runs/41027918639): **completed / SUCCESS**.
+- Ubuntu job `123970370329` and Windows job `123970370431`: all verification/build/install steps **SUCCESS**, not skipped.
+- Compare against original main `f0675253631f489998056e5af618378e115efc83`: 52 changed files, all under `web_panel/` except `.github/workflows/web-panel-ci.yml`. Runtime/Designer/proto and their dependencies were not changed.
+
+## Actual evidence
+
+| Level | Result | What it proves |
+|---|---|---|
+| Backend | 72 tests PASS on both CI OSes (Python 3.10), also locally Python 3.12 | Auth/ACL/account races, request correlation, package security, preview subprocess, mock history, view/resource lifecycle and API integration |
+| Frontend | 18 tests PASS, TypeScript/Vite build PASS | Scope preparation, identity/size/digest checks, cancellation, bound styles/components, draft mapping |
+| Browser fixtures | Chromium PASS on both CI OSes | Script escaping, 13 renderer types, viewport/navigation, slow-image/reset/freeze cases; HTTP/WS are fixtures |
+| Full Web app | Chromium + real FastAPI HTTP/WS PASS on both CI OSes | Login, live mock result, freeze/resume, explicit stop/start, no-run history/start, account and target CRUD/grants, history selection/image, real ZIP upload/activate/version switch/rollback, independent viewer notification, viewer restrictions, mobile width |
+| Distribution | Wheel build + fresh independent venv install PASS on both OSes | Bundled UI and CLI available without Node on target; no Qt/Runtime/model imports |
+| Real production | **BLOCKED / NOT RUN** | No official SDK, real Runtime, Designer integration or hardware acceptance was supplied/performed |
+
+The short resource exercise is 16 viewers × 2 scopes × 200 updates plus bounded/concurrent byte-cache tests, not a day-long or hardware soak. Windows CI is an actual Windows runner, not the user's Windows machine. The cloud-local Chromium launch was sandbox-blocked; it is not counted as a pass. CI browser results are the evidence.
+
+The final evidence-only change waits for `99.50` and a decoded image before the mobile screenshot, rather than capturing the package-switch transition. It changes no application behavior and is rerun through the same branch CI. Consult the latest branch run for that final documentation/test-only commit.
+
+## CI development artifacts
+
+These are development-preview artifacts, retained for 7 days, not a production release:
+
+- [Windows wheel/docs/draft package](https://github.com/jsdfhasuh/emo_master/actions/runs/41027918639/artifacts/12964373861): 119409 bytes, artifact ZIP SHA256 `fc8b439448a19a55531f7fa5584865318f0e86c5e6d88b93fbc476cd2a90070d`.
+- [Ubuntu wheel/docs/draft package](https://github.com/jsdfhasuh/emo_master/actions/runs/41027918639/artifacts/12964079536): 119193 bytes, artifact ZIP SHA256 `042fe93cb45b4c5741761f5241582cec279a5d1fcfeef5bb240becfb9a68fdbc`.
+- Browser evidence is attached to the same run. The independent reviewer verified the Ubuntu evidence ZIP digest and inspected the mobile layout.
+
+Hashes above identify the whole GitHub artifact ZIP, not the contained wheel. New runs produce new artifacts; use the matching commit/run metadata rather than mixing versions.
+
+## Why the whole original plan is not declared complete
+
+The independent draft implementation has passing software checks, but Panel Contract v1 has not been provided. All real business RPC adapter methods still return `CONTRACT_UNAVAILABLE` rather than inventing compatible behavior. Formal mobile/export schema, Coverage/leases/cursor replay, authoritative history/events and Dispatch/continuous root identities remain external integration gates.
+
+See [acceptance matrix](ACCEPTANCE-MATRIX.md) and [exact handoff inputs](CONTRACT-GAPS.md). No merge, production deployment, public sharing service, OS configuration or user-computer operation was performed.
+
+## 2026-10-31 official contract integration (supersedes missing-SDK status above)
+
+Base: `codex/logging-and-designer-improvements` at `b9f448c18ed297652cddc3e040ca1db847b0fbfa`.
+Official handoff uses clean implementation `d4ab96409e43d7ab6ae566820da357508d01658c`;
+all34 file sizes/digests verified. Historical 2026-10-30 results above describe the
+old draft only, not the current official adapter.
+
+Local observed checks: 95 gateway/package tests, 18 synthetic loopback/group tests,
+and 43 frontend tests passed in their respective existing environments.
+TypeScript/Vite builds passed. Local full-environment/CLI/browser checks remain
+unverified: isolated dependency installation was blocked by the execution reviewer,
+and the permitted clarified retry failed before execution in the sandbox wrapper.
+Chromium also could not create its IPC socket. These failures were not bypassed and
+are not counted as successful tests. The dedicated CI workflow provides a separate
+normal Windows/Linux install and browser validation environment. Final exact-SHA CI
+results are pending until recorded below.
+
+No merge, deployment, user-machine operation or physical-device validation performed.
+
+### First integration CI and corrections
+
+[Run 41157631820](https://github.com/jsdfhasuh/emo_master/actions/runs/41157631820)
+at `b3927e10059a97b5d8d8dae251c43e34425696aa` was **not successful**.
+Ubuntu backend ran 115 tests (2 opt-in product tests skipped); frontend/build passed.
+Browser checks caught a Resume regression that discarded the displayed snapshot
+while another image was pending; the implementation now preserves the displayed
+snapshot, with two additional regression tests and the original browser assertion intact.
+Windows exposed implicit text decoding and two legitimate loopback transport timeout
+statuses; fixtures now use explicit UTF-8 and the failed-preview test accepts either
+UNAVAILABLE or DEADLINE_EXCEEDED while still requiring no ready event and nonzero exit.
+The owning Windows Runtime history/image test passed; Start/capture/Stop did not yet
+pass. None of these partial results establishes full W1–W6 acceptance.
+
+The follow-up scope-lifecycle review found and fixed dropped snapshot expiry/start
+metadata, including empty snapshots. Focused tests cover lossless ordinals, scoped
+live retirement, frozen pin preservation and Resume without stale resurrection.
+Run 41158645415 passed Ubuntu browser fixtures and full mock Web application E2E;
+the official preview browser reached rendered history but failed a test-only nested
+locator, now corrected. Owning Runtime Start remains under diagnosis; retained thread
+dumps show Windows multiprocessing spawn stalled, not successful capture acceptance.

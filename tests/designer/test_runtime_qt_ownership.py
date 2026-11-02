@@ -120,6 +120,49 @@ def testQueuedRuntimeCallbacksDoNotTouchClosedController(designerApplication):
     assert not isValid(worker)
 
 
+def testApplicationQuitJoinsPendingNativeRuntimeWorkerWithoutUnsignedOverflow(designerApplication, monkeypatch):
+    from PySide2.QtCore import QCoreApplication, QEvent
+    from shiboken2 import isValid
+
+    entered, release = threading.Event(), threading.Event()
+    waits = []
+
+    class Worker(RuntimeWorker):
+        def run(self):
+            entered.set()
+            assert release.wait(3)
+
+    client = Client()
+    controller, _ = makeController(client)
+    worker = Worker(client, 'project')
+    controller._worker = worker
+    assert controller._bindQtWorker(worker)
+    nativeWait = worker.wait
+
+    def wait(*args):
+        waits.append(args)
+        if args == (12000,):
+            return False  # Exercise the native join after the bounded wait expires.
+        release.set()
+        return nativeWait(*args)
+
+    monkeypatch.setattr(worker, 'wait', wait)
+    worker.start()
+    try:
+        assert entered.wait(3)
+        designerApplication.aboutToQuit.emit()
+        assert waits == [(12000,), ()]
+        assert not worker.isRunning()
+        assert controller._worker is None
+        QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+        assert not isValid(worker)
+    finally:
+        release.set()
+        if isValid(worker):
+            nativeWait(3000)
+        controller.close()
+
+
 @pytest.mark.parametrize('outcome', ['event', 'failed', 'uncertain'])
 def testNativeRuntimeSignalsDeliverOnGuiThread(designerApplication, outcome):
     if designerApplication is None:

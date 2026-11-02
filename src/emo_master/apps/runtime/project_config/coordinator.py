@@ -60,6 +60,10 @@ class ConfigurationCoordinator:
                 raise ConfigurationError('E_CONFIG_PROJECT_REPLACEMENT', 'local loading requires a source and explicit replacement policy')
             from emo_master.core.project.models import ProjectDocument
             return ProjectDocument.model_validate(request['localPayload']).model_dump(mode='json')
+        if request.get('sourcePath') and not request['selectedPaths']:
+            if request['localPayload']['project']['projectId'] != self.current['payload']['project']['projectId']:
+                raise ConfigurationError('E_CONFIG_PROJECT_REPLACEMENT', 'switching projects requires selecting the complete candidate')
+            return deepcopy(self.current['payload'])
         candidate = selectedCandidate(self.current["payload"], request["localPayload"], request["selectedPaths"])
         if candidate["project"]["projectId"] != self.current["payload"]["project"]["projectId"]:
             from emo_master.core.project.models import ProjectDocument
@@ -73,7 +77,8 @@ class ConfigurationCoordinator:
     def validate(self, request):
         with self.lock:
             candidate = self._candidate(request)
-        prepared = self.prepare(candidate, Event())
+        source = {'sourcePath': request['sourcePath']} if request.get('sourcePath') else {}
+        prepared = self.prepare(candidate, Event(), **source)
         if self.discard is not None:
             self.discard(prepared)
         return candidate
@@ -96,12 +101,13 @@ class ConfigurationCoordinator:
                     oldFingerprint, status = existing["fingerprint"], existing["status"]
                 if fingerprint != oldFingerprint:
                     raise ConfigurationError("E_CONFIG_REQUEST_MISMATCH", "request ID content changed")
-                return deepcopy(status)
+                if not (existing and existing.get('staged') and status['state'] in {'AWAITING_RESOURCES', 'VALIDATED'}):
+                    return deepcopy(status)
             self._check(request)
             if self.active:
                 raise ConfigurationError("E_CONFIG_WRITER_BUSY", "another configuration write is pending")
             self._retireRequests()
-            if len(self.requests) >= REQUEST_WINDOW:
+            if len(self.requests) >= REQUEST_WINDOW and existing is None:
                 if self.current is None:
                     raise ConfigurationError('E_CONFIG_CAPACITY', 'initial request window is full; no requests were forgotten')
                 # Failures at the current revision cannot be forgotten until
@@ -112,6 +118,8 @@ class ConfigurationCoordinator:
             candidate = request['localPayload'] if request.get('operation') == 'initialize' else self._candidate(request)
             entry = dict(fingerprint=fingerprint, expectedRevision=request["expectedRevision"], cancelled=Event(), status=dict(
                 state="VALIDATING", requestId=requestId, runtimeInstanceId=self.runtimeInstanceId))
+            if existing and existing.get('staged'):
+                entry.update(initialRequest=existing['initialRequest'], transferIds=existing['transferIds'])
             self.requests[requestId] = entry
             self.active = requestId
             if not synchronous:
@@ -123,6 +131,44 @@ class ConfigurationCoordinator:
         # must learn whether commit occurred before its file rollback can finish.
         self._write(request, candidate, entry)
         return self.status(requestId)
+
+    def stageInitial(self, request):
+        """Keep a declared remote candidate in the existing request/status owner."""
+        request = deepcopy(request)
+        requestId = request['requestId']
+        if not isinstance(requestId, str) or not requestId or len(requestId) > 160:
+            raise ConfigurationError('E_CONFIG_REQUEST_ID', 'a bounded unique request ID is required')
+        fingerprint = digest(request)
+        with self.lock:
+            existing = self.requests.get(requestId)
+            saved = self.store.receipt(requestId)
+            if existing or saved:
+                oldFingerprint = existing['fingerprint'] if existing else saved[0]
+                if oldFingerprint != fingerprint:
+                    raise ConfigurationError('E_CONFIG_REQUEST_MISMATCH', 'request ID content changed')
+                return self.status(requestId)
+            self._check(request)
+            if self.active:
+                raise ConfigurationError('E_CONFIG_WRITER_BUSY', 'another configuration write is pending')
+            if len(self.requests) >= REQUEST_WINDOW:
+                raise ConfigurationError('E_CONFIG_CAPACITY', 'initial request window is full')
+            self.requests[requestId] = dict(fingerprint=fingerprint, expectedRevision=0,
+                cancelled=Event(), staged=True, initialRequest=request, transferIds=set(), status=dict(
+                    state='AWAITING_RESOURCES', requestId=requestId, importId=requestId,
+                    runtimeInstanceId=self.runtimeInstanceId, projectId=request['localPayload']['project']['projectId']))
+            return self.status(requestId)
+
+    def initialImport(self, requestId, *, cleanup=False):
+        with self.lock:
+            entry = self.requests.get(requestId)
+            if entry is None or 'initialRequest' not in entry:
+                raise ConfigurationError('E_CONFIG_IMPORT_UNKNOWN', 'remote import candidate is unavailable; prepare it explicitly')
+            if not cleanup and (not entry.get('staged') or entry['cancelled'].is_set()
+                    or entry['status']['state'] not in {'AWAITING_RESOURCES', 'VALIDATED'}):
+                raise ConfigurationError('E_CONFIG_IMPORT_STATE', 'remote import no longer accepts resources or validation')
+            if not cleanup:
+                self._check(entry['initialRequest'])
+            return entry
 
     def _retireRequests(self):
         if self.current is None:
@@ -213,7 +259,7 @@ class ConfigurationCoordinator:
                     if len({value["snapshot"]["executionRevision"] for value in leases}) >= 16:
                         raise ConfigurationError("E_CONFIG_PLAN_CAPACITY", "in-flight plan capacity reached")
                 if self.beforeCommit is not None:
-                    self.beforeCommit(candidate)
+                    self.beforeCommit(candidate, **source)
                 sourcePath = getattr(prepared, "sourcePath", "") or self.current["sourcePath"]
                 if initial:
                     receipt = dict(state='COMMITTED', requestId=request['requestId'], runtimeInstanceId=self.runtimeInstanceId,
@@ -393,6 +439,9 @@ class ConfigurationCoordinator:
     def cancel(self, requestId):
         with self.lock:
             entry = self.requests.get(requestId)
+            if entry and entry.get('staged') and entry['status']['state'] in {'AWAITING_RESOURCES', 'VALIDATED'}:
+                entry['cancelled'].set()
+                entry['status'].update(state='CANCELLED', code='E_CONFIG_CANCELLED')
             if entry and entry["status"]["state"] in {"VALIDATING", "WAITING"}:
                 entry["cancelled"].set()
             return self.status(requestId)

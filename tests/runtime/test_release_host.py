@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import time
@@ -92,7 +93,7 @@ def testDuplicateDirectoryAndPortDoNotStopExistingHost(tmp_path):
         second = tmp_path/'second'
         second.mkdir()
         other, _ = installed(second)
-        with pytest.raises(RuntimeError, match='aio startup failed'):
+        with pytest.raises(RuntimeError, match=re.escape(f'Runtime 监听 {host.address} 启动失败：')):
             ReleaseHost(other.root, tmp_path/'other-data', port=host.server.port)
         with grpc.insecure_channel(host.address) as channel:
             assert rpc.DisplayServiceStub(channel).Capabilities(pb.DisplayEmpty(), timeout=3).runtime_instance_id

@@ -26,7 +26,7 @@ from tests.runtime.test_operator_debug_sessions import waitFor
 def testCurrentProjectRoundtripAndCompilation(tmp_path):
     registry = _registry()
     document = cameraProject(registry)
-    assert document.schemaVersion == "2.7" and document.devices.schemaVersion == "1.0"
+    assert document.schemaVersion == "2.9" and document.devices.schemaVersion == "1.0"
     assert not document.devices.definitions
     path = tmp_path / "network-camera.emoproj"
     saveProject(path, document.model_dump(mode="json"))

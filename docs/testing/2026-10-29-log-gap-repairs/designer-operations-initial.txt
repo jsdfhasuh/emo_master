@@ -1,0 +1,22 @@
+2026-10-29 Designer operation logging integration, first attempt
+
+Command:
+python -m pytest tests/designer/test_runtime_connection_ui.py tests/designer/test_project_configuration_ui.py tests/designer/test_runtime_controller.py tests/designer/test_workflow_runtime_controller.py tests/designer/test_operation_logging.py -q
+
+Result: 32 failed, 29 passed in 13.38s.
+All 32 failures occurred during MainWindow initialization before the affected operation path:
+
+src/emo_master/apps/designer/ui/main_window.py:1320
+    self.logDialog.view.setLogDirectory(self._localLogDirectory)
+AttributeError: 'StructuredLogView' object has no attribute 'setLogDirectory'
+
+This run imported the shared workspace between the MainWindow integration edit and
+the matching LogDialog method edit. The interface was then completed by the parent
+agent, without changing failure assertions. The same integration batch passed
+61 tests in 18.97s; see designer-operations-integration.log/xml.
+
+The first run did not request JUnit XML. This note preserves its observed command,
+failure point, and result; it is not a reconstructed XML report.
+
+After adding confirmation/recovery coverage, the final focused batch passed
+33 tests in 5.79s; see designer-operations-focused.log/xml. Batches overlap.

@@ -8,7 +8,7 @@ import tempfile
 def genProto(check: bool = False) -> int:
   projectRoot = Path(__file__).resolve().parent.parent
   protoFile = projectRoot / "proto" / "runtime.proto"
-  sourceDir = projectRoot / "src" / "emo_master" / "apps" / "runtime" / "grpc_server" / "generated"
+  sourceDir = projectRoot / "src" / "emo_panel_protocol" / "generated"
   if check:
     with tempfile.TemporaryDirectory(prefix="emo-master-proto-") as tempDir:
       generatedDir = Path(tempDir)

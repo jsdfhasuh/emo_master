@@ -65,7 +65,11 @@ class EditingTools(QObject):
         self.bindingMarks = []
         self._loadedFields = None
         self._loadedPage = None
+        from .responsive_tools import ResponsiveTools
+        self.responsive = ResponsiveTools(self)
         self.palette = Palette()
+        self.palette.beforeDrag = self.responsive.prepareDrag
+        self.palette.afterDrag = self.responsive.cancel
         library = QWidget()
         libraryLayout = QVBoxLayout(library)
         libraryLayout.setContentsMargins(0, 0, 0, 0)
@@ -92,6 +96,11 @@ class EditingTools(QObject):
         self.form.addRow(self.propertyError)
         self.pageName = QLineEdit()
         self.form.addRow('页面名称', self.pageName)
+        self.pageTargets = QComboBox()
+        for label, value in [('桌面', ['desktop']), ('网页', ['web']), ('桌面和网页', ['desktop', 'web'])]:
+            self.pageTargets.addItem(label, value)
+        self.pageTargets.setToolTip('网页目标需要工程 2.9 / 页面 1.2；应用后通过正常保存持久化。')
+        self.form.addRow('显示终端', self.pageTargets)
         self.fields = {}
         for name, label in [('imageResourceId', '静态图片资源'), ('iconResourceId', '按钮图标资源')]:
             field = QComboBox()
@@ -110,6 +119,13 @@ class EditingTools(QObject):
             field.setRange(minimum, maximum)
             self.fields[name] = field
             self.form.addRow(label, field)
+        self.fields['spacerMode'] = QComboBox()
+        self.fields['spacerMode'].addItem('固定占位', 'fixed')
+        self.fields['spacerMode'].addItem('弹性占位', 'flex')
+        self.form.addRow('空白块方式', self.fields['spacerMode'])
+        self.spacerHint = QLabel('弹性占位沿响应式排列的主轴分配剩余空间；旧网格使用固定占位。')
+        self.spacerHint.setWordWrap(True)
+        self.form.addRow(self.spacerHint)
         self.destination = QComboBox()
         self.form.addRow('目标页面', self.destination)
         self.actionMode = QComboBox()
@@ -168,11 +184,22 @@ class EditingTools(QObject):
         self.fieldHint = QLabel('已知 Blob / Detection 字段可选择；未知结构不自动推断')
         self.fieldHint.setWordWrap(True)
         self.form.addRow(self.fieldHint)
+        from .image_properties import ImageProperties
+        self.imageProperties = ImageProperties()
+        self.form.addRow(self.imageProperties)
+        from .responsive_properties import ResponsiveProperties
+        self.responsiveProperties = ResponsiveProperties()
+        self.form.addRow(self.responsiveProperties)
+        from .sqlite_properties import SqliteProperties
+        self.sqliteProperties = SqliteProperties(projectRoot=lambda: self.w.coordinator.directory,
+                                                 inspectRuntime=self.inspectRuntimeSqlite)
+        self.form.addRow(self.sqliteProperties)
         self.captureNotice = QLabel()
         self.captureNotice.setWordWrap(True)
         workspace.detailsLayout.addWidget(self.captureNotice)
         from .property_panel import PropertyGroups
         self.propertyGroups = PropertyGroups(self, panel)
+        self.imageProperties.modeChanged.connect(self.refreshImageMode)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(panel)
@@ -194,12 +221,34 @@ class EditingTools(QObject):
         for button in self.operationButtons:
             action = self.componentMenu.addAction(button.text())
             action.triggered.connect(button.click)
+        self.componentMenu.addSeparator()
+        self.groupActions = []
+        for label, direction in [('横向编组', 'horizontal'), ('纵向编组', 'vertical'), ('自动换行编组', 'wrap')]:
+            action = self.componentMenu.addAction(label)
+            action.triggered.connect(lambda _checked=False, direction=direction:
+                self.w.run(lambda: self.responsive.group(direction), refresh=False))
+            self.groupActions.append(action)
+        self.ungroupAction = self.componentMenu.addAction('取消编组')
+        self.ungroupAction.triggered.connect(lambda: self.w.run(self.responsive.ungroup, refresh=False))
+        self.componentMenu.aboutToShow.connect(self.updateGroupActions)
         self.componentMore = QToolButton()
         self.componentMore.setText('操作')
         self.componentMore.setPopupMode(QToolButton.InstantPopup)
         self.componentMore.setMenu(self.componentMenu)
         header.addWidget(self.componentMore)
         outer.addLayout(header)
+        self.parentRow = QWidget(propertyPanel)
+        parentLayout = QHBoxLayout(self.parentRow)
+        parentLayout.setContentsMargins(0, 0, 0, 0)
+        self.parentLabel = ElidedLabel()
+        self.parentLabel.setTextFormat(Qt.PlainText)
+        self.parentLabel.setMinimumWidth(0)
+        parentLayout.addWidget(self.parentLabel, 1)
+        self.parentButton = QPushButton('选择父组')
+        self.parentButton.clicked.connect(lambda: self.w.run(self.selectParent, refresh=False))
+        parentLayout.addWidget(self.parentButton)
+        self.parentRow.hide()
+        outer.addWidget(self.parentRow)
         outer.addWidget(self.propertyError)
         outer.addWidget(scroll, 1)
         self.applyButton.setObjectName('primaryButton')
@@ -210,6 +259,52 @@ class EditingTools(QObject):
 
     def commands(self):
         return PageCommands(self.w.session, manifestsFromCatalog(self.w.coordinator.window.operatorCatalog))
+
+    def inspectRuntimeSqlite(self, path, table):
+        from pathlib import Path
+        client = self.w.coordinator.window.runtimeClient
+        snapshot = client.getOnlineProjectSnapshot()
+        # This path is returned by Runtime; never send the Designer's directory.
+        directory = str(Path(snapshot['sourcePath']).parent)
+        reply = client.sqliteTarget('inspect', path, directory, table)
+        names = list(reply.tables)
+        selected = table or next(iter(names), '')
+        if selected and not table:
+            reply = client.sqliteTarget('inspect', path, directory, selected)
+        result = {name: [] for name in names}
+        if selected:
+            result[selected] = [column.name for column in reply.columns]
+        return result
+
+    def selectionCount(self):
+        return len(self.responsive.selectedIds) if self.responsive.enabled() else int(self.selected is not None)
+
+    def updateGroupActions(self):
+        enabled = self.responsive.enabled() and bool(self.responsive.selectedIds) and self.w.renderer.editing
+        for action in self.groupActions:
+            action.setVisible(self.responsive.enabled())
+            action.setEnabled(enabled)
+        component = _component(self.w.renderer.config, self.w.pageId, self.selected) if enabled else None
+        self.ungroupAction.setVisible(self.responsive.enabled())
+        self.ungroupAction.setEnabled(enabled and len(self.responsive.selectedIds) == 1 and component.type == 'container')
+
+    def setAlignmentGuidesEnabled(self, enabled):
+        self.responsive.guidesEnabled = bool(enabled)
+        if not enabled and self.responsive.preview:
+            self.responsive.preview.lines = ()
+            self.responsive.preview.update()
+
+    def setAlignmentSnapEnabled(self, enabled):
+        self.responsive.snapEnabled = bool(enabled)
+
+    def arrangementBlockedReason(self, key):
+        return self.responsive.blockedReason(key)
+
+    def alignSelection(self, mode):
+        self.responsive.arrange(alignment=mode)
+
+    def distributeSelection(self, axis):
+        self.responsive.arrange(distribute=axis)
 
     def refreshCatalog(self):
         manifests = self.commands().manifests
@@ -320,10 +415,6 @@ class EditingTools(QObject):
         self.select(self.selected)
 
     def install(self):
-        for page in self.w.renderer.pages.values():
-            # Reserve the editing scrollbar lane so resizing a nested component
-            # cannot change its parent grid width midway through the gesture.
-            page.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         for widget in [self.w.renderer, *self.w.renderer.findChildren(QWidget)]:
             if widget.property('editorDecoration'):
                 continue
@@ -340,6 +431,8 @@ class EditingTools(QObject):
                         content = widget.containerTitle.body if hasattr(widget, 'containerTitle') else widget
                         grids.append((content, item.children))
             for widget, children in grids:
+                if not hasattr(widget.layout(), 'setRowMinimumHeight'):
+                    continue
                 row = max((c.layout.row + c.layout.rowSpan for c in children), default=0)
                 widget.layout().setRowMinimumHeight(row, 64)
                 widget.layout().setGeometry(widget.rect())
@@ -409,7 +502,16 @@ class EditingTools(QObject):
                        for name, field in self.fields.items())
         rows = tuple(tuple(self._cellValue(r, c) for c in range(4)) for r in range(self.extra.rowCount()))
         return (values, self.pageName.text(), self.destination.currentData(), self.actionMode.currentData(), self.actionScope.currentData(),
-                tuple((name, field.currentData()) for name, field in self.appearance.items()), rows)
+                tuple((name, field.currentData()) for name, field in self.appearance.items()), rows,
+                self.sqliteProperties.state(), self.imageProperties.state(), self.responsiveProperties.state(),
+                tuple(self.pageTargets.currentData() or []))
+
+    def refreshImageMode(self):
+        try:
+            component = _component(self.w.store.snapshot(), self.w.pageId, self.selected)
+        except KeyError:
+            return
+        self.propertyGroups.select(component.type)
 
     def commitPending(self):
         """Save the visible form first; invalid input stays visible and blocks leaving."""
@@ -419,10 +521,45 @@ class EditingTools(QObject):
             raise ValueError('属性输入仍属于上一页面，请先应用或修正后再切页')
         self.apply()
 
+    def updateParentNavigation(self):
+        self.parentRow.setVisible(self.selected is not None)
+        if self.selected is None:
+            return
+        from .responsive_editing import parentOf
+        p = self.w.store.snapshot()
+        parentId = parentOf(p, self.w.pageId, self.selected)[0]
+        if parentId is not None:
+            parent = _component(p, self.w.pageId, parentId)
+            self.parentLabel.setText('所属组：' + (parent.props.title or '未命名容器'))
+            self.parentButton.setText('选择父组')
+            self.parentButton.setToolTip('选择当前控件的父组，调整排列、间距和组内等宽')
+        else:
+            self.parentLabel.setText('所属页面：' + p.pages[self.w.pageId].name)
+            self.parentButton.setText('选择页面')
+            self.parentButton.setToolTip('打开当前页面的布局属性')
+
+    def selectParent(self):
+        if self.selected is None:
+            return
+        from .responsive_editing import parentOf
+        parentId = parentOf(self.w.store.snapshot(), self.w.pageId, self.selected)[0]
+        # Use the existing selection path: it accepts valid pending properties
+        # and keeps invalid input on the original component for correction.
+        if self.responsive.enabled():
+            self.responsive.select([parentId] if parentId is not None else [])
+        else:
+            self.select(parentId)
+        self.w.propertyScroll.verticalScrollBar().setValue(0)
+
     def select(self, key):
         if key != self.selected:
             self.commitPending()
         self.selected = key
+        if self.responsive.enabled():
+            if key is None:
+                self.responsive.selectedIds = []
+            elif key not in self.responsive.selectedIds:
+                self.responsive.selectedIds = [key]
         self.componentMore.setEnabled(key is not None)
         self.applyButton.setEnabled(self.w.pageId is not None)
         self.updateSelection()
@@ -430,16 +567,30 @@ class EditingTools(QObject):
             component = _component(self.w.store.snapshot(), self.w.pageId, key)
         except KeyError:
             self.selected = None
+            self.updateParentNavigation()
             if self.w.pageId:
-                self.fields['columns'].setValue(self.w.store.snapshot().pages[self.w.pageId].layout.columns)
+                self.fields['columns'].setValue(getattr(self.w.store.snapshot().pages[self.w.pageId].layout, 'columns', 1))
                 self.pageName.setText(self.w.store.snapshot().pages[self.w.pageId].name)
+                self.pageTargets.setCurrentIndex(self.pageTargets.findData(self.w.store.snapshot().pages[self.w.pageId].targets))
+                self.responsiveProperties.load(self.w.store.snapshot().pages[self.w.pageId].layout, None)
+            self.responsiveProperties.setItemVisible(False)
             self.title.setText('页面属性')
             self.propertyGroups.select(None)
             self._loadedPage = self.w.pageId
             self._loadedFields = self._fieldState()
             return
         from .palette import TITLES
+        self.updateParentNavigation()
+        self.responsiveProperties.load(component.grid if component.type == 'container' else None, component.responsive)
+        self.responsiveProperties.setItemVisible(True)
+        spacerMode = self.fields['spacerMode']
+        spacerMode.setCurrentIndex(spacerMode.findData(component.props.spacerMode))
+        from .responsive_editing import parentOf, layoutFor
+        parentId, _siblings, _index = parentOf(self.w.store.snapshot(), self.w.pageId, key)
+        spacerMode.model().item(1).setEnabled(layoutFor(self.w.store.snapshot(), self.w.pageId, parentId).type == 'responsive')
         self.propertyGroups.select(component.type)
+        self.sqliteProperties.load(component.props.sqlite, component.type)
+        self.imageProperties.load(component, self.w.store.snapshot(), self.w.pageId)
         self.title.setText(component.props.title or TITLES[component.type])
         self.title.setToolTip(self.title.text() + '\n组件编号：' + component.componentId)
         snapshot = self.w.store.snapshot()
@@ -476,8 +627,8 @@ class EditingTools(QObject):
             self.fields[name].setValue(getattr(component.props, name))
         for name, field in self.appearance.items():
             field.setCurrentIndex(field.findData(getattr(component.props, name)))
-        self.fields['columns'].setValue(component.grid.columns if component.type == 'container'
-                                       else self.w.store.snapshot().pages[self.w.pageId].layout.columns)
+        self.fields['columns'].setValue(getattr(component.grid if component.type == 'container'
+                                       else self.w.store.snapshot().pages[self.w.pageId].layout, 'columns', 1))
         action = component.actions.get('clicked')
         self.destination.setCurrentIndex(max(0, self.destination.findData(action.pageId if action else None)))
         self.destination.setEnabled(component.type == 'navigation_button')
@@ -522,13 +673,17 @@ class EditingTools(QObject):
             message = str(error)
             self.propertyError.setText(editorMessage(message))
             self.propertyError.setToolTip(message)
-            self.w.coordinator.window.appendRuntimeLog('ERROR', message)
+            self.w.coordinator.window.appendPageLog('ERROR', message)
             self.propertyError.show()
             self.w.floatingProperties.setExpanded(True)
             field = next((widget for name, widget in self.fields.items() if name in message), self.extra
                          if any(word in message for word in ('boolean', 'duplicate', '字段')) else self.fields['columnSpan'])
             if not self.selected and 'name' in message:
                 field = self.pageName
+            if 'SQLite' in message or 'sqlite' in message:
+                field = self.sqliteProperties
+            if '图片路径' in message or 'imagePath' in message:
+                field = self.imageProperties
             field.setFocus()
             self.errorField = field
             # The caller's error message can resize the canvas after we raise.
@@ -552,8 +707,12 @@ class EditingTools(QObject):
         columns = self.fields['columns'].value()
         if not self.selected:
             def editPage(p):
-                p.pages[self.w.pageId].layout.columns = columns
+                if self.responsive.enabled():
+                    p.pages[self.w.pageId].layout = self.responsiveProperties.layoutPayload()
+                else:
+                    p.pages[self.w.pageId].layout.columns = columns
                 p.pages[self.w.pageId].name = self.pageName.text()
+                p.pages[self.w.pageId].targets = list(self.pageTargets.currentData())
             self.w.session.editPresentation(editPage)
             self._loadedFields = self._fieldState()
             return
@@ -566,6 +725,15 @@ class EditingTools(QObject):
         props.update({key: field.currentData() for key, field in self.appearance.items()})
         props.update({key: self.fields[key].currentData() for key in ['imageResourceId', 'iconResourceId']
                       if key in applicable})
+        if item.type == 'spacer':
+            props['spacerMode'] = self.fields['spacerMode'].currentData()
+        if item.type == 'image':
+            imageMode = self.imageProperties.mode.currentData()
+            props['imagePath'] = self.imageProperties.payload()
+            if imageMode != 'resource':
+                props['imageResourceId'] = None
+            elif props['imageResourceId'] is None:
+                raise ValueError('图片路径：请选择静态图片资源。')
         rows = [[self._cellValue(r, c) for c in range(4)]
                 for r in range(self.extra.rowCount())]
         if item.type == 'table':
@@ -574,6 +742,8 @@ class EditingTools(QObject):
             props['columns'] = [{'title': title, 'fieldPath': list(path)} for title, path, _, _ in rows]
         if item.type == 'indicator':
             props['indicatorStates'] = indicatorStatesFromRows(rows)
+        if item.type in ('sqlite_table', 'sqlite_value'):
+            props['sqlite'] = self.sqliteProperties.payload()
         layout = Placement(**{key: self.fields[key].value() for key in ['row', 'column', 'rowSpan', 'columnSpan']})
         actions = item.actions
         if item.type == 'navigation_button':
@@ -583,7 +753,9 @@ class EditingTools(QObject):
                 resultScopeId=self.actionScope.currentData() if mode in ('detail', 'freeze') else None)
             actions = {'clicked': action} if action else {}
         self.commands().update(self.w.pageId, self.selected, props=Props(**props), layout=layout,
-            actions=actions, columns=columns if item.type == 'container' else None)
+            actions=actions, columns=columns if item.type == 'container' and item.grid.type == 'grid' else None,
+            responsive=self.responsiveProperties.itemPayload() if self.responsive.enabled() else None,
+            containerLayout=self.responsiveProperties.layoutPayload() if self.responsive.enabled() and item.type == 'container' else None)
         self._loadedFields = self._fieldState()
 
     def bindChoice(self, index, key):
@@ -595,6 +767,7 @@ class EditingTools(QObject):
 
     def bindSelected(self):
         if self.selected and self.binding.currentIndex() >= 0:
+            self.commitPending()
             self.bindChoice(self.binding.currentData(), self.selected)
 
     def clearBinding(self):
@@ -605,7 +778,11 @@ class EditingTools(QObject):
 
     def delete(self):
         if self.selected:
-            self.commands().delete(self.w.pageId, self.selected)
+            if self.responsive.enabled():
+                self.responsive.commands().delete(self.w.pageId, self.responsive.selectedIds)
+                self.responsive.selectedIds = []
+            else:
+                self.commands().delete(self.w.pageId, self.selected)
             self.selected = None
 
     def copy(self):
@@ -622,6 +799,8 @@ class EditingTools(QObject):
 
     def componentAt(self, widget):
         while widget and widget is not self.w.renderer:
+            if not isValid(widget):
+                return None, None
             key = widget.property('componentId')
             if key:
                 return key, widget
@@ -649,6 +828,8 @@ class EditingTools(QObject):
         self.w.message.setText(message)
 
     def clearSelection(self):
+        self.responsive.cancel()
+        self.responsive.clearDecorations()
         if self.selection and self.selection is not self.retainedSelection:
             self.selection.dispose()
             self.selection = None
@@ -685,6 +866,9 @@ class EditingTools(QObject):
     def updateSelection(self):
         if self.retainedSelection is not None:
             return
+        if self.responsive.enabled():
+            self.responsive.updateSelection()
+            return
         self.clearSelection()
         if self.selected and self.w.renderer.editing and self.w.pageId in self.w.renderer.pages:
             from .canvas_tools import Selection
@@ -704,6 +888,8 @@ class EditingTools(QObject):
     def drop(self, payload, widget, point, *, preview=False):
         if not self.w.renderer.editing or not self.w.pageId:
             raise ValueError('先创建页面并进入编辑模式')
+        if self.responsive.enabled() and 'choice' not in payload:
+            return self.responsive.drop(payload, widget, point, preview=preview)
         key, card = self.componentAt(widget)
         commands = self.commands().preview() if preview else self.commands()
         if 'choice' in payload:
@@ -768,10 +954,12 @@ class EditingTools(QObject):
             self.w.refresh()
 
     def eventFilter(self, obj, event):
-        if self.w.closed or not isValid(self.w.renderer):
+        if self.w.closed or not isValid(obj) or not isValid(self.w.renderer):
             return False
         if obj.property('editorDecoration'):
             return False
+        if self.responsive.eventFilter(obj, event):
+            return True
         kind = event.type()
         if kind in (QEvent.DragEnter, QEvent.DragMove) and event.mimeData().hasFormat(MIME):
             payload = json.loads(bytes(event.mimeData().data(MIME)))

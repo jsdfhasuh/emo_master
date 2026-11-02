@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="8" time="10.023" timestamp="2026-10-29T17:08:29.866809+08:00" hostname="视觉电脑"><testcase classname="tests.runtime.test_presentation_log_stream" name="testFollowIncludesPresentationFailureClosedAfterWorkerTerminal[False]" time="0.600" /><testcase classname="tests.runtime.test_presentation_log_stream" name="testFollowIncludesPresentationFailureClosedAfterWorkerTerminal[True]" time="0.361" /><testcase classname="tests.runtime.test_presentation_log_stream" name="testFollowCancellationDoesNotContinueDrainingOrReading[retirement]" time="0.336" /><testcase classname="tests.runtime.test_presentation_log_stream" name="testFollowCancellationDoesNotContinueDrainingOrReading[presentation]" time="0.467" /><testcase classname="tests.runtime.test_presentation_log_stream" name="testHistoricalReadNeverWaitsForPresentationDrain" time="0.448" /><testcase classname="tests.runtime.test_presentation_log_stream" name="testTerminalWaitIncludesReadPresentationButNeverNonOperationalSequences" time="0.372" /><testcase classname="tests.runtime.test_tcp_device_integration" name="testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure" time="0.414"><failure message="emo_master.clients.runtime.devices.DeviceClientError: Runtime 未加载此工程">chain = {'root': WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-3816/tcp-device-chain0'), 'serv...ath': [...]}}]}, 'production': {'autoStart': False, 'mode': 'single', 'cycleIntervalMs': 100, 'inputs': {}}, ...}, ...}
+
+    def testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure(chain):
+        from emo_master.clients.runtime.devices import DeviceManagementClient
+        from emo_master.core.project.configuration import projectChanges, requiredProjectChanges
+        c = chain
+        shared = DeviceManagementClient(c['service'])
+&gt;       runtimeId, states = shared.getDeviceStates(c['service'].loadedProjectId)
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_tcp_device_integration.py:385:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\clients\runtime\devices.py:69: in getDeviceStates
+    return self._states(self._call('GetDeviceStates', pb.GetDeviceStatesRequest(project_id=projectId), cancellation))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;emo_master.clients.runtime.devices.DeviceManagementClient object at 0x000001FBBE7CE6B0&gt;
+reply = runtime_instance_id: "cc7fb794-19e4-41d3-835f-51e86076bb0b"
+states_json: "{}"
+message: "Runtime 未加载此工程"
+code: "E_CONFIG_NOT_LOADED"
+runtime_uptime_ms: 405
+
+
+    def _states(self, reply):
+        if not reply.ok:
+&gt;           raise DeviceClientError(reply.code or 'E_DEVICE_STATE', reply.message)
+E           emo_master.clients.runtime.devices.DeviceClientError: Runtime 未加载此工程
+
+src\emo_master\clients\runtime\devices.py:63: DeviceClientError</failure></testcase><testcase classname="tests.runtime.test_tcp_device_integration" name="testA6ThirdPartyServiceUsesSameFactoryJobStateAndDeviceLogs" time="5.651" /></testsuite></testsuites>

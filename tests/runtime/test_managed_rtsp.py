@@ -264,7 +264,7 @@ def testOversizedDecodedFrameCannotEnterStore(driver):
 def testNewProjectRoundtripAndStrictCompilation(tmp_path):
     registry = scan().activeOperators
     document = project()
-    assert document.schemaVersion == '2.7' and document.devices.schemaVersion == '1.0'
+    assert document.schemaVersion == '2.9' and document.devices.schemaVersion == '1.0'
     path = tmp_path / 'managed-rtsp.emoproj'
     saveProject(path, document.model_dump(mode='json'))
     restored = loadProjectDocument(path)

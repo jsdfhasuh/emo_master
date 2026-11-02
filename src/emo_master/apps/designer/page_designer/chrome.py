@@ -72,7 +72,22 @@ class WorkspaceChrome(QObject):
         self.menus['视图'].addAction(self.previewAction)
         self.menus['文件'].addAction(w._toolbarActions['校验项目'])
         from .delivery import exportDialog
-        self.menus['文件'].addAction(self.action('导出测试项目包…', lambda: self.command(lambda: exportDialog(coordinator))))
+        self.exportAction = self.action('导出项目包…', lambda: self.command(lambda: exportDialog(coordinator)))
+        self.menus['文件'].addAction(self.exportAction)
+        from .delivery import exportWebDialog
+        from .web_preview import previewWeb
+        self.exportWebAction = self.action('导出 Web 页面包…',
+            lambda: self.command(lambda: exportWebDialog(coordinator)))
+        self.menus['文件'].addAction(self.exportWebAction)
+        self.previewWebAction = self.action('预览 Web 页面（示例数据）',
+            lambda: self.command(lambda: previewWeb(coordinator)))
+        self.menus['视图'].addAction(self.previewWebAction)
+        self.pageActions.append(self.previewWebAction)
+        self.previewWebRuntimeAction = self.action('预览 Web 页面（当前 Runtime，只读）',
+            lambda: self.command(lambda: previewWeb(coordinator, online=True)))
+        self.previewWebRuntimeAction.setToolTip('使用 Runtime 菜单选择的连接；在网页中选择已有运行记录')
+        self.menus['视图'].addAction(self.previewWebRuntimeAction)
+        self.pageActions.append(self.previewWebRuntimeAction)
         self.menus['运行'].addAction(w._toolbarActions['刷新算子'])
         capture = self.menus['运行'].addMenu('结果采集设置')
         policies = QActionGroup(capture)
@@ -96,6 +111,10 @@ class WorkspaceChrome(QObject):
         self.fit = self.action('适应画布', lambda: self.c.editor.renderer.fitToAvailableScreen() if self.c.pageActive() else None)
         self.menus['视图'].addAction(self.fit)
         self.pageActions.append(self.fit)
+        from emo_master.apps.designer.ui.performance_probe import PerformanceProbeController
+        self.performanceProbe = PerformanceProbeController(coordinator)
+        self.performanceProbeAction = self.action('Designer 性能探针…', self.performanceProbe.show)
+        self.menus['视图'].addAction(self.performanceProbeAction)
         self.publishPages = self.action('发布工作页面…', self.publish)
         self.menus['Runtime'].addSeparator()
         self.menus['Runtime'].addAction(self.publishPages)
@@ -166,6 +185,8 @@ class WorkspaceChrome(QObject):
     def update(self, *, projectChanged=True):
         if projectChanged:
             self.c.updateWindowTitle()
+            from .delivery import exportPackageLabel
+            self.exportAction.setText(exportPackageLabel(self.c) + '…')
         observer = getattr(self.window, 'deviceStatusObserver', None)
         if observer is not None:
             observer.refresh()

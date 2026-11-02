@@ -107,6 +107,16 @@ def testCompletedEventProjectionRemovesOutputsButKeepsOperationalSummary(
     }
 
 
+def testPreviewSnapshotFailureIsIncludedInOperationalFile(tmp_path):
+    writer = RuntimeJsonlLogWriter(tmp_path)
+    assert writer.enqueue(_event(1, eventType='preview.snapshot.failed', level='WARN',
+                                 message='snapshot copy failed', payload={'reason': 'destination unavailable'}))
+    assert writer.close() is None
+    row, = _records(tmp_path)
+    assert row['eventType'] == 'preview.snapshot.failed' and row['level'] == 'WARN'
+    assert row['payload']['reason'] == 'destination unavailable'
+
+
 def testJsonlWriterRotatesAtConfiguredSizeAndUsesStableFileNames(
     tmp_path: Path,
 ) -> None:
@@ -202,7 +212,7 @@ def testJsonlWriterSkipsNonOperationalAndFailureNotificationEvents(
     tmp_path: Path,
 ) -> None:
     writer = RuntimeJsonlLogWriter(tmp_path)
-    assert writer.enqueue(_event(1, eventType="preview.snapshot.failed")) is False
+    assert writer.enqueue(_event(1, eventType="process.heartbeat")) is False
     assert writer.enqueue(_event(2, eventType="runtime.logfile.failed")) is False
     assert writer.close() is None
     assert list(tmp_path.glob("runtime-*.jsonl")) == []

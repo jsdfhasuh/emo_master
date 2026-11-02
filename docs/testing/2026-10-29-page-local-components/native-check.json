@@ -1,0 +1,12 @@
+{
+  "platform": "windows",
+  "schema": "2.7",
+  "palette": 13,
+  "rows": 18,
+  "pageRows": 8,
+  "filteredRows": 3,
+  "designerOpen": true,
+  "roundTrip": true,
+  "compile": true,
+  "runtimeJobStarted": false
+}

@@ -10,6 +10,9 @@ from emo_master.apps.designer.ui.operator_bubble import OPERATOR_MIME_TYPE
 from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
 from emo_master.apps.designer.ui.node_geometry import gridPositions, measureNode
 from emo_master.apps.designer.ui.flow_layout import LayoutEdge, LayoutNode, flowPositions
+from emo_master.apps.designer.ui.canvas_alignment import (
+    Box, alignedOffsets, distributedOffsets, enclosingBox, snapOffset,
+)
 from emo_master.apps.designer.ui.flow_routing import EdgeKey, OrthogonalRouter, Rect, Route, RouteRequest, simplify
 from emo_master.apps.designer.ui.flow_edge_presentation import (
     SELECTED_COLOR, FOCUS_COLOR, WireGeometry, WirePart, edgeStyle, focusEdges, wireGeometry,
@@ -703,6 +706,10 @@ try:
             self._routeBatch = False
             self._routesDirty = False
             self._mouseEditChanged = False
+            self.alignmentGuidesEnabled = True
+            self.alignmentSnapEnabled = True
+            self._alignmentDrag: dict | None = None
+            self._alignmentGuideItem: _WireLayer | None = None
             self._routeTimer = QTimer(self)
             self._routeTimer.setSingleShot(True)
             self._routeTimer.timeout.connect(self.refreshAllRoutes)
@@ -990,6 +997,8 @@ try:
             self.clearGraph()
 
         def clearGraph(self) -> None:
+            self._alignmentDrag = None
+            self._alignmentGuideItem = None  # super().clear() owns its native item
             hadSelection = bool(self.selectedItems())
             for item in self._nodeItems.values():
                 if item._titleProxy is not None:
@@ -1359,10 +1368,10 @@ try:
             self._routeRefineTimer.start(1)
 
         def refreshEdgesForNode(self, nodeId: str) -> None:
-            self._cancelRouteRefinement()
-            self._refreshBindingPaths()
             if self._routeBatch:
                 return
+            self._cancelRouteRefinement()
+            self._refreshBindingPaths()
             if self.mouseGrabberItem() is not None:
                 self._routeTimer.stop()
                 self._routesDirty = True
@@ -1423,6 +1432,8 @@ try:
                 item.setPath(path)
 
         def removeFlowNode(self, nodeId: str) -> None:
+            if self._alignmentDrag is not None:
+                self.cancelAlignmentDrag()
             nodeItem = self._nodeItems.get(nodeId)
             if nodeItem is not None and nodeItem.model.kind in {
                 "workflow_input",
@@ -1593,7 +1604,136 @@ try:
                 return
             self._canvasClickHandler()
 
+        def setAlignmentGuidesEnabled(self, enabled: bool) -> None:
+            self.alignmentGuidesEnabled = bool(enabled)
+            if not enabled:
+                self._showAlignmentGuides(())
+
+        def setAlignmentSnapEnabled(self, enabled: bool) -> None:
+            self.alignmentSnapEnabled = bool(enabled)
+
+        @staticmethod
+        def _alignmentBox(item) -> Box:
+            rect = item.mapRectToScene(item.rect())
+            return Box(rect.x(), rect.y(), rect.width(), rect.height())
+
+        def _showAlignmentGuides(self, lines) -> None:
+            if not lines:
+                if self._alignmentGuideItem is not None:
+                    self._alignmentGuideItem.hide()
+                    self._alignmentGuideItem.setPath(QPainterPath())
+                return
+            if self._alignmentGuideItem is None:
+                self._alignmentGuideItem = _WireLayer()
+                pen = QPen(QColor('#db2777'), 1, Qt.DashLine)
+                pen.setCosmetic(True)
+                self._alignmentGuideItem.setPen(pen)
+                self._alignmentGuideItem.setZValue(100)
+                self.addItem(self._alignmentGuideItem)
+            path = QPainterPath()
+            for x1, y1, x2, y2 in lines:
+                path.moveTo(x1, y1)
+                path.lineTo(x2, y2)
+            self._alignmentGuideItem.setPath(path)
+            self._alignmentGuideItem.show()
+
+        def isAlignmentDragging(self) -> bool:
+            return self._alignmentDrag is not None
+
+        def _beginAlignmentDrag(self, event) -> None:
+            grabber = self.mouseGrabberItem()
+            if not (event.button() == Qt.LeftButton and isinstance(grabber, _NodeItem)
+                    and grabber.isSelected() and grabber.flags() & QGraphicsItem.ItemIsMovable):
+                return
+            selected = {key: item for key, item in self._nodeItems.items()
+                        if item.isSelected() and item.flags() & QGraphicsItem.ItemIsMovable}
+            self._alignmentDrag = {
+                'origins': {key: QPointF(item.pos()) for key, item in selected.items()},
+                'bounds': enclosingBox(self._alignmentBox(item) for item in selected.values()),
+                'references': tuple(self._alignmentBox(item) for key, item in self._nodeItems.items()
+                                    if key not in selected),
+                'start': QPointF(event.scenePos()), 'screen': QPoint(event.screenPos()), 'moved': False,
+                'guideTargets': (None, None),
+            }
+
+        def _moveAlignmentDrag(self, event) -> bool:
+            drag = self._alignmentDrag
+            if drag is None or not event.buttons() & Qt.LeftButton:
+                return False
+            if not drag['moved'] and (event.screenPos() - drag['screen']).manhattanLength() < QApplication.startDragDistance():
+                event.accept()
+                return True
+            drag['moved'] = True
+            delta = event.scenePos() - drag['start']
+            view = next((view for view in self.views() if view.viewport() is event.widget()), None)
+            scale = abs(view.transform().m11()) if view is not None else 1.
+            scale = max(.001, scale)
+            dx, dy, lines = snapOffset(drag['bounds'].translated(delta.x(), delta.y()),
+                drag['references'], 6 / scale, 400 / scale, preferred=drag['guideTargets']) if (
+                    self.alignmentGuidesEnabled or self.alignmentSnapEnabled) else (0., 0., ())
+            drag['guideTargets'] = (next((line[0] for line in lines if line[0] == line[2]), None),
+                                    next((line[1] for line in lines if line[1] == line[3]), None))
+            if self.alignmentSnapEnabled and not event.modifiers() & Qt.AltModifier:
+                delta += QPointF(dx, dy)
+            changed = []
+            self._routeBatch = True
+            try:
+                for key, origin in drag['origins'].items():
+                    item = self._nodeItems[key]
+                    position = origin + delta
+                    if item.pos() != position:
+                        item.setPos(position)
+                        changed.append(key)
+            finally:
+                self._routeBatch = False
+            if changed:
+                self._routeTimer.stop()
+                self._cancelRouteRefinement()
+                self._refreshBindingPaths()
+                self._routesDirty = self._mouseEditChanged = True
+                self._routeEdges([item for item in self._edgeItems.values()
+                                  if item.edge.fromNodeId in changed or item.edge.toNodeId in changed])
+            self._showAlignmentGuides(lines if self.alignmentGuidesEnabled else ())
+            event.accept()
+            return True
+
+        def cancelAlignmentDrag(self) -> None:
+            drag, self._alignmentDrag = self._alignmentDrag, None
+            self._showAlignmentGuides(())
+            if drag is None:
+                return
+            grabber = self.mouseGrabberItem()
+            if isinstance(grabber, _NodeItem):
+                grabber.ungrabMouse()
+            positions = {key: (point.x(), point.y()) for key, point in drag['origins'].items()}
+            if any(self._nodeItems[key].pos() != point for key, point in drag['origins'].items()):
+                self._applyPositions(positions)
+            self._mouseEditChanged = False
+
+        def _arrangeSelectedNodes(self, operation, mode) -> bool:
+            if self.isAlignmentDragging() or self._dragSourcePort is not None:
+                return False
+            selected = {key: self._alignmentBox(item) for key, item in self._nodeItems.items() if item.isSelected()}
+            offsets = operation(selected, mode)
+            positions = {key: (self._nodeItems[key].x() + dx, self._nodeItems[key].y() + dy)
+                         for key, (dx, dy) in offsets.items() if abs(dx) > 1e-6 or abs(dy) > 1e-6}
+            if not positions:
+                return False
+            self._applyPositions(positions)
+            callback = getattr(self, 'editCompleted', None)
+            if callback is not None:
+                callback()
+            return True
+
+        def alignSelectedNodes(self, mode: str) -> bool:
+            return self._arrangeSelectedNodes(alignedOffsets, mode)
+
+        def distributeSelectedNodes(self, axis: str) -> bool:
+            return self._arrangeSelectedNodes(distributedOffsets, axis)
+
         def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+            if self._moveAlignmentDrag(event):
+                return
             if self._dragSourcePort is not None and self._dragPathItem is not None:
                 start = self._dragSourcePort.sceneBoundingRect().center()
                 end = event.scenePos()
@@ -1632,9 +1772,14 @@ try:
                 if not items:
                     self.clearEdgeFocus()
             super().mousePressEvent(event)
+            self._beginAlignmentDrag(event)
 
         def keyPressEvent(self, event) -> None:
             if event.key() == Qt.Key_Escape:
+                if self._alignmentDrag is not None:
+                    self.cancelAlignmentDrag()
+                    event.accept()
+                    return
                 if self._dragSourcePort is not None:
                     self._cancelConnectionDrag()
                     event.accept()
@@ -1703,6 +1848,11 @@ try:
 
                 self._cancelConnectionDrag()
             super().mouseReleaseEvent(event)
+            if self._alignmentDrag is not None:
+                drag, self._alignmentDrag = self._alignmentDrag, None
+                self._mouseEditChanged = any(self._nodeItems[key].pos() != point
+                                             for key, point in drag['origins'].items())
+                self._showAlignmentGuides(())
             if self._routesDirty:
                 self._scheduleRouteRefinement()
             if self._mouseEditChanged:

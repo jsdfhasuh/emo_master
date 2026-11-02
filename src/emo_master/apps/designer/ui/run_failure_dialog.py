@@ -121,7 +121,7 @@ def showRunFailure(window, entry: StructuredLogEntry, failure: dict[str, object]
 
         def navigate():
             result = window.navigateToRuntimeLogEntry(entry)
-            window.appendRuntimeLog('INFO' if result.startswith('已定位') else 'WARN', result)
+            window.appendFlowLog('INFO' if result.startswith('已定位') else 'WARN', result)
 
         locate.clicked.connect(navigate)
     close = box.addButton('关闭', QMessageBox.RejectRole)

@@ -1,6 +1,27 @@
 import json
+import multiprocessing
+import threading
+from types import SimpleNamespace
+
+from prototypes.runtime_pages_p0 import continuous
 
 from prototypes.runtime_pages_p0.watchdog import supervised
+
+
+def testResourceSamplingKeepsRetiredExporterUnavailable(monkeypatch):
+    retired = multiprocessing.get_context("spawn").Process()
+    retired.close()
+    lock = threading.Lock()
+    exporter = SimpleNamespace(lock=lock, dead={0}, slots=[(retired, None), (SimpleNamespace(pid=123), None)])
+    measured = []
+    def sample(pid):
+        assert lock.locked()  # The owner cannot close this wrapper during sampling.
+        measured.append(pid)
+        return dict(rss_bytes=456)
+    monkeypatch.setattr(continuous, "resources", sample)
+    assert continuous.exporterResources(exporter) == [
+        dict(status="UNAVAILABLE", reason="exporter process retired", slot=0), dict(rss_bytes=456)]
+    assert measured == [123]
 
 
 def test_long_lived_runner_to_two_network_image_consumers():

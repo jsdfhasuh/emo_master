@@ -20,6 +20,11 @@ from tests.ui.page_designer.test_normal_run_viewing import waitFor
 @pytest.mark.parametrize('snapshotPolicy', ['ALL', 'NONE'])
 def testNormalRunEnablesSharedPageCapture(qtApp, tmp_path, monkeypatch, snapshotPolicy):
     first, rest = gateConsumers(monkeypatch)
+    failures = []
+    phase = 'running'
+    def recordFailure(self, failure):
+        failures.append({**failure, 'testPhase': phase})
+    monkeypatch.setattr(MainWindow, '_showRunFailure', recordFailure)
     monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Discard)
     document = sharedPageProject(tmp_path)
     path = tmp_path / 'normal-live.emoproj'
@@ -34,8 +39,9 @@ def testNormalRunEnablesSharedPageCapture(qtApp, tmp_path, monkeypatch, snapshot
         waitFor(lambda: window.operatorCatalogController.state == 'ready')
         window.pageCoordinator.sync()
         draft = window.pageCoordinator.session.payload()
-        checked = client.initializeProjectConfiguration(draft, tmp_path, 'check', validate=True)
-        client.initializeProjectConfiguration(draft, tmp_path, 'publish', runtimeInstanceId=checked['runtimeInstanceId'])
+        checked = client.initializeProjectConfiguration(draft, tmp_path, 'check', validate=True, projectPath=path)
+        client.initializeProjectConfiguration(draft, tmp_path, 'publish', runtimeInstanceId=checked['runtimeInstanceId'],
+            projectPath=path)
         waitFor(lambda: client.getProjectWriteStatus('publish')['state'] in {'COMMITTED', 'FAILED'})
         assert client.getProjectWriteStatus('publish')['state'] == 'COMMITTED'
         monkeypatch.setattr(window.pageCoordinator, 'configureRuntime',
@@ -68,6 +74,7 @@ def testNormalRunEnablesSharedPageCapture(qtApp, tmp_path, monkeypatch, snapshot
         assert not runtime.jobRepository.get(job).isTerminal
         assert not runtime.jobRepository.get(consumer).isTerminal
         assert len(runtime.jobRepository.all()) == 2
+        assert not failures, failures
     finally:
         first.set()
         rest.set()
@@ -75,11 +82,24 @@ def testNormalRunEnablesSharedPageCapture(qtApp, tmp_path, monkeypatch, snapshot
             preview.closeAsync()
             waitFor(lambda: not preview.active())
         if window.isJobRunning:
+            phase = 'stopping'
             window.stopJob()
             waitFor(lambda: not window.isJobRunning)
         window.close()
         client.close()
         runtime.close()
+        if failures:
+            import json
+            (tmp_path / 'run-failures.json').write_text(json.dumps(failures, ensure_ascii=False, indent=2), encoding='utf-8')
+    # Only failures delivered after our explicit Stop qualify as cleanup.
+    # The device proxy either rejects a not-yet-sent capture, or retains UNKNOWN
+    # for an interrupted receipt. Running/viewing failures still fail above.
+    for failure in failures:
+        assert failure.get('testPhase') == 'stopping' and failure.get('eventType') == 'node.failed', failure
+        outcome = failure.get('payload', {}).get('diagnostics', {}).get('deviceOutcome', {}).get('outcome')
+        assert ((failure.get('code') == 'E_DEVICE_OUTCOME_UNKNOWN' and outcome == 'UNKNOWN')
+                or (failure.get('code') == 'E_DEVICE_CANCELLED' and outcome == 'NOT_EXECUTED'
+                    and failure.get('message') == 'device proxy cancelled')), failure
 
 
 @pytest.mark.parametrize('selection', ['producer', 'consumer'])

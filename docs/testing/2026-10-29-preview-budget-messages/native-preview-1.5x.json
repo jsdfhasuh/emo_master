@@ -1,0 +1,9 @@
+{
+  "platform": "windows",
+  "devicePixelRatio": 1.5,
+  "screenshot": "native-messages-1.5x.png",
+  "nativeMenuCopy": "passed",
+  "selectedErrorSurvivesLiveRecovery": true,
+  "clipboardSink": "test spy; native clipboard untouched",
+  "realDeviceAccess": false
+}

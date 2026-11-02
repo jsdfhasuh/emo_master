@@ -3,7 +3,6 @@ import queue
 import threading
 import time
 
-import grpc
 from PySide2.QtCore import QObject, QTimer
 from PySide2.QtWidgets import QInputDialog
 from shiboken2 import isValid
@@ -11,6 +10,7 @@ from shiboken2 import isValid
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rpc
 from emo_master.clients.runtime.display_session import DisplaySession
+from emo_master.clients.runtime.connection import connectionProfile, createChannel
 from emo_master.ui.presentation.hub import DisplayHub
 from emo_master.core.presentation.models import walkComponents
 from emo_master.core.presentation.coverage import CaptureCoverage
@@ -69,7 +69,7 @@ class LocalBackend:
                 self.root = self.service.root
             self.server = AioRuntimeServer(runtime, self.service)
             self.address = f'127.0.0.1:{self.server.port}'
-            self.channel = grpc.insecure_channel(self.address)
+            self.channel = createChannel(self.address)
             self.stub = rpc.DisplayServiceStub(self.channel)
         except BaseException:
             self.close()
@@ -80,7 +80,7 @@ class LocalBackend:
         modules = {'vision.io.image_loader': ('image_loader', '1.1.0'),
                    'vision.analysis.blob': ('blob_analysis', '1.2.0'),
                    'vision.collection.count': ('collection_count', '1.1.0'),
-                   'vision.io.image_saver': ('image_saver', '1.0.0')}
+                   'vision.io.image_saver': ('image_saver', '1.2.0')}
         for workflow in document.workflows.values():
             for node in workflow.nodes:
                 if node.kind == 'operator':
@@ -147,6 +147,9 @@ class PreviewController(QObject):
         super().__init__(coordinator.window)
         self.coordinator = coordinator
         self.session = self.hub = self.backend = None
+        self.historyOwner = None
+        self.runtimeLogs = None
+        self.logCursors = {}
         self.busy = False
         self.worker = None
         self.events = queue.Queue(maxsize=1)
@@ -165,9 +168,9 @@ class PreviewController(QObject):
         self.timer.timeout.connect(self.poll)
         self.timer.start(25)
 
-    def message(self, text):
+    def message(self, text, level='INFO'):
         from .property_panel import editorMessage
-        self.coordinator.window.appendRuntimeLog('INFO', text)
+        self.coordinator.window.appendPageLog(level, text)
         text = editorMessage(text)
         for original, readable in [
                 ('当前 Runtime 尚无页面服务；请先明确运行工程', '页面结果服务未启用；请在运行面板确认流程状态'),
@@ -219,10 +222,9 @@ class PreviewController(QObject):
     def connect(self, address, job):
         if self.busy or self.session or self.closing:
             raise ValueError('请先停止查看当前结果')
-        host, separator, port = address.rpartition(':')
-        if (host not in {'127.0.0.1', 'localhost'} or not separator or not port.isdecimal()
-                or not 0 < int(port) < 65536 or not job.strip()):
-            raise ValueError('仅接受本机 loopback 地址和明确 Job ID')
+        profile = connectionProfile(address)
+        if not job.strip():
+            raise ValueError('请指定明确 Job ID')
         job = job.strip()
         if self.observer is None:
             self.openObserver()
@@ -231,12 +233,12 @@ class PreviewController(QObject):
         def attach():
             # Negotiate using the supplied endpoint only. Viewing never creates a
             # local Runtime/service, prepares a snapshot, or starts a Job.
-            with grpc.insecure_channel(address) as channel:
+            with createChannel(profile) as channel:
                 stub = rpc.DisplayServiceStub(channel)
-                capabilities = stub.Capabilities(pb.DisplayEmpty(), timeout=5)
+                capabilities = stub.Capabilities(pb.DisplayEmpty(), timeout=profile.timeoutSeconds)
                 self._checkCapabilities(capabilities)
                 modern = {'project_jobs', 'source_coverage'} <= set(capabilities.capabilities)
-                jobs = stub.ListJobs(pb.DisplayEmpty(project_id=projectId if modern else ''), timeout=5).jobs
+                jobs = stub.ListJobs(pb.DisplayEmpty(project_id=projectId if modern else ''), timeout=profile.timeoutSeconds).jobs
                 metadata = next((item for item in jobs if item.job_id == job), None)
                 if metadata is None:
                     raise ValueError('指定任务不存在或展示结果已释放')
@@ -244,7 +246,8 @@ class PreviewController(QObject):
                     raise ValueError('指定任务不属于当前工程')
                 coverage = self._coverage(metadata, capabilities) if modern else None
             pair = self._dispatchPair(document, metadata, jobs) if modern else None
-            return self._attach(address, metadata, coverage, pair=pair, document=document)
+            return self._attach(profile, metadata, coverage, pair=pair, document=document,
+                                logs='presentation_logs' in capabilities.capabilities)
         self.launch(attach)
 
     @staticmethod
@@ -291,7 +294,7 @@ class PreviewController(QObject):
             else:
                 capabilities = client.getDisplayCapabilities()
                 self._checkCapabilities(capabilities, currentProject=True)
-                address = client.displayAddress()
+                address = getattr(client, 'connectionProfile', None) or client.displayAddress()
                 jobs = client.listDisplayJobs(projectId)
             self._checkCapabilities(capabilities, currentProject=True)
             if not address:
@@ -336,32 +339,13 @@ class PreviewController(QObject):
         metadata = jobs[index]
         coverage = self._coverage(metadata, value['capabilities'])
         pair = self._dispatchPair(document, metadata, value['jobs'])
-        self.launch(lambda: self._attach(value['address'], metadata, coverage, pair=pair, document=document))
+        self.launch(lambda: self._attach(value['address'], metadata, coverage, pair=pair, document=document,
+                                        logs='presentation_logs' in value['capabilities'].capabilities))
 
     @staticmethod
     def _dispatchPair(document, metadata, jobs):
-        from emo_master.core.presentation.validation import pageScopes
-        from emo_master.core.presentation.coverage import DispatchCoverage
-        presentation = document.presentation
-        if presentation is None:
-            return None
-        shared = [{presentation.resultScopes[key].entryWorkflowId for key in pageScopes(presentation, page)
-                   if key in presentation.resultScopes} for page in presentation.pages]
-        candidates = []
-        for consumer in jobs:
-            if not consumer.source_job_id or not consumer.target_slot_id:
-                continue
-            producer = next((item for item in jobs if item.job_id == consumer.source_job_id), None)
-            if producer is None or metadata.job_id not in (producer.job_id, consumer.job_id):
-                continue
-            roots = {producer.workflow_id, consumer.workflow_id}
-            if len(roots) != 2 or roots not in shared:
-                continue
-            DispatchCoverage.fromMetadata(producer, consumer)
-            candidates.append((producer, consumer))
-        if len(candidates) > 1:
-            raise ValueError('此生产任务有多个消费槽位，请选择要查看的消费任务')
-        return candidates[0] if candidates else None
+        from emo_master.core.presentation.workflow_view import dispatchPair
+        return dispatchPair(document, metadata, jobs)
 
     @staticmethod
     def _jobLabel(metadata, *, includeStatus=True):
@@ -374,7 +358,8 @@ class PreviewController(QObject):
         label = f'{source} / {slot} · ' if slot else f'{source} · ' if source else ''
         return f'{label}{mode}{status} · {capture} · {metadata.job_id[:8]}'
 
-    def _attach(self, address, metadata, coverage, *, pair=None, document=None):
+    def _attach(self, address, metadata, coverage, *, pair=None, document=None, logs=False):
+        address = connectionProfile(address)
         roots = (metadata.workflow_id,)
         if pair:
             from emo_master.clients.runtime.dispatch_display import DispatchDisplaySession
@@ -390,7 +375,22 @@ class PreviewController(QObject):
             self.session = DisplaySession(address, metadata.job_id, imageDemand=True,
                 expectedRuntimeInstanceId=metadata.runtime_instance_id, projectId=metadata.project_id,
                 readResults=bool(metadata.capture_enabled and not metadata.resources_released))
-        return {'kind': 'attached', 'metadata': metadata, 'coverage': coverage, 'roots': roots}
+        if document is not None and metadata.runtime_instance_id and metadata.project_id:
+            from emo_master.clients.runtime.history import HistoryClient
+            self.historyOwner = HistoryClient.fromConnectionProfile(address,
+                runtimeInstanceId=metadata.runtime_instance_id, projectId=metadata.project_id,
+                presentation=document.presentation)
+        return {'kind': 'attached', 'metadata': metadata, 'coverage': coverage, 'roots': roots,
+                'logAddress': address if logs else '',
+                'logJobs': tuple(item.job_id for item in pair) if pair else (metadata.job_id,)}
+
+    def historyClient(self, document):
+        from emo_master.clients.runtime.history import LazyHistoryClient
+        if not self.closing and self.session is not None:
+            # Legacy display endpoints have no history identity. Do not read
+            # unrelated main-connection history beside their live results.
+            return self.historyOwner.forPresentation(document.presentation) if self.historyOwner else None
+        return LazyHistoryClient(self.coordinator.window.runtimeClient, document)
 
     def _observerDestroyed(self, token):
         # No native Qt calls here: destruction can follow the Designer owner.
@@ -440,6 +440,7 @@ class PreviewController(QObject):
         observer = self.observer
         if observer is None or not isValid(observer) or observer.detached:
             return
+        observer.setProjectRoot(self.coordinator.directory)
         if observer.frozen is not None:
             # Undo may return to the displayed configuration while a result is
             # pinned. Never apply an obsolete intermediate edit on resume.
@@ -501,6 +502,12 @@ class PreviewController(QObject):
         self.refreshJobStatus()
 
     def poll(self):
+        if self.runtimeLogs is not None:
+            self._appendLogEvents(self.runtimeLogs.take())
+        session = self.session
+        takeLogs = getattr(session, 'takeLogEvents', None)
+        if callable(takeLogs):
+            self._appendClientLogEvents(takeLogs())
         self.refreshJobStatus()
         try:
             kind, value = self.events.get_nowait()
@@ -510,7 +517,7 @@ class PreviewController(QObject):
         self.busy = False
         if kind == 'error':
             self.error = value
-            self.message('操作失败：' + value)
+            self.message('操作失败：' + value, 'ERROR')
             if self.closing and not self.cleaning:
                 self._finishClose()
                 return
@@ -519,6 +526,12 @@ class PreviewController(QObject):
             self.onClosed = None
             return
         if value['kind'] == 'closed':
+            self.runtimeLogs = None
+            self._appendLogEvents(value.get('logEvents', ()))
+            self._appendClientLogEvents(value.get('clientLogEvents', ()))
+            self.logCursors.update(value.get('logCursors', {}))
+            while len(self.logCursors) > 128:
+                self.logCursors.pop(next(iter(self.logCursors)))
             if self.closeExecution and not value['execution']:
                 self._finishClose()
                 return
@@ -541,16 +554,24 @@ class PreviewController(QObject):
                 self._chooseJob(value)
             except ValueError as error:
                 self.error = str(error)
-                self.message('无法查看：' + str(error))
+                self.message('无法查看：' + str(error), 'ERROR')
             return
         self.selectedJob = value['metadata']
         self.selectedWorkflows = value['roots']
         self.coverage = value['coverage']
+        address = value.get('logAddress')
+        # Run-command Jobs already reach this window through RuntimeWorker.
+        knownJobs = getattr(self.coordinator.window, '_runtimeLogJobProjects', {})
+        logJobs = [job for job in value.get('logJobs', ()) if job not in knownJobs]
+        if address and logJobs:
+            from .runtime_logs import PreviewRuntimeLogs
+            self.runtimeLogs = PreviewRuntimeLogs(address, logJobs, self.logCursors)
         self.observationLabel = self._jobLabel(self.selectedJob, includeStatus=False)
         self.hub = DisplayHub(self.session, self) if self.session is not None else None
         observer = self.observer
         if observer is not None and isValid(observer):
             self.refreshObserver(self.coordinator.session.presentation.snapshot())
+            observer.setHistoryClient(self.historyClient(self.coordinator.session.document()))
             observer.setDesignExamples(False)
             observer.setSource(True)
             observer.hub = self.hub
@@ -563,7 +584,7 @@ class PreviewController(QObject):
                     observer.hub = None
                     self.retireObserver()
                     self.error = str(error)
-                    self.message('无法查看：' + str(error))
+                    self.message('无法查看：' + str(error), 'ERROR')
                     return
             slot = getattr(self.selectedJob, 'target_slot_id', '')
             observer.banner.setText('运行结果' + (f' · {self.selectedJob.workflow_id} / {slot}'
@@ -574,6 +595,18 @@ class PreviewController(QObject):
                 f'生产 Job：{self.selectedJob.source_job_id}\n消费 Job：{self.selectedJob.job_id}') if slot else '')
             self.refreshCoverage()
         self.message('已连接运行结果')
+
+    def _appendLogEvents(self, rows):
+        window = self.coordinator.window
+        for kind, value in rows:
+            if kind == 'event':
+                window.appendRuntimeEvent(value)
+            else:
+                window.appendPageLog('WARN', value)
+
+    def _appendClientLogEvents(self, events):
+        for event in events:
+            self.coordinator.window.appendLocalEvent(event, source='page_designer')
 
     def stopViewing(self, callback=None):
         self._requestClose(False, callback)
@@ -599,6 +632,9 @@ class PreviewController(QObject):
             self._finishClose()
 
     def _finishClose(self):
+        logs = self.runtimeLogs
+        history = self.historyOwner
+        self.historyOwner = None
         if self.hub:
             for renderer in tuple(self.hub.windows):
                 self.hub.detach(renderer)
@@ -620,13 +656,23 @@ class PreviewController(QObject):
             observer.banner.setText('运行结果 · 已停止查看')
         execution = self.closeExecution
         def close():
+            logEvents, logCursors, clientLogEvents = [], {}, []
+            if history is not None:
+                history.close()
+            if logs is not None:
+                logs.close()
+                logEvents, logCursors = logs.take(), logs.positions()
             if self.session:
                 self.session.close()
+                takeLogs = getattr(self.session, 'takeLogEvents', None)
+                if callable(takeLogs):
+                    clientLogEvents = takeLogs()
                 self.session = None
             if execution and self.backend:
                 self.backend.close()
                 self.backend = None
-            return {'kind': 'closed', 'execution': execution}
+            return {'kind': 'closed', 'execution': execution,
+                    'logEvents': logEvents, 'logCursors': logCursors, 'clientLogEvents': clientLogEvents}
         self.message('正在结束图片测试' if self.closeExecution else '正在停止查看，流程继续运行')
         self.launch(close, cleanup=True)
 

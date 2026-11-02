@@ -1,7 +1,7 @@
 """Page management around the shared production renderer."""
 from PySide2.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QInputDialog,
-    QLabel, QMessageBox, QTabWidget, QToolButton, QMenu,
+    QLabel, QMessageBox, QTabWidget, QToolButton, QMenu, QSpinBox, QComboBox,
 )
 from PySide2.QtCore import QSize, Qt
 from shiboken2 import isValid
@@ -35,7 +35,18 @@ class EditorPages(RuntimePages):
         self.reloading = False
         from emo_master.core.presentation.assets import pageAssets
         kwargs['assets'] = pageAssets(workspace.session.document(), workspace.coordinator.directory)
+        kwargs['projectRoot'] = workspace.coordinator.directory
+        kwargs['target'] = None  # The editor always retains desktop and web pages.
         super().__init__(*args, **kwargs)
+
+    def fitToAvailableScreen(self, *, resize=True, screen=None):
+        if hasattr(self.workspace, 'canvas'):
+            if resize:
+                self.workspace.canvas.fitPage()
+            else:
+                self.workspace.canvas.updatePageSize()
+            return
+        return super().fitToAvailableScreen(resize=resize, screen=screen)
 
     def navigate(self, pageId, keepFrozen=False):
         if self.reloading or not hasattr(self.workspace, 'tools'):
@@ -54,6 +65,10 @@ class EditorPages(RuntimePages):
         return super().act(action)
 
     def reload(self, presentation):
+        pageId = self.currentPageId
+        scroll = self.pages.get(pageId)
+        position = ((scroll.horizontalScrollBar().value(), scroll.verticalScrollBar().value())
+                    if scroll is not None else None)
         # Rebuilding the canvas is not a request to leave the current form.
         if hasattr(self.workspace, 'tools'):
             self.workspace.tools.clearSelection()
@@ -61,9 +76,17 @@ class EditorPages(RuntimePages):
         try:
             from emo_master.core.presentation.assets import pageAssets
             self.assets = pageAssets(self.workspace.session.document(), self.workspace.coordinator.directory)
+            self.setProjectRoot(self.workspace.coordinator.directory)
             super().reload(presentation)
-            for button in self.buttons.values():
-                button.hide()
+            if position is not None and self.currentPageId == pageId:
+                scroll = self.pages[pageId]
+                # Lay out the replacement at its real viewport width before
+                # restoring the view. QScrollBar clamps a shortened page.
+                self.layout().activate()
+                self.stack.layout().activate()
+                scroll.widget().layout().activate()
+                scroll.horizontalScrollBar().setValue(position[0])
+                scroll.verticalScrollBar().setValue(position[1])
         finally:
             self.reloading = False
 
@@ -119,7 +142,9 @@ class PageWorkspace(QWidget):
         self.centerLayout.addWidget(self.canvasHost, 1)
         self.renderer = EditorPages(self, self.store.snapshot(), label='模拟布局预览 · 不运行算子、不写生产状态')
         self.renderer.editing = True
-        canvasLayout.addWidget(self.renderer, 1)
+        from .page_canvas import PageCanvas
+        self.canvas = PageCanvas(self, self.renderer)
+        canvasLayout.addWidget(self.canvas, 1)
         self.renderer.setEditorHost()
         pageInfo = QHBoxLayout()
         self.pageCaption = ElidedLabel()
@@ -129,9 +154,8 @@ class PageWorkspace(QWidget):
         self.renderer.banner.setWordWrap(False)
         pageInfo.addWidget(self.renderer.banner)
         self.centerLayout.insertLayout(0, pageInfo)
-        # A stable handle lane keeps collapsed panels clear of the first row;
-        # opening panels never changes these margins or the component grid.
-        self.renderer.layout().setContentsMargins(12, 64, 12, 12)
+        # Floating panel headers belong to the canvas overlay, not page layout.
+        self.renderer.layout().setContentsMargins(12, 12, 12, 12)
         self.empty = QWidget()
         emptyLayout = QVBoxLayout(self.empty)
         emptyLayout.addStretch()
@@ -146,10 +170,49 @@ class PageWorkspace(QWidget):
         canvasLayout.addWidget(self.empty, 1)
         self.renderer.fitButton.setParent(self.centerPanel)
         self.renderer.fitButton.setText('适应画布')
+        self.renderer.fitButton.clicked.disconnect()
+        self.renderer.fitButton.clicked.connect(self.canvas.fitPage)
         canvasTools = QHBoxLayout()
+        self.previewMode = QComboBox()
+        self.previewMode.addItem('跟随窗口', 'follow')
+        self.previewMode.addItem('固定终端', 'fixed')
+        self.previewMode.setToolTip('尺寸使用逻辑像素；只改变查看方式，不修改工程')
+        canvasTools.addWidget(self.previewMode)
+        self.previewWidth = QSpinBox()
+        self.previewWidth.setRange(0, 4096)
+        self.previewWidth.setSpecialValueText('跟随窗口')
+        self.previewWidth.setSingleStep(40)
+        self.previewWidth.setSuffix(' px')
+        self.previewWidth.setToolTip('终端页面可视区宽度（逻辑像素）；0 跟随窗口')
+        self.previewHeight = QSpinBox()
+        self.previewHeight.setRange(1, 4096)
+        self.previewHeight.setValue(720)
+        self.previewHeight.setSingleStep(40)
+        self.previewHeight.setSuffix(' px')
+        self.previewHeight.setToolTip('终端页面可视区高度（逻辑像素）')
+        self.previewHeight.setEnabled(False)
+        self.previewWidth.valueChanged.connect(self.previewSizeChanged)
+        self.previewHeight.valueChanged.connect(self.previewSizeChanged)
+        self.previewMode.currentIndexChanged.connect(self.previewModeChanged)
+        self.previewDimensions = QWidget()
+        dimensions = QHBoxLayout(self.previewDimensions)
+        dimensions.setContentsMargins(0, 0, 0, 0)
+        dimensions.addWidget(QLabel('页面可视区'))
+        dimensions.addWidget(self.previewWidth)
+        dimensions.addWidget(QLabel('×'))
+        dimensions.addWidget(self.previewHeight)
+        dimensions.addStretch()
+        self.previewDimensions.hide()
+        self.terminalPreset = QComboBox()
+        self.terminalPreset.addItem('终端预设', None)
+        for width, height in ((360, 640), (768, 1024), (1280, 720), (1920, 1080)):
+            self.terminalPreset.addItem(f'{width}×{height}', (width, height))
+        self.terminalPreset.activated.connect(self.useTerminalPreset)
+        canvasTools.addWidget(self.terminalPreset)
         canvasTools.addStretch()
         canvasTools.addWidget(self.renderer.fitButton)
         self.centerLayout.addLayout(canvasTools)
+        self.centerLayout.addWidget(self.previewDimensions)
         self.message = QLabel()
         self.message.setWordWrap(True)
         self.centerLayout.addWidget(self.message)
@@ -177,6 +240,34 @@ class PageWorkspace(QWidget):
             panel.expandedChanged.connect(lambda _: self.coordinator.chrome.update())
         self.refresh()
 
+    def previewModeChanged(self, _index):
+        if self.previewMode.currentData() == 'follow':
+            self.previewWidth.setValue(0)
+        else:
+            self.previewWidth.setValue(self.previewWidth.value() or 1280)
+        self.previewSizeChanged()
+
+    def previewSizeChanged(self, _value=None):
+        fixed = bool(self.previewWidth.value())
+        self.previewMode.blockSignals(True)
+        self.previewMode.setCurrentIndex(1 if fixed else 0)
+        self.previewMode.blockSignals(False)
+        self.previewHeight.setEnabled(fixed)
+        self.previewDimensions.setVisible(fixed)
+        self.canvas.setPreviewSize(self.previewWidth.value(), self.previewHeight.value())
+
+    def useTerminalPreset(self, index):
+        size = self.terminalPreset.itemData(index)
+        if size is None:
+            return
+        self.previewWidth.blockSignals(True)
+        self.previewHeight.blockSignals(True)
+        self.previewWidth.setValue(size[0])
+        self.previewHeight.setValue(size[1])
+        self.previewWidth.blockSignals(False)
+        self.previewHeight.blockSignals(False)
+        self.previewSizeChanged()
+
     def togglePanel(self, index):
         self.panel(index).toggle()
 
@@ -192,11 +283,12 @@ class PageWorkspace(QWidget):
         if self.pageId == self.pageTabs.pageId(index):
             self.pageMenu.exec_(bar.mapToGlobal(point))
 
-    def run(self, command):
+    def run(self, command, *, refresh=True):
         try:
             self.coordinator.sync()
             command()
-            self.refresh()
+            if refresh:
+                self.refresh()
         except (ValueError, KeyError) as error:
             from .property_panel import editorMessage
             self.message.setText(editorMessage(str(error)))
@@ -220,6 +312,7 @@ class PageWorkspace(QWidget):
         self.pageMenu.setEnabled(bool(p.pages))
         self.pageMore.setEnabled(bool(p.pages))
         self.empty.setVisible(not p.pages)
+        self.canvas.setVisible(bool(p.pages))
         self.renderer.setVisible(bool(p.pages))
         self.renderer.banner.setVisible(bool(p.pages))
         self.renderer.fitButton.setVisible(bool(p.pages))
@@ -229,6 +322,7 @@ class PageWorkspace(QWidget):
             self.renderer.navigate(self.pageId)
         if hasattr(self, 'tools'):
             self.tools.refresh()
+        self.canvas.updatePageSize()
         self.coordinator.preview.refreshCoverage()
         self.coordinator.chrome.update()
 
@@ -242,8 +336,7 @@ class PageWorkspace(QWidget):
         self.pageTabs.blockSignals(True)
         self.pageTabs.selectPage(self.pageId)
         self.pageTabs.blockSignals(False)
-        for key, button in self.renderer.buttons.items():
-            button.setChecked(key == self.pageId)
+        self.renderer.syncNavigation()
 
     def navigatePage(self, pageId, keepFrozen=False):
         if pageId == self.pageId or pageId not in self.renderer.config.pages:
@@ -266,6 +359,7 @@ class PageWorkspace(QWidget):
         self.tools.select(None)
         self.tools.dragStart = None
         self.tools.install()
+        self.canvas.updatePageSize()
 
     def newPage(self):
         name, ok = QInputDialog.getText(self, '新建页面', '页面名称')

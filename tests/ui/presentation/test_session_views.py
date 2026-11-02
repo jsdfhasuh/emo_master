@@ -241,9 +241,17 @@ def testRealAssetFailureIsNotHiddenByComplete(qtApp,live,monkeypatch,fault):
         image=window.widgets['overview']['overview-image'][1]
         assert scope.result.status=='COMPLETE'
         assert image.image.isNull() and image.message
+        logs = session.takeLogEvents()
+        issue = next(row for row in logs if row['payload'].get('stage') == 'read_decode')
+        assert (issue['level'], issue['code']) == (('WARN', 'DEADLINE_EXCEEDED') if fault == 'timeout'
+                                                 else ('ERROR', 'IMAGE_DECODE_FAILED'))
+        assert issue['jobId'] == backend.jobId and issue['payload']['sourceId'] == 'image'
+        assert issue['payload']['identity']['resultKey']
         assert window.widgets['overview']['overview-count'][1].text() in ('2 个','3 个')
         monkeypatch.setattr(backend.presentation.assets,'read',original)
         until(qtApp,lambda:not image.image.isNull())
+        session.close()
+        assert any(row['eventType'] == 'presentation.client.recovered' for row in session.takeLogEvents())
     finally:
         window.close()
 
@@ -265,6 +273,8 @@ def testRealMalformedJsonInvalidatesWindow(qtApp,live,monkeypatch):
             return wire
         monkeypatch.setattr(rpc,'wireResult',invalid)
         until(qtApp,lambda:session.readSnapshot().connection=='INVALID_RESULT')
+        errors = session.takeLogEvents()
+        assert any(row['code'] == 'INVALID_RESULT' and row['level'] == 'ERROR' for row in errors)
         hub.tick()
         assert not window.displayed
         assert 'INVALID_RESULT' in window.widgets['overview']['overview-count'][1].text()

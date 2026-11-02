@@ -9,6 +9,7 @@ import pytest
 
 from emo_master.apps.runtime.grpc_server.aio_entry import AioRuntimeServer
 from emo_master.clients.runtime.display_session import DisplaySession
+from emo_master.clients.runtime.connection import ConnectionProfile
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rpc
 from emo_master.apps.runtime.presentation.rpc import DisplayRpc
@@ -20,7 +21,8 @@ def testFiveRealSessionsHaveFiveHealthySubscriptions(channel):
     jobs = [f"display-job-{i}" for i in range(5)]
     channel.jobs.update({job: {"scopeIds": [], "scopeTerminals": {}} for job in jobs})
     server = AioRuntimeServer(channel.runtime, channel)
-    clients = [DisplaySession(f"127.0.0.1:{server.port}", job) for job in jobs]
+    profile = ConnectionProfile(f"127.0.0.1:{server.port}")
+    clients = [DisplaySession(profile, job) for job in jobs]
     try:
         # Server admission can precede Subscribe returning its client handle.
         until(lambda: server.active["display"] == 5
@@ -48,7 +50,7 @@ def testPerJobIsolationBoundedJobsAndRetirement(channel, monkeypatch):
     from emo_master.apps.runtime.grpc_server.display_subscriptions import DisplaySubscriptions
     monkeypatch.setattr(DisplaySubscriptions, "jobsLimit", 2)
     channel.jobs.update({job: {"scopeIds": []} for job in ("a", "b", "c")})
-    server = AioRuntimeServer(channel.runtime, channel)
+    server = AioRuntimeServer(channel.runtime, channel, displaySubscriptionsPerJob=2)
     calls = []
     with grpc.insecure_channel(f"127.0.0.1:{server.port}") as transport:
         stub = rpc.DisplayServiceStub(transport)
@@ -83,6 +85,29 @@ def testPerJobIsolationBoundedJobsAndRetirement(channel, monkeypatch):
             assert len([e for e in events if e["action"] == "retired"]) == 4
             server.close()
             channel.jobs.clear()
+
+
+def testDefaultAllowsFourIndependentClientsAndBoundsTheFifth(channel):
+    channel.jobs['shared'] = {'scopeIds': []}
+    server = AioRuntimeServer(channel.runtime, channel)
+    calls = []
+    try:
+        with grpc.insecure_channel(f'127.0.0.1:{server.port}') as transport:
+            stub = rpc.DisplayServiceStub(transport)
+            for _ in range(4):
+                call = stub.Subscribe(pb.DisplayRequest(job_id='shared'), timeout=5)
+                calls.append(call)
+                assert next(call).job_id == 'shared'
+            with pytest.raises(grpc.RpcError) as error:
+                next(stub.Subscribe(pb.DisplayRequest(job_id='shared'), timeout=.5))
+            assert error.value.code() == grpc.StatusCode.RESOURCE_EXHAUSTED
+            assert server.displaySubscriptions.byJob['shared'] == 4
+    finally:
+        for call in calls:
+            call.cancel()
+        until(lambda: server.active['display'] == 0)
+        server.close()
+        channel.jobs.clear()
 
 
 @pytest.mark.parametrize("stage", ["construct", "next", "callback", "close"])

@@ -203,11 +203,50 @@ def testRawLaneExactBoundaryOversizeAndConcurrentIterationCannotReuseCredit():
         assert concurrent["reasonCode"] == "BUDGET_EXCEEDED" and "busy" in concurrent["reason"]
         assert collector.image("left", value, item("one"))["pendingImage"]
         tooLarge = collector.image("left", np.zeros((1, 4 * MIB + 1), np.uint8), item("oversize"))
-        assert tooLarge["reasonCode"] == "BUDGET_EXCEEDED" and "4194304" in tooLarge["reason"]
+        assert tooLarge["reasonCode"] == "BUDGET_EXCEEDED"
+        assert tooLarge["reason"] == "raw image 4194305 bytes exceeds source lane limit 4194304; no implicit resize"
         assert len(events) == 2
     finally:
         memory.close()
         memory.unlink()
+
+
+@pytest.mark.parametrize("size,previous,detail", [
+    (8 * MIB + 1, 0, "raw image 8388609 bytes exceeds image limit 8388608; no implicit resize"),
+    (1, 16 * MIB, "raw images 16777217 bytes exceeds result limit 16777216; no implicit resize"),
+])
+def testImageBudgetDetailsDoNotAcquireLaneOrPublishImage(size, previous, detail):
+    credit = threading.BoundedSemaphore(1)
+    events = []
+    collector = ResultCollector({"plan": '{"sources":{},"scopes":{}}',
+        "slots": [{"free": credit}]}, events.append)
+    item = {"rawBytes": previous}
+    rejected = collector.image("image", np.zeros((1, size), np.uint8), item)
+    assert rejected == {"sourceId": "image", "state": "UNAVAILABLE",
+                        "reasonCode": "BUDGET_EXCEEDED", "reason": detail}
+    assert item["rawBytes"] == previous and not events
+    assert credit.acquire(False)
+    credit.release()
+
+
+def testResultValueBudgetDetailsPreserveEarlierAcceptedSources():
+    sources = {f"value-{index}": {"kind": "node_output", "resultScopeId": "root",
+        "nodeId": "values", "port": "value", "expectedType": "string", "fieldPath": []}
+        for index in range(5)}
+    config = {"plan": json.dumps({"sources": sources, "scopes": {
+        "root": {"scopeWorkflowId": "main", "callPath": []}}}),
+        "credits": threading.BoundedSemaphore(8), "scopeIds": ["root"], "ordinals": [0],
+        "identity": {"runtimeInstanceId": "runtime", "jobId": "job"}}
+    collector = ResultCollector(config, lambda event: None)
+    context = RunContext.root("job", "main")
+    collector.begin(context)
+    # Each JSON string fits its own 256 KiB limit; the fifth exceeds 1 MiB in total.
+    collector.output(context.forNode("values"), {"value": "x" * (256 * 1024 - 2)})
+    item = collector.open[(context.workflowRunId, "root")]
+    assert item["bytes"] == MIB
+    assert all(item["values"][f"value-{index}"]["state"] == "AVAILABLE" for index in range(4))
+    assert item["values"]["value-4"] == {"sourceId": "value-4", "state": "UNAVAILABLE",
+        "reasonCode": "BUDGET_EXCEEDED", "reason": "result values 1310720 bytes exceeds result limit 1048576"}
 
 
 def testProfileRejectsThirdImageAndExplainsTwo1080pBgrLimit(tmp_path):

@@ -20,7 +20,7 @@ from tests.plugins.test_collection_operators import _detections
 @pytest.mark.parametrize("legacy", [False, True])
 def testSavedDetectionSortSelectCountWorkflow(tmp_path, legacy):
     payload = WorkflowStore().toPayload("Operator Modes Regression")
-    assert payload["schemaVersion"] == "2.7"
+    assert payload["schemaVersion"] == "2.9"
     workflow = payload["workflows"]["main"]
     workflow["inputs"] = {"detections": deepcopy(CollectionSortOperator.meta.inputPorts["detections"])}
     workflow["inputs"]["detections"]["required"] = True
@@ -77,7 +77,7 @@ def testSavedBoundBlurIgnoresLiteralDraftAndValidatesEffectiveValue(tmp_path):
 
     meta = BlurOperator.meta
     payload = WorkflowStore().toPayload("Bound Mode Draft")
-    assert payload["schemaVersion"] == "2.7"
+    assert payload["schemaVersion"] == "2.9"
     payload["globalVariables"] = {"sigma": variable(45.0, "number")}
     workflow = payload["workflows"]["main"]
     workflow["inputs"] = {"image": deepcopy(meta.inputPorts["image"])}

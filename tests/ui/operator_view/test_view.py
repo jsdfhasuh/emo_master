@@ -54,7 +54,11 @@ def testReadyNavigationExplicitStartSharedWindowsAndBorrowedClose(qtApp, tmp_pat
         assert view.waitingPage is not None
         assert not host.presentation.jobs
         for page in view.document.presentation.pageOrder:
-            QTest.mouseClick(view.waitingPage.buttons[page], Qt.LeftButton)
+            picker = view.waitingPage.pageNavigation.picker
+            picker.setFocus()
+            QTest.keyClick(picker, Qt.Key_Home)
+            for _index in range(picker.findData(page)):
+                QTest.keyClick(picker, Qt.Key_Down)
             assert view.waitingPage.currentPageId == page
         assert not host.presentation.jobs
         QTest.mouseClick(view.startButton, Qt.LeftButton)

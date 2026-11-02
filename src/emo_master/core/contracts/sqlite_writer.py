@@ -62,7 +62,8 @@ def quoteIdentifier(value: str) -> str:
 def parseConfig(params: Mapping[str, Any]) -> dict[str, Any]:
     if type(params.get("configVersion")) is not int or params["configVersion"] != 1:
         raise SqliteWriterError("E_SQLITE_CONFIG", "不支持的 SQLite 配置版本")
-    if set(params) - {"configVersion", "databasePath", "debugDatabasePath", "table", "mappings", "failurePolicy"}:
+    if set(params) - {"configVersion", "databasePath", "debugDatabasePath", "table", "mappings", "failurePolicy",
+                      "fileReferencePathMode", "_fileReferenceProjectRoot"}:
         raise SqliteWriterError("E_SQLITE_CONFIG", "存在不支持的 SQLite 参数")
     path = params.get("databasePath")
     if not isinstance(path, str) or not path.strip():
@@ -73,6 +74,9 @@ def parseConfig(params: Mapping[str, Any]) -> dict[str, Any]:
     failure = params.get("failurePolicy", "stop")
     if failure not in {"stop", "continue"}:
         raise SqliteWriterError("E_SQLITE_CONFIG", "失败策略必须为停止或继续")
+    referenceMode = params.get("fileReferencePathMode", "absolute")
+    if referenceMode not in {"absolute", "project_relative"}:
+        raise SqliteWriterError("E_SQLITE_CONFIG", "图片引用路径必须为绝对路径或工程相对路径")
     rows = params.get("mappings")
     if not isinstance(rows, list) or not 1 <= len(rows) <= MAX_FIELDS:
         raise SqliteWriterError("E_SQLITE_LIMIT", "字段映射必须为 1–64 行")
@@ -112,6 +116,13 @@ def parseConfig(params: Mapping[str, Any]) -> dict[str, Any]:
             raise SqliteWriterError(error.code, str(error), index) from error
     result = {"configVersion": 1, "databasePath": path, "table": table,
               "mappings": deepcopy(rows), "failurePolicy": failure}
+    if "fileReferencePathMode" in params:
+        result["fileReferencePathMode"] = referenceMode
+    if "_fileReferenceProjectRoot" in params:
+        root = params["_fileReferenceProjectRoot"]
+        if not isinstance(root, str) or not root or "\x00" in root or not Path(root).is_absolute():
+            raise SqliteWriterError("E_SQLITE_TARGET", "工程相对图片引用需要原工程的完整目录")
+        result["_fileReferenceProjectRoot"] = root
     if "debugDatabasePath" in params:
         debugPath = params["debugDatabasePath"]
         if not isinstance(debugPath, str) or not debugPath.strip():
@@ -217,6 +228,23 @@ def toStorage(value: Any, storage: str, *, checkFile: bool = True) -> Any:
     if storage == "TEXT" and isinstance(value, str):
         return value
     raise SqliteWriterError("E_SQLITE_TYPE", f"不能将 {type(value).__name__} 无损保存为 {storage}")
+
+
+def projectRelativeFileReference(value: Any, projectRoot: object) -> str | None:
+    """Keep formal file validation, then store its path within the frozen source root."""
+    stored = toStorage(value, "FILE_REFERENCE")
+    if stored is None:
+        return None
+    if not isinstance(projectRoot, str) or not projectRoot or not Path(projectRoot).is_absolute():
+        raise SqliteWriterError("E_SQLITE_TARGET", "工程相对图片引用需要运行前冻结原工程目录")
+    try:
+        root = Path(projectRoot).resolve(strict=True)
+        if not root.is_dir():
+            raise ValueError("not a directory")
+        relative = Path(stored).relative_to(root)
+    except (OSError, RuntimeError, ValueError) as error:
+        raise SqliteWriterError("E_SQLITE_VALUE", "图片引用必须位于原工程目录内，不能保存越出工程的相对路径") from error
+    return relative.as_posix()
 
 
 def rebindParams(params: Mapping[str, Any], nodeIdMap: Mapping[str, str]) -> dict[str, Any]:

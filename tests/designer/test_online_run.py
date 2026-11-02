@@ -58,6 +58,8 @@ def testRunButtonStartsOnlineSnapshotWithoutChangingDifferentDraft(runtime, owne
     monitor = None
     try:
         waitUntil(lambda: dialog.pending is None)
+        # Run the committed online snapshot without requesting local source relocation.
+        dialog.useLocalSource.setChecked(False)
         assert dialog.runButton.isEnabled()
         dialog.runButton.click()
         monitor = dialog.lastRunDialog

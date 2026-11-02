@@ -41,8 +41,21 @@ INTEGER 使用 SQLite 有符号 64 位；REAL 必须有限且整数转实数无�
 TEXT 不自动把数值转文字，UTC_TIME 需要带时区 ISO 8601 并归一 UTC，JSON 存 TEXT。
 FILE_REFERENCE 绑定只支持 Image Saver 的正式持久保存结果，保存其完整 path，
 不复制或归档图片，不接受预览/任务临时图片，不承诺文件永久存在。
-持久引用保存为规范化绝对路径；同时检查原始路径与解析后的实际路径，按本机文件系统
+持久引用默认保存为规范化绝对路径；同时检查原始路径与解析后的实际路径，按本机文件系统
 大小写规则识别缓存目录，目录联接/符号链接不能隐藏预览缓存位置。
+
+算子 1.1.0 新增可选 `fileReferencePathMode`，默认 `absolute` 保留上述行为。
+在保存位置中明确选择 `project_relative`（工程相对路径）时，只对 FILE_REFERENCE 列，
+在同次输出身份和持久文件完整性检查通过后，保存为原工程根目录内的 POSIX 相对路径，
+例如 `outputs/rtsp-riders/with_helmet/48797,0.png`。JSON、文字和数据库目标路径不受此选项影响。
+不自动迁移已有记录、复制图片或允许引用工程目录外的文件。
+
+普通运行及整工程 debug/release 准备在已有 `freezeTargets()` 的独立执行副本中，
+将明确的原工程根目录冻结为内部 `_fileReferenceProjectRoot`，跨 worker 快照重读保持此归属；
+不会把该内部值写回用户工程，也不从数据库所在目录、Runtime 工作区或 cwd 猜测根目录。
+缺少冻结根目录或图片实际位置越出工程目录时，在 INSERT 前明确失败。独立单节点调试
+没有原工程归属时不能猜测使用工程相对引用；默认绝对路径模式仍可使用原有调试流程。
+文件引用为 NULL 时保留 NULL；缺失默认列仍省略，不改变原有取消、提交和回执语义。
 
 `missing:error/null/default` 分别报错、显式 NULL、从 INSERT 省略列。
 已产出的 None 是真实空值，不能因配置 default 而替换为数据库默认值；0、False、空串保留。

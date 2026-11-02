@@ -7,6 +7,9 @@ CONTENT = {
     'text': {'title', 'text', 'emptyText'}, 'indicator': {'title', 'emptyText'},
     'table': {'title', 'pageSize', 'emptyText'}, 'navigation_button': {'title', 'text', 'iconResourceId'},
     'container': {'title'}, 'runtime_status': {'title'},
+    'page_title': {'text'}, 'page_navigation': {'title'}, 'clock': {'title'},
+    'spacer': {'spacerMode'},
+    'sqlite_table': {'title', 'pageSize'}, 'sqlite_value': {'title', 'unit', 'decimals'},
 }
 LAYOUT = {'row', 'column', 'rowSpan', 'columnSpan', 'columns'}
 
@@ -21,6 +24,7 @@ def editorMessage(message):
             ('boolean indicator value', '判定值请填写 true 或 false。'),
             ('indicator key too long', '判定值太长，请缩短后再应用。'),
             ('navigation target page is missing', '请选择存在的目标页面。'),
+            ('navigation target is unavailable', '目标页面在当前页面的部分终端不可见，请调整显示终端或导航目标。'),
             ('current page does not display selected result scope', '当前页面没有显示所选流程的结果，请检查数据来源。'),
             ('target page does not support selected result scope', '目标页面不支持所选流程的结果，请选择其他页面。')]:
         if diagnostic in message:
@@ -57,6 +61,9 @@ class PropertyGroups:
     def __init__(self, tools, panel):
         self.tools = tools
         tools.form.setFormAlignment(Qt.AlignTop)
+        # Qt 5 keeps form row spacing even when every widget in a row is hidden.
+        # Group margins provide separation; hidden groups must take no space.
+        tools.form.setVerticalSpacing(0)
         rows = []
         for index in range(tools.form.rowCount()):
             label = tools.form.itemAt(index, QFormLayout.LabelRole)
@@ -81,16 +88,16 @@ class PropertyGroups:
                 widget.hide()
                 continue
             name = reverse.get(widget)
-            group = ('位置与大小' if name in LAYOUT else '外观' if name == 'fontSize' or widget in tools.appearance.values()
+            group = ('图片来源' if widget is tools.imageProperties or name == 'imageResourceId' else
+                     '数据库来源' if widget is tools.sqliteProperties else
+                     '位置与大小' if name in LAYOUT or name == 'spacerMode' or widget is tools.responsiveProperties else '外观' if name == 'fontSize' or widget in tools.appearance.values()
                      else '数据来源' if widget is tools.binding or widget in tools.bindingButtons else '内容')
             if group not in self.groups:
                 box = QGroupBox(group)
                 box.setObjectName('propertyGroup')
                 box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
-                form = QFormLayout(box)
-                form.setFormAlignment(Qt.AlignTop)
-                form.setRowWrapPolicy(QFormLayout.WrapAllRows)
-                form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+                form = QVBoxLayout(box)
+                form.setAlignment(Qt.AlignTop)
                 self.groups[group] = (box, form)
             form = self.groups[group][1]
             wrapper = QGroupBox()
@@ -112,14 +119,14 @@ class PropertyGroups:
             if pairKey:
                 if pairKey not in self.pairs:
                     self.pairs[pairKey] = FieldPair()
-                    form.addRow(self.pairs[pairKey])
+                    form.addWidget(self.pairs[pairKey])
                 self.pairs[pairKey].add(wrapper)
             else:
-                form.addRow(wrapper)
+                form.addWidget(wrapper)
             if widget in tools.bindingButtons:
                 widget.setFlat(True)
             self.rows.append((wrapper, widget, name, group))
-        for group in ('内容', '位置与大小', '外观', '数据来源'):
+        for group in ('内容', '图片来源', '数据库来源', '位置与大小', '外观', '数据来源'):
             if group in self.groups:
                 tools.form.addRow(self.groups[group][0])
 
@@ -129,12 +136,16 @@ class PropertyGroups:
             visible = kind is not None
             if widget is t.applyButton:
                 visible = True
-            if widget is t.pageName:
+            if widget in (t.pageName, t.pageTargets):
                 visible = kind is None
             if name in CONTENT.get(kind, set()):
                 visible = True
             elif name in {'title', 'text', 'emptyText', 'unit', 'decimals', 'pageSize', 'imageResourceId', 'iconResourceId'}:
                 visible = False
+            if kind == 'spacer' and group == '外观':
+                visible = False
+            if name == 'spacerMode' or widget is t.spacerHint:
+                visible = kind == 'spacer'
             if name == 'columns':
                 visible = kind in (None, 'container')
             if widget in (t.destination, t.actionMode, t.actionScope):
@@ -143,6 +154,18 @@ class PropertyGroups:
                 visible = kind in ('table', 'indicator')
             if widget is t.binding or widget in t.bindingButtons:
                 visible = kind in ('image', 'number', 'text', 'indicator', 'table')
+                if kind == 'image':
+                    visible = t.imageProperties.mode.currentData() == 'workflow'
+            if name == 'imageResourceId':
+                visible = kind == 'image' and t.imageProperties.mode.currentData() == 'resource'
+            if widget is t.imageProperties:
+                visible = kind == 'image'
+            if widget is t.sqliteProperties:
+                visible = kind in ('sqlite_table', 'sqlite_value')
+            if name in LAYOUT and t.responsive.enabled():
+                visible = False
+            if widget is t.responsiveProperties:
+                visible = t.responsive.enabled()
             wrapper.setVisible(visible)
         for group, (box, _form) in self.groups.items():
             box.setVisible(any(not row.isHidden() for row, _, _, g in self.rows if g == group))

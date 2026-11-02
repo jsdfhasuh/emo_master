@@ -1,0 +1,77 @@
+[
+  {
+    "input": {
+      "z": 1,
+      "a": "页面",
+      "emoji": "😀"
+    },
+    "canonicalUtf8": "{\"a\":\"\\u9875\\u9762\",\"emoji\":\"\\ud83d\\ude00\",\"z\":1}",
+    "sha256": "b3535fbe363a64987817464d255724838279d6e1cbc2231b1778e1d95cf6b3fe"
+  },
+  {
+    "input": {
+      "float": 1.0,
+      "negativeZero": -0.0,
+      "small": 1e-07
+    },
+    "canonicalUtf8": "{\"float\":1.0,\"negativeZero\":-0.0,\"small\":1e-07}",
+    "sha256": "b19831a647d4f2b10004bf7f033e5073b08191e01446a864160013f31107e0df"
+  },
+  {
+    "input": {
+      "a": [
+        true,
+        null,
+        {
+          "b": 2
+        }
+      ],
+      "largeInteger": 9007199254740993
+    },
+    "canonicalUtf8": "{\"a\":[true,null,{\"b\":2}],\"largeInteger\":9007199254740993}",
+    "sha256": "dcbccf3e16b5a9d5a94912a3ab938dedb05032b76fda4006befd13f4074e4947"
+  },
+  {
+    "input": {
+      "ruleVersion": "1.0",
+      "scopes": {
+        "root": {
+          "callPath": [],
+          "commitPolicy": "workflow_terminal",
+          "entryWorkflowId": "main",
+          "scopeWorkflowId": "main"
+        }
+      },
+      "sources": [
+        {
+          "callPath": [],
+          "expectedType": "boolean",
+          "fieldPath": [],
+          "kind": "global_variable",
+          "name": null,
+          "nodeId": null,
+          "port": null,
+          "resultScopeId": "root",
+          "ruleVersion": "1.0",
+          "variableId": "verdict",
+          "workflowId": null
+        },
+        {
+          "callPath": [],
+          "expectedType": "integer",
+          "fieldPath": [],
+          "kind": "global_variable",
+          "name": null,
+          "nodeId": null,
+          "port": null,
+          "resultScopeId": "root",
+          "ruleVersion": "1.0",
+          "variableId": "count",
+          "workflowId": null
+        }
+      ]
+    },
+    "canonicalUtf8": "{\"ruleVersion\":\"1.0\",\"scopes\":{\"root\":{\"callPath\":[],\"commitPolicy\":\"workflow_terminal\",\"entryWorkflowId\":\"main\",\"scopeWorkflowId\":\"main\"}},\"sources\":[{\"callPath\":[],\"expectedType\":\"boolean\",\"fieldPath\":[],\"kind\":\"global_variable\",\"name\":null,\"nodeId\":null,\"port\":null,\"resultScopeId\":\"root\",\"ruleVersion\":\"1.0\",\"variableId\":\"verdict\",\"workflowId\":null},{\"callPath\":[],\"expectedType\":\"integer\",\"fieldPath\":[],\"kind\":\"global_variable\",\"name\":null,\"nodeId\":null,\"port\":null,\"resultScopeId\":\"root\",\"ruleVersion\":\"1.0\",\"variableId\":\"count\",\"workflowId\":null}]}",
+    "sha256": "b038f67d7d7da493d28fb03d13ad7426e08f7b54c445c5e6e6df27904929d96e"
+  }
+]

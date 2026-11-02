@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="3.791" timestamp="2026-10-31T20:26:05.922838+08:00" hostname="视觉电脑"><testcase classname="tests.ui.page_designer.test_user_path" name="testNativePageEditingAndLegacyPreviewBackend" time="1.572"><failure message="AssertionError">tests\ui\page_designer\test_user_path.py:93: in testNativePageEditingAndLegacyPreviewBackend
+    assert window.saveProjectToDirectory(str(root))
+src\emo_master\apps\designer\ui\main_window.py:1670: in saveProjectToDirectory
+    ok, projectDir = self.projectController.saveProjectToDirectory(
+src\emo_master\apps\designer\controllers\project_controller.py:249: in saveProjectToDirectory
+    self.editCoordinator.saved(projectDir)
+src\emo_master\apps\designer\page_designer\coordinator.py:382: in saved
+    self.preview.refreshObserver(self.session.presentation.snapshot())
+src\emo_master\apps\designer\state\presentation_store.py:45: in snapshot
+    assert presentation is not None
+E   AssertionError</failure></testcase></testsuite></testsuites>

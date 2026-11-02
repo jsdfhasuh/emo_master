@@ -150,6 +150,8 @@ def testCompleteSqliteDesignerPath(ownedDesignerWindow, tmp_path, monkeypatch):
                 writerEditor._statusLabel.text())
             controller.path.setText('业务 数据.sqlite3')
             controller.table.setCurrentText('检测记录')
+            controller.tabs.setCurrentWidget(controller.mappingPage)
+            QApplication.processEvents()
             QTest.mouseClick(controller.addButton, Qt.LeftButton)
             controller.fields.item(0, 0).setText('数量')
             controller.fields.cellWidget(0, 2).setCurrentIndex(controller.fields.cellWidget(0, 2).findData('INTEGER'))
@@ -158,6 +160,9 @@ def testCompleteSqliteDesignerPath(ownedDesignerWindow, tmp_path, monkeypatch):
             controller.fields.selectRow(1)
             QTest.mouseClick(controller.deleteButton, Qt.LeftButton)
             assert controller.fields.rowCount() == 1
+            controller.tabs.setCurrentWidget(controller.scroll)
+            controller.scroll.ensureWidgetVisible(controller.inspectButton)
+            QApplication.processEvents()
             QTest.mouseClick(controller.inspectButton, Qt.LeftButton)
             waitQt(lambda: controller._pending is None)
             assert not (root / '业务 数据.sqlite3').exists()
@@ -177,6 +182,8 @@ def testCompleteSqliteDesignerPath(ownedDesignerWindow, tmp_path, monkeypatch):
                         previewTimer.stop()
             previewTimer.timeout.connect(closePreview)
             previewTimer.start(20)
+            controller.scroll.ensureWidgetVisible(controller.previewButton)
+            QApplication.processEvents()
             QTest.mouseClick(controller.previewButton, Qt.LeftButton)
             waitQt(lambda: controller._pending is None and controller._preview is not None and not controller._dialogs)
             assert not previewErrors and not (root / '业务 数据.sqlite3').exists()
@@ -194,11 +201,14 @@ def testCompleteSqliteDesignerPath(ownedDesignerWindow, tmp_path, monkeypatch):
                     confirmationErrors.append(str(error))
                     if dialog:
                         dialog.reject()
+            controller.scroll.ensureWidgetVisible(controller.createButton)
+            QApplication.processEvents()
             QTimer.singleShot(40, confirm)
             QTest.mouseClick(controller.createButton, Qt.LeftButton)
             waitQt(lambda: controller._pending is None and not controller._dialogs and (root / '业务 数据.sqlite3').is_file())
             assert not confirmationErrors and (root / '业务 数据.sqlite3').is_file(), controller.error.text()
             assert len(controller._schema['columns']) == 3
+            controller.tabs.setCurrentWidget(controller.mappingPage)
             shot(writerEditor, '01-field-mapping')
             before = len(window.pageCoordinator.session._undo)
             QTest.mouseClick(writerEditor._applyButton, Qt.LeftButton)
@@ -266,6 +276,7 @@ def testCompleteSqliteDesignerPath(ownedDesignerWindow, tmp_path, monkeypatch):
             assert reopened._controller.fields.cellWidget(0, 1).property('source')['nodeId'] == sourceId
             shot(reopened, '04-reopened')
             for width, height in ((1280, 720), (1600, 900), (1920, 1080)):
+                reopened._controller.tabs.setCurrentWidget(reopened._controller.mappingPage)
                 window.resize(width, height)
                 reopened.resize(min(width - 80, 1100), min(height - 100, 780))
                 QApplication.processEvents()
@@ -275,12 +286,20 @@ def testCompleteSqliteDesignerPath(ownedDesignerWindow, tmp_path, monkeypatch):
                 assert reopened.width() <= width - 80 and reopened.height() <= height - 100
                 applyRect = reopened._applyButton.rect().translated(reopened._applyButton.mapTo(reopened, QPoint(0, 0)))
                 assert reopened.rect().contains(applyRect)
-                assert reopened._applyButton.isVisible() and reopened._controller.path.isVisible()
-                # Scrollable groups, with primary buttons outside the scroll area.
+                assert reopened._applyButton.isVisible() and reopened._controller.fields.isVisible()
+                # Settings have their own scrolling page; the main table does not.
+                reopened._controller.tabs.setCurrentWidget(reopened._controller.scroll)
+                reopened._controller.scroll.ensureWidgetVisible(reopened._controller.path)
+                QApplication.processEvents()
+                pathRect = reopened._controller.path.rect().translated(reopened._controller.path.mapTo(reopened._controller.scroll.viewport(), QPoint(0, 0)))
+                assert reopened._controller.path.isVisible()
+                assert reopened._controller.scroll.viewport().rect().contains(pathRect)
                 reopened._controller.scroll.ensureWidgetVisible(reopened._controller.failure)
                 QApplication.processEvents()
                 rulesRect = reopened._controller.failure.rect().translated(reopened._controller.failure.mapTo(reopened._controller.scroll.viewport(), QPoint(0, 0)))
+                assert reopened._controller.failure.isVisible()
                 assert reopened._controller.scroll.viewport().rect().intersects(rulesRect)
+                reopened._controller.tabs.setCurrentWidget(reopened._controller.mappingPage)
                 shot(reopened, f'05-editor-{width}x{height}')
             reopened.forceClose()
             window.pageCoordinator.session.markSaved()

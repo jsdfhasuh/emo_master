@@ -5,7 +5,6 @@ import argparse
 import json
 import os
 from pathlib import Path
-from statistics import median
 import sys
 from time import perf_counter
 import importlib.util
@@ -20,6 +19,7 @@ from emo_master.apps.designer.ui.flow_scene import (  # noqa: E402
     FlowEdgeViewModel, FlowNodeViewModel, FlowScene,
 )
 from emo_master.apps.designer.ui.flow_routing import Route, simplify  # noqa: E402
+from emo_master.apps.designer.services.performance_probe import durationStatistics as statistics  # noqa: E402
 
 
 def populate(scene, stress=False):
@@ -74,11 +74,6 @@ def measure(scene, app, keys):
             durations.append(elapsed)
     scene.clearSelection()
     return statistics(durations)
-
-
-def statistics(durations):
-    return {"samples": len(durations), "medianMs": median(durations),
-            "p95Ms": sorted(durations)[int(.95 * (len(durations) - 1))]}
 
 
 def measuredView(scene, app, keys, output, name):

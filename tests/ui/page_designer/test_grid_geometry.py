@@ -4,10 +4,10 @@ from PySide2.QtCore import QPoint, Qt
 from PySide2.QtWidgets import QApplication, QLabel
 
 from test_workspace import designer  # noqa: F401
-from test_pending_inputs import setupPage
+from test_pending_inputs import setupPage as setupDefaultPage
 from emo_master.apps.designer.state.presentation_store import _component
 from emo_master.apps.designer.page_designer.canvas_tools import cellAt, cellBox
-from emo_master.core.presentation.models import Placement
+from emo_master.core.presentation.models import Grid, Placement
 from emo_master.ui.presentation.renderer import RuntimePages
 
 
@@ -16,8 +16,22 @@ def settle():
         QApplication.processEvents()
 
 
+def setupGridPage(designer, kind='text'):  # noqa: F811
+    """Explicit legacy grid fixture; new production pages remain responsive."""
+    coordinator, editor, key = setupDefaultPage(designer, kind)
+    def configure(p):
+        p.pages[editor.pageId].layout = Grid()
+        item = _component(p, editor.pageId, key)
+        if item.type == 'container':
+            item.grid = Grid()
+    coordinator.session.editPresentation(configure)
+    editor.refresh()
+    editor.tools.select(key)
+    return coordinator, editor, key
+
+
 def testUnequalColumnsUseActualCellsForDropAndPreview(designer):  # noqa: F811
-    c, e, key = setupPage(designer, 'navigation_button')
+    c, e, key = setupGridPage(designer, 'navigation_button')
     def configure(p):
         p.pages[e.pageId].layout.columns = 3
         _component(p, e.pageId, key).props.text = 'A long navigation button label forcing its minimum width'
@@ -40,14 +54,41 @@ def testUnequalColumnsUseActualCellsForDropAndPreview(designer):  # noqa: F811
     assert cellAt(grid, 3, QPoint(grid.width(), point.y()))[1] == 3
 
 
+@pytest.mark.parametrize('terminal', [False, True], ids=['whole-page', 'fixed-terminal'])
+def testLongGridKeepsAnEmptyRowForNativeAppend(designer, terminal):  # noqa: F811
+    from test_user_path import drop
+
+    coordinator, editor, key = setupGridPage(designer, 'image')
+    coordinator.session.editPresentation(lambda p: setattr(
+        _component(p, editor.pageId, key).layout, 'rowSpan', 15))
+    editor.refresh()
+    editor.canvas.setPreviewSize(768 if terminal else 0, 640 if terminal else 0)
+    settle()
+    before, history = coordinator.session.payload(), len(coordinator.session._undo)
+    body = editor.renderer.pages[editor.pageId].widget()
+    empty = body.layout().cellRect(15, 0)
+    assert empty.height() >= 64
+    columns = editor.store.snapshot().pages[editor.pageId].layout.columns
+    assert cellAt(body, columns, empty.center()) == (15, 0)
+    assert drop(body, {'kind': 'text'}, empty.center()), editor.message.text()
+    settle()
+    added = _component(editor.store.snapshot(), editor.pageId, editor.tools.selected)
+    assert added.layout.row == 15 and added.layout.column == 0
+    assert len(coordinator.session._undo) == history + 1
+    body = editor.renderer.pages[editor.pageId].widget()
+    assert body.layout().cellRect(16, 0).height() >= 64
+    coordinator.history()
+    assert coordinator.session.payload() == before
+
+
 @pytest.mark.parametrize('kind', ['number', 'image', 'table'])
 @pytest.mark.parametrize('axes', ['y', 'xy'])
 @pytest.mark.parametrize('nested', [False, True])
 def testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets(designer, kind, axes, nested):  # noqa: F811
-    c, e, key = setupPage(designer, kind)
+    c, e, key = setupGridPage(designer, kind)
     if nested:
         parent = e.tools.commands().add(e.pageId, 'container', 1, 0)
-        c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent).grid, 'columns', 2))
+        c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, parent), 'grid', Grid(columns=2)))
         e.tools.commands().move(e.pageId, key, 0, 0, parent)
     else:
         c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
@@ -76,7 +117,7 @@ def testResizeGhostMatchesCommittedCardWithoutMovingLiveWidgets(designer, kind, 
 
 
 def testContainerTitleSurvivesChildrenReopenAndStandaloneRendering(designer, tmp_path):  # noqa: F811
-    c, e, key = setupPage(designer, 'container')
+    c, e, key = setupGridPage(designer, 'container')
     e.tools.fields['title'].setText('Container <title>')
     e.tools.apply()
     child = e.tools.commands().add(e.pageId, 'text', 0, 0, key)
@@ -102,7 +143,7 @@ def testContainerTitleSurvivesChildrenReopenAndStandaloneRendering(designer, tmp
 
 
 def testShrinkingSpanPreviewAndCancellationPreserveState(designer):  # noqa: F811
-    c, e, key = setupPage(designer, 'image')
+    c, e, key = setupGridPage(designer, 'image')
     def configure(p):
         p.pages[e.pageId].layout.columns = 3
         _component(p, e.pageId, key).layout = Placement(rowSpan=3, columnSpan=2)

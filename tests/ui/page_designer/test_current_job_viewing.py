@@ -124,7 +124,7 @@ def testNormalEntryDoesNotMigrateWithoutExplicitEnable(qtApp, monkeypatch, tmp_p
     monkeypatch.delenv('EMO_PAGE_DESIGNER', raising=False)
     monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.No)
     window = MainWindow(Client())
-    assert window.pageCoordinator.session.document().schemaVersion == '2.7'
+    assert window.pageCoordinator.session.document().schemaVersion == '2.9'
     saveProject(tmp_path, legacyPayload())
     assert window.loadProjectDirectory(str(tmp_path), confirmed=True)
     coordinator = window.pageCoordinator
@@ -133,6 +133,11 @@ def testNormalEntryDoesNotMigrateWithoutExplicitEnable(qtApp, monkeypatch, tmp_p
     assert [a.text() for a in window.pageCoordinator.chrome.workspaceActions] == ['流程设计', '页面设计']
     assert window.pageCoordinator.chrome.deviceAction.text() == '设备管理'
     assert coordinator.session.document().schemaVersion == '2.1'
+    assert window.saveProjectToDirectory(str(tmp_path))
+    from emo_master.apps.designer.state.project_store import loadProjectDocument
+    saved = loadProjectDocument(tmp_path)
+    assert saved.schemaVersion == '2.1' and saved.presentation is None
+    assert not coordinator.session.dirty
     coordinator.showPages()
     assert coordinator.editor is None
     assert not coordinator.session.dirty
@@ -472,13 +477,98 @@ def testPreviewStartsWithSamplesAndCommitsFormBeforeOpening(designer):
     assert observer.hub is None and not Session.instances
 
 
+def testLocalDataPreviewDoesNotRequireRuntimeJobAndReturnsToSamples(designer, monkeypatch):
+    from emo_master.core.presentation.models import Component, Props, SqliteSource
+    from emo_master.ui.presentation import sqlite_widgets
+    window, client, _document = designer
+    coordinator = window.pageCoordinator
+    reads = []
+    monkeypatch.setattr(sqlite_widgets, 'readValue', lambda source, *, projectRoot=None: reads.append(source.table) or 7)
+    component = Component(componentId='local-count', type='sqlite_value', props=Props(
+        sqlite=SqliteSource(databasePath='C:/preview-only.db', table='history')))
+    coordinator.session.editPresentation(lambda p: setattr(p.pages[p.defaultPageId], 'components', [component]))
+    coordinator.editor.refresh()
+    preview = coordinator.preview
+    observer = preview.openObserver()
+    assert reads == []
+    calls = list(client.calls)
+    monkeypatch.setattr(preview, 'watchCurrent', lambda: pytest.fail('local data must not request a Runtime job'))
+    observer.source.setCurrentIndex(2)
+    waitFor(lambda: not preview.busy and not preview.closing)
+    assert observer.source.currentText() == '历史数据'
+    assert not observer.designExamples and not observer.localPreviewOnly
+    assert observer.simulationState is None
+    assert '历史数据查阅' in observer.banner.text()
+    assert not observer.simulation.isVisible()
+    assert observer.hub is None and preview.session is None and not Session.instances
+    assert client.calls == calls
+    database = observer.widgets[observer.currentPageId]['local-count'][1]
+    assert not database.preview and database.refreshButton.isEnabled()
+    database.refreshButton.click()
+    waitFor(lambda: database.loaded)
+    assert database.value.text() == '7' and reads == ['history']
+    observer.setSource(False)
+    assert observer.source.currentIndex() == 2
+    observer.source.setCurrentIndex(0)
+    waitFor(lambda: not preview.busy and not preview.closing)
+    assert observer.designExamples and observer.localPreviewOnly
+    assert observer.source.currentIndex() == 0
+    assert client.calls == calls
+    assert reads == ['history']
+    database = observer.widgets[observer.currentPageId]['local-count'][1]
+    assert database.preview and not database.refreshButton.isEnabled()
+
+
+def testLocalDataRestoresPagesOmittedByWorkflowObservationBeforeReading(designer, monkeypatch):
+    from emo_master.core.presentation.models import Component, Page, Props, ResultScope, SqliteSource
+    from emo_master.core.presentation.workflow_view import presentationForWorkflows
+    from emo_master.ui.presentation import sqlite_widgets
+    window, client, _document = designer
+    coordinator = window.pageCoordinator
+    reads = []
+    monkeypatch.setattr(sqlite_widgets, 'readValue', lambda source, *, projectRoot=None: reads.append(source.table) or 11)
+
+    def configure(presentation):
+        source = SqliteSource(databasePath='C:/preview-only.db', table='history')
+        presentation.pages['overview'].components = [Component(
+            componentId='overview-local', type='sqlite_value', props=Props(sqlite=source))]
+        presentation.pages['overview'].resultScopeIds = ['root']
+        presentation.resultScopes['other'] = ResultScope(entryWorkflowId='detect', scopeWorkflowId='detect')
+        presentation.pages['local-history'] = Page(name='本地历史', layout={'type': 'grid'}, resultScopeIds=['other'], components=[
+            Component(componentId='history-local', type='sqlite_value', props=Props(sqlite=source))])
+        presentation.pageOrder.append('local-history')
+
+    coordinator.session.editPresentation(configure)
+    coordinator.editor.refresh()
+    preview = coordinator.preview
+    observer = preview.openObserver()
+    filtered = presentationForWorkflows(coordinator.session.document(), {'main'})
+    assert 'local-history' not in filtered.pages
+    observer.reload(filtered)
+    observer.setDesignExamples(False)
+    observer.setSource(True)
+    assert reads == []
+    calls = list(client.calls)
+    observer.source.setCurrentIndex(2)
+    waitFor(lambda: not preview.busy and not preview.closing)
+    assert observer.config == coordinator.session.presentation.snapshot()
+    assert observer.pageNavigation.picker.findData('local-history') >= 0
+    assert reads == []
+    assert client.calls == calls
+    database = observer.widgets['overview']['overview-local'][1]
+    assert not database.preview and database.refreshButton.isEnabled()
+    database.refreshButton.click()
+    waitFor(lambda: database.loaded)
+    assert database.value.text() == '11' and reads == ['history']
+
+
 def testAdvancedModernConnectionFiltersProjectAndSupportsUncapturedJob(designer, monkeypatch):
     window, client, document = designer
     item = metadata(document, capture=False)
     requests = []
     stub = SimpleNamespace(Capabilities=lambda _request, **_kwargs: client.capabilities,
         ListJobs=lambda request, **_kwargs: requests.append(request.project_id) or SimpleNamespace(jobs=[item]))
-    monkeypatch.setattr(preview_module.grpc, 'insecure_channel', lambda _address: nullcontext(object()))
+    monkeypatch.setattr(preview_module, 'createChannel', lambda _profile: nullcontext(object()))
     monkeypatch.setattr(preview_module.rpc, 'DisplayServiceStub', lambda _channel: stub)
     preview = window.pageCoordinator.preview
     preview.connect('127.0.0.1:51001', item.job_id)
@@ -487,3 +577,76 @@ def testAdvancedModernConnectionFiltersProjectAndSupportsUncapturedJob(designer,
     assert len(Session.instances) == 1 and not preview.session.readResults
     preview.openObserver()
     assert preview.observer.hub is preview.hub
+
+
+def testAdvancedConnectionHistoryUsesSelectedEndpointAcrossReloadAndCloses(designer, monkeypatch, tmp_path):
+    from emo_master.clients.runtime import connection
+    from emo_master.apps.designer.state.workflow_store import WorkflowStore
+    window, client, _document = designer
+    payload = WorkflowStore().toPayload()
+    payload['presentation'].update(defaultPageId='overview', pageOrder=['overview'], pages={'overview': {
+        'name': 'Station history', 'components': [dict(componentId='station-total', type='sqlite_value',
+            props=dict(sqlite=dict(location='runtime', databasePath='station.db', table='records')))]}})
+    saveProject(tmp_path / 'history-project', payload)
+    assert window.loadProjectDirectory(str(tmp_path / 'history-project'), confirmed=True)
+    coordinator = window.pageCoordinator
+    document = coordinator.session.document()
+    item = metadata(document, capture=False)
+    item.runtime_instance_id = 'station-b'
+    client.capabilities.runtime_instance_id = 'station-b'
+    reads, channels = [], []
+
+    class Channel:
+        closed = False
+
+        def close(self):
+            self.closed = True
+
+    def create(profile):
+        assert profile.target == '192.0.2.20:51001'
+        channel = Channel()
+        channels.append(channel)
+        return channel
+
+    def aggregate(request, **kwargs):
+        assert request.context.runtime_instance_id == 'station-b'
+        assert kwargs['timeout'] == 5
+        reads.append('B')
+        return pb.HistoryReply(ok=True, result_json='{"value":22}')
+
+    def mainCall(name, request):
+        if name == 'GetRuntimeInfo':
+            return pb.RuntimeInfoReply(ok=True, runtime_instance_id='station-a')
+        assert name == 'QueryHistoryAggregate'
+        assert request.context.runtime_instance_id == 'station-a'
+        reads.append('A')
+        return pb.HistoryReply(ok=True, result_json='{"value":11}')
+
+    client._call = mainCall
+    display = SimpleNamespace(Capabilities=lambda _request, **_kwargs: client.capabilities,
+        ListJobs=lambda _request, **_kwargs: SimpleNamespace(jobs=[item]))
+    monkeypatch.setattr(preview_module, 'createChannel', lambda _profile: nullcontext(object()))
+    monkeypatch.setattr(preview_module.rpc, 'DisplayServiceStub', lambda _channel: display)
+    monkeypatch.setattr(connection, 'createChannel', create)
+    monkeypatch.setattr(preview_module.rpc, 'RuntimeServiceStub',
+        lambda _channel: SimpleNamespace(QueryHistoryAggregate=aggregate))
+    preview = coordinator.preview
+    preview.connect('192.0.2.20:51001', item.job_id)
+    waitFor(lambda: preview.hub is not None or preview.error)
+    assert preview.error is None
+    observer = preview.observer
+    for reload in (False, True):
+        if reload:
+            observer.reload(observer.config)
+        value = observer.widgets['overview']['station-total'][1]
+        value.refresh()
+        waitFor(lambda: value.loaded and not value.busy)
+        assert value.value.text() == '22' and set(reads) == {'B'}
+    preview.stopViewing(observer.showLocalData)
+    waitFor(lambda: not preview.busy and not preview.closing)
+    assert len(channels) == 1 and channels[0].closed
+    assert preview.historyOwner is None
+    value = observer.widgets['overview']['station-total'][1]
+    value.refresh()
+    waitFor(lambda: value.loaded and not value.busy)
+    assert value.value.text() == '11' and reads[-1] == 'A'

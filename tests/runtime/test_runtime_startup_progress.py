@@ -54,7 +54,7 @@ def test_remote_startup_does_not_create_embedded_service_and_owns_channel(monkey
     stub = object()
     monkeypatch.setenv("EMO_RUNTIME_TARGET", "127.0.0.1:59999")
     monkeypatch.setattr(service, "RuntimeService", lambda **_: pytest.fail("remote startup constructed embedded Runtime"))
-    monkeypatch.setattr(grpc, "insecure_channel", lambda _: channel)
+    monkeypatch.setattr(grpc, "insecure_channel", lambda _, **_options: channel)
     monkeypatch.setattr(runtime_pb2_grpc, "RuntimeServiceStub", lambda _: stub)
 
     def client(**kwargs):
@@ -76,4 +76,6 @@ def test_remote_startup_does_not_create_embedded_service_and_owns_channel(monkey
         prepared = prepareRuntime(StartupTiming(perf_counter()), Event())
         assert callable(prepared.close) and probes == ["info", "types"]
         assert not closed
-    assert clients == [dict(runtimeService=stub, ownedChannel=channel, runtimeTarget="127.0.0.1:59999", deadlineMs=5000)]
+    from emo_master.clients.runtime.connection import ConnectionProfile
+    assert clients == [dict(runtimeService=stub, ownedChannel=channel, runtimeTarget="127.0.0.1:59999",
+                            connectionProfile=ConnectionProfile("127.0.0.1:59999"), deadlineMs=5000)]

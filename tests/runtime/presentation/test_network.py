@@ -228,12 +228,12 @@ def testC1ThroughC4RealSpawnAndClassifiedLoopback(tmp_path):
             assert max(latencies) < 200
             print(label, "control_ms", latencies, "active", server.active)
             if label == "C4":
-                # Two independent consumers are supported PER Job. Occupy the
-                # second Job-0 subscription before probing the third; other
-                # Jobs cannot monopolize this Job's display admission.
-                second = display.Subscribe(pb.DisplayRequest(job_id=jobs[0]))
-                assert next(second).job_id == jobs[0]
-                calls.append(second)
+                # Fill the configured PER-Job quota before probing one excess
+                # consumer; another Job cannot monopolize this Job's admission.
+                for _ in range(server.displaySubscriptionsPerJob - 1):
+                    additional = display.Subscribe(pb.DisplayRequest(job_id=jobs[0]))
+                    assert next(additional).job_id == jobs[0]
+                    calls.append(additional)
                 for excess in [display.Subscribe(pb.DisplayRequest(job_id=jobs[0]), timeout=.5),
                     legacy.StreamJobEvents(pb.StreamJobEventsRequest(job_id=jobs[0], follow=True), timeout=.5),
                     legacy.StreamOperatorPreviewFrames(pb.StreamOperatorPreviewFramesRequest(session_id="SIMULATED-NO-DEVICE"), timeout=.5)]:

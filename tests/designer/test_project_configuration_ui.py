@@ -35,6 +35,36 @@ def setupDialog(ownedDesignerWindow, tmp_path, *, allowRun=False):
     return window, dialog, calls, path
 
 
+def testResourceDownloadUsesChosenLocalRootAndBackgroundWorker(ownedDesignerWindow, tmp_path, monkeypatch):
+    import threading
+    from emo_master.apps.designer.ui import project_configuration as module
+    window, dialog, writes, path = setupDialog(ownedDesignerWindow, tmp_path)
+    requests = []
+    selected = tmp_path / 'chosen-local'
+    original = path.read_bytes()
+    mainThread = threading.get_ident()
+    def download(snapshot, directory, *, cancelled):
+        requests.append((snapshot, directory, threading.get_ident()))
+        assert not cancelled.is_set()
+        return dict(directory=directory, downloaded=[dict(resourceId='image', path='input.png')],
+                    unchanged=[], cancelled=False, errors=[])
+    try:
+        dialog.snapshot['sourcePath'] = 'Z:/runtime-only/project.emoproj'
+        dialog.snapshot['payload']['resources'] = dict(items=dict(image=dict(path='input.png')))
+        dialog.client.downloadProjectResources = download
+        monkeypatch.setattr(module.QFileDialog, 'getExistingDirectory', lambda *_: str(selected))
+        dialog._controls()
+        assert dialog.downloadButton.isEnabled()
+        dialog.downloadResources()
+        waitUntil(lambda: dialog.pending is None)
+        assert len(requests) == 1 and requests[0][1] == str(selected) and requests[0][2] != mainThread
+        assert requests[0][0]['sourcePath'] == 'Z:/runtime-only/project.emoproj'
+        assert '已下载 1 项' in dialog.status.text()
+        assert not writes and path.read_bytes() == original
+    finally:
+        dialog.reject()
+
+
 @pytest.mark.parametrize('changed', [False, True])
 def testConfigurationSummaryKeepsRevisionsInTechnicalDetails(ownedDesignerWindow, tmp_path, changed):
     window, dialog, calls, path = setupDialog(ownedDesignerWindow, tmp_path)

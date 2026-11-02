@@ -139,6 +139,10 @@ def testTwoNetworkConsumersAll96ChangingImagesAndExplicitSupersession(channel, t
     try:
         until(lambda: server.active["display"] == 2 and all(c.compatible for c in clients))
         for ordinal in range(1, 97):
+            # Client decode can precede server response retirement. Keep this
+            # decision-fence test within the two-read quota; saturation is
+            # covered separately, not an implicit part of the next frame.
+            until(lambda: server.active["asset"] == 0)
             publish(ordinal)
             if ordinal == 2:
                 assert entered.wait(2)
@@ -148,7 +152,9 @@ def testTwoNetworkConsumersAll96ChangingImagesAndExplicitSupersession(channel, t
                 until(lambda: clients[0].high.get("root") == 3 and has(clients[1], 3))
                 release.set()
             until(lambda: all(has(c, ordinal) for c in clients))
-        assert verified == [list(range(1, 97))] * 2
+        assert verified == [list(range(1, 97))] * 2, [
+            [row for row in client.records if row["decoded"] != ["image"] or row["failures"]]
+            for client in clients]
         for index, client in enumerate(clients):
             rows = list(client.records)
             assert len(rows) == 96 and {r["ordinal"] for r in rows} == set(range(1, 97))

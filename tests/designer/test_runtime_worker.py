@@ -212,9 +212,11 @@ def testRuntimeWorkerReconnectsFromLastSequenceWithoutDuplicatingEvents() -> Non
     received = []
     failures = []
     statuses = []
+    diagnostics = []
     worker.eventReceived.connect(received.append)
     worker.failed.connect(failures.append)
     worker.statusChanged.connect(statuses.append)
+    worker.diagnosticReceived.connect(diagnostics.append)
 
     _runWorker(worker)
 
@@ -222,6 +224,11 @@ def testRuntimeWorkerReconnectsFromLastSequenceWithoutDuplicatingEvents() -> Non
     assert client.streamCalls == [(0, True), (1, True), (2, True)]
     assert failures == []
     assert [item.status for item in statuses] == ["COMPLETED"]
+    assert [item['level'] for item in diagnostics] == ['WARN', 'INFO']
+    assert diagnostics[0]['payload']['afterSequence'] == 1
+    assert diagnostics[0]['jobId'] == 'job-reconnect'
+    assert diagnostics[0]['workflowId'] == 'main'
+    assert 'temporary disconnect' in diagnostics[0]['payload']['reason']
 
 
 def testRuntimeWorkerStopBeforeStartDoesNotCreateAJob() -> None:

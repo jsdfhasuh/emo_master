@@ -54,7 +54,7 @@ def scaleExample(tmp_path, monkeypatch):
 
 def projectWithOperator(manifest, params):
     payload = WorkflowStore().toPayload("Documentation Example")
-    assert payload["schemaVersion"] == "2.7"
+    assert payload["schemaVersion"] == "2.9"
     assert payload["devices"]["schemaVersion"] == "1.0"
     assert "communication" not in payload
     payload["dependencies"]["operators"] = [

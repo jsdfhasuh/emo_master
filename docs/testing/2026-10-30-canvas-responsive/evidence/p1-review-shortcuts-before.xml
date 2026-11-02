@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="2.667" timestamp="2026-10-30T17:02:28.692002+08:00" hostname="视觉电脑"><testcase classname="tests.designer.test_designer_shortcuts" name="testPageCopyDeleteUndoNeverModifyHiddenWorkflow" time="0.817"><failure message="AssertionError: assert 'd03f9a88-b834-4ef1-a1a7-40ea3e1a1cad' != 'd03f9a88-b834-4ef1-a1a7-40ea3e1a1cad'">canvas = (&lt;emo_master.apps.designer.ui.main_window.MainWindow(0x2379b0a10f0) at 0x000002379CFDB480&gt;, ['node-d9227dd7', 'node-24755bab'], &lt;tests.designer.test_node_context_menu.Client object at 0x000002379CFE9030&gt;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002379CFC5870&gt;
+
+    def testPageCopyDeleteUndoNeverModifyHiddenWorkflow(canvas, monkeypatch):  # noqa: F811
+        window, _nodes, client = canvas
+        flow = deepcopy(window.flowModel.toProjectGraph())
+        editor, first = makePage(window, monkeypatch)
+        depth = len(window.pageCoordinator.session._undo)
+        press(window, Qt.Key_D, Qt.ControlModifier)
+        copied = editor.tools.selected
+&gt;       assert copied != first
+E       AssertionError: assert 'd03f9a88-b834-4ef1-a1a7-40ea3e1a1cad' != 'd03f9a88-b834-4ef1-a1a7-40ea3e1a1cad'
+
+tests\designer\test_designer_shortcuts.py:266: AssertionError</failure></testcase><testcase classname="tests.designer.test_designer_shortcuts" name="testClickPageCardTransfersPropertyFocusBeforeCopy" time="0.656"><failure message="assert not True&#10; +  where True = inputFocused()&#10; +    where inputFocused = &lt;emo_master.apps.designer.ui.designer_actions.DesignerActions(0x2379dbba970) at 0x000002379E3217C0&gt;.inputFocused&#10; +      where &lt;emo_master.apps.designer.ui.designer_actions.DesignerActions(0x2379dbba970) at 0x000002379E3217C0&gt; = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x2379dbf8480) at 0x000002379E29FB80&gt;.designerActions">canvas = (&lt;emo_master.apps.designer.ui.main_window.MainWindow(0x2379dbf8480) at 0x000002379E29FB80&gt;, ['node-30d5c9c2', 'node-bdbf7e54'], &lt;tests.designer.test_node_context_menu.Client object at 0x000002379D021840&gt;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000002379E1D0FD0&gt;
+
+    def testClickPageCardTransfersPropertyFocusBeforeCopy(canvas, monkeypatch):  # noqa: F811
+        window, _nodes, client = canvas
+        editor, key = makePage(window, monkeypatch)
+        focusCanvas(window)
+        field = editor.tools.fields['text']
+        field.setFocus()
+        QApplication.processEvents()
+        assert window.designerActions.inputFocused()
+        card = editor.renderer.widgets[editor.pageId][key][1].parentWidget()
+        QTest.mouseClick(card, Qt.LeftButton)
+        QApplication.processEvents()
+&gt;       assert not window.designerActions.inputFocused()
+E       assert not True
+E        +  where True = inputFocused()
+E        +    where inputFocused = &lt;emo_master.apps.designer.ui.designer_actions.DesignerActions(0x2379dbba970) at 0x000002379E3217C0&gt;.inputFocused
+E        +      where &lt;emo_master.apps.designer.ui.designer_actions.DesignerActions(0x2379dbba970) at 0x000002379E3217C0&gt; = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x2379dbf8480) at 0x000002379E29FB80&gt;.designerActions
+
+tests\designer\test_designer_shortcuts.py:363: AssertionError</failure></testcase></testsuite></testsuites>

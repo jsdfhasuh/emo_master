@@ -121,11 +121,19 @@ class DisplayHub(QObject):
         channels = pixels.shape[2] if pixels.ndim == 3 else 1
         size = ((pixels.shape[1] * channels + 3) // 4 * 4) * pixels.shape[0]
         if size > 8 * 1024 * 1024 or self.imageBytes() + size > self.imageLimit:
+            report = getattr(self.session, 'reportImageIssue', None)
+            if callable(report):
+                report(scope.result, sourceId, 'UI_IMAGE_BUDGET',
+                       f'界面图像容量超限：本图 {size} 字节，单图上限 8388608，总上限 {self.imageLimit}',
+                       level='WARN', stage='qt_image')
             raise ValueError("UI_IMAGE_BUDGET")
         image = ownedImage(pixels)
         self.cache[key] = image
         self.cacheBytes += image.sizeInBytes()
         self.conversions += 1
+        report = getattr(self.session, 'reportImageIssue', None)
+        if callable(report):
+            report(scope.result, sourceId, stage='qt_image')
         return image
 
     def imageBytes(self):

@@ -223,7 +223,7 @@ def testLocalReloadReplacesConnectedSimulatedDeviceAndKeepsExplicitConnection(tm
     from tests.runtime.test_device_lifecycle import control
     from tests.runtime.test_device_runtime import simulatedProject
     document = ProjectDocument.model_validate(simulatedProject())
-    assert document.schemaVersion == '2.7'
+    assert document.schemaVersion == '2.9'
     path = tmp_path / 'project/inspection.emoproj'
     saveProject(path, document.model_dump(mode='json'))
     assert loadProjectDocument(path) == document

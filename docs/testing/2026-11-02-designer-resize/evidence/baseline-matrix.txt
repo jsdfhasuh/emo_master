@@ -1,0 +1,1587 @@
+FFFFFFFFFFFFFFFFFFFFFFFFF.FF.FFFF                                        [100%]
+=================================== FAILURES ===================================
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-center-0.5] ____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd72dfdcf0>, <emo_master.apps.desig...fa5bc56a-8ecb-4e96-8050-e173c5d0df4c', 'ca7b7969-3327-45c2-a544-e78744f1ba54', '3db6ce24-883f-42a8-95d9-d36ac4bff12a'])
+zoom = 0.5, corner = False, snap = False, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 332))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=120, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+QStandardPaths: could not set correct permissions on runtime directory '/home/agent/.local/run', which is a directory permissions 0755 owned by UID 1000 GID 1000 (Read-only file system)
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+_____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-center-1] _____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd719d39a0>, <emo_master.apps.desig...ac434f0d-f3f0-40c8-8e75-8f4122393083', '05437c86-e27b-4a90-8b21-ca8841eb14a5', '47efc95a-d4c3-400b-8f8c-b0ce18bba7a1'])
+zoom = 1, corner = False, snap = False, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 332))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=117, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-center-1.5] ____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd71de08e0>, <emo_master.apps.desig...b5ddb21a-833c-4d17-bd27-feab705162a5', 'bbe41a4f-e853-4e3e-8d69-08757f025164', 'a7630310-17da-4789-975c-413ef27af3e2'])
+zoom = 1.5, corner = False, snap = False, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 332))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=116, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-offset-0.5] ____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd71da5000>, <emo_master.apps.desig...fa38052c-8328-4b2e-a478-86921181a440', '4ac34796-8055-4473-93c9-d7574c41d880', '52c50ab2-0336-40ed-9f16-8207d5c45726'])
+zoom = 0.5, corner = True, snap = False, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 332))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=120, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+_____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-offset-1] _____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd715f7d90>, <emo_master.apps.desig...276067d9-213f-4598-8d9f-0e14fe9c3e09', 'b6c4b7a9-0043-4d34-86c5-03a2967b4916', '26a10ad6-c0cc-4671-871a-c0cb3ab0e7a4'])
+zoom = 1, corner = True, snap = False, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 332))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=117, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-offset-1.5] ____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd7113d180>, <emo_master.apps.desig...692967d5-74ca-4efd-88ad-0db1d8f94feb', 'f7f272f9-0cc9-4567-8f6c-d4fd49ce040e', '65b98ced-8377-426d-92cc-e15399ee554f'])
+zoom = 1.5, corner = True, snap = False, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 332))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=116, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-center-0.5] _____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd7118b940>, <emo_master.apps.desig...6aba9b1a-edb7-4307-acf2-787f6b0c091b', '284165f7-dc7a-41bd-a2d6-1aaf0c49eac4', '54eb6099-98f3-417f-af59-b88c7f088a96'])
+zoom = 0.5, corner = False, snap = True, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 332))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=115, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+_____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-center-1] ______
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd711decb0>, <emo_master.apps.desig...af782aba-c335-48a2-91ad-5c30e528a368', 'ad36e073-c33b-42da-af4f-a16987e586c0', 'd4d63489-418f-4afe-9c23-f1077f5defdf'])
+zoom = 1, corner = False, snap = True, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 332))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=115, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-center-1.5] _____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd70740fd0>, <emo_master.apps.desig...f4f694c3-6d55-4dc1-8e11-c6418fd10094', '4f679ce6-e65f-4c39-ae11-905b5ff1ed92', '18fe3328-7b38-4b3a-aaa4-f45f9600b6fb'])
+zoom = 1.5, corner = False, snap = True, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 332))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=115, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-offset-0.5] _____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd7079ee00>, <emo_master.apps.desig...ed1048a2-6542-4017-9ba0-2ffffbb4711e', 'dfa3b187-61ef-42e4-a333-02ae282baa86', '32d04ae2-90c2-4d3e-b17c-93ff01069482'])
+zoom = 0.5, corner = True, snap = True, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 332))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=115, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+_____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-offset-1] ______
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd707fd7b0>, <emo_master.apps.desig...6a794afd-7094-43ff-a319-d2aa242ea0ba', 'a10a8a1a-d178-4d72-a76b-b710e2c8e1e4', 'd4d9fbcb-1da4-4c11-bba6-4f86da2e40e7'])
+zoom = 1, corner = True, snap = True, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 332))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=115, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-offset-1.5] _____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd70358790>, <emo_master.apps.desig...fcf6b316-3e13-48a4-8f58-8b3deb3f9a1a', '58948cf1-110c-4859-a7dc-502106c661ac', '3f4740ae-8197-4089-be2a-d0b26b74b38f'])
+zoom = 1.5, corner = True, snap = True, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 332))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=115, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-center-0.5] ____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd703b1ed0>, <emo_master.apps.desig...12f2f991-cd63-4ea7-a009-94d8a44c979b', 'f4172aac-57a5-4ca1-bcb2-9730cc5eb6ec', '1ab3712a-8b06-4627-be88-13d1fcc60ded'])
+zoom = 0.5, corner = False, snap = False, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 492))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=120, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+_____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-center-1] _____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6ff14fd0>, <emo_master.apps.desig...4213e589-6749-4e8d-9a06-d32372f6e71a', 'e70db32b-b523-408f-86c9-857cb5cf5ef3', '02bea2b3-dc90-49a5-ac8f-5db42b07e9dd'])
+zoom = 1, corner = False, snap = False, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 492))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=117, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-center-1.5] ____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6ff72ec0>, <emo_master.apps.desig...153798ca-e15f-4a89-9158-6b22e46d4795', '0e72b9e0-0484-4f1e-9a9a-7277e42f4845', '8998c3ae-1215-428a-82d1-e5294d0b3acd'])
+zoom = 1.5, corner = False, snap = False, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 492))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=116, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-offset-0.5] ____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6ffc0b50>, <emo_master.apps.desig...ee385004-7599-4df9-a9c1-db1850e11837', '464903c6-d5af-434c-937f-f88686b54b39', 'a29f3da2-caaa-44ed-8d43-87afa945ccb1'])
+zoom = 0.5, corner = True, snap = False, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 492))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=120, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+_____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-offset-1] _____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6ffdeb00>, <emo_master.apps.desig...bdf103de-96c1-41d5-bbc8-dc6da5748572', '1351675a-9a00-4b6c-8854-3f9eb4aba952', '8af5657b-c783-4821-b00c-33b88d77b3a0'])
+zoom = 1, corner = True, snap = False, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 492))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=117, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-offset-1.5] ____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6ff5c370>, <emo_master.apps.desig...a49f167a-412a-486d-88b4-30ffde212e78', 'e224ccbf-6410-4faa-97b1-ee8380c8a6b2', '191a3bab-87af-443c-a4af-9e08b34cf337'])
+zoom = 1.5, corner = True, snap = False, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 492))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=116, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-center-0.5] _____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6fb7a170>, <emo_master.apps.desig...5275d6a6-724f-4bf6-b06c-6bac5a2cbcdf', '7bdf0cad-6951-47b6-9999-1d1368d2da56', '2ad1721f-2b83-46ad-8a8e-c15e376199aa'])
+zoom = 0.5, corner = False, snap = True, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 492))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=115, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+_____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-center-1] ______
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6fb19bd0>, <emo_master.apps.desig...7eb95bc4-c215-4073-8b16-c8424b22f378', 'd82a09d6-8927-4771-b729-fcb59007fc30', 'c9b3a751-cb43-4a35-afca-b8120c3580c1'])
+zoom = 1, corner = False, snap = True, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 492))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=115, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-center-1.5] _____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6f7340d0>, <emo_master.apps.desig...cf9257bc-1273-42f5-94a6-690144341b54', '58993679-837a-47fe-8e57-9cd1a48df24f', '2130bbb9-3fb3-485a-b84e-107875033672'])
+zoom = 1.5, corner = False, snap = True, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 492))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=115, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-offset-0.5] _____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6f795db0>, <emo_master.apps.desig...9d5dc09d-f612-4273-a4be-0d2a3a08e3b2', '12acb2bc-e939-4de1-b10b-0701e288b568', 'ad8e90e8-13ed-4385-8e53-7d7c385d2524'])
+zoom = 0.5, corner = True, snap = True, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 492))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=115, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+_____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-offset-1] ______
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6f7e8a90>, <emo_master.apps.desig...0ba4ad80-1abc-4246-8164-cc9bf90c5aee', 'ae0127a5-2921-409e-9188-041845cd9da5', 'b6d10a6c-2f10-4517-a673-ba2cb65789b4'])
+zoom = 1, corner = True, snap = True, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 492))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=115, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+____ testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-offset-1.5] _____
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6f7077f0>, <emo_master.apps.desig...b3e1202a-618e-4546-91a7-b647ad6b4574', '7b47bd03-5556-4dda-ad12-ffdc0214fe5b', 'de9ec3df-86ef-49f9-abfd-ce26fc5d4f32'])
+zoom = 1.5, corner = True, snap = True, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor, corner)
+        state = editor.tools.responsive.resize
+        size, card = state['size'], state['card']
+        delta = QPoint(round(logicalDelta[0] * zoom), round(logicalDelta[1] * zoom))
+        expectedWidth = size.width() + logicalDelta[0]
+        expectedHeight = size.height() + logicalDelta[1]
+        if snap:
+            references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+                          editor.tools.responsive.cards().values()
+                          if other.parentWidget() is card.parentWidget() and other is not card]
+            dx, dy, _ = snapOffset(Box(card.x() + expectedWidth - 1,
+                                      card.y() + expectedHeight - 1, 0, 0), references, 6 / zoom, 400 / zoom)
+            expectedWidth += round(dx)
+            expectedHeight += round(dy)
+        QTest.mouseMove(window, origin + delta)
+        settle()
+        candidate = state['candidate']
+>       assert abs(candidate.preferredWidth - expectedWidth) <= 2
+E       AssertionError: assert 80 <= 2
+E        +  where 80 = abs((412 - 492))
+E        +    where 412 = ResponsiveItem(width='content', minWidth=160, preferredWidth=412, weight=1.0, minHeight=64, preferredHeight=115, alignSelf='start').preferredWidth
+
+tests/ui/page_designer/test_responsive_resize_window.py:73: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+_____________ testWindowResizeZeroAndEscapeThenContinue[False-0.5] _____________
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6f33c970>, <emo_master.apps.desig...4d4c7793-573b-4d1f-9e01-8bc475c69424', 'fd6bc007-61d9-4317-ba91-9e86b1d5749d', '43d0f774-13da-40df-94b5-1230af166ef9'])
+zoom = 0.5, snap = False
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('snap', [False, True])
+    def testWindowResizeZeroAndEscapeThenContinue(responsivePage, zoom, snap):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap)
+        coordinator.session.markSaved()
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor)
+        release(window, origin)
+>       assert editor.store.snapshot() == before
+E       AssertionError: assert Presentation(...['desktop'])}) == Presentation(...['desktop'])})
+E         
+E         Use -v to get more diff
+
+tests/ui/page_designer/test_responsive_resize_window.py:93: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+_____________ testWindowResizeZeroAndEscapeThenContinue[False-1.5] _____________
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6f706aa0>, <emo_master.apps.desig...2c1c646c-a0bd-4066-a004-4f76b0a44b7f', 'd939a8e9-0aea-43ba-8388-e27231f72775', '51004c4f-eef1-4d5f-ba8f-56fc38e6b0ba'])
+zoom = 1.5, snap = False
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('snap', [False, True])
+    def testWindowResizeZeroAndEscapeThenContinue(responsivePage, zoom, snap):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap)
+        coordinator.session.markSaved()
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor)
+        release(window, origin)
+>       assert editor.store.snapshot() == before
+E       AssertionError: assert Presentation(...['desktop'])}) == Presentation(...['desktop'])})
+E         
+E         Use -v to get more diff
+
+tests/ui/page_designer/test_responsive_resize_window.py:93: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+_____________ testWindowResizeZeroAndEscapeThenContinue[True-0.5] ______________
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6ef769b0>, <emo_master.apps.desig...2a020bfe-2195-4e2e-ab56-88bc152cbe05', 'c356dbf8-2b1d-4557-8841-683f064cabc6', 'dc4f34a9-9fdb-4b97-a196-8dbb0fd6ddbe'])
+zoom = 0.5, snap = True
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('snap', [False, True])
+    def testWindowResizeZeroAndEscapeThenContinue(responsivePage, zoom, snap):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap)
+        coordinator.session.markSaved()
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor)
+        release(window, origin)
+>       assert editor.store.snapshot() == before
+E       AssertionError: assert Presentation(...['desktop'])}) == Presentation(...['desktop'])})
+E         
+E         Use -v to get more diff
+
+tests/ui/page_designer/test_responsive_resize_window.py:93: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+_____________ testWindowResizeZeroAndEscapeThenContinue[True-1.5] ______________
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd6ef7aef0>, <emo_master.apps.desig...68eefa3a-6be7-46d9-86cb-3f4b781d9e21', '0f6abb9c-6577-45fd-9665-c7f7e099c1f2', 'aa9fa48f-68d4-43f0-887a-9c9ab54ef0e5'])
+zoom = 1.5, snap = True
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('snap', [False, True])
+    def testWindowResizeZeroAndEscapeThenContinue(responsivePage, zoom, snap):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap)
+        coordinator.session.markSaved()
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        window, origin = press(editor)
+        release(window, origin)
+>       assert editor.store.snapshot() == before
+E       AssertionError: assert Presentation(...['desktop'])}) == Presentation(...['desktop'])})
+E         
+E         Use -v to get more diff
+
+tests/ui/page_designer/test_responsive_resize_window.py:93: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+__________ testWindowResizeKeepsProxyGrabAcrossPendingAppearance[0.5] __________
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd5af63a90>, <emo_master.apps.desig...49796c32-311f-415c-af04-eb0d4c9d9743', '6a31e045-2617-4e41-a7e2-a76aa8334177', '5ec9e8de-2ae8-4ac3-a917-aca97c55829b'])
+zoom = 0.5
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    def testWindowResizeKeepsProxyGrabAcrossPendingAppearance(responsivePage, zoom):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom)
+        history = len(coordinator.session._undo)
+        editor.tools.fields['title'].setText('accepted pending title')
+        window, origin = press(editor)
+        assert editor.canvas.scene().mouseGrabberItem() is editor.canvas.proxy
+>       assert QWidget.mouseGrabber() is None
+E       assert <emo_master.apps.designer.page_designer.responsive_tools.ResponsiveHandle(0x5566b1cb8270) at 0x7fcd5af26340> is None
+E        +  where <emo_master.apps.designer.page_designer.responsive_tools.ResponsiveHandle(0x5566b1cb8270) at 0x7fcd5af26340> = <built-in method mouseGrabber of Shiboken.ObjectType object at 0x5566af7ad7e0>()
+E        +    where <built-in method mouseGrabber of Shiboken.ObjectType object at 0x5566af7ad7e0> = QWidget.mouseGrabber
+
+tests/ui/page_designer/test_responsive_resize_window.py:126: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+___________ testWindowResizeKeepsProxyGrabAcrossPendingAppearance[1] ___________
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd5af5c1c0>, <emo_master.apps.desig...94583680-d8ea-46f3-b378-f7dd60a37d79', '59a78185-2889-450d-81f0-2ca6ef9c12e0', '1e35b154-7d98-48b9-a4e5-d652a036aefb'])
+zoom = 1
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    def testWindowResizeKeepsProxyGrabAcrossPendingAppearance(responsivePage, zoom):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom)
+        history = len(coordinator.session._undo)
+        editor.tools.fields['title'].setText('accepted pending title')
+        window, origin = press(editor)
+        assert editor.canvas.scene().mouseGrabberItem() is editor.canvas.proxy
+>       assert QWidget.mouseGrabber() is None
+E       assert <emo_master.apps.designer.page_designer.responsive_tools.ResponsiveHandle(0x5566b1f190f0) at 0x7fcd5af81580> is None
+E        +  where <emo_master.apps.designer.page_designer.responsive_tools.ResponsiveHandle(0x5566b1f190f0) at 0x7fcd5af81580> = <built-in method mouseGrabber of Shiboken.ObjectType object at 0x5566af7ad7e0>()
+E        +    where <built-in method mouseGrabber of Shiboken.ObjectType object at 0x5566af7ad7e0> = QWidget.mouseGrabber
+
+tests/ui/page_designer/test_responsive_resize_window.py:126: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+__________ testWindowResizeKeepsProxyGrabAcrossPendingAppearance[1.5] __________
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fcd5ab15b70>, <emo_master.apps.desig...e2bfd4f7-4600-41cd-ba5e-ddb74856d792', '89d75449-62b4-4c16-9d7f-9eb1cfe89695', '05614c02-23bb-4bfc-a2c8-57f9f8917f33'])
+zoom = 1.5
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    def testWindowResizeKeepsProxyGrabAcrossPendingAppearance(responsivePage, zoom):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom)
+        history = len(coordinator.session._undo)
+        editor.tools.fields['title'].setText('accepted pending title')
+        window, origin = press(editor)
+        assert editor.canvas.scene().mouseGrabberItem() is editor.canvas.proxy
+>       assert QWidget.mouseGrabber() is None
+E       assert <emo_master.apps.designer.page_designer.responsive_tools.ResponsiveHandle(0x5566b14cfa70) at 0x7fcd5af78680> is None
+E        +  where <emo_master.apps.designer.page_designer.responsive_tools.ResponsiveHandle(0x5566b14cfa70) at 0x7fcd5af78680> = <built-in method mouseGrabber of Shiboken.ObjectType object at 0x5566af7ad7e0>()
+E        +    where <built-in method mouseGrabber of Shiboken.ObjectType object at 0x5566af7ad7e0> = QWidget.mouseGrabber
+
+tests/ui/page_designer/test_responsive_resize_window.py:126: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+--------------------------- Captured stderr teardown ---------------------------
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+=========================== short test summary info ============================
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-center-0.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-center-1]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-center-1.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-offset-0.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-offset-1]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-offset-1.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-center-0.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-center-1]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-center-1.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-offset-0.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-offset-1]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-offset-1.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-center-0.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-center-1]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-center-1.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-offset-0.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-offset-1]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-offset-1.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-center-0.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-center-1]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-center-1.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-offset-0.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-offset-1]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-offset-1.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeZeroAndEscapeThenContinue[False-0.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeZeroAndEscapeThenContinue[False-1.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeZeroAndEscapeThenContinue[True-0.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeZeroAndEscapeThenContinue[True-1.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeKeepsProxyGrabAcrossPendingAppearance[0.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeKeepsProxyGrabAcrossPendingAppearance[1]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeKeepsProxyGrabAcrossPendingAppearance[1.5]
+31 failed, 2 passed in 15.61s

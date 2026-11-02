@@ -9,11 +9,12 @@ from time import monotonic
 
 from PySide2.QtCore import Qt, QTimer, Signal, QEvent
 from PySide2.QtGui import QPalette
-from PySide2.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QCheckBox,
+from PySide2.QtWidgets import (QDialog, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QCheckBox,
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QMessageBox, QStyle, QTextBrowser, QTextEdit,
     QStyledItemDelegate, QStyleOptionViewItem, QTreeWidget, QTreeWidgetItem)
 
 from emo_master.core.project.configuration import projectConfigurationChanges, requiredProjectChanges, changeCategory
+from emo_master.apps.designer.services.runtime_client import localProjectSourceChange
 
 
 class ChangeLocationDelegate(QStyledItemDelegate):
@@ -131,6 +132,7 @@ class ProjectConfigurationDialog(QDialog):
         self.submittedCheckpoint = None
         self.revalidateAfterSnapshot = False
         self.notifiedWrites = set()
+        self._lastOperationLog = None
         self.receiptSummary = ''
         self.connectionObserve = None
         self.projectId = self.session.document().project.projectId
@@ -140,7 +142,9 @@ class ProjectConfigurationDialog(QDialog):
         self.deviceTypes, self.deviceRequirements = {}, {}
         self.initial = False
         self.initialRuntimeId = ''
+        self.initialImportId = ''
         self.initialValidated = False
+        self._sourceCandidate = ''
         self.selectCategories = set(selectCategories)
         self.requestId = ""
         self.writePending = False
@@ -149,18 +153,35 @@ class ProjectConfigurationDialog(QDialog):
         self.validatedSelection = None
         self.validationSelection = None
         self.uploadCancelled = Event()
+        self.downloadCancelled = Event()
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="online-configuration")
         self.setWindowTitle("工程与 Runtime 配置")
         self.resize(1050, 650)
         layout = QVBoxLayout(self)
         self.status = QLabel("正在读取在线配置")
         self.status.setWordWrap(True)
+        # Wrapped upload diagnostics must keep their height as the table shrinks.
+        from PySide2.QtWidgets import QSizePolicy
+        statusPolicy = self.status.sizePolicy()
+        statusPolicy.setVerticalPolicy(QSizePolicy.Minimum)
+        self.status.setSizePolicy(statusPolicy)
         self.status.setTextInteractionFlags(Qt.TextSelectableByMouse)
         statusRow = QHBoxLayout()
         self.statusIcon = QLabel()
         statusRow.addWidget(self.statusIcon, 0, Qt.AlignTop)
         statusRow.addWidget(self.status, 1)
         layout.addLayout(statusRow)
+        self.sourceLocation = QLabel()
+        self.sourceLocation.setWordWrap(True)
+        self.sourceLocation.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.sourceLocation.hide()
+        layout.addWidget(self.sourceLocation)
+        self.useLocalSource = QCheckBox('写入时将 Runtime 工程目录切换到当前本地工程')
+        self.useLocalSource.setObjectName('useLocalProjectSource')
+        self.useLocalSource.setToolTip('相对模型、图片输出和数据库路径按新工程目录解析；不会复制或清空已有数据。')
+        self.useLocalSource.hide()
+        self.useLocalSource.toggled.connect(self._sourceSelectionChanged)
+        layout.addWidget(self.useLocalSource)
         diagnosticRow = QHBoxLayout()
         self.diagnosticChoice = QComboBox()
         self.diagnosticChoice.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
@@ -241,13 +262,18 @@ class ProjectConfigurationDialog(QDialog):
         from emo_master.apps.designer.ui.icon_map import icon
         self.uploadButton.setIcon(icon("upload"))
         self.uploadButton.clicked.connect(self.uploadResources)
+        self.downloadButton = QPushButton('下载工程资源…')
+        self.downloadButton.clicked.connect(self.downloadResources)
+        self.cancelDownloadButton = QPushButton('取消下载')
+        self.cancelDownloadButton.clicked.connect(self.cancelDownload)
         self.cancelUploadButton = QPushButton('取消上传')
         self.cancelUploadButton.setIcon(icon('x'))
         self.cancelUploadButton.clicked.connect(self.cancelUploads)
         self.recoverButton = QPushButton('重试资源恢复')
         self.recoverButton.setIcon(icon('refresh'))
         self.recoverButton.clicked.connect(self.retryRecovery)
-        for button in (self.refreshButton, self.readButton, self.validateButton, self.writeButton):
+        for button in (self.refreshButton, self.readButton, self.downloadButton, self.cancelDownloadButton,
+                       self.validateButton, self.writeButton):
             row.addWidget(button)
         layout.addLayout(row)
         row = QHBoxLayout()
@@ -277,6 +303,13 @@ class ProjectConfigurationDialog(QDialog):
                 id(getattr(self.c.window.runtimeClient, "stub", None)),
                 id(getattr(self.c.window.runtimeClient, "runtimeService", None)))
 
+    def _selectedSourcePath(self):
+        return self._sourceCandidate if self.useLocalSource.isChecked() else ''
+
+    def _sourceSelectionChanged(self):
+        self._invalidateEffects()
+        self._controls()
+
     def openGraph(self):
         if not self._valid():
             return
@@ -285,7 +318,8 @@ class ProjectConfigurationDialog(QDialog):
         self.c.showOnline(projectId)
 
     def runOnline(self):
-        if not self._valid() or self.pending is not None or self.writePending or not self.snapshot or self.snapshot.get("recoveryError"):
+        if (not self._valid() or self.pending is not None or self.writePending or not self.snapshot
+                or self.snapshot.get("recoveryError") or self._selectedSourcePath()):
             return
         if not self.snapshot.get("versionedStart"):
             self.status.setText("Runtime 不支持按在线版本校验启动，请先升级 Runtime")
@@ -312,12 +346,23 @@ class ProjectConfigurationDialog(QDialog):
         self.status.setStyleSheet('font-weight: bold;' if level in {'success', 'error', 'warning'} else '')
         self.statusIcon.setPixmap(self.style().standardIcon(icons[level]).pixmap(20, 20))
 
+    def _logOperation(self, kind, message, *, level='ERROR', code='', details=None, state='failed'):
+        key = (self.requestId, kind, state, code)
+        if key == self._lastOperationLog:
+            return
+        self._lastOperationLog = key
+        self.c.window.appendLocalEvent(dict(
+            eventType='designer.configuration.' + state, level=level, message=message, code=code,
+            projectId=self.projectId,
+            payload=dict(operation=kind, requestId=self.requestId, state=state, details=details)),
+            source='designer')
+
     def _notify(self, title, text, details='', *, warning=False, key=None, upgrade=False, diagnostic=None,
                 localResources=False):
         text = text.strip() or title
         details = details.strip()
         if diagnostic is not None:
-            localResources = localResources or self.initial
+            localResources = localResources or self.initial and not self.initialImportId
             self.diagnosticEntries = configurationDiagnostics(diagnostic, self.local, self.deviceTypes,
                 self.c.window.operatorCatalogController.getCatalog(), localResources=localResources)
             self.diagnosticChoice.clear()
@@ -340,7 +385,8 @@ class ProjectConfigurationDialog(QDialog):
                     if localResources:
                         text += '\n\n请检查本地工程目录中的上述文件；恢复匹配的文件，或更新工程的资源记录后重试。'
                     elif any(entry['target'] == 'resources' for entry in entries):
-                        text += '\n\n请点击“上传候选资源”，将本地文件传到 Runtime；完成后再点击“校验选中变更”。'
+                        text += '\n\n请点击“上传候选资源”，将本地文件传到 Runtime；完成后再点击“校验完整工程”。' if self.initial else (
+                            '\n\n请点击“上传候选资源”，将本地文件传到 Runtime；完成后再点击“校验选中变更”。')
                 text += '\n本次未写入 Runtime，未连接设备或启动任务；草稿和本地工程文件未改变。'
             else:
                 text += '\n请查看详细信息，或返回配置继续修改；草稿和输入已保留。'
@@ -382,7 +428,7 @@ class ProjectConfigurationDialog(QDialog):
         index = self.diagnosticChoice.currentIndex()
         entry = self.diagnosticEntries[index] if 0 <= index < len(self.diagnosticEntries) else {}
         self.locateButton.setText({'node': '定位节点并配置', 'device': '配置设备',
-            'workflow': '定位流程', 'resources': '上传候选资源' if self.snapshot is not None else '返回配置'
+            'workflow': '定位流程', 'resources': '上传候选资源' if self.snapshot is not None or self.initialImportId else '返回配置'
             }.get(entry.get('target'), '返回配置'))
         self.diagnosticChoice.setToolTip(entry.get('text', ''))
 
@@ -391,7 +437,7 @@ class ProjectConfigurationDialog(QDialog):
             return
         index = self.diagnosticChoice.currentIndex()
         entry = self.diagnosticEntries[index] if 0 <= index < len(self.diagnosticEntries) else {}
-        if entry.get('target') == 'resources' and self.snapshot is not None:
+        if entry.get('target') == 'resources' and (self.snapshot is not None or self.initialImportId):
             self.uploadResources()
             return
         # Closing the comparison retains the same edit session and every input.
@@ -417,18 +463,18 @@ class ProjectConfigurationDialog(QDialog):
 
     def _formatFeedback(self):
         version = self.local.get('schemaVersion')
-        old = version not in {'2.6', '2.7'}
-        self.formatStatus.setText(f'当前草稿格式 {version}，当前新工程使用 2.7。升级只修改草稿，可撤销；不会保存或写入。' if old else '')
+        old = version not in {'2.6', '2.7', '2.8', '2.9'}
+        self.formatStatus.setText(f'当前草稿格式 {version}，当前新工程使用 2.9。升级只修改草稿，可撤销；不会保存或写入。' if old else '')
         self.formatStatus.setVisible(old)
         self.upgradeButton.setVisible(old and version in {'2.0', '2.1', '2.2', '2.3', '2.4', '2.5'})
 
     def _requireFormat(self):
-        if self.local.get('schemaVersion') in {'2.6', '2.7'}:
+        if self.local.get('schemaVersion') in {'2.6', '2.7', '2.8', '2.9'}:
             return True
         self._notify('工程校验未通过',
-            f"当前工程格式为 {self.local.get('schemaVersion')}，请新建当前 2.7 工程；本轮不提供旧工程转换。\n"
+            f"当前工程格式为 {self.local.get('schemaVersion')}，在线配置需要 2.6 或更新格式；当前新工程使用 2.9。\n"
             '本次没有写入 Runtime，也没有保存本地工程。\n可升级当前草稿后重新校验；升级可撤销。',
-            'E_CONFIG_INVALID: online writes require current schema 2.7', upgrade=not self.upgradeButton.isHidden())
+            'E_CONFIG_INVALID: online writes require schema 2.6 or newer', upgrade=not self.upgradeButton.isHidden())
         return False
 
     def _draftChanged(self):
@@ -477,7 +523,7 @@ class ProjectConfigurationDialog(QDialog):
             from emo_master.core.project.migration import migrateProjectPayload
             from emo_master.core.project.models import ProjectDocument
             payload = self.session.payload()
-            if payload.get('schemaVersion') in {'2.6', '2.7'}:
+            if payload.get('schemaVersion') in {'2.6', '2.7', '2.8', '2.9'}:
                 self._draftChanged()
                 return
             candidate = migrateProjectPayload(deepcopy(payload), enableDevices=True)
@@ -525,27 +571,34 @@ class ProjectConfigurationDialog(QDialog):
         writable = ready
         self.refreshButton.setEnabled(idle and not self.writePending)
         self.readButton.setEnabled(ready)
-        self.writeButton.setEnabled((writable or initialReady and initialSupported) and self.table.rowCount() > 0)
-        self.validateButton.setEnabled((writable or initialReady and initialSupported) and self.table.rowCount() > 0)
+        self.downloadButton.setEnabled(ready and bool((self.snapshot.get('payload', {}).get('resources') or {}).get('items'))
+            and callable(getattr(self.client, 'downloadProjectResources', None)))
+        self.cancelDownloadButton.setEnabled(self.pending is not None and self.kind == 'download'
+                                             and not self.downloadCancelled.is_set())
+        hasChanges = self.table.rowCount() > 0 or bool(self._selectedSourcePath())
+        self.writeButton.setEnabled((writable or initialReady and initialSupported) and hasChanges)
+        self.validateButton.setEnabled((writable or initialReady and initialSupported) and hasChanges)
+        self.useLocalSource.setEnabled(ready and self.snapshot.get('projectSourceWrite') == 1)
         self.writeButton.setText('首次写入当前工程' if self.initial else '写入 Runtime')
         validating = self.pending is not None and self.kind in {'initialValidate', 'initialPrewrite', 'validate', 'prewrite'}
         self.validateButton.setText('正在校验…' if validating else '校验完整工程' if self.initial else '校验选中变更')
         self.upgradeButton.setEnabled(idle and not self.writePending)
         uncertain = bool(getattr(self.client, 'pendingResourceTransfers', {}))
-        self.uploadButton.setEnabled(ready and not uncertain and hasattr(self.client, "uploadProjectResources"))
+        self.uploadButton.setEnabled(not uncertain and (ready and hasattr(self.client, "uploadProjectResources")
+            or initialReady and callable(getattr(self.client, 'uploadInitialProjectResources', None))))
         self.recoverButton.setEnabled(ready and not uncertain and self.snapshot.get('resourceRecoveryAvailable', False))
         self.queryButton.setEnabled(idle and (bool(self.requestId) or uncertain))
         self.queryButton.setText('查询上传结果' if uncertain else '查询写入结果')
         self.cancelUploadButton.setEnabled(
             (uploading and not self.uploadCancelled.is_set())
-            or (ready and uncertain and hasattr(self.client, 'cancelProjectResourceTransfers')))
-        self.cancelButton.setEnabled(idle and self.writePending)
+            or ((ready or initialReady) and uncertain and hasattr(self.client, 'cancelProjectResourceTransfers')))
+        self.cancelButton.setEnabled(idle and (self.writePending or self.initial and bool(self.initialImportId)))
         self.closeButton.setText('保持差异并关闭' if self.snapshot is not None and self.table.rowCount() > 0 else '关闭')
         self.table.setEnabled(ready or initialReady)
         self._syncSelectAll()
         self.replacementPolicy.setEnabled(ready)
         if self.runButton:
-            self.runButton.setEnabled(ready and not self.snapshot.get("recoveryError"))
+            self.runButton.setEnabled(ready and not self.snapshot.get("recoveryError") and not self._selectedSourcePath())
             self.runButton.setToolTip("运行在线配置并打开独立只读监视图；本地草稿保持不变")
 
     def _submit(self, kind, action, *args):
@@ -570,6 +623,7 @@ class ProjectConfigurationDialog(QDialog):
         self.draftCheckpoint = self.session._checkpoint
         self.initialValidated = False
         self.initialRuntimeId = ''
+        self.initialImportId = ''
         self.validationSelection = self.validatedSelection = None
         self._formatFeedback()
         self._feedback('正在读取在线配置…', 'busy')
@@ -842,6 +896,12 @@ class ProjectConfigurationDialog(QDialog):
     def _showInitial(self):
         self.snapshot = None
         self.initial = True
+        self._sourceCandidate = ''
+        self.sourceLocation.hide()
+        self.useLocalSource.hide()
+        self.useLocalSource.blockSignals(True)
+        self.useLocalSource.setChecked(False)
+        self.useLocalSource.blockSignals(False)
         self.initialValidated = False
         self.initialRuntimeId = ''
         self.replacementPolicy.hide()
@@ -876,6 +936,18 @@ class ProjectConfigurationDialog(QDialog):
         self.initial = False
         self.replacementPolicy.show()
         self.snapshot = snapshot
+        localFile = self.c.window.projectController.currentProjectFile
+        sourceCandidate = localProjectSourceChange(self.client, snapshot, localFile)
+        if sourceCandidate != self._sourceCandidate:
+            self._sourceCandidate = sourceCandidate
+            self.useLocalSource.blockSignals(True)
+            self.useLocalSource.setChecked(bool(sourceCandidate) and snapshot.get('projectSourceWrite') == 1)
+            self.useLocalSource.blockSignals(False)
+        self.sourceLocation.setVisible(bool(snapshot.get('sourcePath')))
+        self.sourceLocation.setText('本地工程：' + str(localFile or '尚未保存') + '\nRuntime 在线工程：' + str(snapshot.get('sourcePath', ''))
+            + ('\n目录变化将在明确写入后生效；相对路径会跟随新目录。' if sourceCandidate else '')
+            + ('\n当前 Runtime 不支持目录切换，请升级后重新比较。' if sourceCandidate and snapshot.get('projectSourceWrite') != 1 else ''))
+        self.useLocalSource.setVisible(bool(sourceCandidate))
         changes = projectConfigurationChanges(snapshot["payload"], self.local)
         replacing = snapshot["payload"]["project"]["projectId"] != self.projectId
         if replacing and self.replacementPolicy.currentData() == "reject":
@@ -920,7 +992,8 @@ class ProjectConfigurationDialog(QDialog):
             self.table.blockSignals(False)
         self._showChangeDetails(self.table.currentRow())
         self._invalidateEffects()
-        self._feedback(('当前工程与 Runtime 配置一致，无需写入。' if not changes else
+        self._feedback(('工程内容一致，但本地与 Runtime 工程目录不同，尚未写入。' if not changes and sourceCandidate else
+                        '当前工程与 Runtime 配置一致，无需写入。' if not changes else
                         f'当前工程与 Runtime 有 {len(changes)} 项配置差异，尚未写入。')
                             + (f"；更换工程：{snapshot['payload']['project']['projectId']} → {self.projectId}" if replacing else "")
                             + ("；恢复未完成：" + snapshot["recoveryError"] if snapshot.get("recoveryError") else "")
@@ -928,6 +1001,8 @@ class ProjectConfigurationDialog(QDialog):
                             + ('\n' + self.receiptSummary if self.receiptSummary else ''),
                        'warning' if snapshot.get('recoveryError') or snapshot.get('exportCopyError') else 'info')
         self.c.onlineSummary = '上次比较：' + ('配置一致' if not changes else f'有 {len(changes)} 项配置差异')
+        if sourceCandidate:
+            self.c.onlineSummary += ' · 工程目录不同'
         if snapshot.get('recoveryError'):
             self.c.onlineSummary += ' · 恢复未完成'
         if snapshot.get('exportCopyError'):
@@ -960,7 +1035,7 @@ class ProjectConfigurationDialog(QDialog):
     def _invalidateEffects(self, *_args):
         self._syncSelectAll()
         self.validatedSelection = None
-        if not self.initial and self.snapshot is not None and not self.table.rowCount():
+        if not self.initial and self.snapshot is not None and not self.table.rowCount() and not self._selectedSourcePath():
             self.impact.setText('无配置差异，无需校验或写入。')
             return
         if self.status.property('feedbackState') == 'success':
@@ -990,7 +1065,8 @@ class ProjectConfigurationDialog(QDialog):
                 effect = effects.get(item.data(Qt.UserRole))
                 if item.checkState() != Qt.Checked or not effect:
                     continue
-                effectText = labels.get(effect['effect'], '运行端未提供说明')
+                effectText = ('随工程目录切换，待受影响任务及设备操作结束后生效' if result.get('sourceChanged')
+                              else labels.get(effect['effect'], '运行端未提供说明'))
                 self.table.item(row, 4).setText(effectText)
                 self.table.item(row, 4).setToolTip(effectText)
                 details = []
@@ -1005,6 +1081,9 @@ class ProjectConfigurationDialog(QDialog):
             self.table.blockSignals(False)
         self._showChangeDetails(self.table.currentRow())
         consequence = []
+        if result.get('sourceChanged'):
+            consequence.append('工程目录切换到：' + result['sourcePath'])
+            consequence.append('本次选中变更统一在受影响任务及设备操作结束、资源释放后生效')
         if result.get('cycleSafe'):
             consequence.append('无需停止；新检测采用新配置，已受理周期保持原配置')
         elif result.get('affectedJobs'):
@@ -1013,7 +1092,7 @@ class ProjectConfigurationDialog(QDialog):
             consequence.append('需断开的设备：' + '、'.join(result['disconnectDevices']))
         if result.get('restartDevices'):
             consequence.append('需重新激活设备：' + '、'.join(result['restartDevices']))
-        if not effects:
+        if not effects and not result.get('sourceChanged'):
             consequence.append('此 Runtime 未提供逐项生效说明，请升级 Runtime')
         self.impact.setText('选中变更已校验 · ' + ('；'.join(consequence) or '无正在运行的受影响对象'))
 
@@ -1029,14 +1108,15 @@ class ProjectConfigurationDialog(QDialog):
             return
         paths = [self.table.item(row, 0).data(Qt.UserRole) for row in range(self.table.rowCount())
                  if self.table.item(row, 0).checkState() == Qt.Checked]
-        if not paths:
+        sourcePath = self._selectedSourcePath()
+        if not paths and not sourcePath:
             self._notify('工程校验未通过', '请选择要校验或写入的变更；本次未写入 Runtime。')
             return
         if not self._requireFormat():
             return
         try:
-            dependencies = requiredProjectChanges(self.snapshot["payload"], self.local, paths,
-                deviceTypes=self.deviceTypes, operatorRegistry=self.deviceRequirements)
+            dependencies = (requiredProjectChanges(self.snapshot["payload"], self.local, paths,
+                deviceTypes=self.deviceTypes, operatorRegistry=self.deviceRequirements) if paths else {})
         except ValueError as error:
             self._notify('工程校验未通过', self._errorText(error), self._errorDetails(error), diagnostic=error)
             return
@@ -1051,8 +1131,10 @@ class ProjectConfigurationDialog(QDialog):
                 if item.data(Qt.UserRole) in dependencies:
                     item.setCheckState(Qt.Checked)
             paths.extend(path for path in dependencies if path not in paths)
-        selection = (tuple(sorted(paths)), self.replacementPolicy.currentData())
+        selection = (tuple(sorted(paths)), self.replacementPolicy.currentData(), sourcePath)
         options = {} if self.replacementPolicy.currentData() == "reject" else {"replacementPolicy": self.replacementPolicy.currentData()}
+        if sourcePath:
+            options['localProjectPath'] = sourcePath
         if not validate and self.validatedSelection != selection:
             self.validationSelection = selection
             self._submit('prewrite', lambda: self.client.writeProjectConfiguration(
@@ -1065,7 +1147,10 @@ class ProjectConfigurationDialog(QDialog):
                            if self.replacementPolicy.currentData() != "reject" else "")
             if self.snapshot["payload"]["project"]["projectId"] != self.projectId:
                 consequence += f"\n将完整替换工程 {self.snapshot['payload']['project']['projectId']} 为 {self.projectId}；旧任务、连接意图不自动恢复。"
-            answer = self._confirm("写入 Runtime", f"将选中的 {len(paths)} 项变更写入在线工程？\n" + self.impact.text() + consequence)
+            if sourcePath:
+                consequence += '\n同时切换 Runtime 工程来源：\n' + self.snapshot['sourcePath'] + '\n→ ' + sourcePath
+            selected = f'选中的 {len(paths)} 项配置变更' if paths else '工程目录变更'
+            answer = self._confirm("写入 Runtime", f"将{selected}写入在线工程？\n" + self.impact.text() + consequence)
             if answer != QMessageBox.Yes:
                 return
             if not self._valid() or self._draftChanged():
@@ -1094,7 +1179,7 @@ class ProjectConfigurationDialog(QDialog):
             return
         if not self._valid() or self._draftChanged():
             return
-        self.requestId = uuid4().hex
+        self.requestId = self.initialImportId or uuid4().hex
         self.writePending = True
         self._submit('write', lambda: initialize(self.local, self.c.directory, self.requestId,
             runtimeInstanceId=self.initialRuntimeId, projectPath=self.c.window.projectController.currentProjectFile))
@@ -1160,14 +1245,15 @@ class ProjectConfigurationDialog(QDialog):
         self._submit('write', self.client.retryProjectResourceRecovery, deepcopy(self.snapshot), self.requestId)
 
     def uploadResources(self):
-        if self.snapshot is None or self.pending is not None or self.writePending or not self._valid():
+        if (self.snapshot is None and not self.initial) or self.pending is not None or self.writePending or not self._valid():
             return
         from emo_master.core.project.configuration import selectedCandidate
         from emo_master.core.project.models import ProjectDocument
         paths = [self.table.item(row, 0).data(Qt.UserRole) for row in range(self.table.rowCount())
                  if self.table.item(row, 0).checkState() == Qt.Checked]
         try:
-            candidate = selectedCandidate(self.snapshot["payload"], self.local, paths) if paths else deepcopy(self.snapshot["payload"])
+            candidate = (deepcopy(self.local) if self.initial else
+                selectedCandidate(self.snapshot["payload"], self.local, paths) if paths else deepcopy(self.snapshot["payload"]))
             document = ProjectDocument.model_validate(candidate)
             items = document.resources.items if document.resources else {}
             if not items:
@@ -1176,14 +1262,20 @@ class ProjectConfigurationDialog(QDialog):
             if not self.c.directory:
                 raise ValueError("请先保存工程以确定资源目录")
             details = "\n".join(f"{key}: {item.path} ({item.size} bytes)" for key, item in items.items())
-            if QMessageBox.question(self, "上传候选资源", "将以下资源传输到 Runtime；若同清单副本损坏，将用本地正确原件修复。不会提交配置或启动设备：\n" + details,
+            prompt = ('声明首次工程候选，并将以下资源传输到 Runtime。不会提交配置或启动设备：\n' if self.initial else
+                      '将以下资源传输到 Runtime；若同清单副本损坏，将用本地正确原件修复。不会提交配置或启动设备：\n')
+            if QMessageBox.question(self, "上传候选资源", prompt + details,
                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
                 return
             self.uploadCancelled.clear()
             snapshot = deepcopy(self.snapshot)
             self.status.setText('正在上传候选资源；可取消本批上传，在线配置未改变。')
-            self._submit("upload", lambda: self.client.uploadProjectResources(snapshot, candidate,
-                         self.c.directory, self.uploadCancelled, repairConfirmed=True))
+            if self.initial:
+                self._submit('upload', lambda: self.client.uploadInitialProjectResources(candidate,
+                    self.c.directory, self.uploadCancelled))
+            else:
+                self._submit("upload", lambda: self.client.uploadProjectResources(snapshot, candidate,
+                             self.c.directory, self.uploadCancelled, repairConfirmed=True))
         except Exception as error:
             self._notify('候选资源上传未完成', self._errorText(error), self._errorDetails(error))
 
@@ -1195,6 +1287,7 @@ class ProjectConfigurationDialog(QDialog):
         if self.closed or self.notifying or self.confirming:
             return
         if not self._valid():
+            self.downloadCancelled.set()
             if self.pending is not None and self.pending.done():
                 self.pending, self.kind = None, ''
             self._feedback('工程或 Runtime 连接已变化；请关闭此窗口后重新比较，原校验结论不再适用。')
@@ -1226,27 +1319,56 @@ class ProjectConfigurationDialog(QDialog):
         snapshotReceived = False
         try:
             result = future.result()
+            previousIssue = self._lastOperationLog
+            if kind not in {'write', 'connectionObserve'} and result.get('state') != 'FAILED':
+                self._lastOperationLog = None
+            if (previousIssue is not None and previousIssue[0] == self.requestId
+                    and previousIssue[2] == 'unknown'
+                    and result.get('state') in {'COMMITTED', 'RECOVERED', 'FAILED', 'CANCELLED'}):
+                self._logOperation(kind, f'写入结果已确认；请求 {self.requestId}；状态 {result["state"]}',
+                    level='INFO', state='confirmed', details=dict(state=result['state']))
             if result.get('state') == 'FAILED':
                 self.writePending = False
                 self.initialValidated = False
+                self.initialImportId = ''
                 self._invalidateEffects()
                 validating = kind in {'initialValidate', 'initialPrewrite', 'validate', 'prewrite'}
+                self._logOperation(kind, 'Runtime 操作失败：' + result.get('message', '请查看详细信息'),
+                    code=str(result.get('code', '')), details=result)
                 self._notify('工程校验未通过' if validating else 'Runtime 操作失败',
                     ('校验失败，尚未写入 Runtime：' if validating else 'Runtime 操作失败：') + result.get('message', '请查看详细信息'),
                     json.dumps(result, ensure_ascii=False, indent=2),
                     key=None if validating else (self.requestId, 'FAILED', json.dumps(result, sort_keys=True)),
                     diagnostic=result if validating else None)
+            elif kind == 'download':
+                count, unchanged = len(result['downloaded']), len(result['unchanged'])
+                text = f"工程资源已下载 {count} 项，相同内容跳过 {unchanged} 项。\n本地目录：{result['directory']}"
+                if result['cancelled']:
+                    text += '\n已取消；已完成的文件保留，未完成的临时文件已清理。'
+                if result['errors']:
+                    text += '\n' + '\n'.join(item['path'] + '：' + item['message'] for item in result['errors'])
+                text += '\n只下载声明的输入、模型及页面资源；未复制生产数据库或业务输出，也未保存工程草稿。'
+                self._feedback(text, 'error' if result['errors'] else 'info')
             elif kind == "snapshot":
                 snapshotReceived = True
                 self._showSnapshot(result)
                 self._revalidateUpgraded()
+                self._lastOperationLog = None
             elif kind in {'initialValidate', 'initialPrewrite'}:
                 self.initialRuntimeId = result['runtimeInstanceId']
+                self.initialImportId = result.get('importId', '')
+                if self.initialImportId:
+                    self.requestId = self.initialImportId
                 self.initialValidated = True
                 self._feedback('完整首次候选校验通过，尚未写入 Runtime；未连接设备或启动任务', 'success')
                 if kind == 'initialPrewrite':
                     self._writeInitial()
             elif kind in {'upload', 'uploadQuery', 'uploadCancel'}:
+                if result.get('importId'):
+                    self.initialImportId = result['importId']
+                    self.initialRuntimeId = result['runtimeInstanceId']
+                    self.requestId = self.initialImportId
+                    self.initialValidated = False
                 self._showResourceResults(result)
                 if result.get('errors'):
                     self._notify('资源操作未完成', self.status.text(), json.dumps(result['errors'], ensure_ascii=False, indent=2),
@@ -1283,22 +1405,38 @@ class ProjectConfigurationDialog(QDialog):
                     if failedConnections:
                         errors['connections'] = failedConnections
                     if errors:
+                        self._logOperation(kind, '配置已提交，但后续操作异常；请求 ' + self.requestId,
+                            level='WARN', state='followup_failed', details=errors)
                         self._notify('配置已提交，但后续操作异常', self.receiptSummary + '\n已提交事实保留，请先处理后续问题，不要重复写入。',
                             json.dumps(errors, ensure_ascii=False, indent=2), warning=True,
                             key=(self.requestId, state, json.dumps(errors, sort_keys=True)))
+                    elif kind == 'connectionObserve':
+                        self._lastOperationLog = None
                     if kind != 'connectionObserve':
                         self.connectionObserve = (dict(requestId=self.requestId, deadline=monotonic()+30, nextRead=monotonic()+.3)
                             if 'PENDING' in result.get('connections', {}).values() else None)
                         self.refresh()
                     elif 'PENDING' not in result.get('connections', {}).values():
                         self.connectionObserve = None
+                elif state == 'CANCELLED' and self.initial:
+                    self.initialImportId = ''
+                    self.initialValidated = False
                 elif self.writePending:
                     QTimer.singleShot(300, lambda: self.query() if self.isVisible() and self.writePending else None)
         except Exception as error:
             if kind == 'connectionObserve':
                 self._feedback('已提交；设备连接结果读取暂未完成，可继续查询原请求或查看设备状态。')
+                self._logOperation(kind, f'已提交；设备连接结果读取失败；请求 {self.requestId}：{error}',
+                    level='WARN', code=str(getattr(error, 'code', '')),
+                    details=dict(reason=str(error), errorType=type(error).__name__))
                 self._controls()
                 return
+            if self.initial and kind in {'initialValidate', 'initialPrewrite', 'upload'}:
+                context = getattr(self.client, 'initialProjectImportContext', lambda: {})()
+                if context:
+                    self.initialImportId = context['importId']
+                    self.initialRuntimeId = context['runtimeInstanceId']
+                    self.requestId = self.initialImportId
             if kind == 'snapshot' and getattr(error, 'code', '') == 'E_CONFIG_NOT_LOADED':
                 self._showInitial()
                 self._revalidateUpgraded()
@@ -1343,6 +1481,9 @@ class ProjectConfigurationDialog(QDialog):
                 else:
                     text = '未能读取 Runtime 在线配置，请检查连接后重新比较。\n' + text
                 text += '\n本次未写入 Runtime，未启动流程；本地工程文件未改变。'
+            self._logOperation(kind, title + '：' + text, level='WARN' if unknown else 'ERROR',
+                code=str(getattr(error, 'code', '')), state='unknown' if unknown else 'failed',
+                details=dict(reason=str(error), errorType=type(error).__name__, detail=self._errorDetails(error)))
             self._notify(title, text, self._errorDetails(error),
                 warning=unknown, key=(self.requestId, 'UNKNOWN', str(error)) if unknown else None,
                 diagnostic=error if validating or localResourceError else None, localResources=localResourceError)
@@ -1358,10 +1499,27 @@ class ProjectConfigurationDialog(QDialog):
         if not self.initial:
             for row in range(self.table.rowCount()):
                 self.table.item(row, 0).setCheckState(Qt.Checked)
-            if not self.table.rowCount():
+            if not self.table.rowCount() and not self._selectedSourcePath():
                 self._feedback('运行配置一致，无需写入。', 'success')
                 return
         self.write(validate=True)
+
+    def downloadResources(self):
+        if self.pending is not None or self.writePending or self.snapshot is None or not self._valid():
+            return
+        directory = QFileDialog.getExistingDirectory(self, '选择保存资源的本地工程目录', str(self.c.directory or ''))
+        if not directory:
+            return
+        snapshot = deepcopy(self.snapshot)
+        self.downloadCancelled.clear()
+        self._feedback('正在下载在线工程声明的资源；相同文件跳过，不覆盖内容不同的本地文件。', 'busy')
+        self._submit('download', lambda: self.client.downloadProjectResources(snapshot, directory,
+            cancelled=self.downloadCancelled))
+
+    def cancelDownload(self):
+        self.downloadCancelled.set()
+        self._feedback('正在取消下载；已完成的文件保留。', 'busy')
+        self._controls()
 
     def readBack(self):
         if self.snapshot is None or self.writePending or not self._valid():
@@ -1401,6 +1559,7 @@ class ProjectConfigurationDialog(QDialog):
         self.closed = True
         self.connectionObserve = None
         self.uploadCancelled.set()
+        self.downloadCancelled.set()
         self.timer.stop()
         self.pool.shutdown(wait=False, cancel_futures=True)
         super().done(result)

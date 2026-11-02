@@ -238,7 +238,7 @@ def testLegacyProjectEditorApplySaveAndReopen(tmp_path, monkeypatch, ownedDesign
     assert window.flowModel.nodes["files"].params["patterns"] == ["*.mp4", "*.avi"]
     assert window.saveProjectToDirectory(str(path))
     reloaded = loadProjectDocument(path)
-    assert reloaded.schemaVersion == "2.7"
+    assert reloaded.schemaVersion == "2.9"
     WorkflowCompiler(registry).compile(reloaded)
     saved = next(node for node in reloaded.workflows["main"].nodes if node.nodeId == "files")
     assert saved.paramSchema == oldSchema

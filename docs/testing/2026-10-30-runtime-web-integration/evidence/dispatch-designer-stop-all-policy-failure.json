@@ -1,0 +1,64 @@
+[
+  {
+    "eventType": "node.failed",
+    "message": "device transport interrupted; do not retry",
+    "level": "ERROR",
+    "code": "E_DEVICE_OUTCOME_UNKNOWN",
+    "nodeId": "camera",
+    "payload": {
+      "deviceBindings": {
+        "camera": {
+          "deviceId": "camera",
+          "selectors": {},
+          "scope": {
+            "runtimeInstanceId": "d03c57e7-57a0-4e2b-a4a4-b40ca99b4993",
+            "projectId": "9de9d3b3-8347-44e6-86bd-49c1d1e173fe",
+            "projectLoadGeneration": "3954b794dd244dfc8c0dd68b3eaa8f59"
+          },
+          "deviceGeneration": "75895c8cdec3490a9aad44771779f51f"
+        }
+      },
+      "status": "FAILED",
+      "code": "E_DEVICE_OUTCOME_UNKNOWN",
+      "message": "device transport interrupted; do not retry",
+      "metrics": {},
+      "diagnostics": {
+        "deviceOutcome": {
+          "code": "E_DEVICE_OUTCOME_UNKNOWN",
+          "outcome": "UNKNOWN",
+          "message": "device transport interrupted; do not retry"
+        }
+      },
+      "ioSummary": {
+        "version": 1,
+        "inputs": {
+          "items": [],
+          "portCount": 0,
+          "omitted": 0
+        },
+        "outputs": null
+      },
+      "cycleId": "0c6b4cbe5fc74cf597eb3469e4dcf2af",
+      "planRevision": 1,
+      "runGroupId": "04fef7c353f540d3b682fa25266510cd",
+      "dispatchId": "",
+      "deliveryId": "",
+      "invocationId": "",
+      "targetSlotId": "",
+      "documentRevision": 1
+    },
+    "jobId": "ae2905a2-db92-4630-8f47-57edbf32f3a7",
+    "projectId": "9de9d3b3-8347-44e6-86bd-49c1d1e173fe",
+    "workflowId": "capture",
+    "workflowRunId": "7f384efa-a7c5-4730-842c-464b8c5799fc",
+    "parentWorkflowRunId": "2422edd4-4ff4-46a7-a8e9-3329dd550662",
+    "nodeRunId": "e5e21cf3-4070-41c0-8318-bf79de1d1c90",
+    "iterationPath": [
+      9
+    ],
+    "sequence": 153,
+    "timestampMs": 1793358511626,
+    "status": "FAILED",
+    "jobMessage": "device transport interrupted; do not retry"
+  }
+]

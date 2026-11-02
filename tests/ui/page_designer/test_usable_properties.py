@@ -26,6 +26,7 @@ def testStaticResourcePickerPersistsAndUndoRestores(designer, tmp_path):  # noqa
             path='page.png', size=len(data), sha256=hashlib.sha256(data).hexdigest(), purpose='page_image')
     editor.refresh()
     editor.tools.select(key)
+    editor.tools.imageProperties.mode.setCurrentIndex(editor.tools.imageProperties.mode.findData('resource'))
     picker = editor.tools.fields['imageResourceId']
     assert picker.findData('page-image') >= 0
     picker.setCurrentIndex(picker.findData('page-image'))

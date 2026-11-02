@@ -3,7 +3,6 @@ import argparse
 import json
 import os
 from pathlib import Path
-import sys
 import time
 
 
@@ -44,7 +43,11 @@ def main():
         app.processEvents()
         assert window.grab().save(str(args.output/'overview.png'))
         first=window.displayed['root'].result.identity.resultKey
-        QTest.mouseClick(window.buttons['detail'],Qt.LeftButton)
+        picker = window.pageNavigation.picker
+        picker.showPopup()
+        item = picker.model().index(picker.findData('detail'), picker.modelColumn(), picker.rootModelIndex())
+        picker.view().scrollTo(item)
+        QTest.mouseClick(picker.view().viewport(), Qt.LeftButton, pos=picker.view().visualRect(item).center())
         until(lambda:window.widgets['detail']['detail-count'][1].text()=='3 个')
         app.processEvents()
         assert window.grab().save(str(args.output/'detail.png'))
@@ -64,7 +67,8 @@ def main():
         window.resize(500,480)
         app.processEvents()
         assert window.grab().save(str(args.output/'narrow.png'))
-        QTest.keyClick(window.buttons['overview'],Qt.Key_Space)
+        picker.setFocus()
+        QTest.keyClick(picker, Qt.Key_Home)
         assert window.currentPageId=='overview'
         report={'platform':app.platformName(),'scale':args.scale,'device_pixel_ratio':window.devicePixelRatioF(),
                 'keys':[first,second],'observed_counts':[2,3],'jobs':len(launcher.backend.presentation.jobs),

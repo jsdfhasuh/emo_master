@@ -3,11 +3,12 @@ from pathlib import Path
 
 from PySide2.QtCore import QSettings, Qt, Signal
 from PySide2.QtWidgets import (
-    QBoxLayout, QFileDialog, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit,
-    QPushButton, QScrollArea, QSizePolicy, QToolButton, QVBoxLayout, QWidget,
+    QBoxLayout, QCheckBox, QFileDialog, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit,
+    QPushButton, QScrollArea, QSizePolicy, QSpinBox, QToolButton, QVBoxLayout, QWidget,
 )
 
-from .settings import DEFAULT_ROOT_KEY, runtimePaths, validateSavedDataRoot
+from .settings import (DEFAULT_ROOT_KEY, LISTENER_SETTINGS_KEY, ListenerSettings, listenerSettingsJson,
+                       readListenerSettings, runtimePaths, validateSavedDataRoot)
 
 
 def plainLabel(text=""):
@@ -122,12 +123,83 @@ class StorageSettings(QGroupBox):
         return True
 
 
+class ListenerSettingsPanel(QGroupBox):
+    def __init__(self, preferences, current=None, parent=None):
+        super().__init__("Runtime 远程接入", parent)
+        self.preferences = preferences
+        self.current = current or readListenerSettings(preferences)
+        self.saved = readListenerSettings(preferences)
+        layout = QVBoxLayout(self)
+        self.currentLabel = plainLabel()
+        layout.addWidget(self.currentLabel)
+        self.allowLan = QCheckBox("允许其他电脑通过局域网连接 Runtime")
+        self.allowLan.setChecked(self.saved.allowLan)
+        layout.addWidget(self.allowLan)
+        form = QFormLayout()
+        self.host = QLineEdit(self.saved.host)
+        self.port = QSpinBox()
+        self.port.setRange(1, 65535)
+        self.port.setValue(self.saved.port)
+        self.subscriptions = QSpinBox()
+        self.subscriptions.setRange(1, 16)
+        self.subscriptions.setValue(self.saved.displaySubscriptionsPerJob)
+        form.addRow("监听 IP", self.host)
+        form.addRow("固定端口", self.port)
+        form.addRow("每任务展示订阅数", self.subscriptions)
+        layout.addLayout(form)
+        layout.addWidget(plainLabel("0.0.0.0 表示本机全部 IPv4 地址。仅用于受信任局域网，连接未加密。\n"
+                                   "关闭局域网接入时使用本机动态端口；程序不修改防火墙。"))
+        self.saveButton = QPushButton("保存下次监听设置")
+        self.saveButton.clicked.connect(self.save)
+        layout.addWidget(self.saveButton)
+        self.feedback = plainLabel()
+        layout.addWidget(self.feedback)
+        self.allowLan.toggled.connect(self._enabled)
+        self._enabled()
+        self.setCurrent(None)
+
+    def _enabled(self):
+        self.host.setEnabled(self.allowLan.isChecked())
+        self.port.setEnabled(self.allowLan.isChecked())
+
+    def setCurrent(self, controller):
+        server = getattr(controller, 'server', None) if controller is not None else None
+        settings = getattr(controller, 'listenerSettings', self.current) if controller is not None else self.current
+        from emo_master.clients.runtime.connection import formatTarget
+        endpoint = formatTarget(settings.listenHost, server.port if server else settings.listenPort)
+        self.currentLabel.setText(('本次已监听：' if server is not None else '本次启动设置：') +
+            (endpoint if settings.allowLan or server else '仅本机，按需分配动态端口') +
+            f'\n每任务最多 {settings.displaySubscriptionsPerJob} 个展示订阅')
+
+    def save(self):
+        previous = self.preferences.value(LISTENER_SETTINGS_KEY, "")
+        preferences = QSettings(self.preferences.fileName(), self.preferences.format())
+        try:
+            settings = ListenerSettings(self.allowLan.isChecked(), self.host.text(), self.port.value(),
+                                        self.subscriptions.value())
+            preferences.setValue(LISTENER_SETTINGS_KEY, listenerSettingsJson(settings))
+            preferences.sync()
+            if preferences.status() != QSettings.NoError:
+                raise OSError("无法写入本机监听设置：" + preferences.fileName())
+        except (ValueError, OSError) as error:
+            if previous:
+                preferences.setValue(LISTENER_SETTINGS_KEY, previous)
+            else:
+                preferences.remove(LISTENER_SETTINGS_KEY)
+            preferences.sync()
+            self.feedback.setText("保存失败：" + str(error))
+            return False
+        self.saved = settings
+        self.feedback.setText("已保存，下次启动生效；本次监听和任务保持运行。启动参数优先于保存设置。")
+        return True
+
+
 class StartupPage(QScrollArea):
     chooseRequested = Signal()
     logsRequested = Signal()
     retryRequested = Signal()
 
-    def __init__(self, preferences, resolution, parent=None):
+    def __init__(self, preferences, resolution, parent=None, *, listenerSettings=None):
         super().__init__(parent)
         self.setWidgetResizable(True)
         content = QWidget()
@@ -159,8 +231,14 @@ class StartupPage(QScrollArea):
         layout.addWidget(self.retryButton)
         layout.addStretch()
         self.storage = StorageSettings(preferences, resolution)
+        self.network = ListenerSettingsPanel(preferences, listenerSettings)
+        right = QWidget()
+        rightLayout = QVBoxLayout(right)
+        rightLayout.setContentsMargins(0, 0, 0, 0)
+        rightLayout.addWidget(self.storage)
+        rightLayout.addWidget(self.network)
         self.columns.addWidget(left, 1)
-        self.columns.addWidget(self.storage, 1)
+        self.columns.addWidget(right, 1)
         self.setWidget(content)
 
     def resizeEvent(self, event):
@@ -169,6 +247,7 @@ class StartupPage(QScrollArea):
 
     def setCurrent(self, controller):
         self.storage.setCurrent(controller)
+        self.network.setCurrent(controller)
         document = controller.document if controller is not None else None
         self.archiveLabel.setText("业务留档：由工程输出/留档配置决定，无统一目录。" if document else "业务留档：未加载工程。")
         if document:

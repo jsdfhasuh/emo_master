@@ -1,0 +1,12 @@
+{
+  "runtimeInstanceId": "demo-runtime-1",
+  "projectId": "panel-contract-demo",
+  "event": "job_state",
+  "jobId": "demo-j1",
+  "runGroupId": "demo-j1",
+  "status": "COMPLETED",
+  "active": false,
+  "ownsResources": false,
+  "displayResourcesReleased": true,
+  "allowedActions": []
+}

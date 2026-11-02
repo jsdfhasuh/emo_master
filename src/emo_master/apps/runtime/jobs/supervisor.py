@@ -176,6 +176,7 @@ class JobSupervisor:
             raise RuntimeError("E_DISPATCH_CONFIGURATION: Dispatch requires authoritative online configuration")
         slots = {key: Slot(workflow, capacity, str(uuid4())) for key, workflow, capacity in spec.dispatchSlots}
         group = RunGroup(spec.jobId, slots, self.devices, document)
+        self.jobRepository.update(spec.jobId, runGroupId=group.groupId, sourceJobId=spec.jobId)
         if spec.presentation is not None:
             spec.presentation["dispatch"] = dict(runGroupId=group.groupId, sourceJobId=spec.jobId, targetSlotId="")
         children = []
@@ -183,7 +184,8 @@ class JobSupervisor:
             # Display attachment takes the presentation lock and may retire an old
             # capture. Finish it before taking the process-admission lock.
             for key, slot in slots.items():
-                self.jobRepository.create(JobRecord(slot.jobId, spec.projectId, document.project.revision, slot.workflowId))
+                self.jobRepository.create(JobRecord(slot.jobId, spec.projectId, document.project.revision, slot.workflowId,
+                    runGroupId=group.groupId, sourceJobId=spec.jobId, targetSlotId=key))
                 workspace = Path(spec.jobWorkspacePath).parent / slot.jobId
                 workspace.mkdir(parents=True, exist_ok=True)
                 # Only the source Job is attached to the requested inspection

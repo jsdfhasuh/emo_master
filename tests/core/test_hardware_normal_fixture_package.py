@@ -13,6 +13,8 @@ from emo_master.apps.runtime.workflow.cancellation import CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.apps.runtime.workflow.runner import WorkflowRunner
 from emo_master.core.plugin.registry import PluginRegistry
+from emo_master.apps.designer.state.project_store import loadProjectDocument
+from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.project.runtime_directory import prepareRuntimeProject
 from emo_master.core.project.runtime_package import buildRuntimePackage, installRuntimePackage, trustedDeviceTypes
@@ -40,7 +42,7 @@ def sourceProject(tmp_path):
     return source, ProjectDocument.model_validate(payload), scan.activeOperators
 
 
-def testGeneratedFixtureMatchesCurrentManagedSource():
+def testGeneratedFixtureMatchesCurrentManagedSource(tmp_path):
     spec = importlib.util.spec_from_file_location("hardware_fixture", EXAMPLE / "build_project.py")
     fixture = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(fixture)
@@ -51,7 +53,18 @@ def testGeneratedFixtureMatchesCurrentManagedSource():
             if node["kind"] == "operator":
                 for field in ("inputPorts", "outputPorts", "paramSchema"):
                     node.pop(field)
-    assert source == fixture.buildProject()
+    # Keep the committed 2.7 acceptance input unchanged; new outputs use the
+    # current format and must preserve that input's business/device structure.
+    upgraded = migrateProjectPayload(source, enableRemotePresentation=True)
+    generated = ProjectDocument.model_validate(fixture.buildProject())
+    assert generated.model_dump() == upgraded
+    assert generated.schemaVersion == "2.9" and generated.presentation.schemaVersion == "1.2"
+    destination = tmp_path / "generated.emoproj"
+    written = fixture.writeProject(destination)
+    assert loadProjectDocument(destination) == written
+    scan = PluginRegistry(__version__).scan(ROOT / "src/emo_master/plugins")
+    assert not scan.rejectedOperators
+    WorkflowCompiler(scan.activeOperators, deviceTypes=scan.deviceTypes).compile(written)
     assert len(source["devices"]["definitions"]) == 8
     bound = [node for workflow in source["workflows"].values() for node in workflow["nodes"]
              if node.get("deviceBindings")]

@@ -256,6 +256,10 @@ def testNodeAndPortDragsDoNotBecomeCanvasPans(window):
     from emo_master.apps.designer.ui.flow_scene import FlowNodeViewModel
 
     view, scene = window.flowView, window.flowScene
+    # Measure pointer displacement independently of nearby-node alignment snaps.
+    actions = window.designerActions
+    actions.actions['alignment_snap'].setChecked(False)
+    actions.applyAlignmentPreferences()
     keys = []
     for name, x in [('source', 7000), ('target', 7600)]:
         key = window.flowModel.addNode('test.echo', name, {'in': 'number'}, {'out': 'number'})
@@ -281,6 +285,7 @@ def testNodeAndPortDragsDoNotBecomeCanvasPans(window):
     mouse(QEvent.MouseButtonRelease, end, Qt.LeftButton, Qt.NoButton)
     settle()
     assert (keys[0], 'out', keys[1], 'in') in scene._edgeItems
+    assert not scene.alignmentSnapEnabled
     node = scene._nodeItems[keys[1]]
     old = node.pos()
     grab = view.mapFromScene(old + QPointF(80, 15))

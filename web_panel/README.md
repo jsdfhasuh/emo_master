@@ -1,0 +1,73 @@
+# emo_master independent Web operator panel
+
+Independent Python 3.10+/FastAPI + React application under `web_panel/`. The gateway consumes **Panel Contract 1.0 / SDK 1.3.0** as an ordinary gRPC client; it does not import Qt, device drivers, inference packages, or `emo_master`.
+
+Current development handoff: SDK 1.3.0 generated from Designer HEAD `8df8599fc026c424a49e87cc53fb45f6b371f16f` plus uncommitted canvas expansion changes (`sourceDirty=true`). Exact delivery bytes and hashes are pinned in `contracts/panel-contract-v1/` and `docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/`. It adds persistent upper canvas bounds and root component offsets with the `layout.expanded-canvas-v1` requirement. Historical SDK 1.2.0 delivery remains in its versioned handoff directory. This is not a clean release or deployment.
+
+## Build and run
+
+```sh
+cd web_panel
+python -m venv .venv
+# Windows: .venv\Scripts\activate; POSIX: . .venv/bin/activate
+python -m pip install contracts/panel-contract-v1/python/emo_panel_protocol-1.3.0-py3-none-any.whl
+python -m pip install -e '.[test]'
+npm --prefix frontend ci
+npm --prefix frontend run build
+python scripts/package_frontend.py
+emo-web-panel --data-dir .panel-data create-user admin
+emo-web-panel --data-dir .panel-data serve --mode grpc --runtime-address 127.0.0.1:50051
+```
+
+Use the actual configured Runtime endpoint, not the example above. Cleartext gRPC is intentional for the controlled LAN; no TLS/certificate administration is added. The Web server defaults to loopback; non-loopback binding requires explicit `--allowed-origin`. No default password is installed. `admin` explicitly has view/control/admin rights; operator/viewer access also requires a target grant. The browser cannot submit arbitrary Runtime addresses, RPC methods, file paths, or SQL.
+
+The separate `--mode mock` is explicitly synthetic and never a fallback for gRPC. Import and activate a Designer `.emoweb` package in the admin UI. Package updates and rollback change Web presentation only, never Runtime configuration or running Jobs.
+
+## Normal operation and current-target packages
+
+Select a Runtime and refresh to retrieve its current instance/project identity,
+configuration revision, Jobs, workflows and available packages. Valid selections
+and edited workflow inputs are retained; changed input definitions/configuration
+are shown with a review notice. Invalid or old-instance control targets are cleared,
+never silently replaced by another Job.
+
+An accepted Start with a concrete Job identity confirms the command, not Job
+completion: explicitly select that Job to view or Stop it immediately. An accepted
+Stop means stopping; terminal state and resource ownership come from the original
+Job. UNKNOWN uses the original request/identity for queries, never an automatic
+replay. Rejections show their actual reason, including HTTP 200 business rejection.
+
+Package files/versions are shared, but activation is stored in Web SQLite as
+`(runtimeId, projectId) -> packageId`. “对当前目标启用 / 切回此版本” affects only
+the selected Runtime's formal project. A package for another project is rejected;
+other targets' activation and grants are retained. Existing views retain their pinned
+version until explicitly switched. Legacy activation migrates only known explicit
+Runtime associations; unassociated packages are not broadcast to every target.
+
+SDK 1.1.1 uses formal BrowserMessage for ordinary Jobs with explicit empty
+run-group identity. Exact Stop preserves that empty field; accepted Stop is not
+terminal. The full official manifest and built-in fixtures are pinned unchanged.
+
+## Designer preview (same built renderer)
+
+```sh
+emo-web-panel preview --package contracts/panel-contract-v1/sample-panels/demo.emoweb --context contracts/panel-contract-v1/fixtures/preview-fixtures.json --host 127.0.0.1 --port 0 --json --no-control
+```
+
+The first stdout line after successful startup is `{"event":"ready","protocolVersion":"1","url":"http://127.0.0.1:PORT/?token=..."}`. The short-lived token is exchanged once for a viewer session; do not log it. Diagnostics use stderr. Temporary users/state are isolated and cleaned up on exit.
+
+`--context` is mandatory. `fixtures` loads only shipped synthetic examples; `runtime` pins the Designer-supplied endpoint, instance, project and history revision and lets the user select an existing Job. Both modes deny Start, Stop, configuration writes, package imports/activation and rollback. Runtime mode never silently substitutes fixtures. Closing preview releases only its own connections/subscriptions, not production Jobs.
+
+## Verification and distribution
+
+```sh
+python -m unittest discover -s tests -v
+npm --prefix frontend test
+npm --prefix frontend run build
+python scripts/package_frontend.py
+python -m build --wheel
+```
+
+Distribute the Web wheel **and supplied SDK wheel** together; install both with `python -m pip install PATH_TO_SDK.whl PATH_TO_WEB.whl`. End users do not need Node. Use one ASGI worker for shared subscriptions and bounded byte caches. See [deployment](docs/DEPLOYMENT.md), [acceptance](docs/ACCEPTANCE-MATRIX.md), [verification](docs/VERIFICATION.md), and [remaining integration boundaries](docs/CONTRACT-GAPS.md).
+
+Synthetic gRPC, actual software Runtime, browser automation, Windows CI, Designer UI, and physical hardware are separate evidence levels. A passing fixture is never a claim that the user's Windows Runtime or devices were accessed.

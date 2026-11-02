@@ -1,6 +1,6 @@
 """Bounded idle subscriptions, not a permanently occupied worker per stream.
 
-Two independent consumers per Job; 32 displayed Jobs (the latest-cache address
+Four independent consumers per Job by default; 32 displayed Jobs (the latest-cache address
 budget). Local windows share a DisplaySession. FIFO work admission has two
 workers and at most one outstanding operation per admitted subscription.
 """
@@ -13,9 +13,13 @@ import grpc
 
 class DisplaySubscriptions:
     jobsLimit = 32
-    perJobLimit = 2
+    perJobLimit = 4
 
-    def __init__(self, owner, workers):
+    def __init__(self, owner, workers, *, perJobLimit=None):
+        limit = self.perJobLimit if perJobLimit is None else perJobLimit
+        if type(limit) is not int or not 1 <= limit <= 16:
+            raise ValueError("display subscriptions per Job must be between 1 and 16")
+        self.perJobLimit = limit
         self.owner = owner
         self.byJob = {}
         self.events = deque(maxlen=512)

@@ -1,0 +1,37 @@
+{
+  "runtimeInstanceId": "demo-runtime-1",
+  "projectId": "panel-contract-demo",
+  "event": "result",
+  "cursor": "1",
+  "result": {
+    "identity": {
+      "runtimeInstanceId": "demo-runtime-1",
+      "jobId": "demo-j1",
+      "resultScopeId": "root",
+      "invocationId": "demo-invocation-1",
+      "resultKey": "demo-result-1",
+      "resultOrdinal": 1,
+      "executionRevision": "0addb3c6f5a5ca798cbb175bd81be342fcce87251d2743790a6d2c6cd63d98ad",
+      "capturePlanRevision": "b038f67d7d7da493d28fb03d13ad7426e08f7b54c445c5e6e6df27904929d96e",
+      "mode": "runtime"
+    },
+    "expectedSourceIds": [
+      "count",
+      "verdict"
+    ],
+    "sources": [
+      {
+        "sourceId": "count",
+        "state": "AVAILABLE",
+        "valueJson": "12"
+      },
+      {
+        "sourceId": "verdict",
+        "state": "AVAILABLE",
+        "valueJson": "true"
+      }
+    ],
+    "status": "COMPLETE",
+    "executionTerminal": "COMPLETED"
+  }
+}

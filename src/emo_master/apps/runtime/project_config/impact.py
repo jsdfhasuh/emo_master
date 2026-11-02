@@ -71,14 +71,27 @@ def affectedObjects(before, payload):
     return flows, devices, False
 
 
-def affectedJobs(runtime, payload):
+def affectedJobs(runtime, payload, *, sourceChanged=False):
     flows, _devices, allJobs = affectedObjects(runtime.projectConfiguration.current['payload'], payload)
     jobs = {record.jobId for record in runtime.jobRepository.all() if allJobs or record.workflowId in flows}
+    if sourceChanged:
+        projectId = runtime.projectConfiguration.current['payload']['project']['projectId']
+        jobs.update(record.jobId for record in runtime.jobRepository.all() if record.projectId == projectId)
     for owner in tuple(jobs):
         group = runtime.deviceManager.dispatchGroups.get(owner)
         if group is not None:
             jobs.update(group.members)
     return jobs
+
+
+def sourceCycleOwners(runtime):
+    """Only leases of the current project depend on its source directory."""
+    configuration = runtime.projectConfiguration
+    projectId = configuration.current['payload']['project']['projectId']
+    with configuration.cycleLock:
+        leases = [*configuration.cycles.items(),
+                  *((owner, lease) for owner, children in configuration.childCycles.items() for lease in children.values())]
+        return {owner for owner, lease in leases if lease['snapshot']['payload']['project']['projectId'] == projectId}
 
 
 def changeEffects(runtime, candidate):

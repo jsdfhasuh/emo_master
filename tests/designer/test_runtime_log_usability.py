@@ -131,17 +131,19 @@ def testButtonAndDoubleClickUseSelectedEntryAndExplainMissingNode(logDock):
     assert '"nodeId": "new-node"' in view.detailViewer.toPlainText()
 
 
-def testNewLogsPreserveDetailTextSelectionAndNavigationFeedback(logDock):
+def testNewLogsPreserveDetailTreeSelectionAndNavigationFeedback(logDock):
     view = logDock.view
     view._onNavigate = lambda _entry: "已定位"
     view.setEntries([errorEntry()])
     view.table.setCurrentCell(0, 0)
     view.locateButton.click()
-    view.detailViewer.selectAll()
-    selected = view.detailViewer.textCursor().selectedText()
+    root = view.detailViewer.topLevelItem(0)
+    selected = root.child(0)
+    view.detailViewer.setCurrentItem(selected)
     view.appendEntry(StructuredLogEntry(2345, "INFO", "新日志"))
     view._applyPendingEntries()
-    assert view.detailViewer.textCursor().selectedText() == selected
+    assert view.detailViewer.currentItem() is selected
+    assert root.isExpanded()
     assert view.navigationHint.text() == "已定位"
 
 

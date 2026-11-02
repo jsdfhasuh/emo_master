@@ -79,4 +79,4 @@ def testDesignerOpenEditSaveReopenWithoutCameraIo(tmp_path, ownedDesignerWindow,
     document = loadProjectDocument(path)
     node = next(item for item in document.workflows["main"].nodes if item.nodeId == "audio")
     assert node.params["maxVolume"] == 25
-    assert document.schemaVersion == "2.7"
+    assert document.schemaVersion == "2.9"

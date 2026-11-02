@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="1.779" timestamp="2026-11-02T00:26:56.992510+00:00" hostname="08edb7b66b49"><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowHandleResizeUsesPointerAndCommitsOnce[0.5]" time="0.803"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x558835b4e230) at 0x7f85ee50d340&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x558835b4e230) at 0x7f85ee50d340&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x558835b4e100) at 0x7f85ed9a5200&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f85ee52f940&gt;, &lt;emo_master.apps.desig...27adb233-8299-4678-9507-712a180ae12f', '888fa347-5af7-4faa-97db-6ceeb7594217', 'f56d8a62-a5d0-45fb-9891-36de74b1a008'])
+zoom = 0.5
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    def testWindowHandleResizeUsesPointerAndCommitsOnce(responsivePage, zoom):
+        coordinator, editor, keys = responsivePage
+        editor.tools.responsive.select([keys[0]])
+        coordinator.window.designerActions.actions['alignment_snap'].setChecked(False)
+        coordinator.window.designerActions.applyAlignmentPreferences()
+        editor.canvas.setZoomFactor(zoom)
+        settle()
+        handle = editor.tools.responsive.handles[0]
+        local = handle.mapTo(editor.renderer, handle.rect().center())
+        start = editor.canvas.mapFromScene(editor.canvas.proxy.mapToScene(QPointF(local)))
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        card = editor.renderer.cards[editor.pageId][keys[0]]
+        size = card.size()
+        window = coordinator.window.windowHandle()
+        origin = window.mapFromGlobal(editor.canvas.viewport().mapToGlobal(start))
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x558835b4e230) at 0x7f85ee50d340&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x558835b4e230) at 0x7f85ee50d340&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x558835b4e100) at 0x7f85ed9a5200&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x558835b4e100) at 0x7f85ed9a5200&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x558835aefa30) at 0x7f85ed941640&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:26: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowHandleResizeUsesPointerAndCommitsOnce[1]" time="0.349"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x558835eb8430) at 0x7f85ed5d2180&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x558835eb8430) at 0x7f85ed5d2180&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x558835eb7fb0) at 0x7f85ed5d1ac0&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f85ed527550&gt;, &lt;emo_master.apps.desig...ef5c1985-9898-48d8-b0a6-5b71fbcdc9d9', '8ab19ca3-897c-48ce-8977-78d16ce7811c', '5097309d-4500-49ad-8917-f1df51ca7fb9'])
+zoom = 1
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    def testWindowHandleResizeUsesPointerAndCommitsOnce(responsivePage, zoom):
+        coordinator, editor, keys = responsivePage
+        editor.tools.responsive.select([keys[0]])
+        coordinator.window.designerActions.actions['alignment_snap'].setChecked(False)
+        coordinator.window.designerActions.applyAlignmentPreferences()
+        editor.canvas.setZoomFactor(zoom)
+        settle()
+        handle = editor.tools.responsive.handles[0]
+        local = handle.mapTo(editor.renderer, handle.rect().center())
+        start = editor.canvas.mapFromScene(editor.canvas.proxy.mapToScene(QPointF(local)))
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        card = editor.renderer.cards[editor.pageId][keys[0]]
+        size = card.size()
+        window = coordinator.window.windowHandle()
+        origin = window.mapFromGlobal(editor.canvas.viewport().mapToGlobal(start))
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x558835eb8430) at 0x7f85ed5d2180&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x558835eb8430) at 0x7f85ed5d2180&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x558835eb7fb0) at 0x7f85ed5d1ac0&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x558835eb7fb0) at 0x7f85ed5d1ac0&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x55883527e2b0) at 0x7f85ed997dc0&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:26: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowHandleResizeUsesPointerAndCommitsOnce[1.5]" time="0.332"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x558835831910) at 0x7f85ed5fa2c0&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x558835831910) at 0x7f85ed5fa2c0&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x558835283200) at 0x7f85ed103540&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f85ed125810&gt;, &lt;emo_master.apps.desig...4f1308d8-5306-4893-bc68-0d7f23d51fc9', 'd86d29b3-37ab-41d1-b7a5-316657db74bb', '430cfd7f-f5a0-4dad-93b0-1d1cc78c88a5'])
+zoom = 1.5
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    def testWindowHandleResizeUsesPointerAndCommitsOnce(responsivePage, zoom):
+        coordinator, editor, keys = responsivePage
+        editor.tools.responsive.select([keys[0]])
+        coordinator.window.designerActions.actions['alignment_snap'].setChecked(False)
+        coordinator.window.designerActions.applyAlignmentPreferences()
+        editor.canvas.setZoomFactor(zoom)
+        settle()
+        handle = editor.tools.responsive.handles[0]
+        local = handle.mapTo(editor.renderer, handle.rect().center())
+        start = editor.canvas.mapFromScene(editor.canvas.proxy.mapToScene(QPointF(local)))
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        card = editor.renderer.cards[editor.pageId][keys[0]]
+        size = card.size()
+        window = coordinator.window.windowHandle()
+        origin = window.mapFromGlobal(editor.canvas.viewport().mapToGlobal(start))
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x558835831910) at 0x7f85ed5fa2c0&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x558835831910) at 0x7f85ed5fa2c0&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x558835283200) at 0x7f85ed103540&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x558835283200) at 0x7f85ed103540&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x558835829090) at 0x7f85ed9ddac0&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:26: AssertionError</failure></testcase></testsuite></testsuites>

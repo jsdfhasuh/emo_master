@@ -1,5 +1,6 @@
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QApplication
+import pytest
+from PySide2.QtCore import QPoint, Qt
+from PySide2.QtWidgets import QApplication, QLabel
 
 from test_workspace import designer  # noqa: F401
 from test_pending_inputs import setupPage
@@ -13,11 +14,14 @@ def testNativeFloatingPaletteAndSearch(designer):  # noqa: F811
     QApplication.processEvents()
     assert e.floatingToolbox.parentWidget() is e.canvasHost
     assert e.floatingProperties.parentWidget() is e.canvasHost
-    assert e.tools.palette.count() == 8
+    assert e.tools.palette.count() == 14
+    assert any(e.tools.palette.item(i).data(Qt.UserRole) == "spacer" for i in range(e.tools.palette.count()))
+    assert {'page_title', 'page_navigation', 'clock', 'sqlite_table', 'sqlite_value'} <= {
+        e.tools.palette.item(i).data(Qt.UserRole) for i in range(e.tools.palette.count())}
     assert e.libraryTabs.count() == 2
     history = len(c.session._undo)
     e.tools.search.setText('图像')
-    assert [e.tools.palette.item(i).data(Qt.UserRole) for i in range(8)
+    assert [e.tools.palette.item(i).data(Qt.UserRole) for i in range(e.tools.palette.count())
             if not e.tools.palette.item(i).isHidden()] == ['image']
     e.tools.search.clear()
     e.floatingToolbox.setExpanded(True)
@@ -86,6 +90,37 @@ def testTypePropertiesPreserveHiddenValuesAndSharedSample(designer):  # noqa: F8
     assert widgets[image1][1].image.cacheKey() == widgets[image2][1].image.cacheKey()
     e.renderer.setDesignExamples(False)
     assert e.renderer.editorResourceUsage()['design_image_bytes'] == 0
+
+
+@pytest.mark.parametrize('size', [(640, 400), (1280, 800)])
+def testHiddenPropertyRowsLeaveNoBlankBands(designer, size):  # noqa: F811
+    coordinator, editor, navigation = setupPage(designer, 'page_navigation')
+    container = editor.tools.responsive.commands().place(editor.pageId, kind='container')[0]
+    editor.refresh()
+    designer.resize(*size)
+    tools = editor.tools
+    rules = tools.responsiveProperties
+    before, history = coordinator.session.payload(), len(coordinator.session._undo)
+    # Switch between item-only, group+item and page-only fields. Hidden rows
+    # must collapse on every transition, including when the panel must scroll.
+    for key in (navigation, container, None, navigation):
+        tools.select(key)
+        for _ in range(6):
+            QApplication.processEvents()
+        firstTitle = '宽度方式' if key == navigation else '排列方式'
+        first = next(label for label in rules.findChildren(QLabel) if label.text() == firstTitle)
+        assert first.isVisible()
+        assert 0 <= first.mapTo(rules, QPoint()).y() <= 8
+        if key == navigation:
+            title = tools.fields['title']
+            content = tools.propertyGroups.groups['内容'][0]
+            layout = tools.propertyGroups.groups['位置与大小'][0]
+            titleBottom = title.mapTo(editor.propertyScroll.widget(), QPoint(0, title.height())).y()
+            assert 0 <= layout.y() - titleBottom <= 24
+            assert content.height() < title.parentWidget().height() + 64
+        assert tools.applyButton.isVisible()
+        assert editor.propertyScroll.horizontalScrollBar().maximum() == 0
+    assert coordinator.session.payload() == before and len(coordinator.session._undo) == history
 
 
 def testPagePropertiesAndLongNamesRemainInSidePanel(designer):  # noqa: F811

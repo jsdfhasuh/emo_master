@@ -119,8 +119,11 @@ def actionFromFields(
         return None
     if mode == 'resume_live':
         return Action(type='resume_live')
-    if mode in {'navigate', 'detail'} and targetPageId not in presentation.pages:
-        raise ValueError('navigation target page is missing')
+    if mode in {'navigate', 'detail'}:
+        if targetPageId is None or targetPageId not in presentation.pages:
+            raise ValueError('navigation target page is missing')
+        if not set(presentation.pages[pageId].targets) <= set(presentation.pages[targetPageId].targets):
+            raise ValueError('navigation target is unavailable on this page\'s targets')
     if mode == 'navigate':
         return Action(type='navigate', pageId=targetPageId)
     if resultScopeId not in presentation.resultScopes:

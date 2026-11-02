@@ -1,0 +1,719 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="22" skipped="0" tests="33" time="14.712" timestamp="2026-11-02T00:29:58.008512+00:00" hostname="08edb7b66b49"><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-center-0.5]" time="1.025" /><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-center-1]" time="0.367"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbc12e60) at 0x7f6039b36c80&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbc12e60) at 0x7f6039b36c80&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607daf5a730) at 0x7f6039b67440&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f6039b7d840&gt;, &lt;emo_master.apps.desig...e6a6333f-62d2-4ac1-9b60-e70ea50c3a47', '7992ebe8-8c84-4351-a1f5-7fed5226013b', '7dc8a625-264c-4657-8e55-f863922db800'])
+zoom = 1, corner = False, snap = False, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607db7e3a80) at 0x7f6039b96040&gt;
+corner = False
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbc12e60) at 0x7f6039b36c80&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbc12e60) at 0x7f6039b36c80&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607daf5a730) at 0x7f6039b67440&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607daf5a730) at 0x7f6039b67440&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607db7e3a80) at 0x7f6039b96040&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-center-1.5]" time="0.363"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db9b9dc0) at 0x7f6039bbac40&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db9b9dc0) at 0x7f6039bbac40&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbd27e10) at 0x7f603971f440&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f6039718a90&gt;, &lt;emo_master.apps.desig...4ad1d1af-3dd9-44fd-bde3-7efb8dad9434', '4b3acbd8-47f2-4763-ac33-50402248537b', 'bda82fa0-23ba-4abb-973a-b5239f86535b'])
+zoom = 1.5, corner = False, snap = False, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607db4f2b60) at 0x7f6039fea300&gt;
+corner = False
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db9b9dc0) at 0x7f6039bbac40&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db9b9dc0) at 0x7f6039bbac40&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbd27e10) at 0x7f603971f440&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbd27e10) at 0x7f603971f440&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607db4f2b60) at 0x7f6039fea300&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-offset-0.5]" time="0.535" /><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-offset-1]" time="0.335"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db949cc0) at 0x7f6039be4dc0&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db949cc0) at 0x7f6039be4dc0&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbacacc0) at 0x7f60397c4c00&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f6040b8ada0&gt;, &lt;emo_master.apps.desig...52e082b3-1f38-4561-beb2-f01227653af3', 'c68e9482-3430-418b-a076-ae65e82e4115', 'e0c18b28-124c-43c4-b259-e31d3ed8de02'])
+zoom = 1, corner = True, snap = False, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dba09460) at 0x7f60397a97c0&gt;
+corner = True
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db949cc0) at 0x7f6039be4dc0&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db949cc0) at 0x7f6039be4dc0&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbacacc0) at 0x7f60397c4c00&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbacacc0) at 0x7f60397c4c00&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dba09460) at 0x7f60397a97c0&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-False-offset-1.5]" time="0.372"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db883b30) at 0x7f603930a6c0&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db883b30) at 0x7f603930a6c0&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db7e8880) at 0x7f60397ff680&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f6039314b80&gt;, &lt;emo_master.apps.desig...6875bc1c-91b4-4f25-93ad-31c25552ec30', '4031efb4-fc01-4e49-a5eb-ecf175235447', '1c22c38e-1d08-4d22-9b70-660972b188b6'])
+zoom = 1.5, corner = True, snap = False, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbc9d470) at 0x7f6039bbab00&gt;
+corner = True
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db883b30) at 0x7f603930a6c0&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db883b30) at 0x7f603930a6c0&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db7e8880) at 0x7f60397ff680&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db7e8880) at 0x7f60397ff680&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbc9d470) at 0x7f6039bbab00&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-center-0.5]" time="0.484" /><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-center-1]" time="0.337"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbb75cf0) at 0x7f60393d1740&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbb75cf0) at 0x7f60393d1740&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbf5b460) at 0x7f60393d1680&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f6039ba90c0&gt;, &lt;emo_master.apps.desig...722741e0-0c09-4338-8261-84f6a51876cc', 'abb1e3f1-783e-4799-8e68-1e4492eab187', '6d56011a-e5f1-47ca-a2a0-2a32e394bbbb'])
+zoom = 1, corner = False, snap = True, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607db7980f0) at 0x7f603937bcc0&gt;
+corner = False
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbb75cf0) at 0x7f60393d1740&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbb75cf0) at 0x7f60393d1740&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbf5b460) at 0x7f60393d1680&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbf5b460) at 0x7f60393d1680&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607db7980f0) at 0x7f603937bcc0&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-center-1.5]" time="0.407"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dba06ab0) at 0x7f6039308c00&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dba06ab0) at 0x7f6039308c00&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbf6e7f0) at 0x7f60393bf440&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f6038922500&gt;, &lt;emo_master.apps.desig...f8074168-f997-4a4b-8bf1-6497453fc5d0', '9c33cf6e-2e54-4c97-8c94-4d189fcb0c37', '50efc2d2-4c25-4931-8994-d7272bd434da'])
+zoom = 1.5, corner = False, snap = True, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbad6de0) at 0x7f60393bde80&gt;
+corner = False
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dba06ab0) at 0x7f6039308c00&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dba06ab0) at 0x7f6039308c00&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbf6e7f0) at 0x7f60393bf440&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbf6e7f0) at 0x7f60393bf440&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbad6de0) at 0x7f60393bde80&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-offset-0.5]" time="0.529" /><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-offset-1]" time="0.390"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbf83310) at 0x7f60393bdc80&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbf83310) at 0x7f60393bdc80&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbb1aaa0) at 0x7f6038977680&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f603891cc40&gt;, &lt;emo_master.apps.desig...03de4348-390b-4ccc-bb72-8ee18bea1a20', '31fafd6b-70e5-4ebe-addc-79e01ce4f0cb', 'a76bd72b-7ab2-41df-b62e-09c62ad27870'])
+zoom = 1, corner = True, snap = True, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbeef860) at 0x7f60389bcd00&gt;
+corner = True
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbf83310) at 0x7f60393bdc80&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbf83310) at 0x7f60393bdc80&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbb1aaa0) at 0x7f6038977680&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbb1aaa0) at 0x7f6038977680&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbeef860) at 0x7f60389bcd00&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta0-True-offset-1.5]" time="0.400"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbde4e10) at 0x7f603850a240&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbde4e10) at 0x7f603850a240&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db65b450) at 0x7f603850a200&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f6038525cf0&gt;, &lt;emo_master.apps.desig...85b453f7-988c-4fc9-a13d-0e7cfb9f809b', 'bb683161-4ff2-4e54-8f01-d62459594702', 'bf601e4b-09c6-42d9-a2d0-9a6c9ffc26db'])
+zoom = 1.5, corner = True, snap = True, logicalDelta = (-80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbf2b5b0) at 0x7f60385373c0&gt;
+corner = True
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbde4e10) at 0x7f603850a240&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbde4e10) at 0x7f603850a240&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db65b450) at 0x7f603850a200&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db65b450) at 0x7f603850a200&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbf2b5b0) at 0x7f60385373c0&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-center-0.5]" time="0.613" /><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-center-1]" time="0.426"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbf5da40) at 0x7f6038509a40&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbf5da40) at 0x7f6038509a40&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbed5160) at 0x7f60385f99c0&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f60389efdc0&gt;, &lt;emo_master.apps.desig...58930c5e-628f-4132-841f-5d4f16b080f7', 'ff5539cc-c79b-4d63-bf34-4a3f55e9d90a', '2a78f6b5-2977-4db9-9b82-9faf323b1e90'])
+zoom = 1, corner = False, snap = False, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607db1a16b0) at 0x7f6039339b00&gt;
+corner = False
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbf5da40) at 0x7f6038509a40&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbf5da40) at 0x7f6038509a40&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbed5160) at 0x7f60385f99c0&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbed5160) at 0x7f60385f99c0&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607db1a16b0) at 0x7f6039339b00&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-center-1.5]" time="0.346"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dc0e9b70) at 0x7f60389e4480&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dc0e9b70) at 0x7f60389e4480&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607daa5e010) at 0x7f60385fc6c0&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f60385f4100&gt;, &lt;emo_master.apps.desig...82667cf1-904d-4d4d-b0ec-da2a2bc6d8fa', 'bb5f1c44-0226-436d-8340-4d60f8a9057e', 'a69cce0f-728a-439d-83ac-268d75e5fb67'])
+zoom = 1.5, corner = False, snap = False, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbffa220) at 0x7f60381373c0&gt;
+corner = False
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dc0e9b70) at 0x7f60389e4480&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dc0e9b70) at 0x7f60389e4480&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607daa5e010) at 0x7f60385fc6c0&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607daa5e010) at 0x7f60385fc6c0&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbffa220) at 0x7f60381373c0&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-offset-0.5]" time="0.510" /><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-offset-1]" time="0.357"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db74ae60) at 0x7f603813ac80&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db74ae60) at 0x7f603813ac80&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbd100b0) at 0x7f60381b2c00&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f603815c7c0&gt;, &lt;emo_master.apps.desig...eb3ee9fc-9c6e-4bb3-9414-6f0fd79e5fb9', '4dfda803-542f-42d9-bc03-492298d8bc0c', '6bab0930-723b-48bd-962b-8be49b07f541'])
+zoom = 1, corner = True, snap = False, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607db942ee0) at 0x7f6038169280&gt;
+corner = True
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db74ae60) at 0x7f603813ac80&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db74ae60) at 0x7f603813ac80&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbd100b0) at 0x7f60381b2c00&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbd100b0) at 0x7f60381b2c00&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607db942ee0) at 0x7f6038169280&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-False-offset-1.5]" time="0.354"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db644c50) at 0x7f6037d1f240&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db644c50) at 0x7f6037d1f240&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db9a7dc0) at 0x7f60381a9f00&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f6037d020b0&gt;, &lt;emo_master.apps.desig...fb4d4895-a970-4e36-beeb-d9ff85ebcaa3', 'f115e5de-3d92-4a01-b79f-2c372a8611d0', '0598cb11-9268-4058-8937-4716e5c8d08b'])
+zoom = 1.5, corner = True, snap = False, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607db9487a0) at 0x7f60381da5c0&gt;
+corner = True
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db644c50) at 0x7f6037d1f240&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db644c50) at 0x7f6037d1f240&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db9a7dc0) at 0x7f60381a9f00&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db9a7dc0) at 0x7f60381a9f00&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607db9487a0) at 0x7f60381da5c0&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-center-0.5]" time="0.489" /><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-center-1]" time="0.381"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dc0fad90) at 0x7f6037d0fc80&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dc0fad90) at 0x7f6037d0fc80&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607da7e0490) at 0x7f6037dbfb40&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f60381fcd30&gt;, &lt;emo_master.apps.desig...f2bbc4aa-6910-4c81-aa87-499bf43307e4', '9fa69a54-2a49-4db3-b72f-a1bb88ed1003', 'e17fc8bd-ab16-45c1-99e0-ecde879790c7'])
+zoom = 1, corner = False, snap = True, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbc51110) at 0x7f6037da2dc0&gt;
+corner = False
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dc0fad90) at 0x7f6037d0fc80&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dc0fad90) at 0x7f6037d0fc80&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607da7e0490) at 0x7f6037dbfb40&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607da7e0490) at 0x7f6037dbfb40&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbc51110) at 0x7f6037da2dc0&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-center-1.5]" time="0.346"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db14a8c0) at 0x7f6037dc7a80&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db14a8c0) at 0x7f6037dc7a80&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dc08c280) at 0x7f6037907440&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f6037dfcf10&gt;, &lt;emo_master.apps.desig...f05ead56-cd68-4631-9b0f-2e69877f997d', 'b75349f7-1c7d-4ee7-8054-6ccce094d8e9', 'cbc9ebb8-f5a3-4f63-b754-b01c0186dc1b'])
+zoom = 1.5, corner = False, snap = True, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607db7d0e70) at 0x7f6037905d80&gt;
+corner = False
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db14a8c0) at 0x7f6037dc7a80&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db14a8c0) at 0x7f6037dc7a80&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dc08c280) at 0x7f6037907440&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dc08c280) at 0x7f6037907440&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607db7d0e70) at 0x7f6037905d80&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-offset-0.5]" time="0.492" /><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-offset-1]" time="0.354"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dc0e4f70) at 0x7f60379b3600&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dc0e4f70) at 0x7f60379b3600&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607daf9bd40) at 0x7f6037967440&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f60379555d0&gt;, &lt;emo_master.apps.desig...17994cdb-5502-41bd-9f2f-f07a52b0742a', '44467629-0b5a-4848-be31-bfeb552b17e8', 'd6bb8285-4cc0-40a8-ac1f-7796a2f9f47b'])
+zoom = 1, corner = True, snap = True, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbfe7200) at 0x7f6037967a40&gt;
+corner = True
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dc0e4f70) at 0x7f60379b3600&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dc0e4f70) at 0x7f60379b3600&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607daf9bd40) at 0x7f6037967440&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607daf9bd40) at 0x7f6037967440&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbfe7200) at 0x7f6037967a40&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeDeltaPreviewCommitUndo[logicalDelta1-True-offset-1.5]" time="0.340"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db510430) at 0x7f6037d1e880&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db510430) at 0x7f6037d1e880&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dc0ae1f0) at 0x7f603794e600&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f6037514b80&gt;, &lt;emo_master.apps.desig...b2eb4b2c-8ed6-4c14-8a66-9a80e32fa8ef', '8522d521-ae70-4b54-9f6a-cf704ea0f241', 'e3aecd82-bd00-440a-bfd0-d32b6b505b88'])
+zoom = 1.5, corner = True, snap = True, logicalDelta = (80, 40)
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('corner', [False, True], ids=['center', 'offset'])
+    @pytest.mark.parametrize('snap', [False, True])
+    @pytest.mark.parametrize('logicalDelta', [(-80, 40), (80, 40)])
+    def testWindowResizeDeltaPreviewCommitUndo(responsivePage, zoom, corner, snap, logicalDelta):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap, corner)
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor, corner)
+
+tests/ui/page_designer/test_responsive_resize_window.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbf39df0) at 0x7f6037523f80&gt;
+corner = True
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db510430) at 0x7f6037d1e880&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db510430) at 0x7f6037d1e880&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dc0ae1f0) at 0x7f603794e600&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dc0ae1f0) at 0x7f603794e600&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbf39df0) at 0x7f6037523f80&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeZeroAndEscapeThenContinue[False-0.5]" time="0.575" /><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeZeroAndEscapeThenContinue[False-1]" time="0.351"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbe6a6b0) at 0x7f6037d7a400&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbe6a6b0) at 0x7f6037d7a400&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dcac47a0) at 0x7f6037569f00&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f6038161090&gt;, &lt;emo_master.apps.desig...bcf6ad51-95d2-473f-a85a-65fe6770b2e3', 'bea8bbe9-c602-48a0-9001-0355c72f022a', 'a593d43d-a734-4453-9eaa-563dea2d1494'])
+zoom = 1, snap = False
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('snap', [False, True])
+    def testWindowResizeZeroAndEscapeThenContinue(responsivePage, zoom, snap):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap)
+        coordinator.session.markSaved()
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor)
+
+tests/ui/page_designer/test_responsive_resize_window.py:87: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dc013720) at 0x7f60375872c0&gt;
+corner = False
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbe6a6b0) at 0x7f6037d7a400&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbe6a6b0) at 0x7f6037d7a400&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dcac47a0) at 0x7f6037569f00&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dcac47a0) at 0x7f6037569f00&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dc013720) at 0x7f60375872c0&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeZeroAndEscapeThenContinue[False-1.5]" time="0.385"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbdcfa80) at 0x7f60379b3800&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbdcfa80) at 0x7f60379b3800&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbd63190) at 0x7f60375696c0&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f60375d8eb0&gt;, &lt;emo_master.apps.desig...2c4c66ca-7412-43e6-a004-3ca5f7c92acd', '46d086f7-3490-423a-9ab8-b997b8f73b38', 'ca7018d1-5804-4c7d-9594-00bbca494616'])
+zoom = 1.5, snap = False
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('snap', [False, True])
+    def testWindowResizeZeroAndEscapeThenContinue(responsivePage, zoom, snap):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap)
+        coordinator.session.markSaved()
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor)
+
+tests/ui/page_designer/test_responsive_resize_window.py:87: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dcff3280) at 0x7f60375ef3c0&gt;
+corner = False
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbdcfa80) at 0x7f60379b3800&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dbdcfa80) at 0x7f60379b3800&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbd63190) at 0x7f60375696c0&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbd63190) at 0x7f60375696c0&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dcff3280) at 0x7f60375ef3c0&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeZeroAndEscapeThenContinue[True-0.5]" time="0.493" /><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeZeroAndEscapeThenContinue[True-1]" time="0.347"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db4fc8c0) at 0x7f60375eb600&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db4fc8c0) at 0x7f60375eb600&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db8ce9d0) at 0x7f60379e1f00&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f6037511f00&gt;, &lt;emo_master.apps.desig...61bb1a31-29d7-457c-9aa9-531252cdffbf', '2eff942a-d3af-4e05-bc5a-d8d426a1457a', '1bdaaa93-a3a8-4792-a6a9-f7bddbfbdc4e'])
+zoom = 1, snap = True
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('snap', [False, True])
+    def testWindowResizeZeroAndEscapeThenContinue(responsivePage, zoom, snap):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap)
+        coordinator.session.markSaved()
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor)
+
+tests/ui/page_designer/test_responsive_resize_window.py:87: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbc88300) at 0x7f603713f3c0&gt;
+corner = False
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db4fc8c0) at 0x7f60375eb600&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db4fc8c0) at 0x7f60375eb600&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db8ce9d0) at 0x7f60379e1f00&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db8ce9d0) at 0x7f60379e1f00&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbc88300) at 0x7f603713f3c0&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeZeroAndEscapeThenContinue[True-1.5]" time="0.357"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db7c8760) at 0x7f60371488c0&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db7c8760) at 0x7f60371488c0&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dba6a6c0) at 0x7f6037147680&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f60371d0a30&gt;, &lt;emo_master.apps.desig...974e6901-0fd0-421f-848f-582500727906', 'eb611d69-ab9c-463d-8154-6cee23da1717', 'e706a538-4b9b-4b4e-a679-00fa53da421e'])
+zoom = 1.5, snap = True
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    @pytest.mark.parametrize('snap', [False, True])
+    def testWindowResizeZeroAndEscapeThenContinue(responsivePage, zoom, snap):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom, snap)
+        coordinator.session.markSaved()
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+&gt;       window, origin = press(editor)
+
+tests/ui/page_designer/test_responsive_resize_window.py:87: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dcdca9a0) at 0x7f60371e1740&gt;
+corner = False
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db7c8760) at 0x7f60371488c0&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607db7c8760) at 0x7f60371488c0&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dba6a6c0) at 0x7f6037147680&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dba6a6c0) at 0x7f6037147680&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dcdca9a0) at 0x7f60371e1740&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeKeepsProxyGrabAcrossPendingAppearance[0.5]" time="0.493" /><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeKeepsProxyGrabAcrossPendingAppearance[1]" time="0.338"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dcd42060) at 0x7f60301f4f40&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dcd42060) at 0x7f60301f4f40&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbd4ecb0) at 0x7f603021cec0&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f6037189c60&gt;, &lt;emo_master.apps.desig...01f49199-dbfc-4992-8812-098b8d181f3f', '2f8f8a71-9615-422b-b2c4-88920f24955c', 'b17077ee-cc9b-44bb-be2a-81126a6958bb'])
+zoom = 1
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    def testWindowResizeKeepsProxyGrabAcrossPendingAppearance(responsivePage, zoom):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom)
+        history = len(coordinator.session._undo)
+        editor.tools.fields['title'].setText('accepted pending title')
+&gt;       window, origin = press(editor)
+
+tests/ui/page_designer/test_responsive_resize_window.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbad4990) at 0x7f603022acc0&gt;
+corner = False
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dcd42060) at 0x7f60301f4f40&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dcd42060) at 0x7f60301f4f40&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbd4ecb0) at 0x7f603021cec0&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607dbd4ecb0) at 0x7f603021cec0&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dbad4990) at 0x7f603022acc0&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase><testcase classname="tests.ui.page_designer.test_responsive_resize_window" name="testWindowResizeKeepsProxyGrabAcrossPendingAppearance[1.5]" time="0.346"><failure message="assert None is not None&#10; +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dcdab6e0) at 0x7f603024a5c0&gt;.resize&#10; +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dcdab6e0) at 0x7f603024a5c0&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db890410) at 0x7f603026f440&gt;.responsive&#10;[+1 more line; full report in element text]">responsivePage = (&lt;emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f6030279d20&gt;, &lt;emo_master.apps.desig...a172ad17-ee24-4c61-be01-3a4ca589cce7', 'ef530cbe-9511-4085-9360-cd2a7da57453', '305150ea-8572-48be-b026-7c62ffe739f7'])
+zoom = 1.5
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    def testWindowResizeKeepsProxyGrabAcrossPendingAppearance(responsivePage, zoom):  # noqa: F811
+        coordinator, editor, key, _ = prepare(responsivePage, zoom)
+        history = len(coordinator.session._undo)
+        editor.tools.fields['title'].setText('accepted pending title')
+&gt;       window, origin = press(editor)
+
+tests/ui/page_designer/test_responsive_resize_window.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+editor = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dcef27d0) at 0x7f603026f1c0&gt;
+corner = False
+
+    def press(editor, corner=False):
+        handle = editor.tools.responsive.handles[0]
+        point = QPoint(2, 2) if corner else handle.rect().center()
+        screen = editor.canvas.widgetScreenPoint(handle, point)
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(screen)
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+&gt;       assert editor.tools.responsive.resize is not None
+E       assert None is not None
+E        +  where None = &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dcdab6e0) at 0x7f603024a5c0&gt;.resize
+E        +    where &lt;emo_master.apps.designer.page_designer.responsive_tools.ResponsiveTools(0x5607dcdab6e0) at 0x7f603024a5c0&gt; = &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db890410) at 0x7f603026f440&gt;.responsive
+E        +      where &lt;emo_master.apps.designer.page_designer.tools.EditingTools(0x5607db890410) at 0x7f603026f440&gt; = &lt;emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5607dcef27d0) at 0x7f603026f1c0&gt;.tools
+
+tests/ui/page_designer/test_responsive_resize_window.py:34: AssertionError</failure></testcase></testsuite></testsuites>

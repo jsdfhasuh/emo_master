@@ -69,7 +69,8 @@ class ResponsiveHandle(QWidget):
         if event.button() == Qt.LeftButton:
             try:
                 self.owner.beginResize(self.key, self, self.owner.w.canvas.widgetScreenPoint(self, event.pos()))
-                self.grabMouse()
+                # The graphics proxy owns the implicit mouse grab. A native
+                # QWidget grab bypasses its scaled event-coordinate mapping.
                 self.grabKeyboard()
             except (ValueError, KeyError) as error:
                 self.owner.w.message.setText(str(error))
@@ -490,14 +491,16 @@ class ResponsiveTools(QObject):
             self.handles = [handle]
         item = _component(self.w.store.snapshot(), self.w.pageId, key)
         card = self.cards()[key]
-        self.resize = dict(key=key, handle=handle, start=self.point(point), original=item.responsive.model_copy(),
+        self.resize = dict(key=key, handle=handle, start=QPoint(point), original=item.responsive.model_copy(),
                            size=card.size(), candidate=item.responsive.model_copy(), card=card)
 
     def moveResize(self, point):
         if not self.resize:
             return
         state = self.resize
-        delta = self.point(point) - state['start']
+        # Map both screen endpoints with the same view transform: focusing the
+        # handle may adjust the view's scroll origin after the press.
+        delta = self.point(point) - self.point(state['start'])
         if delta.isNull():
             state['candidate'] = state['original'].model_copy()
             self.clearPreview()

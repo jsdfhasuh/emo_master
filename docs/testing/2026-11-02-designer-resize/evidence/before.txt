@@ -1,0 +1,214 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_____________ testWindowHandleResizeUsesPointerAndCommitsOnce[0.5] _____________
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f9cc332f940>, <emo_master.apps.desig...c7a383b8-027f-4a1b-a63f-0b6f8fb8628b', '854b142e-0291-4cb2-a512-f651d2bf3f6c', '39b4a3a7-1a22-4091-be7f-f9eba9345894'])
+zoom = 0.5
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    def testWindowHandleResizeUsesPointerAndCommitsOnce(responsivePage, zoom):
+        coordinator, editor, keys = responsivePage
+        editor.tools.responsive.select([keys[0]])
+        coordinator.window.designerActions.actions['alignment_snap'].setChecked(False)
+        coordinator.window.designerActions.applyAlignmentPreferences()
+        editor.canvas.window().resize(1800, 1000)
+        editor.canvas.setZoomFactor(zoom)
+        settle()
+        handle = editor.tools.responsive.handles[0]
+        local = handle.mapTo(editor.renderer, handle.rect().center())
+        start = editor.canvas.mapFromScene(editor.canvas.proxy.mapToScene(QPointF(local)))
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        card = editor.renderer.cards[editor.pageId][keys[0]]
+        size = card.size()
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(editor.canvas.viewport().mapToGlobal(start))
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+        assert editor.tools.responsive.resize is not None
+        QTest.mouseMove(window, origin + QPoint(45, 30))
+        settle()
+        assert editor.store.snapshot() == before
+        QTest.mouseRelease(window, Qt.LeftButton, Qt.NoModifier, origin + QPoint(45, 30))
+        settle()
+        item = _component(editor.store.snapshot(), editor.pageId, keys[0]).responsive
+        assert item.width == 'content' and item.preferredWidth > size.width()
+        assert item.preferredHeight > size.height()
+>       assert abs(item.preferredWidth - size.width() - 45 / zoom) <= 2
+E       AssertionError: assert 14.0 <= 2
+E        +  where 14.0 = abs(((516 - 412) - (45 / 0.5)))
+E        +    where 516 = ResponsiveItem(width='content', minWidth=160, preferredWidth=516, weight=1.0, minHeight=64, preferredHeight=360, alignSelf='start').preferredWidth
+E        +    and   412 = <built-in method width of PySide2.QtCore.QSize object at 0x7f9cc27f3940>()
+E        +      where <built-in method width of PySide2.QtCore.QSize object at 0x7f9cc27f3940> = PySide2.QtCore.QSize(412, 114).width
+
+tests/ui/page_designer/test_responsive_resize_window.py:38: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+QStandardPaths: could not set correct permissions on runtime directory '/home/agent/.local/run', which is a directory permissions 0755 owned by UID 1000 GID 1000 (Read-only file system)
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+______________ testWindowHandleResizeUsesPointerAndCommitsOnce[1] ______________
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f9cc232b010>, <emo_master.apps.desig...426c32b5-3c4a-4c1d-b178-cc89e5c2d14b', '4715a71a-6138-415f-b36a-d34628680d51', '10487380-305a-4761-adca-6457fb81ae27'])
+zoom = 1
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    def testWindowHandleResizeUsesPointerAndCommitsOnce(responsivePage, zoom):
+        coordinator, editor, keys = responsivePage
+        editor.tools.responsive.select([keys[0]])
+        coordinator.window.designerActions.actions['alignment_snap'].setChecked(False)
+        coordinator.window.designerActions.applyAlignmentPreferences()
+        editor.canvas.window().resize(1800, 1000)
+        editor.canvas.setZoomFactor(zoom)
+        settle()
+        handle = editor.tools.responsive.handles[0]
+        local = handle.mapTo(editor.renderer, handle.rect().center())
+        start = editor.canvas.mapFromScene(editor.canvas.proxy.mapToScene(QPointF(local)))
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        card = editor.renderer.cards[editor.pageId][keys[0]]
+        size = card.size()
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(editor.canvas.viewport().mapToGlobal(start))
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+        assert editor.tools.responsive.resize is not None
+        QTest.mouseMove(window, origin + QPoint(45, 30))
+        settle()
+        assert editor.store.snapshot() == before
+        QTest.mouseRelease(window, Qt.LeftButton, Qt.NoModifier, origin + QPoint(45, 30))
+        settle()
+        item = _component(editor.store.snapshot(), editor.pageId, keys[0]).responsive
+        assert item.width == 'content' and item.preferredWidth > size.width()
+        assert item.preferredHeight > size.height()
+        assert abs(item.preferredWidth - size.width() - 45 / zoom) <= 2
+>       assert abs(item.preferredHeight - size.height() - 30 / zoom) <= 2
+E       AssertionError: assert 3.0 <= 2
+E        +  where 3.0 = abs(((147 - 114) - (30 / 1)))
+E        +    where 147 = ResponsiveItem(width='content', minWidth=160, preferredWidth=457, weight=1.0, minHeight=64, preferredHeight=147, alignSelf='start').preferredHeight
+E        +    and   114 = <built-in method height of PySide2.QtCore.QSize object at 0x7f9cc23f6240>()
+E        +      where <built-in method height of PySide2.QtCore.QSize object at 0x7f9cc23f6240> = PySide2.QtCore.QSize(412, 114).height
+
+tests/ui/page_designer/test_responsive_resize_window.py:39: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+_____________ testWindowHandleResizeUsesPointerAndCommitsOnce[1.5] _____________
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7f9cc23f37c0>, <emo_master.apps.desig...866ff097-b81f-4600-9e54-db4aa19c9cc4', '021988f5-b333-4466-84af-1109b59c0699', 'af271a4e-a2ab-4f02-acd8-bf0264390b5a'])
+zoom = 1.5
+
+    @pytest.mark.parametrize('zoom', [.5, 1, 1.5])
+    def testWindowHandleResizeUsesPointerAndCommitsOnce(responsivePage, zoom):
+        coordinator, editor, keys = responsivePage
+        editor.tools.responsive.select([keys[0]])
+        coordinator.window.designerActions.actions['alignment_snap'].setChecked(False)
+        coordinator.window.designerActions.applyAlignmentPreferences()
+        editor.canvas.window().resize(1800, 1000)
+        editor.canvas.setZoomFactor(zoom)
+        settle()
+        handle = editor.tools.responsive.handles[0]
+        local = handle.mapTo(editor.renderer, handle.rect().center())
+        start = editor.canvas.mapFromScene(editor.canvas.proxy.mapToScene(QPointF(local)))
+        before, history = editor.store.snapshot(), len(coordinator.session._undo)
+        card = editor.renderer.cards[editor.pageId][keys[0]]
+        size = card.size()
+        window = editor.canvas.window().windowHandle()
+        origin = window.mapFromGlobal(editor.canvas.viewport().mapToGlobal(start))
+        QTest.mouseMove(window, origin)
+        settle()
+        QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, origin)
+        assert editor.tools.responsive.resize is not None
+        QTest.mouseMove(window, origin + QPoint(45, 30))
+        settle()
+        assert editor.store.snapshot() == before
+        QTest.mouseRelease(window, Qt.LeftButton, Qt.NoModifier, origin + QPoint(45, 30))
+        settle()
+        item = _component(editor.store.snapshot(), editor.pageId, keys[0]).responsive
+        assert item.width == 'content' and item.preferredWidth > size.width()
+>       assert item.preferredHeight > size.height()
+E       AssertionError: assert 76 > 114
+E        +  where 76 = ResponsiveItem(width='content', minWidth=160, preferredWidth=438, weight=1.0, minHeight=64, preferredHeight=76, alignSelf='start').preferredHeight
+E        +  and   114 = <built-in method height of PySide2.QtCore.QSize object at 0x7f9cc238f7c0>()
+E        +    where <built-in method height of PySide2.QtCore.QSize object at 0x7f9cc238f7c0> = PySide2.QtCore.QSize(412, 114).height
+
+tests/ui/page_designer/test_responsive_resize_window.py:37: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+This plugin does not support propagateSizeHints()
+This plugin does not support grabbing the mouse
+This plugin does not support grabbing the keyboard
+=========================== short test summary info ============================
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowHandleResizeUsesPointerAndCommitsOnce[0.5]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowHandleResizeUsesPointerAndCommitsOnce[1]
+FAILED tests/ui/page_designer/test_responsive_resize_window.py::testWindowHandleResizeUsesPointerAndCommitsOnce[1.5]
+3 failed in 2.42s

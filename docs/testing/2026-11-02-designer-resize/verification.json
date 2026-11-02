@@ -1,0 +1,65 @@
+{
+  "source_base": "0e58440a0a6bea9b368d07b37e2d0b9cf8f0d377",
+  "files": {
+    "src/emo_master/apps/designer/page_designer/responsive_tools.py": {
+      "size": 30469,
+      "sha256": "c267019084fe60046c0ed9f0958361bf76eb29e054f0370fcdc01433b3d3e0af"
+    },
+    "tests/ui/page_designer/test_responsive_resize_window.py": {
+      "size": 7656,
+      "sha256": "a436e8bd828c0d3c1060680f8195e601b78dd57e77e3811d47955c051d65d243"
+    },
+    "docs/testing/2026-11-02-designer-resize/evidence/after-window.xml": {
+      "size": 68686,
+      "sha256": "38c2d856e0f87f100f6c5b0b8146b71e54738818ba967568d0249663a70f698b"
+    },
+    "docs/testing/2026-11-02-designer-resize/evidence/baseline-matrix.txt": {
+      "size": 100091,
+      "sha256": "c43d8d1ff562c2c148de7d22cff44d6c6ff5ed56c4b32ca5ba60ce06f45f2b91"
+    },
+    "docs/testing/2026-11-02-designer-resize/evidence/baseline-matrix.xml": {
+      "size": 76360,
+      "sha256": "904a808b6d541ef8e87dc6cd7755f9c622df5aba270fd859e000cfe8d5d1f807"
+    },
+    "docs/testing/2026-11-02-designer-resize/evidence/before.txt": {
+      "size": 12874,
+      "sha256": "03bbb87039b9405f29ced02d23de479f235031f27aab2b8adee862e0bd9e1e6f"
+    },
+    "docs/testing/2026-11-02-designer-resize/evidence/before.xml": {
+      "size": 10011,
+      "sha256": "0de1f112fb1a0d361a58e60ba88f70f11f8f334464fcc6e3652a3bb6c3e67d22"
+    },
+    "docs/testing/2026-11-02-designer-resize/evidence/final-focused.txt": {
+      "size": 181,
+      "sha256": "7f43a68f4734a4b44bbb47ad9a5ea4d21d2e302d121b99b482c30ce2af7a4d62"
+    },
+    "docs/testing/2026-11-02-designer-resize/evidence/final-focused.xml": {
+      "size": 16209,
+      "sha256": "334d249d241e577cf0a3e2e2ac0de77d1faf2af9aeb60eaf9a196642fe33018d"
+    },
+    "docs/testing/2026-11-02-designer-resize/evidence/final-window.txt": {
+      "size": 100,
+      "sha256": "068b51e6ff96964a473cfbe49810b14c9891b05be5a5a5dc9ca9b637d43aaa4b"
+    },
+    "docs/testing/2026-11-02-designer-resize/evidence/final-window.xml": {
+      "size": 6064,
+      "sha256": "e192dcc442c8cda5d5c3a2736041a809fdf7e1ef09d9c70aed7d71e98f14d0dc"
+    },
+    "docs/testing/2026-11-02-designer-resize/evidence/harness-initial.txt": {
+      "size": 10282,
+      "sha256": "6a83e213efa20c38e5ea0ba3ecfa5d63ac7cf6c6bb60578ed015306281ccc6b6"
+    },
+    "docs/testing/2026-11-02-designer-resize/evidence/harness-initial.xml": {
+      "size": 8512,
+      "sha256": "ac979e412752789c79ddc3fac4f890068cb21ad326d554721040ead0f2c1a164"
+    },
+    "docs/testing/2026-11-02-designer-resize/evidence/final-all.txt": {
+      "size": 181,
+      "sha256": "6dc3d9abb2eacb8ad37607c3a5dc4bea519b41636a9344defca1f7d68ddbfed1"
+    },
+    "docs/testing/2026-11-02-designer-resize/evidence/final-all.xml": {
+      "size": 16660,
+      "sha256": "d5c4a9254ef3406c7b7a2aa2ff2a1f26b45d172eec92b52153a6b5d978329b17"
+    }
+  }
+}

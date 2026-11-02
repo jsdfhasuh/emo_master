@@ -92,3 +92,47 @@ assertions or bypassed source ownership/cancellation guarantees.
 
 Real desktop mouse acceptance, physical devices and deployment remain distinct
 from the checks above. No release or deployment is part of this merge.
+
+## Native Windows CI retirement follow-up
+
+At `e592f1690cd77073103ce8a7bbcdc801d1be4ed3`, the Windows job
+`125307066928` in [CI run 41454334319](https://github.com/jsdfhasuh/emo_master/actions/runs/41454334319)
+terminated once with `0xC0000005` at approximately 21% of the suite. This is an
+incomplete run, not a pytest assertion failure or a passing suite. The active
+test was `testUnsupportedOperatorDoesNotStartWorker`; the immediately preceding
+debug execution and close-during-open tests passed. The faulting thread was the
+debug RPC executor, with Python reporting `Garbage-collecting` inside JSON
+decoding (`contracts._pairs`), while the GUI thread was processing test events.
+This identifies a background-GC/native-lifetime investigation direction, not
+the collected object or a proven unique root cause. The relevant debug test,
+window/service implementation and Designer cleanup fixture were unchanged from
+the starting main revision.
+
+Before changing the test, native Windows focused execution of the resource UI
+and debug-window files passed all 16 tests with no skips. A separate five-test
+sequence used a temporary diagnostic plugin without changing application or
+test behavior. It passed and recorded that the close-during-open test returned
+with both editor and debug native windows still valid: the editor was waiting
+for debug closure and was not disposed, while the debug close ACK had already
+marked the debug window disposed. Their native destruction followed during
+fixture cleanup on the GUI thread. This establishes incomplete per-test native
+retirement; it does not prove that the fixture deleted an unacknowledged owner
+or that this caused the CI access violation.
+
+The close-during-open test now retains its accepted-open/stop/resource checks
+and original 12-second deadline while waiting for normal queued Qt closure to
+destroy both native windows. It reuses the retirement pattern already present
+later in the same file. No production behavior, global fixture, GC policy,
+assertion or CI skip was weakened. Native Windows verification after this
+change passed 35 tests across the preceding bubble/catalog and affected debug
+files, plus 14 existing window/scene/runtime Qt ownership and lifecycle tests;
+both groups had zero skips and zero failures. A command with a nonexistent
+additional test path collected no tests and is retained as a command error,
+not included in these passing counts.
+
+The original cloud log and local evidence are retained under `build/`:
+`ci-native-debug-cloud-failure.log`, `ci-native-debug-repro.{log,xml}`,
+`ci-native-debug-retirement.log`, `ci-native-debug-retired.{log,xml}`,
+`ci-native-debug-owners.{log,xml}` and `ci-native-debug-lifecycle.{log,xml}`.
+The first cloud failure remains recorded; full CI must validate the subsequent
+commit before reporting the consolidation checks as complete.

@@ -77,6 +77,8 @@ def testNativeWindowExecutesUnappliedDraftAndKeepsTwoResults(runtime):
 
 
 def testEditorCloseRetiresWorkerEvenWhileOpening(runtime):
+    from PySide2.QtCore import QCoreApplication, QEvent
+
     editor, *_ = editorFor(runtime)
     dialog = OperatorDebugWindow(editor)
     editor._debugWindow = dialog
@@ -85,7 +87,13 @@ def testEditorCloseRetiresWorkerEvenWhileOpening(runtime):
     wait(lambda: dialog.connection.stop.is_set())
     # Observe the actual accepted owner, not just an initial empty slot.
     wait(lambda: bool(runtime.operatorDebugManager.opens))
-    wait(lambda: not runtime.operatorDebugManager.ownsResources())
+    def retired():
+        # Runtime retirement precedes the queued close ACK and native deletion.
+        # Finish the normal close path before fixture cleanup or the next RPC.
+        QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+        return (not runtime.operatorDebugManager.ownsResources()
+                and not isValid(dialog) and not isValid(editor))
+    wait(retired)
 
 
 def testUnsupportedOperatorDoesNotStartWorker(runtime):

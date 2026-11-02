@@ -133,6 +133,11 @@ def testNormalEntryDoesNotMigrateWithoutExplicitEnable(qtApp, monkeypatch, tmp_p
     assert [a.text() for a in window.pageCoordinator.chrome.workspaceActions] == ['流程设计', '页面设计']
     assert window.pageCoordinator.chrome.deviceAction.text() == '设备管理'
     assert coordinator.session.document().schemaVersion == '2.1'
+    assert window.saveProjectToDirectory(str(tmp_path))
+    from emo_master.apps.designer.state.project_store import loadProjectDocument
+    saved = loadProjectDocument(tmp_path)
+    assert saved.schemaVersion == '2.1' and saved.presentation is None
+    assert not coordinator.session.dirty
     coordinator.showPages()
     assert coordinator.editor is None
     assert not coordinator.session.dirty

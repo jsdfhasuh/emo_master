@@ -379,7 +379,9 @@ class PageCoordinator:
         self.directory = Path(directory).resolve() if directory is not None else None
         if self.editor is not None:
             self.editor.renderer.setProjectRoot(self.directory)
-        self.preview.refreshObserver(self.session.presentation.snapshot())
+        presentation = self.session.document().presentation
+        if presentation is not None:
+            self.preview.refreshObserver(presentation)
         self.session.markSaved()
         self.updateWindowTitle()
 

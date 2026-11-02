@@ -1,8 +1,11 @@
 name: Web panel isolated checks
 on:
   push:
-    branches: [codex/logging-and-designer-improvements]
-    paths: ['web_panel/**', '.github/workflows/web-panel-ci.yml']
+    branches: [main, codex/logging-and-designer-improvements]
+    paths: ['web_panel/**', 'src/**', 'proto/**', 'requirements*.txt', '.github/workflows/web-panel-ci.yml']
+  pull_request:
+    branches: [main]
+    paths: ['web_panel/**', 'src/**', 'proto/**', 'requirements*.txt', '.github/workflows/web-panel-ci.yml']
   workflow_dispatch:
 permissions:
   contents: read

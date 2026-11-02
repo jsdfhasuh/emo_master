@@ -31,6 +31,8 @@ version = {attr = "emo_master.app_version.APP_VERSION"}
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+# The independently installed Web package has its own dependency and CI job.
+testpaths = ["tests", "examples"]
 
 [tool.ruff]
 exclude = [

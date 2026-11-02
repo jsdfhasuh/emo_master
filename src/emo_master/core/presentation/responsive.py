@@ -52,7 +52,19 @@ def _justify(layout, count, space):
 
 
 def solveResponsive(layout: ResponsiveLayout, items: list[Measurement], width: float,
-                    height: float | None = None) -> tuple[list[LayoutBox], float]:
+                    height: float | None = None, *, canvasTop: int = 0) -> tuple[list[LayoutBox], float]:
+    """Normalize an expanded root canvas while retaining responsive flow slots."""
+    boxes, contentHeight = _solveResponsive(layout, items, width,
+        max(0, height + canvasTop) if height is not None else None)
+    if not canvasTop and not any(item.responsive.canvasOffsetY for item in items):
+        return boxes, contentHeight
+    boxes = [LayoutBox(box.x, box.y + item.responsive.canvasOffsetY - canvasTop, box.width, box.height)
+             for item, box in zip(items, boxes)]
+    return boxes, max(contentHeight - canvasTop, max((box.y + box.height for box in boxes), default=0))
+
+
+def _solveResponsive(layout: ResponsiveLayout, items: list[Measurement], width: float,
+                     height: float | None = None) -> tuple[list[LayoutBox], float]:
     """Return boxes in input order and required content height.
 
     minWidth is a wrapping threshold, not a forced overflowing QWidget minimum.

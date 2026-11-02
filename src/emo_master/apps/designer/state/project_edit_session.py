@@ -136,7 +136,9 @@ class ProjectEditSession:
             assert document.presentation is not None
             edit(document.presentation)
             from emo_master.core.presentation.targets import usesRemotePresentation
-            if document.presentation.schemaVersion != '1.2' and usesRemotePresentation(document.presentation):
+            needsLatest = usesRemotePresentation(document.presentation) or any(
+                page.canvasTop for page in document.presentation.pages.values())
+            if document.presentation.schemaVersion != '1.2' and needsLatest:
                 if document.schemaVersion not in {'2.7', '2.8'}:
                     raise ValueError('远程页面需要先通过设备迁移升级到工程 2.7 或更新版本')
                 document.schemaVersion = '2.9'

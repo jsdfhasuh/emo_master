@@ -59,13 +59,13 @@ export type PublishedAsset = { "path": string; "sha256": string; "byteSize": num
 
 export type PublishedComponent = { "componentId": string; "type": "image" | "text" | "number" | "indicator" | "runtime_status" | "table" | "navigation_button" | "container" | "page_title" | "page_navigation" | "clock" | "sqlite_table" | "sqlite_value" | "spacer"; "version"?: "1.0"; "layout"?: Placement; "responsive"?: ResponsiveItem; "props"?: PublishedProps; "bindings"?: { [key: string]: unknown }; "actions"?: { [key: string]: Action }; "children"?: Array<PublishedComponent>; "grid"?: (Grid | ResponsiveLayout); "history"?: (HistoryReference | null) };
 
-export type PublishedPage = { "name": string; "layout": (Grid | ResponsiveLayout); "components": Array<PublishedComponent>; "resultScopeIds"?: Array<string> };
+export type PublishedPage = { "name": string; "layout": (Grid | ResponsiveLayout); "canvasTop"?: number; "components": Array<PublishedComponent>; "resultScopeIds"?: Array<string> };
 
 export type PublishedPresentation = { "schemaVersion"?: "published-1"; "defaultPageId": string; "pageOrder": Array<string>; "navigation": Navigation; "resultScopes": { [key: string]: unknown }; "dataSources": { [key: string]: unknown }; "pages": { [key: string]: unknown } };
 
 export type PublishedProps = { "spacerMode"?: "fixed" | "flex"; "imageResourceId"?: (string | null); "iconResourceId"?: (string | null); "title"?: string; "text"?: string; "emptyText"?: string; "unit"?: string; "decimals"?: number; "indicatorStates"?: { [key: string]: IndicatorStyle }; "columns"?: Array<TableColumn>; "pageSize"?: number; "fontFamily"?: "system" | "sans" | "serif" | "monospace"; "fontSize"?: number; "fontWeight"?: "normal" | "bold"; "textColor"?: "default" | "neutral" | "green" | "red" | "amber"; "cardStyle"?: "plain" | "soft" | "outlined" };
 
-export type ResponsiveItem = { "width"?: "fill" | "content"; "minWidth"?: number; "preferredWidth"?: number; "weight"?: number; "minHeight"?: number; "preferredHeight"?: number; "alignSelf"?: "auto" | "start" | "center" | "end" | "stretch" };
+export type ResponsiveItem = { "width"?: "fill" | "content"; "minWidth"?: number; "preferredWidth"?: number; "weight"?: number; "minHeight"?: number; "preferredHeight"?: number; "alignSelf"?: "auto" | "start" | "center" | "end" | "stretch"; "canvasOffsetY"?: number };
 
 export type ResponsiveLayout = { "type"?: "responsive"; "direction"?: "vertical" | "horizontal" | "wrap"; "spacing"?: number; "alignment"?: "start" | "center" | "end" | "stretch"; "justify"?: "start" | "center" | "end" | "space-between"; "equalWidth"?: boolean };
 

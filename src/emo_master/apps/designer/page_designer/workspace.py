@@ -154,7 +154,7 @@ class PageWorkspace(QWidget):
         self.renderer.banner.setWordWrap(False)
         pageInfo.addWidget(self.renderer.banner)
         self.centerLayout.insertLayout(0, pageInfo)
-        # Panel entries live in the toolbar, outside the page viewport.
+        # Floating panel headers belong to the canvas overlay, not page layout.
         self.renderer.layout().setContentsMargins(12, 12, 12, 12)
         self.empty = QWidget()
         emptyLayout = QVBoxLayout(self.empty)
@@ -173,7 +173,6 @@ class PageWorkspace(QWidget):
         self.renderer.fitButton.clicked.disconnect()
         self.renderer.fitButton.clicked.connect(self.canvas.fitPage)
         canvasTools = QHBoxLayout()
-        self.canvasTools = canvasTools
         self.previewMode = QComboBox()
         self.previewMode.addItem('跟随窗口', 'follow')
         self.previewMode.addItem('固定终端', 'fixed')
@@ -233,23 +232,12 @@ class PageWorkspace(QWidget):
         settings = coordinator.window.settingsStore
         self.floatingToolbox = FloatingPanel(self.canvasHost, self.canvasHost, settings,
             'pageDesigner/toolbox', '工具区', self.libraryTabs, expandedSize=QSize(308, 560),
-            collapsedSize=QSize(148, 46), externalToggle=True)
+            collapsedSize=QSize(148, 46))
         self.floatingProperties = FloatingPanel(self.canvasHost, self.canvasHost, settings,
             'pageDesigner/properties', '属性面板', self.propertyPanel,
-            right=True, symbol='sliders-horizontal', expanded=True, expandedSize=QSize(340, 620),
-            externalToggle=True)
-        self.panelButtons = []
+            right=True, symbol='sliders-horizontal', expanded=True, expandedSize=QSize(340, 620))
         for panel in (self.floatingToolbox, self.floatingProperties):
-            button = QToolButton()
-            button.setText(panel.title)
-            button.setCheckable(True)
-            button.setChecked(panel.isExpanded())
-            button.setToolTip('展开或收起' + panel.title)
-            button.clicked.connect(panel.setExpanded)
-            panel.expandedChanged.connect(button.setChecked)
             panel.expandedChanged.connect(lambda _: self.coordinator.chrome.update())
-            self.canvasTools.insertWidget(0, button)
-            self.panelButtons.append(button)
         self.refresh()
 
     def previewModeChanged(self, _index):

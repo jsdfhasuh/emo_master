@@ -62,6 +62,17 @@ PANEL = {'id':'spacers','name':'Spacers','packageRevision':'spacer-browser',
      'components':[{'id':'grid-gap','type':'spacer','layout':{'row':0,'column':1,'rowSpan':2,'columnSpan':2}}]},
 ]}
 
+# The same responsive flow before expansion, after dragging the first title up,
+# and after moving it back into its flow slot while retaining the page bounds.
+for pid, top, offset in [('canvas-base', 0, 0), ('canvas-expanded', -120, -120),
+                         ('canvas-retained', -120, 0)]:
+    title = text(f'{pid}-title', 100, 100)
+    title['type'] = 'page_title'
+    title['responsive']['canvasOffsetY'] = offset
+    PANEL['pages'].append({'id': pid, 'title': pid, 'canvasTop': top,
+        'layout': {'type': 'responsive', 'direction': 'vertical', 'spacing': 12},
+        'components': [title, spacer(f'{pid}-gap', flex=True), text(f'{pid}-body')]})
+
 
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self,*args,**kwargs):
@@ -177,6 +188,27 @@ with sync_playwright() as runtime:
         box=rect(page,'grid-gap')
         assert box['height']>=24 and box['width']>24,box
         report.append({'case':'grid-span','box':box})
+
+        for width in (1280, 500):
+            page.set_viewport_size({'width':width,'height':1200})
+            page.evaluate('window.scrollTo(0,0)')
+            page.get_by_role('button',name='canvas-base',exact=True).click()
+            page.wait_for_function('document.querySelector("[data-component-id=canvas-base-gap]")?.getBoundingClientRect().height>24')
+            baseline={part:rect(page,f'canvas-base-{part}') for part in ('title','gap','body')}
+            for pid in ('canvas-expanded','canvas-retained'):
+                page.get_by_role('button',name=pid,exact=True).click()
+                page.wait_for_function(f'document.querySelector("[data-component-id={pid}-gap]")?.getBoundingClientRect().height>24')
+                boxes={part:rect(page,f'{pid}-{part}') for part in baseline}
+                for part, original in baseline.items():
+                    actual=boxes[part]
+                    assert abs(actual['width']-original['width'])<1,(pid,part,actual,original)
+                    assert abs(actual['height']-original['height'])<1,(pid,part,actual,original)
+                    shift=0 if pid=='canvas-expanded' and part=='title' else 120
+                    assert abs(actual['y']-original['y']-shift)<1,(pid,part,actual,original)
+                canvas=page.locator('[data-canvas-top="-120"]').bounding_box()
+                assert canvas['y']+canvas['height']>=1200+120-16,canvas
+                report.append({'case':pid,'width':width,'boxes':boxes,'canvas':canvas})
+            page.screenshot(path=str(ARTIFACTS/f'expanded-{width}.png'),full_page=True)
         assert not errors,errors
         page.screenshot(path=str(ARTIFACTS/'grid.png'),full_page=True)
         (ARTIFACTS/'result.json').write_text(json.dumps({'cases':report,'pageErrors':errors},ensure_ascii=False,indent=2),encoding='utf-8')

@@ -298,6 +298,7 @@ def _image_matches(data, mime):
 OFFICIAL_REQUIREMENTS = frozenset({f"component.{kind}@1.0" for kind in TYPES} | {
     "actions.readonly-v1", "history.image-v1", "history.query-v1",
     "layout.ordered-responsive-v1", "layout.grid-v1", "result.closed-v1",
+    "layout.expanded-canvas-v1",
 })
 
 
@@ -377,6 +378,8 @@ def _official_presentation(manifest, doc, files):
         if depth > 8 or len(seen) >= 1024 or value.componentId in seen:
             raise PackageError("Duplicate or excessively nested published component")
         seen[value.componentId] = value.type
+        if value.responsive.canvasOffsetY and (depth or parent_layout.type != "responsive"):
+            raise PackageError("Canvas offset requires a root responsive component")
         if value.type == "spacer" and value.props.spacerMode == "flex" and parent_layout.type != "responsive":
             raise PackageError("Elastic spacers require a responsive layout")
         # PublishedComponent is a transport DTO; Component supplies the binding,
@@ -415,6 +418,11 @@ def _official_presentation(manifest, doc, files):
     page_components = {}
     for pid in published.pageOrder:
         page = published.pages[pid]
+        if page.canvasTop and (page.layout.type != "responsive" or model.sourcePresentationVersion != "1.2"
+                              or "layout.expanded-canvas-v1" not in model.rendererRequirements):
+            raise PackageError("Expanded canvas requires responsive presentation 1.2 and renderer support")
+        if any(item.responsive.canvasOffsetY < page.canvasTop for item in page.components):
+            raise PackageError("Component canvas offset exceeds page canvasTop")
         if any(scope not in published.resultScopes for scope in page.resultScopeIds):
             raise PackageError("Unknown page result scope")
         before = set(seen)

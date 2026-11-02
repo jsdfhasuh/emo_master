@@ -7,9 +7,10 @@ from emo_master.core.presentation.responsive import Measurement, solveResponsive
 
 
 class ResponsiveWidgetLayout(QLayout):
-    def __init__(self, parent, rules):
+    def __init__(self, parent, rules, *, canvasTop=0):
         super().__init__(parent)
         self.rules = rules
+        self.canvasTop = canvasTop
         self._items = []
         self._components = {}
         self.childRects = {}
@@ -67,7 +68,7 @@ class ResponsiveWidgetLayout(QLayout):
     def heightForWidth(self, width):
         margins = self.contentsMargins()
         _boxes, height = solveResponsive(self.rules, self._measurements(),
-            max(0, width - margins.left() - margins.right()))
+            max(0, width - margins.left() - margins.right()), canvasTop=self.canvasTop)
         return round(height) + margins.top() + margins.bottom()
 
     def sizeHint(self):
@@ -76,14 +77,14 @@ class ResponsiveWidgetLayout(QLayout):
         return QSize(round(width + 18), self.heightForWidth(width + 18))
 
     def minimumSize(self):
-        return QSize(0, 32)
+        return QSize(0, 32 - self.canvasTop)
 
     def setGeometry(self, rect):
         super().setGeometry(rect)
         margins = self.contentsMargins()
         inner = rect.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom())
         measures = self._measurements()
-        boxes, _height = solveResponsive(self.rules, measures, inner.width(), inner.height())
+        boxes, _height = solveResponsive(self.rules, measures, inner.width(), inner.height(), canvasTop=self.canvasTop)
         self.childRects = {}
         for item, measured, box in zip(self._items, measures, boxes):
             target = QRect(round(inner.x() + box.x), round(inner.y() + box.y),

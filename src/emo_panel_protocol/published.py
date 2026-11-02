@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_serializer
 
 from .models import (Action, ComponentType, DataSource, Grid, Id, Model, Navigation, Placement,
                      VisualProps, ResponsiveItem, ResponsiveLayout, ResultScope)
@@ -40,8 +40,16 @@ class PublishedComponent(Model):
 class PublishedPage(Model):
     name: str
     layout: Grid | ResponsiveLayout
+    canvasTop: int = Field(default=0, ge=-32768, le=0)
     components: list[PublishedComponent]
     resultScopeIds: list[Id] = Field(default_factory=list)
+
+    @model_serializer(mode='wrap')
+    def serializeCanvas(self, handler):
+        payload = handler(self)
+        if not self.canvasTop:
+            payload.pop('canvasTop', None)
+        return payload
 
 
 class PublishedPresentation(Model):

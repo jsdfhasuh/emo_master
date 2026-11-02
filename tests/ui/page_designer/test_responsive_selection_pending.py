@@ -55,6 +55,7 @@ def testDeselectOtherCardPreservesPendingPrimaryInputs(responsivePage, invalid):
 @pytest.mark.parametrize('destination', ['card', 'blank'])
 def testPendingSelectionCommitRefreshesCanvasAndSavedMarker(responsivePage, destination):  # noqa: F811
     coordinator, editor, keys = responsivePage
+    editor.canvas.setPreviewSize(1100, 720)
     def longPage(p):
         page = p.pages[editor.pageId]
         page.layout = ResponsiveLayout(direction='vertical')

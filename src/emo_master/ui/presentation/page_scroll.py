@@ -1,6 +1,14 @@
 """Page scrollbars drawn above the viewport, without changing layout width."""
-from PySide2.QtCore import QEvent, Qt
+from PySide2.QtCore import QEvent, QSize, Qt
 from PySide2.QtWidgets import QScrollArea, QScrollBar
+
+
+def pageContentSize(layout, minimum):
+    """Measure the full page at its layout width, independently of view zoom."""
+    measured = layout.minimumSize()
+    width = max(minimum.width(), measured.width())
+    height = layout.heightForWidth(width) if layout.hasHeightForWidth() else measured.height()
+    return QSize(width, max(minimum.height(), measured.height(), height))
 
 
 class PageScrollArea(QScrollArea):
@@ -8,11 +16,21 @@ class PageScrollArea(QScrollArea):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.canvasExtension = 0
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.overlayHorizontal = self._overlay(Qt.Horizontal, self.horizontalScrollBar())
         self.overlayVertical = self._overlay(Qt.Vertical, self.verticalScrollBar())
         self.viewport().installEventFilter(self)
+
+    def setCanvasExtension(self, height):
+        self.canvasExtension = height
+        self._sizeCanvas()
+
+    def _sizeCanvas(self):
+        if self.widget() is not None:
+            self.widget().setMinimumHeight(self.viewport().height() + self.canvasExtension
+                                           if self.canvasExtension else 0)
 
     def _overlay(self, orientation, source):
         bar = QScrollBar(orientation, self.viewport())
@@ -50,11 +68,13 @@ class PageScrollArea(QScrollArea):
 
     def eventFilter(self, obj, event):
         if obj is self.viewport() and event.type() in (QEvent.Resize, QEvent.Show, QEvent.LayoutRequest):
+            self._sizeCanvas()
             self._syncBars()
         return super().eventFilter(obj, event)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        self._sizeCanvas()
         self._syncBars()
 
     def scrollContentsBy(self, dx, dy):

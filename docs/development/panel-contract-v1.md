@@ -1,8 +1,15 @@
 # Panel Contract v1：Runtime 客户端与 Web 页面交接合同
 
-合同版本 `1.0`，Python SDK `emo_panel_protocol 1.2.0`。工程当前版本为
+合同版本 `1.0`，Python SDK `emo_panel_protocol 1.3.0`。工程当前版本为
 `2.9` / Presentation `1.2`，发布快照为 `published-1`，ZIP 页面包为
 `emo-web-panel-1`（扩展名 `.emoweb`）。这些版本分别管理不同边界，不互相替代。
+
+2026-11-02 开发增量：SDK **1.3.0** 支持响应式根页面持久向上扩展，增加 `Page.canvasTop`
+及 `ResponsiveItem.canvasOffsetY`（默认 0，-32768..0），派生发布页同步保留。
+包声明 `layout.expanded-canvas-v1`，消费者检查根级、上下界及 Presentation 1.2；
+Web 以根部扩展空间和组件相对纵向偏移实现，保持响应式流占位与原有伸展规则。
+工程继续为 2.9 / 页面 1.2。生成脚本的样例包含向上扩展 96px 的标题。
+本增量交接以 manifest 的 `sourceSha`、`sourceDirty` 和文件摘要为准，未提交源码不标为干净发布。
 
 2026-10-31 的[固定交接入口](../handoffs/runtime-web-panel-v1/README.md)提供仓库内可直接下载的 ZIP、实现源码 SHA 和文件摘要。
 

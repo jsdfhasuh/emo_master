@@ -1,9 +1,12 @@
 """Graphics navigation around the same native page used by preview and runtime."""
-from PySide2.QtCore import QPoint, QPointF, QSize, Qt, QTimer
+import json
+
+from PySide2.QtCore import QEvent, QPoint, QPointF, QRect, QSize, Qt, QTimer
 from PySide2.QtGui import QColor
 from PySide2.QtWidgets import QGraphicsItem, QGraphicsScene, QLayout, QRubberBand
 
 from emo_master.apps.designer.ui.designer_graphics_view import DesignerGraphicsView
+from emo_master.ui.presentation.page_scroll import pageContentSize
 
 
 class PageCanvas(DesignerGraphicsView):
@@ -17,6 +20,10 @@ class PageCanvas(DesignerGraphicsView):
         self._lastPageId = None
         self._lastViewportSize = QSize()
         self._rubberStart = None
+        self.componentDragActive = False
+        self._dropCenter = None
+        self._expansionPayload = None
+        self._expansionPoint = QPoint()
         scene = QGraphicsScene(workspace)
         super().__init__(scene)
         self.setObjectName('pageCanvas')
@@ -26,6 +33,9 @@ class PageCanvas(DesignerGraphicsView):
         renderer.layout().setSizeConstraint(QLayout.SetNoConstraint)
         renderer.setMinimumSize(0, 0)
         self.rubber = QRubberBand(QRubberBand.Rectangle, self.viewport())
+        self.expansionTimer = QTimer(self)
+        self.expansionTimer.setInterval(16)
+        self.expansionTimer.timeout.connect(self.extendAtEdge)
         self.sizeTimer = QTimer(self)
         self.sizeTimer.setSingleShot(True)
         self.sizeTimer.timeout.connect(self.updatePageSize)
@@ -35,7 +45,7 @@ class PageCanvas(DesignerGraphicsView):
         tools = getattr(self.workspace, 'tools', None)
         responsive = getattr(tools, 'responsive', None)
         selection = getattr(tools, 'selection', None)
-        return bool(self._rubberStart is not None or self._isPanning
+        return bool(self._rubberStart is not None or self._isPanning or self.componentDragActive
             or (tools and tools.dragStart)
             or (responsive and (responsive.resize or responsive.pointer or responsive.preview))
             or (selection and selection.active))
@@ -50,8 +60,9 @@ class PageCanvas(DesignerGraphicsView):
         self._deferredSize = False
         self._sizing = True
         renderer = self.workspace.renderer
-        previous = QSize(renderer.size())
         pageId = getattr(self.workspace, 'pageId', None)
+        page = renderer.config.pages.get(pageId)
+        canvasTop = page.canvasTop if page is not None else 0
         changedPage = pageId != self._lastPageId
         viewportChanged = self.viewport().size() != self._lastViewportSize
         self._lastViewportSize = QSize(self.viewport().size())
@@ -66,6 +77,7 @@ class PageCanvas(DesignerGraphicsView):
                 scroll = renderer.pages.get(pageId)
                 if scroll is not None:
                     scroll.setMinimumSize(0, 0)
+                    scroll.setCanvasExtension(-canvasTop if self.previewWidth else 0)
                     extra = renderer.size() - scroll.viewport().size()
                 else:
                     margins = renderer.layout().contentsMargins()
@@ -74,18 +86,30 @@ class PageCanvas(DesignerGraphicsView):
                     target = QSize(self.previewWidth, self.previewHeight or 720) + extra
                 else:
                     target = QSize(max(1, self.viewport().width() - 16),
-                                   max(1, self.viewport().height() - 16))
+                                   max(1, self.viewport().height() - 16 - canvasTop))
+                    if scroll is not None:
+                        target = pageContentSize(scroll.widget().layout(), self.contentMinimumSize(canvasTop)) + extra
                 renderer.setMinimumSize(0, 0)
                 renderer.setMaximumSize(target)
                 renderer.resize(target)
             renderer.layout().activate()
             renderer.stack.layout().activate()
-            self.proxy.setPos(8, 8)
+            self.proxy.setPos(8, 8 + canvasTop)
             self._ensureNavigationBounds()
         finally:
             self._sizing = False
-        if self.autoFit and (changedPage or viewportChanged or renderer.size() != previous):
+        if self.autoFit and (changedPage or viewportChanged):
             self._requestFit()
+
+    def contentMinimumSize(self, canvasTop):
+        """Stable layout basis for both live content and disposable drag candidates."""
+        if self.previewWidth:
+            return QSize(self.previewWidth, (self.previewHeight or 720) - canvasTop)
+        renderer = self.workspace.renderer
+        scroll = renderer.pages[self.workspace.pageId]
+        extra = renderer.size() - scroll.viewport().size()
+        return QSize(max(1, self.viewport().width() - 16 - extra.width()),
+                     max(1, self.viewport().height() - 16 - extra.height() - canvasTop))
 
     def setPreviewSize(self, width=0, height=0):
         self.previewWidth = int(width)
@@ -152,6 +176,119 @@ class PageCanvas(DesignerGraphicsView):
         if not renderer.rect().contains(local):
             return None, local
         return renderer.childAt(local) or renderer, local
+
+    def pageViewportRect(self):
+        scroll = self.workspace.renderer.pages[self.workspace.pageId]
+        origin = scroll.viewport().mapTo(self.workspace.renderer, QPoint())
+        first = self.mapFromScene(self.proxy.mapToScene(QPointF(origin)))
+        last = self.mapFromScene(self.proxy.mapToScene(QPointF(origin + scroll.viewport().rect().bottomRight())))
+        return QRect(first, last)
+
+    def rendererRectOnViewport(self, rect):
+        first = self.mapFromScene(self.proxy.mapToScene(QPointF(rect.topLeft())))
+        last = self.mapFromScene(self.proxy.mapToScene(QPointF(rect.bottomRight())))
+        return QRect(first, last)
+
+    def expansionOffset(self, payload, point):
+        renderer = self.workspace.renderer
+        page = renderer.config.pages[self.workspace.pageId]
+        root = renderer.layoutHosts[self.workspace.pageId][None]
+        local = root.mapFrom(renderer, self.proxy.mapFromScene(self.mapToScene(point)).toPoint())
+        hotspot = payload.get('hotspot', [0, 0])
+        offset = local.y() - hotspot[1] + page.canvasTop - root.layout().contentsMargins().top()
+        return max(-32768, min(0, offset))
+
+    def beginExpansion(self, payload, point):
+        if self._dropCenter is None:
+            self._dropCenter = self._viewportCenter()
+        self._expansionPayload, self._expansionPoint = payload, QPoint(point)
+        if point.y() < 32:
+            self.expansionTimer.start()
+        else:
+            self.expansionTimer.stop()
+
+    def extendAtEdge(self):
+        if not self.componentDragActive or self._expansionPayload is None:
+            self.expansionTimer.stop()
+            return
+        if self.expansionOffset(self._expansionPayload, self._expansionPoint) <= -32768:
+            self.expansionTimer.stop()
+            return
+        # Reuse the flow canvas's growing navigation bounds, without changing
+        # logical widget sizes while the native drag owns their receivers.
+        self.centerOn(self._viewportCenter() - QPointF(0, 6 / self.getZoomFactor()))
+        self.workspace.tools.responsive.drop(self._expansionPayload, self.workspace.renderer, QPoint(),
+            preview=True, canvasOffset=self.expansionOffset(self._expansionPayload, self._expansionPoint))
+
+    def commitExpansion(self):
+        self._dropCenter = None
+        self.autoFit = False
+        self._pendingFit = None
+        self._fitTimer.stop()
+
+    def finishDragAssist(self):
+        self.componentDragActive = False
+        self.expansionTimer.stop()
+        self._expansionPayload = None
+        if self._dropCenter is not None:
+            center, self._dropCenter = self._dropCenter, None
+            self.centerOn(center)
+
+    def routeComponentDrag(self, event):
+        from .tools import MIME
+        tools = getattr(self.workspace, 'tools', None)
+        if (tools is None or not self.workspace.renderer.editing or not tools.responsive.enabled()
+                or not event.mimeData().hasFormat(MIME)):
+            return False
+        payload = json.loads(bytes(event.mimeData().data(MIME)))
+        if 'choice' in payload:
+            return False
+        self.componentDragActive = True
+        rect, point = self.pageViewportRect(), event.pos()
+        scroll = self.workspace.renderer.pages[self.workspace.pageId]
+        offset = self.expansionOffset(payload, point)
+        expanding = (scroll.verticalScrollBar().value() == 0
+                     and rect.left() <= point.x() <= rect.right() and offset < 0)
+        if expanding:
+            self.beginExpansion(payload, point)
+            widget, local = self.workspace.renderer, QPoint()
+        else:
+            self.expansionTimer.stop()
+            self._expansionPayload = None
+            widget, local = self.rendererAt(point)
+            if widget is None:
+                tools.responsive.clearPreview()
+                # Accept entry into gray canvas so subsequent moves can reach
+                # the page or its expanded upper canvas without leaving this QWidget.
+                if event.type() == QEvent.DragEnter:
+                    event.acceptProposedAction()
+                else:
+                    event.ignore()
+                if event.type() == QEvent.Drop:
+                    tools.responsive.cancel()
+                return True
+            local = widget.mapFrom(self.workspace.renderer, local)
+        tools.responsive.handleDropEvent(event, payload, widget, local, canvasOffset=offset if expanding else None)
+        return True
+
+    def dragEnterEvent(self, event):
+        if not self.routeComponentDrag(event):
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event):
+        if not self.routeComponentDrag(event):
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event):
+        if not self.routeComponentDrag(event):
+            super().dropEvent(event)
+
+    def dragLeaveEvent(self, event):
+        if self.componentDragActive:
+            self.workspace.tools.responsive.cancel()
+            event.accept()
+        else:
+            super().dragLeaveEvent(event)
 
     def beginPanAt(self, x, y):
         widget, _point = self.rendererAt(QPoint(int(x), int(y)))

@@ -179,8 +179,7 @@ class FloatingPanel(CanvasOverlay):
 
     def __init__(self, host, viewport, settings, key, title, content, *, right=False,
                  symbol='layout-grid', expanded=False, expandedSize=QSize(340, 600),
-                 collapsedSize=QSize(164, 46), externalToggle=False):
-        self.externalToggle = externalToggle
+                 collapsedSize=QSize(164, 46)):
         super().__init__(host, viewport, settings, key + '/position', right=right,
                          expandedSize=expandedSize, collapsedSize=collapsedSize)
         self.title = title
@@ -241,8 +240,6 @@ class FloatingPanel(CanvasOverlay):
         changed = self._expanded != bool(expanded)
         self._expanded = bool(expanded)
         self.contentScroll.setVisible(self._expanded)
-        if self.externalToggle:
-            self.setVisible(self._expanded)
         self.closeButton.setVisible(self._expanded)
         self.toggleButton.setToolTip(('收起' if expanded else '展开') + self.title)
         self.toggleButton.setAccessibleName(self.toggleButton.toolTip())

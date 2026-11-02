@@ -111,6 +111,10 @@ class WorkspaceChrome(QObject):
         self.fit = self.action('适应画布', lambda: self.c.editor.renderer.fitToAvailableScreen() if self.c.pageActive() else None)
         self.menus['视图'].addAction(self.fit)
         self.pageActions.append(self.fit)
+        from emo_master.apps.designer.ui.performance_probe import PerformanceProbeController
+        self.performanceProbe = PerformanceProbeController(coordinator)
+        self.performanceProbeAction = self.action('Designer 性能探针…', self.performanceProbe.show)
+        self.menus['视图'].addAction(self.performanceProbeAction)
         self.publishPages = self.action('发布工作页面…', self.publish)
         self.menus['Runtime'].addSeparator()
         self.menus['Runtime'].addAction(self.publishPages)

@@ -1,8 +1,8 @@
 # emo_master independent Web operator panel
 
-Independent Python 3.10+/FastAPI + React application under `web_panel/`. The gateway consumes **Panel Contract 1.0 / SDK 1.2.0** as an ordinary gRPC client; it does not import Qt, device drivers, inference packages, or `emo_master`.
+Independent Python 3.10+/FastAPI + React application under `web_panel/`. The gateway consumes **Panel Contract 1.0 / SDK 1.3.0** as an ordinary gRPC client; it does not import Qt, device drivers, inference packages, or `emo_master`.
 
-Authoritative handoff: SDK 1.2.0 generated from Designer implementation `32c2b4efb7ba932636e2145fd423e9b2b484b902` with a clean source tree; exact delivery bytes and hashes are pinned in `contracts/panel-contract-v1/`.
+Current development handoff: SDK 1.3.0 generated from Designer HEAD `8df8599fc026c424a49e87cc53fb45f6b371f16f` plus uncommitted canvas expansion changes (`sourceDirty=true`). Exact delivery bytes and hashes are pinned in `contracts/panel-contract-v1/` and `docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/`. It adds persistent upper canvas bounds and root component offsets with the `layout.expanded-canvas-v1` requirement. Historical SDK 1.2.0 delivery remains in its versioned handoff directory. This is not a clean release or deployment.
 
 ## Build and run
 
@@ -10,7 +10,7 @@ Authoritative handoff: SDK 1.2.0 generated from Designer implementation `32c2b4e
 cd web_panel
 python -m venv .venv
 # Windows: .venv\Scripts\activate; POSIX: . .venv/bin/activate
-python -m pip install contracts/panel-contract-v1/python/emo_panel_protocol-1.2.0-py3-none-any.whl
+python -m pip install contracts/panel-contract-v1/python/emo_panel_protocol-1.3.0-py3-none-any.whl
 python -m pip install -e '.[test]'
 npm --prefix frontend ci
 npm --prefix frontend run build

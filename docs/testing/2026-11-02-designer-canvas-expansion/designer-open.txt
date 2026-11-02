@@ -1,0 +1,5 @@
+D:\jsdfhasuh\documents\my_project\emo_master_designer\build\canvas-expansion-preview.png
+extension: (8, 152, 1238, 96)
+source: (29, 269, 1196, 80)
+target: (29, 173, 1196, 80)
+SDK sample Designer open: PASS

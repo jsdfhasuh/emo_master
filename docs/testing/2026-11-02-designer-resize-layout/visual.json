@@ -1,0 +1,16 @@
+{
+  "before": [
+    437,
+    105
+  ],
+  "preview": [
+    180,
+    105
+  ],
+  "after": [
+    180,
+    105
+  ],
+  "zoom": 1.0,
+  "platform": "Qt offscreen"
+}

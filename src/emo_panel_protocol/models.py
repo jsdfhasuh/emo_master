@@ -98,6 +98,14 @@ class ResponsiveItem(Model):
     minHeight: int = Field(default=64, ge=0, le=4096)
     preferredHeight: int = Field(default=0, ge=0, le=8192)
     alignSelf: Literal["auto", "start", "center", "end", "stretch"] = "auto"
+    canvasOffsetY: int = Field(default=0, ge=-32768, le=0)
+
+    @model_serializer(mode="wrap")
+    def serializeCanvasOffset(self, handler):
+        payload = handler(self)
+        if not self.canvasOffsetY:
+            payload.pop('canvasOffsetY', None)
+        return payload
 
 
 class Placement(Model):
@@ -317,6 +325,7 @@ def walkComponents(components: list[Component]):
 class Page(Model):
     name: str = Field(min_length=1, max_length=256)
     layout: Grid | ResponsiveLayout = Field(default_factory=ResponsiveLayout)
+    canvasTop: int = Field(default=0, ge=-32768, le=0)
     components: list[Component] = Field(default_factory=list, max_length=1024)
     resultScopeIds: list[Id] = Field(default_factory=list)
     targets: list[Literal["desktop", "web"]] = Field(default=["desktop"], min_length=1, max_length=2)
@@ -333,6 +342,8 @@ class Page(Model):
         payload = handler(self)
         if self.targets == ["desktop"]:
             payload.pop("targets", None)
+        if not self.canvasTop:
+            payload.pop('canvasTop', None)
         return payload
 
 
@@ -387,6 +398,8 @@ class Presentation(Model):
                 raise ValueError('responsive layout requires presentation schemaVersion 1.1')
             occupied: set[tuple[int, int]] = set()
             for child in children:
+                if child.responsive.canvasOffsetY and (depth > 1 or isinstance(layout, Grid)):
+                    raise ValueError('canvas offset requires a root responsive component')
                 if child.componentId in seen:
                     raise ValueError("duplicate componentId")
                 seen.add(child.componentId)
@@ -405,6 +418,10 @@ class Presentation(Model):
                     visit(child.children, child.grid, depth + 1)
 
         for page in self.pages.values():
+            if page.canvasTop and (self.schemaVersion != '1.2' or not isinstance(page.layout, ResponsiveLayout)):
+                raise ValueError('expanded canvas requires responsive presentation 1.2')
+            if any(item.responsive.canvasOffsetY < page.canvasTop for item in page.components):
+                raise ValueError('component canvas offset exceeds page canvasTop')
             if self.schemaVersion != '1.2':
                 if page.targets != ['desktop']:
                     raise ValueError('page targets require presentation schemaVersion 1.2')

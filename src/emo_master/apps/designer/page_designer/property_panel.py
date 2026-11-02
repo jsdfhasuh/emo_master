@@ -61,6 +61,9 @@ class PropertyGroups:
     def __init__(self, tools, panel):
         self.tools = tools
         tools.form.setFormAlignment(Qt.AlignTop)
+        # Qt 5 keeps form row spacing even when every widget in a row is hidden.
+        # Group margins provide separation; hidden groups must take no space.
+        tools.form.setVerticalSpacing(0)
         rows = []
         for index in range(tools.form.rowCount()):
             label = tools.form.itemAt(index, QFormLayout.LabelRole)
@@ -93,10 +96,8 @@ class PropertyGroups:
                 box = QGroupBox(group)
                 box.setObjectName('propertyGroup')
                 box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
-                form = QFormLayout(box)
-                form.setFormAlignment(Qt.AlignTop)
-                form.setRowWrapPolicy(QFormLayout.WrapAllRows)
-                form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+                form = QVBoxLayout(box)
+                form.setAlignment(Qt.AlignTop)
                 self.groups[group] = (box, form)
             form = self.groups[group][1]
             wrapper = QGroupBox()
@@ -118,10 +119,10 @@ class PropertyGroups:
             if pairKey:
                 if pairKey not in self.pairs:
                     self.pairs[pairKey] = FieldPair()
-                    form.addRow(self.pairs[pairKey])
+                    form.addWidget(self.pairs[pairKey])
                 self.pairs[pairKey].add(wrapper)
             else:
-                form.addRow(wrapper)
+                form.addWidget(wrapper)
             if widget in tools.bindingButtons:
                 widget.setFlat(True)
             self.rows.append((wrapper, widget, name, group))

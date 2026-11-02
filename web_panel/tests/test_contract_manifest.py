@@ -1,4 +1,4 @@
-"""Pin complete official SDK 1.2.0 delivery and embedded consumer bytes on both OSes."""
+"""Pin SDK 1.3.0 development delivery and embedded consumer bytes on both OSes."""
 import hashlib
 import json
 from pathlib import Path
@@ -7,19 +7,19 @@ import zipfile
 
 PANEL = Path(__file__).resolve().parents[1]
 CONTRACT = PANEL / 'contracts/panel-contract-v1'
-HANDOFF = PANEL.parent / 'docs/handoffs/runtime-web-panel-v1/sdk-1.2.0'
-SOURCE_SHA = '32c2b4efb7ba932636e2145fd423e9b2b484b902'
-ZIP_SHA = 'e9769e8ee7a0005715e31d5b9056d81910bdaea0ee06f0bf89e46a7fdfd8d918'
-WHEEL_SHA = '755b81269a3738f08bf44a8cf3fe1dc304b1e12ca9a7ed4b444211f177bb5b52'
-WHEEL_PATH = 'python/emo_panel_protocol-1.2.0-py3-none-any.whl'
+HANDOFF = PANEL.parent / 'docs/handoffs/runtime-web-panel-v1/sdk-1.3.0'
+SOURCE_SHA = '8df8599fc026c424a49e87cc53fb45f6b371f16f'
+ZIP_SHA = '4cf0bcb59fcd427d5e48a74c3f2082f834682a321364a6cc42234792f5577aca'
+WHEEL_SHA = 'cd86472b5faa74e8fb1048a95fcaf67cf59e5a285e4d5e69763cd9a71bb55295'
+WHEEL_PATH = 'python/emo_panel_protocol-1.3.0-py3-none-any.whl'
 
 
 class ContractManifestTests(unittest.TestCase):
-    def test_all_authoritative_files_match_clean_handoff(self):
+    def test_all_authoritative_files_match_development_handoff(self):
         manifest = json.loads((CONTRACT / 'contract-manifest.json').read_bytes())
         self.assertEqual(manifest['sourceSha'], SOURCE_SHA)
-        self.assertFalse(manifest['sourceDirty'])
-        self.assertEqual(manifest['sdkVersion'], '1.2.0')
+        self.assertTrue(manifest['sourceDirty'])
+        self.assertEqual(manifest['sdkVersion'], '1.3.0')
         self.assertEqual(manifest['panelContractVersion'], '1.0')
         self.assertEqual(manifest['sdkWheels'], [WHEEL_PATH])
         self.assertEqual(len(manifest['files']), 39)
@@ -31,13 +31,13 @@ class ContractManifestTests(unittest.TestCase):
                 self.assertEqual(len(data), expected['byteSize'])
                 self.assertEqual(hashlib.sha256(data).hexdigest(), expected['sha256'])
         wheel = (CONTRACT / WHEEL_PATH).read_bytes()
-        self.assertEqual(len(wheel), 38488)
+        self.assertEqual(len(wheel), 38789)
         self.assertEqual(hashlib.sha256(wheel).hexdigest(), WHEEL_SHA)
 
     def test_vendored_tree_is_exact_official_zip_not_regenerated(self):
         archive_path = HANDOFF / 'panel-contract-v1.zip'
         raw = archive_path.read_bytes()
-        self.assertEqual(len(raw), 91287)
+        self.assertEqual(len(raw), 92030)
         self.assertEqual(hashlib.sha256(raw).hexdigest(), ZIP_SHA)
         with zipfile.ZipFile(archive_path) as archive:
             self.assertIsNone(archive.testzip())

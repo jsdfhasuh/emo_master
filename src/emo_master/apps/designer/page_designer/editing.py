@@ -214,6 +214,7 @@ class PageCommands:
 
     def copy(self, pageId, componentId):
         copied = _component(self.session.presentation.snapshot(), pageId, componentId).model_copy(deep=True)
+        copied.responsive.canvasOffsetY = 0
         _copyComponentIds([copied])
         # Copy into an explicit free root row, keeping all original bindings immutable.
         def edit(p):

@@ -237,6 +237,18 @@ class EditingTools(QObject):
         self.componentMore.setMenu(self.componentMenu)
         header.addWidget(self.componentMore)
         outer.addLayout(header)
+        self.parentRow = QWidget(propertyPanel)
+        parentLayout = QHBoxLayout(self.parentRow)
+        parentLayout.setContentsMargins(0, 0, 0, 0)
+        self.parentLabel = ElidedLabel()
+        self.parentLabel.setTextFormat(Qt.PlainText)
+        self.parentLabel.setMinimumWidth(0)
+        parentLayout.addWidget(self.parentLabel, 1)
+        self.parentButton = QPushButton('选择父组')
+        self.parentButton.clicked.connect(lambda: self.w.run(self.selectParent, refresh=False))
+        parentLayout.addWidget(self.parentButton)
+        self.parentRow.hide()
+        outer.addWidget(self.parentRow)
         outer.addWidget(self.propertyError)
         outer.addWidget(scroll, 1)
         self.applyButton.setObjectName('primaryButton')
@@ -509,6 +521,36 @@ class EditingTools(QObject):
             raise ValueError('属性输入仍属于上一页面，请先应用或修正后再切页')
         self.apply()
 
+    def updateParentNavigation(self):
+        self.parentRow.setVisible(self.selected is not None)
+        if self.selected is None:
+            return
+        from .responsive_editing import parentOf
+        p = self.w.store.snapshot()
+        parentId = parentOf(p, self.w.pageId, self.selected)[0]
+        if parentId is not None:
+            parent = _component(p, self.w.pageId, parentId)
+            self.parentLabel.setText('所属组：' + (parent.props.title or '未命名容器'))
+            self.parentButton.setText('选择父组')
+            self.parentButton.setToolTip('选择当前控件的父组，调整排列、间距和组内等宽')
+        else:
+            self.parentLabel.setText('所属页面：' + p.pages[self.w.pageId].name)
+            self.parentButton.setText('选择页面')
+            self.parentButton.setToolTip('打开当前页面的布局属性')
+
+    def selectParent(self):
+        if self.selected is None:
+            return
+        from .responsive_editing import parentOf
+        parentId = parentOf(self.w.store.snapshot(), self.w.pageId, self.selected)[0]
+        # Use the existing selection path: it accepts valid pending properties
+        # and keeps invalid input on the original component for correction.
+        if self.responsive.enabled():
+            self.responsive.select([parentId] if parentId is not None else [])
+        else:
+            self.select(parentId)
+        self.w.propertyScroll.verticalScrollBar().setValue(0)
+
     def select(self, key):
         if key != self.selected:
             self.commitPending()
@@ -525,6 +567,7 @@ class EditingTools(QObject):
             component = _component(self.w.store.snapshot(), self.w.pageId, key)
         except KeyError:
             self.selected = None
+            self.updateParentNavigation()
             if self.w.pageId:
                 self.fields['columns'].setValue(getattr(self.w.store.snapshot().pages[self.w.pageId].layout, 'columns', 1))
                 self.pageName.setText(self.w.store.snapshot().pages[self.w.pageId].name)
@@ -537,6 +580,7 @@ class EditingTools(QObject):
             self._loadedFields = self._fieldState()
             return
         from .palette import TITLES
+        self.updateParentNavigation()
         self.responsiveProperties.load(component.grid if component.type == 'container' else None, component.responsive)
         self.responsiveProperties.setItemVisible(True)
         spacerMode = self.fields['spacerMode']

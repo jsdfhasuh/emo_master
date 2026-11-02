@@ -471,6 +471,7 @@ class PageCoordinator:
                     temporary.unlink(missing_ok=True)
 
     def shutdown(self):
+        self.chrome.performanceProbe.shutdown()
         self.closeMonitor()
         if self.devices:
             self.devices.shutdown()

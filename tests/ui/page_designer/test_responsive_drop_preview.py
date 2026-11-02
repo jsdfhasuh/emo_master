@@ -107,20 +107,22 @@ def testMultiselectionIntoContainerPreviewMatchesNativeLayout(responsivePage):  
     compareDrop(editor, {'move': keys[0], 'moves': keys[:2]}, target, target.rect().center())
 
 
-def testPreviewRecomputesTallPageExtentWhenGroupingReducesRows(responsivePage):  # noqa: F811
+@pytest.mark.parametrize('terminal', [False, True])
+def testPreviewRecomputesTallPageExtentWhenGroupingReducesRows(responsivePage, terminal):  # noqa: F811
     _coordinator, editor, keys = responsivePage
     page = editor.store.snapshot().pages[editor.pageId]
     page.layout = ResponsiveLayout(direction='vertical')
     for item in page.components:
         item.responsive.preferredHeight = 230
     install(editor, page)
-    editor.previewWidth.setValue(1100)
+    if terminal:
+        editor.previewWidth.setValue(1100)
     settle()
     root = editor.renderer.layoutHosts[editor.pageId][None]
     oldHeight = root.height()
     scroll = editor.renderer.pages[editor.pageId]
     scroll.verticalScrollBar().setValue(scroll.verticalScrollBar().maximum())
-    assert scroll.verticalScrollBar().value() > 0
+    assert (scroll.verticalScrollBar().value() > 0) == terminal
     target = editor.renderer.cards[editor.pageId][keys[3]]
     _rects, size = compareDrop(editor, {'move': keys[0], 'moves': keys[:3]},
                              target, QPoint(2, target.height() // 2))
@@ -131,6 +133,8 @@ def testPreviewRecomputesTallPageExtentWhenGroupingReducesRows(responsivePage): 
 
 def testNativeDropRetainsScrolledViewportAndCandidatePositions(responsivePage):  # noqa: F811
     _coordinator, editor, keys = responsivePage
+    # Internal page scrolling belongs to an explicit terminal viewport.
+    editor.canvas.setPreviewSize(1100, 640)
     page = editor.store.snapshot().pages[editor.pageId]
     page.layout = ResponsiveLayout(direction='vertical')
     for item in page.components:

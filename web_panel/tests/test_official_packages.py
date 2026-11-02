@@ -85,6 +85,39 @@ class OfficialPackageTests(unittest.TestCase):
         self.assertEqual(elastic['props']['spacerMode'], 'flex')
         self.assertEqual(elastic['responsive']['weight'], 2)
 
+    def test_expansion_survives_official_install_and_normalization(self):
+        def expand(manifest, presentation, files):
+            manifest['rendererRequirements'].append('layout.expanded-canvas-v1')
+            page = presentation['pages']['live']
+            page['canvasTop'] = -120
+            page['components'][0].setdefault('responsive', {})['canvasOffsetY'] = -120
+        item = self.store.install(official_bundle(expand))
+        page = item['presentation']['pages'][0]
+        self.assertEqual(page['canvasTop'], -120)
+        self.assertEqual(page['components'][0]['responsive']['canvasOffsetY'], -120)
+
+    def test_expansion_rejects_invalid_placement_or_undeclared_requirement(self):
+        for invalid in ('outside', 'nested', 'grid', 'missing-requirement', 'old'):
+            def change(manifest, presentation, files):
+                manifest['rendererRequirements'].append('layout.expanded-canvas-v1')
+                page = presentation['pages']['live']
+                page['canvasTop'] = -120
+                title = page['components'][0]
+                title.setdefault('responsive', {})['canvasOffsetY'] = -120
+                if invalid == 'outside':
+                    title['responsive']['canvasOffsetY'] = -121
+                elif invalid == 'nested':
+                    page['components'] = [{'componentId': 'nested-title', 'type': 'container', 'children': [title]}]
+                elif invalid == 'grid':
+                    page['layout'] = {'type': 'grid'}
+                elif invalid == 'old':
+                    manifest['sourcePresentationVersion'] = '1.1'
+                else:
+                    manifest['rendererRequirements'] = [r for r in manifest['rendererRequirements']
+                                                        if r != 'layout.expanded-canvas-v1']
+            with self.subTest(invalid=invalid), self.assertRaises(PackageError):
+                self.store.install(official_bundle(change))
+
     def test_official_spacer_rejects_bindings_actions_and_children(self):
         for extra in [
             {'bindings':{'value':'score'}},

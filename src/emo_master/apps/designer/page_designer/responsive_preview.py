@@ -6,6 +6,7 @@ from emo_master.core.presentation.models import ResponsiveLayout
 from emo_master.ui.presentation.container_title import ContainerTitle
 from emo_master.ui.presentation.renderer import appearanceStyle
 from emo_master.ui.presentation.responsive_layout import ResponsiveWidgetLayout
+from emo_master.ui.presentation.page_scroll import pageContentSize
 
 
 class MeasuredItem(QLayoutItem):
@@ -46,7 +47,7 @@ class MeasuredItem(QLayoutItem):
         return QRect(self.rect)
 
 
-def candidateGeometry(renderer, pageId, candidatePage, prototypes=None):
+def candidateGeometry(renderer, pageId, candidatePage, prototypes=None, *, minimumSize):
     """Return (component rects in root-host coordinates, candidate root QSize).
 
     Existing leaf controls contribute their native QWidgetItem measurements.
@@ -71,9 +72,9 @@ def candidateGeometry(renderer, pageId, candidatePage, prototypes=None):
     containers = {}
     borrowed = {}
 
-    def populate(host, components, rules):
+    def populate(host, components, rules, *, canvasTop=0):
         responsive = isinstance(rules, ResponsiveLayout)
-        layout = ResponsiveWidgetLayout(host, rules) if responsive else QGridLayout(host)
+        layout = ResponsiveWidgetLayout(host, rules, canvasTop=canvasTop) if responsive else QGridLayout(host)
         layout.setSpacing(rules.spacing)
         if not responsive:
             layout.setRowStretch(max((c.layout.row + c.layout.rowSpan for c in components), default=0), 1)
@@ -130,13 +131,10 @@ def candidateGeometry(renderer, pageId, candidatePage, prototypes=None):
             arrange(child)
 
     try:
-        layout = populate(root, candidatePage.components, candidatePage.layout)
+        layout = populate(root, candidatePage.components, candidatePage.layout, canvasTop=candidatePage.canvasTop)
         root.ensurePolished()
         # Floating page scrollbars never take width from the content viewport.
-        scroll = renderer.pages[pageId]
-        width = scroll.viewport().width()
-        height = max(scroll.viewport().height(), layout.heightForWidth(width))
-        root.resize(QSize(width, height))
+        root.resize(pageContentSize(layout, minimumSize))
         # Only this disposable shell is shown off-screen. Borrowed item setters
         # record rectangles and never touch the live controls.
         root.show()

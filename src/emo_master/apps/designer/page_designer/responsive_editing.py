@@ -48,7 +48,7 @@ def selectionRoots(presentation, pageId, keys):
 
 
 def placeComponents(p, pageId, *, keys=(), kind=None, parentId=None, index=None,
-                    besideId=None, direction=None, before=False):
+                    besideId=None, direction=None, before=False, canvasTop=None):
     """Apply one placement to a caller-owned draft, shared by preview and commit."""
     selected = []
     items = selectionRoots(p, pageId, keys)
@@ -57,6 +57,10 @@ def placeComponents(p, pageId, *, keys=(), kind=None, parentId=None, index=None,
             props=Props(fontSize=24, fontWeight='bold') if kind == 'page_title' else Props())]
     if not items:
         return selected
+    for item in items:
+        item.responsive.canvasOffsetY = canvasTop if canvasTop is not None else 0
+    if canvasTop is not None:
+        p.pages[pageId].canvasTop = min(p.pages[pageId].canvasTop, canvasTop)
     subtree = {c.componentId for item in items for c in walkComponents([item])}
     if parentId in subtree or besideId in subtree:
         raise ValueError('容器不能移入自身或子组件')
@@ -75,6 +79,7 @@ def placeComponents(p, pageId, *, keys=(), kind=None, parentId=None, index=None,
             destination = siblings
             position += 0 if before else 1
         else:
+            target.responsive.canvasOffsetY = 0
             members = [*items, target] if before else [target, *items]
             group = Component(componentId=str(uuid4()), type='container',
                               grid=ResponsiveLayout(direction=direction), children=members)
@@ -111,6 +116,7 @@ class ResponsiveCommands:
             siblings = childrenFor(p, pageId, parentId)
             position = min((i for i, child in enumerate(siblings) if child in items), default=len(siblings))
             for item in items:
+                item.responsive.canvasOffsetY = 0
                 _parent, source, old = parentOf(p, pageId, item.componentId)
                 source.pop(old)
             group = Component(componentId=groupId, type='container',

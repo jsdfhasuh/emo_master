@@ -166,8 +166,8 @@ def sampleProject(root):
             'count': dict(kind='global_variable', variableId='count', resultScopeId='root', expectedType='integer'),
             'verdict': dict(kind='global_variable', variableId='verdict', resultScopeId='root', expectedType='boolean'),
         }, pages={
-            'live': dict(name='Live demo', targets=['desktop', 'web'], components=[
-                dict(componentId='title', type='page_title'),
+            'live': dict(name='Live demo', targets=['desktop', 'web'], canvasTop=-96, components=[
+                dict(componentId='title', type='page_title', responsive=dict(canvasOffsetY=-96)),
                 dict(componentId='tabs', type='page_navigation'),
                 dict(componentId='clock', type='clock'),
                 dict(componentId='note', type='text', props=dict(text='Synthetic fixture data; no device connected')),

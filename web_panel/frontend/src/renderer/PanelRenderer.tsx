@@ -27,18 +27,19 @@ function layoutStyle(layout?:Layout,columns=12):CSSProperties {
 export function responsiveStyle(c:Component,parent?:Layout,hasVerticalSpacer=false,equalWidthBasis=0):CSSProperties {
     if(parent?.type!=='responsive')return {};
     const r=c.responsive || {};
+    const canvasPosition:CSSProperties=r.canvasOffsetY?{position:'relative',top:r.canvasOffsetY}:{};
     if(c.type==='spacer') {
         const width=Math.max(r.minWidth ?? 24,r.preferredWidth || 24);
         const height=Math.max(r.minHeight ?? 24,r.preferredHeight ?? 24);
         const flex=c.props?.spacerMode==='flex';
         const vertical=parent.direction==='vertical';
         const alignment=!r.alignSelf || r.alignSelf==='auto'?parent.alignment:r.alignSelf;
-        return {width,maxWidth:'100%',height,minWidth:0,minHeight:r.minHeight ?? 24,
+        return {...canvasPosition,width,maxWidth:'100%',height,minWidth:0,minHeight:r.minHeight ?? 24,
             flexGrow:flex?r.weight ?? 1:0,flexShrink:vertical?0:1,
             flexBasis:vertical?height:parent.direction==='horizontal' && flex?r.minWidth ?? 24:width,
             alignSelf:alignment==='center'?'center':alignment==='end'?'flex-end':'flex-start'};
     }
-    return {minWidth:`min(100%, ${r.minWidth ?? 160}px)`,maxWidth:'100%',minHeight:r.minHeight,height:r.preferredHeight || undefined,flexGrow:hasVerticalSpacer?0:parent.equalWidth?1:r.width==='content'?0:r.weight ?? 1,flexShrink:hasVerticalSpacer?0:1,flexBasis:parent.direction==='vertical'?'auto':parent.equalWidth?equalWidthBasis:parent.direction==='horizontal' && r.width!=='content'?r.minWidth ?? 160:r.preferredWidth ?? 240,alignSelf:r.alignSelf==='start'?'flex-start':r.alignSelf==='end'?'flex-end':r.alignSelf as CSSProperties['alignSelf']};
+    return {...canvasPosition,minWidth:`min(100%, ${r.minWidth ?? 160}px)`,maxWidth:'100%',minHeight:r.minHeight,height:r.preferredHeight || undefined,flexGrow:hasVerticalSpacer?0:parent.equalWidth?1:r.width==='content'?0:r.weight ?? 1,flexShrink:hasVerticalSpacer?0:1,flexBasis:parent.direction==='vertical'?'auto':parent.equalWidth?equalWidthBasis:parent.direction==='horizontal' && r.width!=='content'?r.minWidth ?? 160:r.preferredWidth ?? 240,alignSelf:r.alignSelf==='start'?'flex-start':r.alignSelf==='end'?'flex-end':r.alignSelf as CSSProperties['alignSelf']};
 }
 export function fieldValue(row:unknown,path:string[]):unknown {
     let value=row;
@@ -231,5 +232,9 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
         const span = Math.min(columns, Math.max(1, Number(grid.columnSpan) || Math.min(6, columns)));
         return <section className="panel-card" data-component-id={c.id} key={c.id} style={{ ...responsiveStyle(c,parentLayout,verticalSpacer,equalBasis), ...(c.type==='container' && hasVerticalSpacer(c.children || [],c.grid)?{display:'flex',flexDirection:'column'} as CSSProperties:{}), fontFamily:fontFamilies[String(p.fontFamily)], border:p.cardStyle==='outlined'?'1px solid #64748b':undefined, boxShadow:p.cardStyle==='soft'?'0 2px 12px #0002':undefined, fontWeight: ['normal', 'bold', '400', '500', '600', '700', 400, 500, 600, 700].includes(style.fontWeight as string | number) ? style.fontWeight as 'normal' | 'bold' | 400 | 500 | 600 | 700 : undefined, gridColumn: parentLayout?.type==='responsive'?undefined:`${grid.column || 'auto'} / span ${span}`, gridRow: parentLayout?.type==='responsive'?undefined:`${grid.row || 'auto'} / span ${Math.max(1, Number(grid.rowSpan) || 1)}`, fontSize: typeof style.fontSize === 'number' ? Math.min(128, Math.max(8, style.fontSize)) : undefined, color: typeof style.color === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.color) ? style.color : undefined, backgroundColor: typeof style.backgroundColor === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.backgroundColor) ? style.backgroundColor : undefined, textAlign: ['left', 'center', 'right'].includes(String(style.textAlign)) ? style.textAlign as 'left' | 'center' | 'right' : undefined }}>{(c.label||typeof p.label==='string'||(c.type==='container'&&typeof p.title==='string'))&&<h3>{c.label||(typeof p.label==='string'?p.label:String(p.title))}</h3>}{body}</section>;
     }
-    return <div ref={pageRoot} className={page.layout?.type==='responsive'?'panel-responsive':'panel-grid'} style={{...layoutStyle(page.layout || page.grid || panel.grid,12),...(hasVerticalSpacer(page.components,page.layout)?{height:availableHeight}:{} )}}>{(page.layout?.type==='responsive'?page.components:ordered(page.components)).map(c => render(c,undefined,page.layout,hasVerticalSpacer(page.components,page.layout),equalWidthBasis(page.components,page.layout)))}</div>;
+    const extension=page.layout?.type==='responsive'?-(page.canvasTop || 0):0;
+    const content=<div ref={extension?undefined:pageRoot} className={page.layout?.type==='responsive'?'panel-responsive':'panel-grid'} style={{...layoutStyle(page.layout || page.grid || panel.grid,12),...(hasVerticalSpacer(page.components,page.layout)?{height:availableHeight}:{}),...(extension?{marginTop:0}:{})}}>{(page.layout?.type==='responsive'?page.components:ordered(page.components)).map(c => render(c,undefined,page.layout,hasVerticalSpacer(page.components,page.layout),equalWidthBasis(page.components,page.layout)))}</div>;
+    // Keep each responsive flow slot; only the moved root card is offset upward.
+    // Measure the outer viewport so expansion never consumes flexible space twice.
+    return extension?<div ref={pageRoot} data-canvas-top={page.canvasTop} style={{marginTop:16,paddingTop:extension,minHeight:(availableHeight || 0)+extension}}>{content}</div>:content;
 }

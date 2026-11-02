@@ -13,7 +13,7 @@ export interface Layout { type?: string; direction?: string; columns?: number; s
 export interface Component {
     history?: {kind:string;componentId:string;sourceComponentId?:string;orderBy?:string;descending?:boolean};
     layout?: {row?:number;column?:number;rowSpan?:number;columnSpan?:number};
-    responsive?: {width?:string;minWidth?:number;preferredWidth?:number;weight?:number;minHeight?:number;preferredHeight?:number;alignSelf?:string};
+    responsive?: {width?:string;minWidth?:number;preferredWidth?:number;weight?:number;minHeight?:number;preferredHeight?:number;alignSelf?:string;canvasOffsetY?:number};
     actions?: {clicked?: {type:string;pageId?:string;context?:string;resultScopeId?:string}};
     id: string;
     type: string;
@@ -35,6 +35,7 @@ export interface Component {
     };
 }
 export interface Page {
+    canvasTop?: number;
     layout?: Layout;
     id: string;
     title: string;

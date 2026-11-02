@@ -1,0 +1,129 @@
+{
+  "date": "2026-11-02",
+  "head": "8df8599fc026c424a49e87cc53fb45f6b371f16f",
+  "branch": "codex/designer-resize-zoom-fix",
+  "sourceDirty": true,
+  "platform": "Qt offscreen; QTest QWindow input, actual preview and rendered geometry assertions",
+  "before": {
+    "tests": 13,
+    "failures": 11,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 2
+  },
+  "regression": {
+    "tests": 171,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 171
+  },
+  "sequentialProcesses": {
+    "final-edges.xml": {
+      "tests": 43,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 43
+    },
+    "final-window.xml": {
+      "tests": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 36
+    },
+    "final-editor.xml": {
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 39
+    },
+    "final-related.xml": {
+      "tests": 53,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 53
+    }
+  },
+  "interruptedCombinedRun": {
+    "status": "ABORTED",
+    "exitCode": 1,
+    "details": "interrupted-run.txt"
+  },
+  "visual": {
+    "before": [
+      437,
+      105
+    ],
+    "preview": [
+      180,
+      105
+    ],
+    "after": [
+      180,
+      105
+    ],
+    "zoom": 1.0,
+    "platform": "Qt offscreen"
+  },
+  "checks": {
+    "ruff": "PASS (changed Python files)",
+    "mypy": "PASS (source check; final affected module check)",
+    "gitDiffCheck": "PASS"
+  },
+  "manualMouse": "NOT_RUN",
+  "windowsDpi": "NOT_RUN",
+  "ci": "NOT_RUN",
+  "frozenPackage": "NOT_RUN",
+  "web": "NOT_RUN; existing layout contract unchanged",
+  "sourceSha256": {
+    "src/emo_master/apps/designer/page_designer/responsive_tools.py": "73997d81570f9ceb8fdd4ee7f798b58da4be488f7f1b24d0a08570412a5b22bf",
+    "tests/ui/page_designer/test_responsive_resize_layout.py": "38cc491f17744a480606b4860be62616f1806a3d8c9f89954f2796265a6dea3b",
+    "tests/ui/page_designer/test_responsive_resize_edges.py": "3262bd5259097a42b832e254d78f0e2a5362be372eda01520258b4f523bff9a4"
+  },
+  "artifacts": {
+    "before.xml": {
+      "sha256": "eaee7c48c617da08f69652a8f4fb82d543255f14da9289072412d8a674e7e63f",
+      "bytes": 15316
+    },
+    "final-edges.xml": {
+      "sha256": "f440fdc9cea0b7a270201769260e1fa24569ee211a6abc92c8927defb21c3240",
+      "bytes": 6989
+    },
+    "final-window.xml": {
+      "sha256": "6f5b201618b018da7a460823124c1b8b8a04c9cb3473e9857499b9efac3de700",
+      "bytes": 6064
+    },
+    "final-editor.xml": {
+      "sha256": "7d891f6e936330c1091d2e3c4dbdca4e772b6e4f9b34d81fc1bf3611191ec714",
+      "bytes": 6341
+    },
+    "final-related.xml": {
+      "sha256": "43e21e87b355ac89b7220846907b38da0ed45c7e09ceeec096bd3be36a311ea4",
+      "bytes": 8522
+    },
+    "before-gesture.png": {
+      "sha256": "36462a9f8b24c2df4f98dc156b9f5a113d5e8bb73749fbb7a8294b43e75993a7",
+      "bytes": 79889
+    },
+    "during.png": {
+      "sha256": "a3c83bc2569b42a7abd1b207f377e2d88e70fa78c1987760f55440cf28ac2d4b",
+      "bytes": 95163
+    },
+    "after.png": {
+      "sha256": "a576d87fd1900781cb87884c34812d2fe6b50175ce4a7e68d66aa5ee9b4fd1d2",
+      "bytes": 82876
+    },
+    "visual.json": {
+      "sha256": "dacfd182dd9a693f2b9b0c06d37778030ef29a33eca2829300b17aa28141fc43",
+      "bytes": 172
+    },
+    "interrupted-run.txt": {
+      "sha256": "0976d8c25f07d79863c87a952a21f068da42cbcf3b0e3e371bb9c630ec956a59",
+      "bytes": 1357
+    }
+  }
+}

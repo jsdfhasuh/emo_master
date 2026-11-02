@@ -533,6 +533,13 @@
           ],
           "title": "Layout"
         },
+        "canvasTop": {
+          "default": 0,
+          "maximum": 0,
+          "minimum": -32768,
+          "title": "Canvastop",
+          "type": "integer"
+        },
         "components": {
           "items": {
             "$ref": "#/$defs/PublishedComponent"
@@ -767,6 +774,13 @@
           ],
           "title": "Alignself",
           "type": "string"
+        },
+        "canvasOffsetY": {
+          "default": 0,
+          "maximum": 0,
+          "minimum": -32768,
+          "title": "Canvasoffsety",
+          "type": "integer"
         }
       },
       "title": "ResponsiveItem",

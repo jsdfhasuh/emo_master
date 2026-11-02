@@ -435,18 +435,19 @@ class RuntimePages(QWidget):
         self.widgets[pageId] = {}
         self.cards[pageId] = {}
         self.layoutHosts[pageId] = {}
-        self._children(body, page.components, page.layout, pageId)
+        self._children(body, page.components, page.layout, pageId, canvasTop=page.canvasTop)
         self._connectLocalImages(pageId)
         scroll.setWidget(body)
+        scroll.setCanvasExtension(0 if self.editorHost else -page.canvasTop)
         self.stack.addWidget(scroll)
         self.pages[pageId] = scroll
 
-    def _children(self, parent, components, grid, pageId, parentId=None):
+    def _children(self, parent, components, grid, pageId, parentId=None, *, canvasTop=0):
         from .editor_grid import EditorGridLayout
         responsive = isinstance(grid, ResponsiveLayout)
         if responsive:
             from .responsive_layout import ResponsiveWidgetLayout
-            layout = ResponsiveWidgetLayout(parent, grid)
+            layout = ResponsiveWidgetLayout(parent, grid, canvasTop=canvasTop)
         else:
             layout = (EditorGridLayout if self.editorHost else QGridLayout)(parent)
         self.layoutHosts[pageId][parentId] = parent

@@ -79,6 +79,8 @@ def publishedSnapshot(document, *, manifests=None):
             requirements.add('component.' + item['type'] + '@1.0')
             exportComponents(item['children'], pageId)
     for pageId, page in payload['pages'].items():
+        if page.get('canvasTop'):
+            requirements.add('layout.expanded-canvas-v1')
         page.pop('targets', None)
         exportComponents(page['components'], pageId)
     snapshot = PublishedPresentation.model_validate(payload).model_dump(mode='json', exclude_none=True)

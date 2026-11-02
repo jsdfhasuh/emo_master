@@ -128,6 +128,7 @@
           "justify": "start",
           "equalWidth": false
         },
+        "canvasTop": -96,
         "components": [
           {
             "componentId": "title",
@@ -146,7 +147,8 @@
               "weight": 1.0,
               "minHeight": 64,
               "preferredHeight": 0,
-              "alignSelf": "auto"
+              "alignSelf": "auto",
+              "canvasOffsetY": -96
             },
             "props": {
               "title": "",

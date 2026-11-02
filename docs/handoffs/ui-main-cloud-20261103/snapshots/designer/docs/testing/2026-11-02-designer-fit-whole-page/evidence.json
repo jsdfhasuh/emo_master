@@ -1,0 +1,49 @@
+{
+  "date": "2026-11-02",
+  "head": "8df8599fc026c424a49e87cc53fb45f6b371f16f",
+  "branch": "codex/designer-resize-zoom-fix",
+  "sourceDirty": true,
+  "regression": {
+    "passed": 150,
+    "failed": 0,
+    "skipped": 0,
+    "platform": "Qt offscreen"
+  },
+  "before": {
+    "failed": 3
+  },
+  "manualMouse": "NOT_RUN",
+  "windowsDpi": "NOT_RUN",
+  "ci": "NOT_RUN",
+  "sourceSha256": {
+    "src/emo_master/apps/designer/page_designer/page_canvas.py": "819f68d13e2ca631c6b9eed1c9a31acc9295bd078c9f4152bd97b73c56e6e609",
+    "src/emo_master/apps/designer/page_designer/responsive_preview.py": "abe3bd43acf8285a0a19bbb20687cd831ad9297a2bf65abb8b74bdf939b3817e",
+    "src/emo_master/apps/designer/page_designer/responsive_tools.py": "4b32f4490d3c68fb6e633d6209f6bf45d43201df959b57400d2a1ba5a3fd4239",
+    "src/emo_master/ui/presentation/page_scroll.py": "ef66349d7ab50bc9f7dd5ce8f4b40a40de8d9a5f254fd8f038d05aea0aff4636",
+    "tests/ui/page_designer/test_canvas_viewport.py": "28697a4a93158bea7dd4b89b30254860263b5ed6afeedd167c65eb8118117c22",
+    "tests/ui/page_designer/test_responsive_drop_preview.py": "8270d20ecff052baf386d7f38f5329516ed4326e2e95034ec622077664944c0c",
+    "tests/ui/page_designer/test_responsive_selection_pending.py": "4185b743133d04780ad4e3fb038b294040c0d50eb340017e40fd64094a7387f0"
+  },
+  "artifacts": {
+    "whole-page.png": {
+      "sha256": "1f16d8d886c39bd8e4dc84c9baad0ef96cde1344614bc78fc2e838f1a4174311",
+      "bytes": 101957
+    },
+    "fixed-terminal.png": {
+      "sha256": "f1c2ad4be5b54be24a4cb057608c5b0376f8f6c08a42e8d64c31a47fdd7139ca",
+      "bytes": 79615
+    },
+    "regression.xml": {
+      "sha256": "a845defd45d03f8ea43cc3352d2df975fe2942e7f7ef5adf2df3e1233e6bafdd",
+      "bytes": 23774
+    },
+    "before.xml": {
+      "sha256": "5e5aef7ab3d8ac712036c331eff2d339b12f7019a157da40461d68c2fd31f247",
+      "bytes": 7225
+    },
+    "visual.json": {
+      "sha256": "fc3293246d8e028d86d48ad839611da09626eb1b9848de9fbd0b8a4d6b3a3e6f",
+      "bytes": 196
+    }
+  }
+}

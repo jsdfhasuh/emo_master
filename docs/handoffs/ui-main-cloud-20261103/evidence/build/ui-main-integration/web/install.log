@@ -1,0 +1,6 @@
+Processing d:\tmp\emo-ui-main-merge-20261102\web_panel\contracts\panel-contract-v1\python\emo_panel_protocol-1.3.0-py3-none-any.whl
+ERROR: Could not find a version that satisfies the requirement web_panel[test] (from versions: none)
+ERROR: No matching distribution found for web_panel[test]
+
+[notice] A new release of pip is available: 23.0.1 -> 26.2.2
+[notice] To update, run: D:\tmp\emo-ui-main-merge-20261102\build\ui-main-integration\web\venv\Scripts\python.exe -m pip install --upgrade pip

@@ -1,0 +1,1935 @@
+diff --git a/docs/development/panel-contract-v1.md b/docs/development/panel-contract-v1.md
+index ca16ad0a..c7cfb38e 100644
+--- a/docs/development/panel-contract-v1.md
++++ b/docs/development/panel-contract-v1.md
+@@ -1,9 +1,16 @@
+ # Panel Contract v1：Runtime 客户端与 Web 页面交接合同
+ 
+-合同版本 `1.0`，Python SDK `emo_panel_protocol 1.2.0`。工程当前版本为
++合同版本 `1.0`，Python SDK `emo_panel_protocol 1.3.0`。工程当前版本为
+ `2.9` / Presentation `1.2`，发布快照为 `published-1`，ZIP 页面包为
+ `emo-web-panel-1`（扩展名 `.emoweb`）。这些版本分别管理不同边界，不互相替代。
+ 
++2026-11-02 开发增量：SDK **1.3.0** 支持响应式根页面持久向上扩展，增加 `Page.canvasTop`
++及 `ResponsiveItem.canvasOffsetY`（默认 0，-32768..0），派生发布页同步保留。
++包声明 `layout.expanded-canvas-v1`，消费者检查根级、上下界及 Presentation 1.2；
++Web 以根部扩展空间和组件相对纵向偏移实现，保持响应式流占位与原有伸展规则。
++工程继续为 2.9 / 页面 1.2。生成脚本的样例包含向上扩展 96px 的标题。
++本增量交接以 manifest 的 `sourceSha`、`sourceDirty` 和文件摘要为准，未提交源码不标为干净发布。
++
+ 2026-10-31 的[固定交接入口](../handoffs/runtime-web-panel-v1/README.md)提供仓库内可直接下载的 ZIP、实现源码 SHA 和文件摘要。
+ 
+ 本合同供远程 Designer 与 Web 网关共同使用 Runtime RPC。浏览器使用网关的固定
+diff --git a/docs/development/responsive-layout-contract.md b/docs/development/responsive-layout-contract.md
+index 56eed415..c7c8e46a 100644
+--- a/docs/development/responsive-layout-contract.md
++++ b/docs/development/responsive-layout-contract.md
+@@ -58,7 +58,7 @@
+ 
+ ## 3. 排列与窗口变化
+ 
+-页面 `components`、容器 `children` 的数组顺序是唯一的展示顺序。不再保存另一套像素坐标或 `order` 账本。插入和移动修改数组位置；同一组件的 `componentId`、绑定、查询来源和导航动作保持原归属。
++页面 `components`、容器 `children` 的数组顺序决定响应式流的位置和宽度分配；不保存另一套 `order` 账本。SDK 1.3.0 增加根页面上方扩展，允许根组件相对自己的流位置向上偏移，详见下节。插入和移动仍修改数组位置；同一组件的 `componentId`、绑定、查询来源和导航动作保持原归属。
+ 
+ - `vertical`：按数组顺序自上而下排列。`width=fill` 或交叉轴对齐为 `stretch` 时占满可用宽度；`content` 配合 start/center/end 时采用首选宽度，受可用宽度限制。
+ - `horizontal`：填充控件按 `minWidth`、内容控件按 `max(minWidth, preferredWidth 或内容测量值)` 尝试并排；容器变窄到无法容纳时按稳定顺序换行。
+@@ -74,6 +74,38 @@ Qt 逻辑像素与浏览器 CSS 像素分别使用各自环境的常规缩放。
+ 
+ ## 4. 编辑命令
+ 
++### 手动尺寸调整与父组规则
++
++渲染合同中 `equalWidth=true` 继续优先于单个控件的宽度方式。Designer在用户手动横向调整
++普通组件时，将该组件设为内容宽度，并在父组是horizontal/wrap时取消该组equalWidth，
++以既有字段表达用户的显式尺寸；不是只保存一个会被父组覆盖的preferredWidth。
++兄弟组件字段不改，继续按自己的填充、权重与内容规则排列；空白块本来不参加普通组件等宽，
++调整它时不取消组等宽。vertical布局的等宽标志不影响布局，因此不额外修改。
++
++仅调整高度时，horizontal/wrap中的组件如果继承或显式采用stretch，改为start以退出行高拉伸；
++组等宽、组件宽度字段不改。自然内容高度仍是下限，不以裁剪文字来满足更小的期望高度。
++预览和提交使用同一组候选规则，提示求解后的布局尺寸；受内容高度限制时明确说明。
++父组规则及组件尺寸属于同一编辑事务，Esc和拖回起点不提交，一次撤销/重做和保存重开均保留对应状态。
++以上是编辑动作对既有字段的调整，不增加工程或SDK字段，不改变Qt/Web渲染语义。
++
++### 向上扩展画布（SDK 1.3.0）
++
++工程保持 2.9、Presentation 保持 1.2，增加两个可省略字段：页面 `canvasTop` 和根组件
++`responsive.canvasOffsetY`，均为 -32768 到 0 的逻辑像素整数，默认 0 时不写入 JSON。
++`canvasTop` 表示保留的最上边界，组件偏移不得小于该边界；旧网格和嵌套组件不能使用此偏移。
++普通响应式流继续计算宽高、换行和位置，最终根组件纵坐标为
++`flowY + canvasOffsetY - canvasTop`。未移动组件的原流位置不变；移动组件原来的流占位保留。
++实际布局、候选测量和 Web CSS 使用同一语义；弹性空白块以扩展前的有限高度分配剩余空间。
++
++向上拖动时绘制真实候选范围，橙色虚线为原位置，绿色实线为落点；鼠标停在视口顶边时
++继续上移查看范围。松手一次提交同时保存页面边界与位置，取消恢复查看位置且不修改模型。
++已是第一项时也可以上移。普通重新排序、复制、编组或移入容器回到响应式流位置，页面扩展边界保留；
++撤销/重做恢复对应完整状态。对原 2.8/1.1 响应式工程显式执行扩展时，沿用编辑事务升级为 2.9/1.2，
++仅打开旧工程不会升级。固定终端可视宽高保持指定值，扩展增加可滚动内容；跟随窗口编辑时增加画布高度。
++
++`.emoweb` 保留两个字段，并声明 `layout.expanded-canvas-v1`。Web 包导入同时检查根级、范围、
++响应式布局和声明；不支持该能力的旧消费者不能静默忽略位置。该扩展不提供任意横向绝对定位。
++
+ ### 空白块（SDK 1.2.0）
+ 
+ `spacer` 是透明布局占位，编辑器的虚线和文字只绘制、不参与测量。默认24×24，
+diff --git a/docs/handoffs/runtime-web-panel-v1/README.md b/docs/handoffs/runtime-web-panel-v1/README.md
+index b1f8adf4..c7758a47 100644
+--- a/docs/handoffs/runtime-web-panel-v1/README.md
++++ b/docs/handoffs/runtime-web-panel-v1/README.md
+@@ -1,6 +1,8 @@
+ # Runtime / Web Panel：Dot 开发交接
+ 
+-当前交接为 **SDK 1.2.0 / Panel Contract 1.0**（2026-11-02），增加固定/弹性空白块。最新源码与生成物见 [SDK 1.2.0 交接说明](./sdk-1.2.0/README.md)。
++当前开发交接为 **SDK 1.3.0 / Panel Contract 1.0**（2026-11-02），增加持久向上扩展画布，源码仍含未提交修改，见 [SDK 1.3.0 交接说明](./sdk-1.3.0/README.md)。
++
++上一批干净源码交接为 **SDK 1.2.0**，增加固定/弹性空白块，继续保留 [SDK 1.2.0 交接说明](./sdk-1.2.0/README.md)。
+ 
+ 以下保留 SDK 1.1.1（2026-10-31）历史交接。
+ 
+diff --git a/docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md b/docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md
+index 0adf141c..c2f88fea 100644
+--- a/docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md
++++ b/docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md
+@@ -5,12 +5,16 @@
+ ## 已确认目标
+ 
+ - 跟随窗口作为默认模式，页面四周8逻辑像素并居中；手动缩放/平移后保持视图，适应画布/Home恢复自动适配；拖拽时延后适配。
+-- 页面顶部64像素预留改12；工具区/属性面板折叠入口在页面外工具栏，展开仍为浮动面板。
++- 页面顶部64像素预留改12；按后续截图确认，工具区/属性面板复用流程设计的浮动面板交互，默认在画布左上/右上，收起后保留可拖动标题条，展开仍为浮动面板。入口不放到底部预览工具栏，不参与页面内容布局。
++- 属性面板顶部显示当前控件的“所属组”和“选择父组”；嵌套容器逐级上选，根组件提供“所属页面”和“选择页面”。复用现有选择和待应用输入处理，不增加工程历史或重置画布；组名过长省略显示，悬停可看全名。
+ - 固定终端预览设置逻辑宽高，预设360×640、768×1024、1280×720、1920×1080；尺寸指页面视口，画布缩放不改变排版宽高。预览状态不写工程/历史。
+-- Qt编辑器及桌面页面使用浮动滚动条，按实际溢出显示，不占内容宽高；真实布局与候选测量共用视口，编辑提示不得制造溢出。
++- 默认“跟随窗口”编辑时，页面按响应式宽度排版，并让画布容纳完整内容；“适应画布”按整页边界等比缩放居中，取消整页内部滚动条。用户放大后通过画布平移查看。固定终端预览及桌面运行页面继续按真实溢出显示浮动滚动条，不占内容宽高；真实布局与候选测量共用尺寸基准，编辑提示不得制造溢出。
++- 后续确认的持久扩展：第一项标题继续向上拖动时，标题实际落到原边界上方，扩展后的画布范围保留，保存重开一致；使用 `canvasTop` 与根组件 `canvasOffsetY`，保持响应式宽度及流占位。顶边持续拖动会继续上移查看；松手一次历史，Esc恢复视图和模型；固定终端不改可视宽高，扩展增加滚动内容。取消临时“放在页面最前”文字辅助条，保留橙色虚线原位置、绿色实线落点和受影响组件的灰色轮廓。
++- 边缘尺寸调整：响应式页面单选组件后，四边和四角显示小手柄，整段边缘可命中对应的水平、垂直或对角尺寸光标，并给出悬停提示。左右边只改宽度、上下边只改高度、角点同时修改两者；复用现有吸附、候选布局、一次提交、Esc和撤销。命中范围兼顾缩放及标题拖动区域，不遮住内部移动入口；组件位置仍遵循响应式排列，多选不增加整体拉伸行为。
++  手动改宽时如父组为并排/换行且开启等宽，将该组退出强制等宽，与组件尺寸同一次提交；兄弟组件字段保持不变，按原有规则分配剩余空间。只改高时解除该组件的行高拉伸，保留组等宽及组件宽度。预览显示求解后的真实尺寸，内容自然高度限制明确提示；松手、Esc与撤销同步处理尺寸及必要的布局规则，保存重开保留结果。
+ - 空白块 `spacer` 默认24×24，固定/弹性，编辑有虚线提示、预览和运行透明；复用选择、拖动、复制删除、编组和撤销保存。
+ - 弹性按响应式父布局主轴分剩余空间；竖排撑高、并排撑宽、换行只撑所在行，多块按权重；不足时保留最低占位，不压缩正常内容。旧grid支持固定占位并说明弹性条件。
+-- 共享模型增加组件类型及 `props.spacerMode`，SDK1.2.0；Qt、Web包校验及渲染同步，契约通过脚本生成。工程保持2.9/页面1.2。
++- 共享模型的空白块基于SDK1.2.0；本次持久画布字段推进至SDK1.3.0，Qt、Web包校验及渲染同步，契约通过脚本生成。工程保持2.9/页面1.2。
+ 
+ ## 实施顺序与边界
+ 
+@@ -23,6 +27,6 @@
+ 
+ ## 完成标准
+ 
+-空/短/长页面按溢出显示浮动条且宽度稳定；自动适配与手动视图互不干扰；固定视口尺寸不被DPI预算悄悄改写；75/100/150%画布缩放下拖动、吸附、取消、撤销与保存重开正常。空白块两端固定/弹性/权重/嵌套一致，旧grid固定占位正常。
++默认编辑的空/短/长页面均无整页内部滚动条，“适应画布”能看到整页；固定终端及独立运行页面按溢出显示浮动条且宽度稳定。普通属性修改/刷新不自动缩放，窗口变化与显式适配按现有规则处理；固定视口尺寸不被DPI预算悄悄改写；75/100/150%画布缩放下拖动、吸附、取消、撤销与保存重开正常。空白块两端固定/弹性/权重/嵌套一致，旧grid固定占位正常。
+ 
+ Windows100/150%显示缩放的真实鼠标与浏览器验收单独记录，不用自动化替代。执行结果、基线、工作区源码摘要和未执行项见同日期测试报告。
+diff --git a/docs/project-json-spec.md b/docs/project-json-spec.md
+index 9a73c4aa..40c5b79e 100644
+--- a/docs/project-json-spec.md
++++ b/docs/project-json-spec.md
+@@ -4,7 +4,7 @@
+ `schemaVersion: "2.9"`、`presentation.schemaVersion: "1.2"`，包括不使用设备的图片、视频和模型处理工程。**
+ 旧格式可读不代表新工程应该继续生成旧格式；创建约束见 [AGENTS.md](../AGENTS.md)。
+ 
+-最后核对：2026-10-30；源码 HEAD：`0fa2115e337e7499688e4d0efd50539e34104a6a`，加本轮远程客户端页面模型工作区修改。
++最后核对：2026-11-02；源码 HEAD：`8df8599fc026c424a49e87cc53fb45f6b371f16f`，加本轮持久画布扩展工作区修改。
+ 2.8/1.1 响应式布局已在基线实现；2.9/1.2 的终端与数据位置能力来自本轮工作区修改，不能归于该 HEAD 本身。格式推进时同步更新规范，不把历史版本号作为永久常量。
+ 
+ ## 1. 格式依据与创建入口
+@@ -290,6 +290,13 @@ SDK 1.2.0 新增 `spacer` 空白块组件。`props.spacerMode` 为 `fixed`（默
+ 所在行。旧grid使用行列跨度固定占位。空白块无绑定、动作、子组件或采集来源，运行端透明。
+ 工程仍为2.9/页面1.2；终端预览宽高属于Designer查看状态，不写入页面模型。
+ 
++SDK 1.3.0 增加持久向上扩展：响应式根页面可保存 `canvasTop`（-32768..0，默认0），
++根组件可保存 `responsive.canvasOffsetY`（同范围、默认0，且不得小于页面canvasTop）。
++两个默认值均省略；原有工程无需批量改写。偏移只改变组件相对响应式流位置的纵坐标，
++宽度、换行及原流占位保留；最终显示纵坐标为 `flowY + canvasOffsetY - canvasTop`。
++边界和偏移参与保存、撤销重做及两端发布；嵌套组件、旧网格不接受非零偏移。
++拖动预览/缩放/查看平移仍不写入工程。规则与编辑操作见[响应式合同](development/responsive-layout-contract.md)。
++
+ 新页面使用有顺序的响应式布局；Qt 编辑预览和运行页面都随窗口宽度重新排版，
+ 组件 ID、数据绑定、导航动作与查询来源不因换行而变化。基础语义也供未来 Web renderer 使用，
+ 详见[响应式布局合同](development/responsive-layout-contract.md)。这次版本升级不代表 Web 发布、远程历史来源或新增 RPC 已实现。
+diff --git a/docs/testing/2026-11-02-designer-space-dot-acceptance.md b/docs/testing/2026-11-02-designer-space-dot-acceptance.md
+index a14fd9ca..42c0f62b 100644
+--- a/docs/testing/2026-11-02-designer-space-dot-acceptance.md
++++ b/docs/testing/2026-11-02-designer-space-dot-acceptance.md
+@@ -14,16 +14,21 @@ Designer工作区 `D:/jsdfhasuh/documents/my_project/emo_master_designer`，运
+ 
+ ## 真实鼠标检查
+ 
+-1. 打开短页面，确认默认跟随窗口，页面居中、外边距紧凑、首行无64px空带。展开/收起工具区和属性面板，确认入口在内容外，不推动组件重排。
++1. 打开短页面，确认默认跟随窗口，页面居中、外边距紧凑、首行无64px空带。工具区/属性面板与流程设计采用相同浮动交互：默认左上/右上，收起仍保留标题条，点击标题展开，关闭按钮或Esc收起；可拖动标题条并记住本机位置。底部预览工具栏没有重复面板入口；面板不参与页面内容布局，展开/收起不推动组件重排或改变缩放。
++   选中“页面导航”，确认属性中的标题、位置与大小紧凑衔接，没有隐藏字段留下的大段空白；依次切换普通组件、容器和页面属性，确认排列设置与组件尺寸按需显示，底部“应用修改”仍可用。
++   选中组内控件，顶部应显示“所属组：组名”和“选择父组”；点击后外框选中整组，“位置与大小”出现排列、对齐、间距、组内等宽。嵌套容器可逐级上选，根组件按钮为“选择页面”，进入页面属性后不显示无目标的父级行。未命名组显示“未命名容器”，长名称悬停可查看。修改组内等宽/间距后应用，核对作用于组且可一次撤销。只切换选择不增加历史或重置缩放；合法未应用输入按原规则保存，非法输入保留原选择和内容供修正。
+ 2. 调整窗口，确认自动排版；手动缩放并平移，再选择控件、应用属性、撤销重做，视图不被重置。点击适应画布及Home恢复适配。
+-3. 切换空页面、短页面、长页面。只有实际溢出方向出现滚动条；用真实鼠标拖滑块及滚轮滚动，确认条出现/消失不挤动内容。
++3. 默认跟随窗口模式切换空页面、短页面、长页面，并点击“适应画布”：页面按完整内容边界等比缩放并居中，最底部组件完整可见，不出现整页内部横/纵滚动条。滚轮放大后拖动画布空白处，确认可到达底部；普通选中/属性应用/刷新不反复缩放。切固定终端或打开独立预览窗口后，实际溢出方向仍显示滚动条；用真实鼠标拖滑块及滚轮滚动，确认条出现/消失不挤动内容。再切回跟随窗口时无残留滚动偏移。
+ 4. 切固定终端，逐一使用360×640、768×1024、1280×720、1920×1080。截图记录设置值、显示缩放和页面。调整Designer窗口只缩放显示，换行和溢出不因窗口大小改变。
+ 5. 在75%、100%、150%画布缩放下，拖动控件及嵌套容器尺寸跨越滚动阈值；检查吸附开关、候选轮廓与落点、Esc、一次撤销/重做；拖动时改变窗口，确认自动适配延后。
++   单选“页面导航”等组件，分别将鼠标放在四边非手柄中心位置及四角：边缘显示水平/垂直双向箭头，角点显示对应对角箭头，悬停有尺寸调整提示。左右拖边只改宽度，上下拖边只改高度，角点可改两者；垂直于该边可调整方向的移动不产生尺寸提交。组件位置继续按响应式规则排列。确认标题处和内部仍可移动组件，并额外在50%画布缩放下检查标题靠左位置不会误触尺寸调整。单击不拖动不增加历史；有未应用标题时再开始边缘尺寸调整，Esc只取消本次尺寸变化，已接受标题保留且八个手柄可继续使用。多选后不出现单组件尺寸手柄。
++   在开启“组内组件等宽”的并排组和自动换行组中（分别检查根页面与嵌套容器），把一个文字控件横向拖到180逻辑像素：关闭吸附时，候选边框、松手后的实际控件、保存重开后的宽度均应约180；不是仅属性中的“期望宽度”改变。本组等宽随这次操作取消，其他组件原属性不改，可继续分配剩余宽度。检查吸附开启时只产生阈值内的吸附修正。Esc或拖回起点应保留原等宽和历史，一次撤销/重做同时恢复尺寸和等宽。再将同一行另一控件设为较高，只拖当前控件的底边：应能单独改高，组等宽与宽度不变；拖到小于自然内容所需高度时，提示真实布局高度和内容限制，避免用无效期望数值表示成功。松手后状态提示应为“尺寸已应用”，取消为“已取消尺寸调整”。
++   响应式页面滚动到顶部，先将标题放为第一项，再继续往原页面上方拖动约80逻辑像素：应出现实际扩展的画布和落点轮廓，标题松手后确实高于原边界，其他控件不被一起上移。橙色虚线标原位置，绿色实线标目标，灰色虚线只标受影响组件的新位置；拖动图像半透明，无“放在页面最前”文字辅助条。停在编辑区顶边，应持续向上拓展查看和目标范围。分别松手、Esc、移出画布取消，以及回到嵌套容器后投放，核对一次有效操作一次历史、落点与预览一致；取消恢复视图。撤销/重做同时恢复标题位置与边界；保存关闭再打开仍保留扩展。再将标题移回正常流、复制或编组，确认页面扩展范围仍保留。组件库拖入标题也能放在扩展区。分别在跟随窗口与固定768×1024模式操作，后者终端宽高不变，扩展增加真实滚动内容。
+ 6. 拖入空白块，检查默认24×24及虚线提示。调整固定大小，切弹性，检查横排/竖排/换行和两个不同权重的弹性块。可用空间变小时不挤压正常内容。
+ 7. 检查空白块复制、删除、多选、编组/取消编组、跨容器移动、撤销重做和保存重开。预览窗口中无虚线/标题/背景/未绑定文字，保留占位。
+ 8. 使用旧头盔工程的临时副本检查空间与滚动、旧尺寸调整和固定空白块。旧grid弹性条件须明确；Ctrl多选和grid转响应式不是本轮验收项。
+ 9. 在Windows100%与150%显示缩放下复测步骤1、4、5。区分画布缩放与Windows显示缩放。
+-10. Web使用新版SDK与相同空白块页面包，检查可导入，固定/弹性/换行/权重以及透明占位；保留浏览器截图。
++10. Web使用SDK1.3.0与相同空白块/扩展页面包，检查可导入，固定/弹性/换行/权重以及透明占位；标题上移和扩展范围保留，窗口变窄仍按响应式宽度排列，正常兄弟组件保留流占位。保留浏览器截图。
+ 
+ ## 结果记录
+ 
+diff --git a/docs/testing/2026-11-02-designer-space/README.md b/docs/testing/2026-11-02-designer-space/README.md
+index 096ab81b..fc17646d 100644
+--- a/docs/testing/2026-11-02-designer-space/README.md
++++ b/docs/testing/2026-11-02-designer-space/README.md
+@@ -1,5 +1,9 @@
+ # 页面空间、终端预览与空白块：实施与验证
+ 
++后续默认编辑交互已更新：跟随窗口采用完整内容画布，“适应画布”显示整页且无整页内部滚动条；
++固定终端/独立预览保留真实滚动。当前结果见[整页适配验证](../2026-11-02-designer-fit-whole-page/README.md)，
++下文原浮动滚动条交付记录保留历史归属。
++
+ 日期2026-11-02。Designer功能提交 `32c2b4efb7ba932636e2145fd423e9b2b484b902`，基线 `46af63de`；Web功能提交 `06ebe51e97e48d355949eeaf503be4a7c21ff18f`，基线 `b1ca6d38`。两端使用同一个SDK1.2.0，无开发分支互相合并或主分支合并，无部署。
+ 
+ ## 交付行为
+@@ -61,3 +65,32 @@
+ 生成器从WorkflowStore最新默认结构创建，检查2.9/1.2、保存重读及编译；本轮另经MainWindow实际打开入口验证。Dot完整步骤见[验收清单](../2026-11-02-designer-space-dot-acceptance.md)。
+ 
+ 真实Windows100/150%显示缩放与真实鼠标拖动、冻结包验收尚未执行。当前头盔文件本轮读取已是2.9/1.2响应式页面，因此临时副本结果不冒充旧grid验收；旧网格使用原有15项几何/嵌套尺寸测试验证。没有修改原工程、访问相机/PLC或部署。
++
++## 后续修正：面板收起后保留画布顶部标题条
++
++用户截图确认页面面板应与流程设计采用相同浮动交互。原实现虽复用 `FloatingPanel`，但页面启用了 `externalToggle`，收起时隐藏整个面板，再通过底部预览工具栏按钮展开；入口位置不符合该要求。
++
++在 Designer `8df8599fc026c424a49e87cc53fb45f6b371f16f` 后的工作区修改中，删除这项页面专用分支和底部重复入口，恢复共享组件原有的收起行为。工具区/属性面板默认分别位于画布左上/右上，收起保留可拖动标题条；保留本机位置记忆、页面12px内边距以及独立的底部终端预览控件。流程面板原有行为不变。
++
++扩展已有视口回归，检查收起可见、默认顶边/侧边位置、真实子控件命中、点击展开和关闭，以及页面几何、显示变换、payload和历史不变。修前该回归在“收起后仍可见”断言失败，修后页面视口、浮动工作区、组件库以及流程运行面板/工具区相关测试共 **55 passed**；定向 Ruff、`git diff --check` 通过。本机证据为 `build/panel-header-before.xml`、`build/panel-header-after.xml`，Qt离屏渲染截图为 `build/panel-header-collapsed.png`。测试和截图均使用临时本机设置及模拟客户端，不操作正在使用的 Designer 窗口。此次结果不替代真实桌面鼠标与Windows显示缩放验收，前文历史测试结果保持原记录。
++
++## 后续修正：属性面板隐藏字段不再留下空带
++
++同一工作区继续修正用户提供的“页面导航”属性面板截图问题。Qt 5 的 `QFormLayout` 在整行控件隐藏后仍保留行间距：内容分组内的多条隐藏属性、位置分组内的旧网格属性，以及响应式表单内隐藏的容器排列属性累加，产生大段留白并增加滚动距离。
++
++分组内已有字段包装改用顶部对齐的纵向布局；外层隐藏分组不保留行间距；响应式排列设置与组件尺寸各自整体显示/隐藏。保持现有控件实例、属性读写和底部应用按钮。在相同字体、面板尺寸的Qt离屏复现中，“宽度方式”标签由面板内y=422移至y=230；滚动范围由790减少至586。
++
++新增常规/小窗口回归，在普通组件、容器、页面属性间切换，检查首个可见字段贴顶、分组无空带、无横向溢出及payload/历史不变。修前 **2 failed**，修后页面外观、浮动工作区、待应用属性、响应式编辑、画布视口相关测试共 **73 passed**；定向 Ruff和`git diff --check`通过。证据在本机 `build/property-spacing-before.xml`、`build/property-spacing-after.xml`，前后离屏截图为 `build/property-spacing-before.png`、`build/property-spacing-after.png`。未执行真实桌面鼠标复测，不替代Dot验收。
++
++## 后续修正：页面顶部投放与原位置/目标区分
++
++**历史阶段说明：下述临时辅助区方案已被用户后续确认的持久画布扩展取代。** 当前实现与257项回归、
++两端验收结果见[持久向上扩展验证](../2026-11-02-designer-canvas-expansion/README.md)。以下112项结果保留历史归属。
++
++用户截图暴露两条实际路径：鼠标离开页面代理控件后，上方灰色区域未继续参与投放；原有蓝色选中框、蓝色目标框/插入线混在一起，预览顶部说明条还会盖住第一项落点。增加画布视口入口，复用原有候选求解及提交逻辑，允许响应式页面滚动到顶部时，在上方灰色区域明确插到页面第一项。
++
++顶部辅助区高48逻辑屏幕像素；空间不足时一次性临时平移查看位置，为页面视口上方保留空间，不改变页面/组件尺寸、画布缩放或真实排版。结束、Esc或离开画布后恢复查看位置。橙色虚线标原位置，绿色实线标目标和插入线，灰色虚线标其他受影响组件的新位置；拖动时暂时隐藏普通蓝色选择装饰，拖动图像60%不透明。提示改成浮层，避免原有底部状态文字换行挤小画布；普通尺寸调整继续沿用原来的蓝色预览。
++
++新增10项实际Qt视口事件/像素检查，覆盖75/100/150%缩放下辅助区与候选稳定、提交/取消后视图恢复、源/目标不同颜色线条、组件库拖入与离开取消、移回嵌套容器投放、已在第一项时无效历史不增长。与候选测量、未应用属性、响应式编辑、缩放尺寸调整和画布视口相关回归合计 **112 passed**；定向Ruff和`git diff --check`通过。实际源码为 `8df8599fc026c424a49e87cc53fb45f6b371f16f` 后本地未提交修改，未推送或合并。
++
++本机证据为 `build/drag-feedback-focused.xml`、`build/drag-feedback-regression.xml`、`build/drag-feedback-top.png`。截图使用模拟客户端、临时本机设置和临时内存页面，由Qt离屏渲染；自动化通过视口发送拖放事件，未执行真实Windows鼠标拖动或显示缩放验收。Dot步骤已追加，未操作现场工程或正在使用的Designer窗口。
+diff --git a/packages/emo_panel_protocol/pyproject.toml b/packages/emo_panel_protocol/pyproject.toml
+index ac533c30..eef190e0 100644
+--- a/packages/emo_panel_protocol/pyproject.toml
++++ b/packages/emo_panel_protocol/pyproject.toml
+@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
+ 
+ [project]
+ name = "emo_panel_protocol"
+-version = "1.2.0"
++version = "1.3.0"
+ description = "Shared Runtime RPC, result identities and published panel contract"
+ requires-python = ">=3.10"
+ dependencies = ["grpcio==1.78.0", "protobuf==6.33.6", "pydantic>=2.6"]
+diff --git a/scripts/build_panel_contract.py b/scripts/build_panel_contract.py
+index e2e5f85b..fb03d5c2 100644
+--- a/scripts/build_panel_contract.py
++++ b/scripts/build_panel_contract.py
+@@ -166,8 +166,8 @@ def sampleProject(root):
+             'count': dict(kind='global_variable', variableId='count', resultScopeId='root', expectedType='integer'),
+             'verdict': dict(kind='global_variable', variableId='verdict', resultScopeId='root', expectedType='boolean'),
+         }, pages={
+-            'live': dict(name='Live demo', targets=['desktop', 'web'], components=[
+-                dict(componentId='title', type='page_title'),
++            'live': dict(name='Live demo', targets=['desktop', 'web'], canvasTop=-96, components=[
++                dict(componentId='title', type='page_title', responsive=dict(canvasOffsetY=-96)),
+                 dict(componentId='tabs', type='page_navigation'),
+                 dict(componentId='clock', type='clock'),
+                 dict(componentId='note', type='text', props=dict(text='Synthetic fixture data; no device connected')),
+diff --git a/scripts/validate_flow_edge_readability.py b/scripts/validate_flow_edge_readability.py
+index f00383ce..efbcc8c9 100644
+--- a/scripts/validate_flow_edge_readability.py
++++ b/scripts/validate_flow_edge_readability.py
+@@ -5,7 +5,6 @@ import argparse
+ import json
+ import os
+ from pathlib import Path
+-from statistics import median
+ import sys
+ from time import perf_counter
+ import importlib.util
+@@ -20,6 +19,7 @@ from emo_master.apps.designer.ui.flow_scene import (  # noqa: E402
+     FlowEdgeViewModel, FlowNodeViewModel, FlowScene,
+ )
+ from emo_master.apps.designer.ui.flow_routing import Route, simplify  # noqa: E402
++from emo_master.apps.designer.services.performance_probe import durationStatistics as statistics  # noqa: E402
+ 
+ 
+ def populate(scene, stress=False):
+@@ -76,11 +76,6 @@ def measure(scene, app, keys):
+     return statistics(durations)
+ 
+ 
+-def statistics(durations):
+-    return {"samples": len(durations), "medianMs": median(durations),
+-            "p95Ms": sorted(durations)[int(.95 * (len(durations) - 1))]}
+-
+-
+ def measuredView(scene, app, keys, output, name):
+     view = QGraphicsView(scene)
+     view.setRenderHints(QPainter.Antialiasing | QPainter.TextAntialiasing)
+diff --git a/src/emo_master/apps/designer/page_designer/chrome.py b/src/emo_master/apps/designer/page_designer/chrome.py
+index e5365e47..6527ae4f 100644
+--- a/src/emo_master/apps/designer/page_designer/chrome.py
++++ b/src/emo_master/apps/designer/page_designer/chrome.py
+@@ -111,6 +111,10 @@ class WorkspaceChrome(QObject):
+         self.fit = self.action('适应画布', lambda: self.c.editor.renderer.fitToAvailableScreen() if self.c.pageActive() else None)
+         self.menus['视图'].addAction(self.fit)
+         self.pageActions.append(self.fit)
++        from emo_master.apps.designer.ui.performance_probe import PerformanceProbeController
++        self.performanceProbe = PerformanceProbeController(coordinator)
++        self.performanceProbeAction = self.action('Designer 性能探针…', self.performanceProbe.show)
++        self.menus['视图'].addAction(self.performanceProbeAction)
+         self.publishPages = self.action('发布工作页面…', self.publish)
+         self.menus['Runtime'].addSeparator()
+         self.menus['Runtime'].addAction(self.publishPages)
+diff --git a/src/emo_master/apps/designer/page_designer/coordinator.py b/src/emo_master/apps/designer/page_designer/coordinator.py
+index bdd0b42b..743b85b1 100644
+--- a/src/emo_master/apps/designer/page_designer/coordinator.py
++++ b/src/emo_master/apps/designer/page_designer/coordinator.py
+@@ -469,6 +469,7 @@ class PageCoordinator:
+                     temporary.unlink(missing_ok=True)
+ 
+     def shutdown(self):
++        self.chrome.performanceProbe.shutdown()
+         self.closeMonitor()
+         if self.devices:
+             self.devices.shutdown()
+diff --git a/src/emo_master/apps/designer/page_designer/editing.py b/src/emo_master/apps/designer/page_designer/editing.py
+index a93b3200..e2d30326 100644
+--- a/src/emo_master/apps/designer/page_designer/editing.py
++++ b/src/emo_master/apps/designer/page_designer/editing.py
+@@ -214,6 +214,7 @@ class PageCommands:
+ 
+     def copy(self, pageId, componentId):
+         copied = _component(self.session.presentation.snapshot(), pageId, componentId).model_copy(deep=True)
++        copied.responsive.canvasOffsetY = 0
+         _copyComponentIds([copied])
+         # Copy into an explicit free root row, keeping all original bindings immutable.
+         def edit(p):
+diff --git a/src/emo_master/apps/designer/page_designer/page_canvas.py b/src/emo_master/apps/designer/page_designer/page_canvas.py
+index f79200b5..f4f4e467 100644
+--- a/src/emo_master/apps/designer/page_designer/page_canvas.py
++++ b/src/emo_master/apps/designer/page_designer/page_canvas.py
+@@ -1,9 +1,12 @@
+ """Graphics navigation around the same native page used by preview and runtime."""
+-from PySide2.QtCore import QPoint, QPointF, QSize, Qt, QTimer
++import json
++
++from PySide2.QtCore import QEvent, QPoint, QPointF, QRect, QSize, Qt, QTimer
+ from PySide2.QtGui import QColor
+ from PySide2.QtWidgets import QGraphicsItem, QGraphicsScene, QLayout, QRubberBand
+ 
+ from emo_master.apps.designer.ui.designer_graphics_view import DesignerGraphicsView
++from emo_master.ui.presentation.page_scroll import pageContentSize
+ 
+ 
+ class PageCanvas(DesignerGraphicsView):
+@@ -17,6 +20,10 @@ class PageCanvas(DesignerGraphicsView):
+         self._lastPageId = None
+         self._lastViewportSize = QSize()
+         self._rubberStart = None
++        self.componentDragActive = False
++        self._dropCenter = None
++        self._expansionPayload = None
++        self._expansionPoint = QPoint()
+         scene = QGraphicsScene(workspace)
+         super().__init__(scene)
+         self.setObjectName('pageCanvas')
+@@ -26,6 +33,9 @@ class PageCanvas(DesignerGraphicsView):
+         renderer.layout().setSizeConstraint(QLayout.SetNoConstraint)
+         renderer.setMinimumSize(0, 0)
+         self.rubber = QRubberBand(QRubberBand.Rectangle, self.viewport())
++        self.expansionTimer = QTimer(self)
++        self.expansionTimer.setInterval(16)
++        self.expansionTimer.timeout.connect(self.extendAtEdge)
+         self.sizeTimer = QTimer(self)
+         self.sizeTimer.setSingleShot(True)
+         self.sizeTimer.timeout.connect(self.updatePageSize)
+@@ -35,7 +45,7 @@ class PageCanvas(DesignerGraphicsView):
+         tools = getattr(self.workspace, 'tools', None)
+         responsive = getattr(tools, 'responsive', None)
+         selection = getattr(tools, 'selection', None)
+-        return bool(self._rubberStart is not None or self._isPanning
++        return bool(self._rubberStart is not None or self._isPanning or self.componentDragActive
+             or (tools and tools.dragStart)
+             or (responsive and (responsive.resize or responsive.pointer or responsive.preview))
+             or (selection and selection.active))
+@@ -50,8 +60,9 @@ class PageCanvas(DesignerGraphicsView):
+         self._deferredSize = False
+         self._sizing = True
+         renderer = self.workspace.renderer
+-        previous = QSize(renderer.size())
+         pageId = getattr(self.workspace, 'pageId', None)
++        page = renderer.config.pages.get(pageId)
++        canvasTop = page.canvasTop if page is not None else 0
+         changedPage = pageId != self._lastPageId
+         viewportChanged = self.viewport().size() != self._lastViewportSize
+         self._lastViewportSize = QSize(self.viewport().size())
+@@ -66,6 +77,7 @@ class PageCanvas(DesignerGraphicsView):
+                 scroll = renderer.pages.get(pageId)
+                 if scroll is not None:
+                     scroll.setMinimumSize(0, 0)
++                    scroll.setCanvasExtension(-canvasTop if self.previewWidth else 0)
+                     extra = renderer.size() - scroll.viewport().size()
+                 else:
+                     margins = renderer.layout().contentsMargins()
+@@ -74,19 +86,31 @@ class PageCanvas(DesignerGraphicsView):
+                     target = QSize(self.previewWidth, self.previewHeight or 720) + extra
+                 else:
+                     target = QSize(max(1, self.viewport().width() - 16),
+-                                   max(1, self.viewport().height() - 16))
++                                   max(1, self.viewport().height() - 16 - canvasTop))
++                    if scroll is not None:
++                        target = pageContentSize(scroll.widget().layout(), self.contentMinimumSize(canvasTop)) + extra
+                 renderer.setMinimumSize(0, 0)
+                 renderer.setMaximumSize(target)
+                 renderer.resize(target)
+             renderer.layout().activate()
+             renderer.stack.layout().activate()
+-            self.proxy.setPos(8, 8)
++            self.proxy.setPos(8, 8 + canvasTop)
+             self._ensureNavigationBounds()
+         finally:
+             self._sizing = False
+-        if self.autoFit and (changedPage or viewportChanged or renderer.size() != previous):
++        if self.autoFit and (changedPage or viewportChanged):
+             self._requestFit()
+ 
++    def contentMinimumSize(self, canvasTop):
++        """Stable layout basis for both live content and disposable drag candidates."""
++        if self.previewWidth:
++            return QSize(self.previewWidth, (self.previewHeight or 720) - canvasTop)
++        renderer = self.workspace.renderer
++        scroll = renderer.pages[self.workspace.pageId]
++        extra = renderer.size() - scroll.viewport().size()
++        return QSize(max(1, self.viewport().width() - 16 - extra.width()),
++                     max(1, self.viewport().height() - 16 - extra.height() - canvasTop))
++
+     def setPreviewSize(self, width=0, height=0):
+         self.previewWidth = int(width)
+         self.previewHeight = int(height) if width else 0
+@@ -153,6 +177,119 @@ class PageCanvas(DesignerGraphicsView):
+             return None, local
+         return renderer.childAt(local) or renderer, local
+ 
++    def pageViewportRect(self):
++        scroll = self.workspace.renderer.pages[self.workspace.pageId]
++        origin = scroll.viewport().mapTo(self.workspace.renderer, QPoint())
++        first = self.mapFromScene(self.proxy.mapToScene(QPointF(origin)))
++        last = self.mapFromScene(self.proxy.mapToScene(QPointF(origin + scroll.viewport().rect().bottomRight())))
++        return QRect(first, last)
++
++    def rendererRectOnViewport(self, rect):
++        first = self.mapFromScene(self.proxy.mapToScene(QPointF(rect.topLeft())))
++        last = self.mapFromScene(self.proxy.mapToScene(QPointF(rect.bottomRight())))
++        return QRect(first, last)
++
++    def expansionOffset(self, payload, point):
++        renderer = self.workspace.renderer
++        page = renderer.config.pages[self.workspace.pageId]
++        root = renderer.layoutHosts[self.workspace.pageId][None]
++        local = root.mapFrom(renderer, self.proxy.mapFromScene(self.mapToScene(point)).toPoint())
++        hotspot = payload.get('hotspot', [0, 0])
++        offset = local.y() - hotspot[1] + page.canvasTop - root.layout().contentsMargins().top()
++        return max(-32768, min(0, offset))
++
++    def beginExpansion(self, payload, point):
++        if self._dropCenter is None:
++            self._dropCenter = self._viewportCenter()
++        self._expansionPayload, self._expansionPoint = payload, QPoint(point)
++        if point.y() < 32:
++            self.expansionTimer.start()
++        else:
++            self.expansionTimer.stop()
++
++    def extendAtEdge(self):
++        if not self.componentDragActive or self._expansionPayload is None:
++            self.expansionTimer.stop()
++            return
++        if self.expansionOffset(self._expansionPayload, self._expansionPoint) <= -32768:
++            self.expansionTimer.stop()
++            return
++        # Reuse the flow canvas's growing navigation bounds, without changing
++        # logical widget sizes while the native drag owns their receivers.
++        self.centerOn(self._viewportCenter() - QPointF(0, 6 / self.getZoomFactor()))
++        self.workspace.tools.responsive.drop(self._expansionPayload, self.workspace.renderer, QPoint(),
++            preview=True, canvasOffset=self.expansionOffset(self._expansionPayload, self._expansionPoint))
++
++    def commitExpansion(self):
++        self._dropCenter = None
++        self.autoFit = False
++        self._pendingFit = None
++        self._fitTimer.stop()
++
++    def finishDragAssist(self):
++        self.componentDragActive = False
++        self.expansionTimer.stop()
++        self._expansionPayload = None
++        if self._dropCenter is not None:
++            center, self._dropCenter = self._dropCenter, None
++            self.centerOn(center)
++
++    def routeComponentDrag(self, event):
++        from .tools import MIME
++        tools = getattr(self.workspace, 'tools', None)
++        if (tools is None or not self.workspace.renderer.editing or not tools.responsive.enabled()
++                or not event.mimeData().hasFormat(MIME)):
++            return False
++        payload = json.loads(bytes(event.mimeData().data(MIME)))
++        if 'choice' in payload:
++            return False
++        self.componentDragActive = True
++        rect, point = self.pageViewportRect(), event.pos()
++        scroll = self.workspace.renderer.pages[self.workspace.pageId]
++        offset = self.expansionOffset(payload, point)
++        expanding = (scroll.verticalScrollBar().value() == 0
++                     and rect.left() <= point.x() <= rect.right() and offset < 0)
++        if expanding:
++            self.beginExpansion(payload, point)
++            widget, local = self.workspace.renderer, QPoint()
++        else:
++            self.expansionTimer.stop()
++            self._expansionPayload = None
++            widget, local = self.rendererAt(point)
++            if widget is None:
++                tools.responsive.clearPreview()
++                # Accept entry into gray canvas so subsequent moves can reach
++                # the page or its expanded upper canvas without leaving this QWidget.
++                if event.type() == QEvent.DragEnter:
++                    event.acceptProposedAction()
++                else:
++                    event.ignore()
++                if event.type() == QEvent.Drop:
++                    tools.responsive.cancel()
++                return True
++            local = widget.mapFrom(self.workspace.renderer, local)
++        tools.responsive.handleDropEvent(event, payload, widget, local, canvasOffset=offset if expanding else None)
++        return True
++
++    def dragEnterEvent(self, event):
++        if not self.routeComponentDrag(event):
++            super().dragEnterEvent(event)
++
++    def dragMoveEvent(self, event):
++        if not self.routeComponentDrag(event):
++            super().dragMoveEvent(event)
++
++    def dropEvent(self, event):
++        if not self.routeComponentDrag(event):
++            super().dropEvent(event)
++
++    def dragLeaveEvent(self, event):
++        if self.componentDragActive:
++            self.workspace.tools.responsive.cancel()
++            event.accept()
++        else:
++            super().dragLeaveEvent(event)
++
+     def beginPanAt(self, x, y):
+         widget, _point = self.rendererAt(QPoint(int(x), int(y)))
+         tools = getattr(self.workspace, 'tools', None)
+diff --git a/src/emo_master/apps/designer/page_designer/property_panel.py b/src/emo_master/apps/designer/page_designer/property_panel.py
+index 86493528..ed7667fe 100644
+--- a/src/emo_master/apps/designer/page_designer/property_panel.py
++++ b/src/emo_master/apps/designer/page_designer/property_panel.py
+@@ -61,6 +61,9 @@ class PropertyGroups:
+     def __init__(self, tools, panel):
+         self.tools = tools
+         tools.form.setFormAlignment(Qt.AlignTop)
++        # Qt 5 keeps form row spacing even when every widget in a row is hidden.
++        # Group margins provide separation; hidden groups must take no space.
++        tools.form.setVerticalSpacing(0)
+         rows = []
+         for index in range(tools.form.rowCount()):
+             label = tools.form.itemAt(index, QFormLayout.LabelRole)
+@@ -93,10 +96,8 @@ class PropertyGroups:
+                 box = QGroupBox(group)
+                 box.setObjectName('propertyGroup')
+                 box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+-                form = QFormLayout(box)
+-                form.setFormAlignment(Qt.AlignTop)
+-                form.setRowWrapPolicy(QFormLayout.WrapAllRows)
+-                form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
++                form = QVBoxLayout(box)
++                form.setAlignment(Qt.AlignTop)
+                 self.groups[group] = (box, form)
+             form = self.groups[group][1]
+             wrapper = QGroupBox()
+@@ -118,10 +119,10 @@ class PropertyGroups:
+             if pairKey:
+                 if pairKey not in self.pairs:
+                     self.pairs[pairKey] = FieldPair()
+-                    form.addRow(self.pairs[pairKey])
++                    form.addWidget(self.pairs[pairKey])
+                 self.pairs[pairKey].add(wrapper)
+             else:
+-                form.addRow(wrapper)
++                form.addWidget(wrapper)
+             if widget in tools.bindingButtons:
+                 widget.setFlat(True)
+             self.rows.append((wrapper, widget, name, group))
+diff --git a/src/emo_master/apps/designer/page_designer/responsive_editing.py b/src/emo_master/apps/designer/page_designer/responsive_editing.py
+index af76f69a..c4515aa5 100644
+--- a/src/emo_master/apps/designer/page_designer/responsive_editing.py
++++ b/src/emo_master/apps/designer/page_designer/responsive_editing.py
+@@ -48,7 +48,7 @@ def selectionRoots(presentation, pageId, keys):
+ 
+ 
+ def placeComponents(p, pageId, *, keys=(), kind=None, parentId=None, index=None,
+-                    besideId=None, direction=None, before=False):
++                    besideId=None, direction=None, before=False, canvasTop=None):
+     """Apply one placement to a caller-owned draft, shared by preview and commit."""
+     selected = []
+     items = selectionRoots(p, pageId, keys)
+@@ -57,6 +57,10 @@ def placeComponents(p, pageId, *, keys=(), kind=None, parentId=None, index=None,
+             props=Props(fontSize=24, fontWeight='bold') if kind == 'page_title' else Props())]
+     if not items:
+         return selected
++    for item in items:
++        item.responsive.canvasOffsetY = canvasTop if canvasTop is not None else 0
++    if canvasTop is not None:
++        p.pages[pageId].canvasTop = min(p.pages[pageId].canvasTop, canvasTop)
+     subtree = {c.componentId for item in items for c in walkComponents([item])}
+     if parentId in subtree or besideId in subtree:
+         raise ValueError('容器不能移入自身或子组件')
+@@ -75,6 +79,7 @@ def placeComponents(p, pageId, *, keys=(), kind=None, parentId=None, index=None,
+             destination = siblings
+             position += 0 if before else 1
+         else:
++            target.responsive.canvasOffsetY = 0
+             members = [*items, target] if before else [target, *items]
+             group = Component(componentId=str(uuid4()), type='container',
+                               grid=ResponsiveLayout(direction=direction), children=members)
+@@ -111,6 +116,7 @@ class ResponsiveCommands:
+             siblings = childrenFor(p, pageId, parentId)
+             position = min((i for i, child in enumerate(siblings) if child in items), default=len(siblings))
+             for item in items:
++                item.responsive.canvasOffsetY = 0
+                 _parent, source, old = parentOf(p, pageId, item.componentId)
+                 source.pop(old)
+             group = Component(componentId=groupId, type='container',
+diff --git a/src/emo_master/apps/designer/page_designer/responsive_preview.py b/src/emo_master/apps/designer/page_designer/responsive_preview.py
+index 5a5c91e3..a7f50b62 100644
+--- a/src/emo_master/apps/designer/page_designer/responsive_preview.py
++++ b/src/emo_master/apps/designer/page_designer/responsive_preview.py
+@@ -6,6 +6,7 @@ from emo_master.core.presentation.models import ResponsiveLayout
+ from emo_master.ui.presentation.container_title import ContainerTitle
+ from emo_master.ui.presentation.renderer import appearanceStyle
+ from emo_master.ui.presentation.responsive_layout import ResponsiveWidgetLayout
++from emo_master.ui.presentation.page_scroll import pageContentSize
+ 
+ 
+ class MeasuredItem(QLayoutItem):
+@@ -46,7 +47,7 @@ class MeasuredItem(QLayoutItem):
+         return QRect(self.rect)
+ 
+ 
+-def candidateGeometry(renderer, pageId, candidatePage, prototypes=None):
++def candidateGeometry(renderer, pageId, candidatePage, prototypes=None, *, minimumSize):
+     """Return (component rects in root-host coordinates, candidate root QSize).
+ 
+     Existing leaf controls contribute their native QWidgetItem measurements.
+@@ -71,9 +72,9 @@ def candidateGeometry(renderer, pageId, candidatePage, prototypes=None):
+     containers = {}
+     borrowed = {}
+ 
+-    def populate(host, components, rules):
++    def populate(host, components, rules, *, canvasTop=0):
+         responsive = isinstance(rules, ResponsiveLayout)
+-        layout = ResponsiveWidgetLayout(host, rules) if responsive else QGridLayout(host)
++        layout = ResponsiveWidgetLayout(host, rules, canvasTop=canvasTop) if responsive else QGridLayout(host)
+         layout.setSpacing(rules.spacing)
+         if not responsive:
+             layout.setRowStretch(max((c.layout.row + c.layout.rowSpan for c in components), default=0), 1)
+@@ -130,13 +131,10 @@ def candidateGeometry(renderer, pageId, candidatePage, prototypes=None):
+             arrange(child)
+ 
+     try:
+-        layout = populate(root, candidatePage.components, candidatePage.layout)
++        layout = populate(root, candidatePage.components, candidatePage.layout, canvasTop=candidatePage.canvasTop)
+         root.ensurePolished()
+         # Floating page scrollbars never take width from the content viewport.
+-        scroll = renderer.pages[pageId]
+-        width = scroll.viewport().width()
+-        height = max(scroll.viewport().height(), layout.heightForWidth(width))
+-        root.resize(QSize(width, height))
++        root.resize(pageContentSize(layout, minimumSize))
+         # Only this disposable shell is shown off-screen. Borrowed item setters
+         # record rectangles and never touch the live controls.
+         root.show()
+diff --git a/src/emo_master/apps/designer/page_designer/responsive_properties.py b/src/emo_master/apps/designer/page_designer/responsive_properties.py
+index c9511399..fc137502 100644
+--- a/src/emo_master/apps/designer/page_designer/responsive_properties.py
++++ b/src/emo_master/apps/designer/page_designer/responsive_properties.py
+@@ -1,5 +1,6 @@
+ """Direct layout choices without exposing implementation row/column coordinates."""
+-from PySide2.QtWidgets import QWidget, QFormLayout, QComboBox, QSpinBox, QDoubleSpinBox, QCheckBox
++from PySide2.QtCore import Qt
++from PySide2.QtWidgets import QWidget, QFormLayout, QVBoxLayout, QComboBox, QSpinBox, QDoubleSpinBox, QCheckBox
+ 
+ from emo_master.core.presentation.models import ResponsiveLayout, ResponsiveItem
+ 
+@@ -7,41 +8,49 @@ from emo_master.core.presentation.models import ResponsiveLayout, ResponsiveItem
+ class ResponsiveProperties(QWidget):
+     def __init__(self):
+         super().__init__()
+-        self.form = QFormLayout(self)
+-        self.form.setContentsMargins(0, 0, 0, 0)
+-        self.form.setRowWrapPolicy(QFormLayout.WrapAllRows)
+-        self.direction = self.combo('排列方式', [('上下排列', 'vertical'), ('并排排列', 'horizontal'), ('自动换行', 'wrap')])
+-        self.alignment = self.combo('组内对齐', [('填满', 'stretch'), ('起始边', 'start'), ('居中', 'center'), ('末尾边', 'end')])
+-        self.justify = self.combo('间隔分配', [('靠前', 'start'), ('居中', 'center'), ('靠后', 'end'), ('等距分布', 'space-between')])
+-        self.spacing = self.spin('组件间距', 0, 128)
++        root = QVBoxLayout(self)
++        root.setContentsMargins(0, 0, 0, 0)
++        root.setAlignment(Qt.AlignTop)
++        self.groupPanel, self.itemPanel = QWidget(), QWidget()
++        self.groupForm, self.itemForm = QFormLayout(self.groupPanel), QFormLayout(self.itemPanel)
++        # Hide each section as a whole so Qt 5 does not retain its hidden rows'
++        # vertical spacing above the remaining visible fields.
++        for panel, form in ((self.groupPanel, self.groupForm), (self.itemPanel, self.itemForm)):
++            root.addWidget(panel)
++            form.setContentsMargins(0, 0, 0, 0)
++            form.setFormAlignment(Qt.AlignTop)
++            form.setRowWrapPolicy(QFormLayout.WrapAllRows)
++            form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
++        group, item = self.groupForm, self.itemForm
++        self.direction = self.combo(group, '排列方式', [('上下排列', 'vertical'), ('并排排列', 'horizontal'), ('自动换行', 'wrap')])
++        self.alignment = self.combo(group, '组内对齐', [('填满', 'stretch'), ('起始边', 'start'), ('居中', 'center'), ('末尾边', 'end')])
++        self.justify = self.combo(group, '间隔分配', [('靠前', 'start'), ('居中', 'center'), ('靠后', 'end'), ('等距分布', 'space-between')])
++        self.spacing = self.spin(group, '组件间距', 0, 128)
+         self.equalWidth = QCheckBox('组内组件等宽')
+-        self.form.addRow(self.equalWidth)
+-        self.groupFields = [self.direction, self.alignment, self.justify, self.spacing, self.equalWidth]
+-        self.widthMode = self.combo('宽度方式', [('自动填满', 'fill'), ('适合内容', 'content')])
+-        self.minWidth = self.spin('最小宽度', 0, 4096)
+-        self.preferredWidth = self.spin('期望宽度（0 为内容宽度）', 0, 8192)
++        group.addRow(self.equalWidth)
++        self.widthMode = self.combo(item, '宽度方式', [('自动填满', 'fill'), ('适合内容', 'content')])
++        self.minWidth = self.spin(item, '最小宽度', 0, 4096)
++        self.preferredWidth = self.spin(item, '期望宽度（0 为内容宽度）', 0, 8192)
+         self.weight = QDoubleSpinBox()
+         self.weight.setRange(0, 100)
+         self.weight.setDecimals(3)
+-        self.form.addRow('宽度比例', self.weight)
+-        self.minHeight = self.spin('最小高度', 0, 4096)
+-        self.preferredHeight = self.spin('期望高度（0 为自动）', 0, 8192)
+-        self.alignSelf = self.combo('组件在组内对齐', [('跟随组设置', 'auto'), ('起始边', 'start'), ('居中', 'center'), ('末尾边', 'end'), ('填满', 'stretch')])
+-        self.itemFields = [self.widthMode, self.minWidth, self.preferredWidth, self.weight,
+-                           self.minHeight, self.preferredHeight, self.alignSelf]
++        item.addRow('宽度比例', self.weight)
++        self.minHeight = self.spin(item, '最小高度', 0, 4096)
++        self.preferredHeight = self.spin(item, '期望高度（0 为自动）', 0, 8192)
++        self.alignSelf = self.combo(item, '组件在组内对齐', [('跟随组设置', 'auto'), ('起始边', 'start'), ('居中', 'center'), ('末尾边', 'end'), ('填满', 'stretch')])
+         self.load(None, None)
+ 
+-    def combo(self, title, choices):
++    def combo(self, form, title, choices):
+         widget = QComboBox()
+         for label, value in choices:
+             widget.addItem(label, value)
+-        self.form.addRow(title, widget)
++        form.addRow(title, widget)
+         return widget
+ 
+-    def spin(self, title, minimum, maximum):
++    def spin(self, form, title, minimum, maximum):
+         widget = QSpinBox()
+         widget.setRange(minimum, maximum)
+-        self.form.addRow(title, widget)
++        form.addRow(title, widget)
+         return widget
+ 
+     def load(self, layout, item):
+@@ -53,24 +62,16 @@ class ResponsiveProperties(QWidget):
+         self.spacing.setValue(rules.spacing)
+         self.equalWidth.setChecked(rules.equalWidth)
+         item = item or ResponsiveItem()
++        self.canvasOffsetY = item.canvasOffsetY
+         self.widthMode.setCurrentIndex(self.widthMode.findData(item.width))
+         self.alignSelf.setCurrentIndex(self.alignSelf.findData(item.alignSelf))
+         for name in ('minWidth', 'preferredWidth', 'weight', 'minHeight', 'preferredHeight'):
+             getattr(self, name).setValue(getattr(item, name))
+-        for widget in self.groupFields:
+-            widget.setVisible(layout is not None)
+-            label = self.form.labelForField(widget)
+-            if label:
+-                label.setVisible(layout is not None)
+-        for widget in self.itemFields:
+-            widget.setVisible(self.parentWidget() is not None)  # refined by setItemVisible
++        self.groupPanel.setVisible(layout is not None)
++        self.itemPanel.setVisible(self.parentWidget() is not None)  # refined by setItemVisible
+ 
+     def setItemVisible(self, visible):
+-        for widget in self.itemFields:
+-            widget.setVisible(visible)
+-            label = self.form.labelForField(widget)
+-            if label:
+-                label.setVisible(visible)
++        self.itemPanel.setVisible(visible)
+ 
+     def layoutPayload(self):
+         return ResponsiveLayout(direction=self.direction.currentData(), alignment=self.alignment.currentData(),
+@@ -78,6 +79,7 @@ class ResponsiveProperties(QWidget):
+ 
+     def itemPayload(self):
+         return ResponsiveItem(width=self.widthMode.currentData(), alignSelf=self.alignSelf.currentData(),
++            canvasOffsetY=self.canvasOffsetY,
+             **{name: getattr(self, name).value() for name in ('minWidth', 'preferredWidth', 'weight', 'minHeight', 'preferredHeight')})
+ 
+     def state(self):
+diff --git a/src/emo_master/apps/designer/page_designer/responsive_tools.py b/src/emo_master/apps/designer/page_designer/responsive_tools.py
+index a14778b9..e453f1cf 100644
+--- a/src/emo_master/apps/designer/page_designer/responsive_tools.py
++++ b/src/emo_master/apps/designer/page_designer/responsive_tools.py
+@@ -2,7 +2,7 @@
+ import json
+ 
+ from PySide2.QtCore import QObject, QEvent, QPoint, QRect, QRectF, QSize, Qt
+-from PySide2.QtGui import QColor, QDrag, QPainter, QPen
++from PySide2.QtGui import QColor, QDrag, QPainter, QPen, QPixmap
+ from PySide2.QtWidgets import QApplication, QWidget
+ from shiboken2 import isValid
+ 
+@@ -21,44 +21,82 @@ class DropOutline(QWidget):
+         self.message = ''
+         self.placements = {}
+         self.moving = set()
++        self.origins = {}
++        self.dragPreview = False
++        self.extension = QRect()
+ 
+     def paintEvent(self, event):
+         painter = QPainter(self)
++        if not self.extension.isEmpty():
++            painter.fillRect(self.extension, QColor('#f4f6f8'))
++            painter.setPen(QPen(QColor('#bdc9d8'), 1))
++            painter.drawRect(self.extension.adjusted(0, 0, -1, -1))
+         for key, rect in self.placements.items():
+             moving = key in self.moving
+-            painter.setPen(QPen(QColor('#2672d9' if moving else '#61758d'), 2,
++            painter.setPen(QPen(QColor('#16845b' if moving else '#61758d'), 2,
+                                 Qt.SolidLine if moving else Qt.DashLine))
+-            painter.setBrush(QColor(38, 114, 217, 35 if moving else 12))
++            painter.setBrush(QColor(22, 132, 91, 25) if moving else QColor(97, 117, 141, 12))
+             painter.drawRect(rect.adjusted(1, 1, -1, -1))
+-        painter.setPen(QPen(QColor('#2672d9'), 2))
+-        painter.setBrush(QColor(38, 114, 217, 35))
++        for rect in self.origins.values():
++            painter.setPen(QPen(QColor('#b45309'), 2, Qt.DashLine))
++            painter.setBrush(Qt.NoBrush)
++            painter.drawRect(rect.adjusted(4, 4, -4, -4))
++        painter.setPen(QPen(QColor('#16845b' if self.dragPreview else '#2672d9'), 2))
++        painter.setBrush(QColor(22, 132, 91, 35) if self.dragPreview else QColor(38, 114, 217, 35))
+         if not self.box.isEmpty():
+             painter.drawRect(self.box.adjusted(1, 1, -1, -1))
+         painter.setPen(QPen(QColor('#ca48b8'), 1, Qt.DashLine))
+         for line in self.lines:
+             painter.drawLine(*[round(v) for v in line])
+-        if self.message:
++        if self.message and not self.dragPreview:
+             painter.setPen(QColor('#1d4f93'))
+             painter.fillRect(QRect(0, 0, min(self.width(), 460), 28), QColor('#eef4ff'))
+             painter.drawText(QRect(8, 0, self.width() - 16, 28), Qt.AlignVCenter, self.message)
+ 
+ 
+ class ResponsiveHandle(QWidget):
+-    def __init__(self, owner, card, key):
++    def __init__(self, owner, card, key, edges=(1, 1)):
+         super().__init__(card)
+         self.owner, self.key = owner, key
++        self.edges = edges
+         self.setProperty('editorDecoration', True)
+-        self.setCursor(Qt.SizeFDiagCursor)
+-        self.setStyleSheet('background:#2672d9;border:1px solid white;')
+-        self.setToolTip('拖动调整期望宽度和高度；Esc 取消')
++        x, y = edges
++        self.setCursor(Qt.SizeHorCursor if not y else Qt.SizeVerCursor if not x else
++                       Qt.SizeFDiagCursor if x == y else Qt.SizeBDiagCursor)
++        self.setToolTip(('拖动调整宽度和高度' if x and y else '左右拖动调整宽度' if x else '上下拖动调整高度') + '；Esc 取消')
+         card.installEventFilter(self)
++        owner.w.canvas.zoomChanged.connect(self.position)
+         self.position()
+ 
+-    def position(self):
++    def position(self, *_):
+         card = self.parentWidget()
+-        self.setGeometry(card.width() - 14, card.height() - 14, 14, 14)
++        # Keep targets compact when zoomed out so they do not cover the title
++        # drag area; zooming in must not grow them across the card's content.
++        zoom = max(1., self.owner.w.canvas.getZoomFactor())
++        corner = max(1, min(round(10 / zoom), card.width() // 2, card.height() // 2))
++        band = max(1, min(corner, round(6 / zoom)))
++        x, y = self.edges
++        if x and y:
++            rect = QRect(0 if x < 0 else card.width() - corner, 0 if y < 0 else card.height() - corner, corner, corner)
++        elif x:
++            rect = QRect(0 if x < 0 else card.width() - band, corner, band, max(0, card.height() - 2 * corner))
++        else:
++            rect = QRect(corner, 0 if y < 0 else card.height() - band, max(0, card.width() - 2 * corner), band)
++        self.setGeometry(rect)
+         self.show()
+         self.raise_()
++        self.update()
++
++    def paintEvent(self, event):
++        # The whole edge is a hit area; only a small grip is painted.
++        zoom = max(1., self.owner.w.canvas.getZoomFactor())
++        side = max(1, min(round(5 / zoom), self.width(), self.height()))
++        marker = QRect(0, 0, side, side)
++        marker.moveCenter(self.rect().center())
++        painter = QPainter(self)
++        painter.setPen(QPen(QColor('#2672d9'), 1 / zoom))
++        painter.setBrush(QColor('white'))
++        painter.drawRect(marker.adjusted(0, 0, -1, -1))
+ 
+     def eventFilter(self, obj, event):
+         if event.type() in (QEvent.Resize, QEvent.Show):
+@@ -185,7 +223,8 @@ class ResponsiveTools(QObject):
+             mark.raise_()
+             self.decorations.append(mark)
+             if len(self.selectedIds) == 1:
+-                self.handles.append(ResponsiveHandle(self, card, key))
++                for edges in ((1, 1), (-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1), (-1, 1)):
++                    self.handles.append(ResponsiveHandle(self, card, key, edges))
+ 
+     def clearPreview(self):
+         if self.preview is not None and isValid(self.preview):
+@@ -193,8 +232,11 @@ class ResponsiveTools(QObject):
+             self.preview.deleteLater()
+         self.preview = None
+         self.lastTarget = None
++        for mark in [*self.decorations, *self.handles]:
++            if isValid(mark):
++                mark.show()
+ 
+-    def showPreview(self, host, box, message, lines=(), *, placements=None, moving=()):
++    def showPreview(self, host, box, message, lines=(), *, placements=None, moving=(), origins=None, extension=None):
+         if self.preview is None or not isValid(self.preview) or self.preview.parentWidget() is not host:
+             self.clearPreview()
+             self.preview = DropOutline(host)
+@@ -202,10 +244,18 @@ class ResponsiveTools(QObject):
+         self.preview.box, self.preview.lines, self.preview.message = box, lines, message
+         self.preview.placements = placements or {}
+         self.preview.moving = set(moving)
++        self.preview.origins = origins or {}
++        self.preview.dragPreview = placements is not None
++        self.preview.extension = extension or QRect()
++        if self.preview.dragPreview:
++            for mark in [*self.decorations, *self.handles]:
++                if isValid(mark):
++                    mark.hide()
+         self.preview.show()
+         self.preview.raise_()
+         self.preview.update()
+-        self.w.message.setText(message)
++        if not self.preview.dragPreview:
++            self.w.message.setText(message)
+ 
+     def target(self, payload, widget, point):
+         p = self.w.renderer.config
+@@ -290,8 +340,16 @@ class ResponsiveTools(QObject):
+         from emo_master.core.presentation.models import walkComponents
+         return walkComponents([item])
+ 
+-    def drop(self, payload, widget, point, preview=False):
+-        host, box, args, message = self.target(payload, widget, point)
++    def drop(self, payload, widget, point, preview=False, *, canvasOffset=None):
++        if canvasOffset is not None:
++            host = self.w.renderer.layoutHosts[self.w.pageId][None]
++            margins = host.layout().contentsMargins()
++            box = QRect(margins.left(), max(0, margins.top() - 3),
++                        host.width() - margins.left() - margins.right(), 6)
++            args, message = dict(parentId=None, index=0, canvasTop=canvasOffset), ''
++            self.candidateGuides = ()
++        else:
++            host, box, args, message = self.target(payload, widget, point)
+         keys = payload.get('moves', [payload['move']] if 'move' in payload else [])
+         if preview:
+             from .responsive_preview import candidateGeometry
+@@ -308,7 +366,9 @@ class ResponsiveTools(QObject):
+                 draft = renderer.config.model_copy(update={'pages': {**renderer.config.pages, pageId: page}})
+                 self.candidateIds = placeComponents(draft, pageId, keys=keys, kind=payload.get('kind'), **args)
+                 prototypes = self.prototypeItems(page, self.candidateIds, payload.get('kind'))
+-                self.candidateRects, self.candidateSize = candidateGeometry(renderer, pageId, page, prototypes)
++                self.candidateRects, self.candidateSize = candidateGeometry(renderer, pageId, page, prototypes,
++                    minimumSize=self.w.canvas.contentMinimumSize(page.canvasTop))
++                self.candidateTop = page.canvasTop
+             viewport = scroll.viewport()
+             offset = QPoint(-min(scroll.horizontalScrollBar().value(), max(0, self.candidateSize.width() - viewport.width())),
+                             -min(scroll.verticalScrollBar().value(), max(0, self.candidateSize.height() - viewport.height())))
+@@ -325,8 +385,26 @@ class ResponsiveTools(QObject):
+             marker = box.translated(hostOffset)
+             if 'besideId' in args:
+                 marker = QRect()  # The candidate outlines show the actual group and card sizes.
+-            self.showPreview(viewport, marker, message + ' · 蓝框为放置位置，虚框为其他组件的新位置',
+-                             guides, placements=placements, moving=moving)
++            origins = {key: QRect(self.cards()[key].mapTo(viewport, QPoint()), self.cards()[key].size())
++                       for key in keys if key in self.cards()}
++            extension = QRect()
++            if canvasOffset is not None:
++                canvas = self.w.canvas
++                rootOffset = root.mapTo(renderer, QPoint())
++                topDelta = self.candidateTop - renderer.config.pages[pageId].canvasTop
++                placements = {key: canvas.rendererRectOnViewport(rect.translated(rootOffset + QPoint(0, topDelta)))
++                              for key, rect in self.candidateRects.items() if key in placements}
++                placements = {key: rect for key, rect in placements.items() if key in moving or key not in self.cards()
++                              or rect != canvas.rendererRectOnViewport(QRect(self.cards()[key].mapTo(renderer, QPoint()),
++                                                                            self.cards()[key].size()))}
++                origins = {key: canvas.rendererRectOnViewport(QRect(self.cards()[key].mapTo(renderer, QPoint()),
++                            self.cards()[key].size())) for key in keys if key in self.cards()}
++                if topDelta < 0:
++                    extension = canvas.rendererRectOnViewport(QRect(0, topDelta, renderer.width(), -topDelta))
++                viewport, marker = canvas.viewport(), QRect()
++            self.showPreview(viewport, marker,
++                             message + ' · 橙色虚线：原位置；绿色实线：目标；灰色虚线：其他组件的新位置',
++                             guides, placements=placements, moving=moving, origins=origins, extension=extension)
+             self.lastTarget = signature
+             return args
+         selected = self.commands().place(self.w.pageId, keys=keys, kind=payload.get('kind'), **args)
+@@ -343,7 +421,9 @@ class ResponsiveTools(QObject):
+             from emo_master.core.presentation.models import Page, Presentation, walkComponents
+             from emo_master.ui.presentation.renderer import RuntimePages
+             from PySide2.QtWidgets import QGraphicsScene
+-            component = next(item for item in walkComponents(page.components) if item.componentId in keys)
++            component = next(item for item in walkComponents(page.components) if item.componentId in keys).model_copy(deep=True)
++            # A prototype measures native size, independently of page placement.
++            component.responsive.canvasOffsetY = 0
+             self.prototype = RuntimePages(Presentation())
+             # Graphics proxies propagate scene fonts differently from a plain
+             # QWidget parent. Use the same native host without adding preview
+@@ -356,7 +436,7 @@ class ResponsiveTools(QObject):
+             self.prototype.setStyleSheet(self.w.renderer.styleSheet())
+             self.prototype.resize(self.w.renderer.size())
+             self.prototype.reload(Presentation(defaultPageId='prototype', pageOrder=['prototype'],
+-                pages={'prototype': Page(name='Prototype', components=[component.model_copy(deep=True)])}))
++                pages={'prototype': Page(name='Prototype', components=[component])}))
+             self.prototype.setDesignExamples(True)
+             self.prototype.ensurePolished()
+             self.prototypeKind = kind
+@@ -388,7 +468,37 @@ class ResponsiveTools(QObject):
+         zoom = self.w.canvas.getZoomFactor()
+         size = QSize(max(1, round(pixmap.width() * zoom)), max(1, round(pixmap.height() * zoom)))
+         pixmap = pixmap.scaled(size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+-        return pixmap, QPoint(round(hotspot.x() * zoom), round(hotspot.y() * zoom))
++        ghost = QPixmap(pixmap.size())
++        ghost.setDevicePixelRatio(pixmap.devicePixelRatioF())
++        ghost.fill(Qt.transparent)
++        painter = QPainter(ghost)
++        painter.setOpacity(.6)
++        painter.drawPixmap(0, 0, pixmap)
++        painter.end()
++        return ghost, QPoint(round(hotspot.x() * zoom), round(hotspot.y() * zoom))
++
++    def handleDropEvent(self, event, payload, widget, point, *, canvasOffset=None):
++        """Shared by the proxy's widgets and the canvas's outer insertion area."""
++        committing = event.type() == QEvent.Drop
++        try:
++            if committing:
++                self.tools.commitPending()
++            self.drop(payload, widget, point, preview=not committing, canvasOffset=canvasOffset)
++            if committing:
++                if canvasOffset is not None or self.w.canvas._dropCenter is not None:
++                    self.w.canvas.commitExpansion()
++                self.tools.laterRefresh()
++            event.acceptProposedAction()
++        except (ValueError, KeyError) as error:
++            self.w.message.setText(str(error))
++            self.clearPreview()
++            if committing:
++                event.ignore()
++            else:
++                event.acceptProposedAction()
++        finally:
++            if committing:
++                self.cancel()
+ 
+     def eventFilter(self, obj, event):
+         if not self.enabled() or not self.w.renderer.editing:
+@@ -403,22 +513,7 @@ class ResponsiveTools(QObject):
+             payload = json.loads(bytes(event.mimeData().data(MIME)))
+             if 'choice' in payload:
+                 return False  # Existing binding validation and confirmation.
+-            try:
+-                if kind == QEvent.Drop:
+-                    self.tools.commitPending()
+-                    self.drop(payload, obj, event.pos())
+-                    self.clearPreview()
+-                    self.tools.laterRefresh()
+-                else:
+-                    self.drop(payload, obj, event.pos(), preview=True)
+-                event.acceptProposedAction()
+-            except (ValueError, KeyError) as error:
+-                self.w.message.setText(str(error))
+-                self.clearPreview()
+-                if kind == QEvent.Drop:
+-                    event.ignore()
+-                else:
+-                    event.acceptProposedAction()
++            self.handleDropEvent(event, payload, obj, event.pos())
+             return True
+         if kind == QEvent.DragLeave:
+             self.clearPreview()
+@@ -479,20 +574,24 @@ class ResponsiveTools(QObject):
+             self.handles.remove(handle)
+             handle.setParent(self.w.canvasHost)
+             self.w.refresh()
+-            for replacement in self.handles:
+-                if isValid(replacement):
++            for index, replacement in enumerate(self.handles):
++                if replacement.edges == handle.edges:
+                     replacement.parentWidget().removeEventFilter(replacement)
+                     replacement.hide()
+                     replacement.deleteLater()
++                    self.handles[index] = handle
++                    break
+             card = self.cards()[key]
+             handle.setParent(card)
+             card.installEventFilter(handle)
+             handle.position()
+-            self.handles = [handle]
+         item = _component(self.w.store.snapshot(), self.w.pageId, key)
++        parentId = parentOf(self.w.store.snapshot(), self.w.pageId, key)[0]
++        rules = layoutFor(self.w.store.snapshot(), self.w.pageId, parentId).model_copy()
+         card = self.cards()[key]
+         self.resize = dict(key=key, handle=handle, start=QPoint(point), original=item.responsive.model_copy(),
+-                           size=card.size(), candidate=item.responsive.model_copy(), card=card)
++                           size=card.size(), candidate=item.responsive.model_copy(), card=card,
++                           parentId=parentId, rules=rules, candidateRules=rules.model_copy(), spacer=item.type == 'spacer')
+ 
+     def moveResize(self, point):
+         if not self.resize:
+@@ -501,21 +600,38 @@ class ResponsiveTools(QObject):
+         # Map both screen endpoints with the same view transform: focusing the
+         # handle may adjust the view's scroll origin after the press.
+         delta = self.point(point) - self.point(state['start'])
++        x, y = state['handle'].edges
++        delta = QPoint(delta.x() * x, delta.y() * y)
++        rules = state['rules'].model_copy()
++        state['candidateRules'] = rules
+         if delta.isNull():
+             state['candidate'] = state['original'].model_copy()
+             self.clearPreview()
+             return
+         item = state['original'].model_copy()
+-        item.width = 'content'
+-        item.alignSelf = 'start'
+-        item.preferredWidth = max(item.minWidth, min(8192, state['size'].width() + delta.x()))
+-        item.preferredHeight = max(item.minHeight, min(8192, state['size'].height() + delta.y()))
++        resizeWidth, resizeHeight = bool(delta.x()), bool(delta.y())
++        horizontal = getattr(rules, 'direction', None) in ('horizontal', 'wrap')
++        if resizeWidth:
++            item.width = 'content'
++            item.alignSelf = 'start'
++            item.preferredWidth = max(item.minWidth, min(8192, state['size'].width() + delta.x()))
++            # Equal-width rows otherwise silently override this explicit size.
++            # Preview and commit the group rule in the same resize transaction.
++            if horizontal and not state['spacer']:
++                rules.equalWidth = False
++        if resizeHeight:
++            item.preferredHeight = max(item.minHeight, min(8192, state['size'].height() + delta.y()))
++            alignment = rules.alignment if item.alignSelf == 'auto' else item.alignSelf
++            if horizontal and alignment == 'stretch' and not state['spacer']:
++                item.alignSelf = 'start'
+         state['candidate'] = item
+         card = state['card']
+         host = card.parentWidget()
+         rect = QRect(card.pos(), state['size'])
+-        rect.setWidth(item.preferredWidth)
+-        rect.setHeight(item.preferredHeight)
++        if resizeWidth:
++            rect.setWidth(item.preferredWidth)
++        if resizeHeight:
++            rect.setHeight(item.preferredHeight)
+         lines = ()
+         if self.guidesEnabled or self.snapEnabled:
+             references = [Box(other.x(), other.y(), other.width(), other.height()) for other in
+@@ -523,11 +639,13 @@ class ResponsiveTools(QObject):
+             dx, dy, guideLines = snapOffset(Box(rect.right(), rect.bottom(), 0, 0), references,
+                 6 / max(.02, self.w.canvas.getZoomFactor()), 400 / max(.02, self.w.canvas.getZoomFactor()))
+             if self.snapEnabled and not QApplication.keyboardModifiers() & Qt.AltModifier:
+-                item.preferredWidth = max(item.minWidth, min(8192, item.preferredWidth + round(dx)))
+-                item.preferredHeight = max(item.minHeight, min(8192, item.preferredHeight + round(dy)))
+-                rect.setWidth(item.preferredWidth)
+-                rect.setHeight(item.preferredHeight)
+-            lines = guideLines if self.guidesEnabled else ()
++                if resizeWidth:
++                    item.preferredWidth = max(item.minWidth, min(8192, item.preferredWidth + round(dx)))
++                    rect.setWidth(item.preferredWidth)
++                if resizeHeight:
++                    item.preferredHeight = max(item.minHeight, min(8192, item.preferredHeight + round(dy)))
++                    rect.setHeight(item.preferredHeight)
++            lines = [line for line in guideLines if (resizeWidth and line[0] == line[2]) or (resizeHeight and line[1] == line[3])] if self.guidesEnabled else ()
+         layout = host.layout()
+         if hasattr(layout, '_measurements'):
+             from dataclasses import replace
+@@ -535,14 +653,19 @@ class ResponsiveTools(QObject):
+             measures = [replace(measure, responsive=item) if measure.key == state['key'] else measure
+                         for measure in layout._measurements()]
+             margins = layout.contentsMargins()
+-            boxes, _height = solveResponsive(layout.rules, measures,
++            boxes, _height = solveResponsive(rules, measures,
+                 max(0, host.width() - margins.left() - margins.right()),
+-                max(0, host.height() - margins.top() - margins.bottom()))
++                max(0, host.height() - margins.top() - margins.bottom()), canvasTop=layout.canvasTop)
+             index = next(i for i, measure in enumerate(measures) if measure.key == state['key'])
+             box = boxes[index]
+             rect = QRect(round(box.x + margins.left()), round(box.y + margins.top()),
+                          round(box.width), round(box.height))
+-        self.showPreview(host, rect, f'期望大小 {item.preferredWidth} × {item.preferredHeight}；松开应用，Esc 取消', lines)
++        message = f'布局尺寸 {rect.width()} × {rect.height()}；松开应用，Esc 取消'
++        if rules != state['rules']:
++            message += '；手动改宽将取消组内等宽'
++        if resizeHeight and rect.height() > item.preferredHeight:
++            message += '；高度保留内容所需空间'
++        self.showPreview(host, rect, message, lines)
+ 
+     def finishResize(self, point):
+         if not self.resize:
+@@ -550,22 +673,30 @@ class ResponsiveTools(QObject):
+         self.moveResize(point)
+         state, self.resize = self.resize, None
+         self.clearPreview()
+-        if state['candidate'] != state['original']:
+-            self.w.session.editPresentation(lambda p: setattr(_component(p, self.w.pageId, state['key']),
+-                                                              'responsive', state['candidate']))
++        if state['candidate'] != state['original'] or state['candidateRules'] != state['rules']:
++            def edit(p):
++                _component(p, self.w.pageId, state['key']).responsive = state['candidate']
++                if state['candidateRules'] != state['rules']:
++                    layoutFor(p, self.w.pageId, state['parentId']).equalWidth = state['candidateRules'].equalWidth
++            self.w.session.editPresentation(edit)
+             self.tools.laterRefresh()
++            self.w.message.setText('尺寸已应用' + ('；本组已取消等宽' if state['candidateRules'] != state['rules'] else ''))
++        else:
++            self.w.message.setText('尺寸未改变')
+ 
+     def cancel(self):
+-        active = bool(self.resize or self.pointer or self.preview)
++        active = bool(self.resize or self.pointer or self.preview or self.w.canvas.componentDragActive)
+         if self.resize:
+             handle = self.resize['handle']
+             if isValid(handle):
+                 handle.releaseMouse()
+                 handle.releaseKeyboard()
++            self.w.message.setText('已取消尺寸调整')
+         self.resize = None
+         self.pointer = None
+         self.clearPreview()
+         self.disposePrototype()
++        self.w.canvas.finishDragAssist()
+         return active
+ 
+     def group(self, direction):
+diff --git a/src/emo_master/apps/designer/page_designer/tools.py b/src/emo_master/apps/designer/page_designer/tools.py
+index f2fa52e4..893049e3 100644
+--- a/src/emo_master/apps/designer/page_designer/tools.py
++++ b/src/emo_master/apps/designer/page_designer/tools.py
+@@ -237,6 +237,18 @@ class EditingTools(QObject):
+         self.componentMore.setMenu(self.componentMenu)
+         header.addWidget(self.componentMore)
+         outer.addLayout(header)
++        self.parentRow = QWidget(propertyPanel)
++        parentLayout = QHBoxLayout(self.parentRow)
++        parentLayout.setContentsMargins(0, 0, 0, 0)
++        self.parentLabel = ElidedLabel()
++        self.parentLabel.setTextFormat(Qt.PlainText)
++        self.parentLabel.setMinimumWidth(0)
++        parentLayout.addWidget(self.parentLabel, 1)
++        self.parentButton = QPushButton('选择父组')
++        self.parentButton.clicked.connect(lambda: self.w.run(self.selectParent, refresh=False))
++        parentLayout.addWidget(self.parentButton)
++        self.parentRow.hide()
++        outer.addWidget(self.parentRow)
+         outer.addWidget(self.propertyError)
+         outer.addWidget(scroll, 1)
+         self.applyButton.setObjectName('primaryButton')
+@@ -509,6 +521,36 @@ class EditingTools(QObject):
+             raise ValueError('属性输入仍属于上一页面，请先应用或修正后再切页')
+         self.apply()
+ 
++    def updateParentNavigation(self):
++        self.parentRow.setVisible(self.selected is not None)
++        if self.selected is None:
++            return
++        from .responsive_editing import parentOf
++        p = self.w.store.snapshot()
++        parentId = parentOf(p, self.w.pageId, self.selected)[0]
++        if parentId is not None:
++            parent = _component(p, self.w.pageId, parentId)
++            self.parentLabel.setText('所属组：' + (parent.props.title or '未命名容器'))
++            self.parentButton.setText('选择父组')
++            self.parentButton.setToolTip('选择当前控件的父组，调整排列、间距和组内等宽')
++        else:
++            self.parentLabel.setText('所属页面：' + p.pages[self.w.pageId].name)
++            self.parentButton.setText('选择页面')
++            self.parentButton.setToolTip('打开当前页面的布局属性')
++
++    def selectParent(self):
++        if self.selected is None:
++            return
++        from .responsive_editing import parentOf
++        parentId = parentOf(self.w.store.snapshot(), self.w.pageId, self.selected)[0]
++        # Use the existing selection path: it accepts valid pending properties
++        # and keeps invalid input on the original component for correction.
++        if self.responsive.enabled():
++            self.responsive.select([parentId] if parentId is not None else [])
++        else:
++            self.select(parentId)
++        self.w.propertyScroll.verticalScrollBar().setValue(0)
++
+     def select(self, key):
+         if key != self.selected:
+             self.commitPending()
+@@ -525,6 +567,7 @@ class EditingTools(QObject):
+             component = _component(self.w.store.snapshot(), self.w.pageId, key)
+         except KeyError:
+             self.selected = None
++            self.updateParentNavigation()
+             if self.w.pageId:
+                 self.fields['columns'].setValue(getattr(self.w.store.snapshot().pages[self.w.pageId].layout, 'columns', 1))
+                 self.pageName.setText(self.w.store.snapshot().pages[self.w.pageId].name)
+@@ -537,6 +580,7 @@ class EditingTools(QObject):
+             self._loadedFields = self._fieldState()
+             return
+         from .palette import TITLES
++        self.updateParentNavigation()
+         self.responsiveProperties.load(component.grid if component.type == 'container' else None, component.responsive)
+         self.responsiveProperties.setItemVisible(True)
+         spacerMode = self.fields['spacerMode']
+diff --git a/src/emo_master/apps/designer/page_designer/workspace.py b/src/emo_master/apps/designer/page_designer/workspace.py
+index 3e054eed..94c9e2d1 100644
+--- a/src/emo_master/apps/designer/page_designer/workspace.py
++++ b/src/emo_master/apps/designer/page_designer/workspace.py
+@@ -154,7 +154,7 @@ class PageWorkspace(QWidget):
+         self.renderer.banner.setWordWrap(False)
+         pageInfo.addWidget(self.renderer.banner)
+         self.centerLayout.insertLayout(0, pageInfo)
+-        # Panel entries live in the toolbar, outside the page viewport.
++        # Floating panel headers belong to the canvas overlay, not page layout.
+         self.renderer.layout().setContentsMargins(12, 12, 12, 12)
+         self.empty = QWidget()
+         emptyLayout = QVBoxLayout(self.empty)
+@@ -173,7 +173,6 @@ class PageWorkspace(QWidget):
+         self.renderer.fitButton.clicked.disconnect()
+         self.renderer.fitButton.clicked.connect(self.canvas.fitPage)
+         canvasTools = QHBoxLayout()
+-        self.canvasTools = canvasTools
+         self.previewMode = QComboBox()
+         self.previewMode.addItem('跟随窗口', 'follow')
+         self.previewMode.addItem('固定终端', 'fixed')
+@@ -233,23 +232,12 @@ class PageWorkspace(QWidget):
+         settings = coordinator.window.settingsStore
+         self.floatingToolbox = FloatingPanel(self.canvasHost, self.canvasHost, settings,
+             'pageDesigner/toolbox', '工具区', self.libraryTabs, expandedSize=QSize(308, 560),
+-            collapsedSize=QSize(148, 46), externalToggle=True)
++            collapsedSize=QSize(148, 46))
+         self.floatingProperties = FloatingPanel(self.canvasHost, self.canvasHost, settings,
+             'pageDesigner/properties', '属性面板', self.propertyPanel,
+-            right=True, symbol='sliders-horizontal', expanded=True, expandedSize=QSize(340, 620),
+-            externalToggle=True)
+-        self.panelButtons = []
++            right=True, symbol='sliders-horizontal', expanded=True, expandedSize=QSize(340, 620))
+         for panel in (self.floatingToolbox, self.floatingProperties):
+-            button = QToolButton()
+-            button.setText(panel.title)
+-            button.setCheckable(True)
+-            button.setChecked(panel.isExpanded())
+-            button.setToolTip('展开或收起' + panel.title)
+-            button.clicked.connect(panel.setExpanded)
+-            panel.expandedChanged.connect(button.setChecked)
+             panel.expandedChanged.connect(lambda _: self.coordinator.chrome.update())
+-            self.canvasTools.insertWidget(0, button)
+-            self.panelButtons.append(button)
+         self.refresh()
+ 
+     def previewModeChanged(self, _index):
+diff --git a/src/emo_master/apps/designer/state/project_edit_session.py b/src/emo_master/apps/designer/state/project_edit_session.py
+index 106c615c..fd25ef70 100644
+--- a/src/emo_master/apps/designer/state/project_edit_session.py
++++ b/src/emo_master/apps/designer/state/project_edit_session.py
+@@ -136,7 +136,9 @@ class ProjectEditSession:
+             assert document.presentation is not None
+             edit(document.presentation)
+             from emo_master.core.presentation.targets import usesRemotePresentation
+-            if document.presentation.schemaVersion != '1.2' and usesRemotePresentation(document.presentation):
++            needsLatest = usesRemotePresentation(document.presentation) or any(
++                page.canvasTop for page in document.presentation.pages.values())
++            if document.presentation.schemaVersion != '1.2' and needsLatest:
+                 if document.schemaVersion not in {'2.7', '2.8'}:
+                     raise ValueError('远程页面需要先通过设备迁移升级到工程 2.7 或更新版本')
+                 document.schemaVersion = '2.9'
+diff --git a/src/emo_master/apps/designer/ui/canvas_overlay.py b/src/emo_master/apps/designer/ui/canvas_overlay.py
+index cf74c0d7..3eddb4ec 100644
+--- a/src/emo_master/apps/designer/ui/canvas_overlay.py
++++ b/src/emo_master/apps/designer/ui/canvas_overlay.py
+@@ -179,8 +179,7 @@ class FloatingPanel(CanvasOverlay):
+ 
+     def __init__(self, host, viewport, settings, key, title, content, *, right=False,
+                  symbol='layout-grid', expanded=False, expandedSize=QSize(340, 600),
+-                 collapsedSize=QSize(164, 46), externalToggle=False):
+-        self.externalToggle = externalToggle
++                 collapsedSize=QSize(164, 46)):
+         super().__init__(host, viewport, settings, key + '/position', right=right,
+                          expandedSize=expandedSize, collapsedSize=collapsedSize)
+         self.title = title
+@@ -241,8 +240,6 @@ class FloatingPanel(CanvasOverlay):
+         changed = self._expanded != bool(expanded)
+         self._expanded = bool(expanded)
+         self.contentScroll.setVisible(self._expanded)
+-        if self.externalToggle:
+-            self.setVisible(self._expanded)
+         self.closeButton.setVisible(self._expanded)
+         self.toggleButton.setToolTip(('收起' if expanded else '展开') + self.title)
+         self.toggleButton.setAccessibleName(self.toggleButton.toolTip())
+diff --git a/src/emo_master/core/presentation/responsive.py b/src/emo_master/core/presentation/responsive.py
+index 5774efa7..376821d6 100644
+--- a/src/emo_master/core/presentation/responsive.py
++++ b/src/emo_master/core/presentation/responsive.py
+@@ -52,7 +52,19 @@ def _justify(layout, count, space):
+ 
+ 
+ def solveResponsive(layout: ResponsiveLayout, items: list[Measurement], width: float,
+-                    height: float | None = None) -> tuple[list[LayoutBox], float]:
++                    height: float | None = None, *, canvasTop: int = 0) -> tuple[list[LayoutBox], float]:
++    """Normalize an expanded root canvas while retaining responsive flow slots."""
++    boxes, contentHeight = _solveResponsive(layout, items, width,
++        max(0, height + canvasTop) if height is not None else None)
++    if not canvasTop and not any(item.responsive.canvasOffsetY for item in items):
++        return boxes, contentHeight
++    boxes = [LayoutBox(box.x, box.y + item.responsive.canvasOffsetY - canvasTop, box.width, box.height)
++             for item, box in zip(items, boxes)]
++    return boxes, max(contentHeight - canvasTop, max((box.y + box.height for box in boxes), default=0))
++
++
++def _solveResponsive(layout: ResponsiveLayout, items: list[Measurement], width: float,
++                     height: float | None = None) -> tuple[list[LayoutBox], float]:
+     """Return boxes in input order and required content height.
+ 
+     minWidth is a wrapping threshold, not a forced overflowing QWidget minimum.
+diff --git a/src/emo_master/core/project/web_panel.py b/src/emo_master/core/project/web_panel.py
+index c060f1f9..0c2eb9f2 100644
+--- a/src/emo_master/core/project/web_panel.py
++++ b/src/emo_master/core/project/web_panel.py
+@@ -79,6 +79,8 @@ def publishedSnapshot(document, *, manifests=None):
+             requirements.add('component.' + item['type'] + '@1.0')
+             exportComponents(item['children'], pageId)
+     for pageId, page in payload['pages'].items():
++        if page.get('canvasTop'):
++            requirements.add('layout.expanded-canvas-v1')
+         page.pop('targets', None)
+         exportComponents(page['components'], pageId)
+     snapshot = PublishedPresentation.model_validate(payload).model_dump(mode='json', exclude_none=True)
+diff --git a/src/emo_master/ui/presentation/page_scroll.py b/src/emo_master/ui/presentation/page_scroll.py
+index 5f6204d3..3cafede2 100644
+--- a/src/emo_master/ui/presentation/page_scroll.py
++++ b/src/emo_master/ui/presentation/page_scroll.py
+@@ -1,19 +1,37 @@
+ """Page scrollbars drawn above the viewport, without changing layout width."""
+-from PySide2.QtCore import QEvent, Qt
++from PySide2.QtCore import QEvent, QSize, Qt
+ from PySide2.QtWidgets import QScrollArea, QScrollBar
+ 
+ 
++def pageContentSize(layout, minimum):
++    """Measure the full page at its layout width, independently of view zoom."""
++    measured = layout.minimumSize()
++    width = max(minimum.width(), measured.width())
++    height = layout.heightForWidth(width) if layout.hasHeightForWidth() else measured.height()
++    return QSize(width, max(minimum.height(), measured.height(), height))
++
++
+ class PageScrollArea(QScrollArea):
+     """Qt owns ranges and scrolling; the edge bars are views of that state."""
+ 
+     def __init__(self, parent=None):
+         super().__init__(parent)
++        self.canvasExtension = 0
+         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+         self.overlayHorizontal = self._overlay(Qt.Horizontal, self.horizontalScrollBar())
+         self.overlayVertical = self._overlay(Qt.Vertical, self.verticalScrollBar())
+         self.viewport().installEventFilter(self)
+ 
++    def setCanvasExtension(self, height):
++        self.canvasExtension = height
++        self._sizeCanvas()
++
++    def _sizeCanvas(self):
++        if self.widget() is not None:
++            self.widget().setMinimumHeight(self.viewport().height() + self.canvasExtension
++                                           if self.canvasExtension else 0)
++
+     def _overlay(self, orientation, source):
+         bar = QScrollBar(orientation, self.viewport())
+         bar.setObjectName('pageOverlayScrollBar')
+@@ -50,11 +68,13 @@ class PageScrollArea(QScrollArea):
+ 
+     def eventFilter(self, obj, event):
+         if obj is self.viewport() and event.type() in (QEvent.Resize, QEvent.Show, QEvent.LayoutRequest):
++            self._sizeCanvas()
+             self._syncBars()
+         return super().eventFilter(obj, event)
+ 
+     def resizeEvent(self, event):
+         super().resizeEvent(event)
++        self._sizeCanvas()
+         self._syncBars()
+ 
+     def scrollContentsBy(self, dx, dy):
+diff --git a/src/emo_master/ui/presentation/renderer.py b/src/emo_master/ui/presentation/renderer.py
+index 10b1688b..c8675c2c 100644
+--- a/src/emo_master/ui/presentation/renderer.py
++++ b/src/emo_master/ui/presentation/renderer.py
+@@ -435,18 +435,19 @@ class RuntimePages(QWidget):
+         self.widgets[pageId] = {}
+         self.cards[pageId] = {}
+         self.layoutHosts[pageId] = {}
+-        self._children(body, page.components, page.layout, pageId)
++        self._children(body, page.components, page.layout, pageId, canvasTop=page.canvasTop)
+         self._connectLocalImages(pageId)
+         scroll.setWidget(body)
++        scroll.setCanvasExtension(0 if self.editorHost else -page.canvasTop)
+         self.stack.addWidget(scroll)
+         self.pages[pageId] = scroll
+ 
+-    def _children(self, parent, components, grid, pageId, parentId=None):
++    def _children(self, parent, components, grid, pageId, parentId=None, *, canvasTop=0):
+         from .editor_grid import EditorGridLayout
+         responsive = isinstance(grid, ResponsiveLayout)
+         if responsive:
+             from .responsive_layout import ResponsiveWidgetLayout
+-            layout = ResponsiveWidgetLayout(parent, grid)
++            layout = ResponsiveWidgetLayout(parent, grid, canvasTop=canvasTop)
+         else:
+             layout = (EditorGridLayout if self.editorHost else QGridLayout)(parent)
+         self.layoutHosts[pageId][parentId] = parent
+diff --git a/src/emo_master/ui/presentation/responsive_layout.py b/src/emo_master/ui/presentation/responsive_layout.py
+index d9ae432b..0847249a 100644
+--- a/src/emo_master/ui/presentation/responsive_layout.py
++++ b/src/emo_master/ui/presentation/responsive_layout.py
+@@ -7,9 +7,10 @@ from emo_master.core.presentation.responsive import Measurement, solveResponsive
+ 
+ 
+ class ResponsiveWidgetLayout(QLayout):
+-    def __init__(self, parent, rules):
++    def __init__(self, parent, rules, *, canvasTop=0):
+         super().__init__(parent)
+         self.rules = rules
++        self.canvasTop = canvasTop
+         self._items = []
+         self._components = {}
+         self.childRects = {}
+@@ -67,7 +68,7 @@ class ResponsiveWidgetLayout(QLayout):
+     def heightForWidth(self, width):
+         margins = self.contentsMargins()
+         _boxes, height = solveResponsive(self.rules, self._measurements(),
+-            max(0, width - margins.left() - margins.right()))
++            max(0, width - margins.left() - margins.right()), canvasTop=self.canvasTop)
+         return round(height) + margins.top() + margins.bottom()
+ 
+     def sizeHint(self):
+@@ -76,14 +77,14 @@ class ResponsiveWidgetLayout(QLayout):
+         return QSize(round(width + 18), self.heightForWidth(width + 18))
+ 
+     def minimumSize(self):
+-        return QSize(0, 32)
++        return QSize(0, 32 - self.canvasTop)
+ 
+     def setGeometry(self, rect):
+         super().setGeometry(rect)
+         margins = self.contentsMargins()
+         inner = rect.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom())
+         measures = self._measurements()
+-        boxes, _height = solveResponsive(self.rules, measures, inner.width(), inner.height())
++        boxes, _height = solveResponsive(self.rules, measures, inner.width(), inner.height(), canvasTop=self.canvasTop)
+         self.childRects = {}
+         for item, measured, box in zip(self._items, measures, boxes):
+             target = QRect(round(inner.x() + box.x), round(inner.y() + box.y),
+diff --git a/src/emo_panel_protocol/__init__.py b/src/emo_panel_protocol/__init__.py
+index 3542965e..c2c0c927 100644
+--- a/src/emo_panel_protocol/__init__.py
++++ b/src/emo_panel_protocol/__init__.py
+@@ -1,2 +1,2 @@
+ """Panel Contract v1: pure DTOs and gRPC wire types, with no application owners."""
+-__version__ = "1.2.0"
++__version__ = "1.3.0"
+diff --git a/src/emo_panel_protocol/models.py b/src/emo_panel_protocol/models.py
+index 7e2d9d3d..2af98b83 100644
+--- a/src/emo_panel_protocol/models.py
++++ b/src/emo_panel_protocol/models.py
+@@ -98,6 +98,14 @@ class ResponsiveItem(Model):
+     minHeight: int = Field(default=64, ge=0, le=4096)
+     preferredHeight: int = Field(default=0, ge=0, le=8192)
+     alignSelf: Literal["auto", "start", "center", "end", "stretch"] = "auto"
++    canvasOffsetY: int = Field(default=0, ge=-32768, le=0)
++
++    @model_serializer(mode="wrap")
++    def serializeCanvasOffset(self, handler):
++        payload = handler(self)
++        if not self.canvasOffsetY:
++            payload.pop('canvasOffsetY', None)
++        return payload
+ 
+ 
+ class Placement(Model):
+@@ -317,6 +325,7 @@ def walkComponents(components: list[Component]):
+ class Page(Model):
+     name: str = Field(min_length=1, max_length=256)
+     layout: Grid | ResponsiveLayout = Field(default_factory=ResponsiveLayout)
++    canvasTop: int = Field(default=0, ge=-32768, le=0)
+     components: list[Component] = Field(default_factory=list, max_length=1024)
+     resultScopeIds: list[Id] = Field(default_factory=list)
+     targets: list[Literal["desktop", "web"]] = Field(default=["desktop"], min_length=1, max_length=2)
+@@ -333,6 +342,8 @@ class Page(Model):
+         payload = handler(self)
+         if self.targets == ["desktop"]:
+             payload.pop("targets", None)
++        if not self.canvasTop:
++            payload.pop('canvasTop', None)
+         return payload
+ 
+ 
+@@ -387,6 +398,8 @@ class Presentation(Model):
+                 raise ValueError('responsive layout requires presentation schemaVersion 1.1')
+             occupied: set[tuple[int, int]] = set()
+             for child in children:
++                if child.responsive.canvasOffsetY and (depth > 1 or isinstance(layout, Grid)):
++                    raise ValueError('canvas offset requires a root responsive component')
+                 if child.componentId in seen:
+                     raise ValueError("duplicate componentId")
+                 seen.add(child.componentId)
+@@ -405,6 +418,10 @@ class Presentation(Model):
+                     visit(child.children, child.grid, depth + 1)
+ 
+         for page in self.pages.values():
++            if page.canvasTop and (self.schemaVersion != '1.2' or not isinstance(page.layout, ResponsiveLayout)):
++                raise ValueError('expanded canvas requires responsive presentation 1.2')
++            if any(item.responsive.canvasOffsetY < page.canvasTop for item in page.components):
++                raise ValueError('component canvas offset exceeds page canvasTop')
+             if self.schemaVersion != '1.2':
+                 if page.targets != ['desktop']:
+                     raise ValueError('page targets require presentation schemaVersion 1.2')
+diff --git a/src/emo_panel_protocol/published.py b/src/emo_panel_protocol/published.py
+index c3c7ac8b..639dccfd 100644
+--- a/src/emo_panel_protocol/published.py
++++ b/src/emo_panel_protocol/published.py
+@@ -3,7 +3,7 @@ from __future__ import annotations
+ 
+ from typing import Literal
+ 
+-from pydantic import Field
++from pydantic import Field, model_serializer
+ 
+ from .models import (Action, ComponentType, DataSource, Grid, Id, Model, Navigation, Placement,
+                      VisualProps, ResponsiveItem, ResponsiveLayout, ResultScope)
+@@ -40,9 +40,17 @@ class PublishedComponent(Model):
+ class PublishedPage(Model):
+     name: str
+     layout: Grid | ResponsiveLayout
++    canvasTop: int = Field(default=0, ge=-32768, le=0)
+     components: list[PublishedComponent]
+     resultScopeIds: list[Id] = Field(default_factory=list)
+ 
++    @model_serializer(mode='wrap')
++    def serializeCanvas(self, handler):
++        payload = handler(self)
++        if not self.canvasTop:
++            payload.pop('canvasTop', None)
++        return payload
++
+ 
+ class PublishedPresentation(Model):
+     schemaVersion: Literal['published-1'] = 'published-1'
+diff --git a/tests/core/presentation/test_panel_contract.py b/tests/core/presentation/test_panel_contract.py
+index 4f99f370..c8100ab6 100644
+--- a/tests/core/presentation/test_panel_contract.py
++++ b/tests/core/presentation/test_panel_contract.py
+@@ -40,6 +40,8 @@ def testManifestTracksEveryArtifactAndHonestValidationScope(contract):
+     with zipfile.ZipFile(output / 'sample-panels/demo.emoweb') as archive:
+         snapshot = json.loads(archive.read('presentation.json'))
+         assert {'live', 'history'} == set(snapshot['pages'])
++        assert snapshot['pages']['live']['canvasTop'] == -96
++        assert snapshot['pages']['live']['components'][0]['responsive']['canvasOffsetY'] == -96
+         spacers = [c for c in snapshot['pages']['live']['components'] if c['type'] == 'spacer']
+         assert spacers and spacers[0]['componentId'] == 'blank'
+         summary = next(c for c in snapshot['pages']['live']['components'] if c['componentId'] == 'summary')
+@@ -129,7 +131,7 @@ def testPreviewContractRequiresExplicitReadOnlyModeAndConnection(contract):
+     from emo_panel_protocol.preview import PreviewContext
+     from pydantic import ValidationError
+     output, manifest = contract
+-    assert manifest['sdkVersion'] == '1.2.0'
++    assert manifest['sdkVersion'] == '1.3.0'
+     fixture = json.loads((output / 'fixtures/preview-fixtures.json').read_text())
+     online = json.loads((output / 'fixtures/preview-runtime.json').read_text())
+     assert PreviewContext.model_validate(online).runtime.target == '192.0.2.10:50051'
+diff --git a/tests/ui/page_designer/test_canvas_viewport.py b/tests/ui/page_designer/test_canvas_viewport.py
+index 0eb693be..a3f08c9f 100644
+--- a/tests/ui/page_designer/test_canvas_viewport.py
++++ b/tests/ui/page_designer/test_canvas_viewport.py
+@@ -1,14 +1,106 @@
+ """Real page viewport size, auto fit and manual camera state are independent."""
+ import pytest
+-from PySide2.QtCore import QEventLoop, QPointF, QSize, Qt, QTimer
++from PySide2.QtCore import QEventLoop, QPoint, QPointF, QRect, QSize, Qt, QTimer
+ from PySide2.QtTest import QTest
+ 
+ from test_workspace import designer  # noqa: F401
+ from test_responsive_editor import responsivePage, settle  # noqa: F401
+ 
+ 
+-def testFollowingPageFillsCanvasAndPanelEntriesStayOutsidePage(responsivePage):  # noqa: F811
+-    _coordinator, editor, _keys = responsivePage
++@pytest.mark.parametrize('legacy', [False, True], ids=['responsive', 'legacy-grid'])
++def testFitShowsWholeLongPageWithoutInternalScrollbars(responsivePage, legacy):  # noqa: F811
++    from emo_master.core.presentation.models import Grid, ResponsiveLayout
++    coordinator, editor, keys = responsivePage
++    def configure(p):
++        page = p.pages[editor.pageId]
++        page.layout = Grid() if legacy else ResponsiveLayout()
++        for index, item in enumerate(page.components):
++            if legacy:
++                item.layout.row = index * 4
++                item.layout.rowSpan = 4
++            else:
++                item.responsive.preferredHeight = 300
++    coordinator.session.editPresentation(configure)
++    editor.refresh()
++    settle()
++    before, history = coordinator.session.payload(), len(coordinator.session._undo)
++    editor.canvas.fitPage()
++    settle()
++    canvas = editor.canvas
++    scroll = editor.renderer.pages[editor.pageId]
++    assert scroll.verticalScrollBar().maximum() == 0
++    assert scroll.horizontalScrollBar().maximum() == 0
++    assert not scroll.overlayVertical.isVisible() and not scroll.overlayHorizontal.isVisible()
++    assert editor.renderer.height() > canvas.viewport().height()
++    assert canvas.getZoomFactor() < 1 and canvasBoxFits(canvas)
++    for card in editor.renderer.cards[editor.pageId].values():
++        box = QRect(card.mapTo(editor.renderer, QPoint()), card.size())
++        assert canvas.viewport().rect().adjusted(-1, -1, 1, 1).contains(canvas.rendererRectOnViewport(box))
++    # Enlarging changes only the view; the whole logical page remains available.
++    canvas.setZoomFactor(1.25)
++    last = editor.renderer.cards[editor.pageId][keys[-1]]
++    local = last.mapTo(editor.renderer, last.rect().center())
++    canvas.centerOn(canvas.proxy.mapToScene(QPointF(local)))
++    settle()
++    assert not scroll.overlayVertical.isVisible()
++    delta = canvas.mapFromScene(canvas.proxy.mapToScene(QPointF(local))) - canvas.viewport().rect().center()
++    assert abs(delta.x()) <= 2 and abs(delta.y()) <= 2
++    assert coordinator.session.payload() == before and len(coordinator.session._undo) == history
++
++
++def testFixedTerminalKeepsOverflowAndFollowingWindowRemovesIt(responsivePage):  # noqa: F811
++    from emo_master.core.presentation.models import ResponsiveLayout
++    coordinator, editor, _keys = responsivePage
++    def configure(p):
++        page = p.pages[editor.pageId]
++        page.layout = ResponsiveLayout()
++        for item in page.components:
++            item.responsive.preferredHeight = 300
++    coordinator.session.editPresentation(configure)
++    editor.refresh()
++    before = coordinator.session.payload()
++    for _ in range(2):
++        editor.canvas.setPreviewSize(768, 640)
++        settle()
++        scroll = editor.renderer.pages[editor.pageId]
++        assert scroll.viewport().size() == QSize(768, 640)
++        assert scroll.overlayVertical.isVisible() and scroll.verticalScrollBar().maximum() > 0
++        scroll.verticalScrollBar().setValue(150)
++        editor.canvas.setPreviewSize()
++        settle()
++        assert scroll.verticalScrollBar().value() == scroll.verticalScrollBar().maximum() == 0
++        assert not scroll.overlayVertical.isVisible()
++        assert canvasBoxFits(editor.canvas)
++    assert coordinator.session.payload() == before
++
++
++def testContentHeightChangeKeepsViewUntilExplicitFit(responsivePage):  # noqa: F811
++    from emo_master.core.presentation.models import ResponsiveLayout
++    coordinator, editor, _keys = responsivePage
++    editor.canvas.fitPage()
++    settle()
++    zoom, center = editor.canvas.getZoomFactor(), editor.canvas._viewportCenter()
++    def configure(p):
++        page = p.pages[editor.pageId]
++        page.layout = ResponsiveLayout()
++        for item in page.components:
++            item.responsive.preferredHeight = 350
++    coordinator.session.editPresentation(configure)
++    editor.refresh()
++    settle()
++    assert editor.canvas.getZoomFactor() == zoom
++    assert (editor.canvas._viewportCenter() - center).manhattanLength() <= 2
++    scroll = editor.renderer.pages[editor.pageId]
++    assert scroll.verticalScrollBar().maximum() == 0
++    history = len(coordinator.session._undo)
++    coordinator.window.designerActions.invoke('fit')
++    settle()
++    assert editor.canvas.getZoomFactor() < zoom and canvasBoxFits(editor.canvas)
++    assert len(coordinator.session._undo) == history
++
++
++def testFollowingPageFillsCanvasAndPanelHeadersFloatAtTop(responsivePage):  # noqa: F811
++    coordinator, editor, _keys = responsivePage
+     canvas = editor.canvas
+     canvas.fitPage()
+     settle()
+@@ -17,13 +109,34 @@ def testFollowingPageFillsCanvasAndPanelEntriesStayOutsidePage(responsivePage):
+     assert (center - canvas.viewport().rect().center()).manhattanLength() <= 2
+     assert canvas.getZoomFactor() == pytest.approx(1)
+     assert editor.renderer.layout().contentsMargins().top() == 12
+-    for panel, button in zip((editor.floatingToolbox, editor.floatingProperties), editor.panelButtons):
++    bounds = editor.renderer.geometry()
++    viewport = canvas.viewport().geometry()
++    transform = canvas.transform()
++    payload, history = coordinator.session.payload(), len(coordinator.session._undo)
++    for panel in (editor.floatingToolbox, editor.floatingProperties):
+         panel.setExpanded(False)
+-        assert not panel.isVisible()
+-        assert button.parentWidget() is editor.centerPanel
+-        button.click()
++    settle()
++    for panel in (editor.floatingToolbox, editor.floatingProperties):
+         assert panel.isVisible()
+-        panel.setExpanded(False)
++        assert panel.parentWidget() is editor.canvasHost
++        assert not editor.renderer.isAncestorOf(panel)
++        assert panel.y() == 12 and panel.height() == 46
++        assert panel.toggleButton.isVisible() and panel.dragHandle.isVisible()
++        assert not panel.contentScroll.isVisible()
++        button = panel.toggleButton
++        hit = editor.canvasHost.childAt(button.mapTo(editor.canvasHost, button.rect().center()))
++        assert hit is button
++        QTest.mouseClick(button, Qt.LeftButton)
++        settle()
++        assert panel.isExpanded() and panel.contentScroll.isVisible()
++        QTest.mouseClick(panel.closeButton, Qt.LeftButton)
++        settle()
++        assert not panel.isExpanded() and button.isVisible()
++        assert editor.renderer.geometry() == bounds
++        assert canvas.viewport().geometry() == viewport and canvas.transform() == transform
++    assert editor.floatingToolbox.x() == 12
++    assert editor.canvasHost.width() - editor.floatingProperties.geometry().right() - 1 == 12
++    assert coordinator.session.payload() == payload and len(coordinator.session._undo) == history
+ 
+ 
+ @pytest.mark.parametrize('width,height', [(360,640), (768,1024), (1280,720), (1920,1080)])
+diff --git a/tests/ui/page_designer/test_responsive_drop_preview.py b/tests/ui/page_designer/test_responsive_drop_preview.py
+index e8b3eccb..e879358b 100644
+--- a/tests/ui/page_designer/test_responsive_drop_preview.py
++++ b/tests/ui/page_designer/test_responsive_drop_preview.py
+@@ -107,20 +107,22 @@ def testMultiselectionIntoContainerPreviewMatchesNativeLayout(responsivePage):
+     compareDrop(editor, {'move': keys[0], 'moves': keys[:2]}, target, target.rect().center())
+ 
+ 
+-def testPreviewRecomputesTallPageExtentWhenGroupingReducesRows(responsivePage):  # noqa: F811
++@pytest.mark.parametrize('terminal', [False, True])
++def testPreviewRecomputesTallPageExtentWhenGroupingReducesRows(responsivePage, terminal):  # noqa: F811
+     _coordinator, editor, keys = responsivePage
+     page = editor.store.snapshot().pages[editor.pageId]
+     page.layout = ResponsiveLayout(direction='vertical')
+     for item in page.components:
+         item.responsive.preferredHeight = 230
+     install(editor, page)
+-    editor.previewWidth.setValue(1100)
++    if terminal:
++        editor.previewWidth.setValue(1100)
+     settle()
+     root = editor.renderer.layoutHosts[editor.pageId][None]
+     oldHeight = root.height()
+     scroll = editor.renderer.pages[editor.pageId]
+     scroll.verticalScrollBar().setValue(scroll.verticalScrollBar().maximum())
+-    assert scroll.verticalScrollBar().value() > 0
++    assert (scroll.verticalScrollBar().value() > 0) == terminal
+     target = editor.renderer.cards[editor.pageId][keys[3]]
+     _rects, size = compareDrop(editor, {'move': keys[0], 'moves': keys[:3]},
+                              target, QPoint(2, target.height() // 2))
+@@ -131,6 +133,8 @@ def testPreviewRecomputesTallPageExtentWhenGroupingReducesRows(responsivePage):
+ 
+ def testNativeDropRetainsScrolledViewportAndCandidatePositions(responsivePage):  # noqa: F811
+     _coordinator, editor, keys = responsivePage
++    # Internal page scrolling belongs to an explicit terminal viewport.
++    editor.canvas.setPreviewSize(1100, 640)
+     page = editor.store.snapshot().pages[editor.pageId]
+     page.layout = ResponsiveLayout(direction='vertical')
+     for item in page.components:
+diff --git a/tests/ui/page_designer/test_responsive_selection_pending.py b/tests/ui/page_designer/test_responsive_selection_pending.py
+index 529cbedf..38fd17cb 100644
+--- a/tests/ui/page_designer/test_responsive_selection_pending.py
++++ b/tests/ui/page_designer/test_responsive_selection_pending.py
+@@ -55,6 +55,7 @@ def testDeselectOtherCardPreservesPendingPrimaryInputs(responsivePage, invalid):
+ @pytest.mark.parametrize('destination', ['card', 'blank'])
+ def testPendingSelectionCommitRefreshesCanvasAndSavedMarker(responsivePage, destination):  # noqa: F811
+     coordinator, editor, keys = responsivePage
++    editor.canvas.setPreviewSize(1100, 720)
+     def longPage(p):
+         page = p.pages[editor.pageId]
+         page.layout = ResponsiveLayout(direction='vertical')
+diff --git a/tests/ui/page_designer/test_visual_editor.py b/tests/ui/page_designer/test_visual_editor.py
+index 8090de12..e7cbf85e 100644
+--- a/tests/ui/page_designer/test_visual_editor.py
++++ b/tests/ui/page_designer/test_visual_editor.py
+@@ -1,5 +1,6 @@
+-from PySide2.QtCore import Qt
+-from PySide2.QtWidgets import QApplication
++import pytest
++from PySide2.QtCore import QPoint, Qt
++from PySide2.QtWidgets import QApplication, QLabel
+ 
+ from test_workspace import designer  # noqa: F401
+ from test_pending_inputs import setupPage
+@@ -91,6 +92,37 @@ def testTypePropertiesPreserveHiddenValuesAndSharedSample(designer):  # noqa: F8
+     assert e.renderer.editorResourceUsage()['design_image_bytes'] == 0
+ 
+ 
++@pytest.mark.parametrize('size', [(640, 400), (1280, 800)])
++def testHiddenPropertyRowsLeaveNoBlankBands(designer, size):  # noqa: F811
++    coordinator, editor, navigation = setupPage(designer, 'page_navigation')
++    container = editor.tools.responsive.commands().place(editor.pageId, kind='container')[0]
++    editor.refresh()
++    designer.resize(*size)
++    tools = editor.tools
++    rules = tools.responsiveProperties
++    before, history = coordinator.session.payload(), len(coordinator.session._undo)
++    # Switch between item-only, group+item and page-only fields. Hidden rows
++    # must collapse on every transition, including when the panel must scroll.
++    for key in (navigation, container, None, navigation):
++        tools.select(key)
++        for _ in range(6):
++            QApplication.processEvents()
++        firstTitle = '宽度方式' if key == navigation else '排列方式'
++        first = next(label for label in rules.findChildren(QLabel) if label.text() == firstTitle)
++        assert first.isVisible()
++        assert 0 <= first.mapTo(rules, QPoint()).y() <= 8
++        if key == navigation:
++            title = tools.fields['title']
++            content = tools.propertyGroups.groups['内容'][0]
++            layout = tools.propertyGroups.groups['位置与大小'][0]
++            titleBottom = title.mapTo(editor.propertyScroll.widget(), QPoint(0, title.height())).y()
++            assert 0 <= layout.y() - titleBottom <= 24
++            assert content.height() < title.parentWidget().height() + 64
++        assert tools.applyButton.isVisible()
++        assert editor.propertyScroll.horizontalScrollBar().maximum() == 0
++    assert coordinator.session.payload() == before and len(coordinator.session._undo) == history
++
++
+ def testPagePropertiesAndLongNamesRemainInSidePanel(designer):  # noqa: F811
+     import pytest
+     c, e, key = setupPage(designer)

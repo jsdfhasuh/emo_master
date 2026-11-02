@@ -1,0 +1,913 @@
+{
+  "designer": {
+    "source": "D:\\jsdfhasuh\\documents\\my_project\\emo_master_designer",
+    "head": "8df8599fc026c424a49e87cc53fb45f6b371f16f",
+    "files": {
+      "docs/development/panel-contract-v1.md": {
+        "sha256": "a4a868797ff27d2769e1b853f6d3db1dc729347f3a6a8ba7b5b09bc70f38e0c3",
+        "bytes": 19814,
+        "untracked": false
+      },
+      "docs/development/responsive-layout-contract.md": {
+        "sha256": "c93c5b010e692d70d625383789e82ab60a99814d34803e4c3d4bbba34f5fb807",
+        "bytes": 14553,
+        "untracked": false
+      },
+      "docs/handoffs/runtime-web-panel-v1/README.md": {
+        "sha256": "4ffb80ddc8bb39921bbeafd15525e817c054a86836475ae57f9f3a8a1e7283e5",
+        "bytes": 4305,
+        "untracked": false
+      },
+      "docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md": {
+        "sha256": "2599052bf30e2508d7460afd6473d22b1805cc46d8ca5bde7335e85c61188edc",
+        "bytes": 4862,
+        "untracked": false
+      },
+      "docs/project-json-spec.md": {
+        "sha256": "7513c73415d0a47b6f4f83f974c60a2e6525fe907d8fea4ae4c4f6ccad72da6b",
+        "bytes": 30633,
+        "untracked": false
+      },
+      "docs/testing/2026-11-02-designer-space-dot-acceptance.md": {
+        "sha256": "0be7e8a33bb5a85e32ae6166d0b42a148c7bcdb301189b3aa9cdb729d644a22e",
+        "bytes": 7197,
+        "untracked": false
+      },
+      "docs/testing/2026-11-02-designer-space/README.md": {
+        "sha256": "10f1cb5ecef120576232c2026b15a306e95b5c9993ddd5fdc6fc16846ad13e9b",
+        "bytes": 11391,
+        "untracked": false
+      },
+      "packages/emo_panel_protocol/pyproject.toml": {
+        "sha256": "5b05e180b8f5163cf8d8eefefe18ccb6e96f7614c27ee34fc6d1890b1e7a69ab",
+        "bytes": 464,
+        "untracked": false
+      },
+      "scripts/build_panel_contract.py": {
+        "sha256": "b8990131b8e5a9d28be4e369408814622d0ddfb7ce1b3333d7f62184690e4405",
+        "bytes": 23357,
+        "untracked": false
+      },
+      "scripts/validate_flow_edge_readability.py": {
+        "sha256": "4407a800d162ce84d1ba2e661e19ee117c354c5dddc0fcaeaad3edcceb9ebdc5",
+        "bytes": 9286,
+        "untracked": false
+      },
+      "src/emo_master/apps/designer/page_designer/chrome.py": {
+        "sha256": "e4c95acabd3774eb920f2243dc36fe7ebe81041c476c7af659de93f45eb2f3b1",
+        "bytes": 15805,
+        "untracked": false
+      },
+      "src/emo_master/apps/designer/page_designer/coordinator.py": {
+        "sha256": "507334f57b3e89f6a7ad0977563754152c1c42c893c827d18542593e7e4b81b7",
+        "bytes": 22598,
+        "untracked": false
+      },
+      "src/emo_master/apps/designer/page_designer/editing.py": {
+        "sha256": "f820bde34e4e4a6f159307965eace879acd844f14cd9d93f81b161290c3dc976",
+        "bytes": 14187,
+        "untracked": false
+      },
+      "src/emo_master/apps/designer/page_designer/page_canvas.py": {
+        "sha256": "819f68d13e2ca631c6b9eed1c9a31acc9295bd078c9f4152bd97b73c56e6e609",
+        "bytes": 16851,
+        "untracked": false
+      },
+      "src/emo_master/apps/designer/page_designer/property_panel.py": {
+        "sha256": "32c4709e9bd975ebc54c0f252c0c3ea1638660d97e35ebd1b72c72adc97684bc",
+        "bytes": 9127,
+        "untracked": false
+      },
+      "src/emo_master/apps/designer/page_designer/responsive_editing.py": {
+        "sha256": "0d5cdb185a0710ba53856dc82308eee9eafde451268dff113ecd61e61689299c",
+        "bytes": 8294,
+        "untracked": false
+      },
+      "src/emo_master/apps/designer/page_designer/responsive_preview.py": {
+        "sha256": "abe3bd43acf8285a0a19bbb20687cd831ad9297a2bf65abb8b74bdf939b3817e",
+        "bytes": 6827,
+        "untracked": false
+      },
+      "src/emo_master/apps/designer/page_designer/responsive_properties.py": {
+        "sha256": "50bc007dc28380207246207714ce58c210cbda00e33e38c1992dae3e68622f4b",
+        "bytes": 5240,
+        "untracked": false
+      },
+      "src/emo_master/apps/designer/page_designer/responsive_tools.py": {
+        "sha256": "73997d81570f9ceb8fdd4ee7f798b58da4be488f7f1b24d0a08570412a5b22bf",
+        "bytes": 39110,
+        "untracked": false
+      },
+      "src/emo_master/apps/designer/page_designer/tools.py": {
+        "sha256": "f43715dbcfdff7baf7bb6c280fbf082dd9419de8704b8cc4235d08f9b324050a",
+        "bytes": 57793,
+        "untracked": false
+      },
+      "src/emo_master/apps/designer/page_designer/workspace.py": {
+        "sha256": "7c009724d1f66b60251c848b1ac5d54782d7805d4182e3fe640c43498fbd6e88",
+        "bytes": 19481,
+        "untracked": false
+      },
+      "src/emo_master/apps/designer/state/project_edit_session.py": {
+        "sha256": "a39baf81307af410da22c96b11f70ed80132d547e04ab37c08ab3ed2ae80e3fb",
+        "bytes": 8553,
+        "untracked": false
+      },
+      "src/emo_master/apps/designer/ui/canvas_overlay.py": {
+        "sha256": "605527ccc0ff20deda5a2b6cda19f99d9f62c4fe8f2def056181dc7769d00524",
+        "bytes": 10671,
+        "untracked": false
+      },
+      "src/emo_master/core/presentation/responsive.py": {
+        "sha256": "4d71fd83e7bf996529d384e98f8d0ede7a0893f1b6bc13da8d5cbbef088f55d1",
+        "bytes": 6074,
+        "untracked": false
+      },
+      "src/emo_master/core/project/web_panel.py": {
+        "sha256": "74ae4a2652f0fe738ed5457d639bdb3a9eb8655ebd70a671391523e147d4df54",
+        "bytes": 10202,
+        "untracked": false
+      },
+      "src/emo_master/ui/presentation/page_scroll.py": {
+        "sha256": "ef66349d7ab50bc9f7dd5ce8f4b40a40de8d9a5f254fd8f038d05aea0aff4636",
+        "bytes": 4058,
+        "untracked": false
+      },
+      "src/emo_master/ui/presentation/renderer.py": {
+        "sha256": "e22d9e7c6d2cf625a61573ddf5fe93a20ba4b1be713f92988046dc75c24c691f",
+        "bytes": 62348,
+        "untracked": false
+      },
+      "src/emo_master/ui/presentation/responsive_layout.py": {
+        "sha256": "1be8309f9930a64e141a0a3f76fb5e1a338ee7d64f46c9a36f66820f772f304a",
+        "bytes": 4065,
+        "untracked": false
+      },
+      "src/emo_panel_protocol/__init__.py": {
+        "sha256": "24460eb800051f0f93957227b3949f91307c045b197b30d7c50e4452342659e3",
+        "bytes": 108,
+        "untracked": false
+      },
+      "src/emo_panel_protocol/models.py": {
+        "sha256": "8608ad1101dc78d23dd39e94dca737f6f1b490498697353cd39cd94b6a2ffa38",
+        "bytes": 19860,
+        "untracked": false
+      },
+      "src/emo_panel_protocol/published.py": {
+        "sha256": "45f015cfef8fe08da653d46182abbfa9480e1536c784f9630a366bd00aaf6d0a",
+        "bytes": 2999,
+        "untracked": false
+      },
+      "tests/core/presentation/test_panel_contract.py": {
+        "sha256": "4dfb341f7e19bbb0c77202a9df01b2cca40b68c8ec33e1b2fb2fa77127957cca",
+        "bytes": 11338,
+        "untracked": false
+      },
+      "tests/ui/page_designer/test_canvas_viewport.py": {
+        "sha256": "28697a4a93158bea7dd4b89b30254860263b5ed6afeedd167c65eb8118117c22",
+        "bytes": 11544,
+        "untracked": false
+      },
+      "tests/ui/page_designer/test_responsive_drop_preview.py": {
+        "sha256": "8270d20ecff052baf386d7f38f5329516ed4326e2e95034ec622077664944c0c",
+        "bytes": 11532,
+        "untracked": false
+      },
+      "tests/ui/page_designer/test_responsive_selection_pending.py": {
+        "sha256": "4185b743133d04780ad4e3fb038b294040c0d50eb340017e40fd64094a7387f0",
+        "bytes": 4916,
+        "untracked": false
+      },
+      "tests/ui/page_designer/test_visual_editor.py": {
+        "sha256": "98e24c873261a74a4b2b337867ffdd2e9ec97becf36d5d74425961343740f2b5",
+        "bytes": 8863,
+        "untracked": false
+      },
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/README.md": {
+        "sha256": "2d7079710ac84846b8c61fac03750059fee48a05c27f9dc3bbf21c232d0dbcc5",
+        "bytes": 2109,
+        "untracked": true
+      },
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/contract-manifest.json": {
+        "sha256": "3f415552c79a37e56a3a57358b2aba1c5e4283f2c14f23c045566e94ed164589",
+        "bytes": 6684,
+        "untracked": true
+      },
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/emo_panel_protocol-1.3.0-py3-none-any.whl": {
+        "sha256": "cd86472b5faa74e8fb1048a95fcaf67cf59e5a285e4d5e69763cd9a71bb55295",
+        "bytes": 38789,
+        "untracked": true
+      },
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/panel-contract-v1.zip": {
+        "sha256": "4cf0bcb59fcd427d5e48a74c3f2082f834682a321364a6cc42234792f5577aca",
+        "bytes": 92030,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/README.md": {
+        "sha256": "1b62fd2b6343dd98a93509992876c864e738365fb900ea23c135849b6afcdb4a",
+        "bytes": 4697,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/backend-result.txt": {
+        "sha256": "91d6a9a6572e08d10d688391db052150633774c64be417369d86976b90a19c18",
+        "bytes": 14919,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/browser-narrow.png": {
+        "sha256": "969d3837bf2caff894189fe6d821d1f419bc0f87bff80c8c6c87dde0f9d18100",
+        "bytes": 55856,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/browser-result.json": {
+        "sha256": "0c70e5b1e9cc0408d2ce323eac7c504cda51ce674df8cecb9d9b78a30d23bc75",
+        "bytes": 5134,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/browser-wide.png": {
+        "sha256": "16e7e186ecc5fc1bedb9b4c9c393ca8c8b8bdc12593e8d86c2d40ef3365afab5",
+        "bytes": 58184,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/committed.png": {
+        "sha256": "d7838edc738e06723f5638ab0a6eaf77443f6d0b6398738a77028a5f6c113ca8",
+        "bytes": 58515,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/core-final.xml": {
+        "sha256": "c3e7db9d14c86645a25be75d4419d61c8dc3b4fda24f9af05855086dbb0031c1",
+        "bytes": 1682,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/designer-open.txt": {
+        "sha256": "0864cae88ddca915f2c27611383f1f6d7318f772b521b89f1db3d9943a3dd83f",
+        "bytes": 211,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/evidence.json": {
+        "sha256": "f66bde3bb8bc8d3a522c02a1c75da2174fa9e291726323dd592fab27d2b0ed13",
+        "bytes": 7846,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/preview.png": {
+        "sha256": "d483c4302b1f3cfa33e75502b8ff5daa95973996639f4796ed6bb7560bfd7de2",
+        "bytes": 57595,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/qt-final-feedback.xml": {
+        "sha256": "6d14b74e03f730a2efcb1e75db22bcff9ca45d8055fd18b302e6d131e7f5050d",
+        "bytes": 5773,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/qt-regression.xml": {
+        "sha256": "7c9e131ff3d238d9f5a6d2d5d133f042113d1d4922e1fc9cc8899e2ce3b3ace2",
+        "bytes": 41559,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/web-lint-baseline.json": {
+        "sha256": "f511f75aee15545213a365e2166467f238d5c425531b0e61e0bf6bcf4d01933c",
+        "bytes": 1384,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-fit-whole-page/README.md": {
+        "sha256": "82f423f7b63d52410199ad431b8151c2f7ee7558ba80890865920a868bccedd3",
+        "bytes": 3338,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-fit-whole-page/before.xml": {
+        "sha256": "5e5aef7ab3d8ac712036c331eff2d339b12f7019a157da40461d68c2fd31f247",
+        "bytes": 7225,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-fit-whole-page/evidence.json": {
+        "sha256": "2be460fdbf4c844b6de93c3726fc0a4f958ca591c7f7c6e61606e74ee9cc9640",
+        "bytes": 2055,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-fit-whole-page/fixed-terminal.png": {
+        "sha256": "f1c2ad4be5b54be24a4cb057608c5b0376f8f6c08a42e8d64c31a47fdd7139ca",
+        "bytes": 79615,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-fit-whole-page/regression.xml": {
+        "sha256": "a845defd45d03f8ea43cc3352d2df975fe2942e7f7ef5adf2df3e1233e6bafdd",
+        "bytes": 23774,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-fit-whole-page/visual.json": {
+        "sha256": "fc3293246d8e028d86d48ad839611da09626eb1b9848de9fbd0b8a4d6b3a3e6f",
+        "bytes": 196,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-fit-whole-page/whole-page.png": {
+        "sha256": "1f16d8d886c39bd8e4dc84c9baad0ef96cde1344614bc78fc2e838f1a4174311",
+        "bytes": 101957,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-parent-navigation/README.md": {
+        "sha256": "c2fb262ac9a716800b3ebc0288832fccf535311824c025cd9c1bc6dc3ec5651a",
+        "bytes": 1864,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-parent-navigation/entry.png": {
+        "sha256": "cb4daa9fec56792f721ee975a67acac7328db4700492ee9e09cbe24b65333431",
+        "bytes": 27929,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-parent-navigation/evidence.json": {
+        "sha256": "db08acbb39a9f967fea65eff6e026eb7d6ee695d2a43093accb7012673d2f2e3",
+        "bytes": 1449,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-parent-navigation/group-properties.png": {
+        "sha256": "3e3af01147caaa1990a3b71aa923ba02c08d66032acd0b6b2e6d2d88412c8642",
+        "bytes": 27155,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-parent-navigation/navigation.xml": {
+        "sha256": "d018cd57695e71cea42eb63973e86d1ac0c9366802284bcedb479f1345ad174f",
+        "bytes": 1660,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-parent-navigation/properties.xml": {
+        "sha256": "84c75186a7eee284b2675145059adfbea038545024589877a052c5b8bfdc058d",
+        "bytes": 1688,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-performance-probe/README.md": {
+        "sha256": "280b063f36ce4e23b787421f3add71051d82cab1b13c385f2bf84ed9bab56128",
+        "bytes": 8244,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-performance-probe/probe-exported.png": {
+        "sha256": "6b775e3e1491f72a124da0c41c0e99fe7ddea3cd62b9fd2154ebaf1e7c2c8229",
+        "bytes": 51320,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-performance-probe/probe-recording.png": {
+        "sha256": "cd389fc57149912ee10adfaf518957ec6e6b9e21bc359fca9af8d9a756a5967d",
+        "bytes": 53077,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-performance-probe/sample/report.json": {
+        "sha256": "c3a40b494daba7a4ee6157e4113094c8a97cd3317edd9c990f85ded24f8794bf",
+        "bytes": 297448,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-performance-probe/sample/summary.md": {
+        "sha256": "2f896b62fc34f15ab40948569e7fb130e9a33d259c4ea302d1c9e399a0b77cd9",
+        "bytes": 8323,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-edges/README.md": {
+        "sha256": "f251e0b17f6159f589dd053cc074502bb84f666e1e365f3bce9be398321645e9",
+        "bytes": 3458,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-edges/before.xml": {
+        "sha256": "8a00a141ae221293e9ff2d7553cdfe26cf471ea721dd980b0f9c7ba45a792e5e",
+        "bytes": 9850,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-edges/evidence.json": {
+        "sha256": "3008dc627cdee399a54c4c4195bc9988725e0ea6905e8087117b07668e3c5a34",
+        "bytes": 2137,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-edges/intermediate-regression.xml": {
+        "sha256": "34686908dc672b23454bc848482280992cd809b92e399ab3e561c32b491dae8c",
+        "bytes": 16138,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-edges/regression.xml": {
+        "sha256": "e577d5bb770202ab04da619a607b8c276ceda5939f4ccf4a812600fef6298525",
+        "bytes": 24768,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-edges/resize-edges.png": {
+        "sha256": "3708ab9be9325e89fc9a206599c03ce81aee6e2a344fbf9728a3634fb781e53f",
+        "bytes": 72672,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-edges/visual.json": {
+        "sha256": "23d6dcb399f5ea5128e73cc5ceb99515002a92fe08baaf4d0bc3c23277c57cb0",
+        "bytes": 1486,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-layout/README.md": {
+        "sha256": "55ef6bd82ac69a8ca3265caefca37ef67008bacffbfd1633bc845d4e74af4511",
+        "bytes": 3635,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-layout/after.png": {
+        "sha256": "a576d87fd1900781cb87884c34812d2fe6b50175ce4a7e68d66aa5ee9b4fd1d2",
+        "bytes": 82876,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-layout/before-gesture.png": {
+        "sha256": "36462a9f8b24c2df4f98dc156b9f5a113d5e8bb73749fbb7a8294b43e75993a7",
+        "bytes": 79889,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-layout/before.xml": {
+        "sha256": "eaee7c48c617da08f69652a8f4fb82d543255f14da9289072412d8a674e7e63f",
+        "bytes": 15316,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-layout/during.png": {
+        "sha256": "a3c83bc2569b42a7abd1b207f377e2d88e70fa78c1987760f55440cf28ac2d4b",
+        "bytes": 95163,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-layout/evidence.json": {
+        "sha256": "1b28971cd389246bb7d290910762b7653749a5507e5ee977269c65a9b8ec6806",
+        "bytes": 3580,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-layout/final-edges.xml": {
+        "sha256": "f440fdc9cea0b7a270201769260e1fa24569ee211a6abc92c8927defb21c3240",
+        "bytes": 6989,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-layout/final-editor.xml": {
+        "sha256": "7d891f6e936330c1091d2e3c4dbdca4e772b6e4f9b34d81fc1bf3611191ec714",
+        "bytes": 6341,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-layout/final-related.xml": {
+        "sha256": "43e21e87b355ac89b7220846907b38da0ed45c7e09ceeec096bd3be36a311ea4",
+        "bytes": 8522,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-layout/final-window.xml": {
+        "sha256": "6f5b201618b018da7a460823124c1b8b8a04c9cb3473e9857499b9efac3de700",
+        "bytes": 6064,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-layout/interrupted-run.txt": {
+        "sha256": "0976d8c25f07d79863c87a952a21f068da42cbcf3b0e3e371bb9c630ec956a59",
+        "bytes": 1357,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-resize-layout/visual.json": {
+        "sha256": "dacfd182dd9a693f2b9b0c06d37778030ef29a33eca2829300b17aa28141fc43",
+        "bytes": 172,
+        "untracked": true
+      },
+      "scripts/validate_designer_performance_probe.py": {
+        "sha256": "5a9a289b8b0535cf2293711c00dda08b3ed14a9edc1f8e4b33bd84845d0a5ffb",
+        "bytes": 4426,
+        "untracked": true
+      },
+      "src/emo_master/apps/designer/services/performance_probe.py": {
+        "sha256": "f77fd569b16c407da736c56520c13331076d763cc6af4c8557399427373573ea",
+        "bytes": 13840,
+        "untracked": true
+      },
+      "src/emo_master/apps/designer/ui/performance_probe.py": {
+        "sha256": "13b0d2fe0ae4cd54c2fbf610dcd751908338574aa43aa7e5970d71e657261298",
+        "bytes": 12316,
+        "untracked": true
+      },
+      "tests/core/presentation/test_expanded_canvas.py": {
+        "sha256": "536d0248b0ecaba475d6de13c11cd1d155526523eed826e887985fd198fdda83",
+        "bytes": 5472,
+        "untracked": true
+      },
+      "tests/designer/test_performance_probe.py": {
+        "sha256": "abff7ddb65b1c7add32a31fd0bdf18e04c63711e537a3b6d6da68e9b1ac6b427",
+        "bytes": 4384,
+        "untracked": true
+      },
+      "tests/ui/page_designer/test_parent_navigation.py": {
+        "sha256": "aca32a3bd864e0ade5e67bd1c82dbba9784a380aebedcae3f99414731147fde5",
+        "bytes": 5459,
+        "untracked": true
+      },
+      "tests/ui/page_designer/test_performance_probe_ui.py": {
+        "sha256": "2c320001e67123d0ddf632b4e2c02783a551de149501663f8952743fa8087969",
+        "bytes": 5222,
+        "untracked": true
+      },
+      "tests/ui/page_designer/test_responsive_drag_feedback.py": {
+        "sha256": "ad82899ec1ec2deef9a97bd7bf281ed5b300e3682fd3c34231302860a460f813",
+        "bytes": 11808,
+        "untracked": true
+      },
+      "tests/ui/page_designer/test_responsive_resize_edges.py": {
+        "sha256": "3262bd5259097a42b832e254d78f0e2a5362be372eda01520258b4f523bff9a4",
+        "bytes": 5775,
+        "untracked": true
+      },
+      "tests/ui/page_designer/test_responsive_resize_layout.py": {
+        "sha256": "38cc491f17744a480606b4860be62616f1806a3d8c9f89954f2796265a6dea3b",
+        "bytes": 7522,
+        "untracked": true
+      },
+      "tests/ui/presentation/test_expanded_native_canvas.py": {
+        "sha256": "7cfc1b16c392dd137152cb24636df2e9cebfc86d1bea79a7d4b99ad787334c8e",
+        "bytes": 1859,
+        "untracked": true
+      }
+    },
+    "tracked": [
+      "docs/development/panel-contract-v1.md",
+      "docs/development/responsive-layout-contract.md",
+      "docs/handoffs/runtime-web-panel-v1/README.md",
+      "docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md",
+      "docs/project-json-spec.md",
+      "docs/testing/2026-11-02-designer-space-dot-acceptance.md",
+      "docs/testing/2026-11-02-designer-space/README.md",
+      "packages/emo_panel_protocol/pyproject.toml",
+      "scripts/build_panel_contract.py",
+      "scripts/validate_flow_edge_readability.py",
+      "src/emo_master/apps/designer/page_designer/chrome.py",
+      "src/emo_master/apps/designer/page_designer/coordinator.py",
+      "src/emo_master/apps/designer/page_designer/editing.py",
+      "src/emo_master/apps/designer/page_designer/page_canvas.py",
+      "src/emo_master/apps/designer/page_designer/property_panel.py",
+      "src/emo_master/apps/designer/page_designer/responsive_editing.py",
+      "src/emo_master/apps/designer/page_designer/responsive_preview.py",
+      "src/emo_master/apps/designer/page_designer/responsive_properties.py",
+      "src/emo_master/apps/designer/page_designer/responsive_tools.py",
+      "src/emo_master/apps/designer/page_designer/tools.py",
+      "src/emo_master/apps/designer/page_designer/workspace.py",
+      "src/emo_master/apps/designer/state/project_edit_session.py",
+      "src/emo_master/apps/designer/ui/canvas_overlay.py",
+      "src/emo_master/core/presentation/responsive.py",
+      "src/emo_master/core/project/web_panel.py",
+      "src/emo_master/ui/presentation/page_scroll.py",
+      "src/emo_master/ui/presentation/renderer.py",
+      "src/emo_master/ui/presentation/responsive_layout.py",
+      "src/emo_panel_protocol/__init__.py",
+      "src/emo_panel_protocol/models.py",
+      "src/emo_panel_protocol/published.py",
+      "tests/core/presentation/test_panel_contract.py",
+      "tests/ui/page_designer/test_canvas_viewport.py",
+      "tests/ui/page_designer/test_responsive_drop_preview.py",
+      "tests/ui/page_designer/test_responsive_selection_pending.py",
+      "tests/ui/page_designer/test_visual_editor.py"
+    ],
+    "untracked": [
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/README.md",
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/contract-manifest.json",
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/emo_panel_protocol-1.3.0-py3-none-any.whl",
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/panel-contract-v1.zip",
+      "docs/testing/2026-11-02-designer-canvas-expansion/README.md",
+      "docs/testing/2026-11-02-designer-canvas-expansion/backend-result.txt",
+      "docs/testing/2026-11-02-designer-canvas-expansion/browser-narrow.png",
+      "docs/testing/2026-11-02-designer-canvas-expansion/browser-result.json",
+      "docs/testing/2026-11-02-designer-canvas-expansion/browser-wide.png",
+      "docs/testing/2026-11-02-designer-canvas-expansion/committed.png",
+      "docs/testing/2026-11-02-designer-canvas-expansion/core-final.xml",
+      "docs/testing/2026-11-02-designer-canvas-expansion/designer-open.txt",
+      "docs/testing/2026-11-02-designer-canvas-expansion/evidence.json",
+      "docs/testing/2026-11-02-designer-canvas-expansion/preview.png",
+      "docs/testing/2026-11-02-designer-canvas-expansion/qt-final-feedback.xml",
+      "docs/testing/2026-11-02-designer-canvas-expansion/qt-regression.xml",
+      "docs/testing/2026-11-02-designer-canvas-expansion/web-lint-baseline.json",
+      "docs/testing/2026-11-02-designer-fit-whole-page/README.md",
+      "docs/testing/2026-11-02-designer-fit-whole-page/before.xml",
+      "docs/testing/2026-11-02-designer-fit-whole-page/evidence.json",
+      "docs/testing/2026-11-02-designer-fit-whole-page/fixed-terminal.png",
+      "docs/testing/2026-11-02-designer-fit-whole-page/regression.xml",
+      "docs/testing/2026-11-02-designer-fit-whole-page/visual.json",
+      "docs/testing/2026-11-02-designer-fit-whole-page/whole-page.png",
+      "docs/testing/2026-11-02-designer-parent-navigation/README.md",
+      "docs/testing/2026-11-02-designer-parent-navigation/entry.png",
+      "docs/testing/2026-11-02-designer-parent-navigation/evidence.json",
+      "docs/testing/2026-11-02-designer-parent-navigation/group-properties.png",
+      "docs/testing/2026-11-02-designer-parent-navigation/navigation.xml",
+      "docs/testing/2026-11-02-designer-parent-navigation/properties.xml",
+      "docs/testing/2026-11-02-designer-performance-probe/README.md",
+      "docs/testing/2026-11-02-designer-performance-probe/probe-exported.png",
+      "docs/testing/2026-11-02-designer-performance-probe/probe-recording.png",
+      "docs/testing/2026-11-02-designer-performance-probe/sample/report.json",
+      "docs/testing/2026-11-02-designer-performance-probe/sample/summary.md",
+      "docs/testing/2026-11-02-designer-resize-edges/README.md",
+      "docs/testing/2026-11-02-designer-resize-edges/before.xml",
+      "docs/testing/2026-11-02-designer-resize-edges/evidence.json",
+      "docs/testing/2026-11-02-designer-resize-edges/intermediate-regression.xml",
+      "docs/testing/2026-11-02-designer-resize-edges/regression.xml",
+      "docs/testing/2026-11-02-designer-resize-edges/resize-edges.png",
+      "docs/testing/2026-11-02-designer-resize-edges/visual.json",
+      "docs/testing/2026-11-02-designer-resize-layout/README.md",
+      "docs/testing/2026-11-02-designer-resize-layout/after.png",
+      "docs/testing/2026-11-02-designer-resize-layout/before-gesture.png",
+      "docs/testing/2026-11-02-designer-resize-layout/before.xml",
+      "docs/testing/2026-11-02-designer-resize-layout/during.png",
+      "docs/testing/2026-11-02-designer-resize-layout/evidence.json",
+      "docs/testing/2026-11-02-designer-resize-layout/final-edges.xml",
+      "docs/testing/2026-11-02-designer-resize-layout/final-editor.xml",
+      "docs/testing/2026-11-02-designer-resize-layout/final-related.xml",
+      "docs/testing/2026-11-02-designer-resize-layout/final-window.xml",
+      "docs/testing/2026-11-02-designer-resize-layout/interrupted-run.txt",
+      "docs/testing/2026-11-02-designer-resize-layout/visual.json",
+      "scripts/validate_designer_performance_probe.py",
+      "src/emo_master/apps/designer/services/performance_probe.py",
+      "src/emo_master/apps/designer/ui/performance_probe.py",
+      "tests/core/presentation/test_expanded_canvas.py",
+      "tests/designer/test_performance_probe.py",
+      "tests/ui/page_designer/test_parent_navigation.py",
+      "tests/ui/page_designer/test_performance_probe_ui.py",
+      "tests/ui/page_designer/test_responsive_drag_feedback.py",
+      "tests/ui/page_designer/test_responsive_resize_edges.py",
+      "tests/ui/page_designer/test_responsive_resize_layout.py",
+      "tests/ui/presentation/test_expanded_native_canvas.py"
+    ]
+  },
+  "web": {
+    "source": "D:\\emo-web-review-b1ca6d3",
+    "head": "b89826b0841c6b4ef7f9c5f11ac938c6008934c7",
+    "files": {
+      "docs/development/panel-contract-v1.md": {
+        "sha256": "a4a868797ff27d2769e1b853f6d3db1dc729347f3a6a8ba7b5b09bc70f38e0c3",
+        "bytes": 19814,
+        "untracked": false
+      },
+      "docs/development/responsive-layout-contract.md": {
+        "sha256": "03c11650991f937e259c71c2580f12d91841cef4dc5c8475c7e39bf162d2db75",
+        "bytes": 13318,
+        "untracked": false
+      },
+      "docs/handoffs/runtime-web-panel-v1/README.md": {
+        "sha256": "4ffb80ddc8bb39921bbeafd15525e817c054a86836475ae57f9f3a8a1e7283e5",
+        "bytes": 4305,
+        "untracked": false
+      },
+      "docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md": {
+        "sha256": "fad9a104fee17a3c60452bc641876300d5b73688d1d7f76638207457bfd3176f",
+        "bytes": 3236,
+        "untracked": false
+      },
+      "docs/project-json-spec.md": {
+        "sha256": "7513c73415d0a47b6f4f83f974c60a2e6525fe907d8fea4ae4c4f6ccad72da6b",
+        "bytes": 30633,
+        "untracked": false
+      },
+      "docs/testing/2026-11-02-designer-space-dot-acceptance.md": {
+        "sha256": "6dc1e7228e5103f103945c8cef4782684ddf8c7225010323b77b62909966ed42",
+        "bytes": 4599,
+        "untracked": false
+      },
+      "packages/emo_panel_protocol/pyproject.toml": {
+        "sha256": "5b05e180b8f5163cf8d8eefefe18ccb6e96f7614c27ee34fc6d1890b1e7a69ab",
+        "bytes": 464,
+        "untracked": false
+      },
+      "src/emo_panel_protocol/__init__.py": {
+        "sha256": "24460eb800051f0f93957227b3949f91307c045b197b30d7c50e4452342659e3",
+        "bytes": 108,
+        "untracked": false
+      },
+      "src/emo_panel_protocol/models.py": {
+        "sha256": "8608ad1101dc78d23dd39e94dca737f6f1b490498697353cd39cd94b6a2ffa38",
+        "bytes": 19860,
+        "untracked": false
+      },
+      "src/emo_panel_protocol/published.py": {
+        "sha256": "45f015cfef8fe08da653d46182abbfa9480e1536c784f9630a366bd00aaf6d0a",
+        "bytes": 2999,
+        "untracked": false
+      },
+      "web_panel/README.md": {
+        "sha256": "d7eecf459e477c88b012fe2cf63ca66a3a8c4ece027bba13603a5cd45725d105",
+        "bytes": 5526,
+        "untracked": false
+      },
+      "web_panel/backend/emo_web_panel/contract_data/fixtures/preview-fixtures.json": {
+        "sha256": "f37556948415ec357b300bc5caf4ccf84dd5e3bce2866414a9dc6d5ca38b8ae0",
+        "bytes": 311,
+        "untracked": false
+      },
+      "web_panel/backend/emo_web_panel/contract_data/fixtures/preview-runtime.json": {
+        "sha256": "167dac4a4a8a7ef127a715ac21274ca63d58e19300e7215437e3bd7b6f9a76a1",
+        "bytes": 506,
+        "untracked": false
+      },
+      "web_panel/backend/emo_web_panel/packages.py": {
+        "sha256": "58767c510cae03b3b06035afb7cfbec49d6ad2d19307d5867b942104b308c28c",
+        "bytes": 37814,
+        "untracked": false
+      },
+      "web_panel/contracts/panel-contract-v1/README.md": {
+        "sha256": "a4a868797ff27d2769e1b853f6d3db1dc729347f3a6a8ba7b5b09bc70f38e0c3",
+        "bytes": 19814,
+        "untracked": false
+      },
+      "web_panel/contracts/panel-contract-v1/contract-manifest.json": {
+        "sha256": "3f415552c79a37e56a3a57358b2aba1c5e4283f2c14f23c045566e94ed164589",
+        "bytes": 6684,
+        "untracked": false
+      },
+      "web_panel/contracts/panel-contract-v1/fixtures/preview-fixtures.json": {
+        "sha256": "f37556948415ec357b300bc5caf4ccf84dd5e3bce2866414a9dc6d5ca38b8ae0",
+        "bytes": 311,
+        "untracked": false
+      },
+      "web_panel/contracts/panel-contract-v1/fixtures/preview-runtime.json": {
+        "sha256": "167dac4a4a8a7ef127a715ac21274ca63d58e19300e7215437e3bd7b6f9a76a1",
+        "bytes": 506,
+        "untracked": false
+      },
+      "web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.2.0-py3-none-any.whl": {
+        "deleted": true
+      },
+      "web_panel/contracts/panel-contract-v1/sample-panels/demo.emoweb": {
+        "sha256": "da6f55a962ea11758df0326587b9bc60d73eecb9d1723ced5fe10555471efc21",
+        "bytes": 2403,
+        "untracked": false
+      },
+      "web_panel/contracts/panel-contract-v1/sample-panels/source/demo.emoproj": {
+        "sha256": "eaa4ef7665836951eb891ef6951fc7fa0a59f07715a0a87eada57714cb208de1",
+        "bytes": 28943,
+        "untracked": false
+      },
+      "web_panel/contracts/panel-contract-v1/schemas/published-presentation.schema.json": {
+        "sha256": "1c8408ff12148aa9513c9fb1c131fbc817f43cc8e39a90b9aaf36e7e53440aac",
+        "bytes": 23670,
+        "untracked": false
+      },
+      "web_panel/contracts/panel-contract-v1/typescript/panel-contract.ts": {
+        "sha256": "01ca4def6bf4526a6d84ae272b6c9ae7701a9aaee7a15660a52651a010c478de",
+        "bytes": 31291,
+        "untracked": false
+      },
+      "web_panel/frontend/src/contracts/types.ts": {
+        "sha256": "c79c9778c9efec41f591749ee02e8bfd3b405ee471e5a12fbef954bc9bb967e5",
+        "bytes": 3813,
+        "untracked": false
+      },
+      "web_panel/frontend/src/renderer/PanelRenderer.tsx": {
+        "sha256": "06514476ca4f0349e6ef86d7a754b3a767c46d84566ca1a87a661f20c7a5ba24",
+        "bytes": 26141,
+        "untracked": false
+      },
+      "web_panel/frontend/tests/spacer_browser.py": {
+        "sha256": "869a1481d54c149a2fe3252cdf75088bbe17c3c5e359b528b4ac9c19cac5bb44",
+        "bytes": 12747,
+        "untracked": false
+      },
+      "web_panel/pyproject.toml": {
+        "sha256": "87bf3635207c3cfd51b3c32939b75fea2e84f60d4a8b0c0620d8a1682bb68085",
+        "bytes": 621,
+        "untracked": false
+      },
+      "web_panel/tests/test_contract_manifest.py": {
+        "sha256": "b7cb6a7e2742f8c22df87c22903a0d246cecc53db78129ff6dc30caaf614fe7f",
+        "bytes": 3678,
+        "untracked": false
+      },
+      "web_panel/tests/test_official_packages.py": {
+        "sha256": "8df8f9f50a1e822e0d2037a14ecd9c822d4dbb7b55663d9088b4faa6ce7ddda5",
+        "bytes": 11091,
+        "untracked": false
+      },
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/README.md": {
+        "sha256": "2d7079710ac84846b8c61fac03750059fee48a05c27f9dc3bbf21c232d0dbcc5",
+        "bytes": 2109,
+        "untracked": true
+      },
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/contract-manifest.json": {
+        "sha256": "3f415552c79a37e56a3a57358b2aba1c5e4283f2c14f23c045566e94ed164589",
+        "bytes": 6684,
+        "untracked": true
+      },
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/emo_panel_protocol-1.3.0-py3-none-any.whl": {
+        "sha256": "cd86472b5faa74e8fb1048a95fcaf67cf59e5a285e4d5e69763cd9a71bb55295",
+        "bytes": 38789,
+        "untracked": true
+      },
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/panel-contract-v1.zip": {
+        "sha256": "4cf0bcb59fcd427d5e48a74c3f2082f834682a321364a6cc42234792f5577aca",
+        "bytes": 92030,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/README.md": {
+        "sha256": "1b62fd2b6343dd98a93509992876c864e738365fb900ea23c135849b6afcdb4a",
+        "bytes": 4697,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/backend-result.txt": {
+        "sha256": "91d6a9a6572e08d10d688391db052150633774c64be417369d86976b90a19c18",
+        "bytes": 14919,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/browser-narrow.png": {
+        "sha256": "969d3837bf2caff894189fe6d821d1f419bc0f87bff80c8c6c87dde0f9d18100",
+        "bytes": 55856,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/browser-result.json": {
+        "sha256": "0c70e5b1e9cc0408d2ce323eac7c504cda51ce674df8cecb9d9b78a30d23bc75",
+        "bytes": 5134,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/browser-wide.png": {
+        "sha256": "16e7e186ecc5fc1bedb9b4c9c393ca8c8b8bdc12593e8d86c2d40ef3365afab5",
+        "bytes": 58184,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/committed.png": {
+        "sha256": "d7838edc738e06723f5638ab0a6eaf77443f6d0b6398738a77028a5f6c113ca8",
+        "bytes": 58515,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/core-final.xml": {
+        "sha256": "c3e7db9d14c86645a25be75d4419d61c8dc3b4fda24f9af05855086dbb0031c1",
+        "bytes": 1682,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/designer-open.txt": {
+        "sha256": "0864cae88ddca915f2c27611383f1f6d7318f772b521b89f1db3d9943a3dd83f",
+        "bytes": 211,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/evidence.json": {
+        "sha256": "f66bde3bb8bc8d3a522c02a1c75da2174fa9e291726323dd592fab27d2b0ed13",
+        "bytes": 7846,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/preview.png": {
+        "sha256": "d483c4302b1f3cfa33e75502b8ff5daa95973996639f4796ed6bb7560bfd7de2",
+        "bytes": 57595,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/qt-final-feedback.xml": {
+        "sha256": "6d14b74e03f730a2efcb1e75db22bcff9ca45d8055fd18b302e6d131e7f5050d",
+        "bytes": 5773,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/qt-regression.xml": {
+        "sha256": "7c9e131ff3d238d9f5a6d2d5d133f042113d1d4922e1fc9cc8899e2ce3b3ace2",
+        "bytes": 41559,
+        "untracked": true
+      },
+      "docs/testing/2026-11-02-designer-canvas-expansion/web-lint-baseline.json": {
+        "sha256": "f511f75aee15545213a365e2166467f238d5c425531b0e61e0bf6bcf4d01933c",
+        "bytes": 1384,
+        "untracked": true
+      },
+      "web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.3.0-py3-none-any.whl": {
+        "sha256": "cd86472b5faa74e8fb1048a95fcaf67cf59e5a285e4d5e69763cd9a71bb55295",
+        "bytes": 38789,
+        "untracked": true
+      }
+    },
+    "tracked": [
+      "docs/development/panel-contract-v1.md",
+      "docs/development/responsive-layout-contract.md",
+      "docs/handoffs/runtime-web-panel-v1/README.md",
+      "docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md",
+      "docs/project-json-spec.md",
+      "docs/testing/2026-11-02-designer-space-dot-acceptance.md",
+      "packages/emo_panel_protocol/pyproject.toml",
+      "src/emo_panel_protocol/__init__.py",
+      "src/emo_panel_protocol/models.py",
+      "src/emo_panel_protocol/published.py",
+      "web_panel/README.md",
+      "web_panel/backend/emo_web_panel/contract_data/fixtures/preview-fixtures.json",
+      "web_panel/backend/emo_web_panel/contract_data/fixtures/preview-runtime.json",
+      "web_panel/backend/emo_web_panel/packages.py",
+      "web_panel/contracts/panel-contract-v1/README.md",
+      "web_panel/contracts/panel-contract-v1/contract-manifest.json",
+      "web_panel/contracts/panel-contract-v1/fixtures/preview-fixtures.json",
+      "web_panel/contracts/panel-contract-v1/fixtures/preview-runtime.json",
+      "web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.2.0-py3-none-any.whl",
+      "web_panel/contracts/panel-contract-v1/sample-panels/demo.emoweb",
+      "web_panel/contracts/panel-contract-v1/sample-panels/source/demo.emoproj",
+      "web_panel/contracts/panel-contract-v1/schemas/published-presentation.schema.json",
+      "web_panel/contracts/panel-contract-v1/typescript/panel-contract.ts",
+      "web_panel/frontend/src/contracts/types.ts",
+      "web_panel/frontend/src/renderer/PanelRenderer.tsx",
+      "web_panel/frontend/tests/spacer_browser.py",
+      "web_panel/pyproject.toml",
+      "web_panel/tests/test_contract_manifest.py",
+      "web_panel/tests/test_official_packages.py"
+    ],
+    "untracked": [
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/README.md",
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/contract-manifest.json",
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/emo_panel_protocol-1.3.0-py3-none-any.whl",
+      "docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/panel-contract-v1.zip",
+      "docs/testing/2026-11-02-designer-canvas-expansion/README.md",
+      "docs/testing/2026-11-02-designer-canvas-expansion/backend-result.txt",
+      "docs/testing/2026-11-02-designer-canvas-expansion/browser-narrow.png",
+      "docs/testing/2026-11-02-designer-canvas-expansion/browser-result.json",
+      "docs/testing/2026-11-02-designer-canvas-expansion/browser-wide.png",
+      "docs/testing/2026-11-02-designer-canvas-expansion/committed.png",
+      "docs/testing/2026-11-02-designer-canvas-expansion/core-final.xml",
+      "docs/testing/2026-11-02-designer-canvas-expansion/designer-open.txt",
+      "docs/testing/2026-11-02-designer-canvas-expansion/evidence.json",
+      "docs/testing/2026-11-02-designer-canvas-expansion/preview.png",
+      "docs/testing/2026-11-02-designer-canvas-expansion/qt-final-feedback.xml",
+      "docs/testing/2026-11-02-designer-canvas-expansion/qt-regression.xml",
+      "docs/testing/2026-11-02-designer-canvas-expansion/web-lint-baseline.json",
+      "web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.3.0-py3-none-any.whl"
+    ]
+  },
+  "shared_differences": [
+    "docs/development/responsive-layout-contract.md",
+    "docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md",
+    "docs/testing/2026-11-02-designer-space-dot-acceptance.md"
+  ]
+}

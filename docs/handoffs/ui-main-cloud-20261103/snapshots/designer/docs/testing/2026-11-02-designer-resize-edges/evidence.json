@@ -1,0 +1,65 @@
+{
+  "date": "2026-11-02",
+  "head": "8df8599fc026c424a49e87cc53fb45f6b371f16f",
+  "branch": "codex/designer-resize-zoom-fix",
+  "sourceDirty": true,
+  "platform": "Qt offscreen; QTest QWindow pointer input, actual viewport cursor assertion",
+  "before": {
+    "tests": 25,
+    "failures": 22,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 3
+  },
+  "intermediateRegression": {
+    "tests": 92,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 91
+  },
+  "regression": {
+    "tests": 157,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 157
+  },
+  "checks": {
+    "ruff": "PASS (changed Python files)",
+    "mypy": "PASS (607 source files)",
+    "gitDiffCheck": "PASS"
+  },
+  "manualMouse": "NOT_RUN",
+  "windowsDpi": "NOT_RUN",
+  "ci": "NOT_RUN",
+  "frozenPackage": "NOT_RUN",
+  "sourceSha256": {
+    "src/emo_master/apps/designer/page_designer/responsive_tools.py": "3bddddd2453a048ffc3b88217f1a0cb20182383ebc0f20bdef9fa472ee6920be",
+    "tests/ui/page_designer/test_responsive_resize_edges.py": "31dc87316dd653aa892a10bc69cf8bd594310a03e68834e0b241f94b251307a4",
+    "tests/ui/page_designer/test_responsive_resize_window.py": "cb8b7017a2838dafa79fd14b5ceecfed9e718042e2a1e8befb7621ada4be9983",
+    "tests/ui/page_designer/test_responsive_editor.py": "f899194327bde94ed443a638fd0a24aa8bc51e048f381c3716c83c344e812a70"
+  },
+  "artifacts": {
+    "before.xml": {
+      "sha256": "8a00a141ae221293e9ff2d7553cdfe26cf471ea721dd980b0f9c7ba45a792e5e",
+      "bytes": 9850
+    },
+    "intermediate-regression.xml": {
+      "sha256": "34686908dc672b23454bc848482280992cd809b92e399ab3e561c32b491dae8c",
+      "bytes": 16138
+    },
+    "regression.xml": {
+      "sha256": "e577d5bb770202ab04da619a607b8c276ceda5939f4ccf4a812600fef6298525",
+      "bytes": 24768
+    },
+    "resize-edges.png": {
+      "sha256": "3708ab9be9325e89fc9a206599c03ce81aee6e2a344fbf9728a3634fb781e53f",
+      "bytes": 72672
+    },
+    "visual.json": {
+      "sha256": "23d6dcb399f5ea5128e73cc5ceb99515002a92fe08baaf4d0bc3c23277c57cb0",
+      "bytes": 1486
+    }
+  }
+}

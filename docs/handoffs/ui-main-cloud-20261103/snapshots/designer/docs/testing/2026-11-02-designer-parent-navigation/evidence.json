@@ -1,0 +1,45 @@
+{
+  "date": "2026-11-02",
+  "head": "8df8599fc026c424a49e87cc53fb45f6b371f16f",
+  "branch": "codex/designer-resize-zoom-fix",
+  "sourceDirty": true,
+  "regression": {
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "platform": "Qt offscreen",
+  "visualProbe": "QWindow click opens real group properties without model changes",
+  "checks": {
+    "ruff": "PASS",
+    "mypy": "PASS (affected module)",
+    "gitDiffCheck": "PASS"
+  },
+  "manualMouse": "NOT_RUN",
+  "windowsDpi": "NOT_RUN",
+  "ci": "NOT_RUN",
+  "frozenPackage": "NOT_RUN",
+  "sourceSha256": {
+    "src/emo_master/apps/designer/page_designer/tools.py": "f43715dbcfdff7baf7bb6c280fbf082dd9419de8704b8cc4235d08f9b324050a",
+    "tests/ui/page_designer/test_parent_navigation.py": "aca32a3bd864e0ade5e67bd1c82dbba9784a380aebedcae3f99414731147fde5"
+  },
+  "artifacts": {
+    "navigation.xml": {
+      "sha256": "d018cd57695e71cea42eb63973e86d1ac0c9366802284bcedb479f1345ad174f",
+      "bytes": 1660
+    },
+    "properties.xml": {
+      "sha256": "84c75186a7eee284b2675145059adfbea038545024589877a052c5b8bfdc058d",
+      "bytes": 1688
+    },
+    "entry.png": {
+      "sha256": "cb4daa9fec56792f721ee975a67acac7328db4700492ee9e09cbe24b65333431",
+      "bytes": 27929
+    },
+    "group-properties.png": {
+      "sha256": "3e3af01147caaa1990a3b71aa923ba02c08d66032acd0b6b2e6d2d88412c8642",
+      "bytes": 27155
+    }
+  }
+}

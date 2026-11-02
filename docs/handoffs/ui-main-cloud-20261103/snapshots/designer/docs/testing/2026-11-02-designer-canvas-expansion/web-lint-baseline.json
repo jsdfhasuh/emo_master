@@ -1,0 +1,40 @@
+[
+  {
+    "path": "web_panel/backend/emo_web_panel/packages.py",
+    "unchangedBaselineFindings": [
+      {
+        "code": "E701",
+        "lineText": "if \"icon\" in props and (not isinstance(props['icon'],str) or len(props['icon'])>32):raise PackageError('Invalid text icon')"
+      },
+      {
+        "code": "E701",
+        "lineText": "if 'sourceMode' in props and props['sourceMode'] not in ('history_fixed','history_selection'):raise PackageError('Invalid history image mode')"
+      },
+      {
+        "code": "E701",
+        "lineText": "if 'sourceComponentId' in props:_identifier(props['sourceComponentId'],'history table reference')"
+      },
+      {
+        "code": "E701",
+        "lineText": "if \"followsFilter\" in props and type(props[\"followsFilter\"]) is not bool:raise PackageError(\"Invalid aggregate filter policy\")"
+      },
+      {
+        "code": "E701",
+        "lineText": "if \"aggregateField\" in props:_identifier(props[\"aggregateField\"], \"aggregate field\")"
+      },
+      {
+        "code": "E702",
+        "lineText": "ids.add(aid); paths.add(path)"
+      }
+    ]
+  },
+  {
+    "path": "web_panel/tests/test_official_packages.py",
+    "unchangedBaselineFindings": [
+      {
+        "code": "E702",
+        "lineText": "data = out.getvalue(); digest = hashlib.sha256(data).hexdigest()"
+      }
+    ]
+  }
+]

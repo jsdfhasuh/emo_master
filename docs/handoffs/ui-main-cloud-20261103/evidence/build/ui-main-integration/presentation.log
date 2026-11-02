@@ -1,0 +1,83 @@
+........................................................................ [ 13%]
+........................................................................ [ 26%]
+........................................................................ [ 39%]
+........................................................................ [ 52%]
+........................................................................ [ 66%]
+..........F.............................................FFFF............ [ 79%]
+........................................................................ [ 92%]
+.........................................                                [100%]
+================================== FAILURES ===================================
+________________ testEvictHiddenPageBeforeAllocatingTableQuota ________________
+tests\ui\presentation\test_components.py:127: in testEvictHiddenPageBeforeAllocatingTableQuota
+    window=RuntimePages(config)
+src\emo_master\ui\presentation\renderer.py:118: in __init__
+    self.config = Presentation.model_validate(presentation.model_dump()) if presentation is not None else Presentation()
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for Presentation
+E     Value error, responsive layout requires presentation schemaVersion 1.1 [type=value_error, input_value={'schemaVersion': '1.0', ... 'resultScopeIds': []}}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+-------------------------- Captured stderr teardown ---------------------------
+Traceback (most recent call last):
+  File "D:\tmp\emo-ui-main-merge-20261102\src\emo_master\ui\presentation\renderer.py", line 1108, in closeEvent
+    self.setDesignExamples(False)
+  File "D:\tmp\emo-ui-main-merge-20261102\src\emo_master\ui\presentation\renderer.py", line 300, in setDesignExamples
+    if not enabled and self.designExamples:
+AttributeError: 'RuntimePages' object has no attribute 'designExamples'. Did you mean: 'setDesignExamples'?
+_________ testImageEmptyTextDoesNotHideFailures[OPTIONAL_ABSENT-True] _________
+tests\ui\presentation\test_live_refresh.py:176: in testImageEmptyTextDoesNotHideFailures
+    assert widget.toolTip() == reason
+E   AssertionError: assert 'No face in t...81323fe5f9fc4' == 'OPTIONAL_ABSENT'
+E     
+E     + No face in this result
+E     - OPTIONAL_ABSENT
+E     + 诊断：OPTIONAL_ABSENT
+E     ? +++               +
+E     + 数据源：image
+E     + 流程 / 节点 / 端口：main / detect / image...
+E     
+E     ...Full output truncated (6 lines hidden), use '-vv' to show
+_________ testImageEmptyTextDoesNotHideFailures[BRANCH_SKIPPED-True] __________
+tests\ui\presentation\test_live_refresh.py:176: in testImageEmptyTextDoesNotHideFailures
+    assert widget.toolTip() == reason
+E   AssertionError: assert 'No face in t...81323fe5f9fc4' == 'BRANCH_SKIPPED'
+E     
+E     + No face in this result
+E     - BRANCH_SKIPPED
+E     + 诊断：BRANCH_SKIPPED
+E     ? +++              +
+E     + 数据源：image
+E     + 流程 / 节点 / 端口：main / detect / image...
+E     
+E     ...Full output truncated (6 lines hidden), use '-vv' to show
+__________ testImageEmptyTextDoesNotHideFailures[NODE_FAILED-False] ___________
+tests\ui\presentation\test_live_refresh.py:176: in testImageEmptyTextDoesNotHideFailures
+    assert widget.toolTip() == reason
+E   AssertionError: assert '本次处理异常，请联系技术...81323fe5f9fc4' == 'NODE_FAILED'
+E     
+E     + 本次处理异常，请联系技术人员
+E     - NODE_FAILED
+E     + 诊断：NODE_FAILED
+E     ? +++           +
+E     + 数据源：image
+E     + 流程 / 节点 / 端口：main / detect / image...
+E     
+E     ...Full output truncated (6 lines hidden), use '-vv' to show
+_________ testImageEmptyTextDoesNotHideFailures[EXPORT_TIMEOUT-False] _________
+tests\ui\presentation\test_live_refresh.py:176: in testImageEmptyTextDoesNotHideFailures
+    assert widget.toolTip() == reason
+E   AssertionError: assert '结果读取超时，请检查连接...81323fe5f9fc4' == 'EXPORT_TIMEOUT'
+E     
+E     + 结果读取超时，请检查连接
+E     - EXPORT_TIMEOUT
+E     + 诊断：EXPORT_TIMEOUT
+E     ? +++              +
+E     + 数据源：image
+E     + 流程 / 节点 / 端口：main / detect / image...
+E     
+E     ...Full output truncated (6 lines hidden), use '-vv' to show
+=========================== short test summary info ===========================
+FAILED tests/ui/presentation/test_components.py::testEvictHiddenPageBeforeAllocatingTableQuota
+FAILED tests/ui/presentation/test_live_refresh.py::testImageEmptyTextDoesNotHideFailures[OPTIONAL_ABSENT-True]
+FAILED tests/ui/presentation/test_live_refresh.py::testImageEmptyTextDoesNotHideFailures[BRANCH_SKIPPED-True]
+FAILED tests/ui/presentation/test_live_refresh.py::testImageEmptyTextDoesNotHideFailures[NODE_FAILED-False]
+FAILED tests/ui/presentation/test_live_refresh.py::testImageEmptyTextDoesNotHideFailures[EXPORT_TIMEOUT-False]
+5 failed, 540 passed in 178.12s (0:02:58)

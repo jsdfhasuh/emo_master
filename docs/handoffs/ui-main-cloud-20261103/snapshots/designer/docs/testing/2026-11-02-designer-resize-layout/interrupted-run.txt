@@ -1,0 +1,25 @@
+2026-11-02 - Qt offscreen combined regression (not a completed test result)
+Command: Python 3.10 -m pytest test_responsive_resize_layout.py,
+  test_responsive_resize_edges.py, test_responsive_resize_window.py,
+  test_responsive_editor.py, test_responsive_drag_pending.py,
+  test_responsive_selection_pending.py, test_responsive_drop_preview.py,
+  test_responsive_drag_feedback.py, test_canvas_viewport.py
+Exit code: 1. No completed JUnit result was produced for this run.
+
+Tool-output stack excerpt (not a complete crash dump):
+Windows fatal exception: access violation
+Current thread:
+  page_designer/page_canvas.py:31 in __init__
+    self.proxy = scene.addWidget(renderer)
+  page_designer/workspace.py:146 in __init__
+  page_designer/coordinator.py:266 in showPages
+  tests/ui/page_designer/test_responsive_editor.py:39 in responsivePage
+  _pytest/fixtures.py in call_fixture_func / pytest_fixture_setup
+
+A concurrently requested visual helper launch also returned -1073741502
+without stdout. The failed run and helper were no longer running when checked.
+No existing user Designer process was closed or restarted.
+
+Cause not established. Subsequent verification is split into fresh, sequential
+processes; see the separate final-*.xml reports and evidence.json. Do not count
+the aborted run as passed or claim that this resize change fixes the exception.

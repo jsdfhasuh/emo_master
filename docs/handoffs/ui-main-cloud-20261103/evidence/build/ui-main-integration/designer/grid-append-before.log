@@ -1,0 +1,54 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+___________ testLongGridKeepsAnEmptyRowForNativeAppend[whole-page] ____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x20a4d6523e0) at 0x0000020A4F3C2A00>
+terminal = False
+
+    @pytest.mark.parametrize('terminal', [False, True], ids=['whole-page', 'fixed-terminal'])
+    def testLongGridKeepsAnEmptyRowForNativeAppend(designer, terminal):  # noqa: F811
+        from test_user_path import drop
+    
+        coordinator, editor, key = setupGridPage(designer, 'image')
+        coordinator.session.editPresentation(lambda p: setattr(
+            _component(p, editor.pageId, key).layout, 'rowSpan', 15))
+        editor.refresh()
+        editor.canvas.setPreviewSize(768, 640) if terminal else editor.canvas.setPreviewSize()
+        settle()
+        before, history = coordinator.session.payload(), len(coordinator.session._undo)
+        body = editor.renderer.pages[editor.pageId].widget()
+        empty = body.layout().cellRect(15, 0)
+>       assert empty.height() >= 64
+E       assert 0 >= 64
+E        +  where 0 = <built-in method height of PySide2.QtCore.QRect object at 0x0000020A506B1D00>()
+E        +    where <built-in method height of PySide2.QtCore.QRect object at 0x0000020A506B1D00> = PySide2.QtCore.QRect(9, 969, 690, 0).height
+
+tests\ui\page_designer\test_grid_geometry.py:70: AssertionError
+_________ testLongGridKeepsAnEmptyRowForNativeAppend[fixed-terminal] __________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x20a4fa1f500) at 0x0000020A4C601300>
+terminal = True
+
+    @pytest.mark.parametrize('terminal', [False, True], ids=['whole-page', 'fixed-terminal'])
+    def testLongGridKeepsAnEmptyRowForNativeAppend(designer, terminal):  # noqa: F811
+        from test_user_path import drop
+    
+        coordinator, editor, key = setupGridPage(designer, 'image')
+        coordinator.session.editPresentation(lambda p: setattr(
+            _component(p, editor.pageId, key).layout, 'rowSpan', 15))
+        editor.refresh()
+        editor.canvas.setPreviewSize(768, 640) if terminal else editor.canvas.setPreviewSize()
+        settle()
+        before, history = coordinator.session.payload(), len(coordinator.session._undo)
+        body = editor.renderer.pages[editor.pageId].widget()
+        empty = body.layout().cellRect(15, 0)
+>       assert empty.height() >= 64
+E       assert 0 >= 64
+E        +  where 0 = <built-in method height of PySide2.QtCore.QRect object at 0x0000020A50CC4CC0>()
+E        +    where <built-in method height of PySide2.QtCore.QRect object at 0x0000020A50CC4CC0> = PySide2.QtCore.QRect(9, 969, 750, 0).height
+
+tests\ui\page_designer\test_grid_geometry.py:70: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/ui/page_designer/test_grid_geometry.py::testLongGridKeepsAnEmptyRowForNativeAppend[whole-page]
+FAILED tests/ui/page_designer/test_grid_geometry.py::testLongGridKeepsAnEmptyRowForNativeAppend[fixed-terminal]
+2 failed, 15 deselected in 2.43s

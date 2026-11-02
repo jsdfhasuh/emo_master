@@ -1,0 +1,1 @@
+PASS: manual full directory refresh, valid selection/dirty input preservation, invalid target clearing, delayed A response after B, and Runtime identity replacement. HTTP fixtures only.

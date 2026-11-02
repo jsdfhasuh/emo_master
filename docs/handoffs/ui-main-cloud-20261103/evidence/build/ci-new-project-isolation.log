@@ -1,0 +1,20 @@
+.FF..                                                                    [100%]
+================================== FAILURES ===================================
+________ testStartupAliasFirstPublicationUsesActualRunAction[embedded] ________
+tests\runtime\test_new_project_online_isolation.py:62: in testStartupAliasFirstPublicationUsesActualRunAction
+    assert window.showStartupProjectEntry(), window.projectController.lastLoadError
+E   AssertionError: �����հ���Ŀʧ�ܣ�[WinError 183] ���ļ��Ѵ���ʱ���޷��������ļ���: 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-4130\\testStartupAliasFirstPublicati0\\short-path\\assets'
+E   assert False
+E    +  where False = showStartupProjectEntry()
+E    +    where showStartupProjectEntry = <emo_master.apps.designer.ui.main_window.MainWindow(0x1ea9f4bdac0) at 0x000001EA9FCEBC40>.showStartupProjectEntry
+________ testStartupAliasFirstPublicationUsesActualRunAction[loopback] ________
+tests\runtime\test_new_project_online_isolation.py:62: in testStartupAliasFirstPublicationUsesActualRunAction
+    assert window.showStartupProjectEntry(), window.projectController.lastLoadError
+E   AssertionError: �����հ���Ŀʧ�ܣ�[WinError 183] ���ļ��Ѵ���ʱ���޷��������ļ���: 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-4130\\testStartupAliasFirstPublicati1\\short-path\\assets'
+E   assert False
+E    +  where False = showStartupProjectEntry()
+E    +    where showStartupProjectEntry = <emo_master.apps.designer.ui.main_window.MainWindow(0x1ea9eeaea80) at 0x000001EAA1FD53C0>.showStartupProjectEntry
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_new_project_online_isolation.py::testStartupAliasFirstPublicationUsesActualRunAction[embedded]
+FAILED tests/runtime/test_new_project_online_isolation.py::testStartupAliasFirstPublicationUsesActualRunAction[loopback]
+2 failed, 3 passed in 14.92s

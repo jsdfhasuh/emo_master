@@ -1,0 +1,33 @@
+....................F.........                                           [100%]
+================================== FAILURES ===================================
+______________ testContentHeightChangeKeepsViewUntilExplicitFit _______________
+
+responsivePage = (<emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x000002D708375090>, <emo_master.apps.d...d03c3a3c-bf80-44db-903d-1541279a7d24', '1b330ac5-0fb1-4246-8a0e-d353af601d29', '44363943-048d-4c01-98ba-1acf131f82d6'])
+
+    def testContentHeightChangeKeepsViewUntilExplicitFit(responsivePage):  # noqa: F811
+        from emo_master.core.presentation.models import ResponsiveLayout
+        coordinator, editor, _keys = responsivePage
+        editor.canvas.fitPage()
+        settle()
+        zoom, center = editor.canvas.getZoomFactor(), editor.canvas._viewportCenter()
+        def configure(p):
+            page = p.pages[editor.pageId]
+            page.layout = ResponsiveLayout()
+            for item in page.components:
+                item.responsive.preferredHeight = 350
+        coordinator.session.editPresentation(configure)
+        editor.refresh()
+        settle()
+        assert editor.canvas.getZoomFactor() == zoom
+>       assert (editor.canvas._viewportCenter() - center).manhattanLength() <= 2
+E       assert 2.3999999999999773 <= 2
+E        +  where 2.3999999999999773 = <built-in method manhattanLength of PySide2.QtCore.QPointF object at 0x000002D70833F680>()
+E        +    where <built-in method manhattanLength of PySide2.QtCore.QPointF object at 0x000002D70833F680> = (PySide2.QtCore.QPointF(376.800000, 150.600000) - PySide2.QtCore.QPointF(375.600000, 149.400000)).manhattanLength
+E        +      where PySide2.QtCore.QPointF(376.800000, 150.600000) = _viewportCenter()
+E        +        where _viewportCenter = <emo_master.apps.designer.page_designer.page_canvas.PageCanvas(0x2d707d84560, name="pageCanvas") at 0x000002D7083428C0>._viewportCenter
+E        +          where <emo_master.apps.designer.page_designer.page_canvas.PageCanvas(0x2d707d84560, name="pageCanvas") at 0x000002D7083428C0> = <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x2d7086e4fb0) at 0x000002D708341280>.canvas
+
+tests\ui\page_designer\test_canvas_viewport.py:92: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/ui/page_designer/test_canvas_viewport.py::testContentHeightChangeKeepsViewUntilExplicitFit
+1 failed, 29 passed in 24.37s

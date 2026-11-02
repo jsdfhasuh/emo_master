@@ -1,0 +1,3 @@
+snapshots/** -text
+evidence/** -text
+cloud-handoff-ci-status.json -text

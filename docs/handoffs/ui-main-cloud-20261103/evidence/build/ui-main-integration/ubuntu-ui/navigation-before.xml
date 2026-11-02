@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="2.041" timestamp="2026-11-02T22:24:16.368069+08:00" hostname="视觉电脑"><testcase classname="tests.designer.test_canvas_navigation_bounds" name="testNodeAndPortDragsDoNotBecomeCanvasPans" time="0.900"><failure message="assert not True&#10; +  where True = &lt;emo_master.apps.designer.ui.flow_scene.FlowScene(0x1a0a2d14a50) at 0x000001A0A42AD440&gt;.alignmentSnapEnabled">window = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x1a0a26bda60) at 0x000001A0A3F27CC0&gt;
+
+    def testNodeAndPortDragsDoNotBecomeCanvasPans(window):
+        from emo_master.apps.designer.ui.flow_scene import FlowNodeViewModel
+    
+        view, scene = window.flowView, window.flowScene
+        # Measure pointer displacement independently of nearby-node alignment snaps.
+        scene.setAlignmentSnapEnabled(False)
+        keys = []
+        for name, x in [('source', 7000), ('target', 7600)]:
+            key = window.flowModel.addNode('test.echo', name, {'in': 'number'}, {'out': 'number'})
+            scene.addFlowNode(FlowNodeViewModel(key, name, x, -6000, {'in': 'number'}, {'out': 'number'}))
+            keys.append(key)
+        view.setZoomFactor(.6)
+        view.centerOn(7400, -5900)
+        settle()
+        before = center(view)
+    
+        def mouse(kind, point, button, buttons):
+            QApplication.sendEvent(view.viewport(), QMouseEvent(kind, QPointF(point),
+                                  QPointF(view.viewport().mapToGlobal(point)), button, buttons, Qt.NoModifier))
+    
+        start = view.mapFromScene(scene._portItems[(keys[0], 'output', 'out')].sceneBoundingRect().center())
+        end = view.mapFromScene(scene._portItems[(keys[1], 'input', 'in')].sceneBoundingRect().center())
+        assert view.itemAt(start) is scene._portItems[(keys[0], 'output', 'out')]
+        mouse(QEvent.MouseMove, start, Qt.NoButton, Qt.NoButton)
+        mouse(QEvent.MouseButtonPress, start, Qt.LeftButton, Qt.LeftButton)
+        assert not view.isPanning()
+        assert scene._dragSourcePort is scene._portItems[(keys[0], 'output', 'out')]
+        mouse(QEvent.MouseMove, end, Qt.NoButton, Qt.LeftButton)
+        mouse(QEvent.MouseButtonRelease, end, Qt.LeftButton, Qt.NoButton)
+        settle()
+        assert (keys[0], 'out', keys[1], 'in') in scene._edgeItems
+&gt;       assert not scene.alignmentSnapEnabled
+E       assert not True
+E        +  where True = &lt;emo_master.apps.designer.ui.flow_scene.FlowScene(0x1a0a2d14a50) at 0x000001A0A42AD440&gt;.alignmentSnapEnabled
+
+tests\designer\test_canvas_navigation_bounds.py:286: AssertionError</failure></testcase></testsuite></testsuites>

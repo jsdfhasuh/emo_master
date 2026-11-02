@@ -1,0 +1,27 @@
+============================= test session starts =============================
+platform win32 -- Python 3.10.21, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe
+cachedir: .pytest_cache
+rootdir: D:\tmp\emo-ui-main-merge-20261102
+configfile: pyproject.toml
+plugins: anyio-4.15.1, cov-7.1.0, timeout-2.4.0
+timeout: 90.0s
+timeout method: thread
+timeout func_only: False
+collecting ... collected 13 items
+
+tests/ui/page_designer/test_canvas_viewport.py::testFitShowsWholeLongPageWithoutInternalScrollbars[responsive] PASSED [  7%]
+tests/ui/page_designer/test_canvas_viewport.py::testFitShowsWholeLongPageWithoutInternalScrollbars[legacy-grid] PASSED [ 15%]
+tests/ui/page_designer/test_canvas_viewport.py::testFixedTerminalKeepsOverflowAndFollowingWindowRemovesIt PASSED [ 23%]
+tests/ui/page_designer/test_canvas_viewport.py::testContentHeightChangeKeepsViewUntilExplicitFit PASSED [ 30%]
+tests/ui/page_designer/test_canvas_viewport.py::testFollowingPageFillsCanvasAndPanelHeadersFloatAtTop PASSED [ 38%]
+tests/ui/page_designer/test_canvas_viewport.py::testFixedTerminalViewportIsExactAndDoesNotMutateProject[360-640] PASSED [ 46%]
+tests/ui/page_designer/test_canvas_viewport.py::testFixedTerminalViewportIsExactAndDoesNotMutateProject[768-1024] PASSED [ 53%]
+tests/ui/page_designer/test_canvas_viewport.py::testFixedTerminalViewportIsExactAndDoesNotMutateProject[1280-720] PASSED [ 61%]
+tests/ui/page_designer/test_canvas_viewport.py::testFixedTerminalViewportIsExactAndDoesNotMutateProject[1920-1080] PASSED [ 69%]
+tests/ui/page_designer/test_canvas_viewport.py::testManualViewSurvivesRefreshAndFitRestoresAutomaticMode PASSED [ 76%]
+tests/ui/page_designer/test_canvas_viewport.py::testWindowResizeWaitsForActiveComponentGesture PASSED [ 84%]
+tests/ui/page_designer/test_canvas_viewport.py::testEnteringAnotherPageRestoresFitWithoutLosingManualViewOnRefresh PASSED [ 92%]
+tests/ui/page_designer/test_canvas_viewport.py::testFixedTerminalRefitsDisplayWhenCanvasChangesAndManualZoomStillWins PASSED [100%]
+
+- generated xml file: D:\tmp\emo-ui-main-merge-20261102\build\ui-main-integration\viewport-pixel-units\pytest.xml -
+============================= 13 passed in 5.40s ==============================

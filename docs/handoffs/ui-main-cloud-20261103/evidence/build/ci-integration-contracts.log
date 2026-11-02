@@ -1,0 +1,34 @@
+............FFFF                                                         [100%]
+================================== FAILURES ===================================
+________ testStartupAliasFirstPublicationUsesActualRunAction[embedded] ________
+tests\runtime\test_new_project_online_isolation.py:62: in testStartupAliasFirstPublicationUsesActualRunAction
+    assert window.showStartupProjectEntry()
+E   assert False
+E    +  where False = showStartupProjectEntry()
+E    +    where showStartupProjectEntry = <emo_master.apps.designer.ui.main_window.MainWindow(0x15492322cf0) at 0x0000015491E0B640>.showStartupProjectEntry
+________ testStartupAliasFirstPublicationUsesActualRunAction[loopback] ________
+tests\runtime\test_new_project_online_isolation.py:62: in testStartupAliasFirstPublicationUsesActualRunAction
+    assert window.showStartupProjectEntry()
+E   assert False
+E    +  where False = showStartupProjectEntry()
+E    +    where showStartupProjectEntry = <emo_master.apps.designer.ui.main_window.MainWindow(0x15492437e20) at 0x000001548D7F7300>.showStartupProjectEntry
+_________ testSameWindowReplacementRunsCommittedOnlineCopy[embedded] __________
+tests\runtime\test_new_project_online_isolation.py:195: in testSameWindowReplacementRunsCommittedOnlineCopy
+    assert messages == [('INFO', '��ĿУ��ͨ��')]
+E   AssertionError: assert [] == [('INFO', '��ĿУ��ͨ��')]
+E     
+E     Right contains one more item: ('INFO', '��ĿУ��ͨ��')
+E     Use -v to get more diff
+_________ testSameWindowReplacementRunsCommittedOnlineCopy[loopback] __________
+tests\runtime\test_new_project_online_isolation.py:195: in testSameWindowReplacementRunsCommittedOnlineCopy
+    assert messages == [('INFO', '��ĿУ��ͨ��')]
+E   AssertionError: assert [] == [('INFO', '��ĿУ��ͨ��')]
+E     
+E     Right contains one more item: ('INFO', '��ĿУ��ͨ��')
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_new_project_online_isolation.py::testStartupAliasFirstPublicationUsesActualRunAction[embedded]
+FAILED tests/runtime/test_new_project_online_isolation.py::testStartupAliasFirstPublicationUsesActualRunAction[loopback]
+FAILED tests/runtime/test_new_project_online_isolation.py::testSameWindowReplacementRunsCommittedOnlineCopy[embedded]
+FAILED tests/runtime/test_new_project_online_isolation.py::testSameWindowReplacementRunsCommittedOnlineCopy[loopback]
+4 failed, 12 passed in 34.29s

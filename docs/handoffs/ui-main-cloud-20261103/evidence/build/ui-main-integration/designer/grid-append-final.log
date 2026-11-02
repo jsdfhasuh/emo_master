@@ -1,0 +1,58 @@
+.FF...................................................                   [100%]
+================================== FAILURES ===================================
+___________ testLongGridKeepsAnEmptyRowForNativeAppend[whole-page] ____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x260cb858680) at 0x00000260C8841980>
+terminal = False
+
+    @pytest.mark.parametrize('terminal', [False, True], ids=['whole-page', 'fixed-terminal'])
+    def testLongGridKeepsAnEmptyRowForNativeAppend(designer, terminal):  # noqa: F811
+        from test_user_path import drop
+    
+        coordinator, editor, key = setupGridPage(designer, 'image')
+        coordinator.session.editPresentation(lambda p: setattr(
+            _component(p, editor.pageId, key).layout, 'rowSpan', 15))
+        editor.refresh()
+        editor.canvas.setPreviewSize(768 if terminal else 0, 640 if terminal else 0)
+        settle()
+        before, history = coordinator.session.payload(), len(coordinator.session._undo)
+        body = editor.renderer.pages[editor.pageId].widget()
+        empty = body.layout().cellRect(15, 0)
+        assert empty.height() >= 64
+>       assert cellAt(body, 2, empty.center()) == (15, 0)
+E       assert (16, 2) == (15, 0)
+E         
+E         At index 0 diff: 16 != 15
+E         Use -v to get more diff
+
+tests\ui\page_designer\test_grid_geometry.py:71: AssertionError
+_________ testLongGridKeepsAnEmptyRowForNativeAppend[fixed-terminal] __________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x260cbce9d00) at 0x00000260CC13D240>
+terminal = True
+
+    @pytest.mark.parametrize('terminal', [False, True], ids=['whole-page', 'fixed-terminal'])
+    def testLongGridKeepsAnEmptyRowForNativeAppend(designer, terminal):  # noqa: F811
+        from test_user_path import drop
+    
+        coordinator, editor, key = setupGridPage(designer, 'image')
+        coordinator.session.editPresentation(lambda p: setattr(
+            _component(p, editor.pageId, key).layout, 'rowSpan', 15))
+        editor.refresh()
+        editor.canvas.setPreviewSize(768 if terminal else 0, 640 if terminal else 0)
+        settle()
+        before, history = coordinator.session.payload(), len(coordinator.session._undo)
+        body = editor.renderer.pages[editor.pageId].widget()
+        empty = body.layout().cellRect(15, 0)
+        assert empty.height() >= 64
+>       assert cellAt(body, 2, empty.center()) == (15, 0)
+E       assert (16, 2) == (15, 0)
+E         
+E         At index 0 diff: 16 != 15
+E         Use -v to get more diff
+
+tests\ui\page_designer\test_grid_geometry.py:71: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/ui/page_designer/test_grid_geometry.py::testLongGridKeepsAnEmptyRowForNativeAppend[whole-page]
+FAILED tests/ui/page_designer/test_grid_geometry.py::testLongGridKeepsAnEmptyRowForNativeAppend[fixed-terminal]
+2 failed, 52 passed in 29.16s

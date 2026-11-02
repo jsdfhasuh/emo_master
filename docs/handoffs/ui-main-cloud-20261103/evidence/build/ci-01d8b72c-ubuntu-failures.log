@@ -1,0 +1,45 @@
+[ci-check] tests/designer/test_canvas_navigation_bounds.py::testNodeAndPortDragsDoNotBecomeCanvasPans (call)
+tests/designer/test_canvas_navigation_bounds.py:294: in testNodeAndPortDragsDoNotBecomeCanvasPans
+    assert node.pos().y() - old.y() == pytest.approx(90, abs=2)
+E   assert 100.0 == 90 ± 2
+E     
+E     comparison failed
+E     Obtained: 100.0
+E     Expected: 90 ± 2
+--- Captured stderr setup ---
+This plugin does not support propagateSizeHints()
+
+[ci-check] tests/runtime/test_release_host.py::testDuplicateDirectoryAndPortDoNotStopExistingHost (call)
+tests/runtime/test_release_host.py:95: in testDuplicateDirectoryAndPortDoNotStopExistingHost
+    with pytest.raises(RuntimeError, match='aio startup failed'):
+E   AssertionError: Regex pattern did not match.
+E     Expected regex: 'aio startup failed'
+E     Actual message: 'Runtime 监听 127.0.0.1:46007 启动失败：Failed to bind to address 127.0.0.1:46007; set GRPC_VERBOSITY=debug environment variable to see detailed error message.'
+--- Captured stderr call ---
+E0000 00:00:1793629887.925616   41785 add_port.cc:83] Failed to add port to server: No address added out of total 1 resolved for '127.0.0.1:46007'
+
+[ci-check] tests/runtime/test_stop_all_dispatch.py::testStopAllDispatchesBeforeWaitingAndPreservesIndependentErrors (call)
+tests/runtime/test_stop_all_dispatch.py:28: in testStopAllDispatchesBeforeWaitingAndPreservesIndependentErrors
+    rows = owner.stopAll()
+src/emo_master/apps/operator_runtime/controller.py:466: in stopAll
+    if session.startUncertain:
+E   AttributeError: 'types.SimpleNamespace' object has no attribute 'startUncertain'
+[ci-check] tests/ui/page_designer/test_canvas_viewport.py::testFollowingPageFillsCanvasAndPanelHeadersFloatAtTop (call)
+tests/ui/page_designer/test_canvas_viewport.py:107: in testFollowingPageFillsCanvasAndPanelHeadersFloatAtTop
+    assert editor.renderer.size() == canvas.viewport().size() - QSize(16, 16)
+E   assert PySide2.QtCore.QSize(734, 266) == (PySide2.QtCore.QSize(750, 262) - PySide2.QtCore.QSize(16, 16))
+E    +  where PySide2.QtCore.QSize(734, 266) = <built-in method size of EditorPages object at 0x742a3412fc80>()
+E    +    where <built-in method size of EditorPages object at 0x742a3412fc80> = <emo_master.apps.designer.page_designer.workspace.EditorPages(0x5e351961cb70, name="runtimePages") at 0x742a3412fc80>.size
+E    +      where <emo_master.apps.designer.page_designer.workspace.EditorPages(0x5e351961cb70, name="runtimePages") at 0x742a3412fc80> = <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5e35172b32b0) at 0x742a6994f580>.renderer
+E    +  and   PySide2.QtCore.QSize(750, 262) = <built-in method size of PySide2.QtWidgets.QWidget object at 0x742a20ff13c0>()
+E    +    where <built-in method size of PySide2.QtWidgets.QWidget object at 0x742a20ff13c0> = <PySide2.QtWidgets.QWidget(0x5e3518a4c8c0) at 0x742a20ff13c0>.size
+E    +      where <PySide2.QtWidgets.QWidget(0x5e3518a4c8c0) at 0x742a20ff13c0> = <built-in method viewport of PageCanvas object at 0x742a34295c80>()
+E    +        where <built-in method viewport of PageCanvas object at 0x742a34295c80> = <emo_master.apps.designer.page_designer.page_canvas.PageCanvas(0x5e3517289650, name="pageCanvas") at 0x742a34295c80>.viewport
+E    +  and   PySide2.QtCore.QSize(16, 16) = QSize(16, 16)
+--- Captured stderr setup ---
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+

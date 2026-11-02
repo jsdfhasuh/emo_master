@@ -1,0 +1,795 @@
+{
+  "generatedAtUtc": "2026-11-02T16:55:44.119167+00:00",
+  "repository": "https://github.com/jsdfhasuh/emo_master",
+  "pullRequest": "https://github.com/jsdfhasuh/emo_master/pull/7",
+  "fixedSourceSha": "61e2717456d5fc17d1202709bcd61f7997fa25eb",
+  "overallStatus": "CI_FAILURE_WINDOWS_TWO_TESTS",
+  "runs": [
+    {
+      "id": 41474013539,
+      "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41474013539",
+      "headSha": "61e2717456d5fc17d1202709bcd61f7997fa25eb",
+      "status": "completed",
+      "conclusion": "failure",
+      "jobs": [
+        {
+          "id": 125374696250,
+          "name": "ubuntu-latest / Python 3.10",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41474013539/job/125374696250",
+          "startedAt": "2026-11-02T15:41:11Z",
+          "completedAt": "2026-11-02T16:18:44Z"
+        },
+        {
+          "id": 125374696550,
+          "name": "windows-latest / Python 3.10",
+          "status": "completed",
+          "conclusion": "failure",
+          "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41474013539/job/125374696550",
+          "startedAt": "2026-11-02T15:41:12Z",
+          "completedAt": "2026-11-02T16:50:02Z"
+        }
+      ]
+    },
+    {
+      "id": 41474013532,
+      "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41474013532",
+      "headSha": "61e2717456d5fc17d1202709bcd61f7997fa25eb",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 125374697002,
+          "name": "Owning Runtime integration (synthetic data, Windows)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41474013532/job/125374697002",
+          "startedAt": "2026-11-02T15:41:11Z",
+          "completedAt": "2026-11-02T15:44:30Z"
+        },
+        {
+          "id": 125374697733,
+          "name": "web-panel (ubuntu-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41474013532/job/125374697733",
+          "startedAt": "2026-11-02T15:41:12Z",
+          "completedAt": "2026-11-02T15:42:48Z"
+        },
+        {
+          "id": 125374697766,
+          "name": "web-panel (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41474013532/job/125374697766",
+          "startedAt": "2026-11-02T15:41:19Z",
+          "completedAt": "2026-11-02T15:48:49Z"
+        }
+      ]
+    },
+    {
+      "id": 41474015001,
+      "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41474015001",
+      "headSha": "61e2717456d5fc17d1202709bcd61f7997fa25eb",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 125374702178,
+          "name": "prepare",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41474015001/job/125374702178",
+          "startedAt": "2026-11-02T15:41:12Z",
+          "completedAt": "2026-11-02T15:42:57Z"
+        },
+        {
+          "id": 125375701279,
+          "name": "package / Build emo-master for Windows",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41474015001/job/125375701279",
+          "startedAt": "2026-11-02T15:43:00Z",
+          "completedAt": "2026-11-02T15:48:21Z"
+        },
+        {
+          "id": 125375703984,
+          "name": "package / vision_train",
+          "status": "completed",
+          "conclusion": "skipped",
+          "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41474015001/job/125375703984",
+          "startedAt": "2026-11-02T15:42:57Z",
+          "completedAt": "2026-11-02T15:42:57Z"
+        },
+        {
+          "id": 125378786255,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41474015001/job/125378786255",
+          "startedAt": "2026-11-02T15:48:24Z",
+          "completedAt": "2026-11-02T15:51:41Z"
+        }
+      ]
+    }
+  ],
+  "sourceTests": {
+    "ubuntu": {
+      "jobId": 125374696250,
+      "status": "SUCCESS",
+      "collected": 9032,
+      "passed": 9001,
+      "skipped": 31,
+      "failed": 0,
+      "errors": 0,
+      "subtestsPassed": 42,
+      "junitTestEntries": 9074,
+      "durationSeconds": 2182.66,
+      "startupAlias": {
+        "embedded": "PASSED",
+        "loopback": "PASSED"
+      },
+      "log": "build/ci-61e27174-ubuntu.log",
+      "xml": "build/ci-61e27174-ubuntu.xml"
+    },
+    "windows": {
+      "jobId": 125374696550,
+      "status": "FAILURE",
+      "collected": 9032,
+      "passed": 9025,
+      "skipped": 5,
+      "failed": 2,
+      "errors": 0,
+      "subtestsPassed": 42,
+      "junitTestEntries": 9074,
+      "durationSeconds": 3964.19,
+      "startupAlias": {
+        "embedded": "PASSED",
+        "loopback": "PASSED"
+      },
+      "log": "build/ci-61e27174-windows.log",
+      "xml": "build/ci-61e27174-windows.xml",
+      "failuresLog": "build/ci-61e27174-windows-failures.log",
+      "failures": [
+        {
+          "test": "tests/runtime/presentation/test_live_decisions.py::testTwoNetworkConsumersAll96ChangingImagesAndExplicitSupersession",
+          "line": 151,
+          "trigger": "Publish 96 changing synthetic images over local RPC to two DisplaySession consumers, with an explicit ordinal-2/3 supersession gate.",
+          "observed": "Both verified-pixel ordinal lists omitted ordinal 88; all other ordinals 1..96 were present. The exact all-96 verification assertion failed.",
+          "evidenceLimit": "The test waits for a records entry, which does not prove successful image decode. XML has no per-image diagnostic properties. The optional detailed JSON is written after the failing assertion, so these artifacts do not establish why ordinal 88 was not verified. Do not label this a flake or an already-fixed failure.",
+          "readOnlyFollowup": "Inspect decode/failure records for ordinal 88 and preserve them on failure before deciding whether delivery, decoding, result lifetime, or test synchronization needs a local correction."
+        },
+        {
+          "test": "tests/runtime/test_project_source_relocation.py::testSourceOnlyChangeRetiresActiveJobWithoutDevices[stopAffected]",
+          "line": 201,
+          "trigger": "Start a synthetic continuous image/SQLite job, wait for outputs/result.png to exist, then immediately assert the Job repository state is RUNNING.",
+          "observed": "The output-file condition had completed but repository status was still STARTING. The failure occurred before the source-relocation write operations. The drainAffected parameterization passed.",
+          "evidenceLimit": "File existence and asynchronous repository state are different observations. The log also includes cycle admission cancelled during cleanup; it does not establish that cancellation caused the readiness assertion. No rerun or source fix was performed.",
+          "readOnlyFollowup": "Inspect the readiness observation and start-event ordering while retaining the relocation and no-restart assertions."
+        }
+      ]
+    }
+  },
+  "web": {
+    "status": "SUCCESS",
+    "backendPerPlatform": {
+      "passed": 148,
+      "skipped": 2,
+      "failed": 0
+    },
+    "frontendPerPlatform": {
+      "passed": 63,
+      "skipped": 0,
+      "failed": 0
+    },
+    "browserSuitesPerPlatformPassed": 5,
+    "spacerBrowserCasesPerPlatformPassed": 14,
+    "independentWheelSdk130": "PASS",
+    "owningRuntimeTestsPassed": 4,
+    "ordinaryJobBrowserStartResultStopAborted": "PASS"
+  },
+  "frozen": {
+    "status": "SUCCESS",
+    "windowsPackage": "SUCCESS",
+    "verify": "SUCCESS",
+    "contractTestsPassed": 16,
+    "contractSubtestsPassed": 2,
+    "actualFrozenPackageValidation": "PASS",
+    "visionTrain": "SKIPPED_BY_WORKFLOW"
+  },
+  "historicalFullRuns": [
+    {
+      "sha": "e592f1690cd77073103ce8a7bbcdc801d1be4ed3",
+      "runId": 41454334319,
+      "ubuntu": {
+        "passed": 8989,
+        "skipped": 31,
+        "failed": 4,
+        "subtestsPassed": 42
+      },
+      "windows": {
+        "status": "INCOMPLETE_NATIVE_ACCESS_VIOLATION",
+        "exitCode": "0xC0000005"
+      }
+    },
+    {
+      "sha": "01d8b72ca999dc911b48daa91b092af677efae1e",
+      "runId": 41458471863,
+      "ubuntu": {
+        "passed": 8989,
+        "skipped": 31,
+        "failed": 4,
+        "subtestsPassed": 42
+      },
+      "windows": {
+        "passed": 9015,
+        "skipped": 5,
+        "failed": 4,
+        "subtestsPassed": 42
+      }
+    },
+    {
+      "sha": "035f96d7a951bf14eb899016c3f573fe61f3c2cd",
+      "runId": 41463473156,
+      "ubuntu": {
+        "passed": 8992,
+        "skipped": 31,
+        "failed": 1,
+        "subtestsPassed": 42
+      },
+      "windows": {
+        "passed": 9018,
+        "skipped": 5,
+        "failed": 1,
+        "subtestsPassed": 42
+      }
+    }
+  ],
+  "countingNotes": [
+    "Collected tests are not counted as passed.",
+    "JUnit tests includes subtest entries; main pytest counts and subtests are reported separately.",
+    "The two backend opt-in skips are covered separately by the owning Runtime job; vision_train remains skipped.",
+    "Software/native Qt/frozen automated evidence does not establish physical-device, human desktop, or deployment acceptance.",
+    "Windows completed with two assertion failures; no native crash or timeout occurred in this final run. It is not merge-ready merely because Linux, Web, and frozen validation passed."
+  ],
+  "uploadInventory": {
+    "fileCount": 107,
+    "bytes": 20899204,
+    "groups": [
+      {
+        "group": "historical_full_ci",
+        "purpose": "Previous full-suite failures; preserve original failure evidence",
+        "fileCount": 16,
+        "bytes": 14405780,
+        "files": [
+          {
+            "path": "build/ci-native-debug-cloud-failure.log",
+            "bytes": 378777
+          },
+          {
+            "path": "build/ci-e592f169-ubuntu-failures.log",
+            "bytes": 3594
+          },
+          {
+            "path": "build/ci-e592f169-ubuntu.log",
+            "bytes": 1449343
+          },
+          {
+            "path": "build/ci-e592f169-ubuntu.xml",
+            "bytes": 1354870
+          },
+          {
+            "path": "build/ci-01d8b72c-ubuntu-failures.log",
+            "bytes": 3594
+          },
+          {
+            "path": "build/ci-01d8b72c-ubuntu.log",
+            "bytes": 1449346
+          },
+          {
+            "path": "build/ci-01d8b72c-ubuntu.xml",
+            "bytes": 1354870
+          },
+          {
+            "path": "build/ci-01d8b72c-windows-failures.log",
+            "bytes": 3869
+          },
+          {
+            "path": "build/ci-01d8b72c-windows.log",
+            "bytes": 1464743
+          },
+          {
+            "path": "build/ci-01d8b72c-windows.xml",
+            "bytes": 1349974
+          },
+          {
+            "path": "build/ci-035f96d7-ubuntu-failures.log",
+            "bytes": 983
+          },
+          {
+            "path": "build/ci-035f96d7-ubuntu.log",
+            "bytes": 1438180
+          },
+          {
+            "path": "build/ci-035f96d7-ubuntu.xml",
+            "bytes": 1352169
+          },
+          {
+            "path": "build/ci-035f96d7-windows-failures.log",
+            "bytes": 954
+          },
+          {
+            "path": "build/ci-035f96d7-windows.log",
+            "bytes": 1454155
+          },
+          {
+            "path": "build/ci-035f96d7-windows.xml",
+            "bytes": 1346359
+          }
+        ]
+      },
+      {
+        "group": "current_linux",
+        "purpose": "61e27174 complete Ubuntu CI: 9001 passed, 31 skipped, 42 subtests",
+        "fileCount": 2,
+        "bytes": 2789567,
+        "files": [
+          {
+            "path": "build/ci-61e27174-ubuntu.log",
+            "bytes": 1437255
+          },
+          {
+            "path": "build/ci-61e27174-ubuntu.xml",
+            "bytes": 1352312
+          }
+        ]
+      },
+      {
+        "group": "current_windows_failure",
+        "purpose": "61e27174 complete Windows CI: 9025 passed, 5 skipped, 2 failures, 42 subtests; unresolved image ordinal 88 and pre-relocation STARTING state",
+        "files": [
+          {
+            "path": "build/ci-61e27174-windows.log",
+            "bytes": 1497515
+          },
+          {
+            "path": "build/ci-61e27174-windows.xml",
+            "bytes": 1353800
+          },
+          {
+            "path": "build/ci-61e27174-windows-failures.log",
+            "bytes": 9100
+          }
+        ],
+        "fileCount": 3,
+        "bytes": 2860415
+      },
+      {
+        "group": "current_web_and_frozen",
+        "purpose": "61e27174 successful Web matrix, owning Runtime, and frozen package validation",
+        "fileCount": 4,
+        "bytes": 439053,
+        "files": [
+          {
+            "path": "build/ci-61e27174-web-runtime.log",
+            "bytes": 82387
+          },
+          {
+            "path": "build/ci-61e27174-web-ubuntu.log",
+            "bytes": 148738
+          },
+          {
+            "path": "build/ci-61e27174-web-windows.log",
+            "bytes": 140416
+          },
+          {
+            "path": "build/ci-61e27174-frozen-verify.log",
+            "bytes": 67512
+          }
+        ]
+      },
+      {
+        "group": "native_debug_lifetime",
+        "purpose": "Original 16-pass reproduction, 5-case lifecycle observation, 35+14 regressions; owners command error remains not passed",
+        "fileCount": 9,
+        "bytes": 13788,
+        "files": [
+          {
+            "path": "build/ci-native-debug-repro.log",
+            "bytes": 692
+          },
+          {
+            "path": "build/ci-native-debug-repro.xml",
+            "bytes": 2894
+          },
+          {
+            "path": "build/ci-native-debug-retirement.log",
+            "bytes": 1358
+          },
+          {
+            "path": "build/ci-native-debug-retired.log",
+            "bytes": 692
+          },
+          {
+            "path": "build/ci-native-debug-retired.xml",
+            "bytes": 5439
+          },
+          {
+            "path": "build/ci-native-debug-lifecycle.log",
+            "bytes": 101
+          },
+          {
+            "path": "build/ci-native-debug-lifecycle.xml",
+            "bytes": 2278
+          },
+          {
+            "path": "build/ci-native-debug-owners.log",
+            "bytes": 96
+          },
+          {
+            "path": "build/ci-native-debug-owners.xml",
+            "bytes": 238
+          }
+        ]
+      },
+      {
+        "group": "runtime_fixture_checks",
+        "purpose": "7-pass current Runtime fixtures; earlier schema/contracts and local symlink failure evidence",
+        "fileCount": 7,
+        "bytes": 7272,
+        "files": [
+          {
+            "path": "build/ci-runtime-final-fixtures.log",
+            "bytes": 101
+          },
+          {
+            "path": "build/ci-runtime-final-fixtures.xml",
+            "bytes": 1151
+          },
+          {
+            "path": "build/ci-schema-fixtures.log",
+            "bytes": 275
+          },
+          {
+            "path": "build/ci-schema-ui.log",
+            "bytes": 1000
+          },
+          {
+            "path": "build/ci-schema-later-runtime.log",
+            "bytes": 102
+          },
+          {
+            "path": "build/ci-integration-contracts.log",
+            "bytes": 2556
+          },
+          {
+            "path": "build/ci-new-project-isolation.log",
+            "bytes": 2087
+          }
+        ]
+      },
+      {
+        "group": "restart_quota_fix",
+        "purpose": "Deterministic original quota counterexample; 3 focused + 40 related + 8 budget/UI validations",
+        "fileCount": 10,
+        "bytes": 18668,
+        "files": [
+          {
+            "path": "build/ui-main-integration/normal-restart/budget-and-ui.log",
+            "bytes": 101
+          },
+          {
+            "path": "build/ui-main-integration/normal-restart/focused.log",
+            "bytes": 101
+          },
+          {
+            "path": "build/ui-main-integration/normal-restart/immediate-before.log",
+            "bytes": 4204
+          },
+          {
+            "path": "build/ui-main-integration/normal-restart/regression.log",
+            "bytes": 102
+          },
+          {
+            "path": "build/ui-main-integration/normal-restart/budget-and-ui.xml",
+            "bytes": 1504
+          },
+          {
+            "path": "build/ui-main-integration/normal-restart/focused.xml",
+            "bytes": 689
+          },
+          {
+            "path": "build/ui-main-integration/normal-restart/immediate-before.xml",
+            "bytes": 4608
+          },
+          {
+            "path": "build/ui-main-integration/normal-restart/regression.xml",
+            "bytes": 6412
+          },
+          {
+            "path": "build/ci-run-selection-quota.log",
+            "bytes": 101
+          },
+          {
+            "path": "build/ci-run-selection-quota.xml",
+            "bytes": 846
+          }
+        ]
+      },
+      {
+        "group": "p0_retired_sampler",
+        "purpose": "Closed Process diagnostic sampling regression and retained continuous-image/deadline tests: 11 passed",
+        "fileCount": 2,
+        "bytes": 1757,
+        "files": [
+          {
+            "path": "build/ci-p0-resource-retirement.log",
+            "bytes": 102
+          },
+          {
+            "path": "build/ci-p0-resource-retirement.xml",
+            "bytes": 1655
+          }
+        ]
+      },
+      {
+        "group": "viewport_pixel_units",
+        "purpose": "Latest manual-view pixel unit correction: 13 passed",
+        "fileCount": 2,
+        "bytes": 4446,
+        "files": [
+          {
+            "path": "build/ui-main-integration/viewport-pixel-units/pytest.log",
+            "bytes": 2260
+          },
+          {
+            "path": "build/ui-main-integration/viewport-pixel-units/pytest.xml",
+            "bytes": 2186
+          }
+        ]
+      },
+      {
+        "group": "prior_ui_geometry",
+        "purpose": "Retained UI geometry counterexamples and 30-case corrected batch",
+        "fileCount": 10,
+        "bytes": 21567,
+        "files": [
+          {
+            "path": "build/ui-main-integration/ubuntu-ui/content-view-isolated.log",
+            "bytes": 100
+          },
+          {
+            "path": "build/ui-main-integration/ubuntu-ui/files-fixed.log",
+            "bytes": 102
+          },
+          {
+            "path": "build/ui-main-integration/ubuntu-ui/files.log",
+            "bytes": 2520
+          },
+          {
+            "path": "build/ui-main-integration/ubuntu-ui/navigation-before.log",
+            "bytes": 2647
+          },
+          {
+            "path": "build/ui-main-integration/ubuntu-ui/targeted.log",
+            "bytes": 100
+          },
+          {
+            "path": "build/ui-main-integration/ubuntu-ui/content-view-isolated.xml",
+            "bytes": 385
+          },
+          {
+            "path": "build/ui-main-integration/ubuntu-ui/files-fixed.xml",
+            "bytes": 4661
+          },
+          {
+            "path": "build/ui-main-integration/ubuntu-ui/files.xml",
+            "bytes": 7746
+          },
+          {
+            "path": "build/ui-main-integration/ubuntu-ui/navigation-before.xml",
+            "bytes": 2785
+          },
+          {
+            "path": "build/ui-main-integration/ubuntu-ui/targeted.xml",
+            "bytes": 521
+          }
+        ]
+      },
+      {
+        "group": "integration_designer_presentation",
+        "purpose": "Original presentation/Designer failures, targeted grid diagnostics and corrected regressions",
+        "fileCount": 21,
+        "bytes": 264737,
+        "files": [
+          {
+            "path": "build/ui-main-integration/presentation-fixed.log",
+            "bytes": 101
+          },
+          {
+            "path": "build/ui-main-integration/presentation.log",
+            "bytes": 5063
+          },
+          {
+            "path": "build/ui-main-integration/presentation-fixed.xml",
+            "bytes": 5554
+          },
+          {
+            "path": "build/ui-main-integration/presentation.xml",
+            "bytes": 91265
+          },
+          {
+            "path": "build/ui-main-integration/designer/dispatch-final.log",
+            "bytes": 101
+          },
+          {
+            "path": "build/ui-main-integration/designer/focused.log",
+            "bytes": 14885
+          },
+          {
+            "path": "build/ui-main-integration/designer/grid-append-after.log",
+            "bytes": 7470
+          },
+          {
+            "path": "build/ui-main-integration/designer/grid-append-before.log",
+            "bytes": 3204
+          },
+          {
+            "path": "build/ui-main-integration/designer/grid-append-final.log",
+            "bytes": 2993
+          },
+          {
+            "path": "build/ui-main-integration/designer/grid-append-verified.log",
+            "bytes": 102
+          },
+          {
+            "path": "build/ui-main-integration/designer/grid-diagnosis.log",
+            "bytes": 5191
+          },
+          {
+            "path": "build/ui-main-integration/designer/grid-hit-diagnosis.log",
+            "bytes": 4255
+          },
+          {
+            "path": "build/ui-main-integration/designer/grid-minimum-diagnosis.log",
+            "bytes": 3691
+          },
+          {
+            "path": "build/ui-main-integration/designer/reproduce.log",
+            "bytes": 6091
+          },
+          {
+            "path": "build/ui-main-integration/designer/dispatch-final.xml",
+            "bytes": 798
+          },
+          {
+            "path": "build/ui-main-integration/designer/focused.xml",
+            "bytes": 71531
+          },
+          {
+            "path": "build/ui-main-integration/designer/grid-append-after.xml",
+            "bytes": 13862
+          },
+          {
+            "path": "build/ui-main-integration/designer/grid-append-before.xml",
+            "bytes": 3735
+          },
+          {
+            "path": "build/ui-main-integration/designer/grid-append-final.xml",
+            "bytes": 10945
+          },
+          {
+            "path": "build/ui-main-integration/designer/grid-append-verified.xml",
+            "bytes": 8328
+          },
+          {
+            "path": "build/ui-main-integration/designer/reproduce.xml",
+            "bytes": 5572
+          }
+        ]
+      },
+      {
+        "group": "local_web_integration",
+        "purpose": "Local Web/backend/frontend/browser/owning Runtime and wheel verification",
+        "fileCount": 18,
+        "bytes": 57028,
+        "files": [
+          {
+            "path": "build/ui-main-integration/web/backend-tests.log",
+            "bytes": 14946
+          },
+          {
+            "path": "build/ui-main-integration/web/backend_e2e.log",
+            "bytes": 269
+          },
+          {
+            "path": "build/ui-main-integration/web/browser_smoke.log",
+            "bytes": 147
+          },
+          {
+            "path": "build/ui-main-integration/web/catalog_refresh_e2e.log",
+            "bytes": 187
+          },
+          {
+            "path": "build/ui-main-integration/web/demo-package.log",
+            "bytes": 70
+          },
+          {
+            "path": "build/ui-main-integration/web/frontend-build.log",
+            "bytes": 411
+          },
+          {
+            "path": "build/ui-main-integration/web/frontend-tests.log",
+            "bytes": 5826
+          },
+          {
+            "path": "build/ui-main-integration/web/install-final.log",
+            "bytes": 5403
+          },
+          {
+            "path": "build/ui-main-integration/web/install.log",
+            "bytes": 501
+          },
+          {
+            "path": "build/ui-main-integration/web/npm-install.log",
+            "bytes": 546
+          },
+          {
+            "path": "build/ui-main-integration/web/official_e2e.log",
+            "bytes": 244
+          },
+          {
+            "path": "build/ui-main-integration/web/package-frontend.log",
+            "bytes": 33
+          },
+          {
+            "path": "build/ui-main-integration/web/product-browser.log",
+            "bytes": 7294
+          },
+          {
+            "path": "build/ui-main-integration/web/product-runtime.log",
+            "bytes": 1482
+          },
+          {
+            "path": "build/ui-main-integration/web/spacer_browser.log",
+            "bytes": 114
+          },
+          {
+            "path": "build/ui-main-integration/web/wheel-build.log",
+            "bytes": 14548
+          },
+          {
+            "path": "build/ui-main-integration/web/wheel-install.log",
+            "bytes": 3716
+          },
+          {
+            "path": "build/ui-main-integration/web/summary.json",
+            "bytes": 1291
+          }
+        ]
+      },
+      {
+        "group": "latest_static_checks",
+        "purpose": "Final source/test Ruff, protobuf drift, mypy after restart fix",
+        "fileCount": 3,
+        "bytes": 15126,
+        "files": [
+          {
+            "path": "build/ui-main-integration/ruff-final.log",
+            "bytes": 20
+          },
+          {
+            "path": "build/ui-main-integration/proto-final.log",
+            "bytes": 0
+          },
+          {
+            "path": "build/ui-main-integration/mypy-restart-final.log",
+            "bytes": 15106
+          }
+        ]
+      }
+    ]
+  },
+  "handoffActionsPerformed": "Read-only diagnosis and artifact collection only after the user chose a GitHub handoff; no source repair, rerun, push, or merge."
+}

@@ -1,0 +1,1 @@
+PASS: desktop/mobile login, all 13 renderer types, script text escaping, staged result, freeze/resume, control, navigation; HTTP/WS fixtures only

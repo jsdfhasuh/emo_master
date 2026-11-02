@@ -1,0 +1,1569 @@
+diff --git a/docs/development/panel-contract-v1.md b/docs/development/panel-contract-v1.md
+index ca16ad0a..c7cfb38e 100644
+--- a/docs/development/panel-contract-v1.md
++++ b/docs/development/panel-contract-v1.md
+@@ -1,9 +1,16 @@
+ # Panel Contract v1：Runtime 客户端与 Web 页面交接合同
+ 
+-合同版本 `1.0`，Python SDK `emo_panel_protocol 1.2.0`。工程当前版本为
++合同版本 `1.0`，Python SDK `emo_panel_protocol 1.3.0`。工程当前版本为
+ `2.9` / Presentation `1.2`，发布快照为 `published-1`，ZIP 页面包为
+ `emo-web-panel-1`（扩展名 `.emoweb`）。这些版本分别管理不同边界，不互相替代。
+ 
++2026-11-02 开发增量：SDK **1.3.0** 支持响应式根页面持久向上扩展，增加 `Page.canvasTop`
++及 `ResponsiveItem.canvasOffsetY`（默认 0，-32768..0），派生发布页同步保留。
++包声明 `layout.expanded-canvas-v1`，消费者检查根级、上下界及 Presentation 1.2；
++Web 以根部扩展空间和组件相对纵向偏移实现，保持响应式流占位与原有伸展规则。
++工程继续为 2.9 / 页面 1.2。生成脚本的样例包含向上扩展 96px 的标题。
++本增量交接以 manifest 的 `sourceSha`、`sourceDirty` 和文件摘要为准，未提交源码不标为干净发布。
++
+ 2026-10-31 的[固定交接入口](../handoffs/runtime-web-panel-v1/README.md)提供仓库内可直接下载的 ZIP、实现源码 SHA 和文件摘要。
+ 
+ 本合同供远程 Designer 与 Web 网关共同使用 Runtime RPC。浏览器使用网关的固定
+diff --git a/docs/development/responsive-layout-contract.md b/docs/development/responsive-layout-contract.md
+index 56eed415..863939c1 100644
+--- a/docs/development/responsive-layout-contract.md
++++ b/docs/development/responsive-layout-contract.md
+@@ -58,7 +58,7 @@
+ 
+ ## 3. 排列与窗口变化
+ 
+-页面 `components`、容器 `children` 的数组顺序是唯一的展示顺序。不再保存另一套像素坐标或 `order` 账本。插入和移动修改数组位置；同一组件的 `componentId`、绑定、查询来源和导航动作保持原归属。
++页面 `components`、容器 `children` 的数组顺序决定响应式流的位置和宽度分配；不保存另一套 `order` 账本。SDK 1.3.0 增加根页面上方扩展，允许根组件相对自己的流位置向上偏移，详见下节。插入和移动仍修改数组位置；同一组件的 `componentId`、绑定、查询来源和导航动作保持原归属。
+ 
+ - `vertical`：按数组顺序自上而下排列。`width=fill` 或交叉轴对齐为 `stretch` 时占满可用宽度；`content` 配合 start/center/end 时采用首选宽度，受可用宽度限制。
+ - `horizontal`：填充控件按 `minWidth`、内容控件按 `max(minWidth, preferredWidth 或内容测量值)` 尝试并排；容器变窄到无法容纳时按稳定顺序换行。
+@@ -74,6 +74,24 @@ Qt 逻辑像素与浏览器 CSS 像素分别使用各自环境的常规缩放。
+ 
+ ## 4. 编辑命令
+ 
++### 向上扩展画布（SDK 1.3.0）
++
++工程保持 2.9、Presentation 保持 1.2，增加两个可省略字段：页面 `canvasTop` 和根组件
++`responsive.canvasOffsetY`，均为 -32768 到 0 的逻辑像素整数，默认 0 时不写入 JSON。
++`canvasTop` 表示保留的最上边界，组件偏移不得小于该边界；旧网格和嵌套组件不能使用此偏移。
++普通响应式流继续计算宽高、换行和位置，最终根组件纵坐标为
++`flowY + canvasOffsetY - canvasTop`。未移动组件的原流位置不变；移动组件原来的流占位保留。
++实际布局、候选测量和 Web CSS 使用同一语义；弹性空白块以扩展前的有限高度分配剩余空间。
++
++向上拖动时绘制真实候选范围，橙色虚线为原位置，绿色实线为落点；鼠标停在视口顶边时
++继续上移查看范围。松手一次提交同时保存页面边界与位置，取消恢复查看位置且不修改模型。
++已是第一项时也可以上移。普通重新排序、复制、编组或移入容器回到响应式流位置，页面扩展边界保留；
++撤销/重做恢复对应完整状态。对原 2.8/1.1 响应式工程显式执行扩展时，沿用编辑事务升级为 2.9/1.2，
++仅打开旧工程不会升级。固定终端可视宽高保持指定值，扩展增加可滚动内容；跟随窗口编辑时增加画布高度。
++
++`.emoweb` 保留两个字段，并声明 `layout.expanded-canvas-v1`。Web 包导入同时检查根级、范围、
++响应式布局和声明；不支持该能力的旧消费者不能静默忽略位置。该扩展不提供任意横向绝对定位。
++
+ ### 空白块（SDK 1.2.0）
+ 
+ `spacer` 是透明布局占位，编辑器的虚线和文字只绘制、不参与测量。默认24×24，
+diff --git a/docs/handoffs/runtime-web-panel-v1/README.md b/docs/handoffs/runtime-web-panel-v1/README.md
+index b1f8adf4..c7758a47 100644
+--- a/docs/handoffs/runtime-web-panel-v1/README.md
++++ b/docs/handoffs/runtime-web-panel-v1/README.md
+@@ -1,6 +1,8 @@
+ # Runtime / Web Panel：Dot 开发交接
+ 
+-当前交接为 **SDK 1.2.0 / Panel Contract 1.0**（2026-11-02），增加固定/弹性空白块。最新源码与生成物见 [SDK 1.2.0 交接说明](./sdk-1.2.0/README.md)。
++当前开发交接为 **SDK 1.3.0 / Panel Contract 1.0**（2026-11-02），增加持久向上扩展画布，源码仍含未提交修改，见 [SDK 1.3.0 交接说明](./sdk-1.3.0/README.md)。
++
++上一批干净源码交接为 **SDK 1.2.0**，增加固定/弹性空白块，继续保留 [SDK 1.2.0 交接说明](./sdk-1.2.0/README.md)。
+ 
+ 以下保留 SDK 1.1.1（2026-10-31）历史交接。
+ 
+diff --git a/docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md b/docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md
+index 0adf141c..f616f432 100644
+--- a/docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md
++++ b/docs/plans/2026-11-02-designer-space-terminal-spacer-plan.md
+@@ -5,12 +5,13 @@
+ ## 已确认目标
+ 
+ - 跟随窗口作为默认模式，页面四周8逻辑像素并居中；手动缩放/平移后保持视图，适应画布/Home恢复自动适配；拖拽时延后适配。
+-- 页面顶部64像素预留改12；工具区/属性面板折叠入口在页面外工具栏，展开仍为浮动面板。
++- 页面顶部64像素预留改12；按后续截图确认，工具区/属性面板复用流程设计的浮动面板交互，默认在画布左上/右上，收起后保留可拖动标题条，展开仍为浮动面板。入口不放到底部预览工具栏，不参与页面内容布局。
+ - 固定终端预览设置逻辑宽高，预设360×640、768×1024、1280×720、1920×1080；尺寸指页面视口，画布缩放不改变排版宽高。预览状态不写工程/历史。
+ - Qt编辑器及桌面页面使用浮动滚动条，按实际溢出显示，不占内容宽高；真实布局与候选测量共用视口，编辑提示不得制造溢出。
++- 后续确认的持久扩展：第一项标题继续向上拖动时，标题实际落到原边界上方，扩展后的画布范围保留，保存重开一致；使用 `canvasTop` 与根组件 `canvasOffsetY`，保持响应式宽度及流占位。顶边持续拖动会继续上移查看；松手一次历史，Esc恢复视图和模型；固定终端不改可视宽高，扩展增加滚动内容。取消临时“放在页面最前”文字辅助条，保留橙色虚线原位置、绿色实线落点和受影响组件的灰色轮廓。
+ - 空白块 `spacer` 默认24×24，固定/弹性，编辑有虚线提示、预览和运行透明；复用选择、拖动、复制删除、编组和撤销保存。
+ - 弹性按响应式父布局主轴分剩余空间；竖排撑高、并排撑宽、换行只撑所在行，多块按权重；不足时保留最低占位，不压缩正常内容。旧grid支持固定占位并说明弹性条件。
+-- 共享模型增加组件类型及 `props.spacerMode`，SDK1.2.0；Qt、Web包校验及渲染同步，契约通过脚本生成。工程保持2.9/页面1.2。
++- 共享模型的空白块基于SDK1.2.0；本次持久画布字段推进至SDK1.3.0，Qt、Web包校验及渲染同步，契约通过脚本生成。工程保持2.9/页面1.2。
+ 
+ ## 实施顺序与边界
+ 
+diff --git a/docs/project-json-spec.md b/docs/project-json-spec.md
+index 9a73c4aa..40c5b79e 100644
+--- a/docs/project-json-spec.md
++++ b/docs/project-json-spec.md
+@@ -4,7 +4,7 @@
+ `schemaVersion: "2.9"`、`presentation.schemaVersion: "1.2"`，包括不使用设备的图片、视频和模型处理工程。**
+ 旧格式可读不代表新工程应该继续生成旧格式；创建约束见 [AGENTS.md](../AGENTS.md)。
+ 
+-最后核对：2026-10-30；源码 HEAD：`0fa2115e337e7499688e4d0efd50539e34104a6a`，加本轮远程客户端页面模型工作区修改。
++最后核对：2026-11-02；源码 HEAD：`8df8599fc026c424a49e87cc53fb45f6b371f16f`，加本轮持久画布扩展工作区修改。
+ 2.8/1.1 响应式布局已在基线实现；2.9/1.2 的终端与数据位置能力来自本轮工作区修改，不能归于该 HEAD 本身。格式推进时同步更新规范，不把历史版本号作为永久常量。
+ 
+ ## 1. 格式依据与创建入口
+@@ -290,6 +290,13 @@ SDK 1.2.0 新增 `spacer` 空白块组件。`props.spacerMode` 为 `fixed`（默
+ 所在行。旧grid使用行列跨度固定占位。空白块无绑定、动作、子组件或采集来源，运行端透明。
+ 工程仍为2.9/页面1.2；终端预览宽高属于Designer查看状态，不写入页面模型。
+ 
++SDK 1.3.0 增加持久向上扩展：响应式根页面可保存 `canvasTop`（-32768..0，默认0），
++根组件可保存 `responsive.canvasOffsetY`（同范围、默认0，且不得小于页面canvasTop）。
++两个默认值均省略；原有工程无需批量改写。偏移只改变组件相对响应式流位置的纵坐标，
++宽度、换行及原流占位保留；最终显示纵坐标为 `flowY + canvasOffsetY - canvasTop`。
++边界和偏移参与保存、撤销重做及两端发布；嵌套组件、旧网格不接受非零偏移。
++拖动预览/缩放/查看平移仍不写入工程。规则与编辑操作见[响应式合同](development/responsive-layout-contract.md)。
++
+ 新页面使用有顺序的响应式布局；Qt 编辑预览和运行页面都随窗口宽度重新排版，
+ 组件 ID、数据绑定、导航动作与查询来源不因换行而变化。基础语义也供未来 Web renderer 使用，
+ 详见[响应式布局合同](development/responsive-layout-contract.md)。这次版本升级不代表 Web 发布、远程历史来源或新增 RPC 已实现。
+diff --git a/docs/testing/2026-11-02-designer-space-dot-acceptance.md b/docs/testing/2026-11-02-designer-space-dot-acceptance.md
+index a14fd9ca..b2aaeee0 100644
+--- a/docs/testing/2026-11-02-designer-space-dot-acceptance.md
++++ b/docs/testing/2026-11-02-designer-space-dot-acceptance.md
+@@ -14,16 +14,18 @@ Designer工作区 `D:/jsdfhasuh/documents/my_project/emo_master_designer`，运
+ 
+ ## 真实鼠标检查
+ 
+-1. 打开短页面，确认默认跟随窗口，页面居中、外边距紧凑、首行无64px空带。展开/收起工具区和属性面板，确认入口在内容外，不推动组件重排。
++1. 打开短页面，确认默认跟随窗口，页面居中、外边距紧凑、首行无64px空带。工具区/属性面板与流程设计采用相同浮动交互：默认左上/右上，收起仍保留标题条，点击标题展开，关闭按钮或Esc收起；可拖动标题条并记住本机位置。底部预览工具栏没有重复面板入口；面板不参与页面内容布局，展开/收起不推动组件重排或改变缩放。
++   选中“页面导航”，确认属性中的标题、位置与大小紧凑衔接，没有隐藏字段留下的大段空白；依次切换普通组件、容器和页面属性，确认排列设置与组件尺寸按需显示，底部“应用修改”仍可用。
+ 2. 调整窗口，确认自动排版；手动缩放并平移，再选择控件、应用属性、撤销重做，视图不被重置。点击适应画布及Home恢复适配。
+ 3. 切换空页面、短页面、长页面。只有实际溢出方向出现滚动条；用真实鼠标拖滑块及滚轮滚动，确认条出现/消失不挤动内容。
+ 4. 切固定终端，逐一使用360×640、768×1024、1280×720、1920×1080。截图记录设置值、显示缩放和页面。调整Designer窗口只缩放显示，换行和溢出不因窗口大小改变。
+ 5. 在75%、100%、150%画布缩放下，拖动控件及嵌套容器尺寸跨越滚动阈值；检查吸附开关、候选轮廓与落点、Esc、一次撤销/重做；拖动时改变窗口，确认自动适配延后。
++   响应式页面滚动到顶部，先将标题放为第一项，再继续往原页面上方拖动约80逻辑像素：应出现实际扩展的画布和落点轮廓，标题松手后确实高于原边界，其他控件不被一起上移。橙色虚线标原位置，绿色实线标目标，灰色虚线只标受影响组件的新位置；拖动图像半透明，无“放在页面最前”文字辅助条。停在编辑区顶边，应持续向上拓展查看和目标范围。分别松手、Esc、移出画布取消，以及回到嵌套容器后投放，核对一次有效操作一次历史、落点与预览一致；取消恢复视图。撤销/重做同时恢复标题位置与边界；保存关闭再打开仍保留扩展。再将标题移回正常流、复制或编组，确认页面扩展范围仍保留。组件库拖入标题也能放在扩展区。分别在跟随窗口与固定768×1024模式操作，后者终端宽高不变，扩展增加真实滚动内容。
+ 6. 拖入空白块，检查默认24×24及虚线提示。调整固定大小，切弹性，检查横排/竖排/换行和两个不同权重的弹性块。可用空间变小时不挤压正常内容。
+ 7. 检查空白块复制、删除、多选、编组/取消编组、跨容器移动、撤销重做和保存重开。预览窗口中无虚线/标题/背景/未绑定文字，保留占位。
+ 8. 使用旧头盔工程的临时副本检查空间与滚动、旧尺寸调整和固定空白块。旧grid弹性条件须明确；Ctrl多选和grid转响应式不是本轮验收项。
+ 9. 在Windows100%与150%显示缩放下复测步骤1、4、5。区分画布缩放与Windows显示缩放。
+-10. Web使用新版SDK与相同空白块页面包，检查可导入，固定/弹性/换行/权重以及透明占位；保留浏览器截图。
++10. Web使用SDK1.3.0与相同空白块/扩展页面包，检查可导入，固定/弹性/换行/权重以及透明占位；标题上移和扩展范围保留，窗口变窄仍按响应式宽度排列，正常兄弟组件保留流占位。保留浏览器截图。
+ 
+ ## 结果记录
+ 
+diff --git a/packages/emo_panel_protocol/pyproject.toml b/packages/emo_panel_protocol/pyproject.toml
+index ac533c30..eef190e0 100644
+--- a/packages/emo_panel_protocol/pyproject.toml
++++ b/packages/emo_panel_protocol/pyproject.toml
+@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
+ 
+ [project]
+ name = "emo_panel_protocol"
+-version = "1.2.0"
++version = "1.3.0"
+ description = "Shared Runtime RPC, result identities and published panel contract"
+ requires-python = ">=3.10"
+ dependencies = ["grpcio==1.78.0", "protobuf==6.33.6", "pydantic>=2.6"]
+diff --git a/src/emo_panel_protocol/__init__.py b/src/emo_panel_protocol/__init__.py
+index 3542965e..c2c0c927 100644
+--- a/src/emo_panel_protocol/__init__.py
++++ b/src/emo_panel_protocol/__init__.py
+@@ -1,2 +1,2 @@
+ """Panel Contract v1: pure DTOs and gRPC wire types, with no application owners."""
+-__version__ = "1.2.0"
++__version__ = "1.3.0"
+diff --git a/src/emo_panel_protocol/models.py b/src/emo_panel_protocol/models.py
+index 7e2d9d3d..2af98b83 100644
+--- a/src/emo_panel_protocol/models.py
++++ b/src/emo_panel_protocol/models.py
+@@ -98,6 +98,14 @@ class ResponsiveItem(Model):
+     minHeight: int = Field(default=64, ge=0, le=4096)
+     preferredHeight: int = Field(default=0, ge=0, le=8192)
+     alignSelf: Literal["auto", "start", "center", "end", "stretch"] = "auto"
++    canvasOffsetY: int = Field(default=0, ge=-32768, le=0)
++
++    @model_serializer(mode="wrap")
++    def serializeCanvasOffset(self, handler):
++        payload = handler(self)
++        if not self.canvasOffsetY:
++            payload.pop('canvasOffsetY', None)
++        return payload
+ 
+ 
+ class Placement(Model):
+@@ -317,6 +325,7 @@ def walkComponents(components: list[Component]):
+ class Page(Model):
+     name: str = Field(min_length=1, max_length=256)
+     layout: Grid | ResponsiveLayout = Field(default_factory=ResponsiveLayout)
++    canvasTop: int = Field(default=0, ge=-32768, le=0)
+     components: list[Component] = Field(default_factory=list, max_length=1024)
+     resultScopeIds: list[Id] = Field(default_factory=list)
+     targets: list[Literal["desktop", "web"]] = Field(default=["desktop"], min_length=1, max_length=2)
+@@ -333,6 +342,8 @@ class Page(Model):
+         payload = handler(self)
+         if self.targets == ["desktop"]:
+             payload.pop("targets", None)
++        if not self.canvasTop:
++            payload.pop('canvasTop', None)
+         return payload
+ 
+ 
+@@ -387,6 +398,8 @@ class Presentation(Model):
+                 raise ValueError('responsive layout requires presentation schemaVersion 1.1')
+             occupied: set[tuple[int, int]] = set()
+             for child in children:
++                if child.responsive.canvasOffsetY and (depth > 1 or isinstance(layout, Grid)):
++                    raise ValueError('canvas offset requires a root responsive component')
+                 if child.componentId in seen:
+                     raise ValueError("duplicate componentId")
+                 seen.add(child.componentId)
+@@ -405,6 +418,10 @@ class Presentation(Model):
+                     visit(child.children, child.grid, depth + 1)
+ 
+         for page in self.pages.values():
++            if page.canvasTop and (self.schemaVersion != '1.2' or not isinstance(page.layout, ResponsiveLayout)):
++                raise ValueError('expanded canvas requires responsive presentation 1.2')
++            if any(item.responsive.canvasOffsetY < page.canvasTop for item in page.components):
++                raise ValueError('component canvas offset exceeds page canvasTop')
+             if self.schemaVersion != '1.2':
+                 if page.targets != ['desktop']:
+                     raise ValueError('page targets require presentation schemaVersion 1.2')
+diff --git a/src/emo_panel_protocol/published.py b/src/emo_panel_protocol/published.py
+index c3c7ac8b..639dccfd 100644
+--- a/src/emo_panel_protocol/published.py
++++ b/src/emo_panel_protocol/published.py
+@@ -3,7 +3,7 @@ from __future__ import annotations
+ 
+ from typing import Literal
+ 
+-from pydantic import Field
++from pydantic import Field, model_serializer
+ 
+ from .models import (Action, ComponentType, DataSource, Grid, Id, Model, Navigation, Placement,
+                      VisualProps, ResponsiveItem, ResponsiveLayout, ResultScope)
+@@ -40,9 +40,17 @@ class PublishedComponent(Model):
+ class PublishedPage(Model):
+     name: str
+     layout: Grid | ResponsiveLayout
++    canvasTop: int = Field(default=0, ge=-32768, le=0)
+     components: list[PublishedComponent]
+     resultScopeIds: list[Id] = Field(default_factory=list)
+ 
++    @model_serializer(mode='wrap')
++    def serializeCanvas(self, handler):
++        payload = handler(self)
++        if not self.canvasTop:
++            payload.pop('canvasTop', None)
++        return payload
++
+ 
+ class PublishedPresentation(Model):
+     schemaVersion: Literal['published-1'] = 'published-1'
+diff --git a/web_panel/README.md b/web_panel/README.md
+index 041f2b50..0be64427 100644
+--- a/web_panel/README.md
++++ b/web_panel/README.md
+@@ -1,8 +1,8 @@
+ # emo_master independent Web operator panel
+ 
+-Independent Python 3.10+/FastAPI + React application under `web_panel/`. The gateway consumes **Panel Contract 1.0 / SDK 1.2.0** as an ordinary gRPC client; it does not import Qt, device drivers, inference packages, or `emo_master`.
++Independent Python 3.10+/FastAPI + React application under `web_panel/`. The gateway consumes **Panel Contract 1.0 / SDK 1.3.0** as an ordinary gRPC client; it does not import Qt, device drivers, inference packages, or `emo_master`.
+ 
+-Authoritative handoff: SDK 1.2.0 generated from Designer implementation `32c2b4efb7ba932636e2145fd423e9b2b484b902` with a clean source tree; exact delivery bytes and hashes are pinned in `contracts/panel-contract-v1/`.
++Current development handoff: SDK 1.3.0 generated from Designer HEAD `8df8599fc026c424a49e87cc53fb45f6b371f16f` plus uncommitted canvas expansion changes (`sourceDirty=true`). Exact delivery bytes and hashes are pinned in `contracts/panel-contract-v1/` and `docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/`. It adds persistent upper canvas bounds and root component offsets with the `layout.expanded-canvas-v1` requirement. Historical SDK 1.2.0 delivery remains in its versioned handoff directory. This is not a clean release or deployment.
+ 
+ ## Build and run
+ 
+@@ -10,7 +10,7 @@ Authoritative handoff: SDK 1.2.0 generated from Designer implementation `32c2b4e
+ cd web_panel
+ python -m venv .venv
+ # Windows: .venv\Scripts\activate; POSIX: . .venv/bin/activate
+-python -m pip install contracts/panel-contract-v1/python/emo_panel_protocol-1.2.0-py3-none-any.whl
++python -m pip install contracts/panel-contract-v1/python/emo_panel_protocol-1.3.0-py3-none-any.whl
+ python -m pip install -e '.[test]'
+ npm --prefix frontend ci
+ npm --prefix frontend run build
+diff --git a/web_panel/backend/emo_web_panel/contract_data/fixtures/preview-fixtures.json b/web_panel/backend/emo_web_panel/contract_data/fixtures/preview-fixtures.json
+index 754afa54..2feef231 100644
+--- a/web_panel/backend/emo_web_panel/contract_data/fixtures/preview-fixtures.json
++++ b/web_panel/backend/emo_web_panel/contract_data/fixtures/preview-fixtures.json
+@@ -3,6 +3,6 @@
+   "mode": "fixtures",
+   "readOnly": true,
+   "projectId": "panel-contract-demo",
+-  "packageRevision": "e6078bee02223d0d1911ec680212dc73f923e11afeb3829b43790460357f2122",
++  "packageRevision": "752ef880fa2c54278189017b66a09d2cbfe31f3a92317852f1cb6043001e6bc1",
+   "historyDefinitionRevision": "ac6f154409d44008c9c7df03794003b979738c85dddb42887788070ea3d661ff"
+ }
+diff --git a/web_panel/backend/emo_web_panel/contract_data/fixtures/preview-runtime.json b/web_panel/backend/emo_web_panel/contract_data/fixtures/preview-runtime.json
+index 231ed037..82c36f20 100644
+--- a/web_panel/backend/emo_web_panel/contract_data/fixtures/preview-runtime.json
++++ b/web_panel/backend/emo_web_panel/contract_data/fixtures/preview-runtime.json
+@@ -3,7 +3,7 @@
+   "mode": "runtime",
+   "readOnly": true,
+   "projectId": "panel-contract-demo",
+-  "packageRevision": "e6078bee02223d0d1911ec680212dc73f923e11afeb3829b43790460357f2122",
++  "packageRevision": "752ef880fa2c54278189017b66a09d2cbfe31f3a92317852f1cb6043001e6bc1",
+   "historyDefinitionRevision": "ac6f154409d44008c9c7df03794003b979738c85dddb42887788070ea3d661ff",
+   "runtime": {
+     "target": "192.0.2.10:50051",
+diff --git a/web_panel/backend/emo_web_panel/packages.py b/web_panel/backend/emo_web_panel/packages.py
+index a9eeef85..a86e39d1 100644
+--- a/web_panel/backend/emo_web_panel/packages.py
++++ b/web_panel/backend/emo_web_panel/packages.py
+@@ -298,6 +298,7 @@ def _image_matches(data, mime):
+ OFFICIAL_REQUIREMENTS = frozenset({f"component.{kind}@1.0" for kind in TYPES} | {
+     "actions.readonly-v1", "history.image-v1", "history.query-v1",
+     "layout.ordered-responsive-v1", "layout.grid-v1", "result.closed-v1",
++    "layout.expanded-canvas-v1",
+ })
+ 
+ 
+@@ -377,6 +378,8 @@ def _official_presentation(manifest, doc, files):
+         if depth > 8 or len(seen) >= 1024 or value.componentId in seen:
+             raise PackageError("Duplicate or excessively nested published component")
+         seen[value.componentId] = value.type
++        if value.responsive.canvasOffsetY and (depth or parent_layout.type != "responsive"):
++            raise PackageError("Canvas offset requires a root responsive component")
+         if value.type == "spacer" and value.props.spacerMode == "flex" and parent_layout.type != "responsive":
+             raise PackageError("Elastic spacers require a responsive layout")
+         # PublishedComponent is a transport DTO; Component supplies the binding,
+@@ -415,6 +418,11 @@ def _official_presentation(manifest, doc, files):
+     page_components = {}
+     for pid in published.pageOrder:
+         page = published.pages[pid]
++        if page.canvasTop and (page.layout.type != "responsive" or model.sourcePresentationVersion != "1.2"
++                              or "layout.expanded-canvas-v1" not in model.rendererRequirements):
++            raise PackageError("Expanded canvas requires responsive presentation 1.2 and renderer support")
++        if any(item.responsive.canvasOffsetY < page.canvasTop for item in page.components):
++            raise PackageError("Component canvas offset exceeds page canvasTop")
+         if any(scope not in published.resultScopes for scope in page.resultScopeIds):
+             raise PackageError("Unknown page result scope")
+         before = set(seen)
+diff --git a/web_panel/contracts/panel-contract-v1/README.md b/web_panel/contracts/panel-contract-v1/README.md
+index 9b8e5396..97bed55e 100644
+--- a/web_panel/contracts/panel-contract-v1/README.md
++++ b/web_panel/contracts/panel-contract-v1/README.md
+@@ -1,9 +1,16 @@
+ # Panel Contract v1：Runtime 客户端与 Web 页面交接合同
+ 
+-合同版本 `1.0`，Python SDK `emo_panel_protocol 1.2.0`。工程当前版本为
++合同版本 `1.0`，Python SDK `emo_panel_protocol 1.3.0`。工程当前版本为
+ `2.9` / Presentation `1.2`，发布快照为 `published-1`，ZIP 页面包为
+ `emo-web-panel-1`（扩展名 `.emoweb`）。这些版本分别管理不同边界，不互相替代。
+ 
++2026-11-02 开发增量：SDK **1.3.0** 支持响应式根页面持久向上扩展，增加 `Page.canvasTop`
++及 `ResponsiveItem.canvasOffsetY`（默认 0，-32768..0），派生发布页同步保留。
++包声明 `layout.expanded-canvas-v1`，消费者检查根级、上下界及 Presentation 1.2；
++Web 以根部扩展空间和组件相对纵向偏移实现，保持响应式流占位与原有伸展规则。
++工程继续为 2.9 / 页面 1.2。生成脚本的样例包含向上扩展 96px 的标题。
++本增量交接以 manifest 的 `sourceSha`、`sourceDirty` 和文件摘要为准，未提交源码不标为干净发布。
++
+ 2026-10-31 的[固定交接入口](../handoffs/runtime-web-panel-v1/README.md)提供仓库内可直接下载的 ZIP、实现源码 SHA 和文件摘要。
+ 
+ 本合同供远程 Designer 与 Web 网关共同使用 Runtime RPC。浏览器使用网关的固定
+diff --git a/web_panel/contracts/panel-contract-v1/contract-manifest.json b/web_panel/contracts/panel-contract-v1/contract-manifest.json
+index 2ee1ca47..33fa9e53 100644
+--- a/web_panel/contracts/panel-contract-v1/contract-manifest.json
++++ b/web_panel/contracts/panel-contract-v1/contract-manifest.json
+@@ -1,13 +1,13 @@
+ {
+   "panelContractVersion": "1.0",
+-  "sdkVersion": "1.2.0",
+-  "sourceSha": "32c2b4efb7ba932636e2145fd423e9b2b484b902",
+-  "sourceDirty": false,
++  "sdkVersion": "1.3.0",
++  "sourceSha": "8df8599fc026c424a49e87cc53fb45f6b371f16f",
++  "sourceDirty": true,
+   "projectSchemaVersion": "2.9",
+   "presentationSchemaVersion": "1.2",
+   "status": "complete",
+   "sdkWheels": [
+-    "python/emo_panel_protocol-1.2.0-py3-none-any.whl"
++    "python/emo_panel_protocol-1.3.0-py3-none-any.whl"
+   ],
+   "sampleValidation": {
+     "model": "PASS",
+@@ -66,11 +66,11 @@
+       "byteSize": 239
+     },
+     "fixtures/preview-fixtures.json": {
+-      "sha256": "e8caa43d4a7cfb7c7f73489c8cbe9f3d25ce8a5ffdba55260f4fd7f17bbc694d",
++      "sha256": "f37556948415ec357b300bc5caf4ccf84dd5e3bce2866414a9dc6d5ca38b8ae0",
+       "byteSize": 311
+     },
+     "fixtures/preview-runtime.json": {
+-      "sha256": "262b6c85cb6392ff0c09f07a586db76722249cb4f1f0fa70253b12a4b07046c4",
++      "sha256": "167dac4a4a8a7ef127a715ac21274ca63d58e19300e7215437e3bd7b6f9a76a1",
+       "byteSize": 506
+     },
+     "fixtures/realtime.json": {
+@@ -117,21 +117,21 @@
+       "sha256": "63ff4542cfe390c905e297a5f330899c2e0fe28c414136e5d8d5000321e25b5f",
+       "byteSize": 34696
+     },
+-    "python/emo_panel_protocol-1.2.0-py3-none-any.whl": {
+-      "sha256": "755b81269a3738f08bf44a8cf3fe1dc304b1e12ca9a7ed4b444211f177bb5b52",
+-      "byteSize": 38488
++    "python/emo_panel_protocol-1.3.0-py3-none-any.whl": {
++      "sha256": "cd86472b5faa74e8fb1048a95fcaf67cf59e5a285e4d5e69763cd9a71bb55295",
++      "byteSize": 38789
+     },
+     "README.md": {
+-      "sha256": "81ed6e99e7fa3bb18aa512929113b36cb81b9a976688ba005ef6d502b0e34b4a",
+-      "byteSize": 19179
++      "sha256": "a4a868797ff27d2769e1b853f6d3db1dc729347f3a6a8ba7b5b09bc70f38e0c3",
++      "byteSize": 19814
+     },
+     "sample-panels/demo.emoweb": {
+-      "sha256": "fa8dfb4a161a09ce146c3cf9b0a4e16a751c375732b988fb513a962447020c8a",
+-      "byteSize": 2365
++      "sha256": "da6f55a962ea11758df0326587b9bc60d73eecb9d1723ced5fe10555471efc21",
++      "byteSize": 2403
+     },
+     "sample-panels/source/demo.emoproj": {
+-      "sha256": "d178783c013e49e699c2fb3a660677b3d94e3f9d0879c559aa7b16582651e0fe",
+-      "byteSize": 28879
++      "sha256": "eaa4ef7665836951eb891ef6951fc7fa0a59f07715a0a87eada57714cb208de1",
++      "byteSize": 28943
+     },
+     "sample-panels/source/demo.png": {
+       "sha256": "a4ee2e10f34181b8f6856e44e232bfa58e69b95fecccdcd87fcc257cb0a8ffbc",
+@@ -162,16 +162,16 @@
+       "byteSize": 2466
+     },
+     "schemas/published-presentation.schema.json": {
+-      "sha256": "59c6992b0b562f8965550cd2f06e8859ce38c96c52417a048121ddb438770e58",
+-      "byteSize": 23306
++      "sha256": "1c8408ff12148aa9513c9fb1c131fbc817f43cc8e39a90b9aaf36e7e53440aac",
++      "byteSize": 23670
+     },
+     "schemas/runtime-rpc.schema.json": {
+       "sha256": "2cb65176ca248e4395e5624df8adc914e2eb1de98b5d99371a4acb36c89e1aa2",
+       "byteSize": 93352
+     },
+     "typescript/panel-contract.ts": {
+-      "sha256": "f677b6cd70ed1854725957bb6063e962e728a7ebee6e441876b9c4169ad6f900",
+-      "byteSize": 31243
++      "sha256": "01ca4def6bf4526a6d84ae272b6c9ae7701a9aaee7a15660a52651a010c478de",
++      "byteSize": 31291
+     }
+   }
+ }
+diff --git a/web_panel/contracts/panel-contract-v1/fixtures/preview-fixtures.json b/web_panel/contracts/panel-contract-v1/fixtures/preview-fixtures.json
+index 754afa54..2feef231 100644
+--- a/web_panel/contracts/panel-contract-v1/fixtures/preview-fixtures.json
++++ b/web_panel/contracts/panel-contract-v1/fixtures/preview-fixtures.json
+@@ -3,6 +3,6 @@
+   "mode": "fixtures",
+   "readOnly": true,
+   "projectId": "panel-contract-demo",
+-  "packageRevision": "e6078bee02223d0d1911ec680212dc73f923e11afeb3829b43790460357f2122",
++  "packageRevision": "752ef880fa2c54278189017b66a09d2cbfe31f3a92317852f1cb6043001e6bc1",
+   "historyDefinitionRevision": "ac6f154409d44008c9c7df03794003b979738c85dddb42887788070ea3d661ff"
+ }
+diff --git a/web_panel/contracts/panel-contract-v1/fixtures/preview-runtime.json b/web_panel/contracts/panel-contract-v1/fixtures/preview-runtime.json
+index 231ed037..82c36f20 100644
+--- a/web_panel/contracts/panel-contract-v1/fixtures/preview-runtime.json
++++ b/web_panel/contracts/panel-contract-v1/fixtures/preview-runtime.json
+@@ -3,7 +3,7 @@
+   "mode": "runtime",
+   "readOnly": true,
+   "projectId": "panel-contract-demo",
+-  "packageRevision": "e6078bee02223d0d1911ec680212dc73f923e11afeb3829b43790460357f2122",
++  "packageRevision": "752ef880fa2c54278189017b66a09d2cbfe31f3a92317852f1cb6043001e6bc1",
+   "historyDefinitionRevision": "ac6f154409d44008c9c7df03794003b979738c85dddb42887788070ea3d661ff",
+   "runtime": {
+     "target": "192.0.2.10:50051",
+diff --git a/web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.2.0-py3-none-any.whl b/web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.2.0-py3-none-any.whl
+deleted file mode 100644
+index f70d331a00bbf27c21156bf09bc7335ed26e300b..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 38488
+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
+Y&y2Lx@qrkHgF^#sC?HnEB9D*$5BxkUR{#J2
+
+diff --git a/web_panel/contracts/panel-contract-v1/sample-panels/demo.emoweb b/web_panel/contracts/panel-contract-v1/sample-panels/demo.emoweb
+index a41db10a777998184d8059b7fc70b0b2caf9f92d..ed769d9eac6f952cbff0ff5427f2a3c2c57d255d 100644
+GIT binary patch
+delta 1996
+zcmV;-2Q&D+65|q()CsZ_;^w*n003^0-64NJdK$1@b}QOpI}}AgNmQy<mRw0rn+^T%
+zqwEAtn+!YbvP&G1)O+M3sb2|rkHIIGzY>AHjbFA4c%yz|a+wwNBI#9+-*y8X6V<~8
+zF9x$o7RdnNo=o%g3n&qD%u-pDS(~v|)@@Z|Sz=z~OhVOS-LbBc$T=5Ww2kCEuNr^O
+zQfQ@Qd^Lmmd&sLg!u}&(^7^_+I1FKQc#Th^a@eDp>vW^W@94a;hM2Nd8i~0baQ0do
+z;+KQgS5u9*cLZhoUWF^G72naNXX_rNw$JN;u2%*$K@hy#{n$Ic3X1AMnFIEzBWCFB
+z=y>G4{YZ!}1M+}kuROC>BSbW*P>X-JxJP9o;znBrdc6gwfN7*S13g_dqt^7_3XH__
+zX|OIF{yX%e4mUBwDYL2i#aW3C*i+mVolrc6J|7hpF<%#dDMgup8+89oDcp|cY$12l
+zAZc9>M3K;LET54r2Qa9Y8O7f#AFSJbL8*)i1b>ZNwWk4I%d9HPv=j7`w!DAijgV>4
+zbaX0M*K|$M^0pE}urhDkrfJ)>Nf8QB*O`>le(^`zwj<D{%286Bgq&Ap-n3cUrCG!3
+z8i*(7Ok$DA0=m4&nzqVi##x<~MVe+<GoDSLl>KK*lL|b1RAnFqX^0`r#^dAa!CNzh
+z*azz6q}!|n--9iu*CTep2y}nw-Y?xPDH3t~${`4A^lrJ0`OsPo)=<ofYs()$&50aY
+z37vKY-HB&<icYPDrV^+vCmsV^wV7&JvoQo~P9w&iogo^CXZ?2jyg#U*PqT3}SoC<V
+zJ&8E_6St=ppCR;5S_OiP1NtZD7W8=P4EPfE#{F>4GR;~aOiv@az5IU~c6JOaT2P>_
+zi6sZK1^>=xU2LaV(l8K<SKB?>ylt^<p1fqbJG^FBM{{#LVtMlV8&FFF1QY-O00;m8
+z03lr63XueW1ONb1E&u=#0001Ra%FR6ZggREX>V>WYIARH?V8PQ<2De0U&Y|rDPkiC
+zQ1#XY7AeqTgF0wXq=A1yQzMxTMQX{B9XIg1cSuUMoY>wrRnj$9CtJfIH9y}_63Hi)
+za^w?JSpkkEPfVCfWB9|By5=}%$=&^s!D9&mA-!3Zz!D}kLJpP<StdcHTfGOVQ)<tZ
+znQ=8;a4Y#t0qI$AmBNWICH&+ytTE`tm4e^EI%zZsN8g>3tm%Ih^rAg$l7da8__Ap;
+zV-#@x4yH90t;xC+GEReB^E|dGx$r}4zK}V`FvJrpOzJH}K6Boql9WH$l){+YH67;C
+zp|LA=ADcr;8d=CrQ5p>zsp0O4ap8ydN;KSz{F6Gbuf$xc)Pjz_Z~8?CK^U7lx?OH%
+z>c{0u=DGl%dFFr60*X1crjj(H@oZ^%Nh0`Madj(GAJmL12SfH}<xpm;(34vqIahK)
+zmat?r9x{w+p&*k5&U?8Ywq4?RZh>M1n`C=)RaJPu?iks(&HWKiQg8x709b;yf=#}$
+z&a&~5{?VIBLy`%KuS^wj3U_14d2{1QN&F-uLclD8n0|k2nNOQFWh@nL(+RGWx4cwb
+z>K)7Py-h+E6eN~V9H1z1bpww+#D7%d^U;Mz)M)(33#mf*Rt}-4r4#uVgnRpoTafwO
+zchttxfTZGcEjYz+f)u(s=bo6@Z%iFA-iyV5AB-{tS_7(=N(`pc-%87%x*oRk)NnBY
+zl~F6N(2##_A@x;l&gDh8tZ^7!p8McH2G&B_=(J_E;`oAu%etNFiY{UURjg9ph?*Jq
+zSxJOxlflJKF|LQN<{u4)Ab$1qAGG`+?c4F%#P__P67LJHs!n;2v*a1&CWn*6{+R;@
+z>35*QtH6{1o;KR8G9W9%o6d*550Sn|PN7Jew03`19hrQDQ!b8O`w!MeP}^4&J@zMz
+z{e3%mUuKqiBgIN}$F1gt7hXkt2PqWh`6pE%z*ANSQgFTC?#7fXIs5){*wIH#OyU1m
+zz<mw9u7)BFpR&vW{$3ODj&<dIoHp!q_l4m<@p~3ejm7uouC+YWA$&p^@zB%P(|4G@
+z29bZxn9~OPhws}XH(6<%1HHlx=ye_|3j@D=|HD8Vdh=RH0Rv&Q4&T5hOlNSmLpW!O
+z>wZE!p$V}GZHu|_4s-tM1#&yWmf~LIs7?^#&Qi1bMtKZdTAgv{koU9VDRKAyQ=P3e
+z$^xbymCF4G_zvr_xSrhFN<I4WST8vB%=UlG9$;2i#jN9rvb3Ixp1L=qE<W6Ti3boe
+z1&{38eQIwe#LWSY<8(G^J)ZrfczAujadPh({j=$=Dhh5_Jy1PRN0w;FbqZ^@4_ak%
+z(_{Bq?EDtouMm$AgmBioUEc(c|772t2_?k?q%p&~cDg>=ST<)Po2~Bc3uRmehj4$A
+z^4}ceI@=D_BmK5B>D4xACkpU(vt>G~5clo5d@Z}_Khx!rt@QPdG(Z&2EWbD!P4!Yp
+zyf##o-j1cQ51BH{DT1X)N5eJR)otAn%BqM6IzRTy27hxW=1}nM+32#GDe2~ro{iZ0
+zZ%|7C0u%rg000080000XTp<JkBwdq92y_Xu6yoN(0ssJRlg0=#8{G<#1b_qp08%ah
+e01*HH00000000000Du9jlM@Lf23iOJ0000&cDvaC
+
+delta 1937
+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
+X00000004jipOZNWBnC7H00000HJO~H
+
+diff --git a/web_panel/contracts/panel-contract-v1/sample-panels/source/demo.emoproj b/web_panel/contracts/panel-contract-v1/sample-panels/source/demo.emoproj
+index 6e6bb963..eb660a16 100644
+--- a/web_panel/contracts/panel-contract-v1/sample-panels/source/demo.emoproj
++++ b/web_panel/contracts/panel-contract-v1/sample-panels/source/demo.emoproj
+@@ -128,6 +128,7 @@
+           "justify": "start",
+           "equalWidth": false
+         },
++        "canvasTop": -96,
+         "components": [
+           {
+             "componentId": "title",
+@@ -146,7 +147,8 @@
+               "weight": 1.0,
+               "minHeight": 64,
+               "preferredHeight": 0,
+-              "alignSelf": "auto"
++              "alignSelf": "auto",
++              "canvasOffsetY": -96
+             },
+             "props": {
+               "title": "",
+diff --git a/web_panel/contracts/panel-contract-v1/schemas/published-presentation.schema.json b/web_panel/contracts/panel-contract-v1/schemas/published-presentation.schema.json
+index 6b5b6769..ecf9c6bb 100644
+--- a/web_panel/contracts/panel-contract-v1/schemas/published-presentation.schema.json
++++ b/web_panel/contracts/panel-contract-v1/schemas/published-presentation.schema.json
+@@ -533,6 +533,13 @@
+           ],
+           "title": "Layout"
+         },
++        "canvasTop": {
++          "default": 0,
++          "maximum": 0,
++          "minimum": -32768,
++          "title": "Canvastop",
++          "type": "integer"
++        },
+         "components": {
+           "items": {
+             "$ref": "#/$defs/PublishedComponent"
+@@ -767,6 +774,13 @@
+           ],
+           "title": "Alignself",
+           "type": "string"
++        },
++        "canvasOffsetY": {
++          "default": 0,
++          "maximum": 0,
++          "minimum": -32768,
++          "title": "Canvasoffsety",
++          "type": "integer"
+         }
+       },
+       "title": "ResponsiveItem",
+diff --git a/web_panel/contracts/panel-contract-v1/typescript/panel-contract.ts b/web_panel/contracts/panel-contract-v1/typescript/panel-contract.ts
+index 4ee7c7e6..efbcbc96 100644
+--- a/web_panel/contracts/panel-contract-v1/typescript/panel-contract.ts
++++ b/web_panel/contracts/panel-contract-v1/typescript/panel-contract.ts
+@@ -59,13 +59,13 @@ export type PublishedAsset = { "path": string; "sha256": string; "byteSize": num
+ 
+ export type PublishedComponent = { "componentId": string; "type": "image" | "text" | "number" | "indicator" | "runtime_status" | "table" | "navigation_button" | "container" | "page_title" | "page_navigation" | "clock" | "sqlite_table" | "sqlite_value" | "spacer"; "version"?: "1.0"; "layout"?: Placement; "responsive"?: ResponsiveItem; "props"?: PublishedProps; "bindings"?: { [key: string]: unknown }; "actions"?: { [key: string]: Action }; "children"?: Array<PublishedComponent>; "grid"?: (Grid | ResponsiveLayout); "history"?: (HistoryReference | null) };
+ 
+-export type PublishedPage = { "name": string; "layout": (Grid | ResponsiveLayout); "components": Array<PublishedComponent>; "resultScopeIds"?: Array<string> };
++export type PublishedPage = { "name": string; "layout": (Grid | ResponsiveLayout); "canvasTop"?: number; "components": Array<PublishedComponent>; "resultScopeIds"?: Array<string> };
+ 
+ export type PublishedPresentation = { "schemaVersion"?: "published-1"; "defaultPageId": string; "pageOrder": Array<string>; "navigation": Navigation; "resultScopes": { [key: string]: unknown }; "dataSources": { [key: string]: unknown }; "pages": { [key: string]: unknown } };
+ 
+ export type PublishedProps = { "spacerMode"?: "fixed" | "flex"; "imageResourceId"?: (string | null); "iconResourceId"?: (string | null); "title"?: string; "text"?: string; "emptyText"?: string; "unit"?: string; "decimals"?: number; "indicatorStates"?: { [key: string]: IndicatorStyle }; "columns"?: Array<TableColumn>; "pageSize"?: number; "fontFamily"?: "system" | "sans" | "serif" | "monospace"; "fontSize"?: number; "fontWeight"?: "normal" | "bold"; "textColor"?: "default" | "neutral" | "green" | "red" | "amber"; "cardStyle"?: "plain" | "soft" | "outlined" };
+ 
+-export type ResponsiveItem = { "width"?: "fill" | "content"; "minWidth"?: number; "preferredWidth"?: number; "weight"?: number; "minHeight"?: number; "preferredHeight"?: number; "alignSelf"?: "auto" | "start" | "center" | "end" | "stretch" };
++export type ResponsiveItem = { "width"?: "fill" | "content"; "minWidth"?: number; "preferredWidth"?: number; "weight"?: number; "minHeight"?: number; "preferredHeight"?: number; "alignSelf"?: "auto" | "start" | "center" | "end" | "stretch"; "canvasOffsetY"?: number };
+ 
+ export type ResponsiveLayout = { "type"?: "responsive"; "direction"?: "vertical" | "horizontal" | "wrap"; "spacing"?: number; "alignment"?: "start" | "center" | "end" | "stretch"; "justify"?: "start" | "center" | "end" | "space-between"; "equalWidth"?: boolean };
+ 
+diff --git a/web_panel/frontend/src/contracts/types.ts b/web_panel/frontend/src/contracts/types.ts
+index 2663b6b9..b5de623f 100644
+--- a/web_panel/frontend/src/contracts/types.ts
++++ b/web_panel/frontend/src/contracts/types.ts
+@@ -13,7 +13,7 @@ export interface Layout { type?: string; direction?: string; columns?: number; s
+ export interface Component {
+     history?: {kind:string;componentId:string;sourceComponentId?:string;orderBy?:string;descending?:boolean};
+     layout?: {row?:number;column?:number;rowSpan?:number;columnSpan?:number};
+-    responsive?: {width?:string;minWidth?:number;preferredWidth?:number;weight?:number;minHeight?:number;preferredHeight?:number;alignSelf?:string};
++    responsive?: {width?:string;minWidth?:number;preferredWidth?:number;weight?:number;minHeight?:number;preferredHeight?:number;alignSelf?:string;canvasOffsetY?:number};
+     actions?: {clicked?: {type:string;pageId?:string;context?:string;resultScopeId?:string}};
+     id: string;
+     type: string;
+@@ -35,6 +35,7 @@ export interface Component {
+     };
+ }
+ export interface Page {
++    canvasTop?: number;
+     layout?: Layout;
+     id: string;
+     title: string;
+diff --git a/web_panel/frontend/src/renderer/PanelRenderer.tsx b/web_panel/frontend/src/renderer/PanelRenderer.tsx
+index 843c05fc..9670f9eb 100644
+--- a/web_panel/frontend/src/renderer/PanelRenderer.tsx
++++ b/web_panel/frontend/src/renderer/PanelRenderer.tsx
+@@ -27,18 +27,19 @@ function layoutStyle(layout?:Layout,columns=12):CSSProperties {
+ export function responsiveStyle(c:Component,parent?:Layout,hasVerticalSpacer=false,equalWidthBasis=0):CSSProperties {
+     if(parent?.type!=='responsive')return {};
+     const r=c.responsive || {};
++    const canvasPosition:CSSProperties=r.canvasOffsetY?{position:'relative',top:r.canvasOffsetY}:{};
+     if(c.type==='spacer') {
+         const width=Math.max(r.minWidth ?? 24,r.preferredWidth || 24);
+         const height=Math.max(r.minHeight ?? 24,r.preferredHeight ?? 24);
+         const flex=c.props?.spacerMode==='flex';
+         const vertical=parent.direction==='vertical';
+         const alignment=!r.alignSelf || r.alignSelf==='auto'?parent.alignment:r.alignSelf;
+-        return {width,maxWidth:'100%',height,minWidth:0,minHeight:r.minHeight ?? 24,
++        return {...canvasPosition,width,maxWidth:'100%',height,minWidth:0,minHeight:r.minHeight ?? 24,
+             flexGrow:flex?r.weight ?? 1:0,flexShrink:vertical?0:1,
+             flexBasis:vertical?height:parent.direction==='horizontal' && flex?r.minWidth ?? 24:width,
+             alignSelf:alignment==='center'?'center':alignment==='end'?'flex-end':'flex-start'};
+     }
+-    return {minWidth:`min(100%, ${r.minWidth ?? 160}px)`,maxWidth:'100%',minHeight:r.minHeight,height:r.preferredHeight || undefined,flexGrow:hasVerticalSpacer?0:parent.equalWidth?1:r.width==='content'?0:r.weight ?? 1,flexShrink:hasVerticalSpacer?0:1,flexBasis:parent.direction==='vertical'?'auto':parent.equalWidth?equalWidthBasis:parent.direction==='horizontal' && r.width!=='content'?r.minWidth ?? 160:r.preferredWidth ?? 240,alignSelf:r.alignSelf==='start'?'flex-start':r.alignSelf==='end'?'flex-end':r.alignSelf as CSSProperties['alignSelf']};
++    return {...canvasPosition,minWidth:`min(100%, ${r.minWidth ?? 160}px)`,maxWidth:'100%',minHeight:r.minHeight,height:r.preferredHeight || undefined,flexGrow:hasVerticalSpacer?0:parent.equalWidth?1:r.width==='content'?0:r.weight ?? 1,flexShrink:hasVerticalSpacer?0:1,flexBasis:parent.direction==='vertical'?'auto':parent.equalWidth?equalWidthBasis:parent.direction==='horizontal' && r.width!=='content'?r.minWidth ?? 160:r.preferredWidth ?? 240,alignSelf:r.alignSelf==='start'?'flex-start':r.alignSelf==='end'?'flex-end':r.alignSelf as CSSProperties['alignSelf']};
+ }
+ export function fieldValue(row:unknown,path:string[]):unknown {
+     let value=row;
+@@ -231,5 +232,9 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId,
+         const span = Math.min(columns, Math.max(1, Number(grid.columnSpan) || Math.min(6, columns)));
+         return <section className="panel-card" data-component-id={c.id} key={c.id} style={{ ...responsiveStyle(c,parentLayout,verticalSpacer,equalBasis), ...(c.type==='container' && hasVerticalSpacer(c.children || [],c.grid)?{display:'flex',flexDirection:'column'} as CSSProperties:{}), fontFamily:fontFamilies[String(p.fontFamily)], border:p.cardStyle==='outlined'?'1px solid #64748b':undefined, boxShadow:p.cardStyle==='soft'?'0 2px 12px #0002':undefined, fontWeight: ['normal', 'bold', '400', '500', '600', '700', 400, 500, 600, 700].includes(style.fontWeight as string | number) ? style.fontWeight as 'normal' | 'bold' | 400 | 500 | 600 | 700 : undefined, gridColumn: parentLayout?.type==='responsive'?undefined:`${grid.column || 'auto'} / span ${span}`, gridRow: parentLayout?.type==='responsive'?undefined:`${grid.row || 'auto'} / span ${Math.max(1, Number(grid.rowSpan) || 1)}`, fontSize: typeof style.fontSize === 'number' ? Math.min(128, Math.max(8, style.fontSize)) : undefined, color: typeof style.color === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.color) ? style.color : undefined, backgroundColor: typeof style.backgroundColor === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.backgroundColor) ? style.backgroundColor : undefined, textAlign: ['left', 'center', 'right'].includes(String(style.textAlign)) ? style.textAlign as 'left' | 'center' | 'right' : undefined }}>{(c.label||typeof p.label==='string'||(c.type==='container'&&typeof p.title==='string'))&&<h3>{c.label||(typeof p.label==='string'?p.label:String(p.title))}</h3>}{body}</section>;
+     }
+-    return <div ref={pageRoot} className={page.layout?.type==='responsive'?'panel-responsive':'panel-grid'} style={{...layoutStyle(page.layout || page.grid || panel.grid,12),...(hasVerticalSpacer(page.components,page.layout)?{height:availableHeight}:{} )}}>{(page.layout?.type==='responsive'?page.components:ordered(page.components)).map(c => render(c,undefined,page.layout,hasVerticalSpacer(page.components,page.layout),equalWidthBasis(page.components,page.layout)))}</div>;
++    const extension=page.layout?.type==='responsive'?-(page.canvasTop || 0):0;
++    const content=<div ref={extension?undefined:pageRoot} className={page.layout?.type==='responsive'?'panel-responsive':'panel-grid'} style={{...layoutStyle(page.layout || page.grid || panel.grid,12),...(hasVerticalSpacer(page.components,page.layout)?{height:availableHeight}:{}),...(extension?{marginTop:0}:{})}}>{(page.layout?.type==='responsive'?page.components:ordered(page.components)).map(c => render(c,undefined,page.layout,hasVerticalSpacer(page.components,page.layout),equalWidthBasis(page.components,page.layout)))}</div>;
++    // Keep each responsive flow slot; only the moved root card is offset upward.
++    // Measure the outer viewport so expansion never consumes flexible space twice.
++    return extension?<div ref={pageRoot} data-canvas-top={page.canvasTop} style={{marginTop:16,paddingTop:extension,minHeight:(availableHeight || 0)+extension}}>{content}</div>:content;
+ }
+diff --git a/web_panel/frontend/tests/spacer_browser.py b/web_panel/frontend/tests/spacer_browser.py
+index b0433a4c..c075ad6f 100644
+--- a/web_panel/frontend/tests/spacer_browser.py
++++ b/web_panel/frontend/tests/spacer_browser.py
+@@ -62,6 +62,17 @@ PANEL = {'id':'spacers','name':'Spacers','packageRevision':'spacer-browser',
+      'components':[{'id':'grid-gap','type':'spacer','layout':{'row':0,'column':1,'rowSpan':2,'columnSpan':2}}]},
+ ]}
+ 
++# The same responsive flow before expansion, after dragging the first title up,
++# and after moving it back into its flow slot while retaining the page bounds.
++for pid, top, offset in [('canvas-base', 0, 0), ('canvas-expanded', -120, -120),
++                         ('canvas-retained', -120, 0)]:
++    title = text(f'{pid}-title', 100, 100)
++    title['type'] = 'page_title'
++    title['responsive']['canvasOffsetY'] = offset
++    PANEL['pages'].append({'id': pid, 'title': pid, 'canvasTop': top,
++        'layout': {'type': 'responsive', 'direction': 'vertical', 'spacing': 12},
++        'components': [title, spacer(f'{pid}-gap', flex=True), text(f'{pid}-body')]})
++
+ 
+ class Handler(SimpleHTTPRequestHandler):
+     def __init__(self,*args,**kwargs):
+@@ -177,6 +188,27 @@ with sync_playwright() as runtime:
+         box=rect(page,'grid-gap')
+         assert box['height']>=24 and box['width']>24,box
+         report.append({'case':'grid-span','box':box})
++
++        for width in (1280, 500):
++            page.set_viewport_size({'width':width,'height':1200})
++            page.evaluate('window.scrollTo(0,0)')
++            page.get_by_role('button',name='canvas-base',exact=True).click()
++            page.wait_for_function('document.querySelector("[data-component-id=canvas-base-gap]")?.getBoundingClientRect().height>24')
++            baseline={part:rect(page,f'canvas-base-{part}') for part in ('title','gap','body')}
++            for pid in ('canvas-expanded','canvas-retained'):
++                page.get_by_role('button',name=pid,exact=True).click()
++                page.wait_for_function(f'document.querySelector("[data-component-id={pid}-gap]")?.getBoundingClientRect().height>24')
++                boxes={part:rect(page,f'{pid}-{part}') for part in baseline}
++                for part, original in baseline.items():
++                    actual=boxes[part]
++                    assert abs(actual['width']-original['width'])<1,(pid,part,actual,original)
++                    assert abs(actual['height']-original['height'])<1,(pid,part,actual,original)
++                    shift=0 if pid=='canvas-expanded' and part=='title' else 120
++                    assert abs(actual['y']-original['y']-shift)<1,(pid,part,actual,original)
++                canvas=page.locator('[data-canvas-top="-120"]').bounding_box()
++                assert canvas['y']+canvas['height']>=1200+120-16,canvas
++                report.append({'case':pid,'width':width,'boxes':boxes,'canvas':canvas})
++            page.screenshot(path=str(ARTIFACTS/f'expanded-{width}.png'),full_page=True)
+         assert not errors,errors
+         page.screenshot(path=str(ARTIFACTS/'grid.png'),full_page=True)
+         (ARTIFACTS/'result.json').write_text(json.dumps({'cases':report,'pageErrors':errors},ensure_ascii=False,indent=2),encoding='utf-8')
+diff --git a/web_panel/pyproject.toml b/web_panel/pyproject.toml
+index 42fae298..cc059f0f 100644
+--- a/web_panel/pyproject.toml
++++ b/web_panel/pyproject.toml
+@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
+ name = "emo-master-web-panel"
+ version = "0.1.0a1"
+ requires-python = ">=3.10"
+-dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "websockets>=13,<17", "emo-panel-protocol==1.2.0", "Pillow>=10,<13", "tzdata>=2024.1"]
++dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "websockets>=13,<17", "emo-panel-protocol==1.3.0", "Pillow>=10,<13", "tzdata>=2024.1"]
+ [project.optional-dependencies]
+ test = ["httpx>=0.27,<1"]
+ [project.scripts]
+diff --git a/web_panel/tests/test_contract_manifest.py b/web_panel/tests/test_contract_manifest.py
+index 78bd3a64..95e376de 100644
+--- a/web_panel/tests/test_contract_manifest.py
++++ b/web_panel/tests/test_contract_manifest.py
+@@ -1,4 +1,4 @@
+-"""Pin complete official SDK 1.2.0 delivery and embedded consumer bytes on both OSes."""
++"""Pin SDK 1.3.0 development delivery and embedded consumer bytes on both OSes."""
+ import hashlib
+ import json
+ from pathlib import Path
+@@ -7,19 +7,19 @@ import zipfile
+ 
+ PANEL = Path(__file__).resolve().parents[1]
+ CONTRACT = PANEL / 'contracts/panel-contract-v1'
+-HANDOFF = PANEL.parent / 'docs/handoffs/runtime-web-panel-v1/sdk-1.2.0'
+-SOURCE_SHA = '32c2b4efb7ba932636e2145fd423e9b2b484b902'
+-ZIP_SHA = 'e9769e8ee7a0005715e31d5b9056d81910bdaea0ee06f0bf89e46a7fdfd8d918'
+-WHEEL_SHA = '755b81269a3738f08bf44a8cf3fe1dc304b1e12ca9a7ed4b444211f177bb5b52'
+-WHEEL_PATH = 'python/emo_panel_protocol-1.2.0-py3-none-any.whl'
++HANDOFF = PANEL.parent / 'docs/handoffs/runtime-web-panel-v1/sdk-1.3.0'
++SOURCE_SHA = '8df8599fc026c424a49e87cc53fb45f6b371f16f'
++ZIP_SHA = '4cf0bcb59fcd427d5e48a74c3f2082f834682a321364a6cc42234792f5577aca'
++WHEEL_SHA = 'cd86472b5faa74e8fb1048a95fcaf67cf59e5a285e4d5e69763cd9a71bb55295'
++WHEEL_PATH = 'python/emo_panel_protocol-1.3.0-py3-none-any.whl'
+ 
+ 
+ class ContractManifestTests(unittest.TestCase):
+-    def test_all_authoritative_files_match_clean_handoff(self):
++    def test_all_authoritative_files_match_development_handoff(self):
+         manifest = json.loads((CONTRACT / 'contract-manifest.json').read_bytes())
+         self.assertEqual(manifest['sourceSha'], SOURCE_SHA)
+-        self.assertFalse(manifest['sourceDirty'])
+-        self.assertEqual(manifest['sdkVersion'], '1.2.0')
++        self.assertTrue(manifest['sourceDirty'])
++        self.assertEqual(manifest['sdkVersion'], '1.3.0')
+         self.assertEqual(manifest['panelContractVersion'], '1.0')
+         self.assertEqual(manifest['sdkWheels'], [WHEEL_PATH])
+         self.assertEqual(len(manifest['files']), 39)
+@@ -31,13 +31,13 @@ class ContractManifestTests(unittest.TestCase):
+                 self.assertEqual(len(data), expected['byteSize'])
+                 self.assertEqual(hashlib.sha256(data).hexdigest(), expected['sha256'])
+         wheel = (CONTRACT / WHEEL_PATH).read_bytes()
+-        self.assertEqual(len(wheel), 38488)
++        self.assertEqual(len(wheel), 38789)
+         self.assertEqual(hashlib.sha256(wheel).hexdigest(), WHEEL_SHA)
+ 
+     def test_vendored_tree_is_exact_official_zip_not_regenerated(self):
+         archive_path = HANDOFF / 'panel-contract-v1.zip'
+         raw = archive_path.read_bytes()
+-        self.assertEqual(len(raw), 91287)
++        self.assertEqual(len(raw), 92030)
+         self.assertEqual(hashlib.sha256(raw).hexdigest(), ZIP_SHA)
+         with zipfile.ZipFile(archive_path) as archive:
+             self.assertIsNone(archive.testzip())
+diff --git a/web_panel/tests/test_official_packages.py b/web_panel/tests/test_official_packages.py
+index dab1f54a..4ad16d24 100644
+--- a/web_panel/tests/test_official_packages.py
++++ b/web_panel/tests/test_official_packages.py
+@@ -85,6 +85,39 @@ class OfficialPackageTests(unittest.TestCase):
+         self.assertEqual(elastic['props']['spacerMode'], 'flex')
+         self.assertEqual(elastic['responsive']['weight'], 2)
+ 
++    def test_expansion_survives_official_install_and_normalization(self):
++        def expand(manifest, presentation, files):
++            manifest['rendererRequirements'].append('layout.expanded-canvas-v1')
++            page = presentation['pages']['live']
++            page['canvasTop'] = -120
++            page['components'][0].setdefault('responsive', {})['canvasOffsetY'] = -120
++        item = self.store.install(official_bundle(expand))
++        page = item['presentation']['pages'][0]
++        self.assertEqual(page['canvasTop'], -120)
++        self.assertEqual(page['components'][0]['responsive']['canvasOffsetY'], -120)
++
++    def test_expansion_rejects_invalid_placement_or_undeclared_requirement(self):
++        for invalid in ('outside', 'nested', 'grid', 'missing-requirement', 'old'):
++            def change(manifest, presentation, files):
++                manifest['rendererRequirements'].append('layout.expanded-canvas-v1')
++                page = presentation['pages']['live']
++                page['canvasTop'] = -120
++                title = page['components'][0]
++                title.setdefault('responsive', {})['canvasOffsetY'] = -120
++                if invalid == 'outside':
++                    title['responsive']['canvasOffsetY'] = -121
++                elif invalid == 'nested':
++                    page['components'] = [{'componentId': 'nested-title', 'type': 'container', 'children': [title]}]
++                elif invalid == 'grid':
++                    page['layout'] = {'type': 'grid'}
++                elif invalid == 'old':
++                    manifest['sourcePresentationVersion'] = '1.1'
++                else:
++                    manifest['rendererRequirements'] = [r for r in manifest['rendererRequirements']
++                                                        if r != 'layout.expanded-canvas-v1']
++            with self.subTest(invalid=invalid), self.assertRaises(PackageError):
++                self.store.install(official_bundle(change))
++
+     def test_official_spacer_rejects_bindings_actions_and_children(self):
+         for extra in [
+             {'bindings':{'value':'score'}},

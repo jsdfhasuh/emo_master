@@ -1,0 +1,19 @@
+============================= test session starts =============================
+platform win32 -- Python 3.10.21, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe
+cachedir: .pytest_cache
+rootdir: D:\tmp\emo-ui-main-merge-20261102
+configfile: pyproject.toml
+plugins: anyio-4.15.1, cov-7.1.0, timeout-2.4.0
+collecting ... collected 5 items
+
+tests/designer/test_operator_debug_resource_ui.py::testFileSaveDialogDefaultsToNoAndRequiresConfirmationEachTime PASSED
+tests/designer/test_operator_debug_resource_ui.py::testSqliteEditorShowsMappedDebugInputsAndNeverWritesProduction PASSED
+tests/designer/test_operator_debug_window.py::testNativeWindowExecutesUnappliedDraftAndKeepsTwoResults PASSED
+tests/designer/test_operator_debug_window.py::testEditorCloseRetiresWorkerEvenWhileOpening RETIRE_TRACE gui_thread 107676
+RETIRE_TRACE after_test_call {"editor_valid": true, "editor_disposed": false, "editor_waiting_debug": true, "debug_valid": true, "debug_disposed": true, "debug_busy": false, "debug_closing": true, "debug_close_sent": true}
+PASSEDRETIRE_TRACE debug_destroyed_thread 107676
+RETIRE_TRACE editor_destroyed_thread 107676
+
+tests/designer/test_operator_debug_window.py::testUnsupportedOperatorDoesNotStartWorker PASSED
+
+============================= 5 passed in 13.42s ==============================

@@ -1,0 +1,1637 @@
+﻿2026-11-02T15:41:13.0667860Z Current runner version: '2.338.2'
+2026-11-02T15:41:13.0686981Z ##[group]Runner Image Provisioner
+2026-11-02T15:41:13.0687532Z Hosted Compute Agent
+2026-11-02T15:41:13.0687980Z Version: 20261021.618
+2026-11-02T15:41:13.0688409Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+2026-11-02T15:41:13.0688852Z Build Date: 2026-10-21T00:45:21Z
+2026-11-02T15:41:13.0689484Z Worker ID: {1c3cde7f-f95f-477b-91ac-7b1be181b208}
+2026-11-02T15:41:13.0689916Z Region: westus3
+2026-11-02T15:41:13.0690294Z Cloud: Azure
+2026-11-02T15:41:13.0690662Z ##[endgroup]
+2026-11-02T15:41:13.0691463Z ##[group]Operating System
+2026-11-02T15:41:13.0691889Z Ubuntu
+2026-11-02T15:41:13.0692210Z 26.04.1
+2026-11-02T15:41:13.0692554Z LTS
+2026-11-02T15:41:13.0692926Z ##[endgroup]
+2026-11-02T15:41:13.0693265Z ##[group]Runner Image
+2026-11-02T15:41:13.0693701Z Image: ubuntu-26.04
+2026-11-02T15:41:13.0694048Z Version: 20261025.179.1
+2026-11-02T15:41:13.0694884Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261025.179/images/ubuntu/Ubuntu2604-Readme.md
+2026-11-02T15:41:13.0695771Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261025.179
+2026-11-02T15:41:13.0696405Z ##[endgroup]
+2026-11-02T15:41:13.0697070Z ##[group]GITHUB_TOKEN Permissions
+2026-11-02T15:41:13.0698577Z Contents: read
+2026-11-02T15:41:13.0698932Z Metadata: read
+2026-11-02T15:41:13.0699432Z ##[endgroup]
+2026-11-02T15:41:13.0700850Z Secret source: Actions
+2026-11-02T15:41:13.0701459Z Cache mode: write
+2026-11-02T15:41:13.0702180Z Prepare workflow directory
+2026-11-02T15:41:13.0958672Z Prepare all required actions
+2026-11-02T15:41:13.0991791Z Getting action download info
+2026-11-02T15:41:13.4179983Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-02T15:41:13.4888125Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-11-02T15:41:13.5729078Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-11-02T15:41:13.6592197Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-11-02T15:41:13.8335331Z Complete job name: web-panel (ubuntu-latest)
+2026-11-02T15:41:13.8998554Z ##[group]Run actions/checkout@v4
+2026-11-02T15:41:13.8999008Z with:
+2026-11-02T15:41:13.8999617Z   repository: jsdfhasuh/emo_master
+2026-11-02T15:41:13.9001853Z   token: ***
+2026-11-02T15:41:13.9002096Z   ssh-strict: true
+2026-11-02T15:41:13.9002343Z   ssh-user: git
+2026-11-02T15:41:13.9002600Z   persist-credentials: true
+2026-11-02T15:41:13.9002875Z   clean: true
+2026-11-02T15:41:13.9003134Z   sparse-checkout-cone-mode: true
+2026-11-02T15:41:13.9003433Z   fetch-depth: 1
+2026-11-02T15:41:13.9003678Z   fetch-tags: false
+2026-11-02T15:41:13.9003928Z   show-progress: true
+2026-11-02T15:41:13.9004181Z   lfs: false
+2026-11-02T15:41:13.9004420Z   submodules: false
+2026-11-02T15:41:13.9004679Z   set-safe-directory: true
+2026-11-02T15:41:13.9004966Z   allow-unsafe-pr-checkout: false
+2026-11-02T15:41:13.9005376Z ##[endgroup]
+2026-11-02T15:41:14.1420974Z Syncing repository: jsdfhasuh/emo_master
+2026-11-02T15:41:14.1423059Z ##[group]Getting Git version info
+2026-11-02T15:41:14.1424229Z Working directory is '/home/runner/work/emo_master/emo_master'
+2026-11-02T15:41:14.1425299Z [command]/usr/bin/git version
+2026-11-02T15:41:14.1450147Z git version 2.56.0
+2026-11-02T15:41:14.1467317Z ##[endgroup]
+2026-11-02T15:41:14.1479923Z Temporarily overriding HOME='/home/runner/work/_temp/3f12bc0d-758d-4d3d-9f65-2336dee329d3' before making global git config changes
+2026-11-02T15:41:14.1484155Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-02T15:41:14.1485209Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/emo_master/emo_master
+2026-11-02T15:41:14.1566560Z Deleting the contents of '/home/runner/work/emo_master/emo_master'
+2026-11-02T15:41:14.1567352Z ##[group]Initializing the repository
+2026-11-02T15:41:14.1572812Z [command]/usr/bin/git init /home/runner/work/emo_master/emo_master
+2026-11-02T15:41:14.1712553Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-02T15:41:14.1713807Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-02T15:41:14.1714737Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-02T15:41:14.1715475Z hint: call:
+2026-11-02T15:41:14.1715929Z hint:
+2026-11-02T15:41:14.1716468Z hint: 	git config --global init.defaultBranch <name>
+2026-11-02T15:41:14.1717086Z hint:
+2026-11-02T15:41:14.1717673Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-02T15:41:14.1718612Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-02T15:41:14.1719477Z hint:
+2026-11-02T15:41:14.1719886Z hint: 	git branch -m <name>
+2026-11-02T15:41:14.1720362Z hint:
+2026-11-02T15:41:14.1720992Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-02T15:41:14.1740326Z Initialized empty Git repository in /home/runner/work/emo_master/emo_master/.git/
+2026-11-02T15:41:14.1741671Z [command]/usr/bin/git remote add origin https://github.com/jsdfhasuh/emo_master
+2026-11-02T15:41:14.1789848Z ##[endgroup]
+2026-11-02T15:41:14.1790689Z ##[group]Disabling automatic garbage collection
+2026-11-02T15:41:14.1796685Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-02T15:41:14.1827038Z ##[endgroup]
+2026-11-02T15:41:14.1827791Z ##[group]Setting up auth
+2026-11-02T15:41:14.1833353Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-02T15:41:14.1866950Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-02T15:41:14.2293295Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-02T15:41:14.2324074Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-02T15:41:14.2573105Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-02T15:41:14.2607785Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-02T15:41:14.2851802Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-02T15:41:14.2888663Z ##[endgroup]
+2026-11-02T15:41:14.2889575Z ##[group]Fetching the repository
+2026-11-02T15:41:14.2896388Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +c84ff569566d9c2f569d3a8bf163f2b026902b4b:refs/remotes/pull/7/merge
+2026-11-02T15:41:21.4883446Z From https://github.com/jsdfhasuh/emo_master
+2026-11-02T15:41:21.4884299Z  * [new ref]         c84ff569566d9c2f569d3a8bf163f2b026902b4b -> pull/7/merge
+2026-11-02T15:41:21.4886876Z ##[endgroup]
+2026-11-02T15:41:21.4887396Z ##[group]Determining the checkout info
+2026-11-02T15:41:21.4890070Z ##[endgroup]
+2026-11-02T15:41:21.4895034Z [command]/usr/bin/git sparse-checkout disable
+2026-11-02T15:41:21.4944019Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-02T15:41:21.5000437Z ##[group]Checking out the ref
+2026-11-02T15:41:21.5003728Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/7/merge
+2026-11-02T15:41:22.5144339Z Updating files:  69% (5253/7582)
+2026-11-02T15:41:22.5211791Z Updating files:  70% (5308/7582)
+2026-11-02T15:41:22.5268953Z Updating files:  71% (5384/7582)
+2026-11-02T15:41:22.5355868Z Updating files:  72% (5460/7582)
+2026-11-02T15:41:22.5425799Z Updating files:  73% (5535/7582)
+2026-11-02T15:41:22.5465977Z Updating files:  74% (5611/7582)
+2026-11-02T15:41:22.5612284Z Updating files:  75% (5687/7582)
+2026-11-02T15:41:22.5699557Z Updating files:  76% (5763/7582)
+2026-11-02T15:41:22.5747636Z Updating files:  77% (5839/7582)
+2026-11-02T15:41:22.5795428Z Updating files:  78% (5914/7582)
+2026-11-02T15:41:22.5835116Z Updating files:  79% (5990/7582)
+2026-11-02T15:41:22.5890495Z Updating files:  80% (6066/7582)
+2026-11-02T15:41:22.5928293Z Updating files:  81% (6142/7582)
+2026-11-02T15:41:22.5969470Z Updating files:  82% (6218/7582)
+2026-11-02T15:41:22.6004804Z Updating files:  83% (6294/7582)
+2026-11-02T15:41:22.6044181Z Updating files:  84% (6369/7582)
+2026-11-02T15:41:22.6074635Z Updating files:  85% (6445/7582)
+2026-11-02T15:41:22.6107782Z Updating files:  86% (6521/7582)
+2026-11-02T15:41:22.6139957Z Updating files:  87% (6597/7582)
+2026-11-02T15:41:22.6179978Z Updating files:  88% (6673/7582)
+2026-11-02T15:41:22.6227677Z Updating files:  89% (6748/7582)
+2026-11-02T15:41:22.6267212Z Updating files:  90% (6824/7582)
+2026-11-02T15:41:22.6309093Z Updating files:  91% (6900/7582)
+2026-11-02T15:41:22.6340641Z Updating files:  92% (6976/7582)
+2026-11-02T15:41:22.6379068Z Updating files:  93% (7052/7582)
+2026-11-02T15:41:22.6419840Z Updating files:  94% (7128/7582)
+2026-11-02T15:41:22.6462476Z Updating files:  95% (7203/7582)
+2026-11-02T15:41:22.6501425Z Updating files:  96% (7279/7582)
+2026-11-02T15:41:22.6536399Z Updating files:  97% (7355/7582)
+2026-11-02T15:41:22.6566161Z Updating files:  98% (7431/7582)
+2026-11-02T15:41:22.6603547Z Updating files:  99% (7507/7582)
+2026-11-02T15:41:22.6604060Z Updating files: 100% (7582/7582)
+2026-11-02T15:41:22.6604526Z Updating files: 100% (7582/7582), done.
+2026-11-02T15:41:22.6656867Z Note: switching to 'refs/remotes/pull/7/merge'.
+2026-11-02T15:41:22.6657413Z 
+2026-11-02T15:41:22.6657807Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-11-02T15:41:22.6658702Z changes and commit them, and you can discard any commits you make in this
+2026-11-02T15:41:22.6659893Z state without impacting any branches by switching back to a branch.
+2026-11-02T15:41:22.6660521Z 
+2026-11-02T15:41:22.6660984Z If you want to create a new branch to retain commits you create, you may
+2026-11-02T15:41:22.6661951Z do so (now or later) by using -c with the switch command. Example:
+2026-11-02T15:41:22.6662522Z 
+2026-11-02T15:41:22.6662944Z   git switch -c <new-branch-name>
+2026-11-02T15:41:22.6663296Z 
+2026-11-02T15:41:22.6663451Z Or undo this operation with:
+2026-11-02T15:41:22.6663759Z 
+2026-11-02T15:41:22.6663886Z   git switch -
+2026-11-02T15:41:22.6664088Z 
+2026-11-02T15:41:22.6664539Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-11-02T15:41:22.6665288Z 
+2026-11-02T15:41:22.6666228Z HEAD is now at c84ff56 Merge 61e2717456d5fc17d1202709bcd61f7997fa25eb into f0675253631f489998056e5af618378e115efc83
+2026-11-02T15:41:22.6756641Z ##[endgroup]
+2026-11-02T15:41:22.6808021Z [command]/usr/bin/git log -1 --format=%H
+2026-11-02T15:41:22.6831933Z c84ff569566d9c2f569d3a8bf163f2b026902b4b
+2026-11-02T15:41:22.7083912Z ##[group]Run actions/setup-python@v5
+2026-11-02T15:41:22.7084272Z with:
+2026-11-02T15:41:22.7084510Z   python-version: 3.10
+2026-11-02T15:41:22.7084788Z   check-latest: false
+2026-11-02T15:41:22.7088936Z   token: ***
+2026-11-02T15:41:22.7089311Z   update-environment: true
+2026-11-02T15:41:22.7089623Z   allow-prereleases: false
+2026-11-02T15:41:22.7089917Z   freethreaded: false
+2026-11-02T15:41:22.7090168Z ##[endgroup]
+2026-11-02T15:41:22.8245541Z ##[group]Installed versions
+2026-11-02T15:41:22.8424359Z Version 3.10 was not found in the local cache
+2026-11-02T15:41:22.8658342Z (node:2286) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-02T15:41:22.8658865Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-02T15:41:23.9373814Z Version 3.10 is available for downloading
+2026-11-02T15:41:23.9374455Z Download from "https://github.com/actions/python-versions/releases/download/3.10.22-36876129702/python-3.10.22-linux-26.04-x64.tar.gz"
+2026-11-02T15:41:24.7462894Z Extract downloaded archive
+2026-11-02T15:41:24.7571532Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/ea8b2d9a-ed4f-4253-891e-f015cadd866f -f /home/runner/work/_temp/e6064a5f-b398-4de4-86d4-a65def7f43bd
+2026-11-02T15:41:25.4164256Z Execute installation script
+2026-11-02T15:41:25.4287341Z Check if Python hostedtoolcache folder exist...
+2026-11-02T15:41:25.4287778Z Create Python 3.10.22 folder
+2026-11-02T15:41:25.4311337Z Copy Python binaries to hostedtoolcache folder
+2026-11-02T15:41:25.7703229Z Create additional symlinks (Required for the UsePythonVersion Azure Pipelines task and the setup-python GitHub Action)
+2026-11-02T15:41:25.7804450Z Upgrading pip...
+2026-11-02T15:41:27.1248164Z Collecting pip
+2026-11-02T15:41:27.1700211Z Downloading pip-26.2.2-py3-none-any.whl (1.8 MB)
+2026-11-02T15:41:27.2218275Z ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 37.1 MB/s eta 0:00:00
+2026-11-02T15:41:27.2218809Z 
+2026-11-02T15:41:27.2544521Z Installing collected packages: pip
+2026-11-02T15:41:27.2545257Z Attempting uninstall: pip
+2026-11-02T15:41:27.2548068Z Found existing installation: pip 23.0.1
+2026-11-02T15:41:27.3660881Z Uninstalling pip-23.0.1:
+2026-11-02T15:41:27.3704466Z Successfully uninstalled pip-23.0.1
+2026-11-02T15:41:27.8971227Z Successfully installed pip-26.2.2
+2026-11-02T15:41:27.9414687Z Create complete file
+2026-11-02T15:41:27.9467219Z Successfully set up CPython (3.10.22)
+2026-11-02T15:41:27.9468096Z ##[endgroup]
+2026-11-02T15:41:27.9678479Z ##[group]Run actions/setup-node@v4
+2026-11-02T15:41:27.9678647Z with:
+2026-11-02T15:41:27.9678771Z   node-version: 22
+2026-11-02T15:41:27.9678896Z   always-auth: false
+2026-11-02T15:41:27.9679025Z   check-latest: false
+2026-11-02T15:41:27.9680518Z   token: ***
+2026-11-02T15:41:27.9680648Z env:
+2026-11-02T15:41:27.9680814Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:27.9681097Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:41:27.9681339Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:27.9681577Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:27.9681797Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:27.9682016Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:41:27.9682202Z ##[endgroup]
+2026-11-02T15:41:28.0629301Z Found in cache @ /opt/hostedtoolcache/node/22.23.4/x64
+2026-11-02T15:41:28.0632557Z (node:2344) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-02T15:41:28.0632949Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-02T15:41:28.0634605Z ##[group]Environment details
+2026-11-02T15:41:28.3961459Z node: v22.23.4
+2026-11-02T15:41:28.3961892Z npm: 10.9.9
+2026-11-02T15:41:28.3962281Z yarn: 1.22.22
+2026-11-02T15:41:28.3962973Z ##[endgroup]
+2026-11-02T15:41:28.4080767Z ##[group]Run python -m pip install contracts/panel-contract-v1/python/*.whl && python -m pip install -e '.[test]' build playwright
+2026-11-02T15:41:28.4081317Z [36;1mpython -m pip install contracts/panel-contract-v1/python/*.whl && python -m pip install -e '.[test]' build playwright[0m
+2026-11-02T15:41:28.4115952Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T15:41:28.4116160Z env:
+2026-11-02T15:41:28.4116322Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:28.4116564Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:41:28.4116802Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:28.4117013Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:28.4117235Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:28.4117454Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:41:28.4117670Z ##[endgroup]
+2026-11-02T15:41:28.6764314Z Processing ./contracts/panel-contract-v1/python/emo_panel_protocol-1.3.0-py3-none-any.whl
+2026-11-02T15:41:29.0293091Z Collecting grpcio==1.78.0 (from emo-panel-protocol==1.3.0)
+2026-11-02T15:41:29.1285447Z   Downloading grpcio-1.78.0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (3.8 kB)
+2026-11-02T15:41:29.2206273Z Collecting protobuf==6.33.6 (from emo-panel-protocol==1.3.0)
+2026-11-02T15:41:29.2314182Z   Downloading protobuf-6.33.6-cp39-abi3-manylinux2014_x86_64.whl.metadata (593 bytes)
+2026-11-02T15:41:29.2920335Z Collecting pydantic>=2.6 (from emo-panel-protocol==1.3.0)
+2026-11-02T15:41:29.3020146Z   Downloading pydantic-2.14.2-py3-none-any.whl.metadata (137 kB)
+2026-11-02T15:41:29.3321195Z Collecting typing-extensions~=4.12 (from grpcio==1.78.0->emo-panel-protocol==1.3.0)
+2026-11-02T15:41:29.3418331Z   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+2026-11-02T15:41:29.3499368Z Collecting annotated-types>=0.6.0 (from pydantic>=2.6->emo-panel-protocol==1.3.0)
+2026-11-02T15:41:29.3596266Z   Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+2026-11-02T15:41:29.7981993Z Collecting pydantic-core==2.50.2 (from pydantic>=2.6->emo-panel-protocol==1.3.0)
+2026-11-02T15:41:29.8088126Z   Downloading pydantic_core-2.50.2-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (6.5 kB)
+2026-11-02T15:41:29.8187492Z Collecting typing-inspection>=0.4.4 (from pydantic>=2.6->emo-panel-protocol==1.3.0)
+2026-11-02T15:41:29.8287214Z   Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+2026-11-02T15:41:29.8450301Z Downloading grpcio-1.78.0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (6.7 MB)
+2026-11-02T15:41:29.9241613Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.7/6.7 MB 92.1 MB/s  0:00:00
+2026-11-02T15:41:29.9347549Z Downloading protobuf-6.33.6-cp39-abi3-manylinux2014_x86_64.whl (323 kB)
+2026-11-02T15:41:29.9469449Z Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+2026-11-02T15:41:29.9588044Z Downloading pydantic-2.14.2-py3-none-any.whl (490 kB)
+2026-11-02T15:41:29.9714466Z Downloading pydantic_core-2.50.2-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (2.2 MB)
+2026-11-02T15:41:29.9840781Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 193.8 MB/s  0:00:00
+2026-11-02T15:41:29.9941270Z Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+2026-11-02T15:41:30.0053975Z Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+2026-11-02T15:41:30.0388800Z Installing collected packages: typing-extensions, protobuf, annotated-types, typing-inspection, pydantic-core, grpcio, pydantic, emo-panel-protocol
+2026-11-02T15:41:30.4513522Z 
+2026-11-02T15:41:30.4526057Z Successfully installed annotated-types-0.8.0 emo-panel-protocol-1.3.0 grpcio-1.78.0 protobuf-6.33.6 pydantic-2.14.2 pydantic-core-2.50.2 typing-extensions-4.16.0 typing-inspection-0.4.4
+2026-11-02T15:41:30.7222096Z Obtaining file:///home/runner/work/emo_master/emo_master/web_panel
+2026-11-02T15:41:30.7233388Z   Installing build dependencies: started
+2026-11-02T15:41:31.2004579Z   Installing build dependencies: finished with status 'done'
+2026-11-02T15:41:31.2011024Z   Checking if build backend supports build_editable: started
+2026-11-02T15:41:31.3985700Z   Checking if build backend supports build_editable: finished with status 'done'
+2026-11-02T15:41:31.3994088Z   Getting requirements to build editable: started
+2026-11-02T15:41:31.6121890Z   Getting requirements to build editable: finished with status 'done'
+2026-11-02T15:41:31.6129977Z   Preparing editable metadata (pyproject.toml): started
+2026-11-02T15:41:31.7389551Z   Preparing editable metadata (pyproject.toml): finished with status 'done'
+2026-11-02T15:41:31.7999736Z Collecting build
+2026-11-02T15:41:31.8401482Z   Downloading build-1.6.1-py3-none-any.whl.metadata (5.6 kB)
+2026-11-02T15:41:31.8921083Z Collecting playwright
+2026-11-02T15:41:31.9023611Z   Downloading playwright-1.64.1-py3-none-manylinux1_x86_64.whl.metadata (3.3 kB)
+2026-11-02T15:41:31.9423582Z Collecting fastapi<1,>=0.115 (from emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:31.9525798Z   Downloading fastapi-0.162.0-py3-none-any.whl.metadata (26 kB)
+2026-11-02T15:41:31.9818667Z Collecting uvicorn<1,>=0.30 (from emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:31.9917917Z   Downloading uvicorn-0.54.0-py3-none-any.whl.metadata (6.6 kB)
+2026-11-02T15:41:32.0786526Z Collecting websockets<17,>=13 (from emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:32.0888154Z   Downloading websockets-16.1.1-cp310-cp310-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (6.8 kB)
+2026-11-02T15:41:32.0912571Z Requirement already satisfied: emo-panel-protocol==1.3.0 in /opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages (from emo-master-web-panel==0.1.0a1) (1.3.0)
+2026-11-02T15:41:32.1935122Z Collecting Pillow<13,>=10 (from emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:32.2041708Z   Downloading pillow-12.3.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (9.1 kB)
+2026-11-02T15:41:32.2228815Z Collecting tzdata>=2024.1 (from emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:32.2327862Z   Downloading tzdata-2026.6-py2.py3-none-any.whl.metadata (1.4 kB)
+2026-11-02T15:41:32.2513807Z Collecting httpx<1,>=0.27 (from emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:32.2612319Z   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+2026-11-02T15:41:32.2645406Z Requirement already satisfied: grpcio==1.78.0 in /opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages (from emo-panel-protocol==1.3.0->emo-master-web-panel==0.1.0a1) (1.78.0)
+2026-11-02T15:41:32.2648169Z Requirement already satisfied: protobuf==6.33.6 in /opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages (from emo-panel-protocol==1.3.0->emo-master-web-panel==0.1.0a1) (6.33.6)
+2026-11-02T15:41:32.2651023Z Requirement already satisfied: pydantic>=2.6 in /opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages (from emo-panel-protocol==1.3.0->emo-master-web-panel==0.1.0a1) (2.14.2)
+2026-11-02T15:41:32.2662358Z Requirement already satisfied: typing-extensions~=4.12 in /opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages (from grpcio==1.78.0->emo-panel-protocol==1.3.0->emo-master-web-panel==0.1.0a1) (4.16.0)
+2026-11-02T15:41:32.2875647Z Collecting starlette>=0.46.0 (from fastapi<1,>=0.115->emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:32.2983240Z   Downloading starlette-1.7.0-py3-none-any.whl.metadata (6.6 kB)
+2026-11-02T15:41:32.3156113Z Requirement already satisfied: typing-inspection>=0.4.2 in /opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages (from fastapi<1,>=0.115->emo-master-web-panel==0.1.0a1) (0.4.4)
+2026-11-02T15:41:32.3280252Z Collecting annotated-doc>=0.0.2 (from fastapi<1,>=0.115->emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:32.3383687Z   Downloading annotated_doc-0.0.5-py3-none-any.whl.metadata (6.5 kB)
+2026-11-02T15:41:32.3575209Z Collecting opentelemetry-api>=1.44.0 (from fastapi<1,>=0.115->emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:32.3673995Z   Downloading opentelemetry_api-1.45.2-py3-none-any.whl.metadata (1.4 kB)
+2026-11-02T15:41:32.3868747Z Collecting anyio (from httpx<1,>=0.27->emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:32.3968839Z   Downloading anyio-4.16.0-py3-none-any.whl.metadata (4.7 kB)
+2026-11-02T15:41:32.4164773Z Collecting certifi (from httpx<1,>=0.27->emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:32.4263637Z   Downloading certifi-2026.10.23-py3-none-any.whl.metadata (2.5 kB)
+2026-11-02T15:41:32.4437336Z Collecting httpcore==1.* (from httpx<1,>=0.27->emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:32.4537938Z   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+2026-11-02T15:41:32.4721473Z Collecting idna (from httpx<1,>=0.27->emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:32.4821058Z   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+2026-11-02T15:41:32.4977439Z Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.27->emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:32.5077323Z   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+2026-11-02T15:41:32.5268054Z Collecting click>=7.0 (from uvicorn<1,>=0.30->emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:32.5368153Z   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+2026-11-02T15:41:32.5544929Z Collecting packaging>=24.0 (from build)
+2026-11-02T15:41:32.5644965Z   Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+2026-11-02T15:41:32.5786807Z Collecting pyproject_hooks (from build)
+2026-11-02T15:41:32.5886452Z   Downloading pyproject_hooks-1.3.3-py3-none-any.whl.metadata (1.3 kB)
+2026-11-02T15:41:32.6149723Z Collecting tomli>=1.1.0 (from build)
+2026-11-02T15:41:32.6251861Z   Downloading tomli-2.5.0-py3-none-any.whl.metadata (10 kB)
+2026-11-02T15:41:32.6420673Z Collecting pyee<15,>=13 (from playwright)
+2026-11-02T15:41:32.6525247Z   Downloading pyee-13.0.1-py3-none-any.whl.metadata (3.0 kB)
+2026-11-02T15:41:32.7520557Z Collecting greenlet<4.0.0,>=3.1.1 (from playwright)
+2026-11-02T15:41:32.7627739Z   Downloading greenlet-3.5.6-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
+2026-11-02T15:41:32.7693781Z Requirement already satisfied: annotated-types>=0.6.0 in /opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages (from pydantic>=2.6->emo-panel-protocol==1.3.0->emo-master-web-panel==0.1.0a1) (0.8.0)
+2026-11-02T15:41:32.7696962Z Requirement already satisfied: pydantic-core==2.50.2 in /opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages (from pydantic>=2.6->emo-panel-protocol==1.3.0->emo-master-web-panel==0.1.0a1) (2.50.2)
+2026-11-02T15:41:32.7876176Z Collecting exceptiongroup>=1.0.2 (from anyio->httpx<1,>=0.27->emo-master-web-panel==0.1.0a1)
+2026-11-02T15:41:32.7977755Z   Downloading exceptiongroup-1.3.1-py3-none-any.whl.metadata (6.7 kB)
+2026-11-02T15:41:32.8144063Z Downloading fastapi-0.162.0-py3-none-any.whl (148 kB)
+2026-11-02T15:41:32.8392861Z Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+2026-11-02T15:41:32.8520231Z Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+2026-11-02T15:41:32.8640655Z Downloading pillow-12.3.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (6.9 MB)
+2026-11-02T15:41:32.9439352Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.9/6.9 MB 96.4 MB/s  0:00:00
+2026-11-02T15:41:32.9545939Z Downloading uvicorn-0.54.0-py3-none-any.whl (87 kB)
+2026-11-02T15:41:32.9667508Z Downloading websockets-16.1.1-cp310-cp310-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (186 kB)
+2026-11-02T15:41:32.9787538Z Downloading build-1.6.1-py3-none-any.whl (31 kB)
+2026-11-02T15:41:32.9908311Z Downloading playwright-1.64.1-py3-none-manylinux1_x86_64.whl (48.5 MB)
+2026-11-02T15:41:33.3462881Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 48.5/48.5 MB 136.7 MB/s  0:00:00
+2026-11-02T15:41:33.3579787Z Downloading greenlet-3.5.6-cp310-cp310-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (622 kB)
+2026-11-02T15:41:33.3641179Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 622.8/622.8 kB 82.9 MB/s  0:00:00
+2026-11-02T15:41:33.3751778Z Downloading pyee-13.0.1-py3-none-any.whl (15 kB)
+2026-11-02T15:41:33.3896895Z Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+2026-11-02T15:41:33.4037900Z Downloading click-8.5.0-py3-none-any.whl (125 kB)
+2026-11-02T15:41:33.4173668Z Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+2026-11-02T15:41:33.4289110Z Downloading opentelemetry_api-1.45.2-py3-none-any.whl (60 kB)
+2026-11-02T15:41:33.4405683Z Downloading packaging-26.3-py3-none-any.whl (129 kB)
+2026-11-02T15:41:33.4524323Z Downloading starlette-1.7.0-py3-none-any.whl (78 kB)
+2026-11-02T15:41:33.4641697Z Downloading anyio-4.16.0-py3-none-any.whl (134 kB)
+2026-11-02T15:41:33.4758173Z Downloading exceptiongroup-1.3.1-py3-none-any.whl (16 kB)
+2026-11-02T15:41:33.4871088Z Downloading idna-3.20-py3-none-any.whl (69 kB)
+2026-11-02T15:41:33.4984771Z Downloading tomli-2.5.0-py3-none-any.whl (14 kB)
+2026-11-02T15:41:33.5096581Z Downloading tzdata-2026.6-py2.py3-none-any.whl (348 kB)
+2026-11-02T15:41:33.5216083Z Downloading certifi-2026.10.23-py3-none-any.whl (135 kB)
+2026-11-02T15:41:33.5329903Z Downloading pyproject_hooks-1.3.3-py3-none-any.whl (10 kB)
+2026-11-02T15:41:33.6013386Z Building wheels for collected packages: emo-master-web-panel
+2026-11-02T15:41:33.6020229Z   Building editable for emo-master-web-panel (pyproject.toml): started
+2026-11-02T15:41:33.7286617Z   Building editable for emo-master-web-panel (pyproject.toml): finished with status 'done'
+2026-11-02T15:41:33.7290159Z   Created wheel for emo-master-web-panel: filename=emo_master_web_panel-0.1.0a1-0.editable-py3-none-any.whl size=1786 sha256=52a97a779b3469d018a574eb5d5df49c2ca995ba3aacbfd7d65972da92501991
+2026-11-02T15:41:33.7291043Z   Stored in directory: /tmp/pip-ephem-wheel-cache-v7i2wtka/wheels/f5/d5/2e/377ae03f6863170f8f9a5fa55ba2983607aa7e0398800c70cc
+2026-11-02T15:41:33.7301080Z Successfully built emo-master-web-panel
+2026-11-02T15:41:33.7635751Z Installing collected packages: websockets, tzdata, tomli, pyproject_hooks, pyee, Pillow, packaging, opentelemetry-api, idna, h11, greenlet, exceptiongroup, click, certifi, annotated-doc, uvicorn, playwright, httpcore, build, anyio, starlette, httpx, fastapi, emo-master-web-panel
+2026-11-02T15:41:35.1195357Z 
+2026-11-02T15:41:35.1221385Z Successfully installed Pillow-12.3.0 annotated-doc-0.0.5 anyio-4.16.0 build-1.6.1 certifi-2026.10.23 click-8.5.0 emo-master-web-panel-0.1.0a1 exceptiongroup-1.3.1 fastapi-0.162.0 greenlet-3.5.6 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 idna-3.20 opentelemetry-api-1.45.2 packaging-26.3 playwright-1.64.1 pyee-13.0.1 pyproject_hooks-1.3.3 starlette-1.7.0 tomli-2.5.0 tzdata-2026.6 uvicorn-0.54.0 websockets-16.1.1
+2026-11-02T15:41:35.2094106Z ##[group]Run python -c "from importlib.metadata import version; assert version('emo-panel-protocol') == '1.3.0'"
+2026-11-02T15:41:35.2094561Z [36;1mpython -c "from importlib.metadata import version; assert version('emo-panel-protocol') == '1.3.0'"[0m
+2026-11-02T15:41:35.2121971Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T15:41:35.2122168Z env:
+2026-11-02T15:41:35.2122327Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:35.2122571Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:41:35.2122829Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:35.2123044Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:35.2123257Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:35.2123484Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:41:35.2123672Z ##[endgroup]
+2026-11-02T15:41:35.2529008Z ##[group]Run python -m unittest discover -s tests -v
+2026-11-02T15:41:35.2529412Z [36;1mpython -m unittest discover -s tests -v[0m
+2026-11-02T15:41:35.2553175Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T15:41:35.2553367Z env:
+2026-11-02T15:41:35.2553524Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:35.2553765Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:41:35.2554012Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:35.2554243Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:35.2554458Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:35.2554676Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:41:35.2554863Z ##[endgroup]
+2026-11-02T15:41:35.4702668Z /opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+2026-11-02T15:41:35.4703286Z   from starlette.testclient import TestClient as TestClient  # noqa
+2026-11-02T15:41:35.8300947Z test_admin_crud_and_request_lookup (test_app.AppTests) ... ok
+2026-11-02T15:41:35.9540742Z test_history_filter_and_opaque_images (test_app.AppTests) ... ok
+2026-11-02T15:41:36.0757102Z test_idempotent_start_and_explicit_new_intent (test_app.AppTests) ... ok
+2026-11-02T15:41:36.2492650Z test_json_objects_and_duplicate_account (test_app.AppTests) ... ok
+2026-11-02T15:41:36.3748966Z test_login_csrf_permissions (test_app.AppTests) ... ok
+2026-11-02T15:41:36.6214216Z test_login_origin (test_app.AppTests) ... ok
+2026-11-02T15:41:36.7576709Z test_package_switch_preserves_existing_view_revision_and_assets (test_app.AppTests) ... ok
+2026-11-02T15:41:36.8761056Z test_pending_views_expire_and_delete (test_app.AppTests) ... ok
+2026-11-02T15:41:37.0299712Z test_preview_is_readonly_even_admin (test_app.AppTests) ... ok
+2026-11-02T15:41:37.1623825Z test_real_mode_never_falls_back (test_app.AppTests) ... ok
+2026-11-02T15:41:37.3169871Z test_view_owner_history_and_websocket (test_app.AppTests) ... ok
+2026-11-02T15:41:37.4641372Z test_wrong_runtime_no_side_effect (test_app.AppTests) ... ok
+2026-11-02T15:41:37.5490388Z test_last_admin_and_revoked_sessions (test_auth.AuthTests) ... ok
+2026-11-02T15:41:37.6073567Z test_concurrent_admin_demotions_leave_one_admin (test_auth.ConcurrentAdminTests) ... ok
+2026-11-02T15:41:37.7152030Z test_password_reset_during_hash_cannot_mint_old_session (test_auth.LoginRaceTests) ... ok
+2026-11-02T15:41:37.7214430Z test_preflight_rejection_is_not_unknown (test_contract_gateway.OperationsContractTests) ... ok
+2026-11-02T15:41:37.7284162Z test_unknown_reconciles_only_original_instance_endpoint_and_request (test_contract_gateway.OperationsContractTests) ... ok
+2026-11-02T15:41:37.8252355Z test_single_use_token_and_all_production_mutators_denied (test_contract_gateway.PreviewGateTests) ... ok
+2026-11-02T15:41:37.8372724Z test_aliases_share_actual_identity_and_restart_cannot_leak_results (test_contract_gateway.ViewContractTests) ... ok
+2026-11-02T15:41:37.8396124Z test_all_authoritative_files_match_development_handoff (test_contract_manifest.ContractManifestTests) ... ok
+2026-11-02T15:41:37.8406587Z test_embedded_fixtures_are_the_same_sdk_delivery (test_contract_manifest.ContractManifestTests) ... ok
+2026-11-02T15:41:37.8442945Z test_vendored_tree_is_exact_official_zip_not_regenerated (test_contract_manifest.ContractManifestTests) ... ok
+2026-11-02T15:41:37.8467543Z test_changed_membership_rejected (test_dispatch_contract.DispatchContractTests) ... ok
+2026-11-02T15:41:37.8506855Z test_consumer_selection_never_expands_to_group (test_dispatch_contract.DispatchContractTests) ... ok
+2026-11-02T15:41:37.8610925Z test_group_source_problems_use_each_sdk_coverage_owner (test_dispatch_contract.DispatchContractTests) ... ok
+2026-11-02T15:41:37.8636642Z test_multiple_consumer_scopes_must_be_disjoint (test_dispatch_contract.DispatchContractTests) ... ok
+2026-11-02T15:41:37.8659888Z test_ordinary_job_remains_single (test_dispatch_contract.DispatchContractTests) ... ok
+2026-11-02T15:41:37.8682694Z test_root_includes_only_exact_direct_consumers (test_dispatch_contract.DispatchContractTests) ... ok
+2026-11-02T15:41:37.8718990Z test_actual_view_attach_and_state_use_formal_messages_for_both_groups (test_formal_browser_messages.FormalBrowserTests) ... ok
+2026-11-02T15:41:37.8730794Z test_control_result_known_empty_or_real_group_and_unknown_nullable (test_formal_browser_messages.FormalBrowserTests) ... ok
+2026-11-02T15:41:37.8744476Z test_official_fixtures_keep_ordinary_empty_and_grouped_real_ids (test_formal_browser_messages.FormalBrowserTests) ... ok
+2026-11-02T15:41:37.8755345Z test_stop_keeps_optional_empty_or_group_presence_and_rejects_absence (test_formal_browser_messages.FormalBrowserTests) ... ok
+2026-11-02T15:41:37.8767760Z test_frozen_read_failure_is_gateway_message_not_forged_contract (test_freeze_contract.FreezeContractTests) ... ok
+2026-11-02T15:41:37.8890725Z test_group_shares_each_member_and_never_joins_unrelated_job (test_freeze_contract.FreezeContractTests) ... ok
+2026-11-02T15:41:37.8904542Z test_slow_asset_uses_exact_advertised_recent_result_not_newest (test_freeze_contract.FreezeContractTests) ... ok
+2026-11-02T15:41:37.9121318Z test_terminal_freeze_expires_without_another_frame (test_freeze_contract.FreezeContractTests) ... ok
+2026-11-02T15:41:38.0345298Z test_timer_cancelled_on_resume_remove_and_close (test_freeze_contract.FreezeContractTests) ... ok
+2026-11-02T15:41:38.0423358Z test_stop_timeout_observes_original_job_terminal_without_replay (test_freeze_contract.StopReconcileTests) ... ok
+2026-11-02T15:41:38.0439676Z test_declared_aggregate_and_filter_policy (test_history_aggregate.HistoryAggregateTests) ... ok
+2026-11-02T15:41:38.0451531Z test_identity_is_consistent_and_cross_target_control_rejected (test_mock_identity.MockIdentityTests) ... ok
+2026-11-02T15:41:38.0478962Z test_same_instance_alias_shares_but_independent_b_stream_does_not (test_mock_identity.MockIdentityTests) ... ok
+2026-11-02T15:41:38.2022682Z test_b_only_viewer_receives_b_image_while_a_stream_is_open (test_mock_identity.MockTargetHttpTests) ... ok
+2026-11-02T15:41:38.2462859Z test_asset_byte_count_digest_filename_and_pixels (test_official_packages.OfficialPackageTests) ... ok
+2026-11-02T15:41:38.2518989Z test_canonical_vectors_authoritative_sdk (test_official_packages.OfficialPackageTests) ... ok
+2026-11-02T15:41:38.2581549Z test_capture_requirements_cover_published_sources (test_official_packages.OfficialPackageTests) ... ok
+2026-11-02T15:41:38.2647050Z test_delivered_spacer_demo_preserves_both_modes_without_capture_sources (test_official_packages.OfficialPackageTests) ... ok
+2026-11-02T15:41:38.2739456Z test_exact_export_and_sdk_revision (test_official_packages.OfficialPackageTests) ... ok
+2026-11-02T15:41:38.2838878Z test_expansion_rejects_invalid_placement_or_undeclared_requirement (test_official_packages.OfficialPackageTests) ... ok
+2026-11-02T15:41:38.2905831Z test_expansion_survives_official_install_and_normalization (test_official_packages.OfficialPackageTests) ... ok
+2026-11-02T15:41:38.2968083Z test_no_runtime_paths_or_unknown_props (test_official_packages.OfficialPackageTests) ... ok
+2026-11-02T15:41:38.3022103Z test_official_grid_spacer_cannot_request_elastic_occupancy (test_official_packages.OfficialPackageTests) ... ok
+2026-11-02T15:41:38.3108333Z test_official_spacer_rejects_bindings_actions_and_children (test_official_packages.OfficialPackageTests) ... ok
+2026-11-02T15:41:38.3382919Z test_page_and_binding_references (test_official_packages.OfficialPackageTests) ... ok
+2026-11-02T15:41:38.3438744Z test_renderer_requirements_fail_closed (test_official_packages.OfficialPackageTests) ... ok
+2026-11-02T15:41:38.3592073Z test_revision_tampering_and_rollback (test_official_packages.OfficialPackageTests) ... ok
+2026-11-02T15:41:38.3660863Z test_spacer_survives_official_install_and_normalization (test_official_packages.OfficialPackageTests) ... ok
+2026-11-02T15:41:38.3736067Z test_accepted_start_confirms_command_not_job_and_does_not_keep_querying (test_operations_state.OperationStateTests) ... ok
+2026-11-02T15:41:38.3807480Z test_accepted_stop_reports_stopping_then_actual_terminal_and_retained_resources (test_operations_state.OperationStateTests) ... ok
+2026-11-02T15:41:38.3861153Z test_accepted_without_job_identity_remains_queryable_unknown (test_operations_state.OperationStateTests) ... ok
+2026-11-02T15:41:38.3911855Z test_rejection_keeps_reason_not_generic_acceptance (test_operations_state.OperationStateTests) ... ok
+2026-11-02T15:41:38.3966662Z test_stop_reconciliation_rejects_changed_original_identity (test_operations_state.OperationStateTests) ... ok
+2026-11-02T15:41:38.4031738Z test_unknown_start_lookup_accepted_uses_same_transition_without_replay (test_operations_state.OperationStateTests) ... ok
+2026-11-02T15:41:38.4093406Z test_unknown_stop_aborted_resolves_original_empty_group_without_inventing_ack (test_operations_state.OperationStateTests) ... ok
+2026-11-02T15:41:38.5731352Z test_a_b_activation_rollback_pinned_view_and_scoped_notices (test_package_context.PackageContextTests) ... ok
+2026-11-02T15:41:38.6995747Z test_formal_project_mismatch_leaves_activation_and_associations (test_package_context.PackageContextTests) ... ok
+2026-11-02T15:41:38.8286064Z test_project_change_does_not_reuse_prior_project_activation (test_package_context.PackageContextTests) ... ok
+2026-11-02T15:41:39.0088701Z test_shared_package_update_never_revokes_other_target_acl (test_package_context.PackageContextTests) ... ok
+2026-11-02T15:41:39.0301123Z test_legacy_migration_explicit_known_targets_only_and_once (test_package_context.PackageMigrationTests) ... ok
+2026-11-02T15:41:39.0358704Z test_actual_demo_fixture_installs_all_component_types (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.0444161Z test_aggregate_is_allowlisted (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.0505566Z test_all_component_types_and_nested_container (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.0558589Z test_assets_validate_declared_type_digest_and_magic (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.0647030Z test_clock_format_timezone (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.0697203Z test_corrupt_json_duplicate_keys_and_nonfinite (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.0748122Z test_depth_and_children_rejected (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.0798914Z test_duplicate_archive_and_symlink (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.0847334Z test_duplicate_component_and_unknown_type (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.0904088Z test_grid_and_mobile_require_supported_schema (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.0983198Z test_history_selection_requires_real_table (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.1048929Z test_image_modes_are_exclusive (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.1191781Z test_install_activate_rollback_and_asset (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.1252000Z test_malformed_types_are_validation_errors (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.1300207Z test_official_or_unknown_contract_not_misread_as_draft (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.1358127Z test_per_type_property_matrix (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.1410580Z test_same_revision_different_bytes_rejected (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.1460224Z test_size_count_ratio_limits (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.1516616Z test_spacer_is_static_fixed_grid_occupancy (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.1570537Z test_typed_renderer_properties (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.1634593Z test_unknown_files_schema_scripts_and_navigation (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.1688102Z test_unknown_ids_and_corrupt_stored_asset (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.1744196Z test_unsafe_paths (test_packages.PackageTests) ... ok
+2026-11-02T15:41:39.1772150Z test_fixture_provider_is_explicit_and_read_only (test_preview.FixtureTests) ... ok
+2026-11-02T15:41:39.1785695Z test_context_identity_validation (test_preview.PreviewTests) ... ok
+2026-11-02T15:41:39.2508079Z test_context_required_and_loopback_only (test_preview.PreviewTests) ... ok
+2026-11-02T15:41:39.8305826Z test_preview_cli (test_preview.PreviewTests) ... ok
+2026-11-02T15:41:40.2614158Z test_unavailable_runtime_never_falls_back_or_announces_ready (test_preview.PreviewTests) ... ok
+2026-11-02T15:41:40.2620298Z test_actual_runtime_history_without_jobs_and_image_ownership (test_product_runtime.ProductRuntimeTests) ... skipped 'Opt-in full owning Runtime integration; requires its separate dependencies'
+2026-11-02T15:41:40.2626912Z test_actual_runtime_start_capture_lookup_stop_and_no_replay (test_product_runtime.ProductRuntimeTests) ... skipped 'Opt-in full owning Runtime integration; requires its separate dependencies'
+2026-11-02T15:41:40.2643280Z test_reconciliation_timeout_does_not_invent_acceptance (test_product_runtime.StartReconciliationTests) ... ok
+2026-11-02T15:41:40.2667769Z test_unknown_queries_same_intent_without_another_start (test_product_runtime.StartReconciliationTests) ... ok
+2026-11-02T15:41:40.2739673Z test_acl_references_delete (test_registry.RegistryTests) ... ok
+2026-11-02T15:41:40.2776664Z test_acl_validation (test_registry.RegistryTests) ... ok
+2026-11-02T15:41:40.2815217Z test_admin_only_mutation (test_registry.RegistryTests) ... ok
+2026-11-02T15:41:40.2886143Z test_crud_persistence (test_registry.RegistryTests) ... ok
+2026-11-02T15:41:40.2953652Z test_explicit_acl (test_registry.RegistryTests) ... ok
+2026-11-02T15:41:40.3002068Z test_invalid_addresses (test_registry.RegistryTests) ... ok
+2026-11-02T15:41:40.3039565Z test_malformed_configuration (test_registry.RegistryTests) ... ok
+2026-11-02T15:41:40.3095446Z test_no_cross_target_leak (test_registry.RegistryTests) ... ok
+2026-11-02T15:41:40.3150060Z test_revoke_deleted_user (test_registry.RegistryTests) ... ok
+2026-11-02T15:41:40.3198309Z test_role_ceiling (test_registry.RegistryTests) ... ok
+2026-11-02T15:41:40.3345159Z test_asset_integrity_releases_lease_on_failure (test_runtime_contract.RuntimeContractTests) ... ok
+2026-11-02T15:41:40.3368568Z test_browser_safe_never_rounds_large_nested_integer (test_runtime_contract.RuntimeContractTests) ... ok
+2026-11-02T15:41:40.3465674Z test_history_zero_based_wire_and_opaque_image_and_revision (test_runtime_contract.RuntimeContractTests) ... ok
+2026-11-02T15:41:40.3575536Z test_identity_and_authoritative_resources_and_large_counters (test_runtime_contract.RuntimeContractTests) ... ok
+2026-11-02T15:41:40.3719890Z test_metadata_only_snapshot_preserves_scope_ordinals (test_runtime_contract.RuntimeContractTests) ... ok
+2026-11-02T15:41:40.3776383Z test_no_capture_never_start (test_runtime_contract.RuntimeContractTests) ... ok
+2026-11-02T15:41:40.3825364Z test_preview_pins_identity_but_allows_layout_document_revision (test_runtime_contract.RuntimeContractTests) ... ok
+2026-11-02T15:41:40.4024104Z test_sdk_coverage_decoding_and_shared_stream_cursor (test_runtime_contract.RuntimeContractTests) ... ok
+2026-11-02T15:41:40.4073773Z test_stale_control_rejected_before_mutation (test_runtime_contract.RuntimeContractTests) ... ok
+2026-11-02T15:41:40.4141905Z test_start_pins_cas_and_preserves_intent_and_stop_job (test_runtime_contract.RuntimeContractTests) ... ok
+2026-11-02T15:41:40.4189557Z test_stop_explicit_empty_ungrouped_identity (test_runtime_contract.RuntimeContractTests) ... ok
+2026-11-02T15:41:40.4256232Z test_unknown_start_never_replays_and_lookup_same_id (test_runtime_contract.RuntimeContractTests) ... ok
+2026-11-02T15:41:40.4270939Z test_empty_expiry_snapshot_retires_live_and_queued_original (test_scope_status.ScopeStatusTests) ... ok
+2026-11-02T15:41:40.4285469Z test_expiry_threshold_preserves_newer_result_other_scope_and_frozen (test_scope_status.ScopeStatusTests) ... ok
+2026-11-02T15:41:40.4300402Z test_late_view_inherits_expiry_even_without_cached_result (test_scope_status.ScopeStatusTests) ... ok
+2026-11-02T15:41:40.4311543Z test_latest_started_keeps_complete_result_and_forwards_decimal (test_scope_status.ScopeStatusTests) ... ok
+2026-11-02T15:41:40.4415979Z test_persisted_intent_not_replayed (test_services.ServicesTests) ... ok
+2026-11-02T15:41:41.4460215Z test_shared_subscription_independent_freeze_and_cleanup (test_services.ServicesTests) ... ok
+2026-11-02T15:41:42.5966001Z test_alias_client_cannot_close_while_other_alias_uses_shared_stream (test_shared_alias.SharedAliasTests) ... ok
+2026-11-02T15:41:42.7285333Z test_declared_fixed_history_image_without_live_run (test_target_api.TargetApiTests) ... ok
+2026-11-02T15:41:42.8570151Z test_duplicate_package_association_does_not_change_active (test_target_api.TargetApiTests) ... ok
+2026-11-02T15:41:42.9811640Z test_freeze_pins_exact_fetched_bytes_and_resume_releases (test_target_api.TargetApiTests) ... ok
+2026-11-02T15:41:43.1020502Z test_mock_status_is_runtime_owned_and_events_use_cursor (test_target_api.TargetApiTests) ... ok
+2026-11-02T15:41:43.4254370Z test_new_same_name_user_cannot_read_old_operation (test_target_api.TargetApiTests) ... ok
+2026-11-02T15:41:43.5562613Z test_no_run_history_workflow_and_target_change_guard (test_target_api.TargetApiTests) ... ok
+2026-11-02T15:41:43.7095242Z test_package_static_assets_require_associated_target (test_target_api.TargetApiTests) ... ok
+2026-11-02T15:41:43.8391629Z test_persisted_runtime_address_wins_over_bootstrap_cli (test_target_api.TargetApiTests) ... ok
+2026-11-02T15:41:43.9964213Z test_target_acl_covers_http_resources_history_and_controls (test_target_api.TargetApiTests) ... ok
+2026-11-02T15:41:44.1477898Z test_viewer_acl_revocation_closes_ws (test_target_api.TargetApiTests) ... ok
+2026-11-02T15:41:44.1539517Z test_coalesces_waiters_cancellation_sha_and_ttl (test_view_resources.CacheTests) ... ok
+2026-11-02T15:41:44.1895501Z test_concurrency_byte_eviction_and_shutdown (test_view_resources.CacheTests) ... ok
+2026-11-02T15:41:44.1904779Z test_frozen_exact_bytes_pinned_until_expiry_or_owner_release (test_view_resources.CacheTests) ... ok
+2026-11-02T15:41:44.2571131Z test_bounded_short_stress_and_byte_budget (test_view_resources.ViewTests) ... ok
+2026-11-02T15:41:44.2586526Z test_freeze_resume_drop_old_pending_and_do_not_extend_deadline (test_view_resources.ViewTests) ... ok
+2026-11-02T15:41:44.2599469Z test_freeze_ttl_expires_as_missing_not_silently_latest (test_view_resources.ViewTests) ... ok
+2026-11-02T15:41:44.2611904Z test_frozen_result_keeps_current_runtime_state (test_view_resources.ViewTests) ... ok
+2026-11-02T15:41:44.2626350Z test_multiscope_actual_display_freeze_isolation_and_latest_resume (test_view_resources.ViewTests) ... ok
+2026-11-02T15:41:44.2649425Z test_notice_survives_snapshot_pressure_and_instance_reset (test_view_resources.ViewTests) ... ok
+2026-11-02T15:41:44.3678327Z test_readonly_snapshot_recovers_after_one_disconnect (test_view_resources.ViewTests) ... ok
+2026-11-02T15:41:44.3803577Z test_runtime_alias_streams_shared_and_cancelled_without_stopping (test_view_resources.ViewTests) ... ok
+2026-11-02T15:41:44.3807029Z 
+2026-11-02T15:41:44.3807322Z ----------------------------------------------------------------------
+2026-11-02T15:41:44.3807706Z Ran 150 tests in 8.779s
+2026-11-02T15:41:44.3807846Z 
+2026-11-02T15:41:44.3807942Z OK (skipped=2)
+2026-11-02T15:41:44.4774613Z ##[group]Run npm --prefix frontend ci && npm --prefix frontend test && npm --prefix frontend run build
+2026-11-02T15:41:44.4775027Z [36;1mnpm --prefix frontend ci && npm --prefix frontend test && npm --prefix frontend run build[0m
+2026-11-02T15:41:44.4801319Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T15:41:44.4801517Z env:
+2026-11-02T15:41:44.4801680Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:44.4801922Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:41:44.4802161Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:44.4802378Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:44.4802596Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:44.4802827Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:41:44.4803015Z ##[endgroup]
+2026-11-02T15:41:46.4572500Z 
+2026-11-02T15:41:46.4573285Z added 22 packages, and audited 23 packages in 2s
+2026-11-02T15:41:46.4573574Z 
+2026-11-02T15:41:46.4573723Z 5 packages are looking for funding
+2026-11-02T15:41:46.4573925Z   run `npm fund` for details
+2026-11-02T15:41:46.4707021Z 
+2026-11-02T15:41:46.4707430Z 1 high severity vulnerability
+2026-11-02T15:41:46.4707595Z 
+2026-11-02T15:41:46.4707684Z To address all issues, run:
+2026-11-02T15:41:46.4707869Z   npm audit fix --force
+2026-11-02T15:41:46.4707964Z 
+2026-11-02T15:41:46.4708039Z Run `npm audit` for details.
+2026-11-02T15:41:46.5591896Z 
+2026-11-02T15:41:46.5592590Z > emo-master-web-panel-ui@0.1.0 test
+2026-11-02T15:41:46.5593034Z > node --test tests/*.test.mjs
+2026-11-02T15:41:46.5593205Z 
+2026-11-02T15:41:46.5979051Z TAP version 13
+2026-11-02T15:41:46.9801561Z # Subtest: normal directory refresh preserves all valid choices and exact edited input
+2026-11-02T15:41:46.9814663Z ok 1 - normal directory refresh preserves all valid choices and exact edited input
+2026-11-02T15:41:46.9829311Z   ---
+2026-11-02T15:41:46.9829842Z   duration_ms: 1.00839
+2026-11-02T15:41:46.9830240Z   type: 'test'
+2026-11-02T15:41:46.9830591Z   ...
+2026-11-02T15:41:46.9831228Z # Subtest: deleted selections clear instead of switching Stop to another Job
+2026-11-02T15:41:46.9832735Z ok 2 - deleted selections clear instead of switching Stop to another Job
+2026-11-02T15:41:46.9833231Z   ---
+2026-11-02T15:41:46.9833562Z   duration_ms: 0.110728
+2026-11-02T15:41:46.9833922Z   type: 'test'
+2026-11-02T15:41:46.9834246Z   ...
+2026-11-02T15:41:46.9834772Z # Subtest: new Runtime identity clears reused same Job/workflow IDs
+2026-11-02T15:41:46.9835383Z ok 3 - new Runtime identity clears reused same Job/workflow IDs
+2026-11-02T15:41:46.9835835Z   ---
+2026-11-02T15:41:46.9836170Z   duration_ms: 0.120072
+2026-11-02T15:41:46.9836515Z   type: 'test'
+2026-11-02T15:41:46.9836832Z   ...
+2026-11-02T15:41:46.9837393Z # Subtest: initial defaults do not select Stop and context encodes explicit target/project
+2026-11-02T15:41:46.9838183Z ok 4 - initial defaults do not select Stop and context encodes explicit target/project
+2026-11-02T15:41:46.9838707Z   ---
+2026-11-02T15:41:46.9839005Z   duration_ms: 0.121264
+2026-11-02T15:41:46.9839516Z   type: 'test'
+2026-11-02T15:41:46.9839802Z   ...
+2026-11-02T15:41:46.9840469Z # Subtest: fresh catalog status updates only the selected view Job and clears missing or replaced identity
+2026-11-02T15:41:46.9841380Z ok 5 - fresh catalog status updates only the selected view Job and clears missing or replaced identity
+2026-11-02T15:41:46.9841923Z   ---
+2026-11-02T15:41:46.9842234Z   duration_ms: 0.110447
+2026-11-02T15:41:46.9842606Z   type: 'test'
+2026-11-02T15:41:46.9842937Z   ...
+2026-11-02T15:41:46.9997151Z # Subtest: accepted Start with exact Job clears unknown tracking, same path after lookup
+2026-11-02T15:41:47.0017649Z ok 6 - accepted Start with exact Job clears unknown tracking, same path after lookup
+2026-11-02T15:41:47.0025186Z   ---
+2026-11-02T15:41:47.0025629Z   duration_ms: 0.879203
+2026-11-02T15:41:47.0026465Z   type: 'test'
+2026-11-02T15:41:47.0027996Z   ...
+2026-11-02T15:41:47.0028564Z # Subtest: accepted Stop acknowledges command but not Job completion/resources
+2026-11-02T15:41:47.0029437Z ok 7 - accepted Stop acknowledges command but not Job completion/resources
+2026-11-02T15:41:47.0029955Z   ---
+2026-11-02T15:41:47.0030376Z   duration_ms: 0.173834
+2026-11-02T15:41:47.0030775Z   type: 'test'
+2026-11-02T15:41:47.0031118Z   ...
+2026-11-02T15:41:47.0031636Z # Subtest: HTTP200 rejection shows reason and clears pending, never accepted wording
+2026-11-02T15:41:47.0032359Z ok 8 - HTTP200 rejection shows reason and clears pending, never accepted wording
+2026-11-02T15:41:47.0032897Z   ---
+2026-11-02T15:41:47.0033221Z   duration_ms: 0.101193
+2026-11-02T15:41:47.0033570Z   type: 'test'
+2026-11-02T15:41:47.0033885Z   ...
+2026-11-02T15:41:47.0034445Z # Subtest: unknown Stop resolved via ABORTED ends tracking without claiming command acceptance
+2026-11-02T15:41:47.0035241Z ok 9 - unknown Stop resolved via ABORTED ends tracking without claiming command acceptance
+2026-11-02T15:41:47.0035780Z   ---
+2026-11-02T15:41:47.0036108Z   duration_ms: 0.17107
+2026-11-02T15:41:47.0036453Z   type: 'test'
+2026-11-02T15:41:47.0036771Z   ...
+2026-11-02T15:41:47.0037338Z # Subtest: genuinely unknown outcomes remain queryable with manual exit available
+2026-11-02T15:41:47.0038082Z ok 10 - genuinely unknown outcomes remain queryable with manual exit available
+2026-11-02T15:41:47.0038573Z   ---
+2026-11-02T15:41:47.0038892Z   duration_ms: 0.119562
+2026-11-02T15:41:47.0039384Z   type: 'test'
+2026-11-02T15:41:47.0039704Z   ...
+2026-11-02T15:41:47.1014324Z # Subtest: resource URLs limited to current-origin authorized paths
+2026-11-02T15:41:47.1014931Z ok 11 - resource URLs limited to current-origin authorized paths
+2026-11-02T15:41:47.1015250Z   ---
+2026-11-02T15:41:47.1015450Z   duration_ms: 0.716516
+2026-11-02T15:41:47.1015707Z   type: 'test'
+2026-11-02T15:41:47.1015940Z   ...
+2026-11-02T15:41:47.1016524Z # Subtest: mutating requests carry CSRF and never put it in URL
+2026-11-02T15:41:47.1017045Z ok 12 - mutating requests carry CSRF and never put it in URL
+2026-11-02T15:41:47.1017330Z   ---
+2026-11-02T15:41:47.1017516Z   duration_ms: 13.339744
+2026-11-02T15:41:47.1017716Z   type: 'test'
+2026-11-02T15:41:47.1018371Z   ...
+2026-11-02T15:41:47.1018660Z # Subtest: server failures are errors rather than fake success
+2026-11-02T15:41:47.1019042Z ok 13 - server failures are errors rather than fake success
+2026-11-02T15:41:47.1019450Z   ---
+2026-11-02T15:41:47.1019620Z   duration_ms: 0.772852
+2026-11-02T15:41:47.1019817Z   type: 'test'
+2026-11-02T15:41:47.1019989Z   ...
+2026-11-02T15:41:47.1020294Z # Subtest: wrong owner result clears image instead of mixing rounds
+2026-11-02T15:41:47.1020703Z ok 14 - wrong owner result clears image instead of mixing rounds
+2026-11-02T15:41:47.1020994Z   ---
+2026-11-02T15:41:47.1021170Z   duration_ms: 0.380788
+2026-11-02T15:41:47.1021364Z   type: 'test'
+2026-11-02T15:41:47.1021538Z   ...
+2026-11-02T15:41:47.1021916Z # Subtest: failed image resolves entire scope with explicit current-round failure
+2026-11-02T15:41:47.1022453Z ok 15 - failed image resolves entire scope with explicit current-round failure
+2026-11-02T15:41:47.1022793Z   ---
+2026-11-02T15:41:47.1022987Z   duration_ms: 0.325394
+2026-11-02T15:41:47.1023191Z   type: 'test'
+2026-11-02T15:41:47.1023373Z   ...
+2026-11-02T15:41:47.1023749Z # Subtest: prepared image publishes fetched bytes once and releases its object URL
+2026-11-02T15:41:47.1024278Z ok 16 - prepared image publishes fetched bytes once and releases its object URL
+2026-11-02T15:41:47.1024609Z   ---
+2026-11-02T15:41:47.1024789Z   duration_ms: 3.511947
+2026-11-02T15:41:47.1024971Z   type: 'test'
+2026-11-02T15:41:47.1025089Z   ...
+2026-11-02T15:41:47.1320482Z # Subtest: slow image cannot publish a cancelled candidate
+2026-11-02T15:41:47.1321446Z ok 17 - slow image cannot publish a cancelled candidate
+2026-11-02T15:41:47.1321875Z   ---
+2026-11-02T15:41:47.1322193Z   duration_ms: 10.521485
+2026-11-02T15:41:47.1323029Z   type: 'test'
+2026-11-02T15:41:47.1323352Z   ...
+2026-11-02T15:41:47.1323782Z # Subtest: hidden page image never blocks the visible scope
+2026-11-02T15:41:47.1324323Z ok 18 - hidden page image never blocks the visible scope
+2026-11-02T15:41:47.1324748Z   ---
+2026-11-02T15:41:47.1325057Z   duration_ms: 0.240835
+2026-11-02T15:41:47.1325387Z   type: 'test'
+2026-11-02T15:41:47.1325685Z   ...
+2026-11-02T15:41:47.1326121Z # Subtest: visible nested image bindings respect explicit scopes
+2026-11-02T15:41:47.1326680Z ok 19 - visible nested image bindings respect explicit scopes
+2026-11-02T15:41:47.1327098Z   ---
+2026-11-02T15:41:47.1327397Z   duration_ms: 1.215909
+2026-11-02T15:41:47.1327732Z   type: 'test'
+2026-11-02T15:41:47.1328032Z   ...
+2026-11-02T15:41:47.1328522Z # Subtest: LAN SHA256 fallback matches standard vectors and multi-block bytes
+2026-11-02T15:41:47.1329288Z ok 20 - LAN SHA256 fallback matches standard vectors and multi-block bytes
+2026-11-02T15:41:47.1329737Z   ---
+2026-11-02T15:41:47.1330057Z   duration_ms: 16.750368
+2026-11-02T15:41:47.1330387Z   type: 'test'
+2026-11-02T15:41:47.1330681Z   ...
+2026-11-02T15:41:47.1331094Z # Subtest: wrong size or digest never publishes image bytes
+2026-11-02T15:41:47.1331616Z ok 21 - wrong size or digest never publishes image bytes
+2026-11-02T15:41:47.1332021Z   ---
+2026-11-02T15:41:47.1332314Z   duration_ms: 0.829738
+2026-11-02T15:41:47.1332633Z   type: 'test'
+2026-11-02T15:41:47.1332925Z   ...
+2026-11-02T15:41:47.4390534Z # Subtest: repeated identical slow result loads once; newer items coalesce without starving current
+2026-11-02T15:41:47.4394416Z ok 22 - repeated identical slow result loads once; newer items coalesce without starving current
+2026-11-02T15:41:47.4395129Z   ---
+2026-11-02T15:41:47.4395494Z   duration_ms: 9.208067
+2026-11-02T15:41:47.4395871Z   type: 'test'
+2026-11-02T15:41:47.4396211Z   ...
+2026-11-02T15:41:47.4407975Z # Subtest: page/reset invalidation discards pending and permits reprepare same identity
+2026-11-02T15:41:47.4408874Z ok 23 - page/reset invalidation discards pending and permits reprepare same identity
+2026-11-02T15:41:47.4409624Z   ---
+2026-11-02T15:41:47.4409984Z   duration_ms: 2.114638
+2026-11-02T15:41:47.4410354Z   type: 'test'
+2026-11-02T15:41:47.4410685Z   ...
+2026-11-02T15:41:47.4433100Z # Subtest: Resume retains last displayed result while slow candidate loads, so immediate Freeze pins that result
+2026-11-02T15:41:47.4434079Z ok 24 - Resume retains last displayed result while slow candidate loads, so immediate Freeze pins that result
+2026-11-02T15:41:47.4434685Z   ---
+2026-11-02T15:41:47.4435025Z   duration_ms: 1.668981
+2026-11-02T15:41:47.4435379Z   type: 'test'
+2026-11-02T15:41:47.4435706Z   ...
+2026-11-02T15:41:47.4436223Z # Subtest: Resume restages expired scopes once after clearing expiry markers
+2026-11-02T15:41:47.4438336Z ok 25 - Resume restages expired scopes once after clearing expiry markers
+2026-11-02T15:41:47.4438848Z   ---
+2026-11-02T15:41:47.4439370Z   duration_ms: 0.173203
+2026-11-02T15:41:47.4439729Z   type: 'test'
+2026-11-02T15:41:47.4440078Z   ...
+2026-11-02T15:41:47.4486041Z # Subtest: scoped expiry invalidates only its pending items, not other live scopes
+2026-11-02T15:41:47.4491366Z ok 26 - scoped expiry invalidates only its pending items, not other live scopes
+2026-11-02T15:41:47.4509604Z   ---
+2026-11-02T15:41:47.4539786Z   duration_ms: 3.124099
+2026-11-02T15:41:47.4546047Z   type: 'test'
+2026-11-02T15:41:47.4546442Z   ...
+2026-11-02T15:41:47.7196950Z # Subtest: binding uses the validated scopeId and nested style whitelist
+2026-11-02T15:41:47.7197874Z ok 27 - binding uses the validated scopeId and nested style whitelist
+2026-11-02T15:41:47.7198608Z   ---
+2026-11-02T15:41:47.7199022Z   duration_ms: 5.764313
+2026-11-02T15:41:47.7199535Z   type: 'test'
+2026-11-02T15:41:47.7199874Z   ...
+2026-11-02T15:41:47.7200446Z # Subtest: unavailable bound values never render fallback or stale OK business values
+2026-11-02T15:41:47.7201200Z ok 28 - unavailable bound values never render fallback or stale OK business values
+2026-11-02T15:41:47.7202168Z   ---
+2026-11-02T15:41:47.7202527Z   duration_ms: 2.699395
+2026-11-02T15:41:47.7202893Z   type: 'test'
+2026-11-02T15:41:47.7203217Z   ...
+2026-11-02T15:41:47.7203776Z # Subtest: draft nested grid, field selection and all permitted safe styles render
+2026-11-02T15:41:47.7204522Z ok 29 - draft nested grid, field selection and all permitted safe styles render
+2026-11-02T15:41:47.7205019Z   ---
+2026-11-02T15:41:47.7205379Z   duration_ms: 0.485125
+2026-11-02T15:41:47.7205736Z   type: 'test'
+2026-11-02T15:41:47.7206065Z   ...
+2026-11-02T15:41:47.7206600Z # Subtest: clock timezone, navigation plain icon and fixed history image are supported
+2026-11-02T15:41:47.7207299Z ok 30 - clock timezone, navigation plain icon and fixed history image are supported
+2026-11-02T15:41:47.7207790Z   ---
+2026-11-02T15:41:47.7208104Z   duration_ms: 29.874936
+2026-11-02T15:41:47.7208451Z   type: 'test'
+2026-11-02T15:41:47.7208775Z   ...
+2026-11-02T15:41:47.7209419Z # Subtest: aggregate null stays empty, never substitutes row count
+2026-11-02T15:41:47.7210050Z ok 31 - aggregate null stays empty, never substitutes row count
+2026-11-02T15:41:47.7210517Z   ---
+2026-11-02T15:41:47.7210854Z   duration_ms: 0.172642
+2026-11-02T15:41:47.7211210Z   type: 'test'
+2026-11-02T15:41:47.7230688Z   ...
+2026-11-02T15:41:47.7231312Z # Subtest: official number valueJson preserves unsafe integer without rounding
+2026-11-02T15:41:47.7231964Z ok 32 - official number valueJson preserves unsafe integer without rounding
+2026-11-02T15:41:47.7232458Z   ---
+2026-11-02T15:41:47.7232777Z   duration_ms: 0.4553
+2026-11-02T15:41:47.7233114Z   type: 'test'
+2026-11-02T15:41:47.7233421Z   ...
+2026-11-02T15:41:47.7233894Z # Subtest: official indicator JSON keys do not confuse boolean with string
+2026-11-02T15:41:47.7234520Z ok 33 - official indicator JSON keys do not confuse boolean with string
+2026-11-02T15:41:47.7234972Z   ---
+2026-11-02T15:41:47.7235291Z   duration_ms: 0.457724
+2026-11-02T15:41:47.7235623Z   type: 'test'
+2026-11-02T15:41:47.7235941Z   ...
+2026-11-02T15:41:47.7236461Z # Subtest: official responsive layout preserves child order and fieldPath columns
+2026-11-02T15:41:47.7238594Z ok 34 - official responsive layout preserves child order and fieldPath columns
+2026-11-02T15:41:47.7269617Z   ---
+2026-11-02T15:41:47.7300743Z   duration_ms: 1.111036
+2026-11-02T15:41:47.7309955Z   type: 'test'
+2026-11-02T15:41:47.7310302Z   ...
+2026-11-02T15:41:47.7310896Z # Subtest: official history refresh reselects only stable identities with new refs
+2026-11-02T15:41:47.7311538Z ok 35 - official history refresh reselects only stable identities with new refs
+2026-11-02T15:41:47.7311878Z   ---
+2026-11-02T15:41:47.7312120Z   duration_ms: 0.477725
+2026-11-02T15:41:47.7312377Z   type: 'test'
+2026-11-02T15:41:47.7312611Z   ...
+2026-11-02T15:41:47.7312992Z # Subtest: lossless JSON handles nested data, escaped strings, and finite floats
+2026-11-02T15:41:47.7313442Z ok 36 - lossless JSON handles nested data, escaped strings, and finite floats
+2026-11-02T15:41:47.7313939Z   ---
+2026-11-02T15:41:47.7314234Z   duration_ms: 1.209235
+2026-11-02T15:41:47.7314570Z   type: 'test'
+2026-11-02T15:41:47.7314896Z   ...
+2026-11-02T15:41:47.7315427Z # Subtest: official result maps exact identity and per-source view URLs without rounding
+2026-11-02T15:41:47.7316196Z ok 37 - official result maps exact identity and per-source view URLs without rounding
+2026-11-02T15:41:47.7346391Z   ---
+2026-11-02T15:41:47.7346762Z   duration_ms: 23.868085
+2026-11-02T15:41:47.7347036Z   type: 'test'
+2026-11-02T15:41:47.7347277Z   ...
+2026-11-02T15:41:47.7347667Z # Subtest: official grid placement uses zero-based coordinates and static navigation icon
+2026-11-02T15:41:47.7348159Z ok 38 - official grid placement uses zero-based coordinates and static navigation icon
+2026-11-02T15:41:47.7348513Z   ---
+2026-11-02T15:41:47.7348748Z   duration_ms: 0.691039
+2026-11-02T15:41:47.7348997Z   type: 'test'
+2026-11-02T15:41:47.7349383Z   ...
+2026-11-02T15:41:47.7350166Z # Subtest: SDK coverage problems hide even available payloads without mutating wire result
+2026-11-02T15:41:47.7350710Z ok 39 - SDK coverage problems hide even available payloads without mutating wire result
+2026-11-02T15:41:47.7351049Z   ---
+2026-11-02T15:41:47.7351213Z   duration_ms: 0.208246
+2026-11-02T15:41:47.7351412Z   type: 'test'
+2026-11-02T15:41:47.7351579Z   ...
+2026-11-02T15:41:47.7351894Z # Subtest: official fixed history images use view-bound no-ref RPC route
+2026-11-02T15:41:47.7352338Z ok 40 - official fixed history images use view-bound no-ref RPC route
+2026-11-02T15:41:47.7352635Z   ---
+2026-11-02T15:41:47.7352803Z   duration_ms: 2.652904
+2026-11-02T15:41:47.7352991Z   type: 'test'
+2026-11-02T15:41:47.7353154Z   ...
+2026-11-02T15:41:47.7353519Z # Subtest: per-Job event merge sorts exact decimal sequence, deduplicates and bounds100
+2026-11-02T15:41:47.7354069Z ok 41 - per-Job event merge sorts exact decimal sequence, deduplicates and bounds100
+2026-11-02T15:41:47.7354406Z   ---
+2026-11-02T15:41:47.7354578Z   duration_ms: 30.163183
+2026-11-02T15:41:47.7354783Z   type: 'test'
+2026-11-02T15:41:47.7354949Z   ...
+2026-11-02T15:41:47.7355328Z # Subtest: official input editor keeps raw numeric text and avoids lossy form reserialization
+2026-11-02T15:41:47.7355893Z ok 42 - official input editor keeps raw numeric text and avoids lossy form reserialization
+2026-11-02T15:41:47.7356243Z   ---
+2026-11-02T15:41:47.7356421Z   duration_ms: 22.116438
+2026-11-02T15:41:47.7356622Z   type: 'test'
+2026-11-02T15:41:47.7356795Z   ...
+2026-11-02T15:41:47.7357188Z # Subtest: displayed-result navigation waits for confirmed freeze and stays put on failure
+2026-11-02T15:41:47.7357787Z ok 43 - displayed-result navigation waits for confirmed freeze and stays put on failure
+2026-11-02T15:41:47.7358150Z   ---
+2026-11-02T15:41:47.7358322Z   duration_ms: 0.26365
+2026-11-02T15:41:47.7358524Z   type: 'test'
+2026-11-02T15:41:47.7358700Z   ...
+2026-11-02T15:41:47.7359068Z # Subtest: interrupted or superseded displayed-result navigation never changes page
+2026-11-02T15:41:47.7359825Z ok 44 - interrupted or superseded displayed-result navigation never changes page
+2026-11-02T15:41:47.7360146Z   ---
+2026-11-02T15:41:47.7360266Z   duration_ms: 0.190509
+2026-11-02T15:41:47.7360391Z   type: 'test'
+2026-11-02T15:41:47.7360698Z   ...
+2026-11-02T15:41:47.7360910Z # Subtest: only SDK validated group runIds can supply group result and state
+2026-11-02T15:41:47.7361221Z ok 45 - only SDK validated group runIds can supply group result and state
+2026-11-02T15:41:47.7361423Z   ---
+2026-11-02T15:41:47.7361533Z   duration_ms: 0.197089
+2026-11-02T15:41:47.7361661Z   type: 'test'
+2026-11-02T15:41:47.7361779Z   ...
+2026-11-02T15:41:47.7362026Z # Subtest: official history renders declared filter columns and authoritative sort defaults
+2026-11-02T15:41:47.7362397Z ok 46 - official history renders declared filter columns and authoritative sort defaults
+2026-11-02T15:41:47.7362624Z   ---
+2026-11-02T15:41:47.7362736Z   duration_ms: 1.259561
+2026-11-02T15:41:47.7362861Z   type: 'test'
+2026-11-02T15:41:47.7362985Z   ...
+2026-11-02T15:41:47.7363241Z # Subtest: gateway-transformed mixed results retain available image routing and official epoch
+2026-11-02T15:41:47.7363625Z ok 47 - gateway-transformed mixed results retain available image routing and official epoch
+2026-11-02T15:41:47.7363865Z   ---
+2026-11-02T15:41:47.7363975Z   duration_ms: 0.174845
+2026-11-02T15:41:47.7364098Z   type: 'test'
+2026-11-02T15:41:47.7364213Z   ...
+2026-11-02T15:41:47.7364428Z # Subtest: published emptyText is used by scalar, image and table empty states
+2026-11-02T15:41:47.7364741Z ok 48 - published emptyText is used by scalar, image and table empty states
+2026-11-02T15:41:47.7364945Z   ---
+2026-11-02T15:41:47.7365152Z   duration_ms: 0.500328
+2026-11-02T15:41:47.7365279Z   type: 'test'
+2026-11-02T15:41:47.7365387Z   ...
+2026-11-02T15:41:47.7365599Z # Subtest: published navigation mode distinguishes tabs from ordinary buttons
+2026-11-02T15:41:47.7365911Z ok 49 - published navigation mode distinguishes tabs from ordinary buttons
+2026-11-02T15:41:47.7366245Z   ---
+2026-11-02T15:41:47.7366354Z   duration_ms: 0.440008
+2026-11-02T15:41:47.7366482Z   type: 'test'
+2026-11-02T15:41:47.7366592Z   ...
+2026-11-02T15:41:47.7366810Z # Subtest: local expiry and package notices never switch the official result epoch
+2026-11-02T15:41:47.7367141Z ok 50 - local expiry and package notices never switch the official result epoch
+2026-11-02T15:41:47.7367351Z   ---
+2026-11-02T15:41:47.7367462Z   duration_ms: 0.090477
+2026-11-02T15:41:47.7367588Z   type: 'test'
+2026-11-02T15:41:47.7367700Z   ...
+2026-11-02T15:41:47.7367970Z # Subtest: scope progress never retires completed result on newer start; expiry is job/scoped and exact
+2026-11-02T15:41:47.7368387Z ok 51 - scope progress never retires completed result on newer start; expiry is job/scoped and exact
+2026-11-02T15:41:47.7368635Z   ---
+2026-11-02T15:41:47.7368746Z   duration_ms: 5.187008
+2026-11-02T15:41:47.7368869Z   type: 'test'
+2026-11-02T15:41:47.7368978Z   ...
+2026-11-02T15:41:47.7369401Z # Subtest: gateway scope-status metadata is identity checked and retains decimal strings
+2026-11-02T15:41:47.7369989Z ok 52 - gateway scope-status metadata is identity checked and retains decimal strings
+2026-11-02T15:41:47.7370339Z   ---
+2026-11-02T15:41:47.7370521Z   duration_ms: 0.176347
+2026-11-02T15:41:47.7370726Z   type: 'test'
+2026-11-02T15:41:47.7370910Z   ...
+2026-11-02T15:41:47.7371327Z # Subtest: Resume removes pinned result whose live ordinal expired even without a new payload
+2026-11-02T15:41:47.7371964Z ok 53 - Resume removes pinned result whose live ordinal expired even without a new payload
+2026-11-02T15:41:47.7372343Z   ---
+2026-11-02T15:41:47.7372524Z   duration_ms: 0.14503
+2026-11-02T15:41:47.7372732Z   type: 'test'
+2026-11-02T15:41:47.7372917Z   ...
+2026-11-02T15:41:47.7373309Z # Subtest: spacers are transparent occupancy without card chrome or business fallback
+2026-11-02T15:41:47.7373903Z ok 54 - spacers are transparent occupancy without card chrome or business fallback
+2026-11-02T15:41:47.7374271Z   ---
+2026-11-02T15:41:47.7374458Z   duration_ms: 0.25739
+2026-11-02T15:41:47.7374661Z   type: 'test'
+2026-11-02T15:41:47.7374848Z   ...
+2026-11-02T15:41:47.7375232Z # Subtest: fixed spacers retain their own width and height under equal-width stretch
+2026-11-02T15:41:47.7375975Z ok 55 - fixed spacers retain their own width and height under equal-width stretch
+2026-11-02T15:41:47.7376331Z   ---
+2026-11-02T15:41:47.7376513Z   duration_ms: 0.091639
+2026-11-02T15:41:47.7376716Z   type: 'test'
+2026-11-02T15:41:47.7376922Z   ...
+2026-11-02T15:41:47.7377271Z # Subtest: elastic spacers use the parent main axis and retained weight
+2026-11-02T15:41:47.7377770Z ok 56 - elastic spacers use the parent main axis and retained weight
+2026-11-02T15:41:47.7378090Z   ---
+2026-11-02T15:41:47.7378278Z   duration_ms: 0.084999
+2026-11-02T15:41:47.7378485Z   type: 'test'
+2026-11-02T15:41:47.7378669Z   ...
+2026-11-02T15:41:47.7379090Z # Subtest: horizontal ordinary fill starts at its minimum while wrap keeps preferred width
+2026-11-02T15:41:47.7410138Z ok 57 - horizontal ordinary fill starts at its minimum while wrap keeps preferred width
+2026-11-02T15:41:47.7410562Z   ---
+2026-11-02T15:41:47.7410768Z   duration_ms: 0.088133
+2026-11-02T15:41:47.7410990Z   type: 'test'
+2026-11-02T15:41:47.7411182Z   ...
+2026-11-02T15:41:47.7411611Z # Subtest: zero-height fixed spacers retain explicit zero instead of default occupancy
+2026-11-02T15:41:47.7412232Z ok 58 - zero-height fixed spacers retain explicit zero instead of default occupancy
+2026-11-02T15:41:47.7412606Z   ---
+2026-11-02T15:41:47.7412801Z   duration_ms: 0.050236
+2026-11-02T15:41:47.7413014Z   type: 'test'
+2026-11-02T15:41:47.7413198Z   ...
+2026-11-02T15:41:47.8239310Z # Subtest: SDK 1.1.1 ordinary job_state, job_changed and control_result preserve explicit empty group
+2026-11-02T15:41:47.8240147Z ok 59 - SDK 1.1.1 ordinary job_state, job_changed and control_result preserve explicit empty group
+2026-11-02T15:41:47.8240577Z   ---
+2026-11-02T15:41:47.8240785Z   duration_ms: 1.345601
+2026-11-02T15:41:47.8241465Z   type: 'test'
+2026-11-02T15:41:47.8241680Z   ...
+2026-11-02T15:41:47.8242179Z # Subtest: retained grouped official fixtures preserve their real group instead of converting to empty
+2026-11-02T15:41:47.8242933Z ok 60 - retained grouped official fixtures preserve their real group instead of converting to empty
+2026-11-02T15:41:47.8243444Z   ---
+2026-11-02T15:41:47.8243642Z   duration_ms: 0.214625
+2026-11-02T15:41:47.8243858Z   type: 'test'
+2026-11-02T15:41:47.8244049Z   ...
+2026-11-02T15:41:47.8244608Z # Subtest: official ordinary accepted Start/Stop acknowledges intent, ABORTED alone supplies terminal display/resources
+2026-11-02T15:41:47.8245467Z ok 61 - official ordinary accepted Start/Stop acknowledges intent, ABORTED alone supplies terminal display/resources
+2026-11-02T15:41:47.8245949Z   ---
+2026-11-02T15:41:47.8246140Z   duration_ms: 5.830063
+2026-11-02T15:41:47.8246340Z   type: 'test'
+2026-11-02T15:41:47.8246517Z   ...
+2026-11-02T15:41:47.8246996Z # Subtest: initial formal job_changed confirms exact current selection; actual changes still invalidate
+2026-11-02T15:41:47.8247664Z ok 62 - initial formal job_changed confirms exact current selection; actual changes still invalidate
+2026-11-02T15:41:47.8248046Z   ---
+2026-11-02T15:41:47.8248229Z   duration_ms: 0.251101
+2026-11-02T15:41:47.8248428Z   type: 'test'
+2026-11-02T15:41:47.8248603Z   ...
+2026-11-02T15:41:47.8249047Z # Subtest: formal WS control notices share HTTP acknowledgement wording without implying Job completion
+2026-11-02T15:41:47.8249883Z ok 63 - formal WS control notices share HTTP acknowledgement wording without implying Job completion
+2026-11-02T15:41:47.8250275Z   ---
+2026-11-02T15:41:47.8250445Z   duration_ms: 0.298402
+2026-11-02T15:41:47.8250641Z   type: 'test'
+2026-11-02T15:41:47.8250823Z   ...
+2026-11-02T15:41:47.8367727Z 1..63
+2026-11-02T15:41:47.8376411Z # tests 63
+2026-11-02T15:41:47.8376675Z # suites 0
+2026-11-02T15:41:47.8376877Z # pass 63
+2026-11-02T15:41:47.8377054Z # fail 0
+2026-11-02T15:41:47.8377283Z # cancelled 0
+2026-11-02T15:41:47.8377497Z # skipped 0
+2026-11-02T15:41:47.8377685Z # todo 0
+2026-11-02T15:41:47.8377942Z # duration_ms 1253.966007
+2026-11-02T15:41:47.9136666Z 
+2026-11-02T15:41:47.9137245Z > emo-master-web-panel-ui@0.1.0 build
+2026-11-02T15:41:47.9137945Z > tsc --noEmit && vite build
+2026-11-02T15:41:47.9138110Z 
+2026-11-02T15:41:49.4305377Z [36mvite v7.1.12 [32mbuilding for production...[36m[39m
+2026-11-02T15:41:49.4756594Z transforming...
+2026-11-02T15:41:50.0799897Z [32m✓[39m 41 modules transformed.
+2026-11-02T15:41:50.1824203Z rendering chunks...
+2026-11-02T15:41:50.1885826Z computing gzip size...
+2026-11-02T15:41:50.1950820Z [2mdist/[22m[32mindex.html                 [39m[1m[2m  0.37 kB[22m[1m[22m[2m │ gzip:  0.29 kB[22m
+2026-11-02T15:41:50.1951336Z [2mdist/[22m[2massets/[22m[35mindex-982hYTwC.css  [39m[1m[2m  3.64 kB[22m[1m[22m[2m │ gzip:  1.42 kB[22m
+2026-11-02T15:41:50.1951870Z [2mdist/[22m[2massets/[22m[36mindex-DQieDYVn.js   [39m[1m[2m263.42 kB[22m[1m[22m[2m │ gzip: 84.43 kB[22m
+2026-11-02T15:41:50.1952418Z [32m✓ built in 750ms[39m
+2026-11-02T15:41:50.2237757Z ##[group]Run python -m playwright install --with-deps chromium
+2026-11-02T15:41:50.2238033Z [36;1mpython -m playwright install --with-deps chromium[0m
+2026-11-02T15:41:50.2264600Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T15:41:50.2264820Z env:
+2026-11-02T15:41:50.2264972Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:50.2265212Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:41:50.2265454Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:50.2265670Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:50.2265889Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:41:50.2266108Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:41:50.2266294Z ##[endgroup]
+2026-11-02T15:41:50.4513102Z Installing dependencies...
+2026-11-02T15:41:50.4566832Z Switching to root user to install dependencies...
+2026-11-02T15:41:50.5227275Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-11-02T15:41:50.5606265Z Get:6 https://packages.microsoft.com/ubuntu/26.04/prod resolute InRelease [3964 B]
+2026-11-02T15:41:50.5697627Z Hit:2 http://azure.archive.ubuntu.com/ubuntu resolute InRelease
+2026-11-02T15:41:50.5756726Z Get:3 http://azure.archive.ubuntu.com/ubuntu resolute-updates InRelease [137 kB]
+2026-11-02T15:41:50.5801648Z Get:4 http://azure.archive.ubuntu.com/ubuntu resolute-backports InRelease [137 kB]
+2026-11-02T15:41:50.5826911Z Get:5 http://azure.archive.ubuntu.com/ubuntu resolute-security InRelease [137 kB]
+2026-11-02T15:41:50.5872629Z Get:7 https://packages.microsoft.com/ubuntu/26.04/prod resolute/main amd64 Packages [131 kB]
+2026-11-02T15:41:50.6080726Z Get:8 http://azure.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 Packages [804 kB]
+2026-11-02T15:41:50.6106171Z Get:14 https://packages.microsoft.com/ubuntu/26.04/prod resolute/main arm64 Packages [120 kB]
+2026-11-02T15:41:50.6155468Z Get:9 http://azure.archive.ubuntu.com/ubuntu resolute-updates/main Translation-en [184 kB]
+2026-11-02T15:41:50.6190694Z Get:10 http://azure.archive.ubuntu.com/ubuntu resolute-updates/universe amd64v3 Packages [375 kB]
+2026-11-02T15:41:50.6226771Z Get:11 http://azure.archive.ubuntu.com/ubuntu resolute-updates/universe Translation-en [118 kB]
+2026-11-02T15:41:50.6227781Z Get:12 http://azure.archive.ubuntu.com/ubuntu resolute-updates/restricted amd64v3 Packages [543 kB]
+2026-11-02T15:41:50.6228898Z Get:13 http://azure.archive.ubuntu.com/ubuntu resolute-updates/restricted Translation-en [112 kB]
+2026-11-02T15:41:50.6281641Z Get:15 http://azure.archive.ubuntu.com/ubuntu resolute-security/main amd64v3 Packages [647 kB]
+2026-11-02T15:41:50.6345677Z Get:16 http://azure.archive.ubuntu.com/ubuntu resolute-security/main Translation-en [146 kB]
+2026-11-02T15:41:50.6384199Z Get:17 http://azure.archive.ubuntu.com/ubuntu resolute-security/universe amd64v3 Packages [206 kB]
+2026-11-02T15:41:50.6385079Z Get:18 http://azure.archive.ubuntu.com/ubuntu resolute-security/universe Translation-en [67.9 kB]
+2026-11-02T15:41:50.6821317Z Get:19 http://azure.archive.ubuntu.com/ubuntu resolute-security/restricted amd64v3 Packages [529 kB]
+2026-11-02T15:41:50.6856127Z Get:20 http://azure.archive.ubuntu.com/ubuntu resolute-security/restricted Translation-en [108 kB]
+2026-11-02T15:41:52.8457801Z Fetched 4505 kB in 0s (14.8 MB/s)
+2026-11-02T15:41:53.2991709Z Reading package lists...
+2026-11-02T15:41:53.3220355Z Reading package lists...
+2026-11-02T15:41:53.4684030Z Building dependency tree...
+2026-11-02T15:41:53.4689568Z Reading state information...
+2026-11-02T15:41:53.4990837Z libasound2t64 is already the newest version (1.2.15.3-1ubuntu1.1).
+2026-11-02T15:41:53.4991272Z libasound2t64 set to manually installed.
+2026-11-02T15:41:53.4991548Z libatk-bridge2.0-0t64 is already the newest version (2.60.4-0ubuntu0.1).
+2026-11-02T15:41:53.4991822Z libatk-bridge2.0-0t64 set to manually installed.
+2026-11-02T15:41:53.4992751Z libatk1.0-0t64 is already the newest version (2.60.4-0ubuntu0.1).
+2026-11-02T15:41:53.4992993Z libatk1.0-0t64 set to manually installed.
+2026-11-02T15:41:53.4993244Z libatspi2.0-0t64 is already the newest version (2.60.4-0ubuntu0.1).
+2026-11-02T15:41:53.4993503Z libatspi2.0-0t64 set to manually installed.
+2026-11-02T15:41:53.4993725Z libcairo2 is already the newest version (1.18.4-3).
+2026-11-02T15:41:53.4993946Z libcairo2 set to manually installed.
+2026-11-02T15:41:53.4994183Z libcups2t64 is already the newest version (2.4.16-1ubuntu1.3).
+2026-11-02T15:41:53.4994416Z libcups2t64 set to manually installed.
+2026-11-02T15:41:53.4994669Z libdbus-1-3 is already the newest version (1.16.2-2ubuntu4).
+2026-11-02T15:41:53.4994889Z libdbus-1-3 set to manually installed.
+2026-11-02T15:41:53.4995099Z libdrm2 is already the newest version (2.4.131-1).
+2026-11-02T15:41:53.4995302Z libdrm2 set to manually installed.
+2026-11-02T15:41:53.4995522Z libgbm1 is already the newest version (26.0.8-1ubuntu0.3).
+2026-11-02T15:41:53.4995742Z libgbm1 set to manually installed.
+2026-11-02T15:41:53.4995973Z libglib2.0-0t64 is already the newest version (2.88.0-1ubuntu0.1).
+2026-11-02T15:41:53.4996215Z libglib2.0-0t64 set to manually installed.
+2026-11-02T15:41:53.4996461Z libnspr4 is already the newest version (2:4.38.2-1ubuntu1).
+2026-11-02T15:41:53.4996688Z libnspr4 set to manually installed.
+2026-11-02T15:41:53.4996915Z libnss3 is already the newest version (2:3.120-1ubuntu2.2).
+2026-11-02T15:41:53.4997128Z libnss3 set to manually installed.
+2026-11-02T15:41:53.4997343Z libpango-1.0-0 is already the newest version (1.57.0-1).
+2026-11-02T15:41:53.4997569Z libpango-1.0-0 set to manually installed.
+2026-11-02T15:41:53.4997803Z libx11-6 is already the newest version (2:1.8.13-1ubuntu0.1).
+2026-11-02T15:41:53.4998019Z libx11-6 set to manually installed.
+2026-11-02T15:41:53.4998232Z libxcb1 is already the newest version (1.17.0-2ubuntu1).
+2026-11-02T15:41:53.4998444Z libxcb1 set to manually installed.
+2026-11-02T15:41:53.4998679Z libxcomposite1 is already the newest version (1:0.4.6-1build1).
+2026-11-02T15:41:53.4998920Z libxcomposite1 set to manually installed.
+2026-11-02T15:41:53.4999295Z libxdamage1 is already the newest version (1:1.1.7-1).
+2026-11-02T15:41:53.4999530Z libxdamage1 set to manually installed.
+2026-11-02T15:41:53.4999753Z libxext6 is already the newest version (2:1.3.4-1build3).
+2026-11-02T15:41:53.4999965Z libxext6 set to manually installed.
+2026-11-02T15:41:53.5000186Z libxfixes3 is already the newest version (1:6.0.0-2build2).
+2026-11-02T15:41:53.5000410Z libxfixes3 set to manually installed.
+2026-11-02T15:41:53.5000627Z libxkbcommon0 is already the newest version (1.13.1-1).
+2026-11-02T15:41:53.5000842Z libxkbcommon0 set to manually installed.
+2026-11-02T15:41:53.5001068Z libxrandr2 is already the newest version (2:1.5.4-1build1).
+2026-11-02T15:41:53.5001291Z libxrandr2 set to manually installed.
+2026-11-02T15:41:53.5001516Z xvfb is already the newest version (2:21.1.22-1ubuntu1.3).
+2026-11-02T15:41:53.5001801Z fonts-noto-color-emoji is already the newest version (2.051-1build1).
+2026-11-02T15:41:53.5002094Z libfontconfig1 is already the newest version (2.17.1-3ubuntu1).
+2026-11-02T15:41:53.5002326Z libfontconfig1 set to manually installed.
+2026-11-02T15:41:53.5002724Z libfreetype6 is already the newest version (2.14.2+dfsg-1ubuntu0.2).
+2026-11-02T15:41:53.5002967Z libfreetype6 set to manually installed.
+2026-11-02T15:41:53.5003218Z fonts-liberation is already the newest version (1:2.1.5-3build1).
+2026-11-02T15:41:53.5003462Z fonts-liberation set to manually installed.
+2026-11-02T15:41:53.5468718Z Solving dependencies...
+2026-11-02T15:41:53.6220973Z The following additional packages will be installed:
+2026-11-02T15:41:53.6221464Z   xfonts-encodings xfonts-utils
+2026-11-02T15:41:53.6226533Z Recommended packages:
+2026-11-02T15:41:53.6226807Z   fonts-ipafont-mincho fonts-tlwg-loma
+2026-11-02T15:41:53.6403441Z The following NEW packages will be installed:
+2026-11-02T15:41:53.6404144Z   fonts-freefont-ttf fonts-ipafont-gothic fonts-tlwg-loma-otf fonts-unifont
+2026-11-02T15:41:53.6412178Z   fonts-wqy-zenhei xfonts-cyrillic xfonts-encodings xfonts-scalable
+2026-11-02T15:41:53.6412589Z   xfonts-utils
+2026-11-02T15:41:53.6606607Z 0 upgraded, 9 newly installed, 0 to remove and 16 not upgraded.
+2026-11-02T15:41:53.6606917Z Need to get 21.9 MB of archives.
+2026-11-02T15:41:53.6607165Z After this operation, 80.2 MB of additional disk space will be used.
+2026-11-02T15:41:53.6607449Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-11-02T15:41:53.7370461Z Get:2 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 fonts-ipafont-gothic all 00303-23ubuntu1 [3703 kB]
+2026-11-02T15:41:53.8397968Z Get:3 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 fonts-freefont-ttf all 20211204+svn4273-4build1 [5656 kB]
+2026-11-02T15:41:53.9967377Z Get:4 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 fonts-tlwg-loma-otf all 1:0.7.3-1build1 [106 kB]
+2026-11-02T15:41:54.0763298Z Get:5 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 fonts-unifont all 1:16.0.04-1build1 [3169 kB]
+2026-11-02T15:41:54.1759073Z Get:6 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 fonts-wqy-zenhei all 0.9.45-8build1 [7863 kB]
+2026-11-02T15:41:54.3362744Z Get:7 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 xfonts-encodings all 1:1.0.5-0ubuntu3 [576 kB]
+2026-11-02T15:41:54.4245994Z Get:8 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 xfonts-utils amd64 1:7.7+7build1 [97.3 kB]
+2026-11-02T15:41:54.4741003Z Get:9 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 xfonts-cyrillic all 1:1.0.5+nmu1build1 [384 kB]
+2026-11-02T15:41:54.5239260Z Get:10 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 xfonts-scalable all 1:1.0.3-1.3build1 [304 kB]
+2026-11-02T15:41:54.7918355Z Fetched 21.9 MB in 1s (24.8 MB/s)
+2026-11-02T15:41:54.8701795Z Selecting previously unselected package fonts-ipafont-gothic.
+2026-11-02T15:41:54.8979467Z (Reading database ... 
+2026-11-02T15:41:54.8980032Z (Reading database ... 5%
+2026-11-02T15:41:54.8980522Z (Reading database ... 10%
+2026-11-02T15:41:54.8980816Z (Reading database ... 15%
+2026-11-02T15:41:54.8981116Z (Reading database ... 20%
+2026-11-02T15:41:54.8981370Z (Reading database ... 25%
+2026-11-02T15:41:54.8981598Z (Reading database ... 30%
+2026-11-02T15:41:54.8981826Z (Reading database ... 35%
+2026-11-02T15:41:54.8982050Z (Reading database ... 40%
+2026-11-02T15:41:54.8982282Z (Reading database ... 45%
+2026-11-02T15:41:54.8982466Z (Reading database ... 50%
+2026-11-02T15:41:54.9999939Z (Reading database ... 55%
+2026-11-02T15:41:55.1610310Z (Reading database ... 60%
+2026-11-02T15:41:55.3423243Z (Reading database ... 65%
+2026-11-02T15:41:55.5019052Z (Reading database ... 70%
+2026-11-02T15:41:55.6019893Z (Reading database ... 75%
+2026-11-02T15:41:55.8022085Z (Reading database ... 80%
+2026-11-02T15:41:55.9883734Z (Reading database ... 85%
+2026-11-02T15:41:56.1694433Z (Reading database ... 90%
+2026-11-02T15:41:56.3003755Z (Reading database ... 95%
+2026-11-02T15:41:56.3004120Z (Reading database ... 100%
+2026-11-02T15:41:56.3004481Z (Reading database ... 212715 files and directories currently installed.)
+2026-11-02T15:41:56.3041350Z Preparing to unpack .../0-fonts-ipafont-gothic_00303-23ubuntu1_all.deb ...
+2026-11-02T15:41:56.3496005Z Unpacking fonts-ipafont-gothic (00303-23ubuntu1) ...
+2026-11-02T15:41:56.6104314Z Selecting previously unselected package fonts-freefont-ttf.
+2026-11-02T15:41:56.6216743Z Preparing to unpack .../1-fonts-freefont-ttf_20211204+svn4273-4build1_all.deb ...
+2026-11-02T15:41:56.6311288Z Unpacking fonts-freefont-ttf (20211204+svn4273-4build1) ...
+2026-11-02T15:41:56.8820258Z Selecting previously unselected package fonts-tlwg-loma-otf.
+2026-11-02T15:41:56.8927188Z Preparing to unpack .../2-fonts-tlwg-loma-otf_1%3a0.7.3-1build1_all.deb ...
+2026-11-02T15:41:56.9112785Z Unpacking fonts-tlwg-loma-otf (1:0.7.3-1build1) ...
+2026-11-02T15:41:57.0111984Z Selecting previously unselected package fonts-unifont.
+2026-11-02T15:41:57.0224439Z Preparing to unpack .../3-fonts-unifont_1%3a16.0.04-1build1_all.deb ...
+2026-11-02T15:41:57.0404250Z Unpacking fonts-unifont (1:16.0.04-1build1) ...
+2026-11-02T15:41:57.4786027Z Selecting previously unselected package fonts-wqy-zenhei.
+2026-11-02T15:41:57.4899805Z Preparing to unpack .../4-fonts-wqy-zenhei_0.9.45-8build1_all.deb ...
+2026-11-02T15:41:57.5143859Z Unpacking fonts-wqy-zenhei (0.9.45-8build1) ...
+2026-11-02T15:41:57.8676889Z Selecting previously unselected package xfonts-encodings.
+2026-11-02T15:41:57.8788245Z Preparing to unpack .../5-xfonts-encodings_1%3a1.0.5-0ubuntu3_all.deb ...
+2026-11-02T15:41:57.8970197Z Unpacking xfonts-encodings (1:1.0.5-0ubuntu3) ...
+2026-11-02T15:41:58.0574382Z Selecting previously unselected package xfonts-utils.
+2026-11-02T15:41:58.0685883Z Preparing to unpack .../6-xfonts-utils_1%3a7.7+7build1_amd64v3.deb ...
+2026-11-02T15:41:58.0691964Z Unpacking xfonts-utils (1:7.7+7build1) ...
+2026-11-02T15:41:58.1013126Z Selecting previously unselected package xfonts-cyrillic.
+2026-11-02T15:41:58.1125866Z Preparing to unpack .../7-xfonts-cyrillic_1%3a1.0.5+nmu1build1_all.deb ...
+2026-11-02T15:41:58.1133815Z Unpacking xfonts-cyrillic (1:1.0.5+nmu1build1) ...
+2026-11-02T15:41:58.1409443Z Selecting previously unselected package xfonts-scalable.
+2026-11-02T15:41:58.1521910Z Preparing to unpack .../8-xfonts-scalable_1%3a1.0.3-1.3build1_all.deb ...
+2026-11-02T15:41:58.1528439Z Unpacking xfonts-scalable (1:1.0.3-1.3build1) ...
+2026-11-02T15:41:58.1907168Z Setting up fonts-wqy-zenhei (0.9.45-8build1) ...
+2026-11-02T15:41:58.2033364Z Setting up fonts-freefont-ttf (20211204+svn4273-4build1) ...
+2026-11-02T15:41:58.2049459Z Setting up fonts-tlwg-loma-otf (1:0.7.3-1build1) ...
+2026-11-02T15:41:58.2063261Z Setting up xfonts-encodings (1:1.0.5-0ubuntu3) ...
+2026-11-02T15:41:58.2077569Z Setting up fonts-ipafont-gothic (00303-23ubuntu1) ...
+2026-11-02T15:41:58.2126342Z update-alternatives: using /usr/share/fonts/opentype/ipafont-gothic/ipag.ttf to provide /usr/share/fonts/truetype/fonts-japanese-gothic.ttf (fonts-japanese-gothic.ttf) in auto mode
+2026-11-02T15:41:58.2140160Z Setting up fonts-unifont (1:16.0.04-1build1) ...
+2026-11-02T15:41:58.2155760Z Setting up xfonts-utils (1:7.7+7build1) ...
+2026-11-02T15:41:58.2206506Z Setting up xfonts-cyrillic (1:1.0.5+nmu1build1) ...
+2026-11-02T15:41:58.2630224Z Setting up xfonts-scalable (1:1.0.3-1.3build1) ...
+2026-11-02T15:41:58.3143213Z Processing triggers for man-db (2.13.1-1build1) ...
+2026-11-02T15:41:58.3179851Z Not building database; man-db/auto-update is not 'true'.
+2026-11-02T15:41:58.3204048Z Processing triggers for fontconfig (2.17.1-3ubuntu1) ...
+2026-11-02T15:41:58.8632423Z 
+2026-11-02T15:41:58.8632950Z Running kernel seems to be up-to-date.
+2026-11-02T15:41:58.8633148Z 
+2026-11-02T15:41:58.8633222Z Restarting services...
+2026-11-02T15:41:58.8709384Z 
+2026-11-02T15:41:58.8709897Z Service restarts being deferred:
+2026-11-02T15:41:58.8713167Z  systemctl restart hosted-compute-agent.service
+2026-11-02T15:41:58.8713381Z 
+2026-11-02T15:41:58.8713940Z No containers need to be restarted.
+2026-11-02T15:41:58.8714153Z 
+2026-11-02T15:41:58.8714317Z No user sessions are running outdated binaries.
+2026-11-02T15:41:58.8714503Z 
+2026-11-02T15:41:58.8715100Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-11-02T15:41:59.6219767Z Downloading Chrome for Testing 156.0.8078.4 (playwright chromium v1248) from https://cdn.playwright.dev/builds/cft/156.0.8078.4/linux64/chrome-linux64.zip
+2026-11-02T15:41:59.9341881Z |                                                                                |   0% of 191.1 MiB
+2026-11-02T15:42:00.1088490Z |■■■■■■■■                                                                        |  10% of 191.1 MiB
+2026-11-02T15:42:00.2192597Z |■■■■■■■■■■■■■■■■                                                                |  20% of 191.1 MiB
+2026-11-02T15:42:00.2950656Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 191.1 MiB
+2026-11-02T15:42:00.4273411Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 191.1 MiB
+2026-11-02T15:42:00.5059605Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 191.1 MiB
+2026-11-02T15:42:00.6446421Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 191.1 MiB
+2026-11-02T15:42:00.7352586Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 191.1 MiB
+2026-11-02T15:42:00.8163067Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 191.1 MiB
+2026-11-02T15:42:00.9091813Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 191.1 MiB
+2026-11-02T15:42:01.0318391Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 191.1 MiB
+2026-11-02T15:42:03.1954394Z Chrome for Testing 156.0.8078.4 (playwright chromium v1248) downloaded to /home/runner/.cache/ms-playwright/chromium-1248
+2026-11-02T15:42:03.1957843Z Downloading FFmpeg (playwright ffmpeg v1013) from https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1013/ffmpeg-linux.zip
+2026-11-02T15:42:03.4645071Z |                                                                                |   0% of 2.2 MiB
+2026-11-02T15:42:03.4673154Z |■■■■■■■■                                                                        |  10% of 2.2 MiB
+2026-11-02T15:42:03.4687989Z |■■■■■■■■■■■■■■■■                                                                |  20% of 2.2 MiB
+2026-11-02T15:42:03.4698800Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 2.2 MiB
+2026-11-02T15:42:03.4721852Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 2.2 MiB
+2026-11-02T15:42:03.4736293Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 2.2 MiB
+2026-11-02T15:42:03.4743024Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 2.2 MiB
+2026-11-02T15:42:03.4748552Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 2.2 MiB
+2026-11-02T15:42:03.4756302Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 2.2 MiB
+2026-11-02T15:42:03.4763269Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 2.2 MiB
+2026-11-02T15:42:03.4772801Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 2.2 MiB
+2026-11-02T15:42:03.5180652Z FFmpeg (playwright ffmpeg v1013) downloaded to /home/runner/.cache/ms-playwright/ffmpeg-1013
+2026-11-02T15:42:03.5182567Z Downloading Chrome Headless Shell 156.0.8078.4 (playwright chromium-headless-shell v1248) from https://cdn.playwright.dev/builds/cft/156.0.8078.4/linux64/chrome-headless-shell-linux64.zip
+2026-11-02T15:42:03.8324531Z |                                                                                |   0% of 120 MiB
+2026-11-02T15:42:03.9541417Z |■■■■■■■■                                                                        |  10% of 120 MiB
+2026-11-02T15:42:04.0507760Z |■■■■■■■■■■■■■■■■                                                                |  20% of 120 MiB
+2026-11-02T15:42:04.1545522Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 120 MiB
+2026-11-02T15:42:04.2553195Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 120 MiB
+2026-11-02T15:42:04.3595002Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 120 MiB
+2026-11-02T15:42:04.4424195Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 120 MiB
+2026-11-02T15:42:04.5102962Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 120 MiB
+2026-11-02T15:42:04.5530014Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 120 MiB
+2026-11-02T15:42:04.6198576Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 120 MiB
+2026-11-02T15:42:04.6961228Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 120 MiB
+2026-11-02T15:42:06.2491913Z Chrome Headless Shell 156.0.8078.4 (playwright chromium-headless-shell v1248) downloaded to /home/runner/.cache/ms-playwright/chromium_headless_shell-1248
+2026-11-02T15:42:06.2720568Z ##[group]Run python scripts/package_frontend.py && python dev/fixtures/make_demo_package.py
+2026-11-02T15:42:06.2720945Z [36;1mpython scripts/package_frontend.py && python dev/fixtures/make_demo_package.py[0m
+2026-11-02T15:42:06.2746941Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T15:42:06.2747138Z env:
+2026-11-02T15:42:06.2747304Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:06.2747550Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:42:06.2747791Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:06.2748006Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:06.2748228Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:06.2748593Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:42:06.2748783Z ##[endgroup]
+2026-11-02T15:42:06.2947057Z Packaged frontend static assets
+2026-11-02T15:42:06.3354515Z /home/runner/work/emo_master/emo_master/web_panel/dev/fixtures/demo.emoweb
+2026-11-02T15:42:06.3442796Z ##[group]Run python frontend/tests/browser_smoke.py
+2026-11-02T15:42:06.3443037Z [36;1mpython frontend/tests/browser_smoke.py[0m
+2026-11-02T15:42:06.3468733Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T15:42:06.3468925Z env:
+2026-11-02T15:42:06.3469085Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:06.3469729Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:42:06.3469975Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:06.3470191Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:06.3470417Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:06.3470651Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:42:06.3470838Z ##[endgroup]
+2026-11-02T15:42:09.3768496Z PASS: desktop/mobile login, all 13 renderer types, script text escaping, staged result, freeze/resume, control, navigation; HTTP/WS fixtures only
+2026-11-02T15:42:09.4940396Z ##[group]Run python frontend/tests/spacer_browser.py
+2026-11-02T15:42:09.4940667Z [36;1mpython frontend/tests/spacer_browser.py[0m
+2026-11-02T15:42:09.4967121Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T15:42:09.4967421Z env:
+2026-11-02T15:42:09.4967659Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:09.4968034Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:42:09.4968423Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:09.4968766Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:09.4969295Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:09.4969647Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:42:09.4969871Z ##[endgroup]
+2026-11-02T15:42:11.6009386Z {"passed": 14, "evidence": "/home/runner/work/emo_master/emo_master/web_panel/frontend/test-tmp/spacer-browser"}
+2026-11-02T15:42:11.6206619Z ##[group]Run python frontend/tests/catalog_refresh_e2e.py
+2026-11-02T15:42:11.6206890Z [36;1mpython frontend/tests/catalog_refresh_e2e.py[0m
+2026-11-02T15:42:11.6232818Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T15:42:11.6233010Z env:
+2026-11-02T15:42:11.6233172Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:11.6233423Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:42:11.6233678Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:11.6233905Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:11.6234278Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:11.6234507Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:42:11.6234698Z ##[endgroup]
+2026-11-02T15:42:13.0150451Z PASS: manual full directory refresh, valid selection/dirty input preservation, invalid target clearing, delayed A response after B, and Runtime identity replacement. HTTP fixtures only.
+2026-11-02T15:42:13.0371025Z ##[group]Run python frontend/tests/backend_e2e.py
+2026-11-02T15:42:13.0371289Z [36;1mpython frontend/tests/backend_e2e.py[0m
+2026-11-02T15:42:13.0397205Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T15:42:13.0397398Z env:
+2026-11-02T15:42:13.0397560Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:13.0397805Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:42:13.0398049Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:13.0398267Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:13.0398501Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:13.0398721Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:42:13.0398911Z ##[endgroup]
+2026-11-02T15:42:25.9493834Z PASS: real FastAPI HTTP/WS explicit MOCK Runtime browser integration, login, real-time result, freeze/resume, control, admin create, viewer restriction, mobile, A/B contextual activation and rollback, isolated B viewer and pinned A assets; no real Runtime or hardware
+2026-11-02T15:42:26.0398229Z ##[group]Run python frontend/tests/official_e2e.py
+2026-11-02T15:42:26.0398625Z [36;1mpython frontend/tests/official_e2e.py[0m
+2026-11-02T15:42:26.0424894Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T15:42:26.0425090Z env:
+2026-11-02T15:42:26.0425253Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:26.0425503Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:42:26.0425761Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:26.0425978Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:26.0426198Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:26.0426419Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:42:26.0426608Z ##[endgroup]
+2026-11-02T15:42:29.4342786Z PASS: actual read-only preview CLI, official package, SDK fixtures, token login, results, static/history images, stable selection, no-Job history, mutation denial and desktop/mobile Chromium. Synthetic data only; no real Runtime/device proof.
+2026-11-02T15:42:29.4561440Z ##[group]Run actions/upload-artifact@v4
+2026-11-02T15:42:29.4561618Z with:
+2026-11-02T15:42:29.4561827Z   name: browser-evidence-ubuntu-latest-c84ff569566d9c2f569d3a8bf163f2b026902b4b
+2026-11-02T15:42:29.4562343Z   path: web_panel/frontend/test-tmp/*.png
+web_panel/frontend/test-tmp/*.html
+web_panel/frontend/test-tmp/spacer-browser/
+web_panel/frontend/*-mobile.png
+web_panel/frontend/*-desktop.png
+
+2026-11-02T15:42:29.4562779Z   if-no-files-found: ignore
+2026-11-02T15:42:29.4562920Z   retention-days: 7
+2026-11-02T15:42:29.4563043Z   compression-level: 6
+2026-11-02T15:42:29.4563169Z   overwrite: false
+2026-11-02T15:42:29.4563296Z   include-hidden-files: false
+2026-11-02T15:42:29.4563436Z env:
+2026-11-02T15:42:29.4563587Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:29.4563833Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:42:29.4564074Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:29.4564308Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:29.4564526Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:29.4564749Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:42:29.4564934Z ##[endgroup]
+2026-11-02T15:42:29.5638541Z (node:3691) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-02T15:42:29.5639554Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-02T15:42:29.5710772Z With the provided path, there will be 12 files uploaded
+2026-11-02T15:42:29.5719839Z Artifact name is valid!
+2026-11-02T15:42:29.5722784Z Root directory input is valid!
+2026-11-02T15:42:29.9035377Z Beginning upload of artifact content to blob storage
+2026-11-02T15:42:29.9600421Z (node:3691) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-02T15:42:30.4621373Z Uploaded bytes 1516717
+2026-11-02T15:42:30.5186839Z Finished uploading artifact content to blob storage!
+2026-11-02T15:42:30.5187503Z SHA256 digest of uploaded artifact zip is 8492d127471bde67d6e8e650ac12b9db45f7cfc0fe74534956d266ecca4860b9
+2026-11-02T15:42:30.5188201Z Finalizing artifact upload
+2026-11-02T15:42:31.0039681Z Artifact browser-evidence-ubuntu-latest-c84ff569566d9c2f569d3a8bf163f2b026902b4b.zip successfully finalized. Artifact ID 13157360349
+2026-11-02T15:42:31.0040772Z Artifact browser-evidence-ubuntu-latest-c84ff569566d9c2f569d3a8bf163f2b026902b4b has been successfully uploaded! Final size is 1516717 bytes. Artifact ID is 13157360349
+2026-11-02T15:42:31.0044883Z Artifact download URL: https://github.com/jsdfhasuh/emo_master/actions/runs/41474013532/artifacts/13157360349
+2026-11-02T15:42:31.0177360Z ##[group]Run python -m build --wheel
+2026-11-02T15:42:31.0177566Z [36;1mpython -m build --wheel[0m
+2026-11-02T15:42:31.0204094Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T15:42:31.0204293Z env:
+2026-11-02T15:42:31.0204457Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:31.0204710Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:42:31.0204957Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:31.0205200Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:31.0205424Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:31.0205654Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:42:31.0205845Z ##[endgroup]
+2026-11-02T15:42:31.0851602Z * Creating isolated environment: venv+pip...
+2026-11-02T15:42:31.0894654Z * Installing packages in isolated environment:
+2026-11-02T15:42:31.0895097Z   - setuptools>=68
+2026-11-02T15:42:31.8315225Z * Getting build dependencies for wheel...
+2026-11-02T15:42:32.1081501Z running egg_info
+2026-11-02T15:42:32.1087906Z writing backend/emo_master_web_panel.egg-info/PKG-INFO
+2026-11-02T15:42:32.1284328Z writing dependency_links to backend/emo_master_web_panel.egg-info/dependency_links.txt
+2026-11-02T15:42:32.1287140Z writing entry points to backend/emo_master_web_panel.egg-info/entry_points.txt
+2026-11-02T15:42:32.1292215Z writing requirements to backend/emo_master_web_panel.egg-info/requires.txt
+2026-11-02T15:42:32.1294875Z writing top-level names to backend/emo_master_web_panel.egg-info/top_level.txt
+2026-11-02T15:42:32.1334836Z reading manifest file 'backend/emo_master_web_panel.egg-info/SOURCES.txt'
+2026-11-02T15:42:32.1350203Z writing manifest file 'backend/emo_master_web_panel.egg-info/SOURCES.txt'
+2026-11-02T15:42:32.2677083Z * Installed build dependency versions:
+2026-11-02T15:42:32.2677365Z   - setuptools==84.2.1
+2026-11-02T15:42:32.3586904Z * Building wheel...
+2026-11-02T15:42:32.3587303Z running bdist_wheel
+2026-11-02T15:42:32.3609517Z running build
+2026-11-02T15:42:32.3609757Z running build_py
+2026-11-02T15:42:32.3617636Z creating build/lib/emo_web_panel
+2026-11-02T15:42:32.3619547Z copying backend/emo_web_panel/packages.py -> build/lib/emo_web_panel
+2026-11-02T15:42:32.3621434Z copying backend/emo_web_panel/config.py -> build/lib/emo_web_panel
+2026-11-02T15:42:32.3622577Z copying backend/emo_web_panel/services.py -> build/lib/emo_web_panel
+2026-11-02T15:42:32.3623704Z copying backend/emo_web_panel/main.py -> build/lib/emo_web_panel
+2026-11-02T15:42:32.3624830Z copying backend/emo_web_panel/runtime_client.py -> build/lib/emo_web_panel
+2026-11-02T15:42:32.3626004Z copying backend/emo_web_panel/registry.py -> build/lib/emo_web_panel
+2026-11-02T15:42:32.3627044Z copying backend/emo_web_panel/auth.py -> build/lib/emo_web_panel
+2026-11-02T15:42:32.3628159Z copying backend/emo_web_panel/resource_cache.py -> build/lib/emo_web_panel
+2026-11-02T15:42:32.3629073Z copying backend/emo_web_panel/fixture_runtime.py -> build/lib/emo_web_panel
+2026-11-02T15:42:32.3630314Z copying backend/emo_web_panel/mock_runtime.py -> build/lib/emo_web_panel
+2026-11-02T15:42:32.3631191Z copying backend/emo_web_panel/app.py -> build/lib/emo_web_panel
+2026-11-02T15:42:32.3632473Z copying backend/emo_web_panel/__init__.py -> build/lib/emo_web_panel
+2026-11-02T15:42:32.3634974Z running egg_info
+2026-11-02T15:42:32.3640924Z writing backend/emo_master_web_panel.egg-info/PKG-INFO
+2026-11-02T15:42:32.3677082Z writing dependency_links to backend/emo_master_web_panel.egg-info/dependency_links.txt
+2026-11-02T15:42:32.3682999Z writing entry points to backend/emo_master_web_panel.egg-info/entry_points.txt
+2026-11-02T15:42:32.3688928Z writing requirements to backend/emo_master_web_panel.egg-info/requires.txt
+2026-11-02T15:42:32.3691249Z writing top-level names to backend/emo_master_web_panel.egg-info/top_level.txt
+2026-11-02T15:42:32.3715591Z reading manifest file 'backend/emo_master_web_panel.egg-info/SOURCES.txt'
+2026-11-02T15:42:32.3730113Z writing manifest file 'backend/emo_master_web_panel.egg-info/SOURCES.txt'
+2026-11-02T15:42:32.4789542Z creating build/lib/emo_web_panel/static
+2026-11-02T15:42:32.4790223Z copying backend/emo_web_panel/static/index.html -> build/lib/emo_web_panel/static
+2026-11-02T15:42:32.4791249Z creating build/lib/emo_web_panel/static/assets
+2026-11-02T15:42:32.4792348Z copying backend/emo_web_panel/static/assets/index-982hYTwC.css -> build/lib/emo_web_panel/static/assets
+2026-11-02T15:42:32.4793863Z copying backend/emo_web_panel/static/assets/index-DQieDYVn.js -> build/lib/emo_web_panel/static/assets
+2026-11-02T15:42:32.4799821Z creating build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4800466Z copying backend/emo_web_panel/contract_data/fixtures/closed-result.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4801280Z copying backend/emo_web_panel/contract_data/fixtures/canonical-vectors.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4802125Z copying backend/emo_web_panel/contract_data/fixtures/terminal.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4802947Z copying backend/emo_web_panel/contract_data/fixtures/history-aggregate.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4803751Z copying backend/emo_web_panel/contract_data/fixtures/index.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4804569Z copying backend/emo_web_panel/contract_data/fixtures/preview-runtime.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4805439Z copying backend/emo_web_panel/contract_data/fixtures/history-image-missing.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4806319Z copying backend/emo_web_panel/contract_data/fixtures/ungrouped-aborted.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4807219Z copying backend/emo_web_panel/contract_data/fixtures/history-image-unsupported.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4808071Z copying backend/emo_web_panel/contract_data/fixtures/no-capture.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4808929Z copying backend/emo_web_panel/contract_data/fixtures/ungrouped-job-changed.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4809931Z copying backend/emo_web_panel/contract_data/fixtures/history-revision-changed.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4811082Z copying backend/emo_web_panel/contract_data/fixtures/ungrouped-start-accepted.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4811990Z copying backend/emo_web_panel/contract_data/fixtures/ungrouped-stop-accepted.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4812868Z copying backend/emo_web_panel/contract_data/fixtures/history-image-empty.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4813707Z copying backend/emo_web_panel/contract_data/fixtures/job-changed.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4814522Z copying backend/emo_web_panel/contract_data/fixtures/history-page.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4815351Z copying backend/emo_web_panel/contract_data/fixtures/ungrouped-running.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4816191Z copying backend/emo_web_panel/contract_data/fixtures/stop-accepted.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4817024Z copying backend/emo_web_panel/contract_data/fixtures/preview-fixtures.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4817856Z copying backend/emo_web_panel/contract_data/fixtures/start-unknown.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4818793Z copying backend/emo_web_panel/contract_data/fixtures/realtime.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4819733Z copying backend/emo_web_panel/contract_data/fixtures/history-image-available.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4820600Z copying backend/emo_web_panel/contract_data/fixtures/start-accepted.json -> build/lib/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4821316Z copying backend/emo_web_panel/contract_data/demo.png -> build/lib/emo_web_panel/contract_data
+2026-11-02T15:42:32.4843519Z installing to build/bdist.linux-x86_64/wheel
+2026-11-02T15:42:32.4843803Z running install
+2026-11-02T15:42:32.4874735Z running install_lib
+2026-11-02T15:42:32.4880759Z creating build/bdist.linux-x86_64/wheel
+2026-11-02T15:42:32.4882293Z creating build/bdist.linux-x86_64/wheel/emo_web_panel
+2026-11-02T15:42:32.4883102Z copying build/lib/emo_web_panel/packages.py -> build/bdist.linux-x86_64/wheel/./emo_web_panel
+2026-11-02T15:42:32.4884308Z copying build/lib/emo_web_panel/config.py -> build/bdist.linux-x86_64/wheel/./emo_web_panel
+2026-11-02T15:42:32.4885186Z copying build/lib/emo_web_panel/services.py -> build/bdist.linux-x86_64/wheel/./emo_web_panel
+2026-11-02T15:42:32.4886034Z copying build/lib/emo_web_panel/main.py -> build/bdist.linux-x86_64/wheel/./emo_web_panel
+2026-11-02T15:42:32.4886773Z copying build/lib/emo_web_panel/runtime_client.py -> build/bdist.linux-x86_64/wheel/./emo_web_panel
+2026-11-02T15:42:32.4887898Z creating build/bdist.linux-x86_64/wheel/emo_web_panel/static
+2026-11-02T15:42:32.4888894Z creating build/bdist.linux-x86_64/wheel/emo_web_panel/static/assets
+2026-11-02T15:42:32.4890032Z copying build/lib/emo_web_panel/static/assets/index-982hYTwC.css -> build/bdist.linux-x86_64/wheel/./emo_web_panel/static/assets
+2026-11-02T15:42:32.4890876Z copying build/lib/emo_web_panel/static/assets/index-DQieDYVn.js -> build/bdist.linux-x86_64/wheel/./emo_web_panel/static/assets
+2026-11-02T15:42:32.4892839Z copying build/lib/emo_web_panel/static/index.html -> build/bdist.linux-x86_64/wheel/./emo_web_panel/static
+2026-11-02T15:42:32.4893497Z copying build/lib/emo_web_panel/registry.py -> build/bdist.linux-x86_64/wheel/./emo_web_panel
+2026-11-02T15:42:32.4894242Z copying build/lib/emo_web_panel/auth.py -> build/bdist.linux-x86_64/wheel/./emo_web_panel
+2026-11-02T15:42:32.4894989Z copying build/lib/emo_web_panel/resource_cache.py -> build/bdist.linux-x86_64/wheel/./emo_web_panel
+2026-11-02T15:42:32.4895908Z creating build/bdist.linux-x86_64/wheel/emo_web_panel/contract_data
+2026-11-02T15:42:32.4896692Z copying build/lib/emo_web_panel/contract_data/demo.png -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data
+2026-11-02T15:42:32.4897718Z creating build/bdist.linux-x86_64/wheel/emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4898598Z copying build/lib/emo_web_panel/contract_data/fixtures/closed-result.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4899509Z copying build/lib/emo_web_panel/contract_data/fixtures/canonical-vectors.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4900304Z copying build/lib/emo_web_panel/contract_data/fixtures/terminal.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4901024Z copying build/lib/emo_web_panel/contract_data/fixtures/history-aggregate.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4901685Z copying build/lib/emo_web_panel/contract_data/fixtures/index.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4902419Z copying build/lib/emo_web_panel/contract_data/fixtures/preview-runtime.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4903103Z copying build/lib/emo_web_panel/contract_data/fixtures/history-image-missing.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4904124Z copying build/lib/emo_web_panel/contract_data/fixtures/ungrouped-aborted.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4905169Z copying build/lib/emo_web_panel/contract_data/fixtures/history-image-unsupported.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4906173Z copying build/lib/emo_web_panel/contract_data/fixtures/no-capture.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4907165Z copying build/lib/emo_web_panel/contract_data/fixtures/ungrouped-job-changed.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4908210Z copying build/lib/emo_web_panel/contract_data/fixtures/history-revision-changed.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4909364Z copying build/lib/emo_web_panel/contract_data/fixtures/ungrouped-start-accepted.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4910431Z copying build/lib/emo_web_panel/contract_data/fixtures/ungrouped-stop-accepted.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4911462Z copying build/lib/emo_web_panel/contract_data/fixtures/history-image-empty.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4912448Z copying build/lib/emo_web_panel/contract_data/fixtures/job-changed.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4913397Z copying build/lib/emo_web_panel/contract_data/fixtures/history-page.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4913997Z copying build/lib/emo_web_panel/contract_data/fixtures/ungrouped-running.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4919992Z copying build/lib/emo_web_panel/contract_data/fixtures/stop-accepted.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4920599Z copying build/lib/emo_web_panel/contract_data/fixtures/preview-fixtures.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4921212Z copying build/lib/emo_web_panel/contract_data/fixtures/start-unknown.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4921792Z copying build/lib/emo_web_panel/contract_data/fixtures/realtime.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4922588Z copying build/lib/emo_web_panel/contract_data/fixtures/history-image-available.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4923208Z copying build/lib/emo_web_panel/contract_data/fixtures/start-accepted.json -> build/bdist.linux-x86_64/wheel/./emo_web_panel/contract_data/fixtures
+2026-11-02T15:42:32.4923759Z copying build/lib/emo_web_panel/fixture_runtime.py -> build/bdist.linux-x86_64/wheel/./emo_web_panel
+2026-11-02T15:42:32.4924297Z copying build/lib/emo_web_panel/mock_runtime.py -> build/bdist.linux-x86_64/wheel/./emo_web_panel
+2026-11-02T15:42:32.4924677Z copying build/lib/emo_web_panel/app.py -> build/bdist.linux-x86_64/wheel/./emo_web_panel
+2026-11-02T15:42:32.4925055Z copying build/lib/emo_web_panel/__init__.py -> build/bdist.linux-x86_64/wheel/./emo_web_panel
+2026-11-02T15:42:32.4925322Z running install_egg_info
+2026-11-02T15:42:32.4925693Z Copying backend/emo_master_web_panel.egg-info to build/bdist.linux-x86_64/wheel/./emo_master_web_panel-0.1.0a1-py3.10.egg-info
+2026-11-02T15:42:32.4929633Z running install_scripts
+2026-11-02T15:42:32.4935983Z creating build/bdist.linux-x86_64/wheel/emo_master_web_panel-0.1.0a1.dist-info/WHEEL
+2026-11-02T15:42:32.4940032Z creating '/home/runner/work/emo_master/emo_master/web_panel/dist/.tmp-reop2iw2/emo_master_web_panel-0.1.0a1-py3-none-any.whl' and adding 'build/bdist.linux-x86_64/wheel' to it
+2026-11-02T15:42:32.4943227Z adding 'emo_web_panel/__init__.py'
+2026-11-02T15:42:32.4951607Z adding 'emo_web_panel/app.py'
+2026-11-02T15:42:32.4953581Z adding 'emo_web_panel/auth.py'
+2026-11-02T15:42:32.4955019Z adding 'emo_web_panel/config.py'
+2026-11-02T15:42:32.4957063Z adding 'emo_web_panel/fixture_runtime.py'
+2026-11-02T15:42:32.4959012Z adding 'emo_web_panel/main.py'
+2026-11-02T15:42:32.4961480Z adding 'emo_web_panel/mock_runtime.py'
+2026-11-02T15:42:32.4969263Z adding 'emo_web_panel/packages.py'
+2026-11-02T15:42:32.4972050Z adding 'emo_web_panel/registry.py'
+2026-11-02T15:42:32.4973930Z adding 'emo_web_panel/resource_cache.py'
+2026-11-02T15:42:32.4979863Z adding 'emo_web_panel/runtime_client.py'
+2026-11-02T15:42:32.4985498Z adding 'emo_web_panel/services.py'
+2026-11-02T15:42:32.4987043Z adding 'emo_web_panel/contract_data/demo.png'
+2026-11-02T15:42:32.4989019Z adding 'emo_web_panel/contract_data/fixtures/canonical-vectors.json'
+2026-11-02T15:42:32.4990337Z adding 'emo_web_panel/contract_data/fixtures/closed-result.json'
+2026-11-02T15:42:32.4991455Z adding 'emo_web_panel/contract_data/fixtures/history-aggregate.json'
+2026-11-02T15:42:32.4992601Z adding 'emo_web_panel/contract_data/fixtures/history-image-available.json'
+2026-11-02T15:42:32.4993552Z adding 'emo_web_panel/contract_data/fixtures/history-image-empty.json'
+2026-11-02T15:42:32.4994545Z adding 'emo_web_panel/contract_data/fixtures/history-image-missing.json'
+2026-11-02T15:42:32.4995539Z adding 'emo_web_panel/contract_data/fixtures/history-image-unsupported.json'
+2026-11-02T15:42:32.4996689Z adding 'emo_web_panel/contract_data/fixtures/history-page.json'
+2026-11-02T15:42:32.4997798Z adding 'emo_web_panel/contract_data/fixtures/history-revision-changed.json'
+2026-11-02T15:42:32.4998892Z adding 'emo_web_panel/contract_data/fixtures/index.json'
+2026-11-02T15:42:32.5000125Z adding 'emo_web_panel/contract_data/fixtures/job-changed.json'
+2026-11-02T15:42:32.5001154Z adding 'emo_web_panel/contract_data/fixtures/no-capture.json'
+2026-11-02T15:42:32.5002244Z adding 'emo_web_panel/contract_data/fixtures/preview-fixtures.json'
+2026-11-02T15:42:32.5003358Z adding 'emo_web_panel/contract_data/fixtures/preview-runtime.json'
+2026-11-02T15:42:32.5004520Z adding 'emo_web_panel/contract_data/fixtures/realtime.json'
+2026-11-02T15:42:32.5005574Z adding 'emo_web_panel/contract_data/fixtures/start-accepted.json'
+2026-11-02T15:42:32.5006626Z adding 'emo_web_panel/contract_data/fixtures/start-unknown.json'
+2026-11-02T15:42:32.5007649Z adding 'emo_web_panel/contract_data/fixtures/stop-accepted.json'
+2026-11-02T15:42:32.5008686Z adding 'emo_web_panel/contract_data/fixtures/terminal.json'
+2026-11-02T15:42:32.5009906Z adding 'emo_web_panel/contract_data/fixtures/ungrouped-aborted.json'
+2026-11-02T15:42:32.5010976Z adding 'emo_web_panel/contract_data/fixtures/ungrouped-job-changed.json'
+2026-11-02T15:42:32.5011967Z adding 'emo_web_panel/contract_data/fixtures/ungrouped-running.json'
+2026-11-02T15:42:32.5013042Z adding 'emo_web_panel/contract_data/fixtures/ungrouped-start-accepted.json'
+2026-11-02T15:42:32.5014037Z adding 'emo_web_panel/contract_data/fixtures/ungrouped-stop-accepted.json'
+2026-11-02T15:42:32.5015284Z adding 'emo_web_panel/static/index.html'
+2026-11-02T15:42:32.5017290Z adding 'emo_web_panel/static/assets/index-982hYTwC.css'
+2026-11-02T15:42:32.5078902Z adding 'emo_web_panel/static/assets/index-DQieDYVn.js'
+2026-11-02T15:42:32.5082266Z adding 'emo_master_web_panel-0.1.0a1.dist-info/METADATA'
+2026-11-02T15:42:32.5082925Z adding 'emo_master_web_panel-0.1.0a1.dist-info/WHEEL'
+2026-11-02T15:42:32.5083731Z adding 'emo_master_web_panel-0.1.0a1.dist-info/entry_points.txt'
+2026-11-02T15:42:32.5084523Z adding 'emo_master_web_panel-0.1.0a1.dist-info/top_level.txt'
+2026-11-02T15:42:32.5087085Z adding 'emo_master_web_panel-0.1.0a1.dist-info/RECORD'
+2026-11-02T15:42:32.5088539Z removing build/bdist.linux-x86_64/wheel
+2026-11-02T15:42:32.5361051Z Successfully built emo_master_web_panel-0.1.0a1-py3-none-any.whl
+2026-11-02T15:42:32.5970088Z ##[group]Run python - <<'PY'
+2026-11-02T15:42:32.5970310Z [36;1mpython - <<'PY'[0m
+2026-11-02T15:42:32.5970454Z [36;1mimport sys, zipfile[0m
+2026-11-02T15:42:32.5970611Z [36;1mfrom pathlib import Path[0m
+2026-11-02T15:42:32.5970770Z [36;1mimport emo_web_panel[0m
+2026-11-02T15:42:32.5970992Z [36;1massert 'PySide2' not in sys.modules and 'emo_master' not in sys.modules[0m
+2026-11-02T15:42:32.5971237Z [36;1mwheel=next(Path('dist').glob('*.whl'))[0m
+2026-11-02T15:42:32.5971427Z [36;1mwith zipfile.ZipFile(wheel) as z:[0m
+2026-11-02T15:42:32.5971640Z [36;1m    assert 'emo_web_panel/static/index.html' in z.namelist()[0m
+2026-11-02T15:42:32.5971856Z [36;1mPY[0m
+2026-11-02T15:42:32.5997490Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T15:42:32.5997684Z env:
+2026-11-02T15:42:32.5997850Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:32.5998095Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:42:32.5998360Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:32.5998580Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:32.5998801Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:32.5999029Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:42:32.5999302Z ##[endgroup]
+2026-11-02T15:42:32.8354607Z ##[group]Run python scripts/verify_wheel.py
+2026-11-02T15:42:32.8354836Z [36;1mpython scripts/verify_wheel.py[0m
+2026-11-02T15:42:32.8380441Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T15:42:32.8380658Z env:
+2026-11-02T15:42:32.8380821Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:32.8381089Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:42:32.8381336Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:32.8381561Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:32.8381783Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:32.8382003Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:42:32.8382196Z ##[endgroup]
+2026-11-02T15:42:35.6755858Z Processing /home/runner/work/emo_master/emo_master/web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.3.0-py3-none-any.whl
+2026-11-02T15:42:35.6817364Z Processing /home/runner/work/emo_master/emo_master/web_panel/dist/emo_master_web_panel-0.1.0a1-py3-none-any.whl
+2026-11-02T15:42:36.5424627Z Collecting grpcio==1.78.0
+2026-11-02T15:42:36.5956623Z   Downloading grpcio-1.78.0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (6.7 MB)
+2026-11-02T15:42:36.7134650Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.7/6.7 MB 58.0 MB/s eta 0:00:00
+2026-11-02T15:42:36.8915899Z Collecting pydantic>=2.6
+2026-11-02T15:42:36.9030685Z   Downloading pydantic-2.14.2-py3-none-any.whl (490 kB)
+2026-11-02T15:42:36.9073622Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 490.4/490.4 kB 182.4 MB/s eta 0:00:00
+2026-11-02T15:42:37.1354051Z Collecting protobuf==6.33.6
+2026-11-02T15:42:37.1461608Z   Downloading protobuf-6.33.6-cp39-abi3-manylinux2014_x86_64.whl (323 kB)
+2026-11-02T15:42:37.1501768Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 323.4/323.4 kB 135.8 MB/s eta 0:00:00
+2026-11-02T15:42:37.1791602Z Collecting typing-extensions~=4.12
+2026-11-02T15:42:37.1897600Z   Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+2026-11-02T15:42:37.1927614Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 45.6/45.6 kB 25.3 MB/s eta 0:00:00
+2026-11-02T15:42:37.4984506Z Collecting Pillow<13,>=10
+2026-11-02T15:42:37.5089832Z   Downloading pillow-12.3.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (6.9 MB)
+2026-11-02T15:42:37.5689934Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.9/6.9 MB 119.2 MB/s eta 0:00:00
+2026-11-02T15:42:37.6182559Z Collecting uvicorn<1,>=0.30
+2026-11-02T15:42:37.6294038Z   Downloading uvicorn-0.54.0-py3-none-any.whl (87 kB)
+2026-11-02T15:42:37.6345920Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 87.4/87.4 kB 26.2 MB/s eta 0:00:00
+2026-11-02T15:42:37.6641026Z Collecting tzdata>=2024.1
+2026-11-02T15:42:37.6758640Z   Downloading tzdata-2026.6-py2.py3-none-any.whl (348 kB)
+2026-11-02T15:42:37.6840893Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 348.2/348.2 kB 63.1 MB/s eta 0:00:00
+2026-11-02T15:42:37.8973084Z Collecting websockets<17,>=13
+2026-11-02T15:42:37.9086049Z   Downloading websockets-16.1.1-cp310-cp310-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (186 kB)
+2026-11-02T15:42:37.9119506Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 186.0/186.0 kB 102.4 MB/s eta 0:00:00
+2026-11-02T15:42:37.9998039Z Collecting fastapi<1,>=0.115
+2026-11-02T15:42:38.0103714Z   Downloading fastapi-0.162.0-py3-none-any.whl (148 kB)
+2026-11-02T15:42:38.0138166Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 148.9/148.9 kB 80.4 MB/s eta 0:00:00
+2026-11-02T15:42:38.1270530Z Collecting starlette>=0.46.0
+2026-11-02T15:42:38.1374610Z   Downloading starlette-1.7.0-py3-none-any.whl (78 kB)
+2026-11-02T15:42:38.1404276Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 79.0/79.0 kB 48.1 MB/s eta 0:00:00
+2026-11-02T15:42:38.1574834Z Collecting annotated-doc>=0.0.2
+2026-11-02T15:42:38.1685099Z   Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+2026-11-02T15:42:38.2026867Z Collecting opentelemetry-api>=1.44.0
+2026-11-02T15:42:38.2130371Z   Downloading opentelemetry_api-1.45.2-py3-none-any.whl (60 kB)
+2026-11-02T15:42:38.2158592Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 60.3/60.3 kB 38.0 MB/s eta 0:00:00
+2026-11-02T15:42:38.2344130Z Collecting typing-inspection>=0.4.2
+2026-11-02T15:42:38.2446310Z   Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+2026-11-02T15:42:38.2808259Z Collecting annotated-types>=0.6.0
+2026-11-02T15:42:38.2910522Z   Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+2026-11-02T15:42:39.4604728Z Collecting pydantic-core==2.50.2
+2026-11-02T15:42:39.4726140Z   Downloading pydantic_core-2.50.2-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (2.2 MB)
+2026-11-02T15:42:39.7017114Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 9.8 MB/s eta 0:00:00
+2026-11-02T15:42:39.8750856Z Collecting h11>=0.8
+2026-11-02T15:42:39.8859885Z   Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+2026-11-02T15:42:40.2534992Z Collecting click>=7.0
+2026-11-02T15:42:40.2638901Z   Downloading click-8.5.0-py3-none-any.whl (125 kB)
+2026-11-02T15:42:40.4377859Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 125.3/125.3 kB 668.7 kB/s eta 0:00:00
+2026-11-02T15:42:40.4828946Z Collecting anyio<5,>=4.0.0
+2026-11-02T15:42:40.4933243Z   Downloading anyio-4.16.0-py3-none-any.whl (134 kB)
+2026-11-02T15:42:40.4961713Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 134.5/134.5 kB 90.6 MB/s eta 0:00:00
+2026-11-02T15:42:40.5290424Z Collecting exceptiongroup>=1.0.2
+2026-11-02T15:42:40.5387957Z   Downloading exceptiongroup-1.3.1-py3-none-any.whl (16 kB)
+2026-11-02T15:42:40.5614770Z Collecting idna>=2.8
+2026-11-02T15:42:40.5713106Z   Downloading idna-3.20-py3-none-any.whl (69 kB)
+2026-11-02T15:42:40.5737101Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 69.6/69.6 kB 53.3 MB/s eta 0:00:00
+2026-11-02T15:42:40.6648620Z Installing collected packages: websockets, tzdata, typing-extensions, protobuf, Pillow, idna, h11, click, annotated-types, annotated-doc, uvicorn, typing-inspection, pydantic-core, opentelemetry-api, grpcio, exceptiongroup, pydantic, anyio, starlette, emo-panel-protocol, fastapi, emo-master-web-panel
+2026-11-02T15:42:41.7643020Z Successfully installed Pillow-12.3.0 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.16.0 click-8.5.0 emo-master-web-panel-0.1.0a1 emo-panel-protocol-1.3.0 exceptiongroup-1.3.1 fastapi-0.162.0 grpcio-1.78.0 h11-0.16.0 idna-3.20 opentelemetry-api-1.45.2 protobuf-6.33.6 pydantic-2.14.2 pydantic-core-2.50.2 starlette-1.7.0 typing-extensions-4.16.0 typing-inspection-0.4.4 tzdata-2026.6 uvicorn-0.54.0 websockets-16.1.1
+2026-11-02T15:42:41.8455786Z 
+2026-11-02T15:42:41.8456502Z [notice] A new release of pip is available: 23.0.1 -> 26.2.2
+2026-11-02T15:42:41.8457030Z [notice] To update, run: /tmp/emo-web-install-s0vvqcup/venv/bin/python -m pip install --upgrade pip
+2026-11-02T15:42:42.8013191Z PASS independent wheel install, SDK1.3.0, five embedded ordinary-Job fixtures including ABORTED, exact empty Stop presence, packaged UI, no Qt/Runtime/model imports
+2026-11-02T15:42:42.8815970Z usage: main.py [-h] [--data-dir DATA_DIR] {create-user,serve,preview} ...
+2026-11-02T15:42:42.8816318Z 
+2026-11-02T15:42:42.8816462Z Independent Web operator panel
+2026-11-02T15:42:42.8816633Z 
+2026-11-02T15:42:42.8816740Z positional arguments:
+2026-11-02T15:42:42.8816997Z   {create-user,serve,preview}
+2026-11-02T15:42:42.8817146Z 
+2026-11-02T15:42:42.8817206Z options:
+2026-11-02T15:42:42.8817383Z   -h, --help            show this help message and exit
+2026-11-02T15:42:42.8817577Z   --data-dir DATA_DIR
+2026-11-02T15:42:42.9774363Z ##[group]Run actions/upload-artifact@v4
+2026-11-02T15:42:42.9774541Z with:
+2026-11-02T15:42:42.9774801Z   name: web-panel-development-preview-ubuntu-latest-c84ff569566d9c2f569d3a8bf163f2b026902b4b
+2026-11-02T15:42:42.9775292Z   path: web_panel/dist/*.whl
+web_panel/contracts/panel-contract-v1/python/*.whl
+web_panel/docs/
+web_panel/README.md
+web_panel/dev/fixtures/demo.emoweb
+
+2026-11-02T15:42:42.9775649Z   retention-days: 7
+2026-11-02T15:42:42.9775784Z   if-no-files-found: warn
+2026-11-02T15:42:42.9775929Z   compression-level: 6
+2026-11-02T15:42:42.9776064Z   overwrite: false
+2026-11-02T15:42:42.9776197Z   include-hidden-files: false
+2026-11-02T15:42:42.9776346Z env:
+2026-11-02T15:42:42.9776506Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:42.9776905Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-02T15:42:42.9777170Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:42.9777420Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:42.9777644Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-02T15:42:42.9777872Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-02T15:42:42.9778069Z ##[endgroup]
+2026-11-02T15:42:43.0959531Z (node:3807) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-02T15:42:43.0960004Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-02T15:42:43.1045424Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-11-02T15:42:43.1047222Z The least common ancestor is /home/runner/work/emo_master/emo_master/web_panel. This will be the root directory of the artifact
+2026-11-02T15:42:43.1047896Z With the provided path, there will be 11 files uploaded
+2026-11-02T15:42:43.1050612Z Artifact name is valid!
+2026-11-02T15:42:43.1051254Z Root directory input is valid!
+2026-11-02T15:42:43.4466737Z Beginning upload of artifact content to blob storage
+2026-11-02T15:42:43.4724618Z (node:3807) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-02T15:42:43.8056197Z Uploaded bytes 203944
+2026-11-02T15:42:43.8637313Z Finished uploading artifact content to blob storage!
+2026-11-02T15:42:43.8638271Z SHA256 digest of uploaded artifact zip is a7a7c48a7642e158f12c3495af55860675e991068b26a2bdf6e09a4ca316f03f
+2026-11-02T15:42:43.8639558Z Finalizing artifact upload
+2026-11-02T15:42:44.3788274Z Artifact web-panel-development-preview-ubuntu-latest-c84ff569566d9c2f569d3a8bf163f2b026902b4b.zip successfully finalized. Artifact ID 13155609689
+2026-11-02T15:42:44.3789274Z Artifact web-panel-development-preview-ubuntu-latest-c84ff569566d9c2f569d3a8bf163f2b026902b4b has been successfully uploaded! Final size is 203944 bytes. Artifact ID is 13155609689
+2026-11-02T15:42:44.3793821Z Artifact download URL: https://github.com/jsdfhasuh/emo_master/actions/runs/41474013532/artifacts/13155609689
+2026-11-02T15:42:44.3961234Z Post job cleanup.
+2026-11-02T15:42:44.4757058Z (node:3819) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-02T15:42:44.4757664Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-02T15:42:44.4927809Z Post job cleanup.
+2026-11-02T15:42:44.5806556Z (node:3827) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-02T15:42:44.5807311Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-02T15:42:44.5955513Z Post job cleanup.
+2026-11-02T15:42:44.6566699Z [command]/usr/bin/git version
+2026-11-02T15:42:44.6605247Z git version 2.56.0
+2026-11-02T15:42:44.6632367Z Temporarily overriding HOME='/home/runner/work/_temp/6239da3e-c4fa-4b61-8dec-9ed14a1507c6' before making global git config changes
+2026-11-02T15:42:44.6633275Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-02T15:42:44.6635581Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/emo_master/emo_master
+2026-11-02T15:42:44.6673627Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-02T15:42:44.6708959Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-02T15:42:44.7000410Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-02T15:42:44.7034908Z http.https://github.com/.extraheader
+2026-11-02T15:42:44.7051885Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-02T15:42:44.7100521Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-02T15:42:44.7342305Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-02T15:42:44.7371114Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-02T15:42:44.7739645Z Cleaning up orphan processes
+2026-11-02T15:42:44.8000716Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

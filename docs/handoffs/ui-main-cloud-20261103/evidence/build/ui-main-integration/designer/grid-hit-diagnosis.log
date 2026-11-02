@@ -1,0 +1,66 @@
+GRID-COORD PySide2.QtCore.QRect(9, 969, 690, 64) PySide2.QtCore.QSize(708, 1042) PySide2.QtCore.QRect(0, 0, 708, 1042) 1 [PySide2.QtCore.QRect(9, 9, 690, 64), PySide2.QtCore.QRect(9, 905, 690, 64), PySide2.QtCore.QRect(9, 969, 690, 64)]
+HIT-COORD (16, 2) [PySide2.QtCore.QRect(9, 9, 690, 64), PySide2.QtCore.QRect(9, 905, 690, 64), PySide2.QtCore.QRect(9, 969, 690, 64)]
+FGRID-COORD PySide2.QtCore.QRect(9, 969, 750, 64) PySide2.QtCore.QSize(768, 1042) PySide2.QtCore.QRect(0, 0, 768, 1042) 1 [PySide2.QtCore.QRect(9, 9, 750, 64), PySide2.QtCore.QRect(9, 905, 750, 64), PySide2.QtCore.QRect(9, 969, 750, 64)]
+HIT-COORD (16, 2) [PySide2.QtCore.QRect(9, 9, 750, 64), PySide2.QtCore.QRect(9, 905, 750, 64), PySide2.QtCore.QRect(9, 969, 750, 64)]
+F
+================================== FAILURES ===================================
+___________ testLongGridKeepsAnEmptyRowForNativeAppend[whole-page] ____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x251cb0d4b20) at 0x00000251CCD25B40>
+terminal = False
+
+    @pytest.mark.parametrize('terminal', [False, True], ids=['whole-page', 'fixed-terminal'])
+    def testLongGridKeepsAnEmptyRowForNativeAppend(designer, terminal):  # noqa: F811
+        from test_user_path import drop
+    
+        coordinator, editor, key = setupGridPage(designer, 'image')
+        coordinator.session.editPresentation(lambda p: setattr(
+            _component(p, editor.pageId, key).layout, 'rowSpan', 15))
+        editor.refresh()
+        editor.canvas.setPreviewSize(768 if terminal else 0, 640 if terminal else 0)
+        settle()
+        before, history = coordinator.session.payload(), len(coordinator.session._undo)
+        body = editor.renderer.pages[editor.pageId].widget()
+        empty = body.layout().cellRect(15, 0)
+        print('GRID-COORD', empty, body.size(), body.layout().geometry(), body.layout().columnCount(), [body.layout().cellRect(i, 0) for i in (0, 14, 15)], flush=True)
+        assert empty.height() >= 64
+        print('HIT-COORD', cellAt(body, 2, empty.center()), [body.layout().cellRect(i, 0) for i in (0, 14, 15)], flush=True)
+>       assert cellAt(body, 2, empty.center()) == (15, 0)
+E       assert (16, 2) == (15, 0)
+E         
+E         At index 0 diff: 16 != 15
+E         Use -v to get more diff
+
+tests\ui\page_designer\test_grid_geometry.py:73: AssertionError
+_________ testLongGridKeepsAnEmptyRowForNativeAppend[fixed-terminal] __________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x251cdb6d870) at 0x00000251CCD03680>
+terminal = True
+
+    @pytest.mark.parametrize('terminal', [False, True], ids=['whole-page', 'fixed-terminal'])
+    def testLongGridKeepsAnEmptyRowForNativeAppend(designer, terminal):  # noqa: F811
+        from test_user_path import drop
+    
+        coordinator, editor, key = setupGridPage(designer, 'image')
+        coordinator.session.editPresentation(lambda p: setattr(
+            _component(p, editor.pageId, key).layout, 'rowSpan', 15))
+        editor.refresh()
+        editor.canvas.setPreviewSize(768 if terminal else 0, 640 if terminal else 0)
+        settle()
+        before, history = coordinator.session.payload(), len(coordinator.session._undo)
+        body = editor.renderer.pages[editor.pageId].widget()
+        empty = body.layout().cellRect(15, 0)
+        print('GRID-COORD', empty, body.size(), body.layout().geometry(), body.layout().columnCount(), [body.layout().cellRect(i, 0) for i in (0, 14, 15)], flush=True)
+        assert empty.height() >= 64
+        print('HIT-COORD', cellAt(body, 2, empty.center()), [body.layout().cellRect(i, 0) for i in (0, 14, 15)], flush=True)
+>       assert cellAt(body, 2, empty.center()) == (15, 0)
+E       assert (16, 2) == (15, 0)
+E         
+E         At index 0 diff: 16 != 15
+E         Use -v to get more diff
+
+tests\ui\page_designer\test_grid_geometry.py:73: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/ui/page_designer/test_grid_geometry.py::testLongGridKeepsAnEmptyRowForNativeAppend[whole-page]
+FAILED tests/ui/page_designer/test_grid_geometry.py::testLongGridKeepsAnEmptyRowForNativeAppend[fixed-terminal]
+2 failed, 15 deselected in 2.21s

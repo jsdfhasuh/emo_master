@@ -1,0 +1,14 @@
+[ci-check] tests/ui/operator_view/test_run_view_selection.py::testViewingConcurrentRemoteRunKeepsExplicitStopSelection (call)
+tests/ui/operator_view/test_run_view_selection.py:76: in testViewingConcurrentRemoteRunKeepsExplicitStopSelection
+    third = remoteStart(window, channel)
+tests/ui/operator_view/test_run_view_selection.py:33: in remoteStart
+    assert result.ok, result.message
+E   AssertionError: display Job quota exceeded; explicitly release a terminal Job
+E   assert False
+E    +  where False = message: "display Job quota exceeded; explicitly release a terminal Job"\nstatus: "REJECTED"\nruntime_instance_id: "a90d2cb1-b7df-48b6-bb9d-7d7ca6d2e625"\nstart_request_id: "ed1ab4b320e54406bb66259ea8678ffe"\nlegacy_snapshot_policy: "NONE"\n.ok
+--- Captured stderr call ---
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+

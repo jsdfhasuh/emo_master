@@ -1,0 +1,45 @@
+[ci-check] tests/p0/test_continuous.py::test_long_lived_runner_to_two_network_image_consumers (call)
+tests\p0\test_continuous.py:7: in test_long_lived_runner_to_two_network_image_consumers
+    stdout, _ = supervised("continuous", timeout=60)
+prototypes\runtime_pages_p0\watchdog.py:88: in supervised
+    raise AssertionError(f"{name}: exit={process.returncode}\n{stdout}\n{stderr}")
+E   AssertionError: continuous: exit=1
+E   
+E   Traceback (most recent call last):
+E     File "C:\hostedtoolcache\windows\Python\3.10.11\x64\lib\runpy.py", line 196, in _run_module_as_main
+E       return _run_code(code, main_globals, None,
+E     File "C:\hostedtoolcache\windows\Python\3.10.11\x64\lib\runpy.py", line 86, in _run_code
+E       exec(code, run_globals)
+E     File "D:\a\emo_master\emo_master\prototypes\runtime_pages_p0\scenarios.py", line 354, in <module>
+E       print(json.dumps(run(sys.argv[1], json.loads(sys.argv[2]) if len(sys.argv) > 2 else {}), ensure_ascii=True))
+E     File "D:\a\emo_master\emo_master\prototypes\runtime_pages_p0\scenarios.py", line 338, in run
+E       report = window(root / "window", service, image_path, hashlib.sha256(image).hexdigest(), count=40)
+E     File "D:\a\emo_master\emo_master\prototypes\runtime_pages_p0\continuous.py", line 185, in window
+E       exporters=[resources(s[0].pid) for s in pipeline.exporter.slots]))
+E     File "D:\a\emo_master\emo_master\prototypes\runtime_pages_p0\continuous.py", line 185, in <listcomp>
+E       exporters=[resources(s[0].pid) for s in pipeline.exporter.slots]))
+E     File "C:\hostedtoolcache\windows\Python\3.10.11\x64\lib\multiprocessing\process.py", line 239, in ident
+E       self._check_closed()
+E     File "C:\hostedtoolcache\windows\Python\3.10.11\x64\lib\multiprocessing\process.py", line 101, in _check_closed
+E       raise ValueError("process object is closed")
+E   ValueError: process object is closed
+[ci-check] tests/runtime/test_release_host.py::testDuplicateDirectoryAndPortDoNotStopExistingHost (call)
+tests\runtime\test_release_host.py:95: in testDuplicateDirectoryAndPortDoNotStopExistingHost
+    with pytest.raises(RuntimeError, match='aio startup failed'):
+E   AssertionError: Regex pattern did not match.
+E     Expected regex: 'aio startup failed'
+E     Actual message: 'Runtime 监听 127.0.0.1:54006 启动失败：Failed to bind to address 127.0.0.1:54006; set GRPC_VERBOSITY=debug environment variable to see detailed error message.'
+[ci-check] tests/runtime/test_stop_all_dispatch.py::testStopAllDispatchesBeforeWaitingAndPreservesIndependentErrors (call)
+tests\runtime\test_stop_all_dispatch.py:28: in testStopAllDispatchesBeforeWaitingAndPreservesIndependentErrors
+    rows = owner.stopAll()
+src\emo_master\apps\operator_runtime\controller.py:466: in stopAll
+    if session.startUncertain:
+E   AttributeError: 'types.SimpleNamespace' object has no attribute 'startUncertain'
+[ci-check] tests/ui/page_designer/test_canvas_viewport.py::testManualViewSurvivesRefreshAndFitRestoresAutomaticMode (call)
+tests\ui\page_designer\test_canvas_viewport.py:183: in testManualViewSurvivesRefreshAndFitRestoresAutomaticMode
+    assert (canvas._viewportCenter() - center).manhattanLength() <= 2
+E   assert 2.6666666666666288 <= 2
+E    +  where 2.6666666666666288 = <built-in method manhattanLength of PySide2.QtCore.QPointF object at 0x000002D3CBD6D0C0>()
+E    +    where <built-in method manhattanLength of PySide2.QtCore.QPointF object at 0x000002D3CBD6D0C0> = (PySide2.QtCore.QPointF(856.000000, 368.666667) - PySide2.QtCore.QPointF(857.333333, 370.000000)).manhattanLength
+E    +      where PySide2.QtCore.QPointF(856.000000, 368.666667) = _viewportCenter()
+E    +        where _viewportCenter = <emo_master.apps.designer.page_designer.page_canvas.PageCanvas(0x2d3d02b2a90, name="pageCanvas") at 0x000002D3CAF734C0>._viewportCenter

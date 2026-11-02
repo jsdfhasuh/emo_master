@@ -1,0 +1,13 @@
+........................................................................ [ 32%]
+.....................................s.................................. [ 65%]
+...................................F.................................... [ 97%]
+.....                                                                    [100%]
+================================== FAILURES ===================================
+____ testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[embedded] _____
+tests\designer\test_runtime_validation_feedback.py:247: in testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject
+    assert len(messages) == 1 and 'input file not found' in messages[0]['detail']
+E   assert (0 == 1)
+E    +  where 0 = len([])
+=========================== short test summary info ===========================
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[embedded]
+1 failed, 219 passed, 1 skipped in 101.73s (0:01:41)

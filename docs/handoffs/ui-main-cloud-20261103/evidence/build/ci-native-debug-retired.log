@@ -1,0 +1,9 @@
+...................................                                      [100%]
+============================== warnings summary ===============================
+tests/designer/test_operator_debug_window.py::testManagedPlcDiagnosticUsesCurrentReadControls[binary]
+tests/designer/test_operator_debug_window.py::testManagedPlcDiagnosticUsesCurrentReadControls[ascii]
+  tests\designer\test_operator_debug_window.py:133: PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')
+    @pytest.mark.parametrize("encoding", ["binary", "ascii"])
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+35 passed, 2 warnings in 20.82s

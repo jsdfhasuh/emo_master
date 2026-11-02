@@ -1,0 +1,129 @@
+.FF...................................F                                  [100%]
+================================== FAILURES ===================================
+___________ testLongGridKeepsAnEmptyRowForNativeAppend[whole-page] ____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x16283234580) at 0x000001628156C380>
+terminal = False
+
+    @pytest.mark.parametrize('terminal', [False, True], ids=['whole-page', 'fixed-terminal'])
+    def testLongGridKeepsAnEmptyRowForNativeAppend(designer, terminal):  # noqa: F811
+        from test_user_path import drop
+    
+        coordinator, editor, key = setupGridPage(designer, 'image')
+        coordinator.session.editPresentation(lambda p: setattr(
+            _component(p, editor.pageId, key).layout, 'rowSpan', 15))
+        editor.refresh()
+        editor.canvas.setPreviewSize(768 if terminal else 0, 640 if terminal else 0)
+        settle()
+        before, history = coordinator.session.payload(), len(coordinator.session._undo)
+        body = editor.renderer.pages[editor.pageId].widget()
+        empty = body.layout().cellRect(15, 0)
+>       assert empty.height() >= 64
+E       assert 0 >= 64
+E        +  where 0 = <built-in method height of PySide2.QtCore.QRect object at 0x0000016283B744C0>()
+E        +    where <built-in method height of PySide2.QtCore.QRect object at 0x0000016283B744C0> = PySide2.QtCore.QRect(9, 969, 690, 0).height
+
+tests\ui\page_designer\test_grid_geometry.py:70: AssertionError
+_________ testLongGridKeepsAnEmptyRowForNativeAppend[fixed-terminal] __________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x162829a1760) at 0x00000162839F36C0>
+terminal = True
+
+    @pytest.mark.parametrize('terminal', [False, True], ids=['whole-page', 'fixed-terminal'])
+    def testLongGridKeepsAnEmptyRowForNativeAppend(designer, terminal):  # noqa: F811
+        from test_user_path import drop
+    
+        coordinator, editor, key = setupGridPage(designer, 'image')
+        coordinator.session.editPresentation(lambda p: setattr(
+            _component(p, editor.pageId, key).layout, 'rowSpan', 15))
+        editor.refresh()
+        editor.canvas.setPreviewSize(768 if terminal else 0, 640 if terminal else 0)
+        settle()
+        before, history = coordinator.session.payload(), len(coordinator.session._undo)
+        body = editor.renderer.pages[editor.pageId].widget()
+        empty = body.layout().cellRect(15, 0)
+>       assert empty.height() >= 64
+E       assert 0 >= 64
+E        +  where 0 = <built-in method height of PySide2.QtCore.QRect object at 0x0000016283BFB240>()
+E        +    where <built-in method height of PySide2.QtCore.QRect object at 0x0000016283BFB240> = PySide2.QtCore.QRect(9, 969, 750, 0).height
+
+tests\ui\page_designer\test_grid_geometry.py:70: AssertionError
+________________ testNativePageEditingAndLegacyPreviewBackend _________________
+
+qtApp = <PySide2.QtWidgets.QApplication(0x162807552a0) at 0x00000162823BBE70>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4134/testNativePageEditingAndLegacy0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000016285AAE230>
+
+    def testNativePageEditingAndLegacyPreviewBackend(qtApp, tmp_path, monkeypatch):
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Yes)
+        out = Path(os.environ['P4_SCREEN_DIR']) if os.environ.get('P4_SCREEN_DIR') else None
+        records = {'platform': QApplication.platformName(), 'steps': [], 'results': [], 'incremental_reload_ms': []}
+        def shot(name):
+            QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+            QApplication.processEvents()
+            if out:
+                assert window.grab().save(str(out/(name+'.png')))
+            records['steps'].append(name)
+        root = tmp_path/'old-project'
+        root.mkdir()
+        runtime = RuntimeService(dbPath=tmp_path/'runtime.sqlite3', workspaceRoot=tmp_path/'jobs')
+        client = RuntimeClient(runtime)
+        doc = sampleProject(root)
+        raw = doc.model_dump()
+        raw['schemaVersion'] = '2.1'
+        raw.pop('presentation')
+        raw.pop('resources')
+        for node in raw['workflows']['main']['nodes']:
+            manifest = runtime.pluginScanResult.activeOperators.get(node.get('operatorId'))
+            if manifest:
+                for key in ('inputPorts', 'outputPorts'):
+                    node[key] = {k: normalizePortType(v) for k, v in getattr(manifest.manifest, key).items()}
+        raw['workflows']['main']['nodes'][1]['params']['imagePath'] = str(root/'input.png')
+        saveProject(root, raw)
+        window = MainWindow(client)
+        window.resize(1500, 980)
+        preview = window.pageCoordinator.preview
+        try:
+            assert window.loadProjectDirectory(str(root))
+            window.show()
+            waitFor(lambda: window.operatorCatalogController.state == 'ready')
+            assert window.saveProjectToDirectory(str(root))
+            assert json.loads((root/'project.json').read_text())['schemaVersion'] == '2.1'
+            window.pageCoordinator.chrome.workspaceActions[1].trigger()
+            editor = window.pageCoordinator.editor
+            editor.floatingToolbox.setExpanded(True)
+            editor.floatingProperties.setExpanded(True)
+            monkeypatch.setattr(QInputDialog, 'getText', lambda *a, **k: ('运行总览', True))
+            QTest.mouseClick(editor.pageTabs._addButton, Qt.LeftButton)
+            overview = editor.pageId
+            image = add(editor, 'image')
+            shot('01-component-drop')
+            number = add(editor, 'number')
+>           text = add(editor, 'text')
+
+tests\ui\page_designer\test_user_path.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+editor = <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x16284cb2a40) at 0x00000162856CD680>
+kind = 'text'
+
+    def add(editor, kind):
+        body = editor.renderer.pages[editor.pageId].widget()
+        body.layout().activate()
+        row = max((c.layout.row + c.layout.rowSpan for c in editor.store.snapshot().pages[editor.pageId].components), default=0)
+        point = body.layout().cellRect(row, 0).center()
+>       assert drop(body, {'kind': kind}, point), editor.message.text()
+E       AssertionError: 1 validation error for ProjectDocument
+E         presentation
+E           Value error, components overlap [type=value_error, input_value={'schemaVersion': '1.0', ... 'resultScopeIds': []}}}, input_type=dict]
+E             For further information visit https://errors.pydantic.dev/2.13/v/value_error
+E       assert False
+E        +  where False = drop(<PySide2.QtWidgets.QWidget(0x162850edfb0) at 0x0000016287067F80>, {'kind': 'text'}, PySide2.QtCore.QPoint(353, 278))
+
+tests\ui\page_designer\test_user_path.py:55: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/ui/page_designer/test_grid_geometry.py::testLongGridKeepsAnEmptyRowForNativeAppend[whole-page]
+FAILED tests/ui/page_designer/test_grid_geometry.py::testLongGridKeepsAnEmptyRowForNativeAppend[fixed-terminal]
+FAILED tests/ui/page_designer/test_user_path.py::testNativePageEditingAndLegacyPreviewBackend
+3 failed, 36 passed in 16.19s

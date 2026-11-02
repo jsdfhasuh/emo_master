@@ -1,0 +1,45 @@
+{
+  "verification": "Windows local integration worktree",
+  "head": "c2be5767cd796ff26821638b1863488ebaa115b8",
+  "sdkVersion": "1.3.0",
+  "backend": {
+    "skipped": 2,
+    "passed": 148,
+    "log": "backend-tests.log",
+    "total": 150
+  },
+  "frontend": {
+    "typescriptAndProductionBuild": "PASS",
+    "buildLog": "frontend-build.log",
+    "passed": 63,
+    "testLog": "frontend-tests.log"
+  },
+  "browser": {
+    "spacersAndExpandedCanvasCases": 14,
+    "officialPreviewCli": "PASS",
+    "productRuntime": "PASS",
+    "fixture": "PASS",
+    "catalogRefresh": "PASS",
+    "executable": "C:/Program Files/Google/Chrome/Application/chrome.exe",
+    "fullMockApplication": "PASS"
+  },
+  "productRuntime": {
+    "log": "product-runtime.log",
+    "browserLog": "product-browser.log",
+    "hardware": false,
+    "skipped": 0,
+    "tests": 4,
+    "interpreter": "C:/Users/jsdfhasuh/.conda/envs/emo_master/python.exe"
+  },
+  "distribution": {
+    "importsQtOrRuntime": false,
+    "log": "wheel-install.log",
+    "isolatedInstall": "PASS",
+    "sdkVersion": "1.3.0",
+    "build": "PASS"
+  },
+  "manifestAndDeliveredBytes": "PASS via backend test_contract_manifest",
+  "cloudCi": "NOT_RUN",
+  "physicalDevices": "NOT_RUN",
+  "deployment": "NOT_RUN"
+}

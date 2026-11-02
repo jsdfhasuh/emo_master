@@ -1,0 +1,144 @@
+{
+  "recordedAt": "2026-11-02T03:47:47.309731+00:00",
+  "designer": {
+    "worktree": "D:\\jsdfhasuh\\documents\\my_project\\emo_master_designer",
+    "branch": "codex/designer-resize-zoom-fix",
+    "head": "8df8599fc026c424a49e87cc53fb45f6b371f16f",
+    "sourceDirty": true,
+    "changedSourceSha256": {
+      "packages/emo_panel_protocol/pyproject.toml": "5b05e180b8f5163cf8d8eefefe18ccb6e96f7614c27ee34fc6d1890b1e7a69ab",
+      "scripts/build_panel_contract.py": "b8990131b8e5a9d28be4e369408814622d0ddfb7ce1b3333d7f62184690e4405",
+      "src/emo_master/apps/designer/page_designer/editing.py": "f820bde34e4e4a6f159307965eace879acd844f14cd9d93f81b161290c3dc976",
+      "src/emo_master/apps/designer/page_designer/page_canvas.py": "41949a29245ab815c3f54c68e33886ae9a483b907fb95df0632cc4d31a1ad7b7",
+      "src/emo_master/apps/designer/page_designer/property_panel.py": "32c4709e9bd975ebc54c0f252c0c3ea1638660d97e35ebd1b72c72adc97684bc",
+      "src/emo_master/apps/designer/page_designer/responsive_editing.py": "0d5cdb185a0710ba53856dc82308eee9eafde451268dff113ecd61e61689299c",
+      "src/emo_master/apps/designer/page_designer/responsive_preview.py": "1194f0959e5b98b37f9255b97041d5c454f8ac7e8c6b94ee33772a9be7346424",
+      "src/emo_master/apps/designer/page_designer/responsive_properties.py": "50bc007dc28380207246207714ce58c210cbda00e33e38c1992dae3e68622f4b",
+      "src/emo_master/apps/designer/page_designer/responsive_tools.py": "548eea46329e9d2d2dde48596043fbcc36f046f9eaa92a71eb2e390a1ecabe8d",
+      "src/emo_master/apps/designer/page_designer/workspace.py": "7c009724d1f66b60251c848b1ac5d54782d7805d4182e3fe640c43498fbd6e88",
+      "src/emo_master/apps/designer/state/project_edit_session.py": "a39baf81307af410da22c96b11f70ed80132d547e04ab37c08ab3ed2ae80e3fb",
+      "src/emo_master/apps/designer/ui/canvas_overlay.py": "605527ccc0ff20deda5a2b6cda19f99d9f62c4fe8f2def056181dc7769d00524",
+      "src/emo_master/core/presentation/responsive.py": "4d71fd83e7bf996529d384e98f8d0ede7a0893f1b6bc13da8d5cbbef088f55d1",
+      "src/emo_master/core/project/web_panel.py": "74ae4a2652f0fe738ed5457d639bdb3a9eb8655ebd70a671391523e147d4df54",
+      "src/emo_master/ui/presentation/page_scroll.py": "f9e14ffa95611ec3f54305c38c28b3241dfb987e833b123a0a6acb54f70f042d",
+      "src/emo_master/ui/presentation/renderer.py": "e22d9e7c6d2cf625a61573ddf5fe93a20ba4b1be713f92988046dc75c24c691f",
+      "src/emo_master/ui/presentation/responsive_layout.py": "1be8309f9930a64e141a0a3f76fb5e1a338ee7d64f46c9a36f66820f772f304a",
+      "src/emo_panel_protocol/__init__.py": "24460eb800051f0f93957227b3949f91307c045b197b30d7c50e4452342659e3",
+      "src/emo_panel_protocol/models.py": "8608ad1101dc78d23dd39e94dca737f6f1b490498697353cd39cd94b6a2ffa38",
+      "src/emo_panel_protocol/published.py": "45f015cfef8fe08da653d46182abbfa9480e1536c784f9630a366bd00aaf6d0a",
+      "tests/core/presentation/test_expanded_canvas.py": "536d0248b0ecaba475d6de13c11cd1d155526523eed826e887985fd198fdda83",
+      "tests/core/presentation/test_panel_contract.py": "4dfb341f7e19bbb0c77202a9df01b2cca40b68c8ec33e1b2fb2fa77127957cca",
+      "tests/ui/page_designer/test_canvas_viewport.py": "1b6b433def444fe696f33476713d99ee9b7b0a573286c49f56d8710ef3613bdc",
+      "tests/ui/page_designer/test_responsive_drag_feedback.py": "ad82899ec1ec2deef9a97bd7bf281ed5b300e3682fd3c34231302860a460f813",
+      "tests/ui/page_designer/test_visual_editor.py": "98e24c873261a74a4b2b337867ffdd2e9ec97becf36d5d74425961343740f2b5",
+      "tests/ui/presentation/test_expanded_native_canvas.py": "7cfc1b16c392dd137152cb24636df2e9cebfc86d1bea79a7d4b99ad787334c8e"
+    }
+  },
+  "web": {
+    "worktree": "D:\\emo-web-review-b1ca6d3",
+    "branch": "codex/logging-and-designer-improvements",
+    "head": "b89826b0841c6b4ef7f9c5f11ac938c6008934c7",
+    "sourceDirty": true,
+    "changedSourceSha256": {
+      "packages/emo_panel_protocol/pyproject.toml": "5b05e180b8f5163cf8d8eefefe18ccb6e96f7614c27ee34fc6d1890b1e7a69ab",
+      "src/emo_panel_protocol/__init__.py": "24460eb800051f0f93957227b3949f91307c045b197b30d7c50e4452342659e3",
+      "src/emo_panel_protocol/models.py": "8608ad1101dc78d23dd39e94dca737f6f1b490498697353cd39cd94b6a2ffa38",
+      "src/emo_panel_protocol/published.py": "45f015cfef8fe08da653d46182abbfa9480e1536c784f9630a366bd00aaf6d0a",
+      "web_panel/backend/emo_web_panel/contract_data/fixtures/preview-fixtures.json": "f37556948415ec357b300bc5caf4ccf84dd5e3bce2866414a9dc6d5ca38b8ae0",
+      "web_panel/backend/emo_web_panel/contract_data/fixtures/preview-runtime.json": "167dac4a4a8a7ef127a715ac21274ca63d58e19300e7215437e3bd7b6f9a76a1",
+      "web_panel/backend/emo_web_panel/packages.py": "58767c510cae03b3b06035afb7cfbec49d6ad2d19307d5867b942104b308c28c",
+      "web_panel/frontend/src/contracts/types.ts": "c79c9778c9efec41f591749ee02e8bfd3b405ee471e5a12fbef954bc9bb967e5",
+      "web_panel/frontend/src/renderer/PanelRenderer.tsx": "06514476ca4f0349e6ef86d7a754b3a767c46d84566ca1a87a661f20c7a5ba24",
+      "web_panel/frontend/tests/spacer_browser.py": "869a1481d54c149a2fe3252cdf75088bbe17c3c5e359b528b4ac9c19cac5bb44",
+      "web_panel/tests/test_contract_manifest.py": "b7cb6a7e2742f8c22df87c22903a0d246cecc53db78129ff6dc30caaf614fe7f",
+      "web_panel/tests/test_official_packages.py": "8df8f9f50a1e822e0d2037a14ecd9c822d4dbb7b55663d9088b4faa6ce7ddda5"
+    }
+  },
+  "automated": {
+    "qt-regression.xml": {
+      "tests": "257",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "62.105"
+    },
+    "qt-final-feedback.xml": {
+      "tests": "35",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "14.336"
+    },
+    "core-final.xml": {
+      "tests": "10",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.755"
+    }
+  },
+  "webBackend": {
+    "tests": 150,
+    "passed": 148,
+    "skipped": 2
+  },
+  "webFrontend": {
+    "passed": 63,
+    "build": "PASS"
+  },
+  "browser": {
+    "cases": 14,
+    "engine": "system Chrome headless",
+    "devices": "synthetic fixtures"
+  },
+  "manualMouse": "NOT_RUN",
+  "windowsDisplayDpi": "NOT_RUN",
+  "frozenPackage": "NOT_RUN",
+  "ci": "NOT_RUN",
+  "artifacts": {
+    "preview.png": {
+      "sha256": "d483c4302b1f3cfa33e75502b8ff5daa95973996639f4796ed6bb7560bfd7de2",
+      "bytes": 57595
+    },
+    "committed.png": {
+      "sha256": "d7838edc738e06723f5638ab0a6eaf77443f6d0b6398738a77028a5f6c113ca8",
+      "bytes": 58515
+    },
+    "qt-regression.xml": {
+      "sha256": "7c9e131ff3d238d9f5a6d2d5d133f042113d1d4922e1fc9cc8899e2ce3b3ace2",
+      "bytes": 41559
+    },
+    "qt-final-feedback.xml": {
+      "sha256": "6d14b74e03f730a2efcb1e75db22bcff9ca45d8055fd18b302e6d131e7f5050d",
+      "bytes": 5773
+    },
+    "core-final.xml": {
+      "sha256": "c3e7db9d14c86645a25be75d4419d61c8dc3b4fda24f9af05855086dbb0031c1",
+      "bytes": 1682
+    },
+    "browser-result.json": {
+      "sha256": "0c70e5b1e9cc0408d2ce323eac7c504cda51ce674df8cecb9d9b78a30d23bc75",
+      "bytes": 5134
+    },
+    "browser-wide.png": {
+      "sha256": "16e7e186ecc5fc1bedb9b4c9c393ca8c8b8bdc12593e8d86c2d40ef3365afab5",
+      "bytes": 58184
+    },
+    "browser-narrow.png": {
+      "sha256": "969d3837bf2caff894189fe6d821d1f419bc0f87bff80c8c6c87dde0f9d18100",
+      "bytes": 55856
+    },
+    "backend-result.txt": {
+      "sha256": "91d6a9a6572e08d10d688391db052150633774c64be417369d86976b90a19c18",
+      "bytes": 14919
+    },
+    "web-lint-baseline.json": {
+      "sha256": "f511f75aee15545213a365e2166467f238d5c425531b0e61e0bf6bcf4d01933c",
+      "bytes": 1384
+    },
+    "designer-open.txt": {
+      "sha256": "0864cae88ddca915f2c27611383f1f6d7318f772b521b89f1db3d9943a3dd83f",
+      "bytes": 211
+    }
+  }
+}

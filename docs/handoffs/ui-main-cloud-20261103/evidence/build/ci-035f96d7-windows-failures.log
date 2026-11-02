@@ -1,0 +1,8 @@
+[ci-check] tests/ui/page_designer/test_canvas_viewport.py::testManualViewSurvivesRefreshAndFitRestoresAutomaticMode (call)
+tests\ui\page_designer\test_canvas_viewport.py:191: in testManualViewSurvivesRefreshAndFitRestoresAutomaticMode
+    assert (canvas._viewportCenter() - center).manhattanLength() <= 2
+E   assert 2.6666666666666288 <= 2
+E    +  where 2.6666666666666288 = <built-in method manhattanLength of PySide2.QtCore.QPointF object at 0x000001F3B46B1200>()
+E    +    where <built-in method manhattanLength of PySide2.QtCore.QPointF object at 0x000001F3B46B1200> = (PySide2.QtCore.QPointF(856.000000, 368.666667) - PySide2.QtCore.QPointF(857.333333, 370.000000)).manhattanLength
+E    +      where PySide2.QtCore.QPointF(856.000000, 368.666667) = _viewportCenter()
+E    +        where _viewportCenter = <emo_master.apps.designer.page_designer.page_canvas.PageCanvas(0x1f3b39e6c80, name="pageCanvas") at 0x000001F3ADA77340>._viewportCenter

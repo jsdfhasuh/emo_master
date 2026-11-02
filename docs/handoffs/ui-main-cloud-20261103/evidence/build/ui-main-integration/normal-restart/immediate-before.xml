@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="4.533" timestamp="2026-11-02T23:28:23.644224+08:00" hostname="视觉电脑"><testcase classname="tests.runtime.presentation.test_normal_restart" name="testRemoteRestartWaitsForStoppedDisplayRetirement[restart]" time="3.786"><failure message="AssertionError: display Job quota exceeded; explicitly release a terminal Job&#10;assert False&#10; +  where False = message: &quot;display Job quota exceeded; explicitly release a terminal Job&quot;\nstatus: &quot;REJECTED&quot;\nruntime_instance_id: &quot;40137e7b-6002-46b3-93d0-0db95ecbcfb1&quot;\nstart_request_id: &quot;3262a1d333af4a05a4daa0807fa8af29&quot;\nlegacy_snapshot_policy: &quot;NONE&quot;\n.ok">captureRuntime = (&lt;emo_master.apps.operator_runtime.controller.ProductionRuntime object at 0x00000220E9FA3550&gt;, &lt;emo_panel_protocol.generated.runtime_pb2_grpc.RuntimeServiceStub object at 0x00000220EA0ECC40&gt;)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000220E9C13BB0&gt;
+cancel = False
+
+    @pytest.mark.parametrize('cancel', [False, True], ids=['restart', 'cancel-wait'])
+    def testRemoteRestartWaitsForStoppedDisplayRetirement(captureRuntime, monkeypatch, cancel):
+        owner, stub = captureRuntime
+        display = owner.presentation
+        first = stub.StartJob(startRequest(owner), timeout=10)
+        assert first.ok, first.message
+        waitFor(lambda: display.store.snapshot(first.job_id)['results'])
+        readerAtFence, releaseReader, admissionTried, cancellationSeen = Event(), Event(), Event(), Event()
+        originalFence, originalRelease = display._fence, display.release
+        originalWait = display.waitForLogDrain
+    
+        def gatedFence(jobId, terminal):
+            if jobId == first.job_id:
+                readerAtFence.set()
+                assert releaseReader.wait(10), 'test did not release the final display reader'
+            originalFence(jobId, terminal)
+    
+        def observedRelease(jobId):
+            try:
+                return originalRelease(jobId)
+            except ValueError:
+                if jobId == first.job_id:
+                    admissionTried.set()
+                raise
+    
+        def observedWait(jobId, *, timeoutSeconds, isActive):
+            def active():
+                result = isActive()
+                if not result:
+                    cancellationSeen.set()
+                return result
+            return originalWait(jobId, timeoutSeconds=timeoutSeconds, isActive=active)
+    
+        monkeypatch.setattr(display, '_fence', gatedFence)
+        monkeypatch.setattr(display, 'release', observedRelease)
+        monkeypatch.setattr(display, 'waitForLogDrain', observedWait)
+        try:
+            owner.stop(jobId=first.job_id)
+            assert owner.status()['canLoad']
+            assert not owner.runtime.jobSupervisor.ownsJobResources(first.job_id)
+            assert readerAtFence.wait(5) and display.readers[first.job_id].is_alive()
+            request = startRequest(owner)
+            future = stub.StartJob.future(request, timeout=10)
+            assert admissionTried.wait(5)
+            if cancel:
+                assert future.cancel()
+                with pytest.raises(grpc.FutureCancelledError):
+                    future.result()
+                assert cancellationSeen.wait(5)
+            releaseReader.set()
+            if cancel:
+                reply = stub.GetStartRequest(pb.StartRequestLookup(
+                    runtime_instance_id=owner.runtime.runtimeInstanceId,
+                    start_request_id=request.start_request_id), timeout=10)
+                assert not reply.ok and not reply.job_id and reply.status == 'REJECTED'
+                assert 'E_CANCELLED' in reply.message
+                assert len(owner.runtime.jobRepository.all()) == 1
+            else:
+                reply = future.result(timeout=10)
+&gt;               assert reply.ok, reply.message
+E               AssertionError: display Job quota exceeded; explicitly release a terminal Job
+E               assert False
+E                +  where False = message: "display Job quota exceeded; explicitly release a terminal Job"\nstatus: "REJECTED"\nruntime_instance_id: "40137e7b-6002-46b3-93d0-0db95ecbcfb1"\nstart_request_id: "3262a1d333af4a05a4daa0807fa8af29"\nlegacy_snapshot_policy: "NONE"\n.ok
+
+tests\runtime\presentation\test_normal_restart.py:110: AssertionError</failure></testcase></testsuite></testsuites>

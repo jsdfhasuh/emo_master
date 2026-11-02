@@ -40,6 +40,10 @@ def testManifestTracksEveryArtifactAndHonestValidationScope(contract):
     with zipfile.ZipFile(output / 'sample-panels/demo.emoweb') as archive:
         snapshot = json.loads(archive.read('presentation.json'))
         assert {'live', 'history'} == set(snapshot['pages'])
+        spacers = [c for c in snapshot['pages']['live']['components'] if c['type'] == 'spacer']
+        assert spacers and spacers[0]['componentId'] == 'blank'
+        summary = next(c for c in snapshot['pages']['live']['components'] if c['componentId'] == 'summary')
+        assert next(c for c in summary['children'] if c['type'] == 'spacer')['props']['spacerMode'] == 'flex'
         text = archive.read('presentation.json').decode()
         assert 'databasePath' not in text and 'baseDirectory' not in text
         assert any(name.startswith('assets/') for name in archive.namelist())
@@ -125,7 +129,7 @@ def testPreviewContractRequiresExplicitReadOnlyModeAndConnection(contract):
     from emo_panel_protocol.preview import PreviewContext
     from pydantic import ValidationError
     output, manifest = contract
-    assert manifest['sdkVersion'] == '1.1.1'
+    assert manifest['sdkVersion'] == '1.2.0'
     fixture = json.loads((output / 'fixtures/preview-fixtures.json').read_text())
     online = json.loads((output / 'fixtures/preview-runtime.json').read_text())
     assert PreviewContext.model_validate(online).runtime.target == '192.0.2.10:50051'

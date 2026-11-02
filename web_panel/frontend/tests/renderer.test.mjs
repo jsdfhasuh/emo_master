@@ -177,3 +177,38 @@ test('Resume removes pinned result whose live ordinal expired even without a new
  assert.equal(isScopeResultExpired(pinned,status,undefined),true);
  assert.equal(isScopeResultExpired({...pinned,resultKey:'new',resultOrdinal:'11'},status,undefined),false);
 });
+
+
+test('spacers are transparent occupancy without card chrome or business fallback',()=>{
+ const html=render([{id:'gap',type:'spacer',label:'SHOULD NOT SHOW',props:{title:'HIDDEN TITLE',spacerMode:'fixed',cardStyle:'soft',style:{backgroundColor:'red'}}}]);
+ assert.match(html,/class="panel-spacer"/);assert.match(html,/aria-hidden="true"/);
+ assert.doesNotMatch(html,/panel-card|SHOULD NOT SHOW|HIDDEN TITLE|未绑定|不支持|background/);
+});
+test('fixed spacers retain their own width and height under equal-width stretch',()=>{
+ const {responsiveStyle}=require('../src/renderer/PanelRenderer.tsx');
+ const style=responsiveStyle({id:'gap',type:'spacer',responsive:{preferredWidth:24,preferredHeight:24}},{type:'responsive',direction:'horizontal',alignment:'stretch',equalWidth:true});
+ assert.equal(style.width,24);assert.equal(style.height,24);assert.equal(style.flexGrow,0);assert.equal(style.flexBasis,24);assert.equal(style.alignSelf,'flex-start');assert.equal(style.minWidth,0);
+});
+test('elastic spacers use the parent main axis and retained weight',()=>{
+ const {responsiveStyle}=require('../src/renderer/PanelRenderer.tsx');
+ for(const direction of ['vertical','horizontal','wrap']){
+ const style=responsiveStyle({id:'gap',type:'spacer',props:{spacerMode:'flex'},responsive:{weight:2,preferredWidth:24,preferredHeight:24}},{type:'responsive',direction,equalWidth:true});
+ assert.equal(style.flexGrow,2);assert.equal(style.flexBasis,24);
+ }
+ const ordinary=responsiveStyle({id:'value',type:'text',responsive:{width:'fill',weight:1}},{type:'responsive',direction:'vertical'},true);
+ assert.equal(ordinary.flexGrow,0);assert.equal(ordinary.flexShrink,0);
+});
+
+
+test('horizontal ordinary fill starts at its minimum while wrap keeps preferred width',()=>{
+ const {responsiveStyle}=require('../src/renderer/PanelRenderer.tsx');
+ const c={id:'value',type:'text',responsive:{width:'fill',minWidth:80,preferredWidth:240,weight:1}};
+ assert.equal(responsiveStyle(c,{type:'responsive',direction:'horizontal'}).flexBasis,80);
+ assert.equal(responsiveStyle(c,{type:'responsive',direction:'wrap'}).flexBasis,240);
+ assert.equal(responsiveStyle(c,{type:'responsive',direction:'horizontal',equalWidth:true},false,160).flexBasis,160);
+});
+test('zero-height fixed spacers retain explicit zero instead of default occupancy',()=>{
+ const {responsiveStyle}=require('../src/renderer/PanelRenderer.tsx');
+ const style=responsiveStyle({id:'zero',type:'spacer',responsive:{minHeight:0,preferredHeight:0}},{type:'responsive',direction:'vertical'});
+ assert.equal(style.height,0);assert.equal(style.minHeight,0);assert.equal(style.flexBasis,0);
+});

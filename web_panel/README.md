@@ -1,8 +1,8 @@
 # emo_master independent Web operator panel
 
-Independent Python 3.10+/FastAPI + React application under `web_panel/`. The gateway consumes **Panel Contract 1.0 / SDK 1.1.1** as an ordinary gRPC client; it does not import Qt, device drivers, inference packages, or `emo_master`.
+Independent Python 3.10+/FastAPI + React application under `web_panel/`. The gateway consumes **Panel Contract 1.0 / SDK 1.2.0** as an ordinary gRPC client; it does not import Qt, device drivers, inference packages, or `emo_master`.
 
-Authoritative handoff: repository delivery `496d4b78ccd6ac40a4fa37b15fb6e78522627cda`, implementation `95c6371542f73a725c0ca2fd585152c728338dbf`. The unchanged handoff files in `contracts/panel-contract-v1/` include their integrity manifest. Production execution and formal configuration remain owned by Runtime. Nothing here deploys software or changes networking.
+Authoritative handoff: SDK 1.2.0 generated from Designer implementation `32c2b4efb7ba932636e2145fd423e9b2b484b902` with a clean source tree; exact delivery bytes and hashes are pinned in `contracts/panel-contract-v1/`.
 
 ## Build and run
 
@@ -10,7 +10,7 @@ Authoritative handoff: repository delivery `496d4b78ccd6ac40a4fa37b15fb6e7852262
 cd web_panel
 python -m venv .venv
 # Windows: .venv\Scripts\activate; POSIX: . .venv/bin/activate
-python -m pip install contracts/panel-contract-v1/python/emo_panel_protocol-1.1.1-py3-none-any.whl
+python -m pip install contracts/panel-contract-v1/python/emo_panel_protocol-1.2.0-py3-none-any.whl
 python -m pip install -e '.[test]'
 npm --prefix frontend ci
 npm --prefix frontend run build

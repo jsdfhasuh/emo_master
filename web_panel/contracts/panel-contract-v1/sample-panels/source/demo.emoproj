@@ -314,6 +314,52 @@
             }
           },
           {
+            "componentId": "blank",
+            "type": "spacer",
+            "version": "1.0",
+            "layout": {
+              "row": 0,
+              "column": 0,
+              "rowSpan": 1,
+              "columnSpan": 1
+            },
+            "responsive": {
+              "width": "content",
+              "minWidth": 24,
+              "preferredWidth": 24,
+              "weight": 1.0,
+              "minHeight": 24,
+              "preferredHeight": 24,
+              "alignSelf": "start"
+            },
+            "props": {
+              "title": "",
+              "text": "",
+              "emptyText": "\u2014",
+              "unit": "",
+              "decimals": 2,
+              "indicatorStates": {},
+              "columns": [],
+              "pageSize": 20,
+              "fontFamily": "system",
+              "fontSize": 0,
+              "fontWeight": "normal",
+              "textColor": "default",
+              "cardStyle": "plain"
+            },
+            "bindings": {},
+            "actions": {},
+            "children": [],
+            "grid": {
+              "type": "responsive",
+              "direction": "wrap",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            }
+          },
+          {
             "componentId": "state",
             "type": "runtime_status",
             "version": "1.0",
@@ -433,6 +479,53 @@
                 "bindings": {
                   "value": "count"
                 },
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "wrap",
+                  "spacing": 12,
+                  "alignment": "stretch",
+                  "justify": "start",
+                  "equalWidth": false
+                }
+              },
+              {
+                "componentId": "spring",
+                "type": "spacer",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "content",
+                  "minWidth": 24,
+                  "preferredWidth": 24,
+                  "weight": 1.0,
+                  "minHeight": 24,
+                  "preferredHeight": 24,
+                  "alignSelf": "start"
+                },
+                "props": {
+                  "spacerMode": "flex",
+                  "title": "",
+                  "text": "",
+                  "emptyText": "\u2014",
+                  "unit": "",
+                  "decimals": 2,
+                  "indicatorStates": {},
+                  "columns": [],
+                  "pageSize": 20,
+                  "fontFamily": "system",
+                  "fontSize": 0,
+                  "fontWeight": "normal",
+                  "textColor": "default",
+                  "cardStyle": "plain"
+                },
+                "bindings": {},
                 "actions": {},
                 "children": [],
                 "grid": {

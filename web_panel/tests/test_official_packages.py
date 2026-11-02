@@ -51,6 +51,61 @@ class OfficialPackageTests(unittest.TestCase):
         self.store.activate(item['packageId'], runtime_id='configured')
         self.assertEqual(self.store.active('configured'), item)
 
+    def test_delivered_spacer_demo_preserves_both_modes_without_capture_sources(self):
+        item = self.store.install((CONTRACT / 'sample-panels' / 'demo.emoweb').read_bytes())
+        def walk(components):
+            for component in components:
+                yield component
+                yield from walk(component.get('children', []))
+        spacers = [component for page in item['presentation']['pages']
+                   for component in walk(page['components']) if component['type'] == 'spacer']
+        self.assertEqual({component['props'].get('spacerMode', 'fixed') for component in spacers},
+                         {'fixed', 'flex'})
+        for component in spacers:
+            self.assertNotIn('binding', component)
+            self.assertFalse(component.get('actions'))
+            self.assertFalse(component.get('history'))
+
+    def test_spacer_survives_official_install_and_normalization(self):
+        def add_spacers(manifest, presentation, files):
+            page = presentation['pages']['live']
+            page['layout'] = {'type':'responsive','direction':'vertical'}
+            page['components'].extend([
+                {'componentId':'fixed-gap','type':'spacer'},
+                {'componentId':'flex-gap','type':'spacer','props':{'spacerMode':'flex'},
+                 'responsive':{'weight':2,'minWidth':24,'preferredWidth':24,
+                               'minHeight':24,'preferredHeight':24}},
+            ])
+        item = self.store.install(official_bundle(add_spacers))
+        page = item['presentation']['pages'][0]
+        fixed, elastic = page['components'][-2:]
+        self.assertEqual(fixed['id'], 'fixed-gap')
+        self.assertEqual(fixed['type'], 'spacer')
+        self.assertNotIn('binding', fixed)
+        self.assertEqual(elastic['props']['spacerMode'], 'flex')
+        self.assertEqual(elastic['responsive']['weight'], 2)
+
+    def test_official_spacer_rejects_bindings_actions_and_children(self):
+        for extra in [
+            {'bindings':{'value':'score'}},
+            {'actions':{'clicked':{'type':'navigate','pageId':'live'}}},
+            {'children':[{'componentId':'inside-gap','type':'text'}]},
+        ]:
+            def add(manifest, presentation, files):
+                presentation['pages']['live']['components'].append(
+                    {'componentId':'gap','type':'spacer',**extra})
+            with self.subTest(extra=extra), self.assertRaises(PackageError):
+                self.store.install(official_bundle(add))
+
+    def test_official_grid_spacer_cannot_request_elastic_occupancy(self):
+        def add(manifest, presentation, files):
+            page = presentation['pages']['live']
+            page['layout'] = {'type':'grid','columns':12}
+            page['components'].append({'componentId':'gap','type':'spacer',
+                                       'props':{'spacerMode':'flex'}})
+        with self.assertRaisesRegex(PackageError, 'responsive'):
+            self.store.install(official_bundle(add))
+
     def test_revision_tampering_and_rollback(self):
         first = self.store.install(official_bundle())
         self.store.activate(first['packageId'], runtime_id='configured')

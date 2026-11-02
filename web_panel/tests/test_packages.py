@@ -62,7 +62,7 @@ class PackageTests(unittest.TestCase):
             self.store.install(bundle(components=[{'id':'other','type':'text','props':{}}]))
         self.assertEqual(len(self.store.list()),1)
 
-    def test_actual_demo_fixture_installs_all_thirteen_types(self):
+    def test_actual_demo_fixture_installs_all_component_types(self):
         from emo_web_panel.mock_runtime import demo_panel
         demo=demo_panel()
         installed=self.store.install(bundle(extras={
@@ -78,11 +78,23 @@ class PackageTests(unittest.TestCase):
                 self.store.install(bundle('invalid',components=[{'id':'x','type':'sqlite_value','props':{'aggregate':value}}]))
 
     def test_all_component_types_and_nested_container(self):
-        comps = [{'id':t,'type':t,'label':t,'props':{},'binding':'sample'} for t in sorted(TYPES)]
+        comps = [{'id':t,'type':t,'label':t,'props':{},**({} if t == 'spacer' else {'binding':'sample'})} for t in sorted(TYPES)]
         comps[-1]['grid'] = {'column':1,'row':1,'columnSpan':2,'rowSpan':1}
         self.store.install(bundle(components=comps))
         self.store.install(bundle('2',components=[{'id':'box','type':'container','props':{},
             'children':[{'id':'child','type':'number','binding':{'sourceId':'number'},'props':{}}]}]))
+
+    def test_spacer_is_static_fixed_grid_occupancy(self):
+        item = self.store.install(bundle(components=[{'id':'gap','type':'spacer',
+            'props':{'spacerMode':'fixed'},'grid':{'row':1,'column':2,'columnSpan':2}}]))
+        self.assertEqual(item['presentation']['pages'][0]['components'][0]['type'], 'spacer')
+        for component in [
+            {'id':'gap','type':'spacer','binding':'sample'},
+            {'id':'gap','type':'spacer','props':{'spacerMode':'flex'}},
+            {'id':'gap','type':'spacer','children':[{'id':'nested','type':'text'}]},
+        ]:
+            with self.subTest(component=component), self.assertRaises(PackageError):
+                self.store.install(bundle('invalid',components=[component]))
 
     def test_unsafe_paths(self):
         for name in ['../evil', '/tmp/evil', 'C:/evil', 'assets\\evil', 'assets/../evil', 'assets//evil', 'assets/CON', 'assets/evil.']:

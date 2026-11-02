@@ -18,7 +18,7 @@ export interface Component {
     id: string;
     type: string;
     label?: string;
-    props?: Record<string, unknown>;
+    props?: Record<string, unknown> & {spacerMode?: 'fixed' | 'flex'};
     binding?: string | {
         sourceId?: string;
         field?: string;

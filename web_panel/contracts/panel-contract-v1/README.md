@@ -1,6 +1,6 @@
 # Panel Contract v1：Runtime 客户端与 Web 页面交接合同
 
-合同版本 `1.0`，Python SDK `emo_panel_protocol 1.1.1`。工程当前版本为
+合同版本 `1.0`，Python SDK `emo_panel_protocol 1.2.0`。工程当前版本为
 `2.9` / Presentation `1.2`，发布快照为 `published-1`，ZIP 页面包为
 `emo-web-panel-1`（扩展名 `.emoweb`）。这些版本分别管理不同边界，不互相替代。
 
@@ -22,7 +22,7 @@ python scripts/build_panel_contract.py
 正式交付可同时生成 ZIP，使用新的版本目录以保持历史产物可追溯：
 
 ```powershell
-python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.1.1 --archive build/panel-contract-v1-sdk-1.1.1.zip
+python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.2.0 --archive build/panel-contract-v1-sdk-1.2.0.zip
 ```
 
 `--archive` 归档前核对 manifest 的全部文件摘要，ZIP 仅包含这些文件及 manifest。
@@ -91,6 +91,8 @@ schema 主要描述结构；oneof 互斥、身份和当前状态的业务约束�
 `runtimeInstanceId + projectId + jobId` 确定所查看运行，`runGroupId` 把根运行与 Dispatch
 消费者关联。Job 的终态和资源释放是两件事；`ownsResources`、
 `displayResourcesReleased` 不能从 `COMPLETED` 字符串推断。
+
+SDK 1.2.0 增加透明 `spacer` 及共享 `VisualProps.spacerMode=fixed|flex`；默认固定模式省略。尺寸和权重沿用 responsive 字段，不增加 RPC 或采集来源。生成样例覆盖两个模式，工程仍为2.9/页面1.2。
 
 SDK 1.1.1 修正普通 Job 的运行组表达：`runGroupId=""` 是正式的未分组身份。
 非空运行组继续使用现有 Id 约束（1–160 个字符、无空白），工程、Job 和 Runtime 实例的 Id 仍不能为空。

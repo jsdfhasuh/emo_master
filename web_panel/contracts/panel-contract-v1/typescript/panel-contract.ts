@@ -5,13 +5,13 @@ export type Action = { "type": "navigate" | "freeze" | "resume_live"; "pageId"?:
 
 export type BrowserCaptureUnavailable = { "runtimeInstanceId": string; "projectId": string; "event"?: "capture_unavailable"; "jobId": string; "reason": string };
 
-export type BrowserControlResult = { "runtimeInstanceId": string; "projectId": string; "event"?: "control_result"; "operation": "start" | "stop"; "jobId"?: (string | null); "runGroupId"?: (string | null); "startRequestId"?: (string | null); "outcome": "ACCEPTED" | "REJECTED" | "UNKNOWN"; "message": string };
+export type BrowserControlResult = { "runtimeInstanceId": string; "projectId": string; "event"?: "control_result"; "operation": "start" | "stop"; "jobId"?: (string | null); "runGroupId"?: (("" | string) | null); "startRequestId"?: (string | null); "outcome": "ACCEPTED" | "REJECTED" | "UNKNOWN"; "message": string };
 
 export type BrowserError = { "runtimeInstanceId": string; "projectId": string; "event"?: "error"; "jobId"?: (string | null); "code": string; "message": string };
 
-export type BrowserJobChanged = { "runtimeInstanceId": string; "projectId": string; "event"?: "job_changed"; "previousJobId"?: (string | null); "jobId": string; "runGroupId": string };
+export type BrowserJobChanged = { "runtimeInstanceId": string; "projectId": string; "event"?: "job_changed"; "previousJobId"?: (string | null); "jobId": string; "runGroupId": ("" | string) };
 
-export type BrowserJobState = { "runtimeInstanceId": string; "projectId": string; "event"?: "job_state"; "jobId": string; "runGroupId": string; "status": string; "active": boolean; "ownsResources": boolean; "displayResourcesReleased": boolean; "allowedActions": Array<string> };
+export type BrowserJobState = { "runtimeInstanceId": string; "projectId": string; "event"?: "job_state"; "jobId": string; "runGroupId": ("" | string); "status": string; "active": boolean; "ownsResources": boolean; "displayResourcesReleased": boolean; "allowedActions": Array<string> };
 
 export type BrowserMessage = (BrowserResult | BrowserCaptureUnavailable | BrowserJobChanged | BrowserJobState | BrowserControlResult | BrowserError);
 

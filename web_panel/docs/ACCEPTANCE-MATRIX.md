@@ -1,11 +1,12 @@
 # W1–W6 integration matrix — 2026-10-31
 
 Implementation is not the same as field acceptance. Final test counts/commit/run
-are recorded in VERIFICATION.md. Runtime/Designer/proto source remains unchanged.
+are recorded in VERIFICATION.md. Runtime/Designer execution source remains unchanged. The protocol owner’s SDK1.1.1
+source and generated delivery are integrated without local protocol edits.
 
 | Stage | Web implementation | Evidence boundary |
 |---|---|---|
-| W1 | SDK1.1.0 grpc.aio adapter, explicit target directory/ACL, accounts, same-origin application, synthetic gRPC tests | SDK and synthetic wire semantics; actual software Runtime separately checked |
+| W1 | SDK1.1.1 grpc.aio adapter, explicit target directory/ACL, accounts, same-origin application, synthetic gRPC tests | SDK and synthetic wire semantics; actual software Runtime separately checked |
 | W2 | Official published schema/canonical digest/resources, immutable activation/rollback,13 renderer types and responsive layout, tokenized preview with mandatory context | Same renderer; browser and CLI checks in CI; native Designer acceptance separate |
 | W3 | Shared instance/Job stream, snapshots/cursor continuation, Coverage, bounded independent view queues/freezes, exact leased assets, staged browser results | No Start/Stop/ReleaseJob on view close; physical production performance not claimed |
 | W4 | Formal-history revision/identity, tables/aggregates/opaque images, stable row refresh, authoritative counter values and per-Job event sequence | Synthetic fixtures and software contract checks are not user database reads |

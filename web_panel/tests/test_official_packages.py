@@ -48,18 +48,18 @@ class OfficialPackageTests(unittest.TestCase):
         self.assertEqual(item['presentation']['historyDefinitionRevision'], item['manifest']['historyDefinitionRevision'])
         self.assertEqual(item['presentation']['dataSources'], item['officialPresentation']['dataSources'])
         self.assertEqual(self.store.asset(item['packageId'], 'demo')[1], 'image/png')
-        self.store.activate(item['packageId'])
-        self.assertEqual(self.store.active(), item)
+        self.store.activate(item['packageId'], runtime_id='configured')
+        self.assertEqual(self.store.active('configured'), item)
 
     def test_revision_tampering_and_rollback(self):
         first = self.store.install(official_bundle())
-        self.store.activate(first['packageId'])
+        self.store.activate(first['packageId'], runtime_id='configured')
         with self.assertRaisesRegex(PackageError, 'revision'):
             self.store.install(official_bundle(lambda m,p,f: p['pages']['live'].update(name='changed'), revise=False))
         second = self.store.install(official_bundle(lambda m,p,f: p['pages']['live'].update(name='changed')))
-        self.store.activate(second['packageId'])
-        self.store.activate(first['packageId'])
-        self.assertEqual(self.store.active(), first)
+        self.store.activate(second['packageId'], runtime_id='configured')
+        self.store.activate(first['packageId'], runtime_id='configured')
+        self.assertEqual(self.store.active('configured'), first)
 
     def test_renderer_requirements_fail_closed(self):
         with self.assertRaisesRegex(PackageError, 'renderer'):

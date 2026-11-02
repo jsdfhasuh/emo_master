@@ -43,6 +43,26 @@
     "schema": "../schemas/browser-message.schema.json",
     "synthetic": true
   },
+  "ungrouped-running.json": {
+    "schema": "../schemas/browser-message.schema.json",
+    "synthetic": true
+  },
+  "ungrouped-job-changed.json": {
+    "schema": "../schemas/browser-message.schema.json",
+    "synthetic": true
+  },
+  "ungrouped-start-accepted.json": {
+    "schema": "../schemas/browser-message.schema.json",
+    "synthetic": true
+  },
+  "ungrouped-stop-accepted.json": {
+    "schema": "../schemas/browser-message.schema.json",
+    "synthetic": true
+  },
+  "ungrouped-aborted.json": {
+    "schema": "../schemas/browser-message.schema.json",
+    "synthetic": true
+  },
   "start-unknown.json": {
     "schema": "../schemas/browser-message.schema.json",
     "synthetic": true

@@ -52,6 +52,7 @@ export interface Panel {
     grid?: Component['grid'];
 }
 export interface Run {
+    status?:string;active?:boolean;ownsResources?:boolean;displayResourcesReleased?:boolean;
     id: string;
     runGroupId?: string;
     allowedActions?: string[];
@@ -84,6 +85,7 @@ export interface Result {
     sources: Record<string, Source>;
 }
 export interface Envelope {
+    operation?: 'start' | 'stop';
     latestStartedOrdinals?:Record<string,string>;
     expiredScopeOrdinals?:Record<string,string>;
     type: string;

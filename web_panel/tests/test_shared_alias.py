@@ -1,5 +1,7 @@
 """A physical shared stream retains its client after its originating alias view closes."""
 import unittest
+from unittest.mock import patch
+from emo_web_panel.mock_runtime import MockRuntime
 import test_app
 
 
@@ -17,7 +19,16 @@ class SharedAliasTests(unittest.TestCase):
                 json={'runtimeId':alias,'panelId':'demo-panel','runId':'demo-run'})
             self.assertEqual(response.status_code,200)
             return response.json()['id']
-        a,b=create('configured'),create('alias-b')
+        # These directory entries intentionally alias ONE physical Runtime,
+        # unlike the normal independent mock-target fixture. Preserve that
+        # authoritative identity in every method, not just the info response.
+        original_init=MockRuntime.__init__
+        shared_instance=self.app.state.runtime.instance_id
+        def alias_init(runtime,runtime_id='configured'):
+            original_init(runtime,runtime_id)
+            runtime.instance_id=shared_instance
+        with patch.object(MockRuntime,'__init__',alias_init):
+            a,b=create('configured'),create('alias-b')
         with self.client.websocket_connect('/ws/views/'+a) as wa:
             wa.receive_json()
             with self.client.websocket_connect('/ws/views/'+b) as wb:

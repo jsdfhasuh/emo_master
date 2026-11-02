@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / 'web_panel/contracts/panel-contract-v1'
 
 
-def run_product_server(root):
+def run_product_server(root, *, continuous=False):
     # Imports exclusively in the Runtime subprocess, not the gateway process.
     import contextlib
     import faulthandler
@@ -34,7 +34,18 @@ def run_product_server(root):
 
     root = Path(root)
     source = CONTRACT / 'sample-panels/source'
-    shutil.copyfile(source / 'demo.emoproj', root / 'project.emoproj')
+    if continuous:
+        # Only the synthetic template's normal production settings change; the
+        # contract package, source/scope definitions and owning Runtime do not.
+        from emo_master.core.project.models import ProjectDocument
+        payload = json.loads((source / 'demo.emoproj').read_text(encoding='utf-8'))
+        if payload['devices']['definitions'] or any(node.get('operatorId') for workflow in payload['workflows'].values() for node in workflow['nodes']):
+            raise AssertionError('Browser fixture must contain no devices or executable operators')
+        payload['production'].update(autoStart=False, mode='continuous', cycleIntervalMs=100)
+        document = ProjectDocument.model_validate(payload)
+        (root / 'project.emoproj').write_text(document.model_dump_json(), encoding='utf-8')
+    else:
+        shutil.copyfile(source / 'demo.emoproj', root / 'project.emoproj')
     shutil.copyfile(source / 'demo.png', root / 'demo.png')
     (root / 'demo-images').mkdir()
     shutil.copyfile(source / 'demo.png', root / 'demo-images/reference.png')
@@ -42,7 +53,7 @@ def run_product_server(root):
         db.execute('CREATE TABLE records (id INTEGER PRIMARY KEY, verdict TEXT, image TEXT)')
         db.execute('INSERT INTO records VALUES (1, ?, ?)', ('OK', 'reference.png'))
     with contextlib.redirect_stdout(sys.stderr):
-        service = RuntimeService(dbPath=root / 'runtime.db', workspaceRoot=root / 'jobs')
+        service = RuntimeService(dbPath=root / 'runtime.db', workspaceRoot=root / 'jobs', productionMode=continuous)
         loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(root / 'project.emoproj')), None)
         if not loaded.ok:
             service.close()
@@ -240,7 +251,7 @@ class StartReconciliationTests(unittest.IsolatedAsyncioTestCase):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 3 and sys.argv[1] == '--runtime-server':
-        run_product_server(sys.argv[2])
+    if len(sys.argv) == 3 and sys.argv[1] in {'--runtime-server', '--runtime-server-continuous'}:
+        run_product_server(sys.argv[2], continuous=sys.argv[1] == '--runtime-server-continuous')
     else:
         unittest.main()

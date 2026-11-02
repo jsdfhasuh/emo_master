@@ -67,12 +67,12 @@ def main():
         parser.error('port must be 0..65535')
     # No state is shared with production; cleanup never stops a Job.
     with tempfile.TemporaryDirectory(prefix='emo-panel-preview-') as directory:
-        store = PackageStore(Path(directory) / 'packages')
+        store = PackageStore(Path(directory) / 'packages', database=Path(directory) / 'web.sqlite')
         try:
             installed = store.install(args.package.read_bytes())
             item = store.get(installed['packageId'])
             context = validate_preview_context(args.context, item['manifest'])
-            store.activate(installed['packageId'])
+            store.activate(installed['packageId'], runtime_id='configured')
         except (ValueError, OSError) as error:
             parser.error(str(error))
         host = '127.0.0.1' if args.host == 'localhost' else args.host

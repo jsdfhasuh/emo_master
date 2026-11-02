@@ -1,0 +1,8 @@
+{
+  "runtimeInstanceId": "demo-runtime-1",
+  "projectId": "panel-contract-demo",
+  "event": "job_changed",
+  "previousJobId": "demo-ordinary-j1",
+  "jobId": "demo-ordinary-j2",
+  "runGroupId": ""
+}

@@ -103,11 +103,13 @@ class WorkspaceChrome(QObject):
             self.policies.append((action, value))
         if w.legacySnapshotPolicyCombo:
             w.legacySnapshotPolicyCombo.currentIndexChanged.connect(self.syncPolicies)
+        self.panelActions = []
         for title, index in [('页面工具区', 0), ('属性面板', 2)]:
             action = self.action(title, lambda index=index: self.c.editor.togglePanel(index) if self.c.pageActive() else None)
             action.setCheckable(True)
             self.menus['视图'].addAction(action)
             self.pageActions.append(action)
+            self.panelActions.append((action, index))
         self.fit = self.action('适应画布', lambda: self.c.editor.renderer.fitToAvailableScreen() if self.c.pageActive() else None)
         self.menus['视图'].addAction(self.fit)
         self.pageActions.append(self.fit)
@@ -207,7 +209,7 @@ class WorkspaceChrome(QObject):
         if pages:
             if projectChanged:
                 self.previewAction.setEnabled(bool(self.c.editor.store.snapshot().pages))
-            for action, index in zip(self.pageActions[1:3], (0, 2)):
+            for action, index in self.panelActions:
                 action.setChecked(self.c.editor.panel(index).isExpanded())
         runtime = self.window.runtimeController
         for key, allowed in [('开始运行', self.window.loadedProjectPath is not None and runtime.canStart()),

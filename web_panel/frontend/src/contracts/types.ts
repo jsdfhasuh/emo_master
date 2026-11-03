@@ -115,4 +115,4 @@ export interface History {
 }
 /** Gateway target discovery (not an arbitrary RPC surface). */
 export interface RuntimeTarget { permissions?: string[]; id: string; alias: string; mode: string; address?: string; }
-export interface WorkflowTarget { inputsJson?:string;inputDeclarations?:Record<string,unknown>; id: string; configurationRevision?: string; name?: string; runtimeInstanceId?: string; projectId?: string; inputSchema?: Record<string, unknown>; inputs?: Record<string, unknown>; canStart?: boolean; }
+export interface WorkflowTarget { inputsJson?:string;inputDeclarations?:Record<string,unknown>; id: string; configurationRevision?: string; name?: string; runtimeInstanceId?: string; projectId?: string; inputSchema?: Record<string, unknown>; inputs?: Record<string, unknown>; canStart?: boolean; startBlockReason?: string; }

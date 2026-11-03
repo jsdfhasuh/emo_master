@@ -1,0 +1,96 @@
+✖ invalid local JSON and non-object never become unknown or send a command (52.455018ms)
+✔ submitted connection failure retains original request and unknown, no replay (18.959748ms)
+✖ successful empty catalog clears only its recovered error (16.254981ms)
+✔ older refresh cannot clear the newer catalog error (9.693492ms)
+✖ disabled workflow renders the official reason without enabling Start (39.006655ms)
+✖ HTTP 401 is typed and centrally notifies only the current session (8.65072ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 2
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 502.426681
+
+✖ failing tests:
+
+test at web_panel/frontend/tests/ux-recovery.test.mjs:17:1
+✖ invalid local JSON and non-object never become unknown or send a command (52.455018ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /尚未发送/. Input:
+  
+  "Expected property name or '}' in JSON at position 1 (line 1 column 2)。结果未确认时不自动重发，请先刷新运行状态。"
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/frontend/tests/ux-recovery.test.mjs:17:307)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "Expected property name or '}' in JSON at position 1 (line 1 column 2)。结果未确认时不自动重发，请先刷新运行状态。",
+    expected: /尚未发送/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at web_panel/frontend/tests/ux-recovery.test.mjs:20:1
+✖ successful empty catalog clears only its recovered error (16.254981ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '目录刷新失败：offline'
+  - ''
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/frontend/tests/ux-recovery.test.mjs:20:140)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '目录刷新失败：offline',
+    expected: '',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at web_panel/frontend/tests/ux-recovery.test.mjs:22:1
+✖ disabled workflow renders the official reason without enabling Start (39.006655ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /RESOURCE_BUSY/. Input:
+  
+  '<section class="toolbar"><label>启动工作流<select aria-label="启动工作流目标"><option value="">明确选择工作流</option><option value="w" selected="">w</option></select></label><button disabled="">启动工作流</button><small>独立启动目标，不使用历史选行；输入由后端再次校验。</small></section>'
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/frontend/tests/ux-recovery.test.mjs:22:838)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '<section class="toolbar"><label>启动工作流<select aria-label="启动工作流目标"><option value="">明确选择工作流</option><option value="w" selected="">w</option></select></label><button disabled="">启动工作流</button><small>独立启动目标，不使用历史选行；输入由后端再次校验。</small></section>',
+    expected: /RESOURCE_BUSY/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at web_panel/frontend/tests/ux-recovery.test.mjs:23:1
+✖ HTTP 401 is typed and centrally notifies only the current session (8.65072ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/frontend/tests/ux-recovery.test.mjs:23:131)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

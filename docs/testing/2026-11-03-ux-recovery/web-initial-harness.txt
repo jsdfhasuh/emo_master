@@ -1,0 +1,93 @@
+✖ invalid local JSON and non-object never become unknown or send a command (63.213386ms)
+✔ submitted connection failure retains original request and unknown, no replay (17.884359ms)
+✖ successful empty catalog clears only its recovered error (16.489676ms)
+✔ older refresh cannot clear the newer catalog error (10.717927ms)
+✖ disabled workflow renders the official reason without enabling Start (17.828305ms)
+✖ HTTP 401 is typed and centrally notifies only the current session (8.439031ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 2
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 556.029004
+
+✖ failing tests:
+
+test at web_panel/frontend/tests/ux-recovery.test.mjs:17:1
+✖ invalid local JSON and non-object never become unknown or send a command (63.213386ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /尚未发送/. Input:
+  
+  "Expected property name or '}' in JSON at position 1 (line 1 column 2)。结果未确认时不自动重发，请先刷新运行状态。"
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/frontend/tests/ux-recovery.test.mjs:17:307)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "Expected property name or '}' in JSON at position 1 (line 1 column 2)。结果未确认时不自动重发，请先刷新运行状态。",
+    expected: /尚未发送/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at web_panel/frontend/tests/ux-recovery.test.mjs:20:1
+✖ successful empty catalog clears only its recovered error (16.489676ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '目录刷新失败：offline'
+  - ''
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/frontend/tests/ux-recovery.test.mjs:20:140)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '目录刷新失败：offline',
+    expected: '',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at web_panel/frontend/tests/ux-recovery.test.mjs:22:1
+✖ disabled workflow renders the official reason without enabling Start (17.828305ms)
+  evalmachine.<anonymous>:13
+  Object.defineProperty(exports, "__esModule", { value: true });
+                        ^
+  
+  ReferenceError: exports is not defined
+      at evalmachine.<anonymous>:13:23
+      at Script.runInContext (node:vm:149:12)
+      at Script.runInNewContext (node:vm:154:17)
+      at Object.runInNewContext (node:vm:310:38)
+      at TestContext.<anonymous> (file:///workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/frontend/tests/ux-recovery.test.mjs:22:715)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+
+test at web_panel/frontend/tests/ux-recovery.test.mjs:23:1
+✖ HTTP 401 is typed and centrally notifies only the current session (8.439031ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/frontend/tests/ux-recovery.test.mjs:23:131)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

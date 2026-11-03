@@ -1,0 +1,353 @@
+test_app (unittest.loader._FailedTest) ... ERROR
+test_auth (unittest.loader._FailedTest) ... ERROR
+test_contract_gateway (unittest.loader._FailedTest) ... ERROR
+test_all_authoritative_files_match_development_handoff (test_contract_manifest.ContractManifestTests) ... ok
+test_embedded_fixtures_are_the_same_sdk_delivery (test_contract_manifest.ContractManifestTests) ... ok
+test_vendored_tree_is_exact_official_zip_not_regenerated (test_contract_manifest.ContractManifestTests) ... ok
+test_dispatch_contract (unittest.loader._FailedTest) ... ERROR
+test_formal_browser_messages (unittest.loader._FailedTest) ... ERROR
+test_freeze_contract (unittest.loader._FailedTest) ... ERROR
+test_history_aggregate (unittest.loader._FailedTest) ... ERROR
+test_mock_identity (unittest.loader._FailedTest) ... ERROR
+test_official_packages (unittest.loader._FailedTest) ... ERROR
+test_operations_state (unittest.loader._FailedTest) ... ERROR
+test_package_context (unittest.loader._FailedTest) ... ERROR
+test_packages (unittest.loader._FailedTest) ... ERROR
+test_preview (unittest.loader._FailedTest) ... ERROR
+test_actual_runtime_history_without_jobs_and_image_ownership (test_product_runtime.ProductRuntimeTests) ... skipped 'Opt-in full owning Runtime integration; requires its separate dependencies'
+test_actual_runtime_start_capture_lookup_stop_and_no_replay (test_product_runtime.ProductRuntimeTests) ... skipped 'Opt-in full owning Runtime integration; requires its separate dependencies'
+test_reconciliation_timeout_does_not_invent_acceptance (test_product_runtime.StartReconciliationTests) ... ok
+test_unknown_queries_same_intent_without_another_start (test_product_runtime.StartReconciliationTests) ... ok
+test_registry (unittest.loader._FailedTest) ... ERROR
+test_runtime_contract (unittest.loader._FailedTest) ... ERROR
+test_scope_status (unittest.loader._FailedTest) ... ERROR
+test_services (unittest.loader._FailedTest) ... ERROR
+test_shared_alias (unittest.loader._FailedTest) ... ERROR
+test_target_api (unittest.loader._FailedTest) ... ERROR
+test_view_resources (unittest.loader._FailedTest) ... ERROR
+
+======================================================================
+ERROR: test_app (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_app
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_app.py", line 6, in <module>
+    from fastapi.testclient import TestClient
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/fastapi/testclient.py", line 1, in <module>
+    from starlette.testclient import TestClient as TestClient  # noqa
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/starlette/testclient.py", line 41, in <module>
+    raise RuntimeError(
+RuntimeError: The starlette.testclient module requires the httpx2 package to be installed.
+You can install this with:
+    $ pip install httpx2
+
+
+
+======================================================================
+ERROR: test_auth (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_auth
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_auth.py", line 4, in <module>
+    from emo_web_panel.auth import AuthStore
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+======================================================================
+ERROR: test_contract_gateway (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_contract_gateway
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_contract_gateway.py", line 6, in <module>
+    from fastapi.testclient import TestClient
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/fastapi/testclient.py", line 1, in <module>
+    from starlette.testclient import TestClient as TestClient  # noqa
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/starlette/testclient.py", line 41, in <module>
+    raise RuntimeError(
+RuntimeError: The starlette.testclient module requires the httpx2 package to be installed.
+You can install this with:
+    $ pip install httpx2
+
+
+
+======================================================================
+ERROR: test_dispatch_contract (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_dispatch_contract
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_dispatch_contract.py", line 13, in <module>
+    from emo_web_panel.runtime_client import GrpcRuntimeClient, RuntimeRejected
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+======================================================================
+ERROR: test_formal_browser_messages (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_formal_browser_messages
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_formal_browser_messages.py", line 10, in <module>
+    from emo_web_panel.services import Views
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+======================================================================
+ERROR: test_freeze_contract (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_freeze_contract
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_freeze_contract.py", line 7, in <module>
+    from emo_web_panel.services import Operations, Views
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+======================================================================
+ERROR: test_history_aggregate (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_history_aggregate
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_history_aggregate.py", line 2, in <module>
+    from emo_web_panel.mock_runtime import MockRuntime
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+======================================================================
+ERROR: test_mock_identity (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_mock_identity
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_mock_identity.py", line 4, in <module>
+    import test_app
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_app.py", line 6, in <module>
+    from fastapi.testclient import TestClient
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/fastapi/testclient.py", line 1, in <module>
+    from starlette.testclient import TestClient as TestClient  # noqa
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/starlette/testclient.py", line 41, in <module>
+    raise RuntimeError(
+RuntimeError: The starlette.testclient module requires the httpx2 package to be installed.
+You can install this with:
+    $ pip install httpx2
+
+
+
+======================================================================
+ERROR: test_official_packages (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_official_packages
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_official_packages.py", line 11, in <module>
+    from emo_web_panel.packages import PackageError, PackageStore
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+======================================================================
+ERROR: test_operations_state (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_operations_state
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_operations_state.py", line 7, in <module>
+    from emo_web_panel.services import Operations
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+======================================================================
+ERROR: test_package_context (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_package_context
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_package_context.py", line 9, in <module>
+    import test_app
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_app.py", line 6, in <module>
+    from fastapi.testclient import TestClient
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/fastapi/testclient.py", line 1, in <module>
+    from starlette.testclient import TestClient as TestClient  # noqa
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/starlette/testclient.py", line 41, in <module>
+    raise RuntimeError(
+RuntimeError: The starlette.testclient module requires the httpx2 package to be installed.
+You can install this with:
+    $ pip install httpx2
+
+
+
+======================================================================
+ERROR: test_packages (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_packages
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_packages.py", line 11, in <module>
+    from emo_web_panel.packages import PackageError, PackageStore, TYPES
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+======================================================================
+ERROR: test_preview (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_preview
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_preview.py", line 14, in <module>
+    from emo_web_panel.config import Config
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+======================================================================
+ERROR: test_registry (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_registry
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_registry.py", line 4, in <module>
+    from emo_web_panel.registry import RuntimeRegistry, RegistryDenied, RegistryError
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+======================================================================
+ERROR: test_runtime_contract (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_runtime_contract
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_runtime_contract.py", line 12, in <module>
+    from emo_web_panel.runtime_client import GrpcRuntimeClient, RuntimeRejected, browser_safe
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+======================================================================
+ERROR: test_scope_status (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_scope_status
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_scope_status.py", line 4, in <module>
+    from emo_web_panel.services import Views
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+======================================================================
+ERROR: test_services (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_services
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_services.py", line 5, in <module>
+    from emo_web_panel.services import Views, Operations
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+======================================================================
+ERROR: test_shared_alias (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_shared_alias
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_shared_alias.py", line 4, in <module>
+    from emo_web_panel.mock_runtime import MockRuntime
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+======================================================================
+ERROR: test_target_api (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_target_api
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_target_api.py", line 3, in <module>
+    import test_app
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_app.py", line 6, in <module>
+    from fastapi.testclient import TestClient
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/fastapi/testclient.py", line 1, in <module>
+    from starlette.testclient import TestClient as TestClient  # noqa
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/starlette/testclient.py", line 41, in <module>
+    raise RuntimeError(
+RuntimeError: The starlette.testclient module requires the httpx2 package to be installed.
+You can install this with:
+    $ pip install httpx2
+
+
+
+======================================================================
+ERROR: test_view_resources (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_view_resources
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_view_resources.py", line 6, in <module>
+    from emo_web_panel.resource_cache import ResourceCache
+ModuleNotFoundError: No module named 'emo_web_panel'
+
+
+----------------------------------------------------------------------
+Ran 27 tests in 0.017s
+
+FAILED (errors=20, skipped=2)

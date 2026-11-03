@@ -1,7 +1,17 @@
 import { parseLosslessJSON } from './lossless';
 let csrf = '';
-export function setCsrf(value: string) { csrf = value; }
+let sessionGeneration = 0;
+const sessionExpiredListeners = new Set<() => void>();
+export class ApiError extends Error {
+    constructor(message: string, public readonly status: number) { super(message); this.name = 'ApiError'; }
+}
+export function onSessionExpired(listener: () => void) {
+    sessionExpiredListeners.add(listener);
+    return () => { sessionExpiredListeners.delete(listener); };
+}
+export function setCsrf(value: string) { csrf = value; sessionGeneration++; }
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+    const requestSession = sessionGeneration;
     const headers = new Headers(options.headers);
     if (options.body && !(options.body instanceof Blob))
         headers.set('Content-Type', 'application/json');
@@ -15,7 +25,11 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
             message = typeof body.detail === 'string' ? body.detail : body.error?.message || message;
         }
         catch { }
-        throw new Error(message);
+        if (res.status === 401 && !['/api/session', '/api/preview/session'].includes(path)) {
+            message = '会话已失效，请重新登录；未确认操作已保留，不会自动重发。';
+            if (requestSession === sessionGeneration) sessionExpiredListeners.forEach(listener => listener());
+        }
+        throw new ApiError(message, res.status);
     }
     return res.status === 204 ? undefined as T : parseLosslessJSON(await res.text()) as T;
 }

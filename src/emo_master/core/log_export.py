@@ -18,7 +18,7 @@ def exportLogs(path: Path, records: Iterable[dict], *, formatName: str, scope: s
         raise ValueError("不支持的日志导出格式：" + formatName)
     path = Path(path)
     exportedAt = datetime.now().astimezone().isoformat(timespec="seconds")
-    metadata = dict(schemaVersion="1.0", exportedAt=exportedAt, scope=scope, filters=filters)
+    metadata: dict[str, object] = dict(schemaVersion="1.0", exportedAt=exportedAt, scope=scope, filters=filters)
     if retainedCount is not None:
         metadata["retainedCount"] = retainedCount
     labels = dict(filtered="当前显示筛选记录", all_cached="全部缓存日志",

@@ -168,7 +168,9 @@ def displayRecord(value: dict, path: Path) -> dict:
 def deviceRecordMatches(record: dict, deviceId: str) -> bool:
     if not deviceId:
         return True
-    payload = record.get('payload') if isinstance(record.get('payload'), dict) else record
+    payload = record.get('payload')
+    if not isinstance(payload, dict):
+        payload = record
     if payload.get('deviceId') == deviceId:
         return True
     bindings = payload.get('deviceBindings', {})

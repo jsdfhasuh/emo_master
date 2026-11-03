@@ -236,7 +236,7 @@ try:
             self._historyFuture = None
             self._historyCancel = None
             self._historyReply = None
-            self._historyFilters = {}
+            self._historyFilters: dict[str, Any] = {}
             self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
             self._historyResources = {"cancel": None, "call": None}
             root = QVBoxLayout()
@@ -1069,7 +1069,7 @@ try:
             values = (
                 entry.displayTime(),
                 entry.level,
-                (entry.originApp or ("runtime" if entry.source == "runtime" else "designer")) + " / " + entry.detailPayload()["component"],
+                (entry.originApp or ("runtime" if entry.source == "runtime" else "designer")) + " / " + str(entry.detailPayload()["component"]),
                 entry.jobId,
                 entry.displayWorkflow(),
                 entry.displayNode(),

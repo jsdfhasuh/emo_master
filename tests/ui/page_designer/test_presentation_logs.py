@@ -35,6 +35,20 @@ class LogService(rpc.RuntimeServiceServicer):
         self.cancelled = set()
         self.failures = []
         self.lock = threading.Lock()
+        self.queryCode = None
+        self.queryRequests = []
+        self.runtimeRows = []
+
+    def QueryRuntimeLogs(self, request, context):
+        self.queryRequests.append(request)
+        if self.queryCode is None:
+            context.abort(grpc.StatusCode.UNIMPLEMENTED, 'legacy Runtime')
+        if isinstance(self.queryCode, grpc.StatusCode):
+            context.abort(self.queryCode, 'controlled query failure')
+        rows = [row for row in self.runtimeRows if row.event_id > request.after_event_id]
+        return pb.QueryRuntimeLogsReply(ok=self.queryCode == 'OK', code=self.queryCode,
+            runtime_instance_id='runtime', events=rows,
+            upper_event_id=len(self.runtimeRows), next_event_id=len(self.runtimeRows))
 
     def StreamJobEvents(self, request, context):
         with self.lock:
@@ -277,3 +291,110 @@ def testRunCommandJobKeepsItsExistingLogSubscription(designer, logsServer, monke
     preview.watchCurrent()
     waitFor(lambda: preview.hub is not None)
     assert preview.runtimeLogs is None and service.requests == []
+
+
+@pytest.mark.parametrize('queryCode', ['OK', 'RESET_REQUIRED', grpc.StatusCode.UNAVAILABLE])
+def testQuerySupportOrUnknownNeverStartsPageJobStream(designer, logsServer, monkeypatch, queryCode):
+    window, client, document = designer
+    service, address = logsServer
+    service.queryCode = queryCode
+    service.rows['external-job'] = [event('external-job', 1)]
+    client.capabilities.capabilities.append('presentation_logs')
+    client.jobs = [metadata(document, 'external-job')]
+    monkeypatch.setattr(client, 'displayAddress', lambda: address)
+    preview = window.pageCoordinator.preview
+    preview.watchCurrent()
+    waitFor(lambda: preview.hub is not None)
+    assert preview.runtimeLogs is None and service.requests == []
+    assert len(service.queryRequests) == 1
+    assert service.queryRequests[0].runtime_instance_id == 'runtime'
+    assert not any(row.eventType == 'presentation.source.unavailable' for row in window.logEntries)
+    if queryCode != 'OK':
+        assert any('页面日志查询失败' in row.message for row in window.logEntries)
+
+
+@pytest.mark.parametrize('switch', ['address', 'instance'])
+def testLegacyPageSourceSwitchClosesStreamAndResetsCursor(designer, logsServer, monkeypatch, switch):
+    window, client, document = designer
+    first, address = logsServer
+    second = LogService()
+    server = grpc.server(ThreadPoolExecutor(max_workers=4))
+    rpc.add_RuntimeServiceServicer_to_server(second, server)
+    port = server.add_insecure_port('127.0.0.1:0')
+    server.start()
+    try:
+        client.capabilities.capabilities.append('presentation_logs')
+        client.jobs = [metadata(document, 'external-job')]
+        monkeypatch.setattr(client, 'displayAddress', lambda: address)
+        first.rows['external-job'] = [event('external-job', 4)]
+        preview = window.pageCoordinator.preview
+        preview.watchCurrent()
+        waitFor(lambda: any(row.sequence == 4 for row in window.logEntries))
+        old = preview.runtimeLogs
+        preview.stopViewing()
+        waitFor(lambda: not preview.active())
+        waitFor(lambda: 'external-job' in first.cancelled)
+        assert all(not thread.is_alive() for thread in old.threads)
+        assert preview.logCursors['external-job'] == 4
+        if switch == 'address':
+            address = f'127.0.0.1:{port}'
+            active = second
+        else:
+            client.capabilities.runtime_instance_id = 'new-runtime'
+            client.jobs[0].runtime_instance_id = 'new-runtime'
+            active = first
+        active.rows['external-job'] = [event('external-job', 1, 'presentation.source.recovered', 'INFO')]
+        preview.watchCurrent()
+        waitFor(lambda: any(row.eventType == 'presentation.source.recovered' for row in window.logEntries))
+        assert active.requests[-1] == ('external-job', 0, True)
+        preview.stopViewing()
+        waitFor(lambda: not preview.active())
+    finally:
+        server.stop(0).wait(3)
+
+
+def testAdvancedLegacyEndpointDoesNotUseMainRuntimeOwnership(designer, logsServer, monkeypatch):
+    from emo_master.clients.runtime.connection import connectionProfile
+    window, client, document = designer
+    service, address = logsServer
+    client.connectionProfile = connectionProfile('127.0.0.1:51001')
+    window._runtimeLogJobProjects['external-job'] = (document.project.projectId, window._runtimeLogProjectToken)
+    service.queryCode = 'UNIMPLEMENTED'
+    service.rows['external-job'] = [event('external-job', 1)]
+    preview = window.pageCoordinator.preview
+    job = metadata(document, 'external-job')
+    preview.launch(lambda: preview._attach(address, job, None, logs=True))
+    waitFor(lambda: any(row.eventType == 'presentation.source.unavailable' for row in window.logEntries))
+    assert service.requests == [('external-job', 0, True)]
+    assert service.queryRequests[0].runtime_instance_id == job.runtime_instance_id
+
+
+def testModernPageUsesOnlyGlobalQueryWithDetails(designer, logsServer, monkeypatch):
+    from emo_master.clients.runtime.connection import createChannel
+    window, client, document = designer
+    service, address = logsServer
+    service.queryCode = 'OK'
+    client.capabilities.capabilities.append('presentation_logs')
+    client.jobs = [metadata(document, 'external-job')]
+    monkeypatch.setattr(client, 'displayAddress', lambda: address)
+    channel = createChannel(address)
+    client.runtimeService = rpc.RuntimeServiceStub(channel)
+    preview = window.pageCoordinator.preview
+    try:
+        window._pollOperationalLogs()
+        waitFor(lambda: window._logResources['reader'].supported is True)
+        preview.watchCurrent()
+        waitFor(lambda: preview.hub is not None)
+        row = event('external-job', 1)
+        row.runtime_instance_id = 'runtime'
+        service.rows['external-job'] = [row]
+        service.runtimeRows = [pb.StoredLogEvent(event_id=1, event=row)]
+        waitFor(lambda: any(entry.eventType == row.event_type for entry in window.logEntries))
+        entries = [entry for entry in window.logEntries if entry.eventType == row.event_type]
+        assert len(entries) == 1 and entries[0].eventId == 1
+        assert entries[0].payload['sourceId'] == 'live' and '6220800' in entries[0].payload['reason']
+        assert preview.runtimeLogs is None and service.requests == []
+    finally:
+        client._closed = True
+        window._stopGlobalLogs()
+        channel.close()

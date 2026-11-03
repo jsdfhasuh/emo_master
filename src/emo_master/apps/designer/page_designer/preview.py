@@ -3,6 +3,8 @@ import queue
 import threading
 import time
 
+import grpc
+
 from PySide2.QtCore import QObject, QTimer
 from PySide2.QtWidgets import QInputDialog
 from shiboken2 import isValid
@@ -150,6 +152,7 @@ class PreviewController(QObject):
         self.historyOwner = None
         self.runtimeLogs = None
         self.logCursors = {}
+        self.logIdentity = None
         self.busy = False
         self.worker = None
         self.events = queue.Queue(maxsize=1)
@@ -380,9 +383,30 @@ class PreviewController(QObject):
             self.historyOwner = HistoryClient.fromConnectionProfile(address,
                 runtimeInstanceId=metadata.runtime_instance_id, projectId=metadata.project_id,
                 presentation=document.presentation)
+        legacyLogs, logError = self._legacyLogs(address, metadata.runtime_instance_id) if logs else (False, '')
         return {'kind': 'attached', 'metadata': metadata, 'coverage': coverage, 'roots': roots,
-                'logAddress': address if logs else '',
+                'logAddress': address if legacyLogs else '', 'logError': logError,
                 'logJobs': tuple(item.job_id for item in pair) if pair else (metadata.job_id,)}
+
+    @staticmethod
+    def _legacyLogs(address, runtimeInstanceId):
+        # Probe the observed endpoint, not the unrelated main-window connection.
+        # Unknown/failed queries must not enable a second source on modern servers.
+        try:
+            with createChannel(address) as channel:
+                reply = rpc.RuntimeServiceStub(channel).QueryRuntimeLogs(
+                    pb.QueryRuntimeLogsRequest(runtime_instance_id=runtimeInstanceId, limit=1),
+                    timeout=address.timeoutSeconds)
+            if reply.ok:
+                return False, ''
+            if reply.code == 'UNIMPLEMENTED':
+                return True, ''
+            detail = reply.message or reply.code
+        except grpc.RpcError as error:
+            if error.code() == grpc.StatusCode.UNIMPLEMENTED:
+                return True, ''
+            detail = error.code().name
+        return False, '页面日志查询失败：' + detail + '；请重新查看运行结果以重试'
 
     def historyClient(self, document):
         from emo_master.clients.runtime.history import LazyHistoryClient
@@ -559,8 +583,25 @@ class PreviewController(QObject):
         self.selectedJob = value['metadata']
         self.selectedWorkflows = value['roots']
         self.coverage = value['coverage']
-        # Runtime records reach the selected Runtime table through the global
-        # query source; page-client diagnostics keep their existing session path.
+        address = value.get('logAddress')
+        if address:
+            from .runtime_logs import PreviewRuntimeLogs
+            identity = (address.target, self.selectedJob.runtime_instance_id)
+            if identity != self.logIdentity:
+                self.logCursors.clear()
+                self.logIdentity = identity
+            window = self.coordinator.window
+            client = window.runtimeClient
+            mainAddress = getattr(client, 'connectionProfile', None)
+            if mainAddress is None and callable(getattr(client, 'displayAddress', None)):
+                mainAddress = client.displayAddress()
+            owned = window._runtimeLogJobProjects if (mainAddress and
+                connectionProfile(mainAddress).target == address.target) else {}
+            jobs = [job for job in value['logJobs'] if job not in owned]
+            if jobs:
+                self.runtimeLogs = PreviewRuntimeLogs(address, jobs, self.logCursors)
+        if value.get('logError'):
+            self.coordinator.window.appendPageLog('WARN', value['logError'])
         self.observationLabel = self._jobLabel(self.selectedJob, includeStatus=False)
         self.hub = DisplayHub(self.session, self) if self.session is not None else None
         observer = self.observer
@@ -595,8 +636,7 @@ class PreviewController(QObject):
         window = self.coordinator.window
         for kind, value in rows:
             if kind == 'event':
-                # The selected Runtime table is fed by QueryRuntimeLogs only.
-                continue
+                window.appendRuntimeEvent(value)
             else:
                 window.appendPageLog('WARN', value)
 

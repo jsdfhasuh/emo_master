@@ -63,3 +63,16 @@ CI/原生 Qt 自动化、源码测试、浏览器自动化、人工可见点击�
 截至此追加时，`fc2bb9afe1c7ce5c44223bc53efb6a9bd9bcc459` 的 [Web run 41634877782](https://github.com/jsdfhasuh/emo_master/actions/runs/41634877782) attempt 1 已于 12:27:57 UTC 全部成功，主 CI [41634877796](https://github.com/jsdfhasuh/emo_master/actions/runs/41634877796) 仍运行。产物名中的 `5e788bd3118b32a5ab3e64c2a00d9466252f252b` 是该 PR synthetic merge checkout；五份 Web artifact 的 metadata 均记录 `workflow_run.head_sha=fc2bb9af...`。这些结果不能冒称本次后续提交已通过。
 
 本地第二次完整检查以 fc2bb9af 启动，后来为定位本项在 35% 后编辑了包自检文件，故仅作为诊断 sweep，不能作为单一不可变 SHA 的完整通过证据；最终完整回归须使用固定源码独立检出。远端 fc2bb9af 任务仍验证其原不可变提交。两个冻结 dispatch 和正式可见桌面阻塞保持不变。
+
+
+## 后续发现：旧服务页面观察的单 Job 日志回退
+
+2026-11-03 13:05 UTC，完整诊断到页面测试时发现：本轮 `PreviewController` 无条件移除了旧 `PreviewRuntimeLogs`，同时丢弃其 event。对于只支持 `presentation_logs/StreamJobEvents`、不支持 `QueryRuntimeLogs` 的旧 Runtime，观察外部 Job 时没有运行控制器订阅兜底，因此原页面运行日志及详情消失。计划保留旧服务原单 Job 入口，这属于正常兼容路径的产品回归，不能仅删改失败断言。
+
+局部修复复用现有 PreviewRuntimeLogs 和关闭生命周期：在已有后台 attach 操作对**实际观察地址**、携带其 metadata runtime instance 查询一次；只有业务回复或 gRPC 明确 UNIMPLEMENTED 才启用旧单 Job 来源。支持 Query 的新服务仍使用全局查询唯一来源，RESET_REQUIRED、UNAVAILABLE 等未知/错误不误当旧服务。旧来源保留 Runtime 身份/完整 payload，页面客户端错误仍属 page_designer；同目标由运行控制器订阅的 Job 不重复订阅；同地址/实例重开保留 cursor，换地址或实例清理旧 cursor，旧流沿原关闭路径退出。
+
+原两个失败测试及旧重开/详情断言全部保留；新增实际现代 Query 全局 eventId 与 payload、零 StreamJobEvents、未知不回退、地址/实例切换和不同主连接所属 Job 不压掉外部流的回归。隔离页面组 **43 passed / 29.52s**；整合后页面与 operational-log 组 **60 passed / 51.63s**；mypy 全 612 源码文件、Ruff `src tests` 及源码 diff whitespace 检查通过。证据见 `dot-ci-evidence/page-fallback-*.txt`。
+
+本地诊断 sweep 已结束：9041 passed、31 skipped、8 failed、42 subtests，40 分 47 秒。它不是固定源码的最终通过：三个包自检失败来自长进程中已载入的旧 v5 验包逻辑，两个页面回退失败为本节已修问题；另有本机 offscreen 工具箱/画布几何差异和一次 750ms 图读取 deadline。后者在固定 f0d77115 单测试原样复跑通过，未改变 deadline、96 帧像素/序列断言或相关业务代码。全部旧输出保留，没有将环境/诊断失败抹去。
+
+当前修复前的 `f0d77115536eb1b8800a7cf69c1c6a21e7a23786` [Web run 41637042466](https://github.com/jsdfhasuh/emo_master/actions/runs/41637042466) attempt 1 已全部成功（12:43:22 UTC）；该 SHA 的 [主 CI 41637042316](https://github.com/jsdfhasuh/emo_master/actions/runs/41637042316) 截至本节仍运行。后续修复提交必须单独等待其精确 head SHA 的 CI 终态，不能继承这些旧结果；冻结与可见桌面两项阻塞没有解除。

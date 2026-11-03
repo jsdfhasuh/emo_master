@@ -76,3 +76,21 @@ CI/原生 Qt 自动化、源码测试、浏览器自动化、人工可见点击�
 本地诊断 sweep 已结束：9041 passed、31 skipped、8 failed、42 subtests，40 分 47 秒。它不是固定源码的最终通过：三个包自检失败来自长进程中已载入的旧 v5 验包逻辑，两个页面回退失败为本节已修问题；另有本机 offscreen 工具箱/画布几何差异和一次 750ms 图读取 deadline。后者在固定 f0d77115 单测试原样复跑通过，未改变 deadline、96 帧像素/序列断言或相关业务代码。全部旧输出保留，没有将环境/诊断失败抹去。
 
 当前修复前的 `f0d77115536eb1b8800a7cf69c1c6a21e7a23786` [Web run 41637042466](https://github.com/jsdfhasuh/emo_master/actions/runs/41637042466) attempt 1 已全部成功（12:43:22 UTC）；该 SHA 的 [主 CI 41637042316](https://github.com/jsdfhasuh/emo_master/actions/runs/41637042316) 截至本节仍运行。后续修复提交必须单独等待其精确 head SHA 的 CI 终态，不能继承这些旧结果；冻结与可见桌面两项阻塞没有解除。
+
+## d196970f 的最终远端结果与本次文档收尾
+
+2026-11-03 14:10 UTC 核对：已测试源码 HEAD 为 `d196970fff38eae7e4453afa4b8a0f364ae2bffd`，tree `4a3027877697d8f0b889094836de2395a40b506e`。该提交包含上述最小修复与完整回归，PR #9 仍 open/draft、未合并。以下全部是该精确 SHA 的结果，不属于随后保存本节的纯文档提交。
+
+- [主 CI 41642002758](https://github.com/jsdfhasuh/emo_master/actions/runs/41642002758)，attempt 1，14:01:39 UTC 终态 **FAILURE**。protobuf、Ruff、mypy 612 个源码文件通过。
+- [Windows job 125937587982](https://github.com/jsdfhasuh/emo_master/actions/runs/41642002758/job/125937587982)：**SUCCESS**，9084 passed、5 skipped、42 subtests passed，49 分钟；包括本轮迁移门禁、启动取消、旧页面日志回退、现代 Query 单一来源和 96 帧双消费者用例。原生 Windows Qt 自动化成功不是人工鼠标键盘验收。
+- [Ubuntu job 125937588498](https://github.com/jsdfhasuh/emo_master/actions/runs/41642002758/job/125937588498)：**FAILURE**，9057 passed、31 skipped、1 failed、42 subtests passed，31 分 58 秒。唯一失败为既有 `testTwoNetworkConsumersAll96ChangingImagesAndExplicitSupersession`，双消费者的 ordinal 73 在约 538 ms 收到 `ReadAsset` 的 DEADLINE_EXCEEDED，decoded 为空，精确 96 帧断言正确报错。本轮日志修复相关项在同次完整运行均通过。
+
+该图读取的产品期限仍是 **500 ms**（`min(.5, connectionProfile.timeoutSeconds)`）。前一诊断 sweep 的约 750 ms 是观察到的耗时，不是该 RPC 的配置期限。该测试、DisplaySession 与 Runtime presentation 源码目录与 main 相同；目前没有日志变更导致该超时的直接证据，也没有证明是 runner/环境原因。历史完整顺序诊断 [41590566404](https://github.com/jsdfhasuh/emo_master/actions/runs/41590566404) 未复现，不能据此否定此次失败。未改期限、96 帧像素/序列/owner 断言或 skip，未以盲目重跑覆盖 attempt 1 的失败。
+
+原始失败 artifact 已下载并核验：Ubuntu ZIP `13234923924`，184115 字节，SHA256 `8e0c43bf95e513851bc1eb813bb424558f211c720e122d8f899d3d63837d00f3`；其中完整 `ci-failures.log` 原字节保存在 [d196970f-linux-failure.log](dot-ci-evidence/d196970f-linux-failure.log)。Windows ZIP `13237215776`，184457 字节，SHA256 `d0e691c1b8690deab0852ee42ece5fef5543a0f7afac1d490afc79dbd89125cd`，失败日志为空。两份 ZIP 的 size/SHA256/CRC 与 GitHub 回执匹配；JUnit 均为 9131 项（包含 42 个 subtests），两平台分别 0/1 failure、0 error。原完整 job 日志及 SHA256、产物身份、过期时间见 [终态证据索引](dot-ci-evidence/d196970f-terminal.json)。两份 test-results artifact 保留至 2027-02-01。
+
+[Web 41642002999](https://github.com/jsdfhasuh/emo_master/actions/runs/41642002999)，attempt 1，13:17:31 UTC **SUCCESS**。Windows/Linux Web 与独立 owning Runtime 三个 job 全部成功。五份 ZIP 都已实际下载，大小、SHA256、CRC 及内部 70 个文件哈希核验通过；artifact metadata 的 head_sha 全为 d196970f，文件名/报告中的 `ee6436edefa84d3b0d264fc0d1a8c56bbdc9ea9a` 为该 PR 的 synthetic merge checkout。两平台随包 SDK wheel 仍为 38937 字节及 `cfc9ce...a086` 原哈希。实际 Chromium → Web → 软件 Runtime 报告 status/ordinary Job 为 PASS、browser-errors 为空、syntheticOnly=true、physicalDevices=false。其 SDK 来源仍正确保留 `940994b...` 与 `sourceDirty=true`，没有冒写为本轮源码 SHA。Web artifact 保留至 2026-11-10；这些是 Web/软件 Runtime 证据，不是冻结 EXE。
+
+Designer/Runtime 两个手动冻结 workflow 仍 **BLOCKED / NOT_RUN**：没有可用已认证 dispatch 入口，未创建凭据、改变触发条件或使用用户电脑绕过。实际 workflow 的 `publish_release=false`、packager `91766f6d18ca9a333f64cf1c6030202457ec4a8a` 不变，之后可执行时 source_ref 必须重新取当时最终完整 HEAD。正式可见桌面八组及 `DesignerOpen=NOT_RUN` 也未解除，不能用 Windows Qt、Web 或包源码自检代替。真实设备/LAN/部署/发布均未执行。
+
+本次收尾只追加本报告和终态证据，不修改源码、测试、配置或 workflow。文档提交会有新的 HEAD 和自己的 CI；上述 d196970f 的通过/失败不能标为新 HEAD 的结果。新 HEAD 的运行需另行跟踪至终态，并在交付说明中给出其精确 SHA、run/attempt 与状态；不为更新本节的状态而无限追加提交。

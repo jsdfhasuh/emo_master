@@ -50,3 +50,16 @@ handoff 的八组正式 Designer/Operator Runtime 鼠标键盘走查全部仍未
 本次没有可用的已认证 Actions dispatch 执行入口：云 `gh` 未登录，已连接 GitHub 工具可读工作流及重跑既有 run，但不提供 workflow_dispatch；没有使用用户电脑或创建新凭据、改 workflow 触发条件来绕开。因此两个冻结 workflow 均未启动、没有本轮冻结产物，也不存在可声称已验证的源码/packager 身份。需在受权可用入口手动启动这两个不发布工作流后继续核对终态及 artifact provenance。
 
 CI/原生 Qt 自动化、源码测试、浏览器自动化、人工可见点击、冻结包和真实设备验收各自独立。真实设备、跨机器 LAN 与现场部署未执行且不在本轮范围。
+
+
+## 后续发现：迁移 006 的包自检门禁
+
+2026-11-03 12:34 UTC，继续运行源码测试发现 `testPackageGuiGateRequiresNineCustomRenderedSamples` 的总体状态为 error。单独执行实际包自检后，九个 GUI 图标样本全部通过；失败来自 `_checkMigrations()` 仍固定接受版本 `[1, 2, 3, 4, 5]`，而本轮数据库已经正确执行 `006_logging_metadata.sql` 并得到 `[1, 2, 3, 4, 5, 6]`。该遗漏同样会影响真实冻结程序的自检，但本次尚未构建冻结包，不能表述为冻结实测失败。
+
+最小修复：包自检必需 SQL 文件列表加入 `006_logging_metadata.sql`，精确版本更新为 1–6。版本 5 仍为既有 Python 迁移，没有伪造 005 SQL。测试保留资源、ONNX、journal mode 和 Qt 隔离断言，正例明确完整五文件顺序，新增缺失/空 006 资源都必须拒绝的两个反例。没有移除门禁、容忍未知版本或修改业务迁移。
+
+回归：`test_windows_package_entry.py`、`test_package_gui_icons.py`、`test_package_classification_selftest.py`、`test_frozen_runtime_validation.py`、`test_release_workflow_contract.py` 共 **29 passed，2 subtests passed / 9.80s**；原失败和修复后输出见 `dot-ci-evidence/package-migration-before.txt`、`package-migration-after.txt`。这是源码自检及合同测试，不是冻结 EXE 通过。Ruff `src tests` 通过。
+
+截至此追加时，`fc2bb9afe1c7ce5c44223bc53efb6a9bd9bcc459` 的 [Web run 41634877782](https://github.com/jsdfhasuh/emo_master/actions/runs/41634877782) attempt 1 已于 12:27:57 UTC 全部成功，主 CI [41634877796](https://github.com/jsdfhasuh/emo_master/actions/runs/41634877796) 仍运行。产物名中的 `5e788bd3118b32a5ab3e64c2a00d9466252f252b` 是该 PR synthetic merge checkout；五份 Web artifact 的 metadata 均记录 `workflow_run.head_sha=fc2bb9af...`。这些结果不能冒称本次后续提交已通过。
+
+本地第二次完整检查以 fc2bb9af 启动，后来为定位本项在 35% 后编辑了包自检文件，故仅作为诊断 sweep，不能作为单一不可变 SHA 的完整通过证据；最终完整回归须使用固定源码独立检出。远端 fc2bb9af 任务仍验证其原不可变提交。两个冻结 dispatch 和正式可见桌面阻塞保持不变。

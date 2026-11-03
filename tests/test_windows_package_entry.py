@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 from types import ModuleType
+import pytest
 
 from emo_master.apps import windows_entry
 from emo_master.apps.package_selftest import runSelfTest, runSelfTestCommand
@@ -19,9 +20,28 @@ def testPackageSelfTestValidatesBundledResourcesAndOnnxRuntime() -> None:
     assert checks["builtins"]["operatorCount"] >= 49
     assert checks["builtins"]["editorUiCount"] >= 3
     assert checks["onnxruntime"]["provider"] == "CPUExecutionProvider"
-    assert checks["migrations"]["versions"] == [1, 2, 3, 4, 5]
+    assert checks["migrations"]["versions"] == [1, 2, 3, 4, 5, 6]
+    assert checks["migrations"]["files"] == [
+        "001_init.sql", "002_runtime_workflow.sql", "003_runtime_timestamps.sql",
+        "004_global_counters.sql", "006_logging_metadata.sql",
+    ]
     assert checks["migrations"]["journalMode"] == "delete"
     assert len(checks["operatorIcons"]["examples"]) == 3
+
+
+@pytest.mark.parametrize("empty", [False, True])
+def testPackageMigrationGateRequiresLoggingMetadataSql(monkeypatch, tmp_path, empty):
+    from emo_master.apps import package_selftest
+    migrationPath = tmp_path / "apps/runtime/context/migrations"
+    migrationPath.mkdir(parents=True)
+    for name in package_selftest._EXPECTED_MIGRATIONS:
+        if name != "006_logging_metadata.sql":
+            (migrationPath / name).write_text("-- existing migration", encoding="utf-8")
+    if empty:
+        (migrationPath / "006_logging_metadata.sql").touch()
+    monkeypatch.setattr(package_selftest, "_packageRoot", lambda: tmp_path)
+    with pytest.raises(RuntimeError, match="SQL migration is missing or empty: 006_logging_metadata.sql"):
+        package_selftest._checkMigrations()
 
 
 def testDefaultPackageSelfTestDoesNotImportQtOrCreateApplication():

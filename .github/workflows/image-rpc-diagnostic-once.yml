@@ -1,0 +1,126 @@
+name: One approved Ubuntu image RPC diagnostic
+
+on:
+  push:
+    branches: [codex/diagnose-image-rpc-20261103]
+    paths:
+      - .github/workflows/image-rpc-diagnostic-once.yml
+      - scripts/image_rpc_diagnostic.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: one-ubuntu-image-rpc-diagnostic-20261103
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: >-
+      github.event.created == true && github.run_attempt == '1' &&
+      github.event.head_commit.message == 'diagnostic: one Ubuntu image RPC trace 20261103'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTHONUNBUFFERED: '1'
+      HUARAY_CAMERA_SMOKE: '0'
+      BASE_SHA: 940994b3420b47ff0add8766ccce5a4f2686a02a
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Verify exact source scope and fresh output
+        shell: bash
+        run: |
+          export EVIDENCE="$RUNNER_TEMP/image-rpc-evidence"
+          echo "EVIDENCE=$EVIDENCE" >> "$GITHUB_ENV"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          mkdir "$EVIDENCE"
+          git rev-parse HEAD > "$EVIDENCE/source-sha.txt"
+          git diff --name-only "$BASE_SHA" HEAD > "$EVIDENCE/changed-files.txt"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          root = Path(os.environ['EVIDENCE'])
+          changed = set((root / 'changed-files.txt').read_text().splitlines())
+          assert changed == {'.github/workflows/image-rpc-diagnostic-once.yml',
+                             'scripts/image_rpc_diagnostic.py'}, changed
+          PY
+          git diff --exit-code "$BASE_SHA" HEAD -- src tests requirements.txt requirements-dev.txt pyproject.toml scripts/r3_asset_split_trace.py scripts/r3_asset_split_analyze.py scripts/r3_measure.py
+      - name: Install original dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Record environment and diagnostic preflight
+        shell: bash
+        run: |
+          python - <<'PY' | tee "$EVIDENCE/environment.json"
+          import importlib.metadata, json, os, platform, sys
+          import grpc
+          assert grpc.__version__ == '1.78.0'
+          print(json.dumps({'python': sys.version, 'platform': platform.platform(),
+              'runner_image': os.environ.get('ImageOS'), 'runner_image_version': os.environ.get('ImageVersion'),
+              'base_sha': os.environ['BASE_SHA'], 'sha': os.environ['GITHUB_SHA'],
+              'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'packages': {name: importlib.metadata.version(name) for name in
+                  ('grpcio', 'numpy', 'opencv-python', 'protobuf', 'pydantic', 'pytest')},
+              'scope': 'one original 96-frame loopback test; no retry, no hardware, no timeout changes'}, indent=2))
+          PY
+          python -m py_compile scripts/image_rpc_diagnostic.py
+      - name: Run original 96-frame test exactly once
+        id: original
+        shell: bash
+        env:
+          EMO_DISPLAY_EVIDENCE: ${{ runner.temp }}/image-rpc-evidence/original
+        run: |
+          set +e
+          python -m pytest -vv --tb=long -p scripts.image_rpc_diagnostic \
+            --asset-rpc-diagnostic-dir "$EVIDENCE/trace" \
+            --junitxml="$EVIDENCE/junit.xml" --timeout=120 --timeout-method=thread \
+            -o faulthandler_timeout=60 \
+            tests/runtime/presentation/test_live_decisions.py::testTwoNetworkConsumersAll96ChangingImagesAndExplicitSupersession \
+            2>&1 | tee "$EVIDENCE/pytest.log"
+          pipeline=("${PIPESTATUS[@]}")
+          printf '%s\n' "${pipeline[0]}" > "$EVIDENCE/pytest-exit.txt"
+          echo "exit_code=${pipeline[0]}" >> "$GITHUB_OUTPUT"
+          if [ "${pipeline[1]}" -ne 0 ]; then exit "${pipeline[1]}"; fi
+          exit "${pipeline[0]}"
+      - name: Analyze retained stages without another test run
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from scripts.r3_asset_split_analyze import analyze_calls
+          root = Path(os.environ['EVIDENCE'])
+          trace_path = root / 'trace' / 'asset-split.json'
+          if not trace_path.is_file():
+              print('DIAGNOSTIC_UNAVAILABLE: inspect setup/test logs; no original test pass is claimed')
+              raise SystemExit(1)
+          manifest = json.loads((root / 'trace' / 'manifest.json').read_text())
+          payload = json.loads(trace_path.read_text())
+          analysis = analyze_calls(payload, count=96, warmup=0, capture=True)
+          (root / 'analysis.json').write_text(json.dumps(analysis, indent=2) + '\n')
+          print(json.dumps({'manifest': manifest, 'analysis': analysis}, indent=2))
+          print('One instrumented trial only. An isolated pass does not prove the historical root cause or a repair. No paired baseline: in-test observer interference remains unmeasured.')
+          assert manifest['diagnostic']['complete'], 'observer incomplete; original pytest result remains separate'
+          assert manifest['full_call_coverage'], '192 original calls not fully observed; inspect original failure'
+          PY
+      - name: Fingerprint all retained evidence
+        if: always()
+        shell: bash
+        run: |
+          if [ -d "$EVIDENCE" ]; then
+            find "$EVIDENCE" -type f ! -name SHA256SUMS.txt -print0 | sort -z | xargs -0 sha256sum > "$EVIDENCE/SHA256SUMS.txt"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: image-rpc-diagnostic-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/image-rpc-evidence
+          if-no-files-found: error
+          retention-days: 14

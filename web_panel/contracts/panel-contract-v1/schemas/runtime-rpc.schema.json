@@ -1436,6 +1436,115 @@
         },
         "iterationPathJson": {
           "type": "string"
+        },
+        "originApp": {
+          "type": "string"
+        },
+        "component": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcQueryRuntimeLogsRequest": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "component": {
+          "type": "string"
+        },
+        "levels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "workflowId": {
+          "type": "string"
+        },
+        "nodeId": {
+          "type": "string"
+        },
+        "startTimestampMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "endTimestampMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "afterEventId": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "upperEventId": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "limit": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcQueryRuntimeLogsReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "upperEventId": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "nextEventId": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcStoredLogEvent"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcStoredLogEvent": {
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "event": {
+          "$ref": "#/$defs/RpcJobEvent"
         }
       },
       "additionalProperties": false
@@ -3440,6 +3549,12 @@
       "request": "#/$defs/RpcStreamJobEventsRequest",
       "response": "#/$defs/RpcJobEvent",
       "serverStreaming": true,
+      "clientStreaming": false
+    },
+    "RuntimeService/QueryRuntimeLogs": {
+      "request": "#/$defs/RpcQueryRuntimeLogsRequest",
+      "response": "#/$defs/RpcQueryRuntimeLogsReply",
+      "serverStreaming": false,
       "clientStreaming": false
     },
     "RuntimeService/ListOperators": {

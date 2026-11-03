@@ -5,11 +5,15 @@ import time
 import sqlite3
 import hashlib
 import secrets
+import logging
+import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, FileResponse
+from starlette.background import BackgroundTask
+from .local_log import GatewayLog
 from fastapi.staticfiles import StaticFiles
 from .config import Config
 from .auth import AuthStore
@@ -22,8 +26,14 @@ from .resource_cache import ResourceCache
 
 COOKIE='emo_panel_session'
 
-def create_app(config: Config, runtime=None):
+
+class LogQueryError(ValueError):
+    pass
+
+def create_app(config: Config, runtime=None, gateway_log=None):
     config.data_dir.mkdir(parents=True,exist_ok=True)
+    own_gateway_log=gateway_log is None
+    gateway_log=gateway_log or GatewayLog(config.data_dir)
     auth=AuthStore(config.data_dir/'web.sqlite',config.session_ttl)
     registry=RuntimeRegistry(config.data_dir/'web.sqlite')
     packages=PackageStore(config.data_dir/'packages',database=config.data_dir/'web.sqlite')
@@ -73,13 +83,19 @@ def create_app(config: Config, runtime=None):
         try:
             for client in clients.values():await client.start()
             if config.preview and config.mode == "grpc":await rt.info()
+            gateway_log.record('gateway.started', 'Web gateway started', mode=config.mode)
             yield
+        except Exception:
+            gateway_log.record('gateway.startup.failed', 'Web gateway lifecycle failed', level=logging.ERROR)
+            raise
         finally:
             await views.close()
             await resources.close()
             for client in clients.values():await client.close()
+            if own_gateway_log:gateway_log.close()
     app=FastAPI(title='emo_master independent Web panel',lifespan=lifespan)
     app.state.auth,app.state.views,app.state.runtime=auth,views,rt
+    app.state.gateway_log=gateway_log
     app.state.registry=registry
     app.state.resources=resources
     def origin_ok(origin,host,scheme):
@@ -110,6 +126,13 @@ def create_app(config: Config, runtime=None):
     async def conflict(req,exc):return JSONResponse({'detail':'Record already exists'},status_code=409)
     @app.exception_handler(ContractUnavailable)
     async def contract_error(req,exc): return JSONResponse({'detail':str(exc),'code':'CONTRACT_UNAVAILABLE'},status_code=503)
+    @app.exception_handler(LogQueryError)
+    async def log_query_error(req,exc):
+        after=req.query_params.get('afterEventId','0')
+        upper=req.query_params.get('upperEventId','0')
+        return JSONResponse({'ok':False,'code':'INVALID_ARGUMENT','message':str(exc),
+            'runtimeInstanceId':'','nextEventId':after if after.isdecimal() else '0',
+            'upperEventId':upper if upper.isdecimal() else '0','hasMore':False,'events':[]},status_code=422)
     @app.exception_handler(ValueError)
     async def value_error(req,exc): return JSONResponse({'detail':str(exc)},status_code=422)
     @app.exception_handler(KeyError)
@@ -129,8 +152,23 @@ def create_app(config: Config, runtime=None):
         response.headers['Cache-Control']='no-store'
         response.headers['Content-Security-Policy']="default-src 'self'; img-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'"
         return response
+    @app.middleware('http')
+    async def request_diagnostic(req, call_next):
+        started = time.monotonic()
+        try:
+            response = await call_next(req)
+        except Exception:
+            gateway_log.record('gateway.request.failed', 'HTTP request failed', level=logging.ERROR,
+                               method=req.method, path=req.url.path, status=500,
+                               elapsedMs=round((time.monotonic()-started)*1000))
+            raise
+        gateway_log.record('gateway.request', 'HTTP request completed',
+                           level=logging.WARNING if response.status_code >= 400 else logging.DEBUG,
+                           method=req.method, path=req.url.path, status=response.status_code,
+                           elapsedMs=round((time.monotonic()-started)*1000))
+        return response
     @app.get('/api/health')
-    async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':'1.1.1','preview':config.preview}
+    async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':'1.4.0','preview':config.preview}
     @app.post('/api/preview/session')
     async def preview_session(req:Request):
         nonlocal preview_used
@@ -174,6 +212,21 @@ def create_app(config: Config, runtime=None):
         await identity(req,'admin')
         if not 1<=limit<=500:raise HTTPException(422,'Invalid limit')
         return await asyncio.to_thread(auth.audit_records,limit)
+    @app.get('/api/admin/gateway-logs')
+    async def gateway_records(req:Request, limit:int=100):
+        await identity(req,'admin')
+        if not 1 <= limit <= 500:raise HTTPException(422,'Invalid limit')
+        return {'entries': await asyncio.to_thread(gateway_log.recent, limit)}
+    @app.get('/api/admin/gateway-logs/export')
+    async def gateway_export(req:Request):
+        await identity(req,'admin')
+        snapshot = await asyncio.to_thread(gateway_log.snapshot)
+        # Capture the file set and byte limits before reading an active writer.
+        entries = await asyncio.to_thread(lambda: list(gateway_log.records(snapshot)))
+        return Response(''.join(json.dumps(item,ensure_ascii=False)+'\n' for item in entries),
+                        media_type='application/x-ndjson',
+                        headers={'Content-Disposition':'attachment; filename="gateway-logs.jsonl"',
+                                 'X-Entry-Count':str(len(entries))})
     @app.get('/api/admin/users')
     async def users(req:Request):await identity(req,'admin');return await asyncio.to_thread(auth.users)
     @app.post('/api/admin/users')
@@ -248,6 +301,61 @@ def create_app(config: Config, runtime=None):
         if not after.isdecimal():raise HTTPException(422,'Decimal sequence required')
         if hasattr(client,'job_events'):return {**await client.job_events(run_id,after),'runtimeInstanceId':info['runtimeInstanceId'],'projectId':info['projectId']}
         return await client.task_events(after)
+    def log_query(req):
+        query = dict(req.query_params)
+        query['levels'] = [part.strip() for value in req.query_params.getlist('levels')
+                           for part in value.split(',') if part.strip()]
+        allowed = {'runtimeInstanceId','projectId','jobId','deviceId','component','workflowId','nodeId',
+                   'levels','startTimestampMs','endTimestampMs','afterEventId','upperEventId','limit'}
+        query = {key:value for key,value in query.items() if key in allowed}
+        try:query['limit'] = int(query.get('limit',200))
+        except ValueError:raise LogQueryError('Invalid log limit')
+        if not 1 <= query['limit'] <= 1000:raise LogQueryError('Invalid log limit')
+        for key in ('startTimestampMs','endTimestampMs','afterEventId','upperEventId'):
+            if key in query and (not query[key].isdecimal() or int(query[key]) > 2**63-1):
+                raise LogQueryError('Invalid decimal log cursor/time')
+        return query
+    async def query_logs(client, query):
+        return await client.query_runtime_logs(query)
+    @app.get('/api/runtimes/{rid}/logs')
+    async def runtime_logs(rid:str,req:Request):
+        client=await client_for(await identity(req),rid)
+        result=await query_logs(client,log_query(req))
+        if not result['ok']:
+            gateway_log.record('gateway.runtime_logs.failed','Runtime log query failed',level=logging.WARNING,
+                               code=result['code'],runtimeInstanceId=result.get('runtimeInstanceId',''))
+        return result
+    @app.get('/api/runtimes/{rid}/logs/export')
+    async def runtime_logs_export(rid:str,req:Request):
+        client=await client_for(await identity(req),rid)
+        query=log_query(req)
+        query['afterEventId']='0'
+        query['limit']=1000
+        temporary=tempfile.NamedTemporaryFile(prefix='emo-log-export-',suffix='.jsonl',delete=False)
+        path=Path(temporary.name)
+        temporary.close()
+        count=0
+        try:
+            with path.open('w',encoding='utf-8',newline='\n') as output:
+                while True:
+                    if await req.is_disconnected():raise asyncio.CancelledError()
+                    result=await query_logs(client,query)
+                    if not result['ok']:
+                        return JSONResponse(result,status_code=409)
+                    query['runtimeInstanceId']=result['runtimeInstanceId']
+                    query['upperEventId']=result['upperEventId']
+                    query['afterEventId']=result['nextEventId']
+                    for item in result['events']:
+                        await asyncio.to_thread(output.write,json.dumps(item,ensure_ascii=False,allow_nan=False)+'\n')
+                        count+=1
+                    if not result['hasMore']:break
+            response=FileResponse(path,media_type='application/x-ndjson',filename='runtime-logs.jsonl',
+                headers={'X-Entry-Count':str(count),'X-Upper-Event-Id':query['upperEventId']},
+                background=BackgroundTask(path.unlink,missing_ok=True))
+            path=None
+            return response
+        finally:
+            if path is not None:path.unlink(missing_ok=True)
     @app.get('/api/runtimes/{rid}/workflows')
     async def workflows(rid:str,req:Request):
         who=await identity(req);client=await client_for(who,rid);info=await client.info()

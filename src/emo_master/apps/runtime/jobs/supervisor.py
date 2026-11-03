@@ -275,6 +275,7 @@ class JobSupervisor:
             workflowRunId=str(event.get("workflowRunId", "")),
             parentWorkflowRunId=str(event.get("parentWorkflowRunId", "")),
             nodeRunId=str(event.get("nodeRunId", "")),
+            timestampMs=int(event["timestampMs"]) if event.get("timestampMs") is not None else nowMs(),
             iterationPath=tuple(item for item in contextIteration if isinstance(item, int))
                 if isinstance(contextIteration, list) else ())
 
@@ -295,7 +296,7 @@ class JobSupervisor:
                     payload = json.dumps(fields.pop("payload"), ensure_ascii=True, default=str)
                     iteration = json.dumps(list(fields.pop("iterationPath")), ensure_ascii=True)
                     prepared.append(RuntimeEvent(**fields, payloadJson=payload,
-                        iterationPathJson=iteration, timestampMs=nowMs()))
+                        iterationPathJson=iteration))
                 self.eventStore.appendBatch(prepared)
 
     def consumeWorkerEvent(self, jobId: str, event: dict[str, object]) -> None:

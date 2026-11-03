@@ -20,6 +20,9 @@ class RuntimeEvent:
     parentWorkflowRunId: str = ""
     nodeRunId: str = ""
     iterationPathJson: str = "[]"
+    originApp: str = ""
+    component: str = ""
+    runtimeInstanceId: str = ""
 
 
 MAX_WORKER_EVENT_BATCH = 32

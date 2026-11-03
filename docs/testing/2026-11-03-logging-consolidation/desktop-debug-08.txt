@@ -1,0 +1,36 @@
+FFFF.........................s.....                                      [100%]
+================================== FAILURES ===================================
+_____ testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce[continue] ______
+tests\designer\test_workflow_debug_window.py:73: in testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce
+    assert "'status': 'CONFIRMED'" in dialog.logs.toPlainText()
+E   assert "'status': 'CONFIRMED'" in '{\n  "generation": 1,\n  "sequence": 1,\n  "type": "session.opened"\n}\n{\n  "generation": 1,\n  "sequence": 2,\n  "t...: "3f29abaf848943c3b01e7c74ffb06344",\n  "snapshotKind": "paused",\n  "state": "PAUSED",\n  "type": "flow_snapshot"\n}'
+E    +  where '{\n  "generation": 1,\n  "sequence": 1,\n  "type": "session.opened"\n}\n{\n  "generation": 1,\n  "sequence": 2,\n  "t...: "3f29abaf848943c3b01e7c74ffb06344",\n  "snapshotKind": "paused",\n  "state": "PAUSED",\n  "type": "flow_snapshot"\n}' = <built-in method toPlainText of PySide2.QtWidgets.QPlainTextEdit object at 0x0000015E87DD5DC0>()
+E    +    where <built-in method toPlainText of PySide2.QtWidgets.QPlainTextEdit object at 0x0000015E87DD5DC0> = <PySide2.QtWidgets.QPlainTextEdit(0x15e86f32fa0) at 0x0000015E87DD5DC0>.toPlainText
+E    +      where <PySide2.QtWidgets.QPlainTextEdit(0x15e86f32fa0) at 0x0000015E87DD5DC0> = <emo_master.apps.designer.ui.workflow_debug_window.WorkflowDebugWindow(0x15e8482db40) at 0x0000015E87E272C0>.logs
+_______ testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce[into] ________
+tests\designer\test_workflow_debug_window.py:73: in testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce
+    assert "'status': 'CONFIRMED'" in dialog.logs.toPlainText()
+E   assert "'status': 'CONFIRMED'" in '{\n  "generation": 1,\n  "sequence": 1,\n  "type": "session.opened"\n}\n{\n  "generation": 1,\n  "sequence": 2,\n  "t...: "f8d0248ec20048c9a48759526112fe12",\n  "snapshotKind": "paused",\n  "state": "PAUSED",\n  "type": "flow_snapshot"\n}'
+E    +  where '{\n  "generation": 1,\n  "sequence": 1,\n  "type": "session.opened"\n}\n{\n  "generation": 1,\n  "sequence": 2,\n  "t...: "f8d0248ec20048c9a48759526112fe12",\n  "snapshotKind": "paused",\n  "state": "PAUSED",\n  "type": "flow_snapshot"\n}' = <built-in method toPlainText of PySide2.QtWidgets.QPlainTextEdit object at 0x0000015E882A8D00>()
+E    +    where <built-in method toPlainText of PySide2.QtWidgets.QPlainTextEdit object at 0x0000015E882A8D00> = <PySide2.QtWidgets.QPlainTextEdit(0x15e86e78470) at 0x0000015E882A8D00>.toPlainText
+E    +      where <PySide2.QtWidgets.QPlainTextEdit(0x15e86e78470) at 0x0000015E882A8D00> = <emo_master.apps.designer.ui.workflow_debug_window.WorkflowDebugWindow(0x15e86f04d30) at 0x0000015E84FD46C0>.logs
+_______ testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce[over] ________
+tests\designer\test_workflow_debug_window.py:73: in testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce
+    assert "'status': 'CONFIRMED'" in dialog.logs.toPlainText()
+E   assert "'status': 'CONFIRMED'" in '{\n  "generation": 1,\n  "sequence": 1,\n  "type": "session.opened"\n}\n{\n  "generation": 1,\n  "sequence": 2,\n  "t...: "248e708df57a46309af57d489fe25b65",\n  "snapshotKind": "paused",\n  "state": "PAUSED",\n  "type": "flow_snapshot"\n}'
+E    +  where '{\n  "generation": 1,\n  "sequence": 1,\n  "type": "session.opened"\n}\n{\n  "generation": 1,\n  "sequence": 2,\n  "t...: "248e708df57a46309af57d489fe25b65",\n  "snapshotKind": "paused",\n  "state": "PAUSED",\n  "type": "flow_snapshot"\n}' = <built-in method toPlainText of PySide2.QtWidgets.QPlainTextEdit object at 0x0000015E885CEE80>()
+E    +    where <built-in method toPlainText of PySide2.QtWidgets.QPlainTextEdit object at 0x0000015E885CEE80> = <PySide2.QtWidgets.QPlainTextEdit(0x15e86e72d70) at 0x0000015E885CEE80>.toPlainText
+E    +      where <PySide2.QtWidgets.QPlainTextEdit(0x15e86e72d70) at 0x0000015E885CEE80> = <emo_master.apps.designer.ui.workflow_debug_window.WorkflowDebugWindow(0x15e86db2760) at 0x0000015E885C3780>.logs
+________ testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce[out] ________
+tests\designer\test_workflow_debug_window.py:73: in testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce
+    assert "'status': 'CONFIRMED'" in dialog.logs.toPlainText()
+E   assert "'status': 'CONFIRMED'" in '{\n  "generation": 1,\n  "sequence": 1,\n  "type": "session.opened"\n}\n{\n  "generation": 1,\n  "sequence": 2,\n  "t...: "5fdea0ec960447beb60a8153f32bb77f",\n  "snapshotKind": "paused",\n  "state": "PAUSED",\n  "type": "flow_snapshot"\n}'
+E    +  where '{\n  "generation": 1,\n  "sequence": 1,\n  "type": "session.opened"\n}\n{\n  "generation": 1,\n  "sequence": 2,\n  "t...: "5fdea0ec960447beb60a8153f32bb77f",\n  "snapshotKind": "paused",\n  "state": "PAUSED",\n  "type": "flow_snapshot"\n}' = <built-in method toPlainText of PySide2.QtWidgets.QPlainTextEdit object at 0x0000015E88761C80>()
+E    +    where <built-in method toPlainText of PySide2.QtWidgets.QPlainTextEdit object at 0x0000015E88761C80> = <PySide2.QtWidgets.QPlainTextEdit(0x15e86e75b70) at 0x0000015E88761C80>.toPlainText
+E    +      where <PySide2.QtWidgets.QPlainTextEdit(0x15e86e75b70) at 0x0000015E88761C80> = <emo_master.apps.designer.ui.workflow_debug_window.WorkflowDebugWindow(0x15e86f00b90) at 0x0000015E887A6180>.logs
+=========================== short test summary info ===========================
+FAILED tests/designer/test_workflow_debug_window.py::testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce[continue]
+FAILED tests/designer/test_workflow_debug_window.py::testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce[into]
+FAILED tests/designer/test_workflow_debug_window.py::testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce[over]
+FAILED tests/designer/test_workflow_debug_window.py::testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce[out]
+4 failed, 30 passed, 1 skipped in 75.01s (0:01:15)

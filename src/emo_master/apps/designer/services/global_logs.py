@@ -1,4 +1,4 @@
-"""Read-only Runtime-wide diagnostics, independent of Run and connection ownership."""
+"""A single Runtime query source for live desktop diagnostics."""
 import inspect
 import queue
 import threading
@@ -11,12 +11,12 @@ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 
 
 class RuntimeGlobalLogs:
-    def __init__(self, service, *, afterSequence=0):
-        self.service = service
-        self.cursor = afterSequence
+    def __init__(self, service, *, afterEventId=None, runtimeInstanceId="", filters=None):
+        self.service, self.cursor = service, afterEventId
+        self.runtimeInstanceId, self.filters = runtimeInstanceId, dict(filters or {})
+        self.supported = None
         self.events = queue.Queue(maxsize=256)
-        self.stop = threading.Event()
-        self.finished = threading.Event()
+        self.stop, self.finished = threading.Event(), threading.Event()
         self.lock = threading.Lock()
         self.stream = None
         self.context = DisplayCallContext()
@@ -34,69 +34,84 @@ class RuntimeGlobalLogs:
 
     def _notice(self, level, code, message, **payload):
         self._publish("local", dict(level=level, code=code, message=message,
-                                    eventType="designer.runtime_logs.connection", payload=payload))
+            eventType="designer.runtime_logs.connection", component="runtime_client", payload=payload))
+
+    def _query(self, request):
+        method = getattr(self.service, "QueryRuntimeLogs", None)
+        if not callable(method):
+            return pb.QueryRuntimeLogsReply(ok=False, code="UNIMPLEMENTED", message="此 Runtime 不支持历史日志查询")
+        future = getattr(method, "future", None)
+        if callable(future):
+            call = future(request, timeout=5, wait_for_ready=False)
+            with self.lock:
+                self.stream = call
+                if self.stop.is_set():
+                    call.cancel()
+            try:
+                return call.result()
+            finally:
+                with self.lock:
+                    self.stream = None
+        return method(request, self.context) if "context" in inspect.signature(method).parameters else method(request)
 
     def _read(self):
-        failures = 0
-        disconnected = False
+        failures, disconnected, upper = 0, False, None
         try:
-            method = self.service.StreamJobEvents
-            embedded = "context" in inspect.signature(method).parameters
             while not self.stop.is_set():
-                stream = None
                 try:
-                    request = pb.StreamJobEventsRequest(job_id="__runtime__", after_sequence=self.cursor, follow=True)
-                    stream = method(request, self.context) if embedded else method(request)
-                    with self.lock:
-                        self.stream = stream
-                        if self.stop.is_set():
-                            cancel = getattr(stream, "cancel", None)
-                            if callable(cancel):
-                                cancel()
-                            return
-                    for event in stream:
-                        if self.stop.is_set():
-                            return
-                        if event.sequence <= self.cursor:
-                            continue
-                        if disconnected:
-                            self._notice("INFO", "GLOBAL_LOG_RECOVERED", "Runtime 全局日志订阅已恢复")
-                            disconnected = False
-                        failures = 0
-                        if not self._publish("event", eventPayload(event)):
-                            return
-                        self.cursor = event.sequence
+                    initial = self.cursor is None
+                    request = pb.QueryRuntimeLogsRequest(runtime_instance_id=self.runtimeInstanceId,
+                        after_event_id=0 if initial else self.cursor, limit=1 if initial else 200,
+                        **({} if initial else self.filters))
+                    if upper is not None and not initial:
+                        request.upper_event_id = upper
+                    reply = self._query(request)
                     if self.stop.is_set():
                         return
-                    raise ConnectionError("Runtime 全局日志流已结束")
+                    if not reply.ok:
+                        if reply.code == "RESET_REQUIRED":
+                            self.runtimeInstanceId, self.cursor, upper = reply.runtime_instance_id, None, None
+                            self._publish("reset", dict(runtimeInstanceId=self.runtimeInstanceId))
+                            continue
+                        if reply.code == "UNIMPLEMENTED":
+                            self.supported = False
+                        self._notice("WARN", reply.code, reply.message or "Runtime 日志查询失败")
+                        return
+                    self.runtimeInstanceId = reply.runtime_instance_id
+                    self.supported = True
+                    if disconnected:
+                        self._notice("INFO", "GLOBAL_LOG_RECOVERED", "Runtime 日志查询已恢复")
+                    failures, disconnected = 0, False
+                    if initial:
+                        self.cursor = reply.upper_event_id
+                    else:
+                        for row in reply.events:
+                            if not self._publish("event", dict(eventPayload(row.event), eventId=row.event_id)):
+                                return
+                        self.cursor = reply.next_event_id
+                    upper = reply.upper_event_id if not initial and reply.has_more else None
+                    if upper is None and self.stop.wait(.5):
+                        return
                 except Exception as error:
                     if self.stop.is_set():
                         return
                     failures += 1
                     code = error.code().name if isinstance(error, grpc.RpcError) else type(error).__name__
-                    permanent = isinstance(error, grpc.RpcError) and error.code() not in {
-                        grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.DEADLINE_EXCEEDED}
-                    if permanent or failures > 3:
-                        self._notice("WARN", "GLOBAL_LOG_STOPPED",
-                                     "Runtime 全局日志订阅已停止；重新打开日志窗口可重连",
+                    if code == "UNIMPLEMENTED":
+                        self.supported = False
+                        self._notice("WARN", code, "此 Runtime 不支持历史日志查询")
+                        return
+                    if failures > 3 or (isinstance(error, grpc.RpcError) and error.code() not in {
+                            grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.DEADLINE_EXCEEDED}):
+                        self._notice("WARN", "GLOBAL_LOG_STOPPED", "Runtime 日志查询已停止；重新打开日志窗口可重连",
                                      errorCode=code, reason=str(error))
                         return
                     if not disconnected:
-                        self._notice("WARN", "GLOBAL_LOG_DISCONNECTED", "Runtime 全局日志订阅中断，正在重连",
+                        self._notice("WARN", "GLOBAL_LOG_DISCONNECTED", "Runtime 日志查询中断，正在重连",
                                      errorCode=code, reason=str(error))
                         disconnected = True
                     if self.stop.wait(.5):
                         return
-                finally:
-                    if stream is not None:
-                        cancel = getattr(stream, "cancel", None)
-                        if callable(cancel):
-                            cancel()
-                        close = getattr(stream, "close", None)
-                        if callable(close):
-                            close()
-                    with self.lock:
-                        self.stream = None
         finally:
             self.finished.set()
 
@@ -109,6 +124,10 @@ class RuntimeGlobalLogs:
                 break
         return result
 
+    @property
+    def unsupported(self):
+        return self.supported is False
+
     def close(self):
         self.stop.set()
         self.context.cancel()
@@ -116,6 +135,6 @@ class RuntimeGlobalLogs:
             cancel = getattr(self.stream, "cancel", None)
             if callable(cancel):
                 cancel()
-        self.thread.join(2)
+        self.thread.join(6)
         if self.thread.is_alive():
-            raise TimeoutError("Runtime 全局日志订阅读取尚未结束")
+            raise TimeoutError("Runtime 日志查询尚未结束")

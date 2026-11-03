@@ -1,0 +1,40 @@
+....F.....................F.                                             [100%]
+================================== FAILURES ===================================
+____________ testEmbeddedGlobalReaderCancelsWithoutClosingRuntime _____________
+tests\designer\test_operational_log_integration.py:165: in testEmbeddedGlobalReaderCancelsWithoutClosingRuntime
+    waitUntil(lambda: not reader.events.empty())
+tests\designer\qt_wait.py:8: in waitUntil
+    raise AssertionError("condition did not become true before timeout")
+E   AssertionError: condition did not become true before timeout
+__ test_failed_remote_startup_can_switch_to_local_and_only_remembers_success __
+tests\designer\test_designer_startup_settings.py:302: in test_failed_remote_startup_can_switch_to_local_and_only_remembers_success
+    assert [writer.directory for writer in writers] == [tmp_path / "first-attempt/logs/designer", root / "logs/designer"]
+E   AssertionError: assert [WindowsPath(...gs/designer')] == [WindowsPath(...gs/designer')]
+E     
+E     At index 0 diff: WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4178/test_failed_remote_startup_can0/runtime-data/logs/designer') != WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4178/test_failed_remote_startup_can0/first-attempt/logs/designer')
+E     Use -v to get more diff
+---------------------------- Captured stdout call -----------------------------
+[designer:start] entry total=6.927s
+[designer:start] qt start total=6.927s
+[designer:start] qt done elapsed=0.000s total=6.927s
+[designer:start] theme start total=6.927s
+[designer:start] theme done elapsed=0.028s total=6.955s
+[designer:start] startup-settings start total=6.955s
+[designer:start] startup-settings done elapsed=0.001s total=6.956s
+[designer:start] startup-window start total=6.961s
+[designer:start] startup-window done elapsed=0.003s total=6.964s
+[designer:start] startup-visible total=6.964s
+[designer:start] startup-settings start total=7.030s
+[designer:start] startup-settings done elapsed=0.011s total=7.041s
+[designer:start] startup-window start total=7.047s
+[designer:start] startup-window done elapsed=0.004s total=7.050s
+[designer:start] startup-visible total=7.051s
+[designer:start] editor-imports start total=7.120s
+[designer:start] editor-imports done elapsed=0.001s total=7.122s
+[designer:start] editor-ui start total=7.122s
+[designer:start] editor-ui done elapsed=0.001s total=7.123s
+[designer:start] project-entry start total=7.123s
+=========================== short test summary info ===========================
+FAILED tests/designer/test_operational_log_integration.py::testEmbeddedGlobalReaderCancelsWithoutClosingRuntime
+FAILED tests/designer/test_designer_startup_settings.py::test_failed_remote_startup_can_switch_to_local_and_only_remembers_success
+2 failed, 26 passed in 8.77s

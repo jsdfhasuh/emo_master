@@ -559,13 +559,8 @@ class PreviewController(QObject):
         self.selectedJob = value['metadata']
         self.selectedWorkflows = value['roots']
         self.coverage = value['coverage']
-        address = value.get('logAddress')
-        # Run-command Jobs already reach this window through RuntimeWorker.
-        knownJobs = getattr(self.coordinator.window, '_runtimeLogJobProjects', {})
-        logJobs = [job for job in value.get('logJobs', ()) if job not in knownJobs]
-        if address and logJobs:
-            from .runtime_logs import PreviewRuntimeLogs
-            self.runtimeLogs = PreviewRuntimeLogs(address, logJobs, self.logCursors)
+        # Runtime records reach the selected Runtime table through the global
+        # query source; page-client diagnostics keep their existing session path.
         self.observationLabel = self._jobLabel(self.selectedJob, includeStatus=False)
         self.hub = DisplayHub(self.session, self) if self.session is not None else None
         observer = self.observer
@@ -600,7 +595,8 @@ class PreviewController(QObject):
         window = self.coordinator.window
         for kind, value in rows:
             if kind == 'event':
-                window.appendRuntimeEvent(value)
+                # The selected Runtime table is fed by QueryRuntimeLogs only.
+                continue
             else:
                 window.appendPageLog('WARN', value)
 

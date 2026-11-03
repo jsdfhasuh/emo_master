@@ -1,6 +1,6 @@
 # Panel Contract v1：Runtime 客户端与 Web 页面交接合同
 
-合同版本 `1.0`，Python SDK `emo_panel_protocol 1.3.0`。工程当前版本为
+合同版本 `1.0`，Python SDK `emo_panel_protocol 1.4.0`。工程当前版本为
 `2.9` / Presentation `1.2`，发布快照为 `published-1`，ZIP 页面包为
 `emo-web-panel-1`（扩展名 `.emoweb`）。这些版本分别管理不同边界，不互相替代。
 
@@ -29,7 +29,7 @@ python scripts/build_panel_contract.py
 正式交付可同时生成 ZIP，使用新的版本目录以保持历史产物可追溯：
 
 ```powershell
-python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.2.0 --archive build/panel-contract-v1-sdk-1.2.0.zip
+python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.4.0 --archive build/panel-contract-v1-sdk-1.4.0.zip
 ```
 
 `--archive` 归档前核对 manifest 的全部文件摘要，ZIP 仅包含这些文件及 manifest。
@@ -52,6 +52,48 @@ manifest 的 SHA 表示仓库基线；`sourceDirty=true` 时新增能力来自�
 状态由权威运行读模型提供，样例结果仅包含可正常采集的 count/verdict 变量。示例源路径均为合成的相对路径；
 历史数据库及图片引用仅供 fixtures 驱动的预览，示例不包含业务数据库。
 `sampleValidation.designerOpen` 明确记录实际 Designer 打开是否执行，不把编译结果当成 UI 验收。
+
+## Runtime 日志查询（SDK 1.4.0）
+
+SDK 1.4.0 追加只读 unary `QueryRuntimeLogs`，能力名为 `runtime_logs_query_v1`。
+`JobEvent` 16/17/18 追加 `origin_app/component/runtime_instance_id`，旧任务事件流继续可用。
+每条查询结果用 `StoredLogEvent(event_id, event)` 包装；event_id 是 SQLite 全局身份，
+event.sequence 仍为原 Job 分区内的序号。系统设备事件不改写 `job_id=__runtime__`，
+具体关联 Job 保留在 payload 中。查看者不改变记录原应用或产生时实例。
+
+| 请求字段 | 语义 |
+| --- | --- |
+| runtime_instance_id | 首次可空，后续传当前连接实例；不相符返回 RESET_REQUIRED |
+| project_id/job_id/device_id/component/levels/workflow_id/node_id | 可选筛选；默认跨历史工程和产生实例，不依赖当前加载工程 |
+| optional start_timestamp_ms/end_timestamp_ms | 事件源时间，起点含、终点不含 |
+| after_event_id/optional upper_event_id | 全局游标；未提供上界时捕获当前最大值，明确 0 表示空范围 |
+| limit | 0 使用默认 200，最大 1000 |
+
+| 回复字段 | 语义 |
+| --- | --- |
+| ok/code/message/runtime_instance_id | 保留结构化成功/失败及当前连接实例 |
+| upper_event_id/next_event_id/has_more/events | 固定上界、实际消费游标、是否还有匹配项及包装记录 |
+
+成功 code 为 `OK`；不合法的游标、时间或 limit 返回 `INVALID_ARGUMENT`；实例变化返回
+`RESET_REQUIRED`；单条紧凑投影仍超过 4 MiB 完整回复预算返回 `EVENT_TOO_LARGE`，不推进游标。
+缺能力或 gRPC `UNIMPLEMENTED` 在当前连接标记为不支持历史查询，可继续使用原单 Job 入口。
+其他失败正常展示，不能伪装空页或推进游标；失败没有传输实例身份时保持空值。
+
+筛选在分页前执行，按全局 eventId 升序；Job 包含直接记录和系统分区 payload.jobId 明确关联的
+设备记录。设备匹配 payload.deviceId 或 deviceBindings 的实际设备，显式 diagnostics.deviceSlot
+限制到该槽位，单条只返回一次。设备筛选不强制 component=device。内部 process.heartbeat
+不在日志查询中出现；存储/落盘故障可查询。读取副本复用 JSONL 紧凑 payload 投影，不改原库或任务流。
+
+首次历史请求固定上界，后续各页和导出复用条件及上界。截断游标停在实际最后返回记录；只有
+确认没有更多匹配项才推进到上界。实时首次无业务筛选 limit=1 获取起点，不插入旧记录；
+逐页消费完本轮再取下一轮上界。同目标断线和隐藏重开保留游标，目标/实例/筛选变化取消旧请求
+并按代次拒绝迟到结果，RESET_REQUIRED 重建查询。历史不默认筛当前实例产生的行。
+
+HTTP 用 camelCase；eventId、afterEventId、upperEventId、nextEventId 和 sequence 都用十进制字符串，
+避免浏览器 64 位整数失真。查询和 JSONL 下载保留同一结构化错误、权限、401 会话失效与取消机制，
+仅成功响应分别解码 JSON/Blob。下载逐页固定上界，JSONL 每行仅一条日志，错误和统计不写成日志行。
+Web 网关诊断写 Config.data_dir/logs，仅管理员读取，与原操作审计分别展示；不写凭据、token 或请求体。
+preview 的临时目录随既有 preview 生命周期清理。
 
 ## RPC、连接和身份
 

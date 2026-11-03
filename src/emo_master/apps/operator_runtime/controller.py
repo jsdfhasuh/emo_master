@@ -48,13 +48,14 @@ class RuntimeInitializationError(RuntimeError):
 
 
 class ProductionRuntime:
-    def __init__(self, dataRoot: Path | None = None, *, pluginRootPaths=None, listenerSettings=None):
+    def __init__(self, dataRoot: Path | None = None, *, pluginRootPaths=None, listenerSettings=None,
+                 runtimeInstanceId=None):
         self.listenerSettings = listenerSettings or ListenerSettings()
         self.dataRoot = (dataRoot or defaultDataRoot()).resolve()
         try:
             self.runtime = RuntimeService(dbPath=self.dataRoot / "runtime.sqlite3",
                 workspaceRoot=self.dataRoot / "jobs", logDirectory=self.dataRoot / "logs",
-                pluginRootPaths=pluginRootPaths, productionMode=True)
+                pluginRootPaths=pluginRootPaths, productionMode=True, runtimeInstanceId=runtimeInstanceId)
         except Exception as error:
             raise RuntimeInitializationError(self.dataRoot, "数据库 / Runtime 服务初始化失败", error) from error
         self.server = None

@@ -1,13 +1,13 @@
 {
   "panelContractVersion": "1.0",
-  "sdkVersion": "1.3.0",
-  "sourceSha": "8df8599fc026c424a49e87cc53fb45f6b371f16f",
+  "sdkVersion": "1.4.0",
+  "sourceSha": "940994b3420b47ff0add8766ccce5a4f2686a02a",
   "sourceDirty": true,
   "projectSchemaVersion": "2.9",
   "presentationSchemaVersion": "1.2",
   "status": "complete",
   "sdkWheels": [
-    "python/emo_panel_protocol-1.3.0-py3-none-any.whl"
+    "python/emo_panel_protocol-1.4.0-py3-none-any.whl"
   ],
   "sampleValidation": {
     "model": "PASS",
@@ -114,16 +114,16 @@
       "byteSize": 277
     },
     "proto/runtime.proto": {
-      "sha256": "63ff4542cfe390c905e297a5f330899c2e0fe28c414136e5d8d5000321e25b5f",
-      "byteSize": 34696
+      "sha256": "92c63e1fe9c7a602c61ca50e72968c7916c77e3204d79314508050cc73e8c96c",
+      "byteSize": 35689
     },
-    "python/emo_panel_protocol-1.3.0-py3-none-any.whl": {
-      "sha256": "cd86472b5faa74e8fb1048a95fcaf67cf59e5a285e4d5e69763cd9a71bb55295",
-      "byteSize": 38789
+    "python/emo_panel_protocol-1.4.0-py3-none-any.whl": {
+      "sha256": "cfc9ceaaa23baacc3321390a22d46a44325aef1dae4947e54a6598947566a086",
+      "byteSize": 38937
     },
     "README.md": {
-      "sha256": "a4a868797ff27d2769e1b853f6d3db1dc729347f3a6a8ba7b5b09bc70f38e0c3",
-      "byteSize": 19814
+      "sha256": "526b2c3a6d71b30561d38acc6c020fe53103a11a5463848a9bac14338a9a5600",
+      "byteSize": 23222
     },
     "sample-panels/demo.emoweb": {
       "sha256": "da6f55a962ea11758df0326587b9bc60d73eecb9d1723ced5fe10555471efc21",
@@ -166,12 +166,12 @@
       "byteSize": 23670
     },
     "schemas/runtime-rpc.schema.json": {
-      "sha256": "2cb65176ca248e4395e5624df8adc914e2eb1de98b5d99371a4acb36c89e1aa2",
-      "byteSize": 93352
+      "sha256": "dfd40f64db42dbb0d2f61b963acaa31c7108df8de792b0bde8a2568bc077e61c",
+      "byteSize": 96073
     },
     "typescript/panel-contract.ts": {
-      "sha256": "01ca4def6bf4526a6d84ae272b6c9ae7701a9aaee7a15660a52651a010c478de",
-      "byteSize": 31291
+      "sha256": "909a69cb52c2bb835fa237cd4c4dd4eeb4188c62150b013ce06fb4d680bb72e4",
+      "byteSize": 32036
     }
   }
 }

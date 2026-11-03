@@ -1,0 +1,26 @@
+warning: in the working copy of 'docs/operator-development-guide.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/page_designer/runtime_logs.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/services/global_logs.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/services/local_log.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/services/log_export.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/services/runtime_client.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/operator_runtime/log_reader.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/operator_runtime/log_view.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/communication/manager.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/devices/diagnostics.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/devices/lifecycle.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/events/jsonl_writer.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/jobs/read_model.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/workflow_debug/worker.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/ui/communication_panel.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_panel_protocol/generated/runtime_pb2.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_panel_protocol/generated/runtime_pb2_grpc.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/designer/test_designer_startup_settings.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/designer/test_log_export.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/designer/test_operational_log_integration.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/designer/test_startup_runtime_connection.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/runtime/test_device_operational_logs.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/runtime/test_runtime_startup_progress.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/ui/operator_view/test_runtime_log_view.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/ui/operator_view/test_startup_settings.py', LF will be replaced by CRLF the next time Git touches it
+PASS syntax compilation of 66 changed Python files

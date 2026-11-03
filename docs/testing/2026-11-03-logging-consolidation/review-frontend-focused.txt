@@ -1,0 +1,14 @@
+✔ global event IDs stay lossless, historical pages retain more than 100 and Job sequence is independent (1.181ms)
+✔ Blob shares credentials, CSRF, abort, structured errors and current-session 401 handling (14.8257ms)
+✔ late status confirms the log instance without losing rows, current upper bound or consumed cursor (41.2016ms)
+✔ status arriving first is used by one baseline and does not recapture the live starting point (17.2093ms)
+✔ actual instance change aborts old reads and rejects their late responses before rebuilding (17.9265ms)
+✔ live display and reopened cache are bounded while the cursor and complete history remain intact (213.7088ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 655.502

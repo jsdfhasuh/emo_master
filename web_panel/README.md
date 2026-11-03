@@ -1,8 +1,8 @@
 # emo_master independent Web operator panel
 
-Independent Python 3.10+/FastAPI + React application under `web_panel/`. The gateway consumes **Panel Contract 1.0 / SDK 1.3.0** as an ordinary gRPC client; it does not import Qt, device drivers, inference packages, or `emo_master`.
+Independent Python 3.10+/FastAPI + React application under `web_panel/`. The gateway consumes **Panel Contract 1.0 / SDK 1.4.0** as an ordinary gRPC client; it does not import Qt, device drivers, inference packages, or `emo_master`.
 
-Current development handoff: SDK 1.3.0 generated from Designer HEAD `8df8599fc026c424a49e87cc53fb45f6b371f16f` plus uncommitted canvas expansion changes (`sourceDirty=true`). Exact delivery bytes and hashes are pinned in `contracts/panel-contract-v1/` and `docs/handoffs/runtime-web-panel-v1/sdk-1.3.0/`. It adds persistent upper canvas bounds and root component offsets with the `layout.expanded-canvas-v1` requirement. Historical SDK 1.2.0 delivery remains in its versioned handoff directory. This is not a clean release or deployment.
+Current development handoff: SDK 1.4.0 adds `QueryRuntimeLogs` and event metadata. This uncommitted implementation is based on `940994b3420b47ff0add8766ccce5a4f2686a02a` (`sourceDirty=true`); current delivery hashes are pinned in `contracts/panel-contract-v1/` and `docs/handoffs/runtime-web-panel-v1/sdk-1.4.0/contract-manifest.json`. Historical SDK 1.3.0 delivery remains unchanged. This is not a release or deployment.
 
 ## Build and run
 
@@ -10,7 +10,7 @@ Current development handoff: SDK 1.3.0 generated from Designer HEAD `8df8599fc02
 cd web_panel
 python -m venv .venv
 # Windows: .venv\Scripts\activate; POSIX: . .venv/bin/activate
-python -m pip install contracts/panel-contract-v1/python/emo_panel_protocol-1.3.0-py3-none-any.whl
+python -m pip install contracts/panel-contract-v1/python/emo_panel_protocol-1.4.0-py3-none-any.whl
 python -m pip install -e '.[test]'
 npm --prefix frontend ci
 npm --prefix frontend run build
@@ -71,3 +71,5 @@ python -m build --wheel
 Distribute the Web wheel **and supplied SDK wheel** together; install both with `python -m pip install PATH_TO_SDK.whl PATH_TO_WEB.whl`. End users do not need Node. Use one ASGI worker for shared subscriptions and bounded byte caches. See [deployment](docs/DEPLOYMENT.md), [acceptance](docs/ACCEPTANCE-MATRIX.md), [verification](docs/VERIFICATION.md), and [remaining integration boundaries](docs/CONTRACT-GAPS.md).
 
 Synthetic gRPC, actual software Runtime, browser automation, Windows CI, Designer UI, and physical hardware are separate evidence levels. A passing fixture is never a claim that the user's Windows Runtime or devices were accessed.
+
+Runtime logs use `/api/runtimes/{rid}/logs` and `/logs/export` with the same Runtime view ACL as other reads. Historical filters do not follow the current project. IDs/cursors/sequences are decimal strings. Query business failures preserve `ok/code/message/runtimeInstanceId`; the browser advances only successful pages. Exports are JSONL with one event per line and fixed upper bounds. Gateway diagnostics are independent JSONL in `Config.data_dir/logs`, readable/exportable only under `/api/admin/gateway-logs`; operation audit stays in its existing endpoint. Preview diagnostics retain the existing temporary preview lifetime.

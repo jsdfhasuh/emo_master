@@ -8,11 +8,14 @@ from collections.abc import Iterator
 from typing import Callable
 
 from emo_master.apps.runtime.events.models import RuntimeEvent, MAX_WORKER_EVENT_BATCH, batchableWorkerEvent
+from emo_master.core.contracts.diagnostic_logging import componentForEvent
 
 
 class EventStore:
-    def __init__(self, persistence: object | None = None, retentionPerJob: int = 10000) -> None:
+    def __init__(self, persistence: object | None = None, retentionPerJob: int = 10000,
+                 runtimeInstanceId: str = "") -> None:
         self.persistence = persistence
+        self.runtimeInstanceId = runtimeInstanceId
         self.retentionPerJob = max(1, retentionPerJob)
         self._events: dict[str, list[RuntimeEvent]] = {}
         self._sequences: dict[str, int] = {}
@@ -41,7 +44,13 @@ class EventStore:
         iterationPath: tuple[int, ...] = (),
         timestampMs: int | None = None,
         notifySinks: bool = True,
+        originApp: str = "",
+        component: str = "",
+        runtimeInstanceId: str = "",
     ) -> RuntimeEvent:
+        originApp = originApp or "runtime"
+        component = component or componentForEvent(eventType)
+        runtimeInstanceId = runtimeInstanceId or self.runtimeInstanceId
         payloadJson = json.dumps(payload or {}, ensure_ascii=True, default=str)
         timestamp = int(time.time() * 1000) if timestampMs is None else timestampMs
         with self._condition:
@@ -70,6 +79,8 @@ class EventStore:
                         iterationPathJson=iterationPathJson,
                         timestamp=timestamp,
                         sequence=None,
+                        originApp=originApp, component=component,
+                        runtimeInstanceId=runtimeInstanceId,
                     ))
                 else:
                     sequence = (self._sequences.get(jobId) or 0) + 1
@@ -91,6 +102,7 @@ class EventStore:
                 parentWorkflowRunId=parentWorkflowRunId,
                 nodeRunId=nodeRunId,
                 iterationPathJson=iterationPathJson,
+                originApp=originApp, component=component, runtimeInstanceId=runtimeInstanceId,
             )
             self._publish(event, notifySinks)
         return event
@@ -102,6 +114,9 @@ class EventStore:
         jobId = events[0].jobId
         if any(event.jobId != jobId or not batchableWorkerEvent(event.eventType) for event in events):
             raise ValueError("worker event batch crosses a Job or event barrier")
+        events = [replace(event, originApp=event.originApp or "runtime",
+                          component=event.component or componentForEvent(event.eventType),
+                          runtimeInstanceId=event.runtimeInstanceId or self.runtimeInstanceId) for event in events]
         with self._condition:
             appendMany = getattr(self.persistence, "appendJobEvents", None)
             if self.persistence is not None and not callable(appendMany):
@@ -111,7 +126,8 @@ class EventStore:
                     projectId=event.projectId, workflowId=event.workflowId,
                     workflowRunId=event.workflowRunId, parentWorkflowRunId=event.parentWorkflowRunId,
                     nodeRunId=event.nodeRunId, iterationPath=tuple(json.loads(event.iterationPathJson)),
-                    timestampMs=event.timestampMs) for event in events]
+                    timestampMs=event.timestampMs, originApp=event.originApp,
+                    component=event.component, runtimeInstanceId=event.runtimeInstanceId) for event in events]
             sequences = (appendMany(events) if callable(appendMany) else
                          range(self._sequences.get(jobId, 0) + 1, self._sequences.get(jobId, 0) + 1 + len(events)))
             committed = [replace(event, sequence=sequence) for event, sequence in zip(events, sequences)]

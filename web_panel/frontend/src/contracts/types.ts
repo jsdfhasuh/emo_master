@@ -116,3 +116,22 @@ export interface History {
 /** Gateway target discovery (not an arbitrary RPC surface). */
 export interface RuntimeTarget { permissions?: string[]; id: string; alias: string; mode: string; address?: string; }
 export interface WorkflowTarget { inputsJson?:string;inputDeclarations?:Record<string,unknown>; id: string; configurationRevision?: string; name?: string; runtimeInstanceId?: string; projectId?: string; inputSchema?: Record<string, unknown>; inputs?: Record<string, unknown>; canStart?: boolean; startBlockReason?: string; }
+
+
+export interface RuntimeLogEvent {
+    eventId: string; sequence: string; timestampMs: string;
+    jobId: string; projectId: string; workflowId: string; nodeId: string;
+    workflowRunId?: string; parentWorkflowRunId?: string; nodeRunId?: string; iterationPath?: unknown;
+    originApp: string; component: string; runtimeInstanceId: string;
+    eventType: string; level: string; code: string; message: string; payload: unknown;
+}
+export interface RuntimeLogPage {
+    ok: boolean; code: string; message: string; runtimeInstanceId: string;
+    upperEventId: string; nextEventId: string; hasMore: boolean; events: RuntimeLogEvent[];
+}
+export interface RuntimeLogQuery {
+    runtimeInstanceId?: string; projectId?: string; jobId?: string; deviceId?: string;
+    component?: string; levels?: string; workflowId?: string; nodeId?: string;
+    startTimestampMs?: string; endTimestampMs?: string;
+    afterEventId?: string; upperEventId?: string; limit?: string;
+}

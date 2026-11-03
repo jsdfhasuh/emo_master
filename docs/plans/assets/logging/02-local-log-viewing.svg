@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1220" viewBox="0 0 1600 1220" role="img">
+<title>桌面与设备的本机日志：各自在本机保存</title>
+<rect width="1600" height="1220" fill="white"/>
+<text x="64" y="58" text-anchor="start" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="23" font-weight="600" fill="#245B9B">S5  /  图 2</text>
+<rect x="1212" y="28" width="324" height="44" rx="20" fill="#EDF3FA" stroke="none" stroke-width="2"/>
+<text x="1374" y="58" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="21" font-weight="400" fill="#245B9B">目标流程 · 按计划实施</text>
+<text x="64" y="127" text-anchor="start" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="46" font-weight="600" fill="#18324F">桌面与设备日志：各自在本机保存</text>
+<text x="64" y="181" text-anchor="start" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="27" font-weight="400" fill="#51647A">看应用在哪里运行，就知道日志存在哪台电脑。</text>
+<text x="96" y="246" text-anchor="start" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="28" font-weight="600" fill="#18324F">发生了什么</text>
+<text x="574" y="246" text-anchor="start" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="28" font-weight="600" fill="#18324F">保存在哪里</text>
+<text x="1100" y="246" text-anchor="start" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="28" font-weight="600" fill="#18324F">从哪里看</text>
+<rect x="64" y="274" width="1472" height="220" rx="22" fill="#F2F6FD" stroke="#B8CDE7" stroke-width="2"/>
+<rect x="96" y="318" width="390" height="132" rx="16" fill="#FFFFFF" stroke="#B8CDE7" stroke-width="2"/>
+<text x="291.0" y="374.76" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="30" font-weight="600" fill="#245B9B">Runtime 启动出错</text>
+<text x="291.0" y="418.32" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="23" font-weight="400" fill="#51647A">启动或初始化阶段</text>
+<rect x="574" y="318" width="440" height="132" rx="16" fill="#FFFFFF" stroke="#B8CDE7" stroke-width="2"/>
+<text x="794.0" y="374.76" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="29" font-weight="600" fill="#245B9B">Runtime 应用日志文件</text>
+<text x="794.0" y="418.32" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="23" font-weight="400" fill="#51647A">保存在 Runtime 所在电脑</text>
+<rect x="1100" y="318" width="404" height="132" rx="16" fill="#FFFFFF" stroke="#B8CDE7" stroke-width="2"/>
+<text x="1302.0" y="374.76" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="29" font-weight="600" fill="#245B9B">Runtime 本机日志窗口</text>
+<text x="1302.0" y="418.32" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="23" font-weight="400" fill="#51647A">查看 / 导出</text>
+<polyline points="486,384 574,384" fill="none" stroke="#7397C2" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="574.00,384.00 563.61,390.00 563.61,378.00" fill="#7397C2"/>
+<polyline points="1014,384 1100,384" fill="none" stroke="#7397C2" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="1100.00,384.00 1089.61,390.00 1089.61,378.00" fill="#7397C2"/>
+<rect x="64" y="524" width="1472" height="220" rx="22" fill="#F2F9F6" stroke="#BBD9CF" stroke-width="2"/>
+<rect x="96" y="568" width="390" height="132" rx="16" fill="#FFFFFF" stroke="#BBD9CF" stroke-width="2"/>
+<text x="291.0" y="624.76" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="30" font-weight="600" fill="#287866">Designer 自身出错</text>
+<text x="291.0" y="668.32" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="23" font-weight="400" fill="#51647A">编辑、保存或连接出错</text>
+<rect x="574" y="568" width="440" height="132" rx="16" fill="#FFFFFF" stroke="#BBD9CF" stroke-width="2"/>
+<text x="794.0" y="624.76" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="29" font-weight="600" fill="#287866">Designer 本机日志文件</text>
+<text x="794.0" y="668.32" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="23" font-weight="400" fill="#51647A">保存在 Designer 所在电脑</text>
+<rect x="1100" y="568" width="404" height="132" rx="16" fill="#FFFFFF" stroke="#BBD9CF" stroke-width="2"/>
+<text x="1302.0" y="624.76" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="29" font-weight="600" fill="#287866">Designer 日志窗口</text>
+<text x="1302.0" y="668.32" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="23" font-weight="400" fill="#51647A">查看 / 导出</text>
+<polyline points="486,634 574,634" fill="none" stroke="#6D9F90" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="574.00,634.00 563.61,640.00 563.61,628.00" fill="#6D9F90"/>
+<polyline points="1014,634 1100,634" fill="none" stroke="#6D9F90" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="1100.00,634.00 1089.61,640.00 1089.61,628.00" fill="#6D9F90"/>
+<rect x="64" y="774" width="1472" height="326" rx="22" fill="#F2F6FD" stroke="#B8CDE7" stroke-width="2"/>
+<text x="96" y="813" text-anchor="start" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="23" font-weight="600" fill="#245B9B">设备明细仍由 Runtime 管理</text>
+<rect x="96" y="866" width="390" height="140" rx="16" fill="#FFFFFF" stroke="#B8CDE7" stroke-width="2"/>
+<text x="291.0" y="926.2" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="28" font-weight="600" fill="#245B9B">设备收发与诊断明细</text>
+<text x="291.0" y="972.4" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="23" font-weight="400" fill="#51647A">例如：近期通信记录</text>
+<rect x="574" y="838" width="440" height="104" rx="16" fill="#FFFFFF" stroke="#B8CDE7" stroke-width="2"/>
+<text x="794.0" y="882.72" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="28" font-weight="600" fill="#245B9B">Runtime 本机日志文件</text>
+<text x="794.0" y="917.04" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="22" font-weight="400" fill="#51647A">按现有规则持久保存</text>
+<rect x="574" y="964" width="440" height="104" rx="16" fill="#FFFFFF" stroke="#B8CDE7" stroke-width="2"/>
+<text x="794.0" y="1008.72" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="28" font-weight="600" fill="#245B9B">近期设备诊断</text>
+<text x="794.0" y="1043.04" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="22" font-weight="400" fill="#51647A">有限缓存，保留近期记录</text>
+<rect x="1100" y="838" width="404" height="104" rx="16" fill="#FFFFFF" stroke="#B8CDE7" stroke-width="2"/>
+<text x="1302.0" y="882.72" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="28" font-weight="600" fill="#245B9B">Runtime 本机日志窗口</text>
+<text x="1302.0" y="917.04" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="22" font-weight="400" fill="#51647A">查看 / 导出</text>
+<rect x="1100" y="964" width="404" height="104" rx="16" fill="#FFFFFF" stroke="#B8CDE7" stroke-width="2"/>
+<text x="1302.0" y="1008.72" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="28" font-weight="600" fill="#245B9B">设备管理页面</text>
+<text x="1302.0" y="1043.04" text-anchor="middle" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="22" font-weight="400" fill="#51647A">查看 / 导出近期记录</text>
+<polyline points="486,936 530,936 530,890 574,890" fill="none" stroke="#7397C2" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="574.00,890.00 563.61,896.00 563.61,884.00" fill="#7397C2"/>
+<polyline points="486,936 530,936 530,1016 574,1016" fill="none" stroke="#7397C2" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="574.00,1016.00 563.61,1022.00 563.61,1010.00" fill="#7397C2"/>
+<polyline points="1014,890 1100,890" fill="none" stroke="#7397C2" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="1100.00,890.00 1089.61,896.00 1089.61,884.00" fill="#7397C2"/>
+<polyline points="1014,1016 1100,1016" fill="none" stroke="#7397C2" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="1100.00,1016.00 1089.61,1022.00 1089.61,1010.00" fill="#7397C2"/>
+<text x="64" y="1150" text-anchor="start" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="24" font-weight="400" fill="#18324F">设备故障、汇总和恢复属于图 1 的运行记录；这里展示普通设备明细的查看方式。</text>
+<text x="64" y="1192" text-anchor="start" font-family="Noto Sans CJK SC, Microsoft YaHei, PingFang SC, sans-serif" font-size="21" font-weight="400" fill="#51647A">近期设备诊断是缓存；完整文件范围以本机已有日志为准。Web 网关自身日志见计划 S6。</text>
+</svg>

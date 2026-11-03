@@ -287,7 +287,8 @@ def heartbeatLoop(jobId: str, projectId: str, workflowId: str, eventQueue, stopE
             heartbeatCell.publish()
         with emissionLock:
             if not eventsStopped.is_set():
-                event = {"eventType": "process.heartbeat", "jobId": jobId, "projectId": projectId, "workflowId": workflowId, "pid": _pid()}
+                event = {"eventType": "process.heartbeat", "jobId": jobId, "projectId": projectId, "workflowId": workflowId, "pid": _pid(),
+                         "timestampMs": int(time.time() * 1000)}
                 if heartbeatCell is None:
                     _put(eventQueue, event)
                 else:
@@ -344,6 +345,7 @@ def _eventPublisher(jobId: str, projectId: str, eventQueue, *, inspectionCredits
 
 
 def _put(eventQueue, event: dict[str, object]) -> None:
+    event.setdefault("timestampMs", int(time.time() * 1000))
     # Inspection is a private IPC barrier, not a persisted JSON event. Preserve
     # its bounded immutable PNG bytes; ordinary diagnostic events stay JSON-safe.
     eventQueue.put(event if event.get("eventType") == "inspection.snapshot" else _jsonSafe(event))

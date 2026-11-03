@@ -1,0 +1,2 @@
+PASS: RuntimeLogs browser lifecycle: logs/status both orderings, actual instance reset, live DOM1000, hidden reopen, history/export1202
+PASS: real FastAPI HTTP/WS explicit MOCK Runtime browser integration, login, real-time result, freeze/resume, control, admin create, viewer restriction, mobile, A/B contextual activation and rollback, isolated B viewer and pinned A assets; no real Runtime or hardware

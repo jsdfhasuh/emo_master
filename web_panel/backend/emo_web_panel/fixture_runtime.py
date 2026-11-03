@@ -24,7 +24,7 @@ class FixtureRuntime:
         return {'runtimeInstanceId': 'demo-runtime-1', 'projectId': self.context.projectId,
                 'configurationRevision': '1', 'historyDefinitionRevision': self.context.historyDefinitionRevision,
                 'mode': 'fixtures', 'synthetic': True, 'contractStatus': '1.0',
-                'capabilities': ['display', 'history']}
+                'capabilities': ['display', 'history', 'runtime_logs_query_v1']}
 
     async def runs(self):
         return [{'id': 'demo-j1', 'runId': 'demo-j1', 'jobId': 'demo-j1', 'runGroupId': 'demo-group-1',
@@ -32,6 +32,10 @@ class FixtureRuntime:
                  'projectId': self.context.projectId, 'workflowId': 'main', 'state': 'completed',
                  'active': False, 'ownsResources': False, 'displayResourcesReleased': False,
                  'allowedActions': [], 'captureEnabled': True, 'synthetic': True}]
+
+    async def query_runtime_logs(self, query):
+        from .mock_runtime import synthetic_log_page
+        return synthetic_log_page('demo-runtime-1',self.context.projectId,query)
 
     async def workflows(self):
         return []

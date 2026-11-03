@@ -13,7 +13,8 @@ from emo_master.apps.runtime.events.models import RuntimeEvent
 
 def events(count=3, job='job'):
     return [RuntimeEvent(job, 'node.completed', str(index), timestampMs=1000 + index,
-                         workflowId='workflow', nodeRunId=f'node-{index}') for index in range(count)]
+                         workflowId='workflow', nodeRunId=f'node-{index}', originApp='runtime',
+                         component='execution', runtimeInstanceId='worker-instance') for index in range(count)]
 
 
 def stores(tmp_path, retention=10000):

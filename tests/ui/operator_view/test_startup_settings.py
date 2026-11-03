@@ -171,7 +171,14 @@ def testFailedInitializationKeepsToolsAndCanRetrySameTarget(qtApp, tmp_path, fai
         assert "本次启动目标目录" in window.startupPage.storage.currentLabel.text()
         window.showLogs()
         assert window.contentStack.currentWidget() is window.logView
-        assert "未写入日志文件" in window.logView.diagnostics.toPlainText()
+        if failureAt == "root":
+            assert "未写入日志文件" in window.logView.diagnostics.toPlainText()
+        else:
+            writer = window.applicationLogWriter
+            assert "已提交 writer" in window.logView.diagnostics.toPlainText()
+            assert writer.waitUntilProcessed("", writer.sequence)
+            assert writer.activePath is not None and writer.activePath.name.startswith("runtime_app-")
+            assert "operator.runtime.failed" in writer.activePath.read_text(encoding="utf-8")
         window.backFromTool()
         panel = window.startupPage.storage
         panel.nextEdit.setText(str(tmp_path / "next"))
@@ -201,7 +208,10 @@ def testFailedInitializationDiagnosticsDoNotWaitForLogReader(qtApp, tmp_path):
         assert not window.logFeed.records
         text = window.logView.diagnostics.toPlainText()
         assert window.error in text
-        assert "未写入日志文件" in text
+        assert "已提交 writer" in text and str(target / "logs") in text
+        writer = window.applicationLogWriter
+        assert writer.waitUntilProcessed("", writer.sequence)
+        assert "operator.runtime.failed" in writer.activePath.read_text(encoding="utf-8")
         window.show()
         window.showLogs()
         assert window.contentStack.currentWidget() is window.logView

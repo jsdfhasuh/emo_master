@@ -2,6 +2,7 @@
 import argparse
 import getpass
 import json
+import logging
 import secrets
 import socket
 import tempfile
@@ -9,6 +10,7 @@ from pathlib import Path
 
 from .auth import AuthStore
 from .config import Config
+from .local_log import GatewayLog
 
 
 def validate_preview_context(path, manifest):
@@ -57,7 +59,18 @@ def main():
         config = Config(args.data_dir, mode=args.mode, host=args.host, port=args.port,
                         runtime_address=args.runtime_address, allowed_origins=tuple(args.allowed_origin),
                         secure_cookie=args.secure_cookie)
-        uvicorn.run(create_app(config), host=args.host, port=args.port, workers=1, access_log=False)
+        gateway_log=GatewayLog(config.data_dir)
+        gateway_log.record('gateway.starting','Starting Web gateway',mode=config.mode)
+        try:
+            app=create_app(config,gateway_log=gateway_log)
+        except Exception:
+            gateway_log.record('gateway.startup.failed','Web gateway initialization failed',level=logging.ERROR)
+            gateway_log.close()
+            raise
+        try:
+            uvicorn.run(app, host=args.host, port=args.port, workers=1, access_log=False)
+        finally:
+            gateway_log.close()
         return
 
     from .packages import PackageStore
@@ -88,7 +101,14 @@ def main():
                             preview_context=context.model_dump(mode='json'), preview_token=token)
             runtime = (GrpcRuntimeClient(context.runtime.target, preview_context=context)
                        if context.runtime else FixtureRuntime(context))
-            app = create_app(config, runtime=runtime)
+            gateway_log=GatewayLog(config.data_dir)
+            gateway_log.record('gateway.starting','Starting preview Web gateway',mode=config.mode)
+            try:
+                app = create_app(config, runtime=runtime,gateway_log=gateway_log)
+            except Exception:
+                gateway_log.record('gateway.startup.failed','Preview gateway initialization failed',level=logging.ERROR)
+                gateway_log.close()
+                raise
 
             class PreviewServer(uvicorn.Server):
                 async def startup(self, sockets=None):
@@ -99,7 +119,10 @@ def main():
                                           'url': f'http://{authority}:{port}/?token={token}'}), flush=True)
 
             server = PreviewServer(uvicorn.Config(app, host=host, port=port, workers=1, access_log=False))
-            server.run(sockets=[sock])
+            try:
+                server.run(sockets=[sock])
+            finally:
+                gateway_log.close()
             if not server.started:
                 raise SystemExit(1)
 

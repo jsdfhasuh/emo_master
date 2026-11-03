@@ -259,7 +259,7 @@ class DeviceWorkspace(QDialog):
         self.references.setOpenLinks(False)
         self.references.anchorClicked.connect(self.navigateReference)
         self.infoTabs.addTab(self.references, "节点引用")
-        from emo_master.ui.communication_panel import TcpChannelStatusTable, DeviceDiagnosticsView
+        from emo_master.ui.communication_panel import TcpChannelStatusTable, DeviceDiagnosticsView, exportDeviceCache
         self.onlineState = QTextBrowser()
         self.channelStatus = TcpChannelStatusTable()
         online = QSplitter(Qt.Vertical)
@@ -267,6 +267,8 @@ class DeviceWorkspace(QDialog):
         online.addWidget(self.channelStatus)
         self.infoTabs.addTab(online, "在线状态")
         self.logs = DeviceDiagnosticsView()
+        self.logs.runtimeLogsRequested.connect(self.openRuntimeLogs)
+        self.logs.exportRequested.connect(lambda: exportDeviceCache(self.logs))
         self.infoTabs.addTab(self.logs, "诊断日志")
         self.infoTabs.currentChanged.connect(lambda _index: self.showDiagnostics())
         self.detailSplitter = QSplitter(Qt.Vertical)
@@ -501,6 +503,16 @@ class DeviceWorkspace(QDialog):
         scope = tuple(state.get(key, '') for key in ('runtimeInstanceId', 'projectId', 'projectLoadGeneration'))
         page = self.diagnosticPages.get((*scope, self.selectedId), {})
         self.logs.setPage(page, driver.get('channels', []))
+
+    def openRuntimeLogs(self):
+        window = self.c.window
+        window.openLogDialog()
+        view = window.logDialog.view
+        view.rangeCombo.setCurrentIndex(view.rangeCombo.findData("runtime"))
+        state = self.states.get(self.selectedId, {})
+        view.historyInputs["projectId"].setText(str(state.get("projectId") or window._currentProjectId()))
+        view.historyInputs["deviceId"].setText(self.selectedId)
+        view.queryHistory()
 
     def readDiagnostics(self):
         state = self.states.get(self.selectedId)

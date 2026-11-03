@@ -15,8 +15,9 @@ def eventPayload(event):
               'level': 'level', 'code': 'code', 'projectId': 'project_id',
               'workflowId': 'workflow_id', 'workflowRunId': 'workflow_run_id',
               'parentWorkflowRunId': 'parent_workflow_run_id', 'nodeId': 'node_id',
-              'nodeRunId': 'node_run_id', 'sequence': 'sequence', 'timestampMs': 'timestamp_ms'}
-    result = {name: getattr(event, wire) for name, wire in fields.items()}
+              'nodeRunId': 'node_run_id', 'sequence': 'sequence', 'timestampMs': 'timestamp_ms',
+              'originApp': 'origin_app', 'component': 'component', 'runtimeInstanceId': 'runtime_instance_id'}
+    result = {name: getattr(event, wire, '') for name, wire in fields.items()}
     result['payload'] = json.loads(event.payload_json or '{}')
     result['iterationPath'] = json.loads(event.iteration_path_json or '[]')
     return result

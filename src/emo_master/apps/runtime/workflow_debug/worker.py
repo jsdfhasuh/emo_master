@@ -63,7 +63,7 @@ def runWorkflowDebug(specJson, commands, events, cancellation, stop, heartbeat, 
         send(dict(kind="log", executionId=context.nodeRunId, event=dict(
             type=event["eventType"], identity=asdict(context), level=event.get("level", "INFO"),
             code=event.get("code", ""), message=str(event.get("message", ""))[:2048],
-            status=payload.get("status", ""))))
+            status=payload.get("status", ""), payload=payload if event["eventType"] == "node.log" else {})))
 
     controller = WorkflowDebugController(token, variables, publish)
     context = RunContext.root("debug:" + uuid4().hex, spec["workflowId"], spec["workspacePath"], spec["projectId"])

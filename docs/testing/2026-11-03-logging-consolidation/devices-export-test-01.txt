@@ -1,0 +1,3012 @@
+...................................FFFF.F.F.FFFFFFFF...FF..........F.... [ 86%]
+...........                                                              [100%]
+================================== FAILURES ===================================
+__ testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication ___
+
+chain = {'root': WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/tcp-device-chain0'), 'serv...ath': [...]}}]}, 'production': {'autoStart': False, 'mode': 'single', 'cycleIntervalMs': 100, 'inputs': {}}, ...}, ...}
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001A4584031C0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A458403730>
+
+    def testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication(chain, ownedDesignerWindow, monkeypatch):
+        from PySide2.QtCore import Qt
+        from PySide2.QtTest import QTest
+        from PySide2.QtWidgets import QDialogButtonBox, QMessageBox
+        from emo_master.apps.designer.ui.device_wizard import DeviceDefinitionDialog, DeviceNodeDialog
+        from tests.designer.test_device_workspace import waitUntil
+        from tests.designer.test_runtime_menu_publication import menuDialog
+        c = chain
+>       window = ownedDesignerWindow(RuntimeClient(runtimeService=c['service']))
+
+tests\runtime\test_tcp_device_integration.py:154: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1315: in __init__
+    self.logDialog = LogDialog(
+src\emo_master\apps\designer\ui\log_dialog.py:993: in __init__
+    self.view = StructuredLogView(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.log_dialog.StructuredLogView(0x1a457aa21b0) at 0x000001A4588B64C0>
+parent = <emo_master.apps.designer.ui.log_dialog.LogDialog(0x1a457aa3100, name="runtimeLogDialog") at 0x000001A4588B7C00>
+onClear = <bound method MainWindow._clearRuntimeLogCache of <emo_master.apps.designer.ui.main_window.MainWindow(0x1a454d647a0) at 0x000001A4588BFD00>>
+onNavigate = <bound method MainWindow.navigateToRuntimeLogEntry of <emo_master.apps.designer.ui.main_window.MainWindow(0x1a454d647a0) at 0x000001A4588BFD00>>
+maximumEntries = 10000
+
+    def __init__(
+        self,
+        parent=None,
+        *,
+        onClear: Callable[[], None] | None = None,
+        onNavigate: Callable[[StructuredLogEntry], str] | None = None,
+        maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
+    ) -> None:
+        super().__init__(parent)
+        self.maximumEntries = max(1, int(maximumEntries))
+        self._onClear = onClear
+        self._onNavigate = onNavigate
+        self._entries: list[StructuredLogEntry] = []
+        self._visibleEntries: list[StructuredLogEntry] = []
+        self._pendingEntries: list[StructuredLogEntry] = []
+        self._pendingEvicted: list[StructuredLogEntry] = []
+        self._detailEntry: StructuredLogEntry | None = None
+        self._viewDirty = False
+        self._filterCounts: dict[str, Counter[Any]] = {
+            name: Counter() for name in ("jobId", "eventType", "workflow", "node")}
+        self._workflowNames: dict[tuple[str, ...], str] = {}
+        self._nodeNames: dict[tuple[str, ...], str] = {}
+        self._errorCount = 0
+        self._visibleErrorCount = 0
+        self._exportDirectory = Path.home()
+        self._historyClient = None
+        self._historyTarget = None
+        self._historyGeneration = 0
+        self._historyFuture = None
+        self._historyCancel = None
+        self._historyReply = None
+        self._historyFilters = {}
+        self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
+        root = QVBoxLayout()
+        historyRow = QHBoxLayout()
+        self.rangeCombo = QComboBox()
+        for label, value in (("��ǰ��ʾ��¼ / ʵʱ", "current"), ("Runtime ��ʷ", "runtime"), ("Designer �����ļ�", "local")):
+            self.rangeCombo.addItem(label, value)
+        historyRow.addWidget(self.rangeCombo)
+        self.historyQueryButton = QPushButton("��ѯ / ˢ��")
+        self.historyNextButton = QPushButton("��һҳ")
+        self.historyExportButton = QPushButton("��������ѡ����Χ��")
+        self.historyCancelButton = QPushButton("ȡ��")
+        for button in (self.historyQueryButton, self.historyNextButton, self.historyExportButton, self.historyCancelButton):
+            historyRow.addWidget(button)
+        root.addLayout(historyRow)
+        self.historyFiltersWidget = QWidget()
+        historyFilters = QGridLayout(self.historyFiltersWidget)
+        historyFilters.setContentsMargins(0, 0, 0, 0)
+        self.historyInputs = {}
+        for index, (name, label) in enumerate((("projectId", "���� ID"), ("jobId", "Job ID"), ("deviceId", "�豸 ID"),
+                ("component", "ģ��"), ("workflowId", "������ ID"), ("nodeId", "�ڵ� ID"),
+                ("startTimestampMs", "��ʼʱ�� ms������"), ("endTimestampMs", "����ʱ�� ms��������"))):
+            edit = QLineEdit()
+            edit.setPlaceholderText(label + "�����ղ���")
+            self.historyInputs[name] = edit
+            historyFilters.addWidget(edit, index // 4, index % 4)
+        self.localFileCombo = QComboBox()
+        self.localFileCombo.setMinimumContentsLength(20)
+        root.addWidget(self.historyFiltersWidget)
+        root.addWidget(self.localFileCombo)
+        self.historyStatus = QLabel()
+        self.historyStatus.setWordWrap(True)
+        root.addWidget(self.historyStatus)
+        filters = QGridLayout()
+        self.levelFilter = _combo(("ȫ��", "DEBUG", "INFO", "WARN", "ERROR"))
+        self.sourceFilter = _combo(("ȫ��", "runtime", "designer", "editor"))
+        self.sourceFilter.addItem("�������", "flow_designer")
+        self.sourceFilter.addItem("ҳ�����", "page_designer")
+        self.jobFilter = _combo(("ȫ��",))
+        self.workflowFilter = _combo(("ȫ��",))
+        self.nodeFilter = _combo(("ȫ��",))
+        self.eventTypeFilter = _combo(("ȫ��",))
+        self.searchInput = QLineEdit()
+        self.searchInput.setPlaceholderText("������־")
+        self.autoScrollCheck = QCheckBox("�Զ�����")
+        self.autoScrollCheck.setChecked(True)
+        for index, (label, widget) in enumerate((
+            ("�ȼ�", self.levelFilter),
+            ("��Դ", self.sourceFilter),
+            ("Job", self.jobFilter),
+            ("������", self.workflowFilter),
+            ("�ڵ�", self.nodeFilter),
+            ("�¼�", self.eventTypeFilter),
+        )):
+            widget.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+            widget.setMinimumContentsLength(6)
+            widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            row, column = divmod(index, 3)
+            filters.addWidget(QLabel(label), row, column * 2)
+            filters.addWidget(widget, row, column * 2 + 1)
+        self.searchInput.setMinimumWidth(80)
+        root.addLayout(filters)
+        searchRow = QHBoxLayout()
+        searchRow.addWidget(self.searchInput, 1)
+        self.resetFiltersButton = QPushButton("���ɸѡ")
+        self.resetFiltersButton.setToolTip("�ָ���ʾȫ����־����ɾ����־����")
+        searchRow.addWidget(self.resetFiltersButton)
+        root.addLayout(searchRow)
+        self.areaTabs = QTabBar()
+        self.areaTabs.setObjectName("runtimeLogAreaTabs")
+        self.areaTabs.setAccessibleName("��־����")
+        self.areaTabs.setExpanding(True)
+        self.areaTabs.setDrawBase(False)
+        for label, area, hint in (
+            ("ȫ��", "all", "��ʾ������־���������̡����Ӻ��豸��ͨ�ü�¼"),
+            ("�������", "flow", "���������ڵ�ִ�к����ӱ༭��־"),
+            ("ҳ�����", "page", "ҳ����Ʋ��������չʾ�쳣��ָ���־"),
+        ):
+            index = self.areaTabs.addTab(label)
+            self.areaTabs.setTabData(index, area)
+            self.areaTabs.setTabToolTip(index, hint)
+        root.addWidget(self.areaTabs)
+        filterStatus = QHBoxLayout()
+        self.filterStatusLabel = QLabel()
+        self.filterStatusLabel.setObjectName("runtimeLogFilterStatus")
+        self.filterStatusLabel.setWordWrap(True)
+        self.showErrorsButton = QPushButton("���ɸѡ������")
+        self.showErrorsButton.setObjectName("runtimeLogShowErrors")
+        self.showErrorsButton.setToolTip("�������ɸѡ��ѡ�����´��󣻱�����־����")
+        filterStatus.addWidget(self.filterStatusLabel, 1)
+        filterStatus.addWidget(self.showErrorsButton)
+        root.addLayout(filterStatus)
+    
+        self.table = QTableWidget(0, len(self.columns))
+        self.table.setObjectName("runtimeLogTable")
+        self.table.setHorizontalHeaderLabels(list(self.columns))
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self.table.verticalHeader().setVisible(False)
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionsMovable(True)
+        for visualIndex, column in enumerate((0, 1, 4, 5, 9, 2, 6, 7, 3, 8)):
+            header.moveSection(header.visualIndex(column), visualIndex)
+        for column, width in enumerate((128, 64, 88, 120, 160, 180, 64, 100, 96, 360)):
+            self.table.setColumnWidth(column, width)
+        self.table.setAlternatingRowColors(True)
+        self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
+        self.detailViewer = LogJsonTree()
+        self.detailViewer.setObjectName("runtimeLogDetails")
+        self._logViewer = self.detailViewer
+        details = QWidget()
+        detailLayout = QVBoxLayout(details)
+        detailLayout.setContentsMargins(0, 0, 0, 0)
+        detailActions = QHBoxLayout()
+        detailActions.addWidget(QLabel("��־���� �� JSON"))
+        detailActions.addStretch(1)
+        self.copyDetailsButton = QPushButton("�������� JSON")
+        self.copyDetailsButton.setAutoDefault(False)
+        self.copyDetailsButton.setEnabled(False)
+        self.copyDetailsButton.clicked.connect(self.detailViewer.copyJson)
+        detailActions.addWidget(self.copyDetailsButton)
+        detailLayout.addLayout(detailActions)
+        detailLayout.addWidget(self.detailViewer)
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(self.table)
+        splitter.addWidget(details)
+        splitter.setSizes([300, 200])
+        root.addWidget(splitter)
+        self.navigationHint = QLabel("ѡ��һ����־���ɲ鿴�����λ�ڵ�")
+        self.navigationHint.setObjectName("runtimeLogNavigationHint")
+        self.navigationHint.setWordWrap(True)
+        root.addWidget(self.navigationHint)
+        actions = QHBoxLayout()
+        self.locateButton = QPushButton("��λ�ڵ�")
+        self.locateButton.setObjectName("runtimeLogLocateNode")
+        self.locateButton.setToolTip("��λ����־�����������еĽڵ㣨Ҳ��˫����־��")
+        self.locateButton.setEnabled(False)
+        self.clearButton = QPushButton("�����ͼ")
+        self.clearButton.setIcon(icon("trash-2"))
+        actions.addWidget(self.autoScrollCheck)
+        self.logDirectoryButton = QPushButton("������־Ŀ¼")
+        self.logDirectoryButton.setAutoDefault(False)
+        self.logDirectoryButton.setEnabled(False)
+        actions.addWidget(self.logDirectoryButton)
+        actions.addStretch(1)
+        self.exportButton = QPushButton("������־")
+        self.exportButton.setObjectName("runtimeLogExport")
+        self.exportButton.setAutoDefault(False)
+        self.exportButton.setToolTip("�������ڵ�ǰ��������־���������飻��������ջ򳬹��������޵���ʷ��¼")
+        self.exportMenu = QMenu(self.exportButton)
+        self.exportFilteredAction = self.exportMenu.addAction("������ǰɸѡ�����")
+        self.exportAllAction = self.exportMenu.addAction("����ȫ��������־��")
+        self.exportFilteredAction.triggered.connect(lambda: self.exportLogs(filtered=True))
+        self.exportAllAction.triggered.connect(lambda: self.exportLogs(filtered=False))
+        self.exportMenu.aboutToShow.connect(self._updateExportActions)
+        self.exportButton.setMenu(self.exportMenu)
+        actions.addWidget(self.exportButton)
+        actions.addWidget(self.locateButton)
+        actions.addWidget(self.clearButton)
+        root.addLayout(actions)
+        self.setLayout(root)
+    
+        for combo in (
+            self.levelFilter,
+            self.sourceFilter,
+            self.jobFilter,
+            self.eventTypeFilter,
+        ):
+            combo.currentTextChanged.connect(self._refreshTable)
+        self.workflowFilter.currentIndexChanged.connect(self._onWorkflowFilterChanged)
+        self.nodeFilter.currentIndexChanged.connect(self._refreshTable)
+        self.searchInput.textChanged.connect(self._refreshTable)
+        self.areaTabs.currentChanged.connect(self._refreshTable)
+        self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
+        self.table.verticalScrollBar().valueChanged.connect(self._onScrollChanged)
+        self.table.verticalScrollBar().rangeChanged.connect(self._onScrollRangeChanged)
+        self.table.currentCellChanged.connect(self._showDetails)
+        self.table.cellDoubleClicked.connect(self._navigateFromRow)
+        self.locateButton.clicked.connect(self._navigateSelected)
+        self.showErrorsButton.clicked.connect(self._showAllErrors)
+        self.resetFiltersButton.clicked.connect(self._resetFilters)
+        self.clearButton.clicked.connect(self._clearLogs)
+        self._refreshTimer = QTimer(self)
+        self._refreshTimer.setSingleShot(True)
+        self._refreshTimer.setInterval(_BATCH_INTERVAL_MS)
+        self._refreshTimer.timeout.connect(self._flushVisibleEntries)
+        for combo in (self.jobFilter, self.workflowFilter, self.nodeFilter, self.eventTypeFilter):
+            combo.popupClosed.connect(self._refreshTimer.start)
+        self._updateFilterStatus()
+>       self.rangeCombo.currentIndexChanged.connect(self._historySourceChanged)
+E       AttributeError: 'StructuredLogView' object has no attribute '_historySourceChanged'
+
+src\emo_master\apps\designer\ui\log_dialog.py:430: AttributeError
+---------------------------- Captured stdout setup ----------------------------
+TCP_ACCEPTANCE_ROOT=C:\Users\jsdfhasuh\AppData\Local\Temp\pytest-of-jsdfhasuh\pytest-4166\tcp-device-chain0
+___________ testA2CameraProcessingThenPlcWriteInTheSameSavedProject ___________
+
+chain = {'root': WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/tcp-device-chain0'), 'serv...ath': [...]}}]}, 'production': {'autoStart': False, 'mode': 'single', 'cycleIntervalMs': 100, 'inputs': {}}, ...}, ...}
+
+    def testA2CameraProcessingThenPlcWriteInTheSameSavedProject(chain):
+        from tests.plugins.test_communication_operators import _ScriptedSlmpServer, _slmpResponse
+        import struct
+        c = chain
+        server = _ScriptedSlmpServer([_slmpResponse()])
+        server.server.close()
+        server.server = socket.socket()
+        server.server.bind(('127.0.0.1', c['payload']['devices']['definitions']['plc']['connection']['port']))
+        server.server.listen(1)
+        server.server.settimeout(10)
+        with server:
+>           c['jobs'].append(run(c['service'], c['client'], 'camera-plc'))
+
+tests\runtime\test_tcp_device_integration.py:260: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+service = <emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001A458A86DD0>
+client = <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A458A843D0>
+workflow = 'camera-plc', inputs = None
+
+    def run(service, client, workflow, inputs=None):
+        reply = client.startJob(service.loadedProjectId, workflow, inputs=inputs or {})
+>       assert reply.ok, reply
+E       AssertionError: message: "project not loaded"
+E         status: "FAILED"
+E         runtime_instance_id: "7e5c5043-e7fa-47f4-8a1c-c9d5cff79d95"
+E         legacy_snapshot_policy: "ALL"
+E         
+E       assert False
+E        +  where False = message: "project not loaded"\nstatus: "FAILED"\nruntime_instance_id: "7e5c5043-e7fa-47f4-8a1c-c9d5cff79d95"\nlegacy_snapshot_policy: "ALL"\n.ok
+
+tests\runtime\test_tcp_device_integration.py:61: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+chain = {'root': WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/tcp-device-chain0'), 'serv...ath': [...]}}]}, 'production': {'autoStart': False, 'mode': 'single', 'cycleIntervalMs': 100, 'inputs': {}}, ...}, ...}
+
+    def testA2CameraProcessingThenPlcWriteInTheSameSavedProject(chain):
+        from tests.plugins.test_communication_operators import _ScriptedSlmpServer, _slmpResponse
+        import struct
+        c = chain
+        server = _ScriptedSlmpServer([_slmpResponse()])
+        server.server.close()
+        server.server = socket.socket()
+        server.server.bind(('127.0.0.1', c['payload']['devices']['definitions']['plc']['connection']['port']))
+        server.server.listen(1)
+        server.server.settimeout(10)
+>       with server:
+
+tests\runtime\test_tcp_device_integration.py:259: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.plugins.test_communication_operators._ScriptedSlmpServer object at 0x000001A458C6FE50>
+_ = (<class 'AssertionError'>, AssertionError('message: "project not loaded"\n  status: "FAILED"\n  runtime_instance_id: "...e5c5043-e7fa-47f4-8a1c-c9d5cff79d95"\\nlegacy_snapshot_policy: "ALL"\\n.ok'), <traceback object at 0x000001A458A68080>)
+
+    def __exit__(self, *_: object) -> None:
+        self.thread.join(timeout=3.0)
+        self.server.close()
+        assert not self.thread.is_alive()
+>       assert self.errors == []
+E       AssertionError: assert [OSError(1003... 10038, None)] == []
+E         
+E         Left contains one more item: OSError(10038, '��һ�����׽����ϳ�����һ��������', None, 10038, None)
+E         Use -v to get more diff
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\plugins\test_communication_operators.py:99: AssertionError
+____________ testA3ServerAndBothSingleTransactionsUseRealJobEntry _____________
+
+chain = {'root': WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/tcp-device-chain0'), 'serv...ath': [...]}}]}, 'production': {'autoStart': False, 'mode': 'single', 'cycleIntervalMs': 100, 'inputs': {}}, ...}, ...}
+
+    def testA3ServerAndBothSingleTransactionsUseRealJobEntry(chain):
+        c = chain
+        serverPort = c['payload']['devices']['definitions']['server']['connection']['port']
+        waiting = c['client'].startJob(c['service'].loadedProjectId, 'other')
+>       assert waiting.ok, waiting
+E       AssertionError: message: "project not loaded"
+E         status: "FAILED"
+E         runtime_instance_id: "7e5c5043-e7fa-47f4-8a1c-c9d5cff79d95"
+E         legacy_snapshot_policy: "ALL"
+E         
+E       assert False
+E        +  where False = message: "project not loaded"\nstatus: "FAILED"\nruntime_instance_id: "7e5c5043-e7fa-47f4-8a1c-c9d5cff79d95"\nlegacy_snapshot_policy: "ALL"\n.ok
+
+tests\runtime\test_tcp_device_integration.py:270: AssertionError
+______________ testNormal16MiBMessageCrossesTheBoundedTcpBridge _______________
+
+chain = {'root': WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/tcp-device-chain0'), 'serv...ath': [...]}}]}, 'production': {'autoStart': False, 'mode': 'single', 'cycleIntervalMs': 100, 'inputs': {}}, ...}, ...}
+
+    def testNormal16MiBMessageCrossesTheBoundedTcpBridge(chain):
+        c = chain
+        data = 'X' * 16777216
+        received = bytearray()
+>       with socket.create_connection(('127.0.0.1', c['payload']['devices']['definitions']['server']['connection']['port']), timeout=5) as peer:
+
+tests\runtime\test_tcp_device_integration.py:326: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+D:\Conda\envs\emo_master\lib\socket.py:857: in create_connection
+    raise err
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 54863), timeout = 5, source_address = None
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default.
+        """
+    
+        host, port = address
+        err = None
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               ConnectionRefusedError: [WinError 10061] ����Ŀ�����������ܾ����޷����ӡ�
+
+D:\Conda\envs\emo_master\lib\socket.py:845: ConnectionRefusedError
+______ testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure ______
+
+chain = {'root': WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/tcp-device-chain0'), 'serv...ath': [...]}}]}, 'production': {'autoStart': False, 'mode': 'single', 'cycleIntervalMs': 100, 'inputs': {}}, ...}, ...}
+
+    def testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure(chain):
+        from emo_master.clients.runtime.devices import DeviceManagementClient
+        from emo_master.core.project.configuration import projectChanges, requiredProjectChanges
+        c = chain
+        shared = DeviceManagementClient(c['service'])
+>       runtimeId, states = shared.getDeviceStates(c['service'].loadedProjectId)
+
+tests\runtime\test_tcp_device_integration.py:385: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\clients\runtime\devices.py:69: in getDeviceStates
+    return self._states(self._call('GetDeviceStates', pb.GetDeviceStatesRequest(project_id=projectId), cancellation))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.clients.runtime.devices.DeviceManagementClient object at 0x000001A458C661A0>
+reply = runtime_instance_id: "7e5c5043-e7fa-47f4-8a1c-c9d5cff79d95"
+states_json: "{}"
+message: "Runtime δ���ش˹���"
+code: "E_CONFIG_NOT_LOADED"
+runtime_uptime_ms: 6797
+
+
+    def _states(self, reply):
+        if not reply.ok:
+>           raise DeviceClientError(reply.code or 'E_DEVICE_STATE', reply.message)
+E           emo_master.clients.runtime.devices.DeviceClientError: Runtime δ���ش˹���
+
+src\emo_master\clients\runtime\devices.py:63: DeviceClientError
+____________ testA5AllThreePackagesImportAndRunFromNewDirectories _____________
+
+self = <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A458A843D0>
+method = 'getDeviceStates', args = ('',), kwargs = {}
+
+    def _deviceCall(self, method, *args, **kwargs):
+        from emo_master.clients.runtime.devices import DeviceClientError
+        try:
+>           return getattr(self._deviceManagement(), method)(*args, **kwargs)
+
+src\emo_master\apps\designer\services\runtime_client.py:757: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\clients\runtime\devices.py:69: in getDeviceStates
+    return self._states(self._call('GetDeviceStates', pb.GetDeviceStatesRequest(project_id=projectId), cancellation))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.clients.runtime.devices.DeviceManagementClient object at 0x000001A45A14D180>
+reply = runtime_instance_id: "7e5c5043-e7fa-47f4-8a1c-c9d5cff79d95"
+states_json: "{}"
+message: "Runtime δ���ش˹���"
+code: "E_CONFIG_NOT_LOADED"
+runtime_uptime_ms: 6844
+
+
+    def _states(self, reply):
+        if not reply.ok:
+>           raise DeviceClientError(reply.code or 'E_DEVICE_STATE', reply.message)
+E           emo_master.clients.runtime.devices.DeviceClientError: Runtime δ���ش˹���
+
+src\emo_master\clients\runtime\devices.py:63: DeviceClientError
+
+The above exception was the direct cause of the following exception:
+
+chain = {'root': WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/tcp-device-chain0'), 'serv...ath': [...]}}]}, 'production': {'autoStart': False, 'mode': 'single', 'cycleIntervalMs': 100, 'inputs': {}}, ...}, ...}
+
+    def testA5AllThreePackagesImportAndRunFromNewDirectories(chain):
+        from emo_master.apps.designer.state.project_edit_session import ProjectEditSession
+        from emo_master.apps.designer.state.device_package import exportDevices, importDevices, readDevicePackage
+        from emo_master.apps.designer.state.workflow_package import buildWorkflowPackage, writeWorkflowPackage, loadWorkflowPackage, importWorkflowPackage
+        from emo_master.core.project.runtime_package import buildRuntimePackage, installRuntimePackage
+        c = chain
+>       control(c, 'server', 'disconnect')
+
+tests\runtime\test_tcp_device_integration.py:508: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\runtime\test_tcp_device_integration.py:364: in control
+    runtimeId, states = c['client'].getDeviceStates(c['service'].loadedProjectId)
+src\emo_master\apps\designer\services\runtime_client.py:765: in getDeviceStates
+    return self._deviceCall('getDeviceStates', projectId)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001A458A843D0>
+method = 'getDeviceStates', args = ('',), kwargs = {}
+
+    def _deviceCall(self, method, *args, **kwargs):
+        from emo_master.clients.runtime.devices import DeviceClientError
+        try:
+            return getattr(self._deviceManagement(), method)(*args, **kwargs)
+        except DeviceClientError as error:
+>           raise RuntimeClientError(error.code, str(error)) from error
+E           emo_master.apps.designer.services.runtime_client.RuntimeClientError: Runtime δ���ش˹���
+
+src\emo_master\apps\designer\services\runtime_client.py:759: RuntimeClientError
+__________ testFormatsPreserveCompleteChineseNestedDiagnostics[json] __________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a455284470) at 0x000001A458A86C40>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A458BD34F0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/testFormatsPreserveCompleteChi0')
+formatName = 'json'
+
+    @pytest.mark.parametrize("formatName", ["json", "jsonl", "txt"])
+    def testFormatsPreserveCompleteChineseNestedDiagnostics(designerApplication, monkeypatch, tmp_path, formatName):
+>       dialog = LogDialog()
+
+tests\designer\test_log_export.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\log_dialog.py:993: in __init__
+    self.view = StructuredLogView(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.log_dialog.StructuredLogView(0x1a45983c5f0) at 0x000001A459FA2440>
+parent = <emo_master.apps.designer.ui.log_dialog.LogDialog(0x1a45983b390, name="runtimeLogDialog") at 0x000001A458AD6DC0>
+onClear = None, onNavigate = None, maximumEntries = 10000
+
+    def __init__(
+        self,
+        parent=None,
+        *,
+        onClear: Callable[[], None] | None = None,
+        onNavigate: Callable[[StructuredLogEntry], str] | None = None,
+        maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
+    ) -> None:
+        super().__init__(parent)
+        self.maximumEntries = max(1, int(maximumEntries))
+        self._onClear = onClear
+        self._onNavigate = onNavigate
+        self._entries: list[StructuredLogEntry] = []
+        self._visibleEntries: list[StructuredLogEntry] = []
+        self._pendingEntries: list[StructuredLogEntry] = []
+        self._pendingEvicted: list[StructuredLogEntry] = []
+        self._detailEntry: StructuredLogEntry | None = None
+        self._viewDirty = False
+        self._filterCounts: dict[str, Counter[Any]] = {
+            name: Counter() for name in ("jobId", "eventType", "workflow", "node")}
+        self._workflowNames: dict[tuple[str, ...], str] = {}
+        self._nodeNames: dict[tuple[str, ...], str] = {}
+        self._errorCount = 0
+        self._visibleErrorCount = 0
+        self._exportDirectory = Path.home()
+        self._historyClient = None
+        self._historyTarget = None
+        self._historyGeneration = 0
+        self._historyFuture = None
+        self._historyCancel = None
+        self._historyReply = None
+        self._historyFilters = {}
+        self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
+        root = QVBoxLayout()
+        historyRow = QHBoxLayout()
+        self.rangeCombo = QComboBox()
+        for label, value in (("��ǰ��ʾ��¼ / ʵʱ", "current"), ("Runtime ��ʷ", "runtime"), ("Designer �����ļ�", "local")):
+            self.rangeCombo.addItem(label, value)
+        historyRow.addWidget(self.rangeCombo)
+        self.historyQueryButton = QPushButton("��ѯ / ˢ��")
+        self.historyNextButton = QPushButton("��һҳ")
+        self.historyExportButton = QPushButton("��������ѡ����Χ��")
+        self.historyCancelButton = QPushButton("ȡ��")
+        for button in (self.historyQueryButton, self.historyNextButton, self.historyExportButton, self.historyCancelButton):
+            historyRow.addWidget(button)
+        root.addLayout(historyRow)
+        self.historyFiltersWidget = QWidget()
+        historyFilters = QGridLayout(self.historyFiltersWidget)
+        historyFilters.setContentsMargins(0, 0, 0, 0)
+        self.historyInputs = {}
+        for index, (name, label) in enumerate((("projectId", "���� ID"), ("jobId", "Job ID"), ("deviceId", "�豸 ID"),
+                ("component", "ģ��"), ("workflowId", "������ ID"), ("nodeId", "�ڵ� ID"),
+                ("startTimestampMs", "��ʼʱ�� ms������"), ("endTimestampMs", "����ʱ�� ms��������"))):
+            edit = QLineEdit()
+            edit.setPlaceholderText(label + "�����ղ���")
+            self.historyInputs[name] = edit
+            historyFilters.addWidget(edit, index // 4, index % 4)
+        self.localFileCombo = QComboBox()
+        self.localFileCombo.setMinimumContentsLength(20)
+        root.addWidget(self.historyFiltersWidget)
+        root.addWidget(self.localFileCombo)
+        self.historyStatus = QLabel()
+        self.historyStatus.setWordWrap(True)
+        root.addWidget(self.historyStatus)
+        filters = QGridLayout()
+        self.levelFilter = _combo(("ȫ��", "DEBUG", "INFO", "WARN", "ERROR"))
+        self.sourceFilter = _combo(("ȫ��", "runtime", "designer", "editor"))
+        self.sourceFilter.addItem("�������", "flow_designer")
+        self.sourceFilter.addItem("ҳ�����", "page_designer")
+        self.jobFilter = _combo(("ȫ��",))
+        self.workflowFilter = _combo(("ȫ��",))
+        self.nodeFilter = _combo(("ȫ��",))
+        self.eventTypeFilter = _combo(("ȫ��",))
+        self.searchInput = QLineEdit()
+        self.searchInput.setPlaceholderText("������־")
+        self.autoScrollCheck = QCheckBox("�Զ�����")
+        self.autoScrollCheck.setChecked(True)
+        for index, (label, widget) in enumerate((
+            ("�ȼ�", self.levelFilter),
+            ("��Դ", self.sourceFilter),
+            ("Job", self.jobFilter),
+            ("������", self.workflowFilter),
+            ("�ڵ�", self.nodeFilter),
+            ("�¼�", self.eventTypeFilter),
+        )):
+            widget.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+            widget.setMinimumContentsLength(6)
+            widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            row, column = divmod(index, 3)
+            filters.addWidget(QLabel(label), row, column * 2)
+            filters.addWidget(widget, row, column * 2 + 1)
+        self.searchInput.setMinimumWidth(80)
+        root.addLayout(filters)
+        searchRow = QHBoxLayout()
+        searchRow.addWidget(self.searchInput, 1)
+        self.resetFiltersButton = QPushButton("���ɸѡ")
+        self.resetFiltersButton.setToolTip("�ָ���ʾȫ����־����ɾ����־����")
+        searchRow.addWidget(self.resetFiltersButton)
+        root.addLayout(searchRow)
+        self.areaTabs = QTabBar()
+        self.areaTabs.setObjectName("runtimeLogAreaTabs")
+        self.areaTabs.setAccessibleName("��־����")
+        self.areaTabs.setExpanding(True)
+        self.areaTabs.setDrawBase(False)
+        for label, area, hint in (
+            ("ȫ��", "all", "��ʾ������־���������̡����Ӻ��豸��ͨ�ü�¼"),
+            ("�������", "flow", "���������ڵ�ִ�к����ӱ༭��־"),
+            ("ҳ�����", "page", "ҳ����Ʋ��������չʾ�쳣��ָ���־"),
+        ):
+            index = self.areaTabs.addTab(label)
+            self.areaTabs.setTabData(index, area)
+            self.areaTabs.setTabToolTip(index, hint)
+        root.addWidget(self.areaTabs)
+        filterStatus = QHBoxLayout()
+        self.filterStatusLabel = QLabel()
+        self.filterStatusLabel.setObjectName("runtimeLogFilterStatus")
+        self.filterStatusLabel.setWordWrap(True)
+        self.showErrorsButton = QPushButton("���ɸѡ������")
+        self.showErrorsButton.setObjectName("runtimeLogShowErrors")
+        self.showErrorsButton.setToolTip("�������ɸѡ��ѡ�����´��󣻱�����־����")
+        filterStatus.addWidget(self.filterStatusLabel, 1)
+        filterStatus.addWidget(self.showErrorsButton)
+        root.addLayout(filterStatus)
+    
+        self.table = QTableWidget(0, len(self.columns))
+        self.table.setObjectName("runtimeLogTable")
+        self.table.setHorizontalHeaderLabels(list(self.columns))
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self.table.verticalHeader().setVisible(False)
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionsMovable(True)
+        for visualIndex, column in enumerate((0, 1, 4, 5, 9, 2, 6, 7, 3, 8)):
+            header.moveSection(header.visualIndex(column), visualIndex)
+        for column, width in enumerate((128, 64, 88, 120, 160, 180, 64, 100, 96, 360)):
+            self.table.setColumnWidth(column, width)
+        self.table.setAlternatingRowColors(True)
+        self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
+        self.detailViewer = LogJsonTree()
+        self.detailViewer.setObjectName("runtimeLogDetails")
+        self._logViewer = self.detailViewer
+        details = QWidget()
+        detailLayout = QVBoxLayout(details)
+        detailLayout.setContentsMargins(0, 0, 0, 0)
+        detailActions = QHBoxLayout()
+        detailActions.addWidget(QLabel("��־���� �� JSON"))
+        detailActions.addStretch(1)
+        self.copyDetailsButton = QPushButton("�������� JSON")
+        self.copyDetailsButton.setAutoDefault(False)
+        self.copyDetailsButton.setEnabled(False)
+        self.copyDetailsButton.clicked.connect(self.detailViewer.copyJson)
+        detailActions.addWidget(self.copyDetailsButton)
+        detailLayout.addLayout(detailActions)
+        detailLayout.addWidget(self.detailViewer)
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(self.table)
+        splitter.addWidget(details)
+        splitter.setSizes([300, 200])
+        root.addWidget(splitter)
+        self.navigationHint = QLabel("ѡ��һ����־���ɲ鿴�����λ�ڵ�")
+        self.navigationHint.setObjectName("runtimeLogNavigationHint")
+        self.navigationHint.setWordWrap(True)
+        root.addWidget(self.navigationHint)
+        actions = QHBoxLayout()
+        self.locateButton = QPushButton("��λ�ڵ�")
+        self.locateButton.setObjectName("runtimeLogLocateNode")
+        self.locateButton.setToolTip("��λ����־�����������еĽڵ㣨Ҳ��˫����־��")
+        self.locateButton.setEnabled(False)
+        self.clearButton = QPushButton("�����ͼ")
+        self.clearButton.setIcon(icon("trash-2"))
+        actions.addWidget(self.autoScrollCheck)
+        self.logDirectoryButton = QPushButton("������־Ŀ¼")
+        self.logDirectoryButton.setAutoDefault(False)
+        self.logDirectoryButton.setEnabled(False)
+        actions.addWidget(self.logDirectoryButton)
+        actions.addStretch(1)
+        self.exportButton = QPushButton("������־")
+        self.exportButton.setObjectName("runtimeLogExport")
+        self.exportButton.setAutoDefault(False)
+        self.exportButton.setToolTip("�������ڵ�ǰ��������־���������飻��������ջ򳬹��������޵���ʷ��¼")
+        self.exportMenu = QMenu(self.exportButton)
+        self.exportFilteredAction = self.exportMenu.addAction("������ǰɸѡ�����")
+        self.exportAllAction = self.exportMenu.addAction("����ȫ��������־��")
+        self.exportFilteredAction.triggered.connect(lambda: self.exportLogs(filtered=True))
+        self.exportAllAction.triggered.connect(lambda: self.exportLogs(filtered=False))
+        self.exportMenu.aboutToShow.connect(self._updateExportActions)
+        self.exportButton.setMenu(self.exportMenu)
+        actions.addWidget(self.exportButton)
+        actions.addWidget(self.locateButton)
+        actions.addWidget(self.clearButton)
+        root.addLayout(actions)
+        self.setLayout(root)
+    
+        for combo in (
+            self.levelFilter,
+            self.sourceFilter,
+            self.jobFilter,
+            self.eventTypeFilter,
+        ):
+            combo.currentTextChanged.connect(self._refreshTable)
+        self.workflowFilter.currentIndexChanged.connect(self._onWorkflowFilterChanged)
+        self.nodeFilter.currentIndexChanged.connect(self._refreshTable)
+        self.searchInput.textChanged.connect(self._refreshTable)
+        self.areaTabs.currentChanged.connect(self._refreshTable)
+        self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
+        self.table.verticalScrollBar().valueChanged.connect(self._onScrollChanged)
+        self.table.verticalScrollBar().rangeChanged.connect(self._onScrollRangeChanged)
+        self.table.currentCellChanged.connect(self._showDetails)
+        self.table.cellDoubleClicked.connect(self._navigateFromRow)
+        self.locateButton.clicked.connect(self._navigateSelected)
+        self.showErrorsButton.clicked.connect(self._showAllErrors)
+        self.resetFiltersButton.clicked.connect(self._resetFilters)
+        self.clearButton.clicked.connect(self._clearLogs)
+        self._refreshTimer = QTimer(self)
+        self._refreshTimer.setSingleShot(True)
+        self._refreshTimer.setInterval(_BATCH_INTERVAL_MS)
+        self._refreshTimer.timeout.connect(self._flushVisibleEntries)
+        for combo in (self.jobFilter, self.workflowFilter, self.nodeFilter, self.eventTypeFilter):
+            combo.popupClosed.connect(self._refreshTimer.start)
+        self._updateFilterStatus()
+>       self.rangeCombo.currentIndexChanged.connect(self._historySourceChanged)
+E       AttributeError: 'StructuredLogView' object has no attribute '_historySourceChanged'
+
+src\emo_master\apps\designer\ui\log_dialog.py:430: AttributeError
+_________ testFormatsPreserveCompleteChineseNestedDiagnostics[jsonl] __________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a455284470) at 0x000001A458A86C40>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A458BAD420>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/testFormatsPreserveCompleteChi1')
+formatName = 'jsonl'
+
+    @pytest.mark.parametrize("formatName", ["json", "jsonl", "txt"])
+    def testFormatsPreserveCompleteChineseNestedDiagnostics(designerApplication, monkeypatch, tmp_path, formatName):
+>       dialog = LogDialog()
+
+tests\designer\test_log_export.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\log_dialog.py:993: in __init__
+    self.view = StructuredLogView(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.log_dialog.StructuredLogView(0x1a45983bda0) at 0x000001A458496A80>
+parent = <emo_master.apps.designer.ui.log_dialog.LogDialog(0x1a45983b7f0, name="runtimeLogDialog") at 0x000001A458AA8300>
+onClear = None, onNavigate = None, maximumEntries = 10000
+
+    def __init__(
+        self,
+        parent=None,
+        *,
+        onClear: Callable[[], None] | None = None,
+        onNavigate: Callable[[StructuredLogEntry], str] | None = None,
+        maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
+    ) -> None:
+        super().__init__(parent)
+        self.maximumEntries = max(1, int(maximumEntries))
+        self._onClear = onClear
+        self._onNavigate = onNavigate
+        self._entries: list[StructuredLogEntry] = []
+        self._visibleEntries: list[StructuredLogEntry] = []
+        self._pendingEntries: list[StructuredLogEntry] = []
+        self._pendingEvicted: list[StructuredLogEntry] = []
+        self._detailEntry: StructuredLogEntry | None = None
+        self._viewDirty = False
+        self._filterCounts: dict[str, Counter[Any]] = {
+            name: Counter() for name in ("jobId", "eventType", "workflow", "node")}
+        self._workflowNames: dict[tuple[str, ...], str] = {}
+        self._nodeNames: dict[tuple[str, ...], str] = {}
+        self._errorCount = 0
+        self._visibleErrorCount = 0
+        self._exportDirectory = Path.home()
+        self._historyClient = None
+        self._historyTarget = None
+        self._historyGeneration = 0
+        self._historyFuture = None
+        self._historyCancel = None
+        self._historyReply = None
+        self._historyFilters = {}
+        self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
+        root = QVBoxLayout()
+        historyRow = QHBoxLayout()
+        self.rangeCombo = QComboBox()
+        for label, value in (("��ǰ��ʾ��¼ / ʵʱ", "current"), ("Runtime ��ʷ", "runtime"), ("Designer �����ļ�", "local")):
+            self.rangeCombo.addItem(label, value)
+        historyRow.addWidget(self.rangeCombo)
+        self.historyQueryButton = QPushButton("��ѯ / ˢ��")
+        self.historyNextButton = QPushButton("��һҳ")
+        self.historyExportButton = QPushButton("��������ѡ����Χ��")
+        self.historyCancelButton = QPushButton("ȡ��")
+        for button in (self.historyQueryButton, self.historyNextButton, self.historyExportButton, self.historyCancelButton):
+            historyRow.addWidget(button)
+        root.addLayout(historyRow)
+        self.historyFiltersWidget = QWidget()
+        historyFilters = QGridLayout(self.historyFiltersWidget)
+        historyFilters.setContentsMargins(0, 0, 0, 0)
+        self.historyInputs = {}
+        for index, (name, label) in enumerate((("projectId", "���� ID"), ("jobId", "Job ID"), ("deviceId", "�豸 ID"),
+                ("component", "ģ��"), ("workflowId", "������ ID"), ("nodeId", "�ڵ� ID"),
+                ("startTimestampMs", "��ʼʱ�� ms������"), ("endTimestampMs", "����ʱ�� ms��������"))):
+            edit = QLineEdit()
+            edit.setPlaceholderText(label + "�����ղ���")
+            self.historyInputs[name] = edit
+            historyFilters.addWidget(edit, index // 4, index % 4)
+        self.localFileCombo = QComboBox()
+        self.localFileCombo.setMinimumContentsLength(20)
+        root.addWidget(self.historyFiltersWidget)
+        root.addWidget(self.localFileCombo)
+        self.historyStatus = QLabel()
+        self.historyStatus.setWordWrap(True)
+        root.addWidget(self.historyStatus)
+        filters = QGridLayout()
+        self.levelFilter = _combo(("ȫ��", "DEBUG", "INFO", "WARN", "ERROR"))
+        self.sourceFilter = _combo(("ȫ��", "runtime", "designer", "editor"))
+        self.sourceFilter.addItem("�������", "flow_designer")
+        self.sourceFilter.addItem("ҳ�����", "page_designer")
+        self.jobFilter = _combo(("ȫ��",))
+        self.workflowFilter = _combo(("ȫ��",))
+        self.nodeFilter = _combo(("ȫ��",))
+        self.eventTypeFilter = _combo(("ȫ��",))
+        self.searchInput = QLineEdit()
+        self.searchInput.setPlaceholderText("������־")
+        self.autoScrollCheck = QCheckBox("�Զ�����")
+        self.autoScrollCheck.setChecked(True)
+        for index, (label, widget) in enumerate((
+            ("�ȼ�", self.levelFilter),
+            ("��Դ", self.sourceFilter),
+            ("Job", self.jobFilter),
+            ("������", self.workflowFilter),
+            ("�ڵ�", self.nodeFilter),
+            ("�¼�", self.eventTypeFilter),
+        )):
+            widget.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+            widget.setMinimumContentsLength(6)
+            widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            row, column = divmod(index, 3)
+            filters.addWidget(QLabel(label), row, column * 2)
+            filters.addWidget(widget, row, column * 2 + 1)
+        self.searchInput.setMinimumWidth(80)
+        root.addLayout(filters)
+        searchRow = QHBoxLayout()
+        searchRow.addWidget(self.searchInput, 1)
+        self.resetFiltersButton = QPushButton("���ɸѡ")
+        self.resetFiltersButton.setToolTip("�ָ���ʾȫ����־����ɾ����־����")
+        searchRow.addWidget(self.resetFiltersButton)
+        root.addLayout(searchRow)
+        self.areaTabs = QTabBar()
+        self.areaTabs.setObjectName("runtimeLogAreaTabs")
+        self.areaTabs.setAccessibleName("��־����")
+        self.areaTabs.setExpanding(True)
+        self.areaTabs.setDrawBase(False)
+        for label, area, hint in (
+            ("ȫ��", "all", "��ʾ������־���������̡����Ӻ��豸��ͨ�ü�¼"),
+            ("�������", "flow", "���������ڵ�ִ�к����ӱ༭��־"),
+            ("ҳ�����", "page", "ҳ����Ʋ��������չʾ�쳣��ָ���־"),
+        ):
+            index = self.areaTabs.addTab(label)
+            self.areaTabs.setTabData(index, area)
+            self.areaTabs.setTabToolTip(index, hint)
+        root.addWidget(self.areaTabs)
+        filterStatus = QHBoxLayout()
+        self.filterStatusLabel = QLabel()
+        self.filterStatusLabel.setObjectName("runtimeLogFilterStatus")
+        self.filterStatusLabel.setWordWrap(True)
+        self.showErrorsButton = QPushButton("���ɸѡ������")
+        self.showErrorsButton.setObjectName("runtimeLogShowErrors")
+        self.showErrorsButton.setToolTip("�������ɸѡ��ѡ�����´��󣻱�����־����")
+        filterStatus.addWidget(self.filterStatusLabel, 1)
+        filterStatus.addWidget(self.showErrorsButton)
+        root.addLayout(filterStatus)
+    
+        self.table = QTableWidget(0, len(self.columns))
+        self.table.setObjectName("runtimeLogTable")
+        self.table.setHorizontalHeaderLabels(list(self.columns))
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self.table.verticalHeader().setVisible(False)
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionsMovable(True)
+        for visualIndex, column in enumerate((0, 1, 4, 5, 9, 2, 6, 7, 3, 8)):
+            header.moveSection(header.visualIndex(column), visualIndex)
+        for column, width in enumerate((128, 64, 88, 120, 160, 180, 64, 100, 96, 360)):
+            self.table.setColumnWidth(column, width)
+        self.table.setAlternatingRowColors(True)
+        self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
+        self.detailViewer = LogJsonTree()
+        self.detailViewer.setObjectName("runtimeLogDetails")
+        self._logViewer = self.detailViewer
+        details = QWidget()
+        detailLayout = QVBoxLayout(details)
+        detailLayout.setContentsMargins(0, 0, 0, 0)
+        detailActions = QHBoxLayout()
+        detailActions.addWidget(QLabel("��־���� �� JSON"))
+        detailActions.addStretch(1)
+        self.copyDetailsButton = QPushButton("�������� JSON")
+        self.copyDetailsButton.setAutoDefault(False)
+        self.copyDetailsButton.setEnabled(False)
+        self.copyDetailsButton.clicked.connect(self.detailViewer.copyJson)
+        detailActions.addWidget(self.copyDetailsButton)
+        detailLayout.addLayout(detailActions)
+        detailLayout.addWidget(self.detailViewer)
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(self.table)
+        splitter.addWidget(details)
+        splitter.setSizes([300, 200])
+        root.addWidget(splitter)
+        self.navigationHint = QLabel("ѡ��һ����־���ɲ鿴�����λ�ڵ�")
+        self.navigationHint.setObjectName("runtimeLogNavigationHint")
+        self.navigationHint.setWordWrap(True)
+        root.addWidget(self.navigationHint)
+        actions = QHBoxLayout()
+        self.locateButton = QPushButton("��λ�ڵ�")
+        self.locateButton.setObjectName("runtimeLogLocateNode")
+        self.locateButton.setToolTip("��λ����־�����������еĽڵ㣨Ҳ��˫����־��")
+        self.locateButton.setEnabled(False)
+        self.clearButton = QPushButton("�����ͼ")
+        self.clearButton.setIcon(icon("trash-2"))
+        actions.addWidget(self.autoScrollCheck)
+        self.logDirectoryButton = QPushButton("������־Ŀ¼")
+        self.logDirectoryButton.setAutoDefault(False)
+        self.logDirectoryButton.setEnabled(False)
+        actions.addWidget(self.logDirectoryButton)
+        actions.addStretch(1)
+        self.exportButton = QPushButton("������־")
+        self.exportButton.setObjectName("runtimeLogExport")
+        self.exportButton.setAutoDefault(False)
+        self.exportButton.setToolTip("�������ڵ�ǰ��������־���������飻��������ջ򳬹��������޵���ʷ��¼")
+        self.exportMenu = QMenu(self.exportButton)
+        self.exportFilteredAction = self.exportMenu.addAction("������ǰɸѡ�����")
+        self.exportAllAction = self.exportMenu.addAction("����ȫ��������־��")
+        self.exportFilteredAction.triggered.connect(lambda: self.exportLogs(filtered=True))
+        self.exportAllAction.triggered.connect(lambda: self.exportLogs(filtered=False))
+        self.exportMenu.aboutToShow.connect(self._updateExportActions)
+        self.exportButton.setMenu(self.exportMenu)
+        actions.addWidget(self.exportButton)
+        actions.addWidget(self.locateButton)
+        actions.addWidget(self.clearButton)
+        root.addLayout(actions)
+        self.setLayout(root)
+    
+        for combo in (
+            self.levelFilter,
+            self.sourceFilter,
+            self.jobFilter,
+            self.eventTypeFilter,
+        ):
+            combo.currentTextChanged.connect(self._refreshTable)
+        self.workflowFilter.currentIndexChanged.connect(self._onWorkflowFilterChanged)
+        self.nodeFilter.currentIndexChanged.connect(self._refreshTable)
+        self.searchInput.textChanged.connect(self._refreshTable)
+        self.areaTabs.currentChanged.connect(self._refreshTable)
+        self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
+        self.table.verticalScrollBar().valueChanged.connect(self._onScrollChanged)
+        self.table.verticalScrollBar().rangeChanged.connect(self._onScrollRangeChanged)
+        self.table.currentCellChanged.connect(self._showDetails)
+        self.table.cellDoubleClicked.connect(self._navigateFromRow)
+        self.locateButton.clicked.connect(self._navigateSelected)
+        self.showErrorsButton.clicked.connect(self._showAllErrors)
+        self.resetFiltersButton.clicked.connect(self._resetFilters)
+        self.clearButton.clicked.connect(self._clearLogs)
+        self._refreshTimer = QTimer(self)
+        self._refreshTimer.setSingleShot(True)
+        self._refreshTimer.setInterval(_BATCH_INTERVAL_MS)
+        self._refreshTimer.timeout.connect(self._flushVisibleEntries)
+        for combo in (self.jobFilter, self.workflowFilter, self.nodeFilter, self.eventTypeFilter):
+            combo.popupClosed.connect(self._refreshTimer.start)
+        self._updateFilterStatus()
+>       self.rangeCombo.currentIndexChanged.connect(self._historySourceChanged)
+E       AttributeError: 'StructuredLogView' object has no attribute '_historySourceChanged'
+
+src\emo_master\apps\designer\ui\log_dialog.py:430: AttributeError
+__________ testFormatsPreserveCompleteChineseNestedDiagnostics[txt] ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a455284470) at 0x000001A458A86C40>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A458C551E0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/testFormatsPreserveCompleteChi2')
+formatName = 'txt'
+
+    @pytest.mark.parametrize("formatName", ["json", "jsonl", "txt"])
+    def testFormatsPreserveCompleteChineseNestedDiagnostics(designerApplication, monkeypatch, tmp_path, formatName):
+>       dialog = LogDialog()
+
+tests\designer\test_log_export.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\log_dialog.py:993: in __init__
+    self.view = StructuredLogView(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.log_dialog.StructuredLogView(0x1a45983bef0) at 0x000001A4589D1E40>
+parent = <emo_master.apps.designer.ui.log_dialog.LogDialog(0x1a45983b240, name="runtimeLogDialog") at 0x000001A4588213C0>
+onClear = None, onNavigate = None, maximumEntries = 10000
+
+    def __init__(
+        self,
+        parent=None,
+        *,
+        onClear: Callable[[], None] | None = None,
+        onNavigate: Callable[[StructuredLogEntry], str] | None = None,
+        maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
+    ) -> None:
+        super().__init__(parent)
+        self.maximumEntries = max(1, int(maximumEntries))
+        self._onClear = onClear
+        self._onNavigate = onNavigate
+        self._entries: list[StructuredLogEntry] = []
+        self._visibleEntries: list[StructuredLogEntry] = []
+        self._pendingEntries: list[StructuredLogEntry] = []
+        self._pendingEvicted: list[StructuredLogEntry] = []
+        self._detailEntry: StructuredLogEntry | None = None
+        self._viewDirty = False
+        self._filterCounts: dict[str, Counter[Any]] = {
+            name: Counter() for name in ("jobId", "eventType", "workflow", "node")}
+        self._workflowNames: dict[tuple[str, ...], str] = {}
+        self._nodeNames: dict[tuple[str, ...], str] = {}
+        self._errorCount = 0
+        self._visibleErrorCount = 0
+        self._exportDirectory = Path.home()
+        self._historyClient = None
+        self._historyTarget = None
+        self._historyGeneration = 0
+        self._historyFuture = None
+        self._historyCancel = None
+        self._historyReply = None
+        self._historyFilters = {}
+        self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
+        root = QVBoxLayout()
+        historyRow = QHBoxLayout()
+        self.rangeCombo = QComboBox()
+        for label, value in (("��ǰ��ʾ��¼ / ʵʱ", "current"), ("Runtime ��ʷ", "runtime"), ("Designer �����ļ�", "local")):
+            self.rangeCombo.addItem(label, value)
+        historyRow.addWidget(self.rangeCombo)
+        self.historyQueryButton = QPushButton("��ѯ / ˢ��")
+        self.historyNextButton = QPushButton("��һҳ")
+        self.historyExportButton = QPushButton("��������ѡ����Χ��")
+        self.historyCancelButton = QPushButton("ȡ��")
+        for button in (self.historyQueryButton, self.historyNextButton, self.historyExportButton, self.historyCancelButton):
+            historyRow.addWidget(button)
+        root.addLayout(historyRow)
+        self.historyFiltersWidget = QWidget()
+        historyFilters = QGridLayout(self.historyFiltersWidget)
+        historyFilters.setContentsMargins(0, 0, 0, 0)
+        self.historyInputs = {}
+        for index, (name, label) in enumerate((("projectId", "���� ID"), ("jobId", "Job ID"), ("deviceId", "�豸 ID"),
+                ("component", "ģ��"), ("workflowId", "������ ID"), ("nodeId", "�ڵ� ID"),
+                ("startTimestampMs", "��ʼʱ�� ms������"), ("endTimestampMs", "����ʱ�� ms��������"))):
+            edit = QLineEdit()
+            edit.setPlaceholderText(label + "�����ղ���")
+            self.historyInputs[name] = edit
+            historyFilters.addWidget(edit, index // 4, index % 4)
+        self.localFileCombo = QComboBox()
+        self.localFileCombo.setMinimumContentsLength(20)
+        root.addWidget(self.historyFiltersWidget)
+        root.addWidget(self.localFileCombo)
+        self.historyStatus = QLabel()
+        self.historyStatus.setWordWrap(True)
+        root.addWidget(self.historyStatus)
+        filters = QGridLayout()
+        self.levelFilter = _combo(("ȫ��", "DEBUG", "INFO", "WARN", "ERROR"))
+        self.sourceFilter = _combo(("ȫ��", "runtime", "designer", "editor"))
+        self.sourceFilter.addItem("�������", "flow_designer")
+        self.sourceFilter.addItem("ҳ�����", "page_designer")
+        self.jobFilter = _combo(("ȫ��",))
+        self.workflowFilter = _combo(("ȫ��",))
+        self.nodeFilter = _combo(("ȫ��",))
+        self.eventTypeFilter = _combo(("ȫ��",))
+        self.searchInput = QLineEdit()
+        self.searchInput.setPlaceholderText("������־")
+        self.autoScrollCheck = QCheckBox("�Զ�����")
+        self.autoScrollCheck.setChecked(True)
+        for index, (label, widget) in enumerate((
+            ("�ȼ�", self.levelFilter),
+            ("��Դ", self.sourceFilter),
+            ("Job", self.jobFilter),
+            ("������", self.workflowFilter),
+            ("�ڵ�", self.nodeFilter),
+            ("�¼�", self.eventTypeFilter),
+        )):
+            widget.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+            widget.setMinimumContentsLength(6)
+            widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            row, column = divmod(index, 3)
+            filters.addWidget(QLabel(label), row, column * 2)
+            filters.addWidget(widget, row, column * 2 + 1)
+        self.searchInput.setMinimumWidth(80)
+        root.addLayout(filters)
+        searchRow = QHBoxLayout()
+        searchRow.addWidget(self.searchInput, 1)
+        self.resetFiltersButton = QPushButton("���ɸѡ")
+        self.resetFiltersButton.setToolTip("�ָ���ʾȫ����־����ɾ����־����")
+        searchRow.addWidget(self.resetFiltersButton)
+        root.addLayout(searchRow)
+        self.areaTabs = QTabBar()
+        self.areaTabs.setObjectName("runtimeLogAreaTabs")
+        self.areaTabs.setAccessibleName("��־����")
+        self.areaTabs.setExpanding(True)
+        self.areaTabs.setDrawBase(False)
+        for label, area, hint in (
+            ("ȫ��", "all", "��ʾ������־���������̡����Ӻ��豸��ͨ�ü�¼"),
+            ("�������", "flow", "���������ڵ�ִ�к����ӱ༭��־"),
+            ("ҳ�����", "page", "ҳ����Ʋ��������չʾ�쳣��ָ���־"),
+        ):
+            index = self.areaTabs.addTab(label)
+            self.areaTabs.setTabData(index, area)
+            self.areaTabs.setTabToolTip(index, hint)
+        root.addWidget(self.areaTabs)
+        filterStatus = QHBoxLayout()
+        self.filterStatusLabel = QLabel()
+        self.filterStatusLabel.setObjectName("runtimeLogFilterStatus")
+        self.filterStatusLabel.setWordWrap(True)
+        self.showErrorsButton = QPushButton("���ɸѡ������")
+        self.showErrorsButton.setObjectName("runtimeLogShowErrors")
+        self.showErrorsButton.setToolTip("�������ɸѡ��ѡ�����´��󣻱�����־����")
+        filterStatus.addWidget(self.filterStatusLabel, 1)
+        filterStatus.addWidget(self.showErrorsButton)
+        root.addLayout(filterStatus)
+    
+        self.table = QTableWidget(0, len(self.columns))
+        self.table.setObjectName("runtimeLogTable")
+        self.table.setHorizontalHeaderLabels(list(self.columns))
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self.table.verticalHeader().setVisible(False)
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionsMovable(True)
+        for visualIndex, column in enumerate((0, 1, 4, 5, 9, 2, 6, 7, 3, 8)):
+            header.moveSection(header.visualIndex(column), visualIndex)
+        for column, width in enumerate((128, 64, 88, 120, 160, 180, 64, 100, 96, 360)):
+            self.table.setColumnWidth(column, width)
+        self.table.setAlternatingRowColors(True)
+        self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
+        self.detailViewer = LogJsonTree()
+        self.detailViewer.setObjectName("runtimeLogDetails")
+        self._logViewer = self.detailViewer
+        details = QWidget()
+        detailLayout = QVBoxLayout(details)
+        detailLayout.setContentsMargins(0, 0, 0, 0)
+        detailActions = QHBoxLayout()
+        detailActions.addWidget(QLabel("��־���� �� JSON"))
+        detailActions.addStretch(1)
+        self.copyDetailsButton = QPushButton("�������� JSON")
+        self.copyDetailsButton.setAutoDefault(False)
+        self.copyDetailsButton.setEnabled(False)
+        self.copyDetailsButton.clicked.connect(self.detailViewer.copyJson)
+        detailActions.addWidget(self.copyDetailsButton)
+        detailLayout.addLayout(detailActions)
+        detailLayout.addWidget(self.detailViewer)
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(self.table)
+        splitter.addWidget(details)
+        splitter.setSizes([300, 200])
+        root.addWidget(splitter)
+        self.navigationHint = QLabel("ѡ��һ����־���ɲ鿴�����λ�ڵ�")
+        self.navigationHint.setObjectName("runtimeLogNavigationHint")
+        self.navigationHint.setWordWrap(True)
+        root.addWidget(self.navigationHint)
+        actions = QHBoxLayout()
+        self.locateButton = QPushButton("��λ�ڵ�")
+        self.locateButton.setObjectName("runtimeLogLocateNode")
+        self.locateButton.setToolTip("��λ����־�����������еĽڵ㣨Ҳ��˫����־��")
+        self.locateButton.setEnabled(False)
+        self.clearButton = QPushButton("�����ͼ")
+        self.clearButton.setIcon(icon("trash-2"))
+        actions.addWidget(self.autoScrollCheck)
+        self.logDirectoryButton = QPushButton("������־Ŀ¼")
+        self.logDirectoryButton.setAutoDefault(False)
+        self.logDirectoryButton.setEnabled(False)
+        actions.addWidget(self.logDirectoryButton)
+        actions.addStretch(1)
+        self.exportButton = QPushButton("������־")
+        self.exportButton.setObjectName("runtimeLogExport")
+        self.exportButton.setAutoDefault(False)
+        self.exportButton.setToolTip("�������ڵ�ǰ��������־���������飻��������ջ򳬹��������޵���ʷ��¼")
+        self.exportMenu = QMenu(self.exportButton)
+        self.exportFilteredAction = self.exportMenu.addAction("������ǰɸѡ�����")
+        self.exportAllAction = self.exportMenu.addAction("����ȫ��������־��")
+        self.exportFilteredAction.triggered.connect(lambda: self.exportLogs(filtered=True))
+        self.exportAllAction.triggered.connect(lambda: self.exportLogs(filtered=False))
+        self.exportMenu.aboutToShow.connect(self._updateExportActions)
+        self.exportButton.setMenu(self.exportMenu)
+        actions.addWidget(self.exportButton)
+        actions.addWidget(self.locateButton)
+        actions.addWidget(self.clearButton)
+        root.addLayout(actions)
+        self.setLayout(root)
+    
+        for combo in (
+            self.levelFilter,
+            self.sourceFilter,
+            self.jobFilter,
+            self.eventTypeFilter,
+        ):
+            combo.currentTextChanged.connect(self._refreshTable)
+        self.workflowFilter.currentIndexChanged.connect(self._onWorkflowFilterChanged)
+        self.nodeFilter.currentIndexChanged.connect(self._refreshTable)
+        self.searchInput.textChanged.connect(self._refreshTable)
+        self.areaTabs.currentChanged.connect(self._refreshTable)
+        self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
+        self.table.verticalScrollBar().valueChanged.connect(self._onScrollChanged)
+        self.table.verticalScrollBar().rangeChanged.connect(self._onScrollRangeChanged)
+        self.table.currentCellChanged.connect(self._showDetails)
+        self.table.cellDoubleClicked.connect(self._navigateFromRow)
+        self.locateButton.clicked.connect(self._navigateSelected)
+        self.showErrorsButton.clicked.connect(self._showAllErrors)
+        self.resetFiltersButton.clicked.connect(self._resetFilters)
+        self.clearButton.clicked.connect(self._clearLogs)
+        self._refreshTimer = QTimer(self)
+        self._refreshTimer.setSingleShot(True)
+        self._refreshTimer.setInterval(_BATCH_INTERVAL_MS)
+        self._refreshTimer.timeout.connect(self._flushVisibleEntries)
+        for combo in (self.jobFilter, self.workflowFilter, self.nodeFilter, self.eventTypeFilter):
+            combo.popupClosed.connect(self._refreshTimer.start)
+        self._updateFilterStatus()
+>       self.rangeCombo.currentIndexChanged.connect(self._historySourceChanged)
+E       AttributeError: 'StructuredLogView' object has no attribute '_historySourceChanged'
+
+src\emo_master\apps\designer\ui\log_dialog.py:430: AttributeError
+_____ testFilteredExportIncludesPendingRowsAndCombinesAreaLevelAndSearch ______
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a455284470) at 0x000001A458A86C40>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A458BD2200>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/testFilteredExportIncludesPend0')
+
+    def testFilteredExportIncludesPendingRowsAndCombinesAreaLevelAndSearch(
+            designerApplication, monkeypatch, tmp_path):
+>       dialog = LogDialog()
+
+tests\designer\test_log_export.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\log_dialog.py:993: in __init__
+    self.view = StructuredLogView(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.log_dialog.StructuredLogView(0x1a45983c660) at 0x000001A4588212C0>
+parent = <emo_master.apps.designer.ui.log_dialog.LogDialog(0x1a45983bf60, name="runtimeLogDialog") at 0x000001A45892DA40>
+onClear = None, onNavigate = None, maximumEntries = 10000
+
+    def __init__(
+        self,
+        parent=None,
+        *,
+        onClear: Callable[[], None] | None = None,
+        onNavigate: Callable[[StructuredLogEntry], str] | None = None,
+        maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
+    ) -> None:
+        super().__init__(parent)
+        self.maximumEntries = max(1, int(maximumEntries))
+        self._onClear = onClear
+        self._onNavigate = onNavigate
+        self._entries: list[StructuredLogEntry] = []
+        self._visibleEntries: list[StructuredLogEntry] = []
+        self._pendingEntries: list[StructuredLogEntry] = []
+        self._pendingEvicted: list[StructuredLogEntry] = []
+        self._detailEntry: StructuredLogEntry | None = None
+        self._viewDirty = False
+        self._filterCounts: dict[str, Counter[Any]] = {
+            name: Counter() for name in ("jobId", "eventType", "workflow", "node")}
+        self._workflowNames: dict[tuple[str, ...], str] = {}
+        self._nodeNames: dict[tuple[str, ...], str] = {}
+        self._errorCount = 0
+        self._visibleErrorCount = 0
+        self._exportDirectory = Path.home()
+        self._historyClient = None
+        self._historyTarget = None
+        self._historyGeneration = 0
+        self._historyFuture = None
+        self._historyCancel = None
+        self._historyReply = None
+        self._historyFilters = {}
+        self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
+        root = QVBoxLayout()
+        historyRow = QHBoxLayout()
+        self.rangeCombo = QComboBox()
+        for label, value in (("��ǰ��ʾ��¼ / ʵʱ", "current"), ("Runtime ��ʷ", "runtime"), ("Designer �����ļ�", "local")):
+            self.rangeCombo.addItem(label, value)
+        historyRow.addWidget(self.rangeCombo)
+        self.historyQueryButton = QPushButton("��ѯ / ˢ��")
+        self.historyNextButton = QPushButton("��һҳ")
+        self.historyExportButton = QPushButton("��������ѡ����Χ��")
+        self.historyCancelButton = QPushButton("ȡ��")
+        for button in (self.historyQueryButton, self.historyNextButton, self.historyExportButton, self.historyCancelButton):
+            historyRow.addWidget(button)
+        root.addLayout(historyRow)
+        self.historyFiltersWidget = QWidget()
+        historyFilters = QGridLayout(self.historyFiltersWidget)
+        historyFilters.setContentsMargins(0, 0, 0, 0)
+        self.historyInputs = {}
+        for index, (name, label) in enumerate((("projectId", "���� ID"), ("jobId", "Job ID"), ("deviceId", "�豸 ID"),
+                ("component", "ģ��"), ("workflowId", "������ ID"), ("nodeId", "�ڵ� ID"),
+                ("startTimestampMs", "��ʼʱ�� ms������"), ("endTimestampMs", "����ʱ�� ms��������"))):
+            edit = QLineEdit()
+            edit.setPlaceholderText(label + "�����ղ���")
+            self.historyInputs[name] = edit
+            historyFilters.addWidget(edit, index // 4, index % 4)
+        self.localFileCombo = QComboBox()
+        self.localFileCombo.setMinimumContentsLength(20)
+        root.addWidget(self.historyFiltersWidget)
+        root.addWidget(self.localFileCombo)
+        self.historyStatus = QLabel()
+        self.historyStatus.setWordWrap(True)
+        root.addWidget(self.historyStatus)
+        filters = QGridLayout()
+        self.levelFilter = _combo(("ȫ��", "DEBUG", "INFO", "WARN", "ERROR"))
+        self.sourceFilter = _combo(("ȫ��", "runtime", "designer", "editor"))
+        self.sourceFilter.addItem("�������", "flow_designer")
+        self.sourceFilter.addItem("ҳ�����", "page_designer")
+        self.jobFilter = _combo(("ȫ��",))
+        self.workflowFilter = _combo(("ȫ��",))
+        self.nodeFilter = _combo(("ȫ��",))
+        self.eventTypeFilter = _combo(("ȫ��",))
+        self.searchInput = QLineEdit()
+        self.searchInput.setPlaceholderText("������־")
+        self.autoScrollCheck = QCheckBox("�Զ�����")
+        self.autoScrollCheck.setChecked(True)
+        for index, (label, widget) in enumerate((
+            ("�ȼ�", self.levelFilter),
+            ("��Դ", self.sourceFilter),
+            ("Job", self.jobFilter),
+            ("������", self.workflowFilter),
+            ("�ڵ�", self.nodeFilter),
+            ("�¼�", self.eventTypeFilter),
+        )):
+            widget.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+            widget.setMinimumContentsLength(6)
+            widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            row, column = divmod(index, 3)
+            filters.addWidget(QLabel(label), row, column * 2)
+            filters.addWidget(widget, row, column * 2 + 1)
+        self.searchInput.setMinimumWidth(80)
+        root.addLayout(filters)
+        searchRow = QHBoxLayout()
+        searchRow.addWidget(self.searchInput, 1)
+        self.resetFiltersButton = QPushButton("���ɸѡ")
+        self.resetFiltersButton.setToolTip("�ָ���ʾȫ����־����ɾ����־����")
+        searchRow.addWidget(self.resetFiltersButton)
+        root.addLayout(searchRow)
+        self.areaTabs = QTabBar()
+        self.areaTabs.setObjectName("runtimeLogAreaTabs")
+        self.areaTabs.setAccessibleName("��־����")
+        self.areaTabs.setExpanding(True)
+        self.areaTabs.setDrawBase(False)
+        for label, area, hint in (
+            ("ȫ��", "all", "��ʾ������־���������̡����Ӻ��豸��ͨ�ü�¼"),
+            ("�������", "flow", "���������ڵ�ִ�к����ӱ༭��־"),
+            ("ҳ�����", "page", "ҳ����Ʋ��������չʾ�쳣��ָ���־"),
+        ):
+            index = self.areaTabs.addTab(label)
+            self.areaTabs.setTabData(index, area)
+            self.areaTabs.setTabToolTip(index, hint)
+        root.addWidget(self.areaTabs)
+        filterStatus = QHBoxLayout()
+        self.filterStatusLabel = QLabel()
+        self.filterStatusLabel.setObjectName("runtimeLogFilterStatus")
+        self.filterStatusLabel.setWordWrap(True)
+        self.showErrorsButton = QPushButton("���ɸѡ������")
+        self.showErrorsButton.setObjectName("runtimeLogShowErrors")
+        self.showErrorsButton.setToolTip("�������ɸѡ��ѡ�����´��󣻱�����־����")
+        filterStatus.addWidget(self.filterStatusLabel, 1)
+        filterStatus.addWidget(self.showErrorsButton)
+        root.addLayout(filterStatus)
+    
+        self.table = QTableWidget(0, len(self.columns))
+        self.table.setObjectName("runtimeLogTable")
+        self.table.setHorizontalHeaderLabels(list(self.columns))
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self.table.verticalHeader().setVisible(False)
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionsMovable(True)
+        for visualIndex, column in enumerate((0, 1, 4, 5, 9, 2, 6, 7, 3, 8)):
+            header.moveSection(header.visualIndex(column), visualIndex)
+        for column, width in enumerate((128, 64, 88, 120, 160, 180, 64, 100, 96, 360)):
+            self.table.setColumnWidth(column, width)
+        self.table.setAlternatingRowColors(True)
+        self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
+        self.detailViewer = LogJsonTree()
+        self.detailViewer.setObjectName("runtimeLogDetails")
+        self._logViewer = self.detailViewer
+        details = QWidget()
+        detailLayout = QVBoxLayout(details)
+        detailLayout.setContentsMargins(0, 0, 0, 0)
+        detailActions = QHBoxLayout()
+        detailActions.addWidget(QLabel("��־���� �� JSON"))
+        detailActions.addStretch(1)
+        self.copyDetailsButton = QPushButton("�������� JSON")
+        self.copyDetailsButton.setAutoDefault(False)
+        self.copyDetailsButton.setEnabled(False)
+        self.copyDetailsButton.clicked.connect(self.detailViewer.copyJson)
+        detailActions.addWidget(self.copyDetailsButton)
+        detailLayout.addLayout(detailActions)
+        detailLayout.addWidget(self.detailViewer)
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(self.table)
+        splitter.addWidget(details)
+        splitter.setSizes([300, 200])
+        root.addWidget(splitter)
+        self.navigationHint = QLabel("ѡ��һ����־���ɲ鿴�����λ�ڵ�")
+        self.navigationHint.setObjectName("runtimeLogNavigationHint")
+        self.navigationHint.setWordWrap(True)
+        root.addWidget(self.navigationHint)
+        actions = QHBoxLayout()
+        self.locateButton = QPushButton("��λ�ڵ�")
+        self.locateButton.setObjectName("runtimeLogLocateNode")
+        self.locateButton.setToolTip("��λ����־�����������еĽڵ㣨Ҳ��˫����־��")
+        self.locateButton.setEnabled(False)
+        self.clearButton = QPushButton("�����ͼ")
+        self.clearButton.setIcon(icon("trash-2"))
+        actions.addWidget(self.autoScrollCheck)
+        self.logDirectoryButton = QPushButton("������־Ŀ¼")
+        self.logDirectoryButton.setAutoDefault(False)
+        self.logDirectoryButton.setEnabled(False)
+        actions.addWidget(self.logDirectoryButton)
+        actions.addStretch(1)
+        self.exportButton = QPushButton("������־")
+        self.exportButton.setObjectName("runtimeLogExport")
+        self.exportButton.setAutoDefault(False)
+        self.exportButton.setToolTip("�������ڵ�ǰ��������־���������飻��������ջ򳬹��������޵���ʷ��¼")
+        self.exportMenu = QMenu(self.exportButton)
+        self.exportFilteredAction = self.exportMenu.addAction("������ǰɸѡ�����")
+        self.exportAllAction = self.exportMenu.addAction("����ȫ��������־��")
+        self.exportFilteredAction.triggered.connect(lambda: self.exportLogs(filtered=True))
+        self.exportAllAction.triggered.connect(lambda: self.exportLogs(filtered=False))
+        self.exportMenu.aboutToShow.connect(self._updateExportActions)
+        self.exportButton.setMenu(self.exportMenu)
+        actions.addWidget(self.exportButton)
+        actions.addWidget(self.locateButton)
+        actions.addWidget(self.clearButton)
+        root.addLayout(actions)
+        self.setLayout(root)
+    
+        for combo in (
+            self.levelFilter,
+            self.sourceFilter,
+            self.jobFilter,
+            self.eventTypeFilter,
+        ):
+            combo.currentTextChanged.connect(self._refreshTable)
+        self.workflowFilter.currentIndexChanged.connect(self._onWorkflowFilterChanged)
+        self.nodeFilter.currentIndexChanged.connect(self._refreshTable)
+        self.searchInput.textChanged.connect(self._refreshTable)
+        self.areaTabs.currentChanged.connect(self._refreshTable)
+        self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
+        self.table.verticalScrollBar().valueChanged.connect(self._onScrollChanged)
+        self.table.verticalScrollBar().rangeChanged.connect(self._onScrollRangeChanged)
+        self.table.currentCellChanged.connect(self._showDetails)
+        self.table.cellDoubleClicked.connect(self._navigateFromRow)
+        self.locateButton.clicked.connect(self._navigateSelected)
+        self.showErrorsButton.clicked.connect(self._showAllErrors)
+        self.resetFiltersButton.clicked.connect(self._resetFilters)
+        self.clearButton.clicked.connect(self._clearLogs)
+        self._refreshTimer = QTimer(self)
+        self._refreshTimer.setSingleShot(True)
+        self._refreshTimer.setInterval(_BATCH_INTERVAL_MS)
+        self._refreshTimer.timeout.connect(self._flushVisibleEntries)
+        for combo in (self.jobFilter, self.workflowFilter, self.nodeFilter, self.eventTypeFilter):
+            combo.popupClosed.connect(self._refreshTimer.start)
+        self._updateFilterStatus()
+>       self.rangeCombo.currentIndexChanged.connect(self._historySourceChanged)
+E       AttributeError: 'StructuredLogView' object has no attribute '_historySourceChanged'
+
+src\emo_master\apps\designer\ui\log_dialog.py:430: AttributeError
+________ testSaveDialogChangesCannotReplaceOrMutateTheCapturedSnapshot ________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a455284470) at 0x000001A458A86C40>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A45A14C730>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/testSaveDialogChangesCannotRep0')
+
+    def testSaveDialogChangesCannotReplaceOrMutateTheCapturedSnapshot(designerApplication, monkeypatch, tmp_path):
+>       dialog = LogDialog()
+
+tests\designer\test_log_export.py:122: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\log_dialog.py:993: in __init__
+    self.view = StructuredLogView(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.log_dialog.StructuredLogView(0x1a45983ba20) at 0x000001A458875280>
+parent = <emo_master.apps.designer.ui.log_dialog.LogDialog(0x1a45983bcc0, name="runtimeLogDialog") at 0x000001A4588BC040>
+onClear = None, onNavigate = None, maximumEntries = 10000
+
+    def __init__(
+        self,
+        parent=None,
+        *,
+        onClear: Callable[[], None] | None = None,
+        onNavigate: Callable[[StructuredLogEntry], str] | None = None,
+        maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
+    ) -> None:
+        super().__init__(parent)
+        self.maximumEntries = max(1, int(maximumEntries))
+        self._onClear = onClear
+        self._onNavigate = onNavigate
+        self._entries: list[StructuredLogEntry] = []
+        self._visibleEntries: list[StructuredLogEntry] = []
+        self._pendingEntries: list[StructuredLogEntry] = []
+        self._pendingEvicted: list[StructuredLogEntry] = []
+        self._detailEntry: StructuredLogEntry | None = None
+        self._viewDirty = False
+        self._filterCounts: dict[str, Counter[Any]] = {
+            name: Counter() for name in ("jobId", "eventType", "workflow", "node")}
+        self._workflowNames: dict[tuple[str, ...], str] = {}
+        self._nodeNames: dict[tuple[str, ...], str] = {}
+        self._errorCount = 0
+        self._visibleErrorCount = 0
+        self._exportDirectory = Path.home()
+        self._historyClient = None
+        self._historyTarget = None
+        self._historyGeneration = 0
+        self._historyFuture = None
+        self._historyCancel = None
+        self._historyReply = None
+        self._historyFilters = {}
+        self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
+        root = QVBoxLayout()
+        historyRow = QHBoxLayout()
+        self.rangeCombo = QComboBox()
+        for label, value in (("��ǰ��ʾ��¼ / ʵʱ", "current"), ("Runtime ��ʷ", "runtime"), ("Designer �����ļ�", "local")):
+            self.rangeCombo.addItem(label, value)
+        historyRow.addWidget(self.rangeCombo)
+        self.historyQueryButton = QPushButton("��ѯ / ˢ��")
+        self.historyNextButton = QPushButton("��һҳ")
+        self.historyExportButton = QPushButton("��������ѡ����Χ��")
+        self.historyCancelButton = QPushButton("ȡ��")
+        for button in (self.historyQueryButton, self.historyNextButton, self.historyExportButton, self.historyCancelButton):
+            historyRow.addWidget(button)
+        root.addLayout(historyRow)
+        self.historyFiltersWidget = QWidget()
+        historyFilters = QGridLayout(self.historyFiltersWidget)
+        historyFilters.setContentsMargins(0, 0, 0, 0)
+        self.historyInputs = {}
+        for index, (name, label) in enumerate((("projectId", "���� ID"), ("jobId", "Job ID"), ("deviceId", "�豸 ID"),
+                ("component", "ģ��"), ("workflowId", "������ ID"), ("nodeId", "�ڵ� ID"),
+                ("startTimestampMs", "��ʼʱ�� ms������"), ("endTimestampMs", "����ʱ�� ms��������"))):
+            edit = QLineEdit()
+            edit.setPlaceholderText(label + "�����ղ���")
+            self.historyInputs[name] = edit
+            historyFilters.addWidget(edit, index // 4, index % 4)
+        self.localFileCombo = QComboBox()
+        self.localFileCombo.setMinimumContentsLength(20)
+        root.addWidget(self.historyFiltersWidget)
+        root.addWidget(self.localFileCombo)
+        self.historyStatus = QLabel()
+        self.historyStatus.setWordWrap(True)
+        root.addWidget(self.historyStatus)
+        filters = QGridLayout()
+        self.levelFilter = _combo(("ȫ��", "DEBUG", "INFO", "WARN", "ERROR"))
+        self.sourceFilter = _combo(("ȫ��", "runtime", "designer", "editor"))
+        self.sourceFilter.addItem("�������", "flow_designer")
+        self.sourceFilter.addItem("ҳ�����", "page_designer")
+        self.jobFilter = _combo(("ȫ��",))
+        self.workflowFilter = _combo(("ȫ��",))
+        self.nodeFilter = _combo(("ȫ��",))
+        self.eventTypeFilter = _combo(("ȫ��",))
+        self.searchInput = QLineEdit()
+        self.searchInput.setPlaceholderText("������־")
+        self.autoScrollCheck = QCheckBox("�Զ�����")
+        self.autoScrollCheck.setChecked(True)
+        for index, (label, widget) in enumerate((
+            ("�ȼ�", self.levelFilter),
+            ("��Դ", self.sourceFilter),
+            ("Job", self.jobFilter),
+            ("������", self.workflowFilter),
+            ("�ڵ�", self.nodeFilter),
+            ("�¼�", self.eventTypeFilter),
+        )):
+            widget.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+            widget.setMinimumContentsLength(6)
+            widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            row, column = divmod(index, 3)
+            filters.addWidget(QLabel(label), row, column * 2)
+            filters.addWidget(widget, row, column * 2 + 1)
+        self.searchInput.setMinimumWidth(80)
+        root.addLayout(filters)
+        searchRow = QHBoxLayout()
+        searchRow.addWidget(self.searchInput, 1)
+        self.resetFiltersButton = QPushButton("���ɸѡ")
+        self.resetFiltersButton.setToolTip("�ָ���ʾȫ����־����ɾ����־����")
+        searchRow.addWidget(self.resetFiltersButton)
+        root.addLayout(searchRow)
+        self.areaTabs = QTabBar()
+        self.areaTabs.setObjectName("runtimeLogAreaTabs")
+        self.areaTabs.setAccessibleName("��־����")
+        self.areaTabs.setExpanding(True)
+        self.areaTabs.setDrawBase(False)
+        for label, area, hint in (
+            ("ȫ��", "all", "��ʾ������־���������̡����Ӻ��豸��ͨ�ü�¼"),
+            ("�������", "flow", "���������ڵ�ִ�к����ӱ༭��־"),
+            ("ҳ�����", "page", "ҳ����Ʋ��������չʾ�쳣��ָ���־"),
+        ):
+            index = self.areaTabs.addTab(label)
+            self.areaTabs.setTabData(index, area)
+            self.areaTabs.setTabToolTip(index, hint)
+        root.addWidget(self.areaTabs)
+        filterStatus = QHBoxLayout()
+        self.filterStatusLabel = QLabel()
+        self.filterStatusLabel.setObjectName("runtimeLogFilterStatus")
+        self.filterStatusLabel.setWordWrap(True)
+        self.showErrorsButton = QPushButton("���ɸѡ������")
+        self.showErrorsButton.setObjectName("runtimeLogShowErrors")
+        self.showErrorsButton.setToolTip("�������ɸѡ��ѡ�����´��󣻱�����־����")
+        filterStatus.addWidget(self.filterStatusLabel, 1)
+        filterStatus.addWidget(self.showErrorsButton)
+        root.addLayout(filterStatus)
+    
+        self.table = QTableWidget(0, len(self.columns))
+        self.table.setObjectName("runtimeLogTable")
+        self.table.setHorizontalHeaderLabels(list(self.columns))
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self.table.verticalHeader().setVisible(False)
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionsMovable(True)
+        for visualIndex, column in enumerate((0, 1, 4, 5, 9, 2, 6, 7, 3, 8)):
+            header.moveSection(header.visualIndex(column), visualIndex)
+        for column, width in enumerate((128, 64, 88, 120, 160, 180, 64, 100, 96, 360)):
+            self.table.setColumnWidth(column, width)
+        self.table.setAlternatingRowColors(True)
+        self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
+        self.detailViewer = LogJsonTree()
+        self.detailViewer.setObjectName("runtimeLogDetails")
+        self._logViewer = self.detailViewer
+        details = QWidget()
+        detailLayout = QVBoxLayout(details)
+        detailLayout.setContentsMargins(0, 0, 0, 0)
+        detailActions = QHBoxLayout()
+        detailActions.addWidget(QLabel("��־���� �� JSON"))
+        detailActions.addStretch(1)
+        self.copyDetailsButton = QPushButton("�������� JSON")
+        self.copyDetailsButton.setAutoDefault(False)
+        self.copyDetailsButton.setEnabled(False)
+        self.copyDetailsButton.clicked.connect(self.detailViewer.copyJson)
+        detailActions.addWidget(self.copyDetailsButton)
+        detailLayout.addLayout(detailActions)
+        detailLayout.addWidget(self.detailViewer)
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(self.table)
+        splitter.addWidget(details)
+        splitter.setSizes([300, 200])
+        root.addWidget(splitter)
+        self.navigationHint = QLabel("ѡ��һ����־���ɲ鿴�����λ�ڵ�")
+        self.navigationHint.setObjectName("runtimeLogNavigationHint")
+        self.navigationHint.setWordWrap(True)
+        root.addWidget(self.navigationHint)
+        actions = QHBoxLayout()
+        self.locateButton = QPushButton("��λ�ڵ�")
+        self.locateButton.setObjectName("runtimeLogLocateNode")
+        self.locateButton.setToolTip("��λ����־�����������еĽڵ㣨Ҳ��˫����־��")
+        self.locateButton.setEnabled(False)
+        self.clearButton = QPushButton("�����ͼ")
+        self.clearButton.setIcon(icon("trash-2"))
+        actions.addWidget(self.autoScrollCheck)
+        self.logDirectoryButton = QPushButton("������־Ŀ¼")
+        self.logDirectoryButton.setAutoDefault(False)
+        self.logDirectoryButton.setEnabled(False)
+        actions.addWidget(self.logDirectoryButton)
+        actions.addStretch(1)
+        self.exportButton = QPushButton("������־")
+        self.exportButton.setObjectName("runtimeLogExport")
+        self.exportButton.setAutoDefault(False)
+        self.exportButton.setToolTip("�������ڵ�ǰ��������־���������飻��������ջ򳬹��������޵���ʷ��¼")
+        self.exportMenu = QMenu(self.exportButton)
+        self.exportFilteredAction = self.exportMenu.addAction("������ǰɸѡ�����")
+        self.exportAllAction = self.exportMenu.addAction("����ȫ��������־��")
+        self.exportFilteredAction.triggered.connect(lambda: self.exportLogs(filtered=True))
+        self.exportAllAction.triggered.connect(lambda: self.exportLogs(filtered=False))
+        self.exportMenu.aboutToShow.connect(self._updateExportActions)
+        self.exportButton.setMenu(self.exportMenu)
+        actions.addWidget(self.exportButton)
+        actions.addWidget(self.locateButton)
+        actions.addWidget(self.clearButton)
+        root.addLayout(actions)
+        self.setLayout(root)
+    
+        for combo in (
+            self.levelFilter,
+            self.sourceFilter,
+            self.jobFilter,
+            self.eventTypeFilter,
+        ):
+            combo.currentTextChanged.connect(self._refreshTable)
+        self.workflowFilter.currentIndexChanged.connect(self._onWorkflowFilterChanged)
+        self.nodeFilter.currentIndexChanged.connect(self._refreshTable)
+        self.searchInput.textChanged.connect(self._refreshTable)
+        self.areaTabs.currentChanged.connect(self._refreshTable)
+        self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
+        self.table.verticalScrollBar().valueChanged.connect(self._onScrollChanged)
+        self.table.verticalScrollBar().rangeChanged.connect(self._onScrollRangeChanged)
+        self.table.currentCellChanged.connect(self._showDetails)
+        self.table.cellDoubleClicked.connect(self._navigateFromRow)
+        self.locateButton.clicked.connect(self._navigateSelected)
+        self.showErrorsButton.clicked.connect(self._showAllErrors)
+        self.resetFiltersButton.clicked.connect(self._resetFilters)
+        self.clearButton.clicked.connect(self._clearLogs)
+        self._refreshTimer = QTimer(self)
+        self._refreshTimer.setSingleShot(True)
+        self._refreshTimer.setInterval(_BATCH_INTERVAL_MS)
+        self._refreshTimer.timeout.connect(self._flushVisibleEntries)
+        for combo in (self.jobFilter, self.workflowFilter, self.nodeFilter, self.eventTypeFilter):
+            combo.popupClosed.connect(self._refreshTimer.start)
+        self._updateFilterStatus()
+>       self.rangeCombo.currentIndexChanged.connect(self._historySourceChanged)
+E       AttributeError: 'StructuredLogView' object has no attribute '_historySourceChanged'
+
+src\emo_master\apps\designer\ui\log_dialog.py:430: AttributeError
+___________ testExportAllMenuUsesCurrentRetentionAndIgnoresFilters ____________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a455284470) at 0x000001A458A86C40>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A458A3BEB0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/testExportAllMenuUsesCurrentRe0')
+
+    def testExportAllMenuUsesCurrentRetentionAndIgnoresFilters(designerApplication, monkeypatch, tmp_path):
+>       dialog = LogDialog(maximumEntries=2)
+
+tests\designer\test_log_export.py:148: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\log_dialog.py:993: in __init__
+    self.view = StructuredLogView(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.log_dialog.StructuredLogView(0x1a45983c660) at 0x000001A4589A53C0>
+parent = <emo_master.apps.designer.ui.log_dialog.LogDialog(0x1a45983c5f0, name="runtimeLogDialog") at 0x000001A4560CD700>
+onClear = None, onNavigate = None, maximumEntries = 2
+
+    def __init__(
+        self,
+        parent=None,
+        *,
+        onClear: Callable[[], None] | None = None,
+        onNavigate: Callable[[StructuredLogEntry], str] | None = None,
+        maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
+    ) -> None:
+        super().__init__(parent)
+        self.maximumEntries = max(1, int(maximumEntries))
+        self._onClear = onClear
+        self._onNavigate = onNavigate
+        self._entries: list[StructuredLogEntry] = []
+        self._visibleEntries: list[StructuredLogEntry] = []
+        self._pendingEntries: list[StructuredLogEntry] = []
+        self._pendingEvicted: list[StructuredLogEntry] = []
+        self._detailEntry: StructuredLogEntry | None = None
+        self._viewDirty = False
+        self._filterCounts: dict[str, Counter[Any]] = {
+            name: Counter() for name in ("jobId", "eventType", "workflow", "node")}
+        self._workflowNames: dict[tuple[str, ...], str] = {}
+        self._nodeNames: dict[tuple[str, ...], str] = {}
+        self._errorCount = 0
+        self._visibleErrorCount = 0
+        self._exportDirectory = Path.home()
+        self._historyClient = None
+        self._historyTarget = None
+        self._historyGeneration = 0
+        self._historyFuture = None
+        self._historyCancel = None
+        self._historyReply = None
+        self._historyFilters = {}
+        self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
+        root = QVBoxLayout()
+        historyRow = QHBoxLayout()
+        self.rangeCombo = QComboBox()
+        for label, value in (("��ǰ��ʾ��¼ / ʵʱ", "current"), ("Runtime ��ʷ", "runtime"), ("Designer �����ļ�", "local")):
+            self.rangeCombo.addItem(label, value)
+        historyRow.addWidget(self.rangeCombo)
+        self.historyQueryButton = QPushButton("��ѯ / ˢ��")
+        self.historyNextButton = QPushButton("��һҳ")
+        self.historyExportButton = QPushButton("��������ѡ����Χ��")
+        self.historyCancelButton = QPushButton("ȡ��")
+        for button in (self.historyQueryButton, self.historyNextButton, self.historyExportButton, self.historyCancelButton):
+            historyRow.addWidget(button)
+        root.addLayout(historyRow)
+        self.historyFiltersWidget = QWidget()
+        historyFilters = QGridLayout(self.historyFiltersWidget)
+        historyFilters.setContentsMargins(0, 0, 0, 0)
+        self.historyInputs = {}
+        for index, (name, label) in enumerate((("projectId", "���� ID"), ("jobId", "Job ID"), ("deviceId", "�豸 ID"),
+                ("component", "ģ��"), ("workflowId", "������ ID"), ("nodeId", "�ڵ� ID"),
+                ("startTimestampMs", "��ʼʱ�� ms������"), ("endTimestampMs", "����ʱ�� ms��������"))):
+            edit = QLineEdit()
+            edit.setPlaceholderText(label + "�����ղ���")
+            self.historyInputs[name] = edit
+            historyFilters.addWidget(edit, index // 4, index % 4)
+        self.localFileCombo = QComboBox()
+        self.localFileCombo.setMinimumContentsLength(20)
+        root.addWidget(self.historyFiltersWidget)
+        root.addWidget(self.localFileCombo)
+        self.historyStatus = QLabel()
+        self.historyStatus.setWordWrap(True)
+        root.addWidget(self.historyStatus)
+        filters = QGridLayout()
+        self.levelFilter = _combo(("ȫ��", "DEBUG", "INFO", "WARN", "ERROR"))
+        self.sourceFilter = _combo(("ȫ��", "runtime", "designer", "editor"))
+        self.sourceFilter.addItem("�������", "flow_designer")
+        self.sourceFilter.addItem("ҳ�����", "page_designer")
+        self.jobFilter = _combo(("ȫ��",))
+        self.workflowFilter = _combo(("ȫ��",))
+        self.nodeFilter = _combo(("ȫ��",))
+        self.eventTypeFilter = _combo(("ȫ��",))
+        self.searchInput = QLineEdit()
+        self.searchInput.setPlaceholderText("������־")
+        self.autoScrollCheck = QCheckBox("�Զ�����")
+        self.autoScrollCheck.setChecked(True)
+        for index, (label, widget) in enumerate((
+            ("�ȼ�", self.levelFilter),
+            ("��Դ", self.sourceFilter),
+            ("Job", self.jobFilter),
+            ("������", self.workflowFilter),
+            ("�ڵ�", self.nodeFilter),
+            ("�¼�", self.eventTypeFilter),
+        )):
+            widget.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+            widget.setMinimumContentsLength(6)
+            widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            row, column = divmod(index, 3)
+            filters.addWidget(QLabel(label), row, column * 2)
+            filters.addWidget(widget, row, column * 2 + 1)
+        self.searchInput.setMinimumWidth(80)
+        root.addLayout(filters)
+        searchRow = QHBoxLayout()
+        searchRow.addWidget(self.searchInput, 1)
+        self.resetFiltersButton = QPushButton("���ɸѡ")
+        self.resetFiltersButton.setToolTip("�ָ���ʾȫ����־����ɾ����־����")
+        searchRow.addWidget(self.resetFiltersButton)
+        root.addLayout(searchRow)
+        self.areaTabs = QTabBar()
+        self.areaTabs.setObjectName("runtimeLogAreaTabs")
+        self.areaTabs.setAccessibleName("��־����")
+        self.areaTabs.setExpanding(True)
+        self.areaTabs.setDrawBase(False)
+        for label, area, hint in (
+            ("ȫ��", "all", "��ʾ������־���������̡����Ӻ��豸��ͨ�ü�¼"),
+            ("�������", "flow", "���������ڵ�ִ�к����ӱ༭��־"),
+            ("ҳ�����", "page", "ҳ����Ʋ��������չʾ�쳣��ָ���־"),
+        ):
+            index = self.areaTabs.addTab(label)
+            self.areaTabs.setTabData(index, area)
+            self.areaTabs.setTabToolTip(index, hint)
+        root.addWidget(self.areaTabs)
+        filterStatus = QHBoxLayout()
+        self.filterStatusLabel = QLabel()
+        self.filterStatusLabel.setObjectName("runtimeLogFilterStatus")
+        self.filterStatusLabel.setWordWrap(True)
+        self.showErrorsButton = QPushButton("���ɸѡ������")
+        self.showErrorsButton.setObjectName("runtimeLogShowErrors")
+        self.showErrorsButton.setToolTip("�������ɸѡ��ѡ�����´��󣻱�����־����")
+        filterStatus.addWidget(self.filterStatusLabel, 1)
+        filterStatus.addWidget(self.showErrorsButton)
+        root.addLayout(filterStatus)
+    
+        self.table = QTableWidget(0, len(self.columns))
+        self.table.setObjectName("runtimeLogTable")
+        self.table.setHorizontalHeaderLabels(list(self.columns))
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self.table.verticalHeader().setVisible(False)
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionsMovable(True)
+        for visualIndex, column in enumerate((0, 1, 4, 5, 9, 2, 6, 7, 3, 8)):
+            header.moveSection(header.visualIndex(column), visualIndex)
+        for column, width in enumerate((128, 64, 88, 120, 160, 180, 64, 100, 96, 360)):
+            self.table.setColumnWidth(column, width)
+        self.table.setAlternatingRowColors(True)
+        self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
+        self.detailViewer = LogJsonTree()
+        self.detailViewer.setObjectName("runtimeLogDetails")
+        self._logViewer = self.detailViewer
+        details = QWidget()
+        detailLayout = QVBoxLayout(details)
+        detailLayout.setContentsMargins(0, 0, 0, 0)
+        detailActions = QHBoxLayout()
+        detailActions.addWidget(QLabel("��־���� �� JSON"))
+        detailActions.addStretch(1)
+        self.copyDetailsButton = QPushButton("�������� JSON")
+        self.copyDetailsButton.setAutoDefault(False)
+        self.copyDetailsButton.setEnabled(False)
+        self.copyDetailsButton.clicked.connect(self.detailViewer.copyJson)
+        detailActions.addWidget(self.copyDetailsButton)
+        detailLayout.addLayout(detailActions)
+        detailLayout.addWidget(self.detailViewer)
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(self.table)
+        splitter.addWidget(details)
+        splitter.setSizes([300, 200])
+        root.addWidget(splitter)
+        self.navigationHint = QLabel("ѡ��һ����־���ɲ鿴�����λ�ڵ�")
+        self.navigationHint.setObjectName("runtimeLogNavigationHint")
+        self.navigationHint.setWordWrap(True)
+        root.addWidget(self.navigationHint)
+        actions = QHBoxLayout()
+        self.locateButton = QPushButton("��λ�ڵ�")
+        self.locateButton.setObjectName("runtimeLogLocateNode")
+        self.locateButton.setToolTip("��λ����־�����������еĽڵ㣨Ҳ��˫����־��")
+        self.locateButton.setEnabled(False)
+        self.clearButton = QPushButton("�����ͼ")
+        self.clearButton.setIcon(icon("trash-2"))
+        actions.addWidget(self.autoScrollCheck)
+        self.logDirectoryButton = QPushButton("������־Ŀ¼")
+        self.logDirectoryButton.setAutoDefault(False)
+        self.logDirectoryButton.setEnabled(False)
+        actions.addWidget(self.logDirectoryButton)
+        actions.addStretch(1)
+        self.exportButton = QPushButton("������־")
+        self.exportButton.setObjectName("runtimeLogExport")
+        self.exportButton.setAutoDefault(False)
+        self.exportButton.setToolTip("�������ڵ�ǰ��������־���������飻��������ջ򳬹��������޵���ʷ��¼")
+        self.exportMenu = QMenu(self.exportButton)
+        self.exportFilteredAction = self.exportMenu.addAction("������ǰɸѡ�����")
+        self.exportAllAction = self.exportMenu.addAction("����ȫ��������־��")
+        self.exportFilteredAction.triggered.connect(lambda: self.exportLogs(filtered=True))
+        self.exportAllAction.triggered.connect(lambda: self.exportLogs(filtered=False))
+        self.exportMenu.aboutToShow.connect(self._updateExportActions)
+        self.exportButton.setMenu(self.exportMenu)
+        actions.addWidget(self.exportButton)
+        actions.addWidget(self.locateButton)
+        actions.addWidget(self.clearButton)
+        root.addLayout(actions)
+        self.setLayout(root)
+    
+        for combo in (
+            self.levelFilter,
+            self.sourceFilter,
+            self.jobFilter,
+            self.eventTypeFilter,
+        ):
+            combo.currentTextChanged.connect(self._refreshTable)
+        self.workflowFilter.currentIndexChanged.connect(self._onWorkflowFilterChanged)
+        self.nodeFilter.currentIndexChanged.connect(self._refreshTable)
+        self.searchInput.textChanged.connect(self._refreshTable)
+        self.areaTabs.currentChanged.connect(self._refreshTable)
+        self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
+        self.table.verticalScrollBar().valueChanged.connect(self._onScrollChanged)
+        self.table.verticalScrollBar().rangeChanged.connect(self._onScrollRangeChanged)
+        self.table.currentCellChanged.connect(self._showDetails)
+        self.table.cellDoubleClicked.connect(self._navigateFromRow)
+        self.locateButton.clicked.connect(self._navigateSelected)
+        self.showErrorsButton.clicked.connect(self._showAllErrors)
+        self.resetFiltersButton.clicked.connect(self._resetFilters)
+        self.clearButton.clicked.connect(self._clearLogs)
+        self._refreshTimer = QTimer(self)
+        self._refreshTimer.setSingleShot(True)
+        self._refreshTimer.setInterval(_BATCH_INTERVAL_MS)
+        self._refreshTimer.timeout.connect(self._flushVisibleEntries)
+        for combo in (self.jobFilter, self.workflowFilter, self.nodeFilter, self.eventTypeFilter):
+            combo.popupClosed.connect(self._refreshTimer.start)
+        self._updateFilterStatus()
+>       self.rangeCombo.currentIndexChanged.connect(self._historySourceChanged)
+E       AttributeError: 'StructuredLogView' object has no attribute '_historySourceChanged'
+
+src\emo_master\apps\designer\ui\log_dialog.py:430: AttributeError
+__________ testEmptyFilterShowsFeedbackWithoutSaveDialogOrDiagnostic __________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a455284470) at 0x000001A458A86C40>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A458C62380>
+
+    def testEmptyFilterShowsFeedbackWithoutSaveDialogOrDiagnostic(designerApplication, monkeypatch):
+>       dialog = LogDialog()
+
+tests\designer\test_log_export.py:172: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\log_dialog.py:993: in __init__
+    self.view = StructuredLogView(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.log_dialog.StructuredLogView(0x1a45983ae50) at 0x000001A45897EF40>
+parent = <emo_master.apps.designer.ui.log_dialog.LogDialog(0x1a45983c5f0, name="runtimeLogDialog") at 0x000001A4588E6AC0>
+onClear = None, onNavigate = None, maximumEntries = 10000
+
+    def __init__(
+        self,
+        parent=None,
+        *,
+        onClear: Callable[[], None] | None = None,
+        onNavigate: Callable[[StructuredLogEntry], str] | None = None,
+        maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
+    ) -> None:
+        super().__init__(parent)
+        self.maximumEntries = max(1, int(maximumEntries))
+        self._onClear = onClear
+        self._onNavigate = onNavigate
+        self._entries: list[StructuredLogEntry] = []
+        self._visibleEntries: list[StructuredLogEntry] = []
+        self._pendingEntries: list[StructuredLogEntry] = []
+        self._pendingEvicted: list[StructuredLogEntry] = []
+        self._detailEntry: StructuredLogEntry | None = None
+        self._viewDirty = False
+        self._filterCounts: dict[str, Counter[Any]] = {
+            name: Counter() for name in ("jobId", "eventType", "workflow", "node")}
+        self._workflowNames: dict[tuple[str, ...], str] = {}
+        self._nodeNames: dict[tuple[str, ...], str] = {}
+        self._errorCount = 0
+        self._visibleErrorCount = 0
+        self._exportDirectory = Path.home()
+        self._historyClient = None
+        self._historyTarget = None
+        self._historyGeneration = 0
+        self._historyFuture = None
+        self._historyCancel = None
+        self._historyReply = None
+        self._historyFilters = {}
+        self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
+        root = QVBoxLayout()
+        historyRow = QHBoxLayout()
+        self.rangeCombo = QComboBox()
+        for label, value in (("��ǰ��ʾ��¼ / ʵʱ", "current"), ("Runtime ��ʷ", "runtime"), ("Designer �����ļ�", "local")):
+            self.rangeCombo.addItem(label, value)
+        historyRow.addWidget(self.rangeCombo)
+        self.historyQueryButton = QPushButton("��ѯ / ˢ��")
+        self.historyNextButton = QPushButton("��һҳ")
+        self.historyExportButton = QPushButton("��������ѡ����Χ��")
+        self.historyCancelButton = QPushButton("ȡ��")
+        for button in (self.historyQueryButton, self.historyNextButton, self.historyExportButton, self.historyCancelButton):
+            historyRow.addWidget(button)
+        root.addLayout(historyRow)
+        self.historyFiltersWidget = QWidget()
+        historyFilters = QGridLayout(self.historyFiltersWidget)
+        historyFilters.setContentsMargins(0, 0, 0, 0)
+        self.historyInputs = {}
+        for index, (name, label) in enumerate((("projectId", "���� ID"), ("jobId", "Job ID"), ("deviceId", "�豸 ID"),
+                ("component", "ģ��"), ("workflowId", "������ ID"), ("nodeId", "�ڵ� ID"),
+                ("startTimestampMs", "��ʼʱ�� ms������"), ("endTimestampMs", "����ʱ�� ms��������"))):
+            edit = QLineEdit()
+            edit.setPlaceholderText(label + "�����ղ���")
+            self.historyInputs[name] = edit
+            historyFilters.addWidget(edit, index // 4, index % 4)
+        self.localFileCombo = QComboBox()
+        self.localFileCombo.setMinimumContentsLength(20)
+        root.addWidget(self.historyFiltersWidget)
+        root.addWidget(self.localFileCombo)
+        self.historyStatus = QLabel()
+        self.historyStatus.setWordWrap(True)
+        root.addWidget(self.historyStatus)
+        filters = QGridLayout()
+        self.levelFilter = _combo(("ȫ��", "DEBUG", "INFO", "WARN", "ERROR"))
+        self.sourceFilter = _combo(("ȫ��", "runtime", "designer", "editor"))
+        self.sourceFilter.addItem("�������", "flow_designer")
+        self.sourceFilter.addItem("ҳ�����", "page_designer")
+        self.jobFilter = _combo(("ȫ��",))
+        self.workflowFilter = _combo(("ȫ��",))
+        self.nodeFilter = _combo(("ȫ��",))
+        self.eventTypeFilter = _combo(("ȫ��",))
+        self.searchInput = QLineEdit()
+        self.searchInput.setPlaceholderText("������־")
+        self.autoScrollCheck = QCheckBox("�Զ�����")
+        self.autoScrollCheck.setChecked(True)
+        for index, (label, widget) in enumerate((
+            ("�ȼ�", self.levelFilter),
+            ("��Դ", self.sourceFilter),
+            ("Job", self.jobFilter),
+            ("������", self.workflowFilter),
+            ("�ڵ�", self.nodeFilter),
+            ("�¼�", self.eventTypeFilter),
+        )):
+            widget.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+            widget.setMinimumContentsLength(6)
+            widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            row, column = divmod(index, 3)
+            filters.addWidget(QLabel(label), row, column * 2)
+            filters.addWidget(widget, row, column * 2 + 1)
+        self.searchInput.setMinimumWidth(80)
+        root.addLayout(filters)
+        searchRow = QHBoxLayout()
+        searchRow.addWidget(self.searchInput, 1)
+        self.resetFiltersButton = QPushButton("���ɸѡ")
+        self.resetFiltersButton.setToolTip("�ָ���ʾȫ����־����ɾ����־����")
+        searchRow.addWidget(self.resetFiltersButton)
+        root.addLayout(searchRow)
+        self.areaTabs = QTabBar()
+        self.areaTabs.setObjectName("runtimeLogAreaTabs")
+        self.areaTabs.setAccessibleName("��־����")
+        self.areaTabs.setExpanding(True)
+        self.areaTabs.setDrawBase(False)
+        for label, area, hint in (
+            ("ȫ��", "all", "��ʾ������־���������̡����Ӻ��豸��ͨ�ü�¼"),
+            ("�������", "flow", "���������ڵ�ִ�к����ӱ༭��־"),
+            ("ҳ�����", "page", "ҳ����Ʋ��������չʾ�쳣��ָ���־"),
+        ):
+            index = self.areaTabs.addTab(label)
+            self.areaTabs.setTabData(index, area)
+            self.areaTabs.setTabToolTip(index, hint)
+        root.addWidget(self.areaTabs)
+        filterStatus = QHBoxLayout()
+        self.filterStatusLabel = QLabel()
+        self.filterStatusLabel.setObjectName("runtimeLogFilterStatus")
+        self.filterStatusLabel.setWordWrap(True)
+        self.showErrorsButton = QPushButton("���ɸѡ������")
+        self.showErrorsButton.setObjectName("runtimeLogShowErrors")
+        self.showErrorsButton.setToolTip("�������ɸѡ��ѡ�����´��󣻱�����־����")
+        filterStatus.addWidget(self.filterStatusLabel, 1)
+        filterStatus.addWidget(self.showErrorsButton)
+        root.addLayout(filterStatus)
+    
+        self.table = QTableWidget(0, len(self.columns))
+        self.table.setObjectName("runtimeLogTable")
+        self.table.setHorizontalHeaderLabels(list(self.columns))
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self.table.verticalHeader().setVisible(False)
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionsMovable(True)
+        for visualIndex, column in enumerate((0, 1, 4, 5, 9, 2, 6, 7, 3, 8)):
+            header.moveSection(header.visualIndex(column), visualIndex)
+        for column, width in enumerate((128, 64, 88, 120, 160, 180, 64, 100, 96, 360)):
+            self.table.setColumnWidth(column, width)
+        self.table.setAlternatingRowColors(True)
+        self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
+        self.detailViewer = LogJsonTree()
+        self.detailViewer.setObjectName("runtimeLogDetails")
+        self._logViewer = self.detailViewer
+        details = QWidget()
+        detailLayout = QVBoxLayout(details)
+        detailLayout.setContentsMargins(0, 0, 0, 0)
+        detailActions = QHBoxLayout()
+        detailActions.addWidget(QLabel("��־���� �� JSON"))
+        detailActions.addStretch(1)
+        self.copyDetailsButton = QPushButton("�������� JSON")
+        self.copyDetailsButton.setAutoDefault(False)
+        self.copyDetailsButton.setEnabled(False)
+        self.copyDetailsButton.clicked.connect(self.detailViewer.copyJson)
+        detailActions.addWidget(self.copyDetailsButton)
+        detailLayout.addLayout(detailActions)
+        detailLayout.addWidget(self.detailViewer)
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(self.table)
+        splitter.addWidget(details)
+        splitter.setSizes([300, 200])
+        root.addWidget(splitter)
+        self.navigationHint = QLabel("ѡ��һ����־���ɲ鿴�����λ�ڵ�")
+        self.navigationHint.setObjectName("runtimeLogNavigationHint")
+        self.navigationHint.setWordWrap(True)
+        root.addWidget(self.navigationHint)
+        actions = QHBoxLayout()
+        self.locateButton = QPushButton("��λ�ڵ�")
+        self.locateButton.setObjectName("runtimeLogLocateNode")
+        self.locateButton.setToolTip("��λ����־�����������еĽڵ㣨Ҳ��˫����־��")
+        self.locateButton.setEnabled(False)
+        self.clearButton = QPushButton("�����ͼ")
+        self.clearButton.setIcon(icon("trash-2"))
+        actions.addWidget(self.autoScrollCheck)
+        self.logDirectoryButton = QPushButton("������־Ŀ¼")
+        self.logDirectoryButton.setAutoDefault(False)
+        self.logDirectoryButton.setEnabled(False)
+        actions.addWidget(self.logDirectoryButton)
+        actions.addStretch(1)
+        self.exportButton = QPushButton("������־")
+        self.exportButton.setObjectName("runtimeLogExport")
+        self.exportButton.setAutoDefault(False)
+        self.exportButton.setToolTip("�������ڵ�ǰ��������־���������飻��������ջ򳬹��������޵���ʷ��¼")
+        self.exportMenu = QMenu(self.exportButton)
+        self.exportFilteredAction = self.exportMenu.addAction("������ǰɸѡ�����")
+        self.exportAllAction = self.exportMenu.addAction("����ȫ��������־��")
+        self.exportFilteredAction.triggered.connect(lambda: self.exportLogs(filtered=True))
+        self.exportAllAction.triggered.connect(lambda: self.exportLogs(filtered=False))
+        self.exportMenu.aboutToShow.connect(self._updateExportActions)
+        self.exportButton.setMenu(self.exportMenu)
+        actions.addWidget(self.exportButton)
+        actions.addWidget(self.locateButton)
+        actions.addWidget(self.clearButton)
+        root.addLayout(actions)
+        self.setLayout(root)
+    
+        for combo in (
+            self.levelFilter,
+            self.sourceFilter,
+            self.jobFilter,
+            self.eventTypeFilter,
+        ):
+            combo.currentTextChanged.connect(self._refreshTable)
+        self.workflowFilter.currentIndexChanged.connect(self._onWorkflowFilterChanged)
+        self.nodeFilter.currentIndexChanged.connect(self._refreshTable)
+        self.searchInput.textChanged.connect(self._refreshTable)
+        self.areaTabs.currentChanged.connect(self._refreshTable)
+        self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
+        self.table.verticalScrollBar().valueChanged.connect(self._onScrollChanged)
+        self.table.verticalScrollBar().rangeChanged.connect(self._onScrollRangeChanged)
+        self.table.currentCellChanged.connect(self._showDetails)
+        self.table.cellDoubleClicked.connect(self._navigateFromRow)
+        self.locateButton.clicked.connect(self._navigateSelected)
+        self.showErrorsButton.clicked.connect(self._showAllErrors)
+        self.resetFiltersButton.clicked.connect(self._resetFilters)
+        self.clearButton.clicked.connect(self._clearLogs)
+        self._refreshTimer = QTimer(self)
+        self._refreshTimer.setSingleShot(True)
+        self._refreshTimer.setInterval(_BATCH_INTERVAL_MS)
+        self._refreshTimer.timeout.connect(self._flushVisibleEntries)
+        for combo in (self.jobFilter, self.workflowFilter, self.nodeFilter, self.eventTypeFilter):
+            combo.popupClosed.connect(self._refreshTimer.start)
+        self._updateFilterStatus()
+>       self.rangeCombo.currentIndexChanged.connect(self._historySourceChanged)
+E       AttributeError: 'StructuredLogView' object has no attribute '_historySourceChanged'
+
+src\emo_master\apps\designer\ui\log_dialog.py:430: AttributeError
+_________________ testCancelIsQuietAndPreservesExistingFiles __________________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a455284470) at 0x000001A458A86C40>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A458C6C490>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/testCancelIsQuietAndPreservesE0')
+
+    def testCancelIsQuietAndPreservesExistingFiles(designerApplication, monkeypatch, tmp_path):
+>       dialog = LogDialog()
+
+tests\designer\test_log_export.py:187: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\log_dialog.py:993: in __init__
+    self.view = StructuredLogView(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.log_dialog.StructuredLogView(0x1a45983ae50) at 0x000001A458A70800>
+parent = <emo_master.apps.designer.ui.log_dialog.LogDialog(0x1a45983b240, name="runtimeLogDialog") at 0x000001A4589A09C0>
+onClear = None, onNavigate = None, maximumEntries = 10000
+
+    def __init__(
+        self,
+        parent=None,
+        *,
+        onClear: Callable[[], None] | None = None,
+        onNavigate: Callable[[StructuredLogEntry], str] | None = None,
+        maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
+    ) -> None:
+        super().__init__(parent)
+        self.maximumEntries = max(1, int(maximumEntries))
+        self._onClear = onClear
+        self._onNavigate = onNavigate
+        self._entries: list[StructuredLogEntry] = []
+        self._visibleEntries: list[StructuredLogEntry] = []
+        self._pendingEntries: list[StructuredLogEntry] = []
+        self._pendingEvicted: list[StructuredLogEntry] = []
+        self._detailEntry: StructuredLogEntry | None = None
+        self._viewDirty = False
+        self._filterCounts: dict[str, Counter[Any]] = {
+            name: Counter() for name in ("jobId", "eventType", "workflow", "node")}
+        self._workflowNames: dict[tuple[str, ...], str] = {}
+        self._nodeNames: dict[tuple[str, ...], str] = {}
+        self._errorCount = 0
+        self._visibleErrorCount = 0
+        self._exportDirectory = Path.home()
+        self._historyClient = None
+        self._historyTarget = None
+        self._historyGeneration = 0
+        self._historyFuture = None
+        self._historyCancel = None
+        self._historyReply = None
+        self._historyFilters = {}
+        self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
+        root = QVBoxLayout()
+        historyRow = QHBoxLayout()
+        self.rangeCombo = QComboBox()
+        for label, value in (("��ǰ��ʾ��¼ / ʵʱ", "current"), ("Runtime ��ʷ", "runtime"), ("Designer �����ļ�", "local")):
+            self.rangeCombo.addItem(label, value)
+        historyRow.addWidget(self.rangeCombo)
+        self.historyQueryButton = QPushButton("��ѯ / ˢ��")
+        self.historyNextButton = QPushButton("��һҳ")
+        self.historyExportButton = QPushButton("��������ѡ����Χ��")
+        self.historyCancelButton = QPushButton("ȡ��")
+        for button in (self.historyQueryButton, self.historyNextButton, self.historyExportButton, self.historyCancelButton):
+            historyRow.addWidget(button)
+        root.addLayout(historyRow)
+        self.historyFiltersWidget = QWidget()
+        historyFilters = QGridLayout(self.historyFiltersWidget)
+        historyFilters.setContentsMargins(0, 0, 0, 0)
+        self.historyInputs = {}
+        for index, (name, label) in enumerate((("projectId", "���� ID"), ("jobId", "Job ID"), ("deviceId", "�豸 ID"),
+                ("component", "ģ��"), ("workflowId", "������ ID"), ("nodeId", "�ڵ� ID"),
+                ("startTimestampMs", "��ʼʱ�� ms������"), ("endTimestampMs", "����ʱ�� ms��������"))):
+            edit = QLineEdit()
+            edit.setPlaceholderText(label + "�����ղ���")
+            self.historyInputs[name] = edit
+            historyFilters.addWidget(edit, index // 4, index % 4)
+        self.localFileCombo = QComboBox()
+        self.localFileCombo.setMinimumContentsLength(20)
+        root.addWidget(self.historyFiltersWidget)
+        root.addWidget(self.localFileCombo)
+        self.historyStatus = QLabel()
+        self.historyStatus.setWordWrap(True)
+        root.addWidget(self.historyStatus)
+        filters = QGridLayout()
+        self.levelFilter = _combo(("ȫ��", "DEBUG", "INFO", "WARN", "ERROR"))
+        self.sourceFilter = _combo(("ȫ��", "runtime", "designer", "editor"))
+        self.sourceFilter.addItem("�������", "flow_designer")
+        self.sourceFilter.addItem("ҳ�����", "page_designer")
+        self.jobFilter = _combo(("ȫ��",))
+        self.workflowFilter = _combo(("ȫ��",))
+        self.nodeFilter = _combo(("ȫ��",))
+        self.eventTypeFilter = _combo(("ȫ��",))
+        self.searchInput = QLineEdit()
+        self.searchInput.setPlaceholderText("������־")
+        self.autoScrollCheck = QCheckBox("�Զ�����")
+        self.autoScrollCheck.setChecked(True)
+        for index, (label, widget) in enumerate((
+            ("�ȼ�", self.levelFilter),
+            ("��Դ", self.sourceFilter),
+            ("Job", self.jobFilter),
+            ("������", self.workflowFilter),
+            ("�ڵ�", self.nodeFilter),
+            ("�¼�", self.eventTypeFilter),
+        )):
+            widget.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+            widget.setMinimumContentsLength(6)
+            widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            row, column = divmod(index, 3)
+            filters.addWidget(QLabel(label), row, column * 2)
+            filters.addWidget(widget, row, column * 2 + 1)
+        self.searchInput.setMinimumWidth(80)
+        root.addLayout(filters)
+        searchRow = QHBoxLayout()
+        searchRow.addWidget(self.searchInput, 1)
+        self.resetFiltersButton = QPushButton("���ɸѡ")
+        self.resetFiltersButton.setToolTip("�ָ���ʾȫ����־����ɾ����־����")
+        searchRow.addWidget(self.resetFiltersButton)
+        root.addLayout(searchRow)
+        self.areaTabs = QTabBar()
+        self.areaTabs.setObjectName("runtimeLogAreaTabs")
+        self.areaTabs.setAccessibleName("��־����")
+        self.areaTabs.setExpanding(True)
+        self.areaTabs.setDrawBase(False)
+        for label, area, hint in (
+            ("ȫ��", "all", "��ʾ������־���������̡����Ӻ��豸��ͨ�ü�¼"),
+            ("�������", "flow", "���������ڵ�ִ�к����ӱ༭��־"),
+            ("ҳ�����", "page", "ҳ����Ʋ��������չʾ�쳣��ָ���־"),
+        ):
+            index = self.areaTabs.addTab(label)
+            self.areaTabs.setTabData(index, area)
+            self.areaTabs.setTabToolTip(index, hint)
+        root.addWidget(self.areaTabs)
+        filterStatus = QHBoxLayout()
+        self.filterStatusLabel = QLabel()
+        self.filterStatusLabel.setObjectName("runtimeLogFilterStatus")
+        self.filterStatusLabel.setWordWrap(True)
+        self.showErrorsButton = QPushButton("���ɸѡ������")
+        self.showErrorsButton.setObjectName("runtimeLogShowErrors")
+        self.showErrorsButton.setToolTip("�������ɸѡ��ѡ�����´��󣻱�����־����")
+        filterStatus.addWidget(self.filterStatusLabel, 1)
+        filterStatus.addWidget(self.showErrorsButton)
+        root.addLayout(filterStatus)
+    
+        self.table = QTableWidget(0, len(self.columns))
+        self.table.setObjectName("runtimeLogTable")
+        self.table.setHorizontalHeaderLabels(list(self.columns))
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self.table.verticalHeader().setVisible(False)
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionsMovable(True)
+        for visualIndex, column in enumerate((0, 1, 4, 5, 9, 2, 6, 7, 3, 8)):
+            header.moveSection(header.visualIndex(column), visualIndex)
+        for column, width in enumerate((128, 64, 88, 120, 160, 180, 64, 100, 96, 360)):
+            self.table.setColumnWidth(column, width)
+        self.table.setAlternatingRowColors(True)
+        self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
+        self.detailViewer = LogJsonTree()
+        self.detailViewer.setObjectName("runtimeLogDetails")
+        self._logViewer = self.detailViewer
+        details = QWidget()
+        detailLayout = QVBoxLayout(details)
+        detailLayout.setContentsMargins(0, 0, 0, 0)
+        detailActions = QHBoxLayout()
+        detailActions.addWidget(QLabel("��־���� �� JSON"))
+        detailActions.addStretch(1)
+        self.copyDetailsButton = QPushButton("�������� JSON")
+        self.copyDetailsButton.setAutoDefault(False)
+        self.copyDetailsButton.setEnabled(False)
+        self.copyDetailsButton.clicked.connect(self.detailViewer.copyJson)
+        detailActions.addWidget(self.copyDetailsButton)
+        detailLayout.addLayout(detailActions)
+        detailLayout.addWidget(self.detailViewer)
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(self.table)
+        splitter.addWidget(details)
+        splitter.setSizes([300, 200])
+        root.addWidget(splitter)
+        self.navigationHint = QLabel("ѡ��һ����־���ɲ鿴�����λ�ڵ�")
+        self.navigationHint.setObjectName("runtimeLogNavigationHint")
+        self.navigationHint.setWordWrap(True)
+        root.addWidget(self.navigationHint)
+        actions = QHBoxLayout()
+        self.locateButton = QPushButton("��λ�ڵ�")
+        self.locateButton.setObjectName("runtimeLogLocateNode")
+        self.locateButton.setToolTip("��λ����־�����������еĽڵ㣨Ҳ��˫����־��")
+        self.locateButton.setEnabled(False)
+        self.clearButton = QPushButton("�����ͼ")
+        self.clearButton.setIcon(icon("trash-2"))
+        actions.addWidget(self.autoScrollCheck)
+        self.logDirectoryButton = QPushButton("������־Ŀ¼")
+        self.logDirectoryButton.setAutoDefault(False)
+        self.logDirectoryButton.setEnabled(False)
+        actions.addWidget(self.logDirectoryButton)
+        actions.addStretch(1)
+        self.exportButton = QPushButton("������־")
+        self.exportButton.setObjectName("runtimeLogExport")
+        self.exportButton.setAutoDefault(False)
+        self.exportButton.setToolTip("�������ڵ�ǰ��������־���������飻��������ջ򳬹��������޵���ʷ��¼")
+        self.exportMenu = QMenu(self.exportButton)
+        self.exportFilteredAction = self.exportMenu.addAction("������ǰɸѡ�����")
+        self.exportAllAction = self.exportMenu.addAction("����ȫ��������־��")
+        self.exportFilteredAction.triggered.connect(lambda: self.exportLogs(filtered=True))
+        self.exportAllAction.triggered.connect(lambda: self.exportLogs(filtered=False))
+        self.exportMenu.aboutToShow.connect(self._updateExportActions)
+        self.exportButton.setMenu(self.exportMenu)
+        actions.addWidget(self.exportButton)
+        actions.addWidget(self.locateButton)
+        actions.addWidget(self.clearButton)
+        root.addLayout(actions)
+        self.setLayout(root)
+    
+        for combo in (
+            self.levelFilter,
+            self.sourceFilter,
+            self.jobFilter,
+            self.eventTypeFilter,
+        ):
+            combo.currentTextChanged.connect(self._refreshTable)
+        self.workflowFilter.currentIndexChanged.connect(self._onWorkflowFilterChanged)
+        self.nodeFilter.currentIndexChanged.connect(self._refreshTable)
+        self.searchInput.textChanged.connect(self._refreshTable)
+        self.areaTabs.currentChanged.connect(self._refreshTable)
+        self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
+        self.table.verticalScrollBar().valueChanged.connect(self._onScrollChanged)
+        self.table.verticalScrollBar().rangeChanged.connect(self._onScrollRangeChanged)
+        self.table.currentCellChanged.connect(self._showDetails)
+        self.table.cellDoubleClicked.connect(self._navigateFromRow)
+        self.locateButton.clicked.connect(self._navigateSelected)
+        self.showErrorsButton.clicked.connect(self._showAllErrors)
+        self.resetFiltersButton.clicked.connect(self._resetFilters)
+        self.clearButton.clicked.connect(self._clearLogs)
+        self._refreshTimer = QTimer(self)
+        self._refreshTimer.setSingleShot(True)
+        self._refreshTimer.setInterval(_BATCH_INTERVAL_MS)
+        self._refreshTimer.timeout.connect(self._flushVisibleEntries)
+        for combo in (self.jobFilter, self.workflowFilter, self.nodeFilter, self.eventTypeFilter):
+            combo.popupClosed.connect(self._refreshTimer.start)
+        self._updateFilterStatus()
+>       self.rangeCombo.currentIndexChanged.connect(self._historySourceChanged)
+E       AttributeError: 'StructuredLogView' object has no attribute '_historySourceChanged'
+
+src\emo_master\apps\designer\ui\log_dialog.py:430: AttributeError
+_____________ testAddedDefaultSuffixCannotOverwriteRejectedTarget _____________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a455284470) at 0x000001A458A86C40>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A458BAD150>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/testAddedDefaultSuffixCannotOv0')
+
+    def testAddedDefaultSuffixCannotOverwriteRejectedTarget(designerApplication, monkeypatch, tmp_path):
+>       dialog = LogDialog()
+
+tests\designer\test_log_export.py:223: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\log_dialog.py:993: in __init__
+    self.view = StructuredLogView(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.log_dialog.StructuredLogView(0x1a45983bc50) at 0x000001A4584C6080>
+parent = <emo_master.apps.designer.ui.log_dialog.LogDialog(0x1a45983ae50, name="runtimeLogDialog") at 0x000001A4584C5D00>
+onClear = None, onNavigate = None, maximumEntries = 10000
+
+    def __init__(
+        self,
+        parent=None,
+        *,
+        onClear: Callable[[], None] | None = None,
+        onNavigate: Callable[[StructuredLogEntry], str] | None = None,
+        maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
+    ) -> None:
+        super().__init__(parent)
+        self.maximumEntries = max(1, int(maximumEntries))
+        self._onClear = onClear
+        self._onNavigate = onNavigate
+        self._entries: list[StructuredLogEntry] = []
+        self._visibleEntries: list[StructuredLogEntry] = []
+        self._pendingEntries: list[StructuredLogEntry] = []
+        self._pendingEvicted: list[StructuredLogEntry] = []
+        self._detailEntry: StructuredLogEntry | None = None
+        self._viewDirty = False
+        self._filterCounts: dict[str, Counter[Any]] = {
+            name: Counter() for name in ("jobId", "eventType", "workflow", "node")}
+        self._workflowNames: dict[tuple[str, ...], str] = {}
+        self._nodeNames: dict[tuple[str, ...], str] = {}
+        self._errorCount = 0
+        self._visibleErrorCount = 0
+        self._exportDirectory = Path.home()
+        self._historyClient = None
+        self._historyTarget = None
+        self._historyGeneration = 0
+        self._historyFuture = None
+        self._historyCancel = None
+        self._historyReply = None
+        self._historyFilters = {}
+        self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
+        root = QVBoxLayout()
+        historyRow = QHBoxLayout()
+        self.rangeCombo = QComboBox()
+        for label, value in (("��ǰ��ʾ��¼ / ʵʱ", "current"), ("Runtime ��ʷ", "runtime"), ("Designer �����ļ�", "local")):
+            self.rangeCombo.addItem(label, value)
+        historyRow.addWidget(self.rangeCombo)
+        self.historyQueryButton = QPushButton("��ѯ / ˢ��")
+        self.historyNextButton = QPushButton("��һҳ")
+        self.historyExportButton = QPushButton("��������ѡ����Χ��")
+        self.historyCancelButton = QPushButton("ȡ��")
+        for button in (self.historyQueryButton, self.historyNextButton, self.historyExportButton, self.historyCancelButton):
+            historyRow.addWidget(button)
+        root.addLayout(historyRow)
+        self.historyFiltersWidget = QWidget()
+        historyFilters = QGridLayout(self.historyFiltersWidget)
+        historyFilters.setContentsMargins(0, 0, 0, 0)
+        self.historyInputs = {}
+        for index, (name, label) in enumerate((("projectId", "���� ID"), ("jobId", "Job ID"), ("deviceId", "�豸 ID"),
+                ("component", "ģ��"), ("workflowId", "������ ID"), ("nodeId", "�ڵ� ID"),
+                ("startTimestampMs", "��ʼʱ�� ms������"), ("endTimestampMs", "����ʱ�� ms��������"))):
+            edit = QLineEdit()
+            edit.setPlaceholderText(label + "�����ղ���")
+            self.historyInputs[name] = edit
+            historyFilters.addWidget(edit, index // 4, index % 4)
+        self.localFileCombo = QComboBox()
+        self.localFileCombo.setMinimumContentsLength(20)
+        root.addWidget(self.historyFiltersWidget)
+        root.addWidget(self.localFileCombo)
+        self.historyStatus = QLabel()
+        self.historyStatus.setWordWrap(True)
+        root.addWidget(self.historyStatus)
+        filters = QGridLayout()
+        self.levelFilter = _combo(("ȫ��", "DEBUG", "INFO", "WARN", "ERROR"))
+        self.sourceFilter = _combo(("ȫ��", "runtime", "designer", "editor"))
+        self.sourceFilter.addItem("�������", "flow_designer")
+        self.sourceFilter.addItem("ҳ�����", "page_designer")
+        self.jobFilter = _combo(("ȫ��",))
+        self.workflowFilter = _combo(("ȫ��",))
+        self.nodeFilter = _combo(("ȫ��",))
+        self.eventTypeFilter = _combo(("ȫ��",))
+        self.searchInput = QLineEdit()
+        self.searchInput.setPlaceholderText("������־")
+        self.autoScrollCheck = QCheckBox("�Զ�����")
+        self.autoScrollCheck.setChecked(True)
+        for index, (label, widget) in enumerate((
+            ("�ȼ�", self.levelFilter),
+            ("��Դ", self.sourceFilter),
+            ("Job", self.jobFilter),
+            ("������", self.workflowFilter),
+            ("�ڵ�", self.nodeFilter),
+            ("�¼�", self.eventTypeFilter),
+        )):
+            widget.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+            widget.setMinimumContentsLength(6)
+            widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            row, column = divmod(index, 3)
+            filters.addWidget(QLabel(label), row, column * 2)
+            filters.addWidget(widget, row, column * 2 + 1)
+        self.searchInput.setMinimumWidth(80)
+        root.addLayout(filters)
+        searchRow = QHBoxLayout()
+        searchRow.addWidget(self.searchInput, 1)
+        self.resetFiltersButton = QPushButton("���ɸѡ")
+        self.resetFiltersButton.setToolTip("�ָ���ʾȫ����־����ɾ����־����")
+        searchRow.addWidget(self.resetFiltersButton)
+        root.addLayout(searchRow)
+        self.areaTabs = QTabBar()
+        self.areaTabs.setObjectName("runtimeLogAreaTabs")
+        self.areaTabs.setAccessibleName("��־����")
+        self.areaTabs.setExpanding(True)
+        self.areaTabs.setDrawBase(False)
+        for label, area, hint in (
+            ("ȫ��", "all", "��ʾ������־���������̡����Ӻ��豸��ͨ�ü�¼"),
+            ("�������", "flow", "���������ڵ�ִ�к����ӱ༭��־"),
+            ("ҳ�����", "page", "ҳ����Ʋ��������չʾ�쳣��ָ���־"),
+        ):
+            index = self.areaTabs.addTab(label)
+            self.areaTabs.setTabData(index, area)
+            self.areaTabs.setTabToolTip(index, hint)
+        root.addWidget(self.areaTabs)
+        filterStatus = QHBoxLayout()
+        self.filterStatusLabel = QLabel()
+        self.filterStatusLabel.setObjectName("runtimeLogFilterStatus")
+        self.filterStatusLabel.setWordWrap(True)
+        self.showErrorsButton = QPushButton("���ɸѡ������")
+        self.showErrorsButton.setObjectName("runtimeLogShowErrors")
+        self.showErrorsButton.setToolTip("�������ɸѡ��ѡ�����´��󣻱�����־����")
+        filterStatus.addWidget(self.filterStatusLabel, 1)
+        filterStatus.addWidget(self.showErrorsButton)
+        root.addLayout(filterStatus)
+    
+        self.table = QTableWidget(0, len(self.columns))
+        self.table.setObjectName("runtimeLogTable")
+        self.table.setHorizontalHeaderLabels(list(self.columns))
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self.table.verticalHeader().setVisible(False)
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionsMovable(True)
+        for visualIndex, column in enumerate((0, 1, 4, 5, 9, 2, 6, 7, 3, 8)):
+            header.moveSection(header.visualIndex(column), visualIndex)
+        for column, width in enumerate((128, 64, 88, 120, 160, 180, 64, 100, 96, 360)):
+            self.table.setColumnWidth(column, width)
+        self.table.setAlternatingRowColors(True)
+        self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
+        self.detailViewer = LogJsonTree()
+        self.detailViewer.setObjectName("runtimeLogDetails")
+        self._logViewer = self.detailViewer
+        details = QWidget()
+        detailLayout = QVBoxLayout(details)
+        detailLayout.setContentsMargins(0, 0, 0, 0)
+        detailActions = QHBoxLayout()
+        detailActions.addWidget(QLabel("��־���� �� JSON"))
+        detailActions.addStretch(1)
+        self.copyDetailsButton = QPushButton("�������� JSON")
+        self.copyDetailsButton.setAutoDefault(False)
+        self.copyDetailsButton.setEnabled(False)
+        self.copyDetailsButton.clicked.connect(self.detailViewer.copyJson)
+        detailActions.addWidget(self.copyDetailsButton)
+        detailLayout.addLayout(detailActions)
+        detailLayout.addWidget(self.detailViewer)
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(self.table)
+        splitter.addWidget(details)
+        splitter.setSizes([300, 200])
+        root.addWidget(splitter)
+        self.navigationHint = QLabel("ѡ��һ����־���ɲ鿴�����λ�ڵ�")
+        self.navigationHint.setObjectName("runtimeLogNavigationHint")
+        self.navigationHint.setWordWrap(True)
+        root.addWidget(self.navigationHint)
+        actions = QHBoxLayout()
+        self.locateButton = QPushButton("��λ�ڵ�")
+        self.locateButton.setObjectName("runtimeLogLocateNode")
+        self.locateButton.setToolTip("��λ����־�����������еĽڵ㣨Ҳ��˫����־��")
+        self.locateButton.setEnabled(False)
+        self.clearButton = QPushButton("�����ͼ")
+        self.clearButton.setIcon(icon("trash-2"))
+        actions.addWidget(self.autoScrollCheck)
+        self.logDirectoryButton = QPushButton("������־Ŀ¼")
+        self.logDirectoryButton.setAutoDefault(False)
+        self.logDirectoryButton.setEnabled(False)
+        actions.addWidget(self.logDirectoryButton)
+        actions.addStretch(1)
+        self.exportButton = QPushButton("������־")
+        self.exportButton.setObjectName("runtimeLogExport")
+        self.exportButton.setAutoDefault(False)
+        self.exportButton.setToolTip("�������ڵ�ǰ��������־���������飻��������ջ򳬹��������޵���ʷ��¼")
+        self.exportMenu = QMenu(self.exportButton)
+        self.exportFilteredAction = self.exportMenu.addAction("������ǰɸѡ�����")
+        self.exportAllAction = self.exportMenu.addAction("����ȫ��������־��")
+        self.exportFilteredAction.triggered.connect(lambda: self.exportLogs(filtered=True))
+        self.exportAllAction.triggered.connect(lambda: self.exportLogs(filtered=False))
+        self.exportMenu.aboutToShow.connect(self._updateExportActions)
+        self.exportButton.setMenu(self.exportMenu)
+        actions.addWidget(self.exportButton)
+        actions.addWidget(self.locateButton)
+        actions.addWidget(self.clearButton)
+        root.addLayout(actions)
+        self.setLayout(root)
+    
+        for combo in (
+            self.levelFilter,
+            self.sourceFilter,
+            self.jobFilter,
+            self.eventTypeFilter,
+        ):
+            combo.currentTextChanged.connect(self._refreshTable)
+        self.workflowFilter.currentIndexChanged.connect(self._onWorkflowFilterChanged)
+        self.nodeFilter.currentIndexChanged.connect(self._refreshTable)
+        self.searchInput.textChanged.connect(self._refreshTable)
+        self.areaTabs.currentChanged.connect(self._refreshTable)
+        self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
+        self.table.verticalScrollBar().valueChanged.connect(self._onScrollChanged)
+        self.table.verticalScrollBar().rangeChanged.connect(self._onScrollRangeChanged)
+        self.table.currentCellChanged.connect(self._showDetails)
+        self.table.cellDoubleClicked.connect(self._navigateFromRow)
+        self.locateButton.clicked.connect(self._navigateSelected)
+        self.showErrorsButton.clicked.connect(self._showAllErrors)
+        self.resetFiltersButton.clicked.connect(self._resetFilters)
+        self.clearButton.clicked.connect(self._clearLogs)
+        self._refreshTimer = QTimer(self)
+        self._refreshTimer.setSingleShot(True)
+        self._refreshTimer.setInterval(_BATCH_INTERVAL_MS)
+        self._refreshTimer.timeout.connect(self._flushVisibleEntries)
+        for combo in (self.jobFilter, self.workflowFilter, self.nodeFilter, self.eventTypeFilter):
+            combo.popupClosed.connect(self._refreshTimer.start)
+        self._updateFilterStatus()
+>       self.rangeCombo.currentIndexChanged.connect(self._historySourceChanged)
+E       AttributeError: 'StructuredLogView' object has no attribute '_historySourceChanged'
+
+src\emo_master\apps\designer\ui\log_dialog.py:430: AttributeError
+_____________ testExportFailureEntersMainWindowAndDurableLocalLog _____________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001A45A554730>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A45A556C20>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/testExportFailureEntersMainWin0')
+
+    def testExportFailureEntersMainWindowAndDurableLocalLog(ownedDesignerWindow, monkeypatch, tmp_path):
+        directory = tmp_path / "designer-logs"
+        monkeypatch.setenv("EMO_DESIGNER_LOG_DIR", str(directory))
+>       window = ownedDesignerWindow(Client(), settingsStore=Settings())
+
+tests\designer\test_log_export.py:250: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1315: in __init__
+    self.logDialog = LogDialog(
+src\emo_master\apps\designer\ui\log_dialog.py:993: in __init__
+    self.view = StructuredLogView(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.log_dialog.StructuredLogView(0x1a457e61ad0) at 0x000001A459FF3100>
+parent = <emo_master.apps.designer.ui.log_dialog.LogDialog(0x1a457e616e0, name="runtimeLogDialog") at 0x000001A459FF3440>
+onClear = <bound method MainWindow._clearRuntimeLogCache of <emo_master.apps.designer.ui.main_window.MainWindow(0x1a45983ae50) at 0x000001A4563F0A00>>
+onNavigate = <bound method MainWindow.navigateToRuntimeLogEntry of <emo_master.apps.designer.ui.main_window.MainWindow(0x1a45983ae50) at 0x000001A4563F0A00>>
+maximumEntries = 10000
+
+    def __init__(
+        self,
+        parent=None,
+        *,
+        onClear: Callable[[], None] | None = None,
+        onNavigate: Callable[[StructuredLogEntry], str] | None = None,
+        maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
+    ) -> None:
+        super().__init__(parent)
+        self.maximumEntries = max(1, int(maximumEntries))
+        self._onClear = onClear
+        self._onNavigate = onNavigate
+        self._entries: list[StructuredLogEntry] = []
+        self._visibleEntries: list[StructuredLogEntry] = []
+        self._pendingEntries: list[StructuredLogEntry] = []
+        self._pendingEvicted: list[StructuredLogEntry] = []
+        self._detailEntry: StructuredLogEntry | None = None
+        self._viewDirty = False
+        self._filterCounts: dict[str, Counter[Any]] = {
+            name: Counter() for name in ("jobId", "eventType", "workflow", "node")}
+        self._workflowNames: dict[tuple[str, ...], str] = {}
+        self._nodeNames: dict[tuple[str, ...], str] = {}
+        self._errorCount = 0
+        self._visibleErrorCount = 0
+        self._exportDirectory = Path.home()
+        self._historyClient = None
+        self._historyTarget = None
+        self._historyGeneration = 0
+        self._historyFuture = None
+        self._historyCancel = None
+        self._historyReply = None
+        self._historyFilters = {}
+        self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
+        root = QVBoxLayout()
+        historyRow = QHBoxLayout()
+        self.rangeCombo = QComboBox()
+        for label, value in (("��ǰ��ʾ��¼ / ʵʱ", "current"), ("Runtime ��ʷ", "runtime"), ("Designer �����ļ�", "local")):
+            self.rangeCombo.addItem(label, value)
+        historyRow.addWidget(self.rangeCombo)
+        self.historyQueryButton = QPushButton("��ѯ / ˢ��")
+        self.historyNextButton = QPushButton("��һҳ")
+        self.historyExportButton = QPushButton("��������ѡ����Χ��")
+        self.historyCancelButton = QPushButton("ȡ��")
+        for button in (self.historyQueryButton, self.historyNextButton, self.historyExportButton, self.historyCancelButton):
+            historyRow.addWidget(button)
+        root.addLayout(historyRow)
+        self.historyFiltersWidget = QWidget()
+        historyFilters = QGridLayout(self.historyFiltersWidget)
+        historyFilters.setContentsMargins(0, 0, 0, 0)
+        self.historyInputs = {}
+        for index, (name, label) in enumerate((("projectId", "���� ID"), ("jobId", "Job ID"), ("deviceId", "�豸 ID"),
+                ("component", "ģ��"), ("workflowId", "������ ID"), ("nodeId", "�ڵ� ID"),
+                ("startTimestampMs", "��ʼʱ�� ms������"), ("endTimestampMs", "����ʱ�� ms��������"))):
+            edit = QLineEdit()
+            edit.setPlaceholderText(label + "�����ղ���")
+            self.historyInputs[name] = edit
+            historyFilters.addWidget(edit, index // 4, index % 4)
+        self.localFileCombo = QComboBox()
+        self.localFileCombo.setMinimumContentsLength(20)
+        root.addWidget(self.historyFiltersWidget)
+        root.addWidget(self.localFileCombo)
+        self.historyStatus = QLabel()
+        self.historyStatus.setWordWrap(True)
+        root.addWidget(self.historyStatus)
+        filters = QGridLayout()
+        self.levelFilter = _combo(("ȫ��", "DEBUG", "INFO", "WARN", "ERROR"))
+        self.sourceFilter = _combo(("ȫ��", "runtime", "designer", "editor"))
+        self.sourceFilter.addItem("�������", "flow_designer")
+        self.sourceFilter.addItem("ҳ�����", "page_designer")
+        self.jobFilter = _combo(("ȫ��",))
+        self.workflowFilter = _combo(("ȫ��",))
+        self.nodeFilter = _combo(("ȫ��",))
+        self.eventTypeFilter = _combo(("ȫ��",))
+        self.searchInput = QLineEdit()
+        self.searchInput.setPlaceholderText("������־")
+        self.autoScrollCheck = QCheckBox("�Զ�����")
+        self.autoScrollCheck.setChecked(True)
+        for index, (label, widget) in enumerate((
+            ("�ȼ�", self.levelFilter),
+            ("��Դ", self.sourceFilter),
+            ("Job", self.jobFilter),
+            ("������", self.workflowFilter),
+            ("�ڵ�", self.nodeFilter),
+            ("�¼�", self.eventTypeFilter),
+        )):
+            widget.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+            widget.setMinimumContentsLength(6)
+            widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            row, column = divmod(index, 3)
+            filters.addWidget(QLabel(label), row, column * 2)
+            filters.addWidget(widget, row, column * 2 + 1)
+        self.searchInput.setMinimumWidth(80)
+        root.addLayout(filters)
+        searchRow = QHBoxLayout()
+        searchRow.addWidget(self.searchInput, 1)
+        self.resetFiltersButton = QPushButton("���ɸѡ")
+        self.resetFiltersButton.setToolTip("�ָ���ʾȫ����־����ɾ����־����")
+        searchRow.addWidget(self.resetFiltersButton)
+        root.addLayout(searchRow)
+        self.areaTabs = QTabBar()
+        self.areaTabs.setObjectName("runtimeLogAreaTabs")
+        self.areaTabs.setAccessibleName("��־����")
+        self.areaTabs.setExpanding(True)
+        self.areaTabs.setDrawBase(False)
+        for label, area, hint in (
+            ("ȫ��", "all", "��ʾ������־���������̡����Ӻ��豸��ͨ�ü�¼"),
+            ("�������", "flow", "���������ڵ�ִ�к����ӱ༭��־"),
+            ("ҳ�����", "page", "ҳ����Ʋ��������չʾ�쳣��ָ���־"),
+        ):
+            index = self.areaTabs.addTab(label)
+            self.areaTabs.setTabData(index, area)
+            self.areaTabs.setTabToolTip(index, hint)
+        root.addWidget(self.areaTabs)
+        filterStatus = QHBoxLayout()
+        self.filterStatusLabel = QLabel()
+        self.filterStatusLabel.setObjectName("runtimeLogFilterStatus")
+        self.filterStatusLabel.setWordWrap(True)
+        self.showErrorsButton = QPushButton("���ɸѡ������")
+        self.showErrorsButton.setObjectName("runtimeLogShowErrors")
+        self.showErrorsButton.setToolTip("�������ɸѡ��ѡ�����´��󣻱�����־����")
+        filterStatus.addWidget(self.filterStatusLabel, 1)
+        filterStatus.addWidget(self.showErrorsButton)
+        root.addLayout(filterStatus)
+    
+        self.table = QTableWidget(0, len(self.columns))
+        self.table.setObjectName("runtimeLogTable")
+        self.table.setHorizontalHeaderLabels(list(self.columns))
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setVerticalScrollMode(QAbstractItemView.ScrollPerItem)
+        self.table.verticalHeader().setVisible(False)
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionsMovable(True)
+        for visualIndex, column in enumerate((0, 1, 4, 5, 9, 2, 6, 7, 3, 8)):
+            header.moveSection(header.visualIndex(column), visualIndex)
+        for column, width in enumerate((128, 64, 88, 120, 160, 180, 64, 100, 96, 360)):
+            self.table.setColumnWidth(column, width)
+        self.table.setAlternatingRowColors(True)
+        self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
+        self.detailViewer = LogJsonTree()
+        self.detailViewer.setObjectName("runtimeLogDetails")
+        self._logViewer = self.detailViewer
+        details = QWidget()
+        detailLayout = QVBoxLayout(details)
+        detailLayout.setContentsMargins(0, 0, 0, 0)
+        detailActions = QHBoxLayout()
+        detailActions.addWidget(QLabel("��־���� �� JSON"))
+        detailActions.addStretch(1)
+        self.copyDetailsButton = QPushButton("�������� JSON")
+        self.copyDetailsButton.setAutoDefault(False)
+        self.copyDetailsButton.setEnabled(False)
+        self.copyDetailsButton.clicked.connect(self.detailViewer.copyJson)
+        detailActions.addWidget(self.copyDetailsButton)
+        detailLayout.addLayout(detailActions)
+        detailLayout.addWidget(self.detailViewer)
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(self.table)
+        splitter.addWidget(details)
+        splitter.setSizes([300, 200])
+        root.addWidget(splitter)
+        self.navigationHint = QLabel("ѡ��һ����־���ɲ鿴�����λ�ڵ�")
+        self.navigationHint.setObjectName("runtimeLogNavigationHint")
+        self.navigationHint.setWordWrap(True)
+        root.addWidget(self.navigationHint)
+        actions = QHBoxLayout()
+        self.locateButton = QPushButton("��λ�ڵ�")
+        self.locateButton.setObjectName("runtimeLogLocateNode")
+        self.locateButton.setToolTip("��λ����־�����������еĽڵ㣨Ҳ��˫����־��")
+        self.locateButton.setEnabled(False)
+        self.clearButton = QPushButton("�����ͼ")
+        self.clearButton.setIcon(icon("trash-2"))
+        actions.addWidget(self.autoScrollCheck)
+        self.logDirectoryButton = QPushButton("������־Ŀ¼")
+        self.logDirectoryButton.setAutoDefault(False)
+        self.logDirectoryButton.setEnabled(False)
+        actions.addWidget(self.logDirectoryButton)
+        actions.addStretch(1)
+        self.exportButton = QPushButton("������־")
+        self.exportButton.setObjectName("runtimeLogExport")
+        self.exportButton.setAutoDefault(False)
+        self.exportButton.setToolTip("�������ڵ�ǰ��������־���������飻��������ջ򳬹��������޵���ʷ��¼")
+        self.exportMenu = QMenu(self.exportButton)
+        self.exportFilteredAction = self.exportMenu.addAction("������ǰɸѡ�����")
+        self.exportAllAction = self.exportMenu.addAction("����ȫ��������־��")
+        self.exportFilteredAction.triggered.connect(lambda: self.exportLogs(filtered=True))
+        self.exportAllAction.triggered.connect(lambda: self.exportLogs(filtered=False))
+        self.exportMenu.aboutToShow.connect(self._updateExportActions)
+        self.exportButton.setMenu(self.exportMenu)
+        actions.addWidget(self.exportButton)
+        actions.addWidget(self.locateButton)
+        actions.addWidget(self.clearButton)
+        root.addLayout(actions)
+        self.setLayout(root)
+    
+        for combo in (
+            self.levelFilter,
+            self.sourceFilter,
+            self.jobFilter,
+            self.eventTypeFilter,
+        ):
+            combo.currentTextChanged.connect(self._refreshTable)
+        self.workflowFilter.currentIndexChanged.connect(self._onWorkflowFilterChanged)
+        self.nodeFilter.currentIndexChanged.connect(self._refreshTable)
+        self.searchInput.textChanged.connect(self._refreshTable)
+        self.areaTabs.currentChanged.connect(self._refreshTable)
+        self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
+        self.table.verticalScrollBar().valueChanged.connect(self._onScrollChanged)
+        self.table.verticalScrollBar().rangeChanged.connect(self._onScrollRangeChanged)
+        self.table.currentCellChanged.connect(self._showDetails)
+        self.table.cellDoubleClicked.connect(self._navigateFromRow)
+        self.locateButton.clicked.connect(self._navigateSelected)
+        self.showErrorsButton.clicked.connect(self._showAllErrors)
+        self.resetFiltersButton.clicked.connect(self._resetFilters)
+        self.clearButton.clicked.connect(self._clearLogs)
+        self._refreshTimer = QTimer(self)
+        self._refreshTimer.setSingleShot(True)
+        self._refreshTimer.setInterval(_BATCH_INTERVAL_MS)
+        self._refreshTimer.timeout.connect(self._flushVisibleEntries)
+        for combo in (self.jobFilter, self.workflowFilter, self.nodeFilter, self.eventTypeFilter):
+            combo.popupClosed.connect(self._refreshTimer.start)
+        self._updateFilterStatus()
+>       self.rangeCombo.currentIndexChanged.connect(self._historySourceChanged)
+E       AttributeError: 'StructuredLogView' object has no attribute '_historySourceChanged'
+
+src\emo_master\apps\designer\ui\log_dialog.py:430: AttributeError
+-------------------------- Captured stderr teardown ---------------------------
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\ui\main_window.py", line 3092, in closeEvent
+    debugWindows = self._activeDebugWindows()
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\ui\main_window.py", line 4858, in _activeDebugWindows
+    windows.extend(getattr(editor, "_debugWindow", None) for editor in self.operatorEditorManager._windows.values())
+AttributeError: 'MainWindow' object has no attribute 'operatorEditorManager'
+____________ testManuallySelectedActiveLogMatchesWindowRecentLogs _____________
+
+qtApp = <PySide2.QtWidgets.QApplication(0x1a455284470) at 0x000001A458A86C40>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4166/testManuallySelectedActiveLogM0')
+
+    def testManuallySelectedActiveLogMatchesWindowRecentLogs(qtApp, tmp_path):
+        window = OperatorWindow(dataRoot=tmp_path / "data", preferences=preferences(tmp_path))
+        window.show()
+        try:
+            waitFor(lambda: window.controller is not None and not window.busy
+                    and window.logFeed.records and window.logFeed.worker is None)
+            window.showLogs()
+            waitFor(lambda: window.logFeed.worker is None)
+            active = window.controller.runtime.operationalLogWriter.activePath
+            index = window.logView.fileCombo.findData(str(active))
+>           assert index > 0
+E           assert -1 > 0
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\operator_view\test_runtime_log_view.py:151: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_tcp_device_integration.py::testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication
+FAILED tests/runtime/test_tcp_device_integration.py::testA2CameraProcessingThenPlcWriteInTheSameSavedProject
+FAILED tests/runtime/test_tcp_device_integration.py::testA3ServerAndBothSingleTransactionsUseRealJobEntry
+FAILED tests/runtime/test_tcp_device_integration.py::testNormal16MiBMessageCrossesTheBoundedTcpBridge
+FAILED tests/runtime/test_tcp_device_integration.py::testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure
+FAILED tests/runtime/test_tcp_device_integration.py::testA5AllThreePackagesImportAndRunFromNewDirectories
+FAILED tests/designer/test_log_export.py::testFormatsPreserveCompleteChineseNestedDiagnostics[json]
+FAILED tests/designer/test_log_export.py::testFormatsPreserveCompleteChineseNestedDiagnostics[jsonl]
+FAILED tests/designer/test_log_export.py::testFormatsPreserveCompleteChineseNestedDiagnostics[txt]
+FAILED tests/designer/test_log_export.py::testFilteredExportIncludesPendingRowsAndCombinesAreaLevelAndSearch
+FAILED tests/designer/test_log_export.py::testSaveDialogChangesCannotReplaceOrMutateTheCapturedSnapshot
+FAILED tests/designer/test_log_export.py::testExportAllMenuUsesCurrentRetentionAndIgnoresFilters
+FAILED tests/designer/test_log_export.py::testEmptyFilterShowsFeedbackWithoutSaveDialogOrDiagnostic
+FAILED tests/designer/test_log_export.py::testCancelIsQuietAndPreservesExistingFiles
+FAILED tests/designer/test_log_export.py::testAddedDefaultSuffixCannotOverwriteRejectedTarget
+FAILED tests/designer/test_log_export.py::testExportFailureEntersMainWindowAndDurableLocalLog
+FAILED tests/ui/operator_view/test_runtime_log_view.py::testManuallySelectedActiveLogMatchesWindowRecentLogs
+17 failed, 66 passed in 37.68s

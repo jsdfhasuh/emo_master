@@ -177,7 +177,11 @@ def test_cancel_during_real_rpc_closes_startup_without_further_requests(
         assert len(clients) == 1 and clients[0]._closed and clients[0]._ownedChannel is None
         with pytest.raises(ValueError, match='closed'):
             channels[0].unary_unary('/startup-test/closed')(b'', timeout=.1)
-        assert not root.exists()
+        # Startup now owns a Designer log before opening the remote channel;
+        # cancellation must still create no local Runtime storage or workspace.
+        assert not (root / 'emo_master.db').exists() and not (root / 'jobs').exists()
+        logs = list((root / 'logs' / 'designer').glob('designer-*.jsonl'))
+        assert logs and 'designer.startup.started' in logs[0].read_text(encoding='utf-8')
         assert {key: store.value(key) for key in store.allKeys()} == previous
         assert designerApplication.quitOnLastWindowClosed() is quitPolicy
     finally:

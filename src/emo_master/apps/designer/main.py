@@ -57,6 +57,7 @@ def configureHighDpi() -> bool:
 
 def runDesigner() -> None:
     from emo_master.apps.designer.startup import StartupTiming, prepareRuntime
+    from emo_master.apps.designer.services.local_log import DesignerLogWriter, designerLogDirectory
 
     timing = StartupTiming(_ENTRY_TIME)
     timing.mark("entry")
@@ -75,6 +76,7 @@ def runDesigner() -> None:
     app.setQuitOnLastWindowClosed(False)
     runtimeClient = None
     window = None
+    localLogWriter = None
     try:
         while True:
             timing.begin("startup-settings")
@@ -82,11 +84,18 @@ def runDesigner() -> None:
             timing.finish()
             if options is None:
                 return
+            localLogDirectory = designerLogDirectory(options=options)
+            localLogWriter = DesignerLogWriter(localLogDirectory)
+            localLogWriter.record("designer.startup.started", "Designer 启动准备", payload={
+                "mode": options.mode, "dataRoot": str(options.dataRoot), "directory": str(localLogDirectory)})
             timing.begin("startup-window")
             startup = DesignerStartupDialog(timing)
             try:
                 runtimeClient = startup.prepare(lambda cancelled: prepareRuntime(timing, cancelled, options=options))
             except Exception as error:
+                localLogWriter.record("designer.startup.failed", str(error), level="ERROR")
+                localLogWriter.close()
+                localLogWriter = None
                 timing.finish("failed")
                 startup.finish()
                 if startup.cancelled.is_set():
@@ -135,7 +144,9 @@ def runDesigner() -> None:
         if not advance("editor-ui"):
             return
         window = MainWindow(runtimeClient, showStartupEntry=True,
-                            projectEntryDialogFactory=projectEntry, settingsStore=selection.preferences)
+                            projectEntryDialogFactory=projectEntry, settingsStore=selection.preferences,
+                            localLogWriter=localLogWriter, localLogDirectory=localLogDirectory)
+        localLogWriter.record("designer.startup.ready", "Designer 启动就绪")
         if not advance("project-entry"):
             return
         startupNotice = selection.rememberSuccessful(options)
@@ -147,6 +158,8 @@ def runDesigner() -> None:
         app.setQuitOnLastWindowClosed(quitOnClose)
         app.exec_()
     except Exception as error:
+        if localLogWriter is not None:
+            localLogWriter.record("designer.startup.failed", str(error), level="ERROR")
         timing.finish("failed")
         if startup is not None:
             startup.finish()
@@ -160,6 +173,8 @@ def runDesigner() -> None:
                 if runtimeClient is not None:
                     runtimeClient.close()
             finally:
+                if localLogWriter is not None:
+                    localLogWriter.close()
                 selection.close()
                 if startup is not None:
                     startup.finish()

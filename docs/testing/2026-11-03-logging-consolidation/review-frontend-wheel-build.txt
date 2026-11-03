@@ -1,0 +1,9 @@
+Processing .\web_panel
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: emo-master-web-panel
+  Building wheel for emo-master-web-panel (pyproject.toml): started
+  Building wheel for emo-master-web-panel (pyproject.toml): finished with status 'done'
+  Created wheel for emo-master-web-panel: filename=emo_master_web_panel-0.1.0a1-py3-none-any.whl size=155874 sha256=8173f65513550e965efea47b3a608d60e6979c34a45339d972c5fe4dfafe0bda
+  Stored in directory: C:\Users\jsdfhasuh\AppData\Local\Temp\pip-ephem-wheel-cache-8sg9a42a\wheels\c1\b1\60\855b6b90a9e0cea2450b32f7167257a88757703480cbc08af1
+Successfully built emo-master-web-panel

@@ -57,7 +57,7 @@ class GrpcRuntimeClient:
             from emo_panel_protocol.connection import ConnectionProfile, createChannel
             from emo_panel_protocol.generated import runtime_pb2, runtime_pb2_grpc
         except ImportError as exc:
-            raise ContractUnavailable('Install the supplied emo_panel_protocol 1.1.1 SDK and its declared dependencies') from exc
+            raise ContractUnavailable('Install the supplied emo_panel_protocol 1.4.0 SDK and its declared dependencies') from exc
         self.pb = runtime_pb2
         profile = ConnectionProfile(self.address, self.timeout, self.max_receive_bytes)
         if self.preview_context is not None:
@@ -104,7 +104,7 @@ class GrpcRuntimeClient:
                 'historyDefinitionRevision': info.history_definition_revision,
                 'productionMode': info.production_mode, 'productionExecutionMode': info.production_execution_mode,
                 'startupWorkflowIds': list(info.startup_workflow_ids), 'capabilities': list(info.capabilities),
-                'contractStatus': 'panel-contract-1.0-sdk-1.1.1'}
+                'contractStatus': 'panel-contract-1.0-sdk-1.4.0'}
 
     @staticmethod
     def _run(run):
@@ -159,6 +159,51 @@ class GrpcRuntimeClient:
             stream.cancel()
         return {'events':events,'nextSequence':events[-1]['sequence'] if events else after,
                 'resetRequired':False,'source':'runtime-per-job-events'}
+
+    @staticmethod
+    def _log_event(stored):
+        event = stored.event
+        return {'eventId': str(stored.event_id), 'sequence': str(event.sequence),
+                'timestampMs': str(event.timestamp_ms), 'jobId': event.job_id,
+                'projectId': event.project_id, 'workflowId': event.workflow_id,
+                'nodeId': event.node_id, 'workflowRunId': event.workflow_run_id,
+                'parentWorkflowRunId': event.parent_workflow_run_id,
+                'nodeRunId': event.node_run_id,
+                'iterationPath': browser_safe(json.loads(event.iteration_path_json or '[]')),
+                'eventType': event.event_type, 'level': event.level, 'code': event.code,
+                'message': event.message, 'payload': browser_safe(json.loads(event.payload_json or '{}')),
+                'originApp': event.origin_app, 'component': event.component,
+                'runtimeInstanceId': event.runtime_instance_id}
+
+    async def query_runtime_logs(self, query):
+        # This query intentionally has no current project or selected Job preflight.
+        # History can belong to a previously loaded project or Runtime instance.
+        fields = {'runtime_instance_id': query.get('runtimeInstanceId', ''),
+                  'project_id': query.get('projectId', ''), 'job_id': query.get('jobId', ''),
+                  'device_id': query.get('deviceId', ''), 'component': query.get('component', ''),
+                  'workflow_id': query.get('workflowId', ''), 'node_id': query.get('nodeId', ''),
+                  'levels': query.get('levels', []), 'limit': query.get('limit', 200)}
+        for public, wire in [('afterEventId', 'after_event_id'), ('upperEventId', 'upper_event_id'),
+                             ('startTimestampMs', 'start_timestamp_ms'), ('endTimestampMs', 'end_timestamp_ms')]:
+            if public in query and query[public] is not None:
+                value = str(query[public])
+                if not value.isdecimal() or int(value) > 2**63-1:
+                    raise ValueError('Invalid decimal log cursor/time')
+                fields[wire] = int(value)
+        request = self.pb.QueryRuntimeLogsRequest(**fields)
+        try:
+            reply = await self.runtime.QueryRuntimeLogs(request, timeout=self.timeout)
+        except Exception as exc:
+            import grpc
+            if not isinstance(exc, grpc.RpcError):
+                raise
+            return {'ok': False, 'code': exc.code().name, 'message': exc.details() or 'Runtime request failed',
+                    'runtimeInstanceId': '', 'upperEventId': str(query.get('upperEventId') or '0'),
+                    'nextEventId': str(query.get('afterEventId') or '0'), 'hasMore': False, 'events': []}
+        return {'ok': reply.ok, 'code': reply.code, 'message': reply.message,
+                'runtimeInstanceId': reply.runtime_instance_id, 'upperEventId': str(reply.upper_event_id),
+                'nextEventId': str(reply.next_event_id), 'hasMore': reply.has_more,
+                'events': [self._log_event(item) for item in reply.events]}
 
     async def workflows(self):
         info = await self._info()

@@ -1,0 +1,109 @@
+F                                                                     [100%]
+================================== FAILURES ===================================
+_ AppTests.test_runtime_log_level_spacing_matches_query_and_export (suffix='', levels='ERROR, INFO') _
+
+self = <test_app.AppTests testMethod=test_runtime_log_level_spacing_matches_query_and_export>
+
+    def test_runtime_log_level_spacing_matches_query_and_export(self):
+        self.login()
+        for suffix in ('', '/export'):
+            path = '/api/runtimes/configured/logs' + suffix
+            expected = self.client.get(path, params={'levels': 'ERROR,INFO'})
+            self.assertEqual(expected.status_code, 200)
+            if suffix:
+                self.assertGreater(int(expected.headers['x-entry-count']), 0)
+            else:
+                self.assertTrue(expected.json()['ok'])
+                self.assertTrue(expected.json()['events'])
+            for levels in ('ERROR, INFO', ' ERROR, INFO ', ' ERROR, , INFO ,, '):
+                with self.subTest(suffix=suffix, levels=levels):
+                    response = self.client.get(path, params={'levels': levels})
+                    self.assertEqual(response.status_code, 200)
+>                   self.assertEqual(response.text, expected.text)
+E                   AssertionError: '{"ok[126 chars]ts":[]}' != '{"ok[126 chars]ts":[{"eventId":"1","sequence":"1","timestampM[684 chars]}}]}'
+E                   Diff is 1008 characters long. Set self.maxDiff to None to see it.
+
+web_panel\tests\test_app.py:67: AssertionError
+_ AppTests.test_runtime_log_level_spacing_matches_query_and_export (suffix='', levels=' ERROR, INFO ') _
+
+self = <test_app.AppTests testMethod=test_runtime_log_level_spacing_matches_query_and_export>
+
+    def test_runtime_log_level_spacing_matches_query_and_export(self):
+        self.login()
+        for suffix in ('', '/export'):
+            path = '/api/runtimes/configured/logs' + suffix
+            expected = self.client.get(path, params={'levels': 'ERROR,INFO'})
+            self.assertEqual(expected.status_code, 200)
+            if suffix:
+                self.assertGreater(int(expected.headers['x-entry-count']), 0)
+            else:
+                self.assertTrue(expected.json()['ok'])
+                self.assertTrue(expected.json()['events'])
+            for levels in ('ERROR, INFO', ' ERROR, INFO ', ' ERROR, , INFO ,, '):
+                with self.subTest(suffix=suffix, levels=levels):
+                    response = self.client.get(path, params={'levels': levels})
+                    self.assertEqual(response.status_code, 200)
+>                   self.assertEqual(response.text, expected.text)
+E                   AssertionError: '{"ok[126 chars]ts":[]}' != '{"ok[126 chars]ts":[{"eventId":"1","sequence":"1","timestampM[684 chars]}}]}'
+E                   Diff is 1008 characters long. Set self.maxDiff to None to see it.
+
+web_panel\tests\test_app.py:67: AssertionError
+_ AppTests.test_runtime_log_level_spacing_matches_query_and_export (suffix='', levels=' ERROR, , INFO ,, ') _
+
+self = <test_app.AppTests testMethod=test_runtime_log_level_spacing_matches_query_and_export>
+
+    def test_runtime_log_level_spacing_matches_query_and_export(self):
+        self.login()
+        for suffix in ('', '/export'):
+            path = '/api/runtimes/configured/logs' + suffix
+            expected = self.client.get(path, params={'levels': 'ERROR,INFO'})
+            self.assertEqual(expected.status_code, 200)
+            if suffix:
+                self.assertGreater(int(expected.headers['x-entry-count']), 0)
+            else:
+                self.assertTrue(expected.json()['ok'])
+                self.assertTrue(expected.json()['events'])
+            for levels in ('ERROR, INFO', ' ERROR, INFO ', ' ERROR, , INFO ,, '):
+                with self.subTest(suffix=suffix, levels=levels):
+                    response = self.client.get(path, params={'levels': levels})
+                    self.assertEqual(response.status_code, 200)
+>                   self.assertEqual(response.text, expected.text)
+E                   AssertionError: '{"ok[126 chars]ts":[]}' != '{"ok[126 chars]ts":[{"eventId":"1","sequence":"1","timestampM[684 chars]}}]}'
+E                   Diff is 1008 characters long. Set self.maxDiff to None to see it.
+
+web_panel\tests\test_app.py:67: AssertionError
+______ AppTests.test_runtime_log_level_spacing_matches_query_and_export _______
+
+self = <test_app.AppTests testMethod=test_runtime_log_level_spacing_matches_query_and_export>
+
+    def test_runtime_log_level_spacing_matches_query_and_export(self):
+        self.login()
+        for suffix in ('', '/export'):
+            path = '/api/runtimes/configured/logs' + suffix
+            expected = self.client.get(path, params={'levels': 'ERROR,INFO'})
+            self.assertEqual(expected.status_code, 200)
+            if suffix:
+                self.assertGreater(int(expected.headers['x-entry-count']), 0)
+            else:
+                self.assertTrue(expected.json()['ok'])
+                self.assertTrue(expected.json()['events'])
+            for levels in ('ERROR, INFO', ' ERROR, INFO ', ' ERROR, , INFO ,, '):
+                with self.subTest(suffix=suffix, levels=levels):
+                    response = self.client.get(path, params={'levels': levels})
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response.text, expected.text)
+            repeated = self.client.get(path, params=[('levels', ' ERROR, '), ('levels', ' INFO ,, ')])
+            self.assertEqual(repeated.status_code, 200)
+>           self.assertEqual(repeated.text, expected.text)
+E           AssertionError: '{"ok[126 chars]ts":[]}' != '{"ok[126 chars]ts":[{"eventId":"1","sequence":"1","timestampM[684 chars]}}]}'
+E           Diff is 1008 characters long. Set self.maxDiff to None to see it.
+
+web_panel\tests\test_app.py:70: AssertionError
+---------------------------- Captured stdout call -----------------------------
+uuu
+=========================== short test summary info ===========================
+SUBFAILED(suffix='', levels='ERROR, INFO') web_panel/tests/test_app.py::AppTests::test_runtime_log_level_spacing_matches_query_and_export
+SUBFAILED(suffix='', levels=' ERROR, INFO ') web_panel/tests/test_app.py::AppTests::test_runtime_log_level_spacing_matches_query_and_export
+SUBFAILED(suffix='', levels=' ERROR, , INFO ,, ') web_panel/tests/test_app.py::AppTests::test_runtime_log_level_spacing_matches_query_and_export
+FAILED web_panel/tests/test_app.py::AppTests::test_runtime_log_level_spacing_matches_query_and_export
+4 failed, 15 deselected in 1.07s

@@ -1,0 +1,1 @@
+gen_proto --check exit=0

@@ -1,4 +1,4 @@
-"""Pin SDK 1.3.0 development delivery and embedded consumer bytes on both OSes."""
+"""Pin SDK 1.4.0 development delivery and embedded consumer bytes on both OSes."""
 import hashlib
 import json
 from pathlib import Path
@@ -7,11 +7,10 @@ import zipfile
 
 PANEL = Path(__file__).resolve().parents[1]
 CONTRACT = PANEL / 'contracts/panel-contract-v1'
-HANDOFF = PANEL.parent / 'docs/handoffs/runtime-web-panel-v1/sdk-1.3.0'
-SOURCE_SHA = '8df8599fc026c424a49e87cc53fb45f6b371f16f'
-ZIP_SHA = '4cf0bcb59fcd427d5e48a74c3f2082f834682a321364a6cc42234792f5577aca'
-WHEEL_SHA = 'cd86472b5faa74e8fb1048a95fcaf67cf59e5a285e4d5e69763cd9a71bb55295'
-WHEEL_PATH = 'python/emo_panel_protocol-1.3.0-py3-none-any.whl'
+HANDOFF = PANEL.parent / 'docs/handoffs/runtime-web-panel-v1/sdk-1.4.0'
+SOURCE_SHA = '940994b3420b47ff0add8766ccce5a4f2686a02a'
+WHEEL_SHA = 'cfc9ceaaa23baacc3321390a22d46a44325aef1dae4947e54a6598947566a086'
+WHEEL_PATH = 'python/emo_panel_protocol-1.4.0-py3-none-any.whl'
 
 
 class ContractManifestTests(unittest.TestCase):
@@ -19,7 +18,7 @@ class ContractManifestTests(unittest.TestCase):
         manifest = json.loads((CONTRACT / 'contract-manifest.json').read_bytes())
         self.assertEqual(manifest['sourceSha'], SOURCE_SHA)
         self.assertTrue(manifest['sourceDirty'])
-        self.assertEqual(manifest['sdkVersion'], '1.3.0')
+        self.assertEqual(manifest['sdkVersion'], '1.4.0')
         self.assertEqual(manifest['panelContractVersion'], '1.0')
         self.assertEqual(manifest['sdkWheels'], [WHEEL_PATH])
         self.assertEqual(len(manifest['files']), 39)
@@ -31,25 +30,20 @@ class ContractManifestTests(unittest.TestCase):
                 self.assertEqual(len(data), expected['byteSize'])
                 self.assertEqual(hashlib.sha256(data).hexdigest(), expected['sha256'])
         wheel = (CONTRACT / WHEEL_PATH).read_bytes()
-        self.assertEqual(len(wheel), 38789)
+        self.assertEqual(len(wheel), 38937)
         self.assertEqual(hashlib.sha256(wheel).hexdigest(), WHEEL_SHA)
 
-    def test_vendored_tree_is_exact_official_zip_not_regenerated(self):
-        archive_path = HANDOFF / 'panel-contract-v1.zip'
-        raw = archive_path.read_bytes()
-        self.assertEqual(len(raw), 92030)
-        self.assertEqual(hashlib.sha256(raw).hexdigest(), ZIP_SHA)
-        with zipfile.ZipFile(archive_path) as archive:
-            self.assertIsNone(archive.testzip())
-            self.assertEqual(len(archive.namelist()), 40)
-            for name in archive.namelist():
-                with self.subTest(file=name):
-                    self.assertEqual((CONTRACT / name).read_bytes(), archive.read(name))
-        self.assertEqual((CONTRACT / WHEEL_PATH).read_bytes(), (HANDOFF / Path(WHEEL_PATH).name).read_bytes())
-        # Outer tracked manifest may have LF normalization. The ZIP manifest is
-        # the byte authority; the separately committed copy must agree as JSON.
+    def test_vendored_tree_is_exact_current_handoff_manifest_and_generated_sdk(self):
         self.assertEqual(json.loads((HANDOFF / 'contract-manifest.json').read_bytes()),
                          json.loads((CONTRACT / 'contract-manifest.json').read_bytes()))
+        self.assertEqual((CONTRACT / 'proto/runtime.proto').read_bytes(),
+                         (PANEL.parent / 'proto/runtime.proto').read_bytes())
+        with zipfile.ZipFile(CONTRACT / WHEEL_PATH) as archive:
+            self.assertIsNone(archive.testzip())
+            for name in ('runtime_pb2.py','runtime_pb2_grpc.py'):
+                self.assertEqual(archive.read('emo_panel_protocol/generated/' + name),
+                    (PANEL.parent / 'src/emo_panel_protocol/generated' / name).read_bytes())
+            self.assertFalse(any(name.startswith('emo_master/') for name in archive.namelist()))
 
     def test_embedded_fixtures_are_the_same_sdk_delivery(self):
         embedded = PANEL / 'backend/emo_web_panel/contract_data'

@@ -4,7 +4,7 @@ import hashlib
 import json
 import os
 import re
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from functools import wraps
 from pathlib import Path
 import shutil
@@ -17,7 +17,7 @@ import grpc
 
 from emo_master import __version__
 from emo_master.apps.runtime.events.event_store import EventStore
-from emo_master.apps.runtime.events.jsonl_writer import RuntimeJsonlLogWriter
+from emo_master.apps.runtime.events.jsonl_writer import RuntimeJsonlLogWriter, _projectEvent
 from emo_master.apps.runtime.events.models import RuntimeEvent
 from emo_master.apps.runtime.context.global_counters import (
     E_RUNTIME_STATE_UNAVAILABLE,
@@ -94,6 +94,9 @@ def _withProjectStateLock(method: Any) -> Any:
     return locked
 
 
+LOG_QUERY_REPLY_BYTES = 4 * 1024 * 1024
+
+
 class RuntimeService(RunReadRpcMixin, HistoryRpcMixin, ProjectConfigurationRpcMixin, CommunicationRpcMixin, OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServicer):
     @property
     def supportsLegacySnapshotPolicy(self) -> bool:
@@ -110,7 +113,9 @@ class RuntimeService(RunReadRpcMixin, HistoryRpcMixin, ProjectConfigurationRpcMi
         logDirectory: Path | None = None,
         productionMode: bool = False,
         startupProgress: Callable[[str], None] | None = None,
+        runtimeInstanceId: str | None = None,
     ) -> None:
+        self.runtimeInstanceId = runtimeInstanceId or str(uuid4())
         report = startupProgress or (lambda _stage: None)
         report("runtime-database")
         self._startedMonotonic = time.monotonic()
@@ -140,9 +145,9 @@ class RuntimeService(RunReadRpcMixin, HistoryRpcMixin, ProjectConfigurationRpcMi
             self.sqliteStore = SqliteStore(dbPath)
             self.sqliteStore.initialize()
             if self._runtimeDataLockIsPrimary:
-                self.sqliteStore.markOrphanedJobsFailed()
+                self.sqliteStore.markOrphanedJobsFailed(self.runtimeInstanceId)
             self.jobRepository = JobRepository(self.sqliteStore)
-            self.eventStore = EventStore(self.sqliteStore)
+            self.eventStore = EventStore(self.sqliteStore, runtimeInstanceId=self.runtimeInstanceId)
             from emo_master.apps.runtime.business_sqlite.outcomes import SqliteOutcomes
             self.sqliteOutcomes = SqliteOutcomes(self.eventStore)
             self.eventStore.beforeTerminal = self.sqliteOutcomes.beforeTerminal
@@ -221,7 +226,6 @@ class RuntimeService(RunReadRpcMixin, HistoryRpcMixin, ProjectConfigurationRpcMi
         self._loadedProjectPreviewKey = ""
         self._projectStateLock = threading.RLock()
         self._previewJobLock = threading.RLock()
-        self.runtimeInstanceId = str(uuid4())
         self.communicationManager = CommunicationManager(self.runtimeInstanceId)
         from emo_master.apps.runtime.devices.manager import DeviceManager
         self.deviceManager = DeviceManager(self.pluginScanResult.deviceTypes,
@@ -842,6 +846,48 @@ class RuntimeService(RunReadRpcMixin, HistoryRpcMixin, ProjectConfigurationRpcMi
             ended_at_ms=record.endedAtMs,
             legacy_snapshot_policy=record.legacySnapshotPolicy,
         )
+
+    def QueryRuntimeLogs(self, request, context):  # type: ignore[override]
+        reply = runtime_pb2.QueryRuntimeLogsReply(
+            ok=False, runtime_instance_id=self.runtimeInstanceId,
+            next_event_id=request.after_event_id)
+        if request.runtime_instance_id and request.runtime_instance_id != self.runtimeInstanceId:
+            reply.code, reply.message = "RESET_REQUIRED", "Runtime instance changed"
+            return reply
+        upper = request.upper_event_id if request.HasField("upper_event_id") else None
+        start = request.start_timestamp_ms if request.HasField("start_timestamp_ms") else None
+        end = request.end_timestamp_ms if request.HasField("end_timestamp_ms") else None
+        limit = request.limit or 200
+        if (request.after_event_id < 0 or upper is not None and upper < request.after_event_id
+                or not 1 <= limit <= 1000 or start is not None and start < 0
+                or end is not None and end < 0 or start is not None and end is not None and start > end):
+            reply.code, reply.message = "INVALID_ARGUMENT", "Invalid log cursor, time range or limit (1-1000)"
+            return reply
+        upper, rows = self.sqliteStore.queryRuntimeLogs(
+            afterEventId=request.after_event_id, upperEventId=upper, limit=limit,
+            projectId=request.project_id, jobId=request.job_id, deviceId=request.device_id,
+            component=request.component, levels=tuple(request.levels),
+            workflowId=request.workflow_id, nodeId=request.node_id,
+            startTimestampMs=start, endTimestampMs=end)
+        reply.ok, reply.code, reply.upper_event_id = True, "OK", upper
+        for index, (eventId, event) in enumerate(rows[:limit]):
+            projected = replace(event, payloadJson=json.dumps(
+                _projectEvent(event)["payload"], ensure_ascii=False, separators=(",", ":")))
+            reply.events.add(event_id=eventId, event=self._toProtoEvent(projected))
+            reply.has_more = index + 1 < len(rows)
+            reply.next_event_id = eventId if reply.has_more else max(request.after_event_id, upper)
+            if reply.ByteSize() > LOG_QUERY_REPLY_BYTES:
+                del reply.events[-1]
+                reply.next_event_id = reply.events[-1].event_id if reply.events else request.after_event_id
+                reply.has_more = True
+                if not reply.events:
+                    reply.ok, reply.code = False, "EVENT_TOO_LARGE"
+                    reply.message = "A projected log record exceeds the reply byte budget"
+                return reply
+        reply.has_more = len(rows) > limit
+        if not reply.has_more:
+            reply.next_event_id = max(request.after_event_id, upper)
+        return reply
 
     def StreamJobEvents(self, request, context):  # type: ignore[override]
         jobId = str(getattr(request, "job_id", ""))
@@ -2259,6 +2305,8 @@ class RuntimeService(RunReadRpcMixin, HistoryRpcMixin, ProjectConfigurationRpcMi
             parent_workflow_run_id=event.parentWorkflowRunId,
             node_run_id=event.nodeRunId,
             iteration_path_json=event.iterationPathJson,
+            origin_app=event.originApp, component=event.component,
+            runtime_instance_id=event.runtimeInstanceId,
         )
 
     def _createSnapshot(self, jobId: str, document: ProjectDocument) -> tuple[Path, Path]:

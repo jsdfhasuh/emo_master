@@ -17,6 +17,7 @@ from emo_master.apps.runtime.context.global_counters import (
 )
 from emo_master.apps.runtime.events.models import RuntimeEvent, MAX_WORKER_EVENT_BATCH, batchableWorkerEvent
 from emo_master.apps.runtime.context.sqlite_transactions import beginImmediate
+from emo_master.core.contracts.diagnostic_logging import componentForEvent
 
 
 class SqliteStore:
@@ -130,6 +131,14 @@ class SqliteStore:
                         "INSERT INTO schemaMigrations(version, appliedAt) VALUES (5, ?)", (_utcNow(),)
                     )
                     connection.commit()
+                if 6 not in applied:
+                    connection.executescript(
+                        (migrationDir / "006_logging_metadata.sql").read_text(encoding="utf-8")
+                    )
+                    connection.execute(
+                        "INSERT INTO schemaMigrations(version, appliedAt) VALUES (6, ?)", (_utcNow(),)
+                    )
+                    connection.commit()
         finally:
             connection.close()
 
@@ -241,6 +250,9 @@ class SqliteStore:
         nodeRunId: str = "",
         iterationPathJson: str = "[]",
         timestamp: int | str | None = None,
+        originApp: str = "",
+        component: str = "",
+        runtimeInstanceId: str = "",
     ) -> int:
         timestampMs = timestamp if isinstance(timestamp, int) else _timestampMs()
         timestampText = _utcNow() if not isinstance(timestamp, str) else timestamp
@@ -257,8 +269,9 @@ class SqliteStore:
                 INSERT INTO jobEvents(
                   jobId, nodeId, eventType, level, code, message, payloadJson,
                   timestamp, sequence, projectId, workflowId, workflowRunId,
-                  parentWorkflowRunId, nodeRunId, iterationPathJson, timestampMs
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  parentWorkflowRunId, nodeRunId, iterationPathJson, timestampMs,
+                  originApp, component, runtimeInstanceId
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     jobId,
@@ -277,6 +290,7 @@ class SqliteStore:
                     nodeRunId,
                     iterationPathJson,
                     timestampMs,
+                    originApp or "runtime", component or componentForEvent(eventType), runtimeInstanceId,
                 ),
             )
             limit = self.jobEventRetention
@@ -312,12 +326,15 @@ class SqliteStore:
                     """INSERT INTO jobEvents(
                       jobId, nodeId, eventType, level, code, message, payloadJson,
                       timestamp, sequence, projectId, workflowId, workflowRunId,
-                      parentWorkflowRunId, nodeRunId, iterationPathJson, timestampMs
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                      parentWorkflowRunId, nodeRunId, iterationPathJson, timestampMs,
+                      originApp, component, runtimeInstanceId
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (jobId, event.nodeId, event.eventType, event.level, event.code,
                      event.message, event.payloadJson, _utcNow(), sequence, event.projectId,
                      event.workflowId, event.workflowRunId, event.parentWorkflowRunId,
-                     event.nodeRunId, event.iterationPathJson, event.timestampMs))
+                     event.nodeRunId, event.iterationPathJson, event.timestampMs,
+                     event.originApp or "runtime", event.component or componentForEvent(event.eventType),
+                     event.runtimeInstanceId))
                 limit = self.jobEventRetention
                 if limit and sequence % min(100, limit) == 0:
                     connection.execute("DELETE FROM jobEvents WHERE jobId = ? AND sequence <= ?",
@@ -391,14 +408,63 @@ class SqliteStore:
                 """
                 SELECT jobId, eventType, message, level, nodeId, code, payloadJson,
                   sequence, timestampMs, projectId, workflowId, workflowRunId,
-                  parentWorkflowRunId, nodeRunId, iterationPathJson
+                  parentWorkflowRunId, nodeRunId, iterationPathJson, originApp, component, runtimeInstanceId
                 FROM jobEvents WHERE jobId = ? AND sequence > ? ORDER BY sequence
                 """,
                 (jobId, afterSequence),
             ).fetchall()
         return [RuntimeEvent(*row) for row in rows]
 
-    def markOrphanedJobsFailed(self) -> int:
+    def queryRuntimeLogs(self, *, afterEventId: int = 0, upperEventId: int | None = None,
+                         limit: int = 200, projectId: str = "", jobId: str = "",
+                         deviceId: str = "", component: str = "", levels: tuple[str, ...] = (),
+                         workflowId: str = "", nodeId: str = "",
+                         startTimestampMs: int | None = None,
+                         endTimestampMs: int | None = None) -> tuple[int, list[tuple[int, RuntimeEvent]]]:
+        """Read matching rows before pagination, including one look-ahead row.
+
+        The upper bound belongs to this query, independently of each row's
+        originating Runtime instance or Job-local sequence.
+        """
+        with self.connection() as connection:
+            if upperEventId is None:
+                upperEventId = int(connection.execute(
+                    "SELECT COALESCE(MAX(eventId), 0) FROM jobEvents").fetchone()[0])
+            clauses = ["eventId > ?", "eventId <= ?", "eventType != 'process.heartbeat'"]
+            values: list[object] = [afterEventId, upperEventId]
+            for field, value in (("projectId", projectId), ("component", component),
+                                 ("workflowId", workflowId), ("nodeId", nodeId)):
+                if value:
+                    clauses.append(f"{field} = ?")
+                    values.append(value)
+            if jobId:
+                clauses.append("(jobId = ? OR (jobId = '__runtime__' AND json_extract(payloadJson, '$.jobId') = ?))")
+                values.extend((jobId, jobId))
+            if deviceId:
+                clauses.append("""(json_extract(payloadJson, '$.deviceId') = ? OR EXISTS (
+                    SELECT 1 FROM json_each(payloadJson, '$.deviceBindings') AS binding
+                    WHERE json_extract(binding.value, '$.deviceId') = ?
+                      AND (COALESCE(json_extract(payloadJson, '$.diagnostics.deviceSlot'), '') = ''
+                        OR binding.key = json_extract(payloadJson, '$.diagnostics.deviceSlot'))))""")
+                values.extend((deviceId, deviceId))
+            if levels:
+                clauses.append("level IN (" + ",".join("?" for _ in levels) + ")")
+                values.extend(levels)
+            if startTimestampMs is not None:
+                clauses.append("timestampMs >= ?")
+                values.append(startTimestampMs)
+            if endTimestampMs is not None:
+                clauses.append("timestampMs < ?")
+                values.append(endTimestampMs)
+            rows = connection.execute(
+                "SELECT eventId, jobId, eventType, message, level, nodeId, code, payloadJson, "
+                "sequence, timestampMs, projectId, workflowId, workflowRunId, parentWorkflowRunId, "
+                "nodeRunId, iterationPathJson, originApp, component, runtimeInstanceId "
+                "FROM jobEvents WHERE " + " AND ".join(clauses) + " ORDER BY eventId LIMIT ?",
+                (*values, limit + 1)).fetchall()
+        return upperEventId, [(int(row[0]), RuntimeEvent(*row[1:])) for row in rows]
+
+    def markOrphanedJobsFailed(self, runtimeInstanceId: str = "") -> int:
         with self.connection() as connection:
             beginImmediate(connection)
             rows = connection.execute(
@@ -434,9 +500,10 @@ class SqliteStore:
                     INSERT INTO jobEvents(
                       jobId, nodeId, eventType, level, code, message, payloadJson,
                       timestamp, sequence, projectId, workflowId, workflowRunId,
-                      parentWorkflowRunId, nodeRunId, iterationPathJson, timestampMs
+                      parentWorkflowRunId, nodeRunId, iterationPathJson, timestampMs,
+                      originApp, component, runtimeInstanceId
                     ) VALUES (?, '', 'job.failed', 'ERROR', 'E_RUNTIME_RESTARTED', ?, '{}',
-                              ?, ?, ?, ?, '', '', '', '', ?)
+                              ?, ?, ?, ?, '', '', '', '', ?, 'runtime', 'execution', ?)
                     """,
                     (
                         jobId,
@@ -446,6 +513,7 @@ class SqliteStore:
                         projectId,
                         workflowId,
                         nowMs,
+                        runtimeInstanceId,
                     ),
                 )
             connection.commit()

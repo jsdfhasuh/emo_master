@@ -270,3 +270,63 @@ def testExportFailureEntersMainWindowAndDurableLocalLog(ownedDesignerWindow, mon
     saved = [record for record in persisted if record["code"] == "DESIGNER_LOG_EXPORT_FAILED"]
     assert len(saved) == 1 and saved[0]["level"] == "ERROR"
     assert saved[0]["payload"] == failures[0].payload
+
+
+@pytest.mark.parametrize('formatName', ['json', 'jsonl', 'txt'])
+def testFileHistoryExportsAllCapturedCompleteRecordsWithActualCount(tmp_path, formatName):
+    from emo_master.apps.operator_runtime.log_reader import JsonlTailReader, snapshotLogFiles, iterLogFileRecords
+    from tests.runtime.test_operator_runtime_logs import line
+    source = tmp_path / 'runtime-history.jsonl'
+    source.write_bytes(b''.join(line(str(index), eventType='node.log') for index in range(2300)) + b'{"message":')
+    assert len(JsonlTailReader().read(source).records) == 2000
+    ranges = snapshotLogFiles([source])
+    with source.open('ab') as stream:
+        stream.write(b'"later"}\n' + line('appended after capture'))
+    (tmp_path / 'runtime-later.jsonl').write_bytes(line('new rotation'))
+    target = tmp_path / ('complete.' + formatName)
+    count = log_export.exportLogs(target, iterLogFileRecords(ranges), formatName=formatName,
+        scope='local_files', filters={'endOffset': ranges[0].endOffset})
+    assert count == 2300
+    text = target.read_text(encoding='utf-8')
+    assert 'later' not in text and 'new rotation' not in text
+    if formatName == 'json':
+        result = json.loads(text)
+        assert result['entryCount'] == len(result['entries']) == count
+        assert 'retainedCount' not in result
+        assert result['entries'][0]['component'] == 'operator'
+        assert result['entries'][0]['eventId'] is None and result['entries'][0]['runtimeInstanceId'] == ''
+    elif formatName == 'jsonl':
+        rows = [json.loads(line) for line in text.splitlines()]
+        assert len(rows) == count and all('message' in row for row in rows)
+    else:
+        assert '导出条数：2300' in text and '缓存条数' not in text
+
+
+@pytest.mark.parametrize('formatName', ['json', 'jsonl', 'txt'])
+def testMidExportCancelPreservesDestinationAndCleansTemporary(tmp_path, formatName):
+    from threading import Event
+    from emo_master.core.log_export import LogExportCancelled
+    target = tmp_path / ('existing.' + formatName)
+    target.write_text('previous complete export', encoding='utf-8')
+    cancelled = Event()
+    def records():
+        yield {'timestampMs': 1, 'level': 'INFO', 'message': 'first'}
+        cancelled.set()
+        yield {'timestampMs': 2, 'level': 'INFO', 'message': 'second'}
+    with pytest.raises(LogExportCancelled):
+        log_export.exportLogs(target, records(), formatName=formatName, scope='runtime_history',
+                              filters={}, cancelled=cancelled.is_set)
+    assert target.read_text(encoding='utf-8') == 'previous complete export'
+    assert list(tmp_path.iterdir()) == [target]
+
+
+def testSelectedUnreadableFileReportsFailureInsteadOfCompletingEmptyExport(tmp_path):
+    from emo_master.apps.operator_runtime.log_reader import snapshotLogFiles, iterLogFileRecords
+    source = tmp_path / 'runtime-history.jsonl'
+    source.write_text('{"message":"record"}\n', encoding='utf-8')
+    ranges = snapshotLogFiles([source])
+    source.unlink()
+    target = tmp_path / 'destination.jsonl'
+    with pytest.raises(FileNotFoundError):
+        log_export.exportLogs(target, iterLogFileRecords(ranges), formatName='jsonl', scope='local_files', filters={})
+    assert not target.exists() and list(tmp_path.iterdir()) == []

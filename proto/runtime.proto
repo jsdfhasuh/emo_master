@@ -294,6 +294,40 @@ message JobEvent {
   string parent_workflow_run_id = 13;
   string node_run_id = 14;
   string iteration_path_json = 15;
+  string origin_app = 16;
+  string component = 17;
+  string runtime_instance_id = 18;
+}
+
+// Global log identity is independent of the Job-local event sequence.
+message StoredLogEvent {
+  int64 event_id = 1;
+  JobEvent event = 2;
+}
+message QueryRuntimeLogsRequest {
+  string runtime_instance_id = 1;
+  string project_id = 2;
+  string job_id = 3;
+  string device_id = 4;
+  string component = 5;
+  repeated string levels = 6;
+  string workflow_id = 7;
+  string node_id = 8;
+  optional int64 start_timestamp_ms = 9;
+  optional int64 end_timestamp_ms = 10;
+  int64 after_event_id = 11;
+  optional int64 upper_event_id = 12;
+  int32 limit = 13;
+}
+message QueryRuntimeLogsReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string runtime_instance_id = 4;
+  int64 upper_event_id = 5;
+  int64 next_event_id = 6;
+  bool has_more = 7;
+  repeated StoredLogEvent events = 8;
 }
 
 message ListOperatorsRequest {}
@@ -833,6 +867,7 @@ service RuntimeService {
   rpc StopJob(StopJobRequest) returns (StopJobReply);
   rpc GetJobStatus(GetJobStatusRequest) returns (GetJobStatusReply);
   rpc StreamJobEvents(StreamJobEventsRequest) returns (stream JobEvent);
+  rpc QueryRuntimeLogs(QueryRuntimeLogsRequest) returns (QueryRuntimeLogsReply);
   rpc ListOperators(ListOperatorsRequest) returns (ListOperatorsReply);
   rpc ListDeviceTypes(ListDeviceTypesRequest) returns (ListDeviceTypesReply);
   rpc GetDeviceStates(GetDeviceStatesRequest) returns (GetDeviceStatesReply);

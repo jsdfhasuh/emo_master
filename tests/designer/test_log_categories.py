@@ -121,7 +121,11 @@ def testPageSourceAndAreaSurviveNativeSettingsRoundTrip(tmp_path):
     assert restored.view._visibleEntries == records()[2:3]
     assert restored.view.settings()["source"] == "page_designer"
     assert restored.view.settings()["area"] == "page"
-    assert restored.view.table.item(0, 2).text() == "页面设计"
+    assert restored.view.table.item(0, 2).text() == "designer / page_designer"
+    detail = restored.view._visibleEntries[0].detailPayload()
+    assert detail["source"] == "page_designer"
+    assert detail["originApp"] == "designer"
+    assert detail["component"] == "page_designer"
 
 
 def testNativeLogCategoryAndJsonTreeLayout(designerApplication):

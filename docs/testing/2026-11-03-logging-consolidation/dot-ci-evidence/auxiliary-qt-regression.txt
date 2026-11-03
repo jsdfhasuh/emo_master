@@ -1,0 +1,9 @@
+2026-11-03T12:08:22Z
+d92ffd37960e8b8f527136151ab9ccb80054e78f
+Auxiliary only: QT_QPA_PLATFORM=offscreen, Python3.10/PySide2; not visible acceptance.
+df6edd52c69ac9ea6796dc5f2af3a1575f7f6893fac1d118dc8bc8b3388cef2f  src/emo_master/core/log_export.py
+bb7ad9a773e021a02a12af5d4cc79ce5dd4495c36a814933990a7ed8f18f7404  src/emo_master/apps/operator_runtime/log_reader.py
+cc8eb1ca1951833a7d0220ad283aed8dab5084d5762e63d2ebe0c24383750fa7  src/emo_master/apps/designer/ui/log_dialog.py
+........................................................................ [ 62%]
+............................................                             [100%]
+116 passed in 33.61s

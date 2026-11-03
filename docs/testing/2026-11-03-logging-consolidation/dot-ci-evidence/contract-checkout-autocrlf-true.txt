@@ -1,0 +1,8 @@
+test_all_authoritative_files_match_development_handoff (test_contract_manifest.ContractManifestTests) ... ok
+test_embedded_fixtures_are_the_same_sdk_delivery (test_contract_manifest.ContractManifestTests) ... ok
+test_vendored_tree_is_exact_current_handoff_manifest_and_generated_sdk (test_contract_manifest.ContractManifestTests) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.008s
+
+OK

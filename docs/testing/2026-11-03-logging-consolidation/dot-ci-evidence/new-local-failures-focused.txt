@@ -1,0 +1,66 @@
+.................FFFFF.....................F..................F.         [100%]
+=================================== FAILURES ===================================
+_____ testNotStartedRunNeverBorrowsRuntimeUptime[READY-\u672a\u5f00\u59cb] _____
+tests/designer/test_device_status.py:114: in testNotStartedRunNeverBorrowsRuntimeUptime
+    assert '01:00:00' not in tip
+E   AssertionError: assert '01:00:00' not in '<b>当前运行</b>...-23 01:00:00'
+E     
+E     '01:00:00' is contained here:
+E       2026-10-23 01:00:00
+___ testNotStartedRunNeverBorrowsRuntimeUptime[STARTING-\u542f\u52a8\u4e2d] ____
+tests/designer/test_device_status.py:114: in testNotStartedRunNeverBorrowsRuntimeUptime
+    assert '01:00:00' not in tip
+E   AssertionError: assert '01:00:00' not in '<b>当前运行</b>...-23 01:00:00'
+E     
+E     '01:00:00' is contained here:
+E       2026-10-23 01:00:00
+_ testNotStartedRunNeverBorrowsRuntimeUptime[ACCEPTED-\u7b49\u5f85\u542f\u52a8] _
+tests/designer/test_device_status.py:114: in testNotStartedRunNeverBorrowsRuntimeUptime
+    assert '01:00:00' not in tip
+E   AssertionError: assert '01:00:00' not in '<b>当前运行</b>...-23 01:00:00'
+E     
+E     '01:00:00' is contained here:
+E       2026-10-23 01:00:00
+_ testNotStartedRunNeverBorrowsRuntimeUptime[REJECTED-\u542f\u52a8\u88ab\u62d2\u7edd] _
+tests/designer/test_device_status.py:114: in testNotStartedRunNeverBorrowsRuntimeUptime
+    assert '01:00:00' not in tip
+E   AssertionError: assert '01:00:00' not in '<b>当前运行</b>...-23 01:00:00'
+E     
+E     '01:00:00' is contained here:
+E       2026-10-23 01:00:00
+_______ testNotStartedRunNeverBorrowsRuntimeUptime[FAILED-\u5931\u8d25] ________
+tests/designer/test_device_status.py:114: in testNotStartedRunNeverBorrowsRuntimeUptime
+    assert '01:00:00' not in tip
+E   AssertionError: assert '01:00:00' not in '<b>当前运行</b>...-23 01:00:00'
+E     
+E     '01:00:00' is contained here:
+E       2026-10-23 01:00:00
+________________ testShortCanvasCanScrollToEveryCategoryAndCard ________________
+tests/designer/test_floating_toolbox.py:255: in testShortCanvasCanScrollToEveryCategoryAndCard
+    assert toolbox.libraryScroll.viewport().height() >= button.height()
+E   assert 27 >= 31
+E    +  where 27 = <built-in method height of PySide2.QtWidgets.QWidget object at 0x7ff311757640>()
+E    +    where <built-in method height of PySide2.QtWidgets.QWidget object at 0x7ff311757640> = <PySide2.QtWidgets.QWidget(0x55bc394527f0, name="qt_scrollarea_viewport") at 0x7ff311757640>.height
+E    +      where <PySide2.QtWidgets.QWidget(0x55bc394527f0, name="qt_scrollarea_viewport") at 0x7ff311757640> = <built-in method viewport of PySide2.QtWidgets.QScrollArea object at 0x7ff310151040>()
+E    +        where <built-in method viewport of PySide2.QtWidgets.QScrollArea object at 0x7ff310151040> = <PySide2.QtWidgets.QScrollArea(0x55bc38d29300, name="contentScroll") at 0x7ff310151040>.viewport
+E    +          where <PySide2.QtWidgets.QScrollArea(0x55bc38d29300, name="contentScroll") at 0x7ff310151040> = <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x55bc38c41f40, name="floatingToolbox") at 0x7ff310138ec0>.libraryScroll
+E    +  and   31 = <built-in method height of PySide2.QtWidgets.QPushButton object at 0x7ff310100780>()
+E    +    where <built-in method height of PySide2.QtWidgets.QPushButton object at 0x7ff310100780> = <PySide2.QtWidgets.QPushButton(0x55bc3858af40, name="sideCategoryButton") at 0x7ff310100780>.height
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+_____________ testPageSourceAndAreaSurviveNativeSettingsRoundTrip ______________
+tests/designer/test_log_categories.py:124: in testPageSourceAndAreaSurviveNativeSettingsRoundTrip
+    assert restored.view.table.item(0, 2).text() == "页面设计"
+E   AssertionError: assert 'designer / page_designer' == '页面设计'
+E     
+E     - 页面设计
+E     + designer / page_designer
+=========================== short test summary info ============================
+FAILED tests/designer/test_device_status.py::testNotStartedRunNeverBorrowsRuntimeUptime[READY-\u672a\u5f00\u59cb]
+FAILED tests/designer/test_device_status.py::testNotStartedRunNeverBorrowsRuntimeUptime[STARTING-\u542f\u52a8\u4e2d]
+FAILED tests/designer/test_device_status.py::testNotStartedRunNeverBorrowsRuntimeUptime[ACCEPTED-\u7b49\u5f85\u542f\u52a8]
+FAILED tests/designer/test_device_status.py::testNotStartedRunNeverBorrowsRuntimeUptime[REJECTED-\u542f\u52a8\u88ab\u62d2\u7edd]
+FAILED tests/designer/test_device_status.py::testNotStartedRunNeverBorrowsRuntimeUptime[FAILED-\u5931\u8d25]
+FAILED tests/designer/test_floating_toolbox.py::testShortCanvasCanScrollToEveryCategoryAndCard
+FAILED tests/designer/test_log_categories.py::testPageSourceAndAreaSurviveNativeSettingsRoundTrip
+7 failed, 57 passed in 13.17s

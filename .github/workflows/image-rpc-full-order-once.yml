@@ -1,0 +1,146 @@
+name: One approved Ubuntu full-order image RPC diagnostic
+
+on:
+  push:
+    branches: [codex/diagnose-image-rpc-full-20261103]
+    paths:
+      - .github/workflows/image-rpc-full-order-once.yml
+      - scripts/image_rpc_diagnostic.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: one-ubuntu-full-order-image-rpc-diagnostic-20261103
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: >-
+      github.event.created == true && github.run_attempt == '1' &&
+      github.event.head_commit.message == 'diagnostic: one Ubuntu full-order image RPC trace 20261103'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTHONUNBUFFERED: '1'
+      HUARAY_CAMERA_SMOKE: '0'
+      BASE_SHA: 940994b3420b47ff0add8766ccce5a4f2686a02a
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Verify original source scope and fresh output
+        shell: bash
+        run: |
+          export EVIDENCE="$RUNNER_TEMP/image-rpc-full-order-evidence"
+          echo "EVIDENCE=$EVIDENCE" >> "$GITHUB_ENV"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          mkdir "$EVIDENCE"
+          git rev-parse HEAD > "$EVIDENCE/source-sha.txt"
+          git diff --name-only "$BASE_SHA" HEAD > "$EVIDENCE/changed-files.txt"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          root = Path(os.environ['EVIDENCE'])
+          changed = set((root / 'changed-files.txt').read_text().splitlines())
+          assert changed == {'.github/workflows/image-rpc-full-order-once.yml',
+                             'scripts/image_rpc_diagnostic.py'}, changed
+          PY
+          git diff --exit-code "$BASE_SHA" HEAD -- src tests examples requirements.txt requirements-dev.txt pyproject.toml scripts/ci_check.py scripts/ci_pytest_reports.py scripts/r3_asset_split_trace.py scripts/r3_asset_split_analyze.py scripts/r3_measure.py
+      - name: Install original dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Record environment and diagnostic preflight
+        shell: bash
+        run: |
+          python - <<'PY' | tee "$EVIDENCE/environment.json"
+          import importlib.metadata, json, os, platform, sys
+          import grpc
+          assert grpc.__version__ == '1.78.0'
+          print(json.dumps({'python': sys.version, 'platform': platform.platform(),
+              'runner_image': os.environ.get('ImageOS'), 'runner_image_version': os.environ.get('ImageVersion'),
+              'historical_runner_image': 'ubuntu26/20261025.179',
+              'base_sha': os.environ['BASE_SHA'], 'sha': os.environ['GITHUB_SHA'],
+              'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'packages': {name: importlib.metadata.version(name) for name in
+                  ('grpcio', 'numpy', 'opencv-python', 'protobuf', 'pydantic', 'pytest')},
+              'scope': 'one original full CI order; target-only phase observer; no retries, hardware or timeout changes'}, indent=2))
+          PY
+          python -m py_compile scripts/image_rpc_diagnostic.py
+      - name: Validate generated protobuf as in original CI
+        run: python scripts/gen_proto.py --check
+      - name: Run original project checks and full pytest order exactly once
+        id: original
+        shell: bash
+        run: |
+          set +e
+          python - <<'PY' 2>&1 | tee "$EVIDENCE/full-ci.log"
+          import os
+          from pathlib import Path
+          from scripts import ci_check
+          original_run_step = ci_check.runStep
+          def observed_run_step(command, name):
+              if name == 'pytest':
+                  command = [*command, '-p', 'scripts.image_rpc_diagnostic',
+                      '--asset-rpc-diagnostic-dir', str(Path(os.environ['EVIDENCE']) / 'trace')]
+              return original_run_step(command, name)
+          ci_check.runStep = observed_run_step
+          raise SystemExit(ci_check.main())
+          PY
+          pipeline=("${PIPESTATUS[@]}")
+          printf '%s\n' "${pipeline[0]}" > "$EVIDENCE/original-ci-exit.txt"
+          echo "exit_code=${pipeline[0]}" >> "$GITHUB_OUTPUT"
+          if [ "${pipeline[1]}" -ne 0 ]; then exit "${pipeline[1]}"; fi
+          exit "${pipeline[0]}"
+      - name: Preserve original reports even after an earlier failure
+        if: always()
+        shell: bash
+        run: |
+          if [ -d "$EVIDENCE" ]; then
+            for source in build/ci-results.xml build/ci-failures.log; do
+              if [ -f "$source" ]; then cp "$source" "$EVIDENCE/"; fi
+            done
+          fi
+      - name: Analyze retained target stages without another test run
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from scripts.r3_asset_split_analyze import analyze_calls
+          root = Path(os.environ['EVIDENCE'])
+          collection_path = root / 'collection.json'
+          if collection_path.is_file():
+              collection = json.loads(collection_path.read_text())
+              print(json.dumps({key: value for key, value in collection.items() if key != 'nodeids'}, indent=2))
+          trace_path = root / 'trace' / 'asset-split.json'
+          if not trace_path.is_file():
+              print('TARGET_DIAGNOSTIC_UNAVAILABLE: inspect full CI log and collection; target may not have run. No target pass is claimed.')
+              raise SystemExit(1)
+          manifest = json.loads((root / 'trace' / 'manifest.json').read_text())
+          analysis = analyze_calls(json.loads(trace_path.read_text()), count=96, warmup=0, capture=True)
+          (root / 'analysis.json').write_text(json.dumps(analysis, indent=2) + '\n')
+          print(json.dumps({'manifest': manifest, 'analysis': analysis}, indent=2))
+          print('One full-order instrumented CI only. Original CI and target outcomes stay separate. No paired control: in-test observer interference remains unmeasured.')
+          assert manifest['diagnostic']['complete'], 'observer incomplete; original pytest result remains separate'
+          assert manifest['full_call_coverage'], '192 target calls not fully observed; preserve original failures'
+          PY
+      - name: Fingerprint all retained evidence
+        if: always()
+        shell: bash
+        run: |
+          if [ -d "$EVIDENCE" ]; then
+            find "$EVIDENCE" -type f ! -name SHA256SUMS.txt -print0 | sort -z | xargs -0 sha256sum > "$EVIDENCE/SHA256SUMS.txt"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: image-rpc-full-order-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/image-rpc-full-order-evidence
+          if-no-files-found: error
+          retention-days: 14

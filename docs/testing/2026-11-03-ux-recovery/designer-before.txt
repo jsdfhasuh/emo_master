@@ -1,0 +1,422 @@
+FFFFFFF.FF                                                               [100%]
+=================================== FAILURES ===================================
+__________________________ testInitialPanelMenuChecks __________________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x5566256d5880) at 0x7fef5bfa8200>
+
+    def testInitialPanelMenuChecks(designer):  # noqa: F811
+        coordinator = designer.pageCoordinator
+        coordinator.showPages()
+>       assertPanelChecks(coordinator)
+
+tests/ui/page_designer/test_panel_menu_state.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+coordinator = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5c039330>
+
+    def assertPanelChecks(coordinator):
+        for action, index in panelActions(coordinator.chrome):
+            assert action.isCheckable()
+>           assert action.isChecked() == coordinator.editor.panel(index).isExpanded()
+E           assert False == True
+E            +  where False = <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5b7f6c00>()
+E            +    where <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5b7f6c00> = <PySide2.QtWidgets.QAction(0x5566269fa250 text="属性面板" toolTip="属性面板" checked=false menuRole=TextHeuristicRole visible=true) at 0x7fef5b7f6c00>.isChecked
+E            +  and   True = isExpanded()
+E            +    where isExpanded = <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626b81660, name="floatingPanel") at 0x7fef5ab41940>.isExpanded
+E            +      where <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626b81660, name="floatingPanel") at 0x7fef5ab41940> = panel(2)
+E            +        where panel = <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x55662683ca70) at 0x7fef5b720f00>.panel
+E            +          where <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x55662683ca70) at 0x7fef5b720f00> = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5c039330>.editor
+
+tests/ui/page_designer/test_panel_menu_state.py:15: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+QStandardPaths: could not set correct permissions on runtime directory '/home/agent/.local/run', which is a directory permissions 0755 owned by UID 1000 GID 1000 (Read-only file system)
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+_______________ testPanelMenuChecksTrackRepeatedToggles[menu-0] ________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x5566255bea50) at 0x7fef5c182000>
+index = 0, route = 'menu'
+
+    @pytest.mark.parametrize('index', [0, 2])
+    @pytest.mark.parametrize('route', ['menu', 'panel'])
+    def testPanelMenuChecksTrackRepeatedToggles(designer, index, route):  # noqa: F811
+        coordinator = designer.pageCoordinator
+        coordinator.showPages()
+        panel = coordinator.editor.panel(index)
+        action = next(action for action, panelIndex in panelActions(coordinator.chrome) if panelIndex == index)
+        for expanded in (False, True):
+            panel.setExpanded(expanded)
+            for _ in range(3):
+                before = panel.isExpanded()
+                if route == 'menu':
+                    action.trigger()
+                else:
+                    panel.toggleButton.click()
+                assert panel.isExpanded() != before
+>               assertPanelChecks(coordinator)
+
+tests/ui/page_designer/test_panel_menu_state.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+coordinator = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5ab8fdc0>
+
+    def assertPanelChecks(coordinator):
+        for action, index in panelActions(coordinator.chrome):
+            assert action.isCheckable()
+>           assert action.isChecked() == coordinator.editor.panel(index).isExpanded()
+E           assert False == True
+E            +  where False = <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5bfa2f40>()
+E            +    where <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5bfa2f40> = <PySide2.QtWidgets.QAction(0x5566268ef4f0 text="属性面板" toolTip="属性面板" checked=false menuRole=TextHeuristicRole visible=true) at 0x7fef5bfa2f40>.isChecked
+E            +  and   True = isExpanded()
+E            +    where isExpanded = <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626fb3860, name="floatingPanel") at 0x7fef5abc6d80>.isExpanded
+E            +      where <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626fb3860, name="floatingPanel") at 0x7fef5abc6d80> = panel(2)
+E            +        where panel = <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x556625f05ab0) at 0x7fef5ab5acc0>.panel
+E            +          where <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x556625f05ab0) at 0x7fef5ab5acc0> = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5ab8fdc0>.editor
+
+tests/ui/page_designer/test_panel_menu_state.py:15: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+_______________ testPanelMenuChecksTrackRepeatedToggles[menu-2] ________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x5566255dc7f0) at 0x7fef5b33c980>
+index = 2, route = 'menu'
+
+    @pytest.mark.parametrize('index', [0, 2])
+    @pytest.mark.parametrize('route', ['menu', 'panel'])
+    def testPanelMenuChecksTrackRepeatedToggles(designer, index, route):  # noqa: F811
+        coordinator = designer.pageCoordinator
+        coordinator.showPages()
+        panel = coordinator.editor.panel(index)
+        action = next(action for action, panelIndex in panelActions(coordinator.chrome) if panelIndex == index)
+        for expanded in (False, True):
+            panel.setExpanded(expanded)
+            for _ in range(3):
+                before = panel.isExpanded()
+                if route == 'menu':
+                    action.trigger()
+                else:
+                    panel.toggleButton.click()
+                assert panel.isExpanded() != before
+                assertPanelChecks(coordinator)
+            panel.closeButton.click()
+            assert not panel.isExpanded()
+>           assertPanelChecks(coordinator)
+
+tests/ui/page_designer/test_panel_menu_state.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+coordinator = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5b789cf0>
+
+    def assertPanelChecks(coordinator):
+        for action, index in panelActions(coordinator.chrome):
+            assert action.isCheckable()
+>           assert action.isChecked() == coordinator.editor.panel(index).isExpanded()
+E           assert True == False
+E            +  where True = <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5ab723c0>()
+E            +    where <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5ab723c0> = <PySide2.QtWidgets.QAction(0x556626839040 text="属性面板" toolTip="属性面板" checked=true menuRole=TextHeuristicRole visible=true) at 0x7fef5ab723c0>.isChecked
+E            +  and   False = isExpanded()
+E            +    where isExpanded = <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626a23be0, name="floatingPanel") at 0x7fef5a701f80>.isExpanded
+E            +      where <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626a23be0, name="floatingPanel") at 0x7fef5a701f80> = panel(2)
+E            +        where panel = <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x556625577550) at 0x7fef5ab710c0>.panel
+E            +          where <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x556625577550) at 0x7fef5ab710c0> = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5b789cf0>.editor
+
+tests/ui/page_designer/test_panel_menu_state.py:15: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+_______________ testPanelMenuChecksTrackRepeatedToggles[panel-0] _______________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x5566265a0d30) at 0x7fef5abcc040>
+index = 0, route = 'panel'
+
+    @pytest.mark.parametrize('index', [0, 2])
+    @pytest.mark.parametrize('route', ['menu', 'panel'])
+    def testPanelMenuChecksTrackRepeatedToggles(designer, index, route):  # noqa: F811
+        coordinator = designer.pageCoordinator
+        coordinator.showPages()
+        panel = coordinator.editor.panel(index)
+        action = next(action for action, panelIndex in panelActions(coordinator.chrome) if panelIndex == index)
+        for expanded in (False, True):
+            panel.setExpanded(expanded)
+            for _ in range(3):
+                before = panel.isExpanded()
+                if route == 'menu':
+                    action.trigger()
+                else:
+                    panel.toggleButton.click()
+                assert panel.isExpanded() != before
+>               assertPanelChecks(coordinator)
+
+tests/ui/page_designer/test_panel_menu_state.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+coordinator = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5c006260>
+
+    def assertPanelChecks(coordinator):
+        for action, index in panelActions(coordinator.chrome):
+            assert action.isCheckable()
+>           assert action.isChecked() == coordinator.editor.panel(index).isExpanded()
+E           assert False == True
+E            +  where False = <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5a7398c0>()
+E            +    where <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5a7398c0> = <PySide2.QtWidgets.QAction(0x556626802b90 text="页面工具区" toolTip="页面工具区" checked=false menuRole=TextHeuristicRole visible=true) at 0x7fef5a7398c0>.isChecked
+E            +  and   True = isExpanded()
+E            +    where isExpanded = <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626aee3f0, name="floatingPanel") at 0x7fef5a713140>.isExpanded
+E            +      where <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626aee3f0, name="floatingPanel") at 0x7fef5a713140> = panel(0)
+E            +        where panel = <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x556626995a90) at 0x7fef5abf8e80>.panel
+E            +          where <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x556626995a90) at 0x7fef5abf8e80> = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5c006260>.editor
+
+tests/ui/page_designer/test_panel_menu_state.py:15: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+_______________ testPanelMenuChecksTrackRepeatedToggles[panel-2] _______________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x556625f16d60) at 0x7fef5ab59fc0>
+index = 2, route = 'panel'
+
+    @pytest.mark.parametrize('index', [0, 2])
+    @pytest.mark.parametrize('route', ['menu', 'panel'])
+    def testPanelMenuChecksTrackRepeatedToggles(designer, index, route):  # noqa: F811
+        coordinator = designer.pageCoordinator
+        coordinator.showPages()
+        panel = coordinator.editor.panel(index)
+        action = next(action for action, panelIndex in panelActions(coordinator.chrome) if panelIndex == index)
+        for expanded in (False, True):
+            panel.setExpanded(expanded)
+            for _ in range(3):
+                before = panel.isExpanded()
+                if route == 'menu':
+                    action.trigger()
+                else:
+                    panel.toggleButton.click()
+                assert panel.isExpanded() != before
+>               assertPanelChecks(coordinator)
+
+tests/ui/page_designer/test_panel_menu_state.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+coordinator = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5bb7a1d0>
+
+    def assertPanelChecks(coordinator):
+        for action, index in panelActions(coordinator.chrome):
+            assert action.isCheckable()
+>           assert action.isChecked() == coordinator.editor.panel(index).isExpanded()
+E           assert False == True
+E            +  where False = <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5a713940>()
+E            +    where <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5a713940> = <PySide2.QtWidgets.QAction(0x55662672cf00 text="属性面板" toolTip="属性面板" checked=false menuRole=TextHeuristicRole visible=true) at 0x7fef5a713940>.isChecked
+E            +  and   True = isExpanded()
+E            +    where isExpanded = <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626a768a0, name="floatingPanel") at 0x7fef5a771540>.isExpanded
+E            +      where <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626a768a0, name="floatingPanel") at 0x7fef5a771540> = panel(2)
+E            +        where panel = <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5566269e6370) at 0x7fef5a711e40>.panel
+E            +          where <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x5566269e6370) at 0x7fef5a711e40> = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5bb7a1d0>.editor
+
+tests/ui/page_designer/test_panel_menu_state.py:15: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+_____________ testPanelMenuChecksSurviveWorkspaceSwitch[expanded0] _____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x556624f9b180) at 0x7fef5ab68e80>
+expanded = (False, True)
+
+    @pytest.mark.parametrize('expanded', [(False, True), (True, False), (False, False), (True, True)])
+    def testPanelMenuChecksSurviveWorkspaceSwitch(designer, expanded):  # noqa: F811
+        coordinator = designer.pageCoordinator
+        coordinator.showPages()
+        for (_, index), state in zip(panelActions(coordinator.chrome), expanded):
+            coordinator.editor.panel(index).setExpanded(state)
+        for _ in range(2):
+            coordinator.showFlow()
+            for action, _ in panelActions(coordinator.chrome):
+                assert not action.isVisible() and not action.isEnabled()
+            coordinator.showPages()
+>           assertPanelChecks(coordinator)
+
+tests/ui/page_designer/test_panel_menu_state.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+coordinator = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5bfdd240>
+
+    def assertPanelChecks(coordinator):
+        for action, index in panelActions(coordinator.chrome):
+            assert action.isCheckable()
+>           assert action.isChecked() == coordinator.editor.panel(index).isExpanded()
+E           assert False == True
+E            +  where False = <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5c05d9c0>()
+E            +    where <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5c05d9c0> = <PySide2.QtWidgets.QAction(0x5566260f59b0 text="属性面板" toolTip="属性面板" checked=false menuRole=TextHeuristicRole visible=true) at 0x7fef5c05d9c0>.isChecked
+E            +  and   True = isExpanded()
+E            +    where isExpanded = <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626cd5450, name="floatingPanel") at 0x7fef5a791dc0>.isExpanded
+E            +      where <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626cd5450, name="floatingPanel") at 0x7fef5a791dc0> = panel(2)
+E            +        where panel = <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x556626146820) at 0x7fef5a76ab00>.panel
+E            +          where <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x556626146820) at 0x7fef5a76ab00> = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5bfdd240>.editor
+
+tests/ui/page_designer/test_panel_menu_state.py:15: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+_____________ testPanelMenuChecksSurviveWorkspaceSwitch[expanded1] _____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x556626436fb0) at 0x7fef5ab70c80>
+expanded = (True, False)
+
+    @pytest.mark.parametrize('expanded', [(False, True), (True, False), (False, False), (True, True)])
+    def testPanelMenuChecksSurviveWorkspaceSwitch(designer, expanded):  # noqa: F811
+        coordinator = designer.pageCoordinator
+        coordinator.showPages()
+        for (_, index), state in zip(panelActions(coordinator.chrome), expanded):
+            coordinator.editor.panel(index).setExpanded(state)
+        for _ in range(2):
+            coordinator.showFlow()
+            for action, _ in panelActions(coordinator.chrome):
+                assert not action.isVisible() and not action.isEnabled()
+            coordinator.showPages()
+>           assertPanelChecks(coordinator)
+
+tests/ui/page_designer/test_panel_menu_state.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+coordinator = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5c159330>
+
+    def assertPanelChecks(coordinator):
+        for action, index in panelActions(coordinator.chrome):
+            assert action.isCheckable()
+>           assert action.isChecked() == coordinator.editor.panel(index).isExpanded()
+E           assert False == True
+E            +  where False = <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5a70c5c0>()
+E            +    where <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5a70c5c0> = <PySide2.QtWidgets.QAction(0x5566268c8740 text="页面工具区" toolTip="页面工具区" checked=false menuRole=TextHeuristicRole visible=true) at 0x7fef5a70c5c0>.isChecked
+E            +  and   True = isExpanded()
+E            +    where isExpanded = <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626a7b1f0, name="floatingPanel") at 0x7fef5a77f6c0>.isExpanded
+E            +      where <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626a7b1f0, name="floatingPanel") at 0x7fef5a77f6c0> = panel(0)
+E            +        where panel = <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x556626b4b910) at 0x7fef5a7ae480>.panel
+E            +          where <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x556626b4b910) at 0x7fef5a7ae480> = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5c159330>.editor
+
+tests/ui/page_designer/test_panel_menu_state.py:15: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+_____________ testPanelMenuChecksSurviveWorkspaceSwitch[expanded3] _____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x556624f990f0) at 0x7fef5a723500>
+expanded = (True, True)
+
+    @pytest.mark.parametrize('expanded', [(False, True), (True, False), (False, False), (True, True)])
+    def testPanelMenuChecksSurviveWorkspaceSwitch(designer, expanded):  # noqa: F811
+        coordinator = designer.pageCoordinator
+        coordinator.showPages()
+        for (_, index), state in zip(panelActions(coordinator.chrome), expanded):
+            coordinator.editor.panel(index).setExpanded(state)
+        for _ in range(2):
+            coordinator.showFlow()
+            for action, _ in panelActions(coordinator.chrome):
+                assert not action.isVisible() and not action.isEnabled()
+            coordinator.showPages()
+>           assertPanelChecks(coordinator)
+
+tests/ui/page_designer/test_panel_menu_state.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+coordinator = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5bb41510>
+
+    def assertPanelChecks(coordinator):
+        for action, index in panelActions(coordinator.chrome):
+            assert action.isCheckable()
+>           assert action.isChecked() == coordinator.editor.panel(index).isExpanded()
+E           assert False == True
+E            +  where False = <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5a338dc0>()
+E            +    where <built-in method isChecked of PySide2.QtWidgets.QAction object at 0x7fef5a338dc0> = <PySide2.QtWidgets.QAction(0x556626a060d0 text="页面工具区" toolTip="页面工具区" checked=false menuRole=TextHeuristicRole visible=true) at 0x7fef5a338dc0>.isChecked
+E            +  and   True = isExpanded()
+E            +    where isExpanded = <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626c4e530, name="floatingPanel") at 0x7fef5abc7800>.isExpanded
+E            +      where <emo_master.apps.designer.ui.canvas_overlay.FloatingPanel(0x556626c4e530, name="floatingPanel") at 0x7fef5abc7800> = panel(0)
+E            +        where panel = <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x556626a071a0) at 0x7fef5a719a00>.panel
+E            +          where <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x556626a071a0) at 0x7fef5a719a00> = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x7fef5bb41510>.editor
+
+tests/ui/page_designer/test_panel_menu_state.py:15: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+__________________ testPanelSyncDoesNotWriteWebPreviewChecks ___________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x556626ad0ed0) at 0x7fef5a762cc0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fef5c0cab90>
+
+    def testPanelSyncDoesNotWriteWebPreviewChecks(designer, monkeypatch):  # noqa: F811
+        coordinator = designer.pageCoordinator
+        coordinator.showPages()
+        writes = []
+        for action in (coordinator.chrome.previewWebAction, coordinator.chrome.previewWebRuntimeAction):
+            monkeypatch.setattr(action, 'setChecked', lambda value: writes.append(value))
+        coordinator.chrome.update()
+        coordinator.editor.togglePanel(0)
+        coordinator.editor.togglePanel(2)
+        coordinator.showFlow()
+        coordinator.showPages()
+>       assert writes == []
+E       assert [False, True,...e, False, ...] == []
+E         
+E         Left contains 10 more items, first extra item: False
+E         Use -v to get more diff
+
+tests/ui/page_designer/test_panel_menu_state.py:77: AssertionError
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+----------------------------- Captured stderr call -----------------------------
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+=========================== short test summary info ============================
+FAILED tests/ui/page_designer/test_panel_menu_state.py::testInitialPanelMenuChecks
+FAILED tests/ui/page_designer/test_panel_menu_state.py::testPanelMenuChecksTrackRepeatedToggles[menu-0]
+FAILED tests/ui/page_designer/test_panel_menu_state.py::testPanelMenuChecksTrackRepeatedToggles[menu-2]
+FAILED tests/ui/page_designer/test_panel_menu_state.py::testPanelMenuChecksTrackRepeatedToggles[panel-0]
+FAILED tests/ui/page_designer/test_panel_menu_state.py::testPanelMenuChecksTrackRepeatedToggles[panel-2]
+FAILED tests/ui/page_designer/test_panel_menu_state.py::testPanelMenuChecksSurviveWorkspaceSwitch[expanded0]
+FAILED tests/ui/page_designer/test_panel_menu_state.py::testPanelMenuChecksSurviveWorkspaceSwitch[expanded1]
+FAILED tests/ui/page_designer/test_panel_menu_state.py::testPanelMenuChecksSurviveWorkspaceSwitch[expanded3]
+FAILED tests/ui/page_designer/test_panel_menu_state.py::testPanelSyncDoesNotWriteWebPreviewChecks
+9 failed, 1 passed in 3.64s

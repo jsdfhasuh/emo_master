@@ -1,0 +1,260 @@
+test_app (unittest.loader._FailedTest) ... ERROR
+test_last_admin_and_revoked_sessions (test_auth.AuthTests) ... ok
+test_concurrent_admin_demotions_leave_one_admin (test_auth.ConcurrentAdminTests) ... ok
+test_password_reset_during_hash_cannot_mint_old_session (test_auth.LoginRaceTests) ... ok
+test_contract_gateway (unittest.loader._FailedTest) ... ERROR
+test_all_authoritative_files_match_development_handoff (test_contract_manifest.ContractManifestTests) ... ok
+test_embedded_fixtures_are_the_same_sdk_delivery (test_contract_manifest.ContractManifestTests) ... ok
+test_vendored_tree_is_exact_official_zip_not_regenerated (test_contract_manifest.ContractManifestTests) ... ok
+test_changed_membership_rejected (test_dispatch_contract.DispatchContractTests) ... ok
+test_consumer_selection_never_expands_to_group (test_dispatch_contract.DispatchContractTests) ... ok
+test_group_source_problems_use_each_sdk_coverage_owner (test_dispatch_contract.DispatchContractTests) ... ok
+test_multiple_consumer_scopes_must_be_disjoint (test_dispatch_contract.DispatchContractTests) ... ok
+test_ordinary_job_remains_single (test_dispatch_contract.DispatchContractTests) ... ok
+test_root_includes_only_exact_direct_consumers (test_dispatch_contract.DispatchContractTests) ... ok
+test_actual_view_attach_and_state_use_formal_messages_for_both_groups (test_formal_browser_messages.FormalBrowserTests) ... ok
+test_control_result_known_empty_or_real_group_and_unknown_nullable (test_formal_browser_messages.FormalBrowserTests) ... ok
+test_official_fixtures_keep_ordinary_empty_and_grouped_real_ids (test_formal_browser_messages.FormalBrowserTests) ... ok
+test_stop_keeps_optional_empty_or_group_presence_and_rejects_absence (test_formal_browser_messages.FormalBrowserTests) ... ok
+test_frozen_read_failure_is_gateway_message_not_forged_contract (test_freeze_contract.FreezeContractTests) ... ok
+test_group_shares_each_member_and_never_joins_unrelated_job (test_freeze_contract.FreezeContractTests) ... ok
+test_slow_asset_uses_exact_advertised_recent_result_not_newest (test_freeze_contract.FreezeContractTests) ... ok
+test_terminal_freeze_expires_without_another_frame (test_freeze_contract.FreezeContractTests) ... ok
+test_timer_cancelled_on_resume_remove_and_close (test_freeze_contract.FreezeContractTests) ... ok
+test_stop_timeout_observes_original_job_terminal_without_replay (test_freeze_contract.StopReconcileTests) ... ok
+test_declared_aggregate_and_filter_policy (test_history_aggregate.HistoryAggregateTests) ... ok
+test_mock_identity (unittest.loader._FailedTest) ... ERROR
+test_asset_byte_count_digest_filename_and_pixels (test_official_packages.OfficialPackageTests) ... ok
+test_canonical_vectors_authoritative_sdk (test_official_packages.OfficialPackageTests) ... ok
+test_capture_requirements_cover_published_sources (test_official_packages.OfficialPackageTests) ... ok
+test_delivered_spacer_demo_preserves_both_modes_without_capture_sources (test_official_packages.OfficialPackageTests) ... ok
+test_exact_export_and_sdk_revision (test_official_packages.OfficialPackageTests) ... ok
+test_expansion_rejects_invalid_placement_or_undeclared_requirement (test_official_packages.OfficialPackageTests) ... ok
+test_expansion_survives_official_install_and_normalization (test_official_packages.OfficialPackageTests) ... ok
+test_no_runtime_paths_or_unknown_props (test_official_packages.OfficialPackageTests) ... ok
+test_official_grid_spacer_cannot_request_elastic_occupancy (test_official_packages.OfficialPackageTests) ... ok
+test_official_spacer_rejects_bindings_actions_and_children (test_official_packages.OfficialPackageTests) ... ok
+test_page_and_binding_references (test_official_packages.OfficialPackageTests) ... ok
+test_renderer_requirements_fail_closed (test_official_packages.OfficialPackageTests) ... ok
+test_revision_tampering_and_rollback (test_official_packages.OfficialPackageTests) ... ok
+test_spacer_survives_official_install_and_normalization (test_official_packages.OfficialPackageTests) ... ok
+test_accepted_start_confirms_command_not_job_and_does_not_keep_querying (test_operations_state.OperationStateTests) ... ok
+test_accepted_stop_reports_stopping_then_actual_terminal_and_retained_resources (test_operations_state.OperationStateTests) ... ok
+test_accepted_without_job_identity_remains_queryable_unknown (test_operations_state.OperationStateTests) ... ok
+test_rejection_keeps_reason_not_generic_acceptance (test_operations_state.OperationStateTests) ... ok
+test_stop_reconciliation_rejects_changed_original_identity (test_operations_state.OperationStateTests) ... ok
+test_unknown_start_lookup_accepted_uses_same_transition_without_replay (test_operations_state.OperationStateTests) ... ok
+test_unknown_stop_aborted_resolves_original_empty_group_without_inventing_ack (test_operations_state.OperationStateTests) ... ok
+test_package_context (unittest.loader._FailedTest) ... ERROR
+test_actual_demo_fixture_installs_all_component_types (test_packages.PackageTests) ... ok
+test_aggregate_is_allowlisted (test_packages.PackageTests) ... ok
+test_all_component_types_and_nested_container (test_packages.PackageTests) ... ok
+test_assets_validate_declared_type_digest_and_magic (test_packages.PackageTests) ... ok
+test_clock_format_timezone (test_packages.PackageTests) ... ok
+test_corrupt_json_duplicate_keys_and_nonfinite (test_packages.PackageTests) ... ok
+test_depth_and_children_rejected (test_packages.PackageTests) ... ok
+test_duplicate_archive_and_symlink (test_packages.PackageTests) ... ok
+test_duplicate_component_and_unknown_type (test_packages.PackageTests) ... ok
+test_grid_and_mobile_require_supported_schema (test_packages.PackageTests) ... ok
+test_history_selection_requires_real_table (test_packages.PackageTests) ... ok
+test_image_modes_are_exclusive (test_packages.PackageTests) ... ok
+test_install_activate_rollback_and_asset (test_packages.PackageTests) ... ok
+test_malformed_types_are_validation_errors (test_packages.PackageTests) ... ok
+test_official_or_unknown_contract_not_misread_as_draft (test_packages.PackageTests) ... ok
+test_per_type_property_matrix (test_packages.PackageTests) ... ok
+test_same_revision_different_bytes_rejected (test_packages.PackageTests) ... ok
+test_size_count_ratio_limits (test_packages.PackageTests) ... ok
+test_spacer_is_static_fixed_grid_occupancy (test_packages.PackageTests) ... ok
+test_typed_renderer_properties (test_packages.PackageTests) ... ok
+test_unknown_files_schema_scripts_and_navigation (test_packages.PackageTests) ... ok
+test_unknown_ids_and_corrupt_stored_asset (test_packages.PackageTests) ... ok
+test_unsafe_paths (test_packages.PackageTests) ... ok
+test_fixture_provider_is_explicit_and_read_only (test_preview.FixtureTests) ... ok
+test_context_identity_validation (test_preview.PreviewTests) ... ok
+test_context_required_and_loopback_only (test_preview.PreviewTests) ... ok
+test_preview_cli (test_preview.PreviewTests) ... ok
+test_unavailable_runtime_never_falls_back_or_announces_ready (test_preview.PreviewTests) ... ok
+test_actual_runtime_history_without_jobs_and_image_ownership (test_product_runtime.ProductRuntimeTests) ... skipped 'Opt-in full owning Runtime integration; requires its separate dependencies'
+test_actual_runtime_start_capture_lookup_stop_and_no_replay (test_product_runtime.ProductRuntimeTests) ... skipped 'Opt-in full owning Runtime integration; requires its separate dependencies'
+test_reconciliation_timeout_does_not_invent_acceptance (test_product_runtime.StartReconciliationTests) ... ok
+test_unknown_queries_same_intent_without_another_start (test_product_runtime.StartReconciliationTests) ... ok
+test_acl_references_delete (test_registry.RegistryTests) ... ok
+test_acl_validation (test_registry.RegistryTests) ... ok
+test_admin_only_mutation (test_registry.RegistryTests) ... ok
+test_crud_persistence (test_registry.RegistryTests) ... ok
+test_explicit_acl (test_registry.RegistryTests) ... ok
+test_invalid_addresses (test_registry.RegistryTests) ... ok
+test_malformed_configuration (test_registry.RegistryTests) ... ok
+test_no_cross_target_leak (test_registry.RegistryTests) ... ok
+test_revoke_deleted_user (test_registry.RegistryTests) ... ok
+test_role_ceiling (test_registry.RegistryTests) ... ok
+test_asset_integrity_releases_lease_on_failure (test_runtime_contract.RuntimeContractTests) ... ok
+test_browser_safe_never_rounds_large_nested_integer (test_runtime_contract.RuntimeContractTests) ... ok
+test_history_zero_based_wire_and_opaque_image_and_revision (test_runtime_contract.RuntimeContractTests) ... ok
+test_identity_and_authoritative_resources_and_large_counters (test_runtime_contract.RuntimeContractTests) ... ok
+test_metadata_only_snapshot_preserves_scope_ordinals (test_runtime_contract.RuntimeContractTests) ... ok
+test_no_capture_never_start (test_runtime_contract.RuntimeContractTests) ... ok
+test_preview_pins_identity_but_allows_layout_document_revision (test_runtime_contract.RuntimeContractTests) ... ok
+test_sdk_coverage_decoding_and_shared_stream_cursor (test_runtime_contract.RuntimeContractTests) ... ok
+test_stale_control_rejected_before_mutation (test_runtime_contract.RuntimeContractTests) ... ok
+test_start_pins_cas_and_preserves_intent_and_stop_job (test_runtime_contract.RuntimeContractTests) ... ok
+test_stop_explicit_empty_ungrouped_identity (test_runtime_contract.RuntimeContractTests) ... ok
+test_unknown_start_never_replays_and_lookup_same_id (test_runtime_contract.RuntimeContractTests) ... ok
+test_empty_expiry_snapshot_retires_live_and_queued_original (test_scope_status.ScopeStatusTests) ... ok
+test_expiry_threshold_preserves_newer_result_other_scope_and_frozen (test_scope_status.ScopeStatusTests) ... ok
+test_late_view_inherits_expiry_even_without_cached_result (test_scope_status.ScopeStatusTests) ... ok
+test_latest_started_keeps_complete_result_and_forwards_decimal (test_scope_status.ScopeStatusTests) ... ok
+test_persisted_intent_not_replayed (test_services.ServicesTests) ... ok
+test_shared_subscription_independent_freeze_and_cleanup (test_services.ServicesTests) ... ok
+test_shared_alias (unittest.loader._FailedTest) ... ERROR
+test_target_api (unittest.loader._FailedTest) ... ERROR
+test_coalesces_waiters_cancellation_sha_and_ttl (test_view_resources.CacheTests) ... ok
+test_concurrency_byte_eviction_and_shutdown (test_view_resources.CacheTests) ... ok
+test_frozen_exact_bytes_pinned_until_expiry_or_owner_release (test_view_resources.CacheTests) ... ok
+test_bounded_short_stress_and_byte_budget (test_view_resources.ViewTests) ... ok
+test_freeze_resume_drop_old_pending_and_do_not_extend_deadline (test_view_resources.ViewTests) ... ok
+test_freeze_ttl_expires_as_missing_not_silently_latest (test_view_resources.ViewTests) ... ok
+test_frozen_result_keeps_current_runtime_state (test_view_resources.ViewTests) ... ok
+test_multiscope_actual_display_freeze_isolation_and_latest_resume (test_view_resources.ViewTests) ... ok
+test_notice_survives_snapshot_pressure_and_instance_reset (test_view_resources.ViewTests) ... ok
+test_readonly_snapshot_recovers_after_one_disconnect (test_view_resources.ViewTests) ... ok
+test_runtime_alias_streams_shared_and_cancelled_without_stopping (test_view_resources.ViewTests) ... ok
+
+======================================================================
+ERROR: test_app (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_app
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_app.py", line 6, in <module>
+    from fastapi.testclient import TestClient
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/fastapi/testclient.py", line 1, in <module>
+    from starlette.testclient import TestClient as TestClient  # noqa
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/starlette/testclient.py", line 41, in <module>
+    raise RuntimeError(
+RuntimeError: The starlette.testclient module requires the httpx2 package to be installed.
+You can install this with:
+    $ pip install httpx2
+
+
+
+======================================================================
+ERROR: test_contract_gateway (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_contract_gateway
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_contract_gateway.py", line 6, in <module>
+    from fastapi.testclient import TestClient
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/fastapi/testclient.py", line 1, in <module>
+    from starlette.testclient import TestClient as TestClient  # noqa
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/starlette/testclient.py", line 41, in <module>
+    raise RuntimeError(
+RuntimeError: The starlette.testclient module requires the httpx2 package to be installed.
+You can install this with:
+    $ pip install httpx2
+
+
+
+======================================================================
+ERROR: test_mock_identity (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_mock_identity
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_mock_identity.py", line 4, in <module>
+    import test_app
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_app.py", line 6, in <module>
+    from fastapi.testclient import TestClient
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/fastapi/testclient.py", line 1, in <module>
+    from starlette.testclient import TestClient as TestClient  # noqa
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/starlette/testclient.py", line 41, in <module>
+    raise RuntimeError(
+RuntimeError: The starlette.testclient module requires the httpx2 package to be installed.
+You can install this with:
+    $ pip install httpx2
+
+
+
+======================================================================
+ERROR: test_package_context (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_package_context
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_package_context.py", line 9, in <module>
+    import test_app
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_app.py", line 6, in <module>
+    from fastapi.testclient import TestClient
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/fastapi/testclient.py", line 1, in <module>
+    from starlette.testclient import TestClient as TestClient  # noqa
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/starlette/testclient.py", line 41, in <module>
+    raise RuntimeError(
+RuntimeError: The starlette.testclient module requires the httpx2 package to be installed.
+You can install this with:
+    $ pip install httpx2
+
+
+
+======================================================================
+ERROR: test_shared_alias (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_shared_alias
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_shared_alias.py", line 5, in <module>
+    import test_app
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_app.py", line 6, in <module>
+    from fastapi.testclient import TestClient
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/fastapi/testclient.py", line 1, in <module>
+    from starlette.testclient import TestClient as TestClient  # noqa
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/starlette/testclient.py", line 41, in <module>
+    raise RuntimeError(
+RuntimeError: The starlette.testclient module requires the httpx2 package to be installed.
+You can install this with:
+    $ pip install httpx2
+
+
+
+======================================================================
+ERROR: test_target_api (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_target_api
+Traceback (most recent call last):
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 436, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/tmp/emo-python/cpython-3.10.22-linux-x86_64-gnu/lib/python3.10/unittest/loader.py", line 377, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_target_api.py", line 3, in <module>
+    import test_app
+  File "/workspace/scratch/a6c68496e0bc/emo_master_ux_fix_20261103/web_panel/tests/test_app.py", line 6, in <module>
+    from fastapi.testclient import TestClient
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/fastapi/testclient.py", line 1, in <module>
+    from starlette.testclient import TestClient as TestClient  # noqa
+  File "/tmp/emo-resize-venv/lib/python3.10/site-packages/starlette/testclient.py", line 41, in <module>
+    raise RuntimeError(
+RuntimeError: The starlette.testclient module requires the httpx2 package to be installed.
+You can install this with:
+    $ pip install httpx2
+
+
+
+----------------------------------------------------------------------
+Ran 121 tests in 3.891s
+
+FAILED (errors=6, skipped=2)

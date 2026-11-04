@@ -125,7 +125,7 @@ def main():
                     page.get_by_role("dialog").wait_for()
                     page.get_by_role("button", name="关闭预览", exact=True).click()
                     with page.expect_response(lambda r: r.url.endswith("/publish")) as published:
-                        page.get_by_role("button", name="发布", exact=True).click()
+                        page.get_by_role("button", name="发布页面", exact=True).click()
                     assert published.value.ok, published.value.text()
                     assert published.value.json()["state"] == "PUBLISHED", published.value.text()
                     assert app.state.runtime.control_count == 0

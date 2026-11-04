@@ -77,7 +77,11 @@ test('project changes retain the old local source separately and restore only th
 });
 test('CAS offers comparison and explicit overwrite, rejects a newer remote write, and allows undo after server adoption',async()=>{
  const f=await fixture();try{
-  await rename('local');f.docs.A=source('other tab');f.revision=2;await click('保存草稿');await waitFor(()=>button('保留本地并覆盖此版本'));assert.equal(nameInput().value,'local');assert.equal(f.saves.length,0);assert.match(document.querySelectorAll('textarea')[1].value,/other tab/);
+  await rename('local');f.docs.A=source('other tab');f.revision=2;await click('保存草稿');await waitFor(()=>button('保留本地并覆盖此版本'));assert.equal(nameInput().value,'local');assert.equal(f.saves.length,0);
+  // dot: textarea content must not become part of the exact comparison labels.
+  const comparisonFields=[...document.querySelectorAll('.editor-draft-conflict textarea')];
+  assert.deepEqual(comparisonFields.map(field=>[...field.labels].map(label=>label.textContent.trim())),[['本地草稿源'],['服务器草稿源']]);
+  assert.match(comparisonFields[0].value,/local/);assert.match(comparisonFields[1].value,/other tab/);
   f.docs.A=source('newer remote');f.revision=3;await click('保留本地并覆盖此版本');await waitFor(()=>document.querySelectorAll('textarea')[1]?.value.includes('newer remote'));assert.equal(f.saves.length,0);assert.equal(f.attempts.at(-1).expectedDraftRevision,'2');
   await click('保留本地并覆盖此版本');await waitFor(()=>!button('保留本地并覆盖此版本'));assert.equal(f.saves.at(-1).expectedDraftRevision,'3');
   await rename('before adopt');f.docs.A=source('server choice');f.revision=5;await refresh();await click('采用服务器草稿');assert.equal(nameInput().value,'server choice');await click('撤销');assert.equal(nameInput().value,'before adopt');await save();assert.equal(f.saves.at(-1).expectedDraftRevision,'5');

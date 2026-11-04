@@ -44,6 +44,61 @@ def testCompleteSelectedFileExportUsesCapturedRangeAndShowsActualCount(qtApp, tm
         closeFeed(feed)
 
 
+@pytest.mark.parametrize("outcome, message", [
+    ("success", "已导出 1"),
+    ("cancel", "导出已取消"),
+    ("failure", "导出失败：test export failure"),
+])
+def testExportCompletionWaitsForFutureBeforeUpdatingControls(qtApp, tmp_path, monkeypatch, outcome, message):
+    from concurrent.futures import ThreadPoolExecutor
+    import emo_master.apps.operator_runtime.log_view as module
+    import emo_master.core.log_export as exportModule
+
+    returned, release = threading.Event(), threading.Event()
+
+    class PausedCompletionPool(ThreadPoolExecutor):
+        def submit(self, function, *args, **kwargs):
+            def pauseBeforeFutureCompletes():
+                result = function(*args, **kwargs)
+                returned.set()
+                assert release.wait(5)
+                return result
+            return super().submit(pauseBeforeFutureCompletes)
+
+    def export(*_args, **_kwargs):
+        if outcome == "cancel":
+            raise exportModule.LogExportCancelled()
+        if outcome == "failure":
+            raise ValueError("test export failure")
+        return 1
+
+    monkeypatch.setattr(module, "ThreadPoolExecutor", PausedCompletionPool)
+    monkeypatch.setattr(exportModule, "exportLogs", export)
+    feed, path = fixtureFeed(tmp_path)
+    path.write_bytes(line("first"))
+    view = RuntimeLogView(feed)
+    view.show()
+    try:
+        feed.exportFiles(tmp_path / "export.jsonl", formatName="jsonl", paths=[path])
+        waitFor(returned.is_set)
+        # Process queued Qt signals while the executor has not completed the Future.
+        qtApp.processEvents()
+        assert not feed.exportWorker.done()
+        assert "正在导出" in view.statusLabel.text()
+        assert view.cancelExportButton.isVisible()
+        assert not view.exportButton.isEnabled()
+        release.set()
+        waitFor(lambda: message in view.statusLabel.text())
+        assert feed.exportWorker.done()
+        assert not view.cancelExportButton.isVisible()
+        assert view.exportButton.isEnabled()
+    finally:
+        release.set()
+        closeFeed(feed)
+        feed.exportPool.shutdown(wait=True)
+        view.close()
+
+
 def testHistoryExportCancelDoesNotUseBusinessBusyOrReportSuccess(qtApp, tmp_path, monkeypatch):
     import emo_master.apps.operator_runtime.log_view as module
     from PySide2.QtWidgets import QFileDialog

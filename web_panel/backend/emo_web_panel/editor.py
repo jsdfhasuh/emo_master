@@ -21,7 +21,7 @@ from emo_panel_protocol.canonical import canonicalJson, revisionOf
 from emo_panel_protocol.models import Presentation, walkComponents
 from emo_panel_protocol.published import PublishedPresentation, PanelManifest
 
-from .packages import PackageError, _official_image
+from .packages import PackageError, PackageStore, _official_image
 
 
 SUPPORTED = {"image", "text", "number", "indicator", "runtime_status", "table",
@@ -158,13 +158,24 @@ def build_package(project_id, model, resources, read_resource):
     manifest = PanelManifest.model_validate(manifest).model_dump(mode="json")
     files.update({"manifest.json": canonicalJson(manifest).encode(),
                   "presentation.json": canonicalJson(snapshot).encode()})
-    buffer = BytesIO()
-    with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for name, data in sorted(files.items()):
-            info = zipfile.ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))
-            info.compress_type = zipfile.ZIP_DEFLATED
-            archive.writestr(info, data)
-    return buffer.getvalue(), manifest, snapshot, config
+    def archive_bytes(stored=()):
+        buffer = BytesIO()
+        with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for name, data in sorted(files.items()):
+                info = zipfile.ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))
+                info.compress_type = zipfile.ZIP_STORED if name in stored else zipfile.ZIP_DEFLATED
+                archive.writestr(info, data)
+        return buffer.getvalue()
+
+    raw = archive_bytes()
+    with zipfile.ZipFile(BytesIO(raw)) as archive:
+        stored = {info.filename for info in archive.infolist()
+                  if info.file_size > max(info.compress_size, 1) * PackageStore.MAX_RATIO}
+    # Keep existing successful packages byte-identical. Only high-ratio entries
+    # (e.g. flat-color BMPs) need storage without compression; import guards stay on.
+    if stored:
+        raw = archive_bytes(stored)
+    return raw, manifest, snapshot, config
 
 
 class EditorStore:

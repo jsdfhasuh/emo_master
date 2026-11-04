@@ -65,3 +65,11 @@ test('grid reorder and duplication preserve spans and keep occupied cells disjoi
 test('duplicated page remaps self-navigation while keeping cross-page targets and capture identities',()=>{
  const page=newPage('检测页'),container=newComponent('container'),self=newComponent('navigation_button'),other=newComponent('navigation_button'),counter=newComponent('number');self.actions.clicked={type:'navigate',pageId:'original',context:'live'};other.actions.clicked={type:'navigate',pageId:'details',context:'live'};counter.bindings.value='source-stable';container.children=[self,other,counter];page.components=[container];page.resultScopeIds=['scope-stable'];const copied=copyPage(page,'original','copied');assert.equal(copied.components[0].children[0].actions.clicked.pageId,'copied');assert.equal(copied.components[0].children[1].actions.clicked.pageId,'details');assert.equal(copied.components[0].children[2].bindings.value,'source-stable');assert.deepEqual(copied.resultScopeIds,['scope-stable']);assert.notEqual(copied.components[0].componentId,container.componentId);assert.equal(self.actions.clicked.pageId,'original');
 });
+
+test('entering a grid makes direct elastic spacers fixed without changing nested responsive spacers',()=>{
+ const gap=newComponent('spacer'),container=newComponent('container'),nested=newComponent('spacer');gap.props.spacerMode='flex';nested.props.spacerMode='flex';container.children=[nested];const children=[gap,container];
+ arrangeGrid(children,{type:'responsive',direction:'vertical'});assert.equal(gap.props.spacerMode,'flex');
+ const before=clone(children);arrangeGrid(children,{type:'grid',columns:2});assert.equal(gap.props.spacerMode,'fixed');assert.equal(nested.props.spacerMode,'flex');assert.deepEqual(gap.responsive,before[0].responsive);
+ arrangeGrid(container.children,{type:'grid',columns:1});assert.equal(nested.props.spacerMode,'fixed');
+ const pasted=copyComponent(before[0]);arrangeGrid([pasted],{type:'grid',columns:1});assert.equal(pasted.props.spacerMode,'fixed');assert.equal(before[0].props.spacerMode,'flex');
+});

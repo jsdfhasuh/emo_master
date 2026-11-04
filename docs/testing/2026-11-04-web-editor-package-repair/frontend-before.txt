@@ -1,0 +1,159 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emo-master-web-panel-ui@0.1.0 test
+> node --test tests/*.test.mjs
+
+✔ normal directory refresh preserves all valid choices and exact edited input (2.515682ms)
+✔ deleted selections clear instead of switching Stop to another Job (0.23827ms)
+✔ new Runtime identity clears reused same Job/workflow IDs (0.271339ms)
+✔ initial defaults do not select Stop and context encodes explicit target/project/instance (0.225012ms)
+✔ fresh catalog status updates only the selected view Job and clears missing or replaced identity (0.250699ms)
+✔ accepted Start with exact Job clears unknown tracking, same path after lookup (2.74487ms)
+✔ accepted Stop acknowledges command but not Job completion/resources (2.422826ms)
+✔ HTTP200 rejection shows reason and clears pending, never accepted wording (0.421951ms)
+✔ unknown Stop resolved via ABORTED ends tracking without claiming command acceptance (0.286763ms)
+✔ genuinely unknown outcomes remain queryable with manual exit available (2.889523ms)
+✔ history keeps a surviving page and its nested selection (3.99483ms)
+✔ history selects the restored home or first existing page when current page was removed (0.624019ms)
+✔ history clears selections which are absent or belong to another surviving page (0.286281ms)
+✔ new source retains current Presentation format, Web target and complete separate identity maps (0.342413ms)
+✔ direct binding uses catalogue IDs and layout or display-name changes never recreate source identity (11.381582ms)
+✔ incompatible output gives a concrete reason without partially changing document (1.050857ms)
+✔ single-direction rendering preserves complete editable source and resource references (0.89007ms)
+✔ copy changes component identity recursively but keeps shared immutable binding definitions (0.513006ms)
+✔ all pages contribute sources, removing last binding prunes only its unused capture definitions (0.640723ms)
+✔ sample values have explicit sample result identities and never manufacture live images (1.281286ms)
+✔ definition comparison ignores object key order without equating different invocation paths (0.275406ms)
+✔ binding selector distinguishes field projections and expected types on the same output (0.38093ms)
+✔ grid reorder and duplication preserve spans and keep occupied cells disjoint (0.512044ms)
+✔ duplicated page remaps self-navigation while keeping cross-page targets and capture identities (0.657918ms)
+✖ entering a grid makes direct elastic spacers fixed without changing nested responsive spacers (8.292425ms)
+✔ page-local context returns the direct nested layout and never selects another page (7.53501ms)
+✔ clipboard restores the deleted subtree sources and action scopes with stable identities (2.209051ms)
+✔ clipboard reuses shared definitions and handles static components without extra definitions (10.742061ms)
+✔ clipboard rejects conflicting stable source or scope definitions before any mutation (0.84893ms)
+✔ grid resizing uses spans, clamps the direct grid boundary and leaves responsive values unchanged (0.443283ms)
+✔ grid properties reject overlap and out-of-grid positions without changing saved placement (0.404665ms)
+✖ component names match the Designer palette without changing internal types (0.457303ms)
+✔ resource URLs limited to current-origin authorized paths (1.599535ms)
+✔ mutating requests carry CSRF and never put it in URL (2.375427ms)
+✔ server failures are errors rather than fake success (0.663727ms)
+✔ wrong owner result clears image instead of mixing rounds (0.731787ms)
+✔ failed image resolves entire scope with explicit current-round failure (0.656005ms)
+✔ prepared image publishes fetched bytes once and releases its object URL (7.5685ms)
+✔ slow image cannot publish a cancelled candidate (10.404183ms)
+✔ hidden page image never blocks the visible scope (0.405838ms)
+✔ visible nested image bindings respect explicit scopes (1.150022ms)
+✔ LAN SHA256 fallback matches standard vectors and multi-block bytes (14.432297ms)
+✔ wrong size or digest never publishes image bytes (2.131017ms)
+✔ repeated identical slow result loads once; newer items coalesce without starving current (8.191186ms)
+✔ page/reset invalidation discards pending and permits reprepare same identity (2.651412ms)
+✔ Resume retains last displayed result while slow candidate loads, so immediate Freeze pins that result (1.090054ms)
+✔ Resume restages expired scopes once after clearing expiry markers (0.361913ms)
+✔ scoped expiry invalidates only its pending items, not other live scopes (3.984615ms)
+✔ global event IDs stay lossless, historical pages retain more than 100 and Job sequence is independent (2.203824ms)
+✔ Blob shares credentials, CSRF, abort, structured errors and current-session 401 handling (8.728787ms)
+✔ late status confirms the log instance without losing rows, current upper bound or consumed cursor (79.225947ms)
+✔ status arriving first is used by one baseline and does not recapture the live starting point (31.183958ms)
+✔ actual instance change aborts old reads and rejects their late responses before rebuilding (27.315173ms)
+✔ live display and reopened cache are bounded while the cursor and complete history remain intact (444.581811ms)
+✔ binding uses the validated scopeId and nested style whitelist (8.878068ms)
+✔ official vision collection envelopes render their declared items as table rows (2.821312ms)
+✔ table does not guess rows from arbitrary JSON objects or unsupported collection versions (0.508408ms)
+✔ unavailable bound values never render fallback or stale OK business values (3.297574ms)
+✔ draft nested grid, field selection and all permitted safe styles render (0.439917ms)
+✔ clock timezone, navigation plain icon and fixed history image are supported (16.561706ms)
+✔ aggregate null stays empty, never substitutes row count (0.304779ms)
+✔ official number valueJson preserves unsafe integer without rounding (0.541587ms)
+✔ official indicator JSON keys do not confuse boolean with string (0.752688ms)
+✔ official responsive layout preserves child order and fieldPath columns (1.510213ms)
+✔ official history refresh reselects only stable identities with new refs (0.405486ms)
+✔ lossless JSON handles nested data, escaped strings, and finite floats (0.501839ms)
+✔ official result maps exact identity and per-source view URLs without rounding (16.253733ms)
+✔ official grid placement uses zero-based coordinates and static navigation icon (0.724226ms)
+✔ SDK coverage problems hide even available payloads without mutating wire result (0.261515ms)
+✔ official fixed history images use view-bound no-ref RPC route (0.737445ms)
+✔ per-Job event merge sorts exact decimal sequence, deduplicates and bounds100 (44.811305ms)
+✔ official input editor keeps raw numeric text and avoids lossy form reserialization (14.657914ms)
+✔ displayed-result navigation waits for confirmed freeze and stays put on failure (0.372358ms)
+✔ interrupted or superseded displayed-result navigation never changes page (0.224561ms)
+✔ only SDK validated group runIds can supply group result and state (0.225071ms)
+✔ official history renders declared filter columns and authoritative sort defaults (1.99807ms)
+✔ gateway-transformed mixed results retain available image routing and official epoch (0.29163ms)
+✔ published emptyText is used by scalar, image and table empty states (0.821008ms)
+✔ published navigation mode distinguishes tabs from ordinary buttons (0.822861ms)
+✔ local expiry and package notices never switch the official result epoch (0.158683ms)
+✔ scope progress never retires completed result on newer start; expiry is job/scoped and exact (6.136662ms)
+✔ gateway scope-status metadata is identity checked and retains decimal strings (0.226243ms)
+✔ Resume removes pinned result whose live ordinal expired even without a new payload (0.252561ms)
+✔ spacers are transparent occupancy without card chrome or business fallback (0.614725ms)
+✔ fixed spacers retain their own width and height under equal-width stretch (0.125355ms)
+✔ elastic spacers use the parent main axis and retained weight (0.129791ms)
+✔ horizontal ordinary fill starts at its minimum while wrap keeps preferred width (0.148229ms)
+✔ zero-height fixed spacers retain explicit zero instead of default occupancy (0.091715ms)
+✔ fixed preview height sizes the vertical flow and adds upward extension only once (0.931641ms)
+✔ SDK 1.1.1 ordinary job_state, job_changed and control_result preserve explicit empty group (2.459289ms)
+✔ retained grouped official fixtures preserve their real group instead of converting to empty (0.336816ms)
+✔ official ordinary accepted Start/Stop acknowledges intent, ABORTED alone supplies terminal display/resources (8.953408ms)
+✔ initial formal job_changed confirms exact current selection; actual changes still invalidate (0.376574ms)
+✔ formal WS control notices share HTTP acknowledgement wording without implying Job completion (0.452346ms)
+✔ invalid local JSON and non-object never become unknown or send a command (108.875627ms)
+✔ submitted connection failure retains original request and unknown, no replay (20.754988ms)
+✔ successful empty catalog clears only its recovered error (17.412949ms)
+✔ older refresh cannot clear the newer catalog error (18.888941ms)
+✔ disabled workflow renders the official reason without enabling Start (49.494138ms)
+✔ HTTP 401 is typed and centrally notifies only the current session (22.293212ms)
+✔ session expiry clears local control identities but preserves original storage (5.264108ms)
+✔ logout clears local session even when server returns expired 401 (4.04881ms)
+✔ late command response cannot settle or overwrite the new session pending (14.129125ms)
+✔ late command failure cannot mark another user request unknown (9.768037ms)
+✔ Runtime canStart false is honored by command handler as well as button (8.929994ms)
+✔ unconfirmed server logout is disclosed and stale logout cannot clear new login (7.222931ms)
+ℹ tests 106
+ℹ suites 0
+ℹ pass 104
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1340.397996
+
+✖ failing tests:
+
+test at tests/editor.test.mjs:69:1
+✖ entering a grid makes direct elastic spacers fixed without changing nested responsive spacers (8.292425ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  'flex' !== 'fixed'
+
+      at TestContext.<anonymous> (file:///workspace/scratch/a6c68496e0bc/emo_web_fix/web_panel/frontend/tests/editor.test.mjs:72:84)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'flex',
+    expected: 'fixed',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/editor_round3.test.mjs:46:1
+✖ component names match the Designer palette without changing internal types (0.457303ms)
+  Error: ENOENT: no such file or directory, open '/workspace/scratch/a6c68496e0bc/emo_web_fix/src/emo_master/apps/designer/page_designer/palette.py'
+      at readFileSync (node:fs:483:20)
+      at TestContext.<anonymous> (file:///workspace/scratch/a6c68496e0bc/emo_web_fix/web_panel/frontend/tests/editor_round3.test.mjs:47:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'open',
+    path: '/workspace/scratch/a6c68496e0bc/emo_web_fix/src/emo_master/apps/designer/page_designer/palette.py'
+  }

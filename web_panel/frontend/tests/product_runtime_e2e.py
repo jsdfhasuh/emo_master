@@ -3,7 +3,7 @@
 Run after building/package_frontend.py, in CI with a separately provisioned
 Runtime interpreter and Chromium. Never substitutes MockRuntime/FixtureRuntime,
 intercepts RPC replies, installs dependencies, or touches a real device.
-SDK >=1.1.1 and the ordinary Job's empty group ID in an official terminal
+SDK >=1.5.0, editor-published output requests, and the ordinary Job's empty group ID in an official terminal
 BrowserJobState are mandatory; no compatibility fallback can satisfy this test.
 """
 import hashlib
@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import queue
+import re
 import shutil
 import socket
 import subprocess
@@ -19,7 +20,6 @@ import sys
 import tempfile
 import threading
 import time
-import zipfile
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -49,7 +49,7 @@ def start_runtime(directory, log):
     env = dict(os.environ, PYTHONPATH=str(ROOT / 'src'), PYTHONDONTWRITEBYTECODE='1',
                QT_QPA_PLATFORM='offscreen', PYTHONUTF8='1')
     process = subprocess.Popen([os.environ.get('EMO_WEB_PRODUCT_PYTHON', sys.executable),
-        str(PANEL / 'tests/test_product_runtime.py'), '--runtime-server-continuous', str(directory)],
+        str(PANEL / 'tests/test_product_runtime.py'), '--runtime-server-web-editor-continuous', str(directory)],
         cwd=ROOT, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=log,
         text=True, encoding='utf-8')
     ready_lines = queue.Queue()
@@ -130,8 +130,8 @@ def main():
     from playwright.sync_api import sync_playwright, expect
     from emo_panel_protocol.messages import BrowserMessage
     sdk_version = importlib.metadata.version('emo_panel_protocol')
-    if tuple(map(int, sdk_version.split('.')[:3])) < (1, 1, 1):
-        raise AssertionError('Final empty-group acceptance requires the delivered official SDK >=1.1.1')
+    if tuple(map(int, sdk_version.split('.')[:3])) < (1, 5, 0):
+        raise AssertionError('Final empty-group acceptance requires the delivered official SDK >=1.5.0')
     if not (PANEL / 'backend/emo_web_panel/static/index.html').is_file():
         raise AssertionError('Build and package the real frontend before this acceptance test')
     EVIDENCE.mkdir(parents=True, exist_ok=True)
@@ -199,32 +199,55 @@ def main():
                     me = read_json(page.request.get('/api/me'))
                     assert me['mode'] == 'grpc' and not me.get('preview'), me
                     initial = read_json(page.request.get('/api/runtimes/configured/status'))['runtime']
-                    assert initial['projectId'] == 'panel-contract-demo', initial
+                    assert initial['projectId'] == 'independent-web-editor-software-demo', initial
                     assert initial['productionExecutionMode'] == 'continuous', initial
                     assert read_json(page.request.get('/api/runtimes/configured/runs')) == [], 'Fixture must not autostart'
-                    page.get_by_text('页面包管理', exact=True).click()
-                    with page.expect_response(lambda r:urlsplit(r.url).path == '/api/packages' and r.request.method == 'POST') as uploaded:
-                        page.get_by_label('导入页面包', exact=True).set_input_files(str(CONTRACT / 'sample-panels/demo.emoweb'))
-                    # Chromium may evict multipart POST response bodies from
-                    # its inspector cache. Verify persistence via an independent
-                    # authenticated catalog read, not that transient cache.
-                    assert uploaded.value.ok, uploaded.value.status
-                    sample_path = CONTRACT / 'sample-panels/demo.emoweb'
-                    package_id = hashlib.sha256(sample_path.read_bytes()).hexdigest()
-                    with zipfile.ZipFile(sample_path) as sample:
-                        expected_manifest = json.loads(sample.read('manifest.json'))
-                    installed = read_json(page.request.get(
-                        '/api/packages?runtimeId=configured&projectId=panel-contract-demo'))
-                    matching = [item for item in installed if item['packageId'] == package_id]
-                    assert len(matching) == 1, installed
-                    assert matching[0]['manifest']['packageRevision'] == expected_manifest['packageRevision']
-                    assert matching[0]['manifest']['projectId'] == initial['projectId']
-                    page.once('dialog', lambda dialog: dialog.accept())
-                    with page.expect_response(lambda r:urlsplit(r.url).path == f'/api/packages/{package_id}/activate') as activated:
-                        page.locator(f'[data-package-id="{package_id}"]').get_by_role('button',
-                            name='对当前目标启用 / 切回此版本', exact=True).click()
-                    read_json(activated.value)
-                    page.get_by_role('heading', name='Live demo', exact=True).wait_for()
+                    # Use the independent editor's normal publish path. Merely
+                    # activating a legacy Qt package does not register external
+                    # output requests and must never opt Web Start into Qt capture.
+                    editor_path = '/api/editor/configured'
+                    context = read_json(page.request.get(editor_path + '/context'))
+                    assert context['requests']['config']['sources'] == {}, context['requests']
+                    page.goto(base + '/editor')
+                    page.get_by_role('heading', name='Web 页面编辑器', exact=True).wait_for()
+                    sources = {}
+                    for label, node, port in [('数值', 'count', 'count'), ('判定指示', 'judge', 'result')]:
+                        choice_index, choice = next((i, item) for i, item in enumerate(context['catalog']['choices'])
+                            if item['source'].get('kind') == 'node_output'
+                            and item['source'].get('workflowId') == 'main'
+                            and item['source'].get('nodeId') == node and item['source'].get('port') == port
+                            and not item['source'].get('fieldPath'))
+                        page.locator('.editor-palette').get_by_role('button', name=re.compile(label + '$')).click()
+                        page.get_by_label('组件输出绑定', exact=True).select_option(str(choice_index))
+                        if port == 'count':
+                            page.get_by_label('小数位', exact=True).fill('2')
+                        sources[port] = choice['sourceId']
+                    page.locator('.editor-palette').get_by_role('button', name=re.compile('连接状态$')).click()
+                    page.get_by_role('button', name='保存草稿', exact=True).click()
+                    page.get_by_text('草稿已保存；正式页面和 Runtime 采集请求未改变。', exact=True).wait_for()
+                    saved = read_json(page.request.get(editor_path + '/context'))
+                    assert saved['draft']['presentation']['schemaVersion'] == '1.2', saved['draft']
+                    assert all(item['targets'] == ['web'] for item in saved['draft']['presentation']['pages'].values())
+                    assert saved['requests']['config']['sources'] == {}, saved['requests']
+                    assert read_json(page.request.get('/api/runtimes/configured/runs')) == [], 'Saving must not start a Job'
+                    with page.expect_response(lambda r:urlsplit(r.url).path == editor_path + '/publish'
+                                              and r.request.method == 'POST') as published:
+                        page.get_by_role('button', name='发布页面', exact=True).click()
+                    publication = read_json(published.value)
+                    assert publication['state'] == 'PUBLISHED', publication
+                    page.get_by_text('发布完成', exact=True).first.wait_for()
+                    registered = read_json(page.request.get(editor_path + '/context'))
+                    assert (registered['runtime']['runtimeInstanceId'], registered['runtime']['projectId']) == (
+                        initial['runtimeInstanceId'], initial['projectId']), registered['runtime']
+                    assert set(registered['requests']['config']['sources']) == set(sources.values()), registered['requests']
+                    assert all(item['kind'] == 'node_output' for item in registered['requests']['config']['sources'].values())
+                    assert read_json(page.request.get('/api/runtimes/configured/runs')) == [], 'Publishing must not start a Job'
+                    assert not requests, 'Editing and publishing must not send any Start/Stop'
+                    package_id = publication['packageId']
+                    report.update(editorPublication=publication, registeredOutputRequests=registered['requests'],
+                                  capturedSourceIds=sources)
+                    page.goto(base)
+                    expect(page.get_by_label('页面包', exact=True)).to_have_value(package_id)
                     page.get_by_label('启动工作流目标', exact=True).select_option('main')
                     with page.expect_response(lambda r:urlsplit(r.url).path == '/api/runs/start' and r.request.method == 'POST') as started:
                         page.get_by_role('button', name='启动工作流', exact=True).click()
@@ -262,10 +285,17 @@ def main():
                     BrowserMessage.model_validate_json(json.dumps(notification))
                     assert notification['runtimeInstanceId'] == initial['runtimeInstanceId']
                     assert notification['projectId'] == initial['projectId']
-                    expect(page.locator('.number')).to_contain_text('12.00')
+                    result = notification['result']
+                    assert result['identity']['capturePlanRevision'], result
+                    assert set(result['expectedSourceIds']) == set(sources.values()), result
+                    values = {item['sourceId']: item for item in result['sources']}
+                    assert json.loads(values[sources['count']]['valueJson']) == 2, values
+                    assert json.loads(values[sources['result']]['valueJson']) is True, values
+                    report['capturedResult'] = result
+                    expect(page.locator('.number')).to_contain_text('2.00')
                     expect(page.locator('.indicator')).to_contain_text('OK')
                     current = read_json(page.request.get(f'/api/runs/{job}?runtimeId=configured'))
-                    assert current['active'] and current['runGroupId'] == '', current
+                    assert current['active'] and current['runGroupId'] == '' and current['captureEnabled'], current
                     assert current['runtimeInstanceId'] == initial['runtimeInstanceId']
                     report['beforeStop'] = current
                     page.screenshot(path=str(EVIDENCE / 'running.png'), full_page=True)
@@ -335,7 +365,7 @@ def main():
                     assert stops[0]['body']['runtimeInstanceId'] == initial['runtimeInstanceId']
                     assert stops[0]['body']['projectId'] == initial['projectId']
                     assert starts[0]['body']['requestId'] != stops[0]['body']['requestId'], 'Distinct user intents need distinct request IDs'
-                    report.update(startHttpCount=len(starts), stopHttpCount=len(stops), renderedCount='12.00',
+                    report.update(startHttpCount=len(starts), stopHttpCount=len(stops), renderedCount='2.00',
                                   websocketResultIdentity=notification['result']['identity'])
                     page.screenshot(path=str(EVIDENCE / 'stopped.png'), full_page=True)
                     assert not errors, errors

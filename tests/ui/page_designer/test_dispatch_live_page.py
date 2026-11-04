@@ -131,11 +131,22 @@ def testLeftUpdatesWhileDetectionIsBlocked(qtApp, tmp_path, monkeypatch, selecti
             [(j.job_id, j.workflow_id, j.run_group_id, j.source_job_id, j.target_slot_id)
              for j in client.listDisplayJobs(document.project.projectId)])
         view = preview.observer
+        liveImage = view.widgets['consumer']['live'][1]
         def ordinal(scope):
             value = view.displayed.get(scope)
             return value.result.identity.resultOrdinal if value else 0
-        waitFor(lambda: ordinal('acquisition') >= 6)
-        assert not view.widgets['consumer']['live'][1].image.isNull()
+        def readyProducerScope(scope):
+            return (scope is not None and scope.result.identity.jobId == started.job_id
+                    and scope.result.status == 'COMPLETE' and not scope.failures
+                    and 'live' in scope.images
+                    and any(source.sourceId == 'live' and source.state == 'AVAILABLE'
+                            for source in scope.result.sources))
+        def producerImageReady():
+            scope = view.displayed.get('acquisition')
+            return (readyProducerScope(scope) and not liveImage.image.isNull()
+                    and liveImage.key == scope.result.identity.resultKey)
+        waitFor(lambda: ordinal('acquisition') >= 6 and producerImageReady())
+        assert not liveImage.image.isNull()
         assert view.widgets['consumer']['image'][1].image.isNull()
         assert not ordinal('consumption') and group.slots['detection'].completedTotal == 0
         assert group.slots['detection'].skippedTotal > 0 and not group.waiting
@@ -153,14 +164,38 @@ def testLeftUpdatesWhileDetectionIsBlocked(qtApp, tmp_path, monkeypatch, selecti
         assert pins.read(ticket).scope.result.identity.jobId == consumer
         pins.release(ticket)
         waitFor(lambda: pins.bytesHeld() == 0)
-        # A failed consumer observer must not blank the healthy producer panel.
+        # Isolate the disconnect against one actual, decoded producer snapshot.
+        # Live capture never waits for a busy image lane: a later ordinal alone
+        # does not promise an AVAILABLE image and must not stand in for readiness.
+        producer = preview.session.sessions[started.job_id]
+        originalProducerRead = producer.readSnapshot
+        healthy = []
+        def rememberHealthyProducer():
+            candidate = originalProducerRead()
+            if candidate.connection == 'CONNECTED' and readyProducerScope(candidate.scopes.get('acquisition')):
+                healthy.append(candidate)
+                return True
+            return False
+        waitFor(rememberHealthyProducer)
+        monkeypatch.setattr(producer, 'readSnapshot', lambda: healthy[0])
+        preview.hub.tick()
+        assert producerImageReady()
+        producerKey, producerPixels = liveImage.key, liveImage.image.copy()
+        producerIdentity = view.displayed['acquisition'].result.identity
         child = preview.session.sessions[consumer]
         originalRead = child.readSnapshot
         monkeypatch.setattr(child, 'readSnapshot', lambda: replace(originalRead(), connection='UNAVAILABLE', detail='test disconnect'))
+        preview.hub.tick()
+        assert view.lastView.scopeErrors == {'consumption': 'UNAVAILABLE: test disconnect'}
+        assert view.widgets['consumer']['image'][1].image.isNull()
+        assert producerImageReady()
+        assert liveImage.key == producerKey and liveImage.image == producerPixels
+        assert view.displayed['acquisition'].result.identity == producerIdentity
+        monkeypatch.setattr(producer, 'readSnapshot', originalProducerRead)
         previous = ordinal('acquisition')
         waitFor(lambda: view.widgets['consumer']['image'][1].image.isNull())
-        waitFor(lambda: ordinal('acquisition') >= previous + 2)
-        assert not view.widgets['consumer']['live'][1].image.isNull()
+        waitFor(lambda: ordinal('acquisition') >= previous + 2 and producerImageReady())
+        assert not liveImage.image.isNull()
         monkeypatch.setattr(child, 'readSnapshot', originalRead)
         preview.closeAsync()
         waitFor(lambda: not preview.active())

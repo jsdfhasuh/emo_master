@@ -12,7 +12,7 @@ from PySide2.QtCore import QObject, Qt, QTimer, QUrl, Signal
 from PySide2.QtGui import QDesktopServices, QTextCursor
 from PySide2.QtWidgets import (
     QAbstractItemView, QCheckBox, QComboBox, QHBoxLayout, QHeaderView, QLabel,
-    QFileDialog, QMenu, QPlainTextEdit, QPushButton, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
+    QFileDialog, QMenu, QMessageBox, QPlainTextEdit, QPushButton, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
 
 from .log_reader import (
@@ -473,6 +473,10 @@ class RuntimeLogView(QWidget):
             target = Path(path)
             if not target.suffix:
                 target = target.with_suffix("." + formatName)
+                # The native save dialog has not confirmed this appended name.
+                if target.exists() and QMessageBox.question(self, "覆盖日志文件", f"文件已存在，是否覆盖？\n{target}",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
+                    return
             if history:
                 self.feed.exportFiles(target, formatName=formatName, paths=ranges,
                                       level=level, deviceId=deviceId)

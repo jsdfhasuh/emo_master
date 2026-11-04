@@ -674,6 +674,11 @@ try:
             if formatName not in {"json", "jsonl", "txt"}:
                 formatName = "jsonl" if "jsonl" in selectedFilter else "json" if "json" in selectedFilter else "txt"
                 path = Path(str(path) + "." + formatName)
+                # The native save dialog checked the selected name, not the
+                # final destination after we appended the export extension.
+                if path.exists() and QMessageBox.question(self, "覆盖日志文件", f"文件已存在，是否覆盖？\n{path}",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
+                    return
             try:
                 if mode == "local":
                     ranges = snapshotLogFiles(self._selectedLocalFiles())

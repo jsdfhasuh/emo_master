@@ -55,7 +55,9 @@ def testCiPreservesSelectedQtPlatform(monkeypatch, platform):
 def testNativeWindowsCiProvidesDesktopWithoutReducingTestSelection():
     workflow = yaml.safe_load((Path(__file__).resolve().parents[1] / ".github/workflows/ci.yml").read_text())
     job = workflow["jobs"]["validate"]
+    assert job["timeout-minutes"] == "${{ matrix.os == 'windows-latest' && 90 || 60 }}"
     assert job["strategy"]["matrix"]["os"] == ["ubuntu-latest", "windows-latest"]
+    assert job["strategy"]["fail-fast"] is False
     steps = {step["name"]: step for step in job["steps"] if "name" in step}
     setup = steps["Configure native Windows test desktop"]
     assert setup["if"] == "runner.os == 'Windows'"

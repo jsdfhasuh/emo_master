@@ -5,6 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
 import ts from 'typescript';
 import {JSDOM} from 'jsdom';
 const require=createRequire(import.meta.url);
@@ -15,13 +16,18 @@ globalThis.IS_REACT_ACT_ENVIRONMENT=true;
 const React=require('react');
 const {act}=React;
 const {createRoot}=require('react-dom/client');
-const sourceRoot=new URL('../src/',import.meta.url).pathname;
+// dot: use native paths for both the Windows loader and cache reset, including spaces.
+const sourceRoot=fileURLToPath(new URL('../src/',import.meta.url));
+const mainPath=require.resolve('../src/main.tsx');
 for(const ext of ['.ts','.tsx'])require.extensions[ext]=(module,path)=>{
  let source=readFileSync(path,'utf8');
- if(path.endsWith('/main.tsx'))source=source.slice(0,source.lastIndexOf('createRoot(document'))+'\nexport {App};';
+ if(path===mainPath)source=source.slice(0,source.lastIndexOf('createRoot(document'))+'\nexport {App};';
  module._compile(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText,path);
 };
 require.extensions['.css']=()=>{};
+function clearSourceModules(){
+ for(const path of Object.keys(require.cache))if(path.startsWith(sourceRoot))delete require.cache[path];
+}
 const nameInput=()=>document.querySelector('input[aria-label="页面名称"]');
 const button=name=>[...document.querySelectorAll('button')].find(x=>x.textContent.trim()===name);
 async function waitFor(check){for(let i=0;i<100;i++){if(check())return;await act(async()=>{await new Promise(r=>setTimeout(r,10));});}assert.ok(check(),'UI condition timed out');}
@@ -33,7 +39,7 @@ async function save(){await click('保存草稿');await waitFor(()=>document.que
 async function login(username='alice'){await input(document.querySelector('input[name="username"]'),username);await input(document.querySelector('input[name="password"]'),'synthetic');await act(async()=>document.querySelector('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));await waitFor(()=>nameInput());}
 function source(name='A saved'){return {schemaVersion:'1.2',defaultPageId:'page',pageOrder:['page'],navigation:{mode:'tabs'},dataSources:{},resultScopes:{},pages:{page:{name,targets:['web'],layout:{type:'responsive',direction:'vertical',spacing:12},components:[],resultScopeIds:[]}}};}
 async function fixture(options={}){
- for(const path of Object.keys(require.cache))if(path.startsWith(sourceRoot))delete require.cache[path];
+ clearSourceModules();
  sessionStorage.clear();globalThis.confirm=()=>true;
  const f={project:'A',instance:'one',username:'alice',authenticated:true,expire:'',revision:1,docs:{A:source(),B:source('B saved')},saves:[],attempts:[],holdSave:undefined,targetIds:['configured'],...options};
  const reply=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
@@ -62,9 +68,21 @@ async function fixture(options={}){
  await act(async()=>root.render(React.createElement(React.StrictMode,null,React.createElement(App))));
  await waitFor(()=>nameInput());
  f.close=async()=>{await act(async()=>root.unmount());};
- f.reload=async()=>{await f.close();for(const path of Object.keys(require.cache))if(path.startsWith(sourceRoot))delete require.cache[path];const {App:FreshApp}=require('../src/main.tsx');root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(React.StrictMode,null,React.createElement(FreshApp))));await waitFor(()=>nameInput());};
+ f.reload=async()=>{await f.close();clearSourceModules();const {App:FreshApp}=require('../src/main.tsx');root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(React.StrictMode,null,React.createElement(FreshApp))));await waitFor(()=>nameInput());};
  return f;
 }
+
+test('React harness exports App without mounting and clears native source module paths',()=>{
+ const first=require(mainPath);
+ assert.equal(typeof first.App,'function');
+ assert.equal(document.getElementById('root').childElementCount,0);
+ const sourcePaths=Object.keys(require.cache).filter(path=>path.startsWith(sourceRoot));
+ assert.ok(sourcePaths.includes(mainPath),'source directory matches the native require cache path');
+ clearSourceModules();
+ for(const path of sourcePaths)assert.equal(require.cache[path],undefined);
+ assert.notEqual(require(mainPath).App,first.App);
+ clearSourceModules();
+});
 
 test('Runtime restart preserves unsaved source and undo but invalidates live task selection',async()=>{
  const f=await fixture();try{await rename('local restart edit');const select=document.querySelector('select[aria-label="实时预览任务"]');await act(async()=>{select.value='run';select.dispatchEvent(new Event('change',{bubbles:true}));});f.instance='two';await refresh();assert.equal(nameInput().value,'local restart edit');assert.equal(button('撤销').disabled,false);assert.equal(select.value,'');assert.equal(button('实时预览').disabled,true);assert.equal(f.saves.length,0);await save();assert.equal(f.saves[0].expectedDraftRevision,'1');}finally{await f.close();}

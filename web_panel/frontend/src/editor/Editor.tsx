@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, DragEvent } from 'react';
-import { api } from '../data/api';
+import { api, ApiError, onSessionExpired } from '../data/api';
+import { draftKey, rememberDraft, recoverDraft } from './drafts';
 import { parseLosslessJSON } from '../data/lossless';
 import { normalizeMessage, applySourceProblems, isInitialJobConfirmation } from '../data/contract';
 import { prepareResult, releaseResult, pageImageSources } from '../state/prepare';
@@ -16,6 +17,7 @@ import './editor.css';
 interface Version {versionId:string;requestId?:string;state:string;createdAt?:string|number;message?:string;requestRevision?:string;requestConfigRevision?:string;packageId?:string;diagnostics?:Array<{code?:string;message:string;componentRefs?:Array<{pageId:string;pageName?:string;componentId:string;componentName?:string}>}>;}
 interface SourceDiagnostic {sourceId?:string;scopeId?:string;code:string;message:string;}
 interface EditorContext {runtime:{runtimeInstanceId:string;projectId:string;documentRevision?:string;configurationRevision?:string;projectName?:string};catalog:{choices:Array<Choice & {title?:string;available?:boolean;hint?:string}>;capabilities?:Record<string,unknown>};requests?:{configRevision?:string;diagnostics?:SourceDiagnostic[]};draft?:{presentation:Presentation;draftRevision:string;resources?:Record<string,{resourceId:string;url?:string}>};versions:Version[];}
+type ServerDraft = NonNullable<EditorContext['draft']>;
 interface JobMetadata {jobId:string;runtimeInstanceId:string;projectId:string;projectRevision?:string;executionRevision?:string;capturePlanRevision?:string;}
 interface Preview {panel?:Panel;presentation?:Panel;viewId?:string;sourceProblems?:Record<string,string>;runIds?:string[];jobMetadata?:JobMetadata;}
 const json=(body:unknown,method='POST'):RequestInit=>({method,body:JSON.stringify(body)});
@@ -33,8 +35,11 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
     const [runs,setRuns]=useState<Run[]>([]),[runId,setRunId]=useState(''),[results,setResults]=useState<Record<string,Result>>({}),[liveState,setLiveState]=useState('等待选择任务');
     const [publication,setPublication]=useState<Version>();
     const [pendingPublishId,setPendingPublishId]=useState('');
+    const [conflict,setConflict]=useState<ServerDraft | null>(),[recoveryWarning,setRecoveryWarning]=useState('');
     const [previewJobMetadata,setPreviewJobMetadata]=useState<JobMetadata>();
     const draftRevision=useRef(''), epoch=useRef(0), docRef=useRef<Presentation | undefined>(undefined);docRef.current=doc;
+    const loadedTarget=useRef(''),savedRef=useRef(saved),selectedRef=useRef(selected);savedRef.current=saved;selectedRef.current=selected;
+    const recovery=useRef<(()=>boolean) | undefined>(undefined);
     const targetRef=useRef(runtimeId);targetRef.current=runtimeId;
     const ownedResults=useRef(new Set<Result>()),sourceProblems=useRef<Record<string,string>>({}),allowedJobs=useRef<string[]>([]);
     const previewEpoch=useRef(0),clipboard=useRef<ComponentClipboard | undefined>(undefined),canvas=useRef<HTMLDivElement>(null);
@@ -44,12 +49,18 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
     const page=doc?.pages[pageId],selection=componentContext(page,selected),component=selection?.component,parentLayout=selection?.parentLayout;
     const changed=Boolean(doc && JSON.stringify(doc)!==saved);
     const projectId=context?.runtime.projectId || '';
+    const userKey=me.userId || me.username;
+    function backupDraft(){
+        if(!docRef.current || !loadedTarget.current || !projectId)return true;
+        return rememberDraft(draftKey(userKey,loadedTarget.current,projectId),{presentation:docRef.current,saved:savedRef.current,draftRevision:draftRevision.current,pageId:pageRef.current,selected:selectedRef.current});
+    }
+    recovery.current=backupDraft;
     const base=`/api/editor/${encodeURIComponent(runtimeId)}`;
     const assetUrl=(id:string)=>`${base}/assets/${encodeURIComponent(id)}?projectId=${encodeURIComponent(projectId)}`;
     const bindingDiagnostics=(sourceId:string)=>diagnostics.filter(d=>d.sourceId===sourceId || !d.sourceId && d.scopeId===doc?.dataSources[sourceId]?.resultScopeId);
     function edit(change:(next:Presentation)=>void) {
         const current=docRef.current;if(!current)return;
-        try {const next=clone(current);change(next);tidyBindings(next);if(JSON.stringify(current)===JSON.stringify(next))return;setHistory(old=>[...old.slice(-79),clone(current)]);setFuture([]);setDoc(next);setError('');}
+        try {const next=clone(current);change(next);tidyBindings(next);if(JSON.stringify(current)===JSON.stringify(next))return;setHistory(old=>[...old.slice(-79),clone(current)]);setFuture([]);docRef.current=next;setDoc(next);setError('');}
         catch(e){setError(explain(e));}
     }
     function restoreDocument(next:Presentation){const selection=restoreSelection(next,pageId,selected);docRef.current=next;setDoc(next);setPageId(selection.pageId);setSelected(selection.componentId);}
@@ -64,26 +75,53 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
     function insert(type:string,parentId?:string){const c=newComponent(type);edit(next=>{const parent=parentId?findComponent(next,parentId):undefined;const children=parent?.type==='container'?parent.children:next.pages[pageId].components;children.push(c);autoGrid(children,parent?.grid || next.pages[pageId].layout);});setSelected(c.componentId);}
     function move(id:string,target?:string,inside=false){if(id===target)return;edit(next=>{const c=findComponent(next,id);if(!c)return;const dest=target?findComponent(next,target):undefined;if(dest && walk([c]).some(child=>child.componentId===dest.componentId))throw Error('不能将容器移入自身');const moved=removeComponent(next.pages[pageId].components,id);if(!moved)return;const parent=inside && dest?.type==='container'?dest:dest?walk(next.pages[pageId].components).find(c=>c.children.some(child=>child.componentId===target)):undefined;const children=parent?.children || next.pages[pageId].components;const index=inside?children.length:children.findIndex(c=>c.componentId===target);children.splice(index<0?children.length:index,0,moved);autoGrid(children,parent?.grid || next.pages[pageId].layout);});}
     function drop(e:DragEvent,id?:string,inside=false){e.preventDefault();e.stopPropagation();const choice=e.dataTransfer.getData('application/emo-source');if(choice && id){const item=choices[Number(choice)];if(item)edit(next=>bindChoice(next,pageId,id,item));return;}const type=e.dataTransfer.getData('application/emo-component');if(type){insert(type,inside?id:undefined);return;}const moving=e.dataTransfer.getData('application/emo-move');if(moving)move(moving,id,inside);}
-    function clearTargetContext(){
+    function clearRuntimeContext(){
         previewEpoch.current++;setPreview(undefined);setPreviewPanel(undefined);setPreviewJobMetadata(undefined);setViewId('');panelRef.current=undefined;
         sourceProblems.current={};allowedJobs.current=[];restage.current=undefined;
         ownedResults.current.forEach(releaseResult);ownedResults.current.clear();setResults({});setLiveState('等待选择任务');
-        setRunId('');setRuns([]);setHistory([]);setFuture([]);clipboard.current=undefined;
-        setPublication(undefined);setPendingPublishId('');setNotice('');setContext(undefined);
-        docRef.current=undefined;setDoc(undefined);setSaved('');draftRevision.current='';setPageId('');pageRef.current='';setSelected('');
+        setRunId('');setRuns([]);setPublication(undefined);setPendingPublishId('');
+    }
+    function clearTargetContext(){
+        clearRuntimeContext();setHistory([]);setFuture([]);clipboard.current=undefined;
+        setNotice('');setContext(undefined);setConflict(undefined);
+        loadedTarget.current='';docRef.current=undefined;setDoc(undefined);savedRef.current='';setSaved('');draftRevision.current='';setPageId('');pageRef.current='';setSelected('');
+    }
+    function acceptDraft(source:Presentation,revision:string,savedSource:string,page='',selection=''){
+        docRef.current=source;setDoc(source);draftRevision.current=revision;savedRef.current=savedSource;setSaved(savedSource);
+        const restored=restoreSelection(source,page,selection);pageRef.current=restored.pageId;setPageId(restored.pageId);setSelected(restored.componentId);
     }
     async function loadTarget(rid:string,preserve=false){
-        const ticket=++epoch.current;setBusy(true);setError('');if(!preserve)clearTargetContext();
+        const ticket=++epoch.current;setBusy(true);setError('');if(!preserve){backupDraft();clearTargetContext();}
         try {const response=await api<EditorContext>(`/api/editor/${encodeURIComponent(rid)}/context`);const rs=await api<Run[]>(`/api/runtimes/${encodeURIComponent(rid)}/runs`);if(ticket!==epoch.current)return;
-            const identityChanged=context && (context.runtime.projectId!==response.runtime.projectId || context.runtime.runtimeInstanceId!==response.runtime.runtimeInstanceId);
-            const replaceDocument=!preserve || !context || !docRef.current || identityChanged;
-            if(preserve && replaceDocument)clearTargetContext();
-            setContext(response);setRuns(rs);const pendingId=sessionStorage.getItem(`emo-editor-publish:${rid}:${response.runtime.projectId}`) || '';setPendingPublishId(pendingId);if(pendingId){const original=response.versions.find(v=>v.requestId===pendingId);if(original)setPublication(original);}if(replaceDocument){const source=response.draft?.presentation || newPresentation();docRef.current=source;setDoc(source);setSaved(response.draft?JSON.stringify(source):'');draftRevision.current=response.draft?.draftRevision || '';setPageId(source.defaultPageId || source.pageOrder[0] || '');setSelected('');if(identityChanged)setNotice('Runtime 实例或工程已改变，已切换相应草稿与任务上下文。');}
+            const projectChanged=Boolean(context && context.runtime.projectId!==response.runtime.projectId);
+            const instanceChanged=Boolean(context && context.runtime.runtimeInstanceId!==response.runtime.runtimeInstanceId);
+            const replaceDocument=!preserve || !context || !docRef.current || projectChanged;
+            const remote=response.draft || {presentation:newPresentation(),draftRevision:''};
+            if(preserve && replaceDocument){backupDraft();clearTargetContext();}
+            else if(instanceChanged)clearRuntimeContext();
+            loadedTarget.current=rid;setContext(response);setRuns(rs);
+            let pendingId='';try{pendingId=sessionStorage.getItem(`emo-editor-publish:${rid}:${response.runtime.projectId}`) || '';}catch{/* Keep in-page draft recovery available when browser storage is unavailable. */}setPendingPublishId(pendingId);if(pendingId){const original=response.versions.find(v=>v.requestId===pendingId);if(original)setPublication(original);}
+            if(replaceDocument){
+                const local=recoverDraft(draftKey(userKey,rid,response.runtime.projectId));
+                acceptDraft(local?.presentation || remote.presentation,local?.draftRevision ?? remote.draftRevision,local?.saved ?? JSON.stringify(remote.presentation),local?.pageId,local?.selected);
+                setConflict(local && local.draftRevision!==remote.draftRevision?remote:undefined);
+                if(local)setNotice('已恢复本标签页未保存的草稿；尚未写入服务器，请核对后保存。');
+                else if(projectChanged)setNotice('工程已改变，已切换相应草稿；原工程未保存的修改保留在本标签页。');
+            }else{
+                // dot: a Runtime restart invalidates live state, not the project editor source/history.
+                if(draftRevision.current!==remote.draftRevision){
+                    if(JSON.stringify(docRef.current)!==savedRef.current)setConflict(remote);
+                    else{acceptDraft(remote.presentation,remote.draftRevision,JSON.stringify(remote.presentation),pageRef.current,selectedRef.current);setHistory([]);setFuture([]);setConflict(undefined);}
+                }else setConflict(undefined);
+                if(instanceChanged)setNotice('Runtime 实例已改变，草稿与撤销记录已保留；请重新选择实时预览任务。');
+            }
         }catch(e){if(ticket===epoch.current)setError(explain(e));}finally{if(ticket===epoch.current)setBusy(false);}
     }
     useEffect(()=>{let valid=true;api<RuntimeTarget[]>('/api/runtimes').then(ts=>{if(!valid)return;setTargets(ts);const wanted=new URLSearchParams(location.search).get('runtimeId');setRuntimeId(ts.some(t=>t.id===wanted)?wanted!:ts[0]?.id || '');}).catch(e=>setError(explain(e)));return()=>{valid=false;epoch.current++;previewEpoch.current++;};},[]);
     useEffect(()=>{if(runtimeId)void loadTarget(runtimeId);},[runtimeId]);
-    useEffect(()=>{const before=(e:BeforeUnloadEvent)=>{if(changed){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',before);return()=>window.removeEventListener('beforeunload',before);},[changed]);
+    useEffect(()=>{const durable=backupDraft();setRecoveryWarning(durable?'':'浏览器暂不能保存恢复副本；草稿仅保留在当前页面，请勿刷新或关闭标签页。');},[doc,saved,projectId,pageId,selected]);
+    useEffect(()=>{const unsubscribe=onSessionExpired(()=>{recovery.current?.();});return()=>{unsubscribe();recovery.current?.();};},[]);
+    useEffect(()=>{const before=(e:BeforeUnloadEvent)=>{recovery.current?.();if(changed){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',before);return()=>window.removeEventListener('beforeunload',before);},[changed]);
     useEffect(()=>{const key=(e:KeyboardEvent)=>{if((e.target as HTMLElement).closest('input,textarea,select,[contenteditable]'))return;
         if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='y'){e.preventDefault();redo();}else if(e.key==='Delete'){e.preventDefault();deleteSelection();}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='d'){e.preventDefault();duplicateSelection();}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='c' && component){try{if(docRef.current)clipboard.current=copyToClipboard(docRef.current,component);}catch(e){setError(explain(e));}}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='v' && clipboard.current){e.preventDefault();let pasted='';edit(next=>{const c=pasteFromClipboard(next,clipboard.current!);next.pages[pageId].components.push(c);autoGrid(next.pages[pageId].components,next.pages[pageId].layout);pasted=c.componentId;});if(pasted)setSelected(pasted);}};
         window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);});
@@ -119,7 +157,32 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
     },[viewId,preview,runId,context?.runtime.runtimeInstanceId,projectId]);
     useEffect(()=>{if(preview==='runtime')restage.current?.();},[pageId,previewPanel]);
 
-    async function save(){if(!doc || !context)throw Error('请先选择 Runtime 工程');const current=clone(doc);const response=await api<{draftRevision:string;presentation?:Presentation}>(`${base}/draft`,json({projectId,presentation:current,expectedDraftRevision:draftRevision.current},'PUT'));draftRevision.current=response.draftRevision;setSaved(JSON.stringify(current));setNotice('草稿已保存；正式页面和 Runtime 采集请求未改变。');return response;}
+    async function save(expected=draftRevision.current){
+        if(!docRef.current || !context)throw Error('请先选择 Runtime 工程');
+        const current=clone(docRef.current),ticket=epoch.current;backupDraft();
+        try{
+            const response=await api<{draftRevision:string;presentation?:Presentation}>(`${base}/draft`,json({projectId,presentation:current,expectedDraftRevision:expected},'PUT'));
+            if(ticket!==epoch.current)throw Error('编辑上下文已改变，请重新核对草稿状态。');
+            draftRevision.current=response.draftRevision;savedRef.current=JSON.stringify(current);setSaved(savedRef.current);setConflict(undefined);backupDraft();
+            setNotice('草稿已保存；正式页面和 Runtime 采集请求未改变。');return response;
+        }catch(e){
+            if(ticket===epoch.current && e instanceof ApiError && e.status===409 && e.code==='EDITOR_CONFLICT'){
+                setConflict(null);await loadTarget(runtimeId,true);
+            }
+            throw e;
+        }
+    }
+    function useServerDraft(){
+        if(!conflict || !docRef.current || !confirm('采用服务器草稿？当前本地修改可用“撤销”恢复。'))return;
+        const local=clone(docRef.current);setHistory(old=>[...old.slice(-79),local]);setFuture([]);
+        acceptDraft(conflict.presentation,conflict.draftRevision,JSON.stringify(conflict.presentation),pageRef.current,selectedRef.current);
+        setConflict(undefined);setError('');setNotice('已采用服务器草稿；可撤销恢复刚才的本地修改。');
+    }
+    function logout(){
+        const durable=backupDraft();
+        if(changed && !confirm(durable?'草稿尚未保存，已在本标签页保留。退出后请用同一帐号登录继续编辑。是否退出？':'草稿尚未保存，恢复副本仅在当前页面。退出后请勿刷新或关闭标签页，用同一帐号登录可继续编辑。是否退出？'))return;
+        onLogout();
+    }
     async function perform(action:()=>Promise<void>){if(busy)return;const rid=runtimeId;setBusy(true);setError('');try{await action();}catch(e){if(rid===targetRef.current)setError(explain(e));}finally{if(rid===targetRef.current)setBusy(false);}}
     async function openPreview(mode:'fixtures'|'runtime'){
         if(!doc)return;if(mode==='runtime' && !runId)throw Error('请明确选择一个已有任务；预览不会启动检测');const ticket=++previewEpoch.current;
@@ -169,9 +232,11 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
         </section>;
     }
     if(me.role!=='admin' || me.preview)return <main><h1>Web 页面编辑器</h1><p>编辑需要管理员会话。</p><a href="/">返回运行页面</a></main>;
-    return <main className="web-editor"><header className="editor-header"><div><span className="editor-eyebrow">EMOMASTER / WEB PANEL</span><h1>Web 页面编辑器</h1></div><div className="editor-session"><a href="/">运行页面 ↗</a><span>{me.username}</span><button onClick={onLogout}>退出</button></div></header>
-        <section className="editor-toolbar"><label>Runtime<select aria-label="编辑 Runtime 目标" value={runtimeId} disabled={busy} onChange={e=>{if(changed && !confirm('当前草稿尚未保存。切换目标将放弃这些修改，是否继续？'))return;setRuntimeId(e.target.value);}}>{targets.map(t=><option key={t.id} value={t.id}>{t.alias || t.id} · {t.mode}</option>)}</select></label><div className="editor-project"><strong>{context?.runtime.projectName || projectId || '请选择 Runtime 工程'}</strong><small>{context?.runtime.runtimeInstanceId || '—'} · 工程修订 {context?.runtime.documentRevision || context?.runtime.configurationRevision || '—'}</small></div><span className={`editor-draft-state ${changed?'dirty':''}`}>{changed?'● 未保存':'✓ 草稿已保存'}</span><button disabled={busy || !doc} onClick={()=>perform(async()=>{await save();})}>保存草稿</button><button disabled={busy || !doc} onClick={()=>perform(()=>openPreview('fixtures'))}>示例预览</button><button disabled={busy || !doc || !runId} onClick={()=>perform(()=>openPreview('runtime'))}>实时预览</button><button className="editor-primary" disabled={busy || !doc || Boolean(pendingPublishId)} onClick={()=>perform(()=>publish())}>发布页面</button></section>
+    return <main className="web-editor"><header className="editor-header"><div><span className="editor-eyebrow">EMOMASTER / WEB PANEL</span><h1>Web 页面编辑器</h1></div><div className="editor-session"><a href="/">运行页面 ↗</a><span>{me.username}</span><button disabled={busy} onClick={logout}>退出</button></div></header>
+        <section className="editor-toolbar"><label>Runtime<select aria-label="编辑 Runtime 目标" value={runtimeId} disabled={busy} onChange={e=>{if(changed && !confirm('当前草稿尚未保存，将在本标签页保留，切回同一工程可继续编辑。是否切换目标？'))return;setRuntimeId(e.target.value);}}>{targets.map(t=><option key={t.id} value={t.id}>{t.alias || t.id} · {t.mode}</option>)}</select></label><div className="editor-project"><strong>{context?.runtime.projectName || projectId || '请选择 Runtime 工程'}</strong><small>{context?.runtime.runtimeInstanceId || '—'} · 工程修订 {context?.runtime.documentRevision || context?.runtime.configurationRevision || '—'}</small></div><span className={`editor-draft-state ${changed?'dirty':''}`}>{changed?'● 未保存':'✓ 草稿已保存'}</span><button disabled={busy || !doc} onClick={()=>perform(async()=>{await save();})}>保存草稿</button><button disabled={busy || !doc} onClick={()=>perform(()=>openPreview('fixtures'))}>示例预览</button><button disabled={busy || !doc || !runId} onClick={()=>perform(()=>openPreview('runtime'))}>实时预览</button><button className="editor-primary" disabled={busy || !doc || Boolean(pendingPublishId)} onClick={()=>perform(()=>publish())}>发布页面</button></section>
         {error && <div role="alert" className="alert">{error}<button onClick={()=>setError('')}>关闭</button></div>}{notice && <div role="status" className="notice">{notice}</div>}
+        {recoveryWarning && <p role="alert" className="alert">{recoveryWarning}</p>}
+        {conflict!==undefined && <section className="editor-draft-conflict" aria-label="草稿版本冲突"><h2>草稿已被其他窗口修改</h2><p>本地修改仍保留，未覆盖服务器。读取最新版本后可比较两份源，再明确选择采用哪份。</p><button disabled={busy} onClick={()=>loadTarget(runtimeId,true)}>读取最新草稿</button>{conflict && <><p>服务器草稿修订：{conflict.draftRevision || '未保存'}</p><details><summary>比较本地与服务器源</summary><label>本地草稿源<textarea readOnly value={JSON.stringify(doc,null,2)}/></label><label>服务器草稿源<textarea readOnly value={JSON.stringify(conflict.presentation,null,2)}/></label></details><button disabled={busy} onClick={useServerDraft}>采用服务器草稿</button><button disabled={busy} onClick={()=>{if(confirm('将本地草稿保存为新版本，覆盖当前显示的服务器草稿？若服务器再次变化，会重新提示冲突。'))void perform(async()=>{await save(conflict.draftRevision);});}}>保留本地并覆盖此版本</button></>}</section>}
         {pendingPublishId && <section className="editor-publication" aria-label="未确认发布请求"><strong>发布回复未确认</strong><span>{pendingPublishId}</span><button disabled={busy} onClick={()=>perform(async()=>{const versions=await api<Version[]>(`${base}/versions?projectId=${encodeURIComponent(projectId)}`);setContext(old=>old?{...old,versions}:old);const original=versions.find(v=>v.requestId===pendingPublishId);if(original){setPublication(original);sessionStorage.removeItem(`emo-editor-publish:${runtimeId}:${projectId}`);setPendingPublishId('');setNotice(versionLabel(original.state));}else setNotice('当前尚未查询到原发布版本；未重放请求，可恢复连接后继续查询。');})}>查询原发布结果</button><button disabled={busy} onClick={()=>{sessionStorage.removeItem(`emo-editor-publish:${runtimeId}:${projectId}`);setPendingPublishId('');setNotice('已结束本地发布跟踪；未撤销或重放 Runtime 请求，请刷新版本并核对实际配置。');}}>结束本地发布跟踪</button><small>保留原请求身份，不自动补提交。</small></section>}
         {publication && <section className="editor-publication" aria-label="发布状态"><strong>{versionLabel(publication.state)}</strong><span>{publication.versionId}</span>{publication.message && <p>{publication.message}</p>}{publication.diagnostics?.map((diagnostic,index)=><div key={index} className="editor-binding-problem"><strong>{diagnostic.code}：{diagnostic.message}</strong>{diagnostic.componentRefs?.map(ref=><p key={`${ref.pageId}/${ref.componentId}`}>{ref.pageName || ref.pageId} / {ref.componentName || ref.componentId} · {ref.componentId}</p>)}</div>)}{!['PUBLISHED','REJECTED','ABANDONED'].includes(publication.state) && <><button disabled={busy} onClick={()=>perform(async()=>{const value=await api<Version>(`${base}/publications/${encodeURIComponent(publication.versionId)}?projectId=${encodeURIComponent(projectId)}`);setPublication(value);setNotice(versionLabel(value.state));})}>查询原发布结果</button><button disabled={busy || publication.state==='REJECTED'} onClick={()=>perform(async()=>{const value=await api<Version>(`${base}/publications/${encodeURIComponent(publication.versionId)}/complete`,json({projectId}));setPublication(value);setNotice(versionLabel(value.state));await refreshVersions();})}>继续完成原发布</button><button disabled={busy} onClick={()=>perform(async()=>{const value=await api<Version>(`${base}/publications/${encodeURIComponent(publication.versionId)}/abandon`,json({projectId}));setPublication(value);setNotice("已结束此发布跟踪并保留草稿；未撤销或重放 Runtime 请求，请核对实际采集配置后继续。");await refreshVersions();})}>结束此发布跟踪</button></>}<small>发布不会停止或重启现有任务，新增来源由下一次明确启动采集。</small></section>}
         <section className="editor-context-bar"><label>实时预览任务<select aria-label="实时预览任务" value={runId} onChange={e=>{setRunId(e.target.value);setViewId('');setPreview(undefined);setResults({});}}><option value="">明确选择已有任务</option>{runs.map(r=><option key={r.id} value={r.id}>{r.name || r.id} · {r.status || r.state}</option>)}</select></label><button disabled={busy || !runtimeId} onClick={()=>perform(()=>loadTarget(runtimeId,true))}>刷新目录和任务</button><small>打开、保存、预览、切页、发布均不触发检测。</small></section>

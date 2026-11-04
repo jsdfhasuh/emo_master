@@ -47,6 +47,12 @@ jobs:
         run: python frontend/tests/spacer_browser.py
       - name: Current-target catalog refresh browser checks
         run: python frontend/tests/catalog_refresh_e2e.py
+      - name: Editor draft recovery browser checks
+        run: python frontend/tests/editor_draft_recovery_browser.py
+      - name: Editor Dispatch capture isolation browser checks
+        run: python frontend/tests/editor_dispatch_browser.py
+      - name: Editor package and grid browser checks
+        run: python frontend/tests/editor_package_browser.py
       - name: Browser full Web application checks
         run: python frontend/tests/backend_e2e.py
       - name: Official preview CLI and browser contract checks

@@ -13,7 +13,7 @@ def assertPanelChecks(coordinator):
     for action, index in panelActions(coordinator.chrome):
         assert action.isCheckable()
         assert action.isChecked() == coordinator.editor.panel(index).isExpanded()
-    for action in (coordinator.chrome.previewWebAction, coordinator.chrome.previewWebRuntimeAction):
+    for action in (coordinator.chrome.previewAction, coordinator.chrome.exportAction):
         assert not action.isCheckable()
         assert not action.isChecked()
 
@@ -63,11 +63,11 @@ def testPanelMenuChecksSurviveWorkspaceSwitch(designer, expanded):  # noqa: F811
             assert coordinator.editor.panel(index).isExpanded() == state
 
 
-def testPanelSyncDoesNotWriteWebPreviewChecks(designer, monkeypatch):  # noqa: F811
+def testPanelSyncDoesNotWriteQtPreviewOrExportChecks(designer, monkeypatch):  # noqa: F811
     coordinator = designer.pageCoordinator
     coordinator.showPages()
     writes = []
-    for action in (coordinator.chrome.previewWebAction, coordinator.chrome.previewWebRuntimeAction):
+    for action in (coordinator.chrome.previewAction, coordinator.chrome.exportAction):
         monkeypatch.setattr(action, 'setChecked', lambda value: writes.append(value))
     coordinator.chrome.update()
     coordinator.editor.togglePanel(0)
@@ -75,3 +75,20 @@ def testPanelSyncDoesNotWriteWebPreviewChecks(designer, monkeypatch):  # noqa: F
     coordinator.showFlow()
     coordinator.showPages()
     assert writes == []
+
+
+def testDesignerKeepsQtActionsWithoutWebExportPreviewOrLauncher(designer):  # noqa: F811
+    from test_pending_inputs import setupPage
+    coordinator, _editor, _key = setupPage(designer)
+    chrome = coordinator.chrome
+    actions = [action for menu in chrome.menus.values() for action in menu.actions()]
+    assert all('Web' not in action.text() and '网页' not in action.text() for action in actions)
+    assert chrome.previewAction.text() == '预览页面'
+    assert chrome.previewAction.isEnabled() and chrome.previewAction.isVisible()
+    assert chrome.previewAction in chrome.menus['视图'].actions()
+    assert chrome.exportAction in chrome.menus['文件'].actions()
+    assert chrome.publishPages in chrome.menus['Runtime'].actions()
+    for name in ('previewWebAction', 'previewWebRuntimeAction', 'exportWebAction'):
+        assert not hasattr(chrome, name)
+    assert not hasattr(coordinator, 'webPreview')
+    assert not hasattr(coordinator, '_closingWebPreview')

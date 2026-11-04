@@ -1,0 +1,11 @@
+{
+  "runtimeInstanceId": "demo-runtime-1",
+  "projectId": "panel-contract-demo",
+  "event": "control_result",
+  "operation": "start",
+  "jobId": "demo-ordinary-j2",
+  "runGroupId": "",
+  "startRequestId": "demo-ordinary-start-2",
+  "outcome": "ACCEPTED",
+  "message": "Accepted"
+}

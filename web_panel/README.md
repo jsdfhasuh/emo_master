@@ -1,75 +1,71 @@
-# emo_master independent Web operator panel
+# emo_master 独立 Web 页面编辑器与运行面板
 
-Independent Python 3.10+/FastAPI + React application under `web_panel/`. The gateway consumes **Panel Contract 1.0 / SDK 1.4.0** as an ordinary gRPC client; it does not import Qt, device drivers, inference packages, or `emo_master`.
+`web_panel/` 是独立的 Python 3.10+/FastAPI + React 应用。它通过受控 LAN 的普通 gRPC 连接 Runtime，使用 **Panel Contract 1.0 / SDK 1.5.0**，无需运行 Windows Designer。Web 后端只依赖轻量 SDK，不导入 `emo_master`、Qt、设备驱动或推理包。
 
-Current development handoff: SDK 1.4.0 adds `QueryRuntimeLogs` and event metadata. This uncommitted implementation is based on `940994b3420b47ff0add8766ccce5a4f2686a02a` (`sourceDirty=true`); current delivery hashes are pinned in `contracts/panel-contract-v1/` and `docs/handoffs/runtime-web-panel-v1/sdk-1.4.0/contract-manifest.json`. Historical SDK 1.3.0 delivery remains unchanged. This is not a release or deployment.
+本期从新建 Web 页面开始。Web 管理完整 Presentation 1.2 编辑源、资源、草稿和发布版本；Windows Designer 继续管理 Qt 页面。Runtime 按工程保存与 UI 无关的输出采集请求，正常任务统一使用它，结果和图片复用 DisplayService。实现起始基线为 `d92ffd37960e8b8f527136151ab9ccb80054e78f`；当前源码交付及整体操作复查入口见[交接说明](../docs/handoffs/2026-11-04-independent-web-editor-review.md)。源码交付不代表已部署。
 
-## Build and run
+## 开发机安装与启动
 
-```sh
-cd web_panel
-python -m venv .venv
-# Windows: .venv\Scripts\activate; POSIX: . .venv/bin/activate
-python -m pip install contracts/panel-contract-v1/python/emo_panel_protocol-1.4.0-py3-none-any.whl
-python -m pip install -e '.[test]'
-npm --prefix frontend ci
-npm --prefix frontend run build
-python scripts/package_frontend.py
-emo-web-panel --data-dir .panel-data create-user admin
-emo-web-panel --data-dir .panel-data serve --mode grpc --runtime-address 127.0.0.1:50051
+从仓库根目录执行；Windows PowerShell 示例：
+
+```powershell
+py -3.10 -m venv web_panel/.venv
+& web_panel/.venv/Scripts/python.exe -m pip install web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.5.0-py3-none-any.whl
+& web_panel/.venv/Scripts/python.exe -m pip install -e './web_panel[test]' build
+npm --prefix web_panel/frontend ci
+npm --prefix web_panel/frontend run build
+& web_panel/.venv/Scripts/python.exe web_panel/scripts/package_frontend.py
+& web_panel/.venv/Scripts/emo-web-panel.exe --data-dir D:/EmoWeb/panel-data create-user admin
+& web_panel/.venv/Scripts/emo-web-panel.exe --data-dir D:/EmoWeb/panel-data serve --mode grpc --runtime-address 127.0.0.1:50051
 ```
 
-Use the actual configured Runtime endpoint, not the example above. Cleartext gRPC is intentional for the controlled LAN; no TLS/certificate administration is added. The Web server defaults to loopback; non-loopback binding requires explicit `--allowed-origin`. No default password is installed. `admin` explicitly has view/control/admin rights; operator/viewer access also requires a target grant. The browser cannot submit arbitrary Runtime addresses, RPC methods, file paths, or SQL.
+将示例地址换成实际 Runtime 地址。默认运行面板是 `http://127.0.0.1:8780/`，独立编辑器是 `http://127.0.0.1:8780/editor`。新安装没有默认用户或密码，`create-user` 交互输入密码。编辑需要 admin 权限；操作员和查看者按现有 Runtime 目标授权访问。目标记录持久化后，管理员保存的连接地址优先于启动命令中的初始地址。
 
-The separate `--mode mock` is explicitly synthetic and never a fallback for gRPC. Import and activate a Designer `.emoweb` package in the admin UI. Package updates and rollback change Web presentation only, never Runtime configuration or running Jobs.
+本机仓库的 C: 路径经 junction 指向 D:；Node/Vite 开发构建请从实际 `D:\jsdfhasuh\documents\my_project\emo_master` 执行，避免跨盘 realpath 产生输出路径错误。已构建wheel的运行不需要Node。
 
-## Normal operation and current-target packages
+`--mode mock` 是明确标注的合成演示，适合查看编辑操作，不作为 gRPC 连接失败时的回退。普通局域网 gRPC 不需要 TLS/mTLS。Web 的非回环监听使用明确的 `--host` 和 `--allowed-origin`，见[独立交付和备份恢复](docs/DEPLOYMENT.md)。
 
-Select a Runtime and refresh to retrieve its current instance/project identity,
-configuration revision, Jobs, workflows and available packages. Valid selections
-and edited workflow inputs are retained; changed input definitions/configuration
-are shown with a review notice. Invalid or old-instance control targets are cleared,
-never silently replaced by another Job.
+## 两页编辑、发布和运行
 
-An accepted Start with a concrete Job identity confirms the command, not Job
-completion: explicitly select that Job to view or Stop it immediately. An accepted
-Stop means stopping; terminal state and resource ownership come from the original
-Job. UNKNOWN uses the original request/identity for queries, never an automatic
-replay. Rejections show their actual reason, including HTTP 200 business rejection.
+1. Designer 将流程加载或发布到 Runtime 后，独立打开 `/editor` 并登录。选择 Runtime；工具栏显示当前工程、实例和文档修订。流程结果区来自该 Runtime 已生效工程和算子声明，不包含 Designer 尚未发布的修改。
+2. 使用初始空白“检测页”，添加结果图片、数值、判定指示、运行状态。新建“详情页”，添加结果表格或数值详情与导航按钮。页面目标固定为 Web，使用 `presentation.schemaVersion="1.2"`。页面标签支持重命名、复制、排序、首页和删除；画布、属性区和撤销重做编辑完整源。
+3. 在属性区选择“工作流 → 节点 → 输出”，或从流程结果区拖放绑定。图片绑定 image，数值绑定 integer/number，判定绑定 boolean/string，表格绑定 collection。实际端口由目录决定；调用位置和结果作用域保留在来源定义中。节点重命名不改变来源 ID。
+4. 静态图片通过上传进入 Web 资源存储。点击“保存草稿”后重开，页面、布局、来源和资源继续可编辑。保存不发布，也不改 Runtime 采集配置。示例预览明确标注“示例数据”，打开、保存和切页均不启动检测。
+5. 点击“发布”。Web 保存候选源和 `.emoweb`，根据全部页面绑定生成通用输出请求，校验当前工程和采集能力，经 Runtime 确认保存后启用页面。运行中的任务保持原采集范围，发布不停止或重启它。
+6. 回到运行面板，通过已有控制区明确选择工作流并“开始”。选择准确任务查看结果；图片、数量、OK/NG 使用同次封闭结果。详情页正常切换。Start 被接受不等于任务已完成，Stop 被接受不等于任务已终止，状态以 Runtime 为准。
+7. 在编辑器选择已有任务进行实时预览。当前任务未采集的新来源显示“先发布，再明确启动新任务”。草稿不创建调试任务。布局修改发布后明确刷新或切换页面版本；新增来源在下一次明确启动时生效。
 
-Package files/versions are shared, but activation is stored in Web SQLite as
-`(runtimeId, projectId) -> packageId`. “对当前目标启用 / 切回此版本” affects only
-the selected Runtime's formal project. A package for another project is rejected;
-other targets' activation and grants are retained. Existing views retain their pinned
-version until explicitly switched. Legacy activation migrates only known explicit
-Runtime associations; unassociated packages are not broadcast to every target.
+页面版本、请求配置修订和任务 `capturePlanRevision` 是不同身份。覆盖依据来源定义和结果作用域判断，不要求这三个修订相等。浏览器视图固定所选版本，收到页面更新通知后由用户明确刷新；多客户端不会改变任务采集范围。
 
-SDK 1.1.1 uses formal BrowserMessage for ordinary Jobs with explicit empty
-run-group identity. Exact Stop preserves that empty field; accepted Stop is not
-terminal. The full official manifest and built-in fixtures are pinned unchanged.
+## 发布状态与一次断连恢复
 
-## Designer preview (same built renderer)
+| 状态 | 已发生的动作 | 正常出口 |
+| --- | --- | --- |
+| `PREPARED` | 候选源和包已保存，校验连接中断时尚未提交写入 | 明确继续，重新校验后提交 |
+| `REQUEST_UNKNOWN` | 原请求已发送，未取得可确认结果 | 查询原请求；不自动重放写入 |
+| `REQUEST_SAVED` | 原请求回执或当前实际配置已确认，页面尚未启用 | 明确继续，核对实际配置后启用 |
+| `PUBLISHED` | 采集配置与页面启用均已确认 | 选择已有任务，或明确启动新任务 |
+| `REJECTED` | 当前工程、类型、来源或额度不满足 | 保留草稿和旧正式页，修复后新建明确发布 |
+| `ABANDONED` | 用户结束此页面发布协调 | 保留草稿；原 Runtime 请求未被撤销或重放 |
 
-```sh
-emo-web-panel preview --package contracts/panel-contract-v1/sample-panels/demo.emoweb --context contracts/panel-contract-v1/fixtures/preview-fixtures.json --host 127.0.0.1 --port 0 --json --no-control
+查询只读取原请求回执和实际配置。回执缺失而实际配置匹配候选时，可确认配置已满足并继续启用；实际配置不同则继续显示未知。也可明确“结束此发布”，记录观察到的实际修订，再发起新的发布。这不声称原写入从未执行。Runtime 已保存但 Web 尚未启用时，新任务可能已经使用新请求，界面会如实显示。
+
+回退使用保存的旧完整页面源，针对 Runtime 当前工程重新校验并提交后续任务需要的请求，再启用对应包。旧来源已删除时列出原因，保留当前正式页。流程变化后的失效来源保留定义和诊断；有效来源继续按任务快照展示，失效来源不能显示旧图片或旧 OK/NG。
+
+## 构建、分发和验证
+
+```powershell
+& web_panel/.venv/Scripts/python.exe -m pytest web_panel/tests -q
+npm --prefix web_panel/frontend test
+npm --prefix web_panel/frontend run build
+& web_panel/.venv/Scripts/python.exe web_panel/scripts/package_frontend.py
+& web_panel/.venv/Scripts/python.exe -m build --wheel web_panel --outdir web_panel/dist
 ```
 
-The first stdout line after successful startup is `{"event":"ready","protocolVersion":"1","url":"http://127.0.0.1:PORT/?token=..."}`. The short-lived token is exchanged once for a viewer session; do not log it. Diagnostics use stderr. Temporary users/state are isolated and cleaned up on exit.
+将 Web wheel 和供应的 SDK 1.5.0 wheel 一起交付。Web wheel 含已构建前端，目标电脑运行不需要 Node。保留独立 Python 环境，使用一个 ASGI worker 共享结果订阅和有界图片缓存。SDK 可从 `contracts/panel-contract-v1/` 或仓库 `docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/` 获取。
 
-`--context` is mandatory. `fixtures` loads only shipped synthetic examples; `runtime` pins the Designer-supplied endpoint, instance, project and history revision and lets the user select an existing Job. Both modes deny Start, Stop, configuration writes, package imports/activation and rollback. Runtime mode never silently substitutes fixtures. Closing preview releases only its own connections/subscriptions, not production Jobs.
+检查证据见仓库 `docs/testing/2026-11-03-independent-web-editor/`。源码自动测试、实际软件 Runtime、真实浏览器、原生 Qt、wheel 安装验证和现场设备是不同层级；未执行的层级不能记为通过。现场验收不由合成演示替代。
 
-## Verification and distribution
+旧 `emo-web-panel preview --package ... --context ... --host 127.0.0.1 --port 0 --json --no-control` CLI 仍可用于隔离的只读包检查。独立 Web 编辑闭环不依赖该 CLI，也不要求 Designer 导出包或启动预览进程。历史交接文件保留原始证据，不作为新 Web 页面的创建流程。
 
-```sh
-python -m unittest discover -s tests -v
-npm --prefix frontend test
-npm --prefix frontend run build
-python scripts/package_frontend.py
-python -m build --wheel
-```
-
-Distribute the Web wheel **and supplied SDK wheel** together; install both with `python -m pip install PATH_TO_SDK.whl PATH_TO_WEB.whl`. End users do not need Node. Use one ASGI worker for shared subscriptions and bounded byte caches. See [deployment](docs/DEPLOYMENT.md), [acceptance](docs/ACCEPTANCE-MATRIX.md), [verification](docs/VERIFICATION.md), and [remaining integration boundaries](docs/CONTRACT-GAPS.md).
-
-Synthetic gRPC, actual software Runtime, browser automation, Windows CI, Designer UI, and physical hardware are separate evidence levels. A passing fixture is never a claim that the user's Windows Runtime or devices were accessed.
-
-Runtime logs use `/api/runtimes/{rid}/logs` and `/logs/export` with the same Runtime view ACL as other reads. Historical filters do not follow the current project. IDs/cursors/sequences are decimal strings. Query business failures preserve `ok/code/message/runtimeInstanceId`; the browser advances only successful pages. Exports are JSONL with one event per line and fixed upper bounds. Gateway diagnostics are independent JSONL in `Config.data_dir/logs`, readable/exportable only under `/api/admin/gateway-logs`; operation audit stays in its existing endpoint. Preview diagnostics retain the existing temporary preview lifetime.
+Runtime 历史日志继续使用既有 `/api/runtimes/{rid}/logs` 和 `/logs/export`，精确 ID/游标保留十进制字符串。网关诊断保存在 data-dir 的 `logs/`，与操作审计分开；不写凭据、token 或请求体。

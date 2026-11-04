@@ -7,6 +7,7 @@ import time
 from uuid import uuid4
 
 from emo_master.core.presentation.values import freezeValue
+from emo_master.core.presentation.capture_limits import imageCaptureIdentity
 from emo_master.apps.runtime.presentation.provenance import FrameTracker
 
 
@@ -106,6 +107,8 @@ class ResultCollector:
                        if source["resultScopeId"] == scopeId}
             item = {"identity": identity, "expected": list(sources), "values": {}, "bytes": 0,
                     "sources": sources, "rawBytes": 0, "sourceObservations": {}}
+            item["values"].update({key: unavailable(key, "INVALID_VALUE", reason)
+                for key, reason in self.plan.get("unavailable", {}).items() if key in sources})
             self.open[(context.workflowRunId, scopeId)] = item
             try:
                 self.emit({"eventType": "display.open", "item": {"identity": identity, "expected": list(sources),
@@ -125,11 +128,22 @@ class ResultCollector:
                 raise
 
     def output(self, context, outputs, workflow=False):
+        # Equivalent Qt/Web scopes keep separate results, but one observation
+        # must acquire/copy/encode its image lane only once for this invocation.
+        frozenSources, imageTargets = {}, {}
         for (runId, _scopeId), item in self.open.items():
             if runId != context.workflowRunId:
                 continue
-            frozenSources = {}
+            for key, source in item['sources'].items():
+                if source['expectedType'] == 'image' and key not in self.plan.get('unavailable', {}):
+                    signature = imageCaptureIdentity(source, self.plan['scopes'])
+                    imageTargets.setdefault(signature, []).append(dict(key=item['identity']['resultKey'], sourceId=key))
+        for (runId, _scopeId), item in self.open.items():
+            if runId != context.workflowRunId:
+                continue
             for key, source in item["sources"].items():
+                if key in self.plan.get("unavailable", {}):
+                    continue
                 if source["kind"] not in {"node_output", "workflow_output"}:
                     continue
                 if (source["kind"] == "workflow_output") != workflow:
@@ -149,14 +163,13 @@ class ResultCollector:
                 try:
                     value = projectField(outputs[source["port"]], source["fieldPath"])
                     if source["expectedType"] == "image":
-                        signature = json.dumps(source, sort_keys=True)
+                        signature = imageCaptureIdentity(source, self.plan['scopes'])
                         if signature in frozenSources:
                             frozen = frozenSources[signature]
                             item["values"][key] = dict(frozen, sourceId=key)
-                            if frozen.get("pendingImage"):
-                                item["values"][key]["imageSourceId"] = frozen["sourceId"]
                         else:
-                            item["values"][key] = frozenSources[signature] = self.image(key, value, item)
+                            item["values"][key] = frozenSources[signature] = self.image(
+                                key, value, item, targets=imageTargets[signature])
                         continue
                     frozen = freezeValue(value)
                     totalBytes = item["bytes"] + len(frozen.encode())
@@ -170,7 +183,7 @@ class ResultCollector:
                     self._trace("source.freeze_failed", item["identity"], sourceId=key, errorType=type(error).__name__)
                     item["values"][key] = unavailable(key, "INVALID_VALUE", type(error).__name__)
 
-    def image(self, key, value, item):
+    def image(self, key, value, item, *, targets=None):
         import numpy as np
         if (not isinstance(value, np.ndarray) or value.dtype != np.uint8 or value.ndim not in (2, 3)
                 or (value.ndim == 3 and value.shape[2] not in (1, 3, 4)) or not value.size):
@@ -226,6 +239,8 @@ class ResultCollector:
                               "resultOrdinal": item["identity"].get("resultOrdinal"),
                               "provenance": self.frames.lookup(value) or {"frameIdentity": str(uuid4()),
                                   "coordinateSpaceId": str(uuid4()), "trust": "unknown"}}
+                if targets is not None:
+                    descriptor['targets'] = targets
                 self.emit({"eventType": "display.image", "descriptor": descriptor})
                 transferred = True
                 acquisition["publishedNs"] = time.monotonic_ns()

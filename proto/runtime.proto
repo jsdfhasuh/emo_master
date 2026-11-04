@@ -798,7 +798,28 @@ message DispatchQueueReply {
   string state_json = 4;
 }
 
+// UI-independent, project-persistent requests for subsequent normal Jobs.
+message OutputRequestsRequest {
+  string runtime_instance_id = 1;
+  string project_id = 2;
+  int64 expected_document_revision = 3;
+  string expected_config_revision = 4;
+  string request_id = 5;
+  string config_json = 6;
+}
+message OutputRequestsReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string state_json = 4;
+}
+
 service RuntimeService {
+  rpc GetOutputCatalog(OutputRequestsRequest) returns (OutputRequestsReply);
+  rpc GetOutputRequests(OutputRequestsRequest) returns (OutputRequestsReply);
+  rpc ValidateOutputRequests(OutputRequestsRequest) returns (OutputRequestsReply);
+  rpc SubmitOutputRequests(OutputRequestsRequest) returns (OutputRequestsReply);
+  rpc GetOutputRequestStatus(OutputRequestsRequest) returns (OutputRequestsReply);
   rpc PrepareProjectImport(PrepareProjectImportRequest) returns (ProjectConfigurationReply);
   rpc GetRuntimeInfo(RuntimeInfoRequest) returns (RuntimeInfoReply);
   rpc ListRuns(ListRunsRequest) returns (ListRunsReply);

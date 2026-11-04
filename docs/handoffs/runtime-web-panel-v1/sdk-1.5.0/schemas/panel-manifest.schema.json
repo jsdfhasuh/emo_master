@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "PublishedAsset": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "byteSize": {
+          "maximum": 8388608,
+          "minimum": 0,
+          "title": "Bytesize",
+          "type": "integer"
+        },
+        "mimeType": {
+          "enum": [
+            "image/png",
+            "image/jpeg",
+            "image/bmp"
+          ],
+          "title": "Mimetype",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sha256",
+        "byteSize",
+        "mimeType"
+      ],
+      "title": "PublishedAsset",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "emo-web-panel-1",
+      "default": "emo-web-panel-1",
+      "title": "Format",
+      "type": "string"
+    },
+    "projectId": {
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "^\\S+$",
+      "title": "Projectid",
+      "type": "string"
+    },
+    "packageRevision": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Packagerevision",
+      "type": "string"
+    },
+    "panelContractVersion": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Panelcontractversion",
+      "type": "string"
+    },
+    "rendererRequirements": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Rendererrequirements",
+      "type": "array"
+    },
+    "presentation": {
+      "const": "presentation.json",
+      "default": "presentation.json",
+      "title": "Presentation",
+      "type": "string"
+    },
+    "sourcePresentationVersion": {
+      "enum": [
+        "1.0",
+        "1.1",
+        "1.2"
+      ],
+      "title": "Sourcepresentationversion",
+      "type": "string"
+    },
+    "historyDefinitionRevision": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Historydefinitionrevision",
+      "type": "string"
+    },
+    "assets": {
+      "patternProperties": {
+        "^\\S+$": {
+          "$ref": "#/$defs/PublishedAsset"
+        }
+      },
+      "propertyNames": {
+        "maxLength": 160,
+        "minLength": 1
+      },
+      "title": "Assets",
+      "type": "object"
+    },
+    "captureRequirements": {
+      "additionalProperties": true,
+      "title": "Capturerequirements",
+      "type": "object"
+    }
+  },
+  "required": [
+    "projectId",
+    "packageRevision",
+    "rendererRequirements",
+    "sourcePresentationVersion",
+    "historyDefinitionRevision",
+    "assets",
+    "captureRequirements"
+  ],
+  "title": "PanelManifest",
+  "type": "object"
+}

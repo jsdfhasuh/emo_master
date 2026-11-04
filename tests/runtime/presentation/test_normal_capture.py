@@ -150,6 +150,7 @@ def testIdempotentStartLookupAndGenerationFence(channel, tmp_path):
     lookup = runtime.GetStartRequest(pb.StartRequestLookup(start_request_id=startRequest.start_request_id,
         runtime_instance_id=runtime.runtimeInstanceId), None)
     assert lookup.ok and lookup.job_id == first.job_id
+    assert lookup.project_revision == runtime.jobRepository.get(first.job_id).projectRevision
     changed = pb.StartJobRequest()
     changed.CopyFrom(startRequest)
     changed.inputs_json = '{"increment":false}'

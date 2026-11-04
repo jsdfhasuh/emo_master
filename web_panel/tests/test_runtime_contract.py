@@ -40,7 +40,8 @@ class Service(rpc.RuntimeServiceServicer, rpc.DisplayServiceServicer):
         return pb.RunState(runtime_instance_id=self.instance, project_id=self.project, workflow_id='wf',
             job_id='j1', run_group_id='group-1', source_job_id='j1', status='COMPLETED',
             owns_resources=True, display_resources_released=False, capture_enabled=self.capture,
-            allowed_actions=['view'], accepted_at_ms=9007199254740993)
+            allowed_actions=['view'], accepted_at_ms=9007199254740993,
+            start_request_id=getattr(self, 'job_request_id', ''))
 
     async def QueryRuntimeLogs(self, request, context):
         self.log_request=request
@@ -101,6 +102,10 @@ class Service(rpc.RuntimeServiceServicer, rpc.DisplayServiceServicer):
 
     async def GetStartRequest(self, request, context):
         self.lookups.append(request)
+        if request.start_request_id == 'metadata-request':
+            return pb.StartJobReply(ok=getattr(self, 'receipt_ok', True), job_id='j1', status='FAILED',
+                start_request_id=request.start_request_id,
+                runtime_instance_id=getattr(self, 'receipt_instance', self.instance), project_revision=3)
         return pb.StartJobReply(ok=True, job_id='j2', status='ACCEPTED')
 
     async def StopJob(self, request, context):
@@ -192,7 +197,7 @@ class RuntimeContractTests(unittest.IsolatedAsyncioTestCase):
         request = self.service.starts[0]
         self.assertEqual(request.expected_document_revision,7)
         self.assertEqual(request.start_request_id,'stable-request-1')
-        self.assertTrue(request.capture_presentation)
+        self.assertFalse(request.capture_presentation)
         await self.client.control('stop','j1',self.body())
         self.assertEqual(self.service.stops[0].job_id,'j1')
         self.assertEqual(self.service.stops[0].mode,'graceful')
@@ -281,6 +286,37 @@ class RuntimeContractTests(unittest.IsolatedAsyncioTestCase):
         wire.identity.execution_revision = 'c'*64
         with self.assertRaisesRegex(RuntimeRejected,'CAPTURE_MISMATCH'):
             await self.client.snapshot('j1')
+
+    async def test_selected_job_metadata_keeps_frozen_revisions_after_project_change(self):
+        source = DataSource.model_validate({'kind': 'global_variable', 'resultScopeId': 'root',
+            'variableId': 'count', 'expectedType': 'integer', 'callPath': [], 'fieldPath': [], 'ruleVersion': '1.0'}).model_dump()
+        scope = ResultScope.model_validate({'callPath': [], 'commitPolicy': 'workflow_terminal',
+            'entryWorkflowId': 'wf', 'scopeWorkflowId': 'wf'}).model_dump()
+        self.service.definition = {'ruleVersion': '1.0', 'sources': [source], 'scopes': {'root': scope}}
+        self.service.capture = True
+        before = await self.client.job_metadata('j1')
+        self.service.revision = 999
+        after = await self.client.job_metadata('j1')
+        self.assertEqual(before, after)
+        self.assertEqual(after['executionRevision'], 'b' * 64)
+        self.assertEqual(after['capturePlanRevision'], revisionOf(self.service.definition))
+        self.assertNotIn('projectRevision', after)
+        self.assertNotIn('documentRevision', after)
+        self.service.job_request_id = 'metadata-request'
+        self.assertEqual((await self.client.job_metadata('j1'))['projectRevision'], '3')
+        self.assertEqual((await self.client.info())['documentRevision'], '999')
+        self.service.receipt_instance = 'old-instance'
+        with self.assertRaisesRegex(RuntimeRejected, 'IDENTITY_MISMATCH'):
+            await self.client.job_metadata('j1')
+        self.service.receipt_instance = self.service.instance
+        self.service.receipt_ok = False
+        self.assertEqual((await self.client.job_metadata('j1'))['projectRevision'], '3')
+        self.assertEqual(self.service.starts, [])
+        self.assertEqual(self.service.stops, [])
+        self.service.capture = False
+        disabled = await self.client.job_metadata('j1')
+        self.assertFalse(disabled['captureEnabled'])
+        self.assertEqual(disabled['capturePlanRevision'], '')
 
     async def test_metadata_only_snapshot_preserves_scope_ordinals(self):
         source = DataSource.model_validate({'kind':'global_variable','resultScopeId':'root',

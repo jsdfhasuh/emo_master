@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import math
+import os
 from pathlib import Path, PurePosixPath
 import re
 import shutil
@@ -13,12 +14,26 @@ import stat
 import sqlite3
 import tempfile
 import threading
+import time
 import zipfile
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 class PackageError(ValueError):
     """Untrusted package rejected; messages never expose host paths."""
+
+
+def _io_path(path):
+    """Use Windows extended paths for IO after package containment validation."""
+    path = Path(path)
+    if os.name != "nt":
+        return path
+    absolute = os.path.abspath(path)
+    if absolute.startswith("\\\\?\\"):
+        return Path(absolute)
+    if absolute.startswith("\\\\"):
+        return Path("\\\\?\\UNC\\" + absolute[2:])
+    return Path("\\\\?\\" + absolute)
 
 
 TYPES = frozenset({"image", "text", "number", "indicator", "runtime_status", "table",
@@ -607,7 +622,20 @@ class PackageStore:
                     path = staging / name
                     path.parent.mkdir(parents=True, exist_ok=True)
                     path.write_bytes(data)
-                staging.rename(self.root / package_id)
+                # The final digest directory can make nested assets exceed
+                # MAX_PATH even when both directory names themselves are short.
+                destination = self.root / package_id
+                try:
+                    _io_path(staging).rename(_io_path(destination))
+                except PermissionError as error:
+                    # Actual Windows installs can briefly deny directory rename
+                    # immediately after closed files were written. Retry this
+                    # local, uncommitted rename once; never replay Runtime RPCs.
+                    if (os.name != 'nt' or getattr(error, 'winerror', None) not in {5, 32, 33}
+                            or not _io_path(staging).exists() or _io_path(destination).exists()):
+                        raise
+                    time.sleep(.1)
+                    _io_path(staging).rename(_io_path(destination))
             finally:
                 if staging.exists():
                     shutil.rmtree(staging)
@@ -673,9 +701,10 @@ class PackageStore:
                 if asset["id"] == asset_id:
                     root = self._directory(package_id).resolve()
                     path = root / asset["path"]
-                    if not path.resolve().is_relative_to(root) or path.is_symlink():
+                    resolved_path = path.resolve()
+                    if not resolved_path.is_relative_to(root) or _io_path(path).is_symlink():
                         raise PackageError("Stored resource unavailable")
-                    data = path.read_bytes()
+                    data = _io_path(resolved_path).read_bytes()
                     if hashlib.sha256(data).hexdigest() != asset["sha256"]:
                         raise PackageError("Stored resource digest mismatch")
                     return data, asset["mimeType"]

@@ -136,7 +136,7 @@ class PropertyGroups:
             visible = kind is not None
             if widget is t.applyButton:
                 visible = True
-            if widget in (t.pageName, t.pageTargets):
+            if widget is t.pageName:
                 visible = kind is None
             if name in CONTENT.get(kind, set()):
                 visible = True

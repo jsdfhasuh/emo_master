@@ -12,6 +12,15 @@ test('binding uses the validated scopeId and nested style whitelist',()=>{
  const html=render([{id:'n',type:'number',binding:{sourceId:'score',scopeId:'second'},props:{style:{color:'#123456',fontSize:24,fontWeight:'bold'}}}],{result:{resultKey:'a',sources:{score:{state:'available',value:11}}},results:{second:{resultKey:'b',sources:{score:{state:'available',value:42}}}}});
  assert.match(html,/>42 /);assert.doesNotMatch(html,/>11 /);assert.match(html,/color:#123456/);assert.match(html,/font-size:24px/);assert.match(html,/font-weight:bold/);
 });
+test('official vision collection envelopes render their declared items as table rows',()=>{
+ const html=render([{id:'table',type:'table',binding:'measurements',props:{columns:[{title:'面积',fieldPath:['area']}]}}],{result:{resultKey:'r',sources:{measurements:{state:'available',valueJson:JSON.stringify({type:'blobCollection',schemaVersion:'1.1',coordinateSpace:{},items:[{area:1600},{area:900}]})}}}});
+ assert.match(html,/面积/);assert.match(html,/>1600</);assert.match(html,/>900</);assert.equal((html.match(/<tbody><tr>|<\/tr><tr>/g) || []).length,2);
+ const {resultRows}=require('../src/renderer/PanelRenderer.tsx');assert.deepEqual(resultRows({type:'detectionCollection',schemaVersion:'1.0',items:[{label:'part'}]}),[{label:'part'}]);assert.deepEqual(resultRows({type:'plcValueCollection',schemaVersion:'1.0',values:[1,2]}),[1,2]);
+});
+test('table does not guess rows from arbitrary JSON objects or unsupported collection versions',()=>{
+ const {resultRows}=require('../src/renderer/PanelRenderer.tsx');assert.equal(resultRows({items:[{area:1}]}),undefined);assert.equal(resultRows({type:'blobCollection',schemaVersion:'9.0',items:[]}),undefined);
+ const html=render([{id:'t',type:'table',binding:'source',props:{columns:[{title:'area',fieldPath:['area']}]}}],{result:{resultKey:'r',sources:{source:{state:'available',value:{items:[{area:777}]}}}}});assert.match(html,/不支持此集合结果结构/);assert.doesNotMatch(html,/>777</);
+});
 test('unavailable bound values never render fallback or stale OK business values',()=>{
  for(const type of ['text','number','indicator','table']){
  const html=render([{id:'c',type,binding:'bad',props:{value:'OK',text:'OK'}}],{result:{resultKey:'r',sources:{bad:{state:'error',value:'OK',reason:'sensor offline'}}}});
@@ -211,4 +220,13 @@ test('zero-height fixed spacers retain explicit zero instead of default occupanc
  const {responsiveStyle}=require('../src/renderer/PanelRenderer.tsx');
  const style=responsiveStyle({id:'zero',type:'spacer',responsive:{minHeight:0,preferredHeight:0}},{type:'responsive',direction:'vertical'});
  assert.equal(style.height,0);assert.equal(style.minHeight,0);assert.equal(style.flexBasis,0);
+});
+
+test('fixed preview height sizes the vertical flow and adds upward extension only once',()=>{
+ const components=[{id:'top',type:'text',props:{text:'Header'}},{id:'space',type:'spacer',props:{spacerMode:'flex'}},{id:'bottom',type:'text',props:{text:'Footer'}}];
+ const panel={id:'p',pages:[{id:'page',title:'Page',canvasTop:-120,layout:{type:'responsive',direction:'vertical'},components}]};
+ const fixed=render(components,{panel,viewportHeight:768});
+ assert.match(fixed,/padding-top:120px;min-height:872px/);assert.match(fixed,/height:752px/);
+ assert.equal((fixed.match(/height:752px/g) || []).length,1);
+ const following=render(components,{panel});assert.doesNotMatch(following,/height:752px/);
 });

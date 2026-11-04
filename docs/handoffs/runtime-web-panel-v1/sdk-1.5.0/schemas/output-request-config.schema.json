@@ -1,0 +1,255 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "CallStep": {
+      "additionalProperties": false,
+      "properties": {
+        "nodeId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Nodeid",
+          "type": "string"
+        },
+        "relation": {
+          "default": "subflow",
+          "enum": [
+            "subflow",
+            "loop_body",
+            "loop_condition"
+          ],
+          "title": "Relation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nodeId"
+      ],
+      "title": "CallStep",
+      "type": "object"
+    },
+    "DataSource": {
+      "additionalProperties": false,
+      "description": "Value object: stores return detached copies; rebind replaces the reference.",
+      "properties": {
+        "kind": {
+          "enum": [
+            "node_output",
+            "workflow_output",
+            "global_counter",
+            "global_variable",
+            "runtime_status"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "resultScopeId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Resultscopeid",
+          "type": "string"
+        },
+        "workflowId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workflowid"
+        },
+        "callPath": {
+          "items": {
+            "$ref": "#/$defs/CallStep"
+          },
+          "maxItems": 32,
+          "title": "Callpath",
+          "type": "array"
+        },
+        "nodeId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nodeid"
+        },
+        "port": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Port"
+        },
+        "fieldPath": {
+          "items": {
+            "maxLength": 160,
+            "minLength": 1,
+            "pattern": "^\\S+$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Fieldpath",
+          "type": "array"
+        },
+        "expectedType": {
+          "enum": [
+            "integer",
+            "number",
+            "string",
+            "boolean",
+            "image",
+            "collection",
+            "geometry",
+            "json"
+          ],
+          "title": "Expectedtype",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "variableId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Variableid"
+        },
+        "ruleVersion": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Ruleversion",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "resultScopeId",
+        "expectedType"
+      ],
+      "title": "DataSource",
+      "type": "object"
+    },
+    "ResultScope": {
+      "additionalProperties": false,
+      "properties": {
+        "entryWorkflowId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Entryworkflowid",
+          "type": "string"
+        },
+        "scopeWorkflowId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Scopeworkflowid",
+          "type": "string"
+        },
+        "callPath": {
+          "items": {
+            "$ref": "#/$defs/CallStep"
+          },
+          "maxItems": 32,
+          "title": "Callpath",
+          "type": "array"
+        },
+        "commitPolicy": {
+          "const": "workflow_terminal",
+          "default": "workflow_terminal",
+          "title": "Commitpolicy",
+          "type": "string"
+        }
+      },
+      "required": [
+        "entryWorkflowId",
+        "scopeWorkflowId"
+      ],
+      "title": "ResultScope",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schemaversion",
+      "type": "string"
+    },
+    "sources": {
+      "maxProperties": 256,
+      "patternProperties": {
+        "^\\S+$": {
+          "$ref": "#/$defs/DataSource"
+        }
+      },
+      "propertyNames": {
+        "maxLength": 160,
+        "minLength": 1
+      },
+      "title": "Sources",
+      "type": "object"
+    },
+    "scopes": {
+      "maxProperties": 256,
+      "patternProperties": {
+        "^\\S+$": {
+          "$ref": "#/$defs/ResultScope"
+        }
+      },
+      "propertyNames": {
+        "maxLength": 160,
+        "minLength": 1
+      },
+      "title": "Scopes",
+      "type": "object"
+    }
+  },
+  "title": "OutputRequestConfig",
+  "type": "object"
+}

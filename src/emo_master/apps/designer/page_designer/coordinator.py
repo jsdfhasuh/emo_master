@@ -26,7 +26,6 @@ class PageCoordinator:
         self.monitor = None
         self.onlineSummary = '未读取在线状态'
         self.closeApproved = None
-        self._closingWebPreview = None
         self._devicePublishPending = False
         from .preview import PreviewController
         self.preview = PreviewController(self)
@@ -339,19 +338,7 @@ class PageCoordinator:
                 self.preview.closeAsync(self.window.close)
             return False
         self.preview.timer.stop()
-        webPreview = getattr(self, 'webPreview', None)
-        if webPreview and not webPreview.finished:
-            if getattr(self, '_closingWebPreview', None) is not webPreview:
-                self._closingWebPreview = webPreview
-                webPreview.closed.connect(self._finishWebPreviewClose)
-            if not webPreview.closing:
-                webPreview.close()
-            return False
         return True
-
-    def _finishWebPreviewClose(self):
-        self._closingWebPreview = None
-        QTimer.singleShot(0, self.window.close)
 
     def confirmDraft(self):
         if not self._canSync():

@@ -46,7 +46,7 @@ export async function apiBlob(path: string, options: RequestInit = {}): Promise<
 export function safeAssetUrl(value: unknown): string | undefined { if (typeof value !== 'string')
     return; try {
     const url = new URL(value, location.origin);
-    if (url.origin === location.origin && (/^\/api\/(assets|history-images)\//.test(url.pathname) || /^\/api\/views\/[^/]+\/(images|history-images|assets)\/[^/]+$/.test(url.pathname)))
+    if (url.origin === location.origin && (/^\/api\/(assets|history-images)\//.test(url.pathname) || /^\/api\/views\/[^/]+\/(images|history-images|assets)\/[^/]+$/.test(url.pathname) || /^\/api\/editor\/[^/]+\/assets\/[^/]+$/.test(url.pathname)))
         return url.href;
 }
 catch { } }

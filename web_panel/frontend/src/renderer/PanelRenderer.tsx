@@ -22,7 +22,7 @@ export function restoreHistorySelection(data:History, prior?:Record<string,unkno
 }
 function layoutStyle(layout?:Layout,columns=12):CSSProperties {
     if(layout?.type==='responsive') return {display:'flex',flexDirection:layout.direction==='vertical'?'column':'row',flexWrap:layout.direction==='vertical'?'nowrap':'wrap',gap:layout.spacing,alignItems:layout.alignment==='start'?'flex-start':layout.alignment==='end'?'flex-end':layout.alignment,justifyContent:layout.justify==='start'?'flex-start':layout.justify==='end'?'flex-end':layout.justify};
-    return {gridTemplateColumns:`repeat(${layout?.columns || columns}, minmax(0, 1fr))`,gap:layout?.spacing ?? (layout as Component['grid'])?.gap};
+    return {gridTemplateColumns:`repeat(${layout?.columns || columns}, minmax(0, 1fr))`,gridAutoRows:'minmax(64px,auto)',gap:layout?.spacing ?? (layout as Component['grid'])?.gap};
 }
 export function responsiveStyle(c:Component,parent?:Layout,hasVerticalSpacer=false,equalWidthBasis=0):CSSProperties {
     if(parent?.type!=='responsive')return {};
@@ -100,11 +100,23 @@ function HistoryTable({ component, viewId, aggregate, onSelection }: {
         {select(row);} }}>{columns.map(k => <td key={k}>{stringify(row.__displayValues ? (row.__displayValues as Record<string,unknown>)[k] : row[k])}</td>)}</tr>)}</tbody></table></div>{!data && <p>正在读取历史…</p>}{data && !rows.length && <p>{typeof component.props?.emptyText==='string'?component.props.emptyText:'暂无记录'}</p>}<nav><button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>上一页</button><span>第 {page} 页 · 共 {data?.total ?? '—'} 条</span><button disabled={!data || (data.hasNext !== undefined ? !data.hasNext : page * data.pageSize >= (data.total ?? 0))} onClick={() => setPage(p => p + 1)}>下一页</button></nav>{selected && (image ? <SafeImage key={image} url={image} label="选中历史记录"/> : <p>选中记录无可用图片</p>)}</>;
 }
 function SafeImage({url,label}:{url:string;label:string}) {const [failed,setFailed]=useState(false);return failed?<p>图片读取失败或无权访问</p>:<img className="result-image" src={url} alt={label} onError={()=>setFailed(true)}/>;}
+/** Runtime's declared collection envelopes, not arbitrary JSON object guessing. */
+export function resultRows(value:unknown):unknown[]|undefined {
+ if(Array.isArray(value))return value;
+ if(value==null || value==='')return [];
+ if(typeof value!=='object')return;
+ const payload=value as Record<string,unknown>;
+ if(!['1.0','1.1','1.2'].includes(String(payload.schemaVersion)))return;
+ const visionCollections=['blobCollection','detectionCollection','contourCollection','shapeMeasurementCollection','lineCollection','circleCollection','templateMatchCollection'];
+ if(visionCollections.includes(String(payload.type)) && Array.isArray(payload.items))return payload.items;
+ if(payload.type==='plcValueCollection' && Array.isArray(payload.values))return payload.values;
+}
 function ResultTable({value,columns,resultKey,pageSize=20,emptyText='本轮暂无表格数据'}:{value:unknown;columns:unknown;resultKey?:string;pageSize?:number;emptyText?:string}) {
- const rows=Array.isArray(value)?value:[];const[page,setPage]=useState(1);useEffect(()=>setPage(1),[resultKey]);
+ const rows=resultRows(value);const[page,setPage]=useState(1);useEffect(()=>setPage(1),[resultKey]);
  const defined=Array.isArray(columns)?columns.filter((c):c is {key?:string;title?:string;fieldPath?:string[]}=>typeof c==='object'&&c!==null&&(typeof c.key==='string'||Array.isArray(c.fieldPath))):[];
  const keys=defined.length?defined:[];const size=Math.max(1,Math.min(100,pageSize));
  if(!keys.length)return <p>未声明表格列</p>;
+ if(!rows)return <p role="status">不支持此集合结果结构，请选择已声明的集合输出或字段投影</p>;
  return <><div className="table-scroll"><table><thead><tr>{keys.map((c,i)=><th key={i}>{c.title||c.key}</th>)}</tr></thead><tbody>{rows.slice((page-1)*size,page*size).map((row,i)=><tr key={i}>{keys.map((c,j)=><td key={j}>{stringify(fieldValue(row,c.fieldPath || (c.key?[c.key]:[])),emptyText)}</td>)}</tr>)}</tbody></table></div>{!rows.length&&<p>{emptyText}</p>}{rows.length>size&&<nav><button disabled={page<=1} onClick={()=>setPage(n=>n-1)}>上一页</button><span>{page} / {Math.ceil(rows.length/size)}</span><button disabled={page*size>=rows.length} onClick={()=>setPage(n=>n+1)}>下一页</button></nav>}</>;
 }
 export async function navigateDisplayedResult(target:string,scope:string|undefined,displayed:boolean,onAction:(a:string,scope?:string)=>Promise<boolean>,onPage:(page:string)=>void,isCurrent:()=>boolean):Promise<boolean> {
@@ -112,7 +124,7 @@ export async function navigateDisplayedResult(target:string,scope:string|undefin
     if(!isCurrent())return false;
     onPage(target);return true;
 }
-export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, onAction, state, runtimeState }: {
+export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, onAction, state, runtimeState, viewportHeight }: {
     panel: Panel;
     pageId: string;
     onPage: (id: string) => void;
@@ -122,18 +134,21 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
     onAction: (a: string, scopeId?:string) => Promise<boolean>;
     state: string;
     runtimeState?: string;
+    /** Whole fixed preview height, including the renderer's normal 16px top gap. */
+    viewportHeight?: number;
 }) {
     const navigationAttempt=useRef(0);
     const pageRoot=useRef<HTMLDivElement>(null);
     const [availableHeight,setAvailableHeight]=useState<number>();
+    const layoutHeight=viewportHeight===undefined?availableHeight:Math.max(0,viewportHeight-16);
     useLayoutEffect(()=>{
         const element=pageRoot.current;
-        if(!element)return;
+        if(!element || viewportHeight!==undefined)return;
         const measure=()=>setAvailableHeight(Math.max(0,window.innerHeight-element.getBoundingClientRect().top-16));
         measure();window.addEventListener('resize',measure);
         const observer=new ResizeObserver(measure);observer.observe(element.parentElement || element);
         return()=>{window.removeEventListener('resize',measure);observer.disconnect()};
-    },[pageId,panel.packageRevision]);
+    },[pageId,panel.packageRevision,viewportHeight]);
     useEffect(()=>{navigationAttempt.current++;return()=>{navigationAttempt.current++}},[viewId,pageId,panel.packageRevision]);
     const [selections,setSelections]=useState<Record<string,Record<string,unknown>|undefined>>({});
     useEffect(()=>setSelections({}),[viewId,panel.packageRevision,pageId]);
@@ -173,7 +188,7 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
                 const selected = typeof p.sourceComponentId === 'string' ? selections[p.sourceComponentId] : undefined;
                 const rowRef = (selected?.imageRefs as Record<string,{status:string;imageRef?:string}> | undefined)?.[c.id];
                 const historyRef = p.sourceMode === 'history_fixed' && viewId ? `/api/views/${encodeURIComponent(viewId)}/${c.history?'history-images':'images'}/${encodeURIComponent(c.id)}` : p.sourceMode === 'history_selection' && viewId && rowRef?.status === 'AVAILABLE' && rowRef.imageRef ? `/api/views/${encodeURIComponent(viewId)}/history-images/${encodeURIComponent(c.id)}?imageRef=${encodeURIComponent(rowRef.imageRef)}` : p.sourceMode === 'history_selection' && typeof selected?.imageRef === 'string' ? `/api/history-images/${encodeURIComponent(selected.imageRef)}` : undefined;
-                const ref = historyRef ?? (p.sourceMode === 'history_selection' || p.sourceMode === 'history_fixed' ? undefined : source?.image?.url ?? (typeof p.assetId === 'string' ? `/api/assets/${encodeURIComponent(panel.id)}/${encodeURIComponent(p.assetId)}` : undefined));
+                const ref = historyRef ?? (p.sourceMode === 'history_selection' || p.sourceMode === 'history_fixed' ? undefined : source?.image?.url ?? (typeof p.assetUrl === 'string'?p.assetUrl:typeof p.assetId === 'string' ? `/api/assets/${encodeURIComponent(panel.id)}/${encodeURIComponent(p.assetId)}` : undefined));
                 const url = preparedImageUrl(ref);
                 body = failed ? <p>{source?.reason || '本轮图片不可用'}</p> : url ? <SafeImage key={url} url={url} label={c.label || '检测结果'}/> : <p>{emptyText ?? '暂无图片'}</p>;
                 break;
@@ -233,8 +248,8 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
         return <section className="panel-card" data-component-id={c.id} key={c.id} style={{ ...responsiveStyle(c,parentLayout,verticalSpacer,equalBasis), ...(c.type==='container' && hasVerticalSpacer(c.children || [],c.grid)?{display:'flex',flexDirection:'column'} as CSSProperties:{}), fontFamily:fontFamilies[String(p.fontFamily)], border:p.cardStyle==='outlined'?'1px solid #64748b':undefined, boxShadow:p.cardStyle==='soft'?'0 2px 12px #0002':undefined, fontWeight: ['normal', 'bold', '400', '500', '600', '700', 400, 500, 600, 700].includes(style.fontWeight as string | number) ? style.fontWeight as 'normal' | 'bold' | 400 | 500 | 600 | 700 : undefined, gridColumn: parentLayout?.type==='responsive'?undefined:`${grid.column || 'auto'} / span ${span}`, gridRow: parentLayout?.type==='responsive'?undefined:`${grid.row || 'auto'} / span ${Math.max(1, Number(grid.rowSpan) || 1)}`, fontSize: typeof style.fontSize === 'number' ? Math.min(128, Math.max(8, style.fontSize)) : undefined, color: typeof style.color === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.color) ? style.color : undefined, backgroundColor: typeof style.backgroundColor === 'string' && /^(#[0-9a-f]{3,8}|[a-z]{1,20})$/i.test(style.backgroundColor) ? style.backgroundColor : undefined, textAlign: ['left', 'center', 'right'].includes(String(style.textAlign)) ? style.textAlign as 'left' | 'center' | 'right' : undefined }}>{(c.label||typeof p.label==='string'||(c.type==='container'&&typeof p.title==='string'))&&<h3>{c.label||(typeof p.label==='string'?p.label:String(p.title))}</h3>}{body}</section>;
     }
     const extension=page.layout?.type==='responsive'?-(page.canvasTop || 0):0;
-    const content=<div ref={extension?undefined:pageRoot} className={page.layout?.type==='responsive'?'panel-responsive':'panel-grid'} style={{...layoutStyle(page.layout || page.grid || panel.grid,12),...(hasVerticalSpacer(page.components,page.layout)?{height:availableHeight}:{}),...(extension?{marginTop:0}:{})}}>{(page.layout?.type==='responsive'?page.components:ordered(page.components)).map(c => render(c,undefined,page.layout,hasVerticalSpacer(page.components,page.layout),equalWidthBasis(page.components,page.layout)))}</div>;
+    const content=<div ref={extension?undefined:pageRoot} className={page.layout?.type==='responsive'?'panel-responsive':'panel-grid'} style={{...layoutStyle(page.layout || page.grid || panel.grid,12),...(hasVerticalSpacer(page.components,page.layout)?{height:layoutHeight}:{}),...(extension?{marginTop:0}:{})}}>{(page.layout?.type==='responsive'?page.components:ordered(page.components)).map(c => render(c,undefined,page.layout,hasVerticalSpacer(page.components,page.layout),equalWidthBasis(page.components,page.layout)))}</div>;
     // Keep each responsive flow slot; only the moved root card is offset upward.
     // Measure the outer viewport so expansion never consumes flexible space twice.
-    return extension?<div ref={pageRoot} data-canvas-top={page.canvasTop} style={{marginTop:16,paddingTop:extension,minHeight:(availableHeight || 0)+extension}}>{content}</div>:content;
+    return extension?<div ref={pageRoot} data-canvas-top={page.canvasTop} style={{marginTop:16,paddingTop:extension,minHeight:(layoutHeight || 0)+extension}}>{content}</div>:content;
 }

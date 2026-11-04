@@ -2,6 +2,7 @@
 import asyncio
 import base64
 import hashlib
+import copy
 from datetime import datetime, timezone
 
 IMAGE = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=')
@@ -35,10 +36,90 @@ class MockRuntime:
         self.ordinal = 0
         self.lock = asyncio.Lock()
         self.control_count = 0
+        from emo_panel_protocol.canonical import revisionOf
+        self.output_config = {"schemaVersion": "1.0", "sources": {}, "scopes": {}}
+        self.output_revision = revisionOf(self.output_config)
+        self.output_receipts = {}
+        self.frozen_output_config = copy.deepcopy(self.output_config)
     async def start(self): pass
     async def close(self): pass
     async def info(self):
-        return {"runtimeInstanceId":self.instance_id,"projectId":"demo-project","mode":"mock","configurationRevision":"1","contractStatus":"draft-unverified","capabilities":["display","history","control","runtime_logs_query_v1"]}
+        return {"runtimeInstanceId":self.instance_id,"projectId":"demo-project","mode":"mock","configurationRevision":"1","documentRevision":"1","contractStatus":"draft-unverified","capabilities":["display","history","control","runtime_logs_query_v1","output_requests_v1"]}
+
+    async def output_catalog(self):
+        from emo_panel_protocol.models import DataSource, ResultScope
+        scope = ResultScope(entryWorkflowId="demo-workflow", scopeWorkflowId="demo-workflow").model_dump(mode="json")
+        choices = []
+        for sid, port, kind, title in (("image", "result_image", "image", "结果图"),
+                                        ("count", "count", "integer", "数量"),
+                                        ("verdict", "result", "boolean", "OK/NG"),
+                                        ("measurements", "detections", "collection", "检测明细")):
+            source = DataSource(kind="node_output", resultScopeId="scope-1", workflowId="demo-workflow",
+                                nodeId="demo-inference", port=port, expectedType=kind).model_dump(mode="json")
+            choices.append({"title": "模拟检测流程 → 推理节点 → " + title, "sourceId": sid,
+                            "scopeId": "scope-1", "source": source, "scope": scope,
+                            "hint": "示例目录，不连接设备", "available": True, "reason": ""})
+        return {**await self.output_requests(), "workflows": await self.workflows(), "choices": choices}
+
+    async def output_requests(self):
+        return {"ok": True, "code": "OK", "runtimeInstanceId": self.instance_id,
+                "projectId": "demo-project", "documentRevision": "1", "configRevision": self.output_revision,
+                "config": copy.deepcopy(self.output_config), "diagnostics": [],
+                "capabilities": {"maxSources": 16, "maxScopes": 16, "maxImageSources": 2}}
+
+    async def validate_output_requests(self, body):
+        from emo_panel_protocol.models import DataSource, ResultScope
+        current = await self.output_requests()
+        reason = ""
+        if body.get("runtimeInstanceId") != self.instance_id or body.get("projectId") != "demo-project":
+            reason = "Runtime 或工程身份已变化"
+        elif str(body.get("expectedDocumentRevision")) != "1" or body.get("expectedConfigRevision") != self.output_revision:
+            reason = "预期工程或采集配置修订不匹配"
+        config = body.get("config", {})
+        try:
+            if set(config) != {"schemaVersion", "sources", "scopes"} or config["schemaVersion"] != "1.0":
+                raise ValueError("Invalid request configuration")
+            scopes = {key: ResultScope.model_validate(value) for key, value in config["scopes"].items()}
+            sources = {key: DataSource.model_validate(value) for key, value in config["sources"].items()}
+            if len(sources) > 16 or len(scopes) > 16 or sum(value.expectedType == "image" for value in sources.values()) > 2:
+                raise ValueError("超出采集额度")
+            catalog = {item["sourceId"]: item for item in (await self.output_catalog_choices())}
+            for sid, value in sources.items():
+                if value.resultScopeId not in scopes or sid not in catalog or value.model_dump(mode="json") != catalog[sid]["source"]:
+                    raise ValueError("来源不存在、类型或结果作用域不匹配: " + sid)
+        except (ValueError, TypeError, KeyError) as error:
+            reason = str(error)
+        return {**current, "ok": not reason, "code": "INVALID_ARGUMENT" if reason else "OK", "message": reason,
+                "diagnostics": [{"message": reason}] if reason else []}
+
+    async def output_catalog_choices(self):
+        return (await self.output_catalog())["choices"]
+
+    async def submit_output_requests(self, body):
+        from emo_panel_protocol.canonical import revisionOf
+        request_id = body.get("requestId")
+        if request_id in self.output_receipts:
+            return copy.deepcopy(self.output_receipts[request_id])
+        checked = await self.validate_output_requests(body)
+        if not checked["ok"]:
+            return checked
+        self.output_config = copy.deepcopy(body["config"])
+        self.output_revision = revisionOf(self.output_config)
+        reply = {**await self.output_requests(), "state": "SAVED", "requestId": request_id}
+        self.output_receipts[request_id] = copy.deepcopy(reply)
+        return reply
+
+    async def output_request_status(self, request_id, body=None):
+        return copy.deepcopy(self.output_receipts.get(request_id, {"ok": False, "code": "NOT_FOUND", "state": "NOT_FOUND", "message": "原请求结果尚不可确认"}))
+
+    async def source_problems(self, run_id, presentation):
+        from emo_panel_protocol.models import DataSource
+        # Immutable packages omit optional nulls; compare the source definition,
+        # not that serialization difference, just as the real Runtime does.
+        return {sid: "SOURCE_NOT_CAPTURED · 当前任务未采集此输出；先发布，再明确启动新任务"
+                for sid, source in presentation.get("dataSources", {}).items()
+                if sid not in self.frozen_output_config["sources"] or
+                DataSource.model_validate(self.frozen_output_config["sources"][sid]) != DataSource.model_validate(source)}
     async def runs(self):
         return [{"id":"demo-run","runId":"demo-run","name":"Demo run","runtimeInstanceId":self.instance_id,"projectId":"demo-project","workflowId":"demo-workflow","configurationRevision":"1","state":"running" if self.running else "stopped"}]
     async def workflows(self):
@@ -46,10 +127,16 @@ class MockRuntime:
     async def snapshot(self, run_id):
         if run_id != "demo-run": raise ValueError("unknown run")
         if self.running: self.ordinal += 1
-        return {"runtimeInstanceId":self.instance_id,"jobId":"demo-run","resultScopeId":"scope-1","resultKey":f"mock-{self.ordinal}","resultOrdinal":str(self.ordinal),"executionRevision":"1","capturePlanRevision":"1","status":"complete","executionTerminal":True,"runState":"running" if self.running else "stopped","receivedAt":datetime.now(timezone.utc).isoformat(),"sources":{
+        result = {"runtimeInstanceId":self.instance_id,"jobId":"demo-run","resultScopeId":"scope-1","resultKey":f"mock-{self.ordinal}","resultOrdinal":str(self.ordinal),"executionRevision":"1","capturePlanRevision":"1","status":"complete","executionTerminal":True,"runState":"running" if self.running else "stopped","receivedAt":datetime.now(timezone.utc).isoformat(),"sources":{
             "image":{"state":"available","image":{"url":f"/api/assets/runtime/{self.runtime_id}/demo-image","ownerResultKey":f"mock-{self.ordinal}","resourceId":"demo-image","mimeType":"image/png","byteSize":len(IMAGE),"sha256":hashlib.sha256(IMAGE).hexdigest()}},
             "score":{"state":"available","value":99.5},"verdict":{"state":"available","value":"OK"},
             "measurements":{"state":"available","value":[{"name":"width","value":10.2}]}}}
+        for sid, source in self.frozen_output_config["sources"].items():
+            port = source.get("port")
+            value = {"count": 3, "result": True, "detections": [{"name": "模拟目标", "value": 3}]} .get(port)
+            result["sources"][sid] = (copy.deepcopy(result["sources"]["image"]) if port == "result_image"
+                                      else {"state": "available", "value": value})
+        return result
     def validate_control(self, action, target, body):
         if body.get("runtimeInstanceId") != self.instance_id or body.get("projectId") != "demo-project" or body.get('configurationRevision')!='1':raise ValueError('Stale or wrong control target/configuration revision')
         inputs=body.get('inputs',{})
@@ -62,6 +149,7 @@ class MockRuntime:
             if action == "start" and body.get("workflowId") != "demo-workflow": raise ValueError("unknown workflow")
             if action == "stop" and target != "demo-run": raise ValueError("unknown run")
             self.running = action == "start"
+            if action == "start": self.frozen_output_config = copy.deepcopy(self.output_config)
             self.control_count += 1
             self.event_sequence += 1
             self.events.append({"sequence":str(self.event_sequence),"at":datetime.now(timezone.utc).isoformat(),"kind":action,"runId":"demo-run","message":"Mock Runtime accepted "+action})

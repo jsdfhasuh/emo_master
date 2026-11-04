@@ -41,7 +41,7 @@ function source(name='A saved'){return {schemaVersion:'1.2',defaultPageId:'page'
 async function fixture(options={}){
  clearSourceModules();
  sessionStorage.clear();globalThis.confirm=()=>true;
- const f={project:'A',instance:'one',username:'alice',authenticated:true,expire:'',revision:1,docs:{A:source(),B:source('B saved')},saves:[],attempts:[],holdSave:undefined,targetIds:['configured'],...options};
+ const f={project:'A',instance:'one',username:'alice',authenticated:true,expire:'',revision:1,docs:{A:source(),B:source('B saved')},saves:[],attempts:[],publishes:[],holdSave:undefined,holdSaveBody:undefined,targetIds:['configured'],...options};
  const reply=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
  const identity=()=>({userId:'user-'+f.username,username:f.username,role:'admin',csrf:'synthetic'});
  globalThis.fetch=async(path,options={})=>{
@@ -58,9 +58,16 @@ async function fixture(options={}){
    if(value.expectedDraftRevision!==String(f.revision))return reply({code:'EDITOR_CONFLICT',detail:'draft conflict'},409);
    f.docs[value.projectId]=structuredClone(value.presentation);f.revision++;f.saves.push(value);
    const result=reply({draftRevision:String(f.revision),presentation:value.presentation});
+   if(f.holdSaveBody){const text=result.text.bind(result);result.text=async()=>{await f.holdSaveBody;return text();};}
    if(f.holdSave)await f.holdSave;
    return result;
   }
+  if(path==='/api/editor/configured/publish'){
+   const value=JSON.parse(options.body);f.publishes.push(value);
+   assert.equal(value.expectedDraftRevision,String(f.revision));
+   return reply({versionId:'published',state:'PUBLISHED'});
+  }
+  if(path.startsWith('/api/editor/configured/versions?'))return reply([]);
   throw Error('Unhandled HTTP '+path);
  };
  const {App}=require('../src/main.tsx');
@@ -86,6 +93,31 @@ test('React harness exports App without mounting and clears native source module
 
 test('Runtime restart preserves unsaved source and undo but invalidates live task selection',async()=>{
  const f=await fixture();try{await rename('local restart edit');const select=document.querySelector('select[aria-label="实时预览任务"]');await act(async()=>{select.value='run';select.dispatchEvent(new Event('change',{bubbles:true}));});f.instance='two';await refresh();assert.equal(nameInput().value,'local restart edit');assert.equal(button('撤销').disabled,false);assert.equal(select.value,'');assert.equal(button('实时预览').disabled,true);assert.equal(f.saves.length,0);await save();assert.equal(f.saves[0].expectedDraftRevision,'1');}finally{await f.close();}
+});
+test('save response headers are not saved UI completion before reload and publish',async()=>{
+ for(const waitForSaved of [false,true]){
+  let release;const bodyReady=new Promise(resolve=>{release=resolve;});
+  const f=await fixture({holdSaveBody:bodyReady});
+  try{
+   await rename('package browser save');await click('保存草稿');
+   assert.equal(f.saves.length,1,'server has saved and returned response headers');
+   assert.equal(button('保存草稿').disabled,true);
+   assert.match(document.querySelector('.editor-draft-state').textContent,/未保存/);
+   if(waitForSaved){release();await waitFor(()=>!button('保存草稿').disabled && document.querySelector('.editor-draft-state').textContent.includes('已保存'));}
+   await f.reload();release();f.holdSaveBody=undefined;
+   await click('发布页面');
+   if(waitForSaved){
+    await waitFor(()=>f.publishes.length===1);
+    assert.equal(f.attempts.at(-1).expectedDraftRevision,'2');
+    assert.equal(f.publishes[0].expectedDraftRevision,'3');
+    assert.equal(document.querySelector('.editor-draft-conflict'),null);
+   }else{
+    await waitFor(()=>button('保留本地并覆盖此版本'));
+    assert.equal(f.attempts.at(-1).expectedDraftRevision,'1');
+    assert.equal(f.publishes.length,0,'conflicted pre-publish save must not publish');
+   }
+  }finally{release();await f.close();}
+ }
 });
 test('401 and explicit logout preserve a user-scoped draft and never replay save after login',async()=>{
  const f=await fixture();try{await rename('alice private edit');f.expire='/api/editor/configured/draft';await click('保存草稿');await waitFor(()=>button('登录'));assert.equal(f.saves.length,0);await login('bob');assert.equal(nameInput().value,'A saved');await click('退出');await login();assert.equal(nameInput().value,'alice private edit');assert.equal(f.saves.length,0);await click('退出');await login();assert.equal(nameInput().value,'alice private edit');await save();assert.equal(f.saves.length,1);assert.equal(Object.keys(sessionStorage).filter(k=>k.startsWith('emo-editor-draft:')).length,0);}finally{await f.close();}

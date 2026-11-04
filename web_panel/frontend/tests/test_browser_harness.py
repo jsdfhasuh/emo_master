@@ -10,6 +10,43 @@ from playwright._impl._sync_base import mapping
 
 
 class BrowserHarnessTests(unittest.TestCase):
+    def test_package_reload_waits_for_saved_ui_and_completed_operation(self):
+        path = Path(__file__).with_name('editor_package_browser.py')
+        tree = ast.parse(path.read_text(encoding='utf-8'))
+        helper = next(node for node in tree.body
+                      if isinstance(node, ast.FunctionDef) and node.name == 'wait_saved')
+        checks = []
+        case = self
+
+        class Page:
+            def locator(self, selector):
+                case.assertEqual(selector, '.editor-draft-state')
+                return self
+
+            def get_by_role(self, role, *, name, exact):
+                case.assertEqual((role, name, exact), ('button', '保存草稿', True))
+                return self
+
+            def to_have_text(self, text):
+                case.assertEqual(text, '✓ 草稿已保存')
+                checks.append('saved marker')
+
+            def to_be_enabled(self):
+                checks.append('operation finished')
+
+        namespace = {'expect': lambda locator: locator}
+        exec(compile(ast.Module(body=[helper], type_ignores=[]), str(path), 'exec'), namespace)
+        namespace['wait_saved'](Page())
+        self.assertEqual(checks, ['saved marker', 'operation finished'])
+        # Guard the regression's sequencing, not just the standalone helper.
+        reload_line = next(node.lineno for node in ast.walk(tree)
+                           if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                           and node.func.attr == 'reload')
+        waits = [node.lineno for node in ast.walk(tree)
+                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                 and node.func.id == 'wait_saved']
+        self.assertIn(reload_line - 1, waits)
+
     def test_package_spacer_assertion_checks_option_not_enabled_parent_select(self):
         # A disabled option inside a label still has an enabled parent select.
         # Playwright's enabled-state retargeting follows that label's control.

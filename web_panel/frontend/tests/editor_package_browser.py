@@ -23,6 +23,13 @@ from emo_web_panel.config import Config
 from emo_web_panel.editor import blank_presentation
 
 
+def wait_saved(page):
+    # A response event fires before the application consumes the JSON and updates
+    # its revision/recovery copy. Reload only after the user's saved state is ready.
+    expect(page.locator(".editor-draft-state")).to_have_text("✓ 草稿已保存")
+    expect(page.get_by_role("button", name="保存草稿", exact=True)).to_be_enabled()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--browser")
@@ -115,8 +122,11 @@ def main():
                     with page.expect_response(lambda r: r.url.endswith("/draft") and r.request.method == "PUT") as saved:
                         page.get_by_role("button", name="保存草稿", exact=True).click()
                     assert saved.value.ok, saved.value.text()
+                    wait_saved(page)
                     page.reload()
                     page.get_by_label("页面名称", exact=True).wait_for()
+                    wait_saved(page)
+                    expect(page.get_by_role("region", name="草稿版本冲突")).to_have_count(0)
                     select("root-gap")
                     mode("fixed", False)
                     select("nested-gap")
@@ -127,9 +137,15 @@ def main():
                     page.get_by_role("dialog").wait_for()
                     page.get_by_role("button", name="关闭预览", exact=True).click()
                     with page.expect_response(lambda r: r.url.endswith("/publish")) as published:
-                        page.get_by_role("button", name="发布页面", exact=True).click()
+                        # Publishing first saves the draft. Surface a failed save
+                        # directly instead of reporting only a missing /publish.
+                        with page.expect_response(lambda r: r.url.endswith("/draft") and r.request.method == "PUT") as publish_saved:
+                            page.get_by_role("button", name="发布页面", exact=True).click()
+                        assert publish_saved.value.ok, publish_saved.value.text()
                     assert published.value.ok, published.value.text()
                     assert published.value.json()["state"] == "PUBLISHED", published.value.text()
+                    expect(page.get_by_role("region", name="发布状态")).to_contain_text("发布完成")
+                    wait_saved(page)
                     assert app.state.runtime.control_count == 0
                     assert not errors, errors
                     browser.close()

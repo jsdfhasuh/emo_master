@@ -105,9 +105,15 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
                 if(message.type==='job_state' && message.jobId===runId){setRuns(old=>old.map(run=>run.id===runId?{...run,state:message.status || run.state,status:message.status || run.status}:run));return;}
                 if(message.viewGeneration){const gen=BigInt(message.viewGeneration);if(gen<viewGeneration)return;if(gen>viewGeneration){viewGeneration=gen;invalidate();}}
                 if(message.type==='scope_status'){statuses=mergeScopeStatus(statuses,message.jobId || runId,message.latestStartedOrdinals || {},message.expiredScopeOrdinals || {});setResults(old=>Object.fromEntries(Object.entries(old).filter(([,result])=>!isScopeResultExpired(result,statuses))));return;}
-                if(message.type==='capture_unavailable'){invalidate();for(const id of Object.keys(rawResults))delete rawResults[id];setResults({});setLiveState(message.reason || '当前任务未采集此输出；先发布，再明确启动新任务');return;}
+                if(message.type==='capture_unavailable'){
+                    const unavailableJob=message.jobId || runId;
+                    // An uncaptured producer must not erase or cancel its captured consumers.
+                    for(const [scope,raw] of Object.entries(rawResults))if(raw.jobId===unavailableJob){queue.invalidateScope(scope);candidates[scope]=(candidates[scope] || 0)+1;delete rawResults[scope];}
+                    setResults(old=>Object.fromEntries(Object.entries(old).filter(([,result])=>result.jobId!==unavailableJob)));
+                    setLiveState(message.reason || '当前任务未采集此输出；先发布，再明确启动新任务');return;
+                }
                 if(message.result){const raw=applySourceProblems(message.result,sourceProblems.current);rawResults[raw.resultScopeId || 'default']=raw;enqueue(raw,connectionId);}
-                else if(message.type==='error' || message.type==='capture_unavailable')setLiveState(message.message || message.reason || '当前任务未采集此输出；先发布，再明确启动新任务');
+                else if(message.type==='error')setLiveState(message.message || message.reason || '当前任务未采集此输出；先发布，再明确启动新任务');
             }catch(e){if(valid)setLiveState(`结果不可用：${explain(e)}`);}};
         };connect();return()=>{valid=false;restage.current=undefined;invalidate();controller.abort();socket?.close();clearTimeout(retry);};
     },[viewId,preview,runId,context?.runtime.runtimeInstanceId,projectId]);

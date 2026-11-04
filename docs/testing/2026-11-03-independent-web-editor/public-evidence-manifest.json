@@ -1,0 +1,2735 @@
+{
+  "description": "Curated historical evidence; original failures and validation boundaries retained. Excluded runtime data, caches, duplicate builds and full worktree snapshots remain in the original local checkout.",
+  "included": [
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/README.md",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/contract-manifest.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/canonical-vectors.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/closed-result.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/history-aggregate.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/history-image-available.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/history-image-empty.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/history-image-missing.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/history-image-unsupported.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/history-page.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/history-revision-changed.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/index.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/job-changed.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/no-capture.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/preview-fixtures.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/preview-runtime.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/realtime.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/start-accepted.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/start-unknown.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/stop-accepted.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/terminal.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/ungrouped-aborted.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/ungrouped-job-changed.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/ungrouped-running.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/ungrouped-start-accepted.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/fixtures/ungrouped-stop-accepted.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/panel-contract-v1.zip",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/proto/runtime.proto",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/python/emo_panel_protocol-1.5.0-py3-none-any.whl",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/sample-panels/demo.emoweb",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/sample-panels/source/demo.emoproj",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/sample-panels/source/demo.png",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/schemas/browser-message.schema.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/schemas/closed-result.schema.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/schemas/history-aggregate.schema.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/schemas/history-page.schema.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/schemas/output-request-config.schema.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/schemas/panel-manifest.schema.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/schemas/preview-context.schema.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/schemas/published-presentation.schema.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/schemas/runtime-rpc.schema.json",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/typescript/panel-contract.ts",
+      "reason": "SDK 1.5.0 完整交接：来源 manifest、README、协议/类型/schema、合成 fixtures、示例源、wheel 与配套归档。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/README.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/backend-before-rename-window-fix.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/backend-concurrent-complete-recheck.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/backend-editor-initial.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/backend-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/browser-attempt-1.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/browser-attempt-10.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/browser-attempt-2.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/browser-attempt-3.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/browser-attempt-4.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/browser-attempt-5.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/browser-attempt-6.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/browser-attempt-7.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/browser-attempt-8.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/browser-attempt-9.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/browser-env-install.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/browser-final-report.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/delivery-artifacts.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/demo-runtime-start.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/demo-runtime-v2.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/designer-qt/qt-normal-loop.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/designer-qt/qt-normal-loop.xml",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/designer-qt/source-properties-retest.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/designer-qt/source-properties-retest.xml",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/designer-qt/source-properties.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/designer-qt/source-properties.xml",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/formal-running-details.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/frontend-build-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/frontend-tests-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/installed-editor-wheel.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/live-detection.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/package-deep-windows-recheck.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/package-rename-probe.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/qt-baseline.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/qt-before-cleanup.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/reconnected-details.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-concurrent-complete-before-fix.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/README.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-attempt1-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-final-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-final-fixed-terminal-preview.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-final-history-delete.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-final-history-duplicate.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-final-history-new.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-final-identity-instance.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-final-identity-preview.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-final-identity-switch.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-final-initial-load-recovery.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-final-resize-cancel.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-final-resize-drag.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-final-resize-noop.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-final-resize-unscaled.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/backend-diff-check.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/backend-full.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/backend-independent-source.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/backend-pip-check.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/backend-review.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/before-frontend-fixes-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/before-frontend-fixes-fixed-terminal-preview.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/before-frontend-fixes-history-delete.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/before-frontend-fixes-history-duplicate.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/before-frontend-fixes-history-new.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/before-frontend-fixes-identity-switch.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/before-frontend-fixes-resize-cancel.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/before-frontend-fixes-resize-drag.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/before-frontend-fixes-resize-noop.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/before-load-recovery-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/before-load-recovery-initial-load-recovery.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/delivery-artifacts.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/final-audit.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/final-diff-check.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/first-delivery-artifacts.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/first-delivery-record.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/frontend-browser-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/frontend-build-after-attempt2.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/frontend-build-after.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/frontend-build-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/frontend-node-after.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/frontend-node-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/frontend-notes.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/frontend-package-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/frontend-static-sha256.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/full-browser-loop.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/browser.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/build.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/fixed-height-adjacent-probe.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/fixed-height-adjacent-probe.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/fixed-height-adjacent-probe.py",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/fixed-height-host-1200.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/fixed-height-host-900.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/independent-built-current-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/independent-built-current-fixed-terminal-preview.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/independent-built-current-history-delete.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/independent-built-current-history-duplicate.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/independent-built-current-history-new.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/independent-built-current-identity-instance.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/independent-built-current-identity-preview.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/independent-built-current-identity-switch.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/independent-built-current-initial-load-recovery.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/independent-built-current-resize-cancel.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/independent-built-current-resize-drag.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/independent-built-current-resize-noop.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/independent-built-current-resize-unscaled.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/independent-review-summary.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/source-hashes.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/installed-editor-wheel.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/installed-full-browser-loop.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/installed-full-browser/formal-running-details.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/installed-full-browser/live-details.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/installed-full-browser/live-detection.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/installed-full-browser/reconnected-details.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/installed-full-browser/report.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/installed-full-browser/runtime.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/installed-full-browser/web.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/installed-wheel-content.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/issue-5-after.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/issue-5-before.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/issue-5-public-rpc-recheck.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/issue-5-runtime-sdk-qt-regression-final-2.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/issue-5-runtime-sdk-qt-regression-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/issue-5-runtime-sdk-qt-regression.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/issue-5-summary.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/package-script-long-evidence.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/package-script-readonly-check.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/package-script-review.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/qt-entry-regression.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/ruff-after-cleanup.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/ruff-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/runtime-wheel-build-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/runtime-wheel-build.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/runtime-wheel-content.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/runtime-wheel-verification.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/source-full-browser/report.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/source-full-browser/runtime.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/source-full-browser/web.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/target-after.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/target-after/publish-target-address.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/target-before.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/target-before/publish-target-address.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after-verified.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-before.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-wheel-build.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-wheel-install.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/README.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/after-fixed-height-attempt1-height-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/artifact-check-only-before.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/artifact-check-only-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/artifact-reuse-notes.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/artifact-runtime-sdk-current.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-after/cross-target-publish.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-after/cross-target-start.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-after/cross-target-stop.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-after/publish-target-address.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-after/queued-grant-user-guard.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-after/release-after-cancel.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-after/release-after-failure.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-after/same-target-address.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-after/same-target-delete.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-before/cross-target-publish.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-before/cross-target-start.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-before/cross-target-stop.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-full.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-isolation-after.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-isolation-before.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-lightweight-source.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-notes.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-pip-check.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-ruff-added-paths.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-ruff-existing-findings.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-ruff.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/backend-source-state.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/before-fixed-height-fixed-fixtures-host-1200.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/before-fixed-height-fixed-fixtures-host-900.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/before-fixed-height-fixed-runtime-host-1200.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/before-fixed-height-fixed-runtime-host-900.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/before-fixed-height-height-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/cross-target-lock-after.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/cross-target-lock-after.py",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/cross-target-lock-supplied.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/cross-target-lock.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/cross-target-lock.py",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/cross-target-stop-after.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/cross-target-stop-before.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/delivery-artifacts.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/final-audit.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/final-diff-check.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/frontend-build-attempt1.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/frontend-build-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/frontend-height-attempt1.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/frontend-node.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/frontend-notes.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/frontend-package.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/frontend-prior12.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/frontend-source-sha256.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/frontend-static-sha256.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-full-plan-ui-20261104-c714a3/browser.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-full-plan-ui-20261104-c714a3/drag-bind-copy-delete-paste.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-full-plan-ui-20261104-c714a3/grid-resize.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-full-plan-ui-20261104-c714a3/nested-grid-properties.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-full-plan-ui-20261104-c714a3/preview-page-selection.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-full-plan-ui-20261104-c714a3/source-provenance.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-full-plan-ui-20261104-c714a3/ui-plan-probes.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-full-plan-ui-20261104-c714a3/ui-plan-probes.py",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/browser.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/build.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-current-fixed-fixtures-host-1200.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-current-fixed-fixtures-host-900.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-current-fixed-runtime-host-1200.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-current-fixed-runtime-host-900.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-current-follow-fixtures-host-1200.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-current-follow-fixtures-host-900.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-current-follow-runtime-host-1200.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-current-follow-runtime-host-900.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-current-height-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-current-overflow-fixtures-host-1200.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-current-overflow-fixtures-host-900.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-current-overflow-runtime-host-1200.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-current-overflow-runtime-host-900.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-height-review.py",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/independent-review-summary.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/mode-transition-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/mode-transition-fixtures.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/mode-transition-runtime.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/source-hashes.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/installed-editor-wheel.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/installed-full-browser-loop.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/installed-full-browser/formal-running-details.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/installed-full-browser/live-details.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/installed-full-browser/live-detection.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/installed-full-browser/reconnected-details.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/installed-full-browser/report.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/installed-full-browser/runtime.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/installed-full-browser/web.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/installed-wheel-content.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/prior12-after-fixed-height-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/ruff-final-new-paths.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/scroll-visibility-probe.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/scroll-visibility-probe.py",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/scroll-visible-fixed-fixtures-host-900.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/scroll-visible-fixed-runtime-host-900.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/scroll-visible-overflow-fixtures-host-900.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/scroll-visible-overflow-runtime-host-900.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/web-wheel-build.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/web-wheel-install.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/README.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/artifact-check-only-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/artifact-runtime-sdk-before-rebuild.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/backend-full-before-context-status.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/backend-full.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/backend-isolation/cross-target-publish.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/backend-isolation/cross-target-start.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/backend-isolation/cross-target-stop.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/backend-isolation/publish-target-address.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/backend-isolation/queued-grant-user-guard.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/backend-isolation/release-after-cancel.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/backend-isolation/release-after-failure.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/backend-isolation/same-target-address.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/backend-isolation/same-target-delete.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/backend-notes.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/backend-ruff.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/backend-source-state.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/before-user-probe.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/before-user-probe/drag-bind-copy-delete-paste.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/before-user-probe/grid-resize.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/before-user-probe/nested-grid-properties.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/before-user-probe/preview-page-selection.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/before-user-probe/ui-plan-probes.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/browser-attempt1-fixture-diagnosis.txt",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/catalog-refresh-browser.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/delivery-artifacts.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/diff-check-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/diff-check-in-progress.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt1-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt2-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-audit.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-clipboard-bound.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-clipboard-nested.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-clipboard-shared.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-clipboard-static.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-grid-nested.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-grid-root.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-metadata-known.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-metadata-unavailable.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-page-editor.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-page-fixtures-button.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-page-fixtures-tab.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-page-runtime-button.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-page-runtime-tab.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-before-source-sha256.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-build-attempt1.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-build-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-build.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-editor-attempt1.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-editor-attempt2.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-editor-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-frozen-source-sha256.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-height.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-node-attempt1.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-node-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-node.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-notes.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-package.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-prior12.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-static-sha256.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/frontend-tested-dist-sha256.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/height-round3-height-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/implementation-checklist.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/browser.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/build.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-current-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-current-clipboard-bound.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-current-clipboard-nested.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-current-clipboard-shared.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-current-clipboard-static.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-current-grid-nested.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-current-grid-root.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-current-metadata-known.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-current-metadata-unavailable.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-current-page-editor.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-current-page-fixtures-button.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-current-page-fixtures-tab.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-current-page-runtime-button.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-current-page-runtime-tab.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/independent-review-summary.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/run-independent-editor.py",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/source-provenance-before.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-source-audit.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-attempt1-diagnosis.txt",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-attempt2-diagnosis.txt",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-browser-attempt1/report.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-browser-attempt1/runtime.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-browser-attempt1/web.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-browser-attempt2/formal-running-details.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-browser-attempt2/live-details.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-browser-attempt2/live-detection.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-browser-attempt2/report.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-browser-attempt2/runtime.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-browser-attempt2/web.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-editor-wheel.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-full-browser-attempt1.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-full-browser-attempt2.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-full-browser-loop.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-full-browser/formal-running-details.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-full-browser/live-details.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-full-browser/live-detection.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-full-browser/operator-auto-reconnect-pinned.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-full-browser/operator-explicit-refresh-new.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-full-browser/reconnected-details.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-full-browser/report.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-full-browser/runtime.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-full-browser/web.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/installed-wheel-content.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/prior12-round3-browser.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/quota-after.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/quota-before.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/quota-focused-first.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/quota-notes.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/quota-ruff.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/quota-runtime-focused.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/quota-source-freeze.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/quota-summary.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/quota-web-focused-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/quota-web-focused.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/quota_probe.py",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-backend-before.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-before/01-update-notice-retains-old.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-before/02-reconnect-silently-adopts-new.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-before/backend-counterexample.py",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-before/backend-report-supplied.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-before/backend-report.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-before/browser-report-supplied.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-before/browser-report.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-before/reconnect-counterexample.py",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-browser-before.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/ruff-existing-test-finding.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/ruff-final-import-fix-attempt1.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/ruff-final-import-fix-attempt2.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/ruff-final-initial.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/ruff-final-new-paths.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/runtime-sdk-qt-regression.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/runtime-wheel-build.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/runtime-wheel-content.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/runtime-wheel-isolated-import.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-after.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-before.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser-final/admin-01-notice-old.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser-final/admin-02-reconnected-old.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser-final/admin-03-explicit-new-uncovered.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser-final/browser-report.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser-final/viewer-01-notice-old.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser-final/viewer-02-reconnected-old.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser-final/viewer-03-explicit-new-uncovered.png",
+      "reason": "关键修前、最终或独立复审截图。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser/browser-report.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-mock-failure.md",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/task-metadata-before.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/task-metadata-contract-after.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/task-metadata-contract.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/test-process-cleanup.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/user-counterexample.py",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/user-original-counterexample.py",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/web-pip-check.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/web-wheel-build.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/web-wheel-install.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-initial-failure.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-launcher-checks.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-launcher-recheck.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-observer-restart-checks.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-qt-assertion-failure.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-qt-regression-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-sdk-checks.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-source-repair-recheck.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-wheel-build-final-clean.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-wheel-build-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-wheel-build.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-wheel-content.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-wheel-import.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-wheel-stale-build-cache.json",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-wheel-unpacked-import-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/runtime-wheel-unpacked-import.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/sdk-independent-import.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/sdk-readme-manifest-recheck.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/sdk-web-install.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/web-env-install.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/wheel-build-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/wheel-install-final.log",
+      "reason": "各轮说明、源审计/指纹、修前失败与修后成功报告/日志或可复现探针。"
+    }
+  ],
+  "excluded": [
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-attempt1-fixed-terminal-preview.png",
+      "reason": "排除重复中间截图；该轮失败报告/日志及最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-attempt1-history-delete.png",
+      "reason": "排除重复中间截图；该轮失败报告/日志及最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-attempt1-history-duplicate.png",
+      "reason": "排除重复中间截图；该轮失败报告/日志及最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-attempt1-history-new.png",
+      "reason": "排除重复中间截图；该轮失败报告/日志及最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-attempt1-identity-instance.png",
+      "reason": "排除重复中间截图；该轮失败报告/日志及最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-attempt1-identity-preview.png",
+      "reason": "排除重复中间截图；该轮失败报告/日志及最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-attempt1-identity-switch.png",
+      "reason": "排除重复中间截图；该轮失败报告/日志及最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-attempt1-resize-cancel.png",
+      "reason": "排除重复中间截图；该轮失败报告/日志及最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-attempt1-resize-drag.png",
+      "reason": "排除重复中间截图；该轮失败报告/日志及最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-attempt1-resize-noop.png",
+      "reason": "排除重复中间截图；该轮失败报告/日志及最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/after-frontend-fixes-attempt1-resize-unscaled.png",
+      "reason": "排除重复中间截图；该轮失败报告/日志及最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/dist/assets/Editor-Dou073XM.css",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/dist/assets/Editor-Qa0TYqL3.js",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/dist/assets/index-BPJhQw1Z.css",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/dist/assets/index-DH1kqud4.js",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/dist/index.html",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_actual_runtime_history_without_jobs_and_image_ownership/gateway-observations.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_actual_runtime_history_without_jobs_and_image_ownership/online-project.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_actual_runtime_history_without_jobs_and_image_ownership/runtime.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_actual_runtime_history_without_jobs_and_image_ownership/stdout.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/gateway-observations.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/logs/runtime-20261103-152259-52052-0001.jsonl",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/online-project.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/runtime.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/stdout.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/fixture-checks.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/gateway-observations.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/logs/runtime-20261103-152314-69360-0001.jsonl",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/online-project.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/ed457f23ec70503f1f95f71e9dab487ada54b43d11b8ca6a469eba3242076bb4/assets/017d7c6287ba3aab898d60749c24e10bf361dd867a4c7fa8779a3ebe70d31e50.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/ed457f23ec70503f1f95f71e9dab487ada54b43d11b8ca6a469eba3242076bb4/assets/04e008d68f48e6ed74d4a57e4a96caf62df6a0674c7aa351b1c42b6cd084133c.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/ed457f23ec70503f1f95f71e9dab487ada54b43d11b8ca6a469eba3242076bb4/assets/2d10125f837cac808c4a540953be1951ec9698cac2985ac9f2b5e4728d787b3e.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/ed457f23ec70503f1f95f71e9dab487ada54b43d11b8ca6a469eba3242076bb4/assets/b340194b5c2ad855a3844e95032ecd2c61f8e3f7730e78b43f39d9f881cf5ca8.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/ed457f23ec70503f1f95f71e9dab487ada54b43d11b8ca6a469eba3242076bb4/index.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/runtime.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/stdout.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/source-full-browser/formal-running-details.png",
+      "reason": "排除重复浏览器截图；该次报告/日志和正式最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/source-full-browser/live-details.png",
+      "reason": "排除重复浏览器截图；该次报告/日志和正式最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/source-full-browser/live-detection.png",
+      "reason": "排除重复浏览器截图；该次报告/日志和正式最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/source-full-browser/reconnected-details.png",
+      "reason": "排除重复浏览器截图；该次报告/日志和正式最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/start-state.json",
+      "reason": "排除：整份起始工作区快照/补丁、原始聊天内容或运行数据；仅保留在原本地证据目录。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_external_request_despite_deleted_qt_source/fixture-checks.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_external_request_despite_deleted_qt_source/gateway-observations.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_external_request_despite_deleted_qt_source/logs/runtime-20261103-152001-24892-0001.jsonl",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_external_request_despite_deleted_qt_source/logs/runtime-20261103-152029-69204-0001.jsonl",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_external_request_despite_deleted_qt_source/online-project.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/0f515a7dd1fc00303fe7487c361904a27bd40bf41403f85b1fc91342c889f3ad/assets/38d73ad05221ff1ab77bb63296ca5691604f64ba3a196941b01da5961b45dead.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/0f515a7dd1fc00303fe7487c361904a27bd40bf41403f85b1fc91342c889f3ad/assets/4248860ebe2fcefaad65cda8da00b6b475c8bbbfdbbf895e76e0b043ba30f1d7.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/0f515a7dd1fc00303fe7487c361904a27bd40bf41403f85b1fc91342c889f3ad/assets/54b78dfda3b95b57aa6e4c9127dbbf1cdec1b75aa80c81a69f0d840f2bbe7f8d.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/0f515a7dd1fc00303fe7487c361904a27bd40bf41403f85b1fc91342c889f3ad/assets/d144b3bd7b31238e0454f32a9105071b23886eeacb1e5b73d580759721e5b597.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/0f515a7dd1fc00303fe7487c361904a27bd40bf41403f85b1fc91342c889f3ad/index.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_external_request_despite_deleted_qt_source/runtime.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_external_request_despite_deleted_qt_source/stdout.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-before/test_web_start_uses_valid_external_request_despite_deleted_qt_source/fixture-checks.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-before/test_web_start_uses_valid_external_request_despite_deleted_qt_source/gateway-observations.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-before/test_web_start_uses_valid_external_request_despite_deleted_qt_source/online-project.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-before/test_web_start_uses_valid_external_request_despite_deleted_qt_source/runtime.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-before/test_web_start_uses_valid_external_request_despite_deleted_qt_source/stdout.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/after-fixed-height-attempt1-fixed-fixtures-host-1200.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/after-fixed-height-attempt1-fixed-fixtures-host-900.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/after-fixed-height-attempt1-fixed-runtime-host-1200.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/after-fixed-height-attempt1-fixed-runtime-host-900.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/after-fixed-height-attempt1-follow-fixtures-host-1200.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/after-fixed-height-attempt1-follow-fixtures-host-900.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/after-fixed-height-attempt1-follow-runtime-host-1200.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/after-fixed-height-attempt1-follow-runtime-host-900.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/after-fixed-height-attempt1-overflow-fixtures-host-1200.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/after-fixed-height-attempt1-overflow-fixtures-host-900.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/after-fixed-height-attempt1-overflow-runtime-host-1200.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/after-fixed-height-attempt1-overflow-runtime-host-900.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/before-fixed-height-follow-fixtures-host-1200.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/before-fixed-height-follow-fixtures-host-900.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/before-fixed-height-follow-runtime-host-1200.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/before-fixed-height-follow-runtime-host-900.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/before-fixed-height-overflow-fixtures-host-1200.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/before-fixed-height-overflow-fixtures-host-900.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/before-fixed-height-overflow-runtime-host-1200.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/before-fixed-height-overflow-runtime-host-900.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/dist/assets/Editor-Dou073XM.css",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/dist/assets/Editor-Dzy_zun9.js",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/dist/assets/index-BPJhQw1Z.css",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/dist/assets/index-cIlQGe0x.js",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/independent-height-rereview-20261104-5d214b/dist/index.html",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/prior12-after-fixed-height-fixed-terminal-preview.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/prior12-after-fixed-height-history-delete.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/prior12-after-fixed-height-history-duplicate.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/prior12-after-fixed-height-history-new.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/prior12-after-fixed-height-identity-instance.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/prior12-after-fixed-height-identity-preview.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/prior12-after-fixed-height-identity-switch.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/prior12-after-fixed-height-initial-load-recovery.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/prior12-after-fixed-height-resize-cancel.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/prior12-after-fixed-height-resize-drag.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/prior12-after-fixed-height-resize-noop.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/prior12-after-fixed-height-resize-unscaled.png",
+      "reason": "排除重复几何截图；修前固定终端截图、滚动截图、独立复审截图与全部报告已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_actual_runtime_history_without_jobs_and_image_ownership/gateway-observations.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_actual_runtime_history_without_jobs_and_image_ownership/online-project.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_actual_runtime_history_without_jobs_and_image_ownership/runtime.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_actual_runtime_history_without_jobs_and_image_ownership/stdout.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/gateway-observations.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/logs/runtime-20261103-230017-61240-0001.jsonl",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/online-project.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/runtime.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/stdout.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/fixture-checks.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/gateway-observations.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/logs/runtime-20261103-230030-57480-0001.jsonl",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/online-project.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/d141f12bcf97b5f0be4dae26b6e9440fee53175fba854d56f6c8adff343b9aa2/assets/061a88850f559b2c9a25f851ec28aa212d85e8aebd58b6001fb7fb2a2ddeff37.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/d141f12bcf97b5f0be4dae26b6e9440fee53175fba854d56f6c8adff343b9aa2/assets/189fc2c923be711438f75d33c9610eb6717bc369cce19adb4b73a98e0796affc.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/d141f12bcf97b5f0be4dae26b6e9440fee53175fba854d56f6c8adff343b9aa2/assets/3dbbd9707bd56bd4504ae9cbf033862834ce4fd0941fd7005aa458b9984891af.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/d141f12bcf97b5f0be4dae26b6e9440fee53175fba854d56f6c8adff343b9aa2/assets/602cb75b64f991b7fba2b45dd07fd9d664b78ed3a27b75b181d7b17c12629e91.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/d141f12bcf97b5f0be4dae26b6e9440fee53175fba854d56f6c8adff343b9aa2/index.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/runtime.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/stdout.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round2/start-state.json",
+      "reason": "排除：整份起始工作区快照/补丁、原始聊天内容或运行数据；仅保留在原本地证据目录。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt1-clipboard-bound.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt1-clipboard-shared.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt1-clipboard-static.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt1-grid-nested.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt1-grid-root.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt1-page-editor.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt1-page-fixtures-button.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt1-page-fixtures-tab.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt1-page-runtime-button.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt1-page-runtime-tab.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt2-clipboard-bound.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt2-clipboard-nested.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt2-clipboard-shared.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt2-clipboard-static.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt2-grid-nested.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt2-grid-root.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt2-metadata-known.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt2-metadata-unavailable.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt2-page-editor.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt2-page-fixtures-button.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt2-page-fixtures-tab.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt2-page-runtime-button.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/editor-after-attempt2-page-runtime-tab.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/height-round3-fixed-fixtures-host-1200.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/height-round3-fixed-fixtures-host-900.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/height-round3-fixed-runtime-host-1200.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/height-round3-fixed-runtime-host-900.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/height-round3-follow-fixtures-host-1200.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/height-round3-follow-fixtures-host-900.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/height-round3-follow-runtime-host-1200.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/height-round3-follow-runtime-host-900.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/height-round3-overflow-fixtures-host-1200.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/height-round3-overflow-fixtures-host-900.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/height-round3-overflow-runtime-host-1200.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/height-round3-overflow-runtime-host-900.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/dist/assets/Editor-DNs6ah13.js",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/dist/assets/Editor-Dou073XM.css",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/dist/assets/index-BL4iqTvR.js",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/dist/assets/index-BPJhQw1Z.css",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/independent-editor-rereview-20261104-b38c72/dist/index.html",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/prior12-round3-fixed-terminal-preview.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/prior12-round3-history-delete.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/prior12-round3-history-duplicate.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/prior12-round3-history-new.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/prior12-round3-identity-instance.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/prior12-round3-identity-preview.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/prior12-round3-identity-switch.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/prior12-round3-initial-load-recovery.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/prior12-round3-resize-cancel.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/prior12-round3-resize-drag.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/prior12-round3-resize-noop.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/prior12-round3-resize-unscaled.png",
+      "reason": "排除重复中间/既有回归截图；全部报告和最终/独立截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_actual_runtime_history_without_jobs_and_image_ownership/gateway-observations.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_actual_runtime_history_without_jobs_and_image_ownership/online-project.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_actual_runtime_history_without_jobs_and_image_ownership/runtime.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_actual_runtime_history_without_jobs_and_image_ownership/stdout.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/gateway-observations.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/logs/runtime-20261103-235011-54972-0001.jsonl",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/logs/runtime-20261103-235149-56540-0001.jsonl",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/online-project.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/runtime.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay/stdout.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/fixture-checks.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/gateway-observations.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/logs/runtime-20261103-235028-38876-0001.jsonl",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/logs/runtime-20261103-235206-20804-0001.jsonl",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/online-project.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/5a8f5dc5b7c2a4e639168d92c3fdf75068ec4ecebc5a3d9c63fbb77003f1362b/assets/11fe94c7e421b8e172ecb01fa131574371d3d7aad10b4e84084560d7c4f06c5d.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/5a8f5dc5b7c2a4e639168d92c3fdf75068ec4ecebc5a3d9c63fbb77003f1362b/assets/22aa15961dab908e6185d054527d08322164d1ab579c01098d128f11affd93ef.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/5a8f5dc5b7c2a4e639168d92c3fdf75068ec4ecebc5a3d9c63fbb77003f1362b/assets/d1d20588d4c84cf3f5c773bb82dd612570426b5d1ddd5531e33807bed1550bdb.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/5a8f5dc5b7c2a4e639168d92c3fdf75068ec4ecebc5a3d9c63fbb77003f1362b/assets/ef2437f63ae0c2c0a3e76ab6300434cb05f75f157f5a8ec1d36fea7db9e7265c.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/5a8f5dc5b7c2a4e639168d92c3fdf75068ec4ecebc5a3d9c63fbb77003f1362b/index.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/866772f6358067616f32a83e3877428fb4ffb01aa5f92ca49b7d7a565127bed3/assets/820de9a2f4710d0ed14be2984b630bba605523d413482c0982ed79d5b0563104.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/866772f6358067616f32a83e3877428fb4ffb01aa5f92ca49b7d7a565127bed3/assets/9f8008aeed2484397f814e13f17ede6d73f077e5e28ff68138563dcde8d528bf.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/866772f6358067616f32a83e3877428fb4ffb01aa5f92ca49b7d7a565127bed3/assets/ad2afb88da09fa6d9700cb063ac9f13ce240642a31a88e64fa36262f46538c1f.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/866772f6358067616f32a83e3877428fb4ffb01aa5f92ca49b7d7a565127bed3/assets/fc9e435b3d0b67ffddf0d52ca753ea6ffafe552f6ec882e772c3cbb6231288b7.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/866772f6358067616f32a83e3877428fb4ffb01aa5f92ca49b7d7a565127bed3/index.json",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/runtime.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/product-runtime/test_web_start_uses_valid_external_request_despite_deleted_qt_source/stdout.log",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-before/dist/assets/Editor-Dou073XM.css",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-before/dist/assets/Editor-Dzy_zun9.js",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-before/dist/assets/index-BPJhQw1Z.css",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-before/dist/assets/index-cIlQGe0x.js",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/reconnect-before/dist/index.html",
+      "reason": "排除：临时 Runtime 工程、数据库/运行记录、预览缓存或重复前端构建；高层测试报告及日志另行保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser/admin-01-notice-old.png",
+      "reason": "排除重复浏览器截图；该次报告/日志和正式最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser/admin-02-reconnected-old.png",
+      "reason": "排除重复浏览器截图；该次报告/日志和正式最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser/admin-03-explicit-new-uncovered.png",
+      "reason": "排除重复浏览器截图；该次报告/日志和正式最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser/viewer-01-notice-old.png",
+      "reason": "排除重复浏览器截图；该次报告/日志和正式最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser/viewer-02-reconnected-old.png",
+      "reason": "排除重复浏览器截图；该次报告/日志和正式最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/selected-package-browser/viewer-03-explicit-new-uncovered.png",
+      "reason": "排除重复浏览器截图；该次报告/日志和正式最终截图已保留。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/start-state.json",
+      "reason": "排除：整份起始工作区快照/补丁、原始聊天内容或运行数据；仅保留在原本地证据目录。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/start-working-diff.patch",
+      "reason": "排除：整份起始工作区快照/补丁、原始聊天内容或运行数据；仅保留在原本地证据目录。"
+    },
+    {
+      "path": "docs/testing/2026-11-03-independent-web-editor/review-round3/user-request.txt",
+      "reason": "排除：整份起始工作区快照/补丁、原始聊天内容或运行数据；仅保留在原本地证据目录。"
+    }
+  ],
+  "notes": [
+    "仅按 include 精确复制/提交，不递归提交整个证据树；原本地证据保持不变。",
+    "已检查候选 UTF-8 文本及 SDK ZIP/wheel/emoweb 内部文本；未发现真实凭据。密码/CSRF 赋值命中仅为临时目录 MockRuntime/浏览器模拟夹具的测试常量。",
+    "保留历史 sourceSha/sourceDirty 和失败结果，不改写成新提交或宣称新版本已重新验收。",
+    "建议在隔离提交中的说明标明完整起始工作区补丁、临时运行数据和重复构建未纳入公开证据；现有 README 中对这些本地文件的历史引用不代表它们随提交公开。",
+    "日志、截图、wheel 或 zip 可能命中现有忽略规则；只能对本清单内确需交付的精确路径使用 git add -f。",
+    "正式 SDK 的 demo.emoproj 是当前格式合成示例，与排除的临时测试工程不同，保持完整交接。"
+  ]
+}

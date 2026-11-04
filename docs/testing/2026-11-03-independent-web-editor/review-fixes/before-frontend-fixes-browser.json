@@ -1,0 +1,450 @@
+{
+  "evidenceLevel": "Real headless Edge + built React frontend + mocked API; persisted source checked",
+  "label": "before-frontend-fixes",
+  "cases": {
+    "identity-switch": {
+      "sameIdentityPreservesUnsavedHistory": true,
+      "newIdentityUndoEnabled": true,
+      "newIdentityRedoEnabled": false,
+      "newIdentityRunSelection": "",
+      "saveAfterIdentitySwitch": {
+        "projectId": "B",
+        "presentation": {
+          "schemaVersion": "1.2",
+          "defaultPageId": "page-A",
+          "pageOrder": [
+            "page-A"
+          ],
+          "navigation": {
+            "mode": "tabs"
+          },
+          "dataSources": {},
+          "resultScopes": {},
+          "pages": {
+            "page-A": {
+              "name": "A 检测页",
+              "targets": [
+                "web"
+              ],
+              "layout": {
+                "type": "responsive",
+                "direction": "vertical",
+                "spacing": 12,
+                "alignment": "stretch",
+                "justify": "start",
+                "equalWidth": false
+              },
+              "components": [
+                {
+                  "componentId": "component-A",
+                  "type": "text",
+                  "version": "1.0",
+                  "layout": {
+                    "row": 0,
+                    "column": 0,
+                    "rowSpan": 1,
+                    "columnSpan": 1
+                  },
+                  "responsive": {
+                    "width": "fill",
+                    "minWidth": 160,
+                    "preferredWidth": 240,
+                    "minHeight": 64,
+                    "preferredHeight": 0,
+                    "weight": 1,
+                    "alignSelf": "auto"
+                  },
+                  "props": {
+                    "title": "component-A",
+                    "text": "Editable text"
+                  },
+                  "bindings": {},
+                  "actions": {},
+                  "children": [],
+                  "grid": {
+                    "type": "responsive",
+                    "direction": "vertical",
+                    "spacing": 12
+                  }
+                }
+              ],
+              "resultScopeIds": []
+            }
+          }
+        },
+        "expectedDraftRevision": "1"
+      },
+      "reopenedPageIds": [
+        "page-A"
+      ],
+      "componentIdsAfterPaste": [
+        "component-A"
+      ],
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 270, in main\n    case(browser, f'http://127.0.0.1:{server.server_port}', outcome, EVIDENCE / f'{args.label}-{name}.png')\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 156, in identity_case\n    assert submitted['projectId'] == 'B' and submitted['presentation']['pageOrder'] == ['page-B'], 'A source was saved as project B'\nAssertionError: A source was saved as project B\n"
+    },
+    "history-new": {
+      "editorAfterUndo": false,
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 270, in main\n    case(browser, f'http://127.0.0.1:{server.server_port}', outcome, EVIDENCE / f'{args.label}-{name}.png')\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 174, in history_case\n    assert report['editorAfterUndo'], 'undo left pageId outside restored document and editor vanished'\nAssertionError: undo left pageId outside restored document and editor vanished\n"
+    },
+    "history-duplicate": {
+      "editorAfterUndo": false,
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 270, in main\n    case(browser, f'http://127.0.0.1:{server.server_port}', outcome, EVIDENCE / f'{args.label}-{name}.png')\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 174, in history_case\n    assert report['editorAfterUndo'], 'undo left pageId outside restored document and editor vanished'\nAssertionError: undo left pageId outside restored document and editor vanished\n"
+    },
+    "history-delete": {
+      "editorAfterUndo": true,
+      "saved": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A",
+          "detail"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          },
+          "detail": {
+            "name": "delete restored editable",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "detail-component",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "detail-component",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A",
+          "detail"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          },
+          "detail": {
+            "name": "delete restored editable",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "detail-component",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "detail-component",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "status": "passed"
+    },
+    "resize-drag": {
+      "zoom": 0.464583,
+      "screenBefore": {
+        "x": 285.36248779296875,
+        "y": 335.36248779296875,
+        "width": 875.2749633789062,
+        "height": 485.0250244140625
+      },
+      "responsiveBefore": {
+        "width": "fill",
+        "minWidth": 160,
+        "preferredWidth": 240,
+        "minHeight": 64,
+        "preferredHeight": 0,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "savedResponsive": {
+        "width": "content",
+        "minWidth": 160,
+        "preferredWidth": 918,
+        "minHeight": 64,
+        "preferredHeight": 507,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "reopenedResponsive": {
+        "width": "content",
+        "minWidth": 160,
+        "preferredWidth": 918,
+        "minHeight": 64,
+        "preferredHeight": 507,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "expectedLogicalSize": [
+        1927,
+        1066
+      ],
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 270, in main\n    case(browser, f'http://127.0.0.1:{server.server_port}', outcome, EVIDENCE / f'{args.label}-{name}.png')\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 222, in resize_case\n    assert abs(actual['preferredWidth'] - expected_width) <= 1, 'screen width was persisted as logical width'\nAssertionError: screen width was persisted as logical width\n"
+    },
+    "resize-noop": {
+      "zoom": 0.464583,
+      "screenBefore": {
+        "x": 281.36248779296875,
+        "y": 282.36248779296875,
+        "width": 875.2749633789062,
+        "height": 485.0250244140625
+      },
+      "responsiveBefore": {
+        "width": "fill",
+        "minWidth": 160,
+        "preferredWidth": 240,
+        "minHeight": 64,
+        "preferredHeight": 0,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "savedResponsive": {
+        "width": "content",
+        "minWidth": 160,
+        "preferredWidth": 875.2749633789062,
+        "minHeight": 64,
+        "preferredHeight": 485.0250244140625,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "reopenedResponsive": {
+        "width": "content",
+        "minWidth": 160,
+        "preferredWidth": 875.2749633789062,
+        "minHeight": 64,
+        "preferredHeight": 485.0250244140625,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 270, in main\n    case(browser, f'http://127.0.0.1:{server.server_port}', outcome, EVIDENCE / f'{args.label}-{name}.png')\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 225, in resize_case\n    assert actual == original, f'{mode} changed source dimensions'\nAssertionError: noop changed source dimensions\n"
+    },
+    "resize-cancel": {
+      "zoom": 0.464583,
+      "screenBefore": {
+        "x": 285.36248779296875,
+        "y": 335.36248779296875,
+        "width": 875.2749633789062,
+        "height": 485.0250244140625
+      },
+      "responsiveBefore": {
+        "width": "fill",
+        "minWidth": 160,
+        "preferredWidth": 240,
+        "minHeight": 64,
+        "preferredHeight": 0,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "savedResponsive": {
+        "width": "content",
+        "minWidth": 160,
+        "preferredWidth": 918,
+        "minHeight": 64,
+        "preferredHeight": 507,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "reopenedResponsive": {
+        "width": "content",
+        "minWidth": 160,
+        "preferredWidth": 918,
+        "minHeight": 64,
+        "preferredHeight": 507,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 270, in main\n    case(browser, f'http://127.0.0.1:{server.server_port}', outcome, EVIDENCE / f'{args.label}-{name}.png')\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 225, in resize_case\n    assert actual == original, f'{mode} changed source dimensions'\nAssertionError: cancel changed source dimensions\n"
+    },
+    "fixed-terminal-preview": {
+      "terminalCount": 0,
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 270, in main\n    case(browser, f'http://127.0.0.1:{server.server_port}', outcome, EVIDENCE / f'{args.label}-{name}.png')\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 241, in preview_case\n    assert viewport.count() == 1, 'preview ignores chosen fixed terminal'\nAssertionError: preview ignores chosen fixed terminal\n"
+    }
+  }
+}

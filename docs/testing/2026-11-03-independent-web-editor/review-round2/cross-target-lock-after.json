@@ -1,0 +1,20 @@
+[
+  {
+    "cancelPublicationTask": false,
+    "otherStopCompletedWhilePublishPending": true,
+    "otherStateWhilePublishPending": "stopped",
+    "publishState": "PUBLISHED",
+    "stopStatus": 200,
+    "otherFinalState": "stopped",
+    "realNetworkRequests": 0
+  },
+  {
+    "cancelPublicationTask": true,
+    "otherStopCompletedWhilePublishPending": true,
+    "otherStateWhilePublishPending": "stopped",
+    "publishState": "CANCELLED_HTTP_TASK",
+    "stopStatus": 200,
+    "otherFinalState": "stopped",
+    "realNetworkRequests": 0
+  }
+]

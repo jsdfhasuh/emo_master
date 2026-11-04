@@ -1,0 +1,136 @@
+{
+  "worktree": "D:/emo-web-delivery-20261104",
+  "branch": "codex/independent-web-editor",
+  "baseHead": "8b987ce393f83141738091ed35985695beba6f7f",
+  "reviewedState": "pending implementation copied on top of current remote baseline",
+  "python": "D:/Conda/envs/emo_master/python.exe",
+  "pythonVersion": "3.10.21",
+  "pytestVersion": "9.1.1",
+  "env": {
+    "PYTHONUTF8": "1",
+    "QT_QPA_PLATFORM": "offscreen"
+  },
+  "checks": [
+    {
+      "name": "ruff",
+      "argv": [
+        "-m",
+        "ruff",
+        "check",
+        "src",
+        "tests"
+      ],
+      "exitCode": 0,
+      "log": "ruff-initial.log"
+    },
+    {
+      "name": "mypy",
+      "argv": [
+        "-m",
+        "mypy",
+        "--config-file",
+        "mypy.ini",
+        "src"
+      ],
+      "exitCode": 0,
+      "sourceFiles": 614,
+      "log": "mypy-initial.log",
+      "note": "Existing annotation-unchecked notes; no errors"
+    },
+    {
+      "name": "proto-drift",
+      "argv": [
+        "scripts/gen_proto.py",
+        "--check"
+      ],
+      "exitCode": 0,
+      "log": "proto-drift.log"
+    },
+    {
+      "name": "runtime-sdk-qt",
+      "argv": [
+        "-m",
+        "pytest",
+        "tests/runtime/presentation/test_external_output_requests.py",
+        "tests/runtime/presentation/test_equivalent_image_capture.py",
+        "tests/runtime/presentation/test_normal_capture.py",
+        "tests/runtime/presentation/test_normal_capture_resources.py",
+        "tests/runtime/presentation/test_normal_capture_status_validation.py",
+        "tests/runtime/presentation/test_multi_capture.py",
+        "tests/runtime/presentation/test_capture_lane_lifetime.py",
+        "tests/runtime/presentation/test_failed_capture_retirement.py",
+        "tests/runtime/presentation/test_export_diagnostics.py",
+        "tests/runtime/presentation/test_images.py",
+        "tests/runtime/test_release_host.py",
+        "tests/core/presentation/test_panel_contract.py",
+        "tests/proto/test_proto_generation.py",
+        "-q",
+        "--tb=short",
+        "--timeout=120",
+        "--timeout-method=thread",
+        "-o",
+        "faulthandler_timeout=60",
+        "--junitxml=D:\\tmp\\emo-web-push-20261104\\runtime-checks\\runtime-sdk-qt.xml"
+      ],
+      "exitCode": 0,
+      "passed": 190,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 165.4,
+      "log": "runtime-sdk-qt.log",
+      "junit": "runtime-sdk-qt.xml"
+    },
+    {
+      "name": "qt-launch-preview",
+      "argv": [
+        "-m",
+        "pytest",
+        "tests/ui/page_designer/test_panel_menu_state.py",
+        "tests/ui/page_designer/test_terminal_properties.py",
+        "tests/ui/page_designer/test_preview.py",
+        "tests/ui/page_designer/test_normal_run_viewing.py",
+        "tests/ui/page_designer/test_dispatch_queue_viewing.py",
+        "tests/ui/page_designer/test_presentation_logs.py",
+        "tests/designer/test_page_log_action.py",
+        "tests/ui/operator_view/test_startup_origin.py",
+        "tests/runtime/presentation/test_normal_restart.py",
+        "tests/runtime/test_production_start_revision.py",
+        "-q",
+        "--tb=short",
+        "--timeout=120",
+        "--timeout-method=thread",
+        "-o",
+        "faulthandler_timeout=60",
+        "--junitxml=D:\\tmp\\emo-web-push-20261104\\runtime-checks\\qt-launch-preview.xml"
+      ],
+      "exitCode": 0,
+      "passed": 59,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 84.68,
+      "log": "qt-launch-preview.log",
+      "junit": "qt-launch-preview.xml",
+      "note": "Includes both test_dispatch_queue_viewing.py parameter cases"
+    },
+    {
+      "name": "diff-check",
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exitCode": 0,
+      "note": "Only line-ending normalization warnings"
+    }
+  ],
+  "modifiedFilesByReviewer": [],
+  "notRun": [
+    "Full repository pytest suite",
+    "manual native Qt acceptance",
+    "installed Runtime wheel full detection",
+    "cross-machine LAN",
+    "real camera/PLC",
+    "frozen EXE or field deployment"
+  ],
+  "scope": "Static checks plus selected software Runtime and offscreen QWidget integration; no source changes, commit, push, or real device access"
+}

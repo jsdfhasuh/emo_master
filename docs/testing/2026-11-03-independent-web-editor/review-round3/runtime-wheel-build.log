@@ -1,0 +1,9 @@
+Processing .\.
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: emo_master
+  Building wheel for emo_master (pyproject.toml): started
+  Building wheel for emo_master (pyproject.toml): finished with status 'done'
+  Created wheel for emo_master: filename=emo_master-0.6.6-py3-none-any.whl size=1664470 sha256=13c6f88f658a7b63968cc361ac1367ff3881c85ace8b3138c231fb1c5a801025
+  Stored in directory: C:\Users\jsdfhasuh\AppData\Local\Temp\pip-ephem-wheel-cache-b68rfwp6\wheels\1f\06\63\54f59ada967555ad08a70399ec620f85802da27fe80e100fe1
+Successfully built emo_master

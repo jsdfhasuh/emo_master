@@ -1,0 +1,23 @@
+..........F...................................                           [100%]
+================================== FAILURES ===================================
+_________ testDesignerKeepsQtActionsWithoutWebExportPreviewOrLauncher _________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1de2b1b7c30) at 0x000001DE2C3D7800>
+
+    def testDesignerKeepsQtActionsWithoutWebExportPreviewOrLauncher(designer):  # noqa: F811
+        coordinator = designer.pageCoordinator
+        coordinator.showPages()
+        chrome = coordinator.chrome
+        actions = [action for menu in chrome.menus.values() for action in menu.actions()]
+        assert all('Web' not in action.text() and '��ҳ' not in action.text() for action in actions)
+        assert chrome.previewAction.text() == 'Ԥ��ҳ��'
+>       assert chrome.previewAction.isEnabled() and chrome.previewAction.isVisible()
+E       assert (False)
+E        +  where False = <built-in method isEnabled of PySide2.QtWidgets.QAction object at 0x000001DE2C52CC40>()
+E        +    where <built-in method isEnabled of PySide2.QtWidgets.QAction object at 0x000001DE2C52CC40> = <PySide2.QtWidgets.QAction(0x1de2b558ec0 text="\u0524\ufffd\ufffd\u04b3\ufffd\ufffd" toolTip="\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\u04b3\ufffd\ufffd\ufffd\u04b3\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\u0524\ufffd\ufffd" shortcut=QKeySequence("Ctrl+Shift+P") menuRole=TextHeuristicRole visible=true) at 0x000001DE2C52CC40>.isEnabled
+E        +      where <PySide2.QtWidgets.QAction(0x1de2b558ec0 text="\u0524\ufffd\ufffd\u04b3\ufffd\ufffd" toolTip="\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\u04b3\ufffd\ufffd\ufffd\u04b3\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\u0524\ufffd\ufffd" shortcut=QKeySequence("Ctrl+Shift+P") menuRole=TextHeuristicRole visible=true) at 0x000001DE2C52CC40> = <emo_master.apps.designer.page_designer.chrome.WorkspaceChrome(0x1de2b5586c0) at 0x000001DE2C516140>.previewAction
+
+tests\ui\page_designer\test_panel_menu_state.py:87: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/ui/page_designer/test_panel_menu_state.py::testDesignerKeepsQtActionsWithoutWebExportPreviewOrLauncher
+1 failed, 45 passed in 20.18s

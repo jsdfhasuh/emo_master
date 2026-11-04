@@ -1,0 +1,48 @@
+.....................................................................F.......................... [ 57%]
+.................................................. [ 87%]
+....................                                                     [100%]
+================================== FAILURES ===================================
+__ OfficialPackageTests.test_windows_deep_editor_packages_install_and_reopen __
+
+self = <test_official_packages.OfficialPackageTests testMethod=test_windows_deep_editor_packages_install_and_reopen>
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows deep Web data directory regression')
+    def test_windows_deep_editor_packages_install_and_reopen(self):
+        # Same repository/data directory shape as the real browser failure:
+        # atomic installation and a later open must both handle deep assets.
+        parent = CONTRACT.parents[1] / 'test-results' / 'independent-editor'
+        parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix='package-install-', dir=_io_path(parent)) as temporary:
+            directory = Path(str(temporary).removeprefix('\\\\?\\')) / 'web' / 'packages'
+            store = PackageStore(directory)
+            for title in ('¼ì²âÒ³', '¼ì²âÒ³²¼¾ÖÐÞ¸Ä', 'ÏêÇéÒ³·¢²¼'):
+                def change(manifest, presentation, files):
+                    presentation['pages']['live']['name'] = title
+>               item = store.install(official_bundle(change))
+
+web_panel\tests\test_official_packages.py:85: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+web_panel\backend\emo_web_panel\packages.py:626: in install
+    _io_path(staging).rename(_io_path(self.root / package_id))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('//?/D:/jsdfhasuh/documents/my_project/emo_master/web_panel/test-results/independent-editor/package-install-2imxituu/web/packages/.install-4fpvuxzz')
+target = WindowsPath('//?/D:/jsdfhasuh/documents/my_project/emo_master/web_panel/test-results/independent-editor/package-install-2imxituu/web/packages/b66a929b2940777fb2a3eaab479019cb22cca6caf944e0f64af6a3f13870c5f3')
+
+    def rename(self, target):
+        """
+        Rename this path to the target path.
+    
+        The target path may be absolute or relative. Relative paths are
+        interpreted relative to the current working directory, *not* the
+        directory of the Path object.
+    
+        Returns the new Path instance pointing to the target path.
+        """
+>       self._accessor.rename(self, target)
+E       PermissionError: [WinError 5] ¾Ü¾ø·ÃÎÊ¡£: '\\\\?\\D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\test-results\\independent-editor\\package-install-2imxituu\\web\\packages\\.install-4fpvuxzz' -> '\\\\?\\D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\test-results\\independent-editor\\package-install-2imxituu\\web\\packages\\b66a929b2940777fb2a3eaab479019cb22cca6caf944e0f64af6a3f13870c5f3'
+
+D:\Conda\envs\emo_master\lib\pathlib.py:1234: PermissionError
+=========================== short test summary info ===========================
+FAILED web_panel/tests/test_official_packages.py::OfficialPackageTests::test_windows_deep_editor_packages_install_and_reopen
+1 failed, 165 passed, 214 subtests passed in 36.72s

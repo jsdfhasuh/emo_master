@@ -1,0 +1,18 @@
+{
+  "isolated": true,
+  "packages": {
+    "emo_web_panel": {
+      "origin": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\.venv\\Lib\\site-packages\\emo_web_panel\\__init__.py",
+      "installedFilesCompared": 45,
+      "wheelSha256": "c10957f0ee447cb3d34f443da16522d9f667e0a3d9f8f4dbf76d11c3385051ce",
+      "installedBytesEqualWheel": "PASS"
+    },
+    "emo_panel_protocol": {
+      "origin": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\.venv\\Lib\\site-packages\\emo_panel_protocol\\__init__.py",
+      "installedFilesCompared": 15,
+      "wheelSha256": "97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d",
+      "installedBytesEqualWheel": "PASS"
+    }
+  },
+  "level": "Installed Web/SDK content equality; full browser execution separately recorded against source software Runtime"
+}

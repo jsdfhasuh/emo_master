@@ -1,0 +1,29 @@
+{
+  "runtime": {
+    "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\runtime\\emo_master-0.6.6-py3-none-any.whl",
+    "byteSize": 1662929,
+    "sha256": "aeb26acc932485cb6942b7cc0bffa10bb24118d5007913ca6da73febebd6ecd1",
+    "archiveIntegrity": "PASS",
+    "sourceModuleCount": 603,
+    "wheelModuleCount": 603,
+    "missing": [],
+    "extra": [],
+    "changed": [
+      "emo_master/apps/runtime/grpc_server/service.py",
+      "emo_master/apps/runtime/presentation/output_requests.py"
+    ]
+  },
+  "sdk": {
+    "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\contracts\\panel-contract-v1\\python\\emo_panel_protocol-1.5.0-py3-none-any.whl",
+    "byteSize": 40265,
+    "sha256": "97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d",
+    "archiveIntegrity": "PASS",
+    "sourceModuleCount": 15,
+    "wheelModuleCount": 15,
+    "missing": [],
+    "extra": [],
+    "changed": [],
+    "manifestHashMatches": true
+  },
+  "boundary": "Read-only current archive/source comparison before Runtime rebuild. No installation or execution acceptance."
+}

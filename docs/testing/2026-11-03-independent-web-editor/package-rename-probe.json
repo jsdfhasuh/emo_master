@@ -1,0 +1,19 @@
+[
+  {
+    "error": "[WinError 5] 拒绝访问。: '\\\\\\\\?\\\\D:\\\\jsdfhasuh\\\\documents\\\\my_project\\\\emo_master\\\\web_panel\\\\test-results\\\\independent-editor\\\\probe-rename-s1ex6355\\\\web\\\\packages\\\\.install-xrag68ur' -> '\\\\\\\\?\\\\D:\\\\jsdfhasuh\\\\documents\\\\my_project\\\\emo_master\\\\web_panel\\\\test-results\\\\independent-editor\\\\probe-rename-s1ex6355\\\\web\\\\packages\\\\71e25273e352d822d6d8a81684a9cb9e17194e88bb1f850db580d2a20f9caeb7'",
+    "winerror": 5,
+    "dstExists": false,
+    "files": [
+      "\\\\?\\D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\test-results\\independent-editor\\probe-rename-s1ex6355\\web\\packages\\.install-xrag68ur\\manifest.json",
+      "\\\\?\\D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\test-results\\independent-editor\\probe-rename-s1ex6355\\web\\packages\\.install-xrag68ur\\metadata.json",
+      "\\\\?\\D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\test-results\\independent-editor\\probe-rename-s1ex6355\\web\\packages\\.install-xrag68ur\\presentation.json",
+      "\\\\?\\D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\test-results\\independent-editor\\probe-rename-s1ex6355\\web\\packages\\.install-xrag68ur\\assets\\a4ee2e10f34181b8f6856e44e232bfa58e69b95fecccdcd87fcc257cb0a8ffbc.png"
+    ],
+    "lockers": {
+      "registerCode": 0,
+      "listCode": 0,
+      "processes": []
+    },
+    "after100ms": "SUCCESS"
+  }
+]

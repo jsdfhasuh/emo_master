@@ -1,0 +1,8 @@
+{
+  "file": "web_panel/tests/test_runtime_contract.py",
+  "finding": "F401 asyncio imported but unused",
+  "existsInFixedHead": true,
+  "fixedHead": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "action": "preserved existing import; excluded file from new-path lint; original finding retained in ruff-final-initial.log",
+  "newBrowserScriptUnusedPath": "editor_round3_browser.py removed unused import; selected_package_recovery_browser.py required import restored after an intermediate wrong-file fix; no test behavior/expectation change"
+}

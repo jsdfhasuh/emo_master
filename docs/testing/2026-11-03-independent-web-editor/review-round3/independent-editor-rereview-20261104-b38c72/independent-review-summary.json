@@ -1,0 +1,204 @@
+{
+  "head": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "sourceUnchanged": true,
+  "sources": [
+    {
+      "path": "web_panel/frontend/src/editor/Editor.tsx",
+      "sha256": "c25ce091d995eb94dc710324424e04147e9826482d737e2081bde62f8db4b91c",
+      "sameAsBefore": true
+    },
+    {
+      "path": "web_panel/frontend/src/editor/model.ts",
+      "sha256": "ca5e435b7a3471958894f293f19028cceca5ce021a63fedca1abf4b25f1d8b5c",
+      "sameAsBefore": true
+    },
+    {
+      "path": "web_panel/frontend/src/editor/editor.css",
+      "sha256": "d80c25728d1646bb3e96b65cee3606cc1bad178100b6cff2492842c9745d87e9",
+      "sameAsBefore": true
+    },
+    {
+      "path": "web_panel/frontend/src/renderer/PanelRenderer.tsx",
+      "sha256": "204d27af8cbec0a8e626d075151b13bc3548abaa2c70091febd9e86881501aeb",
+      "sameAsBefore": true
+    },
+    {
+      "path": "web_panel/frontend/tests/editor_round3_browser.py",
+      "sha256": "88d176f8ff76efdcc67560ce5157d9228ebd301bbff0418f0884bf9635e059e7",
+      "sameAsBefore": true
+    },
+    {
+      "path": "web_panel/frontend/tests/editor_review_browser.py",
+      "sha256": "0c4df0ed39a1b434fc11d3f519813b0c3159ae412d63bc1ab83875e8cdecc4a2",
+      "sameAsBefore": true
+    },
+    {
+      "path": "web_panel/backend/emo_web_panel/editor.py",
+      "sha256": "5d78204649594ba66521be01033c22946791aaca15bae4d6653d97b6462927b7",
+      "sameAsBefore": true
+    }
+  ],
+  "distMatchesDelivered": true,
+  "distFiles": [
+    {
+      "path": "index.html",
+      "independentSha256": "22da3e02f2c1b0073a022053db3d46b7dcdcd8fdeb72d5888f5f80b00783b16c",
+      "matchesFrontendDist": true
+    },
+    {
+      "path": "assets\\Editor-DNs6ah13.js",
+      "independentSha256": "8b023da6b1f271cf8ad220ae2afd94e4f2da6cb2d8202c0be0eafb8801c57927",
+      "matchesFrontendDist": true
+    },
+    {
+      "path": "assets\\Editor-Dou073XM.css",
+      "independentSha256": "0815b9c139e7a613556f968524f18a003ecff7a4fbfb70d5531f769ccca3740a",
+      "matchesFrontendDist": true
+    },
+    {
+      "path": "assets\\index-BL4iqTvR.js",
+      "independentSha256": "98dfeaaf3a4353ae75995f4e45c6babe67005938cdfe1ea7c2292d3b51579896",
+      "matchesFrontendDist": true
+    },
+    {
+      "path": "assets\\index-BPJhQw1Z.css",
+      "independentSha256": "6e99ae16e325407a452bf0abedd5403ea9e330189515d4c06d2247af1db9e8e5",
+      "matchesFrontendDist": true
+    }
+  ],
+  "evidenceLevel": "Real built React / Edge; mocked HTTP+WS; formal backend validate_source on actual PUTs; saved source and reload",
+  "cases": [
+    {
+      "name": "page-fixtures-tab",
+      "status": "passed",
+      "backendValidatedSaves": 2,
+      "before": null,
+      "after": null,
+      "preview": null
+    },
+    {
+      "name": "page-fixtures-button",
+      "status": "passed",
+      "backendValidatedSaves": 2,
+      "before": null,
+      "after": null,
+      "preview": null
+    },
+    {
+      "name": "page-runtime-tab",
+      "status": "passed",
+      "backendValidatedSaves": 2,
+      "before": null,
+      "after": null,
+      "preview": null
+    },
+    {
+      "name": "page-runtime-button",
+      "status": "passed",
+      "backendValidatedSaves": 2,
+      "before": null,
+      "after": null,
+      "preview": null
+    },
+    {
+      "name": "page-editor",
+      "status": "passed",
+      "backendValidatedSaves": 2,
+      "before": null,
+      "after": null,
+      "preview": null
+    },
+    {
+      "name": "clipboard-bound",
+      "status": "passed",
+      "backendValidatedSaves": 2,
+      "before": null,
+      "after": null,
+      "preview": null
+    },
+    {
+      "name": "clipboard-nested",
+      "status": "passed",
+      "backendValidatedSaves": 2,
+      "before": null,
+      "after": null,
+      "preview": null
+    },
+    {
+      "name": "clipboard-shared",
+      "status": "passed",
+      "backendValidatedSaves": 2,
+      "before": null,
+      "after": null,
+      "preview": null
+    },
+    {
+      "name": "clipboard-static",
+      "status": "passed",
+      "backendValidatedSaves": 2,
+      "before": null,
+      "after": null,
+      "preview": null
+    },
+    {
+      "name": "grid-root",
+      "status": "passed",
+      "backendValidatedSaves": 2,
+      "before": {
+        "x": 295,
+        "y": 345,
+        "width": 418,
+        "height": 91
+      },
+      "after": {
+        "x": 295,
+        "y": 345,
+        "width": 848,
+        "height": 140
+      },
+      "preview": {
+        "row": "1 / span 2",
+        "column": "1 / span 2",
+        "height": 140
+      }
+    },
+    {
+      "name": "grid-nested",
+      "status": "passed",
+      "backendValidatedSaves": 2,
+      "before": {
+        "x": 321,
+        "y": 396,
+        "width": 257.328125,
+        "height": 91
+      },
+      "after": {
+        "x": 590.328125,
+        "y": 414,
+        "width": 526.671875,
+        "height": 216
+      },
+      "preview": {
+        "row": "2 / span 3",
+        "column": "2 / span 2",
+        "height": 216
+      }
+    },
+    {
+      "name": "metadata-known",
+      "status": "passed",
+      "backendValidatedSaves": null,
+      "before": null,
+      "after": null,
+      "preview": null
+    },
+    {
+      "name": "metadata-unavailable",
+      "status": "passed",
+      "backendValidatedSaves": null,
+      "before": null,
+      "after": null,
+      "preview": null
+    }
+  ]
+}

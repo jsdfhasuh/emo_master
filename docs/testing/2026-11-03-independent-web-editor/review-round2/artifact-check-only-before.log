@@ -1,0 +1,40 @@
+{
+  "mode": "read-only artifact/source identity checks",
+  "checks": "PASS",
+  "wheels": {
+    "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\runtime\\emo_master-0.6.6-py3-none-any.whl": {
+      "sha256": "aeb26acc932485cb6942b7cc0bffa10bb24118d5007913ca6da73febebd6ecd1",
+      "byteSize": 1662929
+    },
+    "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\dist\\emo_master_web_panel-0.1.0a1-py3-none-any.whl": {
+      "sha256": "d098b3c99700276d2587c9013579575007a7f4d19dc024d723b964709a3719eb",
+      "byteSize": 188352
+    },
+    "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\contracts\\panel-contract-v1\\python\\emo_panel_protocol-1.5.0-py3-none-any.whl": {
+      "sha256": "97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d",
+      "byteSize": 40265
+    }
+  },
+  "frontendAssets": {
+    "index.html": {
+      "sha256": "eae3ab0088ab482bc0337e3505213d221ce286be18e4f7ffb215de6f00d3f1df",
+      "byteSize": 369
+    },
+    "assets/Editor-Dou073XM.css": {
+      "sha256": "0815b9c139e7a613556f968524f18a003ecff7a4fbfb70d5531f769ccca3740a",
+      "byteSize": 9573
+    },
+    "assets/Editor-Qa0TYqL3.js": {
+      "sha256": "40bc25f34d659509e2083a7bba8ba3950388710fbca8117add534aa8cf776b81",
+      "byteSize": 48198
+    },
+    "assets/index-BPJhQw1Z.css": {
+      "sha256": "6e99ae16e325407a452bf0abedd5403ea9e330189515d4c06d2247af1db9e8e5",
+      "byteSize": 3692
+    },
+    "assets/index-DH1kqud4.js": {
+      "sha256": "696613282a883b1365410f8f4bc95714c2b2e5b455b1e164539740b198d70d27",
+      "byteSize": 275641
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "evidenceLevel": "Real headless Edge + built React frontend + mocked API; persisted source checked",
+  "label": "before-load-recovery",
+  "cases": {
+    "initial-load-recovery": {
+      "initialFailureVisible": true,
+      "editorAfterRetry": false,
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 330, in main\n    case(browser, f'http://127.0.0.1:{server.server_port}', outcome, EVIDENCE / f'{args.label}-{name}.png')\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 207, in initial_load_recovery_case\n    assert report['editorAfterRetry'], 'successful refresh did not load document after initial failure'\nAssertionError: successful refresh did not load document after initial failure\n"
+    }
+  }
+}

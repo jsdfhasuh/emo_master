@@ -1,0 +1,44 @@
+{
+  "runtime": {
+    "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\runtime\\emo_master-0.6.6-py3-none-any.whl",
+    "byteSize": 1662929,
+    "sha256": "aeb26acc932485cb6942b7cc0bffa10bb24118d5007913ca6da73febebd6ecd1"
+  },
+  "web": {
+    "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\dist\\emo_master_web_panel-0.1.0a1-py3-none-any.whl",
+    "byteSize": 188352,
+    "sha256": "d098b3c99700276d2587c9013579575007a7f4d19dc024d723b964709a3719eb"
+  },
+  "sdk": {
+    "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\contracts\\panel-contract-v1\\python\\emo_panel_protocol-1.5.0-py3-none-any.whl",
+    "byteSize": 40265,
+    "sha256": "97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d"
+  },
+  "sourceSha": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "sourceDirty": true,
+  "frontendFiles": [
+    {
+      "Hash": "EAE3AB0088AB482BC0337E3505213D221CE286BE18E4F7FFB215DE6F00D3F1DF",
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\backend\\emo_web_panel\\static\\index.html"
+    },
+    {
+      "Hash": "0815B9C139E7A613556F968524F18A003ECFF7A4FBFB70D5531F769CCCA3740A",
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\backend\\emo_web_panel\\static\\assets\\Editor-Dou073XM.css"
+    },
+    {
+      "Hash": "40BC25F34D659509E2083A7BBA8BA3950388710FBCA8117ADD534AA8CF776B81",
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\backend\\emo_web_panel\\static\\assets\\Editor-Qa0TYqL3.js"
+    },
+    {
+      "Hash": "6E99AE16E325407A452BF0ABEDD5403EA9E330189515D4C06D2247AF1DB9E8E5",
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\backend\\emo_web_panel\\static\\assets\\index-BPJhQw1Z.css"
+    },
+    {
+      "Hash": "696613282A883B1365410F8F4BC95714C2B2E5B455B1E164539740B198D70D27",
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\backend\\emo_web_panel\\static\\assets\\index-DH1kqud4.js"
+    }
+  ],
+  "distributionKind": "Python wheels with built frontend; no bundled interpreter or offline dependencies",
+  "webInstalledExecution": "PASS: isolated installed Web+SDK -> source software Runtime; installed-full-browser/report.json",
+  "runtimeWheelVerification": "PASS: 620 Python modules match source; unpacked isolated imports; runtime-wheel-content.json"
+}

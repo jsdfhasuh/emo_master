@@ -1,0 +1,22 @@
+{
+  "wheel": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\runtime\\emo_master-0.6.6-py3-none-any.whl",
+  "sha256": "13c6f88f658a7b63968cc361ac1367ff3881c85ace8b3138c231fb1c5a801025",
+  "byteSize": 1664470,
+  "archiveIntegrity": "PASS",
+  "allPackagedPythonModulesMatchWorkingSource": "PASS",
+  "checkedModuleCount": 620,
+  "unpackedIsolatedImports": "PASS",
+  "imports": {
+    "isolated": true,
+    "modules": {
+      "emo_master.apps.runtime.grpc_server.service": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-round3-fjiypack\\emo_master\\apps\\runtime\\grpc_server\\service.py",
+      "emo_master.apps.runtime.presentation.output_requests": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-round3-fjiypack\\emo_master\\apps\\runtime\\presentation\\output_requests.py",
+      "emo_master.apps.runtime.presentation.output_capture": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-round3-fjiypack\\emo_master\\apps\\runtime\\presentation\\output_capture.py",
+      "emo_master.apps.runtime.presentation.collector": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-round3-fjiypack\\emo_master\\apps\\runtime\\presentation\\collector.py",
+      "emo_master.apps.runtime.presentation.service": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-round3-fjiypack\\emo_master\\apps\\runtime\\presentation\\service.py",
+      "emo_panel_protocol.output_requests": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-round3-fjiypack\\emo_panel_protocol\\output_requests.py",
+      "emo_panel_protocol.generated.runtime_pb2": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-round3-fjiypack\\emo_panel_protocol\\generated\\runtime_pb2.py"
+    }
+  },
+  "level": "archive, current source bytes, unpacked isolated imports; software execution uses source Runtime, not an installed Runtime wheel"
+}

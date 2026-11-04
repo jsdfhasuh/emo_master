@@ -1,0 +1,2466 @@
+{
+  "evidenceLevel": "Real built React / Edge; mocked HTTP+WS; formal backend validate_source on actual PUTs; saved source and reload",
+  "cases": {
+    "page-fixtures-tab": {
+      "label": "editor-after-attempt1-page-fixtures-tab",
+      "saved": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A",
+          "detail"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              },
+              {
+                "componentId": "nav",
+                "type": "navigation_button",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "去详情",
+                  "text": "去详情"
+                },
+                "bindings": {},
+                "actions": {
+                  "clicked": {
+                    "type": "navigate",
+                    "pageId": "detail",
+                    "context": "live"
+                  }
+                },
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          },
+          "detail": {
+            "name": "详情页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "detail-component",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "Edited detail only",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A",
+          "detail"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              },
+              {
+                "componentId": "nav",
+                "type": "navigation_button",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "去详情",
+                  "text": "去详情"
+                },
+                "bindings": {},
+                "actions": {
+                  "clicked": {
+                    "type": "navigate",
+                    "pageId": "detail",
+                    "context": "live"
+                  }
+                },
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          },
+          "detail": {
+            "name": "详情页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "detail-component",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "Edited detail only",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "backendValidatedSaves": 2,
+      "status": "passed"
+    },
+    "page-fixtures-button": {
+      "label": "editor-after-attempt1-page-fixtures-button",
+      "saved": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A",
+          "detail"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              },
+              {
+                "componentId": "nav",
+                "type": "navigation_button",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "去详情",
+                  "text": "去详情"
+                },
+                "bindings": {},
+                "actions": {
+                  "clicked": {
+                    "type": "navigate",
+                    "pageId": "detail",
+                    "context": "live"
+                  }
+                },
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          },
+          "detail": {
+            "name": "详情页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "detail-component",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "Edited detail only",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A",
+          "detail"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              },
+              {
+                "componentId": "nav",
+                "type": "navigation_button",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "去详情",
+                  "text": "去详情"
+                },
+                "bindings": {},
+                "actions": {
+                  "clicked": {
+                    "type": "navigate",
+                    "pageId": "detail",
+                    "context": "live"
+                  }
+                },
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          },
+          "detail": {
+            "name": "详情页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "detail-component",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "Edited detail only",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "backendValidatedSaves": 2,
+      "status": "passed"
+    },
+    "page-runtime-tab": {
+      "label": "editor-after-attempt1-page-runtime-tab",
+      "saved": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A",
+          "detail"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              },
+              {
+                "componentId": "nav",
+                "type": "navigation_button",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "去详情",
+                  "text": "去详情"
+                },
+                "bindings": {},
+                "actions": {
+                  "clicked": {
+                    "type": "navigate",
+                    "pageId": "detail",
+                    "context": "live"
+                  }
+                },
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          },
+          "detail": {
+            "name": "详情页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "detail-component",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "Edited detail only",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A",
+          "detail"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              },
+              {
+                "componentId": "nav",
+                "type": "navigation_button",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "去详情",
+                  "text": "去详情"
+                },
+                "bindings": {},
+                "actions": {
+                  "clicked": {
+                    "type": "navigate",
+                    "pageId": "detail",
+                    "context": "live"
+                  }
+                },
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          },
+          "detail": {
+            "name": "详情页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "detail-component",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "Edited detail only",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "backendValidatedSaves": 2,
+      "status": "passed"
+    },
+    "page-runtime-button": {
+      "label": "editor-after-attempt1-page-runtime-button",
+      "saved": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A",
+          "detail"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              },
+              {
+                "componentId": "nav",
+                "type": "navigation_button",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "去详情",
+                  "text": "去详情"
+                },
+                "bindings": {},
+                "actions": {
+                  "clicked": {
+                    "type": "navigate",
+                    "pageId": "detail",
+                    "context": "live"
+                  }
+                },
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          },
+          "detail": {
+            "name": "详情页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "detail-component",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "Edited detail only",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A",
+          "detail"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              },
+              {
+                "componentId": "nav",
+                "type": "navigation_button",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "去详情",
+                  "text": "去详情"
+                },
+                "bindings": {},
+                "actions": {
+                  "clicked": {
+                    "type": "navigate",
+                    "pageId": "detail",
+                    "context": "live"
+                  }
+                },
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          },
+          "detail": {
+            "name": "详情页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "detail-component",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "Edited detail only",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "backendValidatedSaves": 2,
+      "status": "passed"
+    },
+    "page-editor": {
+      "label": "editor-after-attempt1-page-editor",
+      "saved": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A",
+          "detail"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              },
+              {
+                "componentId": "nav",
+                "type": "navigation_button",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "去详情",
+                  "text": "去详情"
+                },
+                "bindings": {},
+                "actions": {
+                  "clicked": {
+                    "type": "navigate",
+                    "pageId": "detail",
+                    "context": "live"
+                  }
+                },
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          },
+          "detail": {
+            "name": "详情页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "detail-component",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "Edited detail only",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A",
+          "detail"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              },
+              {
+                "componentId": "nav",
+                "type": "navigation_button",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "去详情",
+                  "text": "去详情"
+                },
+                "bindings": {},
+                "actions": {
+                  "clicked": {
+                    "type": "navigate",
+                    "pageId": "detail",
+                    "context": "live"
+                  }
+                },
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          },
+          "detail": {
+            "name": "详情页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "detail-component",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "Edited detail only",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "backendValidatedSaves": 2,
+      "status": "passed"
+    },
+    "clipboard-bound": {
+      "label": "editor-after-attempt1-clipboard-bound",
+      "saved": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {
+          "source-count": {
+            "kind": "node_output",
+            "resultScopeId": "scope-wf",
+            "workflowId": "wf",
+            "nodeId": "node",
+            "port": "count",
+            "callPath": [],
+            "fieldPath": [],
+            "expectedType": "integer",
+            "ruleVersion": "1.0"
+          }
+        },
+        "resultScopes": {
+          "scope-wf": {
+            "entryWorkflowId": "wf",
+            "scopeWorkflowId": "wf",
+            "callPath": [],
+            "commitPolicy": "workflow_terminal"
+          }
+        },
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-800e8fc9a8df4da6fca8",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {
+                  "value": "source-count"
+                },
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": [
+              "scope-wf"
+            ]
+          }
+        }
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {
+          "source-count": {
+            "kind": "node_output",
+            "resultScopeId": "scope-wf",
+            "workflowId": "wf",
+            "nodeId": "node",
+            "port": "count",
+            "callPath": [],
+            "fieldPath": [],
+            "expectedType": "integer",
+            "ruleVersion": "1.0"
+          }
+        },
+        "resultScopes": {
+          "scope-wf": {
+            "entryWorkflowId": "wf",
+            "scopeWorkflowId": "wf",
+            "callPath": [],
+            "commitPolicy": "workflow_terminal"
+          }
+        },
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-800e8fc9a8df4da6fca8",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {
+                  "value": "source-count"
+                },
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": [
+              "scope-wf"
+            ]
+          }
+        }
+      },
+      "backendValidatedSaves": 2,
+      "status": "passed"
+    },
+    "clipboard-nested": {
+      "label": "editor-after-attempt1-clipboard-nested",
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_round3_browser.py\", line 261, in main\n    case(browser, f'http://127.0.0.1:{server.server_port}', outcome);outcome['status'] = 'passed'\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_round3_browser.py\", line 138, in clipboard\n    saved = f.save(page, fixture)['presentation']\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_review_browser.py\", line 119, in save\n    page.wait_for_function(\"() => document.querySelector('.editor-draft-state')?.textContent.includes('已保存')\")\n  File \"C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\.venv\\lib\\site-packages\\playwright\\sync_api\\_generated.py\", line 21235, in wait_for_function\n    self._sync(\n  File \"C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\.venv\\lib\\site-packages\\playwright\\_impl\\_sync_base.py\", line 111, in _sync\n    return task.result()\n  File \"C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\.venv\\lib\\site-packages\\playwright\\_impl\\_page.py\", line 1158, in wait_for_function\n    return await self._main_frame.wait_for_function(**locals_to_params(locals()))\n  File \"C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\.venv\\lib\\site-packages\\playwright\\_impl\\_frame.py\", line 945, in wait_for_function\n    await self._channel.send(\"waitForFunction\", self._timeout, params)\n  File \"C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\.venv\\lib\\site-packages\\playwright\\_impl\\_connection.py\", line 78, in send\n    return await self._connection.wrap_api_call(\n  File \"C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\.venv\\lib\\site-packages\\playwright\\_impl\\_connection.py\", line 636, in wrap_api_call\n    raise rewrite_error(error, f\"{parsed_st['apiName']}: {error}\") from None\nplaywright._impl._errors.TimeoutError: Page.wait_for_function: Timeout 30000ms exceeded.\n"
+    },
+    "clipboard-shared": {
+      "label": "editor-after-attempt1-clipboard-shared",
+      "saved": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {
+          "source-count": {
+            "kind": "node_output",
+            "resultScopeId": "scope-wf",
+            "workflowId": "wf",
+            "nodeId": "node",
+            "port": "count",
+            "callPath": [],
+            "fieldPath": [],
+            "expectedType": "integer",
+            "ruleVersion": "1.0"
+          }
+        },
+        "resultScopes": {
+          "scope-wf": {
+            "entryWorkflowId": "wf",
+            "scopeWorkflowId": "wf",
+            "callPath": [],
+            "commitPolicy": "workflow_terminal"
+          }
+        },
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "other-user",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {
+                  "value": "source-count"
+                },
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              },
+              {
+                "componentId": "component-7c5a103240cd0c6f3f98",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {
+                  "value": "source-count"
+                },
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": [
+              "scope-wf"
+            ]
+          }
+        }
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {
+          "source-count": {
+            "kind": "node_output",
+            "resultScopeId": "scope-wf",
+            "workflowId": "wf",
+            "nodeId": "node",
+            "port": "count",
+            "callPath": [],
+            "fieldPath": [],
+            "expectedType": "integer",
+            "ruleVersion": "1.0"
+          }
+        },
+        "resultScopes": {
+          "scope-wf": {
+            "entryWorkflowId": "wf",
+            "scopeWorkflowId": "wf",
+            "callPath": [],
+            "commitPolicy": "workflow_terminal"
+          }
+        },
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "other-user",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {
+                  "value": "source-count"
+                },
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              },
+              {
+                "componentId": "component-7c5a103240cd0c6f3f98",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {
+                  "value": "source-count"
+                },
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": [
+              "scope-wf"
+            ]
+          }
+        }
+      },
+      "backendValidatedSaves": 2,
+      "status": "passed"
+    },
+    "clipboard-static": {
+      "label": "editor-after-attempt1-clipboard-static",
+      "saved": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-edf9d7f3bb599939ef44",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-edf9d7f3bb599939ef44",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "backendValidatedSaves": 2,
+      "status": "passed"
+    },
+    "grid-root": {
+      "label": "editor-after-attempt1-grid-root",
+      "before": {
+        "x": 295,
+        "y": 345,
+        "width": 418,
+        "height": 91
+      },
+      "after": {
+        "x": 295,
+        "y": 345,
+        "width": 848,
+        "height": 140
+      },
+      "saved": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "grid",
+              "columns": 2,
+              "spacing": 12
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 2,
+                  "columnSpan": 2
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "grid",
+              "columns": 2,
+              "spacing": 12
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 2,
+                  "columnSpan": 2
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "preview": {
+        "row": "1 / span 2",
+        "column": "1 / span 2",
+        "height": 140
+      },
+      "backendValidatedSaves": 2,
+      "status": "passed"
+    },
+    "grid-nested": {
+      "label": "editor-after-attempt1-grid-nested",
+      "before": {
+        "x": 321,
+        "y": 396,
+        "width": 257.328125,
+        "height": 91
+      },
+      "after": {
+        "x": 590.328125,
+        "y": 414,
+        "width": 526.671875,
+        "height": 216
+      },
+      "saved": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "container",
+                "type": "container",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "container",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [
+                  {
+                    "componentId": "nested",
+                    "type": "text",
+                    "version": "1.0",
+                    "layout": {
+                      "row": 1,
+                      "column": 1,
+                      "rowSpan": 3,
+                      "columnSpan": 2
+                    },
+                    "responsive": {
+                      "width": "fill",
+                      "minWidth": 160,
+                      "preferredWidth": 240,
+                      "minHeight": 64,
+                      "preferredHeight": 0,
+                      "weight": 1,
+                      "alignSelf": "auto"
+                    },
+                    "props": {
+                      "title": "nested",
+                      "text": "Editable text"
+                    },
+                    "bindings": {},
+                    "actions": {},
+                    "children": [],
+                    "grid": {
+                      "type": "responsive",
+                      "direction": "vertical",
+                      "spacing": 12
+                    }
+                  }
+                ],
+                "grid": {
+                  "type": "grid",
+                  "columns": 3,
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "container",
+                "type": "container",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "container",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [
+                  {
+                    "componentId": "nested",
+                    "type": "text",
+                    "version": "1.0",
+                    "layout": {
+                      "row": 1,
+                      "column": 1,
+                      "rowSpan": 3,
+                      "columnSpan": 2
+                    },
+                    "responsive": {
+                      "width": "fill",
+                      "minWidth": 160,
+                      "preferredWidth": 240,
+                      "minHeight": 64,
+                      "preferredHeight": 0,
+                      "weight": 1,
+                      "alignSelf": "auto"
+                    },
+                    "props": {
+                      "title": "nested",
+                      "text": "Editable text"
+                    },
+                    "bindings": {},
+                    "actions": {},
+                    "children": [],
+                    "grid": {
+                      "type": "responsive",
+                      "direction": "vertical",
+                      "spacing": 12
+                    }
+                  }
+                ],
+                "grid": {
+                  "type": "grid",
+                  "columns": 3,
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "preview": {
+        "row": "2 / span 3",
+        "column": "2 / span 2",
+        "height": 216
+      },
+      "backendValidatedSaves": 2,
+      "status": "passed"
+    },
+    "metadata-known": {
+      "label": "editor-after-attempt1-metadata-known",
+      "jobMetadataText": "任务：run-A\n\n工程修订：3\n\n执行修订：execution-old-3-full\n\n采集修订：capture-old-5-full",
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_round3_browser.py\", line 261, in main\n    case(browser, f'http://127.0.0.1:{server.server_port}', outcome);outcome['status'] = 'passed'\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_round3_browser.py\", line 228, in details\n    assert palette.get_by_role('button', name=name, exact=True).count() == 1\nAssertionError\n"
+    },
+    "metadata-unavailable": {
+      "label": "editor-after-attempt1-metadata-unavailable",
+      "jobMetadataText": "任务：run-A\n\n工程修订：Runtime未提供\n\n执行修订：execution-old-3-full\n\n采集修订：capture-old-5-full",
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_round3_browser.py\", line 261, in main\n    case(browser, f'http://127.0.0.1:{server.server_port}', outcome);outcome['status'] = 'passed'\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_round3_browser.py\", line 228, in details\n    assert palette.get_by_role('button', name=name, exact=True).count() == 1\nAssertionError\n"
+    }
+  }
+}

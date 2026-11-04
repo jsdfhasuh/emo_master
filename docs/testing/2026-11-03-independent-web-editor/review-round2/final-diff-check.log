@@ -1,0 +1,5 @@
+warning: in the working copy of 'src/emo_panel_protocol/generated/runtime_pb2.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_panel_protocol/generated/runtime_pb2_grpc.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/ui/page_designer/test_terminal_properties.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'web_panel/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'web_panel/docs/DEPLOYMENT.md', LF will be replaced by CRLF the next time Git touches it

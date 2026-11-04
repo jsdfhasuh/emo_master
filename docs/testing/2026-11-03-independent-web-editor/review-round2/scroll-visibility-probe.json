@@ -1,0 +1,173 @@
+{
+  "evidenceLevel": "Real Edge / built React with mocked HTTP+WS; scroll geometry, no Runtime acceptance",
+  "cases": {
+    "fixed-fixtures": {
+      "windowHeight": 900,
+      "terminal": {
+        "top": 85,
+        "bottom": 853,
+        "width": 1024,
+        "height": 768
+      },
+      "content": {
+        "top": 101,
+        "bottom": 853,
+        "width": 1024,
+        "height": 752
+      },
+      "topWidget": {
+        "top": 101,
+        "bottom": 209,
+        "width": 1024,
+        "height": 108
+      },
+      "bottomWidget": {
+        "top": 745,
+        "bottom": 853,
+        "width": 1024,
+        "height": 108
+      },
+      "spacer": {
+        "top": 221,
+        "bottom": 733,
+        "width": 24,
+        "height": 512
+      },
+      "contentStyleHeight": "752px",
+      "terminalScrollHeight": 768,
+      "terminalClientHeight": 768,
+      "terminalOverflowY": "auto",
+      "terminalScrollTop": 0,
+      "contentTopInTerminal": 16,
+      "footerBottomInTerminal": 768,
+      "backdropScrollTop": 138,
+      "status": "passed"
+    },
+    "fixed-runtime": {
+      "windowHeight": 900,
+      "terminal": {
+        "top": 85,
+        "bottom": 853,
+        "width": 1024,
+        "height": 768
+      },
+      "content": {
+        "top": 101,
+        "bottom": 853,
+        "width": 1024,
+        "height": 752
+      },
+      "topWidget": {
+        "top": 101,
+        "bottom": 209,
+        "width": 1024,
+        "height": 108
+      },
+      "bottomWidget": {
+        "top": 745,
+        "bottom": 853,
+        "width": 1024,
+        "height": 108
+      },
+      "spacer": {
+        "top": 221,
+        "bottom": 733,
+        "width": 24,
+        "height": 512
+      },
+      "contentStyleHeight": "752px",
+      "terminalScrollHeight": 768,
+      "terminalClientHeight": 768,
+      "terminalOverflowY": "auto",
+      "terminalScrollTop": 0,
+      "contentTopInTerminal": 16,
+      "footerBottomInTerminal": 768,
+      "backdropScrollTop": 187,
+      "status": "passed"
+    },
+    "overflow-fixtures": {
+      "windowHeight": 900,
+      "terminal": {
+        "top": 85,
+        "bottom": 853,
+        "width": 1024,
+        "height": 768
+      },
+      "content": {
+        "top": -495,
+        "bottom": 257,
+        "width": 1024,
+        "height": 752
+      },
+      "topWidget": {
+        "top": -495,
+        "bottom": 405,
+        "width": 1024,
+        "height": 900
+      },
+      "bottomWidget": {
+        "top": 453,
+        "bottom": 853,
+        "width": 1024,
+        "height": 400
+      },
+      "spacer": {
+        "top": 417,
+        "bottom": 441,
+        "width": 24,
+        "height": 24
+      },
+      "contentStyleHeight": "752px",
+      "terminalScrollHeight": 1364,
+      "terminalClientHeight": 768,
+      "terminalOverflowY": "auto",
+      "terminalScrollTop": 596,
+      "contentTopInTerminal": -580,
+      "footerBottomInTerminal": 768,
+      "backdropScrollTop": 138,
+      "status": "passed"
+    },
+    "overflow-runtime": {
+      "windowHeight": 900,
+      "terminal": {
+        "top": 85,
+        "bottom": 853,
+        "width": 1024,
+        "height": 768
+      },
+      "content": {
+        "top": -495,
+        "bottom": 257,
+        "width": 1024,
+        "height": 752
+      },
+      "topWidget": {
+        "top": -495,
+        "bottom": 405,
+        "width": 1024,
+        "height": 900
+      },
+      "bottomWidget": {
+        "top": 453,
+        "bottom": 853,
+        "width": 1024,
+        "height": 400
+      },
+      "spacer": {
+        "top": 417,
+        "bottom": 441,
+        "width": 24,
+        "height": 24
+      },
+      "contentStyleHeight": "752px",
+      "terminalScrollHeight": 1364,
+      "terminalClientHeight": 768,
+      "terminalOverflowY": "auto",
+      "terminalScrollTop": 596,
+      "contentTopInTerminal": -580,
+      "footerBottomInTerminal": 768,
+      "backdropScrollTop": 187,
+      "status": "passed"
+    }
+  }
+}

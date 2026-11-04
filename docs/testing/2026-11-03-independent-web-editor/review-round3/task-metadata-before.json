@@ -1,0 +1,21 @@
+{
+  "httpStatus": 200,
+  "selectedJob": "demo-run",
+  "jobMetadata": null,
+  "currentRuntime": {
+    "runtimeInstanceId": "mock-instance",
+    "projectId": "demo-project",
+    "mode": "mock",
+    "configurationRevision": "1",
+    "documentRevision": "1",
+    "contractStatus": "draft-unverified",
+    "capabilities": [
+      "display",
+      "history",
+      "control",
+      "runtime_logs_query_v1",
+      "output_requests_v1"
+    ]
+  },
+  "metadataAbsent": true
+}

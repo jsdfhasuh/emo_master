@@ -1,0 +1,26 @@
+F401 [*] `urllib.parse.urlsplit` imported but unused
+  --> web_panel\backend\emo_web_panel\app.py:12:26
+   |
+10 | from contextlib import AsyncExitStack, asynccontextmanager
+11 | from pathlib import Path
+12 | from urllib.parse import urlsplit
+   |                          ^^^^^^^^
+13 | from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+14 | from fastapi.responses import JSONResponse, Response, FileResponse
+   |
+help: Remove unused import: `urllib.parse.urlsplit`
+
+F841 Local variable `who` is assigned to but never used
+   --> web_panel\backend\emo_web_panel\app.py:214:9
+    |
+212 |     @app.post('/api/logout')
+213 |     async def logout(req:Request):
+214 |         who=await identity(req,mutating=True)
+    |         ^^^
+215 |         await asyncio.to_thread(auth.logout,req.cookies.get(COOKIE,''))
+216 |         response=JSONResponse({'ok':True}); response.delete_cookie(COOKIE); return response
+    |
+help: Remove assignment to unused variable `who`
+
+Found 2 errors.
+[*] 1 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).

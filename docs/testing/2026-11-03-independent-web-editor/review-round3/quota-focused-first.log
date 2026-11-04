@@ -1,0 +1,16 @@
+
+=================================== ERRORS ====================================
+_______________ ERROR collecting web_panel/tests/test_editor.py _______________
+web_panel\tests\test_editor.py:8: in <module>
+    from fastapi.testclient import TestClient
+D:\Conda\envs\emo_master\lib\site-packages\fastapi\testclient.py:1: in <module>
+    from starlette.testclient import TestClient as TestClient  # noqa
+D:\Conda\envs\emo_master\lib\site-packages\starlette\testclient.py:41: in <module>
+    raise RuntimeError(
+E   RuntimeError: The starlette.testclient module requires the httpx2 package to be installed.
+E   You can install this with:
+E       $ pip install httpx2
+=========================== short test summary info ===========================
+ERROR web_panel/tests/test_editor.py - RuntimeError: The starlette.testclient...
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 1.31s

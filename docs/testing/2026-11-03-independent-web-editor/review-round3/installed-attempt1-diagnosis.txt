@@ -1,0 +1,1 @@
+First installed E2E attempt 20261104-075655-538c08: palette button accessible name includes the image icon. The updated exact name locator failed before upload. Product code and behavior assertions unchanged. Use the exact Chinese name suffix regex to include the icon; rerun preserves the old report and log.

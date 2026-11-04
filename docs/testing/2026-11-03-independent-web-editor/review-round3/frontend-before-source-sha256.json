@@ -1,0 +1,10 @@
+[
+  {
+    "path": "web_panel/frontend/src/editor/Editor.tsx",
+    "sha256": "7f6070beff01aba4d29aa7552df0de52f95cc990ee0a7059f6a3cf8ed2f0e16b"
+  },
+  {
+    "path": "web_panel/frontend/src/editor/model.ts",
+    "sha256": "f6767983227b199faf77116174024393bad24a4942f0836e9dc222c775df28cb"
+  }
+]

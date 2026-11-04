@@ -1,0 +1,16 @@
+{
+  "web": {
+    "modulePath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\.venv\\lib\\site-packages\\emo_web_panel\\__init__.py",
+    "checkedFiles": 45,
+    "allWheelBytesEqual": true,
+    "sha256": "2fd3a9ee34870f3c7c3294cda0068f5383f566c79969ad9d91be5ebb4fedc686",
+    "byteSize": 191255
+  },
+  "sdk": {
+    "modulePath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\.venv\\lib\\site-packages\\emo_panel_protocol\\__init__.py",
+    "checkedFiles": 15,
+    "allWheelBytesEqual": true,
+    "sha256": "97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d",
+    "byteSize": 40265
+  }
+}

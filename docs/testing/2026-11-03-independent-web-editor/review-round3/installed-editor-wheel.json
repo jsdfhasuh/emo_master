@@ -1,0 +1,15 @@
+{
+  "python": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\.venv\\Scripts\\python.exe",
+  "isolated": true,
+  "webPackage": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\.venv\\lib\\site-packages\\emo_web_panel\\__init__.py",
+  "sdkPackage": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\.venv\\lib\\site-packages\\emo_panel_protocol\\__init__.py",
+  "sdkVersion": "1.5.0",
+  "editorEntry": "PASS",
+  "fullSourceRoundTrip": "PASS",
+  "staticResource": "PASS",
+  "publish": "PASS",
+  "noImplicitStart": "PASS",
+  "pageCount": 2,
+  "lightweightImports": "PASS",
+  "installedCliWithoutNode": "PASS"
+}

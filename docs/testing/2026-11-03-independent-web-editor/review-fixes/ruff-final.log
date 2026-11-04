@@ -1,0 +1,14 @@
+F401 [*] `pathlib.Path` imported but unused
+ --> web_panel\tests\test_web_start_capture.py:6:21
+  |
+4 | import json
+5 | import os
+6 | from pathlib import Path
+  |                     ^^^^
+7 | import sys
+8 | import time
+  |
+help: Remove unused import: `pathlib.Path`
+
+Found 1 error.
+[*] 1 fixable with the `--fix` option.

@@ -1,0 +1,10 @@
+Processing c:\users\jsdfhasuh\my_scripts\emo_master\web_panel\dist\emo_master_web_panel-0.1.0a1-py3-none-any.whl
+Installing collected packages: emo-master-web-panel
+  Attempting uninstall: emo-master-web-panel
+    Found existing installation: emo-master-web-panel 0.1.0a1
+    Uninstalling emo-master-web-panel-0.1.0a1:
+      Successfully uninstalled emo-master-web-panel-0.1.0a1
+Successfully installed emo-master-web-panel-0.1.0a1
+
+[notice] A new release of pip is available: 23.0.1 -> 26.3
+[notice] To update, run: C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\.venv\Scripts\python.exe -m pip install --upgrade pip

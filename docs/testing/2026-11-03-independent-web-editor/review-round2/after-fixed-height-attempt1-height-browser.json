@@ -1,0 +1,676 @@
+{
+  "evidenceLevel": "Built React + real headless Edge; mocked HTTP and live-view WS; no Runtime/device acceptance",
+  "label": "after-fixed-height-attempt1",
+  "cases": {
+    "fixed-fixtures": {
+      "measurements": [
+        {
+          "windowHeight": 900,
+          "terminal": {
+            "top": 223,
+            "bottom": 991,
+            "width": 1024,
+            "height": 768
+          },
+          "content": {
+            "top": 239,
+            "bottom": 991,
+            "width": 1024,
+            "height": 752
+          },
+          "topWidget": {
+            "top": 239,
+            "bottom": 347,
+            "width": 1024,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 883,
+            "bottom": 991,
+            "width": 1024,
+            "height": 108
+          },
+          "spacer": {
+            "top": 359,
+            "bottom": 871,
+            "width": 24,
+            "height": 512
+          },
+          "contentStyleHeight": "752px",
+          "terminalScrollHeight": 768,
+          "terminalClientHeight": 768,
+          "terminalOverflowY": "auto",
+          "terminalScrollTop": 0,
+          "contentTopInTerminal": 16,
+          "footerBottomInTerminal": 768
+        },
+        {
+          "windowHeight": 1200,
+          "terminal": {
+            "top": 223,
+            "bottom": 991,
+            "width": 1024,
+            "height": 768
+          },
+          "content": {
+            "top": 239,
+            "bottom": 991,
+            "width": 1024,
+            "height": 752
+          },
+          "topWidget": {
+            "top": 239,
+            "bottom": 347,
+            "width": 1024,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 883,
+            "bottom": 991,
+            "width": 1024,
+            "height": 108
+          },
+          "spacer": {
+            "top": 359,
+            "bottom": 871,
+            "width": 24,
+            "height": 512
+          },
+          "contentStyleHeight": "752px",
+          "terminalScrollHeight": 768,
+          "terminalClientHeight": 768,
+          "terminalOverflowY": "auto",
+          "terminalScrollTop": 0,
+          "contentTopInTerminal": 16,
+          "footerBottomInTerminal": 768
+        }
+      ],
+      "status": "passed"
+    },
+    "fixed-runtime": {
+      "measurements": [
+        {
+          "windowHeight": 900,
+          "terminal": {
+            "top": 272,
+            "bottom": 1040,
+            "width": 1024,
+            "height": 768
+          },
+          "content": {
+            "top": 288,
+            "bottom": 1040,
+            "width": 1024,
+            "height": 752
+          },
+          "topWidget": {
+            "top": 288,
+            "bottom": 396,
+            "width": 1024,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 932,
+            "bottom": 1040,
+            "width": 1024,
+            "height": 108
+          },
+          "spacer": {
+            "top": 408,
+            "bottom": 920,
+            "width": 24,
+            "height": 512
+          },
+          "contentStyleHeight": "752px",
+          "terminalScrollHeight": 768,
+          "terminalClientHeight": 768,
+          "terminalOverflowY": "auto",
+          "terminalScrollTop": 0,
+          "contentTopInTerminal": 16,
+          "footerBottomInTerminal": 768
+        },
+        {
+          "windowHeight": 1200,
+          "terminal": {
+            "top": 272,
+            "bottom": 1040,
+            "width": 1024,
+            "height": 768
+          },
+          "content": {
+            "top": 288,
+            "bottom": 1040,
+            "width": 1024,
+            "height": 752
+          },
+          "topWidget": {
+            "top": 288,
+            "bottom": 396,
+            "width": 1024,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 932,
+            "bottom": 1040,
+            "width": 1024,
+            "height": 108
+          },
+          "spacer": {
+            "top": 408,
+            "bottom": 920,
+            "width": 24,
+            "height": 512
+          },
+          "contentStyleHeight": "752px",
+          "terminalScrollHeight": 768,
+          "terminalClientHeight": 768,
+          "terminalOverflowY": "auto",
+          "terminalScrollTop": 0,
+          "contentTopInTerminal": 16,
+          "footerBottomInTerminal": 768
+        }
+      ],
+      "status": "passed"
+    },
+    "follow-fixtures": {
+      "measurements": [
+        {
+          "windowHeight": 900,
+          "terminal": {
+            "top": 239,
+            "bottom": 884,
+            "width": 1406,
+            "height": 645
+          },
+          "content": {
+            "top": 239,
+            "bottom": 884,
+            "width": 1406,
+            "height": 645
+          },
+          "topWidget": {
+            "top": 239,
+            "bottom": 347,
+            "width": 1406,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 776,
+            "bottom": 884,
+            "width": 1406,
+            "height": 108
+          },
+          "spacer": {
+            "top": 359,
+            "bottom": 764,
+            "width": 24,
+            "height": 405
+          },
+          "contentStyleHeight": "645px",
+          "terminalScrollHeight": 645,
+          "terminalClientHeight": 645,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0,
+          "contentTopInTerminal": 0,
+          "footerBottomInTerminal": 645
+        },
+        {
+          "windowHeight": 1200,
+          "terminal": {
+            "top": 239,
+            "bottom": 1184,
+            "width": 1406,
+            "height": 945
+          },
+          "content": {
+            "top": 239,
+            "bottom": 1184,
+            "width": 1406,
+            "height": 945
+          },
+          "topWidget": {
+            "top": 239,
+            "bottom": 347,
+            "width": 1406,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 1076,
+            "bottom": 1184,
+            "width": 1406,
+            "height": 108
+          },
+          "spacer": {
+            "top": 359,
+            "bottom": 1064,
+            "width": 24,
+            "height": 705
+          },
+          "contentStyleHeight": "945px",
+          "terminalScrollHeight": 945,
+          "terminalClientHeight": 945,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0,
+          "contentTopInTerminal": 0,
+          "footerBottomInTerminal": 945
+        }
+      ],
+      "status": "passed"
+    },
+    "follow-runtime": {
+      "measurements": [
+        {
+          "windowHeight": 900,
+          "terminal": {
+            "top": 288,
+            "bottom": 884,
+            "width": 1406,
+            "height": 596
+          },
+          "content": {
+            "top": 288,
+            "bottom": 884,
+            "width": 1406,
+            "height": 596
+          },
+          "topWidget": {
+            "top": 288,
+            "bottom": 396,
+            "width": 1406,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 776,
+            "bottom": 884,
+            "width": 1406,
+            "height": 108
+          },
+          "spacer": {
+            "top": 408,
+            "bottom": 764,
+            "width": 24,
+            "height": 356
+          },
+          "contentStyleHeight": "596px",
+          "terminalScrollHeight": 596,
+          "terminalClientHeight": 596,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0,
+          "contentTopInTerminal": 0,
+          "footerBottomInTerminal": 596
+        },
+        {
+          "windowHeight": 1200,
+          "terminal": {
+            "top": 288,
+            "bottom": 1184,
+            "width": 1406,
+            "height": 896
+          },
+          "content": {
+            "top": 288,
+            "bottom": 1184,
+            "width": 1406,
+            "height": 896
+          },
+          "topWidget": {
+            "top": 288,
+            "bottom": 396,
+            "width": 1406,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 1076,
+            "bottom": 1184,
+            "width": 1406,
+            "height": 108
+          },
+          "spacer": {
+            "top": 408,
+            "bottom": 1064,
+            "width": 24,
+            "height": 656
+          },
+          "contentStyleHeight": "896px",
+          "terminalScrollHeight": 896,
+          "terminalClientHeight": 896,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0,
+          "contentTopInTerminal": 0,
+          "footerBottomInTerminal": 896
+        }
+      ],
+      "status": "passed"
+    },
+    "overflow-fixtures": {
+      "measurements": [
+        {
+          "windowHeight": 900,
+          "terminal": {
+            "top": 223,
+            "bottom": 991,
+            "width": 1024,
+            "height": 768
+          },
+          "content": {
+            "top": 239,
+            "bottom": 991,
+            "width": 1024,
+            "height": 752
+          },
+          "topWidget": {
+            "top": 239,
+            "bottom": 1139,
+            "width": 1024,
+            "height": 900
+          },
+          "bottomWidget": {
+            "top": 1187,
+            "bottom": 1587,
+            "width": 1024,
+            "height": 400
+          },
+          "spacer": {
+            "top": 1151,
+            "bottom": 1175,
+            "width": 24,
+            "height": 24
+          },
+          "contentStyleHeight": "752px",
+          "terminalScrollHeight": 1364,
+          "terminalClientHeight": 768,
+          "terminalOverflowY": "auto",
+          "terminalScrollTop": 0,
+          "contentTopInTerminal": 16,
+          "footerBottomInTerminal": 1364,
+          "afterScroll": {
+            "windowHeight": 900,
+            "terminal": {
+              "top": 223,
+              "bottom": 991,
+              "width": 1024,
+              "height": 768
+            },
+            "content": {
+              "top": -357,
+              "bottom": 395,
+              "width": 1024,
+              "height": 752
+            },
+            "topWidget": {
+              "top": -357,
+              "bottom": 543,
+              "width": 1024,
+              "height": 900
+            },
+            "bottomWidget": {
+              "top": 591,
+              "bottom": 991,
+              "width": 1024,
+              "height": 400
+            },
+            "spacer": {
+              "top": 555,
+              "bottom": 579,
+              "width": 24,
+              "height": 24
+            },
+            "contentStyleHeight": "752px",
+            "terminalScrollHeight": 1364,
+            "terminalClientHeight": 768,
+            "terminalOverflowY": "auto",
+            "terminalScrollTop": 596,
+            "contentTopInTerminal": -580,
+            "footerBottomInTerminal": 768
+          }
+        },
+        {
+          "windowHeight": 1200,
+          "terminal": {
+            "top": 223,
+            "bottom": 991,
+            "width": 1024,
+            "height": 768
+          },
+          "content": {
+            "top": 239,
+            "bottom": 991,
+            "width": 1024,
+            "height": 752
+          },
+          "topWidget": {
+            "top": 239,
+            "bottom": 1139,
+            "width": 1024,
+            "height": 900
+          },
+          "bottomWidget": {
+            "top": 1187,
+            "bottom": 1587,
+            "width": 1024,
+            "height": 400
+          },
+          "spacer": {
+            "top": 1151,
+            "bottom": 1175,
+            "width": 24,
+            "height": 24
+          },
+          "contentStyleHeight": "752px",
+          "terminalScrollHeight": 1364,
+          "terminalClientHeight": 768,
+          "terminalOverflowY": "auto",
+          "terminalScrollTop": 0,
+          "contentTopInTerminal": 16,
+          "footerBottomInTerminal": 1364,
+          "afterScroll": {
+            "windowHeight": 1200,
+            "terminal": {
+              "top": 223,
+              "bottom": 991,
+              "width": 1024,
+              "height": 768
+            },
+            "content": {
+              "top": -357,
+              "bottom": 395,
+              "width": 1024,
+              "height": 752
+            },
+            "topWidget": {
+              "top": -357,
+              "bottom": 543,
+              "width": 1024,
+              "height": 900
+            },
+            "bottomWidget": {
+              "top": 591,
+              "bottom": 991,
+              "width": 1024,
+              "height": 400
+            },
+            "spacer": {
+              "top": 555,
+              "bottom": 579,
+              "width": 24,
+              "height": 24
+            },
+            "contentStyleHeight": "752px",
+            "terminalScrollHeight": 1364,
+            "terminalClientHeight": 768,
+            "terminalOverflowY": "auto",
+            "terminalScrollTop": 596,
+            "contentTopInTerminal": -580,
+            "footerBottomInTerminal": 768
+          }
+        }
+      ],
+      "status": "passed"
+    },
+    "overflow-runtime": {
+      "measurements": [
+        {
+          "windowHeight": 900,
+          "terminal": {
+            "top": 272,
+            "bottom": 1040,
+            "width": 1024,
+            "height": 768
+          },
+          "content": {
+            "top": 288,
+            "bottom": 1040,
+            "width": 1024,
+            "height": 752
+          },
+          "topWidget": {
+            "top": 288,
+            "bottom": 1188,
+            "width": 1024,
+            "height": 900
+          },
+          "bottomWidget": {
+            "top": 1236,
+            "bottom": 1636,
+            "width": 1024,
+            "height": 400
+          },
+          "spacer": {
+            "top": 1200,
+            "bottom": 1224,
+            "width": 24,
+            "height": 24
+          },
+          "contentStyleHeight": "752px",
+          "terminalScrollHeight": 1364,
+          "terminalClientHeight": 768,
+          "terminalOverflowY": "auto",
+          "terminalScrollTop": 0,
+          "contentTopInTerminal": 16,
+          "footerBottomInTerminal": 1364,
+          "afterScroll": {
+            "windowHeight": 900,
+            "terminal": {
+              "top": 272,
+              "bottom": 1040,
+              "width": 1024,
+              "height": 768
+            },
+            "content": {
+              "top": -308,
+              "bottom": 444,
+              "width": 1024,
+              "height": 752
+            },
+            "topWidget": {
+              "top": -308,
+              "bottom": 592,
+              "width": 1024,
+              "height": 900
+            },
+            "bottomWidget": {
+              "top": 640,
+              "bottom": 1040,
+              "width": 1024,
+              "height": 400
+            },
+            "spacer": {
+              "top": 604,
+              "bottom": 628,
+              "width": 24,
+              "height": 24
+            },
+            "contentStyleHeight": "752px",
+            "terminalScrollHeight": 1364,
+            "terminalClientHeight": 768,
+            "terminalOverflowY": "auto",
+            "terminalScrollTop": 596,
+            "contentTopInTerminal": -580,
+            "footerBottomInTerminal": 768
+          }
+        },
+        {
+          "windowHeight": 1200,
+          "terminal": {
+            "top": 272,
+            "bottom": 1040,
+            "width": 1024,
+            "height": 768
+          },
+          "content": {
+            "top": 288,
+            "bottom": 1040,
+            "width": 1024,
+            "height": 752
+          },
+          "topWidget": {
+            "top": 288,
+            "bottom": 1188,
+            "width": 1024,
+            "height": 900
+          },
+          "bottomWidget": {
+            "top": 1236,
+            "bottom": 1636,
+            "width": 1024,
+            "height": 400
+          },
+          "spacer": {
+            "top": 1200,
+            "bottom": 1224,
+            "width": 24,
+            "height": 24
+          },
+          "contentStyleHeight": "752px",
+          "terminalScrollHeight": 1364,
+          "terminalClientHeight": 768,
+          "terminalOverflowY": "auto",
+          "terminalScrollTop": 0,
+          "contentTopInTerminal": 16,
+          "footerBottomInTerminal": 1364,
+          "afterScroll": {
+            "windowHeight": 1200,
+            "terminal": {
+              "top": 272,
+              "bottom": 1040,
+              "width": 1024,
+              "height": 768
+            },
+            "content": {
+              "top": -308,
+              "bottom": 444,
+              "width": 1024,
+              "height": 752
+            },
+            "topWidget": {
+              "top": -308,
+              "bottom": 592,
+              "width": 1024,
+              "height": 900
+            },
+            "bottomWidget": {
+              "top": 640,
+              "bottom": 1040,
+              "width": 1024,
+              "height": 400
+            },
+            "spacer": {
+              "top": 604,
+              "bottom": 628,
+              "width": 24,
+              "height": 24
+            },
+            "contentStyleHeight": "752px",
+            "terminalScrollHeight": 1364,
+            "terminalClientHeight": 768,
+            "terminalOverflowY": "auto",
+            "terminalScrollTop": 596,
+            "contentTopInTerminal": -580,
+            "footerBottomInTerminal": 768
+          }
+        }
+      ],
+      "status": "passed"
+    }
+  }
+}

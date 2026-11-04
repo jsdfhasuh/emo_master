@@ -1,0 +1,6 @@
+Processing c:\users\jsdfhasuh\my_scripts\emo_master\build\panel-contract-v1\python\emo_panel_protocol-1.5.0-py3-none-any.whl
+Installing collected packages: emo-panel-protocol
+Successfully installed emo-panel-protocol-1.5.0
+
+[notice] A new release of pip is available: 23.0.1 -> 26.3
+[notice] To update, run: C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\.venv\Scripts\python.exe -m pip install --upgrade pip

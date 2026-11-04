@@ -1,0 +1,186 @@
+* Creating isolated environment: venv+pip...
+* Installing packages in isolated environment:
+  - setuptools>=68
+* Getting build dependencies for wheel...
+running egg_info
+writing backend\emo_master_web_panel.egg-info\PKG-INFO
+writing dependency_links to backend\emo_master_web_panel.egg-info\dependency_links.txt
+writing entry points to backend\emo_master_web_panel.egg-info\entry_points.txt
+writing requirements to backend\emo_master_web_panel.egg-info\requires.txt
+writing top-level names to backend\emo_master_web_panel.egg-info\top_level.txt
+reading manifest file 'backend\emo_master_web_panel.egg-info\SOURCES.txt'
+writing manifest file 'backend\emo_master_web_panel.egg-info\SOURCES.txt'
+* Installed build dependency versions:
+  - setuptools==84.2.1
+* Building wheel...
+running bdist_wheel
+running build
+running build_py
+creating build\lib\emo_web_panel
+copying backend\emo_web_panel\app.py -> build\lib\emo_web_panel
+copying backend\emo_web_panel\auth.py -> build\lib\emo_web_panel
+copying backend\emo_web_panel\config.py -> build\lib\emo_web_panel
+copying backend\emo_web_panel\editor.py -> build\lib\emo_web_panel
+copying backend\emo_web_panel\editor_routes.py -> build\lib\emo_web_panel
+copying backend\emo_web_panel\fixture_runtime.py -> build\lib\emo_web_panel
+copying backend\emo_web_panel\local_log.py -> build\lib\emo_web_panel
+copying backend\emo_web_panel\main.py -> build\lib\emo_web_panel
+copying backend\emo_web_panel\mock_runtime.py -> build\lib\emo_web_panel
+copying backend\emo_web_panel\packages.py -> build\lib\emo_web_panel
+copying backend\emo_web_panel\registry.py -> build\lib\emo_web_panel
+copying backend\emo_web_panel\resource_cache.py -> build\lib\emo_web_panel
+copying backend\emo_web_panel\runtime_client.py -> build\lib\emo_web_panel
+copying backend\emo_web_panel\services.py -> build\lib\emo_web_panel
+copying backend\emo_web_panel\__init__.py -> build\lib\emo_web_panel
+running egg_info
+writing backend\emo_master_web_panel.egg-info\PKG-INFO
+writing dependency_links to backend\emo_master_web_panel.egg-info\dependency_links.txt
+writing entry points to backend\emo_master_web_panel.egg-info\entry_points.txt
+writing requirements to backend\emo_master_web_panel.egg-info\requires.txt
+writing top-level names to backend\emo_master_web_panel.egg-info\top_level.txt
+reading manifest file 'backend\emo_master_web_panel.egg-info\SOURCES.txt'
+writing manifest file 'backend\emo_master_web_panel.egg-info\SOURCES.txt'
+creating build\lib\emo_web_panel\static
+copying backend\emo_web_panel\static\index.html -> build\lib\emo_web_panel\static
+creating build\lib\emo_web_panel\static\assets
+copying backend\emo_web_panel\static\assets\Editor-Dou073XM.css -> build\lib\emo_web_panel\static\assets
+copying backend\emo_web_panel\static\assets\Editor-Dzy_zun9.js -> build\lib\emo_web_panel\static\assets
+copying backend\emo_web_panel\static\assets\index-BPJhQw1Z.css -> build\lib\emo_web_panel\static\assets
+copying backend\emo_web_panel\static\assets\index-cIlQGe0x.js -> build\lib\emo_web_panel\static\assets
+creating build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\canonical-vectors.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\closed-result.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\history-aggregate.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\history-image-available.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\history-image-empty.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\history-image-missing.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\history-image-unsupported.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\history-page.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\history-revision-changed.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\index.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\job-changed.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\no-capture.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\preview-fixtures.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\preview-runtime.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\realtime.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\start-accepted.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\start-unknown.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\stop-accepted.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\terminal.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\ungrouped-aborted.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\ungrouped-job-changed.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\ungrouped-running.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\ungrouped-start-accepted.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\fixtures\ungrouped-stop-accepted.json -> build\lib\emo_web_panel\contract_data\fixtures
+copying backend\emo_web_panel\contract_data\demo.png -> build\lib\emo_web_panel\contract_data
+installing to build\bdist.win-amd64\wheel
+running install
+running install_lib
+creating build\bdist.win-amd64\wheel
+creating build\bdist.win-amd64\wheel\emo_web_panel
+copying build\lib\emo_web_panel\app.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+copying build\lib\emo_web_panel\auth.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+copying build\lib\emo_web_panel\config.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+creating build\bdist.win-amd64\wheel\emo_web_panel\contract_data
+copying build\lib\emo_web_panel\contract_data\demo.png -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data
+creating build\bdist.win-amd64\wheel\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\canonical-vectors.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\closed-result.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\history-aggregate.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\history-image-available.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\history-image-empty.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\history-image-missing.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\history-image-unsupported.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\history-page.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\history-revision-changed.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\index.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\job-changed.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\no-capture.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\preview-fixtures.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\preview-runtime.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\realtime.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\start-accepted.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\start-unknown.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\stop-accepted.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\terminal.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\ungrouped-aborted.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\ungrouped-job-changed.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\ungrouped-running.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\ungrouped-start-accepted.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\contract_data\fixtures\ungrouped-stop-accepted.json -> build\bdist.win-amd64\wheel\.\emo_web_panel\contract_data\fixtures
+copying build\lib\emo_web_panel\editor.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+copying build\lib\emo_web_panel\editor_routes.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+copying build\lib\emo_web_panel\fixture_runtime.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+copying build\lib\emo_web_panel\local_log.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+copying build\lib\emo_web_panel\main.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+copying build\lib\emo_web_panel\mock_runtime.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+copying build\lib\emo_web_panel\packages.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+copying build\lib\emo_web_panel\registry.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+copying build\lib\emo_web_panel\resource_cache.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+copying build\lib\emo_web_panel\runtime_client.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+copying build\lib\emo_web_panel\services.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+creating build\bdist.win-amd64\wheel\emo_web_panel\static
+creating build\bdist.win-amd64\wheel\emo_web_panel\static\assets
+copying build\lib\emo_web_panel\static\assets\Editor-Dou073XM.css -> build\bdist.win-amd64\wheel\.\emo_web_panel\static\assets
+copying build\lib\emo_web_panel\static\assets\Editor-Dzy_zun9.js -> build\bdist.win-amd64\wheel\.\emo_web_panel\static\assets
+copying build\lib\emo_web_panel\static\assets\index-BPJhQw1Z.css -> build\bdist.win-amd64\wheel\.\emo_web_panel\static\assets
+copying build\lib\emo_web_panel\static\assets\index-cIlQGe0x.js -> build\bdist.win-amd64\wheel\.\emo_web_panel\static\assets
+copying build\lib\emo_web_panel\static\index.html -> build\bdist.win-amd64\wheel\.\emo_web_panel\static
+copying build\lib\emo_web_panel\__init__.py -> build\bdist.win-amd64\wheel\.\emo_web_panel
+running install_egg_info
+Copying backend\emo_master_web_panel.egg-info to build\bdist.win-amd64\wheel\.\emo_master_web_panel-0.1.0a1-py3.10.egg-info
+running install_scripts
+creating build\bdist.win-amd64\wheel\emo_master_web_panel-0.1.0a1.dist-info\WHEEL
+creating 'D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\dist\\.tmp-72cogfxu\\emo_master_web_panel-0.1.0a1-py3-none-any.whl' and adding 'build\\bdist.win-amd64\\wheel' to it
+adding 'emo_web_panel/__init__.py'
+adding 'emo_web_panel/app.py'
+adding 'emo_web_panel/auth.py'
+adding 'emo_web_panel/config.py'
+adding 'emo_web_panel/editor.py'
+adding 'emo_web_panel/editor_routes.py'
+adding 'emo_web_panel/fixture_runtime.py'
+adding 'emo_web_panel/local_log.py'
+adding 'emo_web_panel/main.py'
+adding 'emo_web_panel/mock_runtime.py'
+adding 'emo_web_panel/packages.py'
+adding 'emo_web_panel/registry.py'
+adding 'emo_web_panel/resource_cache.py'
+adding 'emo_web_panel/runtime_client.py'
+adding 'emo_web_panel/services.py'
+adding 'emo_web_panel/contract_data/demo.png'
+adding 'emo_web_panel/contract_data/fixtures/canonical-vectors.json'
+adding 'emo_web_panel/contract_data/fixtures/closed-result.json'
+adding 'emo_web_panel/contract_data/fixtures/history-aggregate.json'
+adding 'emo_web_panel/contract_data/fixtures/history-image-available.json'
+adding 'emo_web_panel/contract_data/fixtures/history-image-empty.json'
+adding 'emo_web_panel/contract_data/fixtures/history-image-missing.json'
+adding 'emo_web_panel/contract_data/fixtures/history-image-unsupported.json'
+adding 'emo_web_panel/contract_data/fixtures/history-page.json'
+adding 'emo_web_panel/contract_data/fixtures/history-revision-changed.json'
+adding 'emo_web_panel/contract_data/fixtures/index.json'
+adding 'emo_web_panel/contract_data/fixtures/job-changed.json'
+adding 'emo_web_panel/contract_data/fixtures/no-capture.json'
+adding 'emo_web_panel/contract_data/fixtures/preview-fixtures.json'
+adding 'emo_web_panel/contract_data/fixtures/preview-runtime.json'
+adding 'emo_web_panel/contract_data/fixtures/realtime.json'
+adding 'emo_web_panel/contract_data/fixtures/start-accepted.json'
+adding 'emo_web_panel/contract_data/fixtures/start-unknown.json'
+adding 'emo_web_panel/contract_data/fixtures/stop-accepted.json'
+adding 'emo_web_panel/contract_data/fixtures/terminal.json'
+adding 'emo_web_panel/contract_data/fixtures/ungrouped-aborted.json'
+adding 'emo_web_panel/contract_data/fixtures/ungrouped-job-changed.json'
+adding 'emo_web_panel/contract_data/fixtures/ungrouped-running.json'
+adding 'emo_web_panel/contract_data/fixtures/ungrouped-start-accepted.json'
+adding 'emo_web_panel/contract_data/fixtures/ungrouped-stop-accepted.json'
+adding 'emo_web_panel/static/index.html'
+adding 'emo_web_panel/static/assets/Editor-Dou073XM.css'
+adding 'emo_web_panel/static/assets/Editor-Dzy_zun9.js'
+adding 'emo_web_panel/static/assets/index-BPJhQw1Z.css'
+adding 'emo_web_panel/static/assets/index-cIlQGe0x.js'
+adding 'emo_master_web_panel-0.1.0a1.dist-info/METADATA'
+adding 'emo_master_web_panel-0.1.0a1.dist-info/WHEEL'
+adding 'emo_master_web_panel-0.1.0a1.dist-info/entry_points.txt'
+adding 'emo_master_web_panel-0.1.0a1.dist-info/top_level.txt'
+adding 'emo_master_web_panel-0.1.0a1.dist-info/RECORD'
+removing build\bdist.win-amd64\wheel
+Successfully built emo_master_web_panel-0.1.0a1-py3-none-any.whl

@@ -1,0 +1,32 @@
+[
+  {
+    "path": "assets/Editor-DNs6ah13.js",
+    "sha256": "8b023da6b1f271cf8ad220ae2afd94e4f2da6cb2d8202c0be0eafb8801c57927",
+    "byteSize": 52329,
+    "distByteEqual": true
+  },
+  {
+    "path": "assets/Editor-Dou073XM.css",
+    "sha256": "0815b9c139e7a613556f968524f18a003ecff7a4fbfb70d5531f769ccca3740a",
+    "byteSize": 9573,
+    "distByteEqual": true
+  },
+  {
+    "path": "assets/index-BL4iqTvR.js",
+    "sha256": "98dfeaaf3a4353ae75995f4e45c6babe67005938cdfe1ea7c2292d3b51579896",
+    "byteSize": 276039,
+    "distByteEqual": true
+  },
+  {
+    "path": "assets/index-BPJhQw1Z.css",
+    "sha256": "6e99ae16e325407a452bf0abedd5403ea9e330189515d4c06d2247af1db9e8e5",
+    "byteSize": 3692,
+    "distByteEqual": true
+  },
+  {
+    "path": "index.html",
+    "sha256": "22da3e02f2c1b0073a022053db3d46b7dcdcd8fdeb72d5888f5f80b00783b16c",
+    "byteSize": 369,
+    "distByteEqual": true
+  }
+]

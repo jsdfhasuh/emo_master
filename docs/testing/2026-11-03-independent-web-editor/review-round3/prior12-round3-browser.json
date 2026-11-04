@@ -1,0 +1,961 @@
+{
+  "evidenceLevel": "Real headless Edge + built React frontend + mocked API; persisted source checked",
+  "label": "prior12-round3",
+  "cases": {
+    "identity-switch": {
+      "sameIdentityPreservesUnsavedHistory": true,
+      "newIdentityUndoEnabled": false,
+      "newIdentityRedoEnabled": false,
+      "newIdentityRunSelection": "",
+      "newIdentityLivePreviewEnabled": false,
+      "saveAfterIdentitySwitch": {
+        "projectId": "B",
+        "presentation": {
+          "schemaVersion": "1.2",
+          "defaultPageId": "page-B",
+          "pageOrder": [
+            "page-B"
+          ],
+          "navigation": {
+            "mode": "tabs"
+          },
+          "dataSources": {},
+          "resultScopes": {},
+          "pages": {
+            "page-B": {
+              "name": "B 检测页",
+              "targets": [
+                "web"
+              ],
+              "layout": {
+                "type": "responsive",
+                "direction": "vertical",
+                "spacing": 12,
+                "alignment": "stretch",
+                "justify": "start",
+                "equalWidth": false
+              },
+              "components": [
+                {
+                  "componentId": "component-B",
+                  "type": "text",
+                  "version": "1.0",
+                  "layout": {
+                    "row": 0,
+                    "column": 0,
+                    "rowSpan": 1,
+                    "columnSpan": 1
+                  },
+                  "responsive": {
+                    "width": "fill",
+                    "minWidth": 160,
+                    "preferredWidth": 240,
+                    "minHeight": 64,
+                    "preferredHeight": 0,
+                    "weight": 1,
+                    "alignSelf": "auto"
+                  },
+                  "props": {
+                    "title": "component-B",
+                    "text": "Editable text"
+                  },
+                  "bindings": {},
+                  "actions": {},
+                  "children": [],
+                  "grid": {
+                    "type": "responsive",
+                    "direction": "vertical",
+                    "spacing": 12
+                  }
+                }
+              ],
+              "resultScopeIds": []
+            }
+          }
+        },
+        "expectedDraftRevision": "1"
+      },
+      "componentIdsAfterPaste": [
+        "component-B"
+      ],
+      "reopenedPageIds": [
+        "page-B"
+      ],
+      "status": "passed"
+    },
+    "initial-load-recovery": {
+      "initialFailureVisible": true,
+      "editorAfterRetry": true,
+      "saved": {
+        "projectId": "A",
+        "presentation": {
+          "schemaVersion": "1.2",
+          "defaultPageId": "page-A",
+          "pageOrder": [
+            "page-A"
+          ],
+          "navigation": {
+            "mode": "tabs"
+          },
+          "dataSources": {},
+          "resultScopes": {},
+          "pages": {
+            "page-A": {
+              "name": "Recovered editable",
+              "targets": [
+                "web"
+              ],
+              "layout": {
+                "type": "responsive",
+                "direction": "vertical",
+                "spacing": 12,
+                "alignment": "stretch",
+                "justify": "start",
+                "equalWidth": false
+              },
+              "components": [
+                {
+                  "componentId": "component-A",
+                  "type": "text",
+                  "version": "1.0",
+                  "layout": {
+                    "row": 0,
+                    "column": 0,
+                    "rowSpan": 1,
+                    "columnSpan": 1
+                  },
+                  "responsive": {
+                    "width": "fill",
+                    "minWidth": 160,
+                    "preferredWidth": 240,
+                    "minHeight": 64,
+                    "preferredHeight": 0,
+                    "weight": 1,
+                    "alignSelf": "auto"
+                  },
+                  "props": {
+                    "title": "component-A",
+                    "text": "Editable text"
+                  },
+                  "bindings": {},
+                  "actions": {},
+                  "children": [],
+                  "grid": {
+                    "type": "responsive",
+                    "direction": "vertical",
+                    "spacing": 12
+                  }
+                }
+              ],
+              "resultScopeIds": []
+            }
+          }
+        },
+        "expectedDraftRevision": "1"
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "Recovered editable",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "status": "passed"
+    },
+    "identity-instance": {
+      "sameIdentityPreservesUnsavedHistory": true,
+      "newIdentityUndoEnabled": false,
+      "newIdentityRedoEnabled": false,
+      "newIdentityRunSelection": "",
+      "newIdentityLivePreviewEnabled": false,
+      "saveAfterIdentitySwitch": {
+        "projectId": "A",
+        "presentation": {
+          "schemaVersion": "1.2",
+          "defaultPageId": "page-A",
+          "pageOrder": [
+            "page-A"
+          ],
+          "navigation": {
+            "mode": "tabs"
+          },
+          "dataSources": {},
+          "resultScopes": {},
+          "pages": {
+            "page-A": {
+              "name": "A 检测页",
+              "targets": [
+                "web"
+              ],
+              "layout": {
+                "type": "responsive",
+                "direction": "vertical",
+                "spacing": 12,
+                "alignment": "stretch",
+                "justify": "start",
+                "equalWidth": false
+              },
+              "components": [
+                {
+                  "componentId": "component-A",
+                  "type": "text",
+                  "version": "1.0",
+                  "layout": {
+                    "row": 0,
+                    "column": 0,
+                    "rowSpan": 1,
+                    "columnSpan": 1
+                  },
+                  "responsive": {
+                    "width": "fill",
+                    "minWidth": 160,
+                    "preferredWidth": 240,
+                    "minHeight": 64,
+                    "preferredHeight": 0,
+                    "weight": 1,
+                    "alignSelf": "auto"
+                  },
+                  "props": {
+                    "title": "component-A",
+                    "text": "Editable text"
+                  },
+                  "bindings": {},
+                  "actions": {},
+                  "children": [],
+                  "grid": {
+                    "type": "responsive",
+                    "direction": "vertical",
+                    "spacing": 12
+                  }
+                }
+              ],
+              "resultScopeIds": []
+            }
+          }
+        },
+        "expectedDraftRevision": "1"
+      },
+      "componentIdsAfterPaste": [
+        "component-A"
+      ],
+      "reopenedPageIds": [
+        "page-A"
+      ],
+      "status": "passed"
+    },
+    "identity-preview": {
+      "dialogsAfterIdentityChange": 0,
+      "status": "passed"
+    },
+    "history-new": {
+      "editorAfterUndo": true,
+      "saved": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "new restored editable",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "new restored editable",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "status": "passed"
+    },
+    "history-duplicate": {
+      "editorAfterUndo": true,
+      "saved": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "duplicate restored editable",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "duplicate restored editable",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "status": "passed"
+    },
+    "history-delete": {
+      "editorAfterUndo": true,
+      "saved": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A",
+          "detail"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          },
+          "detail": {
+            "name": "delete restored editable",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "detail-component",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "detail-component",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "reopened": {
+        "schemaVersion": "1.2",
+        "defaultPageId": "page-A",
+        "pageOrder": [
+          "page-A",
+          "detail"
+        ],
+        "navigation": {
+          "mode": "tabs"
+        },
+        "dataSources": {},
+        "resultScopes": {},
+        "pages": {
+          "page-A": {
+            "name": "A 检测页",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "component-A",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "component-A",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          },
+          "detail": {
+            "name": "delete restored editable",
+            "targets": [
+              "web"
+            ],
+            "layout": {
+              "type": "responsive",
+              "direction": "vertical",
+              "spacing": 12,
+              "alignment": "stretch",
+              "justify": "start",
+              "equalWidth": false
+            },
+            "components": [
+              {
+                "componentId": "detail-component",
+                "type": "text",
+                "version": "1.0",
+                "layout": {
+                  "row": 0,
+                  "column": 0,
+                  "rowSpan": 1,
+                  "columnSpan": 1
+                },
+                "responsive": {
+                  "width": "fill",
+                  "minWidth": 160,
+                  "preferredWidth": 240,
+                  "minHeight": 64,
+                  "preferredHeight": 0,
+                  "weight": 1,
+                  "alignSelf": "auto"
+                },
+                "props": {
+                  "title": "detail-component",
+                  "text": "Editable text"
+                },
+                "bindings": {},
+                "actions": {},
+                "children": [],
+                "grid": {
+                  "type": "responsive",
+                  "direction": "vertical",
+                  "spacing": 12
+                }
+              }
+            ],
+            "resultScopeIds": []
+          }
+        }
+      },
+      "status": "passed"
+    },
+    "resize-drag": {
+      "zoom": 0.464583,
+      "screenBefore": {
+        "x": 285.36248779296875,
+        "y": 335.36248779296875,
+        "width": 875.2749633789062,
+        "height": 485.0250244140625
+      },
+      "responsiveBefore": {
+        "width": "fill",
+        "minWidth": 160,
+        "preferredWidth": 240,
+        "minHeight": 64,
+        "preferredHeight": 0,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "savedResponsive": {
+        "width": "content",
+        "minWidth": 160,
+        "preferredWidth": 1927,
+        "minHeight": 64,
+        "preferredHeight": 1066,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "reopenedResponsive": {
+        "width": "content",
+        "minWidth": 160,
+        "preferredWidth": 1927,
+        "minHeight": 64,
+        "preferredHeight": 1066,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "expectedLogicalSize": [
+        1927,
+        1066
+      ],
+      "status": "passed"
+    },
+    "resize-noop": {
+      "zoom": 0.464583,
+      "screenBefore": {
+        "x": 281.36248779296875,
+        "y": 282.36248779296875,
+        "width": 875.2749633789062,
+        "height": 485.0250244140625
+      },
+      "responsiveBefore": {
+        "width": "fill",
+        "minWidth": 160,
+        "preferredWidth": 240,
+        "minHeight": 64,
+        "preferredHeight": 0,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "savedResponsive": {
+        "width": "fill",
+        "minWidth": 160,
+        "preferredWidth": 240,
+        "minHeight": 64,
+        "preferredHeight": 0,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "reopenedResponsive": {
+        "width": "fill",
+        "minWidth": 160,
+        "preferredWidth": 240,
+        "minHeight": 64,
+        "preferredHeight": 0,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "status": "passed"
+    },
+    "resize-cancel": {
+      "zoom": 0.464583,
+      "screenBefore": {
+        "x": 285.36248779296875,
+        "y": 335.36248779296875,
+        "width": 875.2749633789062,
+        "height": 485.0250244140625
+      },
+      "responsiveBefore": {
+        "width": "fill",
+        "minWidth": 160,
+        "preferredWidth": 240,
+        "minHeight": 64,
+        "preferredHeight": 0,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "savedResponsive": {
+        "width": "fill",
+        "minWidth": 160,
+        "preferredWidth": 240,
+        "minHeight": 64,
+        "preferredHeight": 0,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "reopenedResponsive": {
+        "width": "fill",
+        "minWidth": 160,
+        "preferredWidth": 240,
+        "minHeight": 64,
+        "preferredHeight": 0,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "status": "passed"
+    },
+    "resize-unscaled": {
+      "zoom": 1,
+      "screenBefore": {
+        "x": 295,
+        "y": 345,
+        "width": 848,
+        "height": 524
+      },
+      "responsiveBefore": {
+        "width": "fill",
+        "minWidth": 160,
+        "preferredWidth": 240,
+        "minHeight": 64,
+        "preferredHeight": 0,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "savedResponsive": {
+        "width": "content",
+        "minWidth": 160,
+        "preferredWidth": 868,
+        "minHeight": 64,
+        "preferredHeight": 534,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "reopenedResponsive": {
+        "width": "content",
+        "minWidth": 160,
+        "preferredWidth": 868,
+        "minHeight": 64,
+        "preferredHeight": 534,
+        "weight": 1,
+        "alignSelf": "auto"
+      },
+      "expectedLogicalSize": [
+        868,
+        534
+      ],
+      "status": "passed"
+    },
+    "fixed-terminal-preview": {
+      "terminalCount": 1,
+      "terminalSize": {
+        "width": 1366,
+        "minHeight": 768
+      },
+      "status": "passed"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+vite v7.1.12 building for production...
+transforming...
+✓ 46 modules transformed.
+
+(!) outDir D:\jsdfhasuh\documents\my_project\emo_master\docs\testing\2026-11-03-independent-web-editor\review-fixes\independent-editor-rereview-20261103-6f9bd7\dist is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+rendering chunks...
+computing gzip size...
+../../docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/dist/index.html                    0.37 kB │ gzip:  0.30 kB
+../../docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/dist/assets/index-BPJhQw1Z.css     3.69 kB │ gzip:  1.44 kB
+../../docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/dist/assets/Editor-Dou073XM.css    9.57 kB │ gzip:  2.61 kB
+../../docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/dist/assets/Editor-Qa0TYqL3.js    48.20 kB │ gzip: 16.01 kB
+../../docs/testing/2026-11-03-independent-web-editor/review-fixes/independent-editor-rereview-20261103-6f9bd7/dist/assets/index-DH1kqud4.js    275.64 kB │ gzip: 88.54 kB
+✓ built in 873ms

@@ -1,0 +1,140 @@
+{
+  "status": "PASS",
+  "head": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "branch": "codex/logging-consolidation-20261103",
+  "sourceDirty": true,
+  "checks": [
+    "four direct counterexamples retained",
+    "final actual React 13/13, prior12, height6",
+    "selected package viewer/admin full request/action/identity record",
+    "installed Web isolated -> source Runtime with newly received result on auto reconnect; same old package/Job until explicit refresh; zero scoped/legacy control writes",
+    "backend183/230, Runtime190, Node105 completed without skips",
+    "current Runtime620/Web45/SDK15 and static bytes match",
+    "first and second installed attempt failures retained",
+    "W01-W13 and four-stage status updated with unexecuted GUI/installed-Runtime/LAN/field boundaries"
+  ],
+  "files": {
+    "web_panel/frontend/src/editor/Editor.tsx": {
+      "sha256": "c25ce091d995eb94dc710324424e04147e9826482d737e2081bde62f8db4b91c",
+      "byteSize": 58069
+    },
+    "web_panel/frontend/src/editor/model.ts": {
+      "sha256": "ca5e435b7a3471958894f293f19028cceca5ce021a63fedca1abf4b25f1d8b5c",
+      "byteSize": 14623
+    },
+    "web_panel/frontend/src/renderer/PanelRenderer.tsx": {
+      "sha256": "204d27af8cbec0a8e626d075151b13bc3548abaa2c70091febd9e86881501aeb",
+      "byteSize": 27614
+    },
+    "web_panel/frontend/src/main.tsx": {
+      "sha256": "def04894b42e095389bba2a2b537957bd0ea809023cfc662ee7134d339998729",
+      "byteSize": 45711
+    },
+    "web_panel/frontend/src/state/catalog.ts": {
+      "sha256": "a24e2b1f0865f72c88f04a5661591e732aa38f8bd347e3b2937b8ef4316d22a7",
+      "byteSize": 2585
+    },
+    "web_panel/frontend/src/contracts/types.ts": {
+      "sha256": "721f6262bfa71372842190e408942c750bd903618b96b43762042ae07601c9d9",
+      "byteSize": 5020
+    },
+    "web_panel/backend/emo_web_panel/app.py": {
+      "sha256": "8b198dd92c29d93167abfd4748276355d5c7d6ce7143c0ec5def5616dfb64fa4",
+      "byteSize": 47428
+    },
+    "web_panel/backend/emo_web_panel/editor.py": {
+      "sha256": "5d78204649594ba66521be01033c22946791aaca15bae4d6653d97b6462927b7",
+      "byteSize": 25910
+    },
+    "web_panel/backend/emo_web_panel/editor_routes.py": {
+      "sha256": "c0f503bfe6dbad98df2fea1c53d4351a678ad38e34025e6c25eb83bd86be76fd",
+      "byteSize": 9468
+    },
+    "web_panel/backend/emo_web_panel/runtime_client.py": {
+      "sha256": "990df9685842116030c20ed766bd098332fc0c2b821b2bccb5cb5c8bd2fecabd",
+      "byteSize": 37216
+    },
+    "web_panel/backend/emo_web_panel/mock_runtime.py": {
+      "sha256": "bc7683bd6956a40dce672f9d9a8893f3f0f17f24291286b1d91d7e2b488c30e8",
+      "byteSize": 15606
+    },
+    "src/emo_master/apps/runtime/grpc_server/service.py": {
+      "sha256": "43d099fcf6c34ccd89364211d9c650f1d4c71ed449a015e5af40c7cb2acb2c72",
+      "byteSize": 145750
+    },
+    "src/emo_master/apps/runtime/presentation/output_requests.py": {
+      "sha256": "9888a7b234aecf46e4e9e037dce427f85ee6fb1edc5fb5483206a3e7b4763d31",
+      "byteSize": 14888
+    },
+    "web_panel/frontend/tests/independent_editor_e2e.py": {
+      "sha256": "2c48e23749b13a22e38d9bf89f4892fd187f7979366efe4e4db02e747ec44ea4",
+      "byteSize": 27464
+    },
+    "web_panel/frontend/tests/editor_round3_browser.py": {
+      "sha256": "88d176f8ff76efdcc67560ce5157d9228ebd301bbff0418f0884bf9635e059e7",
+      "byteSize": 15324
+    },
+    "web_panel/frontend/tests/selected_package_recovery_browser.py": {
+      "sha256": "e9ee46015390c6e8bc5a21298544590c37b087a37be6f5c07bdae94a872ca513",
+      "byteSize": 12226
+    },
+    "web_panel/tests/test_runtime_contract.py": {
+      "sha256": "c8aa72bcc1bc9d4bfe21ffcf27f03b2db84fb3d70f9d6cf9d23cb782b9fe8a4d",
+      "byteSize": 20577
+    },
+    "tests/runtime/presentation/test_normal_capture.py": {
+      "sha256": "55f65ac686039698eb4d072f7322bfd3d26f1b1b0a5ad270c401839b8147a2b2",
+      "byteSize": 21975
+    },
+    "scripts/package_independent_web_editor_delivery.py": {
+      "sha256": "bb9b141fc7fb34221e326aba8433ab68d817ae1629fa44d8dfda0ecb30e9eb23",
+      "byteSize": 11337
+    }
+  },
+  "wheelBytes": {
+    "runtime": {
+      "sha256": "13c6f88f658a7b63968cc361ac1367ff3881c85ace8b3138c231fb1c5a801025",
+      "byteSize": 1664470
+    },
+    "web": {
+      "sha256": "2fd3a9ee34870f3c7c3294cda0068f5383f566c79969ad9d91be5ebb4fedc686",
+      "byteSize": 191255
+    },
+    "sdk": {
+      "sha256": "97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d",
+      "byteSize": 40265
+    }
+  },
+  "frontend": {
+    "index.html": {
+      "sha256": "22da3e02f2c1b0073a022053db3d46b7dcdcd8fdeb72d5888f5f80b00783b16c",
+      "byteSize": 369
+    },
+    "assets/Editor-DNs6ah13.js": {
+      "sha256": "8b023da6b1f271cf8ad220ae2afd94e4f2da6cb2d8202c0be0eafb8801c57927",
+      "byteSize": 52329
+    },
+    "assets/Editor-Dou073XM.css": {
+      "sha256": "0815b9c139e7a613556f968524f18a003ecff7a4fbfb70d5531f769ccca3740a",
+      "byteSize": 9573
+    },
+    "assets/index-BL4iqTvR.js": {
+      "sha256": "98dfeaaf3a4353ae75995f4e45c6babe67005938cdfe1ea7c2292d3b51579896",
+      "byteSize": 276039
+    },
+    "assets/index-BPJhQw1Z.css": {
+      "sha256": "6e99ae16e325407a452bf0abedd5403ea9e330189515d4c06d2247af1db9e8e5",
+      "byteSize": 3692
+    }
+  },
+  "testOnlyLintCleanup": "one unused editor probe import removed after browser tests, no behavioral or expectation change; final py_compile and F lint passed",
+  "notRun": [
+    "full Designer -> browser rebind W08",
+    "native Qt/Designer manual autoStart",
+    "installed Runtime wheel full execution",
+    "other host LAN",
+    "real camera/PLC",
+    "frozen EXE/installer",
+    "field deployment"
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "status": "REPRODUCED_PLAN_213_VIOLATION",
+  "browser": "installed Edge headless / current Vite build / synthetic HTTP and WS",
+  "humanOrControlActionAfterNotice": false,
+  "before": {
+    "footer": "Panel Contract v1 · old · 等待结果 · 不替代现场设备验收",
+    "visibleOld": true,
+    "selectedRun": "job-existing",
+    "views": [
+      {
+        "runtimeId": "A",
+        "projectId": "project-A",
+        "panelId": "package-old"
+      },
+      {
+        "runtimeId": "A",
+        "projectId": "project-A",
+        "panelId": "package-old",
+        "runId": "job-existing"
+      }
+    ]
+  },
+  "after": {
+    "footer": "Panel Contract v1 · new · same-existing-job-result · 不替代现场设备验收",
+    "visibleNew": true,
+    "selectedRun": "job-existing",
+    "sourceUnavailable": "不可用：SOURCE_NOT_CAPTURED",
+    "views": [
+      {
+        "runtimeId": "A",
+        "projectId": "project-A",
+        "panelId": "package-old"
+      },
+      {
+        "runtimeId": "A",
+        "projectId": "project-A",
+        "panelId": "package-old",
+        "runId": "job-existing"
+      },
+      {
+        "runtimeId": "A",
+        "projectId": "project-A",
+        "panelId": "package-new",
+        "runId": "job-existing"
+      }
+    ]
+  },
+  "productionCommands": [],
+  "errors": [],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/me"
+    },
+    {
+      "method": "GET",
+      "path": "/api/runtimes"
+    },
+    {
+      "method": "GET",
+      "path": "/api/runtimes/A/info"
+    },
+    {
+      "method": "GET",
+      "path": "/api/runtimes/A/logs"
+    },
+    {
+      "method": "GET",
+      "path": "/api/runtimes/A/status"
+    },
+    {
+      "method": "GET",
+      "path": "/api/runtimes"
+    },
+    {
+      "method": "GET",
+      "path": "/api/runtimes/A/info"
+    },
+    {
+      "method": "GET",
+      "path": "/api/runtimes/A/runs"
+    },
+    {
+      "method": "GET",
+      "path": "/api/runtimes/A/workflows"
+    },
+    {
+      "method": "GET",
+      "path": "/api/panels"
+    },
+    {
+      "method": "GET",
+      "path": "/api/panels/package-old"
+    },
+    {
+      "method": "POST",
+      "path": "/api/views"
+    },
+    {
+      "method": "GET",
+      "path": "/api/runtimes/A/status"
+    },
+    {
+      "method": "GET",
+      "path": "/api/runtimes/A/runs/job-existing/events"
+    },
+    {
+      "method": "POST",
+      "path": "/api/views"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/views/view-1"
+    },
+    {
+      "method": "GET",
+      "path": "/api/runtimes"
+    },
+    {
+      "method": "GET",
+      "path": "/api/runtimes/A/info"
+    },
+    {
+      "method": "GET",
+      "path": "/api/runtimes/A/runs"
+    },
+    {
+      "method": "GET",
+      "path": "/api/runtimes/A/workflows"
+    },
+    {
+      "method": "GET",
+      "path": "/api/panels"
+    },
+    {
+      "method": "GET",
+      "path": "/api/panels/package-new"
+    },
+    {
+      "method": "POST",
+      "path": "/api/views"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/views/view-2"
+    }
+  ]
+}

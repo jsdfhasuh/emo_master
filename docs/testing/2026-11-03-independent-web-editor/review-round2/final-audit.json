@@ -1,0 +1,51 @@
+{
+  "reviewRound": 2,
+  "date": "2026-11-04",
+  "sourceSha": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "branch": "codex/logging-consolidation-20261103",
+  "realWorkingDirectory": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "sourceDirty": true,
+  "requiredFixes": {
+    "crossTargetPublicationIsolation": "PASS: per-rid app and store locks; cross-target Start/Stop/publish before A release; same-target address/delete protection; cancel/failure/query/continue/end; duplicate-complete assertions retained",
+    "fixedTerminalHeight": "PASS: selected logical height minus existing top gap, 900/1200 host content/footer invariant; sample/runtime geometry, overflow, follow and prior12"
+  },
+  "frozenSourceBytesVerified": {
+    "web_panel/backend/emo_web_panel/app.py": "ae893ace95569d7c7a283935a0d9bb5a9bafd7f4f3d38022d8849568c3e64dee",
+    "web_panel/backend/emo_web_panel/editor_routes.py": "107f44d58c4412b408a0b565d81c6154a0d90e9c8cf029e1cf5f40a9fa4bca84",
+    "web_panel/backend/emo_web_panel/editor.py": "0f2bfe43d64f37bc2cfbf32ebd218833b0ba4b9accb75802ac9a9f38bd3f1f45",
+    "web_panel/tests/test_editor_target_isolation.py": "9d1e82847bc0cec89e31b5627338a3fb81d4f167de97dd0e8394d84be66b076b",
+    "web_panel/tests/test_editor_concurrency.py": "d6f2708f63e337eb0e58f8bcabe7b39b62021e5122c418d8aff3b423a862d4e2",
+    "web_panel/frontend/src/editor/Editor.tsx": "7f6070beff01aba4d29aa7552df0de52f95cc990ee0a7059f6a3cf8ed2f0e16b",
+    "web_panel/frontend/src/renderer/PanelRenderer.tsx": "5d7d8779c47105923def018cb9d066938636487691d60c93c83c43aa505efbba",
+    "web_panel/frontend/tests/renderer.test.mjs": "99be3c22e740fd407eb499c09d0f39ef99ea55018c0d110c946112b3c240dff7",
+    "web_panel/frontend/tests/editor_preview_height_browser.py": "f35e3f8e255857d34a91ae7b5cc1c852a659fa55ba7feb5e7460c00123aceeac"
+  },
+  "checks": {
+    "backendPassed": 175,
+    "backendSubtestsPassed": 218,
+    "frontendNodePassed": 98,
+    "heightBrowserCasesPassed": 6,
+    "heightHostScenarios": 12,
+    "scrollVisibilityPassed": 4,
+    "priorEditorBrowserPassed": 12,
+    "tscVite": "PASS",
+    "installedWebWheelFullBrowser": "PASS; source software Runtime",
+    "installedWheelBytes": "PASS: Web45 and SDK15 files",
+    "runtimeSdkReuse": "PASS: unchanged hashes, inventories and all source bytes",
+    "gitDiffCheck": "PASS",
+    "ruffNewPaths": "PASS",
+    "wholeAppRuff": "Two unchanged HEAD baseline findings preserved, not a clean whole-file pass"
+  },
+  "priorRuntimeSdkQtRegression": "188 previously passed; not rerun because Runtime/SDK source unchanged",
+  "delivery": "Built Web wheel and static; final ZIP generation and external archive-verification.json follow this audit",
+  "sourceRestrictions": "No revert, commit, push, merge, deployment, field project/credentials or physical devices",
+  "notExecuted": [
+    "Manual native Qt/Designer GUI autoStart",
+    "Native Qt tests in this Web-only round",
+    "Installed Runtime wheel complete detection",
+    "Another computer/LAN",
+    "Real camera/PLC",
+    "Frozen EXE/installer",
+    "Deployment"
+  ]
+}

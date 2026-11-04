@@ -1,0 +1,1 @@
+PASS: manual full directory refresh, valid selection/dirty input preservation, invalid target clearing, delayed A response after B, Runtime identity replacement, local validation, isolated error recovery, blocked Start reason, session expiry, failed logout and user-keyed unknown intent recovery without replay. HTTP fixtures only; accepted is not Job completion.

@@ -1,0 +1,159 @@
+{
+  "schemaVersion": "2.9",
+  "presentationSchemaVersion": "1.2",
+  "devicesSchemaVersion": "1.0",
+  "equivalentTwoImagesAccepted": true,
+  "rejected": {
+    "ok": false,
+    "code": "INVALID_ARGUMENT",
+    "message": "工作流“模拟检测”（main）合并后的不同图片输出为 3，上限 2。Qt 页面与外部请求共用此额度；等价图片按同一输出及调用作用域只计一路。请核对所列绑定和 Qt 采集需求，调整后重新发布；未丢弃任何来源。来源：外部 external-source-1301ce080ccbc3689968e216b2fee40f → main/blob/mask；外部 external-source-31fb0df306d264681b9a5733d0317e52 → main/blob/overlay；外部 external-source-c26855de29964851990e64cb35dcf869 → main/load/image；Qt qt-mask → main/blob/mask；Qt qt-original → main/load/image。 (normal capture supports at most two distinct image sources)",
+    "diagnostics": [
+      {
+        "budget": "images",
+        "code": "CAPTURE_IMAGES_LIMIT",
+        "count": 3,
+        "imageGroups": [
+          {
+            "sourceIds": [
+              "external-source-1301ce080ccbc3689968e216b2fee40f",
+              "qt-mask"
+            ]
+          },
+          {
+            "sourceIds": [
+              "external-source-31fb0df306d264681b9a5733d0317e52"
+            ]
+          },
+          {
+            "sourceIds": [
+              "external-source-c26855de29964851990e64cb35dcf869",
+              "qt-original"
+            ]
+          }
+        ],
+        "limit": 2,
+        "message": "工作流“模拟检测”（main）合并后的不同图片输出为 3，上限 2。Qt 页面与外部请求共用此额度；等价图片按同一输出及调用作用域只计一路。请核对所列绑定和 Qt 采集需求，调整后重新发布；未丢弃任何来源。来源：外部 external-source-1301ce080ccbc3689968e216b2fee40f → main/blob/mask；外部 external-source-31fb0df306d264681b9a5733d0317e52 → main/blob/overlay；外部 external-source-c26855de29964851990e64cb35dcf869 → main/load/image；Qt qt-mask → main/blob/mask；Qt qt-original → main/load/image。",
+        "reason": "normal capture supports at most two distinct image sources",
+        "scopeIds": [
+          "external-scope-6f02d88d0595b6df87672892dc6a9aba",
+          "qt-main"
+        ],
+        "scopes": [
+          {
+            "callPath": [],
+            "commitPolicy": "workflow_terminal",
+            "entryWorkflowId": "main",
+            "origins": [
+              "external"
+            ],
+            "scopeId": "external-scope-6f02d88d0595b6df87672892dc6a9aba",
+            "scopeWorkflowId": "main"
+          },
+          {
+            "callPath": [],
+            "commitPolicy": "workflow_terminal",
+            "entryWorkflowId": "main",
+            "origins": [
+              "qt"
+            ],
+            "scopeId": "qt-main",
+            "scopeWorkflowId": "main"
+          }
+        ],
+        "sourceIds": [
+          "external-source-1301ce080ccbc3689968e216b2fee40f",
+          "external-source-31fb0df306d264681b9a5733d0317e52",
+          "external-source-c26855de29964851990e64cb35dcf869",
+          "qt-mask",
+          "qt-original"
+        ],
+        "sources": [
+          {
+            "callPath": [],
+            "expectedType": "image",
+            "fieldPath": [],
+            "kind": "node_output",
+            "name": null,
+            "nodeId": "blob",
+            "origins": [
+              "external"
+            ],
+            "port": "mask",
+            "resultScopeId": "external-scope-6f02d88d0595b6df87672892dc6a9aba",
+            "ruleVersion": "1.0",
+            "sourceId": "external-source-1301ce080ccbc3689968e216b2fee40f",
+            "workflowId": "main"
+          },
+          {
+            "callPath": [],
+            "expectedType": "image",
+            "fieldPath": [],
+            "kind": "node_output",
+            "name": null,
+            "nodeId": "blob",
+            "origins": [
+              "external"
+            ],
+            "port": "overlay",
+            "resultScopeId": "external-scope-6f02d88d0595b6df87672892dc6a9aba",
+            "ruleVersion": "1.0",
+            "sourceId": "external-source-31fb0df306d264681b9a5733d0317e52",
+            "workflowId": "main"
+          },
+          {
+            "callPath": [],
+            "expectedType": "image",
+            "fieldPath": [],
+            "kind": "node_output",
+            "name": null,
+            "nodeId": "load",
+            "origins": [
+              "external"
+            ],
+            "port": "image",
+            "resultScopeId": "external-scope-6f02d88d0595b6df87672892dc6a9aba",
+            "ruleVersion": "1.0",
+            "sourceId": "external-source-c26855de29964851990e64cb35dcf869",
+            "workflowId": "main"
+          },
+          {
+            "callPath": [],
+            "expectedType": "image",
+            "fieldPath": [],
+            "kind": "node_output",
+            "name": null,
+            "nodeId": "blob",
+            "origins": [
+              "qt"
+            ],
+            "port": "mask",
+            "resultScopeId": "qt-main",
+            "ruleVersion": "1.0",
+            "sourceId": "qt-mask",
+            "workflowId": "main"
+          },
+          {
+            "callPath": [],
+            "expectedType": "image",
+            "fieldPath": [],
+            "kind": "node_output",
+            "name": null,
+            "nodeId": "load",
+            "origins": [
+              "qt"
+            ],
+            "port": "image",
+            "resultScopeId": "qt-main",
+            "ruleVersion": "1.0",
+            "sourceId": "qt-original",
+            "workflowId": "main"
+          }
+        ],
+        "workflowId": "main",
+        "workflowName": "模拟检测"
+      }
+    ]
+  },
+  "savedSources": {},
+  "boundary": "local software Runtime direct RPC methods; no Start/Stop, browser, Qt UI, package install or device"
+}

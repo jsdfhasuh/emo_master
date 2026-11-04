@@ -1,0 +1,3 @@
+productPython=D:\Conda\envs\emo_master\python.exe
+productRoot=D:\emo-web-delivery-20261104\src\emo_master\__init__.py
+runtimeService=D:\emo-web-delivery-20261104\src\emo_master\apps\runtime\grpc_server\service.py

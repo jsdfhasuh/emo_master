@@ -1,0 +1,9 @@
+test_lost_submit_reply_is_queried_then_explicitly_completed_without_replay (test_editor.EditorTests) ... ok
+test_publish_freezes_until_explicit_start_layout_only_and_rollback (test_editor.EditorTests) ... ok
+test_two_pages_full_source_resources_reopen_preview_without_execution (test_editor.EditorTests) ... ok
+test_type_errors_stale_draft_wrong_target_and_missing_real_preview_task (test_editor.EditorTests) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 1.741s
+
+OK

@@ -1,0 +1,7 @@
+
+> emo-master-web-panel-ui@0.1.0 build
+> tsc --noEmit && vite build
+
+src/editor/model.ts(33,56): error TS2538: Type 'null' cannot be used as an index type.
+src/editor/model.ts(34,13): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.

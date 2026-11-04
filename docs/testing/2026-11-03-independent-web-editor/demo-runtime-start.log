@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\scripts\independent_web_editor_demo.py", line 119, in <module>
+    serve(arguments.directory, port=arguments.port, single=arguments.single)
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\scripts\independent_web_editor_demo.py", line 90, in serve
+    path, document = create_demo_project(directory / "project", runtime.pluginScanResult.activeOperators,
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\scripts\independent_web_editor_demo.py", line 75, in create_demo_project
+    WorkflowCompiler(operatorRegistry=registry).compile(reloaded)
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\core\workflow\compiler.py", line 99, in compile
+    compiledWorkflows[workflowId] = self._compileWorkflow(
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\core\workflow\compiler.py", line 312, in _compileWorkflow
+    raise WorkflowCompileError(issues)
+emo_master.core.workflow.errors.WorkflowCompileError: imagePath must be non-empty string

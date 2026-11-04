@@ -1,0 +1,28 @@
+{
+  "sourceSha": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "branch": "codex/logging-consolidation-20261103",
+  "sourceDirty": true,
+  "files": {
+    "web_panel/backend/emo_web_panel/app.py": {
+      "sha256": "ae893ace95569d7c7a283935a0d9bb5a9bafd7f4f3d38022d8849568c3e64dee",
+      "byteSize": 45730
+    },
+    "web_panel/backend/emo_web_panel/editor_routes.py": {
+      "sha256": "107f44d58c4412b408a0b565d81c6154a0d90e9c8cf029e1cf5f40a9fa4bca84",
+      "byteSize": 9183
+    },
+    "web_panel/backend/emo_web_panel/editor.py": {
+      "sha256": "0f2bfe43d64f37bc2cfbf32ebd218833b0ba4b9accb75802ac9a9f38bd3f1f45",
+      "byteSize": 24686
+    },
+    "web_panel/tests/test_editor_target_isolation.py": {
+      "sha256": "9d1e82847bc0cec89e31b5627338a3fb81d4f167de97dd0e8394d84be66b076b",
+      "byteSize": 14545
+    },
+    "web_panel/tests/test_editor_concurrency.py": {
+      "sha256": "d6f2708f63e337eb0e58f8bcabe7b39b62021e5122c418d8aff3b423a862d4e2",
+      "byteSize": 8054
+    }
+  },
+  "status": "backend source frozen after 175 tests / 218 subtests"
+}

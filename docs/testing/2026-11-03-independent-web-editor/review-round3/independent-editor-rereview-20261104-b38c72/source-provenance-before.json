@@ -1,0 +1,41 @@
+{
+  "head": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "files": [
+    {
+      "path": "web_panel/frontend/src/editor/Editor.tsx",
+      "sha256": "c25ce091d995eb94dc710324424e04147e9826482d737e2081bde62f8db4b91c",
+      "bytes": 58069
+    },
+    {
+      "path": "web_panel/frontend/src/editor/model.ts",
+      "sha256": "ca5e435b7a3471958894f293f19028cceca5ce021a63fedca1abf4b25f1d8b5c",
+      "bytes": 14623
+    },
+    {
+      "path": "web_panel/frontend/src/editor/editor.css",
+      "sha256": "d80c25728d1646bb3e96b65cee3606cc1bad178100b6cff2492842c9745d87e9",
+      "bytes": 9595
+    },
+    {
+      "path": "web_panel/frontend/src/renderer/PanelRenderer.tsx",
+      "sha256": "204d27af8cbec0a8e626d075151b13bc3548abaa2c70091febd9e86881501aeb",
+      "bytes": 27614
+    },
+    {
+      "path": "web_panel/frontend/tests/editor_round3_browser.py",
+      "sha256": "88d176f8ff76efdcc67560ce5157d9228ebd301bbff0418f0884bf9635e059e7",
+      "bytes": 15324
+    },
+    {
+      "path": "web_panel/frontend/tests/editor_review_browser.py",
+      "sha256": "0c4df0ed39a1b434fc11d3f519813b0c3159ae412d63bc1ab83875e8cdecc4a2",
+      "bytes": 18576
+    },
+    {
+      "path": "web_panel/backend/emo_web_panel/editor.py",
+      "sha256": "5d78204649594ba66521be01033c22946791aaca15bae4d6653d97b6462927b7",
+      "bytes": 25910
+    }
+  ],
+  "evidenceLevel": "Independent build from current source; real React/Edge with mock API and formal backend validate_source on actual PUTs"
+}

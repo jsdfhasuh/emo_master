@@ -1,0 +1,29 @@
+{
+  "head": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "branch": "codex/logging-consolidation-20261103",
+  "sourceDirty": true,
+  "checks": {
+    "runtime": {
+      "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\runtime\\emo_master-0.6.6-py3-none-any.whl",
+      "sha256": "aeb26acc932485cb6942b7cc0bffa10bb24118d5007913ca6da73febebd6ecd1",
+      "byteSize": 1662929,
+      "identicalToPreviousReviewArtifact": true,
+      "archiveIntegrity": "PASS",
+      "pythonInventoryAndSourceBytes": "PASS",
+      "moduleCount": 620,
+      "sourcePythonInventoryDigest": "6d9a0787c8ab74744eda5d01e34f4aea08ae5e726d7c5f656317aa1dc3d87c8b"
+    },
+    "sdk": {
+      "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\contracts\\panel-contract-v1\\python\\emo_panel_protocol-1.5.0-py3-none-any.whl",
+      "sha256": "97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d",
+      "byteSize": 40265,
+      "identicalToPreviousReviewArtifact": true,
+      "archiveIntegrity": "PASS",
+      "pythonInventoryAndSourceBytes": "PASS",
+      "moduleCount": 15,
+      "sourcePythonInventoryDigest": "2f888f6120bdd952b974598ce5cc6eeb5fd3e0575788e790010b3d777a830a6a"
+    }
+  },
+  "sdkContractDigest": "PASS",
+  "boundary": "Archive integrity and exact Python inventory/source bytes. Not installed Runtime execution, frozen EXE, native Qt UI, LAN or real devices."
+}

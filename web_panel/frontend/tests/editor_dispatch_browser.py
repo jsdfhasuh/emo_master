@@ -61,7 +61,8 @@ def check_case(browser, origin, grouped):
     context = browser.new_context(viewport={'width': 1500, 'height': 1050})
     context.route('**/api/**', fixture.route)
     sockets = []
-    context.route_web_socket('**/ws/views/dispatch-view', sockets.append)
+    # dot: Playwright attaches wrapper metadata; built-in list.append has no attribute storage.
+    context.route_web_socket('**/ws/views/dispatch-view', lambda socket: sockets.append(socket))
     page = context.new_page()
     try:
         page.goto(origin + '/editor')

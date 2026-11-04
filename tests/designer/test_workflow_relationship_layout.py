@@ -170,7 +170,11 @@ def testWhileShowsCallerBeforeConditionAndBody(designerApplication, tmp_path):
     assert window.floatingToolbox.grab().save(str(tmp_path / "while-selected.png"))
 
 
-def testClickCallerLocatesLoopAndRefreshKeepsExpandedData(designerApplication):
+def testClickCallerLocatesLoopAndRefreshKeepsExpandedData(designerApplication, monkeypatch):
+    # toPayload creates a save candidate with the current timestamp. Keep the
+    # clock fixed so full payload equality checks edits, not elapsed seconds.
+    monkeypatch.setattr("emo_master.apps.designer.state.workflow_store.utc_now_iso",
+                        lambda: "2026-11-04T06:56:38Z")
     window = _whileWindow()
     designerApplication.processEvents()
     tree = window.workflowDependencyTree
@@ -203,9 +207,11 @@ def testClickCallerLocatesLoopAndRefreshKeepsExpandedData(designerApplication):
     tree.setCurrentItem(data)
     selectedText = data.text(0)
     before = deepcopy(window.workflowStore.toPayload())
+    storedBefore = deepcopy(vars(window.workflowStore))
     window.refreshWorkflowDependencyTree()
     assert tree.topLevelItem(0).child(0).child(1).child(0).isExpanded()
     assert tree.currentItem().text(0) == selectedText
+    assert vars(window.workflowStore) == storedBefore
     assert window.workflowStore.toPayload() == before
     tree.topLevelItem(0).child(0).setExpanded(False)
     window.refreshWorkflowDependencyTree()

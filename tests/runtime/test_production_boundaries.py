@@ -256,12 +256,25 @@ def testBusinessNgDoesNotStopAndSharesInvocationWithImageAndCount(tmp_path):
     try:
         owner.load(root)
         job = owner.start()
-        waitFor(lambda: any(r.identity.resultOrdinal >= 3 for r in owner.presentation.store.latest.values()))
-        result = next(iter(owner.presentation.store.latest.values()))
         from tests.runtime.runtime_test_utils import jobFailureDetails
+        def completeContinuousResult():
+            # The bounded, non-blocking image export may report INCOMPLETE.
+            # This business test needs a real complete NG invocation after
+            # continued execution, not a guarantee that every frame exports.
+            with owner.presentation.store.lock:
+                return next((result for result in owner.presentation.store.latest.values()
+                             if result.identity.jobId == job and result.identity.resultOrdinal >= 3
+                             and result.status == 'COMPLETE'), None)
+        try:
+            result = waitFor(completeContinuousResult)
+        except AssertionError as error:
+            raise AssertionError(jobFailureDetails(owner.runtime, job)) from error
         assert result.status == "COMPLETE", jobFailureDetails(owner.runtime, job, result=result)
         assert {s.sourceId: s.valueJson for s in result.sources if s.valueJson is not None} == {"count": "2", "judge": "false"}
         assert {s.sourceId for s in result.sources} == {"count", "judge", "image"}
+        image = next(source for source in result.sources if source.sourceId == 'image')
+        assert image.state == 'AVAILABLE' and image.image is not None
+        assert image.image.ownerResultKey == result.identity.resultKey
         waitFor(lambda: any(e.workflowRunId == result.identity.invocationId
                            and e.eventType == "workflow.completed"
                            for e in owner.runtime.eventStore.read(job)))

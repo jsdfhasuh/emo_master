@@ -1335,7 +1335,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                                                lambda message: self.appendRuntimeLog("ERROR", message))
             self.logDialog.view.diagnosticCreated.connect(self.appendLocalEvent)
             self.logDialog.view.setRuntimeClient(self.runtimeClient,
-                lambda: self.logDialog.setEntries(self.logEntries))
+                lambda: self.logDialog.setEntries(self.logEntries), runtimeInstance=self._currentLogRuntimeInstance)
 
         self.workflowController = WorkflowController(
             workflowStore=self.workflowStore,
@@ -4352,7 +4352,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 self.logDialog.view.diagnosticCreated.connect(self.appendLocalEvent)
         if _nativeQt:
             self.logDialog.view.setRuntimeClient(self.runtimeClient,
-                lambda: self.logDialog.setEntries(self.logEntries))
+                lambda: self.logDialog.setEntries(self.logEntries), runtimeInstance=self._currentLogRuntimeInstance)
         if _nativeQt and self.logDialog.isMinimized():
             self.logDialog.setWindowState(self.logDialog.windowState() & ~Qt.WindowMinimized)
         self.logDialog.show()
@@ -4425,7 +4425,16 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 eventType="designer.logfile.failed", message="Designer 本机日志写入失败：" + message,
                 payload={"directory": str(self._localLogDirectory)}), persist=False)
 
+    def _currentLogRuntimeInstance(self):
+        service = getattr(self.runtimeClient, "runtimeService", None)
+        reader = self._logResources.get("reader")
+        if reader is not None and reader.service is service:
+            return reader.runtimeInstanceId
+        return self._globalLogInstance if self._globalLogTransport is service else ""
+
     def _drainGlobalLogs(self, reader):
+        if _nativeQt and self.logDialog is not None:
+            self.logDialog.view.syncRuntimeInstance()
         for kind, event in reader.take():
             if kind == "event":
                 self.appendRuntimeEvent(event)
@@ -4475,7 +4484,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self._clearRuntimeOriginCache()
             if _nativeQt and self.logDialog is not None:
                 self.logDialog.view.setRuntimeClient(self.runtimeClient,
-                    lambda: self.logDialog.setEntries(self.logEntries))
+                    lambda: self.logDialog.setEntries(self.logEntries), runtimeInstance=self._currentLogRuntimeInstance)
         if not getattr(self.runtimeClient, "_closed", False) and service is not None:
             if reader is None or (retry and reader.finished.is_set() and not reader.unsupported):
                 from emo_master.apps.designer.services.global_logs import RuntimeGlobalLogs

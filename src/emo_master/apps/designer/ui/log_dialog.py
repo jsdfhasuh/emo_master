@@ -233,6 +233,8 @@ try:
             self._exportDirectory = Path.home()
             self._historyClient = None
             self._historyTarget = None
+            self._historyInstance = ""
+            self._runtimeInstance = None
             self._historyGeneration = 0
             self._historyFuture = None
             self._historyCancel = None
@@ -449,14 +451,45 @@ try:
             self.destroyed.connect(closeHistory)
             self._historySourceChanged()
 
-        def setRuntimeClient(self, client, onCurrent=None):
+        def setRuntimeClient(self, client, onCurrent=None, *, runtimeInstance=None):
             target = getattr(client, "runtimeService", None)
             if target is not self._historyTarget:
                 self.cancelHistory()
+                self._historyInstance = ""
                 self._historyReply = None
                 if self.rangeCombo.currentData() != "current":
                     self.setEntries([])
             self._historyClient, self._historyTarget, self._onCurrentRecords = client, target, onCurrent
+            self._runtimeInstance = runtimeInstance
+            self.syncRuntimeInstance()
+
+        def syncRuntimeInstance(self):
+            if not callable(self._runtimeInstance):
+                return
+            instance = self._runtimeInstance()
+            if not instance or instance == self._historyInstance:
+                return
+            self._historyInstance = instance
+            future = self._historyFuture
+            if future is not None and self._historyTask[0] == "runtime":
+                _kind, _generation, _target, _filters, taskInstance = self._historyTask
+                # A fresh history query may discover the new instance before
+                # the live reader. Do not discard that already completed page.
+                matchingReply = False
+                if future.done():
+                    try:
+                        reply = future.result()
+                        matchingReply = reply["ok"] and reply["runtimeInstanceId"] == instance
+                    except Exception:
+                        pass
+                if taskInstance != instance and not matchingReply:
+                    self.cancelHistory()
+            if self._historyReply is not None and self._historyReply["runtimeInstanceId"] != instance:
+                self._historyReply = None
+                if self.rangeCombo.currentData() == "runtime":
+                    self.setEntries([])
+                    self.historyNextButton.setEnabled(False)
+                    self.historyStatus.setText("Runtime 实例已切换；请重新查询历史日志。")
 
         def _historySourceChanged(self):
             self.cancelHistory()
@@ -503,14 +536,14 @@ try:
             selected = self.localFileCombo.currentData()
             return (Path(selected),) if selected else listLogFiles(self._logDirectory, prefixes=("designer",))
 
-        def _startHistoryTask(self, kind, task, *, filters=None):
+        def _startHistoryTask(self, kind, task, *, filters=None, runtimeInstance=None):
             self.cancelHistory()
             generation, target = self._historyGeneration, getattr(self._historyClient, "runtimeService", None)
             cancelled = self._historyCancel = threading.Event()
             self._historyResources["cancel"] = cancelled
             self._historyResources["call"] = None
             self._historyFuture = self._historyExecutor.submit(task, cancelled)
-            self._historyTask = kind, generation, target, dict(filters) if filters is not None else None
+            self._historyTask = kind, generation, target, dict(filters) if filters is not None else None, runtimeInstance
             self.historyCancelButton.setEnabled(True)
             self.historyQueryButton.setEnabled(False)
             self.historyNextButton.setEnabled(False)
@@ -531,6 +564,7 @@ try:
             self.historyCancelButton.setEnabled(False)
 
         def queryHistory(self, nextPage=False):
+            self.syncRuntimeInstance()
             mode = self.rangeCombo.currentData()
             if mode == "current":
                 return
@@ -557,8 +591,9 @@ try:
                 else:
                     candidateFilters = self._selectedHistoryFilters()
                     options = dict(candidateFilters)
+                instance = (self._historyReply or {}).get("runtimeInstanceId", self._historyInstance)
                 self._startHistoryTask("runtime", lambda cancelled: self._queryHistoryPage(client, options, cancelled),
-                                       filters=candidateFilters)
+                                       filters=candidateFilters, runtimeInstance=instance)
             except (ValueError, OSError) as error:
                 self.historyStatus.setText(self._historyFailureMessage("日志读取失败：" + str(error)))
 
@@ -578,12 +613,15 @@ try:
                     self._historyResources["call"] = None
 
         def _acceptHistory(self):
+            # This timer may fire before the live-reader drain timer. Observe
+            # its confirmed instance before accepting a completed old page.
+            self.syncRuntimeInstance()
             future = self._historyFuture
             if future is None or not future.done():
                 return
             self._historyTimer.stop()
             self._historyFuture = None
-            kind, generation, target, candidateFilters = self._historyTask
+            kind, generation, target, candidateFilters, _instance = self._historyTask
             if generation != self._historyGeneration or target is not getattr(self._historyClient, "runtimeService", None):
                 self.historyStatus.setText("日志任务已取消；未报告成功。")
             else:
@@ -623,6 +661,7 @@ try:
         def exportHistory(self):
             from emo_master.core.log_export import exportLogs, LogExportCancelled
             from emo_master.apps.operator_runtime.log_reader import snapshotLogFiles, iterLogFileRecords
+            self.syncRuntimeInstance()
             mode = self.rangeCombo.currentData()
             if mode == "current":
                 return

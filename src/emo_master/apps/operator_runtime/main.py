@@ -34,13 +34,13 @@ from emo_master.apps.runtime.events.app_log import RuntimeApplicationLogWriter
 
 class OperatorWindow(QWidget):
     def __init__(self, projectPath=None, *, dataRoot=None, preferences=None, runtimeFactory=ProductionRuntime,
-                 listenerSettings=None, applicationLogWriter=None):
+                 listenerSettings=None, applicationLogWriter=None, dataRootResolution=None):
         super().__init__()
         self.setWindowTitle("EmoMaster Runtime")
         self.resize(1060, 800)
         self.preferences = preferences or QSettings("EmoMaster", "Runtime")
         self.listenerSettings = listenerSettings or readListenerSettings(self.preferences)
-        self.resolution = resolveDataRoot(dataRoot, saved=self.preferences.value(DEFAULT_ROOT_KEY, ""))
+        self.resolution = dataRootResolution or resolveDataRoot(dataRoot, saved=self.preferences.value(DEFAULT_ROOT_KEY, ""))
         self.applicationLogWriter = applicationLogWriter
         self._ownsApplicationLogWriter = applicationLogWriter is None
         self.runtimeFactory, self.explicitProject = runtimeFactory, projectPath
@@ -998,11 +998,12 @@ def main(arguments=None):
         print(f"Project: {document.project.name}; mode: {settings.mode}; validation passed; no Job started.")
         return 0
     app = QApplication.instance() or QApplication([])
-    root = resolveDataRoot(args.data_root, saved=preferences.value(DEFAULT_ROOT_KEY, "")).path
-    writer = RuntimeApplicationLogWriter(root / "logs")
+    resolution = resolveDataRoot(args.data_root, saved=preferences.value(DEFAULT_ROOT_KEY, ""))
+    writer = RuntimeApplicationLogWriter(resolution.path / "logs")
     window = None
     try:
-        window = OperatorWindow(args.project, dataRoot=root,
+        # Keep the origin with the resolved path instead of treating it as CLI input.
+        window = OperatorWindow(args.project, dataRootResolution=resolution,
             preferences=preferences, listenerSettings=listener, applicationLogWriter=writer,
             runtimeFactory=lambda dataRoot: ProductionRuntime(dataRoot, listenerSettings=listener,
                 runtimeInstanceId=window.applicationLogWriter.runtimeInstanceId if window else writer.runtimeInstanceId,

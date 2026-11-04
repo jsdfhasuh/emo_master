@@ -1,0 +1,20 @@
+2026-11-04T12:49:15.4075052Z ##[group]Run python frontend/tests/editor_package_browser.py
+2026-11-04T12:49:15.4075323Z python frontend/tests/editor_package_browser.py
+2026-11-04T12:49:15.4101795Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-04T12:49:15.4101987Z env:
+2026-11-04T12:49:15.4102147Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-04T12:49:15.4102396Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-04T12:49:15.4102802Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-04T12:49:15.4103019Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-04T12:49:15.4103240Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-04T12:49:15.4103478Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-04T12:49:15.4103826Z ##[endgroup]
+2026-11-04T12:49:17.3118364Z Traceback (most recent call last):
+2026-11-04T12:49:17.3119119Z   File "/home/runner/work/emo_master/emo_master/web_panel/frontend/tests/editor_package_browser.py", line 141, in <module>
+2026-11-04T12:49:17.3119585Z     main()
+2026-11-04T12:49:17.3120020Z   File "/home/runner/work/emo_master/emo_master/web_panel/frontend/tests/editor_package_browser.py", line 74, in main
+2026-11-04T12:49:17.3120469Z     mode("fixed", False)
+2026-11-04T12:49:17.3120935Z   File "/home/runner/work/emo_master/emo_master/web_panel/frontend/tests/editor_package_browser.py", line 68, in mode
+2026-11-04T12:49:17.3121493Z     assert field.locator('option[value="flex"]').is_enabled() == enabled
+2026-11-04T12:49:17.3121799Z AssertionError
+2026-11-04T12:49:17.3875750Z ##[error]Process completed with exit code 1.

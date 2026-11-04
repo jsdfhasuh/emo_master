@@ -65,7 +65,9 @@ def main():
                     def mode(value, enabled):
                         field = page.get_by_label("空白模式")
                         expect(field).to_have_value(value)
-                        assert field.locator('option[value="flex"]').is_enabled() == enabled
+                        # is_enabled() follows the enclosing label to its select.
+                        # Assert the option itself, while leaving the select usable.
+                        expect(field.locator('option[value="flex"]')).to_have_js_property("disabled", not enabled)
 
                     # Root layout conversion is one undoable edit, with a usable fixed grid spacer.
                     select("root-gap")

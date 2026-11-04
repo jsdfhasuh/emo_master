@@ -43,6 +43,9 @@ export interface Page {
     grid?: Component['grid'];
 }
 export interface Panel {
+    runtimeId?: string;
+    projectId?: string;
+    runtimeInstanceId?: string;
     navigation?:{mode?:'tabs'|'buttons'};
     title?: string;
     id: string;

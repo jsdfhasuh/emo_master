@@ -7,7 +7,7 @@ import hashlib
 import secrets
 import logging
 import tempfile
-from contextlib import asynccontextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
@@ -23,6 +23,7 @@ from .services import Operations, Views
 from .packages import PackageStore
 from .registry import RuntimeRegistry, RegistryDenied
 from .resource_cache import ResourceCache
+from .editor_routes import install_editor_routes
 
 COOKIE='emo_panel_session'
 
@@ -45,7 +46,13 @@ def create_app(config: Config, runtime=None, gateway_log=None):
     views=Views(rt,config.max_views,config.freeze_ttl)
     ops=Operations(config.data_dir/'web.sqlite')
     clients={'configured':rt} if initial else {}
-    target_lock=asyncio.Lock()
+    target_locks={}
+    user_lock=asyncio.Lock()
+    def target_lock(rid):
+        if not isinstance(rid,str):raise ValueError('Runtime id must be a string')
+        # Keep the same lock after deletion: an already queued operation must
+        # still coordinate with a later target using this id.
+        return target_locks.setdefault(rid,asyncio.Lock())
     resources=ResourceCache(max_item_bytes=8 * 1024 * 1024)
     preview_secret=secrets.token_urlsafe(32) if config.preview else None
     preview_started=time.monotonic()
@@ -114,7 +121,7 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         data=bytearray()
         async for chunk in req.stream():
             data.extend(chunk)
-            if len(data)>65536:raise HTTPException(413,'JSON request too large')
+            if len(data)>(2*1024*1024 if req.url.path.startswith('/api/editor/') else 65536):raise HTTPException(413,'JSON request too large')
         if not data and allow_empty:return {}
         try:body=json.loads(data)
         except (ValueError,UnicodeDecodeError):raise HTTPException(422,'JSON object required')
@@ -168,7 +175,7 @@ def create_app(config: Config, runtime=None, gateway_log=None):
                            elapsedMs=round((time.monotonic()-started)*1000))
         return response
     @app.get('/api/health')
-    async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':'1.4.0','preview':config.preview}
+    async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':'1.5.0','preview':config.preview}
     @app.post('/api/preview/session')
     async def preview_session(req:Request):
         nonlocal preview_used
@@ -243,7 +250,7 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         return {'ok':True}
     @app.delete('/api/admin/users/{username}')
     async def delete_user(username:str,req:Request):
-        async with target_lock:
+        async with user_lock:
             who=await identity(req,'admin',True)
             if username==who['username']:raise HTTPException(422,'Cannot delete own active administrator')
             await asyncio.to_thread(registry.revoke_user,who,username)
@@ -266,7 +273,7 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         return client is not None and any(stream['runtime'] is client for stream in views.streams.values())
     @app.patch('/api/admin/runtimes/{rid}')
     async def change_runtime(rid:str,req:Request):
-        async with target_lock:
+        async with target_lock(rid):
             who=await identity(req,'admin',True);b=await json_object(req)
             if target_in_use(rid):raise HTTPException(409,'Close active views and shared subscriptions before changing connection')
             result=await asyncio.to_thread(registry.update,who,rid,alias=b.get('alias'),mode=b.get('mode'),address=b.get('address'))
@@ -274,7 +281,7 @@ def create_app(config: Config, runtime=None, gateway_log=None):
             return result
     @app.delete('/api/admin/runtimes/{rid}')
     async def remove_runtime(rid:str,req:Request,revoke_acl:bool=False):
-        async with target_lock:
+        async with target_lock(rid):
             who=await identity(req,'admin',True)
             await asyncio.to_thread(registry.delete,who,rid,revoke_acl=revoke_acl,in_use=target_in_use(rid))
             if rid in clients:await clients.pop(rid).close()
@@ -285,7 +292,9 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         who=await identity(req,'admin');return await asyncio.to_thread(registry.list_acl,who,rid)
     @app.put('/api/admin/runtimes/{rid}/grants')
     async def grant_target(rid:str,req:Request):
-        async with target_lock:
+        # Never hold the shared user-directory guard while waiting for a
+        # target's RPC/publication. It only protects local user/ACL changes.
+        async with target_lock(rid), user_lock:
             who=await identity(req,'admin',True);b=await json_object(req)
             if b.get('username') not in [u['username'] for u in await asyncio.to_thread(auth.users)]:raise HTTPException(404,'User not found')
             return await asyncio.to_thread(registry.set_acl,who,rid,b['username'],b.get('view'),b.get('control',False))
@@ -389,10 +398,10 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         return result
 
     async def control(req,action,target):
-        async with target_lock:
+        body=await json_object(req)
+        async with target_lock(body.get('runtimeId','configured')):
             who=await identity(req,'control',True)
             if config.preview:raise HTTPException(403,'Preview is read-only')
-            body=await json_object(req)
             client=await client_for(who,body.get('runtimeId','configured'),'control')
             await client.info() # fail closed before storing unexecutable intent
             if isinstance(client,MockRuntime):client.validate_control(action,target,body)
@@ -415,7 +424,13 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         if not r:raise HTTPException(404,'Operation not found')
         client=await client_for(who,r.get('intent',{}).get('runtimeId','configured'))
         return await with_control_message(who,await ops.reconcile(r,client),client)
-    async def panel_list(who, rid, project_id=None):
+    async def package_panel(item, rid, info):
+        return {**item['presentation'],'id':item['packageId'],'projectId':info['projectId'],'runtimeId':rid,
+                'runtimeInstanceId':info['runtimeInstanceId'],
+                'editorManaged':await asyncio.to_thread(app.state.editor.owns_package,item['packageId']),
+                'packageRevision':item['manifest']['packageRevision'],
+                'officialPresentation':item.get('officialPresentation')}
+    async def panel_list(who, rid, project_id=None, instance_id=None):
         await asyncio.to_thread(registry.require,who,rid)
         # Empty real targets need no synthetic panel or speculative fallback.
         relations=await asyncio.to_thread(packages.activations)
@@ -424,43 +439,57 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         info=await client.info()
         formal=info['projectId']
         if project_id is not None and project_id!=formal:raise HTTPException(409,'Runtime project changed; refresh current target')
+        if instance_id is not None and instance_id!=info['runtimeInstanceId']:raise HTTPException(409,'Runtime instance changed; refresh current target')
         active=await asyncio.to_thread(packages.active,rid,formal)
         if active:
             await package_access(who,active['packageId'],rid)
-            p=active['presentation']
-            return [{**p,'id':active['packageId'],'projectId':formal,'runtimeId':rid,
-                     'packageRevision':active['manifest']['packageRevision'],
-                     'officialPresentation':active.get('officialPresentation')}]
+            return [await package_panel(active,rid,info)]
         if isinstance(client,MockRuntime) and not any(row['runtimeId']==rid for row in relations):
-            return [{**demo_panel(),'runtimeId':rid,'projectId':formal}]
+            return [{**demo_panel(),'runtimeId':rid,'projectId':formal,'runtimeInstanceId':info['runtimeInstanceId']}]
         return []
     @app.get('/api/panels')
-    async def panels(req:Request,runtimeId:str='configured',projectId:str|None=None):
+    async def panels(req:Request,runtimeId:str='configured',projectId:str|None=None,runtimeInstanceId:str|None=None):
         who=await identity(req)
         # Preserve empty discovery for the unconfigured single-target entrypoint;
         # explicit contexts fail authorization instead of leaking target state.
         if 'runtimeId' not in req.query_params:
             allowed={r['id'] for r in await asyncio.to_thread(registry.list,who)}
             if runtimeId not in allowed:return []
-        return await panel_list(who,runtimeId,projectId)
+        return await panel_list(who,runtimeId,projectId,runtimeInstanceId)
     @app.get('/api/panels/{panel_id}')
-    async def panel(panel_id:str,req:Request,runtimeId:str='configured',projectId:str|None=None):
-        return await find_panel(await identity(req),panel_id,runtimeId,projectId)
-    async def find_panel(who,panel_id,rid,project_id=None):
-        for p in await panel_list(who,rid,project_id):
+    async def panel(panel_id:str,req:Request,runtimeId:str='configured',projectId:str|None=None,runtimeInstanceId:str|None=None):
+        return await find_panel(await identity(req),panel_id,runtimeId,projectId,runtimeInstanceId)
+    async def find_panel(who,panel_id,rid,project_id=None,instance_id=None):
+        for p in await panel_list(who,rid,project_id,instance_id):
             if p['id']==panel_id:return p
-        raise HTTPException(404,'Panel not active for this Runtime and project')
+        # Activation only changes the default. Reconnecting an already selected
+        # release may read its immutable source, never an arbitrary uploaded
+        # package or a release associated with another target (including admin).
+        if rid not in await asyncio.to_thread(package_targets,panel_id):
+            raise HTTPException(404,'Panel has not been enabled for this Runtime and project')
+        if not project_id or not instance_id:
+            raise HTTPException(404,'Selected page recovery requires explicit project and Runtime instance identity')
+        await package_access(who,panel_id,rid)
+        client=await client_for(who,rid);info=await client.info()
+        if project_id!=info['projectId'] or instance_id!=info['runtimeInstanceId']:
+            raise HTTPException(409,'Runtime instance or project changed; refresh current target')
+        item=await asyncio.to_thread(packages.get,panel_id)
+        if item['manifest']['projectId']!=project_id:
+            raise HTTPException(409,'Page package and Runtime project differ')
+        return await package_panel(item,rid,info)
     @app.post('/api/views')
     async def new_view(req:Request):
-        async with target_lock:
-            who=await identity(req,mutating=True);b=await json_object(req);rid=b.get('runtimeId','configured')
-            p=await find_panel(who,b.get('panelId'),rid,b.get('projectId'))
+        b=await json_object(req);rid=b.get('runtimeId','configured')
+        async with target_lock(rid):
+            who=await identity(req,mutating=True)
+            p=await find_panel(who,b.get('panelId'),rid,b.get('projectId'),b.get('runtimeInstanceId'))
             await package_access(who,b['panelId'],rid);client=await client_for(who,rid)
             if b['panelId']=='demo-panel' and not isinstance(client,MockRuntime):raise HTTPException(404,'Demo panel is mock-only')
             run_id=b.get('runId','')
             if run_id and run_id not in [r.get('id',r.get('runId')) for r in await client.runs()]:raise HTTPException(404,'Run not found')
             info=await client.info()
             if p.get('projectId') != info['projectId']:raise HTTPException(409,'Page package and Runtime project differ')
+            if p.get('runtimeInstanceId') != info['runtimeInstanceId']:raise HTTPException(409,'Runtime instance changed; refresh current target')
             group={'runIds':[run_id] if run_id else [],'sourceProblems':{}}
             if run_id and p.get('officialPresentation'):
                 if hasattr(client,'validate_group'):
@@ -600,7 +629,8 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         for p in await asyncio.to_thread(packages.list):
             if p['manifest']['projectId']!=formal:continue
             relations=await asyncio.to_thread(packages.activations,p['packageId'])
-            result.append({**p,'runtimeIds':await asyncio.to_thread(package_targets,p['packageId']),
+            result.append({**p,'editorManaged':await asyncio.to_thread(app.state.editor.owns_package,p['packageId']),
+                           'runtimeIds':await asyncio.to_thread(package_targets,p['packageId']),
                            'active':bool(active and active['packageId']==p['packageId']),
                            'runtimeId':runtimeId,'projectId':formal,
                            'activeRuntimeIds':[row['runtimeId'] for row in relations], 'activations':relations})
@@ -615,12 +645,15 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         return await asyncio.to_thread(packages.install,bytes(data))
     @app.post('/api/packages/{pid}/activate')
     async def package_activate(pid:str,req:Request):
-        async with target_lock:
-            who=await identity(req,'admin',True);b=await json_object(req,True)
-            if 'runtimeId' in b and 'runtimeIds' in b:raise HTTPException(422,'Use one explicit Runtime context field')
-            rids=b.get('runtimeIds',[b.get('runtimeId','configured')])
-            if not isinstance(rids,list) or not 1<=len(rids)<=32 or any(not isinstance(rid,str) for rid in rids):raise HTTPException(422,'Runtime association required')
-            if len(set(rids))!=len(rids):raise HTTPException(422,'Duplicate Runtime associations')
+        who=await identity(req,'admin',True);b=await json_object(req,True)
+        if await asyncio.to_thread(app.state.editor.owns_package,pid):
+            raise HTTPException(409,'编辑器生成的页面版本须在 Web 编辑器中发布或回退，同时核对后续采集请求')
+        if 'runtimeId' in b and 'runtimeIds' in b:raise HTTPException(422,'Use one explicit Runtime context field')
+        rids=b.get('runtimeIds',[b.get('runtimeId','configured')])
+        if not isinstance(rids,list) or not 1<=len(rids)<=32 or any(not isinstance(rid,str) for rid in rids):raise HTTPException(422,'Runtime association required')
+        if len(set(rids))!=len(rids):raise HTTPException(422,'Duplicate Runtime associations')
+        async with AsyncExitStack() as targets:
+            for rid in sorted(rids):await targets.enter_async_context(target_lock(rid))
             item=await asyncio.to_thread(packages.get,pid)
             project=item['manifest']['projectId']
             if b.get('projectId',project)!=project:raise HTTPException(409,'Package and selected project differ')
@@ -664,6 +697,11 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         finally:
             resources.release_owner('view:'+vid)
             await views.remove(vid)
+    install_editor_routes(app,config,packages,identity,client_for,json_object,views,registry,target_lock)
     static=Path(__file__).parent/'static'
+    @app.get('/editor',include_in_schema=False)
+    async def editor_entry():
+        if not (static/'index.html').is_file():raise HTTPException(503,'Build the Web frontend before opening the editor')
+        return FileResponse(static/'index.html')
     if static.exists():app.mount('/',StaticFiles(directory=static,html=True),name='frontend')
     return app

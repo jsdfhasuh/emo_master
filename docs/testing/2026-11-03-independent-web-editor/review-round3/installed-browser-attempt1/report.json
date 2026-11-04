@@ -1,0 +1,24 @@
+{
+  "status": "FAILED",
+  "verification": "Edge/Chromium -> independent Web -> software Runtime",
+  "syntheticOnly": true,
+  "physicalDevices": false,
+  "steps": [
+    "W01: standalone target/catalog with no Designer and no Job"
+  ],
+  "runtime": {
+    "event": "ready",
+    "address": "127.0.0.1:56267",
+    "projectId": "independent-web-editor-software-demo",
+    "projectFile": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\test-results\\independent-editor\\20261104-075655-538c08\\runtime\\project\\web-editor-demo.emoproj",
+    "syntheticOnly": true
+  },
+  "webPackage": {
+    "mode": "installed-wheel",
+    "event": "web-package-origin",
+    "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\.venv\\Lib\\site-packages\\emo_web_panel\\__init__.py",
+    "isolated": true
+  },
+  "error": "Locator.click: Timeout 20000ms exceeded.\nCall log:\n  - waiting for locator(\".editor-palette\").get_by_role(\"button\", name=\"图像\", exact=True)\n",
+  "assetResponses": []
+}

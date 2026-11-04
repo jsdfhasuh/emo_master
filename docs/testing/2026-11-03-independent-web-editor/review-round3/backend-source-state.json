@@ -1,0 +1,24 @@
+{
+  "head": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "branch": "codex/logging-consolidation-20261103",
+  "scope": "round3 selected immutable package recovery; source files frozen after final browser PASS",
+  "sha256": {
+    "web_panel/backend/emo_web_panel/app.py": "8b198dd92c29d93167abfd4748276355d5c7d6ce7143c0ec5def5616dfb64fa4",
+    "web_panel/backend/emo_web_panel/mock_runtime.py": "bc7683bd6956a40dce672f9d9a8893f3f0f17f24291286b1d91d7e2b488c30e8",
+    "web_panel/frontend/src/main.tsx": "def04894b42e095389bba2a2b537957bd0ea809023cfc662ee7134d339998729",
+    "web_panel/frontend/src/state/catalog.ts": "a24e2b1f0865f72c88f04a5661591e732aa38f8bd347e3b2937b8ef4316d22a7",
+    "web_panel/frontend/src/contracts/types.ts": "721f6262bfa71372842190e408942c750bd903618b96b43762042ae07601c9d9",
+    "web_panel/frontend/tests/catalog.test.mjs": "ba8d3c18326686e188b36c2c53fb5b61501759a498e4e072fef7c1fa5c49c978",
+    "web_panel/frontend/tests/selected_package_recovery_browser.py": "652ab541cdcaa7bb424905a5ae5345b1034d89d382690002db036af61a108cb4",
+    "web_panel/tests/test_selected_package_recovery.py": "650fc00b0ceb3e5cca11f3f8addd58b176afc362439c042c16121cecc90b6cc3"
+  },
+  "backendSuite": {
+    "passed": 183,
+    "subtestsPassed": 230,
+    "skipped": 0,
+    "elapsedSeconds": 62.51,
+    "productRuntimeEnabled": true,
+    "productPython": "D:\\Conda\\envs\\emo_master\\python.exe"
+  },
+  "browserReport": "selected-package-browser-final/browser-report.json"
+}

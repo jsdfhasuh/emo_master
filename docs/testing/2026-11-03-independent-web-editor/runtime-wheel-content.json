@@ -1,0 +1,28 @@
+{
+  "wheel": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\runtime\\emo_master-0.6.6-py3-none-any.whl",
+  "sha256": "30652d264b8a9eaca290a0732c59e4e59f6784cffcccf59d015787125d618018",
+  "byteSize": 1661736,
+  "archiveIntegrity": "PASS",
+  "allPackagedPythonModulesMatchWorkingSource": "PASS",
+  "checkedModuleCount": 618,
+  "staleModules": [],
+  "deletedDesignerWebPreviewAbsent": true,
+  "verifiedFiles": [
+    "emo_master/apps/runtime/presentation/output_capture.py",
+    "emo_master/apps/runtime/presentation/output_requests.py",
+    "emo_master/apps/runtime/presentation/normal_capture.py",
+    "emo_master/apps/runtime/presentation/collector.py",
+    "emo_master/apps/runtime/grpc_server/service.py",
+    "emo_master/core/presentation/capture_limits.py",
+    "emo_panel_protocol/output_requests.py",
+    "emo_panel_protocol/generated/runtime_pb2.py",
+    "emo_panel_protocol/generated/runtime_pb2_grpc.py",
+    "emo_master/apps/designer/page_designer/chrome.py",
+    "emo_master/apps/designer/page_designer/coordinator.py",
+    "emo_master/apps/designer/page_designer/delivery.py",
+    "emo_master/apps/designer/page_designer/property_panel.py",
+    "emo_master/apps/designer/page_designer/tools.py"
+  ],
+  "unpackedWheelImport": "PASS",
+  "level": "Python wheel archive/content, changed-module syntax and unpacked import; not frozen EXE or deployed installation"
+}

@@ -97,7 +97,7 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
         env['PYTHONDONTWRITEBYTECODE'] = '1'
         env['QT_QPA_PLATFORM'] = 'offscreen'
         self.process = subprocess.Popen([os.environ.get('EMO_WEB_PRODUCT_PYTHON', sys.executable),
-            str(Path(__file__).resolve()), '--runtime-server', self.directory.name], cwd=ROOT,
+            str(Path(__file__).resolve()), getattr(self, 'server_flag', '--runtime-server'), self.directory.name], cwd=ROOT,
             env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=self.log, text=True)
         ready = queue.Queue()
         threading.Thread(target=lambda: ready.put(self.process.stdout.readline()), daemon=True).start()
@@ -146,6 +146,10 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
     def preserve_evidence(self):
         destination = Path(os.environ.get('EMO_WEB_PRODUCT_EVIDENCE_DIR',
             str(ROOT / 'web_panel/test-results/product-runtime'))) / self._testMethodName
+        # Nested software Runtime diagnostics can exceed Windows MAX_PATH.
+        destination = destination.resolve()
+        if os.name == 'nt':
+            destination = Path('\\\\?\\' + str(destination))
         destination.mkdir(parents=True, exist_ok=True)
         self.log.flush()
         root = Path(self.directory.name)
@@ -210,7 +214,8 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(total['value'], 1)
         self.assertEqual(await self.client.runs(), [])
 
-    async def test_actual_runtime_start_capture_lookup_stop_and_no_replay(self):
+    async def test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay(self):
+        from emo_web_panel.runtime_client import RuntimeRejected
         info = await self.client.info()
         workflows = await self.client.workflows()
         workflow = next(w for w in workflows if w['id'] == 'main')
@@ -224,18 +229,14 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
         job = accepted['runId']
         lookup = await self.client.lookup_start(body['requestId'], info['runtimeInstanceId'])
         self.assertEqual(lookup['runId'],job)
-        result = []
-        for _ in range(100):
-            result = [item for item in await self.client.snapshot(job) if item.get('type') != 'scope_status']
-            if result:
-                break
-            await asyncio.sleep(.05)
-        if not result:
-            self.observations.append({'operation':'run_state','reply':await self.client.run_state(job)})
-            self.observations.append({'operation':'job_events','reply':await self.client.job_events(job)})
-        self.assertTrue(result, 'Actual Runtime never produced the supplied sample capture')
-        self.assertEqual(result[0]['jobId'],job)
-        self.assertIn('count',result[0]['sources'])
+        # This fixture has Qt pages, but no external requests saved by Web.
+        # Independent Web Start must not implicitly opt into Qt capture.
+        state = await self.client.run_state(job)
+        self.observations.append({'operation': 'run_state_without_external_requests', 'reply': state})
+        self.assertFalse(state['captureEnabled'])
+        with self.assertRaises(RuntimeRejected) as unavailable:
+            await self.client.snapshot(job)
+        self.assertEqual(unavailable.exception.code, 'CAPTURE_UNAVAILABLE')
         logs = await self.client.query_runtime_logs({'runtimeInstanceId': info['runtimeInstanceId'],
             'jobId': job, 'component': 'execution', 'limit': 1000})
         self.observations.append({'operation': 'query_runtime_logs_for_actual_job', 'reply': logs})
@@ -265,6 +266,115 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(await self.client.runs()),1)
 
 
+@unittest.skipUnless(os.environ.get('EMO_WEB_PRODUCT_RUNTIME') == '1',
+                     'Opt-in full owning Runtime integration; requires its separate dependencies')
+class EditorPublishedRuntimeTests(unittest.IsolatedAsyncioTestCase):
+    """The browser gate's current-format fixture through actual publish + RPC.
+
+    This verifies the software contract without substituting for Chromium UI/WS
+    assertions in frontend/tests/product_runtime_e2e.py.
+    """
+    server_flag = '--runtime-server-web-editor-continuous'
+    asyncSetUp = ProductRuntimeTests.asyncSetUp
+    asyncTearDown = ProductRuntimeTests.asyncTearDown
+    preserve_evidence = ProductRuntimeTests.preserve_evidence
+
+    async def test_editor_publish_registers_real_outputs_before_explicit_start_and_stop(self):
+        from copy import deepcopy
+        import httpx
+        from emo_panel_protocol.messages import BrowserMessage
+        from emo_web_panel.app import create_app
+        from emo_web_panel.config import Config
+
+        fixture = json.loads((Path(self.directory.name) / 'project/web-editor-demo.emoproj').read_text(encoding='utf-8'))
+        self.assertEqual((fixture['schemaVersion'], fixture['presentation']['schemaVersion']), ('2.9', '1.2'))
+        self.assertEqual(fixture['devices']['definitions'], {})
+        self.assertEqual(fixture['presentation']['pages'], {}, 'Capture must not come from a Qt page')
+        app = create_app(Config(Path(self.directory.name) / 'gateway', mode='grpc', runtime_address=self.client.address))
+        app.state.auth.create_user('editor-test', 'Synthetic-editor-test-only!', 'admin')
+        async with app.router.lifespan_context(app), httpx.AsyncClient(
+                transport=httpx.ASGITransport(app), base_url='http://testserver') as web:
+            async def request(method, path, **kwargs):
+                response = await web.request(method, path, **kwargs)
+                self.assertEqual(response.status_code, 200, response.text)
+                return response.json()
+
+            login = await request('POST', '/api/session', json={'username': 'editor-test', 'password': 'Synthetic-editor-test-only!'})
+            web.headers['X-CSRF-Token'] = login['csrf']
+            base = '/api/editor/configured'
+            context = await request('GET', base + '/context')
+            info = context['runtime']
+            self.assertEqual(info['projectId'], 'independent-web-editor-software-demo')
+            self.assertEqual(info['productionExecutionMode'], 'continuous')
+            self.assertEqual(context['requests']['config']['sources'], {})
+            self.assertEqual(await self.client.runs(), [])
+            source = deepcopy(context['draft']['presentation'])
+            page = source['pages'][source['defaultPageId']]
+            sources = {}
+            for node, port, kind in [('count', 'count', 'number'), ('judge', 'result', 'indicator')]:
+                choice = next(item for item in context['catalog']['choices'] if item['source']['kind'] == 'node_output'
+                              and item['source']['nodeId'] == node and item['source']['port'] == port
+                              and not item['source']['fieldPath'])
+                sid, scope = choice['sourceId'], choice['scopeId']
+                source['dataSources'][sid] = choice['source']
+                source['resultScopes'][scope] = choice['scope']
+                if scope not in page['resultScopeIds']:
+                    page['resultScopeIds'].append(scope)
+                page['components'].append({'componentId': 'component-' + port, 'type': kind,
+                                           'bindings': {'value': sid}})
+                sources[port] = sid
+            page['components'].append({'componentId': 'runtime-state', 'type': 'runtime_status'})
+            saved = await request('PUT', base + '/draft', json={'projectId': info['projectId'],
+                'expectedDraftRevision': context['draft']['draftRevision'], 'presentation': source})
+            self.assertEqual((await self.client.output_requests())['config']['sources'], {})
+            publication = await request('POST', base + '/publish', json={'projectId': info['projectId'],
+                'expectedDraftRevision': saved['draftRevision'], 'requestId': 'editor-contract-publish-1'})
+            self.assertEqual(publication['state'], 'PUBLISHED', publication)
+            registered = await self.client.output_requests()
+            self.assertEqual(set(registered['config']['sources']), set(sources.values()))
+            self.assertEqual(await self.client.runs(), [], 'Publish must not create a Job')
+            self.observations.append({'operation': 'editor_publish', 'reply': publication, 'registered': registered})
+            body = {'runtimeId': 'configured', 'runtimeInstanceId': info['runtimeInstanceId'], 'projectId': info['projectId'],
+                    'configurationRevision': info['configurationRevision'], 'workflowId': 'main',
+                    'requestId': 'editor-contract-start-1', 'inputs': {}}
+            accepted = await request('POST', '/api/runs/start', json=body)
+            self.assertEqual(accepted['state'], 'accepted', accepted)
+            BrowserMessage.model_validate(accepted['controlMessage'])
+            job = accepted['runId']
+            state = await self.client.run_state(job)
+            self.assertEqual((state['runtimeInstanceId'], state['projectId'], state['runGroupId']),
+                             (info['runtimeInstanceId'], info['projectId'], ''))
+            self.assertTrue(state['captureEnabled'])
+            deadline = time.monotonic() + 30
+            result = None
+            while time.monotonic() < deadline:
+                result = next((item for item in await self.client.snapshot(job) if item.get('type') != 'scope_status'), None)
+                if result:
+                    break
+                await asyncio.sleep(.05)
+            self.assertIsNotNone(result, 'Published count/verdict never reached actual DisplayService')
+            self.assertEqual((result['runtimeInstanceId'], result['projectId'], result['jobId']),
+                             (info['runtimeInstanceId'], info['projectId'], job))
+            self.assertTrue(result['capturePlanRevision'])
+            self.assertEqual(set(result['sources']), set(sources.values()))
+            self.assertEqual(result['sources'][sources['count']]['value'], 2)
+            self.assertIs(result['sources'][sources['result']]['value'], True)
+            self.observations.append({'operation': 'actual_published_result', 'reply': result})
+            stopped = await request('POST', f'/api/runs/{job}/stop', json={**body,
+                'requestId': 'editor-contract-stop-1', 'runGroupId': ''})
+            self.assertEqual(stopped['state'], 'accepted', stopped)
+            deadline = time.monotonic() + 30
+            while time.monotonic() < deadline:
+                state = await self.client.run_state(job)
+                if state['status'] == 'ABORTED' and not state['active'] and not state['ownsResources']:
+                    break
+                await asyncio.sleep(.05)
+            self.assertEqual((state['id'], state['runGroupId'], state['status'], state['active'], state['ownsResources']),
+                             (job, '', 'ABORTED', False, False))
+            self.assertEqual([run['id'] for run in await self.client.runs()], [job])
+            self.observations.append({'operation': 'actual_exact_stop', 'reply': stopped, 'terminal': state})
+
+
 class StartReconciliationTests(unittest.IsolatedAsyncioTestCase):
     async def test_unknown_queries_same_intent_without_another_start(self):
         from types import SimpleNamespace
@@ -290,7 +400,14 @@ class StartReconciliationTests(unittest.IsolatedAsyncioTestCase):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 3 and sys.argv[1] in {'--runtime-server', '--runtime-server-continuous'}:
+    if len(sys.argv) == 3 and sys.argv[1] == '--runtime-server-independent-web':
+        from test_web_start_capture import run_independent_capture_server
+        run_independent_capture_server(Path(sys.argv[2]))
+    elif len(sys.argv) == 3 and sys.argv[1] == '--runtime-server-web-editor-continuous':
+        sys.path.insert(0, str(ROOT))
+        from scripts.independent_web_editor_demo import serve
+        serve(Path(sys.argv[2]), port=0)
+    elif len(sys.argv) == 3 and sys.argv[1] in {'--runtime-server', '--runtime-server-continuous'}:
         run_product_server(sys.argv[2], continuous=sys.argv[1] == '--runtime-server-continuous')
     else:
         unittest.main()

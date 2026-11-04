@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "value": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Value"
+    },
+    "aggregate": {
+      "enum": [
+        "count",
+        "sum",
+        "avg",
+        "min",
+        "max"
+      ],
+      "title": "Aggregate",
+      "type": "string"
+    },
+    "historyDefinitionRevision": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Historydefinitionrevision",
+      "type": "string"
+    }
+  },
+  "required": [
+    "value",
+    "aggregate",
+    "historyDefinitionRevision"
+  ],
+  "title": "HistoryAggregate",
+  "type": "object"
+}

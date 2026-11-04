@@ -1,0 +1,16 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_ SelectedPackageRecoveryTests.test_recover_old_release_same_job_and_frozen_coverage _
+
+self = <test_selected_package_recovery.SelectedPackageRecoveryTests testMethod=test_recover_old_release_same_job_and_frozen_coverage>
+
+    def test_recover_old_release_same_job_and_frozen_coverage(self):
+        old, new, frozen = self.releases()
+        read = self.read(old)
+>       self.assertEqual(read.status_code, 200, read.text)
+E       AssertionError: 404 != 200 : {"detail":"Panel not active for this Runtime and project"}
+
+web_panel\tests\test_selected_package_recovery.py:39: AssertionError
+=========================== short test summary info ===========================
+FAILED web_panel/tests/test_selected_package_recovery.py::SelectedPackageRecoveryTests::test_recover_old_release_same_job_and_frozen_coverage
+1 failed in 1.42s

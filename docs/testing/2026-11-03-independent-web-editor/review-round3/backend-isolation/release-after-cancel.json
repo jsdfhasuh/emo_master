@@ -1,0 +1,10 @@
+{
+  "outcome": "cancel",
+  "queryState": "REQUEST_UNKNOWN",
+  "continueState": "REQUEST_UNKNOWN",
+  "endState": "ABANDONED",
+  "newExplicitPublishState": "PUBLISHED",
+  "laterManagementStatus": 200,
+  "submissionsAfterExplicitNewRequest": 2,
+  "implicitControls": 0
+}

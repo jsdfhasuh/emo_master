@@ -1,0 +1,184 @@
+{
+  "changedDuringPublish": false,
+  "addressDuringPublish": "127.0.0.1:50051",
+  "publish": {
+    "runtimeId": "configured",
+    "projectId": "demo-project",
+    "versionId": "web-f3b1652c49c1ebbad8c170d5",
+    "requestId": "address-race-1",
+    "state": "PUBLISHED",
+    "message": "页面已发布；当前任务保持原采集配置，新来源下次明确启动生效",
+    "createdAt": 1793749879.0349002,
+    "source": {
+      "dataSources": {
+        "count": {
+          "callPath": [],
+          "expectedType": "integer",
+          "fieldPath": [],
+          "kind": "node_output",
+          "nodeId": "demo-inference",
+          "port": "count",
+          "resultScopeId": "scope-1",
+          "ruleVersion": "1.0",
+          "workflowId": "demo-workflow"
+        }
+      },
+      "defaultPageId": "page-d9d5d6a93fd79817",
+      "navigation": {
+        "mode": "tabs"
+      },
+      "pageOrder": [
+        "page-d9d5d6a93fd79817"
+      ],
+      "pages": {
+        "page-d9d5d6a93fd79817": {
+          "components": [
+            {
+              "actions": {},
+              "bindings": {
+                "value": "count"
+              },
+              "children": [],
+              "componentId": "count",
+              "grid": {
+                "alignment": "stretch",
+                "direction": "wrap",
+                "equalWidth": false,
+                "justify": "start",
+                "spacing": 12,
+                "type": "responsive"
+              },
+              "layout": {
+                "column": 0,
+                "columnSpan": 1,
+                "row": 0,
+                "rowSpan": 1
+              },
+              "props": {
+                "cardStyle": "plain",
+                "columns": [],
+                "decimals": 2,
+                "emptyText": "—",
+                "fontFamily": "system",
+                "fontSize": 0,
+                "fontWeight": "normal",
+                "indicatorStates": {},
+                "pageSize": 20,
+                "text": "",
+                "textColor": "default",
+                "title": "",
+                "unit": ""
+              },
+              "responsive": {
+                "alignSelf": "auto",
+                "minHeight": 64,
+                "minWidth": 160,
+                "preferredHeight": 0,
+                "preferredWidth": 240,
+                "weight": 1.0,
+                "width": "fill"
+              },
+              "type": "number",
+              "version": "1.0"
+            }
+          ],
+          "layout": {
+            "alignment": "stretch",
+            "direction": "vertical",
+            "equalWidth": false,
+            "justify": "start",
+            "spacing": 12,
+            "type": "responsive"
+          },
+          "name": "检测页",
+          "resultScopeIds": [],
+          "targets": [
+            "web"
+          ]
+        }
+      },
+      "resultScopes": {
+        "scope-1": {
+          "callPath": [],
+          "commitPolicy": "workflow_terminal",
+          "entryWorkflowId": "demo-workflow",
+          "scopeWorkflowId": "demo-workflow"
+        }
+      },
+      "schemaVersion": "1.2"
+    },
+    "sourceRevision": "e77f01712aff3ca2632c95f4a65325fed91bfcf110b3063190bfcfce4714a78b",
+    "config": {
+      "schemaVersion": "1.0",
+      "sources": {
+        "count": {
+          "kind": "node_output",
+          "resultScopeId": "scope-1",
+          "workflowId": "demo-workflow",
+          "callPath": [],
+          "nodeId": "demo-inference",
+          "port": "count",
+          "fieldPath": [],
+          "expectedType": "integer",
+          "name": null,
+          "ruleVersion": "1.0"
+        }
+      },
+      "scopes": {
+        "scope-1": {
+          "entryWorkflowId": "demo-workflow",
+          "scopeWorkflowId": "demo-workflow",
+          "callPath": [],
+          "commitPolicy": "workflow_terminal"
+        }
+      }
+    },
+    "packageId": "226b08783945512e4897c52011767d2ae63e5a736f2c144e9f9a99ce202f8ff3",
+    "packageRevision": "ace4f4a0dbae1467ea3d8c0b5ddbfe7e912a9afd32a4fe964bce43bcd26280d4",
+    "runtimeInstanceId": "mock-instance",
+    "diagnostics": [],
+    "submitBody": {
+      "runtimeInstanceId": "mock-instance",
+      "projectId": "demo-project",
+      "expectedDocumentRevision": "1",
+      "expectedConfigRevision": "61a84f0e17bfb773a824ba6512ff382a1d7108cbca99dccf7476ab516ff29119",
+      "requestId": "address-race-1",
+      "config": {
+        "schemaVersion": "1.0",
+        "sources": {
+          "count": {
+            "kind": "node_output",
+            "resultScopeId": "scope-1",
+            "workflowId": "demo-workflow",
+            "callPath": [],
+            "nodeId": "demo-inference",
+            "port": "count",
+            "fieldPath": [],
+            "expectedType": "integer",
+            "name": null,
+            "ruleVersion": "1.0"
+          }
+        },
+        "scopes": {
+          "scope-1": {
+            "entryWorkflowId": "demo-workflow",
+            "scopeWorkflowId": "demo-workflow",
+            "callPath": [],
+            "commitPolicy": "workflow_terminal"
+          }
+        }
+      }
+    },
+    "configRevision": "eca9b1069c55c4ea1484c2e3530251f74c76c730649d9d73c589bfcf3bee0e09"
+  },
+  "changed": {
+    "id": "configured",
+    "alias": "Configured Runtime",
+    "mode": "grpc",
+    "address": "127.0.0.1:50052",
+    "permissions": [
+      "view",
+      "control"
+    ]
+  }
+}

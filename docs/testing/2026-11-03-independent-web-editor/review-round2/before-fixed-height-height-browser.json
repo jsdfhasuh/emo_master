@@ -1,0 +1,648 @@
+{
+  "evidenceLevel": "Built React + real headless Edge; mocked HTTP and live-view WS; no Runtime/device acceptance",
+  "label": "before-fixed-height",
+  "cases": {
+    "fixed-fixtures": {
+      "measurements": [
+        {
+          "windowHeight": 900,
+          "terminal": {
+            "top": 239,
+            "bottom": 1007,
+            "width": 1024,
+            "height": 768
+          },
+          "content": {
+            "top": 239,
+            "bottom": 884,
+            "width": 1024,
+            "height": 645
+          },
+          "topWidget": {
+            "top": 239,
+            "bottom": 347,
+            "width": 1024,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 776,
+            "bottom": 884,
+            "width": 1024,
+            "height": 108
+          },
+          "spacer": {
+            "top": 359,
+            "bottom": 764,
+            "width": 24,
+            "height": 405
+          },
+          "contentStyleHeight": "645px",
+          "terminalScrollHeight": 768,
+          "terminalClientHeight": 768,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0
+        },
+        {
+          "windowHeight": 1200,
+          "terminal": {
+            "top": 239,
+            "bottom": 1184,
+            "width": 1024,
+            "height": 945
+          },
+          "content": {
+            "top": 239,
+            "bottom": 1184,
+            "width": 1024,
+            "height": 945
+          },
+          "topWidget": {
+            "top": 239,
+            "bottom": 347,
+            "width": 1024,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 1076,
+            "bottom": 1184,
+            "width": 1024,
+            "height": 108
+          },
+          "spacer": {
+            "top": 359,
+            "bottom": 1064,
+            "width": 24,
+            "height": 705
+          },
+          "contentStyleHeight": "945px",
+          "terminalScrollHeight": 945,
+          "terminalClientHeight": 945,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0
+        }
+      ],
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_preview_height_browser.py\", line 128, in main\n    assert_geometry(case['measurements'], kind)\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_preview_height_browser.py\", line 83, in assert_geometry\n    assert abs(c['height'] - 768) <= 1, 'internal flow uses browser rather than terminal height'\nAssertionError: internal flow uses browser rather than terminal height\n"
+    },
+    "fixed-runtime": {
+      "measurements": [
+        {
+          "windowHeight": 900,
+          "terminal": {
+            "top": 288,
+            "bottom": 1056,
+            "width": 1024,
+            "height": 768
+          },
+          "content": {
+            "top": 288,
+            "bottom": 884,
+            "width": 1024,
+            "height": 596
+          },
+          "topWidget": {
+            "top": 288,
+            "bottom": 396,
+            "width": 1024,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 776,
+            "bottom": 884,
+            "width": 1024,
+            "height": 108
+          },
+          "spacer": {
+            "top": 408,
+            "bottom": 764,
+            "width": 24,
+            "height": 356
+          },
+          "contentStyleHeight": "596px",
+          "terminalScrollHeight": 768,
+          "terminalClientHeight": 768,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0
+        },
+        {
+          "windowHeight": 1200,
+          "terminal": {
+            "top": 288,
+            "bottom": 1184,
+            "width": 1024,
+            "height": 896
+          },
+          "content": {
+            "top": 288,
+            "bottom": 1184,
+            "width": 1024,
+            "height": 896
+          },
+          "topWidget": {
+            "top": 288,
+            "bottom": 396,
+            "width": 1024,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 1076,
+            "bottom": 1184,
+            "width": 1024,
+            "height": 108
+          },
+          "spacer": {
+            "top": 408,
+            "bottom": 1064,
+            "width": 24,
+            "height": 656
+          },
+          "contentStyleHeight": "896px",
+          "terminalScrollHeight": 896,
+          "terminalClientHeight": 896,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0
+        }
+      ],
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_preview_height_browser.py\", line 128, in main\n    assert_geometry(case['measurements'], kind)\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_preview_height_browser.py\", line 83, in assert_geometry\n    assert abs(c['height'] - 768) <= 1, 'internal flow uses browser rather than terminal height'\nAssertionError: internal flow uses browser rather than terminal height\n"
+    },
+    "follow-fixtures": {
+      "measurements": [
+        {
+          "windowHeight": 900,
+          "terminal": {
+            "top": 239,
+            "bottom": 884,
+            "width": 1406,
+            "height": 645
+          },
+          "content": {
+            "top": 239,
+            "bottom": 884,
+            "width": 1406,
+            "height": 645
+          },
+          "topWidget": {
+            "top": 239,
+            "bottom": 347,
+            "width": 1406,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 776,
+            "bottom": 884,
+            "width": 1406,
+            "height": 108
+          },
+          "spacer": {
+            "top": 359,
+            "bottom": 764,
+            "width": 24,
+            "height": 405
+          },
+          "contentStyleHeight": "645px",
+          "terminalScrollHeight": 645,
+          "terminalClientHeight": 645,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0
+        },
+        {
+          "windowHeight": 1200,
+          "terminal": {
+            "top": 239,
+            "bottom": 1184,
+            "width": 1406,
+            "height": 945
+          },
+          "content": {
+            "top": 239,
+            "bottom": 1184,
+            "width": 1406,
+            "height": 945
+          },
+          "topWidget": {
+            "top": 239,
+            "bottom": 347,
+            "width": 1406,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 1076,
+            "bottom": 1184,
+            "width": 1406,
+            "height": 108
+          },
+          "spacer": {
+            "top": 359,
+            "bottom": 1064,
+            "width": 24,
+            "height": 705
+          },
+          "contentStyleHeight": "945px",
+          "terminalScrollHeight": 945,
+          "terminalClientHeight": 945,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0
+        }
+      ],
+      "status": "passed"
+    },
+    "follow-runtime": {
+      "measurements": [
+        {
+          "windowHeight": 900,
+          "terminal": {
+            "top": 288,
+            "bottom": 884,
+            "width": 1406,
+            "height": 596
+          },
+          "content": {
+            "top": 288,
+            "bottom": 884,
+            "width": 1406,
+            "height": 596
+          },
+          "topWidget": {
+            "top": 288,
+            "bottom": 396,
+            "width": 1406,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 776,
+            "bottom": 884,
+            "width": 1406,
+            "height": 108
+          },
+          "spacer": {
+            "top": 408,
+            "bottom": 764,
+            "width": 24,
+            "height": 356
+          },
+          "contentStyleHeight": "596px",
+          "terminalScrollHeight": 596,
+          "terminalClientHeight": 596,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0
+        },
+        {
+          "windowHeight": 1200,
+          "terminal": {
+            "top": 288,
+            "bottom": 1184,
+            "width": 1406,
+            "height": 896
+          },
+          "content": {
+            "top": 288,
+            "bottom": 1184,
+            "width": 1406,
+            "height": 896
+          },
+          "topWidget": {
+            "top": 288,
+            "bottom": 396,
+            "width": 1406,
+            "height": 108
+          },
+          "bottomWidget": {
+            "top": 1076,
+            "bottom": 1184,
+            "width": 1406,
+            "height": 108
+          },
+          "spacer": {
+            "top": 408,
+            "bottom": 1064,
+            "width": 24,
+            "height": 656
+          },
+          "contentStyleHeight": "896px",
+          "terminalScrollHeight": 896,
+          "terminalClientHeight": 896,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0
+        }
+      ],
+      "status": "passed"
+    },
+    "overflow-fixtures": {
+      "measurements": [
+        {
+          "windowHeight": 900,
+          "terminal": {
+            "top": 239,
+            "bottom": 1007,
+            "width": 1024,
+            "height": 768
+          },
+          "content": {
+            "top": 239,
+            "bottom": 884,
+            "width": 1024,
+            "height": 645
+          },
+          "topWidget": {
+            "top": 239,
+            "bottom": 1139,
+            "width": 1024,
+            "height": 900
+          },
+          "bottomWidget": {
+            "top": 1187,
+            "bottom": 1587,
+            "width": 1024,
+            "height": 400
+          },
+          "spacer": {
+            "top": 1151,
+            "bottom": 1175,
+            "width": 24,
+            "height": 24
+          },
+          "contentStyleHeight": "645px",
+          "terminalScrollHeight": 1348,
+          "terminalClientHeight": 768,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0,
+          "afterScroll": {
+            "windowHeight": 900,
+            "terminal": {
+              "top": 239,
+              "bottom": 1007,
+              "width": 1024,
+              "height": 768
+            },
+            "content": {
+              "top": 239,
+              "bottom": 884,
+              "width": 1024,
+              "height": 645
+            },
+            "topWidget": {
+              "top": 239,
+              "bottom": 1139,
+              "width": 1024,
+              "height": 900
+            },
+            "bottomWidget": {
+              "top": 1187,
+              "bottom": 1587,
+              "width": 1024,
+              "height": 400
+            },
+            "spacer": {
+              "top": 1151,
+              "bottom": 1175,
+              "width": 24,
+              "height": 24
+            },
+            "contentStyleHeight": "645px",
+            "terminalScrollHeight": 1348,
+            "terminalClientHeight": 768,
+            "terminalOverflowY": "visible",
+            "terminalScrollTop": 0
+          }
+        },
+        {
+          "windowHeight": 1200,
+          "terminal": {
+            "top": 239,
+            "bottom": 1184,
+            "width": 1024,
+            "height": 945
+          },
+          "content": {
+            "top": 239,
+            "bottom": 1184,
+            "width": 1024,
+            "height": 945
+          },
+          "topWidget": {
+            "top": 239,
+            "bottom": 1139,
+            "width": 1024,
+            "height": 900
+          },
+          "bottomWidget": {
+            "top": 1187,
+            "bottom": 1587,
+            "width": 1024,
+            "height": 400
+          },
+          "spacer": {
+            "top": 1151,
+            "bottom": 1175,
+            "width": 24,
+            "height": 24
+          },
+          "contentStyleHeight": "945px",
+          "terminalScrollHeight": 1348,
+          "terminalClientHeight": 945,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0,
+          "afterScroll": {
+            "windowHeight": 1200,
+            "terminal": {
+              "top": 239,
+              "bottom": 1184,
+              "width": 1024,
+              "height": 945
+            },
+            "content": {
+              "top": 239,
+              "bottom": 1184,
+              "width": 1024,
+              "height": 945
+            },
+            "topWidget": {
+              "top": 239,
+              "bottom": 1139,
+              "width": 1024,
+              "height": 900
+            },
+            "bottomWidget": {
+              "top": 1187,
+              "bottom": 1587,
+              "width": 1024,
+              "height": 400
+            },
+            "spacer": {
+              "top": 1151,
+              "bottom": 1175,
+              "width": 24,
+              "height": 24
+            },
+            "contentStyleHeight": "945px",
+            "terminalScrollHeight": 1348,
+            "terminalClientHeight": 945,
+            "terminalOverflowY": "visible",
+            "terminalScrollTop": 0
+          }
+        }
+      ],
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_preview_height_browser.py\", line 128, in main\n    assert_geometry(case['measurements'], kind)\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_preview_height_browser.py\", line 94, in assert_geometry\n    assert after['terminalScrollTop'] > 0, 'overflow cannot scroll'\nAssertionError: overflow cannot scroll\n"
+    },
+    "overflow-runtime": {
+      "measurements": [
+        {
+          "windowHeight": 900,
+          "terminal": {
+            "top": 288,
+            "bottom": 1056,
+            "width": 1024,
+            "height": 768
+          },
+          "content": {
+            "top": 288,
+            "bottom": 884,
+            "width": 1024,
+            "height": 596
+          },
+          "topWidget": {
+            "top": 288,
+            "bottom": 1188,
+            "width": 1024,
+            "height": 900
+          },
+          "bottomWidget": {
+            "top": 1236,
+            "bottom": 1636,
+            "width": 1024,
+            "height": 400
+          },
+          "spacer": {
+            "top": 1200,
+            "bottom": 1224,
+            "width": 24,
+            "height": 24
+          },
+          "contentStyleHeight": "596px",
+          "terminalScrollHeight": 1348,
+          "terminalClientHeight": 768,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0,
+          "afterScroll": {
+            "windowHeight": 900,
+            "terminal": {
+              "top": 288,
+              "bottom": 1056,
+              "width": 1024,
+              "height": 768
+            },
+            "content": {
+              "top": 288,
+              "bottom": 884,
+              "width": 1024,
+              "height": 596
+            },
+            "topWidget": {
+              "top": 288,
+              "bottom": 1188,
+              "width": 1024,
+              "height": 900
+            },
+            "bottomWidget": {
+              "top": 1236,
+              "bottom": 1636,
+              "width": 1024,
+              "height": 400
+            },
+            "spacer": {
+              "top": 1200,
+              "bottom": 1224,
+              "width": 24,
+              "height": 24
+            },
+            "contentStyleHeight": "596px",
+            "terminalScrollHeight": 1348,
+            "terminalClientHeight": 768,
+            "terminalOverflowY": "visible",
+            "terminalScrollTop": 0
+          }
+        },
+        {
+          "windowHeight": 1200,
+          "terminal": {
+            "top": 288,
+            "bottom": 1184,
+            "width": 1024,
+            "height": 896
+          },
+          "content": {
+            "top": 288,
+            "bottom": 1184,
+            "width": 1024,
+            "height": 896
+          },
+          "topWidget": {
+            "top": 288,
+            "bottom": 1188,
+            "width": 1024,
+            "height": 900
+          },
+          "bottomWidget": {
+            "top": 1236,
+            "bottom": 1636,
+            "width": 1024,
+            "height": 400
+          },
+          "spacer": {
+            "top": 1200,
+            "bottom": 1224,
+            "width": 24,
+            "height": 24
+          },
+          "contentStyleHeight": "896px",
+          "terminalScrollHeight": 1348,
+          "terminalClientHeight": 896,
+          "terminalOverflowY": "visible",
+          "terminalScrollTop": 0,
+          "afterScroll": {
+            "windowHeight": 1200,
+            "terminal": {
+              "top": 288,
+              "bottom": 1184,
+              "width": 1024,
+              "height": 896
+            },
+            "content": {
+              "top": 288,
+              "bottom": 1184,
+              "width": 1024,
+              "height": 896
+            },
+            "topWidget": {
+              "top": 288,
+              "bottom": 1188,
+              "width": 1024,
+              "height": 900
+            },
+            "bottomWidget": {
+              "top": 1236,
+              "bottom": 1636,
+              "width": 1024,
+              "height": 400
+            },
+            "spacer": {
+              "top": 1200,
+              "bottom": 1224,
+              "width": 24,
+              "height": 24
+            },
+            "contentStyleHeight": "896px",
+            "terminalScrollHeight": 1348,
+            "terminalClientHeight": 896,
+            "terminalOverflowY": "visible",
+            "terminalScrollTop": 0
+          }
+        }
+      ],
+      "status": "failed",
+      "failure": "Traceback (most recent call last):\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_preview_height_browser.py\", line 128, in main\n    assert_geometry(case['measurements'], kind)\n  File \"D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\frontend\\tests\\editor_preview_height_browser.py\", line 94, in assert_geometry\n    assert after['terminalScrollTop'] > 0, 'overflow cannot scroll'\nAssertionError: overflow cannot scroll\n"
+    }
+  }
+}

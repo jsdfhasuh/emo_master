@@ -146,15 +146,31 @@ def testConsumerAttachmentFailureRetiresEarlierCaptureWithoutStartingProcesses(r
     owner = service._presentationOwner
     attach = owner.attachNormal
     attached = []
+    consumers = []
+    processes = []
+    startProcess = service.jobSupervisor.startJob
+    def observedStart(spec, **kwargs):
+        # The outer dispatch call only stages the group; child/producer calls
+        # without dispatchSlots are the ones that may launch worker processes.
+        if not spec.dispatchSlots:
+            processes.append(spec.jobId)
+        return startProcess(spec, **kwargs)
     def failSecondConsumer(jobId, frozen):
-        if len(attached) == 2:
-            raise ValueError("consumer capture fixture failure")
+        # Empty producer capture is intentionally omitted. Target the second
+        # actual consumer, not an assumed third attachment including that empty plan.
+        if service.jobRepository.get(jobId).workflowId == "consumer":
+            consumers.append(jobId)
+            if len(consumers) == 2:
+                raise ValueError("consumer capture fixture failure")
         result = attach(jobId, frozen)
         attached.append(jobId)
         return result
     monkeypatch.setattr(owner, "attachNormal", failSecondConsumer)
+    monkeypatch.setattr(service.jobSupervisor, "startJob", observedStart)
     started = service.StartJob(pb.StartJobRequest(workflow_id="main", capture_presentation=True), None)
     assert not started.ok and "fixture failure" in started.message
+    assert len(consumers) == 2 and consumers[0] in attached and consumers[1] not in attached
+    assert not processes
     assert not service.jobSupervisor._handles and not service.deviceManager.dispatchGroups
     assert all(job.isTerminal for job in service.jobRepository.all())
     waitFor(lambda: all(not owner.readers[jobId].is_alive() for jobId in attached), timeout=5)

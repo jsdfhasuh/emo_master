@@ -1,0 +1,12 @@
+.F                                                                       [100%]
+================================== FAILURES ===================================
+_______________ testRunningPublishNewTaskQtMergeAndStaleSource ________________
+tests\runtime\presentation\test_external_output_requests.py:163: in testRunningPublishNewTaskQtMergeAndStaleSource
+    assert len(result(display, job).sources) == 5
+E   AssertionError: assert 1 == 5
+E    +  where 1 = len((ClosedSource(sourceId='qt-count', state='AVAILABLE', valueJson='2', image=None, reason=None, reasonCode=None),))
+E    +    where (ClosedSource(sourceId='qt-count', state='AVAILABLE', valueJson='2', image=None, reason=None, reasonCode=None),) = ClosedResult(identity=ResultIdentity(runtimeInstanceId='9500cc07-1a14-4c76-8994-c81665be7bfe', jobId='20470b8a-fe3c-4e...ming(captureStartedNs=33491865041200, scopeEndedNs=33491881080400, closedNs=33491882049500, clock='runtime_monotonic')).sources
+E    +      where ClosedResult(identity=ResultIdentity(runtimeInstanceId='9500cc07-1a14-4c76-8994-c81665be7bfe', jobId='20470b8a-fe3c-4e...ming(captureStartedNs=33491865041200, scopeEndedNs=33491881080400, closedNs=33491882049500, clock='runtime_monotonic')) = result(<emo_master.apps.runtime.presentation.service.PresentationService object at 0x00000250AACF4580>, '20470b8a-fe3c-4eda-b1b1-a3f629ece2d4')
+=========================== short test summary info ===========================
+FAILED tests/runtime/presentation/test_external_output_requests.py::testRunningPublishNewTaskQtMergeAndStaleSource
+1 failed, 1 passed in 14.40s

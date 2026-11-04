@@ -1,6 +1,6 @@
 # Panel Contract v1：Runtime 客户端与 Web 页面交接合同
 
-合同版本 `1.0`，Python SDK `emo_panel_protocol 1.4.0`。工程当前版本为
+合同版本 `1.0`，当前 Python SDK 为 `emo_panel_protocol 1.5.0`。工程当前版本为
 `2.9` / Presentation `1.2`，发布快照为 `published-1`，ZIP 页面包为
 `emo-web-panel-1`（扩展名 `.emoweb`）。这些版本分别管理不同边界，不互相替代。
 
@@ -29,7 +29,7 @@ python scripts/build_panel_contract.py
 正式交付可同时生成 ZIP，使用新的版本目录以保持历史产物可追溯：
 
 ```powershell
-python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.4.0 --archive build/panel-contract-v1-sdk-1.4.0.zip
+python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.5.0 --archive build/panel-contract-v1-sdk-1.5.0.zip
 ```
 
 `--archive` 归档前核对 manifest 的全部文件摘要，ZIP 仅包含这些文件及 manifest。
@@ -310,3 +310,52 @@ Dot 用独立 RPC 通道消费此配置，启动和断线重连时调用 `Previe
 合同生成和源码测试可验证 schema、fixture、SDK 独立安装及发布快照；本地模拟 Runtime 可以验证
 协议和状态语义。真实浏览器、原生 Qt、冻结包、另一台电脑的连接与真实设备分别记录。
 本合同不把未执行的层级标为 PASS，不授权部署、安装、提交、推送或操作现场设备。
+
+## 独立 Web 编辑器输出请求（SDK 1.5.0）
+
+能力 `output_requests_v1` 表示 Runtime 支持与页面无关的外部输出采集请求。
+以下 RPC 都在 RuntimeService 上；不使用 DisplayService.Prepare/Start 发布正式页面。
+
+| RPC | 行为 |
+| --- | --- |
+| GetOutputCatalog | 查询当前正式工程、工程修订、受信任插件输出和调用位置 |
+| GetOutputRequests | 读取该工程保存的外部请求及当前诊断 |
+| ValidateOutputRequests | 校验候选来源、类型、作用域和与 Qt 合并后的每任务额度，不写入 |
+| SubmitOutputRequests | 按实例、工程修订和配置修订 CAS 显式保存，返回可查询 receipt |
+| GetOutputRequestStatus | 按原 requestId 查询提交结果；未保存时 NOT_FOUND，不自动重放 |
+
+共同请求 OutputRequestsRequest 包含 runtime_instance_id、project_id、
+expected_document_revision、expected_config_revision、request_id、config_json。
+查询首次可不指定实例；写入及校验必须提供目标实例和准确的预期工程、配置修订。
+共同回复为 ok/code/message/state_json。JSON 中 documentRevision 使用十进制字符串，
+configRevision 为 SDK 规范 JSON 的 SHA-256；它与页面版本、任务 capturePlanRevision 分别管理。
+
+config_json 的轻量 DTO 为 emo_panel_protocol.output_requests.OutputRequestConfig：
+
+```json
+{"schemaVersion":"1.0","sources":{},"scopes":{}}
+```
+
+sources 的值为 DataSource，只接受 node_output/workflow_output；scopes 的值为 ResultScope。
+不接受 pageId、componentId、布局、静态资源或 Web 页面版本。
+目录 choices 每项包含 title/sourceId/scopeId/source/scope/hint/available/reason；
+来源和作用域 ID 取决于地址与调用范围，节点显示名称或布局修改不改变 ID。
+Web 应保留这些稳定身份并在绑定删除后重新计算全部正式页面的需求。
+
+state_json 返回 runtimeInstanceId/projectId/projectName/documentRevision/configRevision/config/
+capabilities/diagnostics。校验成功 state=VALIDATED；保存成功 state=SAVED 并返回 requestId。
+校验拒绝包含来源或作用域身份以及具体原因。配置与保存 receipt 在 Runtime 现有 SQLite
+数据库的同一提交边界内持久化，按 projectId 保存，正常重启即可恢复。
+同 requestId 的不同内容返回 REQUEST_ID_CONFLICT；未保存的新请求遇到配置修订变化返回
+CONFIG_CONFLICT，工程变化返回 DOCUMENT_CONFLICT 或 PROJECT_CHANGED。
+
+提交断连后查询原请求。SAVED 只表示采集配置已保存，不表示 Web 页面版本已经启用；
+Web 自行记录待启用状态并继续原发布。恢复旧待启用版本前还应查询当前 configRevision，
+避免覆盖已被后续发布替换的配置。Runtime 不启用页面、不停止或重启当前任务。
+
+所有正式 StartJob（无论 capture_presentation 是否为真）读取已保存的外部请求，按工作流
+筛选，并在需要 Qt 页面时合并原 Qt 需求。现有 Qt 绑定与资源校验保留。
+每个任务冻结自己的来源、作用域及 capturePlanRevision，后续发布只影响新任务。
+正式结果继续使用既有 DisplayService、ResultCollector、图片资源和同次结果身份。
+流程修改造成来源失效时配置仍保留并返回诊断；仍存在的作用域可发布明确 UNAVAILABLE
+来源与有效来源的同次结果，已消失的作用域不生成伪结果。Web 不应把旧图片或旧判定当作有效实时数据。

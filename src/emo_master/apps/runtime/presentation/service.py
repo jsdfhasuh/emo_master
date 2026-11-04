@@ -21,6 +21,7 @@ from emo_master.apps.runtime.presentation.collector import unavailable
 from emo_master.apps.runtime.presentation.mailbox import SharedMailbox
 from emo_master.apps.runtime.presentation.diagnostics import closureDiagnostic
 from emo_master.apps.runtime.presentation.operational_log import PresentationLog
+from emo_master.core.presentation.capture_limits import imageCaptureIdentity
 
 
 def _guardMutation(method):
@@ -316,6 +317,21 @@ class PresentationService:
                             or (config["imageLaneBySource"]
                                 and config["imageLaneBySource"].get(descriptor["sourceId"]) != descriptor.get("lane", 0))):
                         raise ValueError("image descriptor does not belong to this Job/source lane")
+                    if 'targets' in descriptor:
+                        plan = json.loads(config['plan'])
+                        signature = imageCaptureIdentity(plan['sources'][descriptor['sourceId']], plan['scopes'])
+                        if not 0 < len(descriptor['targets']) <= len(plan['sources']):
+                            raise ValueError('image target budget exceeded')
+                        for target in descriptor['targets']:
+                            source = plan['sources'][target['sourceId']]
+                            item = self.store.open.get(target['key'])
+                            if (imageCaptureIdentity(source, plan['scopes']) != signature
+                                    or (item is not None and (
+                                        item['identity']['jobId'] != jobId
+                                        or item['identity']['invocationId'] != descriptor['invocationId']
+                                        or item['identity']['resultScopeId'] != source['resultScopeId']
+                                        or target['sourceId'] not in item['expected']))):
+                                raise ValueError('image target does not belong to the same captured output/invocation')
                     self._trace(jobId, "export.submitting", key, sourceId=descriptor["sourceId"])
                     self.exporter.submit(descriptor)
                     self._trace(jobId, "export.submitted", key, sourceId=descriptor["sourceId"])
@@ -335,31 +351,51 @@ class PresentationService:
     def _exported(self, task, path, outcome):
         self._trace(task.get("jobId"), "export.callback", task.get("key"), sourceId=task.get("sourceId"), reason=outcome)
         with self.store.lock:
-            pending = self.pending.get(task["key"])
-            if pending is None:
+            if 'targets' not in task and task['key'] not in self.pending:
+                self._trace(task.get('jobId'), 'export.orphan', task['key'], sourceId=task.get('sourceId'))
+                return
+            targets = task.get('targets')
+            if targets is None:
+                targets = [dict(key=task['key'], sourceId=task['sourceId'])]
+            byResult = {}
+            for target in targets:
+                if target['key'] in self.pending:
+                    byResult.setdefault(target['key'], []).append(target['sourceId'])
+            if not byResult:
                 self._trace(task.get("jobId"), "export.orphan", task.get("key"), sourceId=task.get("sourceId"))
                 return  # export owner deletes orphan staging after this callback
-            source = unavailable(task["sourceId"], outcome if outcome != "AVAILABLE" else "EXPORT_FAILED")
-            diagnostic = dict(task.get("exportDiagnostic", {}))
-            if path is not None:
-                try:
-                    diagnostic["adoptionStartedNs"] = time.monotonic_ns()
-                    image = self.assets.adopt(path, task["jobId"], task["key"], task["provenance"])
-                    self._trace(task["jobId"], "export.adopted", task["key"], sourceId=task["sourceId"])
-                    source = {"sourceId": task["sourceId"], "state": "AVAILABLE", "image": image}
-                except (OSError, ValueError) as error:
-                    self._trace(task["jobId"], "export.adopt_failed", task["key"], errorType=type(error).__name__)
-                    from emo_master.apps.runtime.presentation.diagnostics import errorDetail
-                    diagnostic.update(adoptionError=errorDetail(error), stage="asset_adoption")
-                    source = unavailable(task["sourceId"], "EXPORT_FAILED",
-                        f"asset adoption failed: {type(error).__name__}; see Runtime diagnostics")
-                finally:
-                    diagnostic["adoptionEndedNs"] = time.monotonic_ns()
-            elif diagnostic:
-                source["reason"] = f"{outcome} at {diagnostic.get('stage')}; see Runtime diagnostics"
-            pending.setdefault("exportDiagnostics", {})[task["sourceId"]] = diagnostic
-            pending["exports"][task["sourceId"]] = source
-            self._finish(task["key"])
+            captured = None
+            # Adopt all result-owned assets before closing any result, so normal
+            # retention cannot collect the first owner while aliases are copied.
+            for key, sourceIds in byResult.items():
+                pending = self.pending[key]
+                source = unavailable(sourceIds[0], outcome if outcome != 'AVAILABLE' else 'EXPORT_FAILED')
+                diagnostic = dict(task.get('exportDiagnostic', {}))
+                if path is not None:
+                    try:
+                        diagnostic['adoptionStartedNs'] = time.monotonic_ns()
+                        if captured is None:
+                            image = self.assets.adopt(path, task['jobId'], key, task['provenance'])
+                            captured = image
+                        else:
+                            image = self.assets.duplicate(captured, task['jobId'], key)
+                        self._trace(task['jobId'], 'export.adopted', key, sourceId=sourceIds[0])
+                        source = dict(sourceId=sourceIds[0], state='AVAILABLE', image=image)
+                    except (OSError, ValueError) as error:
+                        self._trace(task['jobId'], 'export.adopt_failed', key, errorType=type(error).__name__)
+                        from emo_master.apps.runtime.presentation.diagnostics import errorDetail
+                        diagnostic.update(adoptionError=errorDetail(error), stage='asset_adoption')
+                        source = unavailable(sourceIds[0], 'EXPORT_FAILED',
+                            f'asset adoption failed: {type(error).__name__}; see Runtime diagnostics')
+                    finally:
+                        diagnostic['adoptionEndedNs'] = time.monotonic_ns()
+                elif diagnostic:
+                    source['reason'] = f"{outcome} at {diagnostic.get('stage')}; see Runtime diagnostics"
+                for sourceId in sourceIds:
+                    pending.setdefault('exportDiagnostics', {})[sourceId] = diagnostic
+                    pending['exports'][sourceId] = dict(source, sourceId=sourceId)
+            for key in byResult:
+                self._finish(key)
 
     def _finish(self, key):
         # Readers, exporter callbacks, fences and the monitor share ownership.

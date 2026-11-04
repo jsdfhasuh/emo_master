@@ -1,0 +1,15 @@
+
+> emo-master-web-panel-ui@0.1.0 build
+> tsc --noEmit && vite build
+
+vite v7.1.12 building for production...
+transforming...
+✓ 46 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                    0.37 kB │ gzip:  0.30 kB
+dist/assets/index-BPJhQw1Z.css     3.69 kB │ gzip:  1.44 kB
+dist/assets/Editor-Dou073XM.css    9.57 kB │ gzip:  2.61 kB
+dist/assets/Editor-_CgkWemz.js    48.34 kB │ gzip: 16.05 kB
+dist/assets/index-JG54CjH9.js    275.71 kB │ gzip: 88.58 kB
+✓ built in 733ms

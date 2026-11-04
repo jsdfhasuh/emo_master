@@ -13,21 +13,33 @@ def normalCaptureProfile():
 
 
 def normalCaptureLimits(presentation):
-    limits = normalCaptureProfile()
     capture = captureDefinition(presentation)
     used = {sourceId for page in presentation.pages.values()
             for component in walkComponents(page.components)
             for sourceId in component.bindings.values()}
-    if len(capture["scopes"]) > limits["maxScopes"]:
+    sources = {key: presentation.dataSources[key].model_dump() for key in used}
+    return outputCaptureLimits(sources, capture['scopes'])
+
+
+def imageCaptureIdentity(source, scopes):
+    """One physical output in one invocation, independent of consumer IDs."""
+    address = {key: value for key, value in source.items() if key != 'resultScopeId'}
+    return canonicalJson(dict(source=address, scope=scopes[source['resultScopeId']]))
+
+
+def outputCaptureLimits(sources, scopes):
+    """The same final per-Job budget for Qt and external output requests."""
+    limits = normalCaptureProfile()
+    if len(scopes) > limits["maxScopes"]:
         raise ValueError("normal capture scope budget exceeded (16)")
-    if len(used) > limits["maxSourceIds"]:
+    if len(sources) > limits["maxSourceIds"]:
         raise ValueError("normal capture source budget exceeded (16)")
-    images = {key: canonicalJson(presentation.dataSources[key].model_dump()) for key in sorted(used)
-              if presentation.dataSources[key].expectedType == "image"}
+    images = {key: imageCaptureIdentity(source, scopes) for key, source in sorted(sources.items())
+              if source['expectedType'] == "image"}
     unique = sorted(set(images.values()))
     if len(unique) > limits["maxImageSources"]:
         raise ValueError("normal capture supports at most two distinct image sources")
     capacity = limits["rawBytesPerJob"] // max(1, len(unique))
-    return dict(limits, sourceCount=len(used), scopeCount=len(capture["scopes"]),
+    return dict(limits, sourceCount=len(sources), scopeCount=len(scopes),
                 rawBytesBySource={key: capacity for key in images},
                 imageLaneBySource={key: unique.index(value) for key, value in images.items()})

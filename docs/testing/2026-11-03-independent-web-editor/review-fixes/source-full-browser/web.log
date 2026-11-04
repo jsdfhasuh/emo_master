@@ -1,0 +1,14 @@
+INFO:     Started server process [65280]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:50081 (Press CTRL+C to quit)
+INFO:     127.0.0.1:65515 - "WebSocket /ws/views/1Vw_QItoQ-Z7zB1rq4A-q2Bvb3dcfr3N" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:58899 - "WebSocket /ws/views/RaZGSy8HP3F0Ae_bniqazlo0RNEsfdF1" [accepted]
+INFO:     connection open
+INFO:     Started server process [63264]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:50081 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50558 - "WebSocket /ws/views/gteGUvMWXg0pOsW0-cvfDIbUSsPU7Ymg" [accepted]
+INFO:     connection open

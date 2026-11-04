@@ -1,0 +1,67 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_ EditorConcurrencyTests.test_publish_and_target_address_edit_share_existing_target_coordination _
+
+self = <test_editor_concurrency.EditorConcurrencyTests testMethod=test_publish_and_target_address_edit_share_existing_target_coordination>
+
+    async def test_publish_and_target_address_edit_share_existing_target_coordination(self):
+        from httpx import AsyncClient, ASGITransport
+        from emo_web_panel.app import create_app
+        from emo_web_panel.config import Config
+    
+        class DelayedSubmit(MockRuntime):
+            def __init__(self):
+                super().__init__()
+                self.submitting, self.resume = asyncio.Event(), asyncio.Event()
+    
+            async def submit_output_requests(self, body):
+                self.submitting.set()
+                await self.resume.wait()
+                return await super().submit_output_requests(body)
+    
+        with tempfile.TemporaryDirectory() as directory:
+            runtime = DelayedSubmit()
+            app = create_app(Config(Path(directory), mode='grpc', runtime_address='127.0.0.1:50051'), runtime)
+            app.state.auth.create_user('admin', 'safe-test-password', 'admin')
+            async with app.router.lifespan_context(app), AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as client:
+                login = await client.post('/api/session', json={'username': 'admin', 'password': 'safe-test-password'})
+                headers = {'X-CSRF-Token': login.json()['csrf']}
+                context = (await client.get('/api/editor/configured/context')).json()
+                source = context['draft']['presentation']
+                count = next(item for item in context['catalog']['choices'] if item['source']['port'] == 'count')
+                source['dataSources'][count['sourceId']] = count['source']
+                source['resultScopes'][count['scopeId']] = count['scope']
+                source['pages'][source['defaultPageId']]['components'] = [
+                    {'componentId': 'count', 'type': 'number', 'bindings': {'value': count['sourceId']}}]
+                project = context['runtime']['projectId']
+                saved = await client.put('/api/editor/configured/draft', headers=headers,
+                    json={'projectId': project, 'presentation': source})
+                self.assertEqual(saved.status_code, 200, saved.text)
+                publishing = asyncio.create_task(client.post('/api/editor/configured/publish', headers=headers,
+                    json={'projectId': project, 'expectedDraftRevision': saved.json()['draftRevision'], 'requestId': 'address-race-1'}))
+                await asyncio.wait_for(runtime.submitting.wait(), 5)
+                changing = asyncio.create_task(client.patch('/api/admin/runtimes/configured', headers=headers,
+                    json={'address': '127.0.0.1:50052'}))
+                await asyncio.wait([changing], timeout=.3)
+                changed_during_publish = changing.done()
+                observed = app.state.registry.get({'username': 'admin', 'role': 'admin'}, 'configured')['address']
+                runtime.resume.set()
+                published, changed = await asyncio.gather(publishing, changing)
+                evidence = {'changedDuringPublish': changed_during_publish, 'addressDuringPublish': observed,
+                            'publish': published.json(), 'changed': changed.json()}
+                destination = Path(os.environ.get('EMO_WEB_REVIEW_EVIDENCE_DIR', str(Path(__file__).resolve().parents[2] /
+                    'docs/testing/2026-11-03-independent-web-editor/review-fixes')))
+                destination.mkdir(parents=True, exist_ok=True)
+                (destination / 'publish-target-address.json').write_text(json.dumps(evidence, ensure_ascii=False, indent=2), encoding='utf-8')
+                self.assertEqual(published.status_code, 200, published.text)
+                self.assertEqual(published.json()['state'], 'PUBLISHED')
+                self.assertEqual(changed.status_code, 200, changed.text)
+>               self.assertFalse(changed_during_publish, evidence)
+E               AssertionError: True is not false : {'changedDuringPublish': True, 'addressDuringPublish': '127.0.0.1:50052', 'publish': {'runtimeId': 'configured', 'projectId': 'demo-project', 'versionId': 'web-fb4954a51ae79295bdf9b39e', 'requestId': 'address-race-1', 'state': 'PUBLISHED', 'message': 'ҳ���ѷ�������ǰ���񱣳�ԭ�ɼ����ã�����Դ�´���ȷ������Ч', 'createdAt': 1793719299.284927, 'source': {'dataSources': {'count': {'callPath': [], 'expectedType': 'integer', 'fieldPath': [], 'kind': 'node_output', 'nodeId': 'demo-inference', 'port': 'count', 'resultScopeId': 'scope-1', 'ruleVersion': '1.0', 'workflowId': 'demo-workflow'}}, 'defaultPageId': 'page-db57f13639731736', 'navigation': {'mode': 'tabs'}, 'pageOrder': ['page-db57f13639731736'], 'pages': {'page-db57f13639731736': {'components': [{'actions': {}, 'bindings': {'value': 'count'}, 'children': [], 'componentId': 'count', 'grid': {'alignment': 'stretch', 'direction': 'wrap', 'equalWidth': False, 'justify': 'start', 'spacing': 12, 'type': 'responsive'}, 'layout': {'column': 0, 'columnSpan': 1, 'row': 0, 'rowSpan': 1}, 'props': {'cardStyle': 'plain', 'columns': [], 'decimals': 2, 'emptyText': '��', 'fontFamily': 'system', 'fontSize': 0, 'fontWeight': 'normal', 'indicatorStates': {}, 'pageSize': 20, 'text': '', 'textColor': 'default', 'title': '', 'unit': ''}, 'responsive': {'alignSelf': 'auto', 'minHeight': 64, 'minWidth': 160, 'preferredHeight': 0, 'preferredWidth': 240, 'weight': 1.0, 'width': 'fill'}, 'type': 'number', 'version': '1.0'}], 'layout': {'alignment': 'stretch', 'direction': 'vertical', 'equalWidth': False, 'justify': 'start', 'spacing': 12, 'type': 'responsive'}, 'name': '���ҳ', 'resultScopeIds': [], 'targets': ['web']}}, 'resultScopes': {'scope-1': {'callPath': [], 'commitPolicy': 'workflow_terminal', 'entryWorkflowId': 'demo-workflow', 'scopeWorkflowId': 'demo-workflow'}}, 'schemaVersion': '1.2'}, 'sourceRevision': 'fb2a4e342786214f8f9fa739b863250dfa0885e5cd3126875d971c2b04f256aa', 'config': {'schemaVersion': '1.0', 'sources': {'count': {'kind': 'node_output', 'resultScopeId': 'scope-1', 'workflowId': 'demo-workflow', 'callPath': [], 'nodeId': 'demo-inference', 'port': 'count', 'fieldPath': [], 'expectedType': 'integer', 'name': None, 'ruleVersion': '1.0'}}, 'scopes': {'scope-1': {'entryWorkflowId': 'demo-workflow', 'scopeWorkflowId': 'demo-workflow', 'callPath': [], 'commitPolicy': 'workflow_terminal'}}}, 'packageId': 'd563146f1201e901ad129a566e3d0f7fdf45cf317bd281798a522b7278b6a3d3', 'packageRevision': 'd680c0e3bdd8e7cda56d6b667e8b65d458250f7a81f3a7a53acd3479730253c9', 'runtimeInstanceId': 'mock-instance', 'diagnostics': [], 'submitBody': {'runtimeInstanceId': 'mock-instance', 'projectId': 'demo-project', 'expectedDocumentRevision': '1', 'expectedConfigRevision': '61a84f0e17bfb773a824ba6512ff382a1d7108cbca99dccf7476ab516ff29119', 'requestId': 'address-race-1', 'config': {'schemaVersion': '1.0', 'sources': {'count': {'kind': 'node_output', 'resultScopeId': 'scope-1', 'workflowId': 'demo-workflow', 'callPath': [], 'nodeId': 'demo-inference', 'port': 'count', 'fieldPath': [], 'expectedType': 'integer', 'name': None, 'ruleVersion': '1.0'}}, 'scopes': {'scope-1': {'entryWorkflowId': 'demo-workflow', 'scopeWorkflowId': 'demo-workflow', 'callPath': [], 'commitPolicy': 'workflow_terminal'}}}}, 'configRevision': 'eca9b1069c55c4ea1484c2e3530251f74c76c730649d9d73c589bfcf3bee0e09'}, 'changed': {'id': 'configured', 'alias': 'Configured Runtime', 'mode': 'grpc', 'address': '127.0.0.1:50052', 'permissions': ['view', 'control']}}
+
+web_panel\tests\test_editor_concurrency.py:82: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  asyncio:base_events.py:1904 Executing <Task pending name='Task-1' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:101> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.531 seconds
+=========================== short test summary info ===========================
+FAILED web_panel/tests/test_editor_concurrency.py::EditorConcurrencyTests::test_publish_and_target_address_edit_share_existing_target_coordination
+1 failed, 1 deselected in 2.16s

@@ -2,13 +2,16 @@
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 
 from emo_panel_protocol.canonical import revisionOf, canonicalJson
-from emo_web_panel.packages import PackageError, PackageStore
+from emo_web_panel.packages import PackageError, PackageStore, _io_path
 
 CONTRACT = Path(__file__).resolve().parents[1] / 'contracts' / 'panel-contract-v1'
 
@@ -50,6 +53,68 @@ class OfficialPackageTests(unittest.TestCase):
         self.assertEqual(self.store.asset(item['packageId'], 'demo')[1], 'image/png')
         self.store.activate(item['packageId'], runtime_id='configured')
         self.assertEqual(self.store.active('configured'), item)
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows MAX_PATH regression')
+    def test_windows_long_package_asset_uses_extended_io_path(self):
+        # Staging is short enough to create the file; renaming to the immutable
+        # 64-character package ID makes its ordinary asset path exceed MAX_PATH.
+        parent = Path(self.temp.name).resolve()
+        long_root = parent / ('packages-' + 'x' * max(1, 140 - len(str(parent)) - 10))
+        self.assertTrue(long_root.resolve().is_relative_to(parent))
+        self.addCleanup(lambda: shutil.rmtree(_io_path(long_root)) if _io_path(long_root).exists() else None)
+        store = PackageStore(long_root)
+        item = store.install((CONTRACT / 'sample-panels' / 'demo.emoweb').read_bytes())
+        asset = item['manifest']['assets']['demo']
+        ordinary_path = store.root / item['packageId'] / asset['path']
+        self.assertGreater(len(str(ordinary_path)), 260)
+        data, mime = store.asset(item['packageId'], 'demo')
+        self.assertEqual(mime, asset['mimeType'])
+        self.assertEqual(hashlib.sha256(data).hexdigest(), asset['sha256'])
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows deep Web data directory regression')
+    def test_windows_deep_editor_packages_install_and_reopen(self):
+        # Same repository/data directory shape as the real browser failure:
+        # atomic installation and a later open must both handle deep assets.
+        parent = CONTRACT.parents[1] / 'test-results' / 'independent-editor'
+        parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix='package-install-', dir=_io_path(parent)) as temporary:
+            data_root = Path(str(temporary).removeprefix('\\\\?\\')) / 'web'
+            # Keep the MAX_PATH precondition true in short CI/worktree paths too.
+            directory = data_root / ('packages-' + 'x' * max(1, 160 - len(str(data_root)) - 10))
+            store = PackageStore(directory)
+            for title in ('检测页', '检测页布局修改', '详情页发布'):
+                def change(manifest, presentation, files):
+                    presentation['pages']['live']['name'] = title
+                item = store.install(official_bundle(change))
+                ordinary = directory / item['packageId'] / item['manifest']['assets']['demo']['path']
+                self.assertGreater(len(str(ordinary)), 260)
+                data, mime = store.asset(item['packageId'], 'demo')
+                self.assertEqual(mime, 'image/png')
+                self.assertEqual(hashlib.sha256(data).hexdigest(), item['manifest']['assets']['demo']['sha256'])
+                self.assertEqual(store.install(official_bundle(change))['packageId'], item['packageId'])
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows local rename sharing window')
+    def test_windows_local_rename_retries_once_and_preserves_failure_limit(self):
+        original = Path.rename
+        calls = []
+        def transient(path, target):
+            calls.append((path, target))
+            if len(calls) == 1:
+                error = PermissionError('Temporary Windows rename access denial')
+                error.winerror = 5
+                raise error
+            return original(path, target)
+        with patch.object(Path, 'rename', transient), patch('emo_web_panel.packages.time.sleep') as delay:
+            item = self.store.install(official_bundle())
+        self.assertEqual(len(calls), 2)
+        delay.assert_called_once_with(.1)
+        self.assertEqual(self.store.get(item['packageId'])['packageId'], item['packageId'])
+        denied = PermissionError('Still denied')
+        denied.winerror = 5
+        with patch.object(Path, 'rename', side_effect=denied) as rename, patch('emo_web_panel.packages.time.sleep'):
+            with self.assertRaises(PermissionError):
+                self.store.install(official_bundle(lambda m, p, f: p['pages']['live'].update(name='new release')))
+        self.assertEqual(rename.call_count, 2)
 
     def test_delivered_spacer_demo_preserves_both_modes_without_capture_sources(self):
         item = self.store.install((CONTRACT / 'sample-panels' / 'demo.emoweb').read_bytes())

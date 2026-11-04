@@ -1,0 +1,74 @@
+{
+  "issue": 5,
+  "sourceHead": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "sourceDirty": true,
+  "reproduction": "Current-format temporary software project: Qt qt-main and external main scope IDs bind load.image + blob.mask in the same invocation. Independent two-lane freezes pass; merged Runtime ValidateOutputRequests rejected both equivalent routes as four images.",
+  "beforeEvidence": "issue-5-before.log",
+  "fix": [
+    "Image demand identity uses output address/type/rule and full scope definition, replacing consumer resultScopeId in physical budget identity.",
+    "One ResultCollector output observation captures, copies and encodes each equivalent image once; descriptor targets preserve all consumer source/result identities.",
+    "Assembler validates equivalent output and invocation targets, adopts one encoded capture and creates independently owned bounded disk assets for other results before closing any result.",
+    "Existing per-result asset retention, read integrity, finite leases, raw-lane retirement and late orphan handling remain in effect."
+  ],
+  "modifiedModules": [
+    "src/emo_master/core/presentation/capture_limits.py",
+    "src/emo_master/apps/runtime/presentation/collector.py",
+    "src/emo_master/apps/runtime/presentation/service.py",
+    "src/emo_master/apps/runtime/presentation/assets.py"
+  ],
+  "regressionTest": "tests/runtime/presentation/test_equivalent_image_capture.py",
+  "temporaryProject": {
+    "creation": "WorkflowStore via create_demo_project",
+    "schemaVersion": "2.9",
+    "presentationSchemaVersion": "1.2",
+    "devicesSchemaVersion": "1.0",
+    "devices": [],
+    "modelValidation": "PASS",
+    "saveReload": "PASS",
+    "workflowCompile": "PASS"
+  },
+  "actualChecks": [
+    "Runtime Validate/Submit and normal StartJob with explicit Qt capture pass for four image identities in two logical scope results.",
+    "Both results have one invocation, separate scope/result keys, correct expected source IDs, correct image ownerResultKey and equal expected pixels/digests.",
+    "Public gRPC Snapshot and ReadAsset return both scopes and all four source identities with correct result ownership.",
+    "Exactly two image exports, two raw lanes, unchanged 8 MiB raw slab; genuinely different overlay third image remains rejected.",
+    "Different callPath and fieldPath remain distinct physical demands.",
+    "Public AcquireLease retains Web assets: after Job release Qt ReadAsset is NOT_FOUND and Web ReadAsset succeeds; public ReleaseLease leaves zero assets."
+  ],
+  "directRecheck": {
+    "passed": 4,
+    "seconds": 5.48,
+    "evidence": "issue-5-public-rpc-recheck.log"
+  },
+  "finalRegression": {
+    "passed": 188,
+    "failed": 0,
+    "seconds": 159.36,
+    "evidence": "issue-5-runtime-sdk-qt-regression-final-2.log",
+    "coverage": "External request lifecycle; Qt normal capture validation/resources; multi-image/scope; raw lane lifetime; failure retirement; exporter diagnostics; ReleaseHost; SDK contracts; proto generation"
+  },
+  "staticChecks": {
+    "ruffSelectF": "PASS",
+    "gitDiffCheck": "PASS"
+  },
+  "preservedIntermediateEvidence": [
+    {
+      "file": "issue-5-runtime-sdk-qt-regression.log",
+      "outcome": "No tests ran: initial command used wrong ReleaseHost/proto paths; corrected subsequent command."
+    },
+    {
+      "file": "issue-5-runtime-sdk-qt-regression-final.log",
+      "outcome": "186 passed, 1 failed: new fanout eagerly read sourceId on a deliberately late orphan callback; source fixed without changing the existing correct assertion."
+    }
+  ],
+  "acceptanceLevel": "Source Runtime integration and actual local gRPC; Qt capture regression without native GUI.",
+  "notExecuted": [
+    "Native Qt GUI for this change",
+    "Browser UI for this Runtime-only change",
+    "Frozen EXE",
+    "Another computer/LAN",
+    "Real camera or PLC",
+    "Deployment"
+  ],
+  "packaging": "Parent owns final rebuild and artifact hashes; child did not package."
+}

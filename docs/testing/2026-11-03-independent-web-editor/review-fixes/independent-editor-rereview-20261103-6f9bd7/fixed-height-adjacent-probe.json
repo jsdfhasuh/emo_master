@@ -1,0 +1,47 @@
+{
+  "evidenceLevel": "Current independently-built React + real headless Edge + mocked HTTP; geometry of fixed preview only",
+  "cases": [
+    {
+      "windowHeight": 900,
+      "terminal": {
+        "top": 239,
+        "bottom": 1007,
+        "width": 1024,
+        "height": 768
+      },
+      "content": {
+        "top": 239,
+        "bottom": 884,
+        "width": 1024,
+        "height": 645
+      },
+      "bottomWidget": {
+        "top": 776,
+        "bottom": 884,
+        "width": 1024,
+        "height": 108
+      }
+    },
+    {
+      "windowHeight": 1200,
+      "terminal": {
+        "top": 239,
+        "bottom": 1184,
+        "width": 1024,
+        "height": 945
+      },
+      "content": {
+        "top": 239,
+        "bottom": 1184,
+        "width": 1024,
+        "height": 945
+      },
+      "bottomWidget": {
+        "top": 1076,
+        "bottom": 1184,
+        "width": 1024,
+        "height": 108
+      }
+    }
+  ]
+}

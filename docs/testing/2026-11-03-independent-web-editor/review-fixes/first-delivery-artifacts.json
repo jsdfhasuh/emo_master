@@ -1,0 +1,20 @@
+{
+  "web": {
+    "path": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\dist\\emo_master_web_panel-0.1.0a1-py3-none-any.whl",
+    "byteSize": 187831,
+    "sha256": "43395789e4898722230a4412a513905a994c7136b9d2a3532dc80def6a922daf"
+  },
+  "sdk": {
+    "path": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\contracts\\panel-contract-v1\\python\\emo_panel_protocol-1.5.0-py3-none-any.whl",
+    "byteSize": 40265,
+    "sha256": "97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d"
+  },
+  "frontendFiles": [
+    "emo_web_panel/static/index.html",
+    "emo_web_panel/static/assets/Editor-CVyf-NX7.css",
+    "emo_web_panel/static/assets/Editor-DkdIU4ym.js",
+    "emo_web_panel/static/assets/index-BPJhQw1Z.css",
+    "emo_web_panel/static/assets/index-DUCwRV5U.js"
+  ],
+  "distributionKind": "Python wheels with built frontend; not a frozen interpreter or deployed service"
+}

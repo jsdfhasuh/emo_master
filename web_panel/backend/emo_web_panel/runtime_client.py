@@ -57,7 +57,7 @@ class GrpcRuntimeClient:
             from emo_panel_protocol.connection import ConnectionProfile, createChannel
             from emo_panel_protocol.generated import runtime_pb2, runtime_pb2_grpc
         except ImportError as exc:
-            raise ContractUnavailable('Install the supplied emo_panel_protocol 1.4.0 SDK and its declared dependencies') from exc
+            raise ContractUnavailable('Install the supplied emo_panel_protocol 1.5.0 SDK and its declared dependencies') from exc
         self.pb = runtime_pb2
         profile = ConnectionProfile(self.address, self.timeout, self.max_receive_bytes)
         if self.preview_context is not None:
@@ -104,7 +104,44 @@ class GrpcRuntimeClient:
                 'historyDefinitionRevision': info.history_definition_revision,
                 'productionMode': info.production_mode, 'productionExecutionMode': info.production_execution_mode,
                 'startupWorkflowIds': list(info.startup_workflow_ids), 'capabilities': list(info.capabilities),
-                'contractStatus': 'panel-contract-1.0-sdk-1.4.0'}
+                'contractStatus': 'panel-contract-1.0-sdk-1.5.0'}
+
+    async def _output_request(self, method, body=None):
+        body = body or {}
+        info = await self._info()
+        if not hasattr(self.pb, 'OutputRequestsRequest') or not hasattr(self.runtime, method):
+            raise ContractUnavailable('Runtime/SDK does not support independent output requests')
+        request = self.pb.OutputRequestsRequest(
+            runtime_instance_id=body.get('runtimeInstanceId', info.runtime_instance_id),
+            project_id=body.get('projectId', info.project_id),
+            expected_document_revision=int(body.get('expectedDocumentRevision', info.document_revision)),
+            expected_config_revision=body.get('expectedConfigRevision', ''),
+            request_id=body.get('requestId', ''),
+            config_json=json.dumps(body['config'], ensure_ascii=False, allow_nan=False) if 'config' in body else '')
+        reply = await getattr(self.runtime, method)(request, timeout=self.timeout)
+        state = json.loads(reply.state_json or '{}')
+        return {**state, 'ok': reply.ok, 'code': reply.code, 'message': reply.message}
+
+    async def output_catalog(self):
+        reply = await self._output_request('GetOutputCatalog')
+        if not reply['ok']:
+            raise RuntimeRejected(reply['code'], reply['message'])
+        return reply
+
+    async def output_requests(self):
+        reply = await self._output_request('GetOutputRequests')
+        if not reply['ok']:
+            raise RuntimeRejected(reply['code'], reply['message'])
+        return reply
+
+    async def validate_output_requests(self, body):
+        return await self._output_request('ValidateOutputRequests', body)
+
+    async def submit_output_requests(self, body):
+        return await self._output_request('SubmitOutputRequests', body)
+
+    async def output_request_status(self, request_id, body=None):
+        return await self._output_request('GetOutputRequestStatus', {**(body or {}), 'requestId': request_id})
 
     @staticmethod
     def _run(run):
@@ -289,6 +326,25 @@ class GrpcRuntimeClient:
             job_id=run_id), timeout=self.timeout)
         return self._decode_snapshot(snapshot, info, run, coverage)
 
+    async def job_metadata(self, run_id):
+        """Read the selected Job's frozen revisions; never use current info."""
+        info, run, coverage = await self._job(run_id)
+        metadata = {'jobId': run.job_id, 'runtimeInstanceId': info.runtime_instance_id,
+                    'projectId': run.project_id, 'executionRevision': coverage.executionRevision,
+                    'capturePlanRevision': coverage.capturePlanRevision,
+                    'captureEnabled': coverage.enabled}
+        if run.start_request_id:
+            receipt = await self.runtime.GetStartRequest(self.pb.StartRequestLookup(
+                runtime_instance_id=info.runtime_instance_id, start_request_id=run.start_request_id), timeout=self.timeout)
+            if (receipt.runtime_instance_id, receipt.job_id, receipt.start_request_id) != (
+                    info.runtime_instance_id, run.job_id, run.start_request_id):
+                raise RuntimeRejected('IDENTITY_MISMATCH', 'Selected Job start metadata does not match its identity')
+            # Existing request receipt reads JobRecord.projectRevision. A local
+            # legacy Job without a request ID has no project revision in this
+            # contract: leave it absent, never substitute current revision.
+            metadata['projectRevision'] = str(receipt.project_revision)
+        return metadata
+
     async def subscribe(self, run_id):
         """One caller per shared Views stream; reconnect must re-check identity."""
         info, run, coverage = await self._job(run_id)
@@ -391,7 +447,8 @@ class GrpcRuntimeClient:
                 raise ValueError('Workflow inputs must be a JSON object')
             request = self.pb.StartJobRequest(project_id=info.project_id, workflow_id=body['workflowId'],
                 inputs_json=json.dumps(inputs, allow_nan=False, ensure_ascii=True, separators=(',', ':')),
-                capture_presentation=True, start_request_id=request_id, expected_runtime_instance_id=info.runtime_instance_id,
+                # Web owns external output requests; this flag opts into Qt pages.
+                capture_presentation=False, start_request_id=request_id, expected_runtime_instance_id=info.runtime_instance_id,
                 expected_document_revision=int(revision))
             try:
                 reply = await self.runtime.StartJob(request, timeout=self.timeout)

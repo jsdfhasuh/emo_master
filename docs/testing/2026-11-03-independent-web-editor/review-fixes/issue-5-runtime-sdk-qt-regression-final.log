@@ -1,0 +1,39 @@
+.................................................................F...... [ 38%]
+........................................................................ [ 77%]
+...........................................                              [100%]
+================================== FAILURES ===================================
+______________ testSealDeadlineAndLateExportCannotReplaceFailure ______________
+
+channel = <emo_master.apps.runtime.presentation.service.PresentationService object at 0x000001EED21F2740>
+
+    def testSealDeadlineAndLateExportCannotReplaceFailure(channel):
+        key = item(1)["identity"]["resultKey"]
+        import threading
+        channel.jobs["job"] = {"credits": threading.BoundedSemaphore(1), "scopeIds": [], "slots": []}
+        channel.jobs["job"]["credits"].acquire()
+        try:
+            channel.consume("job", {"eventType": "display.open", "item": item(1)})
+            started = time.monotonic()
+            channel.consume("job", {"eventType": "display.seal", "key": key, "terminal": "COMPLETED",
+                                    "sealedAt": started, "sources": [{"sourceId": "n", "pendingImage": True}]})
+            result = waitFor(lambda: channel.store.snapshot("job")["results"], timeout=1)[0]
+            assert .49 <= time.monotonic() - started < .8
+            assert result.status == "INCOMPLETE" and result.sources[0].reasonCode == "EXPORT_TIMEOUT"
+>           channel._exported({"key": key}, None, "EXPORT_FAILED")
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\presentation\test_images.py:198: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.presentation.service.PresentationService object at 0x000001EED21F2740>
+task = {'key': 'job-scope-1'}, path = None, outcome = 'EXPORT_FAILED'
+
+    def _exported(self, task, path, outcome):
+        self._trace(task.get("jobId"), "export.callback", task.get("key"), sourceId=task.get("sourceId"), reason=outcome)
+        with self.store.lock:
+>           targets = task.get('targets', [dict(key=task['key'], sourceId=task['sourceId'])])
+E           KeyError: 'sourceId'
+
+src\emo_master\apps\runtime\presentation\service.py:354: KeyError
+=========================== short test summary info ===========================
+FAILED tests/runtime/presentation/test_images.py::testSealDeadlineAndLateExportCannotReplaceFailure
+1 failed, 186 passed in 167.75s (0:02:47)

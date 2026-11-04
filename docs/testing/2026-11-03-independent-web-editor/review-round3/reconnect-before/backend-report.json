@@ -1,0 +1,29 @@
+{
+  "status": "CONFIRMED",
+  "layer": "current FastAPI/EditorStore + synthetic MockRuntime; no physical device",
+  "oldPackageId": "95a035ac8d5683c9e162ebc6db2faa24d9d83b135b77cd0f6270cbdc3f2e8db5",
+  "newPackageId": "4386e3ee3c941a2f47ad7bb3bbe7e46e3a0430d0a58b3cf42f4b05a6877172f9",
+  "oldPanelReadStatus": 404,
+  "oldPanelReadDetail": {
+    "detail": "Panel not active for this Runtime and project"
+  },
+  "newOldPackageViewStatus": 404,
+  "oldVersionPackageDownloadStatus": 200,
+  "oldVersionPackageBytes": 1578,
+  "retainedViewPanelId": "95a035ac8d5683c9e162ebc6db2faa24d9d83b135b77cd0f6270cbdc3f2e8db5",
+  "retainedViewPackageRevision": "bd3f64ca09aa44b068c64f9c2108ece64513f1f9ff46002e98f0e8afdf3a69f5",
+  "currentJob": "demo-run",
+  "controlCount": 1,
+  "frozenCaptureUnchanged": true,
+  "frozenSources": [
+    "count",
+    "image",
+    "verdict"
+  ],
+  "nextJobSources": [
+    "count",
+    "image",
+    "measurements",
+    "verdict"
+  ]
+}

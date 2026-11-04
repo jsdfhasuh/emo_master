@@ -1,0 +1,10 @@
+{
+  "otherGrantAndStopCompletedBeforeRelease": true,
+  "sameTargetGrantStillWaiting": true,
+  "publicationState": "PUBLISHED",
+  "managementStatuses": [
+    200,
+    200,
+    200
+  ]
+}

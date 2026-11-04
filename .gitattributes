@@ -1,7 +1,7 @@
 src/emo_master/plugins/builtins/*/assets/*.svg text eol=lf
 # The read-only WPR preflight checks the original profile's exact Git bytes.
 scripts/windows_commit_trace.wprp text eol=lf
-# SDK 1.4.0 preserves the delivered proto bytes; its wheel uses LF Python files.
+# The delivered SDK preserves CRLF proto bytes; its wheel uses LF Python files.
 # Keep exact-byte contract checks independent of checkout OS and core.autocrlf.
 proto/runtime.proto text eol=crlf
 src/emo_panel_protocol/generated/*.py text eol=lf
@@ -33,3 +33,7 @@ docs/evidence/2026-10-23-workspace-delivery/** -text -whitespace
 docs/testing/patchcore-2026-10-23/** -text -whitespace
 docs/testing/patchcore-highlight-2026-10-23/** -text -whitespace
 docs/evidence/2026-10-25-workspace-delivery/** -text -whitespace
+# Preserve the reviewed Web editor evidence and SDK manifest hashes.
+docs/testing/2026-11-03-independent-web-editor/** -text -whitespace
+docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/** -text -whitespace
+web_panel/contracts/panel-contract-v1/** -text

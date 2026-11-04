@@ -1,0 +1,30 @@
+{
+  "head": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "branch": "codex/logging-consolidation-20261103",
+  "sourceDirty": true,
+  "owner": "runtime_capture",
+  "frozenFiles": {
+    "src/emo_master/apps/runtime/presentation/output_requests.py": {
+      "sha256": "9888a7b234aecf46e4e9e037dce427f85ee6fb1edc5fb5483206a3e7b4763d31",
+      "byteSize": 14888
+    },
+    "web_panel/backend/emo_web_panel/editor.py": {
+      "sha256": "5d78204649594ba66521be01033c22946791aaca15bae4d6653d97b6462927b7",
+      "byteSize": 25910
+    },
+    "tests/runtime/presentation/test_equivalent_image_capture.py": {
+      "sha256": "84d48f8dfa374dfd9d27480c6d732919b2fcc87146ad7196cd76674b53c5c923",
+      "byteSize": 12707
+    },
+    "web_panel/tests/test_editor.py": {
+      "sha256": "7d1f77df2f9e9cd1ce3620e2c332ae11caa1d18c1c10cfa06cada81d3f9dfb4a",
+      "byteSize": 16466
+    },
+    "web_panel/tests/test_output_request_diagnostics.py": {
+      "sha256": "0a8d0af1fc1ffdeb2017da4ea73aef6c775cc1b19a1d358228ad79b8e3043f44",
+      "byteSize": 2830
+    }
+  },
+  "runtimeImpact": "Rebuild Runtime and Web wheels; SDK/proto unchanged and SDK wheel reusable.",
+  "boundary": "Source bytes only; test results in separate logs."
+}

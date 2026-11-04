@@ -1,0 +1,29 @@
+Qt standalone two lanes: PASS; Web standalone two lanes: PASS; merged Runtime validation: INVALID_ARGUMENT normal capture supports at most two distinct image sources
+F
+================================== FAILURES ===================================
+__ testQtAndWebEquivalentImagesCaptureOnceAndKeepIndependentResultOwnership ___
+
+channel = <emo_master.apps.runtime.presentation.service.PresentationService object at 0x0000026214281840>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4222/testQtAndWebEquivalentImagesCa0')
+
+    def testQtAndWebEquivalentImagesCaptureOnceAndKeepIndependentResultOwnership(channel, tmp_path):
+        runtime = channel.runtime
+        registry = runtime.pluginScanResult.activeOperators
+        path, document = imageProject(tmp_path / 'project', registry)
+        assert runtime.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None).ok
+        config = imageRequests(document, registry)
+        qt = freezeNormalCapture(document, registry, path.parent, 'main')
+        web = freezeMergedCapture(document, registry, path.parent, 'main', OutputRequestConfig.model_validate(config))
+        assert len(set(json.loads(qt.limitsJson)['imageLaneBySource'].values())) == 2
+        assert len(set(json.loads(web.limitsJson)['imageLaneBySource'].values())) == 2
+        validation = runtime.ValidateOutputRequests(request(runtime, config), None)
+        print('Qt standalone two lanes: PASS; Web standalone two lanes: PASS; merged Runtime validation:', validation.code, validation.message)
+>       assert validation.ok, validation.message
+E       AssertionError: normal capture supports at most two distinct image sources
+E       assert False
+E        +  where False = code: "INVALID_ARGUMENT"\nmessage: "normal capture supports at most two distinct image sources"\nstate_json: "{\"capabil...\\u8f91\\u5668 \\u00b7 \\u672c\\u673a\\u6a21\\u62df\",\"runtimeInstanceId\":\"d1d78410-086e-4f07-b871-6b161928747c\"}"\n.ok
+
+tests\runtime\presentation\test_equivalent_image_capture.py:68: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/runtime/presentation/test_equivalent_image_capture.py::testQtAndWebEquivalentImagesCaptureOnceAndKeepIndependentResultOwnership
+1 failed in 1.64s

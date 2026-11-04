@@ -1,0 +1,3 @@
+source: C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\backend\emo_web_panel\app.py
+{'emo_master': True, 'PySide2': True, 'cv2': True, 'onnxruntime': True}
+PASS lightweight backend source imports

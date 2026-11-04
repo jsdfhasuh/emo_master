@@ -1,0 +1,47 @@
+.........F                                                               [100%]
+================================== FAILURES ===================================
+_ OutputRequestDiagnosticsTests.test_quota_json_preserves_addresses_and_origins_over_grpc _
+
+self = <test_output_request_diagnostics.OutputRequestDiagnosticsTests testMethod=test_quota_json_preserves_addresses_and_origins_over_grpc>
+
+    async def test_quota_json_preserves_addresses_and_origins_over_grpc(self):
+        service = QuotaService()
+        service.diagnostic = {'code': 'CAPTURE_IMAGES_LIMIT', 'message': 'Qt 与外部共用两路图片额度',
+            'workflowId': 'main', 'workflowName': '检测', 'budget': 'images', 'count': 3, 'limit': 2,
+            'sourceIds': ['web-mask', 'qt-mask', 'web-overlay'], 'scopeIds': ['web-main', 'qt-main'],
+            'imageGroups': [{'sourceIds': ['web-mask', 'qt-mask']}, {'sourceIds': ['web-overlay']}],
+            'sources': [{'sourceId': 'qt-mask', 'origins': ['qt'], 'workflowId': 'main', 'nodeId': 'blob', 'port': 'mask'}]}
+        server = grpc.aio.server()
+        rpc.add_RuntimeServiceServicer_to_server(service, server)
+        port = server.add_insecure_port('127.0.0.1:0')
+        await server.start()
+        client = GrpcRuntimeClient(f'127.0.0.1:{port}')
+        try:
+            await client.start()
+>           result = await client.validate_output_requests({'expectedConfigRevision': 'saved',
+                'config': {'schemaVersion': '1.0', 'sources': {}, 'scopes': {}}})
+
+web_panel\tests\test_output_request_diagnostics.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+web_panel\backend\emo_web_panel\runtime_client.py:138: in validate_output_requests
+    return await self._output_request('ValidateOutputRequests', body)
+web_panel\backend\emo_web_panel\runtime_client.py:111: in _output_request
+    info = await self._info()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_web_panel.runtime_client.GrpcRuntimeClient object at 0x0000022A28207100>
+
+    async def _info(self):
+        reply = self._ok(await self.runtime.GetRuntimeInfo(self.pb.RuntimeInfoRequest(), timeout=self.timeout))
+        if self.preview_context is not None:
+            self.preview_context.validateRuntimeInfo(reply)
+        if not reply.runtime_instance_id:
+            raise RuntimeRejected('IDENTITY_MISSING', 'Runtime instance is required')
+        if reply.protocol_version != '1.0' or 'runtime_info_v1' not in reply.capabilities:
+>           raise RuntimeRejected('CAPABILITY_UNAVAILABLE', 'Runtime does not expose Panel Contract v1 runtime info')
+E           emo_web_panel.runtime_client.RuntimeRejected: CAPABILITY_UNAVAILABLE: Runtime does not expose Panel Contract v1 runtime info
+
+web_panel\backend\emo_web_panel\runtime_client.py:92: RuntimeRejected
+=========================== short test summary info ===========================
+FAILED web_panel/tests/test_output_request_diagnostics.py::OutputRequestDiagnosticsTests::test_quota_json_preserves_addresses_and_origins_over_grpc
+1 failed, 9 passed in 5.01s

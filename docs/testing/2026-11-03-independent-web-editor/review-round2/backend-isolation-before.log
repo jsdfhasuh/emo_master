@@ -1,0 +1,58 @@
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+_ EditorTargetIsolationTests.test_other_runtime_publication_completes_while_publication_waits _
+
+self = <test_editor_target_isolation.EditorTargetIsolationTests testMethod=test_other_runtime_publication_completes_while_publication_waits>
+
+    async def test_other_runtime_publication_completes_while_publication_waits(self):
+        async with self.application() as (app, client, runtime):
+            body_a, body_b = await self.draft(client, 'configured'), await self.draft(client, 'other')
+            first = self.spawn(self.publish(client, 'configured', body_a, 'paused-first-publication'))
+            await asyncio.wait_for(runtime.entered.wait(), 5)
+            second = self.spawn(self.publish(client, 'other', body_b, 'independent-second-publication'))
+            await asyncio.wait([second], timeout=1)
+            completed, pending = second.done(), not first.done()
+            runtime.resume.set()
+            a, b = await asyncio.gather(first, second)
+            record = {'secondCompletedWhileFirstPending': completed, 'firstStillPending': pending,
+                      'firstState': a.json()['state'], 'secondState': b.json()['state']}
+            self.evidence('cross-target-publish', record)
+>           self.assertTrue(completed, record)
+E           AssertionError: False is not true : {'secondCompletedWhileFirstPending': False, 'firstStillPending': True, 'firstState': 'PUBLISHED', 'secondState': 'PUBLISHED'}
+
+web_panel\tests\test_editor_target_isolation.py:140: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  asyncio:base_events.py:1904 Executing <Task pending name='Task-1' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:101> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.203 seconds
+_ EditorTargetIsolationTests.test_other_runtime_start_completes_while_publication_waits _
+
+self = <test_editor_target_isolation.EditorTargetIsolationTests testMethod=test_other_runtime_start_completes_while_publication_waits>
+
+    async def test_other_runtime_start_completes_while_publication_waits(self):
+>       await self.cross_target_control('start')
+
+web_panel\tests\test_editor_target_isolation.py:125: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+web_panel\tests\test_editor_target_isolation.py:114: in cross_target_control
+    self.assertTrue(completed, record)
+E   AssertionError: False is not true : {'otherAction': 'start', 'completedWhilePublicationPending': False, 'publicationStillPending': True, 'otherStateWhilePending': 'stopped', 'publishState': 'PUBLISHED', 'controlStatus': 200, 'submissions': 1, 'implicitControlsOnPublishingRuntime': 0}
+------------------------------ Captured log call ------------------------------
+WARNING  asyncio:base_events.py:1904 Executing <Task pending name='Task-35' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:101> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.156 seconds
+_ EditorTargetIsolationTests.test_other_runtime_stop_completes_while_publication_waits _
+
+self = <test_editor_target_isolation.EditorTargetIsolationTests testMethod=test_other_runtime_stop_completes_while_publication_waits>
+
+    async def test_other_runtime_stop_completes_while_publication_waits(self):
+>       await self.cross_target_control('stop')
+
+web_panel\tests\test_editor_target_isolation.py:122: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+web_panel\tests\test_editor_target_isolation.py:114: in cross_target_control
+    self.assertTrue(completed, record)
+E   AssertionError: False is not true : {'otherAction': 'stop', 'completedWhilePublicationPending': False, 'publicationStillPending': True, 'otherStateWhilePending': 'running', 'publishState': 'PUBLISHED', 'controlStatus': 200, 'submissions': 1, 'implicitControlsOnPublishingRuntime': 0}
+------------------------------ Captured log call ------------------------------
+WARNING  asyncio:base_events.py:1904 Executing <Task pending name='Task-67' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:101> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.141 seconds
+=========================== short test summary info ===========================
+FAILED web_panel/tests/test_editor_target_isolation.py::EditorTargetIsolationTests::test_other_runtime_publication_completes_while_publication_waits
+FAILED web_panel/tests/test_editor_target_isolation.py::EditorTargetIsolationTests::test_other_runtime_start_completes_while_publication_waits
+FAILED web_panel/tests/test_editor_target_isolation.py::EditorTargetIsolationTests::test_other_runtime_stop_completes_while_publication_waits
+3 failed, 2 deselected in 8.23s

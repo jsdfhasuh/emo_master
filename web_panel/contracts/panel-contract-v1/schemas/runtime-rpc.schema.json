@@ -1,6 +1,49 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
+    "RpcOutputRequestsRequest": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "expectedDocumentRevision": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "expectedConfigRevision": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "configJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcOutputRequestsReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "stateJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "RpcPrepareProjectImportRequest": {
       "type": "object",
       "properties": {
@@ -3143,6 +3186,36 @@
     }
   },
   "x-rpcMethods": {
+    "RuntimeService/GetOutputCatalog": {
+      "request": "#/$defs/RpcOutputRequestsRequest",
+      "response": "#/$defs/RpcOutputRequestsReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetOutputRequests": {
+      "request": "#/$defs/RpcOutputRequestsRequest",
+      "response": "#/$defs/RpcOutputRequestsReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ValidateOutputRequests": {
+      "request": "#/$defs/RpcOutputRequestsRequest",
+      "response": "#/$defs/RpcOutputRequestsReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/SubmitOutputRequests": {
+      "request": "#/$defs/RpcOutputRequestsRequest",
+      "response": "#/$defs/RpcOutputRequestsReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/GetOutputRequestStatus": {
+      "request": "#/$defs/RpcOutputRequestsRequest",
+      "response": "#/$defs/RpcOutputRequestsReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
     "RuntimeService/PrepareProjectImport": {
       "request": "#/$defs/RpcPrepareProjectImportRequest",
       "response": "#/$defs/RpcProjectConfigurationReply",

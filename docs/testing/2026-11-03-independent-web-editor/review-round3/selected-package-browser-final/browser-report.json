@@ -1,0 +1,1175 @@
+{
+  "status": "PASS",
+  "cases": [
+    {
+      "role": "viewer",
+      "status": "PASS",
+      "layer": "installed Edge headless / actual current Vite build / synthetic HTTP and WS",
+      "notice": {
+        "footer": "Panel Contract v1 · old · 等待结果 · 不替代现场设备验收",
+        "panelId": "package-old",
+        "jobId": "job-existing",
+        "views": [
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          }
+        ],
+        "userActions": [
+          "explicitly select job-existing"
+        ]
+      },
+      "quietImportSync": null,
+      "automaticRecovery": {
+        "footer": "Panel Contract v1 · old · same-existing-job-result · 不替代现场设备验收",
+        "panelId": "package-old",
+        "jobId": "job-existing",
+        "views": [
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          }
+        ],
+        "userActions": [
+          "explicitly select job-existing"
+        ]
+      },
+      "humanActionDuringAutomaticRecovery": false,
+      "explicitAdoption": {
+        "footer": "Panel Contract v1 · new · same-existing-job-result · 不替代现场设备验收",
+        "panelId": "package-new",
+        "jobId": "job-existing",
+        "views": [
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-new",
+            "runId": "job-existing"
+          }
+        ],
+        "userActions": [
+          "explicitly select job-existing",
+          "explicitly click refresh page package and status"
+        ]
+      },
+      "adoptionAction": "explicitly click refresh page package and status",
+      "identityReplacement": {
+        "footer": "Panel Contract v1 · new · 等待结果 · 不替代现场设备验收",
+        "panelId": "package-new",
+        "jobId": "",
+        "views": [
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-new",
+            "runId": "job-existing"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A-reopened",
+            "runtimeInstanceId": "instance-A-restarted",
+            "panelId": "package-new"
+          }
+        ],
+        "userActions": [
+          "explicitly select job-existing",
+          "explicitly click refresh page package and status"
+        ]
+      },
+      "productionCommands": [],
+      "pageErrors": [],
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/me",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/info",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/logs",
+          "query": {
+            "limit": [
+              "1"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/status",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/info",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/runs",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/workflows",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels/package-old",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/views",
+          "query": {},
+          "body": {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/status",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/runs/job-existing/events",
+          "query": {
+            "after": [
+              "0"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ],
+            "projectId": [
+              "project-A"
+            ]
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/views",
+          "query": {},
+          "body": {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/views/view-1",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/info",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/runs",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/workflows",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels/package-old",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/views",
+          "query": {},
+          "body": {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/views/view-2",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/info",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/runs",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/workflows",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels/package-new",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/views",
+          "query": {},
+          "body": {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-new",
+            "runId": "job-existing"
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/views/view-3",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/logs",
+          "query": {
+            "limit": [
+              "1"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/status",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/runs/job-existing/events",
+          "query": {
+            "after": [
+              "0"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ],
+            "projectId": [
+              "project-A"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/logs",
+          "query": {
+            "limit": [
+              "1"
+            ],
+            "runtimeInstanceId": [
+              "instance-A-restarted"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/info",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/runs",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/workflows",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A-reopened"
+            ],
+            "runtimeInstanceId": [
+              "instance-A-restarted"
+            ]
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/views/view-4",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/status",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels/package-new",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A-reopened"
+            ],
+            "runtimeInstanceId": [
+              "instance-A-restarted"
+            ]
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/views",
+          "query": {},
+          "body": {
+            "runtimeId": "A",
+            "projectId": "project-A-reopened",
+            "runtimeInstanceId": "instance-A-restarted",
+            "panelId": "package-new"
+          }
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "status": "PASS",
+      "layer": "installed Edge headless / actual current Vite build / synthetic HTTP and WS",
+      "notice": {
+        "footer": "Panel Contract v1 · old · 等待结果 · 不替代现场设备验收",
+        "panelId": "package-old",
+        "jobId": "job-existing",
+        "views": [
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          }
+        ],
+        "userActions": [
+          "explicitly select job-existing",
+          "import package (quiet catalog sync; no activation)"
+        ]
+      },
+      "quietImportSync": {
+        "footer": "Panel Contract v1 · old · 等待结果 · 不替代现场设备验收",
+        "panelId": "package-old",
+        "jobId": "job-existing",
+        "views": [
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          }
+        ],
+        "userActions": [
+          "explicitly select job-existing",
+          "import package (quiet catalog sync; no activation)"
+        ]
+      },
+      "automaticRecovery": {
+        "footer": "Panel Contract v1 · old · same-existing-job-result · 不替代现场设备验收",
+        "panelId": "package-old",
+        "jobId": "job-existing",
+        "views": [
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          }
+        ],
+        "userActions": [
+          "explicitly select job-existing",
+          "import package (quiet catalog sync; no activation)"
+        ]
+      },
+      "humanActionDuringAutomaticRecovery": false,
+      "explicitAdoption": {
+        "footer": "Panel Contract v1 · new · same-existing-job-result · 不替代现场设备验收",
+        "panelId": "package-new",
+        "jobId": "job-existing",
+        "views": [
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-new",
+            "runId": "job-existing"
+          }
+        ],
+        "userActions": [
+          "explicitly select job-existing",
+          "import package (quiet catalog sync; no activation)",
+          "explicitly switch package dropdown to package-new"
+        ]
+      },
+      "adoptionAction": "explicitly switch package dropdown to package-new",
+      "identityReplacement": {
+        "footer": "Panel Contract v1 · new · 等待结果 · 不替代现场设备验收",
+        "panelId": "package-new",
+        "jobId": "",
+        "views": [
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-new",
+            "runId": "job-existing"
+          },
+          {
+            "runtimeId": "A",
+            "projectId": "project-A-reopened",
+            "runtimeInstanceId": "instance-A-restarted",
+            "panelId": "package-new"
+          }
+        ],
+        "userActions": [
+          "explicitly select job-existing",
+          "import package (quiet catalog sync; no activation)",
+          "explicitly switch package dropdown to package-new"
+        ]
+      },
+      "productionCommands": [],
+      "pageErrors": [],
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/api/me",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/runtimes",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/users",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/info",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/logs",
+          "query": {
+            "limit": [
+              "1"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/status",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/info",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/runs",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/workflows",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/packages",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels/package-old",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/views",
+          "query": {},
+          "body": {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/status",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/runs/job-existing/events",
+          "query": {
+            "after": [
+              "0"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ],
+            "projectId": [
+              "project-A"
+            ]
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/views",
+          "query": {},
+          "body": {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/views/view-1",
+          "query": {}
+        },
+        {
+          "method": "POST",
+          "path": "/api/packages",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/info",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/runs",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/workflows",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/packages",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels/package-old",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/info",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/runs",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/workflows",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/packages",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels/package-old",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/views",
+          "query": {},
+          "body": {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-old",
+            "runId": "job-existing"
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/views/view-2",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels/package-new",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/views",
+          "query": {},
+          "body": {
+            "runtimeId": "A",
+            "projectId": "project-A",
+            "runtimeInstanceId": "instance-A",
+            "panelId": "package-new",
+            "runId": "job-existing"
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/views/view-3",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/logs",
+          "query": {
+            "limit": [
+              "1"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/status",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/runs/job-existing/events",
+          "query": {
+            "after": [
+              "0"
+            ],
+            "runtimeInstanceId": [
+              "instance-A"
+            ],
+            "projectId": [
+              "project-A"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/logs",
+          "query": {
+            "limit": [
+              "1"
+            ],
+            "runtimeInstanceId": [
+              "instance-A-restarted"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/info",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/runs",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/workflows",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A-reopened"
+            ],
+            "runtimeInstanceId": [
+              "instance-A-restarted"
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/api/packages",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A-reopened"
+            ],
+            "runtimeInstanceId": [
+              "instance-A-restarted"
+            ]
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/views/view-4",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/runtimes/A/status",
+          "query": {}
+        },
+        {
+          "method": "GET",
+          "path": "/api/panels/package-new",
+          "query": {
+            "runtimeId": [
+              "A"
+            ],
+            "projectId": [
+              "project-A-reopened"
+            ],
+            "runtimeInstanceId": [
+              "instance-A-restarted"
+            ]
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/api/views",
+          "query": {},
+          "body": {
+            "runtimeId": "A",
+            "projectId": "project-A-reopened",
+            "runtimeInstanceId": "instance-A-restarted",
+            "panelId": "package-new"
+          }
+        }
+      ]
+    }
+  ],
+  "builtArtifactSha256": {
+    "dist\\assets\\Editor-DNs6ah13.js": "8b023da6b1f271cf8ad220ae2afd94e4f2da6cb2d8202c0be0eafb8801c57927",
+    "dist\\assets\\Editor-Dou073XM.css": "0815b9c139e7a613556f968524f18a003ecff7a4fbfb70d5531f769ccca3740a",
+    "dist\\assets\\index-BL4iqTvR.js": "98dfeaaf3a4353ae75995f4e45c6babe67005938cdfe1ea7c2292d3b51579896",
+    "dist\\assets\\index-BPJhQw1Z.css": "6e99ae16e325407a452bf0abedd5403ea9e330189515d4c06d2247af1db9e8e5",
+    "dist\\index.html": "22da3e02f2c1b0073a022053db3d46b7dcdcd8fdeb72d5888f5f80b00783b16c"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "2.9",
+  "presentationSchemaVersion": "1.2",
+  "devicesSchemaVersion": "1.0",
+  "equivalentTwoImagesAccepted": true,
+  "rejected": {
+    "ok": false,
+    "code": "INVALID_ARGUMENT",
+    "message": "normal capture supports at most two distinct image sources",
+    "diagnostics": []
+  },
+  "savedSources": {},
+  "boundary": "local software Runtime direct RPC methods; no Start/Stop, browser, Qt UI, package install or device"
+}

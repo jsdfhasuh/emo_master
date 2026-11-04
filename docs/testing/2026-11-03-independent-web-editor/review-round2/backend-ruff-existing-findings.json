@@ -1,0 +1,140 @@
+{
+  "status": "Only unchanged baseline findings; not a clean whole-file lint pass",
+  "baseline": [
+    {
+      "cell": null,
+      "code": "F401",
+      "end_location": {
+        "column": 34,
+        "row": 12
+      },
+      "filename": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\backend\\emo_web_panel\\app.py",
+      "fix": {
+        "applicability": "safe",
+        "edits": [
+          {
+            "content": "",
+            "end_location": {
+              "column": 1,
+              "row": 13
+            },
+            "location": {
+              "column": 1,
+              "row": 12
+            }
+          }
+        ],
+        "message": "Remove unused import: `urllib.parse.urlsplit`"
+      },
+      "location": {
+        "column": 26,
+        "row": 12
+      },
+      "message": "`urllib.parse.urlsplit` imported but unused",
+      "noqa_row": 12,
+      "url": "https://docs.astral.sh/ruff/rules/unused-import"
+    },
+    {
+      "cell": null,
+      "code": "F841",
+      "end_location": {
+        "column": 12,
+        "row": 207
+      },
+      "filename": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\backend\\emo_web_panel\\app.py",
+      "fix": {
+        "applicability": "unsafe",
+        "edits": [
+          {
+            "content": "",
+            "end_location": {
+              "column": 13,
+              "row": 207
+            },
+            "location": {
+              "column": 9,
+              "row": 207
+            }
+          }
+        ],
+        "message": "Remove assignment to unused variable `who`"
+      },
+      "location": {
+        "column": 9,
+        "row": 207
+      },
+      "message": "Local variable `who` is assigned to but never used",
+      "noqa_row": 207,
+      "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+    }
+  ],
+  "current": [
+    {
+      "cell": null,
+      "code": "F401",
+      "end_location": {
+        "column": 34,
+        "row": 12
+      },
+      "filename": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\backend\\emo_web_panel\\app.py",
+      "fix": {
+        "applicability": "safe",
+        "edits": [
+          {
+            "content": "",
+            "end_location": {
+              "column": 1,
+              "row": 13
+            },
+            "location": {
+              "column": 1,
+              "row": 12
+            }
+          }
+        ],
+        "message": "Remove unused import: `urllib.parse.urlsplit`"
+      },
+      "location": {
+        "column": 26,
+        "row": 12
+      },
+      "message": "`urllib.parse.urlsplit` imported but unused",
+      "noqa_row": 12,
+      "url": "https://docs.astral.sh/ruff/rules/unused-import"
+    },
+    {
+      "cell": null,
+      "code": "F841",
+      "end_location": {
+        "column": 12,
+        "row": 214
+      },
+      "filename": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\backend\\emo_web_panel\\app.py",
+      "fix": {
+        "applicability": "unsafe",
+        "edits": [
+          {
+            "content": "",
+            "end_location": {
+              "column": 13,
+              "row": 214
+            },
+            "location": {
+              "column": 9,
+              "row": 214
+            }
+          }
+        ],
+        "message": "Remove assignment to unused variable `who`"
+      },
+      "location": {
+        "column": 9,
+        "row": 214
+      },
+      "message": "Local variable `who` is assigned to but never used",
+      "noqa_row": 214,
+      "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+    }
+  ],
+  "newFindings": []
+}

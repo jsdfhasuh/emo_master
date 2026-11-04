@@ -1,0 +1,18 @@
+[
+  {
+    "path": "web_panel/frontend/src/editor/Editor.tsx",
+    "sha256": "7f6070beff01aba4d29aa7552df0de52f95cc990ee0a7059f6a3cf8ed2f0e16b"
+  },
+  {
+    "path": "web_panel/frontend/src/renderer/PanelRenderer.tsx",
+    "sha256": "5d7d8779c47105923def018cb9d066938636487691d60c93c83c43aa505efbba"
+  },
+  {
+    "path": "web_panel/frontend/tests/renderer.test.mjs",
+    "sha256": "99be3c22e740fd407eb499c09d0f39ef99ea55018c0d110c946112b3c240dff7"
+  },
+  {
+    "path": "web_panel/frontend/tests/editor_preview_height_browser.py",
+    "sha256": "f35e3f8e255857d34a91ae7b5cc1c852a659fa55ba7feb5e7460c00123aceeac"
+  }
+]

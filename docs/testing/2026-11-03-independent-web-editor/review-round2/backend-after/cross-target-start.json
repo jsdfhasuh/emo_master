@@ -1,0 +1,10 @@
+{
+  "otherAction": "start",
+  "completedWhilePublicationPending": true,
+  "publicationStillPending": true,
+  "otherStateWhilePending": "running",
+  "publishState": "PUBLISHED",
+  "controlStatus": 200,
+  "submissions": 1,
+  "implicitControlsOnPublishingRuntime": 0
+}

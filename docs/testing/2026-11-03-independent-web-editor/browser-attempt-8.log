@@ -1,0 +1,130 @@
+{"status": "FAILED", "evidence": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\test-results\\independent-editor\\20261103-210951-6f3117"}
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\frontend\tests\independent_editor_e2e.py", line 306, in <module>
+    main()
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\frontend\tests\independent_editor_e2e.py", line 169, in main
+    expect(page.get_by_role("heading", name="示例数据预览 · 非真实检测结果", exact=True)).to_be_visible()
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\.venv\lib\site-packages\playwright\sync_api\_generated.py", line 14811, in to_be_visible
+    self._sync(
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\.venv\lib\site-packages\playwright\_impl\_sync_base.py", line 111, in _sync
+    return task.result()
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\.venv\lib\site-packages\playwright\_impl\_assertions.py", line 852, in to_be_visible
+    await self._expect_impl(
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\.venv\lib\site-packages\playwright\_impl\_assertions.py", line 128, in _expect_impl
+    _record_soft_or_raise(
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\.venv\lib\site-packages\playwright\_impl\_assertions.py", line 60, in _record_soft_or_raise
+    raise error
+AssertionError: Locator expected to be visible
+Actual value: None
+Error: element(s) not found 
+Call log:
+  - Expect "to_be_visible" get_by_role("heading", name="示例数据预览 · 非真实检测结果", exact=True) with timeout 5000ms
+  - waiting for get_by_role("heading", name="示例数据预览 · 非真实检测结果", exact=True)
+
+Aria snapshot:
+- main:
+  - text: EMOMASTER / WEB PANEL
+  - heading "Web 页面编辑器" [level=1]
+  - link "运行页面 ↗":
+    - /url: /
+  - text: editor-test
+  - button "退出"
+  - text: Runtime
+  - combobox "编辑 Runtime 目标":
+    - option "Configured Runtime · grpc" [selected]
+  - strong: independent-web-editor-software-demo
+  - text: 0b92bb1e-1f5f-49f4-b3b7-5ddcb5fecc06 · 工程修订 1 ✓ 草稿已保存
+  - button "保存草稿"
+  - button "示例预览"
+  - button "实时预览" [disabled]
+  - button "发布页面"
+  - alert:
+    - text: 请求失败 (500)
+    - button "关闭"
+  - text: 实时预览任务
+  - combobox "实时预览任务":
+    - option "明确选择已有任务" [selected]
+  - button "刷新目录和任务"
+  - text: 打开、保存、预览、切页、发布均不触发检测。
+  - navigation "编辑页面标签":
+    - button "⌂ 检测页"
+    - button "详情页"
+  - button "＋ 新页面"
+  - button "复制页"
+  - button "←"
+  - button "→"
+  - button "设为首页"
+  - button "删除页"
+  - complementary:
+    - button "折叠工具区": ‹ 工具区
+    - button "组件" [pressed]
+    - button "流程结果"
+    - textbox "搜索组件或输出":
+      - /placeholder: 搜索组件
+    - button "▧ 结果图片"
+    - button "＋ 文本"
+    - button "# 数值"
+    - button "＋ 判定指示"
+    - button "＋ 运行状态"
+    - button "▤ 结果表格"
+    - button "＋ 导航按钮"
+    - button "▣ 容器"
+    - button "＋ 页面标题"
+    - button "＋ 页面导航"
+    - button "＋ 空白"
+    - button "＋ 静态图片"
+  - text: 检测页
+  - button "撤销" [disabled]
+  - button "重做" [disabled]
+  - button "复制组件" [disabled]
+  - button "删除组件" [disabled]
+  - text: 拖动排序 · 右下角调整尺寸
+  - region "页面标题 页面标题":
+    - text: 页面标题 页面标题
+    - heading "检测页" [level=2]
+  - region "结果图片 结果图片": 结果图片 结果图片 ▧ 结果图片 · 等待预览 main → blob → overlay · image
+  - region "数值 数值":
+    - text: 数值 数值
+    - strong: —
+    - text: main → count → count · integer
+  - region "判定指示 判定指示":
+    - text: 判定指示 判定指示
+    - strong: OK / NG
+    - text: main → judge → result · boolean
+  - region "运行状态 运行状态":
+    - text: 运行状态 运行状态
+    - paragraph: 连接状态 / 任务状态
+  - region "导航按钮 导航按钮": 导航按钮 导航按钮 查看详情 →
+  - text: 终端预览
+  - combobox "终端尺寸":
+    - option "跟随窗口" [selected]
+    - option "1920 × 1080"
+    - option "1366 × 768"
+    - option "1024 × 768"
+    - option "390 × 844"
+  - button "适应画布"
+  - button "＋"
+  - button "−"
+  - text: 100% · 6 个顶层组件
+  - complementary:
+    - button "折叠属性区": 属性 ›
+    - heading "页面" [level=2]
+    - text: 页面名称
+    - textbox "页面名称": 检测页
+    - text: 布局类型
+    - combobox "布局类型":
+      - option "响应式" [selected]
+      - option "网格"
+    - text: 排列方向
+    - combobox "排列方向":
+      - option "上下排列" [selected]
+      - option "并排"
+      - option "自动换行"
+    - text: 等宽
+    - checkbox "等宽"
+    - text: 间距
+    - spinbutton "间距": "12"
+    - text: Presentation 1.2 · Web 终端
+    - paragraph: 选择画布中的组件以编辑内容、布局和输出绑定。
+  - group: 发布版本与回退 · 0
+  - text: 独立 Web 编辑源 · 草稿修订 04278954f64927d80dcc1c21370c1f1c4f56f271f2e95c53d9945c916f94dca8 · independent-web-editor-software-demo

@@ -1,13 +1,13 @@
 {
   "panelContractVersion": "1.0",
-  "sdkVersion": "1.4.0",
-  "sourceSha": "940994b3420b47ff0add8766ccce5a4f2686a02a",
+  "sdkVersion": "1.5.0",
+  "sourceSha": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
   "sourceDirty": true,
   "projectSchemaVersion": "2.9",
   "presentationSchemaVersion": "1.2",
   "status": "complete",
   "sdkWheels": [
-    "python/emo_panel_protocol-1.4.0-py3-none-any.whl"
+    "python/emo_panel_protocol-1.5.0-py3-none-any.whl"
   ],
   "sampleValidation": {
     "model": "PASS",
@@ -114,16 +114,16 @@
       "byteSize": 277
     },
     "proto/runtime.proto": {
-      "sha256": "92c63e1fe9c7a602c61ca50e72968c7916c77e3204d79314508050cc73e8c96c",
-      "byteSize": 35689
+      "sha256": "fc8b0f2cbf1367ed67d04eb9bb406fcda89915dfbf4f585abda5fa830e0695ed",
+      "byteSize": 36524
     },
-    "python/emo_panel_protocol-1.4.0-py3-none-any.whl": {
-      "sha256": "cfc9ceaaa23baacc3321390a22d46a44325aef1dae4947e54a6598947566a086",
-      "byteSize": 38937
+    "python/emo_panel_protocol-1.5.0-py3-none-any.whl": {
+      "sha256": "97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d",
+      "byteSize": 40265
     },
     "README.md": {
-      "sha256": "526b2c3a6d71b30561d38acc6c020fe53103a11a5463848a9bac14338a9a5600",
-      "byteSize": 23222
+      "sha256": "1c9b8dd8d644ef705aca7882e6f66d69451ddd0d4d48648411ba9155d92409ee",
+      "byteSize": 26805
     },
     "sample-panels/demo.emoweb": {
       "sha256": "da6f55a962ea11758df0326587b9bc60d73eecb9d1723ced5fe10555471efc21",
@@ -153,6 +153,10 @@
       "sha256": "ce9a19af182e54839e8aa45b8ae93bf6f24a54f227d2ecae680a2fa61beb6774",
       "byteSize": 3706
     },
+    "schemas/output-request-config.schema.json": {
+      "sha256": "9698e3cbab534b3969ec58f24fb1106e8304b849b2bde2e63efbc1db246bd027",
+      "byteSize": 6121
+    },
     "schemas/panel-manifest.schema.json": {
       "sha256": "cbc0f06939fd77a0ffa785cb37d91bbdad15a5a7eb12f980ea88d673b491bcf6",
       "byteSize": 2900
@@ -166,12 +170,12 @@
       "byteSize": 23670
     },
     "schemas/runtime-rpc.schema.json": {
-      "sha256": "dfd40f64db42dbb0d2f61b963acaa31c7108df8de792b0bde8a2568bc077e61c",
-      "byteSize": 96073
+      "sha256": "f26073798bba87fd523afd846cd05112d3f586e67420adbff8dbbdd1a389ac43",
+      "byteSize": 98172
     },
     "typescript/panel-contract.ts": {
-      "sha256": "909a69cb52c2bb835fa237cd4c4dd4eeb4188c62150b013ce06fb4d680bb72e4",
-      "byteSize": 32036
+      "sha256": "67d7b815b301391d5a91694437f8ec20262e40bf094f0d91b6f4869e81b8daa7",
+      "byteSize": 32515
     }
   }
 }

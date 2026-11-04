@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\frontend\tests\independent_editor_e2e.py", line 166, in main
+    before = display.GetJob(pb.DisplayJobRequest(job_id=run), timeout=5)
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\.venv\lib\site-packages\grpc\_channel.py", line 1159, in __call__
+    return _end_unary_response_blocking(state, call, False, None)
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\.venv\lib\site-packages\grpc\_channel.py", line 990, in _end_unary_response_blocking
+    raise _InactiveRpcError(state)  # pytype: disable=not-instantiable
+grpc._channel._InactiveRpcError: <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INVALID_ARGUMENT
+	details = "JOB_IDENTITY_REQUIRED"
+	debug_error_string = "UNKNOWN:Error received from peer  {grpc_status:3, grpc_message:"JOB_IDENTITY_REQUIRED"}"
+>
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\frontend\tests\independent_editor_e2e.py", line 239, in <module>
+    main()
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\frontend\tests\independent_editor_e2e.py", line 219, in main
+    browser.close()
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\.venv\lib\site-packages\playwright\sync_api\_generated.py", line 1349, in close
+    self._sync(self._impl_obj.close(reason=reason))
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\.venv\lib\site-packages\playwright\_impl\_sync_base.py", line 101, in _sync
+    raise Error("Event loop is closed! Is Playwright already stopped?")
+playwright._impl._errors.Error: Event loop is closed! Is Playwright already stopped?

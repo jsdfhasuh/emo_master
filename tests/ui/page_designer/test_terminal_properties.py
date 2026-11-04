@@ -1,4 +1,6 @@
 """Actual Designer properties retain endpoint ownership through normal editing."""
+import pytest
+
 from test_workspace import designer  # noqa: F401
 from test_pending_inputs import setupPage
 from emo_master.apps.designer.page_designer.sqlite_properties import SqliteProperties
@@ -12,21 +14,35 @@ def choose(combo, value):
     combo.setCurrentIndex(index)
 
 
-def testPageTargetsApplyUndoAndKeepWebPageInEditor(designer, tmp_path):  # noqa: F811
+@pytest.mark.parametrize('targets', [['desktop'], ['web'], ['desktop', 'web']])
+def testQtPagePropertiesDoNotRewriteExistingTargets(designer, tmp_path, targets):  # noqa: F811
     coordinator, editor, _ = setupPage(designer)
     pageId = editor.pageId
+    # Compatibility input only: the Designer no longer authors Web targets.
+    coordinator.session.editPresentation(lambda p: setattr(p.pages[pageId], 'targets', list(targets)))
+    editor.refresh()
     editor.tools.select(None)
+    assert not hasattr(editor.tools, 'pageTargets')
     before = coordinator.session.payload()
-    choose(editor.tools.pageTargets, ['web'])
+    editor.tools.pageName.setText('保留既有目标的页面')
     editor.tools.commitPending()
-    assert editor.store.snapshot().pages[editor.pageId].targets == ['web']
+    assert editor.store.snapshot().pages[pageId].targets == targets
+    assert editor.store.snapshot().pages[pageId].name == '保留既有目标的页面'
     editor.refresh()
     assert editor.pageId in editor.renderer.config.pages
     assert coordinator.session.undo() and coordinator.session.payload() == before
     assert coordinator.session.redo()
-    assert designer.saveProjectToDirectory(str(tmp_path / 'web.emoproj'))
-    assert designer.loadProjectDirectory(str(tmp_path / 'web.emoproj'))
-    assert coordinator.session.document().presentation.pages[pageId].targets == ['web']
+    assert designer.saveProjectToDirectory(str(tmp_path / 'retained-targets.emoproj'))
+    assert designer.loadProjectDirectory(str(tmp_path / 'retained-targets.emoproj'))
+    page = coordinator.session.document().presentation.pages[pageId]
+    assert page.targets == targets and page.name == '保留既有目标的页面'
+
+
+def testNewDesignerPageStillDefaultsToQtDesktop(designer):  # noqa: F811
+    coordinator, editor, _ = setupPage(designer)
+    assert coordinator.session.document().presentation.schemaVersion == '1.2'
+    assert editor.store.snapshot().pages[editor.pageId].targets == ['desktop']
+    assert not hasattr(editor.tools, 'pageTargets')
 
 
 def testRuntimeSqliteMetadataUsesSelectedEndpointOnly(qtApp, monkeypatch):

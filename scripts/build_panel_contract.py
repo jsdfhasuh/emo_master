@@ -21,6 +21,7 @@ from emo_panel_protocol.messages import BrowserMessage, HistoryAggregate, Histor
 from emo_panel_protocol.published import PanelManifest, PublishedPresentation  # noqa: E402
 from emo_panel_protocol.preview import PreviewContext  # noqa: E402
 from emo_panel_protocol.results import ClosedResult  # noqa: E402
+from emo_panel_protocol.output_requests import OutputRequestConfig  # noqa: E402
 
 
 MODELS = {
@@ -28,6 +29,7 @@ MODELS = {
     'closed-result': ClosedResult, 'history-page': HistoryPage,
     'history-aggregate': HistoryAggregate, 'browser-message': BrowserMessage,
     'preview-context': PreviewContext,
+    'output-request-config': OutputRequestConfig,
 }
 JSON_SCHEMA = 'https://json-schema.org/draft/2020-12/schema'
 

@@ -1,0 +1,35 @@
+................................................................. [ 35%]
+.......................F.................................. [ 67%]
+................... [ 77%]
+.........................................                    [100%]
+================================== FAILURES ===================================
+_ PackageContextTests.test_a_b_activation_rollback_pinned_view_and_scoped_notices _
+
+self = <test_package_context.PackageContextTests testMethod=test_a_b_activation_rollback_pinned_view_and_scoped_notices>
+
+    def test_a_b_activation_rollback_pinned_view_and_scoped_notices(self):
+        headers = self.login(); self.add_b(headers)
+        a1 = self.install(headers, 'a1'); a2 = self.install(headers, 'a2'); b1 = self.install(headers, 'b1')
+        self.assertEqual(self.activate(headers, a1).status_code, 200)
+        self.assertEqual(self.activate(headers, b1, 'B').status_code, 200)
+        def view(pid, rid):
+            response = self.client.post('/api/views', headers=headers,
+                json={'runtimeId':rid,'projectId':'demo-project','panelId':pid})
+            self.assertEqual(response.status_code, 200, response.text)
+            return self.app.state.views.views[response.json()['id']]
+        av, bv = view(a1, 'configured'), view(b1, 'B')
+        self.assertEqual(self.activate(headers, a2).status_code, 200)
+        self.assertEqual(self.client.get('/api/panels?runtimeId=configured').json()[0]['id'], a2)
+        self.assertEqual(self.client.get('/api/panels?runtimeId=B').json()[0]['id'], b1)
+        self.assertEqual(av['revision'], 'a1')
+        self.assertEqual(av['notices']['package_updated']['packageId'], a2)
+        self.assertNotIn('package_updated', bv['notices'])
+        self.assertEqual(self.client.get('/api/assets/' + a1 + '/sample').status_code, 200)
+>       self.assertEqual(self.client.post('/api/views', headers=headers,
+                         json={'runtimeId':'configured','panelId':a1}).status_code, 404)
+E       AssertionError: 409 != 404
+
+web_panel\tests\test_package_context.py:51: AssertionError
+=========================== short test summary info ===========================
+FAILED web_panel/tests/test_package_context.py::PackageContextTests::test_a_b_activation_rollback_pinned_view_and_scoped_notices
+1 failed, 182 passed, 230 subtests passed in 63.08s (0:01:03)

@@ -1,0 +1,22 @@
+{"event": "web-package-origin", "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\.venv\\Lib\\site-packages\\emo_web_panel\\__init__.py", "isolated": true}
+INFO:     Started server process [68712]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:50565 (Press CTRL+C to quit)
+INFO:     127.0.0.1:65172 - "WebSocket /ws/views/CVS6lVaBdrJ8sRtsTZDVAkwNGjx14Np0" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:51470 - "WebSocket /ws/views/JKejisyYL3Jhk1PtQpwJDOXb_rZdzEYs" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:53269 - "WebSocket /ws/views/OrB51pZ2C8LK8rxUMA4dJR071z7mKMR4" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:65117 - "WebSocket /ws/views/LxfkgerMqa4ma7ZxfbSbkOxG_o-qqrgG" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:63289 - "WebSocket /ws/views/bhZmZvyjGjo7COGOidMCmmN8bGN9pwL_" [accepted]
+INFO:     connection open
+{"event": "web-package-origin", "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\.venv\\Lib\\site-packages\\emo_web_panel\\__init__.py", "isolated": true}
+INFO:     Started server process [65428]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:50565 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52475 - "WebSocket /ws/views/CTOXXEPAtnx72zQjiLEEAWnrtsdb0lVU" [accepted]
+INFO:     connection open

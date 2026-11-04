@@ -1,0 +1,15 @@
+{
+  "python": "D:\\tmp\\emo-web-push-20261104\\web-checks\\installed-venv\\Scripts\\python.exe",
+  "isolated": true,
+  "webPackage": "D:\\tmp\\emo-web-push-20261104\\web-checks\\installed-venv\\lib\\site-packages\\emo_web_panel\\__init__.py",
+  "sdkPackage": "D:\\tmp\\emo-web-push-20261104\\web-checks\\installed-venv\\lib\\site-packages\\emo_panel_protocol\\__init__.py",
+  "sdkVersion": "1.5.0",
+  "editorEntry": "PASS",
+  "fullSourceRoundTrip": "PASS",
+  "staticResource": "PASS",
+  "publish": "PASS",
+  "noImplicitStart": "PASS",
+  "pageCount": 2,
+  "lightweightImports": "PASS",
+  "installedCliWithoutNode": "PASS"
+}

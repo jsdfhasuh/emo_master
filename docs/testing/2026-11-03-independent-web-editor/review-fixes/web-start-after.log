@@ -1,0 +1,112 @@
+F.............                                                           [100%]
+================================== FAILURES ===================================
+_ IndependentWebCaptureTests.test_web_start_uses_valid_external_request_despite_deleted_qt_source _
+
+self = WindowsPath('docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_ext...quest_despite_deleted_qt_source/preview-cache/60b7f0d4ad1fd3aa2359d0c0e86a79e3b163560b0549c15ed1b4ccca435d62bc/assets')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           self._accessor.mkdir(self, mode)
+E           FileNotFoundError: [WinError 3] ϵͳ�Ҳ���ָ����·����: 'docs\\testing\\2026-11-03-independent-web-editor\\review-fixes\\web-start-after\\test_web_start_uses_valid_external_request_despite_deleted_qt_source\\preview-cache\\60b7f0d4ad1fd3aa2359d0c0e86a79e3b163560b0549c15ed1b4ccca435d62bc\\assets'
+
+D:\Conda\envs\emo_master\lib\pathlib.py:1175: FileNotFoundError
+
+During handling of the above exception, another exception occurred:
+
+self = WindowsPath('docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/60b7f0d4ad1fd3aa2359d0c0e86a79e3b163560b0549c15ed1b4ccca435d62bc')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           self._accessor.mkdir(self, mode)
+E           FileNotFoundError: [WinError 3] ϵͳ�Ҳ���ָ����·����: 'docs\\testing\\2026-11-03-independent-web-editor\\review-fixes\\web-start-after\\test_web_start_uses_valid_external_request_despite_deleted_qt_source\\preview-cache\\60b7f0d4ad1fd3aa2359d0c0e86a79e3b163560b0549c15ed1b4ccca435d62bc'
+
+D:\Conda\envs\emo_master\lib\pathlib.py:1175: FileNotFoundError
+
+During handling of the above exception, another exception occurred:
+D:\Conda\envs\emo_master\lib\unittest\async_case.py:67: in _callTearDown
+    self._callAsync(self.asyncTearDown)
+D:\Conda\envs\emo_master\lib\unittest\async_case.py:79: in _callAsync
+    return self._asyncioTestLoop.run_until_complete(fut)
+D:\Conda\envs\emo_master\lib\asyncio\base_events.py:649: in run_until_complete
+    return future.result()
+D:\Conda\envs\emo_master\lib\unittest\async_case.py:101: in _asyncioLoopRunner
+    ret = await awaitable
+web_panel\tests\test_product_runtime.py:141: in asyncTearDown
+    self.preserve_evidence()
+web_panel\tests\test_product_runtime.py:159: in preserve_evidence
+    output.parent.mkdir(parents=True, exist_ok=True)
+D:\Conda\envs\emo_master\lib\pathlib.py:1179: in mkdir
+    self.parent.mkdir(parents=True, exist_ok=True)
+D:\Conda\envs\emo_master\lib\pathlib.py:1180: in mkdir
+    self.mkdir(mode, parents=False, exist_ok=exist_ok)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('docs/testing/2026-11-03-independent-web-editor/review-fixes/web-start-after/test_web_start_uses_valid_external_request_despite_deleted_qt_source/preview-cache/60b7f0d4ad1fd3aa2359d0c0e86a79e3b163560b0549c15ed1b4ccca435d62bc')
+mode = 511, parents = False, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           self._accessor.mkdir(self, mode)
+E           FileNotFoundError: [WinError 3] ϵͳ�Ҳ���ָ����·����: 'docs\\testing\\2026-11-03-independent-web-editor\\review-fixes\\web-start-after\\test_web_start_uses_valid_external_request_despite_deleted_qt_source\\preview-cache\\60b7f0d4ad1fd3aa2359d0c0e86a79e3b163560b0549c15ed1b4ccca435d62bc'
+
+D:\Conda\envs\emo_master\lib\pathlib.py:1175: FileNotFoundError
+============================== warnings summary ===============================
+web_panel/tests/test_runtime_contract.py::RuntimeContractTests::test_stale_control_rejected_before_mutation
+  C:\Users\jsdfhasuh\my_scripts\emo_master\web_panel\.venv\lib\site-packages\_pytest\unraisableexception.py:63: PytestUnraisableExceptionWarning: Exception ignored in: <finalize object at 0x1d12e222260; dead>
+  
+  Traceback (most recent call last):
+    File "D:\Conda\envs\emo_master\lib\shutil.py", line 618, in _rmtree_unsafe
+      os.unlink(fullname)
+  PermissionError: [WinError 32] ��һ����������ʹ�ô��ļ��������޷����ʡ�: 'C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\web-product-runtime-tfp2o43z\\runtime.log'
+  
+  During handling of the above exception, another exception occurred:
+  
+  Traceback (most recent call last):
+    File "D:\Conda\envs\emo_master\lib\tempfile.py", line 852, in onerror
+      _os.unlink(path)
+  PermissionError: [WinError 32] ��һ����������ʹ�ô��ļ��������޷����ʡ�: 'C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\web-product-runtime-tfp2o43z\\runtime.log'
+  
+  During handling of the above exception, another exception occurred:
+  
+  Traceback (most recent call last):
+    File "D:\Conda\envs\emo_master\lib\weakref.py", line 591, in __call__
+      return info.func(*info.args, **(info.kwargs or {}))
+    File "D:\Conda\envs\emo_master\lib\tempfile.py", line 868, in _cleanup
+      cls._rmtree(name, ignore_errors=ignore_errors)
+    File "D:\Conda\envs\emo_master\lib\tempfile.py", line 864, in _rmtree
+      _shutil.rmtree(name, onerror=onerror)
+    File "D:\Conda\envs\emo_master\lib\shutil.py", line 750, in rmtree
+      return _rmtree_unsafe(path, onerror)
+    File "D:\Conda\envs\emo_master\lib\shutil.py", line 620, in _rmtree_unsafe
+      onerror(os.unlink, fullname, sys.exc_info())
+    File "D:\Conda\envs\emo_master\lib\tempfile.py", line 855, in onerror
+      cls._rmtree(path, ignore_errors=ignore_errors)
+    File "D:\Conda\envs\emo_master\lib\tempfile.py", line 864, in _rmtree
+      _shutil.rmtree(name, onerror=onerror)
+    File "D:\Conda\envs\emo_master\lib\shutil.py", line 750, in rmtree
+      return _rmtree_unsafe(path, onerror)
+    File "D:\Conda\envs\emo_master\lib\shutil.py", line 601, in _rmtree_unsafe
+      onerror(os.scandir, path, sys.exc_info())
+    File "D:\Conda\envs\emo_master\lib\shutil.py", line 598, in _rmtree_unsafe
+      with os.scandir(path) as scandir_it:
+  NotADirectoryError: [WinError 267] Ŀ¼������Ч��: 'C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\web-product-runtime-tfp2o43z\\runtime.log'
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED web_panel/tests/test_web_start_capture.py::IndependentWebCaptureTests::test_web_start_uses_valid_external_request_despite_deleted_qt_source
+1 failed, 13 passed, 1 warning in 7.48s

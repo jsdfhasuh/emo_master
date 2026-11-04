@@ -15,7 +15,7 @@ export function reconcileCatalogSelection(previous:CatalogSelection,oldInfo:Runt
  if(revisionChanged)notices.push('正式配置版本已更新；输入文本未覆盖，请核对最新工作流输入描述。');
  return {selection:next,identityChanged,revisionChanged,notices};
 }
-export const targetContext=(runtimeId:string,projectId?:string)=>`runtimeId=${encodeURIComponent(runtimeId)}${projectId?`&projectId=${encodeURIComponent(projectId)}`:''}`;
+export const targetContext=(runtimeId:string,projectId?:string,runtimeInstanceId?:string)=>`runtimeId=${encodeURIComponent(runtimeId)}${projectId?`&projectId=${encodeURIComponent(projectId)}`:''}${runtimeInstanceId?`&runtimeInstanceId=${encodeURIComponent(runtimeInstanceId)}`:''}`;
 
 /** Catalog status belongs only to the selected view Job, never the Stop target. */
 export function selectedViewState(runId:string,info:RuntimeInfo,runs:Run[]):string {

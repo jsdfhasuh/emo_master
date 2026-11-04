@@ -44,6 +44,7 @@ from emo_master.apps.runtime.communication.manager import CommunicationManager
 from emo_master.apps.runtime.communication.rpc import CommunicationRpcMixin
 from emo_master.apps.runtime.project_config.rpc import ProjectConfigurationRpcMixin
 from emo_master.apps.runtime.presentation.history import HistoryRpcMixin
+from emo_master.apps.runtime.presentation.output_requests import OutputRequestsRpcMixin
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
 from emo_master.core.contracts.port_types import canonicalPortTypes
@@ -97,7 +98,7 @@ def _withProjectStateLock(method: Any) -> Any:
 LOG_QUERY_REPLY_BYTES = 4 * 1024 * 1024
 
 
-class RuntimeService(RunReadRpcMixin, HistoryRpcMixin, ProjectConfigurationRpcMixin, CommunicationRpcMixin, OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServicer):
+class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, ProjectConfigurationRpcMixin, CommunicationRpcMixin, OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServicer):
     @property
     def supportsLegacySnapshotPolicy(self) -> bool:
         # The opt-in normal-Run policy must not widen restricted test hosts.
@@ -549,6 +550,7 @@ class RuntimeService(RunReadRpcMixin, HistoryRpcMixin, ProjectConfigurationRpcMi
             if job is not None:
                 reply.status = job.status
                 reply.legacy_snapshot_policy = job.legacySnapshotPolicy
+                reply.project_revision = job.projectRevision
         return reply
 
     @_withProjectStateLock
@@ -626,25 +628,41 @@ class RuntimeService(RunReadRpcMixin, HistoryRpcMixin, ProjectConfigurationRpcMi
         capture = None
         consumerCaptures = {}
         presentation = getattr(self, "_presentationOwner", None)
-        if bool(getattr(request, "capture_presentation", False)):
+        externalConfig = self._outputStore().read(document.project.projectId)
+        wantsQt = bool(getattr(request, "capture_presentation", False))
+        if wantsQt or externalConfig.sources:
             try:
-                if presentation is None:
-                    raise ValueError("Runtime does not expose normal presentation capture")
-                presentation.checkNormalAdmission(retirementTimeoutSeconds=2.0,
-                    isActive=getattr(context, "is_active", lambda: True))
-                from emo_master.apps.runtime.presentation.normal_capture import freezeNormalCapture
-                capture = freezeNormalCapture(document, self.pluginScanResult.activeOperators,
-                    Path(self.loadedProjectPath), workflowId,
-                    resourcePaths=self.projectResourceTransfers.resolve(document),
-                    counterNames=frozenset(record.name for record in self.sqliteStore.listGlobalCounters(document.project.projectId)))
+                admissionChecked = False
+                if wantsQt and presentation is not None:
+                    # Keep the existing Qt/restricted-host admission before
+                    # examining its page resources or preparing capture.
+                    presentation.checkNormalAdmission(retirementTimeoutSeconds=2.0,
+                        isActive=getattr(context, "is_active", lambda: True))
+                    admissionChecked = True
+                from emo_master.apps.runtime.presentation.output_capture import freezeMergedCapture
                 from emo_master.core.workflow.dispatch_contracts import groupSlots
                 from emo_master.core.presentation.workflow_view import presentationForWorkflow
+                options = dict(resourcePaths=self.projectResourceTransfers.resolve(document),
+                    counterNames=frozenset(record.name for record in self.sqliteStore.listGlobalCounters(document.project.projectId)))
+                capture = freezeMergedCapture(document, self.pluginScanResult.activeOperators,
+                    Path(self.loadedProjectPath), workflowId, externalConfig, qt=wantsQt, **options)
                 for consumerId, _capacity in set(groupSlots(document, workflowId).values()):
-                    if presentationForWorkflow(document, consumerId, capture=True).pages:
-                        consumerCaptures[consumerId] = freezeNormalCapture(document, self.pluginScanResult.activeOperators,
-                            Path(self.loadedProjectPath), consumerId,
-                            resourcePaths=self.projectResourceTransfers.resolve(document),
-                            counterNames=frozenset(record.name for record in self.sqliteStore.listGlobalCounters(document.project.projectId)))
+                    qtConsumer = wantsQt and bool(document.presentation and
+                        presentationForWorkflow(document, consumerId, capture=True).pages)
+                    frozen = freezeMergedCapture(document, self.pluginScanResult.activeOperators,
+                        Path(self.loadedProjectPath), consumerId, externalConfig, qt=qtConsumer, **options)
+                    if frozen is not None:
+                        consumerCaptures[consumerId] = frozen
+                if capture is not None or consumerCaptures:
+                    if presentation is None:
+                        # Embedded Designer/local callers need the same saved
+                        # external demand even before a display client connects.
+                        from emo_master.apps.runtime.presentation.service import PresentationService
+                        presentation = PresentationService(self, Path(self.workspaceRoot).parent /
+                            (Path(self.workspaceRoot).name + "-presentation"))
+                    if not admissionChecked:
+                        presentation.checkNormalAdmission(retirementTimeoutSeconds=2.0,
+                            isActive=getattr(context, "is_active", lambda: True))
             except (ValueError, OSError) as error:
                 diagnostics = {}
                 if isinstance(error, WorkflowCompileError):

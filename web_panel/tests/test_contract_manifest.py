@@ -1,4 +1,4 @@
-"""Pin SDK 1.4.0 development delivery and embedded consumer bytes on both OSes."""
+"""Pin SDK 1.5.0 development delivery and embedded consumer bytes on both OSes."""
 import hashlib
 import json
 from pathlib import Path
@@ -7,10 +7,10 @@ import zipfile
 
 PANEL = Path(__file__).resolve().parents[1]
 CONTRACT = PANEL / 'contracts/panel-contract-v1'
-HANDOFF = PANEL.parent / 'docs/handoffs/runtime-web-panel-v1/sdk-1.4.0'
-SOURCE_SHA = '940994b3420b47ff0add8766ccce5a4f2686a02a'
-WHEEL_SHA = 'cfc9ceaaa23baacc3321390a22d46a44325aef1dae4947e54a6598947566a086'
-WHEEL_PATH = 'python/emo_panel_protocol-1.4.0-py3-none-any.whl'
+HANDOFF = PANEL.parent / 'docs/handoffs/runtime-web-panel-v1/sdk-1.5.0'
+SOURCE_SHA = 'd92ffd37960e8b8f527136151ab9ccb80054e78f'
+WHEEL_SHA = '97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d'
+WHEEL_PATH = 'python/emo_panel_protocol-1.5.0-py3-none-any.whl'
 
 
 class ContractManifestTests(unittest.TestCase):
@@ -18,10 +18,10 @@ class ContractManifestTests(unittest.TestCase):
         manifest = json.loads((CONTRACT / 'contract-manifest.json').read_bytes())
         self.assertEqual(manifest['sourceSha'], SOURCE_SHA)
         self.assertTrue(manifest['sourceDirty'])
-        self.assertEqual(manifest['sdkVersion'], '1.4.0')
+        self.assertEqual(manifest['sdkVersion'], '1.5.0')
         self.assertEqual(manifest['panelContractVersion'], '1.0')
         self.assertEqual(manifest['sdkWheels'], [WHEEL_PATH])
-        self.assertEqual(len(manifest['files']), 39)
+        self.assertEqual(len(manifest['files']), 40)
         expected_files = set(manifest['files']) | {'contract-manifest.json'}
         self.assertEqual({p.relative_to(CONTRACT).as_posix() for p in CONTRACT.rglob('*') if p.is_file()}, expected_files)
         for name, expected in manifest['files'].items():
@@ -30,7 +30,7 @@ class ContractManifestTests(unittest.TestCase):
                 self.assertEqual(len(data), expected['byteSize'])
                 self.assertEqual(hashlib.sha256(data).hexdigest(), expected['sha256'])
         wheel = (CONTRACT / WHEEL_PATH).read_bytes()
-        self.assertEqual(len(wheel), 38937)
+        self.assertEqual(len(wheel), 40265)
         self.assertEqual(hashlib.sha256(wheel).hexdigest(), WHEEL_SHA)
 
     def test_vendored_tree_is_exact_current_handoff_manifest_and_generated_sdk(self):

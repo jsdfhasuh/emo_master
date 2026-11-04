@@ -1,0 +1,27 @@
+{
+  "wheel": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\runtime\\emo_master-0.6.6-py3-none-any.whl",
+  "sha256": "aeb26acc932485cb6942b7cc0bffa10bb24118d5007913ca6da73febebd6ecd1",
+  "byteSize": 1662929,
+  "sourceSha": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "sourceDirty": true,
+  "archiveIntegrity": "PASS",
+  "allPackagedPythonModulesMatchWorkingSource": "PASS",
+  "checkedModuleCount": 620,
+  "deletedDesignerWebPreviewAbsent": true,
+  "changedModuleSyntax": "PASS",
+  "unpackedWheelImport": "PASS",
+  "imports": {
+    "isolated": true,
+    "modulePaths": [
+      "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-review-7k0_rn0w\\emo_master\\core\\presentation\\capture_limits.py",
+      "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-review-7k0_rn0w\\emo_master\\apps\\runtime\\presentation\\collector.py",
+      "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-review-7k0_rn0w\\emo_master\\apps\\runtime\\presentation\\service.py",
+      "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-review-7k0_rn0w\\emo_master\\apps\\runtime\\presentation\\assets.py",
+      "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-review-7k0_rn0w\\emo_master\\apps\\runtime\\presentation\\output_capture.py",
+      "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-review-7k0_rn0w\\emo_master\\apps\\runtime\\presentation\\output_requests.py",
+      "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-review-7k0_rn0w\\emo_panel_protocol\\output_requests.py",
+      "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-runtime-wheel-review-7k0_rn0w\\emo_panel_protocol\\generated\\runtime_pb2.py"
+    ]
+  },
+  "level": "Python wheel archive, source match and unpacked isolated import; execution of software Runtime is against source, not an installed Runtime wheel"
+}

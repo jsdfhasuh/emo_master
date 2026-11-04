@@ -1,0 +1,123 @@
+{
+  "status": "PASS",
+  "verification": "Edge/Chromium -> independent Web -> software Runtime",
+  "syntheticOnly": true,
+  "physicalDevices": false,
+  "steps": [
+    "W01: standalone target/catalog with no Designer and no Job",
+    "W02/W03/W04: browser creates/binds/saves/reopens two pages and example preview never executes",
+    "W05: explicit Web Start -> real installed operators -> DisplayService same result image/count=2/verdict=true",
+    "W05: formal operator running page shows the published two-page package and same-task results",
+    "W05: actual browser DisplayService WebSocket, image rendering and detail navigation in a 1366x768 live preview terminal",
+    "W06/W10: active Job survives layout publication and rollback with frozen capture revision",
+    "W02/W11: actual browser and Web process close/restart retain draft/assets and resubscribe the original continuously running Job"
+  ],
+  "runtime": {
+    "event": "ready",
+    "address": "127.0.0.1:53424",
+    "projectId": "independent-web-editor-software-demo",
+    "projectFile": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\test-results\\independent-editor\\20261104-070138-dad073\\runtime\\project\\web-editor-demo.emoproj",
+    "syntheticOnly": true
+  },
+  "webPackage": {
+    "mode": "installed-wheel",
+    "event": "web-package-origin",
+    "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\.venv\\Lib\\site-packages\\emo_web_panel\\__init__.py",
+    "isolated": true
+  },
+  "sameResult": {
+    "identity": {
+      "runtimeInstanceId": "dc208ca0-bf63-4c12-a7c1-9dfd551ebae0",
+      "jobId": "6b24378c-6893-4cfd-b092-5200dafe7489",
+      "resultScopeId": "external-scope-6f02d88d0595b6df87672892dc6a9aba",
+      "invocationId": "54db0679-501c-470f-a3bf-d51123965a5e",
+      "resultKey": "70f6a21e-675b-4340-a033-ab9027cedfa5",
+      "resultOrdinal": 1,
+      "executionRevision": "a9487209a9c492ab4924374bb35aecf0247cc8d506f30419b6aa253642c87dd4",
+      "capturePlanRevision": "0f0e9bf905cd2c384be3ca4a25b24a9715041f0adefdda6575584f2e6fa5d890",
+      "mode": "runtime"
+    },
+    "expectedSourceIds": [
+      "external-source-219ee0b5171caccad11bf75bab018a08",
+      "external-source-31fb0df306d264681b9a5733d0317e52",
+      "external-source-4349b388d3658fd1b67a4d6dc53ab584",
+      "external-source-946138065090339a7adfe38fb385b842"
+    ],
+    "sources": [
+      {
+        "sourceId": "external-source-219ee0b5171caccad11bf75bab018a08",
+        "state": "AVAILABLE",
+        "valueJson": "2",
+        "image": null,
+        "reason": null,
+        "reasonCode": null
+      },
+      {
+        "sourceId": "external-source-31fb0df306d264681b9a5733d0317e52",
+        "state": "AVAILABLE",
+        "valueJson": null,
+        "image": {
+          "resourceId": "4529f28b-ea9f-4c13-a232-ceae9775bb5b",
+          "ownerResultKey": "70f6a21e-675b-4340-a033-ab9027cedfa5",
+          "byteSize": 1388,
+          "sha256": "77e84ae7269a2216d6a803bb3a6e741f8b2e012c84f925c396f4b9c64f2d90d8",
+          "mimeType": "image/png",
+          "provenance": {
+            "frameIdentity": "fa7d64b7-6da2-434c-9508-847a9224c56d",
+            "coordinateSpaceId": "10809ab5-4eff-4cdd-9aff-1dc385f0aa73",
+            "trust": "proven",
+            "parentFrameIdentity": "2e23ab74-98a5-4477-b856-bc98232b9ebf",
+            "adapterVersion": "blob-1.2.0"
+          },
+          "ownership": "result_store"
+        },
+        "reason": null,
+        "reasonCode": null
+      },
+      {
+        "sourceId": "external-source-4349b388d3658fd1b67a4d6dc53ab584",
+        "state": "AVAILABLE",
+        "valueJson": "true",
+        "image": null,
+        "reason": null,
+        "reasonCode": null
+      },
+      {
+        "sourceId": "external-source-946138065090339a7adfe38fb385b842",
+        "state": "AVAILABLE",
+        "valueJson": "{\"type\":\"blobCollection\",\"schemaVersion\":\"1.1\",\"coordinateSpace\":{\"origin\":\"topLeft\",\"xAxis\":\"right\",\"yAxis\":\"down\",\"unit\":\"pixel\",\"reference\":\"sourceImage\",\"sourceId\":\"D:\\\\jsdfhasuh\\\\documents\\\\my_project\\\\emo_master\\\\web_panel\\\\test-results\\\\independent-editor\\\\20261104-070138-dad073\\\\runtime\\\\configuration-resources\\\\1114d9a07f7046bb856a0e837ede9903\\\\893e4f68de9292af4c6bc77b9ad0a5ae125b97ad405e544ec50db854f5625847.png\",\"transformToSource\":[1.0,0.0,0.0,1.0,0.0,0.0],\"imageWidth\":320,\"imageHeight\":240},\"items\":[{\"id\":\"blob-1\",\"area\":1600.0,\"centroid\":{\"type\":\"point2d\",\"schemaVersion\":\"1.1\",\"coordinateSpace\":{\"origin\":\"topLeft\",\"xAxis\":\"right\",\"yAxis\":\"down\",\"unit\":\"pixel\",\"reference\":\"sourceImage\",\"sourceId\":\"D:\\\\jsdfhasuh\\\\documents\\\\my_project\\\\emo_master\\\\web_panel\\\\test-results\\\\independent-editor\\\\20261104-070138-dad073\\\\runtime\\\\configuration-resources\\\\1114d9a07f7046bb856a0e837ede9903\\\\893e4f68de9292af4c6bc77b9ad0a5ae125b97ad405e544ec50db854f5625847.png\",\"transformToSource\":[1.0,0.0,0.0,1.0,0.0,0.0],\"imageWidth\":320,\"imageHeight\":240},\"x\":59.5,\"y\":59.5},\"bbox\":{\"type\":\"bbox2d\",\"schemaVersion\":\"1.1\",\"coordinateSpace\":{\"origin\":\"topLeft\",\"xAxis\":\"right\",\"yAxis\":\"down\",\"unit\":\"pixel\",\"reference\":\"sourceImage\",\"sourceId\":\"D:\\\\jsdfhasuh\\\\documents\\\\my_project\\\\emo_master\\\\web_panel\\\\test-results\\\\independent-editor\\\\20261104-070138-dad073\\\\runtime\\\\configuration-resources\\\\1114d9a07f7046bb856a0e837ede9903\\\\893e4f68de9292af4c6bc77b9ad0a5ae125b97ad405e544ec50db854f5625847.png\",\"transformToSource\":[1.0,0.0,0.0,1.0,0.0,0.0],\"imageWidth\":320,\"imageHeight\":240},\"x\":40.0,\"y\":40.0,\"width\":40.0,\"height\":40.0},\"attributes\":{\"perimeter\":156.0,\"circularity\":0.8261913618908069},\"label\":1},{\"id\":\"blob-2\",\"area\":2400.0,\"centroid\":{\"type\":\"point2d\",\"schemaVersion\":\"1.1\",\"coordinateSpace\":{\"origin\":\"topLeft\",\"xAxis\":\"right\",\"yAxis\":\"down\",\"unit\":\"pixel\",\"reference\":\"sourceImage\",\"sourceId\":\"D:\\\\jsdfhasuh\\\\documents\\\\my_project\\\\emo_master\\\\web_panel\\\\test-results\\\\independent-editor\\\\20261104-070138-dad073\\\\runtime\\\\configuration-resources\\\\1114d9a07f7046bb856a0e837ede9903\\\\893e4f68de9292af4c6bc77b9ad0a5ae125b97ad405e544ec50db854f5625847.png\",\"transformToSource\":[1.0,0.0,0.0,1.0,0.0,0.0],\"imageWidth\":320,\"imageHeight\":240},\"x\":179.5,\"y\":149.5},\"bbox\":{\"type\":\"bbox2d\",\"schemaVersion\":\"1.1\",\"coordinateSpace\":{\"origin\":\"topLeft\",\"xAxis\":\"right\",\"yAxis\":\"down\",\"unit\":\"pixel\",\"reference\":\"sourceImage\",\"sourceId\":\"D:\\\\jsdfhasuh\\\\documents\\\\my_project\\\\emo_master\\\\web_panel\\\\test-results\\\\independent-editor\\\\20261104-070138-dad073\\\\runtime\\\\configuration-resources\\\\1114d9a07f7046bb856a0e837ede9903\\\\893e4f68de9292af4c6bc77b9ad0a5ae125b97ad405e544ec50db854f5625847.png\",\"transformToSource\":[1.0,0.0,0.0,1.0,0.0,0.0],\"imageWidth\":320,\"imageHeight\":240},\"x\":160.0,\"y\":120.0,\"width\":40.0,\"height\":60.0},\"attributes\":{\"perimeter\":196.0,\"circularity\":0.7850710504597567},\"label\":2}]}",
+        "image": null,
+        "reason": null,
+        "reasonCode": null
+      }
+    ],
+    "status": "COMPLETE",
+    "executionTerminal": "COMPLETED",
+    "timing": {
+      "captureStartedNs": 69816413209600,
+      "scopeEndedNs": 69816428257400,
+      "closedNs": 69816819500500,
+      "clock": "runtime_monotonic"
+    }
+  },
+  "browserErrors": [],
+  "browserMessages": 18,
+  "assetResponses": [
+    {
+      "url": "http://127.0.0.1:53425/api/editor/configured/assets/asset-e01e82866e239d697ee319ddebc5a035?projectId=independent-web-editor-software-demo",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:53425/api/assets/50d3da5888e07c6bd3a69e771ae0664d8b6645b691cc0db3f19a02f12cdc3aa8/asset-e01e82866e239d697ee319ddebc5a035",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:53425/api/assets/50d3da5888e07c6bd3a69e771ae0664d8b6645b691cc0db3f19a02f12cdc3aa8/asset-e01e82866e239d697ee319ddebc5a035",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:53425/api/editor/configured/assets/asset-e01e82866e239d697ee319ddebc5a035?projectId=independent-web-editor-software-demo",
+      "status": 200
+    }
+  ]
+}

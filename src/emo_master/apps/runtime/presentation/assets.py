@@ -2,6 +2,7 @@
 from collections import OrderedDict
 import hashlib
 from pathlib import Path
+import shutil
 import threading
 import time
 from uuid import uuid4
@@ -54,6 +55,30 @@ class AssetStore:
         with self.lock:
             self.retained = set(keys)
             self._collect()
+
+    def duplicate(self, image, jobId, resultKey):
+        """Give another result independent ownership of one encoded capture.
+
+        Separate bounded disk assets keep the existing single-owner retention,
+        read and lease rules; neither raw lanes nor encoding are duplicated.
+        """
+        with self.lock:
+            self._collect()
+            original = self.items[image['resourceId']]
+            if original['job'] != jobId or original['owner'] != image['ownerResultKey']:
+                raise ValueError('image does not belong to its result/Job')
+            if sum(item['size'] for item in self.items.values()) + original['size'] > 256 * 1024 * 1024:
+                raise ValueError('asset cache budget exceeded')
+            resourceId = str(uuid4())
+            path = self.root / resourceId
+            try:
+                shutil.copyfile(original['path'], path)
+            except OSError:
+                path.unlink(missing_ok=True)
+                raise
+            self.items[resourceId] = dict(original, path=path, owner=resultKey)
+            self.retained.add(resultKey)
+            return dict(image, resourceId=resourceId, ownerResultKey=resultKey)
 
     def read(self, jobId, resourceId):
         started = time.monotonic()

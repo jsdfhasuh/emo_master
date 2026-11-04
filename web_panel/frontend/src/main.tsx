@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Me, Panel, Run, Result, Envelope, RuntimeTarget, WorkflowTarget } from './contracts/types';
 import { api, setCsrf, onSessionExpired, ApiError } from './data/api';
@@ -17,6 +17,8 @@ import './style.css';
 import { WorkflowInputs } from './components/WorkflowInputs';
 import { RuntimeStatus } from './components/RuntimeStatus';
 import { Admin } from './components/Admin';
+const Editor = lazy(() => import('./editor/Editor'));
+const editorRoute = location.pathname === '/editor' || location.pathname.startsWith('/editor/');
 let bootstrapSession: Promise<Me> | undefined;
 function loadSession() {
     if (bootstrapSession) return bootstrapSession;
@@ -67,7 +69,7 @@ function App() {
     selectionRef.current={runId,controlRunId,workflowId,workflowInputs,dirty:inputDirty.current};
     const panelRef=useRef<Panel | undefined>(undefined);panelRef.current=panel;
     const workflowRef=useRef<WorkflowTarget[]>([]);workflowRef.current=workflows;
-    const refreshRef=useRef<((options?:{reconnect?:boolean;quiet?:boolean})=>Promise<void>) | undefined>(undefined);
+    const refreshRef=useRef<((options?:{reconnect?:boolean;quiet?:boolean;adoptPublished?:boolean})=>Promise<void>) | undefined>(undefined);
     const [viewId, setViewId] = useState('');
     const sourceProblems = useRef<Record<string,string>>({});
     const viewRunIds = useRef<string[]>([]);
@@ -92,6 +94,7 @@ function App() {
         packageId?: string;
         name?: string;
         active?: boolean;
+        editorManaged?: boolean;
         runtimeIds?: string[];
         manifest?: {projectId:string;packageRevision:string};
     }[]>([]);
@@ -130,7 +133,7 @@ function App() {
         }
         finally { if(epoch===sessionEpoch.current)endSession(message); }
     }
-    async function refresh(options:{reconnect?:boolean;quiet?:boolean}={}) {
+    async function refresh(options:{reconnect?:boolean;quiet?:boolean;adoptPublished?:boolean}={}) {
         const ticket=++catalogGeneration.current;catalogAbort.current?.abort();const abort=new AbortController();catalogAbort.current=abort;
         const selected=activeRuntime.current;setCatalogBusy(true);
         const current=()=>ticket===catalogGeneration.current && !abort.signal.aborted;
@@ -144,7 +147,7 @@ function App() {
             if(!info.runtimeInstanceId || !info.projectId)throw Error('Runtime 未提供正式实例和工程身份');
             const changed=Boolean(oldInfo && (oldInfo.runtimeInstanceId!==info.runtimeInstanceId || oldInfo.projectId!==info.projectId));
             if(changed){clearIdentityView();setRuns([]);setWorkflows([]);setRunId('');setControlRunId('');setWorkflowId('');setPanel(undefined);setPanels([]);setNotice('Runtime 实例或工程已改变；旧查看和控制选择已清除。');}
-            const context=targetContext(rid,info.projectId);
+            const context=targetContext(rid,info.projectId,info.runtimeInstanceId);
             const [rs,ws,ps,pk]=await Promise.all([
                 api<Run[]>(`/api/runtimes/${encodeURIComponent(rid)}/runs`,{signal:abort.signal}),
                 api<WorkflowTarget[]>(`/api/runtimes/${encodeURIComponent(rid)}/workflows`,{signal:abort.signal}),
@@ -154,18 +157,23 @@ function App() {
             if(rs.some(run=>run.runtimeInstanceId!==info.runtimeInstanceId || run.projectId!==info.projectId) || ws.some(workflow=>workflow.runtimeInstanceId!==info.runtimeInstanceId || workflow.projectId!==info.projectId || workflow.configurationRevision!==info.configurationRevision))throw Error('目录读取期间 Runtime 身份或配置发生变化，请再次刷新。');
             const previous=selectionRef.current;
             const reconciled=reconcileCatalogSelection(previous,oldInfo,info,rs,ws,!oldInfo && targets.find(target=>target.id===rid)?.mode==='mock');
-            const chosen=(!changed && ps.find(item=>item.id===panelRef.current?.id)) || ps[0];
+            // Directory/control synchronization and connection recovery retain
+            // the immutable selected release. Only explicit refresh/switch adopts
+            // the active default, while a real identity change clears selection.
+            const pinned=oldInfo && !changed && !options.adoptPublished?panelRef.current:undefined;
+            const chosen=pinned || ps[0];
             const nextPanel=chosen?await api<Panel>(`/api/panels/${encodeURIComponent(chosen.id)}?${context}`,{signal:abort.signal}):undefined;
             if(!current() || activeRuntime.current!==rid)return;
             const oldWorkflow=workflowRef.current.find(workflow=>workflow.id===previous.workflowId),newWorkflow=ws.find(workflow=>workflow.id===previous.workflowId);
             if(oldWorkflow && newWorkflow && JSON.stringify([oldWorkflow.inputSchema,oldWorkflow.inputDeclarations,oldWorkflow.inputsJson])!==JSON.stringify([newWorkflow.inputSchema,newWorkflow.inputDeclarations,newWorkflow.inputsJson]))reconciled.notices.push('工作流输入描述或默认值已更新；保留当前输入，请核对后再启动。');
             // Preserve edits made while the request was in flight.
             const next={...reconciled.selection,workflowInputs:inputDirty.current?selectionRef.current.workflowInputs:reconciled.selection.workflowInputs};
-            infoRef.current=info;setRuntimeInfo(info);setLastCommand(old=>old && old.runtimeId===rid && (!old.runtimeInstanceId || old.runtimeInstanceId===info.runtimeInstanceId) && (!old.projectId || old.projectId===info.projectId)?{...old,reply:{...old.reply,run:rs.find(run=>run.id===old.runId) || old.reply.run}}:undefined);setRuns(rs);setWorkflows(ws);setPanels(ps);setPackages(pk);
+            const available=nextPanel && !ps.some(item=>item.id===nextPanel.id)?[nextPanel,...ps]:ps;
+            infoRef.current=info;setRuntimeInfo(info);setLastCommand(old=>old && old.runtimeId===rid && (!old.runtimeInstanceId || old.runtimeInstanceId===info.runtimeInstanceId) && (!old.projectId || old.projectId===info.projectId)?{...old,reply:{...old.reply,run:rs.find(run=>run.id===old.runId) || old.reply.run}}:undefined);setRuns(rs);setWorkflows(ws);setPanels(available);setPackages(pk);
             setRuntimeState(selectedViewState(next.runId,info,rs));
             selectionRef.current=next;setRunId(next.runId);setControlRunId(next.controlRunId);setWorkflowId(next.workflowId);setWorkflowInputs(next.workflowInputs);
             setPanel(old=>old?.id===nextPanel?.id && old?.packageRevision===nextPanel?.packageRevision && !changed?old:nextPanel);
-            if(!ps.length)reconciled.notices.push('当前 Runtime／工程暂无可访问的启用页面包。');
+            if(!available.length)reconciled.notices.push('当前 Runtime／工程暂无可访问的启用页面包。');
             if(reconciled.notices.length)setNotice(reconciled.notices.join(' '));
             setCatalogError('');
             if(options.reconnect || connectionNeedsRefresh.current){connectionNeedsRefresh.current=false;setViewRefresh(value=>value+1);}
@@ -189,12 +197,12 @@ function App() {
         try{const r=await api<CommandReply>(`/api/operations/by-request/${encodeURIComponent(original.id)}`);await resolveCommand(original.kind,r,{runtimeId:original.runtimeId || original.target.split('/')[0],runtimeInstanceId:original.runtimeInstanceId,projectId:original.projectId},original.id,epoch);}
         catch(e){if(epoch!==sessionEpoch.current)return;if(activeRuntime.current===(original.runtimeId || original.target.split('/')[0]))setError(`查询未确认：${(e as Error).message}；未重新发送命令。`);setPending(old=>old?.id===original.id?{...old,state:'unknown'}:old)}finally{if(epoch===sessionEpoch.current)setBusy(false)}
     }
-    useEffect(()=>{if(me && activeRuntime.current)void refreshRef.current?.().catch(()=>{});},[runtimeId]);
+    useEffect(()=>{if(!editorRoute && me && activeRuntime.current)void refreshRef.current?.().catch(()=>{});},[runtimeId]);
     useEffect(() => {
         const epoch=sessionEpoch.current;
         loadSession().then(m=>{if(epoch===sessionEpoch.current){setCsrf(m.csrf);setMe(m)}}).catch(()=>{});
     }, []);
-    useEffect(() => { if (me)
+    useEffect(() => { if (me && !editorRoute)
         refresh().catch(()=>{}); }, [me]);
     useEffect(() => { pageRef.current = panel?.defaultPageId || panel?.pages[0]?.id || ''; setPage(pageRef.current); setResult(undefined); setScopes({}); }, [panel]);
     useEffect(() => { if (!me || !panel || !runtimeId || !runtimeInfo) {
@@ -202,7 +210,7 @@ function App() {
         return;
     } let valid = true; sourceProblems.current={}; viewRunIds.current=[]; setViewId(''); setResult(undefined); setScopes({}); setFrozen(false); setRuntimeState(''); api<{
         id: string; sourceProblems?:Record<string,string>; runIds?:string[];
-    }>('/api/views', { method: 'POST', body: JSON.stringify({ runtimeId, projectId:runtimeInfo?.projectId, panelId: panel.id, runId: runId || undefined }) }).then(v => { if (valid) {sourceProblems.current=v.sourceProblems || {};viewRunIds.current=v.runIds || (runId?[runId]:[]);setViewId(v.id);}  else void api(`/api/views/${encodeURIComponent(v.id)}`, { method: 'DELETE' }).catch(() => {}); }).catch(e => { if (valid)
+    }>('/api/views', { method: 'POST', body: JSON.stringify({ runtimeId, projectId:runtimeInfo?.projectId, runtimeInstanceId:runtimeInfo?.runtimeInstanceId, panelId: panel.id, runId: runId || undefined }) }).then(v => { if (valid) {sourceProblems.current=v.sourceProblems || {};viewRunIds.current=v.runIds || (runId?[runId]:[]);setViewId(v.id);}  else void api(`/api/views/${encodeURIComponent(v.id)}`, { method: 'DELETE' }).catch(() => {}); }).catch(e => { if (valid)
         setError(e.message); }); return () => { valid = false; }; }, [me, panel, runtimeId, runId, runtimeInfo?.runtimeInstanceId, runtimeInfo?.projectId,viewRefresh]);
     useEffect(() => {
         setScopeStatuses({});
@@ -410,28 +418,29 @@ function App() {
     const canControl = me?.role !== 'viewer' && Boolean(runtimes.find(r=>r.id===runtimeId)?.permissions?.includes('control'));
     if (!me)
         return <main className="login"><h1>Emo Web 操作员面板</h1><p>独立展示客户端，不执行工作流或控制设备驱动。</p><form onSubmit={login}><label>用户名<input name="username" autoComplete="username" required/></label><label>密码<input name="password" type="password" autoComplete="current-password" required/></label><button disabled={busy}>{busy ? '登录中…' : '登录'}</button></form>{error && <p role="alert">{error}</p>}</main>;
-    return <main><header><div><h1>Emo Web 操作员面板</h1><p>{me.preview ? '只读预览 · 不启动或停止生产' : me.mode === 'mock' ? '模拟 Runtime · 演示数据，不代表生产设备' : '真实 Runtime 模式 · 能力以合同为准'}</p></div><div>{me.username} · {me.role}<button disabled={busy} onClick={logout}>退出</button></div></header>
+    if (editorRoute) return <Suspense fallback={<main>正在加载 Web 页面编辑器…</main>}><Editor me={me} onLogout={logout}/></Suspense>;
+    return <main><header><div><h1>Emo Web 操作员面板</h1><p>{me.preview ? '只读预览 · 不启动或停止生产' : me.mode === 'mock' ? '模拟 Runtime · 演示数据，不代表生产设备' : '真实 Runtime 模式 · 能力以合同为准'}</p></div><div>{me.role==='admin' && !me.preview && <a href="/editor">编辑 Web 页面</a>} {me.username} · {me.role}<button disabled={busy} onClick={logout}>退出</button></div></header>
  {error && <div className="alert" role="alert">{error}<button onClick={() => setError('')}>关闭</button></div>}{catalogError && <div className="alert" role="alert">{catalogError}<button onClick={() => setCatalogError('')}>关闭</button></div>}{notice && <div className="notice" role="status">{notice}</div>}
- <section className="toolbar"><label>Runtime<select aria-label="Runtime 目标" value={runtimeId} onChange={e => selectTarget(e.target.value)}>{runtimes.map(r => <option key={r.id} value={r.id}>{r.alias || r.id} · {r.mode}</option>)}</select></label><label>页面包<select aria-label="页面包" value={panel?.id || ''} onChange={async (e) => { const rid=activeRuntime.current,ticket=catalogGeneration.current;try {
-        const next=await api<Panel>(`/api/panels/${encodeURIComponent(e.target.value)}?${targetContext(rid,infoRef.current?.projectId)}`);if(rid===activeRuntime.current && ticket===catalogGeneration.current)setPanel(next);
+ <section className="toolbar"><label>Runtime<select aria-label="Runtime 目标" value={runtimeId} onChange={e => selectTarget(e.target.value)}>{runtimes.map(r => <option key={r.id} value={r.id}>{r.alias || r.id} · {r.mode}</option>)}</select></label><label>页面包<select aria-label="页面包" value={panel?.id || ''} onChange={async (e) => { const rid=activeRuntime.current,ticket=++catalogGeneration.current;catalogAbort.current?.abort();setCatalogBusy(false);try {
+        const next=await api<Panel>(`/api/panels/${encodeURIComponent(e.target.value)}?${targetContext(rid,infoRef.current?.projectId,infoRef.current?.runtimeInstanceId)}`);if(rid===activeRuntime.current && ticket===catalogGeneration.current)setPanel(next);
     }
     catch (e) {
         if(rid===activeRuntime.current && ticket===catalogGeneration.current)setError((e as Error).message);
-    } }}>{panels.map(p => <option key={p.id} value={p.id}>{p.name || p.title || p.id}</option>)}</select></label><label>查看运行<select aria-label="查看运行" disabled={catalogBusy} value={runId} onChange={e => setRunId(e.target.value)}><option value="">无运行 · 页面 / 历史预览</option>{runs.map(r => <option key={r.id} value={r.id}>{r.name || r.id} · {r.state}</option>)}</select></label><button disabled={catalogBusy} onClick={() => refresh().catch(()=>{})}>刷新页面包和状态</button><small aria-label="当前 Runtime 身份">{runtimeInfo?.runtimeInstanceId || '—'} / {runtimeInfo?.projectId || '—'} · 配置 {runtimeInfo?.configurationRevision || runtimeInfo?.documentRevision || '—'}</small><span className="status">{status} {lastUpdate && `· 最后更新 ${lastUpdate}`}</span></section>
+    } }}>{panels.map(p => <option key={p.id} value={p.id}>{p.name || p.title || p.id}</option>)}</select></label><label>查看运行<select aria-label="查看运行" disabled={catalogBusy} value={runId} onChange={e => setRunId(e.target.value)}><option value="">无运行 · 页面 / 历史预览</option>{runs.map(r => <option key={r.id} value={r.id}>{r.name || r.id} · {r.state}</option>)}</select></label><button disabled={catalogBusy} onClick={() => refresh({adoptPublished:true}).catch(()=>{})}>刷新页面包和状态</button><small aria-label="当前 Runtime 身份">{runtimeInfo?.runtimeInstanceId || '—'} / {runtimeInfo?.projectId || '—'} · 配置 {runtimeInfo?.configurationRevision || runtimeInfo?.documentRevision || '—'}</small><span className="status">{status} {lastUpdate && `· 最后更新 ${lastUpdate}`}</span></section>
  {pending&&<section className="notice"><strong>待确认操作：{pending.kind} / {pending.target}</strong><button disabled={busy} onClick={queryPending}>查询操作结果</button>{pending.state!=='submitting'&&<button onClick={()=>{if(confirm('结束本次跟踪不会停止或重新执行任何命令。请确认已核对运行状态，后续新操作将是新的意图。'))clearPending()}}>结束跟踪（不重发）</button>}</section>}
  {lastCommand && lastCommand.runtimeId===runtimeId && (!lastCommand.runtimeInstanceId || lastCommand.runtimeInstanceId===runtimeInfo?.runtimeInstanceId) && (!lastCommand.projectId || lastCommand.projectId===runtimeInfo?.projectId) && lastCommand.runId && (()=>{const authoritative=lastCommand.reply.run || runs.find(run=>run.id===lastCommand.runId);return <section className="notice" aria-label="原控制运行状态"><strong>原控制 Job：{lastCommand.runId}</strong><p>权威状态：{authoritative?.status || authoritative?.state || lastCommand.reply.status || '待刷新'} · 持有资源：{authoritative?.ownsResources===undefined?'未知':authoritative.ownsResources?'是':'否'} · 展示资源已释放：{authoritative?.displayResourcesReleased===undefined?'未知':authoritative.displayResourcesReleased?'是':'否'}</p><small>命令受理不等于 Job 结束；使用刷新获取后续权威状态。</small></section>})()}
  <section className="toolbar"><button disabled={!result || frozen} onClick={() => action('freeze')}>冻结查看</button><button disabled={!frozen} onClick={() => action('resume_live')}>恢复实时</button><span>{frozen ? '已冻结查看，后台仍在运行' : '实时查看'}</span>{canControl && <><span className="control-target">控制目标：{controlRunId || '未选择'}（独立于查看运行）</span><label>停止目标<select aria-label="停止控制目标" disabled={catalogBusy} value={controlRunId} onChange={e=>setControlRunId(e.target.value)}><option value="">明确选择停止对象</option>{runs.map(r=><option key={r.id} value={r.id}>{r.name||r.id} · {r.state}</option>)}</select></label><button className="danger" disabled={busy || catalogBusy || !controlRunId || Boolean(runs.find(r=>r.id===controlRunId)?.allowedActions && !runs.find(r=>r.id===controlRunId)?.allowedActions?.some(a=>a.toLowerCase()==='stop'))} onClick={() => { if (confirm(`停止当前明确选中的运行 ${controlRunId}？`))
         control('stop'); }}>停止选中运行</button></>}</section>
  {canControl && <section className="toolbar"><label>启动工作流<select aria-label="启动工作流目标" disabled={catalogBusy} value={workflowId} onChange={e => { inputDirty.current=false;setWorkflowId(e.target.value); setWorkflowInputs(workflows.find(w=>w.id===e.target.value)?.inputsJson || JSON.stringify(workflows.find(w=>w.id===e.target.value)?.inputs || {})); }}><option value="">{workflows.length?'明确选择工作流':'无可用工作流 / 合同能力未就绪'}</option>{workflows.map(w => <option key={w.id} value={w.id}>{w.name || w.id}</option>)}</select></label><WorkflowInputs workflow={workflows.find(w=>w.id===workflowId)} value={workflowInputs} onChange={value=>{inputDirty.current=true;selectionRef.current={...selectionRef.current,workflowInputs:value,dirty:true};setWorkflowInputs(value)}}/><button disabled={busy || catalogBusy || !workflowId || !runtimeId || workflows.find(w=>w.id===workflowId)?.canStart === false} onClick={() => control('start')}>启动工作流</button><small>独立启动目标，不使用历史选行；输入由后端再次校验。</small>{workflows.find(w=>w.id===workflowId)?.canStart === false && <p role="status">暂不能启动：{workflows.find(w=>w.id===workflowId)?.startBlockReason || 'Runtime 未提供具体原因，请刷新状态或联系管理员。'} 可使用“刷新页面包和状态”重试查询。</p>}{workflows.find(w => w.id === workflowId)?.inputSchema && <details><summary>输入约束</summary><pre>{JSON.stringify(workflows.find(w => w.id === workflowId)?.inputSchema, null, 2)}</pre></details>}</section>}
  {panel ? <><nav className="page-nav">{panel.pages.map(p => <button key={p.id} aria-current={page === p.id ? 'page' : undefined} onClick={() => changePage(p.id)}>{p.title}</button>)}</nav><PanelRenderer panel={panel} pageId={page} onPage={changePage} result={result} results={scopes} viewId={viewId} onAction={action} state={status} runtimeState={runtimeState || runs.find(r=>r.id===runId)?.state}/></> : <p>暂无已发布页面，请联系管理员。</p>}
- {me.role === 'admin' && <details className="admin"><summary>页面包管理</summary><p>导入不会更改 Runtime 工程；启用 / 切回仅切换 Web 页面版本，仅更新当前 Runtime／正式工程的启用版本，不改变其他目标的版本或访问。</p><input aria-label="导入页面包" type="file" accept=".emoweb,.zip" disabled={busy} onChange={e => { if (e.target.files?.[0])
-        upload(e.target.files[0]); }}/>{packages.map(p => <div key={p.id || p.packageId} data-package-id={p.id || p.packageId}>{p.name || (p.manifest ? `${p.manifest.projectId} / ${p.manifest.packageRevision}` : p.id || p.packageId)} · 关联：{p.runtimeIds?.join(', ') || '未关联'} {p.active && '已启用'} <button disabled={!runtimeId} onClick={async () => { const activatedRuntime=runtimeId,activatedProject=runtimeInfo?.projectId;if (!confirm(`将此版本启用 / 切回到 ${runtimeId}，仅更新该目标当前正式工程的启用版本？其他 Runtime 不受影响。不会改动生产工程。`)) return; try {
+ {me.role === 'admin' && <details className="admin"><summary>页面包管理</summary><p>独立编辑器生成的页面请在编辑器中管理源版本与回退，同时核对后续任务采集请求。此处仅保留兼容 SDK 包的导入与展示切换，不改变其他目标的版本或访问。</p><input aria-label="导入页面包" type="file" accept=".emoweb,.zip" disabled={busy} onChange={e => { if (e.target.files?.[0])
+        upload(e.target.files[0]); }}/>{packages.map(p => <div key={p.id || p.packageId} data-package-id={p.id || p.packageId}>{p.name || (p.manifest ? `${p.manifest.projectId} / ${p.manifest.packageRevision}` : p.id || p.packageId)} · 关联：{p.runtimeIds?.join(', ') || '未关联'} {p.active && '已启用'} {p.editorManaged ? <a href={`/editor?runtimeId=${encodeURIComponent(runtimeId)}`}>在编辑器管理源版本与回退（重新核对采集请求）</a> : <button disabled={!runtimeId} onClick={async () => { const activatedRuntime=runtimeId,activatedProject=runtimeInfo?.projectId;if (!confirm(`将此版本启用 / 切回到 ${runtimeId}，仅更新该目标当前正式工程的启用版本？其他 Runtime 不受影响。不会改动生产工程。`)) return; try {
         await api(`/api/packages/${encodeURIComponent(p.id || p.packageId || '')}/activate`, { method: 'POST', body: JSON.stringify({ runtimeId,projectId:runtimeInfo?.projectId }) });
-        if(activeRuntime.current===activatedRuntime && infoRef.current?.projectId===activatedProject){await refresh();setNotice('当前目标页面包已切换；其他目标未改变');}
+        if(activeRuntime.current===activatedRuntime && infoRef.current?.projectId===activatedProject){await refresh({adoptPublished:true});setNotice('当前目标页面包已切换；其他目标未改变');}
     }
     catch (e) {
         if(activeRuntime.current===activatedRuntime && infoRef.current?.projectId===activatedProject)setError((e as Error).message);
-    } }}>对当前目标启用 / 切回此版本</button></div>)}</details>}
+    } }}>对当前目标启用 / 切回此版本</button>}</div>)}</details>}
  {!canControl && runtimeId && <p>当前目标只读：未授予生产控制权限。</p>}
  <aside aria-label="作用域进度">{Object.entries(scopeStatuses).map(([key,value])=><p key={key}>{value.jobId} / {value.scopeId}：{scopeActivity(value,scopes[value.scopeId],frozenKeys.current?.[value.scopeId]===scopes[value.scopeId]?.resultKey && Boolean(scopes[value.scopeId]))}</p>)}</aside>
  <RuntimeStatus runtimeId={runtimeId} runId={runId} runtimeInstanceId={runs.find(r=>r.id===runId)?.runtimeInstanceId} projectId={runs.find(r=>r.id===runId)?.projectId}/>

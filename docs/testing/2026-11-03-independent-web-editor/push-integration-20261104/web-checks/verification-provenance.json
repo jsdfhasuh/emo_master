@@ -1,0 +1,61 @@
+{
+  "baseSha": "8b987ce393f83141738091ed35985695beba6f7f",
+  "worktree": "D:\\emo-web-delivery-20261104",
+  "webPython": "D:/jsdfhasuh/documents/my_project/emo_master/web_panel/.venv/Scripts/python.exe",
+  "runtimePython": "D:/Conda/envs/emo_master/python.exe",
+  "environment": {
+    "PYTHONPATH": "D:\\emo-web-delivery-20261104\\web_panel\\backend",
+    "EMO_WEB_PRODUCT_RUNTIME": "1",
+    "EMO_WEB_PRODUCT_PYTHON": "D:/Conda/envs/emo_master/python.exe",
+    "EMO_WEB_PRODUCT_EVIDENCE_DIR": "D:\\tmp\\emo-web-push-20261104\\web-checks\\product-runtime-final",
+    "QT_QPA_PLATFORM": "offscreen",
+    "PYTHONUTF8": "1",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "commands": [
+    {
+      "cwd": "D:\\emo-web-delivery-20261104",
+      "command": "D:/jsdfhasuh/documents/my_project/emo_master/web_panel/.venv/Scripts/python.exe -m unittest discover -s web_panel/tests -v",
+      "result": "183 tests OK; 50.780s; no skips"
+    },
+    {
+      "cwd": "D:\\emo-web-delivery-20261104\\web_panel",
+      "command": "D:/jsdfhasuh/documents/my_project/emo_master/web_panel/.venv/Scripts/python.exe -m build --wheel --outdir dist",
+      "result": "PASS"
+    },
+    {
+      "cwd": "D:\\emo-web-delivery-20261104\\web_panel",
+      "command": "D:/jsdfhasuh/documents/my_project/emo_master/web_panel/.venv/Scripts/python.exe scripts/verify_wheel.py",
+      "environment": "PYTHONPATH removed",
+      "result": "PASS"
+    },
+    {
+      "cwd": "D:\\tmp\\emo-web-push-20261104\\web-checks",
+      "command": "D:\\tmp\\emo-web-push-20261104\\web-checks\\installed-venv\\Scripts\\python.exe -I D:\\emo-web-delivery-20261104\\web_panel\\scripts\\check_installed_editor.py",
+      "result": "PASS"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "D:\\emo-web-delivery-20261104\\web_panel\\dist\\emo_master_web_panel-0.1.0a1-py3-none-any.whl",
+      "bytes": 191251,
+      "sha256": "f1a208ecb349344e7c12933ab94ce5eec3708c16c87d6723f71ed10ea6cc7ea7"
+    },
+    {
+      "path": "D:\\emo-web-delivery-20261104\\web_panel\\contracts\\panel-contract-v1\\python\\emo_panel_protocol-1.5.0-py3-none-any.whl",
+      "bytes": 40265,
+      "sha256": "97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d"
+    }
+  ],
+  "staticArchiveMatchesCurrentBackendBytes": true,
+  "staticSha256": {
+    "index.html": "22da3e02f2c1b0073a022053db3d46b7dcdcd8fdeb72d5888f5f80b00783b16c",
+    "assets/Editor-DNs6ah13.js": "8b023da6b1f271cf8ad220ae2afd94e4f2da6cb2d8202c0be0eafb8801c57927",
+    "assets/Editor-Dou073XM.css": "0815b9c139e7a613556f968524f18a003ecff7a4fbfb70d5531f769ccca3740a",
+    "assets/index-BL4iqTvR.js": "98dfeaaf3a4353ae75995f4e45c6babe67005938cdfe1ea7c2292d3b51579896",
+    "assets/index-BPJhQw1Z.css": "6e99ae16e325407a452bf0abedd5403ea9e330189515d4c06d2247af1db9e8e5"
+  },
+  "firstRun": "183 tests; 1 error because SDK1.5.0 handoff had not yet been copied; 1 failure because short checkout made MAX_PATH fixture only 249 characters. Original log preserved.",
+  "testFixtureFix": "web_panel/tests/test_official_packages.py pads packages directory to actual checkout path length; greater-than-260 and asset byte/reinstall assertions preserved.",
+  "acceptance": "software Runtime loopback + backend source tests + independent installed wheels. No physical devices, LAN, frozen exe or deployment validation."
+}

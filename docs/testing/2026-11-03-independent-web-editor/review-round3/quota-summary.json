@@ -1,0 +1,25 @@
+{
+  "detail": "Actionable merged capture quota diagnostics",
+  "head": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "sourceDirty": true,
+  "implemented": true,
+  "before": "quota-before.json: equivalent two-image demand accepted; third distinct image rejected with English-only message and empty diagnostics",
+  "after": "quota-after.json: same rejection and unchanged saved config; workflow, Qt/external sources, addresses, 3/2 merged count and physical alias groups reported",
+  "limitsUnchanged": {"maxScopes": 16, "maxSourceIds": 16, "maxImageSources": 2, "rawBytesPerJob": 8388608},
+  "runtimeMetadata": "Generic output and scope addresses only; no page/component fields",
+  "webMetadata": "componentRefs links Runtime source IDs to candidate Web page/component IDs and names",
+  "checks": [
+    {"evidence": "quota-runtime-focused.log", "passed": 5, "seconds": 6.65},
+    {"evidence": "quota-web-focused-final.log", "passed": 10, "seconds": 4.56},
+    {"evidence": "runtime-sdk-qt-regression.log", "passed": 190, "seconds": 178.08,
+     "files": ["tests/runtime/presentation/test_external_output_requests.py", "tests/runtime/presentation/test_equivalent_image_capture.py", "tests/runtime/presentation/test_normal_capture.py", "tests/runtime/presentation/test_normal_capture_resources.py", "tests/runtime/presentation/test_normal_capture_status_validation.py", "tests/runtime/presentation/test_multi_capture.py", "tests/runtime/presentation/test_capture_lane_lifetime.py", "tests/runtime/presentation/test_failed_capture_retirement.py", "tests/runtime/presentation/test_export_diagnostics.py", "tests/runtime/presentation/test_images.py", "tests/runtime/test_release_host.py", "tests/core/presentation/test_panel_contract.py", "tests/proto/test_proto_generation.py"]},
+    {"evidence": "quota-ruff.log", "result": "PASS: Ruff F"},
+    {"result": "PASS: git diff --check"}
+  ],
+  "checksOverlap": true,
+  "preservedFailures": ["quota-focused-first.log: Web tests not collected because product Conda lacks httpx2; existing Web venv used", "quota-web-focused.log: new gRPC fixture omitted required runtime-info capability; fixture corrected without weakening product checks"],
+  "freeze": "quota-source-freeze.json",
+  "artifactCheck": "artifact-runtime-sdk-before-rebuild.json",
+  "artifactImpact": "Runtime and Web wheels must be rebuilt by parent; SDK wheel source and manifest match and may be reused unchanged",
+  "notExecutedByThisSubtask": ["Browser publication diagnostics UI; frontend agent owns this", "Native Qt manual UI", "Frozen EXE", "Installed Runtime complete detection", "Cross-machine LAN", "Real camera/PLC", "Deployment"]
+}

@@ -1,0 +1,10 @@
+{
+  "runtimeInstanceId": "demo-runtime-1",
+  "projectId": "panel-contract-demo",
+  "event": "control_result",
+  "operation": "stop",
+  "jobId": "demo-j2",
+  "runGroupId": "demo-j2",
+  "outcome": "ACCEPTED",
+  "message": "Stop accepted; awaiting resource release"
+}

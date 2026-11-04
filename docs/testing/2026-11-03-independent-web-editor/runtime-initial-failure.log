@@ -1,0 +1,5 @@
+Initial external-request integration check: 1 passed, 1 failed in 12.45s.
+Failure testRunningPublishNewTaskQtMergeAndStaleSource line157:
+E_CONFIG_ACTIVE: online configuration exists; compare and explicitly write selected changes.
+The test attempted LoadProject to update an already-managed project; this correctly retained the existing explicit-write safeguard.
+The test was corrected to use RuntimeClient.writeProjectConfiguration with exact changed paths and waitForWrite. No admission rule was weakened.

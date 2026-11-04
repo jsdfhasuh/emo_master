@@ -1,0 +1,7 @@
+Processing c:\users\jsdfhasuh\my_scripts\emo_master\web_panel\dist\emo_master_web_panel-0.1.0a1-py3-none-any.whl
+Installing collected packages: emo-master-web-panel
+  Attempting uninstall: emo-master-web-panel
+    Found existing installation: emo-master-web-panel 0.1.0a1
+    Uninstalling emo-master-web-panel-0.1.0a1:
+      Successfully uninstalled emo-master-web-panel-0.1.0a1
+Successfully installed emo-master-web-panel-0.1.0a1

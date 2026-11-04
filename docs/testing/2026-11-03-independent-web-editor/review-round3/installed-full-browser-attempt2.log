@@ -1,0 +1,23 @@
+{"status": "FAILED", "evidence": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\web_panel\\test-results\\independent-editor\\20261104-075839-becab2"}
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\web_panel\frontend\tests\independent_editor_e2e.py", line 382, in <module>
+    main()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\web_panel\frontend\tests\independent_editor_e2e.py", line 286, in main
+    operator.wait_for_function("window.__round3Sockets.length>=2 && window.__round3Sockets.at(-1).readyState===1")
+  File "D:\jsdfhasuh\documents\my_project\emo_master\web_panel\.venv\lib\site-packages\playwright\sync_api\_generated.py", line 21235, in wait_for_function
+    self._sync(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\web_panel\.venv\lib\site-packages\playwright\_impl\_sync_base.py", line 111, in _sync
+    return task.result()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\web_panel\.venv\lib\site-packages\playwright\_impl\_page.py", line 1158, in wait_for_function
+    return await self._main_frame.wait_for_function(**locals_to_params(locals()))
+  File "D:\jsdfhasuh\documents\my_project\emo_master\web_panel\.venv\lib\site-packages\playwright\_impl\_frame.py", line 945, in wait_for_function
+    await self._channel.send("waitForFunction", self._timeout, params)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\web_panel\.venv\lib\site-packages\playwright\_impl\_connection.py", line 78, in send
+    return await self._connection.wrap_api_call(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\web_panel\.venv\lib\site-packages\playwright\_impl\_connection.py", line 636, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.Error: Page.wait_for_function: EvalError: Evaluating a string as JavaScript violates the following Content Security Policy directive because 'unsafe-eval' is not an allowed source of script: default-src 'self'".
+
+    at eval (<anonymous>)
+    at predicate (eval at evaluate (:370:30), <anonymous>:4:60)
+    at next (eval at evaluate (:370:30), <anonymous>:29:33)

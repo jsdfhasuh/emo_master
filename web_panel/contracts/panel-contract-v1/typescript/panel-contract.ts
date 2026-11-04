@@ -47,6 +47,8 @@ export type IndicatorStyle = { "text": string; "color"?: "neutral" | "green" | "
 
 export type Navigation = { "mode"?: "tabs" | "buttons" };
 
+export type OutputRequestConfig = { "schemaVersion"?: "1.0"; "sources"?: { [key: string]: unknown }; "scopes"?: { [key: string]: unknown } };
+
 export type PanelManifest = { "format"?: "emo-web-panel-1"; "projectId": string; "packageRevision": string; "panelContractVersion"?: "1.0"; "rendererRequirements": Array<string>; "presentation"?: "presentation.json"; "sourcePresentationVersion": "1.0" | "1.1" | "1.2"; "historyDefinitionRevision": string; "assets": { [key: string]: unknown }; "captureRequirements": { [key: string]: unknown } };
 
 export type Placement = { "row"?: number; "column"?: number; "rowSpan"?: number; "columnSpan"?: number };
@@ -252,6 +254,10 @@ export type RpcOperatorIconIssue = { "ruleId"?: string; "code"?: string; "messag
 export type RpcOperatorInfo = { "operatorId"?: string; "displayName"?: string; "version"?: string; "inputPorts"?: { [key: string]: string }; "outputPorts"?: { [key: string]: string }; "paramSchemaJson"?: string; "category"?: string; "iconKey"?: string; "summary"?: string; "inputPortSpecsJson"?: string; "outputPortSpecsJson"?: string; "editorSpecJson"?: string; "editorIssuesJson"?: string; "icon"?: RpcOperatorIconInfo; "iconIssues"?: Array<RpcOperatorIconIssue>; "deviceRequirementsJson"?: string };
 
 export type RpcOperatorPreviewFrame = { "sessionId"?: string; "jpeg"?: string; "sequence"?: string; "blockId"?: string; "deviceTimestamp"?: string; "actualExposureUs"?: number; "width"?: number; "height"?: number; "state"?: string; "generation"?: string; "code"?: string; "message"?: string };
+
+export type RpcOutputRequestsReply = { "ok"?: boolean; "code"?: string; "message"?: string; "stateJson"?: string };
+
+export type RpcOutputRequestsRequest = { "runtimeInstanceId"?: string; "projectId"?: string; "expectedDocumentRevision"?: string; "expectedConfigRevision"?: string; "requestId"?: string; "configJson"?: string };
 
 export type RpcPlcDebugReply = { "ok"?: boolean; "code"?: string; "message"?: string; "sessionId"?: string; "runtimeInstanceId"?: string; "state"?: string; "writeEnabled"?: boolean; "resultJson"?: string; "elapsedMs"?: number; "timestampMs"?: string; "ttlMs"?: number; "writeLockGeneration"?: string };
 

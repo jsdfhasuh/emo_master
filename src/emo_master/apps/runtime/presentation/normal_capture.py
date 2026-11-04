@@ -54,7 +54,11 @@ def freezeNormalCapture(document, registry, resourceRoot, workflowId, *, counter
                 or source["workflowId"] != scope["scopeWorkflowId"]
                 or source["callPath"] != scope["callPath"]):
             raise ValueError(f"{sourceId}: output must belong to its explicit invocation scope")
-    execution = {"projectId": document.project.projectId,
+    return freezeOutputCapture(document, registry, workflowId, sources, scopes, limits=limits)
+
+
+def executionDefinition(document, registry, workflowId):
+    return {"projectId": document.project.projectId,
                  **({"globalVariables": {key: value.model_dump() for key, value in document.globalVariables.items()}}
                     if document.schemaVersion in {"2.4", "2.5", "2.6", "2.7", "2.8", "2.9"} else {}),
                  **({"devices": document.devices.model_dump()} if document.schemaVersion in {"2.6", "2.7", "2.8", "2.9"} else {}),
@@ -64,6 +68,19 @@ def freezeNormalCapture(document, registry, resourceRoot, workflowId, *, counter
                  "plugins": {node.operatorId: registry[node.operatorId].manifest.version
                              for workflow in document.workflows.values() for node in workflow.nodes
                              if node.kind == "operator"}}
-    return NormalCapture(canonicalJson({"sources": sources, "scopes": scopes}),
-                         canonicalJson(capture), revisionOf(capture), revisionOf(execution),
-                         canonicalJson(limits))
+
+
+def freezeOutputCapture(document, registry, workflowId, sources, scopes, *, limits=None, unavailable=None):
+    """Construct existing collector metadata without a page or resource dependency."""
+    import json
+    from emo_master.core.presentation.capture_limits import outputCaptureLimits
+    capture = {'ruleVersion': '1.0',
+               'sources': [json.loads(value) for value in sorted({canonicalJson(s) for s in sources.values()})],
+               'scopes': scopes}
+    if limits is None:
+        limits = outputCaptureLimits(sources, scopes)
+    plan = {'sources': sources, 'scopes': scopes}
+    if unavailable:
+        plan['unavailable'] = unavailable
+    return NormalCapture(canonicalJson(plan), canonicalJson(capture), revisionOf(capture),
+                         revisionOf(executionDefinition(document, registry, workflowId)), canonicalJson(limits))

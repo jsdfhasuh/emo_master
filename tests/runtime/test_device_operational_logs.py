@@ -30,6 +30,7 @@ def testNativeFailureJsonlProjectionRetainsLevelCodeAndIdentity(explicitLevel):
     assert (event.workflowId, event.nodeId, event.workflowRunId, event.nodeRunId) == ('main', 'camera', 'run', 'node-run')
     assert json.loads(event.iterationPathJson) == [2]
     assert diagnostics.query(SCOPE, 'camera')['records'][0]['level'] == 'ERROR'
+    assert (event.originApp, event.component, event.runtimeInstanceId) == ('runtime', 'device', 'runtime')
 
 
 def testGlobalFailureSummariesAndRecoveryHaveSinglePersistentCopy(tmp_path):
@@ -131,3 +132,97 @@ def testRuntimeGlobalStreamSqliteAndFileShareDeviceFailureAndFlush(tmp_path):
     assert len(errors) == 2
     assert errors[-1]['payload']['occurrences'] == 2
     assert errors[-1]['payload']['occurrencesSinceLastLog'] == 1
+
+
+@pytest.mark.parametrize('failure', [None, 'known', 'plain'])
+def testActionLogRetainsOperationContextAndOnlyExistingOutcome(monkeypatch, failure):
+    from emo_master.apps.runtime.devices.executor import DeviceError
+    from tests.runtime.test_managed_slmp import managerFor, plcProject
+    manager = managerFor(plcProject(12345))
+    driver = manager.drivers['plc']
+    monkeypatch.setattr(driver, 'connect', lambda *_args: None)
+    def perform(*_args, **_kwargs):
+        if failure == 'known':
+            raise DeviceError('E_TEST', 'unknown result', outcome='UNKNOWN')
+        if failure == 'plain':
+            raise RuntimeError('plain failure')
+        return {'words': [42]}
+    monkeypatch.setattr(driver, 'execute', perform)
+    try:
+        kwargs = dict(cycleId='cycle-a', requestId='actual-request',
+                      source=dict(workflowId='main', nodeId='read', slot='plc'),
+                      arguments=dict(device='D', startAddress=800, count=1))
+        if failure:
+            with pytest.raises((RuntimeError, DeviceError)):
+                manager.execute('a', 'plc', 'read', {}, **kwargs)
+        else:
+            assert manager.execute('a', 'plc', 'read', {}, **kwargs) == {'words': [42]}
+        rows = manager.diagnostics.query(manager.scope, 'plc')['records']
+        row = next(row for row in rows if row['eventType'].startswith('device.action.'))
+        assert {key: row[key] for key in ('jobId', 'workflowId', 'nodeId', 'planRevision', 'slot')} == dict(
+            jobId='a', workflowId='main', nodeId='read', planRevision=0, slot='plc')
+        assert row['requestId'] == 'actual-request' and row['action'] == 'read'
+        if failure == 'known':
+            assert row['outcome'] == 'UNKNOWN'
+        else:
+            assert 'outcome' not in row
+        assert not row.get('workflowRunId') and not row.get('nodeRunId')
+    finally:
+        manager.close()
+
+
+def testConnectionFailureThenManualSuccessPublishesOneRecovery(monkeypatch):
+    from emo_master.apps.runtime.devices.executor import DeviceError
+    from tests.runtime.test_managed_slmp import managerFor, plcProject
+    manager = managerFor(plcProject(12345))
+    store = EventStore()
+    manager.diagnostics.eventPublisher = store.append
+    driver = manager.drivers['plc']
+    def fail(*_args):
+        raise DeviceError('E_TEST_CONNECT', 'temporary refusal')
+    monkeypatch.setattr(driver, 'connect', fail)
+    try:
+        pending = manager._connectEvent('plc', 'a')
+        with pytest.raises(DeviceError):
+            manager.executors['plc'].wait(pending)
+        assert [event.eventType for event in store.read('__runtime__')] == ['device.connect.failed']
+        monkeypatch.setattr(driver, 'connect', lambda *_args: None)
+        manager.lifecycles['plc'].connect(lambda: False, float('inf'))
+        manager.lifecycles['plc'].connect(lambda: False, float('inf'))
+        assert [event.eventType for event in store.read('__runtime__')] == [
+            'device.connect.failed', 'device.connect.recovered']
+        rows = manager.diagnostics.query(manager.scope, 'plc')['records']
+        assert [row['eventType'] for row in rows] == ['device.connect.failed', 'device.connect.completed']
+        assert all(row['action'] == '' for row in rows)
+    finally:
+        manager.close()
+
+
+def testTcpSynchronousAndBackgroundFailuresHaveExplicitPublishResponsibility(monkeypatch):
+    from emo_master.apps.runtime.communication.manager import CommunicationManager
+    from emo_master.core.project.communication import CommunicationSettings
+    from emo_master.core.contracts.tcp_service import TcpServiceError
+    events = []
+    manager = CommunicationManager('runtime')
+    manager.eventSink = lambda eventType, message, **fields: events.append((eventType, fields))
+    config = CommunicationSettings.model_validate(dict(enabled=True, tcpServer=dict(bindAddress='127.0.0.1', port=12345,
+        channels=[dict(channelId='loopback', name='Loopback', allowedIps=['127.0.0.1'])])))
+    # The declaration requires a real port; use an ephemeral loopback reservation.
+    import socket
+    with socket.socket() as reservation:
+        reservation.bind(('127.0.0.1', 0))
+        config.tcpServer.port = reservation.getsockname()[1]
+    manager.configure('project', 'key', config)
+    monkeypatch.setattr(manager, '_spawn', lambda *_args: (_ for _ in ()).throw(RuntimeError('cannot create thread')))
+    with pytest.raises(TcpServiceError):
+        manager.start()
+    assert events == []
+    assert manager.snapshot()['records'][-1]['level'] == 'ERROR'
+    manager.stop()
+    monkeypatch.setattr(manager, '_spawn', lambda *_args: None)
+    manager.start()
+    assert events[-1] == ('device.connect.completed', dict(events[-1][1], action=''))
+    manager._failService(RuntimeError('listener failed'), 'E_TCP_LISTENER_FAILED')
+    assert events[-1][0] == 'device.connect.failed'
+    assert events[-1][1]['level'] == 'ERROR' and events[-1][1]['action'] == ''
+    manager.close()

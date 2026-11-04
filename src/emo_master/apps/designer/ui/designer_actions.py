@@ -261,6 +261,8 @@ class DesignerActions(QObject):
             return '' if w.loadedProjectPath is not None and w.runtimeController.canStart() else '尚未加载项目或所选任务正在运行'
         if key == 'stop':
             return '' if w.runtimeController.canStop() else '没有可停止的当前任务'
+        if key == 'logs':
+            return ''
         if pages:
             return '仅流程设计可用'
         if key in NAVIGATION_KEYS:
@@ -271,8 +273,6 @@ class DesignerActions(QObject):
                 return '' if navigation.canMove(1) else '没有可前进的浏览位置'
             if key == 'definition':
                 return '' if navigation.targets() else '请选择引用子工作流的调用或循环节点'
-            return ''
-        if key == 'logs':
             return ''
         if key == 'results':
             coordinator = w.nodeResultCoordinator

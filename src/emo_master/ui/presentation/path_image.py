@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import math
 
-from PySide2.QtCore import QByteArray, QBuffer, QIODevice, QObject, QRunnable, QSize, QThreadPool, QTimer, Qt, Signal, Slot
+from PySide2.QtCore import QByteArray, QBuffer, QCoreApplication, QIODevice, QObject, QRunnable, QSize, QThreadPool, QTimer, Qt, Signal, Slot
 from PySide2.QtGui import QImage, QImageIOHandler, QImageReader
 from PySide2.QtWidgets import QMenu
 
@@ -89,20 +89,26 @@ class _ImageRead(QRunnable):
         self.arguments = value, base, target, budget, projectRoot
         self.generation = generation
         self.remoteReader = remoteReader
-        self.reply = _ImageReply()
+        # The runnable can be auto-deleted on a pool thread after the GUI has
+        # already delivered ready and released its worker reference. Keep the
+        # GUI-affine reply owned independently of both runnable and view.
+        self.reply = _ImageReply(QCoreApplication.instance())
 
     def run(self):
         try:
-            if self.remoteReader:
-                value, _base, target, budget, _root = self.arguments
-                image = decodePathImage(self.remoteReader(value), target, budget)
-                key = value.imageRef or value.componentId
-            else:
-                image, key = readPathImage(*self.arguments)
-            message = ''
-        except (OSError, ValueError, OverflowError) as error:
-            image, key, message = QImage(), '', str(error)
-        self.reply.ready.emit(self.generation, image, key, message)
+            try:
+                if self.remoteReader:
+                    value, _base, target, budget, _root = self.arguments
+                    image = decodePathImage(self.remoteReader(value), target, budget)
+                    key = value.imageRef or value.componentId
+                else:
+                    image, key = readPathImage(*self.arguments)
+                message = ''
+            except (OSError, ValueError, OverflowError) as error:
+                image, key, message = QImage(), '', str(error)
+            self.reply.ready.emit(self.generation, image, key, message)
+        finally:
+            self.reply.deleteLater()
 
 
 class PathImageView(ImageView):

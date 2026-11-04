@@ -1,5 +1,5 @@
 """Real FastAPI HTTP/WS + explicit mock Runtime + real Chromium. No hardware."""
-import json,os,socket,sys,tempfile,threading,time,zipfile,hashlib
+import asyncio,json,os,socket,sys,tempfile,threading,time,zipfile,hashlib
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 (ROOT/'test-tmp').mkdir(exist_ok=True)
@@ -7,7 +7,7 @@ sys.path.insert(0,str(ROOT.parent/'backend'))
 import uvicorn
 from emo_web_panel.app import create_app
 from emo_web_panel.auth import AuthStore
-from emo_web_panel.mock_runtime import demo_panel, IMAGE
+from emo_web_panel.mock_runtime import MockRuntime, demo_panel, IMAGE
 from emo_web_panel.config import Config
 from playwright.sync_api import sync_playwright
 
@@ -19,6 +19,35 @@ def make_package(directory,revision):
  with zipfile.ZipFile(path,'w',compression=zipfile.ZIP_DEFLATED) as archive:
   archive.writestr('assets/pinned.png',IMAGE);archive.writestr('manifest.json',json.dumps(manifest));archive.writestr('presentation.json',json.dumps({'title':f'Package {revision}','pages':panel['pages']}))
  return path
+
+def logging_check(page,base):
+ """Actual Chromium + FastAPI + synthetic Runtime logs; no real devices."""
+ from playwright.sync_api import expect
+ page.get_by_text('权威计数与任务事件',exact=True).click()
+ logs=page.get_by_role('region',name='Runtime 日志')
+ logs.get_by_label('范围',exact=True).select_option('history')
+ expect(logs.locator('tbody tr')).to_have_count(2)
+ logs.get_by_label('工程',exact=True).fill('previous-project')
+ logs.get_by_role('button',name='应用筛选',exact=True).click()
+ expect(logs.locator('tbody tr')).to_have_count(1)
+ logs.get_by_role('button',name='详情',exact=True).click()
+ expect(logs.locator('pre')).to_contain_text('previous-project')
+ expect(logs.locator('pre')).to_contain_text('demo-device')
+ with page.expect_download() as pending:
+  logs.get_by_role('button',name='导出筛选历史 JSONL',exact=True).click()
+ rows=[json.loads(line) for line in Path(pending.value.path()).read_text(encoding='utf-8').splitlines()]
+ assert len(rows)==1 and rows[0]['projectId']=='previous-project' and rows[0]['eventId']=='1'
+ assert 'entryCount' not in rows[0]
+ page.request.get(base+'/api/admin/gateway-logs?limit=0')
+ page.get_by_text('账户与 Runtime 管理',exact=True).click()
+ page.get_by_role('button',name='读取最近网关诊断',exact=True).click()
+ expect(page.locator('details.admin pre')).to_contain_text('gateway.request')
+ expect(page.locator('details.admin pre')).to_contain_text('422')
+ logs.screenshot(path=str(ROOT/'test-tmp'/'logging-runtime-detail.png'))
+ page.screenshot(path=str(ROOT/'test-tmp'/'logging-history.png'),full_page=True)
+ page.get_by_text('账户与 Runtime 管理',exact=True).click()
+ page.get_by_text('权威计数与任务事件',exact=True).click()
+
 
 def target_isolation_check(page,browser,base,data,versions,password,errors):
  """W5-E: actual browser target contexts; synthetic Runtime data, no hardware."""
@@ -108,7 +137,101 @@ def target_isolation_check(page,browser,base,data,versions,password,errors):
  finally:
   aobserver.close();bobserver.close()
 
+class LiveCursorRuntime(MockRuntime):
+ """Normal synthetic query pages with independently delayed status/log reads."""
+ def __init__(self,status_first=False):
+  super().__init__();self.status_ready=threading.Event();self.query_ready=threading.Event()
+  self.queries=[];self.upper=10;self.first=11
+  (self.status_ready if status_first else self.query_ready).set()
+ async def runs(self):return []
+ async def counters(self):
+  while not self.status_ready.is_set():await asyncio.sleep(.01)
+  return await super().counters()
+ async def query_runtime_logs(self,query):
+  while not self.query_ready.is_set():await asyncio.sleep(.01)
+  self.queries.append(dict(query))
+  after=int(query.get('afterEventId','0'));baseline=query.get('limit')==1
+  reply={'ok':True,'code':'OK','message':'','runtimeInstanceId':self.instance_id,
+         'upperEventId':str(self.upper),'nextEventId':str(after),'hasMore':False,'events':[]}
+  if query.get('runtimeInstanceId') and query['runtimeInstanceId']!=self.instance_id:
+   return {**reply,'ok':False,'code':'RESET_REQUIRED','message':'Instance changed'}
+  if not baseline and self.upper==10:self.upper=11
+  upper=int(query.get('upperEventId',self.upper))
+  ids=[] if baseline else list(range(max(after+1,self.first),upper+1))
+  selected=ids[:query.get('limit',200)]
+  events=[{'eventId':str(n),'sequence':str(n),'timestampMs':'1793664000000','jobId':'review-job',
+           'projectId':'demo-project','workflowId':'wf','nodeId':'node','eventType':'node.log',
+           'originApp':'runtime','component':'operator','runtimeInstanceId':self.instance_id,
+           'level':'INFO','code':'REVIEW','message':'live event '+str(n),'payload':{}} for n in selected]
+  return {**reply,'upperEventId':str(upper),'nextEventId':str(selected[-1] if len(ids)>len(selected) else upper),
+          'hasMore':len(ids)>len(selected),'events':events}
+
+
+def review_live_cursor_browser():
+ from playwright.sync_api import expect
+ observations=[]
+ with sync_playwright() as playwright:
+  browser=playwright.chromium.launch(**({'executable_path':os.environ['CHROMIUM_PATH']} if os.environ.get('CHROMIUM_PATH') else {}),headless=True)
+  try:
+   for scenario in ('logs-first','status-first','instance-change'):
+    with tempfile.TemporaryDirectory(prefix='emo-log-review-') as directory:
+     runtime=LiveCursorRuntime(scenario=='status-first');app=create_app(Config(Path(directory)),runtime=runtime)
+     app.state.auth.create_user('reviewer','Temporary-review-password!','admin')
+     with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
+     server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=port,log_level='warning',access_log=False))
+     thread=threading.Thread(target=server.run,daemon=True);thread.start()
+     deadline=time.monotonic()+10
+     while not server.started and time.monotonic()<deadline:time.sleep(.02)
+     assert server.started
+     page=browser.new_page();errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
+     try:
+      page.goto(f'http://127.0.0.1:{port}');page.get_by_label('用户名',exact=True).fill('reviewer')
+      page.get_by_label('密码',exact=True).fill('Temporary-review-password!');page.get_by_role('button',name='登录',exact=True).click()
+      page.get_by_text('权威计数与任务事件',exact=True).click();logs=page.get_by_role('region',name='Runtime 日志')
+      if scenario=='status-first':
+       expect(page.locator('.runtime-events')).to_contain_text('计数来源：mock-runtime-authoritative')
+       runtime.query_ready.set()
+      expect(logs.locator('tbody tr')).to_have_count(1)
+      if scenario!='status-first':
+       runtime.upper=12;runtime.status_ready.set()
+       expect(logs.locator('tbody tr')).to_have_count(2,timeout=10000)
+       expect(logs.locator('tbody tr').first).to_contain_text('live event 11')
+       expect(logs.locator('tbody tr').last).to_contain_text('live event 12')
+      assert len([q for q in runtime.queries if q.get('limit')==1])==1,runtime.queries
+      detail={'scenario':scenario,'baselinesBeforeChange':1,'rowsAfterConfirmation':logs.locator('tbody tr').count()}
+      if scenario=='logs-first':
+       runtime.upper=1212
+       expect(logs.locator('tbody tr')).to_have_count(1000,timeout=15000)
+       expect(logs.locator('tbody tr').first).to_contain_text('live event 213')
+       expect(logs.locator('tbody tr').last).to_contain_text('live event 1212')
+       page.get_by_text('权威计数与任务事件',exact=True).click();page.get_by_text('权威计数与任务事件',exact=True).click()
+       expect(logs.locator('tbody tr')).to_have_count(1000)
+       with page.expect_download() as downloaded:logs.get_by_role('button',name='导出筛选历史 JSONL',exact=True).click()
+       assert len(Path(downloaded.value.path()).read_text(encoding='utf-8').splitlines())==1202
+       logs.get_by_label('范围',exact=True).select_option('history')
+       expect(logs.locator('tbody tr')).to_have_count(200)
+       for count in (400,600,800,1000,1200,1202):
+        logs.get_by_role('button',name='下一页',exact=True).click();expect(logs.locator('tbody tr')).to_have_count(count)
+       detail.update(liveRows=1000,historyRows=1202,exportRows=1202)
+      if scenario=='instance-change':
+       runtime.instance_id='changed-instance';runtime.upper=20;runtime.first=21
+       expect(logs).to_contain_text('当前连接实例 changed-instance',timeout=10000)
+       expect(logs.locator('tbody tr')).to_have_count(0)
+       runtime.upper=21;expect(logs.locator('tbody tr')).to_have_count(1,timeout=10000)
+       expect(logs.locator('tbody tr').first).to_contain_text('live event 21')
+       assert len([q for q in runtime.queries if q.get('limit')==1])==2,runtime.queries
+       detail.update(baselinesAfterChange=2,newInstanceRows=1)
+      assert not errors,errors
+      detail['queries']=runtime.queries;observations.append(detail)
+     finally:
+      runtime.status_ready.set();runtime.query_ready.set();page.close();server.should_exit=True;thread.join(timeout=10)
+  finally:browser.close()
+ (ROOT/'test-tmp'/'review-live-cursor.json').write_text(json.dumps(observations,ensure_ascii=False,indent=2),encoding='utf-8')
+ print('PASS: RuntimeLogs browser lifecycle: logs/status both orderings, actual instance reset, live DOM1000, hidden reopen, history/export1202')
+
+
 def main():
+ review_live_cursor_browser()
  with tempfile.TemporaryDirectory(dir=ROOT/'test-tmp') as d:
   data=Path(d);auth=AuthStore(data/'web.sqlite');password='Temporary-e2e-fixture!';auth.create_user('tester',password,'admin')
   sock=socket.socket();sock.bind(('127.0.0.1',0));port=sock.getsockname()[1];sock.close()
@@ -123,7 +246,7 @@ def main():
     browser=p.chromium.launch(**({'executable_path':os.environ['CHROMIUM_PATH']} if os.environ.get('CHROMIUM_PATH') else {}),headless=True,args=['--no-sandbox','--disable-dev-shm-usage']);page=browser.new_page(viewport={'width':1280,'height':900});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     try:
      page.goto(f'http://127.0.0.1:{port}');page.get_by_label('用户名',exact=True).fill('tester');page.get_by_label('密码',exact=True).fill(password);page.get_by_role('button',name='登录',exact=True).click()
-     page.get_by_text('99.50',exact=False).wait_for();page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看，后台仍在运行').wait_for();page.get_by_role('button',name='恢复实时',exact=True).click()
+     page.get_by_text('99.50',exact=False).wait_for();logging_check(page,f'http://127.0.0.1:{port}');page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看，后台仍在运行').wait_for();page.get_by_role('button',name='恢复实时',exact=True).click()
      page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('操作已受理：',exact=False).wait_for()
      page.get_by_text('账户与 Runtime 管理',exact=True).click();page.get_by_label('新用户名',exact=True).fill('readonly');page.get_by_label('初始密码',exact=True).fill('Readonly-fixture-123!');page.get_by_role('button',name='创建用户',exact=True).click();page.get_by_role('cell',name='readonly',exact=True).wait_for()
      history=page.locator('section.panel-card').filter(has=page.get_by_label('history-table 筛选', exact=True))

@@ -113,7 +113,9 @@ class DeviceDiagnostics:
                     nodeId=event.nodeId, workflowRunId=event.workflowRunId,
                     parentWorkflowRunId=event.parentWorkflowRunId, nodeRunId=event.nodeRunId,
                     iterationPath=tuple(json.loads(event.iterationPathJson)),
-                    timestampMs=event.timestampMs, payload=entry)
+                    timestampMs=event.timestampMs, payload=entry,
+                    originApp=event.originApp, component=event.component,
+                    runtimeInstanceId=event.runtimeInstanceId)
             except Exception as error:
                 self.logErrors.append(repr(error))
                 self._write(writer, event)
@@ -174,12 +176,15 @@ class DeviceDiagnostics:
     @staticmethod
     def _event(row, jobId):
         from emo_master.apps.runtime.events.models import RuntimeEvent
+        from emo_master.core.contracts.diagnostic_logging import componentForEvent
         return RuntimeEvent(jobId=jobId, eventType=row['eventType'], message=row['message'],
             level=row['level'], code=row.get('code', ''), projectId=row['projectId'],
             workflowId=row.get('workflowId', ''), nodeId=row.get('nodeId', ''),
             workflowRunId=row.get('workflowRunId', ''), parentWorkflowRunId=row.get('parentWorkflowRunId', ''),
             nodeRunId=row.get('nodeRunId', ''), iterationPathJson=json.dumps(row.get('iterationPath', [])),
-            payloadJson=json.dumps(row, ensure_ascii=True), timestampMs=row['timestampMs'])
+            payloadJson=json.dumps(row, ensure_ascii=True), timestampMs=row['timestampMs'],
+            originApp='runtime', component=componentForEvent(row['eventType']),
+            runtimeInstanceId=row['runtimeInstanceId'])
 
     def _write(self, writer, event):
         if writer is not None:

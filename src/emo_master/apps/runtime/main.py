@@ -7,10 +7,11 @@ from typing import Any
 from emo_master.apps.runtime.grpc_server.aio_entry import AioRuntimeServer
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.runtime.presentation.service import PresentationService
+from emo_master.apps.runtime.events.app_log import RuntimeApplicationLogWriter
 
 
-def createRuntimeService() -> RuntimeService:
-    return RuntimeService()
+def createRuntimeService(*, runtimeInstanceId=None) -> RuntimeService:
+    return RuntimeService(runtimeInstanceId=runtimeInstanceId)
 
 
 class RuntimeServer:
@@ -58,13 +59,27 @@ def createRuntimeServer(
 
 
 def runRuntime(host: str = "127.0.0.1", port: int = 50051) -> None:
-    server, _boundPort, service = createRuntimeServer(host, port)
-    server.start()
+    from emo_master.apps.runtime.grpc_server.service import _defaultDbPath, _defaultLogDirectory
+    writer = RuntimeApplicationLogWriter(_defaultLogDirectory(_defaultDbPath(), explicitDbPath=False))
+    server = service = None
     try:
+        writer.record("runtime.startup.started", "Runtime 服务启动")
+        service = createRuntimeService(runtimeInstanceId=writer.runtimeInstanceId)
+        server, _boundPort, service = createRuntimeServer(host, port, runtimeService=service)
+        server.start()
+        writer.record("runtime.startup.ready", "Runtime 服务已就绪", payload={"host": host, "port": _boundPort})
         server.wait_for_termination()
+    except Exception as error:
+        writer.record("runtime.startup.failed", str(error), level="ERROR")
+        raise
     finally:
-        server.stop(0).wait()
-        service.close()
+        try:
+            if server is not None:
+                server.stop(0).wait()
+            if service is not None:
+                service.close()
+        finally:
+            writer.close()
 
 
 if __name__ == "__main__":

@@ -240,12 +240,27 @@ def test_failed_remote_startup_can_switch_to_local_and_only_remembers_success(
     from PySide2 import QtWidgets
     from emo_master.apps.designer import main, startup
     from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+    from emo_master.apps.designer.services import local_log
     from emo_master.apps.designer.ui import main_window
 
     attempts, closed = [], []
+    writers = []
+    originalWriter = local_log.DesignerLogWriter
+    class TrackedWriter(originalWriter):
+        def __init__(self, *args, **kwargs):
+            self.closeCount = 0
+            super().__init__(*args, **kwargs)
+            writers.append(self)
+        def close(self):
+            self.closeCount += 1
+            return super().close()
+    monkeypatch.setattr(local_log, "DesignerLogWriter", TrackedWriter)
+    monkeypatch.delenv("EMO_DESIGNER_LOG_DIR", raising=False)
+    monkeypatch.delenv("EMO_RUNTIME_DATA_DIR", raising=False)
     root = tmp_path / "new-local"
     store = QSettings(str(isolatedDesignerSettings), QSettings.IniFormat)
     store.setValue("startup/runtimeTarget", "previous:50051")
+    store.setValue("startup/dataRoot", str(tmp_path / "first-attempt"))
     client = SimpleNamespace(close=lambda: closed.append("client"))
     def select(dialog):
         if not attempts:
@@ -270,6 +285,8 @@ def test_failed_remote_startup_can_switch_to_local_and_only_remembers_success(
         def __init__(self, actualClient, **kwargs):
             assert actualClient is client
             assert Path(kwargs["settingsStore"].fileName()) == Path(isolatedDesignerSettings)
+            assert kwargs["localLogWriter"] is writers[-1]
+            assert kwargs["localLogDirectory"] == root / "logs" / "designer"
         def showStartupProjectEntry(self):
             assert store.value("startup/mode") == "local"
             assert store.value("startup/dataRoot") == str(root)
@@ -283,6 +300,10 @@ def test_failed_remote_startup_can_switch_to_local_and_only_remembers_success(
     main.runDesigner()
     assert attempts == ["remote", "local"] and closed == ["display", "client"]
     assert store.value("startup/runtimeTarget") == "previous:50051"
+    assert [writer.directory for writer in writers] == [tmp_path / "first-attempt/logs/designer", root / "logs/designer"]
+    assert [writer.closeCount for writer in writers] == [1, 1]
+    assert "designer.startup.failed" in next(writers[0].directory.glob("designer-*.jsonl")).read_text(encoding="utf-8")
+    assert "designer.startup.ready" in next(writers[1].directory.glob("designer-*.jsonl")).read_text(encoding="utf-8")
 
 
 def test_permission_failure_then_cancel_keeps_previous_preferences(

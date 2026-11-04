@@ -13,6 +13,7 @@ import time
 from typing import BinaryIO, Callable
 
 from emo_master.apps.runtime.events.models import RuntimeEvent
+from emo_master.core.contracts.diagnostic_logging import componentForEvent
 
 
 FailureCallback = Callable[[RuntimeEvent | None, str], None]
@@ -396,6 +397,7 @@ def _isOperationalEvent(event: RuntimeEvent) -> bool:
         or event.eventType.startswith("device.")
         or event.eventType.startswith("job.")
         or event.eventType.startswith("workflow.")
+        or event.eventType.startswith("dispatch.")
         or event.eventType.startswith("loop.")
         or event.eventType.startswith("node.")
     )
@@ -408,7 +410,7 @@ def _projectEvent(event: RuntimeEvent) -> dict[str, object]:
         payload = {"invalidPayloadJson": True}
     if not isinstance(payload, dict):
         payload = {"value": payload}
-    if event.eventType.endswith(".completed"):
+    if event.eventType.endswith(".completed") and not event.eventType.startswith("device."):
         payload = {
             key: payload[key]
             for key in (
@@ -419,6 +421,24 @@ def _projectEvent(event: RuntimeEvent) -> dict[str, object]:
                 "branch",
                 "artifact",
                 "artifacts",
+                "jobId",
+                "ownerId",
+                "workflowId",
+                "nodeId",
+                "workflowRunId",
+                "parentWorkflowRunId",
+                "nodeRunId",
+                "iterationPath",
+                "cycleId",
+                "planRevision",
+                "runGroupId",
+                "dispatchId",
+                "deliveryId",
+                "invocationId",
+                "targetSlotId",
+                "documentRevision",
+                "slot",
+                "deviceBindings",
             )
             if key in payload
         }
@@ -429,6 +449,9 @@ def _projectEvent(event: RuntimeEvent) -> dict[str, object]:
         iterationPath = []
     return {
         "schemaVersion": "1.0",
+        "originApp": event.originApp or "runtime",
+        "component": event.component or componentForEvent(event.eventType),
+        "runtimeInstanceId": event.runtimeInstanceId,
         "timestamp": datetime.fromtimestamp(
             event.timestampMs / 1000.0, timezone.utc
         ).isoformat(),

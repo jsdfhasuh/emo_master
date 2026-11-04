@@ -5,11 +5,17 @@ import multiprocessing
 from pathlib import Path
 import threading
 import time
+import json
+import sqlite3
+
+import grpc
+import pytest
 
 from emo_master.apps.runtime.context.sqlite_store import SqliteStore
 from emo_master.apps.runtime.context.runtime_lock import RuntimeDataLock
 from emo_master.apps.runtime.events.event_store import EventStore
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2
+from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
 from emo_master.apps.runtime.grpc_server.service import (
     RuntimeService,
     _defaultDbPath,
@@ -272,3 +278,162 @@ def testSqliteRetentionDeletesOnlyOldUnprotectedTerminalJobEvents(
 
     store.checkpointWal()
     assert isinstance(store.vacuumIfNeeded(0.0), bool)
+
+
+def testLoggingMetadataMigrationFromV5PreservesHistoryAndReopens(tmp_path):
+    from emo_master.apps.runtime.context.global_variables import migrateVariables
+    import emo_master.apps.runtime.context.sqlite_store as module
+    db = tmp_path / 'old.db'
+    migrations = Path(module.__file__).parent / 'migrations'
+    with sqlite3.connect(db) as connection:
+        for name in ('001_init.sql', '002_runtime_workflow.sql', '003_runtime_timestamps.sql', '004_global_counters.sql'):
+            connection.executescript((migrations / name).read_text(encoding='utf-8'))
+        migrateVariables(connection)
+        connection.execute('CREATE TABLE IF NOT EXISTS schemaMigrations(version INTEGER PRIMARY KEY, appliedAt TEXT NOT NULL)')
+        connection.executemany("INSERT OR REPLACE INTO schemaMigrations VALUES (?, 'old')", [(i,) for i in range(1, 6)])
+        for index, eventType in enumerate(('node.log', 'node.completed', 'device.connect.failed',
+                                            'presentation.source.unavailable', 'runtime.logfile.failed', 'unknown',
+                                            'dispatch.invocation.failed', 'dispatch.invocation.completed')):
+            connection.execute("""INSERT INTO jobEvents(jobId,nodeId,eventType,level,code,message,payloadJson,
+                timestamp,sequence,timestampMs) VALUES ('old-job','node',?,'INFO','','old',?,'old',?,123)""",
+                (eventType, json.dumps({'original': index}), index + 1))
+    store = SqliteStore(db)
+    store.initialize()
+    store.initialize()
+    rows = SqliteStore(db).listJobEventsAfter('old-job')
+    assert [event.component for event in rows] == ['operator', 'execution', 'device', 'presentation', 'storage',
+                                                  'application', 'execution', 'execution']
+    assert all(event.originApp == 'runtime' and event.runtimeInstanceId == '' for event in rows)
+    assert [event.sequence for event in rows] == list(range(1, 9))
+    assert [json.loads(event.payloadJson) for event in rows] == [{'original': i} for i in range(8)]
+    assert [eventId for eventId, _ in store.queryRuntimeLogs()[1]] == list(range(1, 9))
+    events = EventStore(store, runtimeInstanceId='current-instance')
+    for eventType in ('dispatch.invocation.failed', 'dispatch.invocation.completed'):
+        event = events.append('current-job', eventType, 'dispatch result')
+        assert event.component == 'execution'
+    current = SqliteStore(db).listJobEventsAfter('current-job')
+    assert [event.component for event in current] == ['execution', 'execution']
+    assert all(event.runtimeInstanceId == 'current-instance' for event in current)
+
+
+@pytest.fixture
+def queryRpc(tmp_path):
+    service = RuntimeService(dbPath=tmp_path / 'query.db', runtimeInstanceId='connected-instance')
+    server = grpc.server(ThreadPoolExecutor(max_workers=2), options=[('grpc.max_send_message_length', 9 * 1024 * 1024)])
+    runtime_pb2_grpc.add_RuntimeServiceServicer_to_server(service, server)
+    port = server.add_insecure_port('127.0.0.1:0')
+    server.start()
+    channel = grpc.insecure_channel(f'127.0.0.1:{port}', options=[('grpc.max_receive_message_length', 9 * 1024 * 1024)])
+    stub = runtime_pb2_grpc.RuntimeServiceStub(channel)
+    try:
+        yield service, lambda **fields: stub.QueryRuntimeLogs(runtime_pb2.QueryRuntimeLogsRequest(**fields), timeout=5)
+    finally:
+        channel.close()
+        server.stop(0).wait()
+        service.close()
+
+
+def testQueryRuntimeLogsRpcFixedUpperIdentityAssociationsAndTime(queryRpc):
+    service, query = queryRpc
+    store = service.eventStore
+    store.append('A', 'node.log', 'one', projectId='old-project', workflowId='flow', nodeId='node', timestampMs=100,
+                 payload={'deviceBindings': {'camera': {'deviceId': 'camera'}, 'plc': {'deviceId': 'plc'}},
+                          'diagnostics': {'deviceSlot': 'camera'}})
+    store.append('B', 'node.log', 'two', projectId='other-project', timestampMs=200, runtimeInstanceId='earlier-instance',
+                 payload={'deviceBindings': {'camera': {'deviceId': 'camera'}}})
+    store.append('__runtime__', 'device.action.failed', 'failed', projectId='old-project', timestampMs=300,
+                 payload={'jobId': 'A', 'deviceId': 'camera'})
+    store.append('A', 'process.heartbeat', 'pulse', timestampMs=400)
+    first = query(limit=1)
+    assert first.ok and first.code == 'OK' and first.runtime_instance_id == 'connected-instance'
+    assert (first.upper_event_id, first.next_event_id, first.has_more) == (4, 1, True)
+    assert first.events[0].event.origin_app == 'runtime'
+    assert first.events[0].event.component == 'operator'
+    assert first.events[0].event.runtime_instance_id == 'connected-instance'
+    store.append('A', 'node.log', 'new', timestampMs=500)
+    second = query(after_event_id=first.next_event_id, upper_event_id=first.upper_event_id,
+                   runtime_instance_id=first.runtime_instance_id)
+    assert [row.event_id for row in second.events] == [2, 3]
+    assert second.events[0].event.runtime_instance_id == 'earlier-instance'
+    assert second.runtime_instance_id == 'connected-instance'
+    assert not second.has_more and second.next_event_id == 4
+    assert [row.event_id for row in query(after_event_id=4).events] == [5]
+    assert [row.event_id for row in query(job_id='A').events] == [1, 3, 5]
+    assert [row.event_id for row in query(device_id='camera').events] == [1, 2, 3]
+    assert not query(device_id='plc').events
+    assert [row.event_id for row in query(project_id='old-project').events] == [1, 3]
+    assert [row.event_id for row in query(component='device', start_timestamp_ms=300, end_timestamp_ms=400).events] == [3]
+    assert [row.event_id for row in query(workflow_id='flow', node_id='node', levels=['INFO']).events] == [1]
+    assert not query(upper_event_id=0).events
+    reset = query(runtime_instance_id='previous', after_event_id=3)
+    assert not reset.ok and reset.code == 'RESET_REQUIRED' and reset.runtime_instance_id == 'connected-instance'
+    assert reset.next_event_id == 3
+    assert query(after_event_id=-1).code == 'INVALID_ARGUMENT'
+    assert query(limit=1001).code == 'INVALID_ARGUMENT'
+
+
+@pytest.mark.parametrize("completedType", ("node.completed", "dispatch.invocation.completed"))
+def testQueryRuntimeLogsRpcByteBudgetAndProjectionKeepCursor(queryRpc, monkeypatch, completedType):
+    import emo_master.apps.runtime.grpc_server.service as module
+    service, query = queryRpc
+    for index in range(3):
+        service.eventStore.append('A', 'node.log', 'x' * 700, payload={'data': index})
+    monkeypatch.setattr(module, 'LOG_QUERY_REPLY_BYTES', 1800)
+    page = query()
+    assert page.ok and page.ByteSize() <= 1800 and page.has_more
+    assert [row.event_id for row in page.events] == [1, 2]
+    assert page.next_event_id == 2
+    following = query(after_event_id=page.next_event_id, upper_event_id=page.upper_event_id)
+    assert [row.event_id for row in following.events] == [3]
+    service.eventStore.append('A', 'node.log', 'oversize' * 300)
+    large = query(after_event_id=3)
+    assert not large.ok and large.code == 'EVENT_TOO_LARGE' and large.next_event_id == 3
+    context = dict(runGroupId='group-1', dispatchId='dispatch-1', deliveryId='delivery-1',
+                   invocationId='invocation-1', targetSlotId='slot-1', documentRevision=7)
+    original = dict(context, outputs={'huge': 'x' * 5000}, status='OK')
+    service.eventStore.append('B', completedType, 'done', payload=original)
+    compact = query(job_id='B')
+    assert compact.ok and json.loads(compact.events[0].event.payload_json) == dict(context, status='OK')
+    assert json.loads(service.sqliteStore.listJobEventsAfter('B')[0].payloadJson) == original
+
+
+def testRuntimeLogsQueryThroughProductionAioAdapter(tmp_path):
+    from emo_master.apps.runtime.main import createRuntimeServer
+    service = RuntimeService(dbPath=tmp_path / 'aio.db')
+    service.eventStore.append('job', 'node.log', 'aio query')
+    server, port, _ = createRuntimeServer(port=0, runtimeService=service)
+    server.start()
+    channel = grpc.insecure_channel(f'127.0.0.1:{port}')
+    try:
+        stub = runtime_pb2_grpc.RuntimeServiceStub(channel)
+        page = stub.QueryRuntimeLogs(runtime_pb2.QueryRuntimeLogsRequest(), timeout=5)
+        assert page.ok and page.events[0].event.message == 'aio query'
+        assert page.events[0].event.runtime_instance_id == service.runtimeInstanceId
+        assert 'runtime_logs_query_v1' in stub.GetRuntimeInfo(runtime_pb2.RuntimeInfoRequest(), timeout=5).capabilities
+    finally:
+        channel.close()
+        server.stop(0).wait()
+        service.close()
+
+
+def testWorkerSourceTimestampIsPreservedAndHeartbeatUsesReceiptTime(monkeypatch):
+    from queue import Queue
+    from emo_master.apps.runtime.jobs.worker_main import _put, heartbeatLoop
+    from tests.runtime.test_job_supervisor_contracts import _supervisor
+    from threading import Event
+    import emo_master.apps.runtime.jobs.supervisor as module
+    queue = Queue()
+    _put(queue, {'eventType': 'node.log'})
+    assert abs(queue.get()['timestampMs'] - int(time.time() * 1000)) < 1000
+    stop = Event()
+    stop.set()
+    heartbeatLoop('job-stop', 'project', 'flow', queue, stop, 100)
+    pulse = queue.get()
+    assert pulse['timestampMs'] > 0
+    supervisor, _, store, _ = _supervisor()
+    supervisor.consumeWorkerEvents('job-stop', [{'eventType': 'node.log', 'timestampMs': 123}])
+    assert store.read('job-stop')[-1].timestampMs == 123
+    monkeypatch.setattr(module, 'nowMs', lambda: 456)
+    supervisor.consumeWorkerEvent('job-stop', dict(pulse, timestampMs=124))
+    assert store.read('job-stop')[-1].timestampMs == 124
+    assert supervisor._heartbeat['job-stop'] == 456

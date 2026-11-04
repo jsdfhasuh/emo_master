@@ -131,7 +131,7 @@ def testPreviewContractRequiresExplicitReadOnlyModeAndConnection(contract):
     from emo_panel_protocol.preview import PreviewContext
     from pydantic import ValidationError
     output, manifest = contract
-    assert manifest['sdkVersion'] == '1.3.0'
+    assert manifest['sdkVersion'] == '1.4.0'
     fixture = json.loads((output / 'fixtures/preview-fixtures.json').read_text())
     online = json.loads((output / 'fixtures/preview-runtime.json').read_text())
     assert PreviewContext.model_validate(online).runtime.target == '192.0.2.10:50051'

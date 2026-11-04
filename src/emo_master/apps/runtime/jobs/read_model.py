@@ -87,7 +87,8 @@ class RunReadRpcMixin:
             presentation = current.get('payload', {}).get('presentation')
             return pb.RuntimeInfoReply(ok=True, runtime_instance_id=self.runtimeInstanceId,
                 protocol_version='1.0', capabilities=['runtime_info_v1', 'run_catalog_v1', 'stop_identity_v1',
-                    'remote_project_import_v1', 'history_query_v1', 'history_image_v1', 'project_resource_read_v1'],
+                    'remote_project_import_v1', 'history_query_v1', 'history_image_v1', 'project_resource_read_v1',
+                    'runtime_logs_query_v1'],
                 production_mode=self.productionMode, project_id=document.project.projectId if document else '',
                 document_revision=current.get('documentRevision', 0),
                 production_inputs_json=json.dumps(production.inputs if production else {}, ensure_ascii=False),

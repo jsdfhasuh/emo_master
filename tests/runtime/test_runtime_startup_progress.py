@@ -79,3 +79,45 @@ def test_remote_startup_does_not_create_embedded_service_and_owns_channel(monkey
     from emo_master.clients.runtime.connection import ConnectionProfile
     assert clients == [dict(runtimeService=stub, ownedChannel=channel, runtimeTarget="127.0.0.1:59999",
                             connectionProfile=ConnectionProfile("127.0.0.1:59999"), deadlineMs=5000)]
+
+
+def test_headless_initialization_failure_has_application_file_before_service(tmp_path, monkeypatch):
+    import json
+    from emo_master.apps.runtime import main
+    monkeypatch.setenv("EMO_RUNTIME_LOG_DIR", str(tmp_path / "logs"))
+    instances = []
+    def fail(*, runtimeInstanceId):
+        instances.append(runtimeInstanceId)
+        raise OSError("ordinary initialization failure")
+    monkeypatch.setattr(main, "createRuntimeService", fail)
+    with pytest.raises(OSError, match="ordinary initialization failure"):
+        main.runRuntime()
+    rows = [json.loads(row) for path in (tmp_path / "logs").glob("runtime_app-*.jsonl")
+            for row in path.read_text(encoding="utf-8").splitlines()]
+    assert [row["eventType"] for row in rows] == ["runtime.startup.started", "runtime.startup.failed"]
+    assert all(row["runtimeInstanceId"] == instances[0] and row["originApp"] == "runtime"
+               and row["component"] == "application" for row in rows)
+    assert not list((tmp_path / "logs").glob("runtime-*.jsonl"))
+
+
+def test_headless_application_and_service_share_identity_and_close_owners_once(tmp_path, monkeypatch):
+    from emo_master.apps.runtime import main
+    monkeypatch.setenv("EMO_RUNTIME_LOG_DIR", str(tmp_path / "logs"))
+    closes, identities = [], []
+    originalWriter = main.RuntimeApplicationLogWriter
+    class Writer(originalWriter):
+        def close(self):
+            closes.append("application")
+            return super().close()
+    monkeypatch.setattr(main, "RuntimeApplicationLogWriter", Writer)
+    def service(*, runtimeInstanceId):
+        identities.append(runtimeInstanceId)
+        return SimpleNamespace(runtimeInstanceId=runtimeInstanceId, close=lambda: closes.append("service"))
+    def server(_host, port, *, runtimeService):
+        assert runtimeService.runtimeInstanceId == identities[0]
+        return SimpleNamespace(start=lambda: None, wait_for_termination=lambda: None,
+            stop=lambda _grace: SimpleNamespace(wait=lambda: None)), port, runtimeService
+    monkeypatch.setattr(main, "createRuntimeService", service)
+    monkeypatch.setattr(main, "createRuntimeServer", server)
+    main.runRuntime()
+    assert identities[0] and closes == ["service", "application"]

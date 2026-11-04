@@ -1,0 +1,61 @@
+Actual environment location may have moved due to redirects, links or junctions.
+  Requested location: "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-web-install-jkmvsg78\venv\Scripts\python.exe"
+  Actual location:    "C:\Users\jsdfhasuh\AppData\Local\Temp\emo-web-install-jkmvsg78\venv\Scripts\python.exe"
+Processing d:\jsdfhasuh\documents\my_project\emo_master\web_panel\contracts\panel-contract-v1\python\emo_panel_protocol-1.4.0-py3-none-any.whl
+Processing d:\jsdfhasuh\documents\my_project\emo_master\web_panel\dist\emo_master_web_panel-0.1.0a1-py3-none-any.whl
+Collecting grpcio==1.78.0
+  Using cached grpcio-1.78.0-cp310-cp310-win_amd64.whl (4.8 MB)
+Collecting pydantic>=2.6
+  Using cached pydantic-2.14.2-py3-none-any.whl (490 kB)
+Collecting protobuf==6.33.6
+  Using cached protobuf-6.33.6-cp310-abi3-win_amd64.whl (437 kB)
+Collecting typing-extensions~=4.12
+  Using cached typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Collecting uvicorn<1,>=0.30
+  Using cached uvicorn-0.54.0-py3-none-any.whl (87 kB)
+Collecting websockets<17,>=13
+  Using cached websockets-16.1.1-cp310-cp310-win_amd64.whl (180 kB)
+Collecting Pillow<13,>=10
+  Using cached pillow-12.3.0-cp310-cp310-win_amd64.whl (7.2 MB)
+Collecting fastapi<1,>=0.115
+  Using cached fastapi-0.162.0-py3-none-any.whl (148 kB)
+Collecting tzdata>=2024.1
+  Using cached tzdata-2026.6-py2.py3-none-any.whl (348 kB)
+Collecting starlette>=0.46.0
+  Using cached starlette-1.7.0-py3-none-any.whl (78 kB)
+Collecting opentelemetry-api>=1.44.0
+  Using cached opentelemetry_api-1.45.2-py3-none-any.whl (60 kB)
+Collecting typing-inspection>=0.4.2
+  Using cached typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+Collecting annotated-doc>=0.0.2
+  Using cached annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+Collecting annotated-types>=0.6.0
+  Using cached annotated_types-0.8.0-py3-none-any.whl (13 kB)
+Collecting pydantic-core==2.50.2
+  Using cached pydantic_core-2.50.2-cp310-cp310-win_amd64.whl (2.2 MB)
+Collecting h11>=0.8
+  Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+Collecting click>=7.0
+  Using cached click-8.5.0-py3-none-any.whl (125 kB)
+Collecting anyio<5,>=4.0.0
+  Using cached anyio-4.16.0-py3-none-any.whl (134 kB)
+Collecting exceptiongroup>=1.0.2
+  Using cached exceptiongroup-1.3.1-py3-none-any.whl (16 kB)
+Collecting idna>=2.8
+  Using cached idna-3.20-py3-none-any.whl (69 kB)
+Installing collected packages: websockets, tzdata, typing-extensions, protobuf, Pillow, idna, h11, click, annotated-types, annotated-doc, uvicorn, typing-inspection, pydantic-core, opentelemetry-api, grpcio, exceptiongroup, pydantic, anyio, starlette, emo-panel-protocol, fastapi, emo-master-web-panel
+Successfully installed Pillow-12.3.0 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.16.0 click-8.5.0 emo-master-web-panel-0.1.0a1 emo-panel-protocol-1.4.0 exceptiongroup-1.3.1 fastapi-0.162.0 grpcio-1.78.0 h11-0.16.0 idna-3.20 opentelemetry-api-1.45.2 protobuf-6.33.6 pydantic-2.14.2 pydantic-core-2.50.2 starlette-1.7.0 typing-extensions-4.16.0 typing-inspection-0.4.4 tzdata-2026.6 uvicorn-0.54.0 websockets-16.1.1
+
+[notice] A new release of pip is available: 23.0.1 -> 26.3
+[notice] To update, run: C:\Users\JSDFHA~1\AppData\Local\Temp\emo-web-install-jkmvsg78\venv\Scripts\python.exe -m pip install --upgrade pip
+PASS independent wheel install, SDK1.4.0, five embedded ordinary-Job fixtures including ABORTED, exact empty Stop presence, packaged UI, no Qt/Runtime/model imports
+usage: main.py [-h] [--data-dir DATA_DIR] {create-user,serve,preview} ...
+
+Independent Web operator panel
+
+positional arguments:
+  {create-user,serve,preview}
+
+options:
+  -h, --help            show this help message and exit
+  --data-dir DATA_DIR

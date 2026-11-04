@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+import threading
 from collections import Counter
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace as dataclassReplace
 from datetime import datetime
 import json
 from pathlib import Path
@@ -38,6 +40,11 @@ class StructuredLogEntry:
     projectInstanceToken: str = ""
     workflowName: str = ""
     nodeName: str = ""
+    originApp: str = ""
+    component: str = ""
+    runtimeInstanceId: str = ""
+    sequence: int = 0
+    eventId: int | None = None
 
     @classmethod
     def fromLine(cls, line: str) -> "StructuredLogEntry":
@@ -68,6 +75,7 @@ class StructuredLogEntry:
         )
         rawPayload = event.get("payload", {})
         timestampMs = _integer(event.get("timestampMs"), 0)
+        from emo_master.core.contracts.diagnostic_logging import componentForEvent
         return cls(
             timestampMs=timestampMs if timestampMs > 0 else _nowMs(),
             level=_level(event.get("level", "INFO")),
@@ -85,6 +93,11 @@ class StructuredLogEntry:
             projectId=str(event.get("projectId", "")),
             workflowName=str(event.get("workflowName", "")),
             nodeName=str(event.get("nodeName", "")),
+            originApp=str(event.get("originApp", "runtime") or "runtime"),
+            component=str(event.get("component") or componentForEvent(str(event.get("eventType", "")))),
+            runtimeInstanceId=str(event.get("runtimeInstanceId", "")),
+            sequence=_integer(event.get("sequence"), 0),
+            eventId=_integer(event.get("eventId"), 0) or None,
         )
 
     def displayTime(self) -> str:
@@ -144,6 +157,12 @@ class StructuredLogEntry:
             "code": self.code,
             "message": self.message,
             "payload": self.payload,
+            "originApp": self.originApp or ("runtime" if self.source == "runtime" else "designer"),
+            "component": self.component or (self.source if self.source in {
+                "editor", "flow_designer", "page_designer", "runtime_client"} else "application"),
+            "runtimeInstanceId": self.runtimeInstanceId,
+            "sequence": self.sequence,
+            "eventId": self.eventId,
         }
 
 
@@ -184,7 +203,7 @@ try:
 
     class StructuredLogView(QWidget):
         diagnosticCreated: Any = Signal(object)
-        columns = ("时间", "级别", "来源", "Job", "工作流", "节点", "迭代", "事件", "错误码", "消息")
+        columns = ("时间", "级别", "应用 / 模块", "Job", "工作流", "节点", "迭代", "事件", "错误码", "消息")
 
         def __init__(
             self,
@@ -204,6 +223,7 @@ try:
             self._pendingEvicted: list[StructuredLogEntry] = []
             self._detailEntry: StructuredLogEntry | None = None
             self._viewDirty = False
+            self._updatingTable = False
             self._filterCounts: dict[str, Counter[Any]] = {
                 name: Counter() for name in ("jobId", "eventType", "workflow", "node")}
             self._workflowNames: dict[tuple[str, ...], str] = {}
@@ -211,7 +231,49 @@ try:
             self._errorCount = 0
             self._visibleErrorCount = 0
             self._exportDirectory = Path.home()
+            self._historyClient = None
+            self._historyTarget = None
+            self._historyInstance = ""
+            self._runtimeInstance = None
+            self._historyGeneration = 0
+            self._historyFuture = None
+            self._historyCancel = None
+            self._historyReply = None
+            self._historyFilters: dict[str, Any] = {}
+            self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
+            self._historyResources = {"cancel": None, "call": None}
             root = QVBoxLayout()
+            historyRow = QHBoxLayout()
+            self.rangeCombo = QComboBox()
+            for label, value in (("当前显示记录 / 实时", "current"), ("Runtime 历史", "runtime"), ("Designer 本机文件", "local")):
+                self.rangeCombo.addItem(label, value)
+            historyRow.addWidget(self.rangeCombo)
+            self.historyQueryButton = QPushButton("查询 / 刷新")
+            self.historyNextButton = QPushButton("下一页")
+            self.historyExportButton = QPushButton("导出完整选定范围…")
+            self.historyCancelButton = QPushButton("取消")
+            for button in (self.historyQueryButton, self.historyNextButton, self.historyExportButton, self.historyCancelButton):
+                button.setAutoDefault(False)
+                historyRow.addWidget(button)
+            root.addLayout(historyRow)
+            self.historyFiltersWidget = QWidget()
+            historyFilters = QGridLayout(self.historyFiltersWidget)
+            historyFilters.setContentsMargins(0, 0, 0, 0)
+            self.historyInputs = {}
+            for index, (name, label) in enumerate((("projectId", "工程 ID"), ("jobId", "Job ID"), ("deviceId", "设备 ID"),
+                    ("component", "模块"), ("workflowId", "工作流 ID"), ("nodeId", "节点 ID"),
+                    ("startTimestampMs", "开始时间 ms（含）"), ("endTimestampMs", "结束时间 ms（不含）"))):
+                edit = QLineEdit()
+                edit.setPlaceholderText(label + "，留空不限")
+                self.historyInputs[name] = edit
+                historyFilters.addWidget(edit, index // 4, index % 4)
+            self.localFileCombo = QComboBox()
+            self.localFileCombo.setMinimumContentsLength(20)
+            root.addWidget(self.historyFiltersWidget)
+            root.addWidget(self.localFileCombo)
+            self.historyStatus = QLabel()
+            self.historyStatus.setWordWrap(True)
+            root.addWidget(self.historyStatus)
             filters = QGridLayout()
             self.levelFilter = _combo(("全部", "DEBUG", "INFO", "WARN", "ERROR"))
             self.sourceFilter = _combo(("全部", "runtime", "designer", "editor"))
@@ -285,7 +347,7 @@ try:
             header.setSectionsMovable(True)
             for visualIndex, column in enumerate((0, 1, 4, 5, 9, 2, 6, 7, 3, 8)):
                 header.moveSection(header.visualIndex(column), visualIndex)
-            for column, width in enumerate((128, 64, 88, 120, 160, 180, 64, 100, 96, 360)):
+            for column, width in enumerate((128, 64, 160, 120, 160, 180, 64, 100, 96, 360)):
                 self.table.setColumnWidth(column, width)
             self.table.setAlternatingRowColors(True)
             self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
@@ -371,6 +433,283 @@ try:
             for combo in (self.jobFilter, self.workflowFilter, self.nodeFilter, self.eventTypeFilter):
                 combo.popupClosed.connect(self._refreshTimer.start)
             self._updateFilterStatus()
+            self.rangeCombo.currentIndexChanged.connect(self._historySourceChanged)
+            self.historyQueryButton.clicked.connect(lambda: self.queryHistory())
+            self.historyNextButton.clicked.connect(lambda: self.queryHistory(nextPage=True))
+            self.historyExportButton.clicked.connect(self.exportHistory)
+            self.historyCancelButton.clicked.connect(self.cancelHistory)
+            self._historyTimer = QTimer(self)
+            self._historyTimer.setInterval(40)
+            self._historyTimer.timeout.connect(self._acceptHistory)
+            resources, executor = self._historyResources, self._historyExecutor
+            def closeHistory():
+                if resources["cancel"] is not None:
+                    resources["cancel"].set()
+                if resources["call"] is not None:
+                    resources["call"].cancel()
+                executor.shutdown(wait=False, cancel_futures=True)
+            self.destroyed.connect(closeHistory)
+            self._historySourceChanged()
+
+        def setRuntimeClient(self, client, onCurrent=None, *, runtimeInstance=None):
+            target = getattr(client, "runtimeService", None)
+            if target is not self._historyTarget:
+                self.cancelHistory()
+                self._historyInstance = ""
+                self._historyReply = None
+                if self.rangeCombo.currentData() != "current":
+                    self.setEntries([])
+            self._historyClient, self._historyTarget, self._onCurrentRecords = client, target, onCurrent
+            self._runtimeInstance = runtimeInstance
+            self.syncRuntimeInstance()
+
+        def syncRuntimeInstance(self):
+            if not callable(self._runtimeInstance):
+                return
+            instance = self._runtimeInstance()
+            if not instance or instance == self._historyInstance:
+                return
+            self._historyInstance = instance
+            future = self._historyFuture
+            if future is not None and self._historyTask[0] == "runtime":
+                _kind, _generation, _target, _filters, taskInstance = self._historyTask
+                # A fresh history query may discover the new instance before
+                # the live reader. Do not discard that already completed page.
+                matchingReply = False
+                if future.done():
+                    try:
+                        reply = future.result()
+                        matchingReply = reply["ok"] and reply["runtimeInstanceId"] == instance
+                    except Exception:
+                        pass
+                if taskInstance != instance and not matchingReply:
+                    self.cancelHistory()
+            if self._historyReply is not None and self._historyReply["runtimeInstanceId"] != instance:
+                self._historyReply = None
+                if self.rangeCombo.currentData() == "runtime":
+                    self.setEntries([])
+                    self.historyNextButton.setEnabled(False)
+                    self.historyStatus.setText("Runtime 实例已切换；请重新查询历史日志。")
+
+        def _historySourceChanged(self):
+            self.cancelHistory()
+            mode = self.rangeCombo.currentData()
+            self.historyFiltersWidget.setVisible(mode == "runtime")
+            self.localFileCombo.setVisible(mode == "local")
+            self.historyQueryButton.setEnabled(mode != "current")
+            self.historyNextButton.setEnabled(False)
+            self.historyExportButton.setEnabled(mode != "current")
+            self.historyCancelButton.setEnabled(False)
+            self._historyReply = None
+            if mode != "current":
+                self.setEntries([])
+            if mode == "current":
+                callback = getattr(self, "_onCurrentRecords", None)
+                if callable(callback):
+                    callback()
+                self.historyStatus.setText("当前显示记录；实时 Runtime 记录来自统一查询。清空仅影响显示缓存。")
+            elif mode == "local":
+                from emo_master.apps.operator_runtime.log_reader import listLogFiles
+                self.localFileCombo.clear()
+                self.localFileCombo.addItem("全部 Designer 本机文件", None)
+                try:
+                    for path in listLogFiles(getattr(self, "_logDirectory", Path.home()), prefixes=("designer",)):
+                        self.localFileCombo.addItem(path.name, str(path))
+                    self.historyStatus.setText("选定本机文件；显示最近记录，完整导出读取固定文件范围。")
+                except OSError as error:
+                    self.historyStatus.setText("本机文件读取失败：" + str(error))
+            else:
+                self.historyStatus.setText("Runtime 历史不限当前工程；输入条件后查询，分页和导出固定同一上界。")
+
+        def _selectedHistoryFilters(self):
+            filters = {name: edit.text().strip() for name, edit in self.historyInputs.items() if edit.text().strip()}
+            for name in ("startTimestampMs", "endTimestampMs"):
+                if name in filters:
+                    filters[name] = int(filters[name])
+            level = self.levelFilter.currentText()
+            if level in {"DEBUG", "INFO", "WARN", "ERROR"}:
+                filters["levels"] = [level]
+            return filters
+
+        def _selectedLocalFiles(self):
+            from emo_master.apps.operator_runtime.log_reader import listLogFiles
+            selected = self.localFileCombo.currentData()
+            return (Path(selected),) if selected else listLogFiles(self._logDirectory, prefixes=("designer",))
+
+        def _startHistoryTask(self, kind, task, *, filters=None, runtimeInstance=None):
+            self.cancelHistory()
+            generation, target = self._historyGeneration, getattr(self._historyClient, "runtimeService", None)
+            cancelled = self._historyCancel = threading.Event()
+            self._historyResources["cancel"] = cancelled
+            self._historyResources["call"] = None
+            self._historyFuture = self._historyExecutor.submit(task, cancelled)
+            self._historyTask = kind, generation, target, dict(filters) if filters is not None else None, runtimeInstance
+            self.historyCancelButton.setEnabled(True)
+            self.historyQueryButton.setEnabled(False)
+            self.historyNextButton.setEnabled(False)
+            self.historyExportButton.setEnabled(False)
+            self.historyStatus.setText("正在" + ("导出" if kind == "export" else "读取") + "选定范围…")
+            self._historyTimer.start()
+
+        def cancelHistory(self):
+            self._historyGeneration += 1
+            cancelled = self._historyCancel
+            if cancelled is not None:
+                cancelled.set()
+            call = self._historyResources["call"]
+            if call is not None:
+                call.cancel()
+            if self._historyFuture is not None:
+                self.historyStatus.setText("已请求取消；原目标文件保持不变。")
+            self.historyCancelButton.setEnabled(False)
+
+        def queryHistory(self, nextPage=False):
+            self.syncRuntimeInstance()
+            mode = self.rangeCombo.currentData()
+            if mode == "current":
+                return
+            try:
+                if mode == "local":
+                    from emo_master.apps.operator_runtime.log_reader import JsonlTailReader
+                    paths = self._selectedLocalFiles()
+                    def read(cancelled):
+                        rows = []
+                        for path in reversed(paths):
+                            if cancelled.is_set():
+                                return None
+                            rows.extend(record.data for record in JsonlTailReader().read(path).records)
+                        return rows[-self.maximumEntries:]
+                    self._startHistoryTask("local", read)
+                    return
+                client = self._historyClient
+                if client is None or not callable(getattr(client, "queryRuntimeLogs", None)):
+                    raise ValueError("此 Runtime 不支持历史日志查询")
+                if nextPage and self._historyReply is not None:
+                    candidateFilters = dict(self._historyFilters)
+                    options = dict(candidateFilters, afterEventId=self._historyReply["nextEventId"],
+                        upperEventId=self._historyReply["upperEventId"], runtimeInstanceId=self._historyReply["runtimeInstanceId"])
+                else:
+                    candidateFilters = self._selectedHistoryFilters()
+                    options = dict(candidateFilters)
+                instance = (self._historyReply or {}).get("runtimeInstanceId", self._historyInstance)
+                self._startHistoryTask("runtime", lambda cancelled: self._queryHistoryPage(client, options, cancelled),
+                                       filters=candidateFilters, runtimeInstance=instance)
+            except (ValueError, OSError) as error:
+                self.historyStatus.setText(self._historyFailureMessage("日志读取失败：" + str(error)))
+
+        def _queryHistoryPage(self, client, options, cancelled):
+            from emo_master.apps.designer.services.display_calls import DisplayCallContext
+            from emo_master.core.log_export import LogExportCancelled
+            if cancelled.is_set():
+                raise LogExportCancelled("日志任务已取消")
+            context = DisplayCallContext()
+            self._historyResources["call"] = context
+            if cancelled.is_set():
+                context.cancel()
+            try:
+                return client.queryRuntimeLogs(**options, cancellation=context)
+            finally:
+                if self._historyResources["call"] is context:
+                    self._historyResources["call"] = None
+
+        def _acceptHistory(self):
+            # This timer may fire before the live-reader drain timer. Observe
+            # its confirmed instance before accepting a completed old page.
+            self.syncRuntimeInstance()
+            future = self._historyFuture
+            if future is None or not future.done():
+                return
+            self._historyTimer.stop()
+            self._historyFuture = None
+            kind, generation, target, candidateFilters, _instance = self._historyTask
+            if generation != self._historyGeneration or target is not getattr(self._historyClient, "runtimeService", None):
+                self.historyStatus.setText("日志任务已取消；未报告成功。")
+            else:
+                try:
+                    value = future.result()
+                    if kind == "export":
+                        self.historyStatus.setText(f"已导出 {value} 条日志：{self._historyExportPath}")
+                    elif kind == "local":
+                        entries = [StructuredLogEntry.fromRuntimeEvent(row) for row in value]
+                        self.setEntries([dataclassReplace(entry, source=str(row.get("source", "designer"))) for entry, row in zip(entries, value)])
+                        self.historyStatus.setText(f"本机文件最近记录：{len(entries)} 条；完整导出读取选定文件全部记录。")
+                    elif not value["ok"]:
+                        self.historyStatus.setText(self._historyFailureMessage(value["code"] + "：" + value["message"]))
+                        if value["code"] == "RESET_REQUIRED":
+                            self._historyReply = None
+                            self.setEntries([])
+                            QTimer.singleShot(0, lambda: self.queryHistory())
+                    else:
+                        entries = [StructuredLogEntry.fromRuntimeEvent(dict(row["event"], eventId=row["eventId"])) for row in value["events"]]
+                        self._historyFilters = candidateFilters
+                        self._historyReply = value
+                        self.setEntries(entries)
+                        self.historyStatus.setText(f"Runtime 历史当前页 {len(value['events'])} 条；上界 {value['upperEventId']}，游标 {value['nextEventId']}。")
+                except Exception as error:
+                    self.historyStatus.setText(self._historyFailureMessage("日志任务失败：" + str(error)))
+            mode = self.rangeCombo.currentData()
+            self.historyCancelButton.setEnabled(False)
+            self.historyQueryButton.setEnabled(mode != "current")
+            self.historyExportButton.setEnabled(mode != "current")
+            self.historyNextButton.setEnabled(mode == "runtime" and bool(self._historyReply and self._historyReply["hasMore"]))
+
+        def _historyFailureMessage(self, message):
+            if self._historyReply is not None and self.rangeCombo.currentData() == "runtime":
+                return message + "；仍保留上次成功范围，翻页和完整导出沿用：" + json.dumps(self._historyFilters, ensure_ascii=False)
+            return message
+
+        def exportHistory(self):
+            from emo_master.core.log_export import exportLogs, LogExportCancelled
+            from emo_master.apps.operator_runtime.log_reader import snapshotLogFiles, iterLogFileRecords
+            self.syncRuntimeInstance()
+            mode = self.rangeCombo.currentData()
+            if mode == "current":
+                return
+            selected, selectedFilter = QFileDialog.getSaveFileName(self, "导出完整选定范围",
+                str(self._exportDirectory / "日志历史.jsonl"), "JSON Lines (*.jsonl);;JSON (*.json);;文本 (*.txt)")
+            if not selected:
+                return
+            path = Path(selected)
+            formatName = path.suffix.lower().lstrip(".")
+            if formatName not in {"json", "jsonl", "txt"}:
+                formatName = "jsonl" if "jsonl" in selectedFilter else "json" if "json" in selectedFilter else "txt"
+                path = Path(str(path) + "." + formatName)
+            try:
+                if mode == "local":
+                    ranges = snapshotLogFiles(self._selectedLocalFiles())
+                    filters = {"files": [{"path": str(row.path), "endOffset": row.endOffset} for row in ranges]}
+                    def task(cancelled):
+                        return exportLogs(path, iterLogFileRecords(ranges, cancelled=cancelled.is_set),
+                            formatName=formatName, scope="local_files", filters=filters, cancelled=cancelled.is_set)
+                else:
+                    client = self._historyClient
+                    if client is None or not callable(getattr(client, "queryRuntimeLogs", None)):
+                        raise ValueError("此 Runtime 不支持历史日志查询")
+                    filters = dict(self._historyFilters if self._historyReply else self._selectedHistoryFilters())
+                    previous = dict(self._historyReply) if self._historyReply else None
+                    def task(cancelled):
+                        def records():
+                            cursor, upper = 0, previous["upperEventId"] if previous else None
+                            instance = previous["runtimeInstanceId"] if previous else ""
+                            while True:
+                                if cancelled.is_set():
+                                    raise LogExportCancelled("日志导出已取消")
+                                reply = self._queryHistoryPage(client, dict(filters, afterEventId=cursor,
+                                    upperEventId=upper, runtimeInstanceId=instance), cancelled)
+                                if not reply["ok"]:
+                                    raise ValueError(reply["code"] + "：" + reply["message"])
+                                upper, instance = reply["upperEventId"], reply["runtimeInstanceId"]
+                                for row in reply["events"]:
+                                    yield StructuredLogEntry.fromRuntimeEvent(dict(row["event"], eventId=row["eventId"])).detailPayload()
+                                cursor = reply["nextEventId"]
+                                if not reply["hasMore"]:
+                                    break
+                        return exportLogs(path, records(), formatName=formatName, scope="runtime_history",
+                            filters=filters, cancelled=cancelled.is_set)
+                self._historyExportPath = path
+                self._startHistoryTask("export", task)
+            except (OSError, ValueError) as error:
+                self.historyStatus.setText("日志导出失败：" + str(error))
 
         def _updateExportActions(self):
             filteredCount = sum(self._matches(entry) for entry in self._entries)
@@ -453,6 +792,8 @@ try:
                     self._directoryError(message)
 
         def appendEntry(self, entry: StructuredLogEntry) -> None:
+            if self.rangeCombo.currentData() != "current":
+                return
             self._entries.append(entry)
             self._countEntry(entry, 1)
             overflow = len(self._entries) - self.maximumEntries
@@ -492,6 +833,7 @@ try:
                         names.pop(key, None)
 
         def hideEvent(self, event) -> None:
+            self.cancelHistory()
             self._refreshTimer.stop()
             self._viewDirty = self._viewDirty or bool(self._pendingEntries or self._pendingEvicted)
             self._pendingEntries.clear()
@@ -661,7 +1003,9 @@ try:
                 return
             scrollBar = self.table.verticalScrollBar()
             scrollPosition = scrollBar.value()
-            scrollBlocked = scrollBar.blockSignals(True)
+            # Qt needs scrollbar signals to update the viewport/header offset.
+            # Suppress only our follow-mode callbacks during table mutations.
+            self._updatingTable = True
             tableBlocked = self.table.blockSignals(True)
             self.table.setUpdatesEnabled(False)
             try:
@@ -685,7 +1029,7 @@ try:
             finally:
                 self.table.setUpdatesEnabled(True)
                 self.table.blockSignals(tableBlocked)
-                scrollBar.blockSignals(scrollBlocked)
+                self._updatingTable = False
             self._updateFilterStatus()
             self._showDetails(self.table.currentRow(), 0)
 
@@ -701,7 +1045,9 @@ try:
             self._visibleEntries = [entry for entry in self._entries if self._matches(entry)]
             self._visibleErrorCount = sum(_isError(entry) for entry in self._visibleEntries)
             self._viewDirty = False
-            scrollBlocked = scrollBar.blockSignals(True)
+            # Qt needs scrollbar signals to update the viewport/header offset.
+            # Suppress only our follow-mode callbacks during table mutations.
+            self._updatingTable = True
             tableBlocked = self.table.blockSignals(True)
             self.table.setUpdatesEnabled(False)
             try:
@@ -718,7 +1064,7 @@ try:
             finally:
                 self.table.setUpdatesEnabled(True)
                 self.table.blockSignals(tableBlocked)
-                scrollBar.blockSignals(scrollBlocked)
+                self._updatingTable = False
             self._updateFilterStatus()
             self._showDetails(self.table.currentRow(), 0)
 
@@ -767,7 +1113,7 @@ try:
             values = (
                 entry.displayTime(),
                 entry.level,
-                {"page_designer": "页面设计", "flow_designer": "流程设计"}.get(entry.source, entry.source),
+                (entry.originApp or ("runtime" if entry.source == "runtime" else "designer")) + " / " + str(entry.detailPayload()["component"]),
                 entry.jobId,
                 entry.displayWorkflow(),
                 entry.displayNode(),
@@ -859,11 +1205,12 @@ try:
                 self.table.scrollToBottom()
 
         def _onScrollChanged(self, value: int) -> None:
-            if value < self.table.verticalScrollBar().maximum():
+            if not self._updatingTable and value < self.table.verticalScrollBar().maximum():
                 self.autoScrollCheck.setChecked(False)
 
         def _onScrollRangeChanged(self, _minimum: int, _maximum: int) -> None:
-            self._onAutoScrollChanged(self.autoScrollCheck.isChecked())
+            if not self._updatingTable:
+                self._onAutoScrollChanged(self.autoScrollCheck.isChecked())
 
 
     class RuntimeLogDock(QDockWidget):

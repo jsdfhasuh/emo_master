@@ -32,6 +32,9 @@ class RuntimeEventDTO:
     parentWorkflowRunId: str = ""
     nodeRunId: str = ""
     iterationPath: tuple[int, ...] = ()
+    originApp: str = ""
+    component: str = ""
+    runtimeInstanceId: str = ""
 
     @property
     def job_id(self) -> str:

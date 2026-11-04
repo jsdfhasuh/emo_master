@@ -1,0 +1,35 @@
+........................................................................ [ 75%]
+.....F.................                                                  [100%]
+================================== FAILURES ===================================
+________ testHeartbeatEmissionPublishesCellBeforeUnchangedFormalEvent _________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000016F3D7C0130>
+
+    def testHeartbeatEmissionPublishesCellBeforeUnchangedFormalEvent(monkeypatch) -> None:
+        _, _, _, _, cell, clock = _withCell(monkeypatch)
+        clock[0] = 42
+        stop = Event()
+        events = []
+    
+        class ObserverQueue:
+            def put(self, event):
+                assert cell.read() == 42
+                events.append(event)
+                stop.set()
+    
+            put_nowait = put
+    
+        heartbeatLoop("job", "project", "main", ObserverQueue(), stop, 500, cell)
+        assert len(events) == 1
+        assert events[0]["eventType"] == "process.heartbeat"
+>       assert set(events[0]) == {"eventType", "jobId", "projectId", "workflowId", "pid"}
+E       AssertionError: assert {'eventType',... 'workflowId'} == {'eventType',... 'workflowId'}
+E         
+E         Extra items in the left set:
+E         'timestampMs'
+E         Use -v to get more diff
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_heartbeat_liveness.py:210: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_heartbeat_liveness.py::testHeartbeatEmissionPublishesCellBeforeUnchangedFormalEvent
+1 failed, 94 passed in 19.84s

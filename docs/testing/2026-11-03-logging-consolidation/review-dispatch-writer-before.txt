@@ -1,0 +1,17 @@
+.F.F                                                                     [100%]
+================================== FAILURES ===================================
+_ testJsonlWriterPersistsUnicodeContextAndSequenceInEnqueueOrder[dispatch.invocation.failed] _
+tests\runtime\test_jsonl_logging.py:58: in testJsonlWriterPersistsUnicodeContextAndSequenceInEnqueueOrder
+    assert writer.enqueue(
+E   AssertionError: assert False is True
+E    +  where False = enqueue(RuntimeEvent(jobId='job-1', eventType='dispatch.invocation.failed', message='ʧ��', level='ERROR', nodeId='node-1', code...unId='parent-run', nodeRunId='node-run-1', iterationPathJson='[2,3]', originApp='', component='', runtimeInstanceId=''))
+E    +    where enqueue = <emo_master.apps.runtime.events.jsonl_writer.RuntimeJsonlLogWriter object at 0x000002A45420DAB0>.enqueue
+E    +    and   RuntimeEvent(jobId='job-1', eventType='dispatch.invocation.failed', message='ʧ��', level='ERROR', nodeId='node-1', code...unId='parent-run', nodeRunId='node-run-1', iterationPathJson='[2,3]', originApp='', component='', runtimeInstanceId='') = _event(2, eventType='dispatch.invocation.failed', level='ERROR', message='ʧ��')
+_ testCompletedEventProjectionRemovesOutputsButKeepsOperationalSummary[dispatch.invocation.completed] _
+tests\runtime\test_jsonl_logging.py:120: in testCompletedEventProjectionRemovesOutputsButKeepsOperationalSummary
+    record, = _records(tmp_path)
+E   ValueError: not enough values to unpack (expected 1, got 0)
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_jsonl_logging.py::testJsonlWriterPersistsUnicodeContextAndSequenceInEnqueueOrder[dispatch.invocation.failed]
+FAILED tests/runtime/test_jsonl_logging.py::testCompletedEventProjectionRemovesOutputsButKeepsOperationalSummary[dispatch.invocation.completed]
+2 failed, 2 passed, 11 deselected in 1.08s

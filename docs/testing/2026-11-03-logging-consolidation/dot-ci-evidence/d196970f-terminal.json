@@ -1,0 +1,321 @@
+{
+  "recorded_utc": "2026-11-03T14:10:00Z",
+  "source_head": "d196970fff38eae7e4453afa4b8a0f364ae2bffd",
+  "source_tree": "4a3027877697d8f0b889094836de2395a40b506e",
+  "pr_merge_checkout": "ee6436edefa84d3b0d264fc0d1a8c56bbdc9ea9a",
+  "ci": {
+    "run_id": 41642002758,
+    "attempt": 1,
+    "event": "pull_request",
+    "status": "completed",
+    "conclusion": "failure",
+    "updated_at": "2026-11-03T14:01:39Z",
+    "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41642002758",
+    "jobs": [
+      {
+        "id": 125937587982,
+        "name": "windows-latest / Python 3.10",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41642002758/job/125937587982",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1
+          },
+          {
+            "name": "Run actions/checkout@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2
+          },
+          {
+            "name": "Run actions/setup-python@v5",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3
+          },
+          {
+            "name": "Install dependencies",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4
+          },
+          {
+            "name": "Configure native Windows test desktop",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5
+          },
+          {
+            "name": "Verify native Windows test desktop",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6
+          },
+          {
+            "name": "Validate generated protobuf",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7
+          },
+          {
+            "name": "Run project checks",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 8
+          },
+          {
+            "name": "Upload test results",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 9
+          },
+          {
+            "name": "Post Run actions/setup-python@v5",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 17
+          },
+          {
+            "name": "Post Run actions/checkout@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 18
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 19
+          }
+        ]
+      },
+      {
+        "id": 125937588498,
+        "name": "ubuntu-latest / Python 3.10",
+        "status": "completed",
+        "conclusion": "failure",
+        "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41642002758/job/125937588498",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1
+          },
+          {
+            "name": "Run actions/checkout@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2
+          },
+          {
+            "name": "Run actions/setup-python@v5",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3
+          },
+          {
+            "name": "Install dependencies",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4
+          },
+          {
+            "name": "Configure native Windows test desktop",
+            "status": "completed",
+            "conclusion": "skipped",
+            "number": 5
+          },
+          {
+            "name": "Verify native Windows test desktop",
+            "status": "completed",
+            "conclusion": "skipped",
+            "number": 6
+          },
+          {
+            "name": "Validate generated protobuf",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7
+          },
+          {
+            "name": "Run project checks",
+            "status": "completed",
+            "conclusion": "failure",
+            "number": 8
+          },
+          {
+            "name": "Upload test results",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 9
+          },
+          {
+            "name": "Post Run actions/setup-python@v5",
+            "status": "completed",
+            "conclusion": "skipped",
+            "number": 17
+          },
+          {
+            "name": "Post Run actions/checkout@v4",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 18
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 19
+          }
+        ]
+      }
+    ],
+    "results": {
+      "windows": {
+        "passed": 9084,
+        "skipped": 5,
+        "failed": 0,
+        "subtests_passed": 42,
+        "duration_seconds": 2940.97
+      },
+      "ubuntu": {
+        "passed": 9057,
+        "skipped": 31,
+        "failed": 1,
+        "subtests_passed": 42,
+        "duration_seconds": 1918.26
+      }
+    },
+    "artifacts": [
+      {
+        "id": 13237215776,
+        "name": "test-results-windows-latest-py3.10",
+        "size_bytes": 184457,
+        "sha256": "d0e691c1b8690deab0852ee42ece5fef5543a0f7afac1d490afc79dbd89125cd",
+        "expires_at": "2027-02-01T13:10:37Z",
+        "head_sha": "d196970fff38eae7e4453afa4b8a0f364ae2bffd",
+        "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41642002758/artifacts/13237215776",
+        "verification": "downloaded ZIP size, SHA256 and CRC match"
+      },
+      {
+        "id": 13234923924,
+        "name": "test-results-ubuntu-latest-py3.10",
+        "size_bytes": 184115,
+        "sha256": "8e0c43bf95e513851bc1eb813bb424558f211c720e122d8f899d3d63837d00f3",
+        "expires_at": "2027-02-01T13:10:37Z",
+        "head_sha": "d196970fff38eae7e4453afa4b8a0f364ae2bffd",
+        "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41642002758/artifacts/13234923924",
+        "verification": "downloaded ZIP size, SHA256 and CRC match"
+      }
+    ],
+    "full_log_sha256": {
+      "windows": "7524c0df1173acdcddbac4f3219eb5fde4cfb92e698cd7328ba34bc713f835f2",
+      "ubuntu": "680ed0c77ba46a56f577773e73355410c51daeec9932012fe60411373b7bb56d"
+    }
+  },
+  "web": {
+    "run_id": 41642002999,
+    "attempt": 1,
+    "status": "completed",
+    "conclusion": "success",
+    "updated_at": "2026-11-03T13:17:31Z",
+    "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41642002999",
+    "jobs": [
+      {
+        "id": 125937588026,
+        "name": "Owning Runtime integration (synthetic data, Windows)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 125937588300,
+        "name": "web-panel (ubuntu-latest)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 125937588478,
+        "name": "web-panel (windows-latest)",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": 13233751027,
+        "name": "web-panel-development-preview-ubuntu-latest-ee6436edefa84d3b0d264fc0d1a8c56bbdc9ea9a",
+        "size_bytes": 211635,
+        "sha256": "beca1cf7fdfa0943743a0f2961fae088b9b1a22e7aa4abe9589d002e9fac7cc6",
+        "expires_at": "2026-11-10T13:12:34Z",
+        "head_sha": "d196970fff38eae7e4453afa4b8a0f364ae2bffd",
+        "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41642002999/artifacts/13233751027",
+        "verification": "downloaded ZIP size, SHA256 and CRC match"
+      },
+      {
+        "id": 13233398519,
+        "name": "browser-evidence-windows-latest-ee6436edefa84d3b0d264fc0d1a8c56bbdc9ea9a",
+        "size_bytes": 1109552,
+        "sha256": "ea297df3091c6b2190fa6fad83cedd5ab2f0b3940a1536e23ef1a8992a88fba4",
+        "expires_at": "2026-11-10T13:17:04Z",
+        "head_sha": "d196970fff38eae7e4453afa4b8a0f364ae2bffd",
+        "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41642002999/artifacts/13233398519",
+        "verification": "downloaded ZIP size, SHA256 and CRC match"
+      },
+      {
+        "id": 13232809910,
+        "name": "web-panel-development-preview-windows-latest-ee6436edefa84d3b0d264fc0d1a8c56bbdc9ea9a",
+        "size_bytes": 212112,
+        "sha256": "d1dc0b6f9280a25fe2e47bf17bdc016c42097ac0936325ebf8990ef8c8842ba5",
+        "expires_at": "2026-11-10T13:17:25Z",
+        "head_sha": "d196970fff38eae7e4453afa4b8a0f364ae2bffd",
+        "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41642002999/artifacts/13232809910",
+        "verification": "downloaded ZIP size, SHA256 and CRC match"
+      },
+      {
+        "id": 13232753792,
+        "name": "product-runtime-evidence-ee6436edefa84d3b0d264fc0d1a8c56bbdc9ea9a",
+        "size_bytes": 276857,
+        "sha256": "6be2434c951b2adeb5080397a06560d5803eb0295a311ba67c2b53b712727cbc",
+        "expires_at": "2026-11-10T13:13:25Z",
+        "head_sha": "d196970fff38eae7e4453afa4b8a0f364ae2bffd",
+        "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41642002999/artifacts/13232753792",
+        "verification": "downloaded ZIP size, SHA256 and CRC match"
+      },
+      {
+        "id": 13232573722,
+        "name": "browser-evidence-ubuntu-latest-ee6436edefa84d3b0d264fc0d1a8c56bbdc9ea9a",
+        "size_bytes": 2113076,
+        "sha256": "ac19922f775d23c60e940d3168fefa886aa627fab5a5df0225230f043512d04b",
+        "expires_at": "2026-11-10T13:12:22Z",
+        "head_sha": "d196970fff38eae7e4453afa4b8a0f364ae2bffd",
+        "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/41642002999/artifacts/13232573722",
+        "verification": "downloaded ZIP size, SHA256 and CRC match"
+      }
+    ],
+    "owning_runtime_report": {
+      "webSourceSha": "ee6436edefa84d3b0d264fc0d1a8c56bbdc9ea9a",
+      "sdkSourceSha": "940994b3420b47ff0add8766ccce5a4f2686a02a",
+      "sdkSourceDirty": true,
+      "sdkWheelSha256": "cfc9ceaaa23baacc3321390a22d46a44325aef1dae4947e54a6598947566a086",
+      "sdkVersion": "1.4.0",
+      "syntheticOnly": true,
+      "physicalDevices": false,
+      "status": "PASS",
+      "officialUngroupedVerified": true,
+      "browser_errors": []
+    }
+  },
+  "blocked": {
+    "visible_desktop": "NOT_RUN; no authorized cloud visible input session",
+    "designer_frozen": "NOT_RUN; no authenticated workflow_dispatch tool",
+    "runtime_frozen": "NOT_RUN; no authenticated workflow_dispatch tool",
+    "packager_ref": "91766f6d18ca9a333f64cf1c6030202457ec4a8a",
+    "publish_release": false
+  },
+  "scope": "Results above belong only to source_head, not to the later documentation-only commit that records this file. No rerun, deadline change or test weakening was performed to suppress the recorded failure."
+}

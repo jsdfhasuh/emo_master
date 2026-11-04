@@ -219,10 +219,13 @@ def testStartupCancellationShutsDownDisplayBeforeClient(monkeypatch, confirmedSt
     client = SimpleNamespace(close=lambda: events.append("client"))
 
     class Window:
-        def __init__(self, actualClient, showStartupEntry, projectEntryDialogFactory, settingsStore):
+        def __init__(self, actualClient, showStartupEntry, projectEntryDialogFactory, settingsStore,
+                     localLogWriter, localLogDirectory):
             assert actualClient is client and showStartupEntry
             assert callable(projectEntryDialogFactory)
             assert settingsStore is not None
+            assert localLogWriter is not None
+            assert localLogDirectory.is_dir()
 
         def showStartupProjectEntry(self):
             events.append("cancel")
@@ -239,6 +242,7 @@ def testStartupCancellationShutsDownDisplayBeforeClient(monkeypatch, confirmedSt
     monkeypatch.setattr(main, "configureHighDpi", lambda: None)
     monkeypatch.setattr(main, "applyDesignerStyle", lambda *_args: None)
     monkeypatch.setattr(main, "resolveRuntimeTarget", lambda: "")
+    monkeypatch.setattr(main, "_showStartupError", lambda error: pytest.fail(str(error)))
     monkeypatch.setattr(startup, "prepareRuntime", lambda *_args, **_kwargs: client)
     monkeypatch.setattr(mainWindowModule, "MainWindow", Window)
     main.runDesigner()

@@ -16,6 +16,145 @@ from tests.ui.operator_view.test_production_window import closeWindow, preferenc
 from tests.ui.operator_view.test_view import waitFor
 
 
+def testCompleteSelectedFileExportUsesCapturedRangeAndShowsActualCount(qtApp, tmp_path, monkeypatch):
+    from PySide2.QtWidgets import QFileDialog
+    feed, path = fixtureFeed(tmp_path)
+    path.write_bytes(b''.join(line(str(index), eventType='node.log') for index in range(2300)))
+    view = RuntimeLogView(feed)
+    view.show()
+    feed.setVisible(True)
+    target = tmp_path / 'history-export.jsonl'
+    def choose(*_args):
+        with path.open('ab') as handle:
+            handle.write(line('after-file-dialog'))
+        return str(target), 'JSONL (*.jsonl)'
+    monkeypatch.setattr(QFileDialog, 'getSaveFileName', choose)
+    try:
+        waitFor(lambda: len(feed.records) == 2000)
+        view.exportFileAction.trigger()
+        waitFor(lambda: feed.exportWorker is not None and feed.exportWorker.done())
+        waitFor(lambda: '已导出 2300' in view.statusLabel.text())
+        import json
+        rows = [json.loads(value) for value in target.read_text(encoding='utf-8').splitlines()]
+        assert len(rows) == 2300 and rows[0]['message'] == '0'
+        assert all(row['message'] != 'after-file-dialog' for row in rows)
+        assert not view.cancelExportButton.isVisible()
+        assert view.table.columnCount() == 6
+    finally:
+        closeFeed(feed)
+
+
+@pytest.mark.parametrize("outcome, message", [
+    ("success", "已导出 1"),
+    ("cancel", "导出已取消"),
+    ("failure", "导出失败：test export failure"),
+])
+def testExportCompletionWaitsForFutureBeforeUpdatingControls(qtApp, tmp_path, monkeypatch, outcome, message):
+    from concurrent.futures import ThreadPoolExecutor
+    import emo_master.apps.operator_runtime.log_view as module
+    import emo_master.core.log_export as exportModule
+
+    returned, release = threading.Event(), threading.Event()
+
+    class PausedCompletionPool(ThreadPoolExecutor):
+        def submit(self, function, *args, **kwargs):
+            def pauseBeforeFutureCompletes():
+                result = function(*args, **kwargs)
+                returned.set()
+                assert release.wait(5)
+                return result
+            return super().submit(pauseBeforeFutureCompletes)
+
+    def export(*_args, **_kwargs):
+        if outcome == "cancel":
+            raise exportModule.LogExportCancelled()
+        if outcome == "failure":
+            raise ValueError("test export failure")
+        return 1
+
+    monkeypatch.setattr(module, "ThreadPoolExecutor", PausedCompletionPool)
+    monkeypatch.setattr(exportModule, "exportLogs", export)
+    feed, path = fixtureFeed(tmp_path)
+    path.write_bytes(line("first"))
+    view = RuntimeLogView(feed)
+    view.show()
+    try:
+        feed.exportFiles(tmp_path / "export.jsonl", formatName="jsonl", paths=[path])
+        waitFor(returned.is_set)
+        # Process queued Qt signals while the executor has not completed the Future.
+        qtApp.processEvents()
+        assert not feed.exportWorker.done()
+        assert "正在导出" in view.statusLabel.text()
+        assert view.cancelExportButton.isVisible()
+        assert not view.exportButton.isEnabled()
+        release.set()
+        waitFor(lambda: message in view.statusLabel.text())
+        assert feed.exportWorker.done()
+        assert not view.cancelExportButton.isVisible()
+        assert view.exportButton.isEnabled()
+    finally:
+        release.set()
+        closeFeed(feed)
+        feed.exportPool.shutdown(wait=True)
+        view.close()
+
+
+def testHistoryExportCancelDoesNotUseBusinessBusyOrReportSuccess(qtApp, tmp_path, monkeypatch):
+    import emo_master.apps.operator_runtime.log_view as module
+    from PySide2.QtWidgets import QFileDialog
+    feed, path = fixtureFeed(tmp_path)
+    path.write_bytes(line('first'))
+    view = RuntimeLogView(feed)
+    view.show()
+    feed.setVisible(True)
+    target = tmp_path / 'cancelled.jsonl'
+    target.write_text('keep destination', encoding='utf-8')
+    started, release = threading.Event(), threading.Event()
+    def records(*_args, **_kwargs):
+        yield {'message': 'first'}
+        started.set()
+        assert release.wait(5)
+        yield {'message': 'second'}
+    monkeypatch.setattr(module, 'iterLogFileRecords', records)
+    monkeypatch.setattr(QFileDialog, 'getSaveFileName', lambda *_args: (str(target), 'JSONL (*.jsonl)'))
+    try:
+        waitFor(lambda: feed.records)
+        view.exportFileAction.trigger()
+        waitFor(started.is_set)
+        assert view.cancelExportButton.isVisible()
+        QTest.mouseClick(view.cancelExportButton, Qt.LeftButton)
+        release.set()
+        waitFor(lambda: feed.exportWorker.done())
+        waitFor(lambda: '导出已取消' in view.statusLabel.text())
+        assert '已导出' not in feed.exportMessage and target.read_text(encoding='utf-8') == 'keep destination'
+        assert not list(tmp_path.glob('.emo-log-*'))
+    finally:
+        release.set()
+        closeFeed(feed)
+
+
+def testDeviceCacheExportAndRuntimeRequestAreSeparateScopes(qtApp, tmp_path, monkeypatch):
+    from PySide2.QtWidgets import QFileDialog
+    from emo_master.ui.communication_panel import DeviceDiagnosticsView, exportDeviceCache
+    import json
+    view = DeviceDiagnosticsView()
+    view.show()
+    requests = []
+    view.runtimeLogsRequested.connect(lambda: requests.append('runtime'))
+    view.exportRequested.connect(lambda: exportDeviceCache(view))
+    records = [dict(timestampMs=1, eventType='device.action.failed', level='ERROR', message='actual failure', cursor=1),
+               dict(timestampMs=2, eventType='device.action.completed', level='INFO', message='actual success', cursor=2)]
+    view.setPage(dict(deviceId='camera', projectId='project', records=records, more=True, dropped=3))
+    target = tmp_path / 'device-cache.jsonl'
+    monkeypatch.setattr(QFileDialog, 'getSaveFileName', lambda *_args: (str(target), 'JSONL (*.jsonl)'))
+    QTest.mouseClick(view.runtimeLogsButton, Qt.LeftButton)
+    assert requests == ['runtime'] and not target.exists()
+    QTest.mouseClick(view.exportCacheButton, Qt.LeftButton)
+    assert [json.loads(line) for line in target.read_text(encoding='utf-8').splitlines()] == records
+    assert '2 条已返回诊断缓存' in view.notice.text()
+    view.close()
+
+
 def fixtureFeed(tmp_path):
     path = tmp_path / "runtime-synthetic.jsonl"
     feed = LogFeed(tmp_path)
@@ -146,7 +285,8 @@ def testManuallySelectedActiveLogMatchesWindowRecentLogs(qtApp, tmp_path):
                 and window.logFeed.records and window.logFeed.worker is None)
         window.showLogs()
         waitFor(lambda: window.logFeed.worker is None)
-        active = window.controller.runtime.operationalLogWriter.activePath
+        active = window.logFeed.activePath
+        assert active.name.startswith('runtime_app-')
         index = window.logView.fileCombo.findData(str(active))
         assert index > 0
         window.logView.fileCombo.setCurrentIndex(index)

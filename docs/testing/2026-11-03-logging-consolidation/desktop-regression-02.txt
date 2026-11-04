@@ -1,0 +1,53 @@
+.....................................FF................................. [ 94%]
+....                                                                     [100%]
+================================== FAILURES ===================================
+_ test_cancel_during_real_rpc_closes_startup_without_further_requests[reply] __
+tests\designer\test_startup_runtime_connection.py:180: in test_cancel_during_real_rpc_closes_startup_without_further_requests
+    assert not root.exists()
+E   AssertionError: assert not True
+E    +  where True = exists()
+E    +    where exists = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4174/test_cancel_during_real_rpc_cl0/unused-local').exists
+---------------------------- Captured stdout call -----------------------------
+[designer:start] entry total=9.549s
+[designer:start] qt start total=9.550s
+[designer:start] qt done elapsed=0.000s total=9.550s
+[designer:start] theme start total=9.550s
+[designer:start] theme done elapsed=0.028s total=9.578s
+[designer:start] startup-settings start total=9.578s
+[designer:start] startup-settings done elapsed=0.000s total=9.578s
+[designer:start] startup-window start total=9.583s
+[designer:start] startup-window done elapsed=0.005s total=9.588s
+[designer:start] startup-visible total=9.588s
+[designer:start] runtime-imports start total=9.589s
+[designer:start] runtime-imports done elapsed=0.000s total=9.589s
+[designer:start] runtime-channel start total=9.589s
+[designer:start] cancel-requested total=9.606s
+[designer:start] runtime-channel done elapsed=0.233s total=9.822s
+[designer:start] cancelled total=9.823s
+_ test_cancel_during_real_rpc_closes_startup_without_further_requests[deadline] _
+tests\designer\test_startup_runtime_connection.py:180: in test_cancel_during_real_rpc_closes_startup_without_further_requests
+    assert not root.exists()
+E   AssertionError: assert not True
+E    +  where True = exists()
+E    +    where exists = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4174/test_cancel_during_real_rpc_cl1/unused-local').exists
+---------------------------- Captured stdout call -----------------------------
+[designer:start] entry total=10.612s
+[designer:start] qt start total=10.612s
+[designer:start] qt done elapsed=0.000s total=10.612s
+[designer:start] theme start total=10.612s
+[designer:start] theme done elapsed=0.023s total=10.635s
+[designer:start] startup-settings start total=10.635s
+[designer:start] startup-settings done elapsed=0.000s total=10.635s
+[designer:start] startup-window start total=10.640s
+[designer:start] startup-window done elapsed=0.005s total=10.645s
+[designer:start] startup-visible total=10.645s
+[designer:start] runtime-imports start total=10.646s
+[designer:start] runtime-imports done elapsed=0.000s total=10.646s
+[designer:start] runtime-channel start total=10.646s
+[designer:start] cancel-requested total=10.659s
+[designer:start] runtime-channel failed elapsed=5.122s total=15.768s
+[designer:start] cancelled total=15.768s
+=========================== short test summary info ===========================
+FAILED tests/designer/test_startup_runtime_connection.py::test_cancel_during_real_rpc_closes_startup_without_further_requests[reply]
+FAILED tests/designer/test_startup_runtime_connection.py::test_cancel_during_real_rpc_closes_startup_without_further_requests[deadline]
+2 failed, 74 passed in 34.10s

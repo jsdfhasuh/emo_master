@@ -7,7 +7,7 @@ import json
 import re
 from uuid import uuid4
 
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, Signal
 from PySide2.QtWidgets import (
     QAbstractItemView, QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout,
     QHBoxLayout, QHeaderView, QLabel, QLineEdit, QPlainTextEdit, QPushButton, QScrollArea,
@@ -262,6 +262,8 @@ def recordDetails(record, *, utf8=False):
 
 class DeviceDiagnosticsView(QWidget):
     """Device events with channel filtering and bounded UTF-8/HEX receipt details."""
+    runtimeLogsRequested = Signal()
+    exportRequested = Signal()
     def __init__(self):
         super().__init__()
         self.page = {}
@@ -275,6 +277,12 @@ class DeviceDiagnosticsView(QWidget):
         row.addWidget(self.filter)
         row.addWidget(self.format)
         row.addWidget(self.notice, 1)
+        self.runtimeLogsButton = QPushButton('当前设备运行日志…')
+        self.exportCacheButton = QPushButton('导出已返回诊断缓存…')
+        row.addWidget(self.runtimeLogsButton)
+        row.addWidget(self.exportCacheButton)
+        self.runtimeLogsButton.clicked.connect(self.runtimeLogsRequested.emit)
+        self.exportCacheButton.clicked.connect(self.exportRequested.emit)
         layout.addLayout(row)
         self.records = QTreeWidget()
         self.records.setHeaderLabels(['时间', '事件', '通道 / 槽位', '结果'])
@@ -300,7 +308,10 @@ class DeviceDiagnosticsView(QWidget):
             self.filter.addItem(channel['name'], channel['channelId'])
         self.filter.setCurrentIndex(max(0, self.filter.findData(selected)))
         self.filter.blockSignals(False)
-        self.notice.setText('较早记录已截断' if page.get('truncated') else 'Runtime 设备日志；传输完成不等于设备动作完成')
+        self.notice.setText(('较早记录已截断；' if page.get('truncated') else '') +
+                            '近期设备诊断缓存；传输完成不等于设备动作完成')
+        self.runtimeLogsButton.setEnabled(bool(page.get('deviceId')))
+        self.exportCacheButton.setEnabled(bool(page.get('records')))
         self.renderRecords()
 
     def renderRecords(self):
@@ -325,6 +336,33 @@ class DeviceDiagnosticsView(QWidget):
         item = self.records.currentItem()
         self.details.setPlainText(recordDetails(item.data(0, Qt.UserRole), utf8=self.format.currentIndex() == 1)
                                   if item else '选择一条记录查看详情')
+
+
+def exportDeviceCache(view):
+    """Export only records already returned to this device view."""
+    from pathlib import Path
+    from PySide2.QtWidgets import QFileDialog
+    from emo_master.core.log_export import exportLogs
+    from emo_master.apps.operator_runtime.log_reader import safeRecord, safeText
+    records = deepcopy(view.page.get('records', []))
+    scope = {key: view.page.get(key, '') for key in ('runtimeInstanceId', 'projectId', 'deviceId', 'projectLoadGeneration')}
+    if not records:
+        view.notice.setText('当前没有已返回的设备诊断缓存可导出')
+        return
+    path, selected = QFileDialog.getSaveFileName(view, '导出已返回诊断缓存', 'device-cache.jsonl',
+        'JSONL (*.jsonl);;JSON (*.json);;文本 (*.txt)')
+    if not path:
+        return
+    formatName = 'txt' if '*.txt' in selected else 'json' if '*.json)' in selected else 'jsonl'
+    target = Path(path)
+    if not target.suffix:
+        target = target.with_suffix('.' + formatName)
+    try:
+        count = exportLogs(target, (safeRecord(record) for record in records), formatName=formatName,
+                           scope='device_cache', filters=scope, retainedCount=len(records))
+        view.notice.setText(f'已导出 {count} 条已返回诊断缓存：{safeText(target)}')
+    except Exception as error:
+        view.notice.setText('导出失败：' + safeText(error))
 
 
 def tcpDeviceSummary(definitions, states):

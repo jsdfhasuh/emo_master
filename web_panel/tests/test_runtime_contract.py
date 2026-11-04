@@ -42,6 +42,23 @@ class Service(rpc.RuntimeServiceServicer, rpc.DisplayServiceServicer):
             owns_resources=True, display_resources_released=False, capture_enabled=self.capture,
             allowed_actions=['view'], accepted_at_ms=9007199254740993)
 
+    async def QueryRuntimeLogs(self, request, context):
+        self.log_request=request
+        if request.component=='unimplemented':
+            await context.abort(grpc.StatusCode.UNIMPLEMENTED,'Old Runtime')
+        if request.runtime_instance_id and request.runtime_instance_id!=self.instance:
+            return pb.QueryRuntimeLogsReply(ok=False,code='RESET_REQUIRED',message='Instance changed',
+                runtime_instance_id=self.instance,next_event_id=request.after_event_id)
+        if request.component=='too_large':
+            return pb.QueryRuntimeLogsReply(ok=False,code='EVENT_TOO_LARGE',message='Single event exceeds budget',
+                runtime_instance_id=self.instance,next_event_id=request.after_event_id)
+        return pb.QueryRuntimeLogsReply(ok=True,code='OK',runtime_instance_id=self.instance,
+            upper_event_id=9007199254740995,next_event_id=9007199254740995,
+            events=[pb.StoredLogEvent(event_id=9007199254740995,event=pb.JobEvent(sequence=9007199254740993,
+                job_id='__runtime__',project_id='old-project',event_type='device.action.failed',
+                level='ERROR',origin_app='runtime',component='device',runtime_instance_id='old-instance',
+                workflow_id='wf',node_id='node',payload_json='{"jobId":"old-job","outcome":"UNKNOWN"}'))])
+
     async def ListRuns(self, request, context):
         return pb.ListRunsReply(ok=True, runtime_instance_id=self.instance, runs=[self.run()])
 
@@ -132,6 +149,27 @@ class RuntimeContractTests(unittest.IsolatedAsyncioTestCase):
     async def asyncTearDown(self):
         await self.client.close()
         await self.server.stop(None)
+
+    async def test_log_query_preserves_identity_payload_ids_errors_and_optional_zero(self):
+        page=await self.client.query_runtime_logs({'projectId':'old-project','jobId':'old-job',
+            'afterEventId':'9007199254740993','upperEventId':'0','levels':['ERROR']})
+        self.assertTrue(page['ok'])
+        self.assertEqual(page['upperEventId'],'9007199254740995')
+        event=page['events'][0]
+        self.assertEqual((event['eventId'],event['sequence']),('9007199254740995','9007199254740993'))
+        self.assertEqual((event['jobId'],event['payload']['jobId']),('__runtime__','old-job'))
+        self.assertEqual((event['originApp'],event['component'],event['runtimeInstanceId']),('runtime','device','old-instance'))
+        self.assertTrue(self.service.log_request.HasField('upper_event_id'))
+        self.assertEqual(self.service.log_request.upper_event_id,0)
+        self.assertEqual(self.service.log_request.project_id,'old-project')
+        reset=await self.client.query_runtime_logs({'runtimeInstanceId':'old','afterEventId':'123'})
+        self.assertEqual((reset['ok'],reset['code'],reset['runtimeInstanceId'],reset['nextEventId']),
+                         (False,'RESET_REQUIRED','runtime-1','123'))
+        huge=await self.client.query_runtime_logs({'component':'too_large','afterEventId':'123'})
+        self.assertEqual((huge['code'],huge['nextEventId']),('EVENT_TOO_LARGE','123'))
+        old=await self.client.query_runtime_logs({'component':'unimplemented','afterEventId':'123'})
+        self.assertEqual((old['ok'],old['code'],old['runtimeInstanceId'],old['nextEventId']),
+                         (False,'UNIMPLEMENTED','','123'))
 
     def body(self):
         return {'runtimeInstanceId':'runtime-1','projectId':'project-1','configurationRevision':'7',

@@ -1,0 +1,9 @@
+.........F........................................                       [100%]
+================================== FAILURES ===================================
+___________ testDesignerLocalHistoryAndTargetChangeRejectOldReturn ____________
+tests\designer\test_operational_log_integration.py:305: in testDesignerLocalHistoryAndTargetChangeRejectOldReturn
+    assert selected > 0
+E   assert -1 > 0
+=========================== short test summary info ===========================
+FAILED tests/designer/test_operational_log_integration.py::testDesignerLocalHistoryAndTargetChangeRejectOldReturn
+1 failed, 49 passed in 22.48s

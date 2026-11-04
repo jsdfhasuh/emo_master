@@ -1,0 +1,93 @@
+warning: in the working copy of 'docs/operator-development-guide.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/page_designer/runtime_logs.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/services/global_logs.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/services/local_log.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/services/log_export.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/designer/services/runtime_client.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/operator_runtime/log_reader.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/operator_runtime/log_view.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/communication/manager.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/devices/diagnostics.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/devices/lifecycle.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/events/jsonl_writer.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/jobs/read_model.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/apps/runtime/workflow_debug/worker.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_master/ui/communication_panel.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_panel_protocol/generated/runtime_pb2.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/emo_panel_protocol/generated/runtime_pb2_grpc.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/designer/test_designer_startup_settings.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/designer/test_log_export.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/designer/test_operational_log_integration.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/designer/test_startup_runtime_connection.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/runtime/test_device_operational_logs.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/runtime/test_runtime_startup_progress.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/runtime/test_workflow_debug_acceptance.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/ui/operator_view/test_runtime_log_view.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/ui/operator_view/test_startup_settings.py', LF will be replaced by CRLF the next time Git touches it
+PASS Python syntax: 66 changed/new files
+docs/testing/2026-11-03-logging-consolidation/desktop_mock_probe.py
+src/emo_master/apps/designer/main.py
+src/emo_master/apps/designer/page_designer/preview.py
+src/emo_master/apps/designer/page_designer/runtime_logs.py
+src/emo_master/apps/designer/services/global_logs.py
+src/emo_master/apps/designer/services/local_log.py
+src/emo_master/apps/designer/services/log_export.py
+src/emo_master/apps/designer/services/runtime_client.py
+src/emo_master/apps/designer/ui/device_workspace.py
+src/emo_master/apps/designer/ui/log_dialog.py
+src/emo_master/apps/designer/ui/main_window.py
+src/emo_master/apps/designer/ui/workflow_debug_window.py
+src/emo_master/apps/operator_runtime/controller.py
+src/emo_master/apps/operator_runtime/log_reader.py
+src/emo_master/apps/operator_runtime/log_view.py
+src/emo_master/apps/operator_runtime/main.py
+src/emo_master/apps/runtime/communication/manager.py
+src/emo_master/apps/runtime/context/sqlite_store.py
+src/emo_master/apps/runtime/devices/diagnostics.py
+src/emo_master/apps/runtime/devices/lifecycle.py
+src/emo_master/apps/runtime/devices/manager.py
+src/emo_master/apps/runtime/events/app_log.py
+src/emo_master/apps/runtime/events/event_store.py
+src/emo_master/apps/runtime/events/jsonl_writer.py
+src/emo_master/apps/runtime/events/models.py
+src/emo_master/apps/runtime/grpc_server/aio_entry.py
+src/emo_master/apps/runtime/grpc_server/service.py
+src/emo_master/apps/runtime/jobs/read_model.py
+src/emo_master/apps/runtime/jobs/supervisor.py
+src/emo_master/apps/runtime/jobs/worker_main.py
+src/emo_master/apps/runtime/main.py
+src/emo_master/apps/runtime/workflow_debug/worker.py
+src/emo_master/core/contracts/diagnostic_logging.py
+src/emo_master/core/contracts/execution.py
+src/emo_master/core/log_export.py
+src/emo_master/ui/communication_panel.py
+src/emo_master/ui/device_management.py
+src/emo_panel_protocol/__init__.py
+src/emo_panel_protocol/generated/runtime_pb2.py
+src/emo_panel_protocol/generated/runtime_pb2_grpc.py
+tests/core/presentation/test_panel_contract.py
+tests/designer/test_designer_startup_settings.py
+tests/designer/test_log_export.py
+tests/designer/test_operational_log_integration.py
+tests/designer/test_startup_runtime_connection.py
+tests/runtime/test_device_operational_logs.py
+tests/runtime/test_heartbeat_liveness.py
+tests/runtime/test_jsonl_logging.py
+tests/runtime/test_runtime_persistence_contract.py
+tests/runtime/test_runtime_startup_progress.py
+tests/runtime/test_worker_event_batch_persistence.py
+tests/runtime/test_workflow_debug_acceptance.py
+tests/ui/operator_view/test_runtime_log_view.py
+tests/ui/operator_view/test_startup_settings.py
+web_panel/backend/emo_web_panel/app.py
+web_panel/backend/emo_web_panel/fixture_runtime.py
+web_panel/backend/emo_web_panel/local_log.py
+web_panel/backend/emo_web_panel/main.py
+web_panel/backend/emo_web_panel/mock_runtime.py
+web_panel/backend/emo_web_panel/runtime_client.py
+web_panel/frontend/tests/backend_e2e.py
+web_panel/scripts/verify_wheel.py
+web_panel/tests/test_app.py
+web_panel/tests/test_contract_manifest.py
+web_panel/tests/test_product_runtime.py
+web_panel/tests/test_runtime_contract.py

@@ -159,6 +159,12 @@ Runtime 会自动限制消息和 payload 大小、嵌套深度、DEBUG/INFO 频�
 并遮蔽 password、secret、token、authorization、credential、apiKey、privateKey 等字段。
 算子不要记录原始图像、完整网络报文、认证信息或完整 PLC 批量数据。
 
+设备关联使用同一公开接口：`getDeviceLogger(context, "camera")` 中的 `camera` 是设备槽位，
+实际设备来自本次执行冻结的绑定。它仍产生一条 `node.log`，带 `operatorId/phase/data/deviceBindings`，
+不向设备发指令，也不采集厂商固件日志。普通 logger 只有一个绑定时自动携带该绑定；多个绑定时
+通过 `getDeviceLogger()` 指定槽位，不将一条日志关联到全部设备。每次执行取当前 context 的 logger，
+不跨执行缓存。ERROR 日志不单独决定 Job 结果，调试预览不写正式生产历史。
+
 ## SQLite 与本地 JSONL
 
 SQLite 是事件查询和重放的权威存储，默认位于
@@ -172,6 +178,36 @@ Runtime 还异步写入面向运维的 UTF-8 JSONL，默认目录为
 Workflow、Loop、Node、artifact 生命周期及 `node.log`，完成事件不会复制大体积 outputs。
 ERROR 和 Job 终态立即 flush/fsync，其余至少每秒刷新。JSONL 故障不影响作业，Runtime 会把
 `runtime.logfile.failed` 仅写入 SQLite，避免递归失败。
+
+记录追加 `originApp/component/runtimeInstanceId`。运行事件归 `runtime`；`node.log` 为 `operator`，
+Job/节点生命周期为 `execution`，设备为 `device`，页面为 `presentation`，存储诊断为 `storage`，
+其他为 `application`。`timestampMs` 保留事件产生时间，SQLite 文本 timestamp 仍为入库时间。
+006 迁移给旧记录补应用/模块分类并保留空历史实例 ID，旧 JSONL 只在读取时补显示分类。
+
+原生设备普通操作和收发明细进入文件及有界设备缓存；WARN/ERROR 经现有首次、间隔摘要、恢复
+聚合进入 `__runtime__` 系统分区。算子设备日志只存一条原始 node.log，再投影到设备缓存
+（`write=False`），不参与原生故障计数。Job 查询也包含系统分区 payload 明确关联该 Job 的记录，
+聚合摘要不能解释为该 Job 的逐次错误账本。
+
+应用日志在服务建立前创建：Runtime 使用 `runtime_app-*.jsonl`，服务使用 `runtime-*.jsonl`；
+同次启动共享实例 ID，启动重试重新生成实例。Designer 用本次选定目录（优先
+`EMO_DESIGNER_LOG_DIR`）写 `designer-*.jsonl`。入口持有注入 writer 并负责关闭，独立窗口
+才持有自己的 writer。提交异步 writer 表示入队，关闭沿现有流程刷新，不表示逐条同步落盘。
+
+## 统一历史查询与导出（SDK 1.4.0）
+
+Designer 和 Web 的运行日志表使用 `QueryRuntimeLogs`，任务订阅继续处理控制、状态和结果。
+完整请求、回复、错误合同见 [Panel Contract](development/panel-contract-v1.md#runtime-日志查询sdk-140)。
+全局 eventId 只放在 StoredLogEvent 包装，与 Job sequence 分开；默认跨工程、跨历史实例查询。
+首次捕获 upperEventId 后固定范围翻页和导出。实时连接先获取当前上界建立起点，随后逐页消费，
+断线或隐藏重开保留同一目标/筛选的游标；实例、目标或筛选变化则取消旧请求并重建。
+
+桌面区分当前显示记录、固定筛选/上界的 Runtime 历史、选定本机文件及设备诊断缓存。
+Runtime 本机窗口只列 runtime_app/runtime 文件；Designer 在自己的日志目录查看历史，无需
+Runtime 在线。文件导出开始时固定文件集合和结束字节，只读取截止位置内的完整行；后续追加
+不加入本次导出。历史读取与导出在局部后台任务进行，可取消，失败/取消不替换目标或报告成功。
+JSON 流式完成 entries 后写实际 entryCount；JSONL 每行仅一条日志，实际条数由导出结果返回；
+TXT 末尾写实际统计。设备缓存导出只代表实际返回的有限记录。
 
 算子最低采集等级默认为 INFO，可通过 `EMO_RUNTIME_OPERATOR_LOG_LEVEL` 设置为
 `DEBUG`、`WARN` 或 `ERROR`。显示端筛选不会改变已经写入 SQLite/JSONL 的内容。
@@ -192,8 +228,9 @@ Designer 通过“打开日志”（`Ctrl+Shift+L`）打开独立的非模态日
 SQLite 或 JSONL。弹窗位置、大小、可见状态、列宽和筛选条件保存在本机 QSettings，不写入项目；
 旧版底部 Dock 的布局不再恢复，但原有列宽和筛选条件继续保留。
 
-Runtime 的 `node.log` 来源标记为 `runtime`；Designer 自身和 `EditorContext.log()` 分别标记为
-`designer`、`editor`，只保留在当前 Designer 会话中。
+Runtime 的 `node.log` 保持 `originApp=runtime/component=operator`，查看者不改变归属。
+Designer 自身与编辑器日志写入本机 writer，显示区域保留已有 designer/editor 标签；
+`component` 区分 editor、flow_designer、page_designer、runtime_client 或 application。
 
 ### Runtime 的空闲 SQLite 连接所有权
 

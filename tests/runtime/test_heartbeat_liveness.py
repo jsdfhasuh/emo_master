@@ -207,7 +207,8 @@ def testHeartbeatEmissionPublishesCellBeforeUnchangedFormalEvent(monkeypatch) ->
     heartbeatLoop("job", "project", "main", ObserverQueue(), stop, 500, cell)
     assert len(events) == 1
     assert events[0]["eventType"] == "process.heartbeat"
-    assert set(events[0]) == {"eventType", "jobId", "projectId", "workflowId", "pid"}
+    assert set(events[0]) == {"eventType", "jobId", "projectId", "workflowId", "pid", "timestampMs"}
+    assert isinstance(events[0]["timestampMs"], int) and events[0]["timestampMs"] > 0
     # Existing six-argument heartbeat callers and three-argument worker entry
     # keep the same signature; an absent optional cell needs no extra IPC.
     legacy = queue.Queue()

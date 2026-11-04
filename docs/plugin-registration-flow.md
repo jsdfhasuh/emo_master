@@ -596,6 +596,12 @@ NodeRun 和 Loop iteration 上下文的 `node.log`，不需要也不允许用输
 完整 TCP 报文、密码、token 或私钥；Runtime 虽会限流、截断和脱敏，但这不是算子主动控制
 数据面的替代方案。日志持久化和轮转规则见 `docs/runtime-event-flow.md`。
 
+关联设备时复用 `getDeviceLogger(runtimeContext, slot)`；slot 是当前冻结绑定的槽位，不是设备 ID。
+同一 node.log 只持久化一次，`originApp=runtime/component=operator`，设备视图从提交事件投影到
+有界缓存，不重复写库或参与原生故障计数。普通 logger 仅在一个绑定时自动携带设备；多个绑定
+必须显式选择槽位。设备驱动自己的诊断通过注入的 `DeviceRuntimeContext.events()` 发布，
+管理器已有动作结果不用算子再输出一份。调试日志保留受限 payload，只用于本次调试。
+
 上面的数值算子只是为了让注册样例足够短。图像算子的注册步骤完全相同：基础预处理可
 参考 `roi`、`threshold`；集合适配可参考 `collection_filter`；Homography 传播可参考
 `perspective`；经典分析可参考 `contour`、`template_match`；文件副作用可参考

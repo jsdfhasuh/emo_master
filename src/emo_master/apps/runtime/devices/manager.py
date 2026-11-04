@@ -362,8 +362,13 @@ class DeviceManager:
             def completed(future):
                 error = future.exception()
                 fields = dict(ownerId=owner, cycleId=cycleId, requestId=requestId,
-                    source=source, selectors=selectors, action=action)
+                    source=source, selectors=selectors, action=action,
+                    jobId=operationContext.jobId, workflowId=operationContext.workflowId,
+                    nodeId=operationContext.nodeId, planRevision=operationContext.planRevision,
+                    slot=operationContext.slot)
                 if error is not None:
+                    if hasattr(error, 'outcome'):
+                        fields['outcome'] = error.outcome
                     events('device.action.failed', str(error), **fields,
                         level='INFO' if getattr(error, 'code', '') == 'E_DEVICE_CANCELLED' else 'ERROR',
                         code=getattr(error, 'code', 'E_DEVICE_ERROR'), diagnostics=getattr(error, 'diagnostics', {}))
@@ -634,14 +639,7 @@ class DeviceManager:
                 if (self.lifecycles.get(deviceId) is not lifecycle or revision != lifecycle.controlRevision or lifecycle.paused
                         or currentRevision != configurationRevision):
                     return 'SUPERSEDED'
-                try:
-                    lifecycle.connect(cancel, deadline)
-                except Exception as error:
-                    lifecycle.driver.runtimeContext.events('device.connect.failed', str(error),
-                        level='INFO' if getattr(error, 'code', '') == 'E_DEVICE_CANCELLED' else 'ERROR',
-                        code=getattr(error, 'code', 'E_DEVICE_CONNECT'))
-                    raise
-                lifecycle.driver.runtimeContext.events('device.connect.completed', '设备连接已就绪')
+                lifecycle.connect(cancel, deadline)
                 return 'LISTENING' if lifecycle.driver.snapshot().get('state') == 'LISTENING' else 'CONNECTED'
             operation = executor.submit(owner, connect,
                 operationTimeout=connectionBudget(self.definitions[deviceId].policies))

@@ -59,8 +59,10 @@ def testWorkflowStopRetiresCooperativeAndUncooperativeLiveOperator(mode):
         manager.call("flow_start", dict(identity, requestId="start", inputSetId=prepared["inputSetId"]))
         waitFor(lambda: manager.call("get", identity)["state"] == "PAUSED")
         manager.call("flow_control", dict(identity, requestId="continue", controlJson='{"action":"continue","pauseSequence":1}'))
-        waitFor(lambda: any(event["type"] == "node.log" and event["event"].get("message") == "invoked"
-                           for event in manager.call("events", identity)["events"]))
+        log = waitFor(lambda: next((event for event in manager.call("events", identity)["events"]
+            if event["type"] == "node.log" and event["event"].get("message") == "invoked"), None))
+        assert log["event"]["payload"]["operatorId"] == "test.probe"
+        assert log["event"]["payload"]["phase"] == "execute"
         session = manager.sessions[identity["sessionId"]]
         path = Path(session.worker.workspace.name)
         manager.call("close", dict(identity, requestId="close"))

@@ -10,8 +10,9 @@ jobs:
   validate:
     name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    # Native Windows Qt reached 99% at 60 minutes; keep each test bounded at 120s.
-    timeout-minutes: ${{ matrix.os == 'windows-latest' && 90 || 45 }}
+    # Full Linux checks reached the 45-minute job cap after passing; allow setup and cleanup.
+    # Native Windows Qt reached 99% at 60 minutes. Each test remains bounded at 120s.
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 90 || 60 }}
     strategy:
       fail-fast: false
       matrix:

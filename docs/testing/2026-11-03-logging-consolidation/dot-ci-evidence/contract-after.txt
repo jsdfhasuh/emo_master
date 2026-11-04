@@ -1,0 +1,16 @@
+test_all_authoritative_files_match_development_handoff (test_contract_manifest.ContractManifestTests) ... ok
+test_embedded_fixtures_are_the_same_sdk_delivery (test_contract_manifest.ContractManifestTests) ... ok
+test_vendored_tree_is_exact_current_handoff_manifest_and_generated_sdk (test_contract_manifest.ContractManifestTests) ... FAIL
+
+======================================================================
+FAIL: test_vendored_tree_is_exact_current_handoff_manifest_and_generated_sdk (test_contract_manifest.ContractManifestTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/shared/emo_logging_ci_20261103/web_panel/tests/test_contract_manifest.py", line 39, in test_vendored_tree_is_exact_current_handoff_manifest_and_generated_sdk
+    self.assertEqual((CONTRACT / 'proto/runtime.proto').read_bytes(),
+AssertionError: b'syntax = "proto3";\r\n\r\npackage emo_master.runtime;\r\n\r\[37878 chars]\r\n' != b'syntax = "proto3";\n\npackage emo_master.runtime;\n\nmessage[35626 chars] }\n'
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.006s
+
+FAILED (failures=1)

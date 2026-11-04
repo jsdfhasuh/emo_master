@@ -38,7 +38,7 @@ class MockRuntime:
     async def start(self): pass
     async def close(self): pass
     async def info(self):
-        return {"runtimeInstanceId":self.instance_id,"projectId":"demo-project","mode":"mock","configurationRevision":"1","contractStatus":"draft-unverified","capabilities":["display","history","control"]}
+        return {"runtimeInstanceId":self.instance_id,"projectId":"demo-project","mode":"mock","configurationRevision":"1","contractStatus":"draft-unverified","capabilities":["display","history","control","runtime_logs_query_v1"]}
     async def runs(self):
         return [{"id":"demo-run","runId":"demo-run","name":"Demo run","runtimeInstanceId":self.instance_id,"projectId":"demo-project","workflowId":"demo-workflow","configurationRevision":"1","state":"running" if self.running else "stopped"}]
     async def workflows(self):
@@ -82,7 +82,32 @@ class MockRuntime:
     async def counters(self):
         return {"source":"mock-runtime-authoritative", "total":str(self.ordinal), "ok":str(self.ordinal-self.ordinal//4), "ng":str(self.ordinal//4), "at":datetime.now(timezone.utc).isoformat()}
 
+    async def query_runtime_logs(self, query):
+        return synthetic_log_page(self.instance_id,'demo-project',query)
+
     async def task_events(self, after="0"):
         if not isinstance(after,str) or not after.isdigit() or len(after)>20:raise ValueError("Invalid event sequence")
         cursor=int(after)
         return {"events":[event for event in self.events if int(event['sequence'])>cursor],"nextSequence":str(self.event_sequence),"resetRequired":bool(self.events and cursor<int(self.events[0]['sequence'])-1),"source":"mock-runtime-event-log"}
+
+
+def synthetic_log_page(instance_id, project_id, query):
+    reply={'ok':True,'code':'OK','message':'','runtimeInstanceId':instance_id,
+           'upperEventId':'2','nextEventId':str(query.get('afterEventId','0')),'hasMore':False,'events':[]}
+    if query.get('runtimeInstanceId') and query['runtimeInstanceId']!=instance_id:
+        return {**reply,'ok':False,'code':'RESET_REQUIRED','message':'Runtime instance changed'}
+    upper=int(query.get('upperEventId',2));after=int(query.get('afterEventId',0))
+    rows=[{'eventId':str(n),'sequence':str(n),'timestampMs':'1793664000000','jobId':'demo-run',
+           'projectId':project_id if n==2 else 'previous-project','workflowId':'demo-workflow','nodeId':'node-1',
+           'eventType':'node.log','originApp':'runtime','component':'operator','runtimeInstanceId':instance_id,
+           'level':'INFO','code':'DEMO_LOG','message':'Synthetic Runtime log','payload':{'deviceId':'demo-device'}}
+          for n in (1,2)]
+    rows=[item for item in rows if after<int(item['eventId'])<=upper
+          and all(not query.get(key) or item.get(key)==query[key] for key in ('projectId','jobId','component','workflowId','nodeId'))
+          and (not query.get('deviceId') or item['payload']['deviceId']==query['deviceId'])
+          and (not query.get('levels') or item['level'] in query['levels'])
+          and ('startTimestampMs' not in query or int(item['timestampMs'])>=int(query['startTimestampMs']))
+          and ('endTimestampMs' not in query or int(item['timestampMs'])<int(query['endTimestampMs']))]
+    page=rows[:query.get('limit',200)]
+    return {**reply,'upperEventId':str(upper),'nextEventId':page[-1]['eventId'] if len(rows)>len(page) else str(upper),
+            'hasMore':len(rows)>len(page),'events':page}

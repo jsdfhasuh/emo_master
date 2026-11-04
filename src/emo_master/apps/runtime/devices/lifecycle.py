@@ -34,10 +34,19 @@ class DeviceLifecycle:
                                 progress=lambda state: self.recoveryState.update(state))
         except BaseException as error:
             self.recoveryState.update(state="FAILED", lastError=str(error))
+            context = getattr(self.driver, 'runtimeContext', None)
+            if context is not None:
+                context.events('device.connect.failed', str(error), action='',
+                    level='INFO' if getattr(error, 'code', '') == 'E_DEVICE_CANCELLED' else 'ERROR',
+                    code=getattr(error, 'code', 'E_DEVICE_CONNECT'))
             raise
         self.recoveryState.update(state="CONNECTED", lastError="")
         self.connected = True
         self.lastUsed = monotonic()
+        # The built-in TCP listener publishes only after its thread starts.
+        context = getattr(self.driver, 'runtimeContext', None)
+        if context is not None and self.definition.deviceTypeId != 'device.tcp.server':
+            context.events('device.connect.completed', '设备连接已就绪', action='')
 
     def touched(self):
         self.lastUsed = monotonic()

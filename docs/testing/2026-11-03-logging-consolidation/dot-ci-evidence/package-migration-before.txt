@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/workspace/shared/emo_logging_ci_20261103/src/emo_master/apps/package_selftest.py", line 206, in _checkMigrations
+    raise RuntimeError(f"unexpected migration versions: {versions}")
+RuntimeError: unexpected migration versions: [1, 2, 3, 4, 5, 6]

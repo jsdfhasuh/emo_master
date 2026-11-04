@@ -1,0 +1,41 @@
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+____ testCompletedEventProjectionRemovesOutputsButKeepsOperationalSummary _____
+tests\runtime\test_jsonl_logging.py:114: in testCompletedEventProjectionRemovesOutputsButKeepsOperationalSummary
+    assert _records(tmp_path)[0]["payload"] == {
+E   AssertionError: assert {'status': 'C...: 'true', ...} == {'status': 'C...: 'true', ...}
+E     
+E     Omitting 7 identical items, use -vv to show
+E     Right contains 6 more items:
+E     {'deliveryId': 'delivery-1',
+E      'dispatchId': 'dispatch-1',
+E      'documentRevision': 7,
+E      'invocationId': 'invocation-1',...
+E     
+E     ...Full output truncated (3 lines hidden), use '-vv' to show
+________ testLoggingMetadataMigrationFromV5PreservesHistoryAndReopens _________
+tests\runtime\test_runtime_persistence_contract.py:304: in testLoggingMetadataMigrationFromV5PreservesHistoryAndReopens
+    assert [event.component for event in rows] == ['operator', 'execution', 'device', 'presentation', 'storage',
+E   AssertionError: assert ['operator', ...ication', ...] == ['operator', ...ication', ...]
+E     
+E     At index 6 diff: 'application' != 'execution'
+E     Use -v to get more diff
+__________ testQueryRuntimeLogsRpcByteBudgetAndProjectionKeepCursor ___________
+tests\runtime\test_runtime_persistence_contract.py:395: in testQueryRuntimeLogsRpcByteBudgetAndProjectionKeepCursor
+    assert compact.ok and json.loads(compact.events[0].event.payload_json) == dict(context, status='OK')
+E   assert (True and {'status': 'OK'} == {'runGroupId'...ation-1', ...}
+E    +  where True = ok: true\ncode: "OK"\nruntime_instance_id: "connected-instance"\nupper_event_id: 5\nnext_event_id: 5\nevents {\n  event_id: ...th_json: "[]"\n    origin_app: "runtime"\n    component: "execution"\n    runtime_instance_id: "connected-instance"\n  }\n}\n.ok
+E     
+E     Omitting 1 identical items, use -vv to show
+E     Right contains 6 more items:
+E     {'deliveryId': 'delivery-1',
+E      'dispatchId': 'dispatch-1',
+E      'documentRevision': 7,
+E      'invocationId': 'invocation-1',...
+E     
+E     ...Full output truncated (3 lines hidden), use '-vv' to show)
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_jsonl_logging.py::testCompletedEventProjectionRemovesOutputsButKeepsOperationalSummary
+FAILED tests/runtime/test_runtime_persistence_contract.py::testLoggingMetadataMigrationFromV5PreservesHistoryAndReopens
+FAILED tests/runtime/test_runtime_persistence_contract.py::testQueryRuntimeLogsRpcByteBudgetAndProjectionKeepCursor
+3 failed, 26 deselected in 2.57s

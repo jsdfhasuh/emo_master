@@ -128,7 +128,7 @@ class JsonlTailReader:
                 value = json.loads(raw.decode("utf-8"))
                 if not isinstance(value, dict):
                     raise ValueError("JSONL 记录不是对象")
-                records.append(LogRecord(path, lineStart, safeRecord(value)))
+                records.append(LogRecord(path, lineStart, displayRecord(value, path)))
             except (UnicodeError, ValueError, RecursionError) as error:
                 errors += 1
                 # JSONDecodeError.str includes source fragments; do not echo them.
@@ -144,12 +144,88 @@ class JsonlTailReader:
                           errors, reason, recentOnly)
 
 
-def listLogFiles(directory: Path) -> tuple[Path, ...]:
+def listLogFiles(directory: Path, *, prefixes=("runtime", "runtime_app")) -> tuple[Path, ...]:
     if not directory.exists():
         return ()
     # Metadata/file reads stay on the same single background task.
-    return tuple(sorted((path for path in directory.glob("runtime-*.jsonl") if path.is_file()),
+    return tuple(sorted((path for prefix in prefixes for path in directory.glob(prefix + "-*.jsonl") if path.is_file()),
                         key=lambda path: (path.stat().st_mtime_ns, path.name), reverse=True))
+
+
+def displayRecord(value: dict, path: Path) -> dict:
+    """Classify legacy files on read without changing their stored identity."""
+    from emo_master.core.contracts.diagnostic_logging import componentForEvent
+    value = dict(value)
+    origin = "designer" if path.name.startswith("designer-") else "runtime"
+    value["originApp"] = value.get("originApp") or origin
+    value["component"] = value.get("component") or (
+        componentForEvent(value.get("eventType", "")) if origin == "runtime" else "application")
+    value.setdefault("runtimeInstanceId", "")
+    value.setdefault("eventId", None)
+    return safeRecord(value)
+
+
+def deviceRecordMatches(record: dict, deviceId: str) -> bool:
+    if not deviceId:
+        return True
+    payload = record.get('payload')
+    if not isinstance(payload, dict):
+        payload = record
+    if payload.get('deviceId') == deviceId:
+        return True
+    bindings = payload.get('deviceBindings', {})
+    selected = payload.get('diagnostics', {}).get('deviceSlot')
+    return any(binding.get('deviceId') == deviceId for slot, binding in bindings.items()
+               if not selected or slot == selected)
+
+
+@dataclass(frozen=True)
+class LogFileRange:
+    path: Path
+    endOffset: int
+
+
+def snapshotLogFiles(paths) -> tuple[LogFileRange, ...]:
+    """Capture selected files and byte limits before the task starts."""
+    return tuple(path if isinstance(path, LogFileRange) else LogFileRange(Path(path), Path(path).stat().st_size)
+                 for path in paths)
+
+
+def iterLogFileRecords(ranges, *, cancelled=lambda: False):
+    """Read complete records up to captured positions, independent of tail caches."""
+    from emo_master.core.log_export import LogExportCancelled
+    for selected in ranges:
+        if cancelled():
+            raise LogExportCancelled("日志导出已取消")
+        path, end = selected.path, selected.endOffset
+        with path.open("rb") as stream:
+            remaining, pending = end, b""
+            while remaining:
+                if cancelled():
+                    raise LogExportCancelled("日志导出已取消")
+                block = stream.read(min(READ_BYTES, remaining))
+                if not block:
+                    raise OSError("选定日志文件在导出期间变短：" + safeText(path))
+                remaining -= len(block)
+                pending += block
+                while b"\n" in pending:
+                    raw, pending = pending.split(b"\n", 1)
+                    if cancelled():
+                        raise LogExportCancelled("日志导出已取消")
+                    if not raw.strip():
+                        continue
+                    if len(raw) > MAX_LINE_BYTES:
+                        raise ValueError("选定日志文件含超过 256 KiB 的记录：" + safeText(path))
+                    try:
+                        value = json.loads(raw.decode("utf-8"))
+                    except (UnicodeError, ValueError) as error:
+                        raise ValueError("选定日志文件含无效 UTF-8 / JSON 记录：" + safeText(path)) from error
+                    if not isinstance(value, dict):
+                        raise ValueError("选定日志文件中的 JSONL 记录不是对象：" + safeText(path))
+                    yield displayRecord(value, path)
+                if len(pending) > MAX_LINE_BYTES:
+                    raise ValueError("选定日志文件含超过 256 KiB 的记录：" + safeText(path))
+            # A trailing partial line is outside the captured complete records.
 
 
 def recordSource(data):
@@ -169,6 +245,8 @@ def recordDetails(record: LogRecord) -> str:
         key = data.get(kind + "Id")
         return f"{name}（{key}）" if name and key else name or key
     fields = (("时间", data.get("timestamp") or data.get("timestampMs")), ("级别", data.get("level")),
+              ("应用", data.get("originApp")), ("模块", data.get("component")),
+              ("Runtime 实例", data.get("runtimeInstanceId")),
               ("来源", recordSource(data)), ("事件", data.get("eventType")), ("错误码", data.get("code")),
               ("原始消息", data.get("message")), ("工程 / ID", identity("project")),
               ("流程 / ID", identity("workflow")), ("节点 / ID", identity("node")),

@@ -21,6 +21,86 @@ class AppTests(unittest.TestCase):
         r=self.client.post('/api/session',json={'username':name,'password':'safe-test-password'})
         self.assertEqual(r.status_code,200)
         return {'X-CSRF-Token':r.json()['csrf']}
+    def test_runtime_logs_permissions_history_download_and_structured_error(self):
+        path='/api/runtimes/configured/logs'
+        self.assertEqual(self.client.get(path).status_code,401)
+        self.login('viewer')
+        self.assertEqual(self.client.get(path).status_code,403)
+        self.app.state.registry.set_acl({'username':'admin','role':'admin'},'configured','viewer',True,False)
+        page=self.client.get(path+'?projectId=previous-project&limit=1').json()
+        self.assertTrue(page['ok']);self.assertEqual(page['events'][0]['projectId'],'previous-project')
+        reset=self.client.get(path+'?runtimeInstanceId=old&afterEventId=1').json()
+        self.assertEqual((reset['ok'],reset['code'],reset['runtimeInstanceId'],reset['nextEventId']),
+                         (False,'RESET_REQUIRED','mock-instance','1'))
+        response=self.client.get(path+'/export?projectId=previous-project')
+        self.assertEqual(response.status_code,200)
+        rows=[json.loads(line) for line in response.text.splitlines()]
+        self.assertEqual(len(rows),1);self.assertEqual(rows[0]['eventId'],'1')
+        self.assertEqual(response.headers['x-entry-count'],'1')
+        self.assertNotIn('entryCount',rows[0])
+        self.assertEqual(self.client.get('/api/admin/gateway-logs').status_code,403)
+        self.assertEqual(self.client.get('/api/admin/gateway-logs/export').status_code,403)
+        self.login()
+        logs=self.client.get('/api/admin/gateway-logs').json()['entries']
+        self.assertTrue(any(item['component']=='gateway' for item in logs))
+        raw=self.client.get('/api/admin/gateway-logs/export').text
+        self.assertNotIn('safe-test-password',raw)
+        self.assertNotIn('emo_panel_session',raw)
+        self.assertTrue(all(json.loads(line)['originApp']=='web' for line in raw.splitlines()))
+        self.assertEqual(self.client.get(path+'?upperEventId=9007199254740993').status_code,200)
+
+    def test_runtime_log_level_spacing_matches_query_and_export(self):
+        self.login()
+        for suffix in ('', '/export'):
+            path = '/api/runtimes/configured/logs' + suffix
+            expected = self.client.get(path, params={'levels': 'ERROR,INFO'})
+            self.assertEqual(expected.status_code, 200)
+            if suffix:
+                self.assertGreater(int(expected.headers['x-entry-count']), 0)
+            else:
+                self.assertTrue(expected.json()['ok'])
+                self.assertTrue(expected.json()['events'])
+            for levels in ('ERROR, INFO', ' ERROR, INFO ', ' ERROR, , INFO ,, '):
+                with self.subTest(suffix=suffix, levels=levels):
+                    response = self.client.get(path, params={'levels': levels})
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response.text, expected.text)
+            repeated = self.client.get(path, params=[('levels', ' ERROR, '), ('levels', ' INFO ,, ')])
+            self.assertEqual(repeated.status_code, 200)
+            self.assertEqual(repeated.text, expected.text)
+
+    def test_log_validation_failure_boundary_and_fixed_gateway_range(self):
+        self.login()
+        invalid=self.client.get('/api/runtimes/configured/logs?limit=0&afterEventId=123')
+        self.assertEqual(invalid.status_code,422)
+        self.assertEqual((invalid.json()['code'],invalid.json()['runtimeInstanceId'],invalid.json()['nextEventId']),
+                         ('INVALID_ARGUMENT','','123'))
+        gateway=self.app.state.gateway_log
+        def warnings():return sum(item['level']=='WARNING' for item in gateway.records())
+        before=warnings()
+        rejected=self.client.get('/api/runtimes/configured/logs/export?runtimeInstanceId=old')
+        self.assertEqual(rejected.status_code,409)
+        self.assertEqual(rejected.json()['code'],'RESET_REQUIRED')
+        self.assertEqual(warnings()-before,1)
+        gateway.record('gateway.test','before fixed range',runtimeInstanceId='associated-runtime')
+        snapshot=gateway.snapshot()
+        gateway.record('gateway.test','after fixed range')
+        selected=list(gateway.records(snapshot))
+        self.assertEqual(selected[-1]['message'],'before fixed range')
+        self.assertEqual(selected[-1]['runtimeInstanceId'],'associated-runtime')
+
+    def test_gateway_entry_initialization_failure_is_logged_and_writer_closed(self):
+        from unittest.mock import patch
+        from emo_web_panel.main import main
+        with tempfile.TemporaryDirectory() as directory:
+            with patch('sys.argv',['emo-web-panel','--data-dir',directory,'serve','--mode','mock']), \
+                 patch('emo_web_panel.app.create_app',side_effect=ValueError('private initialization detail')):
+                with self.assertRaises(ValueError):main()
+            raw=(Path(directory)/'logs/gateway.jsonl').read_text(encoding='utf-8')
+            self.assertIn('gateway.startup.failed',raw)
+            self.assertNotIn('private initialization detail',raw)
+            # TemporaryDirectory cleanup on Windows also verifies no open handler remains.
+
     def test_login_csrf_permissions(self):
         self.assertEqual(self.client.get('/api/runs').status_code,401)
         h=self.login('viewer')

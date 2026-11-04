@@ -1,0 +1,22 @@
+......F................................................                  [100%]
+================================== FAILURES ===================================
+________ testPreviewContractRequiresExplicitReadOnlyModeAndConnection _________
+
+contract = (WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4176/panel-contract0'), {'panelContract...ion': '1.0', 'sdkVersion': '1.4.0', 'sourceSha': '940994b3420b47ff0add8766ccce5a4f2686a02a', 'sourceDirty': True, ...})
+
+    def testPreviewContractRequiresExplicitReadOnlyModeAndConnection(contract):
+        from emo_panel_protocol.preview import PreviewContext
+        from pydantic import ValidationError
+        output, manifest = contract
+>       assert manifest['sdkVersion'] == '1.3.0'
+E       AssertionError: assert '1.4.0' == '1.3.0'
+E         
+E         - 1.3.0
+E         ?   ^
+E         + 1.4.0
+E         ?   ^
+
+tests\core\presentation\test_panel_contract.py:134: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/core/presentation/test_panel_contract.py::testPreviewContractRequiresExplicitReadOnlyModeAndConnection
+1 failed, 54 passed in 5.99s

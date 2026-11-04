@@ -1,0 +1,195 @@
+[
+  {
+    "scenario": "logs-first",
+    "baselinesBeforeChange": 1,
+    "rowsAfterConfirmation": 2,
+    "liveRows": 1000,
+    "historyRows": 1202,
+    "exportRows": 1202,
+    "queries": [
+      {
+        "limit": 1,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "10",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "11",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "12",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "212",
+        "upperEventId": "1212",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "412",
+        "upperEventId": "1212",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "612",
+        "upperEventId": "1212",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "812",
+        "upperEventId": "1212",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "1012",
+        "upperEventId": "1212",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "levels": [],
+        "limit": 1000,
+        "afterEventId": "0"
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "levels": [],
+        "limit": 1000,
+        "afterEventId": "1010",
+        "upperEventId": "1212"
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "0",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "210",
+        "upperEventId": "1212",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "410",
+        "upperEventId": "1212",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "610",
+        "upperEventId": "1212",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "810",
+        "upperEventId": "1212",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "1010",
+        "upperEventId": "1212",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "1210",
+        "upperEventId": "1212",
+        "limit": 200,
+        "levels": []
+      }
+    ]
+  },
+  {
+    "scenario": "status-first",
+    "baselinesBeforeChange": 1,
+    "rowsAfterConfirmation": 1,
+    "queries": [
+      {
+        "limit": 1,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "10",
+        "limit": 200,
+        "levels": []
+      }
+    ]
+  },
+  {
+    "scenario": "instance-change",
+    "baselinesBeforeChange": 1,
+    "rowsAfterConfirmation": 2,
+    "baselinesAfterChange": 2,
+    "newInstanceRows": 1,
+    "queries": [
+      {
+        "limit": 1,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "10",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "11",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "mock-instance",
+        "afterEventId": "12",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "limit": 1,
+        "runtimeInstanceId": "changed-instance",
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "changed-instance",
+        "afterEventId": "20",
+        "limit": 200,
+        "levels": []
+      },
+      {
+        "runtimeInstanceId": "changed-instance",
+        "afterEventId": "20",
+        "limit": 200,
+        "levels": []
+      }
+    ]
+  }
+]

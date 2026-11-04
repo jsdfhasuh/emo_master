@@ -1,0 +1,1804 @@
+F401 [*] `urllib.parse.urlsplit` imported but unused
+  --> web_panel\backend\emo_web_panel\app.py:12:26
+   |
+10 | from contextlib import asynccontextmanager
+11 | from pathlib import Path
+12 | from urllib.parse import urlsplit
+   |                          ^^^^^^^^
+13 | from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+14 | from fastapi.responses import JSONResponse, Response, FileResponse
+   |
+help: Remove unused import: `urllib.parse.urlsplit`
+
+E701 Multiple statements on one line (colon)
+  --> web_panel\backend\emo_web_panel\app.py:66:81
+   |
+64 |             db.execute('DELETE FROM package_activations WHERE runtime_id=?',(rid,))
+65 |     async def package_access(who,pid,rid=None):
+66 |         if who['role']=='admin' or config.preview and who['username']=='preview':return
+   |                                                                                 ^
+67 |         allowed={r['id'] for r in await asyncio.to_thread(registry.list,who)}
+68 |         if pid=='demo-panel':targets=allowed
+   |
+
+E701 Multiple statements on one line (colon)
+  --> web_panel\backend\emo_web_panel\app.py:68:29
+   |
+66 |         if who['role']=='admin' or config.preview and who['username']=='preview':return
+67 |         allowed={r['id'] for r in await asyncio.to_thread(registry.list,who)}
+68 |         if pid=='demo-panel':targets=allowed
+   |                             ^
+69 |         else:targets=set(await asyncio.to_thread(package_targets,pid)) & allowed
+70 |         if not targets or rid is not None and rid not in targets:raise HTTPException(403,'Page package not authorized for target')
+   |
+
+E701 Multiple statements on one line (colon)
+  --> web_panel\backend\emo_web_panel\app.py:69:13
+   |
+67 |         allowed={r['id'] for r in await asyncio.to_thread(registry.list,who)}
+68 |         if pid=='demo-panel':targets=allowed
+69 |         else:targets=set(await asyncio.to_thread(package_targets,pid)) & allowed
+   |             ^
+70 |         if not targets or rid is not None and rid not in targets:raise HTTPException(403,'Page package not authorized for target')
+71 |     client_lock=asyncio.Lock()
+   |
+
+E701 Multiple statements on one line (colon)
+  --> web_panel\backend\emo_web_panel\app.py:70:65
+   |
+68 |         if pid=='demo-panel':targets=allowed
+69 |         else:targets=set(await asyncio.to_thread(package_targets,pid)) & allowed
+70 |         if not targets or rid is not None and rid not in targets:raise HTTPException(403,'Page package not authorized for target')
+   |                                                                 ^
+71 |     client_lock=asyncio.Lock()
+72 |     async def client_for(who,rid,permission='view'):
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> web_panel\backend\emo_web_panel\app.py:78:37
+   |
+76 |                 entry=await asyncio.to_thread(registry.get,service_actor,rid)
+77 |                 client=MockRuntime(rid) if entry['mode']=='mock' else GrpcRuntimeClient(entry['address'])
+78 |                 await client.start();clients[rid]=client
+   |                                     ^
+79 |             return clients[rid]
+80 |     login_failures={}
+   |
+
+E701 Multiple statements on one line (colon)
+  --> web_panel\backend\emo_web_panel\app.py:84:43
+   |
+82 |     async def lifespan(app):
+83 |         try:
+84 |             for client in clients.values():await client.start()
+   |                                           ^
+85 |             if config.preview and config.mode == "grpc":await rt.info()
+86 |             gateway_log.record('gateway.started', 'Web gateway started', mode=config.mode)
+   |
+
+E701 Multiple statements on one line (colon)
+  --> web_panel\backend\emo_web_panel\app.py:85:56
+   |
+83 |         try:
+84 |             for client in clients.values():await client.start()
+85 |             if config.preview and config.mode == "grpc":await rt.info()
+   |                                                        ^
+86 |             gateway_log.record('gateway.started', 'Web gateway started', mode=config.mode)
+87 |             yield
+   |
+
+E701 Multiple statements on one line (colon)
+  --> web_panel\backend\emo_web_panel\app.py:94:43
+   |
+92 |             await views.close()
+93 |             await resources.close()
+94 |             for client in clients.values():await client.close()
+   |                                           ^
+95 |             if own_gateway_log:gateway_log.close()
+96 |     app=FastAPI(title='emo_master independent Web panel',lifespan=lifespan)
+   |
+
+E701 Multiple statements on one line (colon)
+  --> web_panel\backend\emo_web_panel\app.py:95:31
+   |
+93 |             await resources.close()
+94 |             for client in clients.values():await client.close()
+95 |             if own_gateway_log:gateway_log.close()
+   |                               ^
+96 |     app=FastAPI(title='emo_master independent Web panel',lifespan=lifespan)
+97 |     app.state.auth,app.state.views,app.state.runtime=auth,views,rt
+   |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:102:22
+    |
+100 |     app.state.resources=resources
+101 |     def origin_ok(origin,host,scheme):
+102 |         if not origin:return True # non-browser command clients still need session and CSRF
+    |                      ^
+103 |         if origin in config.allowed_origins:return True
+104 |         return origin == f'{scheme}://{host}'
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:103:44
+    |
+101 |     def origin_ok(origin,host,scheme):
+102 |         if not origin:return True # non-browser command clients still need session and CSRF
+103 |         if origin in config.allowed_origins:return True
+    |                                            ^
+104 |         return origin == f'{scheme}://{host}'
+105 |     async def identity(request:Request,permission='view',mutating=False):
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:107:18
+    |
+105 |     async def identity(request:Request,permission='view',mutating=False):
+106 |         me=await asyncio.to_thread(auth.session,request.cookies.get(COOKIE))
+107 |         if not me:raise HTTPException(401,'Login required')
+    |                  ^
+108 |         if permission not in me['permissions']:raise HTTPException(403,'Permission denied')
+109 |         if mutating:
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:108:47
+    |
+106 | …     me=await asyncio.to_thread(auth.session,request.cookies.get(COOKIE))
+107 | …     if not me:raise HTTPException(401,'Login required')
+108 | …     if permission not in me['permissions']:raise HTTPException(403,'Permission denied')
+    |                                             ^
+109 | …     if mutating:
+110 | …         if not origin_ok(request.headers.get('origin'),request.headers.get('host'),request.url.scheme): raise HTTPException(403,'Or…
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:110:107
+    |
+108 | …     if permission not in me['permissions']:raise HTTPException(403,'Permission denied')
+109 | …     if mutating:
+110 | …         if not origin_ok(request.headers.get('origin'),request.headers.get('host'),request.url.scheme): raise HTTPException(403,'Or…
+    |                                                                                                         ^
+111 | …         if not hmac.compare_digest(request.headers.get('x-csrf-token',''),me['csrf']): raise HTTPException(403,'CSRF denied')
+112 | …     return me
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:111:90
+    |
+109 |         if mutating:
+110 |             if not origin_ok(request.headers.get('origin'),request.headers.get('host'),request.url.scheme): raise HTTPException(403,'…
+111 |             if not hmac.compare_digest(request.headers.get('x-csrf-token',''),me['csrf']): raise HTTPException(403,'CSRF denied')
+    |                                                                                          ^
+112 |         return me
+113 |     async def json_object(req,allow_empty=False):
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:117:31
+    |
+115 |         async for chunk in req.stream():
+116 |             data.extend(chunk)
+117 |             if len(data)>65536:raise HTTPException(413,'JSON request too large')
+    |                               ^
+118 |         if not data and allow_empty:return {}
+119 |         try:body=json.loads(data)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:118:36
+    |
+116 |             data.extend(chunk)
+117 |             if len(data)>65536:raise HTTPException(413,'JSON request too large')
+118 |         if not data and allow_empty:return {}
+    |                                    ^
+119 |         try:body=json.loads(data)
+120 |         except (ValueError,UnicodeDecodeError):raise HTTPException(422,'JSON object required')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:119:12
+    |
+117 |             if len(data)>65536:raise HTTPException(413,'JSON request too large')
+118 |         if not data and allow_empty:return {}
+119 |         try:body=json.loads(data)
+    |            ^
+120 |         except (ValueError,UnicodeDecodeError):raise HTTPException(422,'JSON object required')
+121 |         if not isinstance(body,dict):raise HTTPException(422,'JSON object required')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:120:47
+    |
+118 |         if not data and allow_empty:return {}
+119 |         try:body=json.loads(data)
+120 |         except (ValueError,UnicodeDecodeError):raise HTTPException(422,'JSON object required')
+    |                                               ^
+121 |         if not isinstance(body,dict):raise HTTPException(422,'JSON object required')
+122 |         return body
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:121:37
+    |
+119 |         try:body=json.loads(data)
+120 |         except (ValueError,UnicodeDecodeError):raise HTTPException(422,'JSON object required')
+121 |         if not isinstance(body,dict):raise HTTPException(422,'JSON object required')
+    |                                     ^
+122 |         return body
+123 |     @app.exception_handler(RegistryDenied)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:145:27
+    |
+143 |             path=req.url.path
+144 |             allowed=(path in {'/api/preview/session','/api/session','/api/logout','/api/views'} or path.startswith('/api/views/'))
+145 |             if not allowed:return JSONResponse({'detail':'Preview is read-only'},403)
+    |                           ^
+146 |         if req.method in {'POST','PUT','PATCH'}:
+147 |             try: size=int(req.headers.get('content-length','0'))
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:147:16
+    |
+145 | …         if not allowed:return JSONResponse({'detail':'Preview is read-only'},403)
+146 | …     if req.method in {'POST','PUT','PATCH'}:
+147 | …         try: size=int(req.headers.get('content-length','0'))
+    |              ^
+148 | …         except ValueError:return JSONResponse({'detail':'Invalid Content-Length'},400)
+149 | …         if size>(66*1024*1024 if req.url.path=='/api/packages' else 24*1024*1024):return JSONResponse({'detail':'Request too large'…
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:148:30
+    |
+146 | …     if req.method in {'POST','PUT','PATCH'}:
+147 | …         try: size=int(req.headers.get('content-length','0'))
+148 | …         except ValueError:return JSONResponse({'detail':'Invalid Content-Length'},400)
+    |                            ^
+149 | …         if size>(66*1024*1024 if req.url.path=='/api/packages' else 24*1024*1024):return JSONResponse({'detail':'Request too large'…
+150 | …     response=await call_next(req)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:149:86
+    |
+147 | …         try: size=int(req.headers.get('content-length','0'))
+148 | …         except ValueError:return JSONResponse({'detail':'Invalid Content-Length'},400)
+149 | …         if size>(66*1024*1024 if req.url.path=='/api/packages' else 24*1024*1024):return JSONResponse({'detail':'Request too large'…
+    |                                                                                    ^
+150 | …     response=await call_next(req)
+151 | …     response.headers['X-Content-Type-Options']='nosniff'
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:175:58
+    |
+173 |     async def preview_session(req:Request):
+174 |         nonlocal preview_used
+175 |         if not config.preview or not config.preview_token:raise HTTPException(404,'Not a preview')
+    |                                                          ^
+176 |         if not origin_ok(req.headers.get('origin'),req.headers.get('host'),req.url.scheme):raise HTTPException(403,'Origin denied')
+177 |         body=await json_object(req)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:176:91
+    |
+174 |         nonlocal preview_used
+175 |         if not config.preview or not config.preview_token:raise HTTPException(404,'Not a preview')
+176 |         if not origin_ok(req.headers.get('origin'),req.headers.get('host'),req.url.scheme):raise HTTPException(403,'Origin denied')
+    |                                                                                           ^
+177 |         body=await json_object(req)
+178 |         token=body.get('token')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:179:169
+    |
+177 | …
+178 | …
+179 | …token,str) or not hmac.compare_digest(token,config.preview_token):raise HTTPException(403,'Preview token expired or already used; re…
+    |                                                                   ^
+180 | …
+181 | …
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:188:91
+    |
+186 |     @app.post('/api/session')
+187 |     async def login(req:Request):
+188 |         if not origin_ok(req.headers.get('origin'),req.headers.get('host'),req.url.scheme):raise HTTPException(403,'Origin denied')
+    |                                                                                           ^
+189 |         ip=req.client.host if req.client else 'unknown'; now=time.monotonic()
+190 |         prior=[v for v in login_failures.get(ip,[]) if now-v<60]
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:189:56
+    |
+187 |     async def login(req:Request):
+188 |         if not origin_ok(req.headers.get('origin'),req.headers.get('host'),req.url.scheme):raise HTTPException(403,'Origin denied')
+189 |         ip=req.client.host if req.client else 'unknown'; now=time.monotonic()
+    |                                                        ^
+190 |         prior=[v for v in login_failures.get(ip,[]) if now-v<60]
+191 |         if len(prior)>=10:raise HTTPException(429,'Try again later')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:191:26
+    |
+189 | …     ip=req.client.host if req.client else 'unknown'; now=time.monotonic()
+190 | …     prior=[v for v in login_failures.get(ip,[]) if now-v<60]
+191 | …     if len(prior)>=10:raise HTTPException(429,'Try again later')
+    |                        ^
+192 | …     body=await json_object(req)
+193 | …     if not isinstance(body.get('username'),str) or not isinstance(body.get('password'),str):raise HTTPException(422,'Credentials re…
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:193:96
+    |
+191 | …     if len(prior)>=10:raise HTTPException(429,'Try again later')
+192 | …     body=await json_object(req)
+193 | …     if not isinstance(body.get('username'),str) or not isinstance(body.get('password'),str):raise HTTPException(422,'Credentials re…
+    |                                                                                              ^
+194 | …     if len(body['password'])>1024:raise HTTPException(422,'Password too long')
+195 | …     token=await asyncio.to_thread(auth.login,body['username'],body['password'])
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:194:38
+    |
+192 | …     body=await json_object(req)
+193 | …     if not isinstance(body.get('username'),str) or not isinstance(body.get('password'),str):raise HTTPException(422,'Credentials re…
+194 | …     if len(body['password'])>1024:raise HTTPException(422,'Password too long')
+    |                                    ^
+195 | …     token=await asyncio.to_thread(auth.login,body['username'],body['password'])
+196 | …     if not token:
+    |
+
+F841 Local variable `who` is assigned to but never used
+   --> web_panel\backend\emo_web_panel\app.py:207:9
+    |
+205 |     @app.post('/api/logout')
+206 |     async def logout(req:Request):
+207 |         who=await identity(req,mutating=True)
+    |         ^^^
+208 |         await asyncio.to_thread(auth.logout,req.cookies.get(COOKIE,''))
+209 |         response=JSONResponse({'ok':True}); response.delete_cookie(COOKIE); return response
+    |
+help: Remove assignment to unused variable `who`
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:209:43
+    |
+207 |         who=await identity(req,mutating=True)
+208 |         await asyncio.to_thread(auth.logout,req.cookies.get(COOKIE,''))
+209 |         response=JSONResponse({'ok':True}); response.delete_cookie(COOKIE); return response
+    |                                           ^
+210 |     @app.get('/api/admin/audit')
+211 |     async def audit_records(req:Request,limit:int=100):
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:209:75
+    |
+207 |         who=await identity(req,mutating=True)
+208 |         await asyncio.to_thread(auth.logout,req.cookies.get(COOKIE,''))
+209 |         response=JSONResponse({'ok':True}); response.delete_cookie(COOKIE); return response
+    |                                                                           ^
+210 |     @app.get('/api/admin/audit')
+211 |     async def audit_records(req:Request,limit:int=100):
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:213:29
+    |
+211 |     async def audit_records(req:Request,limit:int=100):
+212 |         await identity(req,'admin')
+213 |         if not 1<=limit<=500:raise HTTPException(422,'Invalid limit')
+    |                             ^
+214 |         return await asyncio.to_thread(auth.audit_records,limit)
+215 |     @app.get('/api/admin/gateway-logs')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:218:33
+    |
+216 |     async def gateway_records(req:Request, limit:int=100):
+217 |         await identity(req,'admin')
+218 |         if not 1 <= limit <= 500:raise HTTPException(422,'Invalid limit')
+    |                                 ^
+219 |         return {'entries': await asyncio.to_thread(gateway_log.recent, limit)}
+220 |     @app.get('/api/admin/gateway-logs/export')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:231:61
+    |
+229 |                                  'X-Entry-Count':str(len(entries))})
+230 |     @app.get('/api/admin/users')
+231 |     async def users(req:Request):await identity(req,'admin');return await asyncio.to_thread(auth.users)
+    |                                                             ^
+232 |     @app.post('/api/admin/users')
+233 |     async def create_user(req:Request):
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:234:41
+    |
+232 |     @app.post('/api/admin/users')
+233 |     async def create_user(req:Request):
+234 |         await identity(req,'admin',True);b=await json_object(req)
+    |                                         ^
+235 |         await asyncio.to_thread(auth.create_user,b.get('username'),b.get('password'),b.get('role'))
+236 |         return {'ok':True}
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:239:45
+    |
+237 |     @app.patch('/api/admin/users/{username}')
+238 |     async def update_user(username:str,req:Request):
+239 |         who=await identity(req,'admin',True);b=await json_object(req)
+    |                                             ^
+240 |         if username==who['username'] and b.get('role',who['role'])!=who['role']:raise HTTPException(422,'Change your role from anothe…
+241 |         await asyncio.to_thread(auth.update_user,username,b.get('role'),b.get('password'))
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:240:80
+    |
+238 |     async def update_user(username:str,req:Request):
+239 |         who=await identity(req,'admin',True);b=await json_object(req)
+240 |         if username==who['username'] and b.get('role',who['role'])!=who['role']:raise HTTPException(422,'Change your role from anothe…
+    |                                                                                ^
+241 |         await asyncio.to_thread(auth.update_user,username,b.get('role'),b.get('password'))
+242 |         await asyncio.to_thread(auth.audit,who['username'],'update_user',username,'succeeded')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:248:41
+    |
+246 |         async with target_lock:
+247 |             who=await identity(req,'admin',True)
+248 |             if username==who['username']:raise HTTPException(422,'Cannot delete own active administrator')
+    |                                         ^
+249 |             await asyncio.to_thread(registry.revoke_user,who,username)
+250 |             await asyncio.to_thread(auth.delete_user,username)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:255:40
+    |
+253 |     @app.get('/api/admin/runtimes')
+254 |     async def runtimes(req:Request):
+255 |         who=await identity(req,'admin');return await asyncio.to_thread(registry.list,who)
+    |                                        ^
+256 |     @app.get('/api/runtimes')
+257 |     async def allowed_runtimes(req:Request):
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:258:32
+    |
+256 |     @app.get('/api/runtimes')
+257 |     async def allowed_runtimes(req:Request):
+258 |         who=await identity(req);return await asyncio.to_thread(registry.list,who)
+    |                                ^
+259 |     @app.post('/api/admin/runtimes')
+260 |     async def add_runtime(req:Request):
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:261:45
+    |
+259 |     @app.post('/api/admin/runtimes')
+260 |     async def add_runtime(req:Request):
+261 |         who=await identity(req,'admin',True);b=await json_object(req)
+    |                                             ^
+262 |         return await asyncio.to_thread(registry.create,who,b.get('id'),b.get('alias'),b.get('mode'),b.get('address',''))
+263 |     def target_in_use(rid):
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:264:83
+    |
+262 |         return await asyncio.to_thread(registry.create,who,b.get('id'),b.get('alias'),b.get('mode'),b.get('address',''))
+263 |     def target_in_use(rid):
+264 |         if any(v.get('runtimeId','configured')==rid for v in views.views.values()):return True
+    |                                                                                   ^
+265 |         client=clients.get(rid)
+266 |         return client is not None and any(stream['runtime'] is client for stream in views.streams.values())
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:270:49
+    |
+268 |     async def change_runtime(rid:str,req:Request):
+269 |         async with target_lock:
+270 |             who=await identity(req,'admin',True);b=await json_object(req)
+    |                                                 ^
+271 |             if target_in_use(rid):raise HTTPException(409,'Close active views and shared subscriptions before changing connection')
+272 |             result=await asyncio.to_thread(registry.update,who,rid,alias=b.get('alias'),mode=b.get('mode'),address=b.get('address'))
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:271:34
+    |
+269 |         async with target_lock:
+270 |             who=await identity(req,'admin',True);b=await json_object(req)
+271 |             if target_in_use(rid):raise HTTPException(409,'Close active views and shared subscriptions before changing connection')
+    |                                  ^
+272 |             result=await asyncio.to_thread(registry.update,who,rid,alias=b.get('alias'),mode=b.get('mode'),address=b.get('address'))
+273 |             if rid in clients:await clients.pop(rid).close()
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:273:30
+    |
+271 |             if target_in_use(rid):raise HTTPException(409,'Close active views and shared subscriptions before changing connection')
+272 |             result=await asyncio.to_thread(registry.update,who,rid,alias=b.get('alias'),mode=b.get('mode'),address=b.get('address'))
+273 |             if rid in clients:await clients.pop(rid).close()
+    |                              ^
+274 |             return result
+275 |     @app.delete('/api/admin/runtimes/{rid}')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:280:30
+    |
+278 |             who=await identity(req,'admin',True)
+279 |             await asyncio.to_thread(registry.delete,who,rid,revoke_acl=revoke_acl,in_use=target_in_use(rid))
+280 |             if rid in clients:await clients.pop(rid).close()
+    |                              ^
+281 |             await asyncio.to_thread(remove_target_associations,rid)
+282 |             return {'ok':True}
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:285:40
+    |
+283 |     @app.get('/api/admin/runtimes/{rid}/grants')
+284 |     async def target_grants(rid:str,req:Request):
+285 |         who=await identity(req,'admin');return await asyncio.to_thread(registry.list_acl,who,rid)
+    |                                        ^
+286 |     @app.put('/api/admin/runtimes/{rid}/grants')
+287 |     async def grant_target(rid:str,req:Request):
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:289:49
+    |
+287 |     async def grant_target(rid:str,req:Request):
+288 |         async with target_lock:
+289 |             who=await identity(req,'admin',True);b=await json_object(req)
+    |                                                 ^
+290 |             if b.get('username') not in [u['username'] for u in await asyncio.to_thread(auth.users)]:raise HTTPException(404,'User no…
+291 |             return await asyncio.to_thread(registry.set_acl,who,rid,b['username'],b.get('view'),b.get('control',False))
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:290:101
+    |
+288 |         async with target_lock:
+289 |             who=await identity(req,'admin',True);b=await json_object(req)
+290 |             if b.get('username') not in [u['username'] for u in await asyncio.to_thread(auth.users)]:raise HTTPException(404,'User no…
+    |                                                                                                     ^
+291 |             return await asyncio.to_thread(registry.set_acl,who,rid,b['username'],b.get('view'),b.get('control',False))
+292 |     @app.get('/api/runtimes/{rid}/status')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:294:32
+    |
+292 |     @app.get('/api/runtimes/{rid}/status')
+293 |     async def runtime_status(rid:str,req:Request,after:str='0'):
+294 |         who=await identity(req);client=await client_for(who,rid)
+    |                                ^
+295 |         return {'runtime':await client.info(),'counters':await client.counters(),'events':await client.task_events(after)}
+296 |     @app.get('/api/runtimes/{rid}/runs/{run_id}/events')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:298:32
+    |
+296 |     @app.get('/api/runtimes/{rid}/runs/{run_id}/events')
+297 |     async def job_events(rid:str,run_id:str,req:Request,after:str='0',runtimeInstanceId:str='',projectId:str=''):
+298 |         who=await identity(req);client=await client_for(who,rid)
+    |                                ^
+299 |         info=await client.info()
+300 |         if runtimeInstanceId and runtimeInstanceId!=info['runtimeInstanceId'] or projectId and projectId!=info['projectId']:raise HTT…
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:300:124
+    |
+298 | …     who=await identity(req);client=await client_for(who,rid)
+299 | …     info=await client.info()
+300 | …     if runtimeInstanceId and runtimeInstanceId!=info['runtimeInstanceId'] or projectId and projectId!=info['projectId']:raise HTTPE…
+    |                                                                                                                          ^
+301 | …     if not after.isdecimal():raise HTTPException(422,'Decimal sequence required')
+302 | …     if hasattr(client,'job_events'):return {**await client.job_events(run_id,after),'runtimeInstanceId':info['runtimeInstanceId'],'…
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:301:33
+    |
+299 | …     info=await client.info()
+300 | …     if runtimeInstanceId and runtimeInstanceId!=info['runtimeInstanceId'] or projectId and projectId!=info['projectId']:raise HTTPE…
+301 | …     if not after.isdecimal():raise HTTPException(422,'Decimal sequence required')
+    |                               ^
+302 | …     if hasattr(client,'job_events'):return {**await client.job_events(run_id,after),'runtimeInstanceId':info['runtimeInstanceId'],'…
+303 | …     return await client.task_events(after)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:302:40
+    |
+300 |         if runtimeInstanceId and runtimeInstanceId!=info['runtimeInstanceId'] or projectId and projectId!=info['projectId']:raise HTT…
+301 |         if not after.isdecimal():raise HTTPException(422,'Decimal sequence required')
+302 |         if hasattr(client,'job_events'):return {**await client.job_events(run_id,after),'runtimeInstanceId':info['runtimeInstanceId']…
+    |                                        ^
+303 |         return await client.task_events(after)
+304 |     def log_query(req):
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:311:12
+    |
+309 |                    'levels','startTimestampMs','endTimestampMs','afterEventId','upperEventId','limit'}
+310 |         query = {key:value for key,value in query.items() if key in allowed}
+311 |         try:query['limit'] = int(query.get('limit',200))
+    |            ^
+312 |         except ValueError:raise LogQueryError('Invalid log limit')
+313 |         if not 1 <= query['limit'] <= 1000:raise LogQueryError('Invalid log limit')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:312:26
+    |
+310 |         query = {key:value for key,value in query.items() if key in allowed}
+311 |         try:query['limit'] = int(query.get('limit',200))
+312 |         except ValueError:raise LogQueryError('Invalid log limit')
+    |                          ^
+313 |         if not 1 <= query['limit'] <= 1000:raise LogQueryError('Invalid log limit')
+314 |         for key in ('startTimestampMs','endTimestampMs','afterEventId','upperEventId'):
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:313:43
+    |
+311 |         try:query['limit'] = int(query.get('limit',200))
+312 |         except ValueError:raise LogQueryError('Invalid log limit')
+313 |         if not 1 <= query['limit'] <= 1000:raise LogQueryError('Invalid log limit')
+    |                                           ^
+314 |         for key in ('startTimestampMs','endTimestampMs','afterEventId','upperEventId'):
+315 |             if key in query and (not query[key].isdecimal() or int(query[key]) > 2**63-1):
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:341:51
+    |
+339 |             with path.open('w',encoding='utf-8',newline='\n') as output:
+340 |                 while True:
+341 |                     if await req.is_disconnected():raise asyncio.CancelledError()
+    |                                                   ^
+342 |                     result=await query_logs(client,query)
+343 |                     if not result['ok']:
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:351:45
+    |
+349 |                         await asyncio.to_thread(output.write,json.dumps(item,ensure_ascii=False,allow_nan=False)+'\n')
+350 |                         count+=1
+351 |                     if not result['hasMore']:break
+    |                                             ^
+352 |             response=FileResponse(path,media_type='application/x-ndjson',filename='runtime-logs.jsonl',
+353 |                 headers={'X-Entry-Count':str(count),'X-Upper-Event-Id':query['upperEventId']},
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:358:32
+    |
+356 |             return response
+357 |         finally:
+358 |             if path is not None:path.unlink(missing_ok=True)
+    |                                ^
+359 |     @app.get('/api/runtimes/{rid}/workflows')
+360 |     async def workflows(rid:str,req:Request):
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:361:32
+    |
+359 |     @app.get('/api/runtimes/{rid}/workflows')
+360 |     async def workflows(rid:str,req:Request):
+361 |         who=await identity(req);client=await client_for(who,rid);info=await client.info()
+    |                                ^
+362 |         return [{**w,'runtimeId':rid,'runtimeInstanceId':info['runtimeInstanceId'],'projectId':info['projectId'],'configurationRevisi…
+363 |     @app.get('/api/runs')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:361:65
+    |
+359 |     @app.get('/api/runtimes/{rid}/workflows')
+360 |     async def workflows(rid:str,req:Request):
+361 |         who=await identity(req);client=await client_for(who,rid);info=await client.info()
+    |                                                                 ^
+362 |         return [{**w,'runtimeId':rid,'runtimeInstanceId':info['runtimeInstanceId'],'projectId':info['projectId'],'configurationRevisi…
+363 |     @app.get('/api/runs')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:365:32
+    |
+363 |     @app.get('/api/runs')
+364 |     async def runs(req:Request,runtimeId:str='configured'):
+365 |         who=await identity(req);client=await client_for(who,runtimeId)
+    |                                ^
+366 |         return [{**r,'runtimeId':runtimeId} for r in await client.runs()]
+367 |     @app.get('/api/runtimes/{rid}/info')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:375:50
+    |
+373 |     async def run_state(run_id:str,req:Request,runtimeId:str='configured'):
+374 |         for r in await runs(req,runtimeId):
+375 |             if r.get('id',r.get('runId'))==run_id:return r
+    |                                                  ^
+376 |         raise HTTPException(404,'Run not found')
+377 |     async def with_control_message(who,result,client):
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:378:49
+    |
+376 |         raise HTTPException(404,'Run not found')
+377 |     async def with_control_message(who,result,client):
+378 |         if not hasattr(client,'control_message'):return result
+    |                                                 ^
+379 |         intent=result.get('intent',{})
+380 |         message=await client.control_message(intent['action'],result,intent)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:394:30
+    |
+392 |         async with target_lock:
+393 |             who=await identity(req,'control',True)
+394 |             if config.preview:raise HTTPException(403,'Preview is read-only')
+    |                              ^
+395 |             body=await json_object(req)
+396 |             client=await client_for(who,body.get('runtimeId','configured'),'control')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:398:46
+    |
+396 | …     client=await client_for(who,body.get('runtimeId','configured'),'control')
+397 | …     await client.info() # fail closed before storing unexecutable intent
+398 | …     if isinstance(client,MockRuntime):client.validate_control(action,target,body)
+    |                                        ^
+399 | …     result=await ops.execute(who['userId'],body.get('requestId'),action,target,body,client)
+400 | …     await asyncio.to_thread(auth.audit,who['username'],action,json.dumps({k:body.get(k) for k in ('requestId','runtimeId','runtimeI…
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:408:32
+    |
+406 |     @app.get('/api/operations/by-request/{request_id}')
+407 |     async def operation_by_request(request_id:str,req:Request):
+408 |         who=await identity(req);r=await asyncio.to_thread(ops.by_request,who['userId'],request_id)
+    |                                ^
+409 |         if not r:raise HTTPException(404,'Operation not found; outcome is not assumed')
+410 |         client=await client_for(who,r.get('intent',{}).get('runtimeId','configured'))
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:409:17
+    |
+407 |     async def operation_by_request(request_id:str,req:Request):
+408 |         who=await identity(req);r=await asyncio.to_thread(ops.by_request,who['userId'],request_id)
+409 |         if not r:raise HTTPException(404,'Operation not found; outcome is not assumed')
+    |                 ^
+410 |         client=await client_for(who,r.get('intent',{}).get('runtimeId','configured'))
+411 |         return await with_control_message(who,await ops.reconcile(r,client),client)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:414:32
+    |
+412 |     @app.get('/api/operations/{op_id}')
+413 |     async def operation(op_id:str,req:Request):
+414 |         who=await identity(req);r=await asyncio.to_thread(ops.get,op_id,who['userId'])
+    |                                ^
+415 |         if not r:raise HTTPException(404,'Operation not found')
+416 |         client=await client_for(who,r.get('intent',{}).get('runtimeId','configured'))
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:415:17
+    |
+413 |     async def operation(op_id:str,req:Request):
+414 |         who=await identity(req);r=await asyncio.to_thread(ops.get,op_id,who['userId'])
+415 |         if not r:raise HTTPException(404,'Operation not found')
+    |                 ^
+416 |         client=await client_for(who,r.get('intent',{}).get('runtimeId','configured'))
+417 |         return await with_control_message(who,await ops.reconcile(r,client),client)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:423:102
+    |
+421 |         relations=await asyncio.to_thread(packages.activations)
+422 |         client=await client_for(who,rid)
+423 |         if not any(row['runtimeId']==rid for row in relations) and not isinstance(client,MockRuntime):return []
+    |                                                                                                      ^
+424 |         info=await client.info()
+425 |         formal=info['projectId']
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:426:57
+    |
+424 |         info=await client.info()
+425 |         formal=info['projectId']
+426 |         if project_id is not None and project_id!=formal:raise HTTPException(409,'Runtime project changed; refresh current target')
+    |                                                         ^
+427 |         active=await asyncio.to_thread(packages.active,rid,formal)
+428 |         if active:
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:444:40
+    |
+442 |         if 'runtimeId' not in req.query_params:
+443 |             allowed={r['id'] for r in await asyncio.to_thread(registry.list,who)}
+444 |             if runtimeId not in allowed:return []
+    |                                        ^
+445 |         return await panel_list(who,runtimeId,projectId)
+446 |     @app.get('/api/panels/{panel_id}')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:451:33
+    |
+449 |     async def find_panel(who,panel_id,rid,project_id=None):
+450 |         for p in await panel_list(who,rid,project_id):
+451 |             if p['id']==panel_id:return p
+    |                                 ^
+452 |         raise HTTPException(404,'Panel not active for this Runtime and project')
+453 |     @app.post('/api/views')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:456:50
+    |
+454 |     async def new_view(req:Request):
+455 |         async with target_lock:
+456 |             who=await identity(req,mutating=True);b=await json_object(req);rid=b.get('runtimeId','configured')
+    |                                                  ^
+457 |             p=await find_panel(who,b.get('panelId'),rid,b.get('projectId'))
+458 |             await package_access(who,b['panelId'],rid);client=await client_for(who,rid)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:456:75
+    |
+454 |     async def new_view(req:Request):
+455 |         async with target_lock:
+456 |             who=await identity(req,mutating=True);b=await json_object(req);rid=b.get('runtimeId','configured')
+    |                                                                           ^
+457 |             p=await find_panel(who,b.get('panelId'),rid,b.get('projectId'))
+458 |             await package_access(who,b['panelId'],rid);client=await client_for(who,rid)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:458:55
+    |
+456 |             who=await identity(req,mutating=True);b=await json_object(req);rid=b.get('runtimeId','configured')
+457 |             p=await find_panel(who,b.get('panelId'),rid,b.get('projectId'))
+458 |             await package_access(who,b['panelId'],rid);client=await client_for(who,rid)
+    |                                                       ^
+459 |             if b['panelId']=='demo-panel' and not isinstance(client,MockRuntime):raise HTTPException(404,'Demo panel is mock-only')
+460 |             run_id=b.get('runId','')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:459:81
+    |
+457 | …     p=await find_panel(who,b.get('panelId'),rid,b.get('projectId'))
+458 | …     await package_access(who,b['panelId'],rid);client=await client_for(who,rid)
+459 | …     if b['panelId']=='demo-panel' and not isinstance(client,MockRuntime):raise HTTPException(404,'Demo panel is mock-only')
+    |                                                                           ^
+460 | …     run_id=b.get('runId','')
+461 | …     if run_id and run_id not in [r.get('id',r.get('runId')) for r in await client.runs()]:raise HTTPException(404,'Run not found')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:461:98
+    |
+459 | …     if b['panelId']=='demo-panel' and not isinstance(client,MockRuntime):raise HTTPException(404,'Demo panel is mock-only')
+460 | …     run_id=b.get('runId','')
+461 | …     if run_id and run_id not in [r.get('id',r.get('runId')) for r in await client.runs()]:raise HTTPException(404,'Run not found')
+    |                                                                                            ^
+462 | …     info=await client.info()
+463 | …     if p.get('projectId') != info['projectId']:raise HTTPException(409,'Page package and Runtime project differ')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:463:55
+    |
+461 | …     if run_id and run_id not in [r.get('id',r.get('runId')) for r in await client.runs()]:raise HTTPException(404,'Run not found')
+462 | …     info=await client.info()
+463 | …     if p.get('projectId') != info['projectId']:raise HTTPException(409,'Page package and Runtime project differ')
+    |                                                 ^
+464 | …     group={'runIds':[run_id] if run_id else [],'sourceProblems':{}}
+465 | …     if run_id and p.get('officialPresentation'):
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:471:32
+    |
+469 | …             group['sourceProblems']=await client.source_problems(run_id,p['officialPresentation'])
+470 | …     v=views.create(who['userId'],b['panelId'],run_id,p['packageRevision'],runtime_id=rid,runtime=client)
+471 | …     v['presentation']=p;v['instanceId']=info['runtimeInstanceId'];v['projectId']=info['projectId']
+    |                          ^
+472 | …     v['historyContext']={'runtimeInstanceId':info['runtimeInstanceId'],'projectId':info['projectId'],'historyDefinitionRevision':p.…
+473 | …     v['runIds']=group['runIds'];v['sourceProblems']=group['sourceProblems']
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:471:74
+    |
+469 | …             group['sourceProblems']=await client.source_problems(run_id,p['officialPresentation'])
+470 | …     v=views.create(who['userId'],b['panelId'],run_id,p['packageRevision'],runtime_id=rid,runtime=client)
+471 | …     v['presentation']=p;v['instanceId']=info['runtimeInstanceId'];v['projectId']=info['projectId']
+    |                                                                    ^
+472 | …     v['historyContext']={'runtimeInstanceId':info['runtimeInstanceId'],'projectId':info['projectId'],'historyDefinitionRevision':p.…
+473 | …     v['runIds']=group['runIds'];v['sourceProblems']=group['sourceProblems']
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:473:40
+    |
+471 |             v['presentation']=p;v['instanceId']=info['runtimeInstanceId'];v['projectId']=info['projectId']
+472 |             v['historyContext']={'runtimeInstanceId':info['runtimeInstanceId'],'projectId':info['projectId'],'historyDefinitionRevisi…
+473 |             v['runIds']=group['runIds'];v['sourceProblems']=group['sourceProblems']
+    |                                        ^
+474 |             return {'id':v['id'],'runIds':v['runIds'],'sourceProblems':v['sourceProblems']}
+475 |     @app.delete('/api/views/{vid}')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:477:46
+    |
+475 |     @app.delete('/api/views/{vid}')
+476 |     async def delete_view(vid:str,req:Request):
+477 |         who=await identity(req,mutating=True);views.get(vid,who['userId']);resources.release_owner('view:'+vid);await views.remove(vi…
+    |                                              ^
+478 |         return {'ok':True}
+479 |     @app.post('/api/views/{vid}/{action}')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:477:75
+    |
+475 |     @app.delete('/api/views/{vid}')
+476 |     async def delete_view(vid:str,req:Request):
+477 |         who=await identity(req,mutating=True);views.get(vid,who['userId']);resources.release_owner('view:'+vid);await views.remove(vi…
+    |                                                                           ^
+478 |         return {'ok':True}
+479 |     @app.post('/api/views/{vid}/{action}')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:477:112
+    |
+475 |     @app.delete('/api/views/{vid}')
+476 |     async def delete_view(vid:str,req:Request):
+477 |         who=await identity(req,mutating=True);views.get(vid,who['userId']);resources.release_owner('view:'+vid);await views.remove(vi…
+    |                                                                                                                ^
+478 |         return {'ok':True}
+479 |     @app.post('/api/views/{vid}/{action}')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:481:46
+    |
+479 |     @app.post('/api/views/{vid}/{action}')
+480 |     async def view_action(vid:str,action:str,req:Request):
+481 |         who=await identity(req,mutating=True);v=views.get(vid,who['userId'])
+    |                                              ^
+482 |         if action not in {'freeze','resume'}:raise HTTPException(404,'Unknown view action')
+483 |         await asyncio.to_thread(registry.require,who,v['runtimeId'])
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:482:45
+    |
+480 |     async def view_action(vid:str,action:str,req:Request):
+481 |         who=await identity(req,mutating=True);v=views.get(vid,who['userId'])
+482 |         if action not in {'freeze','resume'}:raise HTTPException(404,'Unknown view action')
+    |                                             ^
+483 |         await asyncio.to_thread(registry.require,who,v['runtimeId'])
+484 |         await package_access(who,v['panelId'],v['runtimeId'])
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:492:33
+    |
+490 | …     for source in scope.get('sources',{}).values():
+491 | …         image=source.get('image')
+492 | …         if not image:continue
+    |                       ^
+493 | …         key=(scope['runtimeInstanceId'] if hasattr(v['runtime'],'read_asset') else scope['runtimeInstanceId']+':'+v['runtimeId'],sc…
+494 | …         try:
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:502:39
+    |
+500 | …                 resources.pin(key,'view:'+vid,ttl=config.freeze_ttl)
+501 | …             except Exception:
+502 | …                 source.clear();source.update(state='unavailable',reasonCode='FROZEN_RESOURCE_UNAVAILABLE',reason='Exact frozen imag…
+    |                                 ^
+503 | …                 scope['gatewayTransformed']=True;scope.pop('closedResult',None);frozen_changed=True
+504 | …     if frozen_changed:views.refresh_frozen(v)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:503:57
+    |
+501 | …             except Exception:
+502 | …                 source.clear();source.update(state='unavailable',reasonCode='FROZEN_RESOURCE_UNAVAILABLE',reason='Exact frozen imag…
+503 | …                 scope['gatewayTransformed']=True;scope.pop('closedResult',None);frozen_changed=True
+    |                                                   ^
+504 | …     if frozen_changed:views.refresh_frozen(v)
+505 | …     return result
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:503:88
+    |
+501 | …             except Exception:
+502 | …                 source.clear();source.update(state='unavailable',reasonCode='FROZEN_RESOURCE_UNAVAILABLE',reason='Exact frozen imag…
+503 | …                 scope['gatewayTransformed']=True;scope.pop('closedResult',None);frozen_changed=True
+    |                                                                                  ^
+504 | …     if frozen_changed:views.refresh_frozen(v)
+505 | …     return result
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:504:30
+    |
+502 | …                     source.clear();source.update(state='unavailable',reasonCode='FROZEN_RESOURCE_UNAVAILABLE',reason='Exact frozen …
+503 | …                     scope['gatewayTransformed']=True;scope.pop('closedResult',None);frozen_changed=True
+504 | …         if frozen_changed:views.refresh_frozen(v)
+    |                            ^
+505 | …         return result
+506 | …     resources.release_owner('view:'+vid)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:510:32
+    |
+508 |     @app.get('/api/views/{vid}/history/{component_id}')
+509 |     async def history(vid:str,component_id:str,req:Request,page:int=1,pageSize:int=10,q:str='',sort:str='',order:str='asc',filterColu…
+510 |         who=await identity(req);v=views.get(vid,who['userId']);p=v['presentation']
+    |                                ^
+511 |         await package_access(who,v['panelId'],v['runtimeId'])
+512 |         def find(cs):
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:510:63
+    |
+508 |     @app.get('/api/views/{vid}/history/{component_id}')
+509 |     async def history(vid:str,component_id:str,req:Request,page:int=1,pageSize:int=10,q:str='',sort:str='',order:str='asc',filterColu…
+510 |         who=await identity(req);v=views.get(vid,who['userId']);p=v['presentation']
+    |                                                               ^
+511 |         await package_access(who,v['panelId'],v['runtimeId'])
+512 |         def find(cs):
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:514:90
+    |
+512 |         def find(cs):
+513 |             for c in cs:
+514 |                 if c['id']==component_id and c['type'] in {'sqlite_table','sqlite_value'}:return c
+    |                                                                                          ^
+515 |                 nested=find(c.get('children',[]))
+516 |                 if nested:return nested
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:516:26
+    |
+514 |                 if c['id']==component_id and c['type'] in {'sqlite_table','sqlite_value'}:return c
+515 |                 nested=find(c.get('children',[]))
+516 |                 if nested:return nested
+    |                          ^
+517 |         component=next((found for page in p['pages'] if (found:=find(page['components']))),None)
+518 |         if not component:raise HTTPException(404,'Undeclared history source')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:518:25
+    |
+516 |                 if nested:return nested
+517 |         component=next((found for page in p['pages'] if (found:=find(page['components']))),None)
+518 |         if not component:raise HTTPException(404,'Undeclared history source')
+    |                         ^
+519 |         if not 1<=page<=10000 or not 1<=pageSize<=100:raise HTTPException(422,'Invalid page')
+520 |         client=await client_for(who,v['runtimeId'])
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:519:54
+    |
+517 |         component=next((found for page in p['pages'] if (found:=find(page['components']))),None)
+518 |         if not component:raise HTTPException(404,'Undeclared history source')
+519 |         if not 1<=page<=10000 or not 1<=pageSize<=100:raise HTTPException(422,'Invalid page')
+    |                                                      ^
+520 |         client=await client_for(who,v['runtimeId'])
+521 |         props=component.get('props',{})
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:527:73
+    |
+525 |     async def mock_image(who,rid,image_ref):
+526 |         client=await client_for(who,rid)
+527 |         if not isinstance(client,MockRuntime) or image_ref!='demo-image':raise HTTPException(404,'Unknown opaque image reference')
+    |                                                                         ^
+528 |         async def load():return IMAGE
+529 |         info=await client.info()
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:534:32
+    |
+532 |     @app.get('/api/views/{vid}/images/{component_id}')
+533 |     async def fixed_history_image(vid:str,component_id:str,req:Request):
+534 |         who=await identity(req);v=views.get(vid,who['userId'])
+    |                                ^
+535 |         await asyncio.to_thread(registry.require,who,v['runtimeId'])
+536 |         await package_access(who,v['panelId'],v['runtimeId'])
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:539:88
+    |
+537 | …     def declared(cs):
+538 | …         return any((c['id']==component_id and c['type']=='image' and c.get('props',{}).get('sourceMode')=='history_fixed') or decla…
+539 | …     if not any(declared(page['components']) for page in v['presentation']['pages']):raise HTTPException(404,'Fixed history image no…
+    |                                                                                      ^
+540 | …     client=await client_for(who,v['runtimeId'])
+541 | …     if not isinstance(client,MockRuntime):await client.info()
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:541:46
+    |
+539 |         if not any(declared(page['components']) for page in v['presentation']['pages']):raise HTTPException(404,'Fixed history image …
+540 |         client=await client_for(who,v['runtimeId'])
+541 |         if not isinstance(client,MockRuntime):await client.info()
+    |                                              ^
+542 |         return await mock_image(who,v['runtimeId'],'demo-image')
+543 |     @app.get('/api/history-images/{image_ref}')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:554:41
+    |
+552 |         def find(items):
+553 |             for c in items:
+554 |                 if c['id']==component_id:return c
+    |                                         ^
+555 |                 found=find(c.get('children',[]))
+556 |                 if found:return found
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:556:25
+    |
+554 |                 if c['id']==component_id:return c
+555 |                 found=find(c.get('children',[]))
+556 |                 if found:return found
+    |                         ^
+557 |         return next((found for p in view['presentation']['pages'] if (found:=find(p['components']))),None)
+558 |     @app.get('/api/views/{vid}/history-images/{component_id}')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:560:32
+    |
+558 |     @app.get('/api/views/{vid}/history-images/{component_id}')
+559 |     async def bound_history_image(vid:str,component_id:str,req:Request,imageRef:str=''):
+560 |         who=await identity(req);v=views.get(vid,who['userId'])
+    |                                ^
+561 |         await package_access(who,v['panelId'],v['runtimeId']);client=await client_for(who,v['runtimeId'])
+562 |         component=view_component(v,component_id)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:561:62
+    |
+559 |     async def bound_history_image(vid:str,component_id:str,req:Request,imageRef:str=''):
+560 |         who=await identity(req);v=views.get(vid,who['userId'])
+561 |         await package_access(who,v['panelId'],v['runtimeId']);client=await client_for(who,v['runtimeId'])
+    |                                                              ^
+562 |         component=view_component(v,component_id)
+563 |         if not component or component['type']!='image' or not component.get('history'):raise HTTPException(404,'History image not dec…
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:563:87
+    |
+561 | …     await package_access(who,v['panelId'],v['runtimeId']);client=await client_for(who,v['runtimeId'])
+562 | …     component=view_component(v,component_id)
+563 | …     if not component or component['type']!='image' or not component.get('history'):raise HTTPException(404,'History image not decla…
+    |                                                                                     ^
+564 | …     data,mime,status=await client.history_image(component_id=None if imageRef else component_id,image_ref=imageRef or None,context=…
+565 | …     if status!='AVAILABLE':raise HTTPException(404,{'status':status,'message':'History image unavailable'})
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:565:31
+    |
+563 |         if not component or component['type']!='image' or not component.get('history'):raise HTTPException(404,'History image not dec…
+564 |         data,mime,status=await client.history_image(component_id=None if imageRef else component_id,image_ref=imageRef or None,contex…
+565 |         if status!='AVAILABLE':raise HTTPException(404,{'status':status,'message':'History image unavailable'})
+    |                               ^
+566 |         return Response(data,media_type=mime)
+567 |     @app.get('/api/views/{vid}/assets/{source_id}')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:569:32
+    |
+567 |     @app.get('/api/views/{vid}/assets/{source_id}')
+568 |     async def bound_result_image(vid:str,source_id:str,req:Request,scope:str,resultKey:str):
+569 |         who=await identity(req);v=views.get(vid,who['userId'])
+    |                                ^
+570 |         await package_access(who,v['panelId'],v['runtimeId']);client=await client_for(who,v['runtimeId'])
+571 |         try:result,is_frozen=views.advertised_result(v,scope,resultKey)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:570:62
+    |
+568 |     async def bound_result_image(vid:str,source_id:str,req:Request,scope:str,resultKey:str):
+569 |         who=await identity(req);v=views.get(vid,who['userId'])
+570 |         await package_access(who,v['panelId'],v['runtimeId']);client=await client_for(who,v['runtimeId'])
+    |                                                              ^
+571 |         try:result,is_frozen=views.advertised_result(v,scope,resultKey)
+572 |         except KeyError:raise HTTPException(404,'Exact advertised result retired or expired')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:571:12
+    |
+569 |         who=await identity(req);v=views.get(vid,who['userId'])
+570 |         await package_access(who,v['panelId'],v['runtimeId']);client=await client_for(who,v['runtimeId'])
+571 |         try:result,is_frozen=views.advertised_result(v,scope,resultKey)
+    |            ^
+572 |         except KeyError:raise HTTPException(404,'Exact advertised result retired or expired')
+573 |         source=result.get('sources',{}).get(source_id,{})
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:572:24
+    |
+570 |         await package_access(who,v['panelId'],v['runtimeId']);client=await client_for(who,v['runtimeId'])
+571 |         try:result,is_frozen=views.advertised_result(v,scope,resultKey)
+572 |         except KeyError:raise HTTPException(404,'Exact advertised result retired or expired')
+    |                        ^
+573 |         source=result.get('sources',{}).get(source_id,{})
+574 |         resource=source.get('image')
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:575:60
+    |
+573 | …     source=result.get('sources',{}).get(source_id,{})
+574 | …     resource=source.get('image')
+575 | …     if not resource or source.get('state')!='available':raise HTTPException(404,'Result image unavailable')
+    |                                                          ^
+576 | …     key=(result['runtimeInstanceId'] if hasattr(client,'read_asset') else result['runtimeInstanceId']+':'+v['runtimeId'],result['jo…
+577 | …     async def load():
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:580:12
+    |
+578 |             data,_=await client.read_asset(result['jobId'],resource,runtime_instance_id=result['runtimeInstanceId'])
+579 |             return data
+580 |         try:data=resources.peek(key) if is_frozen else await resources.get(key,load)
+    |            ^
+581 |         except KeyError:raise HTTPException(404,'Exact frozen resource expired')
+582 |         return Response(data,media_type=resource['mimeType'])
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:581:24
+    |
+579 |             return data
+580 |         try:data=resources.peek(key) if is_frozen else await resources.get(key,load)
+581 |         except KeyError:raise HTTPException(404,'Exact frozen resource expired')
+    |                        ^
+582 |         return Response(data,media_type=resource['mimeType'])
+583 |     @app.get('/api/assets/demo-image')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:587:32
+    |
+585 |     @app.get('/api/assets/{package_id}/{asset_id}')
+586 |     async def asset(package_id:str,asset_id:str,req:Request):
+587 |         who=await identity(req);await package_access(who,package_id)
+    |                                ^
+588 |         # Imported immutable versions stay readable by authenticated viewers.
+589 |         # Activation changes defaults, not existing view resources.
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:597:55
+    |
+595 |         client=await client_for(who,runtimeId)
+596 |         formal=(await client.info())['projectId']
+597 |         if projectId is not None and projectId!=formal:raise HTTPException(409,'Runtime project changed; refresh current target')
+    |                                                       ^
+598 |         active=await asyncio.to_thread(packages.active,runtimeId,formal)
+599 |         result=[]
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:601:50
+    |
+599 |         result=[]
+600 |         for p in await asyncio.to_thread(packages.list):
+601 |             if p['manifest']['projectId']!=formal:continue
+    |                                                  ^
+602 |             relations=await asyncio.to_thread(packages.activations,p['packageId'])
+603 |             result.append({**p,'runtimeIds':await asyncio.to_thread(package_targets,p['packageId']),
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:614:38
+    |
+612 |         async for chunk in req.stream():
+613 |             data.extend(chunk)
+614 |             if len(data)>66*1024*1024:raise HTTPException(413,'Package too large')
+    |                                      ^
+615 |         return await asyncio.to_thread(packages.install,bytes(data))
+616 |     @app.post('/api/packages/{pid}/activate')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:619:49
+    |
+617 |     async def package_activate(pid:str,req:Request):
+618 |         async with target_lock:
+619 |             who=await identity(req,'admin',True);b=await json_object(req,True)
+    |                                                 ^
+620 |             if 'runtimeId' in b and 'runtimeIds' in b:raise HTTPException(422,'Use one explicit Runtime context field')
+621 |             rids=b.get('runtimeIds',[b.get('runtimeId','configured')])
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:620:54
+    |
+618 | …     async with target_lock:
+619 | …         who=await identity(req,'admin',True);b=await json_object(req,True)
+620 | …         if 'runtimeId' in b and 'runtimeIds' in b:raise HTTPException(422,'Use one explicit Runtime context field')
+    |                                                    ^
+621 | …         rids=b.get('runtimeIds',[b.get('runtimeId','configured')])
+622 | …         if not isinstance(rids,list) or not 1<=len(rids)<=32 or any(not isinstance(rid,str) for rid in rids):raise HTTPException(42…
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:622:113
+    |
+620 | …     if 'runtimeId' in b and 'runtimeIds' in b:raise HTTPException(422,'Use one explicit Runtime context field')
+621 | …     rids=b.get('runtimeIds',[b.get('runtimeId','configured')])
+622 | …     if not isinstance(rids,list) or not 1<=len(rids)<=32 or any(not isinstance(rid,str) for rid in rids):raise HTTPException(422,'R…
+    |                                                                                                           ^
+623 | …     if len(set(rids))!=len(rids):raise HTTPException(422,'Duplicate Runtime associations')
+624 | …     item=await asyncio.to_thread(packages.get,pid)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:623:41
+    |
+621 | …     rids=b.get('runtimeIds',[b.get('runtimeId','configured')])
+622 | …     if not isinstance(rids,list) or not 1<=len(rids)<=32 or any(not isinstance(rid,str) for rid in rids):raise HTTPException(422,'R…
+623 | …     if len(set(rids))!=len(rids):raise HTTPException(422,'Duplicate Runtime associations')
+    |                                   ^
+624 | …     item=await asyncio.to_thread(packages.get,pid)
+625 | …     project=item['manifest']['projectId']
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:626:51
+    |
+624 |             item=await asyncio.to_thread(packages.get,pid)
+625 |             project=item['manifest']['projectId']
+626 |             if b.get('projectId',project)!=project:raise HTTPException(409,'Package and selected project differ')
+    |                                                   ^
+627 |             # Validate every target before the one SQLite activation transaction.
+628 |             for rid in rids:
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:630:63
+    |
+628 | …     for rid in rids:
+629 | …         client=await client_for(who,rid)
+630 | …         if (await client.info())['projectId']!=project:raise HTTPException(409,'Package project does not match target Runtime forma…
+    |                                                         ^
+631 | …     result=await asyncio.to_thread(packages.activate_many,pid,rids,project)
+632 | …     await asyncio.to_thread(auth.audit,who['username'],'activate_package',json.dumps({'packageId':pid,'runtimeIds':rids,'projectId'…
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:642:37
+    |
+640 |     @app.websocket('/ws/views/{vid}')
+641 |     async def ws(ws:WebSocket,vid:str):
+642 |         token=ws.cookies.get(COOKIE);who=await asyncio.to_thread(auth.session,token)
+    |                                     ^
+643 |         scheme='https' if ws.url.scheme=='wss' else 'http'
+644 |         if not who or not origin_ok(ws.headers.get('origin'),ws.headers.get('host'),scheme):await ws.close(code=1008);return
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:644:92
+    |
+642 |         token=ws.cookies.get(COOKIE);who=await asyncio.to_thread(auth.session,token)
+643 |         scheme='https' if ws.url.scheme=='wss' else 'http'
+644 |         if not who or not origin_ok(ws.headers.get('origin'),ws.headers.get('host'),scheme):await ws.close(code=1008);return
+    |                                                                                            ^
+645 |         try:
+646 |             v=views.get(vid,who['userId'])
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:644:118
+    |
+642 |         token=ws.cookies.get(COOKIE);who=await asyncio.to_thread(auth.session,token)
+643 |         scheme='https' if ws.url.scheme=='wss' else 'http'
+644 |         if not who or not origin_ok(ws.headers.get('origin'),ws.headers.get('host'),scheme):await ws.close(code=1008);return
+    |                                                                                                                      ^
+645 |         try:
+646 |             v=views.get(vid,who['userId'])
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:648:30
+    |
+646 |             v=views.get(vid,who['userId'])
+647 |             await asyncio.to_thread(registry.require,who,v['runtimeId'])
+648 |             if not v['runId']:raise ValueError('History-only view has no stream')
+    |                              ^
+649 |             await views.attach(v)
+650 |         except (KeyError,ValueError,RegistryDenied):await ws.close(code=1008);return
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:650:52
+    |
+648 |             if not v['runId']:raise ValueError('History-only view has no stream')
+649 |             await views.attach(v)
+650 |         except (KeyError,ValueError,RegistryDenied):await ws.close(code=1008);return
+    |                                                    ^
+651 |         await ws.accept()
+652 |         try:
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:650:78
+    |
+648 |             if not v['runId']:raise ValueError('History-only view has no stream')
+649 |             await views.attach(v)
+650 |         except (KeyError,ValueError,RegistryDenied):await ws.close(code=1008);return
+    |                                                                              ^
+651 |         await ws.accept()
+652 |         try:
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:654:93
+    |
+652 |         try:
+653 |             while True:
+654 |                 if vid not in views.views or not await asyncio.to_thread(auth.session,token):await ws.close(code=1008);break
+    |                                                                                             ^
+655 |                 try:
+656 |                     await asyncio.to_thread(registry.require,who,v['runtimeId'])
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:654:119
+    |
+652 |         try:
+653 |             while True:
+654 |                 if vid not in views.views or not await asyncio.to_thread(auth.session,token):await ws.close(code=1008);break
+    |                                                                                                                       ^
+655 |                 try:
+656 |                     await asyncio.to_thread(registry.require,who,v['runtimeId'])
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:658:54
+    |
+656 |                     await asyncio.to_thread(registry.require,who,v['runtimeId'])
+657 |                     await package_access(who,v['panelId'],v['runtimeId'])
+658 |                 except (RegistryDenied,HTTPException):await ws.close(code=1008);break
+    |                                                      ^
+659 |                 try:msg=await asyncio.wait_for(views.next_message(v),timeout=2)
+660 |                 except asyncio.TimeoutError:msg={'type':'heartbeat','mode':config.mode}
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\backend\emo_web_panel\app.py:658:80
+    |
+656 |                     await asyncio.to_thread(registry.require,who,v['runtimeId'])
+657 |                     await package_access(who,v['panelId'],v['runtimeId'])
+658 |                 except (RegistryDenied,HTTPException):await ws.close(code=1008);break
+    |                                                                                ^
+659 |                 try:msg=await asyncio.wait_for(views.next_message(v),timeout=2)
+660 |                 except asyncio.TimeoutError:msg={'type':'heartbeat','mode':config.mode}
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:659:20
+    |
+657 |                     await package_access(who,v['panelId'],v['runtimeId'])
+658 |                 except (RegistryDenied,HTTPException):await ws.close(code=1008);break
+659 |                 try:msg=await asyncio.wait_for(views.next_message(v),timeout=2)
+    |                    ^
+660 |                 except asyncio.TimeoutError:msg={'type':'heartbeat','mode':config.mode}
+661 |                 if msg.get('type') in {'reset_required','freeze_expired'}:resources.release_owner('view:'+vid)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:660:44
+    |
+658 |                 except (RegistryDenied,HTTPException):await ws.close(code=1008);break
+659 |                 try:msg=await asyncio.wait_for(views.next_message(v),timeout=2)
+660 |                 except asyncio.TimeoutError:msg={'type':'heartbeat','mode':config.mode}
+    |                                            ^
+661 |                 if msg.get('type') in {'reset_required','freeze_expired'}:resources.release_owner('view:'+vid)
+662 |                 await ws.send_json(msg.get('contractMessage',msg))
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:661:74
+    |
+659 |                 try:msg=await asyncio.wait_for(views.next_message(v),timeout=2)
+660 |                 except asyncio.TimeoutError:msg={'type':'heartbeat','mode':config.mode}
+661 |                 if msg.get('type') in {'reset_required','freeze_expired'}:resources.release_owner('view:'+vid)
+    |                                                                          ^
+662 |                 await ws.send_json(msg.get('contractMessage',msg))
+663 |         except (WebSocketDisconnect,RuntimeError):pass
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:663:50
+    |
+661 |                 if msg.get('type') in {'reset_required','freeze_expired'}:resources.release_owner('view:'+vid)
+662 |                 await ws.send_json(msg.get('contractMessage',msg))
+663 |         except (WebSocketDisconnect,RuntimeError):pass
+    |                                                  ^
+664 |         finally:
+665 |             resources.release_owner('view:'+vid)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\backend\emo_web_panel\app.py:668:23
+    |
+666 |             await views.remove(vid)
+667 |     static=Path(__file__).parent/'static'
+668 |     if static.exists():app.mount('/',StaticFiles(directory=static,html=True),name='frontend')
+    |                       ^
+669 |     return app
+    |
+
+F401 [*] `asyncio` imported but unused
+ --> web_panel\tests\test_app.py:1:8
+  |
+1 | import asyncio
+  |        ^^^^^^^
+2 | import json
+3 | import tempfile
+  |
+help: Remove unused import: `asyncio`
+
+E702 Multiple statements on one line (semicolon)
+  --> web_panel\tests\test_app.py:19:60
+   |
+17 |         self.client=TestClient(self.app)
+18 |         self.client.__enter__()
+19 |     def tearDown(self):self.client.__exit__(None,None,None);self.tmp.cleanup()
+   |                                                            ^
+20 |     def login(self,name='admin'):
+21 |         r=self.client.post('/api/session',json={'username':name,'password':'safe-test-password'})
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> web_panel\tests\test_app.py:31:36
+   |
+29 |         self.app.state.registry.set_acl({'username':'admin','role':'admin'},'configured','viewer',True,False)
+30 |         page=self.client.get(path+'?projectId=previous-project&limit=1').json()
+31 |         self.assertTrue(page['ok']);self.assertEqual(page['events'][0]['projectId'],'previous-project')
+   |                                    ^
+32 |         reset=self.client.get(path+'?runtimeInstanceId=old&afterEventId=1').json()
+33 |         self.assertEqual((reset['ok'],reset['code'],reset['runtimeInstanceId'],reset['nextEventId']),
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> web_panel\tests\test_app.py:38:38
+   |
+36 |         self.assertEqual(response.status_code,200)
+37 |         rows=[json.loads(line) for line in response.text.splitlines()]
+38 |         self.assertEqual(len(rows),1);self.assertEqual(rows[0]['eventId'],'1')
+   |                                      ^
+39 |         self.assertEqual(response.headers['x-entry-count'],'1')
+40 |         self.assertNotIn('entryCount',rows[0])
+   |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\tests\test_app.py:98:51
+    |
+ 96 |             with patch('sys.argv',['emo-web-panel','--data-dir',directory,'serve','--mode','mock']), \
+ 97 |                  patch('emo_web_panel.app.create_app',side_effect=ValueError('private initialization detail')):
+ 98 |                 with self.assertRaises(ValueError):main()
+    |                                                   ^
+ 99 |             raw=(Path(directory)/'logs/gateway.jsonl').read_text(encoding='utf-8')
+100 |             self.assertIn('gateway.startup.failed',raw)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\tests\test_app.py:125:23
+    |
+123 |         self.assertEqual(self.client.get('/api/operations/by-request/lookup-123456').status_code,404)
+124 |     def test_history_filter_and_opaque_images(self):
+125 |         h=self.login();v=self.client.post('/api/views',headers=h,json={'panelId':'demo-panel','runId':'demo-run'}).json()['id']
+    |                       ^
+126 |         rows=self.client.get(f'/api/views/{v}/history/history-table?q=NG&sort=id&order=desc&pageSize=2').json()
+127 |         self.assertEqual(rows['total'],7);self.assertEqual([r['id'] for r in rows['rows']],['28','24'])
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\tests\test_app.py:127:42
+    |
+125 |         h=self.login();v=self.client.post('/api/views',headers=h,json={'panelId':'demo-panel','runId':'demo-run'}).json()['id']
+126 |         rows=self.client.get(f'/api/views/{v}/history/history-table?q=NG&sort=id&order=desc&pageSize=2').json()
+127 |         self.assertEqual(rows['total'],7);self.assertEqual([r['id'] for r in rows['rows']],['28','24'])
+    |                                          ^
+128 |         self.assertEqual(self.client.get('/api/history-images/demo-image').headers['content-type'],'image/png')
+129 |         self.assertEqual(self.client.get('/api/history-images/arbitrary-file').status_code,404)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\tests\test_app.py:140:27
+    |
+138 |     def test_pending_views_expire_and_delete(self):
+139 |         h=self.login()
+140 |         for i in range(32):self.app.state.views.create('admin','demo-panel','demo-run')
+    |                           ^
+141 |         for v in self.app.state.views.views.values():v['created']-=61
+142 |         response=self.client.post('/api/views',headers=h,json={'panelId':'demo-panel','runId':'demo-run'})
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\tests\test_app.py:141:53
+    |
+139 |         h=self.login()
+140 |         for i in range(32):self.app.state.views.create('admin','demo-panel','demo-run')
+141 |         for v in self.app.state.views.views.values():v['created']-=61
+    |                                                     ^
+142 |         response=self.client.post('/api/views',headers=h,json={'panelId':'demo-panel','runId':'demo-run'})
+143 |         self.assertEqual(response.status_code,200)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\tests\test_app.py:160:23
+    |
+158 |         self.assertEqual(self.client.post('/api/session',headers={'Origin':'https://evil.example'},json={}).status_code,403)
+159 |     def test_idempotent_start_and_explicit_new_intent(self):
+160 |         h=self.login();body={'requestId':'intent-123456','configurationRevision':'1','runtimeInstanceId':'mock-instance','projectId':…
+    |                       ^
+161 |         a=self.client.post('/api/runs/start',headers=h,json=body)
+162 |         self.assertEqual(a.status_code,200);self.assertEqual(a.json()['state'],'succeeded')
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\tests\test_app.py:162:44
+    |
+160 | …     h=self.login();body={'requestId':'intent-123456','configurationRevision':'1','runtimeInstanceId':'mock-instance','projectId':'d…
+161 | …     a=self.client.post('/api/runs/start',headers=h,json=body)
+162 | …     self.assertEqual(a.status_code,200);self.assertEqual(a.json()['state'],'succeeded')
+    |                                          ^
+163 | …     b=self.client.post('/api/runs/start',headers=h,json=body)
+164 | …     self.assertEqual(a.json(),b.json());self.assertEqual(self.app.state.runtime.control_count,1)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\tests\test_app.py:164:44
+    |
+162 |         self.assertEqual(a.status_code,200);self.assertEqual(a.json()['state'],'succeeded')
+163 |         b=self.client.post('/api/runs/start',headers=h,json=body)
+164 |         self.assertEqual(a.json(),b.json());self.assertEqual(self.app.state.runtime.control_count,1)
+    |                                            ^
+165 |         body['workflowId']='other'
+166 |         self.assertEqual(self.client.post('/api/runs/start',headers=h,json=body).status_code,422)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\tests\test_app.py:169:23
+    |
+167 |         self.assertEqual(self.client.get('/api/operations/'+a.json()['operationId']).json()['state'],'succeeded')
+168 |     def test_view_owner_history_and_websocket(self):
+169 |         h=self.login();v=self.client.post('/api/views',headers=h,json={'panelId':'demo-panel','runId':'demo-run'}).json()['id']
+    |                       ^
+170 |         self.assertEqual(self.client.get(f'/api/views/{v}/history/history-table').json()['total'],30)
+171 |         self.assertEqual(self.client.get(f'/api/views/{v}/history/not-declared').status_code,404)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\tests\test_app.py:173:34
+    |
+171 |         self.assertEqual(self.client.get(f'/api/views/{v}/history/not-declared').status_code,404)
+172 |         with self.client.websocket_connect(f'/ws/views/{v}') as ws:
+173 |             msg=ws.receive_json();self.assertEqual(msg['type'],'result')
+    |                                  ^
+174 |             r=self.client.post(f'/api/views/{v}/freeze',headers=h,json={'resultKey':msg['result']['resultKey']})
+175 |             self.assertEqual(r.status_code,200)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\tests\test_app.py:179:23
+    |
+177 |         self.assertEqual(self.client.get(f'/api/views/{v}/history/history-table').status_code,404)
+178 |     def test_wrong_runtime_no_side_effect(self):
+179 |         h=self.login();r=self.client.post('/api/runs/start',headers=h,json={'requestId':'wrong-123456','configurationRevision':'1','r…
+    |                       ^
+180 |         self.assertEqual(r.status_code,422);self.assertEqual(self.app.state.runtime.control_count,0)
+181 |     def test_preview_is_readonly_even_admin(self):
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> web_panel\tests\test_app.py:180:44
+    |
+178 |     def test_wrong_runtime_no_side_effect(self):
+179 |         h=self.login();r=self.client.post('/api/runs/start',headers=h,json={'requestId':'wrong-123456','configurationRevision':'1','r…
+180 |         self.assertEqual(r.status_code,422);self.assertEqual(self.app.state.runtime.control_count,0)
+    |                                            ^
+181 |     def test_preview_is_readonly_even_admin(self):
+182 |         self.app= create_app(Config(Path(self.tmp.name),preview=True))
+    |
+
+E701 Multiple statements on one line (colon)
+   --> web_panel\tests\test_app.py:198:24
+    |
+196 |             self.assertEqual(c.get('/api/panels').json(),[])
+197 |
+198 | if __name__=='__main__':unittest.main()
+    |                        ^
+    |
+
+Found 164 errors.
+[*] 2 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).

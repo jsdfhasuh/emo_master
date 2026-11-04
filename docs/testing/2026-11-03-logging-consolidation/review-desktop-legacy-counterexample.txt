@@ -1,0 +1,10 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+__ testLegacyJobSourceRestoresAfterUnimplementedAndDoesNotLeakAcrossTargets ___
+tests\designer\test_operational_log_integration.py:463: in testLegacyJobSourceRestoresAfterUnimplementedAndDoesNotLeakAcrossTargets
+    assert len([row for row in window.logEntries if row.message == task.message]) == 1
+E   assert 0 == 1
+E    +  where 0 = len([])
+=========================== short test summary info ===========================
+FAILED tests/designer/test_operational_log_integration.py::testLegacyJobSourceRestoresAfterUnimplementedAndDoesNotLeakAcrossTargets
+1 failed, 16 deselected in 2.24s

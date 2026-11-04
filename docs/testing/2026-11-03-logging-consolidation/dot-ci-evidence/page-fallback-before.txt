@@ -1,0 +1,26 @@
+Diagnostic sweep original failure excerpt; preview.py and these test files unchanged from f0d77115536eb1b8800a7cf69c1c6a21e7a23786.
+[ci-check] tests/ui/page_designer/test_log_sources.py::testPageObserverFailureDoesNotRelabelRuntimeEvents (call)
+tests/ui/page_designer/test_log_sources.py:30: in testPageObserverFailureDoesNotRelabelRuntimeEvents
+    local, runtime = designer.logEntries
+E   ValueError: not enough values to unpack (expected 2, got 1)
+--- Captured stderr setup ---
+This plugin does not support propagateSizeHints()
+
+[ci-check] tests/ui/page_designer/test_presentation_logs.py::testObservedJobAppearsInExistingLogWindowWithDetails (call)
+tests/ui/page_designer/test_presentation_logs.py:223: in testObservedJobAppearsInExistingLogWindowWithDetails
+    waitFor(lambda: any(entry.eventType == 'presentation.source.unavailable' for entry in window.logEntries))
+tests/ui/page_designer/test_current_job_viewing.py:30: in waitFor
+    raise AssertionError('bounded Qt wait')
+E   AssertionError: bounded Qt wait
+--- Captured stderr setup ---
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+
+--- Captured stderr call ---
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+This plugin does not support raise()
+This plugin does not support propagateSizeHints()
+

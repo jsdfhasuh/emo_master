@@ -193,7 +193,7 @@ export type RpcInitializeSqliteTargetRequest = { "databasePath"?: string; "proje
 
 export type RpcInspectSqliteTargetRequest = { "databasePath"?: string; "projectDirectory"?: string; "table"?: string; "proposedColumns"?: Array<RpcSqliteColumnPlan> };
 
-export type RpcJobEvent = { "jobId"?: string; "nodeId"?: string; "eventType"?: string; "level"?: string; "code"?: string; "message"?: string; "payloadJson"?: string; "timestampMs"?: string; "sequence"?: string; "projectId"?: string; "workflowId"?: string; "workflowRunId"?: string; "parentWorkflowRunId"?: string; "nodeRunId"?: string; "iterationPathJson"?: string };
+export type RpcJobEvent = { "jobId"?: string; "nodeId"?: string; "eventType"?: string; "level"?: string; "code"?: string; "message"?: string; "payloadJson"?: string; "timestampMs"?: string; "sequence"?: string; "projectId"?: string; "workflowId"?: string; "workflowRunId"?: string; "parentWorkflowRunId"?: string; "nodeRunId"?: string; "iterationPathJson"?: string; "originApp"?: string; "component"?: string; "runtimeInstanceId"?: string };
 
 export type RpcListDeviceTypesReply = { "typesJson"?: string; "requirementsJson"?: string; "rejectedJson"?: string };
 
@@ -279,6 +279,10 @@ export type RpcQueryHistoryAggregateRequest = { "context"?: RpcHistoryContext; "
 
 export type RpcQueryHistoryPageRequest = { "context"?: RpcHistoryContext; "componentId"?: string; "page"?: number; "pageSize"?: number; "filterColumn"?: string; "filterText"?: string; "orderBy"?: string; "descending"?: boolean };
 
+export type RpcQueryRuntimeLogsReply = { "ok"?: boolean; "code"?: string; "message"?: string; "runtimeInstanceId"?: string; "upperEventId"?: string; "nextEventId"?: string; "hasMore"?: boolean; "events"?: Array<RpcStoredLogEvent> };
+
+export type RpcQueryRuntimeLogsRequest = { "runtimeInstanceId"?: string; "projectId"?: string; "jobId"?: string; "deviceId"?: string; "component"?: string; "levels"?: Array<string>; "workflowId"?: string; "nodeId"?: string; "startTimestampMs"?: string; "endTimestampMs"?: string; "afterEventId"?: string; "upperEventId"?: string; "limit"?: number };
+
 export type RpcReadHistoryImageRequest = { "context"?: RpcHistoryContext; "imageRef"?: string; "componentId"?: string };
 
 export type RpcReadProjectResourceReply = { "ok"?: boolean; "code"?: string; "message"?: string; "data"?: string; "offset"?: string; "totalSize"?: string; "sha256"?: string; "eof"?: boolean };
@@ -328,6 +332,8 @@ export type RpcStartRequestLookup = { "startRequestId"?: string; "runtimeInstanc
 export type RpcStopJobReply = { "ok"?: boolean; "status"?: string; "message"?: string };
 
 export type RpcStopJobRequest = { "jobId"?: string; "mode"?: string; "expectedRuntimeInstanceId"?: string; "expectedProjectId"?: string; "expectedRunGroupId"?: string };
+
+export type RpcStoredLogEvent = { "eventId"?: string; "event"?: RpcJobEvent };
 
 export type RpcStreamJobEventsRequest = { "jobId"?: string; "afterSequence"?: string; "follow"?: boolean };
 

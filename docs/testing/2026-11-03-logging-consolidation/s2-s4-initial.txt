@@ -1,0 +1,85 @@
+...........F.......................F.......................F             [100%]
+================================== FAILURES ===================================
+________ testLoggingMetadataMigrationFromV5PreservesHistoryAndReopens _________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4163/testLoggingMetadataMigrationFr0')
+
+    def testLoggingMetadataMigrationFromV5PreservesHistoryAndReopens(tmp_path):
+        from emo_master.apps.runtime.context.global_variables import migrateVariables
+        import emo_master.apps.runtime.context.sqlite_store as module
+        db = tmp_path / 'old.db'
+        migrations = Path(module.__file__).parent / 'migrations'
+        with sqlite3.connect(db) as connection:
+            for name in ('001_init.sql', '002_runtime_workflow.sql', '003_runtime_timestamps.sql', '004_global_counters.sql'):
+                connection.executescript((migrations / name).read_text(encoding='utf-8'))
+            migrateVariables(connection)
+>           connection.execute('CREATE TABLE schemaMigrations(version INTEGER PRIMARY KEY, appliedAt TEXT NOT NULL)')
+E           sqlite3.OperationalError: table schemaMigrations already exists
+
+tests\runtime\test_runtime_persistence_contract.py:292: OperationalError
+_______ testJsonlWriterPersistsUnicodeContextAndSequenceInEnqueueOrder ________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-4163/testJsonlWriterPersistsUnicode0')
+
+    def testJsonlWriterPersistsUnicodeContextAndSequenceInEnqueueOrder(
+        tmp_path: Path,
+    ) -> None:
+        writer = RuntimeJsonlLogWriter(tmp_path, flushIntervalSeconds=0.05)
+        assert writer.enqueue(_event(1, message="��������")) is True
+        assert writer.enqueue(
+            _event(2, eventType="node.failed", level="ERROR", message="ʧ��")
+        ) is True
+        assert writer.close() is None
+    
+        records = _records(tmp_path)
+        assert [record["sequence"] for record in records] == [1, 2]
+>       assert records[0] == {
+            "schemaVersion": "1.0",
+            "timestamp": records[0]["timestamp"],
+            "timestampMs": 1_800_000_000_001,
+            "sequence": 1,
+            "level": "INFO",
+            "eventType": "node.log",
+            "jobId": "job-1",
+            "projectId": "project-1",
+            "workflowId": "main",
+            "workflowRunId": "workflow-run-1",
+            "parentWorkflowRunId": "parent-run",
+            "nodeId": "node-1",
+            "nodeRunId": "node-run-1",
+            "iterationPath": [2, 3],
+            "code": "",
+            "message": "��������",
+            "payload": {},
+        }
+E       AssertionError: assert {'schemaVersi...eId': '', ...} == {'schemaVersi...ence': 1, ...}
+E         
+E         Omitting 17 identical items, use -vv to show
+E         Left contains 3 more items:
+E         {'component': 'operator', 'originApp': 'runtime', 'runtimeInstanceId': ''}
+E         Use -v to get more diff
+
+tests\runtime\test_jsonl_logging.py:61: AssertionError
+__ testTcpSynchronousAndBackgroundFailuresHaveExplicitPublishResponsibility ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000149A7A106A0>
+
+    def testTcpSynchronousAndBackgroundFailuresHaveExplicitPublishResponsibility(monkeypatch):
+        from emo_master.apps.runtime.communication.manager import CommunicationManager
+        from emo_master.core.project.communication import CommunicationSettings
+        from emo_master.core.contracts.tcp_service import TcpServiceError
+        events = []
+        manager = CommunicationManager('runtime')
+        manager.eventSink = lambda eventType, message, **fields: events.append((eventType, fields))
+>       config = CommunicationSettings.model_validate(dict(enabled=True, tcpServer=dict(bindAddress='127.0.0.1', port=0)))
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for CommunicationSettings
+E       tcpServer.port
+E         Input should be greater than or equal to 1 [type=greater_than_equal, input_value=0, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.13/v/greater_than_equal
+
+tests\runtime\test_device_operational_logs.py:208: ValidationError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_runtime_persistence_contract.py::testLoggingMetadataMigrationFromV5PreservesHistoryAndReopens
+FAILED tests/runtime/test_jsonl_logging.py::testJsonlWriterPersistsUnicodeContextAndSequenceInEnqueueOrder
+FAILED tests/runtime/test_device_operational_logs.py::testTcpSynchronousAndBackgroundFailuresHaveExplicitPublishResponsibility
+3 failed, 57 passed in 12.50s

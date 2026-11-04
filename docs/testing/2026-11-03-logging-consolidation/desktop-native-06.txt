@@ -1,0 +1,11 @@
+.........F....................                                           [100%]
+================================== FAILURES ===================================
+___________ testDesignerLocalHistoryAndTargetChangeRejectOldReturn ____________
+tests\designer\test_operational_log_integration.py:306: in testDesignerLocalHistoryAndTargetChangeRejectOldReturn
+    assert len(view._entries) == 1 and view._entries[0].message == "local failure"
+E   AssertionError: assert (3 == 1)
+E    +  where 3 = len([StructuredLogEntry(timestampMs=1793693682977, level='ERROR', message='local failure', source='designer', eventType='d...ame='', nodeName='', originApp='designer', component='runtime_client', runtimeInstanceId='', sequence=0, eventId=None)])
+E    +    where [StructuredLogEntry(timestampMs=1793693682977, level='ERROR', message='local failure', source='designer', eventType='d...ame='', nodeName='', originApp='designer', component='runtime_client', runtimeInstanceId='', sequence=0, eventId=None)] = <emo_master.apps.designer.ui.log_dialog.StructuredLogView(0x2ba10b0fd70) at 0x000002BA0E1039C0>._entries
+=========================== short test summary info ===========================
+FAILED tests/designer/test_operational_log_integration.py::testDesignerLocalHistoryAndTargetChangeRejectOldReturn
+1 failed, 29 passed in 8.53s

@@ -1,0 +1,35 @@
+FFFF                                                                     [100%]
+================================== FAILURES ===================================
+_________ testHistoryFailedFilterKeepsSuccessfulPagingAndExportScope __________
+tests\designer\test_operational_log_integration.py:380: in testHistoryFailedFilterKeepsSuccessfulPagingAndExportScope
+    assert nextRequest["projectId"] == "A" and nextRequest["afterEventId"] == 5 and nextRequest["upperEventId"] == 22
+E   AssertionError: assert ('B' == 'A'
+E     
+E     - A
+E     + B)
+______ testReaderErrorRetryKeepsMatchingCursorAndInstance[same-instance] ______
+tests\designer\test_operational_log_integration.py:428: in testReaderErrorRetryKeepsMatchingCursorAndInstance
+    assert service.requests[requestStart] == (instance, cursor)
+E   AssertionError: assert ('', 1) == ('test-runtime', 1)
+E     
+E     At index 0 diff: '' != 'test-runtime'
+E     Use -v to get more diff
+___ testReaderErrorRetryKeepsMatchingCursorAndInstance[restarted-instance] ____
+tests\designer\test_operational_log_integration.py:428: in testReaderErrorRetryKeepsMatchingCursorAndInstance
+    assert service.requests[requestStart] == (instance, cursor)
+E   AssertionError: assert ('', 1) == ('test-runtime', 1)
+E     
+E     At index 0 diff: '' != 'test-runtime'
+E     Use -v to get more diff
+__ testLegacyJobSourceRestoresAfterUnimplementedAndDoesNotLeakAcrossTargets ___
+tests\designer\test_operational_log_integration.py:457: in testLegacyJobSourceRestoresAfterUnimplementedAndDoesNotLeakAcrossTargets
+    waitUntil(lambda: window._logResources["reader"].unsupported)
+tests\designer\qt_wait.py:8: in waitUntil
+    raise AssertionError("condition did not become true before timeout")
+E   AssertionError: condition did not become true before timeout
+=========================== short test summary info ===========================
+FAILED tests/designer/test_operational_log_integration.py::testHistoryFailedFilterKeepsSuccessfulPagingAndExportScope
+FAILED tests/designer/test_operational_log_integration.py::testReaderErrorRetryKeepsMatchingCursorAndInstance[same-instance]
+FAILED tests/designer/test_operational_log_integration.py::testReaderErrorRetryKeepsMatchingCursorAndInstance[restarted-instance]
+FAILED tests/designer/test_operational_log_integration.py::testLegacyJobSourceRestoresAfterUnimplementedAndDoesNotLeakAcrossTargets
+4 failed, 11 deselected in 9.83s

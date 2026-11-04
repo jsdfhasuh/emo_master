@@ -1,0 +1,102 @@
+[
+  {
+    "file": "08-failed-B-retains-A.png",
+    "size": 123361,
+    "sha256": "066675ae7e7b6bfa0f73c205c20a83fbbaecb6808f5dacf73b9197d6845035ed"
+  },
+  {
+    "file": "10-retained-A-export6029.png",
+    "size": 120956,
+    "sha256": "d5483fabe5d2833ab3866f9eb2736e30b45566ae3b6ec564f37570a3f286e2db"
+  },
+  {
+    "file": "12-instance-switch-stale-history.png",
+    "size": 99628,
+    "sha256": "0288d69e1ebc42ffcc3b51d44da281418a4305ef9a6b16dba6283b47a2240d95"
+  },
+  {
+    "file": "26-final-alpha-history.png",
+    "size": 119325,
+    "sha256": "e45d715d0e0701f8b9a56ed796eb2a010812227fb2b2a3ec3b708808fee0cb42"
+  },
+  {
+    "file": "27-final-old-page-cancelled.png",
+    "size": 95624,
+    "sha256": "56221b987ecaaa6f32a033a848977c4f1dc5c08e717f064bdf07d9392c453ab7"
+  },
+  {
+    "file": "28-final-beta-query.png",
+    "size": 117958,
+    "sha256": "2b271155fc2d56fe908dd061aa347615ff362a340fad919c886ba436db521a7b"
+  },
+  {
+    "file": "29-final-beta-next.png",
+    "size": 118035,
+    "sha256": "8bcc19c82183aa0a2f7f954b591f625044edcc8967ab29fd252f27c3fd1fa388"
+  },
+  {
+    "file": "30-final-full-rpc-export.png",
+    "size": 120179,
+    "sha256": "4aaa6c9ee3f15b84924b1b03993ccd7265b3647c5b390cc014079771fda7a1eb"
+  },
+  {
+    "file": "32-rpc-export-in-progress.png",
+    "size": 114938,
+    "sha256": "dde28e4400f23a16c7f9f1d2994b101a8bb2d74bab381247a40591f622d89959"
+  },
+  {
+    "file": "33-rpc-export-cancelled.png",
+    "size": 117369,
+    "sha256": "5a6ac79d195907bc44b70b99aa15ede11b835b2600452ccc7a443ad5cfc2029d"
+  },
+  {
+    "file": "34-operator-fixed-saved-source.png",
+    "size": 144295,
+    "sha256": "b0b3ef222a3dff1e702bd839dd1d2e460cc7e7a28445dc2873c420e4ef011738"
+  },
+  {
+    "file": "35-operator-fixed-next-start-notice.png",
+    "size": 144633,
+    "sha256": "ba087e4a7388f2a6942cb4f83fb4383ffcbc242b69e2656d5646625efc435d3b"
+  },
+  {
+    "file": "38-simulated-diagnostic-cache.png",
+    "size": 111800,
+    "sha256": "5881708050369ca6c72c55b48651d9070468b6fd63eb24501f82def3354f4e4c"
+  },
+  {
+    "file": "39-device-entry-runtime-history.png",
+    "size": 96233,
+    "sha256": "00fb34244736e0048d2bd38d4a1a5f3c16912c8249d0f9b21d5f5f2c9fc497b3"
+  },
+  {
+    "file": "40-legacy-job-fallback.png",
+    "size": 110416,
+    "sha256": "25421c8e30c11e1b35d00f9a981384cac1765ceaf0f5aa08ecfd60aa6b1c5e06"
+  },
+  {
+    "file": "42-page-mode-log-command-disabled.png",
+    "size": 13109,
+    "sha256": "88f5cd7469f91d9323a10c1ee9e2d4ad7f285e867e2cabf5f69080bd793090bf"
+  },
+  {
+    "file": "55-fixed-page-log-menu-enabled.png",
+    "size": 13455,
+    "sha256": "68ac4abe26d84cee4b5afcbc9013e819624a6798a446e8745bb2ef2892a0d40b"
+  },
+  {
+    "file": "56-page-menu-opened-logs.png",
+    "size": 99477,
+    "sha256": "72ced0b750e410778b1ed4c74a3a33d9b36da9e12d878c13c8b545e83a3c7750"
+  },
+  {
+    "file": "57-page-shortcut-reopened-logs.png",
+    "size": 100811,
+    "sha256": "a3febae956f92ad32f42d3809cf5d8d4108b516fbf627c7a9ebd76dfd8259a31"
+  },
+  {
+    "file": "58-flow-shortcut-still-works.png",
+    "size": 100811,
+    "sha256": "a3febae956f92ad32f42d3809cf5d8d4108b516fbf627c7a9ebd76dfd8259a31"
+  }
+]

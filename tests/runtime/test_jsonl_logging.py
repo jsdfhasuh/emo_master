@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 import time
 
+import pytest
+
 from emo_master.apps.runtime.events.jsonl_writer import RuntimeJsonlLogWriter
 from emo_master.apps.runtime.events.models import RuntimeEvent
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2
@@ -46,13 +48,15 @@ def _records(directory: Path) -> list[dict[str, object]]:
     return records
 
 
+@pytest.mark.parametrize("failureType", ("node.failed", "dispatch.invocation.failed"))
 def testJsonlWriterPersistsUnicodeContextAndSequenceInEnqueueOrder(
     tmp_path: Path,
+    failureType: str,
 ) -> None:
     writer = RuntimeJsonlLogWriter(tmp_path, flushIntervalSeconds=0.05)
     assert writer.enqueue(_event(1, message="中文坐标")) is True
     assert writer.enqueue(
-        _event(2, eventType="node.failed", level="ERROR", message="失败")
+        _event(2, eventType=failureType, level="ERROR", message="失败")
     ) is True
     assert writer.close() is None
 
@@ -76,17 +80,22 @@ def testJsonlWriterPersistsUnicodeContextAndSequenceInEnqueueOrder(
         "code": "",
         "message": "中文坐标",
         "payload": {},
+        "originApp": "runtime",
+        "component": "operator",
+        "runtimeInstanceId": "",
     }
 
 
+@pytest.mark.parametrize("completedType", ("node.completed", "dispatch.invocation.completed"))
 def testCompletedEventProjectionRemovesOutputsButKeepsOperationalSummary(
     tmp_path: Path,
+    completedType: str,
 ) -> None:
     writer = RuntimeJsonlLogWriter(tmp_path)
     writer.enqueue(
         _event(
             1,
-            eventType="node.completed",
+            eventType=completedType,
             payload={
                 "status": "COMPLETED",
                 "outputs": {"image": "x" * 10000},
@@ -94,17 +103,47 @@ def testCompletedEventProjectionRemovesOutputsButKeepsOperationalSummary(
                 "diagnostics": {"warning": False},
                 "branch": "true",
                 "unrelated": "drop",
+                "jobId": "job-1",
+                "planRevision": 4,
+                "runGroupId": "group-1",
+                "dispatchId": "dispatch-1",
+                "deliveryId": "delivery-1",
+                "invocationId": "invocation-1",
+                "targetSlotId": "slot-1",
+                "documentRevision": 7,
+                "deviceBindings": {"camera": {"deviceId": "front"}},
             },
         )
     )
     assert writer.close() is None
 
-    assert _records(tmp_path)[0]["payload"] == {
+    record, = _records(tmp_path)
+    assert record["component"] == "execution"
+    assert record["payload"] == {
         "status": "COMPLETED",
         "metrics": {"latencyMs": 3},
         "diagnostics": {"warning": False},
         "branch": "true",
+        "jobId": "job-1",
+        "planRevision": 4,
+        "runGroupId": "group-1",
+        "dispatchId": "dispatch-1",
+        "deliveryId": "delivery-1",
+        "invocationId": "invocation-1",
+        "targetSlotId": "slot-1",
+        "documentRevision": 7,
+        "deviceBindings": {"camera": {"deviceId": "front"}},
     }
+
+
+def testDeviceCompletedProjectionKeepsCompactPayload(tmp_path):
+    payload = dict(deviceId="camera", action="capture", requestId="request", jobId="job-1",
+                   workflowId="main", nodeId="capture", planRevision=4, slot="camera",
+                   result={"frame": True})
+    writer = RuntimeJsonlLogWriter(tmp_path)
+    writer.enqueue(_event(1, eventType="device.action.completed", payload=payload))
+    assert writer.close() is None
+    assert _records(tmp_path)[0]["payload"] == payload
 
 
 def testPreviewSnapshotFailureIsIncludedInOperationalFile(tmp_path):

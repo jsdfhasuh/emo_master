@@ -4,27 +4,33 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import threading
+from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 from typing import Any
 
 from PySide2.QtCore import QObject, Qt, QTimer, QUrl, Signal
 from PySide2.QtGui import QDesktopServices, QTextCursor
 from PySide2.QtWidgets import (
     QAbstractItemView, QCheckBox, QComboBox, QHBoxLayout, QHeaderView, QLabel,
-    QPlainTextEdit, QPushButton, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
+    QFileDialog, QMenu, QPlainTextEdit, QPushButton, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
 
 from .log_reader import (
     JsonlTailReader, LogRecord, MAX_RECORDS, listLogFiles, recordDetails, recordSource, safeText,
+    snapshotLogFiles, iterLogFileRecords,
+    deviceRecordMatches,
 )
 
 
 class LogFeed(QObject):
     updated: Any = Signal()
     _completed: Any = Signal(object)
+    _exportCompleted: Any = Signal(object)
 
     def __init__(self, directory: Path, parent=None):
         super().__init__(parent)
         self.directory, self.writer = directory, None
+        self.applicationWriter = None
         self.reader = JsonlTailReader()
         self.cursor = None
         self.records: list[LogRecord] = []
@@ -37,10 +43,15 @@ class LogFeed(QObject):
         self.generation = 0
         self.worker = None
         self.visible = self.closed = False
+        self.exportWorker = None
+        self.exportPool = None
+        self.exportCancel = threading.Event()
+        self.exportMessage = ""
         self.timer = QTimer(self)
         self.timer.setInterval(1000)
         self.timer.timeout.connect(self.refresh)
         self._completed.connect(self._accept)
+        self._exportCompleted.connect(self._acceptExport)
 
     def setSource(self, controller):
         writer = controller.runtime.operationalLogWriter if controller else None
@@ -80,6 +91,8 @@ class LogFeed(QObject):
         if self.closed or not self.visible or self.worker is not None:
             return
         active = self.writer.activePath if self.writer is not None else None
+        if active is None and self.applicationWriter is not None:
+            active = self.applicationWriter.activePath
         self.activePath = Path(active) if active is not None else None
         path = self.historyPath or self.activePath
         generation, cursor, directory = self.generation, self.cursor, self.directory
@@ -128,10 +141,56 @@ class LogFeed(QObject):
         self.closed = True
         self.visible = False
         self.timer.stop()
+        self.exportCancel.set()
+        if self.exportPool is not None:
+            self.exportPool.shutdown(wait=False, cancel_futures=True)
 
     @property
     def idle(self):
-        return self.worker is None or not self.worker.is_alive()
+        return (self.worker is None or not self.worker.is_alive()) and (
+            self.exportWorker is None or self.exportWorker.done())
+
+    def exportFiles(self, target, *, formatName, paths, level="", deviceId=""):
+        from emo_master.core.log_export import exportLogs, LogExportCancelled
+        if self.exportWorker is not None and not self.exportWorker.done():
+            return
+        ranges = snapshotLogFiles(paths)
+        if not ranges:
+            raise ValueError("没有选定可导出的日志文件")
+        self.exportCancel.clear()
+        self.exportMessage = "正在导出选定本机文件范围…"
+        if self.exportPool is None:
+            self.exportPool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="runtime-log-export")
+        filters = dict(level=level, deviceId=deviceId,
+                       files=[dict(path=str(item.path), endOffset=item.endOffset) for item in ranges])
+        def run():
+            try:
+                records = iterLogFileRecords(ranges, cancelled=self.exportCancel.is_set)
+                if level:
+                    records = (record for record in records if str(record.get('level', '')).upper().replace('WARNING', 'WARN') == level)
+                if deviceId:
+                    records = (record for record in records if deviceRecordMatches(record, deviceId))
+                count = exportLogs(target, records, formatName=formatName, scope="local_files", filters=filters,
+                                   cancelled=self.exportCancel.is_set)
+                result = f"已导出 {count} 条选定本机文件记录：{safeText(target)}"
+            except LogExportCancelled:
+                result = "导出已取消；目标文件未替换。"
+            except Exception as error:
+                result = "导出失败：" + safeText(error)
+            return result
+        def completed(future):
+            if not future.cancelled():
+                self._exportCompleted.emit(future.result())
+        self.exportWorker = self.exportPool.submit(run)
+        # Publish only after Future.done() is true so the terminal message and
+        # export controls agree, even when Qt handles the signal immediately.
+        self.exportWorker.add_done_callback(completed)
+        self.updated.emit()
+
+    def _acceptExport(self, message):
+        self.exportMessage = message
+        if not self.closed:
+            self.updated.emit()
 
     def fileLabel(self, path):
         return "本次活动文件" if path == self.activePath else "历史文件"
@@ -148,7 +207,7 @@ class LogFeed(QObject):
         if self.error:
             lines.append("读取失败（可刷新重试）：" + self.error)
         elif not self.files and not self.records:
-            lines.append("日志目录暂无 runtime-*.jsonl 文件。")
+            lines.append("日志目录暂无 runtime/runtime_app JSONL 文件。")
         if self.writer is not None:
             lines.append("日志 writer：" + ("已启用" if self.writer.enabled else "不可用"))
             if self.writer.failureMessage:
@@ -157,6 +216,8 @@ class LogFeed(QObject):
             lines.append(f"跳过 {self.parseErrors} 条无效记录：{self.parseReason}")
         lines.append(f"最近记录：当前保留 {len(self.records)} 条（初读最多 2 MiB / 2000 条，视图上限 10000 条）"
                      + ("；更早记录请在原文件中查看。" if self.recentOnly else "。"))
+        if self.exportMessage:
+            lines.append(self.exportMessage)
         return "\n".join(lines)
 
 
@@ -167,6 +228,7 @@ class RuntimeLogView(QWidget):
         self._signature = None
         self._shownRecords: list[LogRecord] = []
         self._filePaths = None
+        self.deviceId = ""
         layout = QVBoxLayout(self)
         row = QHBoxLayout()
         self.fileCombo = QComboBox()
@@ -181,6 +243,15 @@ class RuntimeLogView(QWidget):
         row.addWidget(self.resetButton)
         self.refreshButton = QPushButton("刷新")
         row.addWidget(self.refreshButton)
+        self.exportButton = QPushButton("导出…")
+        exportMenu = QMenu(self.exportButton)
+        self.exportCurrentAction = exportMenu.addAction("当前显示记录…")
+        self.exportFileAction = exportMenu.addAction("选定文件完整范围…")
+        self.exportFilesAction = exportMenu.addAction("本机全部文件范围…")
+        self.exportButton.setMenu(exportMenu)
+        row.addWidget(self.exportButton)
+        self.cancelExportButton = QPushButton("取消导出")
+        row.addWidget(self.cancelExportButton)
         layout.addLayout(row)
         self.statusLabel = QLabel()
         self.statusLabel.setTextFormat(Qt.PlainText)
@@ -192,8 +263,8 @@ class RuntimeLogView(QWidget):
         self.emptyLabel.setTextFormat(Qt.PlainText)
         layout.addWidget(self.emptyLabel)
         self.splitter = QSplitter(Qt.Vertical)
-        self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(["时间", "级别", "来源", "消息"])
+        self.table = QTableWidget(0, 6)
+        self.table.setHorizontalHeaderLabels(["时间", "级别", "应用", "模块", "来源", "消息"])
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -202,7 +273,7 @@ class RuntimeLogView(QWidget):
         self.table.verticalHeader().hide()
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
-        for column, width in enumerate((175, 65, 145)):
+        for column, width in enumerate((175, 65, 80, 100, 145)):
             self.table.setColumnWidth(column, width)
         self.splitter.addWidget(self.table)
         detailHost = QWidget()
@@ -243,13 +314,23 @@ class RuntimeLogView(QWidget):
         self.levelCombo.currentIndexChanged.connect(self.render)
         self.resetButton.clicked.connect(self.resetFilter)
         self.refreshButton.clicked.connect(feed.refresh)
+        self.exportCurrentAction.triggered.connect(lambda: self.exportLogs(history=False))
+        self.exportFileAction.triggered.connect(lambda: self.exportLogs(history=True))
+        self.exportFilesAction.triggered.connect(lambda: self.exportLogs(history=True, allFiles=True))
+        self.cancelExportButton.clicked.connect(feed.exportCancel.set)
         self.folderButton.clicked.connect(self.openFolder)
         self.table.itemSelectionChanged.connect(self.showDetails)
         feed.updated.connect(self.render)
         self.render()
 
     def resetFilter(self):
+        self.deviceId = ""
         self.levelCombo.setCurrentIndex(0)
+        self.render()
+
+    def setDevice(self, deviceId):
+        self.deviceId = deviceId
+        self.render()
 
     def _selectFile(self, index):
         self.feed.selectFile(self.fileCombo.itemData(index))
@@ -300,10 +381,14 @@ class RuntimeLogView(QWidget):
                 self.fileCombo.setCurrentIndex(index)
             self.fileCombo.blockSignals(False)
         self.statusLabel.setText(feed.statusText())
+        exporting = feed.exportWorker is not None and not feed.exportWorker.done()
+        self.exportButton.setEnabled(not exporting)
+        self.cancelExportButton.setVisible(exporting)
         self._renderDiagnostics()
         level = self.levelCombo.currentData()
-        records = [row for row in feed.records if not level or str(row.data.get("level", "")).upper().replace("WARNING", "WARN") == level]
-        signature = (feed.generation, level, tuple((id(row), row.identity) for row in records))
+        records = [row for row in feed.records if deviceRecordMatches(row.data, self.deviceId) and
+                   (not level or str(row.data.get("level", "")).upper().replace("WARNING", "WARN") == level)]
+        signature = (feed.generation, level, self.deviceId, tuple((id(row), row.identity) for row in records))
         if signature == self._signature:
             return
         self._signature = signature
@@ -318,6 +403,7 @@ class RuntimeLogView(QWidget):
         for rowIndex, record in enumerate(records):
             data = record.data
             values = (str(data.get("timestamp", data.get("timestampMs", ""))), str(data.get("level", "")),
+                      str(data.get("originApp", "")), str(data.get("component", "")),
                       recordSource(data), str(data.get("message", "")))
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value.replace("\n", " ")[:1000])
@@ -367,3 +453,34 @@ class RuntimeLogView(QWidget):
             return False
         self.folderFeedback.setText("已请求系统打开：" + safeText(path))
         return True
+
+    def exportLogs(self, *, history=False, allFiles=False):
+        from emo_master.core.log_export import exportLogs
+        # Freeze visible records or selected file byte ranges before asking for a destination.
+        records = deepcopy([record.data for record in self._shownRecords])
+        level, deviceId = str(self.levelCombo.currentData() or ""), self.deviceId
+        paths = self.feed.files if allFiles else tuple(path for path in (
+            self.feed.historyPath or self.feed.activePath,) if path is not None)
+        try:
+            ranges = snapshotLogFiles(paths) if history else ()
+            if history and not ranges:
+                raise ValueError("没有选定可导出的日志文件")
+            path, selected = QFileDialog.getSaveFileName(self, "导出日志", "runtime-logs.jsonl",
+                "JSONL (*.jsonl);;JSON (*.json);;文本 (*.txt)")
+            if not path:
+                return
+            formatName = "txt" if "*.txt" in selected else "json" if "*.json)" in selected else "jsonl"
+            target = Path(path)
+            if not target.suffix:
+                target = target.with_suffix("." + formatName)
+            if history:
+                self.feed.exportFiles(target, formatName=formatName, paths=ranges,
+                                      level=level, deviceId=deviceId)
+            else:
+                count = exportLogs(target, records, formatName=formatName, scope="filtered",
+                    filters=dict(level=level, deviceId=deviceId), retainedCount=len(self.feed.records))
+                self.feed.exportMessage = f"已导出 {count} 条当前显示记录：{safeText(target)}"
+                self.feed.updated.emit()
+        except Exception as error:
+            self.feed.exportMessage = "导出失败：" + safeText(error)
+            self.feed.updated.emit()

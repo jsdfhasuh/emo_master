@@ -1,0 +1,22 @@
+Verbatim line excerpts from job 125908451223, run 41633416601, head c9da22fb09c91687a5ccab6e9c11e61da358607e, attempt 1.
+Source: https://github.com/jsdfhasuh/emo_master/actions/runs/41633416601/job/125908451223
+
+2026-11-03T12:21:13.0269521Z This plugin does not support propagateSizeHints()
+2026-11-03T12:21:13.0269958Z Traceback (most recent call last):
+2026-11-03T12:21:13.0277461Z   File "/home/runner/work/emo_master/emo_master/src/emo_master/apps/designer/main.py", line 146, in runDesigner
+2026-11-03T12:21:13.0278140Z     window = MainWindow(runtimeClient, showStartupEntry=True,
+2026-11-03T12:21:13.0278898Z TypeError: testStartupCancellationShutsDownDisplayBeforeClient.<locals>.Window.__init__() got an unexpected keyword argument 'localLogWriter'
+2026-11-03T12:21:13.0280134Z [designer] Designer 启动失败：
+2026-11-03T12:21:13.0280716Z testStartupCancellationShutsDownDisplayBeforeClient.<locals>.Window.__init__() got an unexpected keyword argument 'localLogWriter'
+2026-11-03T12:21:13.0281388Z This plugin does not support propagateSizeHints()
+[... intervening thread stack frames omitted ...]
+2026-11-03T12:21:13.0368719Z   File "/opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages/_pytest/python.py", line 187, in pytest_pyfunc_call
+2026-11-03T12:21:13.0369604Z     result = testfunction(**testargs)
+2026-11-03T12:21:13.0370387Z   File "/home/runner/work/emo_master/emo_master/tests/designer/test_operator_icon_integration.py", line 244, in testStartupCancellationShutsDownDisplayBeforeClient
+2026-11-03T12:21:13.0371104Z     main.runDesigner()
+2026-11-03T12:21:13.0371804Z   File "/home/runner/work/emo_master/emo_master/src/emo_master/apps/designer/main.py", line 166, in runDesigner
+2026-11-03T12:21:13.0372336Z     _showStartupError(error)
+2026-11-03T12:21:13.0372859Z   File "/home/runner/work/emo_master/emo_master/src/emo_master/apps/designer/main.py", line 230, in _showStartupError
+2026-11-03T12:21:13.0373383Z     dialog.exec_()
+2026-11-03T12:21:13.0373661Z +++++++++++++++++++++++++++++++++++ Timeout ++++++++++++++++++++++++++++++++++++
+2026-11-03T12:21:13.0571108Z [ci-check] failed pytest with code 1

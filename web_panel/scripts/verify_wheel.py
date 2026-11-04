@@ -4,8 +4,15 @@ from pathlib import Path
 import subprocess
 import tempfile
 import venv
+import zipfile
 
 wheel=next(Path('dist').glob('*.whl')).resolve()
+with zipfile.ZipFile(wheel) as archive:
+    actual={name.removeprefix('emo_web_panel/static/') for name in archive.namelist()
+            if name.startswith('emo_web_panel/static/') and not name.endswith('/')}
+    static=Path('backend/emo_web_panel/static')
+    assert actual == {path.relative_to(static).as_posix() for path in static.rglob('*') if path.is_file()}, 'stale packaged frontend assets'
+
 with tempfile.TemporaryDirectory(prefix='emo-web-install-') as temporary:
     root=Path(temporary);venv.create(root/'venv',with_pip=True)
     python=root/'venv'/('Scripts/python.exe' if os.name=='nt' else 'bin/python')
@@ -21,7 +28,11 @@ from emo_web_panel.app import create_app
 from emo_web_panel.config import Config
 package_root=Path(emo_web_panel.__file__).parent
 assert package_root.joinpath('static/index.html').is_file()
-assert version('emo-panel-protocol') == emo_panel_protocol.__version__ == '1.3.0'
+assert version('emo-panel-protocol') == emo_panel_protocol.__version__ == '1.4.0'
+query=runtime_pb2.QueryRuntimeLogsRequest(upper_event_id=0)
+assert query.HasField('upper_event_id')
+assert {'origin_app','component','runtime_instance_id'} <= set(runtime_pb2.JobEvent.DESCRIPTOR.fields_by_name.keys())
+assert 'QueryRuntimeLogs' in runtime_pb2.DESCRIPTOR.services_by_name['RuntimeService'].methods_by_name
 expected={
  'ungrouped-running':('job_state','RUNNING'),
  'ungrouped-aborted':('job_state','ABORTED'),
@@ -45,7 +56,7 @@ with tempfile.TemporaryDirectory() as d:
  app=create_app(Config(Path(d),mode='mock'))
  assert any(getattr(route,'name','')=='frontend' for route in app.routes)
 assert not any(name in sys.modules for name in ('PySide2','PyQt5','emo_master','cv2','torch'))
-print('PASS independent wheel install, SDK1.3.0, five embedded ordinary-Job fixtures including ABORTED, exact empty Stop presence, packaged UI, no Qt/Runtime/model imports')
+print('PASS independent wheel install, SDK1.4.0, five embedded ordinary-Job fixtures including ABORTED, exact empty Stop presence, packaged UI, no Qt/Runtime/model imports')
 '''
     subprocess.run([str(python),'-c',check],check=True,cwd=root)
     subprocess.run([str(python),'-m','emo_web_panel.main','--help'],check=True,cwd=root)

@@ -85,7 +85,9 @@ def run_product_server(root, *, continuous=False):
 class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         from emo_web_panel.runtime_client import GrpcRuntimeClient
-        self.observations = []
+        import emo_panel_protocol
+        self.observations = [{'operation': 'gateway_environment', 'python': sys.executable,
+            'protocolVersion': emo_panel_protocol.__version__, 'protocolPath': emo_panel_protocol.__file__}]
         self.stdout_lines = []
         self.directory = tempfile.TemporaryDirectory(prefix='web-product-runtime-')
         self.log = open(Path(self.directory.name) / 'runtime.log', 'w+')
@@ -118,10 +120,12 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
         except Exception:
             self.process.kill()
             self.process.wait(timeout=10)
-            self.log.flush(); self.log.seek(0)
+            self.log.flush()
+            self.log.seek(0)
             diagnostic = self.log.read()
             self.preserve_evidence()
-            self.log.close(); self.directory.cleanup()
+            self.log.close()
+            self.directory.cleanup()
             raise AssertionError('Owning Runtime subprocess did not start:\n' + diagnostic)
 
     async def asyncTearDown(self):
@@ -131,11 +135,13 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
             try:
                 await asyncio.to_thread(self.process.wait, timeout=20)
             except subprocess.TimeoutExpired:
-                self.process.kill(); self.process.wait(timeout=10)
+                self.process.kill()
+                self.process.wait(timeout=10)
         self.stdout_thread.join(timeout=2)
         self.preserve_evidence()
         self.process.stdout.close()
-        self.log.close(); self.directory.cleanup()
+        self.log.close()
+        self.directory.cleanup()
 
     def preserve_evidence(self):
         destination = Path(os.environ.get('EMO_WEB_PRODUCT_EVIDENCE_DIR',
@@ -180,6 +186,15 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
         info = await self.client.info()
         self.assertEqual(info['projectId'], 'panel-contract-demo')
         self.assertEqual(await self.client.runs(), [])
+        logs = await self.client.query_runtime_logs({'runtimeInstanceId': info['runtimeInstanceId']})
+        self.observations.append({'operation': 'query_runtime_logs_without_job', 'reply': logs})
+        self.assertTrue(logs['ok'], logs)
+        self.assertEqual(logs['runtimeInstanceId'], info['runtimeInstanceId'])
+        self.assertTrue(logs['upperEventId'].isdecimal())
+        self.assertTrue(logs['nextEventId'].isdecimal())
+        self.assertIsInstance(logs['hasMore'], bool)
+        self.assertTrue(all(event['originApp'] == 'runtime' for event in logs['events']))
+        self.assertEqual(await self.client.runs(), [])
         context = {key: info[key] for key in ('runtimeInstanceId','projectId','historyDefinitionRevision')}
         page = await self.client.history('records',1,20,context=context,sort='id')
         self.assertTrue(page['stableRowIdentity'])
@@ -187,7 +202,8 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
         ref = page['rows'][0]['imageRefs']['record-image']['imageRef']
         self.assertNotIn('reference.png', ref)
         image, mime, status = await self.client.history_image(image_ref=ref, context=context)
-        self.assertEqual(status, 'AVAILABLE'); self.assertEqual(mime, 'image/png')
+        self.assertEqual(status, 'AVAILABLE')
+        self.assertEqual(mime, 'image/png')
         fixed, _, _ = await self.client.history_image(component_id='fixed-image', context=context)
         self.assertEqual(image, fixed)
         total = await self.client.history('total',1,20,context=context,kind='aggregate')
@@ -220,6 +236,29 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result, 'Actual Runtime never produced the supplied sample capture')
         self.assertEqual(result[0]['jobId'],job)
         self.assertIn('count',result[0]['sources'])
+        logs = await self.client.query_runtime_logs({'runtimeInstanceId': info['runtimeInstanceId'],
+            'jobId': job, 'component': 'execution', 'limit': 1000})
+        self.observations.append({'operation': 'query_runtime_logs_for_actual_job', 'reply': logs})
+        self.assertTrue(logs['ok'], logs)
+        self.assertEqual(logs['runtimeInstanceId'], info['runtimeInstanceId'])
+        self.assertTrue(logs['events'], 'Actual Job execution logs were not persisted or queryable')
+        ids = [int(event['eventId']) for event in logs['events']]
+        self.assertEqual(ids, sorted(set(ids)))
+        self.assertGreater(ids[0], 0)
+        self.assertLessEqual(ids[-1], int(logs['upperEventId']))
+        for event in logs['events']:
+            self.assertEqual(event['jobId'], job)
+            self.assertEqual(event['projectId'], info['projectId'])
+            self.assertEqual(event['workflowId'], 'main')
+            self.assertEqual(event['originApp'], 'runtime')
+            self.assertEqual(event['component'], 'execution')
+            self.assertEqual(event['runtimeInstanceId'], info['runtimeInstanceId'])
+            self.assertTrue(event['sequence'].isdecimal())
+            self.assertTrue(event['timestampMs'].isdecimal())
+        unfiltered = await self.client.query_runtime_logs({'runtimeInstanceId': info['runtimeInstanceId'], 'limit': 1000})
+        self.observations.append({'operation': 'query_runtime_logs_across_jobs', 'reply': unfiltered})
+        self.assertTrue(unfiltered['ok'], unfiltered)
+        self.assertTrue(any(event['jobId'] == job for event in unfiltered['events']))
         state = await self.client.run_state(job)
         stop = await self.client.control('stop',job,body | {'runGroupId':state['runGroupId']})
         self.assertEqual(stop['outcome'],'ACCEPTED', stop)

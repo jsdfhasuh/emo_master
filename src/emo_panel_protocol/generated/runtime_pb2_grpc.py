@@ -374,6 +374,11 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.StreamJobEventsRequest.SerializeToString,
                 response_deserializer=runtime__pb2.JobEvent.FromString,
                 _registered_method=True)
+        self.QueryRuntimeLogs = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/QueryRuntimeLogs',
+                request_serializer=runtime__pb2.QueryRuntimeLogsRequest.SerializeToString,
+                response_deserializer=runtime__pb2.QueryRuntimeLogsReply.FromString,
+                _registered_method=True)
         self.ListOperators = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/ListOperators',
                 request_serializer=runtime__pb2.ListOperatorsRequest.SerializeToString,
@@ -937,6 +942,12 @@ class RuntimeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def QueryRuntimeLogs(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ListOperators(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -1459,6 +1470,11 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
                     servicer.StreamJobEvents,
                     request_deserializer=runtime__pb2.StreamJobEventsRequest.FromString,
                     response_serializer=runtime__pb2.JobEvent.SerializeToString,
+            ),
+            'QueryRuntimeLogs': grpc.unary_unary_rpc_method_handler(
+                    servicer.QueryRuntimeLogs,
+                    request_deserializer=runtime__pb2.QueryRuntimeLogsRequest.FromString,
+                    response_serializer=runtime__pb2.QueryRuntimeLogsReply.SerializeToString,
             ),
             'ListOperators': grpc.unary_unary_rpc_method_handler(
                     servicer.ListOperators,
@@ -3447,6 +3463,33 @@ class RuntimeService(object):
             '/emo_master.runtime.RuntimeService/StreamJobEvents',
             runtime__pb2.StreamJobEventsRequest.SerializeToString,
             runtime__pb2.JobEvent.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def QueryRuntimeLogs(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/QueryRuntimeLogs',
+            runtime__pb2.QueryRuntimeLogsRequest.SerializeToString,
+            runtime__pb2.QueryRuntimeLogsReply.FromString,
             options,
             channel_credentials,
             insecure,

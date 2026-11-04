@@ -51,7 +51,7 @@ def testNormalRunEnablesSharedPageCapture(qtApp, tmp_path, monkeypatch, snapshot
         window.startJob()
         waitFor(lambda: window.currentJobId or window.runtimePanelState.jobStatus == 'FAILED')
         job = window.currentJobId
-        assert job, window.runtimePanelState.jobMessage
+        assert job, {'lastMessage': window.runtimePanelState.lastMessage, 'failures': failures}
         assert client.displayAddress(), 'normal Run did not enable shared-page capture'
         group = runtime.deviceManager.dispatchGroups[job]
         consumer = group.slots['detection'].jobId

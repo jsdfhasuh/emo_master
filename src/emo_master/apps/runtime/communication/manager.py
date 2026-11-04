@@ -82,7 +82,7 @@ class CommunicationManager:
         self._disableSaveToken = ""
         self._saveRequiresDisabled = False
 
-    def _record(self, kind, message, channelId="", data=None, **fields):
+    def _record(self, kind, message, channelId="", data=None, *, eventType=None, publishRuntime=True, **fields):
         with self._lock:
             self._sequence += 1
             record = dict(sequence=self._sequence, timestampMs=int(time.time() * 1000),
@@ -97,8 +97,9 @@ class CommunicationManager:
             while len(self._records) > MAX_RECORDS or self._recordBytes > MAX_RECORD_BYTES:
                 self._recordBytes -= self._records.popleft()[1]
                 self._dropped += 1
-            if self.eventSink is not None:
-                self.eventSink("device.tcp." + kind, message, **{k: v for k, v in record.items() if k != "message"})
+            if publishRuntime and self.eventSink is not None:
+                self.eventSink(eventType or "device.tcp." + kind, message,
+                               **{k: v for k, v in record.items() if k != "message"})
 
     def configure(self, projectId, projectKey, config, *, saveToken=""):
         config = CommunicationSettings.model_validate(config.model_dump())
@@ -213,17 +214,19 @@ class CommunicationManager:
                 listener.close()
                 with self._lock:
                     self.state, self.error = "FAILED", str(error)
-                    self._record("event", f"监听失败：{config.bindAddress}:{config.port} · {error}", code="E_TCP_BIND_FAILED")
+                    self._record("event", f"监听失败：{config.bindAddress}:{config.port} · {error}",
+                                 code="E_TCP_BIND_FAILED", level="ERROR", publishRuntime=False)
                 raise TcpServiceError("E_TCP_BIND_FAILED", self.error) from error
             with self._lock:
                 self._listener = listener
                 self.state = "LISTENING"
-                self._record("event", f"开始监听 {config.bindAddress}:{config.port}")
                 try:
                     self._spawn(self._accept, "tcp-listener", listener)
                 except Exception as error:
-                    self._failService(error, "E_TCP_THREAD_FAILED")
+                    self._failService(error, "E_TCP_THREAD_FAILED", publishRuntime=False)
                     raise TcpServiceError("E_TCP_THREAD_FAILED", str(error)) from error
+                self._record("event", f"开始监听 {config.bindAddress}:{config.port}",
+                             eventType="device.connect.completed", action="")
                 self._changed.notify_all()
             return self.snapshot()
 
@@ -245,7 +248,7 @@ class CommunicationManager:
             self._threads.discard(thread)
             raise
 
-    def _failService(self, error, code):
+    def _failService(self, error, code, *, publishRuntime=True):
         # Called from owned I/O threads: close sockets and wake waits, but never
         # join this thread or acquire _control (STOP may be joining us there).
         with self._changed:
@@ -263,7 +266,8 @@ class CommunicationManager:
                     self._listener = None
             for peer in list(self._peers.values()):
                 self._disconnect(peer)
-            self._record("event", f"通信服务异常：{self.error}", code=code)
+            self._record("event", f"通信服务异常：{self.error}", code=code, level="ERROR",
+                         eventType="device.connect.failed", action="", publishRuntime=publishRuntime)
             self._changed.notify_all()
 
     def _accept(self, listener):

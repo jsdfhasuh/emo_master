@@ -1,0 +1,6 @@
+.................................................................................................ss..... [ 68%]
+................................................  [100%]
+=========================== short test summary info ===========================
+SKIPPED [1] web_panel\tests\test_product_runtime.py:179: Opt-in full owning Runtime integration; requires its separate dependencies
+SKIPPED [1] web_panel\tests\test_product_runtime.py:197: Opt-in full owning Runtime integration; requires its separate dependencies
+150 passed, 2 skipped, 207 subtests passed in 37.93s

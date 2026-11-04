@@ -2,6 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from pathlib import Path
+import json
 import re
 import time
 
@@ -410,7 +411,8 @@ class WorkflowDebugWindow(QDialog):
                 self.status.setText("续租失败：" + value["leaseError"])
             self.sequence = value["events"]["nextSequence"]
             for event in value["events"]["events"]:
-                self.logs.appendPlainText(str(event))
+                self.logs.appendPlainText(json.dumps(event, ensure_ascii=False, indent=2, default=str)
+                    if event.get("type") == "node.log" else str(event))
             if flow.get("trialError"):
                 self.status.setText(self.status.text() + " | 试运行失败：" + str(flow["trialError"]))
             setSummaryLabel(self.status, self.status.text())

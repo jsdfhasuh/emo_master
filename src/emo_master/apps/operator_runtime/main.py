@@ -29,17 +29,20 @@ from emo_master.apps.operator_runtime.startup_page import StartupPage
 from emo_master.apps.operator_runtime.log_reader import safeRecord, safeText
 from emo_master.apps.operator_runtime.log_view import LogFeed, RuntimeLogView
 from emo_master.apps.runtime.events.models import RuntimeEvent
+from emo_master.apps.runtime.events.app_log import RuntimeApplicationLogWriter
 
 
 class OperatorWindow(QWidget):
     def __init__(self, projectPath=None, *, dataRoot=None, preferences=None, runtimeFactory=ProductionRuntime,
-                 listenerSettings=None):
+                 listenerSettings=None, applicationLogWriter=None, dataRootResolution=None):
         super().__init__()
         self.setWindowTitle("EmoMaster Runtime")
         self.resize(1060, 800)
         self.preferences = preferences or QSettings("EmoMaster", "Runtime")
         self.listenerSettings = listenerSettings or readListenerSettings(self.preferences)
-        self.resolution = resolveDataRoot(dataRoot, saved=self.preferences.value(DEFAULT_ROOT_KEY, ""))
+        self.resolution = dataRootResolution or resolveDataRoot(dataRoot, saved=self.preferences.value(DEFAULT_ROOT_KEY, ""))
+        self.applicationLogWriter = applicationLogWriter
+        self._ownsApplicationLogWriter = applicationLogWriter is None
         self.runtimeFactory, self.explicitProject = runtimeFactory, projectPath
         self.projectPath = str(projectPath or self.preferences.value("projectPath", ""))
         self.controller = self.session = self.hub = self.pages = None
@@ -134,6 +137,10 @@ class OperatorWindow(QWidget):
         self._initialize()
 
     def _initialize(self):
+        if self.applicationLogWriter is None:
+            self.applicationLogWriter = RuntimeApplicationLogWriter(self.resolution.path / "logs")
+        self.logFeed.writer = self.applicationLogWriter
+        self.logFeed.applicationWriter = self.applicationLogWriter
         self.initializationFailed = False
         self.startupPage.retryButton.hide()
         self.startupPage.failureLabel.clear()
@@ -143,7 +150,8 @@ class OperatorWindow(QWidget):
                          payload={"source": self.resolution.source, "dataRoot": str(self.resolution.path)})
 
         def initialize():
-            self.controller = (self.runtimeFactory(self.resolution.path, listenerSettings=self.listenerSettings)
+            self.controller = (self.runtimeFactory(self.resolution.path, listenerSettings=self.listenerSettings,
+                runtimeInstanceId=self.applicationLogWriter.runtimeInstanceId)
                 if self.runtimeFactory is ProductionRuntime else self.runtimeFactory(self.resolution.path))
             if self.explicitProject:
                 self.controller.load(self.projectPath)
@@ -156,23 +164,31 @@ class OperatorWindow(QWidget):
         if self.busy or self.closing or self.controller is not None:
             return
         # Retry the same startup target, never a saved-but-not-yet-effective draft.
+        self.closeApplicationLog()
+        self._readyRecorded = False
         self._initialize()
+
+    def closeApplicationLog(self):
+        writer, self.applicationLogWriter = self.applicationLogWriter, None
+        if writer is not None:
+            writer.close()
 
     def _diagnostic(self, eventType, message, *, level="INFO", payload=None):
         event = RuntimeEvent(jobId="", eventType=eventType, message=safeText(message), level=level,
             timestampMs=int(time.time() * 1000), payloadJson=json.dumps(safeRecord(payload or {}), ensure_ascii=False))
-        writer = self.controller.runtime.operationalLogWriter if self.controller else None
-        accepted = bool(writer and writer.enqueue(event))
+        writer = self.applicationLogWriter
+        accepted = bool(writer and writer.record(eventType, event.message, level=level, payload=safeRecord(payload or {})))
         self.startupDiagnostics.append((event, accepted))
         self._diagnosticText()
 
     def _diagnosticText(self):
         from datetime import datetime
-        writer = self.controller.runtime.operationalLogWriter if self.controller else None
+        writer = self.applicationLogWriter
         self.logFeed.diagnostics = [
             datetime.fromtimestamp(event.timestampMs / 1000).isoformat(timespec="seconds") + " · " + event.level + " · " + event.message
             + ("（已提交 writer；落盘以实际文件为准）" if accepted and writer and writer.enabled and not writer.failureMessage
                else "（未写入日志文件 / writer 未确认写入）")
+            + (" · 日志目录：" + str(writer.directory) if writer else "")
             for event, accepted in self.startupDiagnostics]
         self.logFeed.updated.emit()
 
@@ -804,7 +820,11 @@ class OperatorWindow(QWidget):
                     self._runtimeReady()
                 else:
                     self.initializationFailed = True
-                    self.startupPage.failureLabel.setText("本次初始化失败（未写入日志文件）：\n" + self.error)
+                    writer = self.applicationLogWriter
+                    status = ("错误已提交应用日志 writer；落盘以实际文件为准" if writer and writer.enabled and not writer.failureMessage
+                              else "应用日志 writer 不可用 / 未确认写入")
+                    self.startupPage.failureLabel.setText("本次初始化失败（" + status + "）：\n" + self.error
+                        + "\n日志目录：" + str(writer.directory if writer else self.resolution.path / "logs"))
                     self.startupPage.retryButton.show()
                 self._diagnostic("operator.project.load.failed" if self.controller else "operator.runtime.failed",
                                  self.error, level="ERROR", payload={"targetDataRoot": str(self.resolution.path)})
@@ -896,6 +916,8 @@ class OperatorWindow(QWidget):
     def closeEvent(self, event):
         if self.done:
             self.timer.stop()
+            if self._ownsApplicationLogWriter:
+                self.closeApplicationLog()
             event.accept()
         else:
             event.ignore()
@@ -976,12 +998,23 @@ def main(arguments=None):
         print(f"Project: {document.project.name}; mode: {settings.mode}; validation passed; no Job started.")
         return 0
     app = QApplication.instance() or QApplication([])
-    window = OperatorWindow(args.project, dataRoot=args.data_root,
-        preferences=preferences, listenerSettings=listener,
-        runtimeFactory=lambda root: ProductionRuntime(root, listenerSettings=listener,
-            pluginRootPaths=tuple(map(str, args.plugin_root)) if args.plugin_root else None))
-    window.show()
-    return app.exec_()
+    resolution = resolveDataRoot(args.data_root, saved=preferences.value(DEFAULT_ROOT_KEY, ""))
+    writer = RuntimeApplicationLogWriter(resolution.path / "logs")
+    window = None
+    try:
+        # Keep the origin with the resolved path instead of treating it as CLI input.
+        window = OperatorWindow(args.project, dataRootResolution=resolution,
+            preferences=preferences, listenerSettings=listener, applicationLogWriter=writer,
+            runtimeFactory=lambda dataRoot: ProductionRuntime(dataRoot, listenerSettings=listener,
+                runtimeInstanceId=window.applicationLogWriter.runtimeInstanceId if window else writer.runtimeInstanceId,
+                pluginRootPaths=tuple(map(str, args.plugin_root)) if args.plugin_root else None))
+        window.show()
+        return app.exec_()
+    finally:
+        if window is not None:
+            window.closeApplicationLog()
+        else:
+            writer.close()
 
 
 if __name__ == "__main__":

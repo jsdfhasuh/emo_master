@@ -1,3 +1,4 @@
+import { RuntimeLogs } from './RuntimeLogs';
 import { useEffect, useState } from 'react';
 import { api } from '../data/api';
 export interface JobEvent { sequence:string; at?:string; timestampMs?:string; kind:string; runId?:string; message:string; level?:string; code?:string; }
@@ -37,5 +38,6 @@ export function RuntimeStatus({runtimeId,runId='',runtimeInstanceId,projectId}:{
  <small>计数来源：{counters.source}；不按浏览器收到的结果帧累计。</small></>:!error&&<p>正在获取 Runtime 权威计数…</p>}
  <h3>所选运行事件：{runId || '尚未选择'}</h3>{eventError&&<p role="alert">日志读取失败：{eventError}；旧日志不代表当前状态。</p>}
  {!runId?<p>请明确选择查看运行；计数与日志不依赖页面结果帧。</p>:<><p>日志来源：{eventPage?.source || '等待 Runtime'} · 游标 {eventPage?.nextSequence || '0'} · 仅保留当前所选运行最近 100 条</p><div className="table-scroll"><table><thead><tr><th>序号 / 时间</th><th>类型 / 级别</th><th>内容</th></tr></thead><tbody>{events.map(event=><tr key={event.sequence}><td>{event.sequence} / {event.at || timestamp(event.timestampMs)}</td><td>{event.kind} / {event.level || '—'}</td><td>{event.code && `${event.code} · `}{event.message}</td></tr>)}</tbody></table></div></>}
+ <RuntimeLogs runtimeId={runtimeId} runtimeInstanceId={observedInstance}/>
  </details>;
 }

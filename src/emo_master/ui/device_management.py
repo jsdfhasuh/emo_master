@@ -43,6 +43,9 @@ class DeviceManagementDialog(QDialog):
         from emo_master.ui.communication_panel import TcpChannelStatusTable, DeviceDiagnosticsView
         self.channelStatus = TcpChannelStatusTable()
         self.diagnostics = DeviceDiagnosticsView()
+        from emo_master.ui.communication_panel import exportDeviceCache
+        self.diagnostics.exportRequested.connect(lambda: exportDeviceCache(self.diagnostics))
+        self.diagnostics.runtimeLogsRequested.connect(self.openRuntimeLogs)
         layout.addWidget(self.detail)
         layout.addWidget(self.channelStatus)
         layout.addWidget(self.diagnostics)
@@ -138,6 +141,16 @@ class DeviceManagementDialog(QDialog):
         self.hide()
         self.client.close()
         self.reader.shutdown(wait=False, cancel_futures=True)
+
+    def openRuntimeLogs(self):
+        host = self.parent()
+        if host is not None and hasattr(host, 'showLogs'):
+            host.showLogs()
+            if hasattr(host, 'logView'):
+                host.logView.setDevice(self.selector.currentData() or '')
+            self.hide()
+        else:
+            self.status.setText('请从 Runtime 本机日志窗口查看所选设备的持久化文件记录。')
 
     def managementAction(self):
         key = self.selector.currentData()

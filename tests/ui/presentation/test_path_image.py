@@ -236,3 +236,43 @@ def testImageReadFinishingAfterPreviewOrHideCannotRestorePicture(qtApp, tmp_path
     waitReady(qtApp, view)
     assert view.image.isNull()
     assert ('设计示例' if retire == 'preview' else '隐藏') in view.message
+
+
+def testReplyIsRetiredOnGuiThreadWhenDeliveryPrecedesWorkerExit(qtApp, tmp_path, monkeypatch):
+    from PySide2.QtCore import Qt
+    from emo_master.ui.presentation import path_image
+
+    path = saveImage(tmp_path / 'photo.png')
+    emitted, release = threading.Event(), threading.Event()
+    destroyedOn = []
+    originalInit = path_image._ImageRead.__init__
+    originalRun = path_image._ImageRead.run
+
+    def recordedInit(self, *args, **kwargs):
+        originalInit(self, *args, **kwargs)
+        self.reply.destroyed.connect(
+            lambda: destroyedOn.append(threading.get_ident()), Qt.DirectConnection)
+
+    def delayedExit(self):
+        originalRun(self)
+        emitted.set()
+        assert release.wait(2)
+
+    monkeypatch.setattr(path_image._ImageRead, '__init__', recordedInit)
+    monkeypatch.setattr(path_image._ImageRead, 'run', delayedExit)
+    view = PathImageView()
+    view.setPath(str(path))
+    view.show()
+    try:
+        qtApp.processEvents()
+        assert emitted.wait(1)
+        # Deliver ready and drop the view's worker reference while run still
+        # owns the runnable. Its eventual destruction must not delete a
+        # GUI-affine QObject on the pool thread.
+        waitReady(qtApp, view)
+        assert not view.image.isNull()
+    finally:
+        release.set()
+        assert QThreadPool.globalInstance().waitForDone(3000)
+    QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+    assert destroyedOn == [threading.get_ident()]

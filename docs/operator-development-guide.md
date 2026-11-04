@@ -226,6 +226,14 @@ manifest 和 meta 的 ID、显示名、版本、PortSpec、完整 paramSchema �
 
 日志使用 `getOperatorLogger(context)`，绑定设备日志使用 `getDeviceLogger(context, slot)`。归属由 Runtime 注入，不伪造 job/node/device ID，不记录口令。
 
+例如 `getDeviceLogger(context, "camera").warning("触发超时", code="CAMERA_TRIGGER_TIMEOUT")` 仍输出
+`node.log`（`originApp=runtime/component=operator`），关联本次冻结 camera 槽位实际设备，
+经 EventStore 写入 SQLite 与 Runtime JSONL，再投影到设备有界缓存，不向设备写日志、不参与原生
+设备故障聚合计数。普通 logger 恰好一个绑定时自动关联；多设备时显式选槽。每次执行取当前
+context，不跨执行缓存 logger；ERROR 不单独决定作业失败，业务 NG 不自动升级系统错误。
+驱动独有诊断通过 `DeviceRuntimeContext.events()` 上报；管理器已有动作结果无需算子重复记录。
+查询、归属及三种历史范围见 [Runtime 事件流程](runtime-event-flow.md)。
+
 ### 失败、取消与已发生的副作用
 
 返回 status=error 或抛出普通 Python 异常均使当前工作流、外层调用及所属 Job 失败，连续运行也退出；不会默认重试或把失败当成跳过。保留已有业务错误码；无错误码的普通异常使用 E_EXEC_FAILED，不用 E_WORKER_CRASHED 冒充业务失败。取消保持取消异常和 E_CANCELLED，不补执行剩余动作。

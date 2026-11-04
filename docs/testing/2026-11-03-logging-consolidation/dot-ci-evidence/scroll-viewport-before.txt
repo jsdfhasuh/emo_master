@@ -1,0 +1,98 @@
+FFFF...F.                                                                [100%]
+=================================== FAILURES ===================================
+_________________ testFullRefreshActuallyShowsNewestRow[False] _________________
+tests/designer/test_log_scroll_viewport.py:51: in testFullRefreshActuallyShowsNewestRow
+    assertLatestVisible(view)
+tests/designer/test_log_scroll_viewport.py:35: in assertLatestVisible
+    assert 0 <= rect.top() <= rect.bottom() < viewport.height(), (
+E   AssertionError: latest row 29: rect=(0, 1073, 127, 36), viewport=(0, 0, 746, 166), top row=0, scrollbar=26/26
+E   assert 1108 < 166
+E    +  where 1108 = <built-in method bottom of PySide2.QtCore.QRect object at 0x7f9064abe8c0>()
+E    +    where <built-in method bottom of PySide2.QtCore.QRect object at 0x7f9064abe8c0> = PySide2.QtCore.QRect(0, 1073, 127, 36).bottom
+E    +  and   166 = <built-in method height of PySide2.QtCore.QRect object at 0x7f905c6f2b40>()
+E    +    where <built-in method height of PySide2.QtCore.QRect object at 0x7f905c6f2b40> = PySide2.QtCore.QRect(0, 0, 746, 166).height
+---------------------------- Captured stderr setup -----------------------------
+QStandardPaths: could not set correct permissions on runtime directory '/home/agent/.local/run', which is a directory permissions 0755 owned by UID 1000 GID 1000 (Read-only file system)
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+Fontconfig error: No writable cache directories
+This plugin does not support propagateSizeHints()
+_________________ testFullRefreshActuallyShowsNewestRow[True] __________________
+tests/designer/test_log_scroll_viewport.py:54: in testFullRefreshActuallyShowsNewestRow
+    assertLatestVisible(view)
+tests/designer/test_log_scroll_viewport.py:35: in assertLatestVisible
+    assert 0 <= rect.top() <= rect.bottom() < viewport.height(), (
+E   AssertionError: latest row 34: rect=(0, 296, 127, 36), viewport=(0, 0, 746, 166), top row=26, scrollbar=31/31
+E   assert 331 < 166
+E    +  where 331 = <built-in method bottom of PySide2.QtCore.QRect object at 0x7f905b6ae0c0>()
+E    +    where <built-in method bottom of PySide2.QtCore.QRect object at 0x7f905b6ae0c0> = PySide2.QtCore.QRect(0, 296, 127, 36).bottom
+E    +  and   166 = <built-in method height of PySide2.QtCore.QRect object at 0x7f905cd6e480>()
+E    +    where <built-in method height of PySide2.QtCore.QRect object at 0x7f905cd6e480> = PySide2.QtCore.QRect(0, 0, 746, 166).height
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+________________ testIncrementalBatchesActuallyFollowNewestRow _________________
+tests/designer/test_log_scroll_viewport.py:72: in testIncrementalBatchesActuallyFollowNewestRow
+    assertLatestVisible(view)
+tests/designer/test_log_scroll_viewport.py:35: in assertLatestVisible
+    assert 0 <= rect.top() <= rect.bottom() < viewport.height(), (
+E   AssertionError: latest row 19: rect=(0, 296, 127, 36), viewport=(0, 0, 746, 166), top row=11, scrollbar=16/16
+E   assert 331 < 166
+E    +  where 331 = <built-in method bottom of PySide2.QtCore.QRect object at 0x7f905b68ccc0>()
+E    +    where <built-in method bottom of PySide2.QtCore.QRect object at 0x7f905b68ccc0> = PySide2.QtCore.QRect(0, 296, 127, 36).bottom
+E    +  and   166 = <built-in method height of PySide2.QtCore.QRect object at 0x7f905b68cdc0>()
+E    +    where <built-in method height of PySide2.QtCore.QRect object at 0x7f905b68cdc0> = PySide2.QtCore.QRect(0, 0, 746, 166).height
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+______________ testFollowingViewportSurvivesFilterResizeAndReopen ______________
+tests/designer/test_log_scroll_viewport.py:81: in testFollowingViewportSurvivesFilterResizeAndReopen
+    assertLatestVisible(view)
+tests/designer/test_log_scroll_viewport.py:35: in assertLatestVisible
+    assert 0 <= rect.top() <= rect.bottom() < viewport.height(), (
+E   AssertionError: latest row 34: rect=(0, 1258, 127, 36), viewport=(0, 0, 746, 166), top row=0, scrollbar=31/31
+E   assert 1293 < 166
+E    +  where 1293 = <built-in method bottom of PySide2.QtCore.QRect object at 0x7f905b623440>()
+E    +    where <built-in method bottom of PySide2.QtCore.QRect object at 0x7f905b623440> = PySide2.QtCore.QRect(0, 1258, 127, 36).bottom
+E    +  and   166 = <built-in method height of PySide2.QtCore.QRect object at 0x7f90889bdc00>()
+E    +    where <built-in method height of PySide2.QtCore.QRect object at 0x7f90889bdc00> = PySide2.QtCore.QRect(0, 0, 746, 166).height
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+____________ testPausedViewportPreservesHistoryAndSelection[reopen] ____________
+tests/designer/test_log_scroll_viewport.py:120: in testPausedViewportPreservesHistoryAndSelection
+    assert view._visibleEntries[view.table.rowAt(0)] is anchor
+E   AssertionError: assert StructuredLogEntry(timestampMs=16, level='INFO', message='message-015', source='designer', eventType='', jobId='', wor...anceToken='', workflowName='', nodeName='', originApp='', component='', runtimeInstanceId='', sequence=0, eventId=None) is StructuredLogEntry(timestampMs=11, level='INFO', message='message-010', source='designer', eventType='', jobId='', wor...anceToken='', workflowName='', nodeName='', originApp='', component='', runtimeInstanceId='', sequence=0, eventId=None)
+---------------------------- Captured stderr setup -----------------------------
+This plugin does not support propagateSizeHints()
+=========================== short test summary info ============================
+FAILED tests/designer/test_log_scroll_viewport.py::testFullRefreshActuallyShowsNewestRow[False]
+FAILED tests/designer/test_log_scroll_viewport.py::testFullRefreshActuallyShowsNewestRow[True]
+FAILED tests/designer/test_log_scroll_viewport.py::testIncrementalBatchesActuallyFollowNewestRow
+FAILED tests/designer/test_log_scroll_viewport.py::testFollowingViewportSurvivesFilterResizeAndReopen
+FAILED tests/designer/test_log_scroll_viewport.py::testPausedViewportPreservesHistoryAndSelection[reopen]
+5 failed, 4 passed in 1.30s

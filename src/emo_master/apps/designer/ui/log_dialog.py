@@ -223,6 +223,7 @@ try:
             self._pendingEvicted: list[StructuredLogEntry] = []
             self._detailEntry: StructuredLogEntry | None = None
             self._viewDirty = False
+            self._updatingTable = False
             self._filterCounts: dict[str, Counter[Any]] = {
                 name: Counter() for name in ("jobId", "eventType", "workflow", "node")}
             self._workflowNames: dict[tuple[str, ...], str] = {}
@@ -963,7 +964,9 @@ try:
                 return
             scrollBar = self.table.verticalScrollBar()
             scrollPosition = scrollBar.value()
-            scrollBlocked = scrollBar.blockSignals(True)
+            # Qt needs scrollbar signals to update the viewport/header offset.
+            # Suppress only our follow-mode callbacks during table mutations.
+            self._updatingTable = True
             tableBlocked = self.table.blockSignals(True)
             self.table.setUpdatesEnabled(False)
             try:
@@ -987,7 +990,7 @@ try:
             finally:
                 self.table.setUpdatesEnabled(True)
                 self.table.blockSignals(tableBlocked)
-                scrollBar.blockSignals(scrollBlocked)
+                self._updatingTable = False
             self._updateFilterStatus()
             self._showDetails(self.table.currentRow(), 0)
 
@@ -1003,7 +1006,9 @@ try:
             self._visibleEntries = [entry for entry in self._entries if self._matches(entry)]
             self._visibleErrorCount = sum(_isError(entry) for entry in self._visibleEntries)
             self._viewDirty = False
-            scrollBlocked = scrollBar.blockSignals(True)
+            # Qt needs scrollbar signals to update the viewport/header offset.
+            # Suppress only our follow-mode callbacks during table mutations.
+            self._updatingTable = True
             tableBlocked = self.table.blockSignals(True)
             self.table.setUpdatesEnabled(False)
             try:
@@ -1020,7 +1025,7 @@ try:
             finally:
                 self.table.setUpdatesEnabled(True)
                 self.table.blockSignals(tableBlocked)
-                scrollBar.blockSignals(scrollBlocked)
+                self._updatingTable = False
             self._updateFilterStatus()
             self._showDetails(self.table.currentRow(), 0)
 
@@ -1161,11 +1166,12 @@ try:
                 self.table.scrollToBottom()
 
         def _onScrollChanged(self, value: int) -> None:
-            if value < self.table.verticalScrollBar().maximum():
+            if not self._updatingTable and value < self.table.verticalScrollBar().maximum():
                 self.autoScrollCheck.setChecked(False)
 
         def _onScrollRangeChanged(self, _minimum: int, _maximum: int) -> None:
-            self._onAutoScrollChanged(self.autoScrollCheck.isChecked())
+            if not self._updatingTable:
+                self._onAutoScrollChanged(self.autoScrollCheck.isChecked())
 
 
     class RuntimeLogDock(QDockWidget):

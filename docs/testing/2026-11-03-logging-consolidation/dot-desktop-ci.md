@@ -94,3 +94,8 @@ CI/原生 Qt 自动化、源码测试、浏览器自动化、人工可见点击�
 Designer/Runtime 两个手动冻结 workflow 仍 **BLOCKED / NOT_RUN**：没有可用已认证 dispatch 入口，未创建凭据、改变触发条件或使用用户电脑绕过。实际 workflow 的 `publish_release=false`、packager `91766f6d18ca9a333f64cf1c6030202457ec4a8a` 不变，之后可执行时 source_ref 必须重新取当时最终完整 HEAD。正式可见桌面八组及 `DesignerOpen=NOT_RUN` 也未解除，不能用 Windows Qt、Web 或包源码自检代替。真实设备/LAN/部署/发布均未执行。
 
 本次收尾只追加本报告和终态证据，不修改源码、测试、配置或 workflow。文档提交会有新的 HEAD 和自己的 CI；上述 d196970f 的通过/失败不能标为新 HEAD 的结果。新 HEAD 的运行需另行跟踪至终态，并在交付说明中给出其精确 SHA、run/attempt 与状态；不为更新本节的状态而无限追加提交。
+
+
+## 2026-11-04：实际云桌面发现的日志视口修复
+
+后续正式云桌面已可用，并在正常 SDK 示例运行/日志初开中发现可见视口与滚动条错位。新的失败、根因、局部补丁、恢复后回归及正式初开复测见 [日志视口修复记录](scroll-viewport-fix.md)。上文 NOT_RUN 为当时状态，不能替代后续分项证据；局部通过也不等于完整八组桌面/冻结验收通过。

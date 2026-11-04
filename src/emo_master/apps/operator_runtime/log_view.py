@@ -177,8 +177,14 @@ class LogFeed(QObject):
                 result = "导出已取消；目标文件未替换。"
             except Exception as error:
                 result = "导出失败：" + safeText(error)
-            self._exportCompleted.emit(result)
+            return result
+        def completed(future):
+            if not future.cancelled():
+                self._exportCompleted.emit(future.result())
         self.exportWorker = self.exportPool.submit(run)
+        # Publish only after Future.done() is true so the terminal message and
+        # export controls agree, even when Qt handles the signal immediately.
+        self.exportWorker.add_done_callback(completed)
         self.updated.emit()
 
     def _acceptExport(self, message):

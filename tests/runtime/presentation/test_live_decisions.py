@@ -4,6 +4,7 @@ import json
 import threading
 import time
 
+import grpc
 import numpy as np
 import pytest
 
@@ -115,7 +116,16 @@ def testTwoNetworkConsumersAll96ChangingImagesAndExplicitSupersession(channel, t
     for index, client in enumerate(clients):
         original = client._readImage
         def read(value, image, _original=original, _index=index):
-            decoded = _original(value, image)
+            try:
+                decoded = _original(value, image)
+            except grpc.RpcError:
+                # Failure-only observation; preserve the original read error.
+                try:
+                    from tests.runtime.presentation.asset_read_diagnostics import emitAssetReadFailure
+                    emitAssetReadFailure(server, clients, _index, value)
+                except Exception:
+                    pass
+                raise
             ordinal = value.identity.resultOrdinal
             np.testing.assert_array_equal(decoded, pixels(ordinal))
             assert image.ownerResultKey == value.identity.resultKey

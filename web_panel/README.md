@@ -19,7 +19,7 @@ npm --prefix web_panel/frontend run build
 & web_panel/.venv/Scripts/emo-web-panel.exe --data-dir D:/EmoWeb/panel-data serve --mode grpc --runtime-address 127.0.0.1:50051
 ```
 
-将示例地址换成实际 Runtime 地址。默认运行面板是 `http://127.0.0.1:8780/`，独立编辑器是 `http://127.0.0.1:8780/editor`。新安装没有默认用户或密码，`create-user` 交互输入密码。编辑需要 admin 权限；操作员和查看者按现有 Runtime 目标授权访问。目标记录持久化后，管理员保存的连接地址优先于启动命令中的初始地址。
+将示例地址换成实际 Runtime 地址。默认运行面板是 `http://127.0.0.1:8780/`，独立编辑器是 `http://127.0.0.1:8780/editor`。新安装没有默认用户或密码，`create-user` 默认交互输入密码；无人值守初始化可用 `create-user admin --password-file <本机私有密码文件路径>`，格式、权限和清理要求见[密码文件初始化](docs/DEPLOYMENT.md#密码文件初始化)。编辑需要 admin 权限；操作员和查看者按现有 Runtime 目标授权访问。目标记录持久化后，管理员保存的连接地址优先于启动命令中的初始地址。
 
 本机仓库的 C: 路径经 junction 指向 D:；Node/Vite 开发构建请从实际 `D:\jsdfhasuh\documents\my_project\emo_master` 执行，避免跨盘 realpath 产生输出路径错误。已构建wheel的运行不需要Node。
 

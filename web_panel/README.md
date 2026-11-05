@@ -21,6 +21,8 @@ npm --prefix web_panel/frontend run build
 
 将示例地址换成实际 Runtime 地址。默认运行面板是 `http://127.0.0.1:8780/`，独立编辑器是 `http://127.0.0.1:8780/editor`。新安装没有默认用户或密码，`create-user` 默认交互输入密码；无人值守初始化可用 `create-user admin --password-file <本机私有密码文件路径>`，格式、权限和清理要求见[密码文件初始化](docs/DEPLOYMENT.md#密码文件初始化)。编辑需要 admin 权限；操作员和查看者按现有 Runtime 目标授权访问。目标记录持久化后，管理员保存的连接地址优先于启动命令中的初始地址。
 
+若只在可信本机使用，可跳过 `create-user`，给 `serve` 明确追加 `--local-no-auth`。首次打开即可使用本机管理员身份，无需创建账号或密码；默认仍是密码模式。**该管理员可编辑、发布并启停全部已登记的 Runtime，包括远端目标**。本机其他用户与进程也可使用此入口，不能通过反向代理或隧道向外开放。退出后需明确点击“进入本机模式”；真正关闭免密入口须停止服务或移除选项后重启。完整限制见[本机免密管理员模式](docs/DEPLOYMENT.md#本机免密管理员模式)。
+
 本机仓库的 C: 路径经 junction 指向 D:；Node/Vite 开发构建请从实际 `D:\jsdfhasuh\documents\my_project\emo_master` 执行，避免跨盘 realpath 产生输出路径错误。已构建wheel的运行不需要Node。
 
 `--mode mock` 是明确标注的合成演示，适合查看编辑操作，不作为 gRPC 连接失败时的回退。普通局域网 gRPC 不需要 TLS/mTLS。Web 的非回环监听使用明确的 `--host` 和 `--allowed-origin`，见[独立交付和备份恢复](docs/DEPLOYMENT.md)。

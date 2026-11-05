@@ -40,12 +40,17 @@ async function login(username='alice'){await input(document.querySelector('input
 function source(name='A saved'){return {schemaVersion:'1.2',defaultPageId:'page',pageOrder:['page'],navigation:{mode:'tabs'},dataSources:{},resultScopes:{},pages:{page:{name,targets:['web'],layout:{type:'responsive',direction:'vertical',spacing:12},components:[],resultScopeIds:[]}}};}
 async function fixture(options={}){
  clearSourceModules();
+ history.replaceState(null,'',options.route || '/editor');
  sessionStorage.clear();globalThis.confirm=()=>true;
- const f={project:'A',instance:'one',username:'alice',authenticated:true,expire:'',revision:1,docs:{A:source(),B:source('B saved')},saves:[],attempts:[],publishes:[],holdSave:undefined,holdSaveBody:undefined,targetIds:['configured'],...options};
+ const f={project:'A',instance:'one',username:'alice',authenticated:true,expire:'',revision:1,docs:{A:source(),B:source('B saved')},saves:[],attempts:[],publishes:[],holdSave:undefined,holdSaveBody:undefined,targetIds:['configured'],localNoAuth:false,localSessions:0,requests:[],...options};
  const reply=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
- const identity=()=>({userId:'user-'+f.username,username:f.username,role:'admin',csrf:'synthetic'});
+ const identity=()=>({userId:'user-'+f.username,username:f.username,role:'admin',csrf:'synthetic',localNoAuth:f.localNoAuth,authMode:f.localAuth?'local':'password'});
  globalThis.fetch=async(path,options={})=>{
-  if(path==='/api/session'){f.username=JSON.parse(options.body).username;f.authenticated=true;return reply(identity());}
+  f.requests.push({path,method:options.method || 'GET'});
+  if(path==='/api/health')return reply({localNoAuth:f.localNoAuth},f.healthStatus || 200);
+  if(path==='/api/local/session'){assert.equal(options.method,'POST');assert.equal(options.headers.get('X-Local-Session'),'1');assert.equal(options.body,undefined);f.localSessions++;f.authenticated=true;f.localAuth=true;f.username='local-admin';return reply(identity());}
+  if(path==='/api/admin/users' || path==='/api/admin/runtimes')return reply([]);
+  if(path==='/api/session'){f.localAuth=false;f.username=JSON.parse(options.body).username;f.authenticated=true;return reply(identity());}
   if(path===f.expire){f.authenticated=false;f.expire='';}
   if(!f.authenticated)return reply({detail:'Login required'},401);
   if(path==='/api/me')return reply(identity());
@@ -73,9 +78,10 @@ async function fixture(options={}){
  const {App}=require('../src/main.tsx');
  let root=createRoot(document.getElementById('root'));
  await act(async()=>root.render(React.createElement(React.StrictMode,null,React.createElement(App))));
- await waitFor(()=>nameInput());
+ const ready=options.ready || (()=>f.route==='/'?button('退出'):nameInput());
+ await waitFor(ready);
  f.close=async()=>{await act(async()=>root.unmount());};
- f.reload=async()=>{await f.close();clearSourceModules();const {App:FreshApp}=require('../src/main.tsx');root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(React.StrictMode,null,React.createElement(FreshApp))));await waitFor(()=>nameInput());};
+ f.reload=async(check=ready)=>{await f.close();clearSourceModules();const {App:FreshApp}=require('../src/main.tsx');root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(React.StrictMode,null,React.createElement(FreshApp))));await waitFor(check);};
  return f;
 }
 
@@ -152,4 +158,87 @@ test('configured targets with the same projectId keep their recovery drafts sepa
 });
 test('blocked browser storage warns and still recovers after in-page reauthentication',async()=>{
  const f=await fixture(),storage=globalThis.sessionStorage;try{globalThis.sessionStorage={getItem(){throw Error('blocked');},setItem(){throw Error('blocked');},removeItem(){throw Error('blocked');}};await rename('in-page recovery');assert.match(document.body.textContent,/浏览器暂不能保存恢复副本/);await click('退出');await login();assert.equal(nameInput().value,'in-page recovery');assert.equal(f.saves.length,0);}finally{globalThis.sessionStorage=storage;await f.close();}
+});
+
+
+test('local first visit enters once under StrictMode without creating an account and warns on both routes',async()=>{
+ for(const route of ['/editor','/']){
+  const f=await fixture({route,localNoAuth:true,authenticated:false,targetIds:route==='/'?[]:['configured']});
+  try{
+   assert.equal(f.localSessions,1);
+   assert.equal(document.querySelector('.login'),null);
+   assert.match(document.querySelector('[role="note"]').textContent,/本机免密管理员，可控制全部已登记 Runtime/);
+   assert.match(document.querySelector('[role="note"]').textContent,/退出不关闭免密入口.*--local-no-auth/);
+   await f.reload();assert.equal(f.localSessions,1,'existing session survives reload without another issuance');
+  }finally{await f.close();}
+ }
+});
+
+test('local expiry and logout require explicit reentry, preserve drafts, and never replay writes even after reload',async()=>{
+ const f=await fixture({localNoAuth:true,authenticated:false});
+ try{
+  await rename('local unsaved draft');
+  f.expire='/api/editor/configured/draft';await click('保存草稿');
+  await waitFor(()=>button('进入本机模式'));
+  assert.equal(f.localSessions,1);assert.equal(f.saves.length,0);
+  await f.reload(()=>button('进入本机模式'));
+  assert.equal(f.localSessions,1,'reload must not silently recreate an expired session');
+  await click('进入本机模式');await waitFor(()=>nameInput());
+  assert.equal(f.localSessions,2);assert.equal(nameInput().value,'local unsaved draft');assert.equal(f.saves.length,0);
+  await click('退出');await waitFor(()=>button('进入本机模式'));
+  await f.reload(()=>button('进入本机模式'));
+  assert.equal(f.localSessions,2,'logout remains effective after reload');
+  await click('进入本机模式');await waitFor(()=>nameInput());
+  assert.equal(f.localSessions,3);assert.equal(nameInput().value,'local unsaved draft');assert.equal(f.saves.length,0);
+  await save();assert.equal(f.saves.length,1);assert.equal(f.publishes.length,0);
+ }finally{await f.close();}
+});
+
+test('ordinary accounts remain signed in and see the open local-mode warning',async()=>{
+ const f=await fixture({localNoAuth:true});
+ try{assert.equal(f.localSessions,0);assert.match(document.querySelector('[role="note"]').textContent,/服务仍开放本机免密入口/);assert.ok(document.body.textContent.includes('alice'));}
+ finally{await f.close();}
+});
+
+test('health 401 cannot invalidate a valid ordinary account or block legacy bootstrap',async()=>{
+ const f=await fixture({healthStatus:401});
+ try{assert.ok(nameInput());assert.equal(f.localSessions,0);assert.equal(document.querySelector('[role="note"]'),null);}
+ finally{await f.close();}
+});
+
+
+test('local runtime reentry restores the original pending command without querying or resubmitting it',async()=>{
+ const f=await fixture({route:'/',targetIds:[],localNoAuth:true,authenticated:false});
+ try{
+  const original={id:'original-request',kind:'start',target:'configured/workflow',runtimeId:'configured',runtimeInstanceId:'one',projectId:'A',state:'unknown'};
+  const key='emo-pending:user-local-admin';sessionStorage.setItem(key,JSON.stringify(original));
+  await f.reload();assert.ok(button('查询操作结果'));
+  f.expire='/api/runtimes';await click('刷新页面包和状态');await waitFor(()=>button('进入本机模式'));
+  assert.equal(f.localSessions,1);assert.deepEqual(JSON.parse(sessionStorage.getItem(key)),original);
+  const before=f.requests.length;
+  await click('进入本机模式');await waitFor(()=>button('查询操作结果'));
+  assert.equal(f.localSessions,2);assert.deepEqual(JSON.parse(sessionStorage.getItem(key)),original);
+  assert.deepEqual(f.requests.slice(before).filter(x=>x.method!=='GET').map(x=>x.path),['/api/local/session']);
+  assert.equal(f.requests.some(x=>x.path.includes('original-request')),false,'queries also require an explicit click');
+ }finally{await f.close();}
+});
+
+
+test('blocked storage never prevents explicit local entry or restores a session automatically',async()=>{
+ const storage=globalThis.sessionStorage;
+ for(const blockedRead of [true,false]){
+  globalThis.sessionStorage={clear(){},getItem(){if(blockedRead)throw Error('blocked');return null;},setItem(){throw Error('blocked');},removeItem(){throw Error('blocked');}};
+  let f;
+  try{
+   f=await fixture({route:'/',targetIds:[],localNoAuth:true,authenticated:false,ready:()=>button('进入本机模式')});
+   assert.equal(f.localSessions,0,'unavailable recovery storage requires explicit first entry');
+   await click('进入本机模式');await waitFor(()=>button('退出'));
+   assert.equal(f.localSessions,1);assert.ok(document.body.textContent.includes('本机管理员'));
+   await f.reload(()=>button('退出'));
+   assert.equal(f.localSessions,1,'valid server session remains usable despite blocked marker write');
+   await click('退出');await waitFor(()=>button('进入本机模式'));
+   await f.reload(()=>button('进入本机模式'));assert.equal(f.localSessions,1);
+   await click('进入本机模式');await waitFor(()=>button('退出'));assert.equal(f.localSessions,2);
+  }finally{if(f)await f.close();globalThis.sessionStorage=storage;}
+ }
 });

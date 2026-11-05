@@ -24,6 +24,7 @@ from .packages import PackageStore
 from .registry import RuntimeRegistry, RegistryDenied
 from .resource_cache import ResourceCache
 from .editor_routes import install_editor_routes
+from .local_access import LocalAccessGuard
 
 COOKIE='emo_panel_session'
 
@@ -35,7 +36,7 @@ def create_app(config: Config, runtime=None, gateway_log=None):
     config.data_dir.mkdir(parents=True,exist_ok=True)
     own_gateway_log=gateway_log is None
     gateway_log=gateway_log or GatewayLog(config.data_dir)
-    auth=AuthStore(config.data_dir/'web.sqlite',config.session_ttl)
+    auth=AuthStore(config.data_dir/'web.sqlite',config.session_ttl,local_no_auth=config.local_no_auth)
     registry=RuntimeRegistry(config.data_dir/'web.sqlite')
     packages=PackageStore(config.data_dir/'packages',database=config.data_dir/'web.sqlite')
     service_actor={'username':'web-service','role':'admin'}
@@ -175,7 +176,22 @@ def create_app(config: Config, runtime=None, gateway_log=None):
                            elapsedMs=round((time.monotonic()-started)*1000))
         return response
     @app.get('/api/health')
-    async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':'1.5.0','preview':config.preview}
+    async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':'1.5.0','preview':config.preview,'localNoAuth':config.local_no_auth}
+    @app.post('/api/local/session')
+    async def local_session(req:Request):
+        if not config.local_no_auth:raise HTTPException(404,'Local passwordless mode is disabled')
+        # LocalAccessGuard checks the actual peer and exact Origin for this POST.
+        # The custom header also excludes form submissions and cross-site fetches.
+        if req.headers.get('x-local-session') != '1':raise HTTPException(403,'Explicit local session request required')
+        token=req.cookies.get(COOKIE)
+        who=await asyncio.to_thread(auth.session,token)
+        if not who or who.get('authMode') != 'local':
+            token=await asyncio.to_thread(auth.login_local)
+            who=await asyncio.to_thread(auth.session,token)
+            await asyncio.to_thread(auth.audit,who['username'],'local_session','local-no-auth','succeeded')
+        response=JSONResponse({**who,'mode':config.mode,'localNoAuth':True})
+        response.set_cookie(COOKIE,token,httponly=True,samesite='strict',secure=config.secure_cookie,max_age=config.session_ttl)
+        return response
     @app.post('/api/preview/session')
     async def preview_session(req:Request):
         nonlocal preview_used
@@ -204,11 +220,11 @@ def create_app(config: Config, runtime=None, gateway_log=None):
             login_failures[ip]=prior+[now]
             raise HTTPException(401,'Invalid credentials')
         me=await asyncio.to_thread(auth.session,token)
-        response=JSONResponse({**me,'mode':config.mode})
+        response=JSONResponse({**me,'mode':config.mode,'localNoAuth':config.local_no_auth})
         response.set_cookie(COOKIE,token,httponly=True,samesite='strict',secure=config.secure_cookie,max_age=config.session_ttl)
         return response
     @app.get('/api/me')
-    async def me(req:Request):return {**await identity(req),'mode':config.mode,'preview':config.preview}
+    async def me(req:Request):return {**await identity(req),'mode':config.mode,'preview':config.preview,'localNoAuth':config.local_no_auth}
     @app.post('/api/logout')
     async def logout(req:Request):
         who=await identity(req,mutating=True)
@@ -704,4 +720,5 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         if not (static/'index.html').is_file():raise HTTPException(503,'Build the Web frontend before opening the editor')
         return FileResponse(static/'index.html')
     if static.exists():app.mount('/',StaticFiles(directory=static,html=True),name='frontend')
+    if config.local_no_auth:app.add_middleware(LocalAccessGuard,config=config)
     return app

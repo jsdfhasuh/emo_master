@@ -1,3 +1,4 @@
+import { LocalModeWarning } from '../components/LocalModeWarning';
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, DragEvent } from 'react';
 import { api, ApiError, onSessionExpired } from '../data/api';
@@ -231,8 +232,9 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
             {selected===c.componentId && <button aria-label="拖动调整组件尺寸" className="editor-resize" onPointerDown={e=>resize(e,c.componentId)} onClick={e=>e.stopPropagation()}>↘</button>}
         </section>;
     }
-    if(me.role!=='admin' || me.preview)return <main><h1>Web 页面编辑器</h1><p>编辑需要管理员会话。</p><a href="/">返回运行页面</a></main>;
-    return <main className="web-editor"><header className="editor-header"><div><span className="editor-eyebrow">EMOMASTER / WEB PANEL</span><h1>Web 页面编辑器</h1></div><div className="editor-session"><a href="/">运行页面 ↗</a><span>{me.username}</span><button disabled={busy} onClick={logout}>退出</button></div></header>
+    if(me.role!=='admin' || me.preview)return <main><h1>Web 页面编辑器</h1>{(me.localNoAuth || me.authMode==='local') && <LocalModeWarning me={me}/>}<p>编辑需要管理员会话。</p><a href="/">返回运行页面</a></main>;
+    return <main className="web-editor"><header className="editor-header"><div><span className="editor-eyebrow">EMOMASTER / WEB PANEL</span><h1>Web 页面编辑器</h1></div><div className="editor-session"><a href="/">运行页面 ↗</a><span>{me.authMode==='local'?'本机管理员':me.username}</span><button disabled={busy} onClick={logout}>退出</button></div></header>
+        {(me.localNoAuth || me.authMode==='local') && <LocalModeWarning me={me}/>}
         <section className="editor-toolbar"><label>Runtime<select aria-label="编辑 Runtime 目标" value={runtimeId} disabled={busy} onChange={e=>{if(changed && !confirm('当前草稿尚未保存，将在本标签页保留，切回同一工程可继续编辑。是否切换目标？'))return;setRuntimeId(e.target.value);}}>{targets.map(t=><option key={t.id} value={t.id}>{t.alias || t.id} · {t.mode}</option>)}</select></label><div className="editor-project"><strong>{context?.runtime.projectName || projectId || '请选择 Runtime 工程'}</strong><small>{context?.runtime.runtimeInstanceId || '—'} · 工程修订 {context?.runtime.documentRevision || context?.runtime.configurationRevision || '—'}</small></div><span className={`editor-draft-state ${changed?'dirty':''}`}>{changed?'● 未保存':'✓ 草稿已保存'}</span><button disabled={busy || !doc} onClick={()=>perform(async()=>{await save();})}>保存草稿</button><button disabled={busy || !doc} onClick={()=>perform(()=>openPreview('fixtures'))}>示例预览</button><button disabled={busy || !doc || !runId} onClick={()=>perform(()=>openPreview('runtime'))}>实时预览</button><button className="editor-primary" disabled={busy || !doc || Boolean(pendingPublishId)} onClick={()=>perform(()=>publish())}>发布页面</button></section>
         {error && <div role="alert" className="alert">{error}<button onClick={()=>setError('')}>关闭</button></div>}{notice && <div role="status" className="notice">{notice}</div>}
         {recoveryWarning && <p role="alert" className="alert">{recoveryWarning}</p>}

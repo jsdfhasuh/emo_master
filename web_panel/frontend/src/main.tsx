@@ -17,18 +17,48 @@ import './style.css';
 import { WorkflowInputs } from './components/WorkflowInputs';
 import { RuntimeStatus } from './components/RuntimeStatus';
 import { Admin } from './components/Admin';
+import { LocalModeWarning } from './components/LocalModeWarning';
 const Editor = lazy(() => import('./editor/Editor'));
 const editorRoute = location.pathname === '/editor' || location.pathname.startsWith('/editor/');
 let bootstrapSession: Promise<Me> | undefined;
+let bootstrapLocalNoAuth = false;
+const localEntryKey = 'emo-local-session-entered';
+function markLocalEntry() {
+    try { sessionStorage.setItem(localEntryKey, '1'); return true; } catch { return false; }
+}
+function canAutoEnterLocal() {
+    // Without storage, require a click rather than forgetting logout on reload.
+    try { return !sessionStorage.getItem(localEntryKey) && markLocalEntry(); } catch { return false; }
+}
+async function enterLocalSession() {
+    markLocalEntry();
+    return api<Me>('/api/local/session', {method:'POST', headers:{'X-Local-Session':'1'}});
+}
 function loadSession() {
     if (bootstrapSession) return bootstrapSession;
     const url=new URL(location.href);const token=url.searchParams.get('token');
     if(token){url.searchParams.delete('token');history.replaceState(null,'',url.pathname+url.search+url.hash)}
-    bootstrapSession=token?api<Me>('/api/preview/session',{method:'POST',body:JSON.stringify({token})}):api<Me>('/api/me');
+    bootstrapSession = (async () => {
+        if(token)return api<Me>('/api/preview/session',{method:'POST',body:JSON.stringify({token})});
+        // Older/password-only servers may not expose public health. This probe must
+        // never invalidate an existing session or change its request generation.
+        try { bootstrapLocalNoAuth = (await api<{localNoAuth?:boolean}>('/api/health', {ignoreSessionExpiry:true})).localNoAuth === true; } catch { }
+        try {
+            const me = await api<Me>('/api/me', {ignoreSessionExpiry:true});
+            bootstrapLocalNoAuth = bootstrapLocalNoAuth || me.localNoAuth === true || me.authMode === 'local';
+            if(bootstrapLocalNoAuth)markLocalEntry();
+            return me;
+        } catch(e) {
+            if(bootstrapLocalNoAuth && e instanceof ApiError && e.status===401 && canAutoEnterLocal())return enterLocalSession();
+            throw e;
+        }
+    })();
     return bootstrapSession;
 }
 function App() {
     const [me, setMe] = useState<Me>();
+    const [localNoAuth, setLocalNoAuth] = useState(false);
+    const [booting, setBooting] = useState(true);
     const [error, setError] = useState('');
     const [catalogError, setCatalogError] = useState('');
     const sessionEpoch = useRef(0);
@@ -200,7 +230,7 @@ function App() {
     useEffect(()=>{if(!editorRoute && me && activeRuntime.current)void refreshRef.current?.().catch(()=>{});},[runtimeId]);
     useEffect(() => {
         const epoch=sessionEpoch.current;
-        loadSession().then(m=>{if(epoch===sessionEpoch.current){setCsrf(m.csrf);setMe(m)}}).catch(()=>{});
+        loadSession().then(m=>{if(epoch===sessionEpoch.current){setCsrf(m.csrf);setMe(m)}}).catch(()=>{}).finally(()=>{setLocalNoAuth(bootstrapLocalNoAuth);setBooting(false)});
     }, []);
     useEffect(() => { if (me && !editorRoute)
         refresh().catch(()=>{}); }, [me]);
@@ -345,6 +375,13 @@ function App() {
         connect();
         return () => { queue.invalidate(); invalidateCandidates.current = undefined; restagePage.current = undefined; retireExpiredLive.current=undefined; frozenKeys.current = undefined; expiredScopes.current.clear(); closed = true; generation.current++; abort.abort(); Object.values(aborts).forEach(a => a.abort()); clearTimeout(retry); socket?.close(); };
     }, [viewId]);
+    async function enterLocal() {
+        if(busy)return;
+        const epoch=sessionEpoch.current;setBusy(true);setError('');
+        try { const m=await enterLocalSession();if(epoch!==sessionEpoch.current)return;sessionEpoch.current++;setCsrf(m.csrf);setMe(m); }
+        catch(e) { if(epoch===sessionEpoch.current)setError((e as Error).message); }
+        finally { setBusy(false); }
+    }
     async function login(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); const f = new FormData(event.currentTarget); setBusy(true); setError(''); try {
         const m = await api<Me>('/api/session', { method: 'POST', body: JSON.stringify({ username: f.get('username'), password: f.get('password') }) });
         sessionEpoch.current++;
@@ -416,11 +453,13 @@ function App() {
         setBusy(false);
     } }
     const canControl = me?.role !== 'viewer' && Boolean(runtimes.find(r=>r.id===runtimeId)?.permissions?.includes('control'));
+    if (booting) return <main>正在检查会话…</main>;
     if (!me)
-        return <main className="login"><h1>Emo Web 操作员面板</h1><p>独立展示客户端，不执行工作流或控制设备驱动。</p><form onSubmit={login}><label>用户名<input name="username" autoComplete="username" required/></label><label>密码<input name="password" type="password" autoComplete="current-password" required/></label><button disabled={busy}>{busy ? '登录中…' : '登录'}</button></form>{error && <p role="alert">{error}</p>}</main>;
+        return <main className="login"><h1>Emo Web 操作员面板</h1><p>独立展示客户端，不执行工作流或控制设备驱动。</p>{localNoAuth && <><LocalModeWarning/><button disabled={busy} onClick={enterLocal}>{busy ? '正在进入…' : '进入本机模式'}</button></>}<form onSubmit={login}><label>用户名<input name="username" autoComplete="username" required/></label><label>密码<input name="password" type="password" autoComplete="current-password" required/></label><button disabled={busy}>{busy ? '登录中…' : '登录'}</button></form>{error && <p role="alert">{error}</p>}</main>;
     if (editorRoute) return <Suspense fallback={<main>正在加载 Web 页面编辑器…</main>}><Editor me={me} onLogout={logout}/></Suspense>;
-    return <main><header><div><h1>Emo Web 操作员面板</h1><p>{me.preview ? '只读预览 · 不启动或停止生产' : me.mode === 'mock' ? '模拟 Runtime · 演示数据，不代表生产设备' : '真实 Runtime 模式 · 能力以合同为准'}</p></div><div>{me.role==='admin' && !me.preview && <a href="/editor">编辑 Web 页面</a>} {me.username} · {me.role}<button disabled={busy} onClick={logout}>退出</button></div></header>
+    return <main><header><div><h1>Emo Web 操作员面板</h1><p>{me.preview ? '只读预览 · 不启动或停止生产' : me.mode === 'mock' ? '模拟 Runtime · 演示数据，不代表生产设备' : '真实 Runtime 模式 · 能力以合同为准'}</p></div><div>{me.role==='admin' && !me.preview && <a href="/editor">编辑 Web 页面</a>} {me.authMode==='local'?'本机管理员':me.username} · {me.role}<button disabled={busy} onClick={logout}>退出</button></div></header>
  {error && <div className="alert" role="alert">{error}<button onClick={() => setError('')}>关闭</button></div>}{catalogError && <div className="alert" role="alert">{catalogError}<button onClick={() => setCatalogError('')}>关闭</button></div>}{notice && <div className="notice" role="status">{notice}</div>}
+ {(me.localNoAuth || me.authMode==='local' || localNoAuth) && <LocalModeWarning me={me}/>}
  <section className="toolbar"><label>Runtime<select aria-label="Runtime 目标" value={runtimeId} onChange={e => selectTarget(e.target.value)}>{runtimes.map(r => <option key={r.id} value={r.id}>{r.alias || r.id} · {r.mode}</option>)}</select></label><label>页面包<select aria-label="页面包" value={panel?.id || ''} onChange={async (e) => { const rid=activeRuntime.current,ticket=++catalogGeneration.current;catalogAbort.current?.abort();setCatalogBusy(false);try {
         const next=await api<Panel>(`/api/panels/${encodeURIComponent(e.target.value)}?${targetContext(rid,infoRef.current?.projectId,infoRef.current?.runtimeInstanceId)}`);if(rid===activeRuntime.current && ticket===catalogGeneration.current)setPanel(next);
     }

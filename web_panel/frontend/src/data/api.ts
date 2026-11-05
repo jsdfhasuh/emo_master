@@ -11,14 +11,16 @@ export function onSessionExpired(listener: () => void) {
 }
 export function getSessionGeneration() { return sessionGeneration; }
 export function setCsrf(value: string) { csrf = value; sessionGeneration++; }
-async function request(path: string, options: RequestInit = {}): Promise<Response> {
+type ApiOptions = RequestInit & { ignoreSessionExpiry?: boolean };
+async function request(path: string, options: ApiOptions = {}): Promise<Response> {
+    const { ignoreSessionExpiry, ...fetchOptions } = options;
     const requestSession = sessionGeneration;
     const headers = new Headers(options.headers);
     if (options.body && !(options.body instanceof Blob))
         headers.set('Content-Type', 'application/json');
     if (options.method && !['GET', 'HEAD'].includes(options.method))
         headers.set('X-CSRF-Token', csrf);
-    const res = await fetch(path, { ...options, headers, credentials: 'same-origin' });
+    const res = await fetch(path, { ...fetchOptions, headers, credentials: 'same-origin' });
     if (!res.ok) {
         let message = `请求失败 (${res.status})`, code = '', runtimeInstanceId = '';
         try {
@@ -28,7 +30,7 @@ async function request(path: string, options: RequestInit = {}): Promise<Respons
             runtimeInstanceId = typeof body.runtimeInstanceId === 'string' ? body.runtimeInstanceId : '';
         }
         catch { }
-        if (res.status === 401 && !['/api/session', '/api/preview/session'].includes(path)) {
+        if (res.status === 401 && !ignoreSessionExpiry && !['/api/session', '/api/preview/session', '/api/local/session'].includes(path)) {
             message = '会话已失效，请重新登录；未确认操作已保留，不会自动重发。';
             if (requestSession === sessionGeneration) sessionExpiredListeners.forEach(listener => listener());
         }
@@ -36,7 +38,7 @@ async function request(path: string, options: RequestInit = {}): Promise<Respons
     }
     return res;
 }
-export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function api<T>(path: string, options: ApiOptions = {}): Promise<T> {
     const res = await request(path, options);
     return res.status === 204 ? undefined as T : parseLosslessJSON(await res.text()) as T;
 }

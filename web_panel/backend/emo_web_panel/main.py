@@ -81,6 +81,8 @@ def main():
     serve.add_argument('--port', type=int, default=8780)
     serve.add_argument('--allowed-origin', action='append', default=[])
     serve.add_argument('--secure-cookie', action='store_true')
+    serve.add_argument('--local-no-auth', action='store_true',
+                       help='Opt in to local passwordless administrator access; loopback only, no proxy or tunnel')
     preview = sub.add_parser('preview')
     preview.add_argument('--package', type=Path, required=True)
     preview.add_argument('--context', type=Path, required=True)
@@ -109,9 +111,15 @@ def main():
     import uvicorn
     from .app import create_app
     if args.command != 'preview':
-        config = Config(args.data_dir, mode=args.mode, host=args.host, port=args.port,
-                        runtime_address=args.runtime_address, allowed_origins=tuple(args.allowed_origin),
-                        secure_cookie=args.secure_cookie)
+        try:
+            config = Config(args.data_dir, mode=args.mode, host=args.host, port=args.port,
+                            runtime_address=args.runtime_address, allowed_origins=tuple(args.allowed_origin),
+                            secure_cookie=args.secure_cookie,local_no_auth=args.local_no_auth)
+        except ValueError as error:
+            parser.error(str(error))
+        if config.local_no_auth:
+            print('WARNING: Local passwordless ADMINISTRATOR mode. Any local user or process can edit, publish and control ALL registered Runtime targets. '
+                  'Do not expose through a proxy or tunnel. Stop this service or remove --local-no-auth to disable.', flush=True)
         gateway_log=GatewayLog(config.data_dir)
         gateway_log.record('gateway.starting','Starting Web gateway',mode=config.mode)
         try:
@@ -121,7 +129,8 @@ def main():
             gateway_log.close()
             raise
         try:
-            uvicorn.run(app, host=args.host, port=args.port, workers=1, access_log=False)
+            uvicorn.run(app, host=args.host, port=args.port, workers=1, access_log=False,
+                        **({'proxy_headers': False} if config.local_no_auth else {}))
         finally:
             gateway_log.close()
         return

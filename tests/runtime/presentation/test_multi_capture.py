@@ -1,6 +1,7 @@
 """Bounded software profile regressions, not inferred field image specifications."""
 from copy import deepcopy
 from dataclasses import replace
+from functools import partial
 import json
 from multiprocessing.shared_memory import SharedMemory
 import threading
@@ -140,22 +141,66 @@ def testTwoCallSitesHaveSeparateImagesIdentitiesAndWatermarks(channel, tmp_path)
     assert channel.exporter.stats["completed"] == 2
 
 
-def testTwoExplicitDualImageJobsStayWithinRuntimeBudget(channel, tmp_path):
+def runJobAfterCaptureGate(spec, cancelEvent, eventQueue, communicationPipe=None, devicePipe=None, *, ready, go):
+    """Keep the real worker heartbeat running while both Jobs finish startup."""
+    from emo_master.apps.runtime.jobs.worker_main import runJobProcess
+    from emo_master.apps.runtime.workflow.runner import WorkflowRunner
+
+    original = WorkflowRunner.run
+
+    def gatedRun(self, *args, **kwargs):
+        if not ready.is_set():
+            ready.set()
+            if not go.wait(15):
+                raise RuntimeError("test must release the capture startup gate")
+        return original(self, *args, **kwargs)
+
+    WorkflowRunner.run = gatedRun
+    try:
+        runJobProcess(spec, cancelEvent, eventQueue, communicationPipe, devicePipe)
+    finally:
+        WorkflowRunner.run = original
+
+
+def testTwoExplicitDualImageJobsStayWithinRuntimeBudget(channel, tmp_path, monkeypatch):
+    from emo_master.apps.runtime.jobs import supervisor
+
     project = twoImages(tmp_path, alias=False)
-    first = loadAndStart(channel, tmp_path, project)
-    second = start(channel, project)
-    assert first != second
-    for job in (first, second):
-        result = results(channel, job)[0]
-        assert result.status == "COMPLETE", jobFailureDetails(channel.runtime, job, result=result)
-    assert len(channel.exporter.slots) == 2
-    assert channel.resourceStats()["shared_capacity"] == 16 * MIB
-    assert channel.resourceStats()["total_reserved"] == 256 * MIB
-    assert {slot["index"] for slot in channel.jobs[first]["slots"]}.isdisjoint(
-        {slot["index"] for slot in channel.jobs[second]["slots"]})
-    assert len(channel.runtime.jobRepository.all()) == 2
-    release(channel, first)
-    release(channel, second)
+    ready = [channel.context.Event(), channel.context.Event()]
+    go = channel.context.Event()
+    try:
+        monkeypatch.setattr(supervisor, "runJobProcess", partial(runJobAfterCaptureGate, ready=ready[0], go=go))
+        first = loadAndStart(channel, tmp_path, project)
+        monkeypatch.setattr(supervisor, "runJobProcess", partial(runJobAfterCaptureGate, ready=ready[1], go=go))
+        second = start(channel, project)
+        assert first != second
+        assert all(event.wait(10) for event in ready), (
+            "both real workers must finish startup before capture; "
+            + "; ".join(jobFailureDetails(channel.runtime, job) for job in (first, second)))
+        assert not go.is_set()
+        assert all(channel.runtime.jobSupervisor._handles[job][0].is_alive() for job in (first, second))
+        assert all(not channel.runtime.jobRepository.get(job).isTerminal for job in (first, second))
+        with channel.store.lock:
+            assert not channel.store.open and not channel.store.history and not channel.pending
+        assert channel.exporter.stats["completed"] == 0
+        # Startup/import work is not the resource-budget target. Release both
+        # workers together; real dual-image captures keep their 500ms deadlines.
+        go.set()
+        for job in (first, second):
+            result = results(channel, job)[0]
+            assert result.status == "COMPLETE", jobFailureDetails(channel.runtime, job, result=result)
+            assert sum(source.image is not None for source in result.sources) == 2
+        assert channel.exporter.stats["completed"] == 4
+        assert len(channel.exporter.slots) == 2
+        assert channel.resourceStats()["shared_capacity"] == 16 * MIB
+        assert channel.resourceStats()["total_reserved"] == 256 * MIB
+        assert {slot["index"] for slot in channel.jobs[first]["slots"]}.isdisjoint(
+            {slot["index"] for slot in channel.jobs[second]["slots"]})
+        assert len(channel.runtime.jobRepository.all()) == 2
+        release(channel, first)
+        release(channel, second)
+    finally:
+        go.set()
 
 
 def testClientDecodesTwoImagesOnceAndSharesAliases(channel, tmp_path):

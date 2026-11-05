@@ -218,7 +218,8 @@ class DeviceManager:
             30000 + int(connectionBudget(policies)*1000)) for action in declaration.controlCapabilities})
 
     def execute(self, owner, deviceId, action, params, *, cycleId, arguments=None, cancelled=lambda: False,
-                previewOnly=False, source=None, selectors=None, requestDeadline=None, requestId=None):
+                previewOnly=False, source=None, selectors=None, requestDeadline=None, requestId=None,
+                cancelReceiptTimeout=0.0):
         if cancelled():
             raise DeviceError("E_DEVICE_CANCELLED", "request cancelled before device admission")
         planRevision = (self.configuration.requireCycle(owner, cycleId)
@@ -381,7 +382,7 @@ class DeviceManager:
         if service:
             return self.services[deviceId].run(operation, perform, cancelled,
                 min(requestDeadline or float('inf'), monotonic()+operationTimeout), executor.generation)
-        return executor.wait(operation, cancelled)
+        return executor.wait(operation, cancelled, cancelReceiptTimeout=cancelReceiptTimeout)
 
     def testConnection(self, value, cancelled=lambda: False, *, admissionLock=None, admission=None, deviceId=None):
         """Borrow the physical owner, or register a temporary owner until cleanup."""

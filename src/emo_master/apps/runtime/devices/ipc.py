@@ -11,6 +11,8 @@ from .frame_store import copyFrame
 
 
 MAX_BYTES = 3 * 1024 * 1024
+IPC_TIMEOUT = 2.0
+CANCEL_RECEIPT_TIMEOUT = 1.0
 
 
 class DeviceBridge:
@@ -24,11 +26,18 @@ class DeviceBridge:
         return self.stopped.is_set() or self.cancellation.is_set()
 
     def run(self):
+        stopDeadline = None
         try:
-            while not self.cancelled():
+            while not self.stopped.is_set():
+                # A Job stop cancels business work, not the receipt channel.
+                # The worker may already have sent its one outstanding request.
+                if self.cancellation.is_set() and stopDeadline is None:
+                    stopDeadline = time.monotonic() + IPC_TIMEOUT
                 if not self.connection.poll(.02):
+                    if stopDeadline is not None and time.monotonic() >= stopDeadline:
+                        break
                     continue
-                raw = receiveBytes(self.connection, MAX_BYTES, self.cancelled, time.monotonic() + 2)
+                raw = receiveBytes(self.connection, MAX_BYTES, self.stopped.is_set, time.monotonic() + IPC_TIMEOUT)
                 try:
                     request = json.loads(raw)
                     sequence = request["sequence"]
@@ -36,11 +45,13 @@ class DeviceBridge:
                         raise DeviceError("E_DEVICE_IPC_SEQUENCE", "device request is duplicate or out of order")
                     self.sequence = sequence
                     kind = request.get('kind')
+                    if self.cancelled():
+                        raise DeviceError("E_DEVICE_CANCELLED", "request cancelled before admission")
                     if kind == 'device_action':
                         result = self.manager.execute(self.owner, request['deviceId'], request['action'],
                             request['params'], cycleId=request['cycleId'], arguments=request.get('arguments'),
                             cancelled=self.cancelled, source=request.get('source'), selectors=request.get('selectors'),
-                            requestId=request['requestId'])
+                            requestId=request['requestId'], cancelReceiptTimeout=CANCEL_RECEIPT_TIMEOUT)
                     elif kind != 'framework_operation':
                         raise DeviceError('E_DEVICE_IPC_KIND', 'unknown device request kind')
                     elif request["action"].startswith("dispatch"):
@@ -76,7 +87,9 @@ class DeviceBridge:
                 except Exception as error:
                     reply = dict(ok=False, code=getattr(error, "code", "E_DEVICE_IPC"), message=str(error),
                                  outcome=getattr(error, "outcome", "UNKNOWN"), diagnostics=getattr(error, "diagnostics", {}))
-                sendBytes(self.connection, json.dumps(reply).encode(), self.cancelled, time.monotonic() + 2)
+                sendBytes(self.connection, json.dumps(reply).encode(), self.stopped.is_set, time.monotonic() + IPC_TIMEOUT)
+                if self.cancellation.is_set():
+                    break
         except (OSError, EOFError, ValueError):
             pass
         finally:
@@ -100,7 +113,17 @@ class DeviceProxy:
         self.frameCopies = {}
 
     def call(self, action, **fields):
-        return self._call('device_action', action, **fields)
+        try:
+            return self._call('device_action', action, **fields)
+        except DeviceError as error:
+            # Only a confirmed cancellation of this stopped Job is a normal
+            # workflow stop. Native uncertainty and unrelated faults stay errors.
+            if (self.cancellation.is_set() and error.code == "E_DEVICE_CANCELLED"
+                    and error.outcome in {"NOT_EXECUTED", "CANCELLED"}):
+                stopped = CancellationRequested(str(error))
+                stopped.outcome, stopped.diagnostics = error.outcome, error.diagnostics
+                raise stopped from error
+            raise
 
     def framework(self, action, **fields):
         try:
@@ -116,10 +139,13 @@ class DeviceProxy:
             raise
 
     def _call(self, kind, action, **fields):
+        stopDeadline = None
+
         def cancelled():
             return self.closed or self.cancellation.is_set()
 
         def interrupted():
+            nonlocal stopDeadline
             # pipe_io normally combines cancellation and timeout into OSError.
             # Keep an observed framework stop distinct from a broken transport,
             # including cancellation after the admission check but before I/O.
@@ -128,7 +154,15 @@ class DeviceProxy:
                 if self.cancellation.is_set():
                     raise CancellationRequested("execution cancelled")
                 return self.closed
-            return cancelled()
+            if self.closed:
+                return True
+            if self.cancellation.is_set():
+                if stopDeadline is None:
+                    # Bound even an unlimited capture after Stop, while allowing
+                    # the driver receipt and its IPC delivery to finish once.
+                    stopDeadline = time.monotonic() + CANCEL_RECEIPT_TIMEOUT + IPC_TIMEOUT
+                return time.monotonic() >= stopDeadline
+            return False
         while not self.lock.acquire(timeout=.02):
             if cancelled():
                 raise DeviceError("E_DEVICE_CANCELLED", "device proxy cancelled")
@@ -136,16 +170,19 @@ class DeviceProxy:
             if cancelled():
                 raise DeviceError("E_DEVICE_CANCELLED", "device proxy cancelled")
             self.sequence += 1
-            raw = json.dumps(dict(sequence=self.sequence, kind=kind, action=action, requestId=uuid4().hex, **fields)).encode()
+            request = dict(sequence=self.sequence, kind=kind, action=action, requestId=uuid4().hex, **fields)
+            raw = json.dumps(request).encode()
             if len(raw) > MAX_BYTES:
                 raise DeviceError("E_DEVICE_IPC_SIZE", "device request exceeds IPC budget")
             try:
+                phase = "send"
                 deadline = time.monotonic() + 1202
                 if kind == 'device_action' and action == "capture" and fields.get("params", {}).get("captureTimeoutMs") == 0:
                     # Runtime validates the plugin's cancellable-wait declaration.
                     # EOF and cancellation still retire this non-retrying call.
                     deadline = float("inf")
-                sendBytes(self.connection, raw, interrupted, time.monotonic() + 2)
+                sendBytes(self.connection, raw, interrupted, time.monotonic() + IPC_TIMEOUT)
+                phase = "receive"
                 reply = json.loads(receiveBytes(self.connection, MAX_BYTES, interrupted, deadline))
             except (OSError, EOFError, ValueError) as error:
                 self.close()
@@ -158,7 +195,9 @@ class DeviceProxy:
                     stopped.diagnostics = dict(action=action, transportError=type(error).__name__)
                     raise stopped from error
                 raise DeviceError("E_DEVICE_OUTCOME_UNKNOWN", "device transport interrupted; do not retry",
-                                  outcome="UNKNOWN") from error
+                                  outcome="UNKNOWN", diagnostics=dict(requestId=request['requestId'],
+                                      deviceId=fields.get('deviceId', ''), cycleId=fields.get('cycleId', ''),
+                                      action=action, phase=phase, transportError=type(error).__name__)) from error
             if not reply["ok"]:
                 raise DeviceError(reply["code"], reply["message"], outcome=reply["outcome"], diagnostics=reply.get("diagnostics", {}))
             if kind == 'framework_operation' and action == "endCycle":

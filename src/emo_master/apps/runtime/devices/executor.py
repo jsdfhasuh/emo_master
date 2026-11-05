@@ -1,6 +1,6 @@
 """Bounded per-device FIFO with cancellation fenced by real driver exit."""
 from collections import deque
-from concurrent.futures import Future
+from concurrent.futures import Future, wait as waitFutures
 from dataclasses import dataclass, field
 from threading import Condition, Event, Thread
 import time
@@ -119,11 +119,15 @@ class DeviceExecutor:
                     self.active = None
                     self.condition.notify_all()
 
-    def wait(self, operation, cancelled=lambda: False):
+    def wait(self, operation, cancelled=lambda: False, *, cancelReceiptTimeout=0.0):
         # Caller abandonment does not release the device thread or native resources.
         while not operation.future.done():
             if cancelled():
                 self.cancel(operation)
+                if cancelReceiptTimeout > 0:
+                    # The caller may keep its receipt channel open briefly;
+                    # only this operation's real future can settle its outcome.
+                    waitFutures((operation.future,), timeout=cancelReceiptTimeout)
                 if operation.future.done():
                     return operation.future.result()
                 raise DeviceError("E_DEVICE_CANCELLED", "operation cancellation requested; awaiting driver exit",

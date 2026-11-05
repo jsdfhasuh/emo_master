@@ -39,7 +39,9 @@ export function responsiveStyle(c:Component,parent?:Layout,hasVerticalSpacer=fal
             flexBasis:vertical?height:parent.direction==='horizontal' && flex?r.minWidth ?? 24:width,
             alignSelf:alignment==='center'?'center':alignment==='end'?'flex-end':'flex-start'};
     }
-    return {...canvasPosition,minWidth:`min(100%, ${r.minWidth ?? 160}px)`,maxWidth:'100%',minHeight:r.minHeight,height:r.preferredHeight || undefined,flexGrow:hasVerticalSpacer?0:parent.equalWidth?1:r.width==='content'?0:r.weight ?? 1,flexShrink:hasVerticalSpacer?0:1,flexBasis:parent.direction==='vertical'?'auto':parent.equalWidth?equalWidthBasis:parent.direction==='horizontal' && r.width!=='content'?r.minWidth ?? 160:r.preferredWidth ?? 240,alignSelf:r.alignSelf==='start'?'flex-start':r.alignSelf==='end'?'flex-end':r.alignSelf as CSSProperties['alignSelf']};
+    // Preferred height is a lower bound; content still determines its natural height.
+    const minHeight=r.preferredHeight?Math.max(r.minHeight ?? 0,r.preferredHeight):r.minHeight;
+    return {...canvasPosition,minWidth:`min(100%, ${r.minWidth ?? 160}px)`,maxWidth:'100%',minHeight,flexGrow:hasVerticalSpacer?0:parent.equalWidth?1:r.width==='content'?0:r.weight ?? 1,flexShrink:hasVerticalSpacer?0:1,flexBasis:parent.direction==='vertical'?'auto':parent.equalWidth?equalWidthBasis:parent.direction==='horizontal' && r.width!=='content'?r.minWidth ?? 160:r.preferredWidth ?? 240,alignSelf:r.alignSelf==='start'?'flex-start':r.alignSelf==='end'?'flex-end':r.alignSelf as CSSProperties['alignSelf']};
 }
 export function fieldValue(row:unknown,path:string[]):unknown {
     let value=row;

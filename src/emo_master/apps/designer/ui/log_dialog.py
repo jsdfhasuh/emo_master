@@ -521,6 +521,21 @@ try:
             else:
                 self.historyStatus.setText("Runtime 历史不限当前工程；输入条件后查询，分页和导出固定同一上界。")
 
+        def openDeviceHistory(self, projectId: str, deviceId: str) -> None:
+            """Start a fresh device scope without changing ordinary refreshes."""
+            if self.rangeCombo.currentData() == "runtime":
+                # Re-selecting the same mode emits no signal; retire its page
+                # and cursor just as switching to Runtime history would.
+                self._historySourceChanged()
+            else:
+                self.rangeCombo.setCurrentIndex(self.rangeCombo.findData("runtime"))
+            self._historyFilters = {}
+            scope = {"projectId": projectId, "deviceId": deviceId}
+            for name, edit in self.historyInputs.items():
+                edit.setText(scope.get(name, ""))
+            self._resetFilters()
+            self.queryHistory()
+
         def _selectedHistoryFilters(self):
             filters = {name: edit.text().strip() for name, edit in self.historyInputs.items() if edit.text().strip()}
             for name in ("startTimestampMs", "endTimestampMs"):

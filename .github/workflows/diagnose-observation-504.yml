@@ -1,0 +1,96 @@
+name: Diagnose two-job observation at 504
+
+on:
+  push:
+    branches: [codex/diagnose-observation-504-20261106]
+
+permissions:
+  contents: read
+
+jobs:
+  observation:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: windows
+      PYTHONPATH: src;scripts/diagnostics
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Verify fixed product and test baseline
+        shell: python
+        run: |
+          import json, pathlib, subprocess
+          baseline = "504c1c35db4f80a55b236a2f51adda78a38b1d28"
+          allowed = {"scripts/diagnostics/observation_probe.py",
+                     ".github/workflows/diagnose-observation-504.yml"}
+          changed = subprocess.check_output(["git", "diff", "--name-only", baseline, "HEAD"], text=True).splitlines()
+          head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          output = pathlib.Path("build/observation-diagnose")
+          output.mkdir(parents=True, exist_ok=True)
+          report = {"baseline": baseline, "diagnosticHead": head, "changedPaths": changed}
+          (output / "source.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+          assert set(changed) <= allowed, report
+      - name: Install the existing test dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Configure native Windows test desktop
+        shell: pwsh
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+      - name: Record and verify desktop and dependencies
+        shell: python
+        run: |
+          import json, pathlib, platform, subprocess, sys
+          import emo_master
+          from PySide2.QtWidgets import QApplication
+          output = pathlib.Path("build/observation-diagnose")
+          app = QApplication([])
+          screen = app.primaryScreen()
+          geometry = screen.geometry()
+          report = {"platform": platform.platform(), "python": sys.version,
+                    "qtPlatform": app.platformName(), "geometry": geometry.getRect(),
+                    "available": screen.availableGeometry().getRect(),
+                    "scale": screen.devicePixelRatio()}
+          print(json.dumps(report), flush=True)
+          (output / "desktop.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+          (output / "dependencies.txt").write_bytes(subprocess.check_output([sys.executable, "-m", "pip", "freeze"]))
+          assert app.platformName() == "windows", report
+          assert geometry.width() >= 1920 and geometry.height() >= 1080, report
+      - name: Observe only the unchanged two-job test
+        shell: python
+        run: |
+          import json, os, pathlib, subprocess, sys
+          output = pathlib.Path("build/observation-diagnose")
+          target = "tests/ui/page_designer/test_two_job_observation.py::testTwoCompletedNormalJobsChooseCurrentObserveFreezeResumeAndRetire"
+          results = []
+          for attempt in range(1, 4):
+              stem = output / f"run-{attempt}"
+              probe = stem.with_suffix(".jsonl")
+              env = dict(os.environ, EMO_OBSERVATION_PROBE_OUTPUT=str(probe.resolve()))
+              command = [sys.executable, "-m", "pytest", "-p", "observation_probe", "-q", "--tb=short",
+                         target, "--timeout=120", "--timeout-method=thread", "-o", "faulthandler_timeout=60",
+                         f"--junitxml={stem.with_suffix('.xml')}"]
+              with stem.with_suffix(".log").open("wb") as log:
+                  code = subprocess.run(command, env=env, stdout=log, stderr=subprocess.STDOUT).returncode
+              print(stem.with_suffix(".log").read_text(encoding="utf-8", errors="replace"), flush=True)
+              records = [json.loads(line) for line in probe.read_text(encoding="utf-8").splitlines()] if probe.exists() else []
+              diagnostic_errors = [record["diagnosticError"] for record in records if "diagnosticError" in record]
+              stages = [record["stage"] for record in records]
+              results.append({"attempt": attempt, "pytestExitCode": code, "stages": stages,
+                              "diagnosticErrors": diagnostic_errors})
+              (output / "attempts.json").write_text(json.dumps(results, indent=2), encoding="utf-8")
+              if code:
+                  sys.exit(code)
+              assert not diagnostic_errors, diagnostic_errors
+              assert {"job_1_image", "job_2_image"} <= set(stages), stages
+      - name: Upload every completed diagnostic attempt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: observation-504-windows-attempt${{ github.run_attempt }}
+          path: build/observation-diagnose/
+          if-no-files-found: error

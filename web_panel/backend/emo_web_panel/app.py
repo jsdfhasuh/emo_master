@@ -17,7 +17,7 @@ from .local_log import GatewayLog
 from fastapi.staticfiles import StaticFiles
 from .config import Config
 from .auth import AuthStore
-from .runtime_client import ContractUnavailable, GrpcRuntimeClient
+from .runtime_client import ContractUnavailable, GrpcRuntimeClient, RuntimeRejected
 from .mock_runtime import MockRuntime, demo_panel, IMAGE
 from .services import Operations, Views
 from .packages import PackageStore
@@ -402,6 +402,13 @@ def create_app(config: Config, runtime=None, gateway_log=None):
     async def runtime_runs(rid:str,req:Request):return await runs(req,rid)
     @app.get('/api/runs/{run_id}')
     async def run_state(run_id:str,req:Request,runtimeId:str='configured'):
+        client=await client_for(await identity(req),runtimeId)
+        if hasattr(client,'run_state'):
+            try:return {**(await client.run_state(run_id)),'runtimeId':runtimeId}
+            except RuntimeRejected as exc:
+                if exc.code in {'JOB_NOT_FOUND','PROJECT_MISMATCH'}:
+                    raise HTTPException(404,'Run not found') from exc
+                raise
         for r in await runs(req,runtimeId):
             if r.get('id',r.get('runId'))==run_id:return r
         raise HTTPException(404,'Run not found')

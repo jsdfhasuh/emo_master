@@ -41,7 +41,9 @@ def wait_until(page, condition, description, *, timeout=30):
 
 def read_json(response):
     if not response.ok:
-        raise AssertionError(f'{response.request.method} {response.url}: {response.status} {response.text()}')
+        # Both page responses and APIRequestContext responses use this helper;
+        # APIResponse has no request attribute. Preserve the actual HTTP error.
+        raise AssertionError(f'{response.url}: {response.status} {response.text()}')
     return response.json()
 
 
@@ -322,17 +324,21 @@ def main():
                             initial['runtimeInstanceId'],initial['projectId'],job,''), state
                         return state if state['status'] == 'ABORTED' and not state['active'] and not state['ownsResources'] else None
                     terminal = wait_until(page, retired, 'original Job ABORTED with resources retired', timeout=40)
-                    # Verify the browser's authoritative status too, not just a
-                    # successful out-of-band read while the screen stays stale.
-                    page.get_by_role('button', name='刷新页面包和状态', exact=True).click()
+                    # Formal state must update the screen without a catalog
+                    # refresh masking a stale command reply or run option.
                     original_status = page.get_by_label('原控制运行状态', exact=True)
                     expect(original_status).to_contain_text(job)
                     expect(original_status).to_contain_text('权威状态：ABORTED')
                     expect(original_status).to_contain_text('持有资源：否')
                     expect(original_status).to_contain_text('展示资源已释放：' + ('是' if terminal['displayResourcesReleased'] else '否'))
+                    for label in ('查看运行', '停止控制目标'):
+                        selection = page.get_by_label(label, exact=True)
+                        expect(selection).to_have_value(job)
+                        expect(selection.locator('option:checked')).to_contain_text('aborted')
                     expect(page.get_by_role('button', name='查询操作结果', exact=True)).to_have_count(0)
                     expect(page.get_by_role('button', name='结束跟踪（不重发）', exact=True)).to_have_count(0)
                     report['renderedTerminalStatus'] = original_status.inner_text()
+                    report['automaticRunStateVerified'] = True
                     published_status = page.locator('section.panel-card p').filter(has_text='运行：')
                     expect(published_status).to_have_count(1)
                     expect(published_status).to_contain_text('运行：ABORTED')

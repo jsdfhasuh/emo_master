@@ -17,6 +17,19 @@ export function reconcileCatalogSelection(previous:CatalogSelection,oldInfo:Runt
 }
 export const targetContext=(runtimeId:string,projectId?:string,runtimeInstanceId?:string)=>`runtimeId=${encodeURIComponent(runtimeId)}${projectId?`&projectId=${encodeURIComponent(projectId)}`:''}${runtimeInstanceId?`&runtimeInstanceId=${encodeURIComponent(runtimeInstanceId)}`:''}`;
 
+/** Keep formal observations received during a directory read, including Jobs
+ * that its earlier snapshot omitted. Unchanged missing rows still retire. */
+export function mergeRunCatalog(before:readonly Run[],current:readonly Run[],incoming:Run[],info:RuntimeInfo):Run[] {
+ const observations=current.filter(run=>!before.includes(run) && run.runtimeInstanceId===info.runtimeInstanceId && run.projectId===info.projectId);
+ const merged=incoming.map(run=>{
+  const observed=observations.find(item=>item.id===run.id && item.runtimeInstanceId===run.runtimeInstanceId && item.projectId===run.projectId);
+  if(!observed)return run;
+  const {status,state,active,ownsResources,displayResourcesReleased,allowedActions}=observed;
+  return {...run,status,state,active,ownsResources,displayResourcesReleased,allowedActions};
+ });
+ return [...merged,...observations.filter(run=>!incoming.some(item=>item.id===run.id))];
+}
+
 /** Catalog status belongs only to the selected view Job, never the Stop target. */
 export function selectedViewState(runId:string,info:RuntimeInfo,runs:Run[]):string {
  const run=runs.find(item=>item.id===runId && item.runtimeInstanceId===info.runtimeInstanceId && item.projectId===info.projectId);

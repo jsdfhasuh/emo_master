@@ -18,6 +18,7 @@ from emo_master.core.presentation.models import Action
 from examples.runtime_pages_p2 import sampleProject
 from test_preview import waitFor
 from tests.runtime.runtime_test_utils import jobFailureDetails
+from tests.ui.page_designer.observation_diagnostics import printObservationFailure
 from tests.ui.page_designer.test_normal_run_viewing import displayedImagesReady
 
 
@@ -164,6 +165,10 @@ def testTwoCompletedNormalJobsChooseCurrentObserveFreezeResumeAndRetire(qtApp, t
         mark('designer_closed')
     except BaseException:
         print('TWO_JOB_OBSERVATION FAILED_AT ' + stage, flush=True)
+        try:
+            printObservationFailure(preview, runtime, jobs, stage)
+        except Exception as diagnosticError:
+            print('TWO_JOB_OBSERVATION DIAGNOSTIC_ERROR ' + repr(diagnosticError), flush=True)
         faulthandler.dump_traceback(all_threads=True)
         raise
     finally:

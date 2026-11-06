@@ -60,37 +60,84 @@ jobs:
           (output / "dependencies.txt").write_bytes(subprocess.check_output([sys.executable, "-m", "pip", "freeze"]))
           assert app.platformName() == "windows", report
           assert geometry.width() >= 1920 and geometry.height() >= 1080, report
-      - name: Observe only the unchanged two-job test
+      - name: Observe the original adjacent 30 cases and unchanged two-job test
         shell: python
         run: |
-          import json, os, pathlib, subprocess, sys
+          import json, os, pathlib, subprocess, sys, xml.etree.ElementTree as ET
           output = pathlib.Path("build/observation-diagnose")
-          target = "tests/ui/page_designer/test_two_job_observation.py::testTwoCompletedNormalJobsChooseCurrentObserveFreezeResumeAndRetire"
-          results = []
-          for attempt in range(1, 4):
-              stem = output / f"run-{attempt}"
-              probe = stem.with_suffix(".jsonl")
-              env = dict(os.environ, EMO_OBSERVATION_PROBE_OUTPUT=str(probe.resolve()))
-              command = [sys.executable, "-m", "pytest", "-p", "observation_probe", "-q", "--tb=short",
-                         target, "--timeout=120", "--timeout-method=thread", "-o", "faulthandler_timeout=60",
-                         f"--junitxml={stem.with_suffix('.xml')}"]
-              with stem.with_suffix(".log").open("wb") as log:
-                  code = subprocess.run(command, env=env, stdout=log, stderr=subprocess.STDOUT).returncode
-              print(stem.with_suffix(".log").read_text(encoding="utf-8", errors="replace"), flush=True)
+          # Preserve the exact order from run 42153848036 / Windows job
+          # 127683201304. Verified against both its full log and JUnit.
+          nodeids = [
+              "tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeZeroAndEscapeThenContinue[False-1]",
+              "tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeZeroAndEscapeThenContinue[False-1.5]",
+              "tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeZeroAndEscapeThenContinue[True-0.5]",
+              "tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeZeroAndEscapeThenContinue[True-1]",
+              "tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeZeroAndEscapeThenContinue[True-1.5]",
+              "tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeKeepsProxyGrabAcrossPendingAppearance[0.5]",
+              "tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeKeepsProxyGrabAcrossPendingAppearance[1]",
+              "tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeKeepsProxyGrabAcrossPendingAppearance[1.5]",
+              "tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeSaveReopenKeepsLogicalDimensions[0.5]",
+              "tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeSaveReopenKeepsLogicalDimensions[1]",
+              "tests/ui/page_designer/test_responsive_resize_window.py::testWindowResizeSaveReopenKeepsLogicalDimensions[1.5]",
+              "tests/ui/page_designer/test_responsive_selection_pending.py::testDeselectOtherCardPreservesPendingPrimaryInputs[False]",
+              "tests/ui/page_designer/test_responsive_selection_pending.py::testDeselectOtherCardPreservesPendingPrimaryInputs[True]",
+              "tests/ui/page_designer/test_responsive_selection_pending.py::testPendingSelectionCommitRefreshesCanvasAndSavedMarker[card]",
+              "tests/ui/page_designer/test_responsive_selection_pending.py::testPendingSelectionCommitRefreshesCanvasAndSavedMarker[blank]",
+              "tests/ui/page_designer/test_retained_acceptance_multiscope.py::testNormalTwoScopeOverviewButtonsPinGuiNgDespiteNewerBackgroundOk",
+              "tests/ui/page_designer/test_retained_acceptance_multiscope.py::testSimulationAndNormalObserverWindowsHaveNoExecutionDeviceOrCounterEffects",
+              "tests/ui/page_designer/test_space_delivery.py::testAcceptanceProjectOpenAndRealOverflow",
+              "tests/ui/page_designer/test_spacer_editing.py::testSpacerModeCopyUndoAndSaveReopen",
+              "tests/ui/page_designer/test_sqlite_properties.py::testMetadataIsExplicitAndSelectionsHaveCorrectFields",
+              "tests/ui/page_designer/test_sqlite_properties.py::testReadFailurePreservesSavedChoices",
+              "tests/ui/page_designer/test_sqlite_properties.py::testSqliteChoicesApplyUndoCopyAndSave",
+              "tests/ui/page_designer/test_sqlite_properties.py::testSqliteStatisticsRequireValueFieldAndKeepPendingValues",
+              "tests/ui/page_designer/test_sqlite_properties.py::testPageTitleDefaultsAndTextCanFollowPageName",
+              "tests/ui/page_designer/test_terminal_properties.py::testQtPagePropertiesDoNotRewriteExistingTargets[targets0]",
+              "tests/ui/page_designer/test_terminal_properties.py::testQtPagePropertiesDoNotRewriteExistingTargets[targets1]",
+              "tests/ui/page_designer/test_terminal_properties.py::testQtPagePropertiesDoNotRewriteExistingTargets[targets2]",
+              "tests/ui/page_designer/test_terminal_properties.py::testNewDesignerPageStillDefaultsToQtDesktop",
+              "tests/ui/page_designer/test_terminal_properties.py::testRuntimeSqliteMetadataUsesSelectedEndpointOnly",
+              "tests/ui/page_designer/test_terminal_properties.py::testImageLocationAndInheritedTableLocationAreEditable",
+              "tests/ui/page_designer/test_two_job_observation.py::testTwoCompletedNormalJobsChooseCurrentObserveFreezeResumeAndRetire",
+          ]
+          assert len(nodeids) == len(set(nodeids)) == 31
+          selection = {"originalRunId": 42153848036, "originalJobId": 127683201304,
+                       "scope": "original adjacent 30 cases followed by the target in one pytest process",
+                       "nodeids": nodeids}
+          (output / "selection.json").write_text(json.dumps(selection, indent=2), encoding="utf-8")
+          stem = output / "context-31"
+          probe = stem.with_suffix(".jsonl")
+          env = dict(os.environ, EMO_OBSERVATION_PROBE_OUTPUT=str(probe.resolve()))
+          command = [sys.executable, "-m", "pytest", "-p", "observation_probe", "-v", "--tb=short",
+                     *nodeids, "--timeout=120", "--timeout-method=thread", "-o", "faulthandler_timeout=60",
+                     f"--junitxml={stem.with_suffix('.xml')}"]
+          with stem.with_suffix(".log").open("wb") as log:
+              code = subprocess.run(command, env=env, stdout=log, stderr=subprocess.STDOUT).returncode
+          print(stem.with_suffix(".log").read_text(encoding="utf-8", errors="replace"), flush=True)
+          records, diagnostic_errors, actual_nodeids, skipped = [], [], [], []
+          try:
               records = [json.loads(line) for line in probe.read_text(encoding="utf-8").splitlines()] if probe.exists() else []
-              diagnostic_errors = [record["diagnosticError"] for record in records if "diagnosticError" in record]
-              stages = [record["stage"] for record in records]
-              results.append({"attempt": attempt, "pytestExitCode": code, "stages": stages,
-                              "diagnosticErrors": diagnostic_errors})
-              (output / "attempts.json").write_text(json.dumps(results, indent=2), encoding="utf-8")
-              if code:
-                  sys.exit(code)
-              assert not diagnostic_errors, diagnostic_errors
-              assert {"job_1_image", "job_2_image"} <= set(stages), stages
-      - name: Upload every completed diagnostic attempt
+              diagnostic_errors.extend(record["diagnosticError"] for record in records if "diagnosticError" in record)
+              if stem.with_suffix(".xml").exists():
+                  cases = list(ET.parse(stem.with_suffix(".xml")).getroot().iter("testcase"))
+                  actual_nodeids = [case.attrib["classname"].replace(".", "/") + ".py::" + case.attrib["name"] for case in cases]
+                  skipped = [case.attrib["name"] for case in cases if case.find("skipped") is not None]
+          except Exception as error:
+              diagnostic_errors.append(f"diagnostic result parsing: {type(error).__name__}: {error}")
+          stages = [record["stage"] for record in records]
+          result = {"pytestExitCode": code, "stages": stages, "diagnosticErrors": diagnostic_errors,
+                    "actualNodeIds": actual_nodeids, "orderMatches": actual_nodeids == nodeids, "skipped": skipped}
+          (output / "context-result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
+          if code:
+              sys.exit(code)
+          assert not diagnostic_errors, diagnostic_errors
+          assert actual_nodeids == nodeids, result
+          assert not skipped, skipped
+          assert stages == ["job_1_image", "job_1_observer_image", "job_2_image", "job_2_observer_image"], stages
+      - name: Upload the bounded context diagnostic
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: observation-504-windows-attempt${{ github.run_attempt }}
+          name: observation-504-windows-context30-attempt${{ github.run_attempt }}
           path: build/observation-diagnose/
           if-no-files-found: error

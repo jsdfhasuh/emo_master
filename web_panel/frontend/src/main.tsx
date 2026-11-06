@@ -97,6 +97,7 @@ function App() {
     const [viewRefresh,setViewRefresh]=useState(0);
     const connectionNeedsRefresh=useRef(false);
     const activeRuntime=useRef('');const catalogGeneration=useRef(0);const catalogAbort=useRef<AbortController | undefined>(undefined);
+    const workflowGeneration=useRef(0);
     const infoRef=useRef<RuntimeInfo | undefined>(undefined);const inputDirty=useRef(false);
     const selectionRef=useRef<CatalogSelection>({runId:'',controlRunId:'',workflowId:'',workflowInputs:'{}',dirty:false});
     selectionRef.current={runId,controlRunId,workflowId,workflowInputs,dirty:inputDirty.current};
@@ -193,6 +194,7 @@ function App() {
             // Keep only a reference to the current runs, even if this refresh
             // was invoked by a closure from an earlier render.
             const beforeRuns=runsRef.current;
+            const workflowTicket=++workflowGeneration.current;
             const [rs,ws,ps,pk]=await Promise.all([
                 api<Run[]>(`/api/runtimes/${encodeURIComponent(rid)}/runs`,{signal:abort.signal}),
                 api<WorkflowTarget[]>(`/api/runtimes/${encodeURIComponent(rid)}/workflows`,{signal:abort.signal}),
@@ -207,14 +209,21 @@ function App() {
             const chosen=pinned || ps[0];
             const nextPanel=chosen?await api<Panel>(`/api/panels/${encodeURIComponent(chosen.id)}?${context}`,{signal:abort.signal}):undefined;
             if(!current() || activeRuntime.current!==rid)return;
+            // A resource-retirement read can finish while this full directory
+            // is still loading. Keep its newer admission, without losing the
+            // directory's names/input metadata or changing either Job selection.
+            const nextWorkflows=workflowTicket===workflowGeneration.current?ws:ws.map(workflow=>{
+                const latest=workflowRef.current.find(item=>item.id===workflow.id && item.runtimeInstanceId===workflow.runtimeInstanceId && item.projectId===workflow.projectId && item.configurationRevision===workflow.configurationRevision);
+                return latest?{...workflow,canStart:latest.canStart,startBlockReason:latest.startBlockReason}:workflow;
+            });
             const previous=selectionRef.current;
-            const reconciled=reconcileCatalogSelection(previous,oldInfo,info,mergeRunCatalog(beforeRuns,runsRef.current,rs,info),ws,!oldInfo && targets.find(target=>target.id===rid)?.mode==='mock');
-            const oldWorkflow=workflowRef.current.find(workflow=>workflow.id===previous.workflowId),newWorkflow=ws.find(workflow=>workflow.id===previous.workflowId);
+            const reconciled=reconcileCatalogSelection(previous,oldInfo,info,mergeRunCatalog(beforeRuns,runsRef.current,rs,info),nextWorkflows,!oldInfo && targets.find(target=>target.id===rid)?.mode==='mock');
+            const oldWorkflow=workflowRef.current.find(workflow=>workflow.id===previous.workflowId),newWorkflow=nextWorkflows.find(workflow=>workflow.id===previous.workflowId);
             if(oldWorkflow && newWorkflow && JSON.stringify([oldWorkflow.inputSchema,oldWorkflow.inputDeclarations,oldWorkflow.inputsJson])!==JSON.stringify([newWorkflow.inputSchema,newWorkflow.inputDeclarations,newWorkflow.inputsJson]))reconciled.notices.push('工作流输入描述或默认值已更新；保留当前输入，请核对后再启动。');
             // Preserve edits made while the request was in flight.
             const next={...reconciled.selection,workflowInputs:inputDirty.current?selectionRef.current.workflowInputs:reconciled.selection.workflowInputs};
             const available=nextPanel && !ps.some(item=>item.id===nextPanel.id)?[nextPanel,...ps]:ps;
-            infoRef.current=info;setRuntimeInfo(info);setLastCommand(old=>old && old.runtimeId===rid && (!old.runtimeInstanceId || old.runtimeInstanceId===info.runtimeInstanceId) && (!old.projectId || old.projectId===info.projectId)?{...old,reply:{...old.reply,run:rs.find(run=>run.id===old.runId) || old.reply.run}}:undefined);setRuns(current=>mergeRunCatalog(beforeRuns,current,rs,info));setWorkflows(ws);setPanels(available);setPackages(pk);
+            infoRef.current=info;setRuntimeInfo(info);setLastCommand(old=>old && old.runtimeId===rid && (!old.runtimeInstanceId || old.runtimeInstanceId===info.runtimeInstanceId) && (!old.projectId || old.projectId===info.projectId)?{...old,reply:{...old.reply,run:rs.find(run=>run.id===old.runId) || old.reply.run}}:undefined);setRuns(current=>mergeRunCatalog(beforeRuns,current,rs,info));workflowRef.current=nextWorkflows;setWorkflows(nextWorkflows);setPanels(available);setPackages(pk);
             setRuntimeState(selectedViewState(next.runId,info,rs));
             selectionRef.current=next;setRunId(next.runId);setControlRunId(next.controlRunId);setWorkflowId(next.workflowId);setWorkflowInputs(next.workflowInputs);
             setPanel(old=>old?.id===nextPanel?.id && old?.packageRevision===nextPanel?.packageRevision && !changed?old:nextPanel);
@@ -271,6 +280,31 @@ function App() {
         void poll();
         return()=>{alive=false;abort.abort();clearTimeout(timer);};
     },[lastCommand?.runId,lastCommand?.runtimeId,lastCommand?.runtimeInstanceId,lastCommand?.projectId,runtimeId,runtimeInfo?.runtimeInstanceId,runtimeInfo?.projectId,viewId]);
+    const retiredRunIds=runs.filter(run=>run.runtimeInstanceId===runtimeInfo?.runtimeInstanceId && run.projectId===runtimeInfo?.projectId && run.ownsResources===false && ['ABORTED','COMPLETED','FAILED'].includes((run.status || run.state).toUpperCase())).map(run=>run.id).sort().join(',');
+    useEffect(()=>{
+        const info=runtimeInfo,rid=runtimeId,epoch=sessionEpoch.current;
+        if(!rid || !info || !retiredRunIds)return;
+        const ticket=++workflowGeneration.current,abort=new AbortController();
+        const current=()=>!abort.signal.aborted && ticket===workflowGeneration.current && epoch===sessionEpoch.current && activeRuntime.current===rid && infoRef.current?.runtimeInstanceId===info.runtimeInstanceId && infoRef.current?.projectId===info.projectId && infoRef.current?.configurationRevision===info.configurationRevision;
+        // Stop acceptance can precede execution retirement. Re-read only the
+        // formal admission once for this retired set; repeated snapshots and
+        // retained display resources must not poll/reopen the whole directory.
+        void (async()=>{
+            try {
+                const ws=await api<WorkflowTarget[]>(`/api/runtimes/${encodeURIComponent(rid)}/workflows`,{signal:abort.signal});
+                if(!current())return;
+                if(ws.some(workflow=>workflow.runtimeInstanceId!==info.runtimeInstanceId || workflow.projectId!==info.projectId || workflow.configurationRevision!==info.configurationRevision))throw Error('Runtime 身份或配置已改变，请刷新当前目标');
+                const next=workflowRef.current.map(workflow=>{
+                    const incoming=ws.find(item=>item.id===workflow.id);
+                    if(!incoming)throw Error('工作流目录已改变，请刷新当前目标');
+                    return {...workflow,canStart:incoming.canStart,startBlockReason:incoming.startBlockReason};
+                });
+                workflowRef.current=next;setWorkflows(next);
+                setCatalogError(old=>old.startsWith('启动条件更新失败：')?'':old);
+            } catch(e) {if(current())setCatalogError(`启动条件更新失败：${(e as Error).message}；可使用“刷新页面包和状态”重试查询。`);}
+        })();
+        return()=>abort.abort();
+    },[runtimeId,runtimeInfo?.runtimeInstanceId,runtimeInfo?.projectId,runtimeInfo?.configurationRevision,retiredRunIds]);
     useEffect(() => { pageRef.current = panel?.defaultPageId || panel?.pages[0]?.id || ''; setPage(pageRef.current); setResult(undefined); setScopes({}); }, [panel]);
     useEffect(() => {
         // Retire the old stream before its shared view state changes. Socket

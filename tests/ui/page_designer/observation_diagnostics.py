@@ -1,7 +1,10 @@
-"""Failure-only metadata for the two-job observation test, before owner cleanup."""
+"""Bounded metadata for the two-job observation test; no extra product reads."""
 import json
+from pathlib import Path
 import threading
 import time
+
+import grpc
 
 
 def resultState(result):
@@ -50,6 +53,144 @@ def observerState(observer):
             'detached': observer.detached, 'designExamples': observer.designExamples,
             'banner': observer.banner.text(), 'status': observer.status.text(),
             'readiness': readiness}
+
+
+class ObservationEvidence:
+    """Test-local read trace, retained even when a transient failure recovers.
+
+    The original read, deadline and exception are unchanged. GUI observations
+    are taken by the test's main thread, separately from decoder observations.
+    """
+    maxReads = 32
+    maxStages = 8
+    maxBytes = 256 * 1024
+
+    def __init__(self, path, *, platform, jobs):
+        self.path = Path(path)
+        self.jobs = jobs
+        self.lock = threading.RLock()
+        self.stage = 'setup'
+        self.firstErrorObserved = False
+        self.data = {'outcome': 'in_progress', 'qtPlatform': platform,
+                     'semantics': 'best-effort, non-atomic; read errors precede caller handling; '
+                                  'GUI is the next main-thread observation and may already reflect recovery',
+                     'readCount': 0, 'errorCount': 0, 'droppedReads': 0,
+                     'firstError': None, 'reads': [], 'stages': [], 'diagnosticErrors': []}
+
+    def install(self, monkeypatch):
+        from emo_master.clients.runtime.display_session import DisplaySession
+        original = DisplaySession._readImage
+
+        def read(session, result, image, **kwargs):
+            if result.identity.jobId not in self.jobs:
+                return original(session, result, image, **kwargs)
+            error = None
+            startedMs, startedNs = int(time.time() * 1000), time.monotonic_ns()
+            try:
+                return original(session, result, image, **kwargs)
+            except Exception as caught:
+                error = caught
+                raise
+            finally:
+                endedNs = time.monotonic_ns()
+                try:
+                    self._read(session, result, image, error, startedMs, startedNs, endedNs)
+                except Exception as diagnosticError:
+                    self._diagnosticError('read', diagnosticError)
+
+        monkeypatch.setattr(DisplaySession, '_readImage', read)
+
+    def _read(self, session, result, image, error, startedMs, startedNs, endedNs):
+        record = {'stage': self.stage, 'startedAtMs': startedMs, 'startedNs': startedNs,
+                  'endedNs': endedNs, 'readDecodeMs': (endedNs - startedNs) / 1e6,
+                  'identity': result.identity.model_dump(mode='json'),
+                  'resultStatus': result.status, 'executionTerminal': result.executionTerminal,
+                  'image': image.model_dump(mode='json'),
+                  'sources': [{'sourceId': source.sourceId, 'state': source.state,
+                               'reasonCode': source.reasonCode}
+                              for source in result.sources if source.image == image],
+                  'error': None}
+        if error is not None:
+            record['error'] = {'type': type(error).__name__,
+                'code': error.code().name if isinstance(error, grpc.RpcError) else None,
+                'details': (error.details() or '')[:2048] if isinstance(error, grpc.RpcError) else str(error)[:2048]}
+        first = False
+        with self.lock:
+            self.data['readCount'] += 1
+            if len(self.data['reads']) < self.maxReads:
+                self.data['reads'].append(record)
+            else:
+                self.data['droppedReads'] += 1
+            if error is not None:
+                self.data['errorCount'] += 1
+                if self.data['firstError'] is None:
+                    self.data['firstError'] = record
+                    first = True
+        if first:
+            # Preserve the actual first exception before cleanup or successful
+            # recovery can erase it. No RPC, pixel access or Qt call is added.
+            self._write()
+
+    def observeFirstError(self, preview):
+        with self.lock:
+            needed = self.data['firstError'] is not None and not self.firstErrorObserved
+            if needed:
+                self.firstErrorObserved = True
+        if needed:
+            self.capture('first_error_main_thread', preview)
+
+    def capture(self, stage, preview):
+        record = {'stage': stage, 'observedAtMs': int(time.time() * 1000),
+                  'observedNs': time.monotonic_ns()}
+        session = preview.session
+        try:
+            if session is not None and session.lock.acquire(blocking=False):
+                try:
+                    record['client'] = clientState(session)
+                    record['client']['records'] = record['client']['records'][-4:]
+                    # Freeze dictionaries while the client lock is held.
+                    record['client'] = json.loads(json.dumps(record['client'], ensure_ascii=False))
+                finally:
+                    session.lock.release()
+            else:
+                record['client'] = {'unavailable': 'no_session_or_lock_busy'}
+            record['observer'] = observerState(preview.observer) if preview.observer is not None else None
+        except Exception as diagnosticError:
+            record['diagnosticError'] = repr(diagnosticError)
+            self._diagnosticError('stage', diagnosticError)
+        with self.lock:
+            if len(self.data['stages']) < self.maxStages:
+                self.data['stages'].append(record)
+
+    def finish(self, outcome, stage, *, failedAt=None):
+        with self.lock:
+            self.data.update(outcome=outcome, finalStage=stage,
+                             failedAt=failedAt or (stage if outcome == 'failed' else None))
+        self._write()
+
+    def _write(self):
+        try:
+            with self.lock:
+                report = dict(self.data, expectedJobs=list(self.jobs))
+                content = json.dumps(report, ensure_ascii=False, indent=2)
+                if len(content.encode('utf-8')) + 1 > self.maxBytes:
+                    # Keep the first exact error and totals even if verbose
+                    # post-read snapshots exceed this test artifact's budget.
+                    report.update(reads=[], stages=[], outputTruncated=True)
+                    content = json.dumps(report, ensure_ascii=False, indent=2)
+                if len(content.encode('utf-8')) + 1 > self.maxBytes:
+                    raise ValueError('observation evidence exceeds 256 KiB')
+                self.path.parent.mkdir(parents=True, exist_ok=True)
+                self.path.write_text(content + '\n', encoding='utf-8')
+        except Exception as diagnosticError:
+            self._diagnosticError('write', diagnosticError)
+
+    def _diagnosticError(self, stage, error):
+        detail = {'stage': stage, 'error': repr(error)[:2048]}
+        with self.lock:
+            if len(self.data['diagnosticErrors']) < 8:
+                self.data['diagnosticErrors'].append(detail)
+        print('TWO_JOB_OBSERVATION DIAGNOSTIC_ERROR ' + json.dumps(detail), flush=True)
 
 
 def printObservationFailure(preview, runtime, jobs, stage):

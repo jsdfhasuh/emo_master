@@ -174,12 +174,14 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         except Exception:
             gateway_log.record('gateway.request.failed', 'HTTP request failed', level=logging.ERROR,
                                method=req.method, path=req.url.path, status=500,
-                               elapsedMs=round((time.monotonic()-started)*1000))
+                               elapsedMs=round((time.monotonic()-started)*1000),
+                               **getattr(req.state, 'asset_diagnostic', {}))
             raise
         gateway_log.record('gateway.request', 'HTTP request completed',
                            level=logging.WARNING if response.status_code >= 400 else logging.DEBUG,
                            method=req.method, path=req.url.path, status=response.status_code,
-                           elapsedMs=round((time.monotonic()-started)*1000))
+                           elapsedMs=round((time.monotonic()-started)*1000),
+                           **(getattr(req.state, 'asset_diagnostic', {}) if response.status_code >= 400 else {}))
         return response
     @app.get('/api/health')
     async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':'1.5.0','preview':config.preview,'localNoAuth':config.local_no_auth}
@@ -624,19 +626,36 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         return Response(data,media_type=mime)
     @app.get('/api/views/{vid}/assets/{source_id}')
     async def bound_result_image(vid:str,source_id:str,req:Request,scope:str,resultKey:str):
-        who=await identity(req);v=views.get(vid,who['userId'])
+        who=await identity(req)
+        # Record only the requested asset identity, never arbitrary query values,
+        # credentials or bytes. A late read may legitimately outlive this result.
+        asset = req.state.asset_diagnostic = {
+            key: value[:256] for key, value in
+            {'viewId':vid, 'resultScopeId':scope, 'resultKey':resultKey, 'sourceId':source_id}.items()}
+        def unavailable(code, detail):
+            asset['assetCode'] = code
+            return JSONResponse({'detail':detail, 'code':code}, status_code=404)
+        try:v=views.get(vid,who['userId'])
+        except KeyError:return unavailable('VIEW_NOT_FOUND', 'Not found')
+        asset.update(runtimeId=v['runtimeId'], runtimeInstanceId=v.get('instanceId') or '',
+                     projectId=v.get('projectId') or '', viewRunId=v['runId'])
         await package_access(who,v['panelId'],v['runtimeId']);client=await client_for(who,v['runtimeId'])
         try:result,is_frozen=views.advertised_result(v,scope,resultKey)
-        except KeyError:raise HTTPException(404,'Exact advertised result retired or expired')
+        except KeyError:return unavailable('RESULT_RETIRED', 'Exact advertised result retired or expired')
         source=result.get('sources',{}).get(source_id,{})
         resource=source.get('image')
-        if not resource or source.get('state')!='available':raise HTTPException(404,'Result image unavailable')
+        asset.update(jobId=result['jobId'], sourceState=source.get('state', ''),
+                     sourceReasonCode=source.get('reasonCode', ''))
+        if not resource or source.get('state')!='available':return unavailable('SOURCE_UNAVAILABLE', 'Result image unavailable')
+        asset.update(resourceId=resource['resourceId'], resourceSha256=resource['sha256'], assetPhase='read_or_cache')
         key=(result['runtimeInstanceId'] if hasattr(client,'read_asset') else result['runtimeInstanceId']+':'+v['runtimeId'],result['jobId'],resource['resourceId'],resource['sha256'])
         async def load():
             data,_=await client.read_asset(result['jobId'],resource,runtime_instance_id=result['runtimeInstanceId'])
             return data
         try:data=resources.peek(key) if is_frozen else await resources.get(key,load)
-        except KeyError:raise HTTPException(404,'Exact frozen resource expired')
+        except KeyError:
+            if not is_frozen:raise
+            return unavailable('FROZEN_RESOURCE_EXPIRED', 'Exact frozen resource expired')
         return Response(data,media_type=resource['mimeType'])
     @app.get('/api/assets/demo-image')
     async def demo_image(req:Request):return await mock_image(await identity(req),'configured','demo-image')

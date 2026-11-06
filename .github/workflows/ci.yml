@@ -78,4 +78,5 @@ jobs:
           path: |
             build/ci-results.xml
             build/ci-failures.log
+            build/two-job-observation.json
           if-no-files-found: ignore

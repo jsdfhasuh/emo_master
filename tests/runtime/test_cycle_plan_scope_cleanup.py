@@ -2,6 +2,7 @@
 from contextlib import ExitStack, contextmanager
 import json
 import multiprocessing
+import os
 from threading import Event, Thread
 import time
 from types import SimpleNamespace
@@ -98,8 +99,14 @@ def testFrameWriteEOFKeepsOriginalUnknownReceiptThroughNestedCleanup(depth):
         assert failure.value is primary[0]
         assert failure.value.code == "E_DEVICE_OUTCOME_UNKNOWN"
         assert failure.value.outcome == "UNKNOWN"
-        assert isinstance(failure.value.__cause__, EOFError)
+        cause = failure.value.__cause__
+        # Windows reports ERROR_BROKEN_PIPE (109) before or after the
+        # overlapped read starts; POSIX reports EOF for the same peer close.
+        assert isinstance(cause, EOFError) or (
+            os.name == "nt" and isinstance(cause, OSError)
+            and (cause.errno == 109 or getattr(cause, "winerror", None) == 109))
         diagnostics = failure.value.diagnostics
+        assert diagnostics["transportError"] == type(cause).__name__
         assert diagnostics["requestId"] == requests[-1]["requestId"]
         assert diagnostics["action"] == "frameBeginWrite" and diagnostics["phase"] == "receive"
         assert diagnostics["cycleId"] == "cycle-" + str(depth)

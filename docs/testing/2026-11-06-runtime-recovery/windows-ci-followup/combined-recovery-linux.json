@@ -1,0 +1,30 @@
+{
+  "at": "2026-11-06T02:50:27.431224+00:00",
+  "baseCommit": "6372ecfb8eaab7e0a8d9df687848915788b79109",
+  "scope": "Windows CI test portability follow-up; product source unchanged",
+  "command": [
+    "/workspace/scratch/4e0e3d24442d/review-f308/venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "--tb=short",
+    "tests/runtime/test_supervisor_heartbeat_observation.py",
+    "tests/runtime/test_cycle_plan_scope_cleanup.py",
+    "tests/runtime/test_device_failure_observability.py",
+    "tests/runtime/presentation/test_export_restart_retirement.py",
+    "--timeout=120",
+    "--timeout-method=thread",
+    "-o",
+    "faulthandler_timeout=60",
+    "--junitxml=/workspace/scratch/4e0e3d24442d/review-f308/diagnostics/windows-ci-followup/combined-recovery-linux.xml"
+  ],
+  "exitCode": 0,
+  "seconds": 7.443,
+  "sourceHashes": {
+    "tests/runtime/test_supervisor_heartbeat_observation.py": "8f2f6f802048c0aec88d424d5217957463d7d1e47e59a0ceba830e1d59cd917f",
+    "tests/runtime/test_cycle_plan_scope_cleanup.py": "3a2d39492dec5afdf1713d083fb82f47e8c5db05ef222b62390221047169ad15",
+    "tests/runtime/test_device_failure_observability.py": "a850b6df0c1bf6587dc7108499b202c58ca1ba54dc130d4fd499c7104ab88e40",
+    "tests/runtime/presentation/test_export_restart_retirement.py": "3045412edd82c67d3c065d83c961c160a8c922df409def7e49e320be5dd8c115"
+  },
+  "sourceChangedPaths": []
+}

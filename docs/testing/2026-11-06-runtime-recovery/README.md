@@ -54,6 +54,8 @@
 
 ## 后续人工复验
 
+Windows 全仓 CI 后续发现五项新增测试的跨平台假设问题，具体失败、最小修正和原断言保留情况见 [Windows CI 补充记录](windows-ci-followup/README.md)。原失败结果继续保留，Windows 复跑以对应固定提交的 Actions 和 ChatGPT Web 评论为准。
+
 按 [DOT_ACCEPTANCE.md](DOT_ACCEPTANCE.md) 在 PR 评论给出的固定提交复验。优先完成 Web 创建、保存、发布、真实软件 Runtime 订阅、停止/重启、日志查看与导出闭环，并单独检查双标签页恢复。历史长停顿若再次出现，保留新诊断与原始日志，不通过刷新、重启或覆盖报告把失败样本隐藏。
 
 本轮不合并 PR、不发布或部署、不修改现场工程、不访问真实设备。

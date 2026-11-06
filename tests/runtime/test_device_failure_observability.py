@@ -244,13 +244,16 @@ def testReplySendBudgetStartsAfterSerialization(monkeypatch, serializationPause,
         child.send_bytes(json.dumps(dict(sequence=1, kind="device_action", action="capture",
             deviceId="camera", requestId="one-request", cycleId="cycle", params={})).encode())
         bridge.run()
-        assert parent.closed and child.poll(.2)
+        assert parent.closed
         assert calls == ["one-request"]
         assert sends == [(100.0 + serializationPause, 102.0 + serializationPause)]
         if succeeds:
+            assert child.poll(.2)
             assert json.loads(child.recv_bytes()) == {"ok": True, "result": {"completed": True}}
             assert failures == []
         else:
+            # Windows poll() raises ERROR_BROKEN_PIPE for a closed peer;
+            # recv_bytes() normalizes that same closure to EOFError.
             with pytest.raises(EOFError):
                 child.recv_bytes()
             failure, = failures

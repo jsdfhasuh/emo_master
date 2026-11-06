@@ -305,7 +305,7 @@ def testRetirementFailurePersistsFinalProofInExistingEventStoreAndJsonl(
         assert [record.payloadJson for record in persistence.listJobEventsAfter('job')] == [event.payloadJson]
         assert writer.close() is None
         lines = [json.loads(line) for path in (tmp_path / 'logs').glob('runtime-*.jsonl')
-                 for line in path.read_text().splitlines()]
+                 for line in path.read_text(encoding='utf-8').splitlines()]
         assert len(lines) == 1 and lines[0]['payload'] == diagnostic
     finally:
         writer.close()

@@ -52,6 +52,22 @@ jobs:
           assert geometry.width() >= 1920 and geometry.height() >= 1080
       - name: Validate generated protobuf
         run: python scripts/gen_proto.py --check
+      - name: Run runtime recovery regressions
+        run: >-
+          python -m pytest -q --tb=short
+          tests/runtime/test_supervisor_heartbeat_observation.py
+          tests/runtime/test_cycle_plan_scope_cleanup.py
+          tests/runtime/test_device_failure_observability.py
+          tests/runtime/presentation/test_export_restart_retirement.py
+          --timeout=120 --timeout-method=thread -o faulthandler_timeout=60
+          --junitxml=build/recovery-regressions.xml
+      - name: Upload runtime recovery regression results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-recovery-${{ matrix.os }}-py${{ matrix.python-version }}-attempt${{ github.run_attempt }}
+          path: build/recovery-regressions.xml
+          if-no-files-found: ignore
       - name: Run project checks
         run: python scripts/ci_check.py
       - name: Upload test results

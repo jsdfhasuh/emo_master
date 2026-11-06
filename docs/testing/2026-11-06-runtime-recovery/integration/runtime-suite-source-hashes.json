@@ -1,0 +1,25 @@
+{
+  "description": "Final source after preserving normal cleanup cancellation receipts and the original reply-send timing boundary.",
+  "baseCommit": "cdf1250ccc41b78f79b25b87e6db197809875384",
+  "files": {
+    "src/emo_master/apps/runtime/devices/diagnostics.py": "d9769dee111170f06d3c8ce765243fe9dc879824c1b01c2cca8ce1fffa351ad0",
+    "src/emo_master/apps/runtime/devices/executor.py": "0ecec180af3d98a653eee7b8ea1d2ece6ab852f797a54883f4c751b55954c6bc",
+    "src/emo_master/apps/runtime/devices/ipc.py": "cc31061cecc117f59b9b3dae8f5b093b4f0d861a17e2708d5180b9a7d3f81c26",
+    "src/emo_master/apps/runtime/devices/manager.py": "b7d8415b734175ec965642036966a191551266a120c8695d626ded76bc9ddda8",
+    "src/emo_master/apps/runtime/events/jsonl_writer.py": "02f8b8cec05ccdb47f511d60b9b7bbd0d6d0a3b59e477db25ec29dfbaf6227c6",
+    "src/emo_master/apps/runtime/jobs/supervisor.py": "0e33d616b60fe3205ccdc8526bb66e2d6a697bcf72ce34a535ab5431c3326e5d",
+    "src/emo_master/apps/runtime/presentation/exporter.py": "e7cc3aea1e2a989211ad7aeb76f26501d076b15d5f8a8ffa9408b76d2285cf67",
+    "src/emo_master/apps/runtime/presentation/service.py": "a594103c12b85ef83ce23453cbff1800ce237b76f1a5f98d2a3a5f8fb34e939f",
+    "src/emo_master/apps/runtime/project_config/cycle_plan.py": "77b977d4205e617a1fe0d5e741c3ba81cbc391a49a9c6f7804e0ee94a0e420ab",
+    "tests/runtime/presentation/test_export_restart_retirement.py": "64f12558ad2ab77dbfa49648e33392c54ef5ee7b99470b901337502e053581d3",
+    "tests/runtime/test_cycle_plan_scope_cleanup.py": "30f9d4357daaf8679509b491317ba11cdf224ee6dec5a49e9f25f05f51ad88ea",
+    "tests/runtime/test_device_failure_observability.py": "4cb0493064d52557350d6913806af67d859b6f2f7ae3fd2e8f38c25cd9b56160",
+    "tests/runtime/test_supervisor_heartbeat_observation.py": "8f2f6f802048c0aec88d424d5217957463d7d1e47e59a0ceba830e1d59cd917f",
+    "web_panel/backend/emo_web_panel/app.py": "96e82f9149902f14c4a429e2839e23a8644b2593175c9815545ca5243d7e22c2",
+    "web_panel/frontend/src/data/api.ts": "88f231e40d55b22cce8346dcac42fa3fa198a63a551195a9aeecbc42e9e6e219",
+    "web_panel/frontend/src/main.tsx": "140d3120adda8804b4e51729880d32a60f7f5577b8cb6528e3cdd92352cfb90a",
+    "web_panel/frontend/tests/editor_draft_recovery.test.mjs": "fd59f4dcae7f4e276f61e78160636aed39855bf9905c85a508ddcd7fdcb03a53",
+    "web_panel/frontend/tests/ux-recovery.test.mjs": "6be1f8d41874abf9eb31d43d059e783bc4afc719f2bb5d7580866e429067dde7",
+    "web_panel/tests/test_local_auth.py": "063017790e88216d86d2754085918d6992eafb549069adb908927eb7a5af7fa4"
+  }
+}

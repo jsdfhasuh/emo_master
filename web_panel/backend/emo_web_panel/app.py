@@ -32,6 +32,10 @@ COOKIE='emo_panel_session'
 class LogQueryError(ValueError):
     pass
 
+
+class CsrfMismatch(Exception):
+    pass
+
 def create_app(config: Config, runtime=None, gateway_log=None):
     config.data_dir.mkdir(parents=True,exist_ok=True)
     own_gateway_log=gateway_log is None
@@ -116,7 +120,7 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         if permission not in me['permissions']:raise HTTPException(403,'Permission denied')
         if mutating:
             if not origin_ok(request.headers.get('origin'),request.headers.get('host'),request.url.scheme): raise HTTPException(403,'Origin denied')
-            if not hmac.compare_digest(request.headers.get('x-csrf-token',''),me['csrf']): raise HTTPException(403,'CSRF denied')
+            if not hmac.compare_digest(request.headers.get('x-csrf-token',''),me['csrf']): raise CsrfMismatch()
         return me
     async def json_object(req,allow_empty=False):
         data=bytearray()
@@ -128,6 +132,8 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         except (ValueError,UnicodeDecodeError):raise HTTPException(422,'JSON object required')
         if not isinstance(body,dict):raise HTTPException(422,'JSON object required')
         return body
+    @app.exception_handler(CsrfMismatch)
+    async def csrf_denied(req,exc):return JSONResponse({'detail':'CSRF denied','code':'CSRF_MISMATCH'},status_code=403)
     @app.exception_handler(RegistryDenied)
     async def target_denied(req,exc):return JSONResponse({'detail':str(exc)},status_code=403)
     @app.exception_handler(sqlite3.IntegrityError)

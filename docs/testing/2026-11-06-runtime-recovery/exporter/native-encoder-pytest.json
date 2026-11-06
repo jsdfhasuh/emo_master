@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "/workspace/scratch/4e0e3d24442d/review-f308/venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/runtime/presentation/test_failed_capture_retirement.py::testRealFailedEncoderReturnsRawBeforeSlowCallback"
+  ],
+  "cwd": "/workspace/scratch/4e0e3d24442d/review-f308/repo-repair",
+  "env_overrides": {
+    "PYTHONPATH": "src:.",
+    "QT_QPA_PLATFORM": "offscreen"
+  },
+  "started_utc": "2026-11-06T00:57:48.310622+00:00",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 1.305445883000175,
+  "conftest_enabled": true,
+  "stdout": "native-encoder-pytest.txt",
+  "stdout_sha256": "3b48e0860dc023141693c4f77181cda5b340fb20a1a3707eedab872d4f8fa2ba"
+}

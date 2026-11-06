@@ -16,19 +16,25 @@ CANCEL_RECEIPT_TIMEOUT = 1.0
 
 
 class DeviceBridge:
-    def __init__(self, manager, owner, connection, cancellation):
+    def __init__(self, manager, owner, connection, cancellation, *, onTransportError=None):
         self.manager, self.owner, self.connection, self.cancellation = manager, owner, connection, cancellation
         self.stopped = Event()
         self.thread = Thread(target=self.run, name="device-ipc-" + owner, daemon=True)
         self.sequence = 0
+        self.onTransportError = onTransportError
 
     def cancelled(self):
         return self.stopped.is_set() or self.cancellation.is_set()
 
     def run(self):
         stopDeadline = None
+        transportFailure = None
+        request = None
+        phase, phaseStarted, deadline = "poll", time.monotonic(), None
         try:
             while not self.stopped.is_set():
+                request = None
+                phase, phaseStarted, deadline = "poll", time.monotonic(), None
                 # A Job stop cancels business work, not the receipt channel.
                 # The worker may already have sent its one outstanding request.
                 if self.cancellation.is_set() and stopDeadline is None:
@@ -37,7 +43,9 @@ class DeviceBridge:
                     if stopDeadline is not None and time.monotonic() >= stopDeadline:
                         break
                     continue
-                raw = receiveBytes(self.connection, MAX_BYTES, self.stopped.is_set, time.monotonic() + IPC_TIMEOUT)
+                phase, phaseStarted = "receive", time.monotonic()
+                deadline = phaseStarted + IPC_TIMEOUT
+                raw = receiveBytes(self.connection, MAX_BYTES, self.stopped.is_set, deadline)
                 try:
                     request = json.loads(raw)
                     sequence = request["sequence"]
@@ -87,14 +95,42 @@ class DeviceBridge:
                 except Exception as error:
                     reply = dict(ok=False, code=getattr(error, "code", "E_DEVICE_IPC"), message=str(error),
                                  outcome=getattr(error, "outcome", "UNKNOWN"), diagnostics=getattr(error, "diagnostics", {}))
-                sendBytes(self.connection, json.dumps(reply).encode(), self.stopped.is_set, time.monotonic() + IPC_TIMEOUT)
+                phase, phaseStarted, deadline = "encode_reply", time.monotonic(), None
+                encodedReply = json.dumps(reply).encode()
+                phase, phaseStarted = "send", time.monotonic()
+                deadline = phaseStarted + IPC_TIMEOUT
+                sendBytes(self.connection, encodedReply, self.stopped.is_set, deadline)
                 if self.cancellation.is_set():
                     break
-        except (OSError, EOFError, ValueError):
-            pass
+        except (OSError, EOFError, ValueError) as error:
+            # Idle peer exit and explicit Stop are normal retirement. Preserve
+            # an unexpected reply/transport failure before closing the channel;
+            # the worker alone can only see EOF and cannot recover this cause.
+            # Windows' overlapped pipe reader reports ERROR_BROKEN_PIPE (109)
+            # as OSError, whereas the POSIX reader reports EOFError.
+            peerClosed = (isinstance(error, (EOFError, BrokenPipeError, ConnectionResetError))
+                or isinstance(error, OSError) and (error.errno == 109 or getattr(error, 'winerror', None) == 109))
+            if not self.cancelled() and not (request is None and peerClosed):
+                fields = request if isinstance(request, dict) else {}
+                transportFailure = {key: value[:128] for key in
+                    ('deviceId', 'requestId', 'cycleId', 'action', 'kind')
+                    if isinstance(value := fields.get(key), str)}
+                transportFailure.update(ownerId=self.owner, jobId=self.owner, sequence=self.sequence,
+                    diagnostics=dict(deviceIpc=dict(phase=phase, transportError=type(error).__name__,
+                        transportMessage=str(error)[:160],
+                        phaseStartedMonotonicMs=int(phaseStarted * 1000),
+                        deadlineMonotonicMs=int(deadline * 1000) if deadline is not None else None,
+                        observedMonotonicMs=int(time.monotonic() * 1000))))
         finally:
             self.stopped.set()
             self.connection.close()
+        # Diagnostics must never delay transport closure or retry an uncertain
+        # request. The manager supplies the frozen project scope for this owner.
+        if transportFailure is not None and self.onTransportError is not None:
+            try:
+                self.onTransportError(transportFailure)
+            except Exception:
+                pass
 
     def close(self):
         self.stopped.set()

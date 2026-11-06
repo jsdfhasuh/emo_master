@@ -7,6 +7,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import ts from 'typescript';
+import vm from 'node:vm';
 import {JSDOM} from 'jsdom';
 const require=createRequire(import.meta.url);
 const dom=new JSDOM('<div id="root"></div>',{url:'http://localhost/editor'});
@@ -42,19 +43,35 @@ async function fixture(options={}){
  clearSourceModules();
  history.replaceState(null,'',options.route || '/editor');
  sessionStorage.clear();globalThis.confirm=()=>true;
- const f={project:'A',instance:'one',username:'alice',authenticated:true,expire:'',revision:1,docs:{A:source(),B:source('B saved')},saves:[],attempts:[],publishes:[],holdSave:undefined,holdSaveBody:undefined,targetIds:['configured'],localNoAuth:false,localSessions:0,requests:[],...options};
+ const f={project:'A',instance:'one',username:'alice',authenticated:true,expire:'',revision:1,docs:{A:source(),B:source('B saved')},saves:[],attempts:[],publishes:[],holdSave:undefined,holdSaveBody:undefined,targetIds:['configured'],localNoAuth:false,localSessions:0,cookieJar:{token:''},sessions:new Map(),requests:[],...options};
  const reply=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
- const identity=()=>({userId:'user-'+f.username,username:f.username,role:'admin',csrf:'synthetic',localNoAuth:f.localNoAuth,authMode:f.localAuth?'local':'password'});
+ // Both loaded API modules use this browser-wide cookie jar; their CSRF caches remain isolated.
+ let sessionSerial=0;
+ function issueSession(username,localAuth){
+  const token=`synthetic-cookie-${++sessionSerial}`;
+  f.sessions.set(token,{userId:'user-'+username,username,role:'admin',csrf:`synthetic-csrf-${sessionSerial}`,authMode:localAuth?'local':'password'});
+  f.cookieJar.token=token;f.authenticated=true;f.username=username;f.localAuth=localAuth;
+ }
+ if(f.authenticated)issueSession(f.username,f.localAuth);
+ const identity=()=>({...f.sessions.get(f.cookieJar.token),localNoAuth:f.localNoAuth});
  globalThis.fetch=async(path,options={})=>{
-  f.requests.push({path,method:options.method || 'GET'});
-  if(path==='/api/health')return reply({localNoAuth:f.localNoAuth},f.healthStatus || 200);
-  if(path==='/api/local/session'){assert.equal(options.method,'POST');assert.equal(options.headers.get('X-Local-Session'),'1');assert.equal(options.body,undefined);f.localSessions++;f.authenticated=true;f.localAuth=true;f.username='local-admin';return reply(identity());}
-  if(path==='/api/admin/users' || path==='/api/admin/runtimes')return reply([]);
-  if(path==='/api/session'){f.localAuth=false;f.username=JSON.parse(options.body).username;f.authenticated=true;return reply(identity());}
+  const mutating=options.method && !['GET','HEAD'].includes(options.method);
+  f.requests.push({path,method:options.method || 'GET',csrfMatchesCurrent:mutating?options.headers.get('X-CSRF-Token')===identity().csrf:null});
   if(path===f.expire){f.authenticated=false;f.expire='';}
-  if(!f.authenticated)return reply({detail:'Login required'},401);
+  if(!f.authenticated)f.sessions.delete(f.cookieJar.token);
+  if(path==='/api/health')return reply({localNoAuth:f.localNoAuth},f.healthStatus || 200);
+  if(path==='/api/local/session'){
+   assert.equal(options.method,'POST');assert.equal(options.headers.get('X-Local-Session'),'1');assert.equal(options.body,undefined);
+   if(identity().authMode!=='local'){f.localSessions++;issueSession('local-admin',true);}
+   return reply(identity());
+  }
+  if(path==='/api/admin/users' || path==='/api/admin/runtimes')return reply([]);
+  if(path==='/api/session'){issueSession(JSON.parse(options.body).username,false);return reply(identity());}
+  if(!f.sessions.has(f.cookieJar.token))return reply({detail:'Login required'},401);
   if(path==='/api/me')return reply(identity());
-  if(path==='/api/logout'){f.authenticated=false;return reply({});}
+  if(path===f.deniedPath)return reply(f.denial,403);
+  if(mutating && options.headers.get('X-CSRF-Token')!==identity().csrf)return reply({code:'CSRF_MISMATCH',detail:'CSRF denied'},403);
+  if(path==='/api/logout'){f.authenticated=false;f.sessions.delete(f.cookieJar.token);f.cookieJar.token='';return reply({});}
   if(path==='/api/runtimes')return reply(f.targetIds.map(id=>({id,mode:'mock'})));
   if(/^\/api\/editor\/[^/]+\/context$/.test(path))return reply({runtime:{projectId:f.project,runtimeInstanceId:f.instance},catalog:{choices:[]},versions:[],draft:{presentation:f.docs[f.project],draftRevision:String(f.revision)}});
   if(/^\/api\/runtimes\/[^/]+\/runs$/.test(path))return reply([{id:'run',state:'COMPLETED'}]);
@@ -242,3 +259,78 @@ test('blocked storage never prevents explicit local entry or restores a session 
   }finally{if(f)await f.close();globalThis.sessionStorage=storage;}
  }
 });
+
+
+function isolatedTabApi(){
+ const path=require.resolve('../src/data/api.ts');
+ const code=ts.transpileModule(readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+ const exports={};
+ vm.runInNewContext(code,{exports,require:name=>{assert.equal(name,'./lossless');return require('../src/data/lossless.ts');},Headers,Blob,fetch:(...args)=>globalThis.fetch(...args),location},{filename:path});
+ return exports;
+}
+async function renewInOtherTab(f){
+ const other=isolatedTabApi(),previousCookie=f.cookieJar.token;
+ f.authenticated=false;
+ const me=await other.api('/api/local/session',{method:'POST',headers:{'X-Local-Session':'1'}});
+ other.setCsrf(me.csrf);
+ assert.notEqual(f.cookieJar.token,previousCookie,'browser-wide cookie rotates');
+ return {other,me};
+}
+for(const memoryOnly of [false,true])for(const initiatingAction of ['保存草稿','发布页面']){
+ test(`cross-tab CSRF recovery preserves ${memoryOnly?'page-memory':'stored'} draft after ${initiatingAction} without replay or shared-cookie logout`,async()=>{
+  const f=await fixture({localNoAuth:true,authenticated:false}),storage=globalThis.sessionStorage;
+  try{
+   if(memoryOnly)globalThis.sessionStorage={getItem(){throw Error('blocked');},setItem(){throw Error('blocked');},removeItem(){throw Error('blocked');}};
+   await rename('cross-tab unsaved draft');
+   if(memoryOnly)assert.match(document.body.textContent,/草稿仅保留在当前页面/);
+   const editorApi=require('../src/data/api.ts'),oldGeneration=editorApi.getSessionGeneration();
+   const {other,me}=await renewInOtherTab(f);
+   assert.equal(editorApi.getSessionGeneration(),oldGeneration,'other tab cannot update this module cache');
+   await click(initiatingAction);await waitFor(()=>button('进入本机模式'));
+   assert.equal(f.localSessions,2,'stale tab must await an explicit reentry');
+   assert.equal(f.saves.length,0);assert.equal(f.publishes.length,0);
+   const rejected=f.requests.filter(x=>x.path==='/api/editor/configured/draft');
+   assert.equal(rejected.length,1);assert.equal(rejected[0].csrfMatchesCurrent,false);
+   assert.equal(f.requests.some(x=>x.path==='/api/logout'),false,'recovery must not revoke another tab session');
+   assert.equal((await other.api('/api/me')).csrf,me.csrf);
+   const cookieAfterRenewal=f.cookieJar.token;
+   await click('进入本机模式');await waitFor(()=>nameInput());
+   assert.equal(f.localSessions,2);assert.equal(f.cookieJar.token,cookieAfterRenewal,'adopt the current local session');
+   assert.equal(nameInput().value,'cross-tab unsaved draft');
+   assert.match(document.querySelector('.editor-draft-state').textContent,/未保存/);
+   assert.match(document.body.textContent,/已恢复本标签页未保存的草稿/);
+   assert.equal(f.saves.length,0);assert.equal(f.publishes.length,0);
+   await save();assert.equal(f.saves.length,1);assert.equal(f.publishes.length,0);
+   assert.equal(f.saves[0].presentation.pages.page.name,'cross-tab unsaved draft');
+   assert.equal(f.requests.filter(x=>x.path==='/api/editor/configured/draft').at(-1).csrfMatchesCurrent,true);
+  }finally{globalThis.sessionStorage=storage;await f.close();}
+ });
+}
+for(const boundary of ['user','project','target']){
+ test(`cross-tab reentry restores only the actual returned ${boundary} identity`,async()=>{
+  const f=await fixture(boundary==='user'?{localNoAuth:true}:{localNoAuth:true,authenticated:false});
+  try{
+   await rename('old identity private draft');
+   await renewInOtherTab(f);
+   await click('保存草稿');await waitFor(()=>button('进入本机模式'));
+   if(boundary==='project')f.project='B';
+   if(boundary==='target')f.targetIds=['other'];
+   await click('进入本机模式');await waitFor(()=>nameInput());
+   assert.equal(nameInput().value,boundary==='project'?'B saved':'A saved');
+   assert.doesNotMatch(document.body.textContent,/已恢复本标签页未保存的草稿/);
+   assert.equal(f.saves.length,0);assert.equal(f.publishes.length,0);
+   if(boundary==='user')assert.match(document.querySelector('.editor-session').textContent,/本机管理员/);
+   if(boundary==='target')assert.equal(document.querySelector('[aria-label="编辑 Runtime 目标"]').value,'other');
+  }finally{await f.close();}
+ });
+}
+for(const denial of [{detail:'Permission denied'},{detail:'Origin denied'},{detail:'CSRF denied'}]){
+ test(`ordinary 403 (${denial.detail}) does not enter session recovery`,async()=>{
+  const f=await fixture({localNoAuth:true,authenticated:false,deniedPath:'/api/editor/configured/draft',denial});
+  try{
+   await rename('retained without reentry');await click('保存草稿');
+   assert.equal(nameInput().value,'retained without reentry');assert.equal(button('进入本机模式'),undefined);
+   assert.ok(document.body.textContent.includes(denial.detail));assert.equal(f.localSessions,1);assert.equal(f.saves.length,0);
+  }finally{await f.close();}
+ });
+}

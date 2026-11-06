@@ -1,0 +1,102 @@
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+__________ testDeadlineReceiptKeepsDecisionTimeAndDoesNotReleaseOwner __________
+
+    def testDeadlineReceiptKeepsDecisionTimeAndDoesNotReleaseOwner():
+        executor = DeviceExecutor("wait-evidence")
+        entered, release = Event(), Event()
+    
+        def held(*_args):
+            entered.set()
+            assert release.wait(5)
+    
+        try:
+            operation = executor.submit("job", held, requestId="request")
+            assert entered.wait(2)
+            with executor.condition:
+                operation.operationDeadline = time.monotonic() - 1
+            with pytest.raises(DeviceError) as caught:
+                executor.wait(operation)
+            error = caught.value
+            assert error.code == "E_DEVICE_OPERATION_TIMEOUT" and error.outcome == "UNKNOWN"
+>           receipt = error.diagnostics["deviceWait"]
+E           KeyError: 'deviceWait'
+
+tests/runtime/test_device_failure_observability.py:34: KeyError
+__________ testCaptureObserverStallIsDistinguishedFromDriverExecution __________
+
+manager = <emo_master.apps.runtime.devices.manager.DeviceManager object at 0x7fdf4a14cd60>
+
+    def testCaptureObserverStallIsDistinguishedFromDriverExecution(manager):
+        executor = manager.executors["camera"]
+        entered, release = Event(), Event()
+    
+        def heldObserver(*_args):
+            with executor.condition:
+                executor.active.operationDeadline = time.monotonic() - 1
+            entered.set()
+            assert release.wait(5)
+    
+        manager.frameObserver = heldObserver
+        try:
+            with ThreadPoolExecutor(1) as callers:
+                pending = callers.submit(manager.execute, "a", "camera", "capture", params(),
+                                         cycleId="cycle", requestId="observed-request")
+                assert entered.wait(2)
+                try:
+                    with pytest.raises(DeviceError) as caught:
+                        pending.result(2)
+                    error = caught.value
+                    assert error.code == "E_DEVICE_OPERATION_TIMEOUT" and error.outcome == "UNKNOWN"
+>                   receipt = error.diagnostics["deviceAction"]
+E                   KeyError: 'deviceAction'
+
+tests/runtime/test_device_failure_observability.py:67: KeyError
+___________ testBridgeRecordsActualSendFailureAfterClosingConnection ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fdf64b5a4a0>
+
+    def testBridgeRecordsActualSendFailureAfterClosingConnection(monkeypatch):
+        parent, child = multiprocessing.get_context("spawn").Pipe()
+        records = []
+        manager = SimpleNamespace(execute=lambda *_args, **_kwargs: {"completed": True})
+    
+        def record(value):
+            assert parent.closed
+            records.append(value)
+    
+>       bridge = ipc.DeviceBridge(manager, "job", parent, Event(), onTransportError=record)
+E       TypeError: DeviceBridge.__init__() got an unexpected keyword argument 'onTransportError'
+
+tests/runtime/test_device_failure_observability.py:92: TypeError
+_______________ testIdlePeerClosureIsNotReportedAsDeviceFailure ________________
+
+    def testIdlePeerClosureIsNotReportedAsDeviceFailure():
+        parent, child = multiprocessing.get_context("spawn").Pipe()
+        records = []
+>       bridge = ipc.DeviceBridge(SimpleNamespace(), "job", parent, Event(), onTransportError=records.append)
+E       TypeError: DeviceBridge.__init__() got an unexpected keyword argument 'onTransportError'
+
+tests/runtime/test_device_failure_observability.py:125: TypeError
+________ testBoundedTransportAndWaitDetailsSurviveLogPreviewTruncation _________
+
+    def testBoundedTransportAndWaitDetailsSurviveLogPreviewTruncation():
+        diagnostics = DeviceDiagnostics()
+        scope = dict(runtimeInstanceId="runtime", projectId="project", projectLoadGeneration="load")
+        details = dict(deviceWait=dict(state="EXECUTING", observedMonotonicMs=1234),
+            deviceAction=dict(phase="frame_observer", driverReturnedMonotonicMs=1200),
+            deviceIpc=dict(phase="send", transportError="OSError"))
+        row = diagnostics.append(scope, "camera", "device.action.failed", "unknown outcome",
+            code="E_DEVICE_OPERATION_TIMEOUT", diagnostics=details, unrelated="x" * 3000)
+        assert row["fieldsTruncated"] is True
+>       assert row["diagnostics"] == details
+E       KeyError: 'diagnostics'
+
+tests/runtime/test_device_failure_observability.py:144: KeyError
+=========================== short test summary info ============================
+FAILED tests/runtime/test_device_failure_observability.py::testDeadlineReceiptKeepsDecisionTimeAndDoesNotReleaseOwner
+FAILED tests/runtime/test_device_failure_observability.py::testCaptureObserverStallIsDistinguishedFromDriverExecution
+FAILED tests/runtime/test_device_failure_observability.py::testBridgeRecordsActualSendFailureAfterClosingConnection
+FAILED tests/runtime/test_device_failure_observability.py::testIdlePeerClosureIsNotReportedAsDeviceFailure
+FAILED tests/runtime/test_device_failure_observability.py::testBoundedTransportAndWaitDetailsSurviveLogPreviewTruncation
+5 failed in 0.35s

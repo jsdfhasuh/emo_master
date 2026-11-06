@@ -1,0 +1,43 @@
+Baseline cdf1250ccc41b78f79b25b87e6db197809875384 src/emo_master/apps/runtime/presentation/exporter.py sha256=40c2fef2acb3ff9d2a79118f53bb37d722ab965266edc05782caae78bc6396f5
+FF.                                                                      [100%]
+=================================== FAILURES ===================================
+_ testReapedReplacementFailureRetiresSuccessorAndNextCaptureRetriesLocally[ready_timeout] _
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-12/testReapedReplacementFailureRe0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f4d6fed63b0>
+replacement = 'ready_timeout'
+
+    @pytest.mark.parametrize('replacement', ['ready_timeout', 'ready_eof'])
+    def testReapedReplacementFailureRetiresSuccessorAndNextCaptureRetriesLocally(tmp_path, monkeypatch, replacement):
+        pool, slot, credit, capture, callbacks, retired = makePool(tmp_path, monkeypatch, replacement)
+        try:
+            assert capture(33, 19)['pendingImage']
+            pool._run(slot)
+>           assert not slot['quarantined'].value, 'proved-dead replacement must not quarantine a raw slab'
+E           AssertionError: proved-dead replacement must not quarantine a raw slab
+E           assert not True
+E            +  where True = namespace(value=True).value
+
+tests/runtime/presentation/test_export_restart_retirement.py:184: AssertionError
+_ testReapedReplacementFailureRetiresSuccessorAndNextCaptureRetriesLocally[ready_eof] _
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-12/testReapedReplacementFailureRe1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f4d6ffb3820>
+replacement = 'ready_eof'
+
+    @pytest.mark.parametrize('replacement', ['ready_timeout', 'ready_eof'])
+    def testReapedReplacementFailureRetiresSuccessorAndNextCaptureRetriesLocally(tmp_path, monkeypatch, replacement):
+        pool, slot, credit, capture, callbacks, retired = makePool(tmp_path, monkeypatch, replacement)
+        try:
+            assert capture(33, 19)['pendingImage']
+            pool._run(slot)
+>           assert not slot['quarantined'].value, 'proved-dead replacement must not quarantine a raw slab'
+E           AssertionError: proved-dead replacement must not quarantine a raw slab
+E           assert not True
+E            +  where True = namespace(value=True).value
+
+tests/runtime/presentation/test_export_restart_retirement.py:184: AssertionError
+=========================== short test summary info ============================
+FAILED tests/runtime/presentation/test_export_restart_retirement.py::testReapedReplacementFailureRetiresSuccessorAndNextCaptureRetriesLocally[ready_timeout]
+FAILED tests/runtime/presentation/test_export_restart_retirement.py::testReapedReplacementFailureRetiresSuccessorAndNextCaptureRetriesLocally[ready_eof]
+2 failed, 1 passed, 4 deselected in 0.19s

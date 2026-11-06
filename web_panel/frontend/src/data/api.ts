@@ -1,11 +1,11 @@
 import { parseLosslessJSON } from './lossless';
 let csrf = '';
 let sessionGeneration = 0;
-const sessionExpiredListeners = new Set<() => void>();
+const sessionExpiredListeners = new Set<(message: string) => void>();
 export class ApiError extends Error {
     constructor(message: string, public readonly status: number, public readonly code = '', public readonly runtimeInstanceId = '') { super(message); this.name = 'ApiError'; }
 }
-export function onSessionExpired(listener: () => void) {
+export function onSessionExpired(listener: (message: string) => void) {
     sessionExpiredListeners.add(listener);
     return () => { sessionExpiredListeners.delete(listener); };
 }
@@ -30,9 +30,13 @@ async function request(path: string, options: ApiOptions = {}): Promise<Response
             runtimeInstanceId = typeof body.runtimeInstanceId === 'string' ? body.runtimeInstanceId : '';
         }
         catch { }
-        if (res.status === 401 && !ignoreSessionExpiry && !['/api/session', '/api/preview/session', '/api/local/session'].includes(path)) {
-            message = '会话已失效，请重新登录；未确认操作已保留，不会自动重发。';
-            if (requestSession === sessionGeneration) sessionExpiredListeners.forEach(listener => listener());
+        // Another tab can renew the shared cookie while this module still holds its old CSRF.
+        const csrfMismatch = res.status === 403 && code === 'CSRF_MISMATCH';
+        if ((res.status === 401 || csrfMismatch) && !ignoreSessionExpiry && !['/api/session', '/api/preview/session', '/api/local/session'].includes(path)) {
+            message = csrfMismatch
+                ? '会话校验已失效，请重新进入；未保存草稿和未确认操作已保留，不会自动重发。'
+                : '会话已失效，请重新登录；未确认操作已保留，不会自动重发。';
+            if (requestSession === sessionGeneration) sessionExpiredListeners.forEach(listener => listener(message));
         }
         throw new ApiError(message, res.status, code, runtimeInstanceId);
     }

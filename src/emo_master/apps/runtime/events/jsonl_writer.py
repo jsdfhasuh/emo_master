@@ -391,7 +391,8 @@ def _isOperationalEvent(event: RuntimeEvent) -> bool:
         or event.eventType == "artifact.created"
         or event.eventType == "resource.cleanup.failed"
         or event.eventType == "preview.snapshot.failed"
-        or event.eventType in {"presentation.source.unavailable", "presentation.source.recovered"}
+        or event.eventType in {"presentation.source.unavailable", "presentation.source.recovered",
+                               "presentation.export.retirement_failed"}
         or event.eventType in {"operator.storage.resolved", "operator.runtime.ready",
                                "operator.runtime.failed", "operator.project.load.failed"}
         or event.eventType.startswith("device.")

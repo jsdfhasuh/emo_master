@@ -1,0 +1,66 @@
+{
+  "base_commit": "cdf1250ccc41b78f79b25b87e6db197809875384",
+  "head": "cdf1250ccc41b78f79b25b87e6db197809875384",
+  "runs": [
+    {
+      "name": "red-final",
+      "argv": [
+        "/workspace/scratch/4e0e3d24442d/review-f308/venv/bin/python",
+        "/workspace/scratch/4e0e3d24442d/review-f308/repo-repair/docs/testing/2026-11-06-runtime-recovery/exporter/baseline_runner.py",
+        "--noconftest",
+        "-q",
+        "tests/runtime/presentation/test_export_restart_retirement.py",
+        "-k",
+        "ReapedReplacementFailure or UnprovedReplacementDeath"
+      ],
+      "cwd": "/workspace/scratch/4e0e3d24442d/review-f308/repo-repair",
+      "env_overrides": {
+        "PYTHONPATH": "src:."
+      },
+      "started_utc": "2026-11-06T00:55:41.069982+00:00",
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output": "red-final.txt",
+      "output_sha256": "3dbd1df6b59ca918f7241482efd703452a9154cb449d151d4928fe0cb3f800ef"
+    },
+    {
+      "name": "green-final",
+      "argv": [
+        "/workspace/scratch/4e0e3d24442d/review-f308/venv/bin/python",
+        "-m",
+        "pytest",
+        "--noconftest",
+        "-q",
+        "tests/runtime/presentation/test_export_restart_retirement.py",
+        "tests/runtime/presentation/test_export_diagnostics.py",
+        "tests/runtime/presentation/test_failed_capture_retirement.py",
+        "tests/runtime/test_jsonl_logging.py",
+        "-k",
+        "not RealFailedEncoder and not RuntimeService"
+      ],
+      "cwd": "/workspace/scratch/4e0e3d24442d/review-f308/repo-repair",
+      "env_overrides": {
+        "PYTHONPATH": "src:."
+      },
+      "started_utc": "2026-11-06T00:55:41.642365+00:00",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "output": "green-final.txt",
+      "output_sha256": "2843145c675cd2c07b92320b26f4962948aacfe8da8e31b39a59b70c2b27cf0a"
+    }
+  ],
+  "file_sha256": {
+    "src/emo_master/apps/runtime/presentation/exporter.py": "e7cc3aea1e2a989211ad7aeb76f26501d076b15d5f8a8ffa9408b76d2285cf67",
+    "src/emo_master/apps/runtime/presentation/service.py": "a594103c12b85ef83ce23453cbff1800ce237b76f1a5f98d2a3a5f8fb34e939f",
+    "src/emo_master/apps/runtime/events/jsonl_writer.py": "02f8b8cec05ccdb47f511d60b9b7bbd0d6d0a3b59e477db25ec29dfbaf6227c6",
+    "tests/runtime/presentation/test_export_restart_retirement.py": "64f12558ad2ab77dbfa49648e33392c54ef5ee7b99470b901337502e053581d3"
+  },
+  "real_spawn_started": false,
+  "hardware_acceptance": false,
+  "limitations": [
+    "Native Process/Pipe scheduling controlled in the new regression.",
+    "Real collector, shared memory, semaphore, encodeWorker, PNG codec, ExportPool owner methods, SQLite and JSONL writer used.",
+    "No project generated. --noconftest bypasses unavailable examples.runtime_pages_p2 collection import; only selected self-contained tests ran.",
+    "Initial production slowdown cause remains unconfirmed."
+  ]
+}

@@ -301,8 +301,14 @@ class DeviceManager:
             service = declaration.operationScheduling == 'managed_service'
             if service and not lifecycle.connected:
                 raise DeviceError('E_TCP_NOT_RUNNING', f'{deviceId}: 服务尚未启动，请按策略启动或在设备页启动服务')
+            actionTrace = dict(phase='queued', phaseStartedMonotonicMs=int(monotonic()*1000))
+
+            def tracePhase(phase, **completed):
+                actionTrace.update(phase=phase, phaseStartedMonotonicMs=int(monotonic()*1000), **completed)
+
             def perform(cancel, deadline, generation):
                 try:
+                    tracePhase('connect')
                     def stopped():
                         return cancel() or cancelled()
                     if stopped():
@@ -316,8 +322,11 @@ class DeviceManager:
                                           "device action abandoned after connection, before execution")
                     deadline = min(deadline, requestDeadline or float("inf"))
                     actionDeadline = deadline if unlimited else min(deadline, monotonic() + operationTimeout)
+                    tracePhase('driver')
                     result = driver.execute(action, params, stopped, actionDeadline,
                         arguments=arguments, operationContext=operationContext)
+                    tracePhase('frame_publish' if reservation else 'return',
+                               driverReturnedMonotonicMs=int(monotonic()*1000))
                     if reservation:
                         metadata = None
                         if isinstance(result, DeviceCaptureResult):
@@ -326,21 +335,26 @@ class DeviceManager:
                             result, metadata = result
                         descriptor = self.frames.publish(reservation, result, cycleId=cycleId,
                             generation=generation, requestId=requestId, planRevision=planRevision, metadata=metadata)
+                        tracePhase('frame_observer', framePublishedMonotonicMs=int(monotonic()*1000))
                         if observe and self.frameObserver is not None:
                             # Observation owns only a bounded JPEG copy, never the
                             # original lease or admission of another acquisition.
                             self.frameObserver(deviceId, owner, result, descriptor)
                         return descriptor
                     return result
-                except DeviceError:
+                except DeviceError as error:
+                    error.diagnostics.setdefault('deviceAction', dict(actionTrace,
+                        observedMonotonicMs=int(monotonic()*1000)))
                     state = driver.snapshot()
                     if state.get('ready') is False and state.get('ownsResources') is False:
                         lifecycle.connected = False
                     raise
                 finally:
+                    tracePhase('cleanup')
                     lifecycle.touched()
                     if reservation:
                         self.frames.discardReservation(reservation)
+                    tracePhase('finished')
             if service:
                 with executor.condition:
                     lifecycle.admit()
@@ -379,10 +393,17 @@ class DeviceManager:
                         result={'frame': True} if reservation else compactResult(future.result()))
             # The native result is recorded even after the RPC caller stops waiting.
             operation.future.add_done_callback(completed)
-        if service:
-            return self.services[deviceId].run(operation, perform, cancelled,
-                min(requestDeadline or float('inf'), monotonic()+operationTimeout), executor.generation)
-        return executor.wait(operation, cancelled, cancelReceiptTimeout=cancelReceiptTimeout)
+        try:
+            if service:
+                return self.services[deviceId].run(operation, perform, cancelled,
+                    min(requestDeadline or float('inf'), monotonic()+operationTimeout), executor.generation)
+            return executor.wait(operation, cancelled, cancelReceiptTimeout=cancelReceiptTimeout)
+        except DeviceError as error:
+            # A wait timeout can occur after the driver returned, while frame
+            # publication/observation or cleanup still owns the operation.
+            error.diagnostics.setdefault('deviceAction', dict(actionTrace,
+                observedMonotonicMs=int(monotonic()*1000)))
+            raise
 
     def testConnection(self, value, cancelled=lambda: False, *, admissionLock=None, admission=None, deviceId=None):
         """Borrow the physical owner, or register a temporary owner until cleanup."""
@@ -546,7 +567,14 @@ class DeviceManager:
                 if self.definitions[key].enabled and self.types[self.definitions[key].deviceTypeId].operationScheduling == "serial" and self.types[self.definitions[key].deviceTypeId].connectionLifetime == "persistent" and self.definitions[key].policies.get("connect") == "on_project_run":
                     self._connectEvent(key, owner)
             parent, child = context.Pipe()
-            bridge = DeviceBridge(self, owner, parent, cancellation)
+            scope = dict(self.scope)
+
+            def reportTransport(fields):
+                self.diagnostics.append(scope, fields.get('deviceId', ''), 'device.ipc.failed',
+                    'device IPC transport closed; request will not be replayed', code='E_DEVICE_IPC_CLOSED',
+                    **{key: value for key, value in fields.items() if key != 'deviceId'})
+
+            bridge = DeviceBridge(self, owner, parent, cancellation, onTransportError=reportTransport)
             self.workers[owner] = bridge
             bridge.thread.start()
             return child

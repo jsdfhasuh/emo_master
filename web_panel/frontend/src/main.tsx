@@ -154,7 +154,7 @@ function App() {
         setPending(undefined);controlId.current=undefined;setBusy(false);setCatalogBusy(false);
         setCatalogError('');setNotice('');setError(message);bootstrapSession=undefined;
     }
-    useEffect(() => onSessionExpired(() => endSession('会话已失效，请重新登录；未确认操作已保留，不会自动重发。')), []);
+    useEffect(() => onSessionExpired(message => endSession(message)), []);
     async function logout() {
         const epoch=sessionEpoch.current;setBusy(true);
         let message='';

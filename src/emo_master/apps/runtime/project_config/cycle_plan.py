@@ -2,6 +2,7 @@
 from contextlib import contextmanager
 from dataclasses import replace
 
+from emo_master.core.contracts.device_driver import DeviceError
 from emo_master.core.project.configuration import applyCycleParameters, applyDeviceCycleParameters
 from emo_master.core.project.models import ProjectDocument
 from emo_master.apps.runtime.workflow.cancellation import CancellationRequested
@@ -38,10 +39,22 @@ class CyclePlanSession:
                 try:
                     self.devices.framework("endCycle", cycleId=cycle["cycleId"])
                 except CancellationRequested:
-                    # A stop racing cleanup must not hide a real body failure.
-                    # The existing owner retirement releases this cycle lease.
+                    # Preserve the existing cancellation receipt unchanged.
                     if primaryError is None:
                         raise
+                except DeviceError as cleanupError:
+                    # Keep the original device receipt, including UNKNOWN and
+                    # its request identity, when an already closed proxy rejects
+                    # cleanup. Owner retirement still releases the cycle lease.
+                    if primaryError is None:
+                        raise
+                    diagnostics = getattr(primaryError, "diagnostics", None)
+                    if isinstance(diagnostics, dict):
+                        cleanup = diagnostics.setdefault("cycleCleanup", [])
+                        if isinstance(cleanup, list):
+                            cleanup.append({"cycleId": cycle["cycleId"], "code": cleanupError.code,
+                                "message": str(cleanupError), "outcome": getattr(cleanupError, "outcome", None),
+                                "diagnostics": getattr(cleanupError, "diagnostics", {})})
 
     def iteration(self, context):
         return self.scope(context, parentCycleId=context.cycleId)

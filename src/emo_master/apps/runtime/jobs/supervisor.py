@@ -411,6 +411,9 @@ class JobSupervisor:
                     # The producer clock is authoritative from process start. A
                     # queued heartbeat, unavailable cell or corrupt future sample
                     # must never renew this deadline.
+                    # Do not charge a pause after the read to the sampled
+                    # heartbeat. The producer may have kept publishing meanwhile.
+                    observation = monotonicMs()
                     sample = cell.read()
                     current = monotonicMs()
                     lastHeartbeat = self._heartbeatMonotonic[jobId]
@@ -423,12 +426,14 @@ class JobSupervisor:
                     if legacyHeartbeat is None:
                         return
                     lastHeartbeat = legacyHeartbeat
-                    current = nowMs()
+                    sample = None
+                    observation = current = nowMs()
                 timeoutMs = self._heartbeatTimeouts.get(jobId, self.heartbeatTimeoutMs)
-                if jobId not in self._heartbeatSeen:
-                    intervalMs = self._heartbeatIntervals.get(jobId, 500)
+                intervalMs = self._heartbeatIntervals.get(jobId, 500)
+                seen = jobId in self._heartbeatSeen
+                if not seen:
                     timeoutMs = max(timeoutMs, intervalMs * 2)
-                if current - lastHeartbeat <= timeoutMs:
+                if observation - lastHeartbeat <= timeoutMs:
                     return
                 handle = self._handles.get(jobId)
                 if handle is None:
@@ -458,6 +463,12 @@ class JobSupervisor:
                     code="E_HEARTBEAT_TIMEOUT",
                     projectId=record.projectId,
                     workflowId=record.workflowId,
+                    payload={"pid": process.pid, "heartbeat": {
+                        "clock": "monotonic" if cell is not None else "wall",
+                        "observationMs": observation, "currentMs": current,
+                        "sampleMs": sample, "lastGoodMs": lastHeartbeat,
+                        "timeoutMs": timeoutMs, "intervalMs": intervalMs, "seen": seen,
+                    }},
                 )
                 self._claimTerminal(claim,
                     jobId,

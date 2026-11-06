@@ -1,0 +1,33 @@
+{
+  "argv": [
+    "/workspace/scratch/4e0e3d24442d/review-f308/venv/bin/python",
+    "docs/testing/2026-11-06-runtime-recovery/exporter/replay_restart_recovery.py",
+    "--output",
+    "docs/testing/2026-11-06-runtime-recovery/exporter/native-replay.json"
+  ],
+  "cwd": "/workspace/scratch/4e0e3d24442d/review-f308/repo-repair",
+  "env_overrides": {
+    "PYTHONPATH": "src:.",
+    "QT_QPA_PLATFORM": "offscreen"
+  },
+  "started_utc": "2026-11-06T00:59:49.694220+00:00",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 13.014175887999954,
+  "source_hashes_before": {
+    "src/emo_master/apps/runtime/presentation/exporter.py": "e7cc3aea1e2a989211ad7aeb76f26501d076b15d5f8a8ffa9408b76d2285cf67",
+    "src/emo_master/apps/runtime/presentation/service.py": "a594103c12b85ef83ce23453cbff1800ce237b76f1a5f98d2a3a5f8fb34e939f",
+    "src/emo_master/apps/runtime/events/jsonl_writer.py": "02f8b8cec05ccdb47f511d60b9b7bbd0d6d0a3b59e477db25ec29dfbaf6227c6",
+    "/workspace/scratch/4e0e3d24442d/review-f308/diagnostics/image/repro_restart_quarantine.py": "33d99fb8841f00a0fa7a3ef41acdc0f9faf560aff77208ead4c2578264b07f0a",
+    "docs/testing/2026-11-06-runtime-recovery/exporter/replay_restart_recovery.py": "f6bd97201c8d6a0bc65b318561bea47a838da234f4f06eacb999a59f829eb668"
+  },
+  "source_hashes_after": {
+    "src/emo_master/apps/runtime/presentation/exporter.py": "e7cc3aea1e2a989211ad7aeb76f26501d076b15d5f8a8ffa9408b76d2285cf67",
+    "src/emo_master/apps/runtime/presentation/service.py": "a594103c12b85ef83ce23453cbff1800ce237b76f1a5f98d2a3a5f8fb34e939f",
+    "src/emo_master/apps/runtime/events/jsonl_writer.py": "02f8b8cec05ccdb47f511d60b9b7bbd0d6d0a3b59e477db25ec29dfbaf6227c6",
+    "/workspace/scratch/4e0e3d24442d/review-f308/diagnostics/image/repro_restart_quarantine.py": "33d99fb8841f00a0fa7a3ef41acdc0f9faf560aff77208ead4c2578264b07f0a",
+    "docs/testing/2026-11-06-runtime-recovery/exporter/replay_restart_recovery.py": "f6bd97201c8d6a0bc65b318561bea47a838da234f4f06eacb999a59f829eb668"
+  },
+  "stdout": "native-replay.txt",
+  "stdout_sha256": "708a508fb6a0fa3914d94971fbccd165344b224cea7edeadd76a4f58c273a7f4"
+}

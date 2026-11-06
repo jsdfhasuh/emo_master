@@ -1,0 +1,15 @@
+
+==================================== ERRORS ====================================
+_____________ ERROR collecting web_panel/tests/test_local_auth.py ______________
+ImportError while importing test module '/workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/tests/test_local_auth.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/root/.local/share/uv/python/cpython-3.10-linux-x86_64-gnu/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+web_panel/tests/test_local_auth.py:9: in <module>
+    from fastapi.testclient import TestClient
+E   ModuleNotFoundError: No module named 'fastapi'
+=========================== short test summary info ============================
+ERROR web_panel/tests/test_local_auth.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.12s

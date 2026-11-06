@@ -1,0 +1,64 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_ testReapedReplacementFailureRetiresSuccessorAndNextCaptureRetriesLocally[ready_timeout] _
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/testReapedReplacementFailureRe0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f86b54010f0>
+replacement = 'ready_timeout'
+
+    @pytest.mark.parametrize('replacement', ['ready_timeout', 'ready_eof'])
+    def testReapedReplacementFailureRetiresSuccessorAndNextCaptureRetriesLocally(tmp_path, monkeypatch, replacement):
+        pool, slot, credit, capture, callbacks, retired = makePool(tmp_path, monkeypatch, replacement)
+        try:
+            assert capture(33, 19)['pendingImage']
+            pool._run(slot)
+>           assert not slot['quarantined'].value, 'proved-dead replacement must not quarantine a raw slab'
+E           AssertionError: proved-dead replacement must not quarantine a raw slab
+E           assert not True
+E            +  where True = namespace(value=True).value
+
+tests/runtime/presentation/test_export_restart_retirement.py:183: AssertionError
+_ testReapedReplacementFailureRetiresSuccessorAndNextCaptureRetriesLocally[ready_eof] _
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/testReapedReplacementFailureRe1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f86b5566680>
+replacement = 'ready_eof'
+
+    @pytest.mark.parametrize('replacement', ['ready_timeout', 'ready_eof'])
+    def testReapedReplacementFailureRetiresSuccessorAndNextCaptureRetriesLocally(tmp_path, monkeypatch, replacement):
+        pool, slot, credit, capture, callbacks, retired = makePool(tmp_path, monkeypatch, replacement)
+        try:
+            assert capture(33, 19)['pendingImage']
+            pool._run(slot)
+>           assert not slot['quarantined'].value, 'proved-dead replacement must not quarantine a raw slab'
+E           AssertionError: proved-dead replacement must not quarantine a raw slab
+E           assert not True
+E            +  where True = namespace(value=True).value
+
+tests/runtime/presentation/test_export_restart_retirement.py:183: AssertionError
+_______ testUnprovedReplacementDeathKeepsQueuedRawReservationQuarantined _______
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/testUnprovedReplacementDeathKe0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f86b55a6e00>
+
+    def testUnprovedReplacementDeathKeepsQueuedRawReservationQuarantined(tmp_path, monkeypatch):
+        pool, slot, credit, capture, callbacks, retired = makePool(tmp_path, monkeypatch, 'unproved_reap')
+        try:
+            assert capture(33, 19)['pendingImage']
+            pool._run(slot)
+            assert slot['quarantined'].value and slot['process'].alive
+            assert slot['pending'] == {0} and not credit.acquire(False)
+            assert credit.releases == 1, 'unproved reader death must not release its successor reservation'
+            assert [row[:2] for row in callbacks] == [(33, 'EXPORT_TIMEOUT'), (34, 'EXPORT_FAILED')]
+            assert 'quarantined' in capture(40, 241)['reason']
+            assert pool.context.dispatched == [33]
+            assert len(pool.context.processes) == 2
+>           assert retired and retired[0]['ownerPhase'] == 'quarantined'
+E           assert ([])
+
+tests/runtime/presentation/test_export_restart_retirement.py:233: AssertionError
+=========================== short test summary info ============================
+FAILED tests/runtime/presentation/test_export_restart_retirement.py::testReapedReplacementFailureRetiresSuccessorAndNextCaptureRetriesLocally[ready_timeout]
+FAILED tests/runtime/presentation/test_export_restart_retirement.py::testReapedReplacementFailureRetiresSuccessorAndNextCaptureRetriesLocally[ready_eof]
+FAILED tests/runtime/presentation/test_export_restart_retirement.py::testUnprovedReplacementDeathKeepsQueuedRawReservationQuarantined
+3 failed in 0.47s

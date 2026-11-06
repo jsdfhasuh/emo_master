@@ -180,6 +180,65 @@ class LocalHTTPTests(unittest.TestCase):
         self.assertEqual(renewed['userId'], me['userId'])
         self.assertNotEqual(self.client.cookies.get(COOKIE), old)
 
+    def test_shared_cookie_csrf_recovery_keeps_current_session_and_requires_explicit_save(self):
+        old_me, old_headers = self.login()
+        old_cookie = self.client.cookies.get(COOKIE)
+        base = '/api/editor/configured'
+        context = self.client.get(base + '/context').json()
+        # Persist the starting draft: an empty editor otherwise generates fresh page IDs on each read.
+        seeded = self.client.put(base + '/draft', headers=old_headers, json={
+            'projectId': context['runtime']['projectId'], 'presentation': context['draft']['presentation'],
+            'expectedDraftRevision': context['draft']['draftRevision']})
+        self.assertEqual(seeded.status_code, 200, seeded.text)
+        context = self.client.get(base + '/context').json()
+        presentation = deepcopy(context['draft']['presentation'])
+        presentation['pages'][presentation['defaultPageId']]['name'] = 'Cross-tab draft'
+        body = {'projectId': context['runtime']['projectId'], 'presentation': presentation,
+                'expectedDraftRevision': context['draft']['draftRevision']}
+        with self.app.state.auth.db() as db:
+            db.execute('UPDATE sessions SET expires=?', (time.time() - 1,))
+        # A second tab reenters; TestClient's real cookie jar now sends its fresh cookie
+        # while the first tab still supplies its original cached CSRF header.
+        current_me, _ = self.login()
+        current_cookie = self.client.cookies.get(COOKIE)
+        self.assertNotEqual(current_cookie, old_cookie)
+        self.assertNotEqual(current_me['csrf'], old_me['csrf'])
+        self.assertEqual(current_me['userId'], old_me['userId'])
+        for headers in (old_headers, {'Origin': ORIGIN}):
+            denied = self.client.put(base + '/draft', headers=headers, json=body)
+            self.assertEqual(denied.status_code, 403, denied.text)
+            self.assertEqual(denied.json(), {'detail': 'CSRF denied', 'code': 'CSRF_MISMATCH'})
+            self.assertNotIn('set-cookie', denied.headers)
+            self.assertEqual(self.client.get(base + '/context').json()['draft'], context['draft'])
+        self.assertEqual(self.client.cookies.get(COOKIE), current_cookie)
+        self.assertIsNotNone(self.app.state.auth.session(current_cookie))
+        adopted_me, adopted_headers = self.login()
+        self.assertEqual(adopted_me['csrf'], current_me['csrf'])
+        self.assertEqual(self.client.cookies.get(COOKIE), current_cookie)
+        saved = self.client.put(base + '/draft', headers=adopted_headers, json=body)
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertEqual(saved.json()['presentation'], presentation)
+        self.assertEqual(self.app.state.runtime.control_count, 0)
+        self.assertEqual(self.app.state.runtime.output_config['sources'], {})
+        self.assertEqual(self.app.state.runtime.output_receipts, {})
+
+    def test_origin_and_permission_denials_never_report_csrf_recovery_code(self):
+        _, headers = self.login()
+        base = '/api/editor/configured'
+        context = self.client.get(base + '/context').json()
+        body = {'projectId': context['runtime']['projectId'],
+                'presentation': context['draft']['presentation']}
+        wrong_origin = self.client.put(base + '/draft', headers={**headers, 'Origin': 'https://evil.example'}, json=body)
+        self.assertEqual(wrong_origin.status_code, 403)
+        self.assertNotIn('code', wrong_origin.json())
+        self.app.state.auth.create_user('viewer', 'safe-test-password', 'viewer')
+        viewer = self.client.post('/api/session', headers={'Origin': ORIGIN},
+                                  json={'username': 'viewer', 'password': 'safe-test-password'})
+        self.assertEqual(viewer.status_code, 200, viewer.text)
+        denied = self.client.put(base + '/draft', headers=headers, json=body)
+        self.assertEqual(denied.status_code, 403)
+        self.assertEqual(denied.json(), {'detail': 'Permission denied'})
+
     def test_disabling_local_mode_rejects_old_local_cookie(self):
         self.login()
         token = self.client.cookies.get(COOKIE)

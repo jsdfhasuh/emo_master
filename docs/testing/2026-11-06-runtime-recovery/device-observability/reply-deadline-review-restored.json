@@ -1,0 +1,156 @@
+{
+  "baseCommit": "cdf1250ccc41b78f79b25b87e6db197809875384",
+  "sourcePath": "src/emo_master/apps/runtime/devices/ipc.py",
+  "expected": "restored",
+  "sourceSha256": {
+    "baseline": "c5daaa8d78caa3e5217598163d3d7e40d9e0f832887cc90fa6add09b9605a813",
+    "current": "cc31061cecc117f59b9b3dae8f5b093b4f0d861a17e2708d5180b9a7d3f81c26",
+    "pipeIo": "6a8ed9d0d80ed2b4dbe4530228ba54029f71fd130eeec446b25833ff4db1d80c"
+  },
+  "method": "Unchanged run methods, native Pipe, real sendBytes; local fake clocks; no sleep/spawn.",
+  "scenarios": {
+    "control": {
+      "baseline": {
+        "serializationPauseSeconds": 0.0,
+        "transportPauseSeconds": 0.0,
+        "ipcTimeoutSeconds": 2.0,
+        "serializationStarted": 100.0,
+        "serializationEnded": 100.0,
+        "sendEntered": 100.0,
+        "sendDeadline": 102.0,
+        "sendBudgetAtEntry": 2.0,
+        "sendErrorType": null,
+        "reply": {
+          "ok": true,
+          "result": {
+            "completed": true
+          }
+        },
+        "peerOutcome": "REPLY",
+        "executeCalls": 1,
+        "parentClosed": true,
+        "failureDiagnostics": []
+      },
+      "current": {
+        "serializationPauseSeconds": 0.0,
+        "transportPauseSeconds": 0.0,
+        "ipcTimeoutSeconds": 2.0,
+        "serializationStarted": 100.0,
+        "serializationEnded": 100.0,
+        "sendEntered": 100.0,
+        "sendDeadline": 102.0,
+        "sendBudgetAtEntry": 2.0,
+        "sendErrorType": null,
+        "reply": {
+          "ok": true,
+          "result": {
+            "completed": true
+          }
+        },
+        "peerOutcome": "REPLY",
+        "executeCalls": 1,
+        "parentClosed": true,
+        "failureDiagnostics": []
+      }
+    },
+    "serialization_pause": {
+      "baseline": {
+        "serializationPauseSeconds": 2.25,
+        "transportPauseSeconds": 0.0,
+        "ipcTimeoutSeconds": 2.0,
+        "serializationStarted": 100.0,
+        "serializationEnded": 102.25,
+        "sendEntered": 102.25,
+        "sendDeadline": 104.25,
+        "sendBudgetAtEntry": 2.0,
+        "sendErrorType": null,
+        "reply": {
+          "ok": true,
+          "result": {
+            "completed": true
+          }
+        },
+        "peerOutcome": "REPLY",
+        "executeCalls": 1,
+        "parentClosed": true,
+        "failureDiagnostics": []
+      },
+      "current": {
+        "serializationPauseSeconds": 2.25,
+        "transportPauseSeconds": 0.0,
+        "ipcTimeoutSeconds": 2.0,
+        "serializationStarted": 100.0,
+        "serializationEnded": 102.25,
+        "sendEntered": 102.25,
+        "sendDeadline": 104.25,
+        "sendBudgetAtEntry": 2.0,
+        "sendErrorType": null,
+        "reply": {
+          "ok": true,
+          "result": {
+            "completed": true
+          }
+        },
+        "peerOutcome": "REPLY",
+        "executeCalls": 1,
+        "parentClosed": true,
+        "failureDiagnostics": []
+      }
+    },
+    "transport_pause": {
+      "baseline": {
+        "serializationPauseSeconds": 0.0,
+        "transportPauseSeconds": 2.25,
+        "ipcTimeoutSeconds": 2.0,
+        "serializationStarted": 100.0,
+        "serializationEnded": 100.0,
+        "sendEntered": 100.0,
+        "sendDeadline": 102.0,
+        "sendBudgetAtEntry": 2.0,
+        "sendErrorType": "TimeoutError",
+        "reply": null,
+        "peerOutcome": "EOF",
+        "executeCalls": 1,
+        "parentClosed": true,
+        "failureDiagnostics": []
+      },
+      "current": {
+        "serializationPauseSeconds": 0.0,
+        "transportPauseSeconds": 2.25,
+        "ipcTimeoutSeconds": 2.0,
+        "serializationStarted": 100.0,
+        "serializationEnded": 100.0,
+        "sendEntered": 100.0,
+        "sendDeadline": 102.0,
+        "sendBudgetAtEntry": 2.0,
+        "sendErrorType": "TimeoutError",
+        "reply": null,
+        "peerOutcome": "EOF",
+        "executeCalls": 1,
+        "parentClosed": true,
+        "failureDiagnostics": [
+          {
+            "deviceId": "simulated",
+            "requestId": "review-request",
+            "cycleId": "review-cycle",
+            "action": "read",
+            "kind": "device_action",
+            "ownerId": "review-job",
+            "jobId": "review-job",
+            "sequence": 1,
+            "diagnostics": {
+              "deviceIpc": {
+                "phase": "send",
+                "transportError": "TimeoutError",
+                "transportMessage": "通信 IPC 已取消或超过请求时限",
+                "phaseStartedMonotonicMs": 100000,
+                "deadlineMonotonicMs": 102000,
+                "observedMonotonicMs": 102250
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

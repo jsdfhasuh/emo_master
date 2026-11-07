@@ -521,7 +521,8 @@ class PresentationService:
         self.runtime.eventStore.append(jobId, "presentation.export.retirement_failed",
             "图像导出退休失败；原始图像仍隔离" if quarantined else "图像编码器启动失败；读者已回收，后续图像可重试",
             level="ERROR" if quarantined else "WARN", code="EXPORT_RETIREMENT_FAILED",
-            projectId=job.projectId if job else "", workflowRunId=diagnostic.get("invocationId") or "",
+            projectId=job.projectId if job else "", workflowId=job.workflowId if job else "",
+            workflowRunId=diagnostic.get("invocationId") or "",
             payload=dict(diagnostic))
 
     def _retirePending(self, key, pending):

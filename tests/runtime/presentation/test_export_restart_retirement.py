@@ -285,7 +285,8 @@ def testRetirementFailurePersistsFinalProofInExistingEventStoreAndJsonl(
     events.addSink(writer.enqueue)
     service = object.__new__(PresentationService)
     service.runtime = SimpleNamespace(eventStore=events,
-        jobRepository=SimpleNamespace(get=lambda jobId: SimpleNamespace(projectId='project')))
+        jobRepository=SimpleNamespace(get=lambda jobId: SimpleNamespace(
+            projectId='project', workflowId='producer-flow')))
     pool, slot, credit, capture, callbacks, retired = makePool(tmp_path, monkeypatch, replacement)
     pool.retirementCallback = service._exportRetired
     try:
@@ -294,7 +295,8 @@ def testRetirementFailurePersistsFinalProofInExistingEventStoreAndJsonl(
         event, = events.read('job')
         assert (event.eventType, event.component, event.level, event.code) == (
             'presentation.export.retirement_failed', 'presentation', level, 'EXPORT_RETIREMENT_FAILED')
-        assert event.projectId == 'project' and event.workflowRunId == 'call-33'
+        assert (event.jobId, event.projectId, event.workflowId, event.workflowRunId) == (
+            'job', 'project', 'producer-flow', 'call-33')
         diagnostic = json.loads(event.payloadJson)
         assert diagnostic['resultOrdinal'] == 33 and diagnostic['ownerPhase'] == phase
         assert diagnostic['laneReleaseProof'] == 'verified_private_snapshot'
@@ -302,11 +304,15 @@ def testRetirementFailurePersistsFinalProofInExistingEventStoreAndJsonl(
         assert len(diagnostic['startupDetail']) <= 240 and len(diagnostic['retirementDetail']) <= 240
         assert diagnostic['retirementEndedNs'] >= diagnostic['callbackEndedNs']
         assert 'retirementErrorType' not in callbacks[0][2], 'published result metadata stays immutable'
-        assert [record.payloadJson for record in persistence.listJobEventsAfter('job')] == [event.payloadJson]
+        persisted, = persistence.listJobEventsAfter('job')
+        assert (persisted.jobId, persisted.projectId, persisted.workflowId) == ('job', 'project', 'producer-flow')
+        assert persisted.payloadJson == event.payloadJson
         assert writer.close() is None
         lines = [json.loads(line) for path in (tmp_path / 'logs').glob('runtime-*.jsonl')
                  for line in path.read_text(encoding='utf-8').splitlines()]
         assert len(lines) == 1 and lines[0]['payload'] == diagnostic
+        assert (lines[0]['jobId'], lines[0]['projectId'], lines[0]['workflowId']) == (
+            'job', 'project', 'producer-flow')
     finally:
         writer.close()
         if slot['process'] is not None:

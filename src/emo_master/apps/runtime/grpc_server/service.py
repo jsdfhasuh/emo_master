@@ -2344,8 +2344,10 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
             self._inspectionFailed(jobId, error)
 
     def _inspectionFailed(self, jobId, error):
+        record = self.jobRepository.get(jobId)
         self.eventStore.append(jobId, 'preview.snapshot.failed', str(error), level='WARN',
-                               code='E_INSPECTION_TAKEOVER')
+            code='E_INSPECTION_TAKEOVER', projectId=record.projectId if record else '',
+            workflowId=record.workflowId if record else '')
 
     def _onJobTerminal(self, jobId: str, status: str) -> None:
         if self.loadedDocument is not None and self.loadedDocument.schemaVersion not in {'2.7', '2.8', '2.9'}:
@@ -2361,12 +2363,15 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
                     workspace / "preview_staging", previewKey
                 )
             except Exception as err:
+                record = self.jobRepository.get(jobId)
                 self.eventStore.append(
                     jobId,
                     "preview.snapshot.failed",
                     str(err),
                     level="WARN",
                     code="E_PREVIEW_SNAPSHOT_FAILED",
+                    projectId=record.projectId if record else "",
+                    workflowId=record.workflowId if record else "",
                 )
         if status in {JobStatus.FAILED.value, JobStatus.ABORTED.value}:
             self._removeWorkspace(jobId)

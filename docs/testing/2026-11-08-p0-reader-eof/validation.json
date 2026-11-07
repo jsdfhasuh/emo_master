@@ -1,0 +1,83 @@
+{
+  "actor": "ChatGPT Web",
+  "dateAsiaShanghai": "2026-11-08",
+  "baseline": "c897db8f48fda255a0853caa3ba538ddaf210502",
+  "sourceFilesSHA256": {
+    "prototypes/runtime_pages_p0/resources.py": "446e09febed5d7936ca8d1acb19b07cec60cd1c821bf71b65609c806ae6f31b7",
+    "tests/p0/test_asset_reader_completion.py": "1a96b1c3f1a54e1ceec2efd4c3d118351d6d82e712f544aaf07e04cca45208c9"
+  },
+  "failedCI": {
+    "run": 42387051487,
+    "job": 128446540030,
+    "checkout": "10262f2ec087e744c773e2c62e9a767b9f7dba6f",
+    "test": "tests/p0/test_continuous.py::test_long_lived_runner_to_two_network_image_consumers",
+    "coverage": [
+      0.975,
+      0.975
+    ],
+    "ordinal": 35,
+    "encodedBytes": 6232951,
+    "bytesReceivedEach": [
+      6232951,
+      6232951
+    ],
+    "rpcStatusEach": [
+      "DEADLINE_EXCEEDED",
+      "DEADLINE_EXCEEDED"
+    ],
+    "elapsedMsEach": [
+      506.9945,
+      512.4123
+    ],
+    "nextOrdinalAdoptionMs": 380.4177
+  },
+  "local": {
+    "python": "3.10.22",
+    "platform": "Linux",
+    "QT_QPA_PLATFORM": "offscreen",
+    "red": {
+      "tests": "2",
+      "failures": "2",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.720"
+    },
+    "greenDirect": {
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.276"
+    },
+    "greenP0Suite": {
+      "tests": "72",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "32.025"
+    },
+    "commands": [
+      "python -m pytest -q tests/p0/test_asset_reader_completion.py --tb=short --timeout=30 --timeout-method=thread",
+      "python -m pytest -q tests/p0 --tb=short --timeout=120 --timeout-method=thread -o faulthandler_timeout=60",
+      "python -m ruff check prototypes/runtime_pages_p0/resources.py tests/p0/test_asset_reader_completion.py",
+      "git diff --check"
+    ],
+    "ruff": "passed",
+    "whitespace": "passed"
+  },
+  "unchanged": {
+    "assetRpcBudgetMs": 500,
+    "consumerBudgetMs": 550,
+    "requiredCoverage": [
+      1.0,
+      1.0
+    ],
+    "ciWorkflow": true,
+    "leaseLatestReaderGuards": true,
+    "readBuffersChargedThroughFinalYield": true,
+    "formalProductPaths": true
+  },
+  "causalBoundary": "Controlled event-gated adoption proves that the shared Assets.lock delays already-admitted reader EOF until unrelated filesystem work returns. Original Windows CI timings are consistent, but contain no per-lock/unlink/replace/last-chunk trace to establish the unique historical OS trigger.",
+  "remoteValidation": "New head, merge checkout and terminal CI results are recorded in the ChatGPT Web PR follow-up comment; no older passing run substitutes for this patch.",
+  "visibleAcceptance": "Previous Dot passing scope retained. This P0-only patch does not require another full visible Web/Dispatch acceptance or resolve historical Error 9/first blank image."
+}

@@ -1,0 +1,250 @@
+{
+  "source": "evidence/os-process-samples.jsonl",
+  "clockTicksPerSecond": "not retained in original evidence; no conversion to seconds",
+  "interpretations": [
+    "stat user/system ticks aggregate the process; schedstat here is the PID leader thread, so their magnitudes need not match.",
+    "Failure windows show nearly all process CPU tick growth in system time plus major-fault growth across independent Runtime/worker/Web processes.",
+    "This supports examining kernel scheduling/reclaim/resource-domain delay; it does not uniquely prove CPU quota, OOM, a particular kernel path or external process.",
+    "The four-process footprint cannot describe all host activity. Missing native-TID identity and resource-domain counters remain limitations."
+  ],
+  "rows": [
+    {
+      "group": "1",
+      "sourceLines": [
+        607,
+        608
+      ],
+      "pid": 2007574,
+      "role": "runtime",
+      "starttimeTicks": 21636452,
+      "intervalNs": 11033526103,
+      "userTicks": 0,
+      "systemTicks": 350,
+      "majorFaults": 95,
+      "minorFaults": 576,
+      "leaderCpuNs": 0,
+      "leaderRunqueueNs": 0
+    },
+    {
+      "group": "1",
+      "sourceLines": [
+        607,
+        608
+      ],
+      "pid": 2024915,
+      "role": "job:c8a30046-95b5-4818-80f4-2d33ddedc739",
+      "starttimeTicks": 21758378,
+      "intervalNs": 11044809724,
+      "userTicks": 2,
+      "systemTicks": 144,
+      "majorFaults": 20,
+      "minorFaults": 113,
+      "leaderCpuNs": 561009617,
+      "leaderRunqueueNs": 9010550276
+    },
+    {
+      "group": "1",
+      "sourceLines": [
+        607,
+        608
+      ],
+      "pid": 2024912,
+      "role": "job:03e7f906-708b-49ea-9347-3a5446a8e2ea",
+      "starttimeTicks": 21758377,
+      "intervalNs": 11045162713,
+      "userTicks": 3,
+      "systemTicks": 131,
+      "majorFaults": 27,
+      "minorFaults": 118,
+      "leaderCpuNs": 1118851009,
+      "leaderRunqueueNs": 8696024124
+    },
+    {
+      "group": "1",
+      "sourceLines": [
+        607,
+        608
+      ],
+      "pid": 2007575,
+      "role": "web",
+      "starttimeTicks": 21636452,
+      "intervalNs": 11045772718,
+      "userTicks": 0,
+      "systemTicks": 759,
+      "majorFaults": 150,
+      "minorFaults": 320,
+      "leaderCpuNs": 1123122693,
+      "leaderRunqueueNs": 8769945991
+    },
+    {
+      "group": "2",
+      "sourceLines": [
+        652,
+        653
+      ],
+      "pid": 2007574,
+      "role": "runtime",
+      "starttimeTicks": 21636452,
+      "intervalNs": 7146199250,
+      "userTicks": 15,
+      "systemTicks": 222,
+      "majorFaults": 254,
+      "minorFaults": 1223,
+      "leaderCpuNs": 0,
+      "leaderRunqueueNs": 0
+    },
+    {
+      "group": "2",
+      "sourceLines": [
+        652,
+        653
+      ],
+      "pid": 2007575,
+      "role": "web",
+      "starttimeTicks": 21636452,
+      "intervalNs": 7147902482,
+      "userTicks": 5,
+      "systemTicks": 499,
+      "majorFaults": 373,
+      "minorFaults": 363,
+      "leaderCpuNs": 1152259233,
+      "leaderRunqueueNs": 3836754480
+    },
+    {
+      "group": "5",
+      "sourceLines": [
+        845,
+        847
+      ],
+      "pid": 2007574,
+      "role": "runtime",
+      "starttimeTicks": 21636452,
+      "intervalNs": 9685704629,
+      "userTicks": 0,
+      "systemTicks": 429,
+      "majorFaults": 480,
+      "minorFaults": 1500,
+      "leaderCpuNs": 0,
+      "leaderRunqueueNs": 0
+    },
+    {
+      "group": "5",
+      "sourceLines": [
+        845,
+        847
+      ],
+      "pid": 2031935,
+      "role": "job:6df9d721-e413-43e7-9e71-22335e9ef63d",
+      "starttimeTicks": 21808566,
+      "intervalNs": 9651072415,
+      "userTicks": 3,
+      "systemTicks": 144,
+      "majorFaults": 173,
+      "minorFaults": 513,
+      "leaderCpuNs": 906552825,
+      "leaderRunqueueNs": 4040294057
+    },
+    {
+      "group": "5",
+      "sourceLines": [
+        845,
+        847
+      ],
+      "pid": 2031932,
+      "role": "job:b0f88154-121f-467f-bd09-888b51fdf9db",
+      "starttimeTicks": 21808565,
+      "intervalNs": 9607796886,
+      "userTicks": 3,
+      "systemTicks": 286,
+      "majorFaults": 225,
+      "minorFaults": 438,
+      "leaderCpuNs": 2285582410,
+      "leaderRunqueueNs": 5101847702
+    },
+    {
+      "group": "5",
+      "sourceLines": [
+        845,
+        847
+      ],
+      "pid": 2007575,
+      "role": "web",
+      "starttimeTicks": 21636452,
+      "intervalNs": 9589104747,
+      "userTicks": 0,
+      "systemTicks": 859,
+      "majorFaults": 923,
+      "minorFaults": 1081,
+      "leaderCpuNs": 2209806017,
+      "leaderRunqueueNs": 5003487924
+    },
+    {
+      "group": "9",
+      "sourceLines": [
+        1047,
+        1048
+      ],
+      "pid": 2007574,
+      "role": "runtime",
+      "starttimeTicks": 21636452,
+      "intervalNs": 7099522383,
+      "userTicks": 4,
+      "systemTicks": 331,
+      "majorFaults": 173,
+      "minorFaults": 808,
+      "leaderCpuNs": 0,
+      "leaderRunqueueNs": 0
+    },
+    {
+      "group": "9",
+      "sourceLines": [
+        1047,
+        1048
+      ],
+      "pid": 2037927,
+      "role": "job:d9d09b03-f9f2-48ab-91e5-9c0d7a56c565",
+      "starttimeTicks": 21850239,
+      "intervalNs": 7433225813,
+      "userTicks": 7,
+      "systemTicks": 67,
+      "majorFaults": 39,
+      "minorFaults": 365,
+      "leaderCpuNs": 298769674,
+      "leaderRunqueueNs": 3225457306
+    },
+    {
+      "group": "9",
+      "sourceLines": [
+        1047,
+        1048
+      ],
+      "pid": 2037924,
+      "role": "job:177118b6-48da-4507-a1f6-d4e6f6db0c30",
+      "starttimeTicks": 21850239,
+      "intervalNs": 7433138003,
+      "userTicks": 19,
+      "systemTicks": 123,
+      "majorFaults": 81,
+      "minorFaults": 1049,
+      "leaderCpuNs": 748514602,
+      "leaderRunqueueNs": 3954935648
+    },
+    {
+      "group": "9",
+      "sourceLines": [
+        1047,
+        1048
+      ],
+      "pid": 2007575,
+      "role": "web",
+      "starttimeTicks": 21636452,
+      "intervalNs": 7435132968,
+      "userTicks": 6,
+      "systemTicks": 488,
+      "majorFaults": 313,
+      "minorFaults": 374,
+      "leaderCpuNs": 1072255057,
+      "leaderRunqueueNs": 4110633838
+    }
+  ]
+}

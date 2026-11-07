@@ -1,7 +1,9 @@
 """One bounded, non-retrying device channel per spawned Job."""
 import json
-from threading import Event, Lock, Thread
+from os import getpid
+from threading import Event, Lock, Thread, get_native_id
 import time
+from time import process_time_ns, thread_time_ns
 from uuid import uuid4
 
 from emo_master.apps.runtime.communication.pipe_io import sendBytes, receiveBytes
@@ -217,10 +219,23 @@ class DeviceProxy:
                     # Runtime validates the plugin's cancellable-wait declaration.
                     # EOF and cancellation still retire this non-retrying call.
                     deadline = float("inf")
-                sendBytes(self.connection, raw, interrupted, time.monotonic() + IPC_TIMEOUT)
+                phaseThreadCpuStart, phaseProcessCpuStart = thread_time_ns(), process_time_ns()
+                phaseStarted = time.monotonic()
+                phaseDeadline = phaseStarted + IPC_TIMEOUT
+                sendBytes(self.connection, raw, interrupted, phaseDeadline)
                 phase = "receive"
+                phaseThreadCpuStart, phaseProcessCpuStart = thread_time_ns(), process_time_ns()
+                phaseStarted, phaseDeadline = time.monotonic(), deadline
                 reply = json.loads(receiveBytes(self.connection, MAX_BYTES, interrupted, deadline))
             except (OSError, EOFError, ValueError) as error:
+                # Capture the failed I/O phase before closing the transport; CPU
+                # deltas use this calling thread and process, never the peer's.
+                timing = dict(processId=getpid(), nativeThreadId=get_native_id(),
+                    phaseStartedMonotonicMs=int(phaseStarted*1000),
+                    deadlineMonotonicMs=int(phaseDeadline*1000) if phaseDeadline != float('inf') else None,
+                    observedMonotonicMs=int(time.monotonic()*1000),
+                    phaseElapsedThreadCpuNs=thread_time_ns() - phaseThreadCpuStart,
+                    phaseElapsedProcessCpuNs=process_time_ns() - phaseProcessCpuStart)
                 self.close()
                 if kind == 'framework_operation' and self.cancellation.is_set() and isinstance(error, (OSError, EOFError)):
                     # A Windows pipe can report closure before invoking the
@@ -233,7 +248,7 @@ class DeviceProxy:
                 raise DeviceError("E_DEVICE_OUTCOME_UNKNOWN", "device transport interrupted; do not retry",
                                   outcome="UNKNOWN", diagnostics=dict(requestId=request['requestId'],
                                       deviceId=fields.get('deviceId', ''), cycleId=fields.get('cycleId', ''),
-                                      action=action, phase=phase, transportError=type(error).__name__)) from error
+                                      action=action, phase=phase, transportError=type(error).__name__, **timing)) from error
             if not reply["ok"]:
                 raise DeviceError(reply["code"], reply["message"], outcome=reply["outcome"], diagnostics=reply.get("diagnostics", {}))
             if kind == 'framework_operation' and action == "endCycle":

@@ -35,12 +35,12 @@ async function writeInputs(value){await act(async()=>{const el=document.querySel
 function job(id,status='STARTING',extra={}){return {id,jobId:id,runId:id,runtimeInstanceId:'instance',projectId:'project',workflowId:id==='consumer'?'consumer':'main',runGroupId:id==='ordinary'?'':'group',sourceJobId:id==='ordinary'?'':'root',targetSlotId:id==='consumer'?'detection':'',name:id,status,state:status.toLowerCase(),active:!['COMPLETED','ABORTED'].includes(status),ownsResources:true,displayResourcesReleased:false,allowedActions:['stop'],...extra};}
 function stateOf(run){return {event:'job_state',...Object.fromEntries(['runtimeInstanceId','projectId','jobId','runGroupId','status','active','ownsResources','displayResourcesReleased','allowedActions'].map(key=>[key,run[key]]))};}
 function result(jobId,count){return {event:'result',runtimeInstanceId:'instance',projectId:'project',result:{identity:{runtimeInstanceId:'instance',jobId,resultScopeId:'scope',resultKey:`${jobId}-${count}`,resultOrdinal:count},expectedSourceIds:['count'],sources:[{sourceId:'count',state:'AVAILABLE',valueJson:String(count)}]}};}
-async function fixture(kind='ordinary',{admission=false}={}){
+async function fixture(kind='ordinary',{admission=false,image=false}={}){
  for(const file of Object.keys(require.cache))if(file.startsWith(sourceRoot))delete require.cache[file];
  sessionStorage.clear();
  const f={kind,jobs:[],requests:[],views:new Map(),sockets:[],nextView:0,runtimeInstanceId:'instance',projectId:'project',configurationRevision:'2',holdNextState:false,heldState:undefined,failNextCatalog:false,holdNextCatalog:false,heldCatalog:undefined,holdNextWorkflows:false,heldWorkflows:[],failNextWorkflows:false};
  const reply=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
- const panel={id:'panel',packageRevision:'published-v1',defaultPageId:'page',pages:[{id:'page',title:'Result',components:[{id:'count',type:'number',label:'Count',binding:{sourceId:'count',scopeId:'scope'}},{id:'state',type:'runtime_status',label:'Runtime status'}]}]};
+ const panel={id:'panel',packageRevision:'published-v1',defaultPageId:'page',pages:[{id:'page',title:'Result',components:[{id:'count',type:'number',label:'Count',binding:{sourceId:'count',scopeId:'scope'}},{id:'state',type:'runtime_status',label:'Runtime status'},...(image?[{id:'image',type:'image',label:'Image',binding:{sourceId:'image',scopeId:'scope'}}]:[])]}]};
  class Socket{
   constructor(url){this.url=url;this.view=f.views.get(url.split('/').at(-1));this.readyState=1;f.sockets.push(this);queueMicrotask(()=>this.onopen?.({}));}
   close(){if(this.readyState===3)return;this.readyState=3;queueMicrotask(()=>this.onclose?.({}));}
@@ -431,4 +431,68 @@ test('failed admission refresh preserves the official denial and offers normal e
   assert.equal(f.snapshot().alerts.length,0);
   assert.equal(document.querySelector('select[aria-label="查看运行"]').value,'ordinary');
  }finally{await f.close();}
+});
+
+const captureFailure=jobId=>({event:'capture_unavailable',runtimeInstanceId:'instance',projectId:'project',jobId,reason:`CAPTURE_UNAVAILABLE: ${jobId} did not enable page capture`});
+const notices=()=>[...document.querySelectorAll('[role="status"]')].map(element=>element.textContent);
+
+test('published capture notice clears after the same Job recovers without clearing its control notice',async()=>{
+ const f=await fixture();try{
+  await f.start();await f.select('ordinary');
+  await f.send(captureFailure('ordinary'));
+  assert.ok(notices().some(text=>text.includes('CAPTURE_UNAVAILABLE')));
+  await f.send(result('ordinary',1));await waitFor(()=>f.snapshot().count?.includes('1'));
+  assert.ok(!notices().some(text=>text.includes('CAPTURE_UNAVAILABLE')),'accepted current-Job result clears its capture failure');
+  assert.ok(notices().some(text=>text.includes('启动已受理')),'capture recovery preserves the separate command acknowledgement');
+ }finally{await f.close();}
+});
+
+test('published capture notice belongs to its view and is cleared when another Job is selected',async()=>{
+ const f=await fixture('dispatch');try{
+  await f.start();await f.select('root');await f.send(captureFailure('root'));
+  assert.ok(notices().some(text=>text.includes('CAPTURE_UNAVAILABLE')));
+  await f.select('consumer');
+  assert.ok(!notices().some(text=>text.includes('CAPTURE_UNAVAILABLE')),'switching view removes the old capture failure before any new result');
+  await f.send(result('consumer',2));await waitFor(()=>f.snapshot().count?.includes('2'));
+  assert.ok(!notices().some(text=>text.includes('CAPTURE_UNAVAILABLE')));
+ }finally{await f.close();}
+});
+
+test('published capture recovery clears only its own Job notice in a Dispatch view',async()=>{
+ const f=await fixture('dispatch');try{
+  await f.start();await f.select('root');
+  await f.send(captureFailure('root'));await f.send(captureFailure('consumer'));
+  assert.ok(notices().some(text=>text.includes('root did not enable')),'each unavailable Job keeps its own explanation');
+  assert.ok(notices().some(text=>text.includes('consumer did not enable')));
+  await f.send(result('consumer',3));await waitFor(()=>f.snapshot().count?.includes('3'));
+  assert.ok(notices().some(text=>text.includes('root did not enable')),'consumer recovery must not erase the root failure');
+  assert.ok(!notices().some(text=>text.includes('consumer did not enable')));
+ }finally{await f.close();}
+});
+
+for(const unavailableJob of ['root','consumer'])test(`published capture loss for ${unavailableJob} cancels only that Job's in-flight image`,async()=>{
+ const f=await fixture('dispatch',{image:true});
+ const ordinaryFetch=globalThis.fetch,originalImage=globalThis.Image;let pendingImage;
+ globalThis.fetch=async(raw,options={})=>{
+  if(new URL(raw,location.origin).pathname.includes('/assets/image'))return new Promise((resolve,reject)=>{
+   pendingImage={signal:options.signal,resolve};
+   options.signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')),{once:true});
+  });
+  return ordinaryFetch(raw,options);
+ };
+ globalThis.Image=class{set src(value){if(value)queueMicrotask(()=>this.onload?.());}};
+ try{
+  await f.start();await f.select('root');
+  const consumer=result('consumer',9);consumer.result.expectedSourceIds.push('image');
+  consumer.result.sources.push({sourceId:'image',state:'AVAILABLE',image:{resourceId:'image-resource',ownerResultKey:'consumer-9',mimeType:'image/png'}});
+  await f.send(consumer);
+  assert.ok(pendingImage,'consumer image HTTP request has actually started');assert.equal(pendingImage.signal.aborted,false);
+  await f.send(captureFailure(unavailableJob));
+  await act(async()=>pendingImage.resolve(new Response(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6UKAAAAAASUVORK5CYII=','base64'),{headers:{'Content-Type':'image/png'}})));
+  assert.equal(pendingImage.signal.aborted,unavailableJob==='consumer','capture loss must not cancel another Job image');
+  if(unavailableJob==='root'){
+   await waitFor(()=>f.snapshot().count?.includes('9'));
+   assert.ok(document.querySelector('[data-component-id="image"] img'),'consumer image and same-round count are displayed');
+  }else assert.match(f.snapshot().count,/本轮数据未就绪/,'an invalidated owner cannot publish a late image result');
+ }finally{await f.close();globalThis.fetch=ordinaryFetch;if(originalImage===undefined)delete globalThis.Image;else globalThis.Image=originalImage;}
 });

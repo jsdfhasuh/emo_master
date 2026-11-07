@@ -2,8 +2,9 @@
 from copy import deepcopy
 from contextlib import nullcontext
 import platform
-from threading import RLock
-from time import monotonic
+from os import getpid
+from threading import RLock, get_native_id
+from time import monotonic, process_time_ns, thread_time_ns
 from uuid import uuid4
 
 from .executor import DeviceError, DeviceExecutor
@@ -301,10 +302,25 @@ class DeviceManager:
             service = declaration.operationScheduling == 'managed_service'
             if service and not lifecycle.connected:
                 raise DeviceError('E_TCP_NOT_RUNNING', f'{deviceId}: 服务尚未启动，请按策略启动或在设备页启动服务')
-            actionTrace = dict(phase='queued', phaseStartedMonotonicMs=int(monotonic()*1000))
+            actionTrace = dict(processId=getpid(), phase='queued', phaseStartedMonotonicMs=int(monotonic()*1000))
 
             def tracePhase(phase, **completed):
-                actionTrace.update(phase=phase, phaseStartedMonotonicMs=int(monotonic()*1000), **completed)
+                actionTrace.update(phase=phase, phaseStartedMonotonicMs=int(monotonic()*1000),
+                    executionNativeThreadId=get_native_id(), phaseStartedThreadCpuNs=thread_time_ns(),
+                    phaseStartedProcessCpuNs=process_time_ns(), **completed)
+
+            def traceReceipt():
+                receipt = dict(actionTrace)
+                receipt.update(observedMonotonicMs=int(monotonic()*1000),
+                    observationNativeThreadId=get_native_id(), observedThreadCpuNs=thread_time_ns(),
+                    observedProcessCpuNs=process_time_ns())
+                if 'phaseStartedProcessCpuNs' in receipt:
+                    receipt['phaseElapsedProcessCpuNs'] = receipt['observedProcessCpuNs'] - receipt['phaseStartedProcessCpuNs']
+                # A waiting IPC bridge must not present its own CPU time as the
+                # execution thread's. A driver exception is observed on that thread.
+                if receipt.get('executionNativeThreadId') == receipt['observationNativeThreadId']:
+                    receipt['phaseElapsedThreadCpuNs'] = receipt['observedThreadCpuNs'] - receipt['phaseStartedThreadCpuNs']
+                return receipt
 
             def perform(cancel, deadline, generation):
                 try:
@@ -323,10 +339,12 @@ class DeviceManager:
                     deadline = min(deadline, requestDeadline or float("inf"))
                     actionDeadline = deadline if unlimited else min(deadline, monotonic() + operationTimeout)
                     tracePhase('driver')
+                    driverThreadCpuStart = actionTrace['phaseStartedThreadCpuNs']
                     result = driver.execute(action, params, stopped, actionDeadline,
                         arguments=arguments, operationContext=operationContext)
                     tracePhase('frame_publish' if reservation else 'return',
-                               driverReturnedMonotonicMs=int(monotonic()*1000))
+                               driverReturnedMonotonicMs=int(monotonic()*1000),
+                               driverPhaseThreadCpuNs=thread_time_ns() - driverThreadCpuStart)
                     if reservation:
                         metadata = None
                         if isinstance(result, DeviceCaptureResult):
@@ -343,8 +361,7 @@ class DeviceManager:
                         return descriptor
                     return result
                 except DeviceError as error:
-                    error.diagnostics.setdefault('deviceAction', dict(actionTrace,
-                        observedMonotonicMs=int(monotonic()*1000)))
+                    error.diagnostics.setdefault('deviceAction', traceReceipt())
                     state = driver.snapshot()
                     if state.get('ready') is False and state.get('ownsResources') is False:
                         lifecycle.connected = False
@@ -401,8 +418,7 @@ class DeviceManager:
         except DeviceError as error:
             # A wait timeout can occur after the driver returned, while frame
             # publication/observation or cleanup still owns the operation.
-            error.diagnostics.setdefault('deviceAction', dict(actionTrace,
-                observedMonotonicMs=int(monotonic()*1000)))
+            error.diagnostics.setdefault('deviceAction', traceReceipt())
             raise
 
     def testConnection(self, value, cancelled=lambda: False, *, admissionLock=None, admission=None, deviceId=None):

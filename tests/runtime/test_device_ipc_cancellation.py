@@ -3,6 +3,7 @@ from concurrent.futures import Future
 from contextlib import contextmanager
 import json
 import multiprocessing
+import os
 from threading import Event, Thread
 import time
 from types import SimpleNamespace
@@ -167,8 +168,17 @@ def testUnlimitedCaptureStopWithoutReceiptHasBoundedUnknownOutcome(monkeypatch):
         assert failure.value.code == "E_DEVICE_OUTCOME_UNKNOWN"
         assert failure.value.outcome == "UNKNOWN"
         assert isinstance(failure.value.__cause__, TimeoutError)
-        assert failure.value.diagnostics == dict(requestId=request["requestId"], deviceId="device",
-            cycleId="cycle", action="capture", phase="receive", transportError="TimeoutError")
+        expected = dict(requestId=request["requestId"], deviceId="device", cycleId="cycle",
+            action="capture", phase="receive", transportError="TimeoutError")
+        detail = failure.value.diagnostics
+        timingKeys = {"processId", "nativeThreadId", "phaseStartedMonotonicMs", "deadlineMonotonicMs",
+            "observedMonotonicMs", "phaseElapsedThreadCpuNs", "phaseElapsedProcessCpuNs"}
+        assert set(detail) == set(expected) | timingKeys
+        assert {key: detail[key] for key in expected} == expected
+        assert detail["deadlineMonotonicMs"] is None
+        assert detail["processId"] == os.getpid() and detail["nativeThreadId"] == thread.native_id
+        assert detail["observedMonotonicMs"] >= detail["phaseStartedMonotonicMs"]
+        assert detail["phaseElapsedThreadCpuNs"] >= 0 and detail["phaseElapsedProcessCpuNs"] >= 0
         assert proxy.closed and proxy.sequence == 1
     finally:
         parent.close()

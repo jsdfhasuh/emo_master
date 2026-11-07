@@ -2,7 +2,8 @@
 from concurrent.futures import ThreadPoolExecutor
 import json
 import multiprocessing
-from threading import Event
+import os
+from threading import Event, get_native_id
 import time
 from types import SimpleNamespace
 
@@ -74,6 +75,13 @@ def testCaptureObserverStallIsDistinguishedFromDriverExecution(manager):
                 assert receipt["phase"] == "frame_observer"
                 assert receipt["driverReturnedMonotonicMs"] <= receipt["framePublishedMonotonicMs"]
                 assert receipt["framePublishedMonotonicMs"] <= receipt["observedMonotonicMs"]
+                assert receipt["processId"] == os.getpid()
+                assert receipt["executionNativeThreadId"] == executor.thread.native_id
+                assert receipt["observationNativeThreadId"] != receipt["executionNativeThreadId"]
+                assert receipt["phaseElapsedProcessCpuNs"] >= 0
+                assert receipt["driverPhaseThreadCpuNs"] >= 0
+                # The waiting bridge cannot measure the executor's current CPU clock.
+                assert "phaseElapsedThreadCpuNs" not in receipt
                 assert executor.active is not None and manager.frames.frames
             finally:
                 release.set()
@@ -84,6 +92,68 @@ def testCaptureObserverStallIsDistinguishedFromDriverExecution(manager):
         assert manager.execute("b", "camera", "capture", params(), cycleId="next")["frameId"]
     finally:
         release.set()
+
+
+def testDriverFailureKeepsExecutionThreadTimingAfterCleanup(manager, monkeypatch):
+    def fail(*_args, **_kwargs):
+        raise DeviceError("E_CAPTURE_FAILED", "driver rejected capture", outcome="NOT_EXECUTED")
+
+    monkeypatch.setattr(manager.drivers["camera"], "execute", fail)
+    with pytest.raises(DeviceError) as caught:
+        manager.execute("a", "camera", "capture", params(), cycleId="cycle")
+    error = caught.value
+    assert error.code == "E_CAPTURE_FAILED" and error.outcome == "NOT_EXECUTED"
+    receipt = error.diagnostics["deviceAction"]
+    assert receipt["phase"] == "driver"
+    assert receipt["executionNativeThreadId"] == manager.executors["camera"].thread.native_id
+    assert receipt["observationNativeThreadId"] == receipt["executionNativeThreadId"]
+    assert receipt["observedMonotonicMs"] >= receipt["phaseStartedMonotonicMs"]
+    assert receipt["phaseElapsedThreadCpuNs"] >= 0
+    assert receipt["phaseElapsedProcessCpuNs"] >= 0
+
+
+@pytest.mark.parametrize("phase", ["send", "receive"])
+def testProxyTransportFailureKeepsPhaseTimingWithoutReplay(monkeypatch, phase):
+    clock = SimpleNamespace(now=100.0)
+    clock.monotonic = lambda: clock.now
+    monkeypatch.setattr(ipc, "time", clock)
+    parent, child = multiprocessing.get_context("spawn").Pipe()
+    proxy = ipc.DeviceProxy(child, Event())
+    calls = []
+
+    def send(_connection, _raw, _cancelled, deadline):
+        calls.append("send")
+        assert deadline == 102.0
+        if phase == "send":
+            clock.now += 2.25
+            raise TimeoutError("send deadline")
+        clock.now += .125
+
+    def receive(_connection, _limit, _cancelled, deadline):
+        calls.append("receive")
+        assert deadline == 1302.0  # Existing reply budget starts before send.
+        clock.now += 2.25
+        raise EOFError("reply channel closed")
+
+    monkeypatch.setattr(ipc, "sendBytes", send)
+    monkeypatch.setattr(ipc, "receiveBytes", receive)
+    try:
+        with pytest.raises(DeviceError) as caught:
+            proxy.framework("dispatchNext")
+        error = caught.value
+        assert error.code == "E_DEVICE_OUTCOME_UNKNOWN" and error.outcome == "UNKNOWN"
+        assert proxy.closed and child.closed
+        assert calls == (["send"] if phase == "send" else ["send", "receive"])
+        detail = error.diagnostics
+        assert detail["phase"] == phase and detail["action"] == "dispatchNext"
+        assert detail["processId"] == os.getpid() and detail["nativeThreadId"] == get_native_id()
+        assert detail["observedMonotonicMs"] - detail["phaseStartedMonotonicMs"] == 2250
+        assert detail["deadlineMonotonicMs"] == (102000 if phase == "send" else 1302000)
+        assert detail["phaseElapsedThreadCpuNs"] >= 0
+        assert detail["phaseElapsedProcessCpuNs"] >= 0
+    finally:
+        parent.close()
+        child.close()
 
 
 @pytest.mark.parametrize("transportError", [OSError("injected reply deadline"), OSError(109, "peer closed")])

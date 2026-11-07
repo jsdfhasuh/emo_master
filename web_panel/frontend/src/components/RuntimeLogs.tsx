@@ -24,19 +24,20 @@ export function RuntimeLogs({runtimeId,runtimeInstanceId=''}:{runtimeId:string;r
     if(logSessionGeneration!==getSessionGeneration()){liveCursors.clear();unsupportedRuntimes.clear();logSessionGeneration=getSessionGeneration()}
     const [mode,setMode]=useState<'live'|'history'>('live');
     const [draft,setDraft]=useState<RuntimeLogQuery>({}),[filter,setFilter]=useState<RuntimeLogQuery>({});
-    const [events,setEvents]=useState<RuntimeLogEvent[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+    const [events,setEvents]=useState<RuntimeLogEvent[]>([]),[queryError,setQueryError]=useState(''),[busy,setBusy]=useState(false);
     const [hasMore,setHasMore]=useState(false),[revision,setRevision]=useState(0),[pageRequest,setPageRequest]=useState(0);
     const [detail,setDetail]=useState<RuntimeLogEvent>(),[exporting,setExporting]=useState(false),[feedback,setFeedback]=useState('');
+    const [exportError,setExportError]=useState('');
     const cursor=useRef<Cursor>(fresh()), download=useRef<AbortController | undefined>(undefined), readAbort=useRef<AbortController | undefined>(undefined);
     const filterKey=JSON.stringify(filter),key=runtimeId+'|'+filterKey;
-    useEffect(()=>()=>download.current?.abort(),[key]);
-    useEffect(()=>{cursor.current=mode==='live'?(liveCursors.get(key)||fresh()):fresh();setEvents(cursor.current.events);setError('');setHasMore(false);setFeedback('');setDetail(undefined);},[key,mode,revision]);
+    useEffect(()=>{setExporting(false);setExportError('');return()=>download.current?.abort()},[key]);
+    useEffect(()=>{cursor.current=mode==='live'?(liveCursors.get(key)||fresh()):fresh();setEvents(cursor.current.events);setQueryError('');setHasMore(false);setFeedback('');setDetail(undefined);},[key,mode,revision]);
     function resetInstance(instance:string){
         const next=fresh();next.instance=instance;cursor.current=next;
         liveCursors.delete(key);
         if(mode==='live')liveCursors.set(key,next);
         readAbort.current?.abort();download.current?.abort();
-        setEvents([]);setDetail(undefined);setHasMore(false);setFeedback('');setExporting(false);
+        setEvents([]);setDetail(undefined);setHasMore(false);setQueryError('');setExportError('');setFeedback('');setExporting(false);
         setPageRequest(value=>value+1);
     }
     useEffect(()=>{
@@ -49,7 +50,7 @@ export function RuntimeLogs({runtimeId,runtimeInstanceId=''}:{runtimeId:string;r
     },[runtimeInstanceId,key,mode]);
     useEffect(()=>{
         if(!runtimeId)return;
-        if(unsupportedRuntimes.get(runtimeId)===runtimeInstanceId){setError('UNIMPLEMENTED · 此 Runtime 不支持历史日志查询');return;}
+        if(unsupportedRuntimes.get(runtimeId)===runtimeInstanceId){setQueryError('UNIMPLEMENTED · 此 Runtime 不支持历史日志查询');return;}
         let alive=true,timer:ReturnType<typeof setTimeout>;const abort=new AbortController();
         const current=cursor.current;readAbort.current=abort;
         const read=async()=>{
@@ -70,7 +71,7 @@ export function RuntimeLogs({runtimeId,runtimeInstanceId=''}:{runtimeId:string;r
                     if(current.instance&&page.runtimeInstanceId!==current.instance)throw new ApiError('Runtime 实例改变',409,'RESET_REQUIRED',page.runtimeInstanceId);
                     current.events=mode==='live'?merged.slice(-RUNTIME_LIVE_LOG_LIMIT):merged;current.instance=page.runtimeInstanceId;current.after=page.nextEventId;current.upper=page.upperEventId;current.initialized=true;
                     if(mode==='live')liveCursors.set(key,current);
-                    setEvents(current.events);setHasMore(page.hasMore);setError('');
+                    setEvents(current.events);setHasMore(page.hasMore);setQueryError('');
                     if(mode==='history'||!page.hasMore)break;
                 } while(alive);
                 if(mode==='live')current.upper=undefined;
@@ -80,7 +81,7 @@ export function RuntimeLogs({runtimeId,runtimeInstanceId=''}:{runtimeId:string;r
                 if(failure.code==='RESET_REQUIRED'){
                     resetInstance(failure.runtimeInstanceId);retry=false;
                 } else {
-                    setError((failure.code?failure.code+' · ':'')+failure.message);
+                    setQueryError((failure.code?failure.code+' · ':'')+failure.message);
                     if(failure.code==='UNIMPLEMENTED')unsupportedRuntimes.set(runtimeId,runtimeInstanceId);
                     if(['UNIMPLEMENTED','EVENT_TOO_LARGE','INVALID_ARGUMENT'].includes(failure.code))retry=false;
                 }
@@ -89,7 +90,7 @@ export function RuntimeLogs({runtimeId,runtimeInstanceId=''}:{runtimeId:string;r
         void read();return()=>{alive=false;abort.abort();clearTimeout(timer)};
     },[key,mode,revision,pageRequest]);
     async function exportHistory(){
-        download.current?.abort();const abort=new AbortController();download.current=abort;setExporting(true);setFeedback('');
+        download.current?.abort();const abort=new AbortController();download.current=abort;setExporting(true);setExportError('');setFeedback('');
         try{
             const query={...filter,runtimeInstanceId:cursor.current.instance,...(cursor.current.upper!==undefined?{upperEventId:cursor.current.upper}:{})};
             const blob=await apiBlob(`/api/runtimes/${encodeURIComponent(runtimeId)}/logs/export?${queryString(query)}`,{signal:abort.signal});
@@ -99,8 +100,8 @@ export function RuntimeLogs({runtimeId,runtimeInstanceId=''}:{runtimeId:string;r
         }catch(e){
             if(!abort.signal.aborted){
                 const failure=e as ApiError;
-                setError((failure.code?failure.code+' · ':'')+failure.message+(failure.runtimeInstanceId?' · 当前实例 '+failure.runtimeInstanceId:''));
                 if(failure.code==='RESET_REQUIRED')resetInstance(failure.runtimeInstanceId)
+                setExportError((failure.code?failure.code+' · ':'')+failure.message+(failure.runtimeInstanceId?' · 当前实例 '+failure.runtimeInstanceId:''));
                 if(failure.code==='UNIMPLEMENTED')unsupportedRuntimes.set(runtimeId,runtimeInstanceId);
             }
         }finally{if(download.current===abort)setExporting(false)}
@@ -109,7 +110,8 @@ export function RuntimeLogs({runtimeId,runtimeInstanceId=''}:{runtimeId:string;r
         <div className="toolbar"><label>范围<select aria-label="范围" value={mode} onChange={e=>setMode(e.target.value as 'live'|'history')}><option value="live">实时（接入后新增）</option><option value="history">历史</option></select></label>
         {(['projectId','jobId','deviceId','component','levels','workflowId','nodeId','startTimestampMs','endTimestampMs'] as const).map(name=><label key={name}>{({projectId:'工程',jobId:'Job',deviceId:'设备',component:'模块',levels:'级别（逗号分隔）',workflowId:'工作流',nodeId:'节点',startTimestampMs:'起始时间 ms（含）',endTimestampMs:'结束时间 ms（不含）'})[name]}<input value={draft[name]||''} onChange={e=>setDraft({...draft,[name]:e.target.value})}/></label>)}
         <button onClick={()=>{setFilter({...draft});setRevision(v=>v+1)}}>应用筛选</button><button onClick={()=>setRevision(v=>v+1)}>重新查询</button></div>
-        {error&&<p role="alert">日志查询失败：{error}；已显示记录和已消费游标保留。</p>}
+        {queryError&&<p role="alert">日志查询失败：{queryError}；已显示记录和已消费游标保留。</p>}
+        {exportError&&<p role="alert">日志导出失败：{exportError}</p>}
         {mode==='live'&&<p>实时显示保留最近 {RUNTIME_LIVE_LOG_LIMIT} 条；完整记录可按历史范围查询或导出。</p>}
         <p>已显示 {events.length} 条 · 当前连接实例 {cursor.current.instance||'等待确认'} · 全局游标 {cursor.current.after} · 历史上界 {cursor.current.upper??'按轮次确定'}</p>
         <button disabled={!runtimeId||exporting} onClick={()=>void exportHistory()}>导出筛选历史 JSONL</button>{exporting&&<button onClick={()=>{download.current?.abort();setExporting(false);setFeedback('导出已取消')}}>取消导出</button>}{feedback&&<p role="status">{feedback}</p>}

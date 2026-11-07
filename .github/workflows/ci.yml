@@ -58,6 +58,8 @@ jobs:
           tests/runtime/test_supervisor_heartbeat_observation.py
           tests/runtime/test_cycle_plan_scope_cleanup.py
           tests/runtime/test_device_failure_observability.py
+          tests/runtime/test_simulated_camera_completion.py
+          tests/runtime/test_dispatch_continuous_recovery.py
           tests/runtime/presentation/test_export_restart_retirement.py
           --timeout=120 --timeout-method=thread -o faulthandler_timeout=60
           --junitxml=build/recovery-regressions.xml

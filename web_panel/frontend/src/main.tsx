@@ -133,6 +133,7 @@ function App() {
         manifest?: {projectId:string;packageRevision:string};
     }[]>([]);
     const [notice, setNotice] = useState('');
+    const [captureNotices,setCaptureNotices] = useState<Record<string,{viewId:string;message:string}>>({});
     const generation = useRef(0);
     const [pending,setPending]=useState<{id:string;kind:'start'|'stop';target:string;runtimeId?:string;runtimeInstanceId?:string;projectId?:string;state?:'submitting'|'unknown'}|undefined>();
     const [lastCommand,setLastCommand]=useState<{kind:'start'|'stop';runtimeId:string;runtimeInstanceId?:string;projectId?:string;runId?:string;reply:CommandReply}>();
@@ -151,7 +152,7 @@ function App() {
     function clearIdentityView() {
         generation.current++;actionAttempt.current++;invalidateCandidates.current?.();
         ownedResults.current.forEach(releaseResult);ownedResults.current.clear();
-        setViewId('');setResult(undefined);setScopes({});setScopeStatuses({});setFrozen(false);setRuntimeState('');setLastCommand(undefined);setSubscriptionError('');
+        setViewId('');setResult(undefined);setScopes({});setScopeStatuses({});setFrozen(false);setRuntimeState('');setLastCommand(undefined);setSubscriptionError('');setCaptureNotices({});
     }
     function selectTarget(id:string) {
         catalogGeneration.current++;catalogAbort.current?.abort();connectionNeedsRefresh.current=false;activeRuntime.current=id;infoRef.current=undefined;setRuntimeInfo(undefined);
@@ -312,7 +313,7 @@ function App() {
         generation.current++;
         invalidateCandidates.current?.();
         sourceProblems.current={}; viewRunIds.current=[];
-        setViewId(''); setResult(undefined); setScopes({}); setFrozen(false); setRuntimeState(''); setSubscriptionError('');
+        setViewId(''); setResult(undefined); setScopes({}); setFrozen(false); setRuntimeState(''); setSubscriptionError(''); setCaptureNotices({});
         if (!me || !panel || !runtimeId || !runtimeInfo) return;
         let valid = true;
         api<{id:string;sourceProblems?:Record<string,string>;runIds?:string[]}>(
@@ -357,7 +358,13 @@ function App() {
             const visiblePage = panel?.pages.find(p => p.id === pageRef.current) || panel?.pages[0];
             const ready = await prepareResult(raw, aborts[scope].signal, pageImageSources(visiblePage, scope));
             if (currentConnection(connectionId) && id === candidates[scope] && (!frozenKeys.current?.[scope] || frozenKeys.current[scope] === ready.resultKey)) {
-                displayedRaw[scope] = raw; ownedResults.current.add(ready); setScopes(old => ({ ...old, [scope]: ready })); setResult(ready); setStatus('已连接'); setLastUpdate(new Date().toLocaleTimeString()); setSubscriptionError(''); return true;
+                displayedRaw[scope] = raw; ownedResults.current.add(ready); setScopes(old => ({ ...old, [scope]: ready })); setResult(ready); setStatus('已连接'); setLastUpdate(new Date().toLocaleTimeString()); setSubscriptionError('');
+                const capturedJob=ready.jobId;
+                if(capturedJob)setCaptureNotices(old=>{
+                    if(old[capturedJob]?.viewId!==viewId)return old;
+                    const next={...old};delete next[capturedJob];return next;
+                });
+                return true;
             } else releaseResult(ready);
             return false;
         };
@@ -396,7 +403,20 @@ function App() {
                 ordinalStatus=mergeScopeStatus(ordinalStatus,message.jobId,message.latestStartedOrdinals || {},message.expiredScopeOrdinals || {});setScopeStatuses(ordinalStatus);
                 retireExpiredLive.current?.();return;
             }
-            if (message.type === 'capture_unavailable') {invalidateCandidates.current?.();Object.keys(rawResults).forEach(scope=>{if(!message.jobId || rawResults[scope].jobId===message.jobId)delete rawResults[scope]});setResult(old=>old?.jobId===message.jobId?undefined:old);setScopes(old=>Object.fromEntries(Object.entries(old).filter(([,value])=>message.jobId && value.jobId!==message.jobId)));setNotice(message.reason || '当前运行未启用页面采集，不会自动重启');return;}
+            if (message.type === 'capture_unavailable') {
+                const unavailableJob=message.jobId || runId;
+                // Capture availability belongs to a Job, even in an aggregate
+                // Dispatch view. Keep other consumers' in-flight images alive.
+                for(const [scope,raw] of Object.entries(rawResults))if(raw.jobId===unavailableJob){
+                    queue.invalidateScope(scope);candidates[scope]=(candidates[scope] || 0)+1;aborts[scope]?.abort();delete rawResults[scope];
+                }
+                for(const [scope,raw] of Object.entries(displayedRaw))if(raw.jobId===unavailableJob)delete displayedRaw[scope];
+                for(const owned of ownedResults.current)if(owned.jobId===unavailableJob){releaseResult(owned);ownedResults.current.delete(owned);}
+                setResult(old=>old?.jobId===unavailableJob?undefined:old);
+                setScopes(old=>Object.fromEntries(Object.entries(old).filter(([,value])=>value.jobId!==unavailableJob)));
+                setCaptureNotices(old=>({...old,[unavailableJob]:{viewId,message:message.reason || '当前运行未启用页面采集，不会自动重启'}}));
+                return;
+            }
             if (message.type === 'error') {setSubscriptionError(message.message || 'Runtime 读取失败');return;}
             if (message.type === 'control_result') {if(message.operation==='start' || message.operation==='stop')setNotice(commandResolution(message.operation,{outcome:message.outcome,jobId:message.jobId,message:message.message}).message);return;}
             if (message.type === 'job_state') {
@@ -566,6 +586,7 @@ function App() {
     if (editorRoute) return <Suspense fallback={<main>正在加载 Web 页面编辑器…</main>}><Editor me={me} onLogout={logout}/></Suspense>;
     return <main><header><div><h1>Emo Web 操作员面板</h1><p>{me.preview ? '只读预览 · 不启动或停止生产' : me.mode === 'mock' ? '模拟 Runtime · 演示数据，不代表生产设备' : '真实 Runtime 模式 · 能力以合同为准'}</p></div><div>{me.role==='admin' && !me.preview && <a href="/editor">编辑 Web 页面</a>} {me.authMode==='local'?'本机管理员':me.username} · {me.role}<button disabled={busy} onClick={logout}>退出</button></div></header>
  {error && <div className="alert" role="alert">{error}<button onClick={() => setError('')}>关闭</button></div>}{catalogError && <div className="alert" role="alert">{catalogError}<button onClick={() => setCatalogError('')}>关闭</button></div>}{subscriptionError && <div className="alert" role="alert">{subscriptionError}<button onClick={() => setSubscriptionError('')}>关闭</button></div>}{notice && <div className="notice" role="status">{notice}</div>}
+ {Object.entries(captureNotices).filter(([,capture])=>capture.viewId===viewId).map(([jobId,capture])=><div className="notice" role="status" key={jobId}>运行 {runs.find(run=>run.id===jobId)?.name || jobId}：{capture.message}</div>)}
  {(me.localNoAuth || me.authMode==='local' || localNoAuth) && <LocalModeWarning me={me}/>}
  <section className="toolbar"><label>Runtime<select aria-label="Runtime 目标" value={runtimeId} onChange={e => selectTarget(e.target.value)}>{runtimes.map(r => <option key={r.id} value={r.id}>{r.alias || r.id} · {r.mode}</option>)}</select></label><label>页面包<select aria-label="页面包" value={panel?.id || ''} onChange={async (e) => { const rid=activeRuntime.current,ticket=++catalogGeneration.current;catalogAbort.current?.abort();setCatalogBusy(false);try {
         const next=await api<Panel>(`/api/panels/${encodeURIComponent(e.target.value)}?${targetContext(rid,infoRef.current?.projectId,infoRef.current?.runtimeInstanceId)}`);if(rid===activeRuntime.current && ticket===catalogGeneration.current)setPanel(next);

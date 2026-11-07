@@ -75,6 +75,12 @@ class DeviceDiagnostics:
                 retained['diagnostics'] = {'tcpReceipt': receipt}
             if transaction:
                 retained.setdefault('diagnostics', {})['tcpTransaction'] = transaction
+            # Failure-only timing/transport receipts are compact and must not
+            # disappear just because unrelated node attribution was truncated.
+            for name in ('deviceWait', 'deviceAction', 'deviceIpc'):
+                detail = fields.get('diagnostics', {}).get(name)
+                if isinstance(detail, dict) and len(json.dumps(detail, default=str).encode('utf-8')) <= 768:
+                    retained.setdefault('diagnostics', {})[name] = detail
             fields = dict(retained, preview=preview.encode('utf-8')[:1000].decode('utf-8', errors='ignore'), fieldsTruncated=True)
         with self.lock:
             self.cursor += 1

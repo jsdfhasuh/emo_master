@@ -1,0 +1,79 @@
+{
+  "sourceSHA": "5f62eb7e2eb63e097e8e3385de34c96549eabf07",
+  "mechanism": "Real FastAPI asset route with normal Views result retention; synthetic Runtime source",
+  "browserModalExecuted": false,
+  "requests": [
+    {
+      "resultKey": "mock-1",
+      "phase": "before ordinary results advance",
+      "status": 200
+    },
+    {
+      "resultKey": "mock-1",
+      "phase": "after five ordinary results",
+      "status": 404,
+      "body": {
+        "detail": "Exact advertised result retired or expired"
+      }
+    },
+    {
+      "resultKey": "mock-6",
+      "phase": "current result remains available",
+      "status": 200
+    }
+  ],
+  "retainedKeys": [
+    "mock-3",
+    "mock-4",
+    "mock-5",
+    "mock-6"
+  ],
+  "assetReads": 1,
+  "gateway": [
+    {
+      "timestampMs": 1793997840691,
+      "originApp": "web",
+      "component": "gateway",
+      "runtimeInstanceId": "",
+      "level": "DEBUG",
+      "eventType": "gateway.request",
+      "message": "HTTP request completed",
+      "payload": {
+        "method": "GET",
+        "path": "/api/views/FK0gdkb6QV-MjZLgrUXU_JRE2el91dJ5/assets/image",
+        "status": 200,
+        "elapsedMs": 3
+      }
+    },
+    {
+      "timestampMs": 1793997840696,
+      "originApp": "web",
+      "component": "gateway",
+      "runtimeInstanceId": "",
+      "level": "WARNING",
+      "eventType": "gateway.request",
+      "message": "HTTP request completed",
+      "payload": {
+        "method": "GET",
+        "path": "/api/views/FK0gdkb6QV-MjZLgrUXU_JRE2el91dJ5/assets/image",
+        "status": 404,
+        "elapsedMs": 2
+      }
+    },
+    {
+      "timestampMs": 1793997840699,
+      "originApp": "web",
+      "component": "gateway",
+      "runtimeInstanceId": "",
+      "level": "DEBUG",
+      "eventType": "gateway.request",
+      "message": "HTTP request completed",
+      "payload": {
+        "method": "GET",
+        "path": "/api/views/FK0gdkb6QV-MjZLgrUXU_JRE2el91dJ5/assets/image",
+        "status": 200,
+        "elapsedMs": 1
+      }
+    }
+  ]
+}

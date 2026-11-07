@@ -3,14 +3,55 @@ import argparse
 import getpass
 import json
 import logging
+import os
 import secrets
 import socket
+import sqlite3
+import stat
 import tempfile
 from pathlib import Path
 
 from .auth import AuthStore
 from .config import Config
 from .local_log import GatewayLog
+
+
+def read_password_file(path: Path) -> str:
+    """Read one private UTF-8 password without changing or disclosing the file."""
+    # 1024 Unicode characters, an optional UTF-8 BOM and one CRLF terminator.
+    limit = 4 * 1024 + 3 + 2
+    try:
+        if not stat.S_ISREG(path.lstat().st_mode):
+            raise ValueError('password file must be a regular file, not a symbolic link')
+        flags = os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0)
+        flags |= getattr(os, 'O_BINARY', 0)
+        with os.fdopen(os.open(path, flags), 'rb') as stream:
+            info = os.fstat(stream.fileno())
+            if not stat.S_ISREG(info.st_mode):
+                raise ValueError('password file must be a regular file')
+            if os.name == 'posix':
+                if info.st_uid != os.geteuid() or info.st_mode & 0o077:
+                    raise ValueError('password file must be owned by the current user with no group/other permissions (use 0600 or 0400)')
+            if info.st_size > limit:
+                raise ValueError('password file is too large')
+            raw = stream.read(limit + 1)
+        if len(raw) > limit:
+            raise ValueError('password file is too large')
+        password = raw.decode('utf-8-sig')
+    except UnicodeError:
+        raise ValueError('password file must contain UTF-8 text') from None
+    except OSError:
+        # OS and decoder errors can carry file details; never print their payload.
+        raise ValueError('cannot read password file; check its path and access permissions') from None
+    if password.endswith('\r\n'):
+        password = password[:-2]
+    elif password.endswith('\n'):
+        password = password[:-1]
+    if any(character in password for character in ('\r', '\n', '\x00')):
+        raise ValueError('password file must contain a single line without NUL characters')
+    if not 12 <= len(password) <= 1024:
+        raise ValueError('password must be 12..1024 characters')
+    return password
 
 
 def validate_preview_context(path, manifest):
@@ -31,6 +72,8 @@ def main():
     user = sub.add_parser('create-user')
     user.add_argument('username')
     user.add_argument('--role', choices=['admin', 'operator', 'viewer'], default='admin')
+    user.add_argument('--password-file', type=Path,
+                      help='Read a password from a private UTF-8 file instead of prompting; file is not deleted')
     serve = sub.add_parser('serve')
     serve.add_argument('--mode', choices=['mock', 'grpc'], required=True)
     serve.add_argument('--runtime-address')
@@ -38,6 +81,8 @@ def main():
     serve.add_argument('--port', type=int, default=8780)
     serve.add_argument('--allowed-origin', action='append', default=[])
     serve.add_argument('--secure-cookie', action='store_true')
+    serve.add_argument('--local-no-auth', action='store_true',
+                       help='Opt in to local passwordless administrator access; loopback only, no proxy or tunnel')
     preview = sub.add_parser('preview')
     preview.add_argument('--package', type=Path, required=True)
     preview.add_argument('--context', type=Path, required=True)
@@ -47,18 +92,34 @@ def main():
     preview.add_argument('--no-control', action='store_true', help='Read-only preview (always enforced)')
     args = parser.parse_args()
     if args.command == 'create-user':
-        password = getpass.getpass('Password (12+ characters): ')
-        if password != getpass.getpass('Confirm password: '):
-            parser.error('passwords differ')
-        AuthStore(args.data_dir / 'web.sqlite').create_user(args.username, password, args.role)
+        try:
+            if args.password_file is not None:
+                password = read_password_file(args.password_file)
+            else:
+                password = getpass.getpass('Password (12+ characters): ')
+                if password != getpass.getpass('Confirm password: '):
+                    parser.error('passwords differ')
+            AuthStore(args.data_dir / 'web.sqlite').create_user(args.username, password, args.role)
+        except ValueError as error:
+            parser.error(str(error))
+        except sqlite3.IntegrityError:
+            parser.error('user already exists; create-user does not reset existing passwords')
         print('User created. No default password or account is installed.')
+        if args.password_file is not None:
+            print('Password file was not deleted. Remove it when no longer needed.')
         return
     import uvicorn
     from .app import create_app
     if args.command != 'preview':
-        config = Config(args.data_dir, mode=args.mode, host=args.host, port=args.port,
-                        runtime_address=args.runtime_address, allowed_origins=tuple(args.allowed_origin),
-                        secure_cookie=args.secure_cookie)
+        try:
+            config = Config(args.data_dir, mode=args.mode, host=args.host, port=args.port,
+                            runtime_address=args.runtime_address, allowed_origins=tuple(args.allowed_origin),
+                            secure_cookie=args.secure_cookie,local_no_auth=args.local_no_auth)
+        except ValueError as error:
+            parser.error(str(error))
+        if config.local_no_auth:
+            print('WARNING: Local passwordless ADMINISTRATOR mode. Any local user or process can edit, publish and control ALL registered Runtime targets. '
+                  'Do not expose through a proxy or tunnel. Stop this service or remove --local-no-auth to disable.', flush=True)
         gateway_log=GatewayLog(config.data_dir)
         gateway_log.record('gateway.starting','Starting Web gateway',mode=config.mode)
         try:
@@ -68,7 +129,8 @@ def main():
             gateway_log.close()
             raise
         try:
-            uvicorn.run(app, host=args.host, port=args.port, workers=1, access_log=False)
+            uvicorn.run(app, host=args.host, port=args.port, workers=1, access_log=False,
+                        **({'proxy_headers': False} if config.local_no_auth else {}))
         finally:
             gateway_log.close()
         return

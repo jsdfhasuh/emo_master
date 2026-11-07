@@ -244,6 +244,79 @@ def testAddedDefaultSuffixCannotOverwriteRejectedTarget(designerApplication, mon
     assert notices == []
 
 
+@pytest.mark.parametrize("mode", ["local", "runtime"])
+@pytest.mark.parametrize("formatName", ["json", "jsonl", "txt"])
+@pytest.mark.parametrize("overwrite", [False, True], ids=["reject", "confirm"])
+def testHistoryAddedSuffixConfirmsFinalTargetBeforeStartingExport(
+        designerApplication, monkeypatch, tmp_path, mode, formatName, overwrite):
+    from types import SimpleNamespace
+    from tests.designer.qt_wait import waitUntil
+
+    dialog = LogDialog()
+    view = dialog.view
+    source = tmp_path / "designer-source.jsonl"
+    source.write_text(json.dumps(entry().detailPayload(), ensure_ascii=False) + "\n", encoding="utf-8")
+    view._logDirectory = tmp_path
+    view.rangeCombo.setCurrentIndex(view.rangeCombo.findData(mode))
+    requests = []
+
+    def query(**options):
+        requests.append(options)
+        return dict(ok=True, upperEventId=1, nextEventId=1, runtimeInstanceId="test-runtime", hasMore=False,
+                    events=[dict(eventId=1, event=entry().detailPayload())])
+
+    view._historyClient = SimpleNamespace(runtimeService=object(), queryRuntimeLogs=query)
+    monkeypatch.setattr(view, "_selectedLocalFiles", lambda: (source,))
+    selected = tmp_path / "已有导出.backup"
+    target = Path(str(selected) + "." + formatName)
+    target.write_bytes(b"previous complete export")
+    chooseFile(monkeypatch, selected, formatName)
+    confirmations = []
+
+    def confirm(parent, title, message, buttons, default):
+        confirmations.append(message)
+        assert str(target) in message
+        assert buttons == QMessageBox.Yes | QMessageBox.No and default == QMessageBox.No
+        assert view._historyFuture is None and not requests
+        return QMessageBox.Yes if overwrite else QMessageBox.No
+
+    monkeypatch.setattr(QMessageBox, "question", confirm)
+    status = view.historyStatus.text()
+
+    view.exportHistory()
+
+    assert len(confirmations) == 1
+    if overwrite:
+        waitUntil(lambda: view._historyFuture is None)
+        assert "页面图片读取失败" in target.read_text(encoding="utf-8")
+        assert "已导出 1 条日志" in view.historyStatus.text()
+        assert len(requests) == (1 if mode == "runtime" else 0)
+    else:
+        assert target.read_bytes() == b"previous complete export"
+        assert view._historyFuture is None and not requests
+        assert view.historyStatus.text() == status
+    assert not selected.exists() and not list(tmp_path.glob(".emo-log-*"))
+
+
+@pytest.mark.parametrize("mode", ["local", "runtime"])
+def testHistoryAddedSuffixForNewTargetNeedsNoConfirmation(designerApplication, monkeypatch, tmp_path, mode):
+    dialog = LogDialog()
+    view = dialog.view
+    view._logDirectory = tmp_path
+    view.rangeCombo.setCurrentIndex(view.rangeCombo.findData(mode))
+    chooseFile(monkeypatch, tmp_path / "新导出", "jsonl")
+    monkeypatch.setattr(QMessageBox, "question", lambda *_args: pytest.fail("new target requested overwrite"))
+    monkeypatch.setattr(view, "_selectedLocalFiles", lambda: ())
+    view._historyClient = type("Client", (), {"queryRuntimeLogs": lambda **_kwargs: None})()
+    started = []
+    monkeypatch.setattr(view, "_startHistoryTask", lambda kind, task: started.append(kind))
+
+    view.exportHistory()
+
+    assert started == ["export"]
+    assert view._historyExportPath == tmp_path / "新导出.jsonl"
+
+
 def testExportFailureEntersMainWindowAndDurableLocalLog(ownedDesignerWindow, monkeypatch, tmp_path):
     directory = tmp_path / "designer-logs"
     monkeypatch.setenv("EMO_DESIGNER_LOG_DIR", str(directory))

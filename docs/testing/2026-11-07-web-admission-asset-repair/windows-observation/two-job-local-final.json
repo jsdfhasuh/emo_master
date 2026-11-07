@@ -1,0 +1,770 @@
+{
+  "outcome": "passed",
+  "qtPlatform": "offscreen",
+  "semantics": "best-effort, non-atomic; read errors precede caller handling; GUI is the next main-thread observation and may already reflect recovery",
+  "readCount": 2,
+  "errorCount": 0,
+  "droppedReads": 0,
+  "firstError": null,
+  "reads": [
+    {
+      "stage": "job_1_image",
+      "startedAtMs": 1793998540909,
+      "startedNs": 78307532557442,
+      "endedNs": 78307534069640,
+      "readDecodeMs": 1.512198,
+      "identity": {
+        "runtimeInstanceId": "25515cc8-5608-46b7-9855-18043d1dc86e",
+        "jobId": "5a48db21-a584-46a4-ab2a-8d26a7b9be2a",
+        "resultScopeId": "root",
+        "invocationId": "56186782-51d6-45e4-a81c-20780022bfe5",
+        "resultKey": "4badf265-a455-43cb-a0f7-209028e8e213",
+        "resultOrdinal": 1,
+        "executionRevision": "f20a6cb9c25aabbb6c5622438a899f0c4479c8923bebacb1a04f82b6bc62f847",
+        "capturePlanRevision": "c7f97426d96467a43fbb94720e0cc97d7d0e705e517b0be5773443d2a8328308",
+        "mode": "runtime"
+      },
+      "resultStatus": "COMPLETE",
+      "executionTerminal": "COMPLETED",
+      "image": {
+        "resourceId": "3097869e-3ab0-4c6d-a7a7-bb145d8125b3",
+        "ownerResultKey": "4badf265-a455-43cb-a0f7-209028e8e213",
+        "byteSize": 654,
+        "sha256": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3",
+        "mimeType": "image/png",
+        "provenance": {
+          "frameIdentity": "871f6f27-4b78-44ab-98ca-f0032e29a47b",
+          "coordinateSpaceId": "45776f83-3d48-4410-a311-d653af37edac",
+          "trust": "proven",
+          "parentFrameIdentity": "cba2eb46-f1e4-4a16-80f6-46bcb09eeff4",
+          "adapterVersion": "blob-1.2.0"
+        },
+        "ownership": "result_store"
+      },
+      "sources": [
+        {
+          "sourceId": "image",
+          "state": "AVAILABLE",
+          "reasonCode": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "stage": "job_2_image",
+      "startedAtMs": 1793998542711,
+      "startedNs": 78309333771067,
+      "endedNs": 78309334912877,
+      "readDecodeMs": 1.14181,
+      "identity": {
+        "runtimeInstanceId": "25515cc8-5608-46b7-9855-18043d1dc86e",
+        "jobId": "c99a5e6a-7532-46f2-959d-9e5d76f8171b",
+        "resultScopeId": "root",
+        "invocationId": "ac11cfed-83e3-4a95-b203-d915bad57689",
+        "resultKey": "d43836b7-5687-4831-9978-763142694b3c",
+        "resultOrdinal": 1,
+        "executionRevision": "f20a6cb9c25aabbb6c5622438a899f0c4479c8923bebacb1a04f82b6bc62f847",
+        "capturePlanRevision": "c7f97426d96467a43fbb94720e0cc97d7d0e705e517b0be5773443d2a8328308",
+        "mode": "runtime"
+      },
+      "resultStatus": "COMPLETE",
+      "executionTerminal": "COMPLETED",
+      "image": {
+        "resourceId": "98f98a6a-0964-40a3-b505-a6dd7c86110d",
+        "ownerResultKey": "d43836b7-5687-4831-9978-763142694b3c",
+        "byteSize": 654,
+        "sha256": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3",
+        "mimeType": "image/png",
+        "provenance": {
+          "frameIdentity": "795e30d4-a5d2-427d-8b1b-d52ca8279977",
+          "coordinateSpaceId": "4e4e61bc-0c7d-4f8a-9530-57e18c78a95c",
+          "trust": "proven",
+          "parentFrameIdentity": "ef9824aa-ec35-4416-af33-7a31627d931a",
+          "adapterVersion": "blob-1.2.0"
+        },
+        "ownership": "result_store"
+      },
+      "sources": [
+        {
+          "sourceId": "image",
+          "state": "AVAILABLE",
+          "reasonCode": null
+        }
+      ],
+      "error": null
+    }
+  ],
+  "stages": [
+    {
+      "stage": "job_1_image",
+      "observedAtMs": 1793998540922,
+      "observedNs": 78307545567191,
+      "client": {
+        "jobId": "5a48db21-a584-46a4-ab2a-8d26a7b9be2a",
+        "connection": "CONNECTED",
+        "detail": "",
+        "generation": 0,
+        "revision": 6,
+        "readResults": true,
+        "resultsAvailable": true,
+        "stopped": false,
+        "stats": {
+          "received": 1,
+          "decoded": 1,
+          "dropped": 0,
+          "read_failed": 0,
+          "resets": 0,
+          "expired_scopes": 0
+        },
+        "errors": [],
+        "records": [
+          {
+            "key": "4badf265-a455-43cb-a0f7-209028e8e213",
+            "ordinal": 1,
+            "decoded": [
+              "image"
+            ],
+            "failures": {},
+            "read_decode_ms": 1.5680229989811778,
+            "received_ns": 78307532322187,
+            "decoded_ns": 78307534112155,
+            "model_ns": 78307534112155,
+            "applied_to_live": true,
+            "scope_ended_ns": 78306435418007,
+            "owner_age_at_send_ms": 1096.153359,
+            "received_to_model_ms": 1.792361,
+            "live_decision": "APPLIED",
+            "task_generation": 0,
+            "decision_generation": 0,
+            "decision_job_id": "5a48db21-a584-46a4-ab2a-8d26a7b9be2a",
+            "decision_runtime_instance_id": "25515cc8-5608-46b7-9855-18043d1dc86e",
+            "high_ordinal": 1,
+            "expired_ordinal": 0,
+            "high_result_key": "4badf265-a455-43cb-a0f7-209028e8e213",
+            "runtime_instance_id": "25515cc8-5608-46b7-9855-18043d1dc86e",
+            "job_id": "5a48db21-a584-46a4-ab2a-8d26a7b9be2a",
+            "scope_id": "root",
+            "invocation_id": "56186782-51d6-45e4-a81c-20780022bfe5",
+            "result_status": "COMPLETE",
+            "execution_terminal": "COMPLETED",
+            "source_outcomes": {
+              "count": {
+                "state": "AVAILABLE",
+                "reason_code": null,
+                "reason": null
+              },
+              "image": {
+                "state": "AVAILABLE",
+                "reason_code": null,
+                "reason": null
+              }
+            },
+            "image_refs": {
+              "image": {
+                "owner_result_key": "4badf265-a455-43cb-a0f7-209028e8e213",
+                "sha256": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3",
+                "resource_id": "3097869e-3ab0-4c6d-a7a7-bb145d8125b3"
+              }
+            }
+          }
+        ],
+        "scheduled": [],
+        "wantedImages": [
+          "image"
+        ],
+        "consumers": {
+          "066d4c6d3e2b43cc9a5ed6b0ebcfbcf5": [
+            "image"
+          ]
+        },
+        "scopes": {
+          "root": {
+            "result": {
+              "identity": {
+                "runtimeInstanceId": "25515cc8-5608-46b7-9855-18043d1dc86e",
+                "jobId": "5a48db21-a584-46a4-ab2a-8d26a7b9be2a",
+                "resultScopeId": "root",
+                "invocationId": "56186782-51d6-45e4-a81c-20780022bfe5",
+                "resultKey": "4badf265-a455-43cb-a0f7-209028e8e213",
+                "resultOrdinal": 1,
+                "executionRevision": "f20a6cb9c25aabbb6c5622438a899f0c4479c8923bebacb1a04f82b6bc62f847",
+                "capturePlanRevision": "c7f97426d96467a43fbb94720e0cc97d7d0e705e517b0be5773443d2a8328308",
+                "mode": "runtime"
+              },
+              "status": "COMPLETE",
+              "terminal": "COMPLETED",
+              "sources": [
+                {
+                  "sourceId": "count",
+                  "state": "AVAILABLE",
+                  "reasonCode": null,
+                  "reason": null,
+                  "image": null
+                },
+                {
+                  "sourceId": "image",
+                  "state": "AVAILABLE",
+                  "reasonCode": null,
+                  "reason": null,
+                  "image": {
+                    "resourceId": "3097869e-3ab0-4c6d-a7a7-bb145d8125b3",
+                    "ownerResultKey": "4badf265-a455-43cb-a0f7-209028e8e213",
+                    "byteSize": 654,
+                    "sha256": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3",
+                    "mimeType": "image/png",
+                    "provenance": {
+                      "frameIdentity": "871f6f27-4b78-44ab-98ca-f0032e29a47b",
+                      "coordinateSpaceId": "45776f83-3d48-4410-a311-d653af37edac",
+                      "trust": "proven",
+                      "parentFrameIdentity": "cba2eb46-f1e4-4a16-80f6-46bcb09eeff4",
+                      "adapterVersion": "blob-1.2.0"
+                    },
+                    "ownership": "result_store"
+                  }
+                }
+              ]
+            },
+            "decoded": [
+              "image"
+            ],
+            "failures": {},
+            "imageStates": {}
+          }
+        },
+        "loading": {},
+        "threads": {
+          "display-metadata": true,
+          "display-snapshot-health": true,
+          "display-read-decode": true
+        }
+      },
+      "observer": {
+        "page": "main",
+        "visible": true,
+        "detached": false,
+        "designExamples": false,
+        "banner": "运行结果",
+        "status": "结果服务已连接",
+        "readiness": [
+          {
+            "componentId": "image",
+            "sourceId": "image",
+            "sourceExists": true,
+            "scopeExists": true,
+            "sourceDecoded": true,
+            "imageNull": false,
+            "widgetKey": "4badf265-a455-43cb-a0f7-209028e8e213",
+            "scopeKey": "4badf265-a455-43cb-a0f7-209028e8e213",
+            "resultKeyMatches": true,
+            "tooltip": ""
+          }
+        ]
+      }
+    },
+    {
+      "stage": "job_1_observer_image",
+      "observedAtMs": 1793998540935,
+      "observedNs": 78307558253208,
+      "client": {
+        "jobId": "5a48db21-a584-46a4-ab2a-8d26a7b9be2a",
+        "connection": "CONNECTED",
+        "detail": "",
+        "generation": 0,
+        "revision": 6,
+        "readResults": true,
+        "resultsAvailable": true,
+        "stopped": false,
+        "stats": {
+          "received": 1,
+          "decoded": 1,
+          "dropped": 0,
+          "read_failed": 0,
+          "resets": 0,
+          "expired_scopes": 0
+        },
+        "errors": [],
+        "records": [
+          {
+            "key": "4badf265-a455-43cb-a0f7-209028e8e213",
+            "ordinal": 1,
+            "decoded": [
+              "image"
+            ],
+            "failures": {},
+            "read_decode_ms": 1.5680229989811778,
+            "received_ns": 78307532322187,
+            "decoded_ns": 78307534112155,
+            "model_ns": 78307534112155,
+            "applied_to_live": true,
+            "scope_ended_ns": 78306435418007,
+            "owner_age_at_send_ms": 1096.153359,
+            "received_to_model_ms": 1.792361,
+            "live_decision": "APPLIED",
+            "task_generation": 0,
+            "decision_generation": 0,
+            "decision_job_id": "5a48db21-a584-46a4-ab2a-8d26a7b9be2a",
+            "decision_runtime_instance_id": "25515cc8-5608-46b7-9855-18043d1dc86e",
+            "high_ordinal": 1,
+            "expired_ordinal": 0,
+            "high_result_key": "4badf265-a455-43cb-a0f7-209028e8e213",
+            "runtime_instance_id": "25515cc8-5608-46b7-9855-18043d1dc86e",
+            "job_id": "5a48db21-a584-46a4-ab2a-8d26a7b9be2a",
+            "scope_id": "root",
+            "invocation_id": "56186782-51d6-45e4-a81c-20780022bfe5",
+            "result_status": "COMPLETE",
+            "execution_terminal": "COMPLETED",
+            "source_outcomes": {
+              "count": {
+                "state": "AVAILABLE",
+                "reason_code": null,
+                "reason": null
+              },
+              "image": {
+                "state": "AVAILABLE",
+                "reason_code": null,
+                "reason": null
+              }
+            },
+            "image_refs": {
+              "image": {
+                "owner_result_key": "4badf265-a455-43cb-a0f7-209028e8e213",
+                "sha256": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3",
+                "resource_id": "3097869e-3ab0-4c6d-a7a7-bb145d8125b3"
+              }
+            }
+          }
+        ],
+        "scheduled": [],
+        "wantedImages": [
+          "image"
+        ],
+        "consumers": {
+          "066d4c6d3e2b43cc9a5ed6b0ebcfbcf5": [
+            "image"
+          ]
+        },
+        "scopes": {
+          "root": {
+            "result": {
+              "identity": {
+                "runtimeInstanceId": "25515cc8-5608-46b7-9855-18043d1dc86e",
+                "jobId": "5a48db21-a584-46a4-ab2a-8d26a7b9be2a",
+                "resultScopeId": "root",
+                "invocationId": "56186782-51d6-45e4-a81c-20780022bfe5",
+                "resultKey": "4badf265-a455-43cb-a0f7-209028e8e213",
+                "resultOrdinal": 1,
+                "executionRevision": "f20a6cb9c25aabbb6c5622438a899f0c4479c8923bebacb1a04f82b6bc62f847",
+                "capturePlanRevision": "c7f97426d96467a43fbb94720e0cc97d7d0e705e517b0be5773443d2a8328308",
+                "mode": "runtime"
+              },
+              "status": "COMPLETE",
+              "terminal": "COMPLETED",
+              "sources": [
+                {
+                  "sourceId": "count",
+                  "state": "AVAILABLE",
+                  "reasonCode": null,
+                  "reason": null,
+                  "image": null
+                },
+                {
+                  "sourceId": "image",
+                  "state": "AVAILABLE",
+                  "reasonCode": null,
+                  "reason": null,
+                  "image": {
+                    "resourceId": "3097869e-3ab0-4c6d-a7a7-bb145d8125b3",
+                    "ownerResultKey": "4badf265-a455-43cb-a0f7-209028e8e213",
+                    "byteSize": 654,
+                    "sha256": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3",
+                    "mimeType": "image/png",
+                    "provenance": {
+                      "frameIdentity": "871f6f27-4b78-44ab-98ca-f0032e29a47b",
+                      "coordinateSpaceId": "45776f83-3d48-4410-a311-d653af37edac",
+                      "trust": "proven",
+                      "parentFrameIdentity": "cba2eb46-f1e4-4a16-80f6-46bcb09eeff4",
+                      "adapterVersion": "blob-1.2.0"
+                    },
+                    "ownership": "result_store"
+                  }
+                }
+              ]
+            },
+            "decoded": [
+              "image"
+            ],
+            "failures": {},
+            "imageStates": {}
+          }
+        },
+        "loading": {},
+        "threads": {
+          "display-metadata": true,
+          "display-snapshot-health": true,
+          "display-read-decode": true
+        }
+      },
+      "observer": {
+        "page": "main",
+        "visible": true,
+        "detached": false,
+        "designExamples": false,
+        "banner": "运行结果",
+        "status": "结果服务已连接",
+        "readiness": [
+          {
+            "componentId": "image",
+            "sourceId": "image",
+            "sourceExists": true,
+            "scopeExists": true,
+            "sourceDecoded": true,
+            "imageNull": false,
+            "widgetKey": "4badf265-a455-43cb-a0f7-209028e8e213",
+            "scopeKey": "4badf265-a455-43cb-a0f7-209028e8e213",
+            "resultKeyMatches": true,
+            "tooltip": ""
+          }
+        ]
+      }
+    },
+    {
+      "stage": "job_2_image",
+      "observedAtMs": 1793998542718,
+      "observedNs": 78309341018884,
+      "client": {
+        "jobId": "c99a5e6a-7532-46f2-959d-9e5d76f8171b",
+        "connection": "CONNECTED",
+        "detail": "",
+        "generation": 0,
+        "revision": 6,
+        "readResults": true,
+        "resultsAvailable": true,
+        "stopped": false,
+        "stats": {
+          "received": 1,
+          "decoded": 1,
+          "dropped": 0,
+          "read_failed": 0,
+          "resets": 0,
+          "expired_scopes": 0
+        },
+        "errors": [],
+        "records": [
+          {
+            "key": "d43836b7-5687-4831-9978-763142694b3c",
+            "ordinal": 1,
+            "decoded": [
+              "image"
+            ],
+            "failures": {},
+            "read_decode_ms": 1.1942599958274513,
+            "received_ns": 78309333688708,
+            "decoded_ns": 78309334952848,
+            "model_ns": 78309334952848,
+            "applied_to_live": true,
+            "scope_ended_ns": 78308212214317,
+            "owner_age_at_send_ms": 1120.683434,
+            "received_to_model_ms": 1.266623,
+            "live_decision": "APPLIED",
+            "task_generation": 0,
+            "decision_generation": 0,
+            "decision_job_id": "c99a5e6a-7532-46f2-959d-9e5d76f8171b",
+            "decision_runtime_instance_id": "25515cc8-5608-46b7-9855-18043d1dc86e",
+            "high_ordinal": 1,
+            "expired_ordinal": 0,
+            "high_result_key": "d43836b7-5687-4831-9978-763142694b3c",
+            "runtime_instance_id": "25515cc8-5608-46b7-9855-18043d1dc86e",
+            "job_id": "c99a5e6a-7532-46f2-959d-9e5d76f8171b",
+            "scope_id": "root",
+            "invocation_id": "ac11cfed-83e3-4a95-b203-d915bad57689",
+            "result_status": "COMPLETE",
+            "execution_terminal": "COMPLETED",
+            "source_outcomes": {
+              "count": {
+                "state": "AVAILABLE",
+                "reason_code": null,
+                "reason": null
+              },
+              "image": {
+                "state": "AVAILABLE",
+                "reason_code": null,
+                "reason": null
+              }
+            },
+            "image_refs": {
+              "image": {
+                "owner_result_key": "d43836b7-5687-4831-9978-763142694b3c",
+                "sha256": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3",
+                "resource_id": "98f98a6a-0964-40a3-b505-a6dd7c86110d"
+              }
+            }
+          }
+        ],
+        "scheduled": [],
+        "wantedImages": [
+          "image"
+        ],
+        "consumers": {
+          "c9296517852247889c46fb24f377a5e6": [
+            "image"
+          ]
+        },
+        "scopes": {
+          "root": {
+            "result": {
+              "identity": {
+                "runtimeInstanceId": "25515cc8-5608-46b7-9855-18043d1dc86e",
+                "jobId": "c99a5e6a-7532-46f2-959d-9e5d76f8171b",
+                "resultScopeId": "root",
+                "invocationId": "ac11cfed-83e3-4a95-b203-d915bad57689",
+                "resultKey": "d43836b7-5687-4831-9978-763142694b3c",
+                "resultOrdinal": 1,
+                "executionRevision": "f20a6cb9c25aabbb6c5622438a899f0c4479c8923bebacb1a04f82b6bc62f847",
+                "capturePlanRevision": "c7f97426d96467a43fbb94720e0cc97d7d0e705e517b0be5773443d2a8328308",
+                "mode": "runtime"
+              },
+              "status": "COMPLETE",
+              "terminal": "COMPLETED",
+              "sources": [
+                {
+                  "sourceId": "count",
+                  "state": "AVAILABLE",
+                  "reasonCode": null,
+                  "reason": null,
+                  "image": null
+                },
+                {
+                  "sourceId": "image",
+                  "state": "AVAILABLE",
+                  "reasonCode": null,
+                  "reason": null,
+                  "image": {
+                    "resourceId": "98f98a6a-0964-40a3-b505-a6dd7c86110d",
+                    "ownerResultKey": "d43836b7-5687-4831-9978-763142694b3c",
+                    "byteSize": 654,
+                    "sha256": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3",
+                    "mimeType": "image/png",
+                    "provenance": {
+                      "frameIdentity": "795e30d4-a5d2-427d-8b1b-d52ca8279977",
+                      "coordinateSpaceId": "4e4e61bc-0c7d-4f8a-9530-57e18c78a95c",
+                      "trust": "proven",
+                      "parentFrameIdentity": "ef9824aa-ec35-4416-af33-7a31627d931a",
+                      "adapterVersion": "blob-1.2.0"
+                    },
+                    "ownership": "result_store"
+                  }
+                }
+              ]
+            },
+            "decoded": [
+              "image"
+            ],
+            "failures": {},
+            "imageStates": {}
+          }
+        },
+        "loading": {},
+        "threads": {
+          "display-metadata": true,
+          "display-snapshot-health": true,
+          "display-read-decode": true
+        }
+      },
+      "observer": {
+        "page": "main",
+        "visible": true,
+        "detached": false,
+        "designExamples": false,
+        "banner": "运行结果",
+        "status": "结果服务已连接",
+        "readiness": [
+          {
+            "componentId": "image",
+            "sourceId": "image",
+            "sourceExists": true,
+            "scopeExists": true,
+            "sourceDecoded": true,
+            "imageNull": false,
+            "widgetKey": "d43836b7-5687-4831-9978-763142694b3c",
+            "scopeKey": "d43836b7-5687-4831-9978-763142694b3c",
+            "resultKeyMatches": true,
+            "tooltip": ""
+          }
+        ]
+      }
+    },
+    {
+      "stage": "job_2_observer_image",
+      "observedAtMs": 1793998542729,
+      "observedNs": 78309351860151,
+      "client": {
+        "jobId": "c99a5e6a-7532-46f2-959d-9e5d76f8171b",
+        "connection": "CONNECTED",
+        "detail": "",
+        "generation": 0,
+        "revision": 6,
+        "readResults": true,
+        "resultsAvailable": true,
+        "stopped": false,
+        "stats": {
+          "received": 1,
+          "decoded": 1,
+          "dropped": 0,
+          "read_failed": 0,
+          "resets": 0,
+          "expired_scopes": 0
+        },
+        "errors": [],
+        "records": [
+          {
+            "key": "d43836b7-5687-4831-9978-763142694b3c",
+            "ordinal": 1,
+            "decoded": [
+              "image"
+            ],
+            "failures": {},
+            "read_decode_ms": 1.1942599958274513,
+            "received_ns": 78309333688708,
+            "decoded_ns": 78309334952848,
+            "model_ns": 78309334952848,
+            "applied_to_live": true,
+            "scope_ended_ns": 78308212214317,
+            "owner_age_at_send_ms": 1120.683434,
+            "received_to_model_ms": 1.266623,
+            "live_decision": "APPLIED",
+            "task_generation": 0,
+            "decision_generation": 0,
+            "decision_job_id": "c99a5e6a-7532-46f2-959d-9e5d76f8171b",
+            "decision_runtime_instance_id": "25515cc8-5608-46b7-9855-18043d1dc86e",
+            "high_ordinal": 1,
+            "expired_ordinal": 0,
+            "high_result_key": "d43836b7-5687-4831-9978-763142694b3c",
+            "runtime_instance_id": "25515cc8-5608-46b7-9855-18043d1dc86e",
+            "job_id": "c99a5e6a-7532-46f2-959d-9e5d76f8171b",
+            "scope_id": "root",
+            "invocation_id": "ac11cfed-83e3-4a95-b203-d915bad57689",
+            "result_status": "COMPLETE",
+            "execution_terminal": "COMPLETED",
+            "source_outcomes": {
+              "count": {
+                "state": "AVAILABLE",
+                "reason_code": null,
+                "reason": null
+              },
+              "image": {
+                "state": "AVAILABLE",
+                "reason_code": null,
+                "reason": null
+              }
+            },
+            "image_refs": {
+              "image": {
+                "owner_result_key": "d43836b7-5687-4831-9978-763142694b3c",
+                "sha256": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3",
+                "resource_id": "98f98a6a-0964-40a3-b505-a6dd7c86110d"
+              }
+            }
+          }
+        ],
+        "scheduled": [],
+        "wantedImages": [
+          "image"
+        ],
+        "consumers": {
+          "c9296517852247889c46fb24f377a5e6": [
+            "image"
+          ]
+        },
+        "scopes": {
+          "root": {
+            "result": {
+              "identity": {
+                "runtimeInstanceId": "25515cc8-5608-46b7-9855-18043d1dc86e",
+                "jobId": "c99a5e6a-7532-46f2-959d-9e5d76f8171b",
+                "resultScopeId": "root",
+                "invocationId": "ac11cfed-83e3-4a95-b203-d915bad57689",
+                "resultKey": "d43836b7-5687-4831-9978-763142694b3c",
+                "resultOrdinal": 1,
+                "executionRevision": "f20a6cb9c25aabbb6c5622438a899f0c4479c8923bebacb1a04f82b6bc62f847",
+                "capturePlanRevision": "c7f97426d96467a43fbb94720e0cc97d7d0e705e517b0be5773443d2a8328308",
+                "mode": "runtime"
+              },
+              "status": "COMPLETE",
+              "terminal": "COMPLETED",
+              "sources": [
+                {
+                  "sourceId": "count",
+                  "state": "AVAILABLE",
+                  "reasonCode": null,
+                  "reason": null,
+                  "image": null
+                },
+                {
+                  "sourceId": "image",
+                  "state": "AVAILABLE",
+                  "reasonCode": null,
+                  "reason": null,
+                  "image": {
+                    "resourceId": "98f98a6a-0964-40a3-b505-a6dd7c86110d",
+                    "ownerResultKey": "d43836b7-5687-4831-9978-763142694b3c",
+                    "byteSize": 654,
+                    "sha256": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3",
+                    "mimeType": "image/png",
+                    "provenance": {
+                      "frameIdentity": "795e30d4-a5d2-427d-8b1b-d52ca8279977",
+                      "coordinateSpaceId": "4e4e61bc-0c7d-4f8a-9530-57e18c78a95c",
+                      "trust": "proven",
+                      "parentFrameIdentity": "ef9824aa-ec35-4416-af33-7a31627d931a",
+                      "adapterVersion": "blob-1.2.0"
+                    },
+                    "ownership": "result_store"
+                  }
+                }
+              ]
+            },
+            "decoded": [
+              "image"
+            ],
+            "failures": {},
+            "imageStates": {}
+          }
+        },
+        "loading": {},
+        "threads": {
+          "display-metadata": true,
+          "display-snapshot-health": true,
+          "display-read-decode": true
+        }
+      },
+      "observer": {
+        "page": "main",
+        "visible": true,
+        "detached": false,
+        "designExamples": false,
+        "banner": "运行结果",
+        "status": "结果服务已连接",
+        "readiness": [
+          {
+            "componentId": "image",
+            "sourceId": "image",
+            "sourceExists": true,
+            "scopeExists": true,
+            "sourceDecoded": true,
+            "imageNull": false,
+            "widgetKey": "d43836b7-5687-4831-9978-763142694b3c",
+            "scopeKey": "d43836b7-5687-4831-9978-763142694b3c",
+            "resultKeyMatches": true,
+            "tooltip": ""
+          }
+        ]
+      }
+    }
+  ],
+  "diagnosticErrors": [],
+  "finalStage": "all_owners_closed",
+  "failedAt": null,
+  "expectedJobs": [
+    "5a48db21-a584-46a4-ab2a-8d26a7b9be2a",
+    "c99a5e6a-7532-46f2-959d-9e5d76f8171b"
+  ]
+}

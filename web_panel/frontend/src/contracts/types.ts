@@ -1,6 +1,8 @@
 /** Browser view model; official Panel Contract v1 is normalized at the boundary. */
 export type Role = 'admin' | 'operator' | 'viewer';
 export interface Me {
+    authMode?: 'local' | 'password' | 'preview';
+    localNoAuth?: boolean;
     preview?:boolean;
     username: string;
     userId?: string;

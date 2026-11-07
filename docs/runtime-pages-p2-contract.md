@@ -316,6 +316,13 @@ Designer 的 PreviewController 与独立 operator_view 选择按需模式；P2/P
 `ScopeView.imageStates` 是只读本地状态：NOT_REQUESTED / LOADING 与来源失败、ReadAsset 失败分别表示。
 同结果图片准备完成也更新 readyNs；不会把旧图片配上新数值。过期资产显示 RESOURCE_EXPIRED，不回退到上一件。
 活跃/排队结果身份合计最多 9；元数据健康快照可重试队列拒绝的最终结果；取消和代际切换不保留无限补读任务。
+当前 live 结果的首次 ReadAsset 若返回 UNAVAILABLE、DEADLINE_EXCEEDED，或明确的
+RESOURCE_EXHAUSTED / asset 准入拒绝，后续成功接纳的健康快照可授权同一来源补读一次。
+必须仍为同一 Runtime/Job/generation/resultKey、相同且 AVAILABLE 的图片引用，且仍有图片需求；
+仅用原队列和解码线程，单次 RPC 的 0.5 秒上限不变。无需求时不消费补读机会；
+旧结果、过期、换代和关闭清理补读意图。第二次仍失败则保留错误，不无限重试。
+RESOURCE_EXPIRED、摘要/PNG 错误、CANCELLED 和 CLIENT_BUDGET 不自动补读。
+同结果恢复更新图片、readyNs 与 revision，不重复发送正式结果 observer 回调，也不重新执行任务。
 有限 pin 的缺图补读也使用此队列/线程；租约就绪时给 pin 留出下一空闲队列位置，避免持续 live 流量饿死它。
 没有新增图片队列、图片线程或解码 scratch。每图先用 PNG 头及透明度信息检查 OpenCV 输出字节上界，
 包含灰度+alpha 扩成 BGRA 的四通道情况，超 8 MiB 在解码分配前拒绝。

@@ -1,0 +1,14 @@
+{
+  "sourceBaseCommit": "cdf1250ccc41b78f79b25b87e6db197809875384",
+  "python": "3.10.22",
+  "newRegressionResult": "32 passed in 6.02s",
+  "baselineResult": "8 failed, 24 passed in 6.24s",
+  "files": {
+    "src/emo_master/apps/runtime/jobs/supervisor.py": "0e33d616b60fe3205ccdc8526bb66e2d6a697bcf72ce34a535ab5431c3326e5d",
+    "src/emo_master/apps/runtime/project_config/cycle_plan.py": "1b1f58a30f275f069cebfc105ad03d4abf064d4e348baabcec0d0acdae5ab0f5",
+    "tests/runtime/test_supervisor_heartbeat_observation.py": "8f2f6f802048c0aec88d424d5217957463d7d1e47e59a0ceba830e1d59cd917f",
+    "tests/runtime/test_cycle_plan_scope_cleanup.py": "30f9d4357daaf8679509b491317ba11cdf224ee6dec5a49e9f25f05f51ad88ea"
+  },
+  "existingTargetedResult": "36 passed in 2.92s",
+  "totalGreenCases": 68
+}

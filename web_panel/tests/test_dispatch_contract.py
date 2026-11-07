@@ -60,6 +60,21 @@ class DispatchContractTests(unittest.IsolatedAsyncioTestCase):
         value = await client.validate_group('root',presentation)
         self.assertEqual(value,{'runIds':['root','child'],'sourceProblems':{}})
 
+    async def test_uncaptured_root_preserves_group_and_consumer_coverage(self):
+        root, child = run('root'), run('child',slot='slot-1')
+        jobs = [pb.DisplayJob(runtime_instance_id='instance',project_id='project',job_id='root',
+            run_group_id='group',source_job_id='root',capture_enabled=False),
+            metadata('child','verdict','child-scope',slot='slot-1')]
+        client = self.client(root,[root,child],jobs)
+        run_ids, coverages = await client._group_coverage('root')
+        self.assertEqual(run_ids,['root','child'])
+        self.assertFalse(coverages[0].enabled)
+        self.assertFalse(coverages[0].sources)
+        self.assertTrue(coverages[1].enabled)
+        self.assertEqual(set(coverages[1].sources),{'verdict'})
+        self.assertEqual(set(coverages[1].scopes),{'child-scope'})
+        self.assertEqual(await client.group_members('root'),['root','child'])
+
     async def test_consumer_selection_never_expands_to_group(self):
         child = run('child',slot='slot-1')
         client = self.client(child,[],[])
@@ -83,7 +98,9 @@ class DispatchContractTests(unittest.IsolatedAsyncioTestCase):
             await client.group_members('root')
 
     async def test_multiple_consumer_scopes_must_be_disjoint(self):
-        root = run('root'); child = run('child',slot='1'); child2 = run('child2',slot='2')
+        root = run('root')
+        child = run('child',slot='1')
+        child2 = run('child2',slot='2')
         client = self.client(root,[root,child,child2],[metadata('root','a','root-scope'),
             metadata('child','b','child-scope',slot='1'),metadata('child2','c','child-scope',slot='2')])
         with self.assertRaisesRegex(RuntimeRejected,'GROUP_SCOPE_OVERLAP'):

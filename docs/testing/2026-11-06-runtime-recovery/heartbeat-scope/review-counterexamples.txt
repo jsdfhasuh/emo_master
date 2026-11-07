@@ -1,0 +1,7 @@
+silent-after-read: one deferred observation, then E_HEARTBEAT_TIMEOUT; epoch event timestamp preserved
+.dead-process: EventBridge selected processExited before heartbeat and completed retirement
+.legacy: wall timestamp comparisons and payload clock label agree; sample is null
+.frame_write_eof_receipt={"code": "E_DEVICE_OUTCOME_UNKNOWN", "depth": 1, "diagnostics": {"action": "frameBeginWrite", "cycleCleanup": [{"code": "E_DEVICE_CANCELLED", "cycleId": "cycle-1", "diagnostics": {}, "message": "device proxy cancelled", "outcome": "NOT_EXECUTED"}], "cycleId": "cycle-1", "deviceId": "", "phase": "receive", "requestId": "4ac93c7f8f4d416abbe0ff7074bc42a2", "transportError": "EOFError"}, "outcome": "UNKNOWN"}
+.frame_write_eof_receipt={"code": "E_DEVICE_OUTCOME_UNKNOWN", "depth": 2, "diagnostics": {"action": "frameBeginWrite", "cycleCleanup": [{"code": "E_DEVICE_CANCELLED", "cycleId": "cycle-2", "diagnostics": {}, "message": "device proxy cancelled", "outcome": "NOT_EXECUTED"}, {"code": "E_DEVICE_CANCELLED", "cycleId": "cycle-1", "diagnostics": {}, "message": "device proxy cancelled", "outcome": "NOT_EXECUTED"}], "cycleId": "cycle-2", "deviceId": "", "phase": "receive", "requestId": "2ec6624e68c84cdeb9b255088c5f0fbf", "transportError": "EOFError"}, "outcome": "UNKNOWN"}
+..........
+14 passed in 0.41s

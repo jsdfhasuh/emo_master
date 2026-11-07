@@ -1,0 +1,23 @@
+##[group]Run python frontend/tests/editor_package_browser.py
+2026-11-04T13:01:29.7423740Z python frontend/tests/editor_package_browser.py
+2026-11-04T13:01:29.7497450Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-04T13:01:29.7498062Z env:
+2026-11-04T13:01:29.7498525Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-04T13:01:29.7498998Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib/pkgconfig
+2026-11-04T13:01:29.7499443Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-04T13:01:29.7499822Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-04T13:01:29.7500203Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.22/x64
+2026-11-04T13:01:29.7500596Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.22/x64/lib
+2026-11-04T13:01:29.7500907Z ##[endgroup]
+2026-11-04T13:02:04.4475789Z Traceback (most recent call last):
+2026-11-04T13:02:04.4477311Z   File "/home/runner/work/emo_master/emo_master/web_panel/frontend/tests/editor_package_browser.py", line 143, in <module>
+2026-11-04T13:02:04.4478359Z     main()
+2026-11-04T13:02:04.4479348Z   File "/home/runner/work/emo_master/emo_master/web_panel/frontend/tests/editor_package_browser.py", line 129, in main
+2026-11-04T13:02:04.4480683Z     with page.expect_response(lambda r: r.url.endswith("/publish")) as published:
+2026-11-04T13:02:04.4481776Z   File "/opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages/playwright/_impl/_sync_base.py", line 82, in __exit__
+2026-11-04T13:02:04.4482487Z     self._event.value
+2026-11-04T13:02:04.4483218Z   File "/opt/hostedtoolcache/Python/3.10.22/x64/lib/python3.10/site-packages/playwright/_impl/_sync_base.py", line 56, in value
+2026-11-04T13:02:04.4483945Z     raise exception
+2026-11-04T13:02:04.4484581Z playwright._impl._errors.TimeoutError: Timeout 30000ms exceeded while waiting for event "response"
+2026-11-04T13:02:04.5293446Z ##[error]Process completed with exit code 1.
+2026-11-04T13:02:04.5389372Z

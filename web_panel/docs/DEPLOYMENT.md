@@ -29,9 +29,50 @@ py -3.10 -m venv .venv
 & .venv/Scripts/emo-web-panel.exe --data-dir D:/EmoWeb/panel-data serve --mode grpc --runtime-address 127.0.0.1:50051
 ```
 
-浏览器打开 `http://127.0.0.1:8780/editor`。密码交互输入，不写进启动参数。admin 拥有编辑和管理权限；操作员、查看者通过已有目标授权访问运行页。Runtime 正常运行即可，Designer 不必启动。Web 使用一个 ASGI worker；多 worker 不共享当前进程的订阅和视图状态。
+浏览器打开 `http://127.0.0.1:8780/editor`。密码默认交互输入，也可通过下述私有文件初始化，均不把密码内容写进启动参数。admin 拥有编辑和管理权限；操作员、查看者通过已有目标授权访问运行页。Runtime 正常运行即可，Designer 不必启动。Web 使用一个 ASGI worker；多 worker 不共享当前进程的订阅和视图状态。
 
 Linux 使用 `python3 -m venv .venv`、`.venv/bin/python` 和 `.venv/bin/emo-web-panel`，其余参数相同。`--mode mock` 仅用于明确的合成演示，不作为正式 Runtime 替代。
+
+## 本机免密管理员模式
+
+可信本机可显式启用此模式，**首次安装也不用执行 `create-user`**：
+
+```powershell
+& .venv/Scripts/emo-web-panel.exe --data-dir D:/EmoWeb/panel-data serve --mode grpc --runtime-address 127.0.0.1:50051 --local-no-auth
+```
+
+打开 `http://127.0.0.1:8780/editor` 即可开始。合成演示可把 `--mode grpc --runtime-address ...` 换为 `--mode mock`，但不代表真实设备验收。
+
+- 默认关闭，仅 `serve --local-no-auth` 明确开启；绑定只接受字面 `127.0.0.1` 或 `::1`，端口须为 1–65535。IPv6 访问形如 `http://[::1]:8780/editor`。也可用对应端口的 `localhost`；不接受自定义域名、通配地址、`--allowed-origin` 或 preview 组合。
+- 本机身份是完整管理员：可编辑、发布、管理账号/目标，以及启停**全部已登记 Runtime（包含远端）**。它不限定为只控制回环 Runtime。不要在不信任其他本机用户或进程的共享电脑上启用；loopback 不是操作系统用户隔离。
+- 本机身份独立保存于 `web.sqlite`，没有密码、不冒用普通账号，也不出现在普通账号管理列表。相同 data-dir 保留稳定身份，使草稿和待确认操作继续归属于原身份；新 data-dir 则是另一身份。既有账号、密码和角色不变。
+- 首次页面自动建立带 HttpOnly/SameSite=Strict cookie 的会话。后续读写仍走 session、权限、TTL 与 CSRF 校验；不会跳过 Runtime 权限或业务流程。退出或到期后须明确点击“进入本机模式”，不会自动重放保存、发布或控制。退出仅销毁该会话，**不关闭免密入口**；停止 Web 或去掉选项后重启才停用。每次服务重启旧本机会话均失效，普通密码会话仍沿用既有生命周期。
+- HTTP 与 WebSocket 都检查实际连接 peer、Host 和 Origin；写请求和 WebSocket 必须带精确同源 Origin。CLI 关闭代理头信任，并拒绝 Forwarded、X-Forwarded-* 等转发头。不得把这个端口放到反向代理、端口转发或隧道之后；主动伪造同源信息的本机代理与本机用户无法可靠区分。
+- 普通 HTTP 不要启用 `--secure-cookie`。本模式不提供 HTTPS 终止或代理部署方式；需要远程 Web 访问时，请使用下述密码模式与受控局域网配置，不要开放免密端口。
+
+实现计划与验证层级见[本机免密实施记录](../../docs/plans/2026-11-05-local-passwordless-web.md)。
+
+## 密码文件初始化
+
+`create-user` 支持显式 `--password-file`，用于没有交互终端的安装流程。先由操作人员或受控的秘密管理工具在 **Web 所在主机** 准备一个私有文件；命令只传路径，不在命令行、环境变量、脚本源码或日志里写密码内容。例如 Windows：
+
+```powershell
+& .venv/Scripts/emo-web-panel.exe --data-dir D:/EmoWeb/panel-data create-user admin --password-file D:/EmoWeb/private/admin-password.txt
+```
+
+Linux 示例（文件已安全准备好，不能通过含明文密码的 `echo` 命令创建）：
+
+```sh
+chmod 600 /private/path/admin-password.txt
+.venv/bin/emo-web-panel --data-dir /srv/emo-web/panel-data create-user admin --password-file /private/path/admin-password.txt
+```
+
+- 内容为 UTF-8 单行密码，允许 UTF-8 BOM 和一个末尾 LF/CRLF；不支持 UTF-16。仅去掉 BOM 和该行结束符，**保留首尾空格**。密码沿用现有 12–1024 字符限制，不能含其他换行或 NUL；请选择独立的强密码。程序限制读取大小，拒绝空文件、格式错误和超长输入。
+- 文件本身必须是普通文件，不能是符号链接、目录、管道或设备。POSIX 系统检查文件归当前运行用户所有，且没有组/其他用户权限，建议 `0600` 或只读的 `0400`。不要将文件放在共享、公开、可被其他用户替换的目录中。
+- Windows ACL 不等同于 POSIX 权限位，本 CLI **不验证 Windows ACL**。操作人员必须先通过 Windows 文件安全设置或秘密管理工具限制访问，只允许安装账号及必要的系统管理员读取；不能用 `chmod` 代替 Windows ACL 设置。容器秘密挂载也需满足文件类型、所有者和权限要求，不自动放宽检查。
+- 成功时仅通过既有 `AuthStore` 保存随机盐和 scrypt 哈希，不复制密码文件、不输出密码、不创建登录会话。原文件保持不变且**不会自动删除**，成功后应及时按部署环境的秘密清理策略删除或卸载；不要提交 Git、放在 `data-dir` 备份里或长期留下明文。普通删除不保证物理介质安全擦除，应用也不保证 Python 进程内存可被安全擦除。
+- 未指定该参数时仍执行两次隐藏交互输入。可继续指定 `--role admin|operator|viewer`；默认 `admin`。已有同名账号会失败，不重置密码或角色；`serve` 不会自动读取文件或创建默认账号。失败不会回退到交互提示，返回非零退出码。
+- 创建后用同一 `--data-dir` 启动 Web，再在正常登录页输入账号和密码。文件只用于创建账号，不是浏览器免登录令牌，不绕过 CSRF 或权限检查。
 
 ## 受控局域网
 

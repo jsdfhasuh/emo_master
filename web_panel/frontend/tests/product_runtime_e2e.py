@@ -41,7 +41,9 @@ def wait_until(page, condition, description, *, timeout=30):
 
 def read_json(response):
     if not response.ok:
-        raise AssertionError(f'{response.request.method} {response.url}: {response.status} {response.text()}')
+        # Both page responses and APIRequestContext responses use this helper;
+        # APIResponse has no request attribute. Preserve the actual HTTP error.
+        raise AssertionError(f'{response.url}: {response.status} {response.text()}')
     return response.json()
 
 
@@ -211,7 +213,8 @@ def main():
                     page.goto(base + '/editor')
                     page.get_by_role('heading', name='Web 页面编辑器', exact=True).wait_for()
                     sources = {}
-                    for label, node, port in [('数值', 'count', 'count'), ('判定指示', 'judge', 'result')]:
+                    for label, node, port in [('图像', 'blob', 'overlay'), ('数值', 'count', 'count'),
+                                              ('判定指示', 'judge', 'result')]:
                         choice_index, choice = next((i, item) for i, item in enumerate(context['catalog']['choices'])
                             if item['source'].get('kind') == 'node_output'
                             and item['source'].get('workflowId') == 'main'
@@ -291,9 +294,14 @@ def main():
                     values = {item['sourceId']: item for item in result['sources']}
                     assert json.loads(values[sources['count']]['valueJson']) == 2, values
                     assert json.loads(values[sources['result']]['valueJson']) is True, values
+                    assert values[sources['overlay']]['image']['ownerResultKey'] == result['identity']['resultKey'], values
                     report['capturedResult'] = result
                     expect(page.locator('.number')).to_contain_text('2.00')
                     expect(page.locator('.indicator')).to_contain_text('OK')
+                    current_image = page.locator('section.panel-card img')
+                    expect(current_image).to_have_count(1)
+                    expect(current_image).to_have_js_property('naturalWidth', 320)
+                    expect(current_image).to_have_js_property('naturalHeight', 240)
                     current = read_json(page.request.get(f'/api/runs/{job}?runtimeId=configured'))
                     assert current['active'] and current['runGroupId'] == '' and current['captureEnabled'], current
                     assert current['runtimeInstanceId'] == initial['runtimeInstanceId']
@@ -322,17 +330,21 @@ def main():
                             initial['runtimeInstanceId'],initial['projectId'],job,''), state
                         return state if state['status'] == 'ABORTED' and not state['active'] and not state['ownsResources'] else None
                     terminal = wait_until(page, retired, 'original Job ABORTED with resources retired', timeout=40)
-                    # Verify the browser's authoritative status too, not just a
-                    # successful out-of-band read while the screen stays stale.
-                    page.get_by_role('button', name='刷新页面包和状态', exact=True).click()
+                    # Formal state must update the screen without a catalog
+                    # refresh masking a stale command reply or run option.
                     original_status = page.get_by_label('原控制运行状态', exact=True)
                     expect(original_status).to_contain_text(job)
                     expect(original_status).to_contain_text('权威状态：ABORTED')
                     expect(original_status).to_contain_text('持有资源：否')
                     expect(original_status).to_contain_text('展示资源已释放：' + ('是' if terminal['displayResourcesReleased'] else '否'))
+                    for label in ('查看运行', '停止控制目标'):
+                        selection = page.get_by_label(label, exact=True)
+                        expect(selection).to_have_value(job)
+                        expect(selection.locator('option:checked')).to_contain_text('aborted')
                     expect(page.get_by_role('button', name='查询操作结果', exact=True)).to_have_count(0)
                     expect(page.get_by_role('button', name='结束跟踪（不重发）', exact=True)).to_have_count(0)
                     report['renderedTerminalStatus'] = original_status.inner_text()
+                    report['automaticRunStateVerified'] = True
                     published_status = page.locator('section.panel-card p').filter(has_text='运行：')
                     expect(published_status).to_have_count(1)
                     expect(published_status).to_contain_text('运行：ABORTED')
@@ -368,6 +380,72 @@ def main():
                     report.update(startHttpCount=len(starts), stopHttpCount=len(stops), renderedCount='2.00',
                                   websocketResultIdentity=notification['result']['identity'])
                     page.screenshot(path=str(EVIDENCE / 'stopped.png'), full_page=True)
+                    # A terminal Run alone is insufficient: the separate workflow
+                    # admission snapshot must recover without a refresh/reload.
+                    # Use the same Runtime, published page and ordinary UI again.
+                    start_button = page.get_by_role('button', name='启动工作流', exact=True)
+                    expect(start_button).to_be_enabled()
+                    expect(page.get_by_label('页面包', exact=True)).to_have_value(package_id)
+                    with page.expect_response(lambda r:urlsplit(r.url).path == '/api/runs/start'
+                                              and r.request.method == 'POST') as restarted:
+                        start_button.click()
+                    second_reply = read_json(restarted.value)
+                    assert second_reply['state'] == 'accepted' and second_reply['runId'] != job, second_reply
+                    second_job = second_reply['runId']
+                    expect(page.get_by_label('查看运行', exact=True).locator(f'option[value="{second_job}"]')).to_have_count(1)
+                    page.get_by_label('查看运行', exact=True).select_option(second_job)
+                    page.get_by_label('停止控制目标', exact=True).select_option(second_job)
+                    def displayed_second_result():
+                        footer = page.locator('footer').inner_text()
+                        return next((message for message in reversed(messages)
+                            if message.get('event') == 'result'
+                            and message.get('result',{}).get('identity',{}).get('jobId') == second_job
+                            and message['result']['identity']['resultKey'] in footer), None)
+                    second_notification = wait_until(page, displayed_second_result,
+                        'rendered result identity from explicitly restarted Job in the same Runtime')
+                    BrowserMessage.model_validate_json(json.dumps(second_notification))
+                    assert (second_notification['runtimeInstanceId'], second_notification['projectId']) == (
+                        initial['runtimeInstanceId'], initial['projectId']), second_notification
+                    second_result = second_notification['result']
+                    assert second_result['identity']['resultKey'] != result['identity']['resultKey']
+                    second_sources = {item['sourceId']:item for item in second_result['sources']}
+                    assert second_sources[sources['overlay']]['image']['ownerResultKey'] == second_result['identity']['resultKey']
+                    expect(current_image).to_have_js_property('naturalWidth', 320)
+                    expect(current_image).to_have_js_property('naturalHeight', 240)
+                    expect(page.locator('.number')).to_contain_text('2.00')
+                    expect(page.locator('.indicator')).to_contain_text('OK')
+                    expect(original_status).to_contain_text(second_job)
+                    page.screenshot(path=str(EVIDENCE / 'restarted.png'), full_page=True)
+                    page.once('dialog', lambda dialog: dialog.accept())
+                    with page.expect_response(lambda r:urlsplit(r.url).path == f'/api/runs/{second_job}/stop'
+                                              and r.request.method == 'POST') as stopped_again:
+                        page.get_by_role('button', name='停止选中运行', exact=True).click()
+                    second_stop = read_json(stopped_again.value)
+                    assert second_stop['state'] == 'accepted', second_stop
+                    def second_retired():
+                        state = read_json(page.request.get(f'/api/runs/{second_job}?runtimeId=configured'))
+                        report['secondAfterStop'] = state
+                        assert (state['runtimeInstanceId'], state['projectId'], state['id']) == (
+                            initial['runtimeInstanceId'], initial['projectId'], second_job), state
+                        return state if state['status'] == 'ABORTED' and not state['active'] and not state['ownsResources'] else None
+                    wait_until(page, second_retired, 'second Job ABORTED with execution resources retired', timeout=40)
+                    expect(original_status).to_contain_text('权威状态：ABORTED')
+                    expect(original_status).to_contain_text('持有资源：否')
+                    expect(start_button).to_be_enabled()
+                    expect(page.get_by_label('页面包', exact=True)).to_have_value(package_id)
+                    for label in ('查看运行', '停止控制目标'):
+                        expect(page.get_by_label(label, exact=True)).to_have_value(second_job)
+                        expect(page.get_by_label(label, exact=True).locator('option:checked')).to_contain_text('aborted')
+                    starts = [r for r in requests if r['path'] == '/api/runs/start']
+                    stops = [r for r in requests if r['path'].endswith('/stop')]
+                    assert len(starts) == 2 and len(stops) == 2, requests
+                    assert stops[1]['path'] == f'/api/runs/{second_job}/stop', stops
+                    assert len({request['body']['requestId'] for request in requests}) == 4, requests
+                    assert {run['id'] for run in read_json(page.request.get('/api/runtimes/configured/runs'))} == {job, second_job}
+                    report.update(secondJobId=second_job, secondStartReply=second_reply,
+                                  secondStopReply=second_stop, secondResultIdentity=second_result['identity'],
+                                  automaticStartAdmissionVerified=True, sameRuntimeRestartVerified=True,
+                                  renderedImageSize=[320, 240], startHttpCount=2, stopHttpCount=2)
                     assert not errors, errors
                     report['status'] = 'PASS'
                 except BaseException as error:
@@ -393,9 +471,10 @@ def main():
             (EVIDENCE / 'http-controls.json').write_text(json.dumps({'requests':requests,'responses':responses}, indent=2), encoding='utf-8')
             (EVIDENCE / 'websocket.json').write_text(json.dumps(messages, indent=2), encoding='utf-8')
             (EVIDENCE / 'browser-errors.json').write_text(json.dumps(errors, indent=2), encoding='utf-8')
-            if report['status'] == 'PASS' and (len(accepted_jobs) != 1 or accepted_jobs[0]['jobId'] != report['jobId']):
+            if report['status'] == 'PASS' and (len(accepted_jobs) != 2 or
+                    {event['jobId'] for event in accepted_jobs} != {report['jobId'], report['secondJobId']}):
                 report['status'] = 'FAILED'
-                report['error'] = 'Runtime acceptance log did not confirm exactly the one browser-started Job'
+                report['error'] = 'Runtime acceptance log did not confirm exactly the two browser-started Jobs'
             (EVIDENCE / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     assert report['status'] == 'PASS', report
     assert report['officialUngroupedVerified'] and report['emptyGroupAcceptance'] == 'PASS', report

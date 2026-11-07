@@ -1,0 +1,19 @@
+{
+  "baseCommit": "cdf1250ccc41b78f79b25b87e6db197809875384",
+  "sourceSha256": {
+    "src/emo_master/apps/runtime/devices/executor.py": "0ecec180af3d98a653eee7b8ea1d2ece6ab852f797a54883f4c751b55954c6bc",
+    "src/emo_master/apps/runtime/devices/ipc.py": "cc31061cecc117f59b9b3dae8f5b093b4f0d861a17e2708d5180b9a7d3f81c26",
+    "src/emo_master/apps/runtime/devices/manager.py": "b7d8415b734175ec965642036966a191551266a120c8695d626ded76bc9ddda8",
+    "src/emo_master/apps/runtime/devices/diagnostics.py": "d9769dee111170f06d3c8ce765243fe9dc879824c1b01c2cca8ce1fffa351ad0",
+    "src/emo_master/apps/runtime/project_config/cycle_plan.py": "77b977d4205e617a1fe0d5e741c3ba81cbc391a49a9c6f7804e0ee94a0e420ab",
+    "tests/runtime/test_device_failure_observability.py": "4cb0493064d52557350d6913806af67d859b6f2f7ae3fd2e8f38c25cd9b56160",
+    "tests/runtime/test_startup_cancellation.py": "aeef090f9d246f17b665743b016d3f02b415d3ca15c817d10da3dd60fa39a533",
+    "tests/runtime/test_cycle_plan_scope_cleanup.py": "30f9d4357daaf8679509b491317ba11cdf224ee6dec5a49e9f25f05f51ad88ea"
+  },
+  "testOutputSha256": "7dd922bf94d5bfc0b983c9bd65c8ec44b14bc4f61d3c586e8048eafafb8678ec",
+  "result": {
+    "passed": 76,
+    "seconds": 11.32
+  },
+  "boundary": "Linux software components, simulated camera, real Pipe/EventStore/JSONL and cancellation compatibility; not native Windows or manual desktop/hardware acceptance"
+}

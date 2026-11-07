@@ -17,13 +17,14 @@ from .local_log import GatewayLog
 from fastapi.staticfiles import StaticFiles
 from .config import Config
 from .auth import AuthStore
-from .runtime_client import ContractUnavailable, GrpcRuntimeClient
+from .runtime_client import ContractUnavailable, GrpcRuntimeClient, RuntimeRejected
 from .mock_runtime import MockRuntime, demo_panel, IMAGE
 from .services import Operations, Views
 from .packages import PackageStore
 from .registry import RuntimeRegistry, RegistryDenied
 from .resource_cache import ResourceCache
 from .editor_routes import install_editor_routes
+from .local_access import LocalAccessGuard
 
 COOKIE='emo_panel_session'
 
@@ -31,11 +32,15 @@ COOKIE='emo_panel_session'
 class LogQueryError(ValueError):
     pass
 
+
+class CsrfMismatch(Exception):
+    pass
+
 def create_app(config: Config, runtime=None, gateway_log=None):
     config.data_dir.mkdir(parents=True,exist_ok=True)
     own_gateway_log=gateway_log is None
     gateway_log=gateway_log or GatewayLog(config.data_dir)
-    auth=AuthStore(config.data_dir/'web.sqlite',config.session_ttl)
+    auth=AuthStore(config.data_dir/'web.sqlite',config.session_ttl,local_no_auth=config.local_no_auth)
     registry=RuntimeRegistry(config.data_dir/'web.sqlite')
     packages=PackageStore(config.data_dir/'packages',database=config.data_dir/'web.sqlite')
     service_actor={'username':'web-service','role':'admin'}
@@ -115,7 +120,7 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         if permission not in me['permissions']:raise HTTPException(403,'Permission denied')
         if mutating:
             if not origin_ok(request.headers.get('origin'),request.headers.get('host'),request.url.scheme): raise HTTPException(403,'Origin denied')
-            if not hmac.compare_digest(request.headers.get('x-csrf-token',''),me['csrf']): raise HTTPException(403,'CSRF denied')
+            if not hmac.compare_digest(request.headers.get('x-csrf-token',''),me['csrf']): raise CsrfMismatch()
         return me
     async def json_object(req,allow_empty=False):
         data=bytearray()
@@ -127,6 +132,8 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         except (ValueError,UnicodeDecodeError):raise HTTPException(422,'JSON object required')
         if not isinstance(body,dict):raise HTTPException(422,'JSON object required')
         return body
+    @app.exception_handler(CsrfMismatch)
+    async def csrf_denied(req,exc):return JSONResponse({'detail':'CSRF denied','code':'CSRF_MISMATCH'},status_code=403)
     @app.exception_handler(RegistryDenied)
     async def target_denied(req,exc):return JSONResponse({'detail':str(exc)},status_code=403)
     @app.exception_handler(sqlite3.IntegrityError)
@@ -167,15 +174,32 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         except Exception:
             gateway_log.record('gateway.request.failed', 'HTTP request failed', level=logging.ERROR,
                                method=req.method, path=req.url.path, status=500,
-                               elapsedMs=round((time.monotonic()-started)*1000))
+                               elapsedMs=round((time.monotonic()-started)*1000),
+                               **getattr(req.state, 'asset_diagnostic', {}))
             raise
         gateway_log.record('gateway.request', 'HTTP request completed',
                            level=logging.WARNING if response.status_code >= 400 else logging.DEBUG,
                            method=req.method, path=req.url.path, status=response.status_code,
-                           elapsedMs=round((time.monotonic()-started)*1000))
+                           elapsedMs=round((time.monotonic()-started)*1000),
+                           **(getattr(req.state, 'asset_diagnostic', {}) if response.status_code >= 400 else {}))
         return response
     @app.get('/api/health')
-    async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':'1.5.0','preview':config.preview}
+    async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':'1.5.0','preview':config.preview,'localNoAuth':config.local_no_auth}
+    @app.post('/api/local/session')
+    async def local_session(req:Request):
+        if not config.local_no_auth:raise HTTPException(404,'Local passwordless mode is disabled')
+        # LocalAccessGuard checks the actual peer and exact Origin for this POST.
+        # The custom header also excludes form submissions and cross-site fetches.
+        if req.headers.get('x-local-session') != '1':raise HTTPException(403,'Explicit local session request required')
+        token=req.cookies.get(COOKIE)
+        who=await asyncio.to_thread(auth.session,token)
+        if not who or who.get('authMode') != 'local':
+            token=await asyncio.to_thread(auth.login_local)
+            who=await asyncio.to_thread(auth.session,token)
+            await asyncio.to_thread(auth.audit,who['username'],'local_session','local-no-auth','succeeded')
+        response=JSONResponse({**who,'mode':config.mode,'localNoAuth':True})
+        response.set_cookie(COOKIE,token,httponly=True,samesite='strict',secure=config.secure_cookie,max_age=config.session_ttl)
+        return response
     @app.post('/api/preview/session')
     async def preview_session(req:Request):
         nonlocal preview_used
@@ -204,11 +228,11 @@ def create_app(config: Config, runtime=None, gateway_log=None):
             login_failures[ip]=prior+[now]
             raise HTTPException(401,'Invalid credentials')
         me=await asyncio.to_thread(auth.session,token)
-        response=JSONResponse({**me,'mode':config.mode})
+        response=JSONResponse({**me,'mode':config.mode,'localNoAuth':config.local_no_auth})
         response.set_cookie(COOKIE,token,httponly=True,samesite='strict',secure=config.secure_cookie,max_age=config.session_ttl)
         return response
     @app.get('/api/me')
-    async def me(req:Request):return {**await identity(req),'mode':config.mode,'preview':config.preview}
+    async def me(req:Request):return {**await identity(req),'mode':config.mode,'preview':config.preview,'localNoAuth':config.local_no_auth}
     @app.post('/api/logout')
     async def logout(req:Request):
         who=await identity(req,mutating=True)
@@ -380,6 +404,13 @@ def create_app(config: Config, runtime=None, gateway_log=None):
     async def runtime_runs(rid:str,req:Request):return await runs(req,rid)
     @app.get('/api/runs/{run_id}')
     async def run_state(run_id:str,req:Request,runtimeId:str='configured'):
+        client=await client_for(await identity(req),runtimeId)
+        if hasattr(client,'run_state'):
+            try:return {**(await client.run_state(run_id)),'runtimeId':runtimeId}
+            except RuntimeRejected as exc:
+                if exc.code in {'JOB_NOT_FOUND','PROJECT_MISMATCH'}:
+                    raise HTTPException(404,'Run not found') from exc
+                raise
         for r in await runs(req,runtimeId):
             if r.get('id',r.get('runId'))==run_id:return r
         raise HTTPException(404,'Run not found')
@@ -595,19 +626,36 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         return Response(data,media_type=mime)
     @app.get('/api/views/{vid}/assets/{source_id}')
     async def bound_result_image(vid:str,source_id:str,req:Request,scope:str,resultKey:str):
-        who=await identity(req);v=views.get(vid,who['userId'])
+        who=await identity(req)
+        # Record only the requested asset identity, never arbitrary query values,
+        # credentials or bytes. A late read may legitimately outlive this result.
+        asset = req.state.asset_diagnostic = {
+            key: value[:256] for key, value in
+            {'viewId':vid, 'resultScopeId':scope, 'resultKey':resultKey, 'sourceId':source_id}.items()}
+        def unavailable(code, detail):
+            asset['assetCode'] = code
+            return JSONResponse({'detail':detail, 'code':code}, status_code=404)
+        try:v=views.get(vid,who['userId'])
+        except KeyError:return unavailable('VIEW_NOT_FOUND', 'Not found')
+        asset.update(runtimeId=v['runtimeId'], runtimeInstanceId=v.get('instanceId') or '',
+                     projectId=v.get('projectId') or '', viewRunId=v['runId'])
         await package_access(who,v['panelId'],v['runtimeId']);client=await client_for(who,v['runtimeId'])
         try:result,is_frozen=views.advertised_result(v,scope,resultKey)
-        except KeyError:raise HTTPException(404,'Exact advertised result retired or expired')
+        except KeyError:return unavailable('RESULT_RETIRED', 'Exact advertised result retired or expired')
         source=result.get('sources',{}).get(source_id,{})
         resource=source.get('image')
-        if not resource or source.get('state')!='available':raise HTTPException(404,'Result image unavailable')
+        asset.update(jobId=result['jobId'], sourceState=source.get('state', ''),
+                     sourceReasonCode=source.get('reasonCode', ''))
+        if not resource or source.get('state')!='available':return unavailable('SOURCE_UNAVAILABLE', 'Result image unavailable')
+        asset.update(resourceId=resource['resourceId'], resourceSha256=resource['sha256'], assetPhase='read_or_cache')
         key=(result['runtimeInstanceId'] if hasattr(client,'read_asset') else result['runtimeInstanceId']+':'+v['runtimeId'],result['jobId'],resource['resourceId'],resource['sha256'])
         async def load():
             data,_=await client.read_asset(result['jobId'],resource,runtime_instance_id=result['runtimeInstanceId'])
             return data
         try:data=resources.peek(key) if is_frozen else await resources.get(key,load)
-        except KeyError:raise HTTPException(404,'Exact frozen resource expired')
+        except KeyError:
+            if not is_frozen:raise
+            return unavailable('FROZEN_RESOURCE_EXPIRED', 'Exact frozen resource expired')
         return Response(data,media_type=resource['mimeType'])
     @app.get('/api/assets/demo-image')
     async def demo_image(req:Request):return await mock_image(await identity(req),'configured','demo-image')
@@ -704,4 +752,5 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         if not (static/'index.html').is_file():raise HTTPException(503,'Build the Web frontend before opening the editor')
         return FileResponse(static/'index.html')
     if static.exists():app.mount('/',StaticFiles(directory=static,html=True),name='frontend')
+    if config.local_no_auth:app.add_middleware(LocalAccessGuard,config=config)
     return app

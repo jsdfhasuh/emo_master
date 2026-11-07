@@ -3,6 +3,7 @@ from copy import deepcopy
 from io import BytesIO
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -10,6 +11,7 @@ from PIL import Image
 
 from emo_web_panel.app import create_app
 from emo_web_panel.config import Config
+from emo_web_panel.packages import PackageError, PackageStore
 
 
 class EditorTests(unittest.TestCase):
@@ -89,6 +91,65 @@ class EditorTests(unittest.TestCase):
         self.assertIsInstance(reopened["presentation"]["pages"], dict)
         self.assertEqual(reopened["presentation"]["schemaVersion"], "1.2")
         self.assertTrue(all(page["targets"] == ["web"] for page in reopened["presentation"]["pages"].values()))
+
+    def test_highly_compressible_bmp_previews_publishes_and_reimports_without_relaxing_zip_limits(self):
+        buffer = BytesIO()
+        Image.new("RGB", (1024, 1024), "white").save(buffer, "BMP")
+        data = buffer.getvalue()
+        compressed = BytesIO()
+        with zipfile.ZipFile(compressed, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("assets/white.bmp", data)
+        with zipfile.ZipFile(compressed) as archive:
+            info = archive.getinfo("assets/white.bmp")
+            self.assertGreater(info.file_size, info.compress_size * PackageStore.MAX_RATIO)
+        with tempfile.TemporaryDirectory() as destination:
+            imported = PackageStore(Path(destination))
+            with self.assertRaisesRegex(PackageError, "Unsafe compression ratio"):
+                imported.install(compressed.getvalue())
+
+            upload = self.client.post(self.base + "/assets", params={"projectId": self.project, "name": "white.bmp"},
+                content=data, headers={**self.headers, "Content-Type": "image/bmp"})
+            self.assertEqual(upload.status_code, 200, upload.text)
+            asset = upload.json()
+            source = deepcopy(self.context["draft"]["presentation"])
+            source["pages"][source["defaultPageId"]]["components"] = [
+                {"componentId": "logo", "type": "image", "props": {"imageResourceId": asset["resourceId"]}}]
+            saved = self.save(source, "")
+            preview = self.client.post(self.base + "/preview", headers=self.headers,
+                json={"projectId": self.project, "presentation": saved["presentation"], "mode": "fixtures"})
+            self.assertEqual(preview.status_code, 200, preview.text)
+            published = self.publish(saved["draftRevision"])
+            self.assertEqual(published["state"], "PUBLISHED", published)
+            self.assertEqual(published["packageId"], preview.json()["panel"]["id"])
+            exported = self.client.get(self.base + "/versions/" + published["versionId"] + "/package",
+                params={"projectId": self.project})
+            self.assertEqual(exported.status_code, 200, exported.text)
+            with zipfile.ZipFile(BytesIO(exported.content)) as archive:
+                self.assertEqual(archive.getinfo(asset["path"]).compress_type, zipfile.ZIP_STORED)
+                self.assertEqual(archive.getinfo("manifest.json").compress_type, zipfile.ZIP_DEFLATED)
+            package = imported.install(exported.content)
+            self.assertEqual(package["packageId"], published["packageId"])
+            self.assertEqual(imported.asset(package["packageId"], asset["resourceId"]), (data, "image/bmp"))
+            self.assertEqual(self.app.state.runtime.control_count, 0)
+            self.assertEqual(create_app(self.config).state.editor.draft("configured", self.project), saved)
+
+    def test_ordinary_generated_package_keeps_existing_compressed_bytes_and_identity(self):
+        saved = self.save(self.pages())
+        published = self.publish(saved["draftRevision"])
+        response = self.client.get(self.base + "/versions/" + published["versionId"] + "/package",
+            params={"projectId": self.project})
+        self.assertEqual(response.status_code, 200)
+        previous = BytesIO()
+        with zipfile.ZipFile(BytesIO(response.content)) as current, zipfile.ZipFile(previous, "w", compression=zipfile.ZIP_DEFLATED) as old:
+            for name in sorted(current.namelist()):
+                info = zipfile.ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))
+                info.compress_type = zipfile.ZIP_DEFLATED
+                old.writestr(info, current.read(name))
+        self.assertEqual(response.content, previous.getvalue())
+        with tempfile.TemporaryDirectory() as destination:
+            imported = PackageStore(Path(destination))
+            installed = imported.install(previous.getvalue())
+            self.assertEqual(imported.install(response.content)["packageId"], installed["packageId"])
 
     def test_publish_freezes_until_explicit_start_layout_only_and_rollback(self):
         initial = self.save(self.pages(("result_image", "count", "result")))

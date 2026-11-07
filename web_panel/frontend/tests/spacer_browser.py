@@ -1,12 +1,14 @@
-"""Chromium geometry acceptance for transparent/flexible page spacers.
+"""Chromium geometry acceptance for responsive content and page spacers.
 
 Uses HTTP fixtures and the production frontend build; no live Runtime/device.
 """
 import json
 import os
 from pathlib import Path
+import struct
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+import zlib
 
 from playwright.sync_api import sync_playwright
 
@@ -26,6 +28,20 @@ def text(cid, width=100, height=64):
     return {'id':cid,'type':'text','props':{'text':cid},
             'responsive':{'width':'content','minWidth':width,'preferredWidth':width,
                           'minHeight':height,'preferredHeight':height}}
+
+
+def image(cid, preferred, *, minimum=240, asset='detection'):
+    return {'id':cid,'type':'image','label':cid,
+            'props':{'assetUrl':f'/api/assets/height/{asset}.png'},
+            'responsive':{'minHeight':minimum,'preferredHeight':preferred,'preferredWidth':480}}
+
+
+def fixture_png(height):
+    def chunk(kind, data):
+        return struct.pack('>I',len(data))+kind+data+struct.pack('>I',zlib.crc32(kind+data))
+    header=struct.pack('>IIBBBBB',320,height,8,2,0,0,0)
+    pixels=(b'\0'+b'\x33\x77\xaa'*320)*height
+    return b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',header)+chunk(b'IDAT',zlib.compress(pixels))+chunk(b'IEND',b'')
 
 
 PANEL = {'id':'spacers','name':'Spacers','packageRevision':'spacer-browser',
@@ -60,6 +76,16 @@ PANEL = {'id':'spacers','name':'Spacers','packageRevision':'spacer-browser',
      'components':[{'id':'zero-gap','type':'spacer','responsive':{'width':'content','minWidth':24,'preferredWidth':24,'minHeight':0,'preferredHeight':0}},text('zero-neighbor')]},
     {'id':'grid','title':'Grid','layout':{'type':'grid','columns':4,'spacing':12},
      'components':[{'id':'grid-gap','type':'spacer','layout':{'row':0,'column':1,'rowSpan':2,'columnSpan':2}}]},
+    {'id':'natural-height','title':'Natural height','layout':{'type':'responsive','direction':'vertical','spacing':12},
+     'components':[image('height-image',260),image('height-static',100,minimum=100,asset='static'),
+        {'id':'height-text','type':'text','label':'Wrapped text',
+         'props':{'text':'Readable content wraps within the card. '*24},
+         'responsive':{'minHeight':64,'preferredHeight':64}},
+        {'id':'height-container','type':'container','label':'Natural content group',
+         'responsive':{'minHeight':64,'preferredHeight':100},
+         'grid':{'type':'responsive','direction':'vertical','spacing':12},
+         'children':[image('height-auto',0)]},
+        text('height-following',height=180)]},
 ]}
 
 # The same responsive flow before expansion, after dragging the first title up,
@@ -106,6 +132,9 @@ def mock(route):
         data={}
     elif path=='/api/views/spacer-view':
         data={}
+    elif path in ('/api/assets/height/detection.png','/api/assets/height/static.png'):
+        route.fulfill(content_type='image/png',body=fixture_png(100 if path.endswith('/static.png') else 240))
+        return
     else:
         route.fulfill(status=404,json={'detail':path})
         return
@@ -188,6 +217,31 @@ with sync_playwright() as runtime:
         box=rect(page,'grid-gap')
         assert box['height']>=24 and box['width']>24,box
         report.append({'case':'grid-span','box':box})
+
+        page.get_by_role('button',name='Natural height',exact=True).click()
+        page.locator('[data-component-id="height-image"]').evaluate('(e)=>e.parentElement.style.width="480px"')
+        page.wait_for_function('Array.from(document.querySelectorAll(".result-image")).length===3 && Array.from(document.querySelectorAll(".result-image")).every(image=>image.complete && image.naturalWidth===320)')
+        content=[]
+        for cid in ('height-image','height-static','height-text','height-container','height-auto'):
+            value=page.locator(f'[data-component-id="{cid}"]').evaluate('''(el)=>{
+                const box=el.getBoundingClientRect(),style=getComputedStyle(el);
+                return {id:el.dataset.componentId,height:box.height,
+                    contentBottom:Math.max(...Array.from(el.children,child=>child.getBoundingClientRect().bottom)),
+                    contentBoundary:box.bottom-parseFloat(style.borderBottomWidth)-parseFloat(style.paddingBottom)};
+            }''')
+            assert value['contentBottom']<=value['contentBoundary']+1,value
+            content.append(value)
+        for cid,expected in (('height-image',240),('height-static',100),('height-auto',240)):
+            value=page.locator(f'[data-component-id="{cid}"] img').evaluate('(el)=>({height:el.getBoundingClientRect().height,naturalHeight:el.naturalHeight})')
+            assert value['naturalHeight']==expected and abs(value['height']-expected)<1,(cid,value)
+        order=('height-image','height-static','height-text','height-container','height-following')
+        for before,after in zip(order,order[1:]):
+            a,b=rect(page,before),rect(page,after)
+            assert b['y']>=a['y']+a['height']-1,(before,after,a,b)
+        assert abs(rect(page,'height-following')['height']-180)<1
+        report.append({'case':'preferred-height-natural-content','content':content})
+        page.screenshot(path=str(ARTIFACTS/'natural-height.png'),full_page=True)
+        page.locator('[data-component-id="height-image"]').evaluate('(e)=>e.parentElement.style.width=""')
 
         for width in (1280, 500):
             page.set_viewport_size({'width':width,'height':1200})

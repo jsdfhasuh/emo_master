@@ -1,0 +1,20 @@
+▶ Start admission refreshes after execution retirement without a manual refresh
+  ✔ ordinary (1890.891027ms)
+  ✔ dispatch (2636.942554ms)
+✔ Start admission refreshes after execution retirement without a manual refresh (4529.868869ms)
+✔ retired selected Job does not override Runtime denial while another Job owns capacity (1499.796918ms)
+✔ a late full catalog cannot overwrite admission refreshed after resource retirement (320.165537ms)
+▶ a late admission response cannot replace a newer Runtime, project or configuration catalog
+  ✔ instance (266.730049ms)
+  ✔ project (173.474455ms)
+  ✔ configuration (186.869173ms)
+✔ a late admission response cannot replace a newer Runtime, project or configuration catalog (628.044329ms)
+✔ failed admission refresh preserves the official denial and offers normal explicit recovery (287.724831ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8034.560458

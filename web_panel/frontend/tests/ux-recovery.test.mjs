@@ -28,3 +28,23 @@ test('late command failure cannot mark another user request unknown',async()=>{c
 test('Runtime canStart false is honored by command handler as well as button',async()=>{const ctx=controlContext('{}');ctx.workflows[0].canStart=false;ctx.workflows[0].startBlockReason='RESOURCE_BUSY';await closure('control',ctx)('start');assert.equal(ctx.posts,0);assert.match(ctx.error,/RESOURCE_BUSY/);assert.match(ctx.error,/尚未发送/)});
 
 test('unconfirmed server logout is disclosed and stale logout cannot clear new login',async()=>{const {ApiError}=require('../src/data/api.ts');let message;const ctx={ApiError,sessionEpoch:ref(1),setBusy(){},api:async()=>{throw Error('offline')},endSession(value){message=value}};await closure('logout',ctx)();assert.match(message,/服务器注销未确认/);let finish;ctx.api=()=>new Promise(resolve=>finish=resolve);message=undefined;const old=closure('logout',ctx)();ctx.sessionEpoch.current++;finish({});await old;assert.equal(message,undefined)});
+
+
+test('typed CSRF mismatch uses the current-session recovery channel and never retries',async()=>{
+ const mod=require('../src/data/api.ts'),original=globalThis.fetch;let count=0,calls=0,message;
+ const off=mod.onSessionExpired(value=>{count++;message=value;});
+ const reply=()=>new Response('{"detail":"CSRF denied","code":"CSRF_MISMATCH"}',{status:403});
+ try{
+  mod.setCsrf('old-tab');globalThis.fetch=async()=>{calls++;return reply();};
+  await assert.rejects(mod.api('/api/editor/configured/draft',{method:'PUT',body:'{}'}),e=>e instanceof mod.ApiError && e.status===403 && e.code==='CSRF_MISMATCH');
+  assert.equal(count,1);assert.equal(calls,1);assert.match(message,/重新进入/);
+  let complete;globalThis.fetch=()=>new Promise(resolve=>{complete=resolve;});
+  const old=mod.api('/api/editor/configured/draft',{method:'PUT',body:'{}'});
+  mod.setCsrf('adopted-current');complete(reply());await assert.rejects(old);
+  assert.equal(count,1,'a late old rejection cannot evict a recovered session');
+  globalThis.fetch=async()=>reply();
+  await assert.rejects(mod.api('/api/local/session',{method:'POST'}));
+  await assert.rejects(mod.api('/api/health',{ignoreSessionExpiry:true}));
+  assert.equal(count,1,'entry and ignored probes do not recurse into recovery');
+ }finally{off();globalThis.fetch=original;mod.setCsrf('');}
+});

@@ -1,0 +1,168 @@
+{
+  "python": "3.10.22 (main, Oct  9 2026, 15:21:30) [Clang 22.1.3 ]",
+  "reused_functions": {
+    "worker": {
+      "unchanged": true,
+      "sha256": "07daec9e9667486a2464c3b15ab6b01ce5e7570fd226a46880beac53d422c1ed"
+    },
+    "item": {
+      "unchanged": true,
+      "sha256": "8862a10e61c9a6a8884af04e19eade4bcf73704b5f86162cd8efa355459ba2e7"
+    }
+  },
+  "base_source_equivalence": {
+    "src/emo_master/apps/runtime/presentation/exporter.py": {
+      "unchanged_between_f308_and_cdf1250": true,
+      "sha256": "40c2fef2acb3ff9d2a79118f53bb37d722ab965266edc05782caae78bc6396f5"
+    },
+    "src/emo_master/apps/runtime/presentation/collector.py": {
+      "unchanged_between_f308_and_cdf1250": true,
+      "sha256": "56e38695d51c3a25e2e535527adb2c55d919e91960ad022bd080baeb889d6737"
+    }
+  },
+  "original_evidence_sha256": "023775f45fd65745a40dcfc4d238216c212dda3755f2781d7392141723332c81",
+  "before": {
+    "process": null,
+    "quarantined": true,
+    "active": true,
+    "busy": true,
+    "pending": [
+      0
+    ],
+    "pendingDescriptors": {
+      "0": {
+        "taskId": "977f8b6e-64b8-4801-bedb-e50935a0a4f9",
+        "key": "result-34",
+        "jobId": "diagnostic-job",
+        "sourceId": "image-source",
+        "invocationId": "invocation-34",
+        "resultScopeId": "scope",
+        "resultOrdinal": 34,
+        "slot": 0,
+        "lane": 0,
+        "captureAcquiredNs": 77640391078917,
+        "submittedNs": 77640391516937,
+        "deadline": 77640.891511909
+      }
+    },
+    "queueSize": 0,
+    "creditAvailable": false
+  },
+  "after": {
+    "process": null,
+    "quarantined": false,
+    "active": false,
+    "busy": false,
+    "pending": [],
+    "pendingDescriptors": {},
+    "queueSize": 0,
+    "creditAvailable": true
+  },
+  "before_successor": {
+    "resultOrdinal": 34,
+    "outcome": "EXPORT_FAILED",
+    "laneReleased": false,
+    "laneReleaseProof": null
+  },
+  "after_successor": {
+    "resultOrdinal": 34,
+    "outcome": "EXPORT_TIMEOUT",
+    "laneReleased": true,
+    "laneReleaseProof": "not_dispatched"
+  },
+  "cases": [
+    {
+      "case": "healthy_replacement_control",
+      "original_raw_release_before_callback": true,
+      "replacement_startup_ms": 239.088249,
+      "fresh_startup_ms": null,
+      "outcomes": [
+        {
+          "ordinal": 33,
+          "outcome": "EXPORT_TIMEOUT",
+          "proof": "verified_private_snapshot"
+        },
+        {
+          "ordinal": 34,
+          "outcome": "AVAILABLE",
+          "proof": "verified_private_snapshot"
+        },
+        {
+          "ordinal": 40,
+          "outcome": "AVAILABLE",
+          "proof": "verified_private_snapshot"
+        },
+        {
+          "ordinal": 41,
+          "outcome": "AVAILABLE",
+          "proof": "verified_private_snapshot"
+        }
+      ],
+      "worker_pids": [
+        16,
+        27,
+        38
+      ],
+      "failures_injected": 0,
+      "stats": {
+        "completed": 3,
+        "timed_out": 1,
+        "reaped": 1,
+        "failed": 0
+      },
+      "after_close": {
+        "allProcessesReaped": true,
+        "allOwnersExited": true,
+        "allQuarantinesCleared": true,
+        "allSharedMemoryUnlinked": true
+      }
+    },
+    {
+      "case": "replacement_ready_timeout",
+      "original_raw_release_before_callback": true,
+      "replacement_startup_ms": 10013.165077,
+      "fresh_startup_ms": 283.425165,
+      "outcomes": [
+        {
+          "ordinal": 33,
+          "outcome": "EXPORT_TIMEOUT",
+          "proof": "verified_private_snapshot"
+        },
+        {
+          "ordinal": 34,
+          "outcome": "EXPORT_TIMEOUT",
+          "proof": "not_dispatched"
+        },
+        {
+          "ordinal": 40,
+          "outcome": "AVAILABLE",
+          "proof": "verified_private_snapshot"
+        },
+        {
+          "ordinal": 41,
+          "outcome": "AVAILABLE",
+          "proof": "verified_private_snapshot"
+        }
+      ],
+      "worker_pids": [
+        48,
+        59,
+        70,
+        80
+      ],
+      "failures_injected": 1,
+      "stats": {
+        "completed": 2,
+        "timed_out": 2,
+        "reaped": 2,
+        "failed": 0
+      },
+      "after_close": {
+        "allProcessesReaped": true,
+        "allOwnersExited": true,
+        "allQuarantinesCleared": true,
+        "allSharedMemoryUnlinked": true
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import ts from 'typescript';import {readFileSync} from 'node:fs';
 const js=ts.transpileModule(readFileSync(new URL('../src/state/catalog.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
-const {reconcileCatalogSelection,selectedViewState,targetContext}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+const {reconcileCatalogSelection,mergeRunCatalog,selectedViewState,targetContext}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
 const info={runtimeInstanceId:'instance',projectId:'project',configurationRevision:'1'};
 const selected={runId:'j1',controlRunId:'j1',workflowId:'w1',workflowInputs:'{"n":9007199254740993}',dirty:true};
 test('normal directory refresh preserves all valid choices and exact edited input',()=>{const r=reconcileCatalogSelection(selected,info,{...info,configurationRevision:'2'},[{id:'j1'},{id:'j2'}],[{id:'w1'},{id:'w2'}]);assert.deepEqual(r.selection,selected);assert.equal(r.revisionChanged,true);assert.match(r.notices.join(' '),/输入文本未覆盖/)});
@@ -16,4 +16,18 @@ test('fresh catalog status updates only the selected view Job and clears missing
  assert.equal(selectedViewState('missing',info,runs),'');
  assert.equal(selectedViewState('view',{...info,runtimeInstanceId:'replacement'},runs),'');
  assert.equal(selectedViewState('view',{...info,projectId:'replacement'},runs),'');
+});
+
+test('directory merge preserves only observations made during this read and keeps catalog membership/metadata',()=>{
+ const before={id:'job',runtimeInstanceId:'instance',projectId:'project',name:'Old name',state:'starting',status:'STARTING'};
+ const incoming={...before,name:'Current name',state:'running',status:'RUNNING',workflowId:'current-workflow'};
+ assert.deepEqual(mergeRunCatalog([before],[before],[incoming],info),[incoming],'an unchanged cached row cannot block a newer directory');
+ const observed={...before,status:'ABORTED',state:'aborted',active:false,ownsResources:false,displayResourcesReleased:true,allowedActions:[]};
+ const added={...incoming,id:'added'},removed={...observed,id:'removed'},newObservation={...observed,id:'newly-observed'};
+ const merged=mergeRunCatalog([before,removed],[observed,removed,newObservation],[incoming,added],info);
+ assert.deepEqual(merged,[{...incoming,status:'ABORTED',state:'aborted',active:false,ownsResources:false,displayResourcesReleased:true,allowedActions:[]},added,newObservation]);
+ for(const changed of [{projectId:'other-project'},{runtimeInstanceId:'replacement'}]){
+  assert.deepEqual(mergeRunCatalog([before],[{...observed,...changed}],[incoming],info),[incoming]);
+  assert.deepEqual(mergeRunCatalog([], [{...newObservation,...changed}],[],info),[]);
+ }
 });

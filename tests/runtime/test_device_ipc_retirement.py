@@ -154,6 +154,7 @@ def testCancelledDeviceProxyDoesNotSubmitOrReplay():
     from emo_master.apps.runtime.devices.executor import DeviceError
     from emo_master.apps.runtime.devices.ipc import DeviceProxy
     from emo_master.apps.runtime.jobs.cancellation import JobCancellation
+    from emo_master.apps.runtime.workflow.cancellation import CancellationRequested
     context = multiprocessing.get_context("spawn")
     cancellation = JobCancellation(context)
     parent, child = context.Pipe()
@@ -161,9 +162,13 @@ def testCancelledDeviceProxyDoesNotSubmitOrReplay():
     try:
         cancellation.set()
         for _ in range(2):
-            with pytest.raises(DeviceError) as error:
+            with pytest.raises(CancellationRequested) as error:
                 proxy.call("capture", deviceId="camera", cycleId="cycle", params={})
-            assert error.value.code == "E_DEVICE_CANCELLED"
+            assert error.value.code == "E_CANCELLED"
+            assert error.value.outcome == "NOT_EXECUTED"
+            assert isinstance(error.value.__cause__, DeviceError)
+            assert error.value.__cause__.code == "E_DEVICE_CANCELLED"
+            assert error.value.__cause__.outcome == "NOT_EXECUTED"
         assert not parent.poll(0)
         assert proxy.sequence == 0
     finally:

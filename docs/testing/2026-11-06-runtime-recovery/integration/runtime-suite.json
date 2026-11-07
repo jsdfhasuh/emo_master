@@ -1,0 +1,71 @@
+{
+  "command": [
+    "/workspace/scratch/4e0e3d24442d/review-f308/venv/bin/python",
+    "-m",
+    "pytest",
+    "tests/runtime",
+    "-q",
+    "--tb=short",
+    "--timeout=120",
+    "--timeout-method=thread",
+    "-o",
+    "faulthandler_timeout=60",
+    "--junitxml=build/recovery-runtime-results.xml"
+  ],
+  "baseCommit": "cdf1250ccc41b78f79b25b87e6db197809875384",
+  "startedAt": "2026-11-06T01:19:27.353547+00:00",
+  "finishedAt": "2026-11-06T01:32:31.802166+00:00",
+  "durationSeconds": 784.449,
+  "exitCode": 0,
+  "sourceChangedPaths": [],
+  "junitSha256": "5a65bb5831d289a2b01e9d248767f9bb537e9fa2477bef5a1e53dab0e532b903",
+  "suites": [
+    {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "7",
+      "tests": "2977",
+      "time": "781.458",
+      "timestamp": "2026-11-06T09:19:27.667402+08:00",
+      "hostname": "638b78173200"
+    }
+  ],
+  "skippedCases": [
+    {
+      "name": "testDiagnosticUsesFrozenCycleDefaultsAcrossConcurrentCommit",
+      "classname": "tests.runtime.test_managed_imv",
+      "reason": "managed IMV declaration supports Windows Runtime only"
+    },
+    {
+      "name": "testManagerSharesHostBetweenOwnersAndCapacityFailureDoesNotOpenSdk",
+      "classname": "tests.runtime.test_managed_imv",
+      "reason": "managed IMV declaration supports Windows Runtime only"
+    },
+    {
+      "name": "testSpawnedProductionJobsUseManagedCameraHost",
+      "classname": "tests.runtime.test_managed_imv",
+      "reason": "managed IMV declaration supports Windows Runtime only"
+    },
+    {
+      "name": "testRemoteDiagnosticsShareHostDeduplicateAndRejectPrivatePreview",
+      "classname": "tests.runtime.test_managed_imv",
+      "reason": "managed IMV declaration supports Windows Runtime only"
+    },
+    {
+      "name": "testThousandExecutionsAndFiftyRetirements",
+      "classname": "tests.runtime.test_operator_debug_acceptance",
+      "reason": "explicit 1000 execution / 50 session acceptance run"
+    },
+    {
+      "name": "testWindowsDriveUncAndChinesePreferenceLexically",
+      "classname": "tests.runtime.test_operator_runtime_settings",
+      "reason": "Windows path contract"
+    },
+    {
+      "name": "testDesignerConnectionRenewsWhilePausedBeyondLease",
+      "classname": "tests.runtime.test_workflow_debug_acceptance",
+      "reason": "65-second live lease acceptance; set EMO_DEBUG_STRESS=1"
+    }
+  ]
+}

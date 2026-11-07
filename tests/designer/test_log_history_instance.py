@@ -109,6 +109,52 @@ def testSameInstanceReconnectKeepsHistoryScopeAndAllowsNextPage(historyWindow):
     assert view._historyReply["nextEventId"] == 4
 
 
+@pytest.mark.parametrize('previousMode', ['current', 'runtime'])
+def testDeviceHistoryStartsCleanScopeAndDropsPreviousPage(historyWindow, monkeypatch, previousMode):
+    _window, view, client, _reader, _resets = historyWindow
+    view.rangeCombo.setCurrentIndex(view.rangeCombo.findData(previousMode))
+    oldFilters = dict(projectId='old-project', jobId='old-job', deviceId='old-device',
+        component='operator', workflowId='old-workflow', nodeId='business_log',
+        startTimestampMs='10', endTimestampMs='20')
+    for key, value in oldFilters.items():
+        view.historyInputs[key].setText(value)
+    view.restoreSettings(dict(area='page', level='ERROR', source='editor', job='old-job',
+        workflow=['old-project', 'old-workflow'], node=['old-project', 'old-workflow', 'business_log'],
+        event='node.log', search='COMMITTED', autoScroll=False))
+    entered, release = threading.Event(), threading.Event()
+    query = client.queryRuntimeLogs
+    count = len(client.requests)
+
+    def delayed(**options):
+        reply = query(**options)
+        entered.set()
+        assert release.wait(5)
+        return reply
+
+    monkeypatch.setattr(client, 'queryRuntimeLogs', delayed)
+    scope = dict(projectId='device-project', deviceId='camera')
+    try:
+        view.openDeviceHistory(**scope)
+        waitUntil(entered.is_set)
+        assert len(client.requests) == count + 1
+        assert {k: v for k, v in client.requests[-1].items() if k != 'cancellation'} == scope
+        assert view.rangeCombo.currentData() == 'runtime'
+        assert {k: edit.text() for k, edit in view.historyInputs.items() if edit.text()} == scope
+        assert view._historyReply is None and view._historyFilters == {}
+        assert view._entries == [] and not view.historyNextButton.isEnabled()
+        assert not view.historyExportButton.isEnabled()
+        settings = view.settings()
+        assert settings['area'] == 'all' and settings['search'] == ''
+        assert all(settings[key] == '全部' for key in ('level', 'source', 'job', 'workflow', 'node', 'event'))
+        assert settings['autoScroll'] is False
+    finally:
+        release.set()
+    waitUntil(lambda: view._historyFuture is None)
+    assert view._historyFilters == scope
+    assert len(view._visibleEntries) == 1
+    assert len(client.requests) == count + 1
+
+
 def testNewInstanceHistoryIsNotClearedByDelayedLiveReset(historyWindow):
     window, view, client, reader, resets = historyWindow
     # A fresh history query can discover the new Runtime before live polling.

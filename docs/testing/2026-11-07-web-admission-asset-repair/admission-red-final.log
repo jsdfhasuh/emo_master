@@ -1,0 +1,152 @@
+▶ Start admission refreshes after execution retirement without a manual refresh
+  ✖ ordinary (3190.778886ms)
+  ✖ dispatch (3704.088573ms)
+✖ Start admission refreshes after execution retirement without a manual refresh (6896.743928ms)
+✖ retired selected Job does not override Runtime denial while another Job owns capacity (2528.998043ms)
+✖ a late full catalog cannot overwrite admission refreshed after resource retirement (2508.520067ms)
+▶ a late admission response cannot replace a newer Runtime, project or configuration catalog
+  ✖ instance (2470.114974ms)
+  ✖ project (2477.878426ms)
+  ✖ configuration (2478.557552ms)
+✖ a late admission response cannot replace a newer Runtime, project or configuration catalog (7427.886906ms)
+✖ failed admission refresh preserves the official denial and offers normal explicit recovery (2441.425588ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 0
+ℹ fail 10
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 22960.106462
+
+✖ failing tests:
+
+test at tests/run-state.test.mjs:333:52
+✖ ordinary (3190.778886ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:31:179)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:347:4)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:333:44)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/run-state.test.mjs:333:52
+✖ dispatch (3704.088573ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:31:179)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:347:4)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:333:44)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/run-state.test.mjs:365:1
+✖ retired selected Job does not override Runtime denial while another Job owns capacity (2528.998043ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:31:179)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:371:36)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/run-state.test.mjs:381:1
+✖ a late full catalog cannot overwrite admission refreshed after resource retirement (2508.520067ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:31:179)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:388:36)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/run-state.test.mjs:398:70
+✖ instance (2470.114974ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:31:179)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:404:37)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:398:62)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/run-state.test.mjs:398:70
+✖ project (2477.878426ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:31:179)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:404:37)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:398:62)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/run-state.test.mjs:398:70
+✖ configuration (2478.557552ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:31:179)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:404:37)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:398:62)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/run-state.test.mjs:421:1
+✖ failed admission refresh preserves the official denial and offers normal explicit recovery (2441.425588ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:31:179)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/repair-5f62-evidence/frontend-red/web_panel/frontend/tests/run-state.test.mjs:428:3)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

@@ -44,6 +44,65 @@ def testCompleteSelectedFileExportUsesCapturedRangeAndShowsActualCount(qtApp, tm
         closeFeed(feed)
 
 
+@pytest.mark.parametrize("scope", ["current", "selected-file", "all-files"])
+@pytest.mark.parametrize("formatName", ["json", "jsonl", "txt"])
+@pytest.mark.parametrize("overwrite", [False, True], ids=["reject", "confirm"])
+def testAddedSuffixConfirmsFinalTargetBeforeStartingExport(qtApp, tmp_path, monkeypatch, scope, formatName, overwrite):
+    from PySide2.QtWidgets import QFileDialog, QMessageBox
+    feed, source = fixtureFeed(tmp_path)
+    source.write_bytes(line("完整日志导出"))
+    feed.activePath, feed.files = source, (source,)
+    feed.records = list(feed.reader.read(source).records)
+    view = RuntimeLogView(feed)
+    selected = tmp_path / "已有导出"
+    target = selected.with_suffix("." + formatName)
+    target.write_bytes(b"previous complete export")
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_args: (str(selected), f"日志 (*.{formatName})"))
+    confirmations = []
+
+    def confirm(parent, title, message, buttons, default):
+        confirmations.append(message)
+        assert str(target) in message
+        assert buttons == QMessageBox.Yes | QMessageBox.No and default == QMessageBox.No
+        assert feed.exportWorker is None
+        return QMessageBox.Yes if overwrite else QMessageBox.No
+
+    monkeypatch.setattr(QMessageBox, "question", confirm)
+    try:
+        view.exportLogs(history=scope != "current", allFiles=scope == "all-files")
+        assert len(confirmations) == 1
+        if overwrite:
+            waitFor(lambda: "已导出 1" in feed.exportMessage)
+            assert "完整日志导出" in target.read_text(encoding="utf-8")
+        else:
+            assert target.read_bytes() == b"previous complete export"
+            assert feed.exportWorker is None and not feed.exportMessage
+        assert not selected.exists() and not list(tmp_path.glob(".emo-log-*"))
+    finally:
+        closeFeed(feed)
+        if feed.exportPool is not None:
+            feed.exportPool.shutdown(wait=True)
+        view.close()
+
+
+def testAddedSuffixForNewTargetNeedsNoConfirmation(qtApp, tmp_path, monkeypatch):
+    from PySide2.QtWidgets import QFileDialog, QMessageBox
+    feed, source = fixtureFeed(tmp_path)
+    source.write_bytes(line("new export"))
+    feed.records = list(feed.reader.read(source).records)
+    view = RuntimeLogView(feed)
+    selected = tmp_path / "new-export"
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_args: (str(selected), "JSONL (*.jsonl)"))
+    monkeypatch.setattr(QMessageBox, "question", lambda *_args: pytest.fail("new target requested overwrite"))
+    try:
+        view.exportLogs()
+        assert "new export" in selected.with_suffix(".jsonl").read_text(encoding="utf-8")
+        assert "已导出 1" in feed.exportMessage
+    finally:
+        closeFeed(feed)
+        view.close()
+
+
 @pytest.mark.parametrize("outcome, message", [
     ("success", "已导出 1"),
     ("cancel", "导出已取消"),

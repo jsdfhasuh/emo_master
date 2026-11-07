@@ -1,0 +1,16 @@
+{
+  "baseCommit": "cdf1250ccc41b78f79b25b87e6db197809875384",
+  "sourceSha256": {
+    "src/emo_master/apps/runtime/devices/executor.py": "0ecec180af3d98a653eee7b8ea1d2ece6ab852f797a54883f4c751b55954c6bc",
+    "src/emo_master/apps/runtime/devices/ipc.py": "c6982348dcee32f04cb795c3c96cd844deeefeb1bec57c0e04ae32ae1f5f43b9",
+    "src/emo_master/apps/runtime/devices/manager.py": "b7d8415b734175ec965642036966a191551266a120c8695d626ded76bc9ddda8",
+    "src/emo_master/apps/runtime/devices/diagnostics.py": "d9769dee111170f06d3c8ce765243fe9dc879824c1b01c2cca8ce1fffa351ad0",
+    "tests/runtime/test_device_failure_observability.py": "b1be8ed3bbd952eae1a2a7db41121e50bd57aa0b7e6c72e4d33a67c66449ef47"
+  },
+  "testOutputSha256": "c7c8382dd81b9111ed7fbf1f4ca881e12327fedbf9b4f4199d38179135f10ebe",
+  "result": {
+    "passed": 51,
+    "seconds": 3.57
+  },
+  "boundary": "Linux software components, simulated camera, real Pipe/EventStore/JSONL; not native Windows or manual desktop/hardware acceptance"
+}

@@ -36,11 +36,16 @@ class SimulatedCamera(DeviceDriver):
         if action != "capture":
             raise DeviceError("E_DEVICE_ACTION", "unsupported simulated action")
         until = time.monotonic() + params["exposureUs"] / 1_000_000
-        while time.monotonic() < until:
+        while True:
             if cancelled():
                 raise DeviceError("E_DEVICE_CANCELLED", "synthetic acquisition cancelled", outcome="CANCELLED")
-            if time.monotonic() >= deadline:
+            now = time.monotonic()
+            if now >= deadline:
                 raise DeviceError("E_DEVICE_OPERATION_TIMEOUT", "synthetic acquisition timed out", outcome="CANCELLED")
+            # A delayed final sleep can cross both exposure end and deadline.
+            # Check the operation outcome before producing a late frame.
+            if now >= until:
+                break
             time.sleep(.001)
         self.sequence += 1
         image = np.empty((params["height"], params["width"], 3), dtype=np.uint8)

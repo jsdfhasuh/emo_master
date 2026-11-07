@@ -98,6 +98,37 @@ def testFailureBeforeFirstConsumerStartsLeavesNoDispatchOwners(tmp_path, monkeyp
         service.close()
 
 
+@pytest.mark.parametrize("retireOrder", [("source", "consumer"), ("consumer", "source")])
+def testDispatchRetirementEventsKeepSourceJobIdentity(tmp_path, retireOrder):
+    from emo_master.apps.runtime.frame_dispatch.scheduler import RunGroup, Slot
+    from emo_master.apps.runtime.jobs.models import JobRecord
+    from tests.runtime.test_terminal_finalization_contract import Channel, Process
+
+    service = RuntimeService(dbPath=tmp_path / "runtime.db", workspaceRoot=tmp_path / "jobs")
+    supervisor = service.jobSupervisor
+    source = JobRecord("source", "owning-project", 1, "producer", status="ABORTED")
+    service.jobRepository.create(source)
+    service.jobRepository.create(JobRecord("consumer", source.projectId, 1, "consumer", status="ABORTED"))
+    group = RunGroup(source.jobId, {"left": Slot("consumer", 1, "consumer")}, service.deviceManager, None)
+    service.deviceManager.dispatchGroups.update({job: group for job in group.members})
+    for job in group.members:
+        supervisor._handles[job] = (Process(alive=False), Event(), Channel())
+    try:
+        for job in retireOrder:
+            with supervisor._lock:
+                supervisor._reap(job)
+        assert not supervisor._ownedJobs() and not service.deviceManager.dispatchGroups
+        for events in (service.eventStore.read(source.jobId),
+                       service.eventStore.readFromPersistence(source.jobId)):
+            assert [event.eventType for event in events] == ["dispatch.source.ended", "dispatch.group.retired"]
+            assert all((event.jobId, event.projectId, event.workflowId)
+                       == (source.jobId, source.projectId, source.workflowId) for event in events)
+            assert all(json.loads(event.payloadJson)["runGroupId"] == group.groupId for event in events)
+        assert not service.eventStore.read("consumer")
+    finally:
+        service.close()
+
+
 @pytest.mark.parametrize("status", ["FAILED", "ABORTED"])
 @pytest.mark.parametrize("durable", [False, True])
 def testUnknownDispatchRetirementRemainsOwnedWithoutEventReplay(tmp_path, monkeypatch, status, durable):

@@ -90,6 +90,15 @@ def testContinuousConsumerImagesSurviveStopAndRestartInSameRuntime(runtime, tmp_
         waitFor(lambda: not service.jobSupervisor._ownedJobs()
                 and not service.deviceManager.workers
                 and not service.deviceManager.dispatchGroups, timeout=15)
+        terminal_sequence = service.eventStore.terminalSequence(started.job_id)
+        assert terminal_sequence > 0
+        retired_events = list(client.runtimeService.StreamJobEvents(pb.StreamJobEventsRequest(
+            job_id=started.job_id, after_sequence=terminal_sequence, follow=False), timeout=5))
+        assert [event.event_type for event in retired_events] == [
+            "dispatch.source.ended", "dispatch.group.retired"]
+        assert all((event.job_id, event.project_id, event.workflow_id)
+                   == (started.job_id, document.project.projectId, "main") for event in retired_events)
+        assert [event.sequence for event in retired_events] == [terminal_sequence + 1, terminal_sequence + 2]
         waitFor(lambda: admission().can_start, timeout=5)
         assert service.runtimeInstanceId == instance
         assert service.deviceManager.drivers["camera"] is driver

@@ -1294,15 +1294,20 @@ class JobSupervisor:
         group = self.devices.dispatchGroups.get(jobId) if self.devices is not None else None
         if group is None:
             return
+        # Both retirement events belong to the source, including when the last
+        # retiring process is a consumer with a different workflow.
+        source = self.jobRepository.get(group.source)
         self.devices.retire(jobId)
         group.workerRetired(jobId)
         if jobId == group.source:
             self.eventStore.append(jobId, "dispatch.source.ended", "source ended; downstream group remains managed",
+                projectId=source.projectId, workflowId=source.workflowId,
                 payload=dict(runGroupId=group.groupId, downstreamPending=any(s.active or s.queue for s in group.slots.values())))
         if group.retired >= group.members:
             if self.retiredCallback is not None and group.source != jobId:
                 self.retiredCallback(group.source)
             self.eventStore.append(group.source, "dispatch.group.retired", "all run-group processes retired",
+                projectId=source.projectId, workflowId=source.workflowId,
                 payload=dict(runGroupId=group.groupId))
 
     def finishRetirements(self) -> list[str]:

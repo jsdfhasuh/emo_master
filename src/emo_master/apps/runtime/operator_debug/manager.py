@@ -120,6 +120,7 @@ class OperatorDebugManager:
                     resourcesHeld=session.worker is not None, activeExecutionId=session.active,
                     code=session.code, message=session.message, lastSequence=session.sequence,
                     draftDigest=session.spec["draftDigest"], operatorId=session.spec["operatorId"],
+                    resourceRoot=session.spec.get("resourceRoot", ""),
                     variables=deepcopy(session.variables), cacheBytes=session.assets.used if session.assets else 0,
                     debugKind=session.spec.get("kind", "operator"), flow=deepcopy(session.flow),
                     snapshots=[dict(snapshotId=key, phase=row.get("phase", ""), nodeId=row.get("nodeId", ""),
@@ -355,7 +356,8 @@ class OperatorDebugManager:
             spec = draft(request["projectJson"], request["projectId"], request["workflowId"], request["nodeId"],
                          request["operatorId"], self.admitted)
         if request.get("resourceRoot"):
-            fail("E_DEBUG_UNSUPPORTED", "resource roots require the A3 resource adapter")
+            from .resources import runtimePath
+            spec["resourceRoot"] = str(runtimePath(request["resourceRoot"], directory=True).resolve())
         encode(spec, MAX_REQUEST_BYTES if spec.get("kind") == "workflow" else MAX_INLINE_BYTES)
         session = Session(uuid4().hex, spec, expiresAt=time.monotonic()+self.leaseSeconds,
                           variables=DebugVariables(spec.get("variableDefinitions", {})).values)

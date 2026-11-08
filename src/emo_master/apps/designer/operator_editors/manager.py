@@ -32,6 +32,7 @@ class OperatorEditorManager:
         getCurrentJobId: Callable[[], str | None] | None = None,
         getSqliteDraft: Callable[[EditorKey], dict] | None = None,
         getPreviewProject: Callable[[EditorKey], dict[str, object]] | None = None,
+        getProjectDirectory=None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.applyParams = applyParams
@@ -39,6 +40,7 @@ class OperatorEditorManager:
         self.getCurrentJobId = getCurrentJobId or (lambda: None)
         self.getSqliteDraft = getSqliteDraft
         self.getPreviewProject = getPreviewProject
+        self.getProjectDirectory = getProjectDirectory
         self._trustStore = EditorTrustStore(settingsStore)
         self._assetCache = EditorAssetCache(cacheRoot)
         self._windows: dict[EditorKey, OperatorWorkspaceWindow] = {}
@@ -92,6 +94,7 @@ class OperatorEditorManager:
             getCurrentJobId=self.getCurrentJobId,
             getSqliteDraft=self.getSqliteDraft,
             getPreviewProject=self.getPreviewProject,
+            getProjectDirectory=self.getProjectDirectory,
             variableDefinitions=variableDefinitions,
             variableBindings=variableBindings,
             applyConfiguration=applyConfiguration,

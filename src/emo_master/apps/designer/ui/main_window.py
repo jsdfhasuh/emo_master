@@ -1413,6 +1413,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             getCurrentJobId=lambda: self.currentJobId,
             getSqliteDraft=self._sqliteEditorDraft,
             getPreviewProject=self._livePreviewProject,
+            getProjectDirectory=lambda: str(self.currentProjectDir or ""),
         )
         self.layoutController = LayoutController(
             mainSplitter=self.mainSplitter,

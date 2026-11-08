@@ -1,7 +1,6 @@
 """Modeless operator debugging; all Runtime calls stay off the Qt thread."""
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
-from pathlib import Path
 
 from PySide2.QtCore import QObject, Qt, QTimer, Signal
 from PySide2.QtGui import QPixmap
@@ -12,13 +11,15 @@ from PySide2.QtWidgets import (
 )
 
 from emo_master.apps.designer.services.operator_debug import DebugConnection
-from emo_master.apps.runtime.operator_debug.assets import VALUE_BYTES, decode
+from emo_master.apps.designer.services.debug_input_files import inputFileFilter, readInputFile
+from emo_master.apps.runtime.operator_debug.assets import VALUE_BYTES
 from emo_master.apps.runtime.operator_debug.contracts import digest, parse
 from emo_master.apps.runtime.operator_debug.data import companionPort
 from emo_master.core.contracts.port_types import normalizePortType
 from emo_master.core.project.global_variables import definitions, variablePorts
-from .debug_values import InputRow, ValueTree, tool
+from .debug_values import InputRow, ValueTree, tool, imagePortTitle
 from .debug_artifact_tools import DebugActionFeedback, DebugArtifactTools
+from .debug_parameters import DebugParameterSection
 from .icon_map import icon
 from .widgets import PreviewLabel, WrapLabel, scrollContent
 from .plc_presentation import ADVANCED_FIELDS, NUMBER_TYPES, PORT_TITLES, STATES, frameTitle, plcLog, plcSchema
@@ -37,6 +38,7 @@ class OperatorDebugWindow(QDialog):
         self.isPlc = editor.context.operatorId in {"communication.plc.slmp_read", "communication.plc.slmp_write"}
         self.logEvents = []
         self.connection = DebugConnection(editor.context._runtimeClient)
+        self.connection.projectDirectory = getattr(editor.context, "getProjectDirectory", lambda: "")()
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-debug")
         self.controls = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-debug-control")
         self.bridge = Completion(self)
@@ -70,7 +72,7 @@ class OperatorDebugWindow(QDialog):
         layout = QVBoxLayout(self)
         self.status = WrapLabel("连接 Runtime…")
         layout.addWidget(self.status)
-        self.resourceNotice = WrapLabel("文件、文件夹、模型必须位于 Runtime 电脑并使用绝对路径，不自动上传。"
+        self.resourceNotice = WrapLabel("文件、文件夹、模型位于 Runtime 电脑；相对路径使用会话工程目录，不自动上传。"
             "结果写入与 SQLite 写入仅使用调试临时目录/隔离库，关闭会话后清理。"
             "批量图片保留进度；会话坐标首次执行冻结，重置后重新读取。")
         layout.addWidget(self.resourceNotice)
@@ -103,6 +105,8 @@ class OperatorDebugWindow(QDialog):
         inputLayout = QVBoxLayout(self.inputBody)
         self.inputForm = QFormLayout()
         inputLayout.addLayout(self.inputForm)
+        self.parameters = DebugParameterSection(editor, self.inputBody)
+        inputLayout.addWidget(self.parameters)
         inputLayout.addStretch()
         self.inputForm.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         self.inputForm.setRowWrapPolicy(QFormLayout.WrapLongRows)
@@ -127,6 +131,9 @@ class OperatorDebugWindow(QDialog):
         resultLayout.addLayout(resultBar)
         self.resultLabel = WrapLabel("")
         resultLayout.addWidget(self.resultLabel)
+        self.outputMessage = WrapLabel("")
+        self.outputMessage.hide()
+        resultLayout.addWidget(self.outputMessage)
         self.plcSummary = WrapLabel("")
         self.plcSummary.setVisible(self.isPlc)
         resultLayout.addWidget(self.plcSummary)
@@ -306,10 +313,15 @@ class OperatorDebugWindow(QDialog):
         for port, spec in ports.items():
             row = InputRow(normalizePortType(spec))
             self.rows[port] = row
-            row.layout().addWidget(tool(row, "folder-open", "选择 PNG / JSON 文件", lambda _checked=False, port=port: self.selectFile(port)))
+            fileTitle = "选择图片（PNG / JPG / JPEG）" if row.portType == "image" else "选择 PNG / JSON 文件"
+            row.layout().addWidget(tool(row, "folder-open", fileTitle, lambda _checked=False, port=port: self.selectFile(port)))
             row.layout().addWidget(tool(row, "logs", "选择历史完整数据 / 调试输出", lambda _checked=False, port=port: self.selectSource(port)))
             title = spec.get("title", port) if isinstance(spec, dict) else port
+            if self.editor.context.operatorId == "vision.inference.yolo":
+                title = {"image": "图片（必填）", "frame": "坐标框（可选）"}.get(port, title)
             label = QLabel(title + " : " + normalizePortType(spec))
+            if self.editor.context.operatorId == "vision.inference.yolo" and port == "frame":
+                label.setToolTip("图片在来源坐标系中的范围，不是第二张图片；未提供时使用整图范围。")
             label.setWordWrap(True)
             self.inputForm.addRow(label, row)
 
@@ -340,6 +352,7 @@ class OperatorDebugWindow(QDialog):
             self.pixmap = None
             self.image.clear()
             self.outputTree.clear()
+            self.outputMessage.hide()
             self.executionStatus = "正在准备输入与校验参数；尚未取得执行确认"
             self.updateResultLabel()
             invoke = (lambda: self.connection.execute(params, inputs, confirmSideEffects=True)) if warning else (
@@ -353,18 +366,12 @@ class OperatorDebugWindow(QDialog):
 
     def selectFile(self, port):
         context = self.artifacts.inputContext()
-        path, _ = QFileDialog.getOpenFileName(self, "选择完整输入", "", "PNG / JSON (*.png *.json)")
+        portType = context[1][port].portType
+        path, _ = QFileDialog.getOpenFileName(self, "选择完整输入", "", inputFileFilter(portType))
         if not path:
             return
         def upload():
-            file = Path(path)
-            if file.stat().st_size > VALUE_BYTES:
-                raise ValueError("文件超过 64 MiB")
-            with file.open("rb") as stream:
-                raw = stream.read(VALUE_BYTES+1)
-            mime = "image/png" if file.suffix.lower() == ".png" else "application/json"
-            decode(raw, mime)
-            return self.connection.upload(raw, mime, dict(kind="upload", filename=file.name))
+            return self.connection.upload(*readInputFile(path, portType))
         self.artifacts.submitInput("file:" + port, upload, context, path)
 
     def selectSource(self, port, offset=0):
@@ -445,6 +452,7 @@ class OperatorDebugWindow(QDialog):
     def resetSession(self):
         if not self.reset.isEnabled():
             return
+        self.outputMessage.hide()
         self.executionId = ""
         self.executionStatus = ""
         self.resultLabel.clear()
@@ -471,6 +479,7 @@ class OperatorDebugWindow(QDialog):
     def poll(self):
         if self.closing or self.disposed:
             return
+        self.parameters.refresh()
         if not self.valid() or not self.connection.attached():
             self.close()
             return
@@ -525,6 +534,8 @@ class OperatorDebugWindow(QDialog):
             return
         if name == "open":
             self.capability = value["capability"]
+            root = value["session"].get("resourceRoot", "")
+            self.resourceNotice.setToolTip("会话工程目录：" + (root or "未提供；相对资源路径不可用"))
             self.resourceNotice.setVisible(bool(self.capability.get("singleNodeOnly")) and not self.isPlc)
             self.state = value["session"]["state"]
             self.status.setText(self.stateTitle(self.state))
@@ -617,6 +628,7 @@ class OperatorDebugWindow(QDialog):
                 self.submit("download:" + assetId, lambda: self.connection.download(assetId))
 
     def showResult(self, *_):
+        previousPort = self.selectedOutputPort()
         self.outputPorts.blockSignals(True)
         self.outputPorts.clear()
         index = self.versions.currentIndex()
@@ -635,8 +647,22 @@ class OperatorDebugWindow(QDialog):
                 self.outputPorts.addItem(PORT_TITLES.get(port, port) if self.isPlc else port, "")
                 self.outputPorts.setItemData(self.outputPorts.count() - 1, port, Qt.UserRole + 1)
             for port, asset in record.get("outputAssets", {}).items():
-                self.outputPorts.addItem(PORT_TITLES.get(port, port) if self.isPlc else port, asset["assetId"])
+                title = imagePortTitle(port) if asset["mime"] == "image/png" else port
+                self.outputPorts.addItem(PORT_TITLES.get(port, port) if self.isPlc else title, asset["assetId"])
                 self.outputPorts.setItemData(self.outputPorts.count() - 1, port, Qt.UserRole + 1)
+            messages = record.get("diagnostics", {}).get("imageOutputMessages", {})
+            for port, message in messages.items():
+                if port not in record.get("outputs", {}) and port not in record.get("outputAssets", {}):
+                    self.outputPorts.addItem(imagePortTitle(port) + " · 未生成", "")
+                    self.outputPorts.setItemData(self.outputPorts.count() - 1, port, Qt.UserRole + 1)
+                    self.outputPorts.setItemData(self.outputPorts.count() - 1, message, Qt.ToolTipRole)
+            selection = self.outputPorts.findData(previousPort, Qt.UserRole + 1)
+            if selection < 0:
+                images = [port for port, asset in record.get("outputAssets", {}).items() if asset["mime"] == "image/png"]
+                preferred = next((port for port in ("overlay", "croppedImage", "image") if port in images), next(iter(images), ""))
+                selection = self.outputPorts.findData(preferred, Qt.UserRole + 1)
+            if selection >= 0:
+                self.outputPorts.setCurrentIndex(selection)
         self.updateResultLabel()
         self.outputPorts.blockSignals(False)
         self.showOutput()
@@ -684,9 +710,13 @@ class OperatorDebugWindow(QDialog):
         self.outputTree.clear()
         self.plcResults.hide()
         self.plcSummary.clear()
+        self.outputMessage.hide()
+        self.image.hide()
+        self.outputTree.hide()
         index = self.versions.currentIndex()
         if not 0 <= index < len(self.records):
             return
+        self.outputPorts.setToolTip(self.outputPorts.currentText() + " / " + self.selectedOutputPort())
         assetId = self.outputPorts.currentData()
         isImage = bool(assetId and self.records[index]["outputAssets"][self.selectedOutputPort()]["mime"] == "image/png")
         self.image.setVisible(isImage)
@@ -697,9 +727,15 @@ class OperatorDebugWindow(QDialog):
         else:
             record = self.records[index]
             port = self.selectedOutputPort()
-            value = record.get("outputs", {}).get(port)
-            self.outputTree.setValue(value)
-            if self.isPlc:
+            if port not in record.get("outputs", {}):
+                message = record.get("diagnostics", {}).get("imageOutputMessages", {}).get(port)
+                self.outputMessage.setText(message or ("本次执行失败，未生成输出。" if record.get("status") == "FAILED" else "本次未生成输出。"))
+                self.outputMessage.show()
+                self.outputTree.hide()
+            else:
+                self.outputTree.setValue(record["outputs"][port])
+            if self.isPlc and port in record.get("outputs", {}):
+                value = record["outputs"][port]
                 params = record.get("resolvedParams") or record.get("rawParams", {})
                 self.plcSummary.setText(f"PLC {params.get('host', '')}:{params.get('port', '')} | {frameTitle(params)}")
                 if not self.rawOutput.isChecked():
@@ -761,6 +797,7 @@ class OperatorDebugWindow(QDialog):
 
     def detach(self):
         """Parent lifetime ended; keep the pinned connection alive until cleanup finishes."""
+        self.parameters.restore()
         if self.disposed:
             return
         self.disposed = True
@@ -780,6 +817,7 @@ class OperatorDebugWindow(QDialog):
         if not self.disposed:
             self.close()
             return
+        self.parameters.restore()
         super().done(result)
 
     def reject(self):
@@ -790,6 +828,7 @@ class OperatorDebugWindow(QDialog):
 
     def closeEvent(self, event):
         if self.disposed:
+            self.parameters.restore()
             event.accept()
             return
         event.ignore()

@@ -73,6 +73,9 @@ class OperatorDebugRpcMixin:
                             fail('E_DEVICE_DEBUG_REQUIRED', 'use managed device diagnostics; private debug connections are disabled')
                         if not getattr(context, "is_active", lambda: True)():
                             fail("E_CANCELLED", "request cancelled before acceptance")
+                        if (debugKind == "operator" and not values["resourceRoot"]
+                                and runtime.loadedProjectId == request.project_id):
+                            values["resourceRoot"] = runtime.loadedProjectPath or ""
                         with manager.lock:
                             manager.admitted = trustedEntries(runtime.pluginScanResult.activeOperators)
                         payload = manager.call(action, values)

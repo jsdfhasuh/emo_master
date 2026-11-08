@@ -246,8 +246,8 @@ def testOutputSelectionQueuesBehindBusyPollAndIgnoresStaleDownload(runtime):
         dialog.connection.download = download
         dialog.records = [dict(status="SUCCEEDED", outputs={"value": 1},
                                outputAssets={"image": {"assetId": "image", "mime": "image/png"}})]
-        dialog.versions.addItem("result")
         dialog.submit("busy-test", lambda: gate.wait(3))
+        dialog.versions.addItem("result")
         dialog.outputPorts.setCurrentIndex(1)
         assert dialog.pendingAsset == "image" and calls == []
         gate.set()

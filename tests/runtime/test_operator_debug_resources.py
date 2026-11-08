@@ -26,8 +26,9 @@ from tests.runtime.test_operator_debug_sessions import waitFor
 
 
 @contextmanager
-def connected(runtime, operatorId):
+def connected(runtime, operatorId, resourceRoot=""):
     debug = DebugConnection(RuntimeClient(runtime))
+    debug.projectDirectory = resourceRoot
     try:
         debug.open(project(operatorId), EditorKey("draft", "main", "node"), operatorId)
         waitFor(lambda: debug.snapshot()["session"]["state"] == "READY")
@@ -181,22 +182,24 @@ def testPathsMustExistOnRuntime(runtime, tmp_path, operatorId, key):
             assert "Runtime" in record["message"]
 
 
-def testYoloUsesRealOnnxSession(runtime, tmp_path):
+@pytest.mark.parametrize("relative", [False, True])
+def testYoloUsesRealOnnxSession(runtime, tmp_path, relative):
     from tests.plugins.test_yolo_onnx_backend import _TINY_YOLO_ONNX
     model = tmp_path / "tiny.onnx"
     model.write_bytes(base64.b64decode(_TINY_YOLO_ONNX))
-    with connected(runtime, "vision.inference.yolo") as debug:
-        record = run(debug, {"modelPath": str(model)}, {"image": uploadImage(debug)})
+    with connected(runtime, "vision.inference.yolo", str(tmp_path) if relative else "") as debug:
+        record = run(debug, {"modelPath": model.name if relative else str(model)}, {"image": uploadImage(debug)})
         assert record["status"] == "SUCCEEDED", record
         assert record["metrics"]["detectionCount"] == 1
         assert record["outputs"]["detections"]["items"][0]["label"] == "screw"
 
 
-def testYoloClassificationUsesRealOnnxSession(runtime, tmp_path):
+@pytest.mark.parametrize("relative", [False, True])
+def testYoloClassificationUsesRealOnnxSession(runtime, tmp_path, relative):
     from tests.plugins.test_yolo_classification_operator import makeModel
     model = makeModel(tmp_path / "classifier.onnx", (.1, .9))
-    with connected(runtime, "vision.inference.yolo_classification") as debug:
-        record = run(debug, {"modelPath": str(model)}, {"image": uploadImage(debug)})
+    with connected(runtime, "vision.inference.yolo_classification", str(tmp_path) if relative else "") as debug:
+        record = run(debug, {"modelPath": model.name if relative else str(model)}, {"image": uploadImage(debug)})
         assert record["status"] == "SUCCEEDED", record
         assert record["outputs"]["label"] == "with_helmet"
         assert record["outputs"]["accepted"] is True

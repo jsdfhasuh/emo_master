@@ -63,6 +63,7 @@ class EditorContext:
         getCurrentJobId: Callable[[], str | None] | None = None,
         getSqliteDraft: Callable[[EditorKey], dict] | None = None,
         getPreviewProject: Callable[[EditorKey], dict[str, object]] | None = None,
+        getProjectDirectory=None,
         variableDefinitions=None,
         variableBindings=None,
         applyConfiguration=None,
@@ -82,6 +83,7 @@ class EditorContext:
         self._getCurrentJobId = getCurrentJobId or (lambda: None)
         self._getSqliteDraft = getSqliteDraft
         self._getPreviewProject = getPreviewProject
+        self.getProjectDirectory = getProjectDirectory or (lambda: "")
         self._pureDraftLock = threading.RLock()
         self._pureDraftTouched = 0.0
         self._pureDraftSessionId = ""

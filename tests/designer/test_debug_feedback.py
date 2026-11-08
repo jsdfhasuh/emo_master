@@ -43,7 +43,8 @@ def testZeroInputArtifactPanelIsLaidOutBeforeOpenAndAfterReadyOrFault(runtime, m
             assert panel.parentWidget() is dialog.inputBody
             assert dialog.inputBody.layout().indexOf(panel) == 0
             assert panel.mapTo(dialog, QPoint()).y() >= dialog.tabs.y()
-            assert dialog.inputBody.layout().count() == 3
+            assert dialog.inputBody.layout().count() == 4
+            assert dialog.inputBody.layout().indexOf(dialog.parameters) == 2
         check()
         release.set()
         wait(lambda: dialog.state == ("READY" if supported else "FAULTED"))
@@ -98,6 +99,7 @@ def testPrepareFailureHasNoExecutionAndKeepsHistoryIdentityAcrossPolls(runtime, 
         dialog.showResult()
         assert "以下为历史结果" in dialog.resultLabel.text()
         assert dialog.exportSelection()["identity"]["rawParams"] == previous["rawParams"]
+        wait(lambda: dialog.run.isEnabled())
         editor._schemaForm._controls["clipLimit"].setValue(1.2345)
         QTest.mouseClick(dialog.run, Qt.LeftButton)
         wait(lambda: len(dialog.records) == 2 and dialog.run.isEnabled())

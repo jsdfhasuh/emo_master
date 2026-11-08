@@ -100,7 +100,9 @@ def testInputToolbarHasLayoutDuringSlowOpenAndAfterFailure(runtime, monkeypatch,
             dialog.buildInputs()
         assert panel.parentWidget() is dialog.inputBody
         assert dialog.inputBody.layout().indexOf(panel) == 0
-        assert dialog.inputBody.layout().count() == 3
+        assert dialog.inputBody.layout().count() == 4
+        assert dialog.inputBody.layout().indexOf(dialog.parameters) == 2
+        assert dialog.parameters.form is editor._schemaForm
     finally:
         release.set()
         editor.forceClose()

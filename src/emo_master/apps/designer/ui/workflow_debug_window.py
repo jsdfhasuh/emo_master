@@ -1,7 +1,6 @@
 """Modeless, fixed-draft workflow debugging with Worker-confirmed controls."""
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
-from pathlib import Path
 import json
 import re
 import time
@@ -13,10 +12,11 @@ from PySide2.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, 
     QSpinBox, QTableWidget, QTableWidgetItem, QTabWidget, QVBoxLayout, QWidget)
 
 from emo_master.apps.designer.services.workflow_debug import WorkflowDebugConnection
-from emo_master.apps.runtime.operator_debug.assets import VALUE_BYTES, decode
+from emo_master.apps.designer.services.debug_input_files import inputFileFilter, readInputFile
+from emo_master.apps.runtime.operator_debug.assets import VALUE_BYTES
 from emo_master.apps.runtime.operator_debug.contracts import digest, parse
 from emo_master.core.contracts.port_types import normalizePortType
-from .debug_values import InputRow, ValueTree, tool
+from .debug_values import InputRow, ValueTree, tool, imagePortTitle
 from .debug_artifact_tools import DebugActionFeedback, DebugArtifactTools
 from .operator_debug_window import Completion
 from .param_form import SchemaParamForm
@@ -92,7 +92,8 @@ class WorkflowDebugWindow(QDialog):
         form.setRowWrapPolicy(QFormLayout.WrapLongRows)
         for port, spec in payload["workflows"][workflowId].get("inputs", {}).items():
             row = InputRow(normalizePortType(spec))
-            row.layout().addWidget(tool(row, "folder-open", "选择 PNG / JSON 文件", lambda _=False, port=port: self.file(port)))
+            fileTitle = "选择图片（PNG / JPG / JPEG）" if row.portType == "image" else "选择 PNG / JSON 文件"
+            row.layout().addWidget(tool(row, "folder-open", fileTitle, lambda _=False, port=port: self.file(port)))
             self.rows[port] = row
             label = QLabel(port + " : " + normalizePortType(spec))
             label.setWordWrap(True)
@@ -330,16 +331,12 @@ class WorkflowDebugWindow(QDialog):
 
     def file(self, port):
         context = self.artifacts.inputContext()
-        path, _ = QFileDialog.getOpenFileName(self, "选择完整输入", "", "PNG / JSON (*.png *.json)")
+        portType = context[1][port].portType
+        path, _ = QFileDialog.getOpenFileName(self, "选择完整输入", "", inputFileFilter(portType))
         if not path:
             return
         def upload():
-            file = Path(path)
-            with file.open("rb") as stream:
-                raw = stream.read(VALUE_BYTES + 1)
-            mime = "image/png" if file.suffix.lower() == ".png" else "application/json"
-            decode(raw, mime)
-            return self.connection.upload(raw, mime, dict(kind="upload", filename=file.name))
+            return self.connection.upload(*readInputFile(path, portType))
         self.artifacts.submitInput("file:" + port, upload, context, path)
 
     def poll(self):
@@ -501,6 +498,7 @@ class WorkflowDebugWindow(QDialog):
             self.submit("asset:" + key, lambda: self.connection.download(key))
 
     def display(self, value):
+        previous = self.ports.currentData()
         self.displayed = value
         setSummaryLabel(self.dataLabel, f"{value.get('snapshotKind', '')} | {value.get('phase', '')} | {value['snapshotId'][:12]} | {value.get('conditionError', '')}")
         self.ports.blockSignals(True)
@@ -509,8 +507,21 @@ class WorkflowDebugWindow(QDialog):
             for key in value.get(group, {}):
                 self.ports.addItem(group + " / " + key, (group, "", key, ""))
             for key, asset in value.get(group + "Assets", {}).items():
-                self.ports.addItem(group + " / " + key, (group, asset["assetId"], key, asset["mime"]))
+                title = imagePortTitle(key) if asset["mime"] == "image/png" else key
+                self.ports.addItem(group + " / " + title, (group, asset["assetId"], key, asset["mime"]))
         self.ports.addItem("参数与身份", ("detail", "", "", ""))
+        preferred = -1
+        for index in range(self.ports.count()):
+            group, asset, key, mime = self.ports.itemData(index)
+            if group == "outputs" and mime == "image/png":
+                preferred = index
+                break
+        if preferred < 0:
+            preferred = next((index for index in range(self.ports.count()) if self.ports.itemData(index)[3] == "image/png"), 0)
+        if previous and (previous[0] == "outputs" or not value.get("outputsAssets")):
+            preferred = next((index for index in range(self.ports.count())
+                if (self.ports.itemData(index)[0], self.ports.itemData(index)[2]) == (previous[0], previous[2])), preferred)
+        self.ports.setCurrentIndex(preferred)
         self.ports.blockSignals(False)
         self.selectPort()
 
@@ -523,6 +534,7 @@ class WorkflowDebugWindow(QDialog):
         if not selected or not self.displayed:
             return
         group, asset, key, mime = selected
+        self.ports.setToolTip(self.ports.currentText() + " / " + key)
         self.image.setVisible(mime == "image/png")
         self.data.setVisible(mime != "image/png")
         if asset:

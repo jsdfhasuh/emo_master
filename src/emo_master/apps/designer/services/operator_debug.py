@@ -7,7 +7,7 @@ import threading
 import time
 from uuid import uuid4
 
-from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+from emo_master.apps.designer.services.runtime_client import RuntimeClientError, runtimeConnectionDescription
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.operator_debug.contracts import digest, encode, parse, MAX_REQUEST_BYTES
 from emo_master.apps.runtime.operator_debug.assets import CHUNK_BYTES, VALUE_BYTES
@@ -26,6 +26,7 @@ class DebugConnection:
         self.leaseError = ""
         self.uncertain = False
         self.executionPhase = "idle"
+        self.projectDirectory = ""
 
     def attached(self):
         return self.origin.runtimeService is self.service
@@ -52,7 +53,9 @@ class DebugConnection:
         try:
             state = self.call("OpenOperatorDebugSession", open_request_id=self.openId,
                 project_json=encode(payload, MAX_REQUEST_BYTES), project_id=key.projectId,
-                workflow_id=key.workflowId, node_id=key.nodeId, operator_id=operatorId)
+                workflow_id=key.workflowId, node_id=key.nodeId, operator_id=operatorId,
+                resource_root=(str(self.projectDirectory or "")
+                    if runtimeConnectionDescription(self.client)["kind"] == "embedded" else ""))
         except Exception as error:
             if isinstance(error, RuntimeClientError) and error.code.startswith("E_"):
                 self.identity = {}

@@ -21,17 +21,24 @@ class DebugImageBatchLoader(ImageBatchLoaderOperator):
         self._loader = DebugImageLoader()
 
 
-def runtimePath(raw, *, directory=False, mustExist=True):
-    if not isinstance(raw, str) or not raw.strip() or "\x00" in raw or not Path(raw.strip()).is_absolute():
+def runtimePath(raw, *, directory=False, mustExist=True, resourceRoot=""):
+    if not isinstance(raw, str) or not raw.strip() or "\x00" in raw:
         fail("E_PARAM_INVALID", "需要 Runtime 所在电脑上的有效绝对路径：" + str(raw))
     path = Path(raw.strip())
+    if not path.is_absolute():
+        if not resourceRoot:
+            fail("E_PARAM_INVALID", "无法解析相对路径；Runtime 会话没有匹配的工程目录，请先保存本机工程，"
+                 "或在远程 Runtime 加载对应工程，也可使用绝对路径。原始路径：" + raw + "；基准目录：未提供；最终路径：未解析")
+        path = Path(resourceRoot) / path
+    path = path.resolve()
+    detail = f"原始路径：{raw}；基准目录：{resourceRoot or '绝对路径无需基准'}；最终路径：{path}"
     if mustExist:
         try:
             valid = path.is_dir() if directory else path.is_file()
             if not valid:
-                fail("E_INPUT_MISSING", "Runtime 所在电脑找不到所需文件或目录；不会自动上传 Designer 本地资源：" + str(path))
+                fail("E_INPUT_MISSING", "Runtime 所在电脑找不到所需文件或目录；不会自动上传 Designer 本地资源。" + detail)
         except OSError as error:
-            fail("E_INPUT_UNREADABLE", "Runtime 无法访问路径：" + str(path) + "；" + str(error))
+            fail("E_INPUT_UNREADABLE", "Runtime 无法访问路径。" + detail + "；" + str(error))
     return path
 
 
@@ -60,21 +67,31 @@ class DebugResources:
         mapped = {}
         notes = {}
         cancellation.raise_if_cancelled()
+        root = self.spec.get("resourceRoot", "")
+        def resolve(key, *, directory=False, mustExist=True, fromInput=False):
+            raw = values[key] if fromInput else params.get(key)
+            path = str(runtimePath(raw, directory=directory, mustExist=mustExist, resourceRoot=root))
+            notes.setdefault("resourcePaths", {})[key] = dict(original=raw, baseDirectory=root, resolved=path)
+            effective[key] = path
+            return path
         if operatorId == "vision.io.image_loader":
-            validateRuntimeImagePath(params)
+            resolve("imagePath")
+            validateRuntimeImagePath(effective)
         elif operatorId == "vision.io.coordinate_reader":
             # A frozen session remains usable if its source is later removed.
-            runtimePath(params.get("filePath"), mustExist=params.get("readMode") != "session")
+            resolve("filePath", mustExist=params.get("readMode") != "session")
         elif operatorId in {"vision.io.image_batch_loader", "vision.io.file_list"}:
-            runtimePath(params.get("folderPath"), directory=True)
+            resolve("folderPath", directory=True)
         elif operatorId == "vision.io.video_loader":
-            runtimePath(values["videoPath"] if "videoPath" in values else params.get("videoPath"))
+            path = resolve("videoPath", fromInput="videoPath" in values)
+            if "videoPath" in values:
+                values = dict(values, videoPath=path)
         elif operatorId in {"vision.inference.yolo", "vision.inference.yolo_classification"}:
-            runtimePath(params.get("modelPath"))
+            resolve("modelPath")
         elif operatorId == "vision.inference.patchcore":
-            runtimePath(params.get("modelPath"), directory=True)
+            resolve("modelPath", directory=True)
         elif operatorId == "vision.io.image_saver":
-            runtimePath(params.get("outputPath"), mustExist=False)
+            resolve("outputPath", mustExist=False)
         elif operatorId == "communication.plc.slmp_write" and params.get("dataType", "uint16") != "float32":
             # JSON-schema number coercion produces floats, while the protocol
             # encoder deliberately accepts only integers for integer registers.
@@ -96,7 +113,10 @@ class DebugResources:
             )
             from emo_master.core.contracts.sqlite_writer import parseConfig, toStorage
             from emo_master.core.workflow.parameter_bindings import BoundValue
-            config = parseConfig(params)
+            resolve("databasePath", mustExist=self.sqliteParams != params)
+            if params.get("debugDatabasePath"):
+                resolve("debugDatabasePath", mustExist=self.sqliteParams != params)
+            config = parseConfig(effective)
             if self.sqliteParams != params:
                 path = runtimePath(config["databasePath"])
                 root = Path(context.workspacePath)
@@ -123,7 +143,7 @@ class DebugResources:
                 if row["source"]["kind"] == "node_output" and key in values:
                     mapped[index] = BoundValue(context.workflowRunId, context.nodeRunId,
                                                toStorage(values.pop(key), row["storageType"]))
-            notes = {"debugIsolation": "仅向隔离测试库写入，生产库及测试模板均不写入。关闭会话后清理。",
-                     "debugDatabasePath": self.sqliteTarget}
+            notes.update(debugIsolation="仅向隔离测试库写入，生产库及测试模板均不写入。关闭会话后清理。",
+                         debugDatabasePath=self.sqliteTarget)
         cancellation.raise_if_cancelled()
         return effective, values, mapped, notes

@@ -2,6 +2,7 @@ from copy import deepcopy
 
 import cv2
 import numpy as np
+import pytest
 from PySide2.QtCore import Qt
 from PySide2.QtTest import QTest
 from shiboken2 import isValid
@@ -15,7 +16,8 @@ from tests.runtime.operator_debug_fixture import project
 from tests.runtime.test_operator_debug_rpc import runtime as runtime
 
 
-def testImageReadShowsCurrentDraftPixelsAndRuntimeMissingFile(runtime, tmp_path, record_property):
+@pytest.mark.parametrize("relative", [False, True])
+def testImageReadShowsCurrentDraftPixelsAndRuntimeMissingFile(runtime, tmp_path, record_property, relative):
     operatorId = "vision.io.image_loader"
     schema = runtime.pluginScanResult.activeOperators[operatorId].manifest.paramSchema
     payload = project(operatorId)
@@ -30,9 +32,10 @@ def testImageReadShowsCurrentDraftPixelsAndRuntimeMissingFile(runtime, tmp_path,
     context = EditorContext(key=EditorKey("draft", "main", "node"), operatorId=operatorId,
         version="1.1.0", previewMode="none", paramSchema=schema, runtimeClient=RuntimeClient(runtime),
         applyParams=lambda *_: applied.append(True), appendLog=lambda *_: None,
-        getPreviewProject=lambda _: payload, variableDefinitions=lambda: {})
+        getPreviewProject=lambda _: payload, variableDefinitions=lambda: {}, getProjectDirectory=lambda: str(tmp_path))
+    imagePath = path.name if relative else str(path)
     editor = OperatorWorkspaceWindow(key=context.key, title="Image Loader", context=context,
-        schema=schema, values={"imagePath": str(path), "colorMode": "color"})
+        schema=schema, values={"imagePath": imagePath, "colorMode": "color"})
     editor.show()
     dialog = OperatorDebugWindow(editor)
     editor._debugWindow = dialog
@@ -43,7 +46,7 @@ def testImageReadShowsCurrentDraftPixelsAndRuntimeMissingFile(runtime, tmp_path,
         QTest.mouseClick(dialog.run, Qt.LeftButton)
         wait(lambda: len(dialog.records) == 1 and dialog.run.isEnabled())
         assert dialog.records[0]["status"] == "SUCCEEDED"
-        dialog.outputPorts.setCurrentIndex(dialog.outputPorts.findText("image"))
+        assert dialog.selectedOutputPort() == "image"
         wait(lambda: dialog.pixmap is not None and not dialog.busy)
         assert (dialog.pixmap.width(), dialog.pixmap.height()) == (400, 240)
         assert not dialog.pixmap.toImage().isGrayscale()
@@ -51,11 +54,11 @@ def testImageReadShowsCurrentDraftPixelsAndRuntimeMissingFile(runtime, tmp_path,
         assert dialog.grab().save(str(capture))
         record_property("colorScreenshot", str(capture))
 
-        editor._schemaForm.setSchema(schema, {"imagePath": str(path), "colorMode": "grayscale"})
+        editor._schemaForm.setSchema(schema, {"imagePath": imagePath, "colorMode": "grayscale"})
         QTest.mouseClick(dialog.run, Qt.LeftButton)
         wait(lambda: len(dialog.records) == 2 and dialog.run.isEnabled())
         assert [row["rawParams"]["colorMode"] for row in dialog.records] == ["grayscale", "color"]
-        dialog.outputPorts.setCurrentIndex(dialog.outputPorts.findText("image"))
+        assert dialog.selectedOutputPort() == "image"
         wait(lambda: dialog.pixmap is not None and not dialog.busy)
         assert dialog.pixmap.toImage().isGrayscale()
 

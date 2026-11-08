@@ -12,6 +12,12 @@ from emo_master.apps.runtime.operator_debug.contracts import encode, parse
 from .icon_map import icon
 
 
+def imagePortTitle(port):
+    title = {"image": "图片", "overlay": "叠加图", "croppedImage": "裁剪图",
+             "heatmap": "热力图", "mask": "掩膜"}.get(port)
+    return title or port
+
+
 def tool(parent, name, title, callback):
     button = QToolButton(parent)
     button.setIcon(icon(name))

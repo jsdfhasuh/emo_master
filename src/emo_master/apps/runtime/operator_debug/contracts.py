@@ -46,7 +46,7 @@ EXECUTION_WARNINGS = {
     "communication.plc.slmp_write": "本次将解锁一次 PLC 写入并真实写入配置的设备。取消或超时不能撤销已发送的数据；禁止自动重试。",
     "communication.tcp.client": "本次将向配置的 TCP 地址真实发送数据。取消或超时不能撤销已发送的数据。",
     "communication.tcp.receive_once": "本次将在 Runtime 监听 TCP 端口，并可能发送配置的应答。请确认监听地址及应答内容。",
-    "vision.io.image_saver": "本次将在 Runtime 电脑的指定绝对路径真实写入图片，可能覆盖原文件。取消不能撤销写入。",
+    "vision.io.image_saver": "本次将在 Runtime 电脑的指定输出路径真实写入图片，相对路径以会话工程目录为基准，可能覆盖原文件。取消不能撤销写入。",
     "vision.io.huaray_camera": "本次将连接真实相机、应用当前配置并采集一帧。请确认设备可用于调试。",
 }
 

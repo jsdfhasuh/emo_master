@@ -183,7 +183,7 @@ def testDebugUiShowsImagesRawMapAndHistoricalScore(runtime, tmp_path, ownedDesig
         QTest.mouseClick(dialog.run, Qt.LeftButton)
         wait(lambda: len(dialog.records) == 1 and dialog.run.isEnabled())
         assert dialog.records[0]["status"] == "SUCCEEDED", dialog.records[0]
-        dialog.outputPorts.setCurrentIndex(dialog.outputPorts.findText("overlay"))
+        assert dialog.selectedOutputPort() == "overlay"
         wait(lambda: dialog.pixmap is not None)
         assert not dialog.pixmap.isNull() and dialog.pixmap.width() == 360 and dialog.pixmap.height() == 240
         if overlayMode == "highlight":

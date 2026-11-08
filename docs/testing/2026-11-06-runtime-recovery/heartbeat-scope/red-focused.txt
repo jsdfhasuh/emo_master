@@ -1,0 +1,414 @@
+F.F.................spawned_heartbeat_observation={"actualAgeMs": 348, "actualSampleMs": 6059461, "currentMs": 6059809, "observationMs": 6054459, "sampleMs": 6054459, "status": "FAILED"}
+FFFF.FF.....
+=================================== FAILURES ===================================
+_______________ testReadDelayDoesNotExpireAnInitiallyFreshSample _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fbc6fc48940>
+
+    def testReadDelayDoesNotExpireAnInitiallyFreshSample(monkeypatch):
+        supervisor, repository, store, process, cell, clock = _withCell(monkeypatch)
+        clock[0] = 900
+        cell.publish()
+        clock[0] = 1000
+        read = cell.read
+    
+        def delayedRead():
+            sample = read()
+            clock[0] = 6350
+            cell.publish()  # The producer continues while the reader is descheduled.
+            return sample
+    
+        monkeypatch.setattr(cell, "read", delayedRead)
+        supervisor.checkHeartbeat("job-stop")
+>       assert repository.get("job-stop").status == "RUNNING"
+E       AssertionError: assert 'FAILED' == 'RUNNING'
+E         
+E         - RUNNING
+E         + FAILED
+
+tests/runtime/test_supervisor_heartbeat_observation.py:30: AssertionError
+________ testAlreadyStaleSampleStillFailsAndKeepsObservationDiagnostics ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fbc6fc15750>
+
+    def testAlreadyStaleSampleStillFailsAndKeepsObservationDiagnostics(monkeypatch):
+        supervisor, repository, store, process, cell, clock = _withCell(monkeypatch)
+        supervisor._heartbeatMonotonic["job-stop"] = 1000
+        clock[0] = 6001
+    
+        def delayedRead():
+            clock[0] = 11351
+            return 1000
+    
+        monkeypatch.setattr(cell, "read", delayedRead)
+        supervisor.checkHeartbeat("job-stop")
+        assert process.terminated
+        assert repository.get("job-stop").errorCode == "E_HEARTBEAT_TIMEOUT"
+        failed = next(event for event in store.read("job-stop") if event.eventType == "job.failed")
+        payload = json.loads(failed.payloadJson)
+>       assert payload == {"pid": 1234, "heartbeat": {
+            "clock": "monotonic", "observationMs": 6001, "currentMs": 11351,
+            "sampleMs": 1000, "lastGoodMs": 1000, "timeoutMs": 5000,
+            "intervalMs": 500, "seen": False,
+        }}
+E       AssertionError: assert {} == {'pid': 1234,...': 1000, ...}}
+E         
+E         Right contains 2 more items:
+E         {'heartbeat': {'clock': 'monotonic',
+E                        'currentMs': 11351,
+E                        'intervalMs': 500,
+E                        'lastGoodMs': 1000,
+E                        'observationMs': 6001,...
+E         
+E         ...Full output truncated, use '-vv' to show
+
+tests/runtime/test_supervisor_heartbeat_observation.py:74: AssertionError
+_______________ testSpawnedHeartbeatSurvivesParentPauseAfterRead _______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fbc6fcca440>
+
+    def testSpawnedHeartbeatSurvivesParentPauseAfterRead(monkeypatch):
+        supervisor, repository, _, _ = _supervisor()
+        context = multiprocessing.get_context("spawn")
+        cell = HeartbeatCell(context)
+        ready, stop = context.Event(), context.Event()
+        process = context.Process(target=_publishHeartbeat, args=(cell, ready, stop))
+        process.start()
+        try:
+            assert ready.wait(5), "heartbeat producer did not start"
+            supervisor._handles["job-stop"] = (process, stop, object())
+            supervisor._heartbeatCells["job-stop"] = cell
+            supervisor._heartbeatMonotonic["job-stop"] = monotonicMs()
+            supervisor._heartbeatTimeouts["job-stop"] = 5000
+            supervisor._heartbeatIntervals["job-stop"] = 500
+            read, evidence = cell.read, {}
+    
+            def delayedRead():
+                sample = read()
+                before = monotonicMs()
+                Event().wait(5.35)
+                evidence.update(sampleMs=sample, actualSampleMs=read(), currentMs=monotonicMs(),
+                                observationMs=before)
+                return sample
+    
+            monkeypatch.setattr(cell, "read", delayedRead)
+            supervisor.checkHeartbeat("job-stop")
+            evidence["status"] = repository.get("job-stop").status
+            evidence["actualAgeMs"] = evidence["currentMs"] - evidence["actualSampleMs"]
+            print("spawned_heartbeat_observation=" + json.dumps(evidence, sort_keys=True))
+            assert evidence["currentMs"] - evidence["observationMs"] >= 5300
+            assert evidence["actualAgeMs"] < 1500, "producer did not remain healthy during the pause"
+>           assert repository.get("job-stop").status == "RUNNING"
+E           AssertionError: assert 'FAILED' == 'RUNNING'
+E             
+E             - RUNNING
+E             + FAILED
+
+tests/runtime/test_supervisor_heartbeat_observation.py:166: AssertionError
+_____ testFrameWriteEOFKeepsOriginalUnknownReceiptThroughNestedCleanup[1] ______
+
+depth = 1
+
+    @pytest.mark.parametrize("depth", [1, 2])
+    def testFrameWriteEOFKeepsOriginalUnknownReceiptThroughNestedCleanup(depth):
+        def respond(request):
+            if request["action"] == "beginCycle":
+                return _cycle(request)
+            assert request["action"] == "frameBeginWrite"
+            return None
+    
+        with _proxyChannel(respond) as (proxy, cancellation, requests):
+            plans = _session(proxy, cancellation)
+            primary = []
+            with pytest.raises(DeviceError) as failure:
+                with ExitStack() as scopes:
+                    context = RunContext.root("job", "main")
+                    for level in range(depth):
+                        context = scopes.enter_context(plans.scope(context,
+                            parentCycleId=context.cycleId if level else None))
+                    try:
+                        proxy.encode(np.zeros((2, 2, 3), dtype=np.uint8), context)
+                    except DeviceError as error:
+                        primary.append(error)
+                        raise
+>           assert failure.value is primary[0]
+E           AssertionError: assert DeviceError('device proxy cancelled') is DeviceError('device transport interrupted; do not retry')
+E            +  where DeviceError('device proxy cancelled') = <ExceptionInfo DeviceError('device proxy cancelled') tblen=7>.value
+
+tests/runtime/test_cycle_plan_scope_cleanup.py:98: AssertionError
+_____ testFrameWriteEOFKeepsOriginalUnknownReceiptThroughNestedCleanup[2] ______
+
+depth = 2
+
+    @pytest.mark.parametrize("depth", [1, 2])
+    def testFrameWriteEOFKeepsOriginalUnknownReceiptThroughNestedCleanup(depth):
+        def respond(request):
+            if request["action"] == "beginCycle":
+                return _cycle(request)
+            assert request["action"] == "frameBeginWrite"
+            return None
+    
+        with _proxyChannel(respond) as (proxy, cancellation, requests):
+            plans = _session(proxy, cancellation)
+            primary = []
+            with pytest.raises(DeviceError) as failure:
+                with ExitStack() as scopes:
+                    context = RunContext.root("job", "main")
+                    for level in range(depth):
+                        context = scopes.enter_context(plans.scope(context,
+                            parentCycleId=context.cycleId if level else None))
+                    try:
+                        proxy.encode(np.zeros((2, 2, 3), dtype=np.uint8), context)
+                    except DeviceError as error:
+                        primary.append(error)
+                        raise
+>           assert failure.value is primary[0]
+E           AssertionError: assert DeviceError('device proxy cancelled') is DeviceError('device transport interrupted; do not retry')
+E            +  where DeviceError('device proxy cancelled') = <ExceptionInfo DeviceError('device proxy cancelled') tblen=7>.value
+
+tests/runtime/test_cycle_plan_scope_cleanup.py:98: AssertionError
+________ testDeviceFailureAndRequestIdentitySurviveCleanupErrorReceipt _________
+
+    def testDeviceFailureAndRequestIdentitySurviveCleanupErrorReceipt():
+        def respond(request):
+            if request["action"] == "beginCycle":
+                return _cycle(request)
+            if request["action"] == "endCycle":
+                return _cleanupFailure()
+            return dict(ok=False, code="E_DEVICE_OUTCOME_UNKNOWN", message="native write receipt unavailable",
+                        outcome="UNKNOWN", diagnostics={"requestId": request["requestId"], "receipt": "primary"})
+    
+        with _proxyChannel(respond) as (proxy, cancellation, requests):
+            primary = []
+            with pytest.raises(DeviceError) as failure:
+                with _session(proxy, cancellation).scope(RunContext.root("job", "main")) as context:
+                    try:
+                        proxy.call("write", deviceId="device", params={}, cycleId=context.cycleId)
+                    except DeviceError as error:
+                        primary.append(error)
+                        raise
+>           assert failure.value is primary[0]
+E           AssertionError: assert DeviceError('cycle release failed') is DeviceError('native write receipt unavailable')
+E            +  where DeviceError('cycle release failed') = <ExceptionInfo DeviceError('cycle release failed') tblen=5>.value
+
+tests/runtime/test_cycle_plan_scope_cleanup.py:136: AssertionError
+______ testExpectedCleanupFailureCannotReplacePrimaryException[primary0] _______
+
+primary = ValueError('body failed')
+
+    @pytest.mark.parametrize("primary", [ValueError("body failed"), KeyboardInterrupt("body interrupted")])
+    def testExpectedCleanupFailureCannotReplacePrimaryException(primary):
+        with _proxyChannel(lambda request: _cycle(request) if request["action"] == "beginCycle"
+                           else _cleanupFailure()) as (proxy, cancellation, _requests):
+            with pytest.raises(type(primary)) as failure:
+                with _session(proxy, cancellation).scope(RunContext.root("job", "main")):
+>                   raise primary
+E                   ValueError: body failed
+
+tests/runtime/test_cycle_plan_scope_cleanup.py:162: ValueError
+
+During handling of the above exception, another exception occurred:
+
+primary = ValueError('body failed')
+
+    @pytest.mark.parametrize("primary", [ValueError("body failed"), KeyboardInterrupt("body interrupted")])
+    def testExpectedCleanupFailureCannotReplacePrimaryException(primary):
+        with _proxyChannel(lambda request: _cycle(request) if request["action"] == "beginCycle"
+                           else _cleanupFailure()) as (proxy, cancellation, _requests):
+            with pytest.raises(type(primary)) as failure:
+>               with _session(proxy, cancellation).scope(RunContext.root("job", "main")):
+
+tests/runtime/test_cycle_plan_scope_cleanup.py:161: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.local/share/uv/python/cpython-3.10-linux-x86_64-gnu/lib/python3.10/contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+src/emo_master/apps/runtime/project_config/cycle_plan.py:39: in scope
+    self.devices.framework("endCycle", cycleId=cycle["cycleId"])
+src/emo_master/apps/runtime/devices/ipc.py:130: in framework
+    return self._call('framework_operation', action, **fields)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <emo_master.apps.runtime.devices.ipc.DeviceProxy object at 0x7fbc6fce7910>
+kind = 'framework_operation', action = 'endCycle'
+fields = {'cycleId': 'cycle-1'}
+
+    def _call(self, kind, action, **fields):
+        stopDeadline = None
+    
+        def cancelled():
+            return self.closed or self.cancellation.is_set()
+    
+        def interrupted():
+            nonlocal stopDeadline
+            # pipe_io normally combines cancellation and timeout into OSError.
+            # Keep an observed framework stop distinct from a broken transport,
+            # including cancellation after the admission check but before I/O.
+            # Device actions still retain their possibly unknown native outcome.
+            if kind == 'framework_operation':
+                if self.cancellation.is_set():
+                    raise CancellationRequested("execution cancelled")
+                return self.closed
+            if self.closed:
+                return True
+            if self.cancellation.is_set():
+                if stopDeadline is None:
+                    # Bound even an unlimited capture after Stop, while allowing
+                    # the driver receipt and its IPC delivery to finish once.
+                    stopDeadline = time.monotonic() + CANCEL_RECEIPT_TIMEOUT + IPC_TIMEOUT
+                return time.monotonic() >= stopDeadline
+            return False
+        while not self.lock.acquire(timeout=.02):
+            if cancelled():
+                raise DeviceError("E_DEVICE_CANCELLED", "device proxy cancelled")
+        try:
+            if cancelled():
+                raise DeviceError("E_DEVICE_CANCELLED", "device proxy cancelled")
+            self.sequence += 1
+            request = dict(sequence=self.sequence, kind=kind, action=action, requestId=uuid4().hex, **fields)
+            raw = json.dumps(request).encode()
+            if len(raw) > MAX_BYTES:
+                raise DeviceError("E_DEVICE_IPC_SIZE", "device request exceeds IPC budget")
+            try:
+                phase = "send"
+                deadline = time.monotonic() + 1202
+                if kind == 'device_action' and action == "capture" and fields.get("params", {}).get("captureTimeoutMs") == 0:
+                    # Runtime validates the plugin's cancellable-wait declaration.
+                    # EOF and cancellation still retire this non-retrying call.
+                    deadline = float("inf")
+                sendBytes(self.connection, raw, interrupted, time.monotonic() + IPC_TIMEOUT)
+                phase = "receive"
+                reply = json.loads(receiveBytes(self.connection, MAX_BYTES, interrupted, deadline))
+            except (OSError, EOFError, ValueError) as error:
+                self.close()
+                if kind == 'framework_operation' and self.cancellation.is_set() and isinstance(error, (OSError, EOFError)):
+                    # A Windows pipe can report closure before invoking the
+                    # cancellation probe. This stops the workflow, never replays
+                    # the request or claims that an admission did not happen.
+                    stopped = CancellationRequested("framework transport closed during cancellation; no replay")
+                    stopped.outcome = "UNKNOWN"
+                    stopped.diagnostics = dict(action=action, transportError=type(error).__name__)
+                    raise stopped from error
+                raise DeviceError("E_DEVICE_OUTCOME_UNKNOWN", "device transport interrupted; do not retry",
+                                  outcome="UNKNOWN", diagnostics=dict(requestId=request['requestId'],
+                                      deviceId=fields.get('deviceId', ''), cycleId=fields.get('cycleId', ''),
+                                      action=action, phase=phase, transportError=type(error).__name__)) from error
+            if not reply["ok"]:
+>               raise DeviceError(reply["code"], reply["message"], outcome=reply["outcome"], diagnostics=reply.get("diagnostics", {}))
+E               emo_master.core.contracts.device_driver.DeviceError: cycle release failed
+
+src/emo_master/apps/runtime/devices/ipc.py:202: DeviceError
+______ testExpectedCleanupFailureCannotReplacePrimaryException[primary1] _______
+
+primary = KeyboardInterrupt('body interrupted')
+
+    @pytest.mark.parametrize("primary", [ValueError("body failed"), KeyboardInterrupt("body interrupted")])
+    def testExpectedCleanupFailureCannotReplacePrimaryException(primary):
+        with _proxyChannel(lambda request: _cycle(request) if request["action"] == "beginCycle"
+                           else _cleanupFailure()) as (proxy, cancellation, _requests):
+            with pytest.raises(type(primary)) as failure:
+                with _session(proxy, cancellation).scope(RunContext.root("job", "main")):
+>                   raise primary
+E                   KeyboardInterrupt: body interrupted
+
+tests/runtime/test_cycle_plan_scope_cleanup.py:162: KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+primary = KeyboardInterrupt('body interrupted')
+
+    @pytest.mark.parametrize("primary", [ValueError("body failed"), KeyboardInterrupt("body interrupted")])
+    def testExpectedCleanupFailureCannotReplacePrimaryException(primary):
+        with _proxyChannel(lambda request: _cycle(request) if request["action"] == "beginCycle"
+                           else _cleanupFailure()) as (proxy, cancellation, _requests):
+            with pytest.raises(type(primary)) as failure:
+>               with _session(proxy, cancellation).scope(RunContext.root("job", "main")):
+
+tests/runtime/test_cycle_plan_scope_cleanup.py:161: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.local/share/uv/python/cpython-3.10-linux-x86_64-gnu/lib/python3.10/contextlib.py:153: in __exit__
+    self.gen.throw(typ, value, traceback)
+src/emo_master/apps/runtime/project_config/cycle_plan.py:39: in scope
+    self.devices.framework("endCycle", cycleId=cycle["cycleId"])
+src/emo_master/apps/runtime/devices/ipc.py:130: in framework
+    return self._call('framework_operation', action, **fields)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <emo_master.apps.runtime.devices.ipc.DeviceProxy object at 0x7fbc6fcfa830>
+kind = 'framework_operation', action = 'endCycle'
+fields = {'cycleId': 'cycle-1'}
+
+    def _call(self, kind, action, **fields):
+        stopDeadline = None
+    
+        def cancelled():
+            return self.closed or self.cancellation.is_set()
+    
+        def interrupted():
+            nonlocal stopDeadline
+            # pipe_io normally combines cancellation and timeout into OSError.
+            # Keep an observed framework stop distinct from a broken transport,
+            # including cancellation after the admission check but before I/O.
+            # Device actions still retain their possibly unknown native outcome.
+            if kind == 'framework_operation':
+                if self.cancellation.is_set():
+                    raise CancellationRequested("execution cancelled")
+                return self.closed
+            if self.closed:
+                return True
+            if self.cancellation.is_set():
+                if stopDeadline is None:
+                    # Bound even an unlimited capture after Stop, while allowing
+                    # the driver receipt and its IPC delivery to finish once.
+                    stopDeadline = time.monotonic() + CANCEL_RECEIPT_TIMEOUT + IPC_TIMEOUT
+                return time.monotonic() >= stopDeadline
+            return False
+        while not self.lock.acquire(timeout=.02):
+            if cancelled():
+                raise DeviceError("E_DEVICE_CANCELLED", "device proxy cancelled")
+        try:
+            if cancelled():
+                raise DeviceError("E_DEVICE_CANCELLED", "device proxy cancelled")
+            self.sequence += 1
+            request = dict(sequence=self.sequence, kind=kind, action=action, requestId=uuid4().hex, **fields)
+            raw = json.dumps(request).encode()
+            if len(raw) > MAX_BYTES:
+                raise DeviceError("E_DEVICE_IPC_SIZE", "device request exceeds IPC budget")
+            try:
+                phase = "send"
+                deadline = time.monotonic() + 1202
+                if kind == 'device_action' and action == "capture" and fields.get("params", {}).get("captureTimeoutMs") == 0:
+                    # Runtime validates the plugin's cancellable-wait declaration.
+                    # EOF and cancellation still retire this non-retrying call.
+                    deadline = float("inf")
+                sendBytes(self.connection, raw, interrupted, time.monotonic() + IPC_TIMEOUT)
+                phase = "receive"
+                reply = json.loads(receiveBytes(self.connection, MAX_BYTES, interrupted, deadline))
+            except (OSError, EOFError, ValueError) as error:
+                self.close()
+                if kind == 'framework_operation' and self.cancellation.is_set() and isinstance(error, (OSError, EOFError)):
+                    # A Windows pipe can report closure before invoking the
+                    # cancellation probe. This stops the workflow, never replays
+                    # the request or claims that an admission did not happen.
+                    stopped = CancellationRequested("framework transport closed during cancellation; no replay")
+                    stopped.outcome = "UNKNOWN"
+                    stopped.diagnostics = dict(action=action, transportError=type(error).__name__)
+                    raise stopped from error
+                raise DeviceError("E_DEVICE_OUTCOME_UNKNOWN", "device transport interrupted; do not retry",
+                                  outcome="UNKNOWN", diagnostics=dict(requestId=request['requestId'],
+                                      deviceId=fields.get('deviceId', ''), cycleId=fields.get('cycleId', ''),
+                                      action=action, phase=phase, transportError=type(error).__name__)) from error
+            if not reply["ok"]:
+>               raise DeviceError(reply["code"], reply["message"], outcome=reply["outcome"], diagnostics=reply.get("diagnostics", {}))
+E               emo_master.core.contracts.device_driver.DeviceError: cycle release failed
+
+src/emo_master/apps/runtime/devices/ipc.py:202: DeviceError
+=========================== short test summary info ============================
+FAILED tests/runtime/test_supervisor_heartbeat_observation.py::testReadDelayDoesNotExpireAnInitiallyFreshSample
+FAILED tests/runtime/test_supervisor_heartbeat_observation.py::testAlreadyStaleSampleStillFailsAndKeepsObservationDiagnostics
+FAILED tests/runtime/test_supervisor_heartbeat_observation.py::testSpawnedHeartbeatSurvivesParentPauseAfterRead
+FAILED tests/runtime/test_cycle_plan_scope_cleanup.py::testFrameWriteEOFKeepsOriginalUnknownReceiptThroughNestedCleanup[1]
+FAILED tests/runtime/test_cycle_plan_scope_cleanup.py::testFrameWriteEOFKeepsOriginalUnknownReceiptThroughNestedCleanup[2]
+FAILED tests/runtime/test_cycle_plan_scope_cleanup.py::testDeviceFailureAndRequestIdentitySurviveCleanupErrorReceipt
+FAILED tests/runtime/test_cycle_plan_scope_cleanup.py::testExpectedCleanupFailureCannotReplacePrimaryException[primary0]
+FAILED tests/runtime/test_cycle_plan_scope_cleanup.py::testExpectedCleanupFailureCannotReplacePrimaryException[primary1]
+8 failed, 24 passed in 6.24s

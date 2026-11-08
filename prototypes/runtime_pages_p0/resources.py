@@ -86,7 +86,8 @@ class Assets:
 
     def _delete(self, asset_id):
         asset = self.entries[asset_id]
-        assert asset.readers == 0 and asset_id not in self.lease_tokens
+        with self.resources.lock:
+            assert asset.readers == 0 and asset_id not in self.lease_tokens
         asset.path.unlink(missing_ok=True)  # actual resource first, accounting second
         del self.entries[asset_id]
         for token in asset.tokens:
@@ -100,7 +101,9 @@ class Assets:
             if enough and (not count or len(self.entries) < BUDGET.history):
                 return
             entry = self.entries[asset_id]
-            if entry.readers or asset_id in self.lease_tokens or asset_id in self.latest.values():
+            with self.resources.lock:
+                reading = entry.readers > 0
+            if reading or asset_id in self.lease_tokens or asset_id in self.latest.values():
                 continue
             self._delete(asset_id)
 
@@ -173,8 +176,11 @@ class Assets:
             asset = self.entries.get(asset_id)
             if asset is None or asset.job != request["job"]:
                 raise KeyError("expired or wrong-job asset")
-            token = self.resources.reserve(asset.job, "memory", 3 * batchSize * ASSET_CHUNK_BYTES)
-            asset.readers += 1
+            # Admission/deletion holds Assets.lock, then the short resource
+            # ledger lock. Reader ownership and its buffer token move together.
+            with self.resources.lock:
+                token = self.resources.reserve(asset.job, "memory", 3 * batchSize * ASSET_CHUNK_BYTES)
+                asset.readers += 1
         deadline = time.monotonic() + BUDGET.read_seconds
         try:
             with asset.path.open("rb") as handle:
@@ -195,7 +201,9 @@ class Assets:
                     # final partial batch is suspended in the RPC transport.
                     yield chunks[0] if batchSize == 1 else tuple(chunks)
         finally:
-            with self.lock:
+            # EOF/cancellation must not wait for an unrelated adopt/unlink's
+            # filesystem I/O under Assets.lock. The file handle is closed here.
+            with self.resources.lock:
                 asset.readers -= 1
                 self.resources.release(token)
 

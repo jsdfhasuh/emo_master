@@ -19,6 +19,24 @@ const prepJs=ts.transpileModule(prepSource,{compilerOptions:{module:ts.ModuleKin
 const {prepareResult}=await import('data:text/javascript;base64,'+Buffer.from(prepJs).toString('base64'));
 test('wrong owner result clears image instead of mixing rounds',async()=>{const result={resultKey:'new',sources:{image:{state:'available',image:{url:'/api/assets/a',ownerResultKey:'old'}},score:{state:'available',value:100}}};const ready=await prepareResult(result,new AbortController().signal);assert.equal(ready.sources.image.state,'error');assert.equal(ready.sources.image.image,undefined);assert.equal(ready.sources.score.value,100);assert.equal(result.sources.image.state,'available')});
 test('failed image resolves entire scope with explicit current-round failure',async()=>{globalThis.Image=class{set src(v){if(v)setTimeout(()=>this.onerror?.(),0)}};const ready=await prepareResult({resultKey:'new',sources:{image:{state:'available',image:{url:'/api/assets/a',ownerResultKey:'new'}}}},new AbortController().signal);assert.equal(ready.sources.image.state,'error')});
+test('retired exact image is unavailable without substituting or retrying another result',async()=>{
+ for(const [code,reason] of [['RESULT_RETIRED',/已过期/],['SOURCE_UNAVAILABLE',/不可用/],['FROZEN_RESOURCE_EXPIRED',/冻结.*过期/]]){
+  let requests=0,decodes=0;
+  globalThis.fetch=async()=>{requests++;return{ok:false,status:404,json:async()=>({code,detail:'Exact asset unavailable'})}};
+  globalThis.Image=class{set src(v){if(v)decodes++}};
+  const ready=await prepareResult({resultKey:'old',sources:{image:{state:'available',image:{url:'/api/views/v/assets/image?scope=s&resultKey=old',ownerResultKey:'old'}},score:{state:'available',value:12}}},new AbortController().signal);
+  assert.equal(ready.sources.image.state,'unavailable');assert.match(ready.sources.image.reason,reason);
+  assert.equal(ready.sources.image.image,undefined);assert.equal(ready.resultKey,'old');assert.equal(ready.sources.score.value,12);
+  assert.equal(requests,1);assert.equal(decodes,0);
+ }
+});
+test('unclassified asset rejection and actual read failure remain errors',async()=>{
+ for(const [status,code] of [[404,'VIEW_NOT_FOUND'],[404,undefined],[500,'RESULT_RETIRED'],[503,'UNAVAILABLE']]){
+  globalThis.fetch=async()=>({ok:false,status,json:async()=>({code,detail:'Asset request failed'})});
+  const ready=await prepareResult({resultKey:'r',sources:{image:{state:'available',image:{url:'/api/views/v/assets/image?scope=s&resultKey=r'}}}},new AbortController().signal);
+  assert.equal(ready.sources.image.state,'error');assert.equal(ready.sources.image.image,undefined);
+ }
+});
 test('prepared image publishes fetched bytes once and releases its object URL',async()=>{
  let requests=0,decoded;
  globalThis.fetch=async()=>{requests++;return{ok:true,blob:async()=>new Blob(['bytes'],{type:'image/png'})}};

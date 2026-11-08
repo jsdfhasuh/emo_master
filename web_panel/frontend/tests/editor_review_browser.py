@@ -148,12 +148,12 @@ def identity_case(browser, origin, report, screenshot, change='project'):
         else:
             fixture.instance = 'runtime-2'
         page.get_by_role('button', name='刷新目录和任务', exact=True).click()
-        page.wait_for_function("name => document.querySelector('input[aria-label=\"页面名称\"]')?.value === name", arg=f'{fixture.project} 检测页')
+        page.wait_for_function("name => document.querySelector('input[aria-label=\"页面名称\"]')?.value === name", arg=f'{fixture.project} 检测页' if change == 'project' else 'A unsaved editing')
         report['newIdentityUndoEnabled'] = page.get_by_role('button', name='撤销', exact=True).is_enabled()
         report['newIdentityRedoEnabled'] = page.get_by_role('button', name='重做', exact=True).is_enabled()
         report['newIdentityRunSelection'] = page.get_by_label('实时预览任务').input_value()
         report['newIdentityLivePreviewEnabled'] = page.get_by_role('button', name='实时预览', exact=True).is_enabled()
-        if report['newIdentityUndoEnabled']:
+        if change == 'project' and report['newIdentityUndoEnabled']:
             page.get_by_role('button', name='撤销', exact=True).click()
         submitted = save(page, fixture)
         report['saveAfterIdentitySwitch'] = copy.deepcopy(submitted)
@@ -166,11 +166,11 @@ def identity_case(browser, origin, report, screenshot, change='project'):
         report['reopenedPageIds'] = reopened['pageOrder']
         page.screenshot(path=str(screenshot), full_page=True)
         assert submitted['projectId'] == fixture.project and submitted['presentation']['pageOrder'] == [f'page-{fixture.project}'], 'old source was saved under the new identity'
-        assert reopened['pages'][f'page-{fixture.project}']['name'] == f'{fixture.project} 检测页', 'reopened target contains old unsaved source'
-        assert not report['newIdentityUndoEnabled'] and not report['newIdentityRedoEnabled'], 'old history survived'
+        assert reopened['pages'][f'page-{fixture.project}']['name'] == (f'{fixture.project} 检测页' if change == 'project' else 'A unsaved editing'), 'project source was not preserved correctly'
+        assert report['newIdentityUndoEnabled'] == (change == 'instance') and report['newIdentityRedoEnabled'] == (change == 'instance'), 'history must follow the project, not the Runtime instance'
         assert report['newIdentityRunSelection'] == '', 'old task survived'
         assert not report['newIdentityLivePreviewEnabled'], 'old task remains usable for live preview'
-        assert len(report['componentIdsAfterPaste']) == 1, 'old clipboard survived'
+        assert len(report['componentIdsAfterPaste']) == (2 if change == 'instance' else 1), 'clipboard must follow the project, not the Runtime instance'
     finally:
         context.close()
 

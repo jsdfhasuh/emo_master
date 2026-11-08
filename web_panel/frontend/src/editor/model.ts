@@ -79,6 +79,8 @@ export function arrangeGrid(children:SourceComponent[],layout:Layout):void {
     if(layout.type!=='grid')return;
     const columns=Math.max(1,Math.min(24,layout.columns || 1)),bottoms=Array<number>(columns).fill(0);
     for(const c of children){
+        // A grid spacer occupies cells; elastic growth only applies to responsive parents.
+        if(c.type==='spacer' && c.props.spacerMode==='flex')c.props.spacerMode='fixed';
         const width=Math.max(1,Math.min(columns,c.layout.columnSpan || 1)),height=Math.max(1,Math.min(128,c.layout.rowSpan || 1));
         let row=Infinity,column=0;
         for(let start=0;start<=columns-width;start++){const top=Math.max(...bottoms.slice(start,start+width));if(top<row){row=top;column=start;}}

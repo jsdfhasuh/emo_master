@@ -105,6 +105,7 @@ class PresentationService:
             try:
                 if any(s["expectedType"] == "image" for s in json.loads(record.sourceJson)["sources"].values()) and self.exporter is None:
                     self.exporter = ExportPool(self.root / "staging", self._exported)
+                    self.exporter.retirementCallback = self._exportRetired
             except BaseException:
                 import shutil
                 shutil.rmtree(record.projectPath.parent)
@@ -226,6 +227,7 @@ class PresentationService:
         needsImage = any(source["expectedType"] == "image" for source in plan["sources"].values())
         if needsImage and self.exporter is None:
             self.exporter = ExportPool(self.root / "staging", self._exported)
+            self.exporter.retirementCallback = self._exportRetired
         config = {"plan": sourceJson, "preparedId": preparedId,
                   "captureDefinitionJson": captureDefinitionJson,
                   "limitsJson": limitsJson,
@@ -504,6 +506,24 @@ class PresentationService:
         except Exception as error:
             # Observability must never prevent result retirement/credit return.
             self.runtime.jobSupervisor.presentationErrors.append('presentation log: ' + repr(error))
+
+    def _exportRetired(self, diagnostic):
+        """Persist only failed startup/retirement, after the result callback.
+
+        This bounded record uses the existing event store and JSONL sink; it
+        does not mutate published result metadata or source recovery state.
+        """
+        jobId = diagnostic.get("jobId")
+        if not jobId:
+            return
+        job = self.runtime.jobRepository.get(jobId)
+        quarantined = diagnostic.get("ownerPhase") == "quarantined"
+        self.runtime.eventStore.append(jobId, "presentation.export.retirement_failed",
+            "图像导出退休失败；原始图像仍隔离" if quarantined else "图像编码器启动失败；读者已回收，后续图像可重试",
+            level="ERROR" if quarantined else "WARN", code="EXPORT_RETIREMENT_FAILED",
+            projectId=job.projectId if job else "", workflowId=job.workflowId if job else "",
+            workflowRunId=diagnostic.get("invocationId") or "",
+            payload=dict(diagnostic))
 
     def _retirePending(self, key, pending):
         if self.pending.get(key) is not pending:

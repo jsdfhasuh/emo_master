@@ -3,8 +3,10 @@
 The explicit address is never replaced by localhost or demonstration data. SDK
 imports are lazy so the explicit mock mode does not require a Runtime channel.
 """
+import asyncio
 import hashlib
 import json
+import time
 from datetime import datetime, timezone
 from typing import Protocol
 
@@ -82,8 +84,30 @@ class GrpcRuntimeClient:
             raise RuntimeRejected(getattr(reply, 'code', ''), reply.message)
         return reply
 
-    async def _info(self):
-        reply = self._ok(await self.runtime.GetRuntimeInfo(self.pb.RuntimeInfoRequest(), timeout=self.timeout))
+    async def _control_read(self, method, request, *, deadline):
+        # Only read-only callers use this helper. A "control" quota refusal is
+        # before execution; retry within the original budget, never reset it.
+        import grpc
+        delay = .01
+        while True:
+            try:
+                return await method(request, timeout=max(0, deadline - time.monotonic()))
+            except grpc.RpcError as error:
+                if error.code() != grpc.StatusCode.RESOURCE_EXHAUSTED or error.details() != 'control':
+                    raise
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise
+                await asyncio.sleep(min(delay, remaining))
+                if time.monotonic() >= deadline:
+                    raise
+                delay = min(.05, delay * 2)
+
+    async def _info(self, *, deadline=None):
+        if deadline is None:
+            deadline = time.monotonic() + self.timeout
+        reply = self._ok(await self._control_read(self.runtime.GetRuntimeInfo,
+            self.pb.RuntimeInfoRequest(), deadline=deadline))
         if self.preview_context is not None:
             self.preview_context.validateRuntimeInfo(reply)
         if not reply.runtime_instance_id:
@@ -168,10 +192,11 @@ class GrpcRuntimeClient:
         return [self._run(run) for run in reply.runs]
 
     async def run_state(self, run_id):
-        info = await self._info()
-        run = self._ok(await self.runtime.GetRunState(self.pb.GetRunStateRequest(
+        deadline = time.monotonic() + self.timeout
+        info = await self._info(deadline=deadline)
+        run = self._ok(await self._control_read(self.runtime.GetRunState, self.pb.GetRunStateRequest(
             runtime_instance_id=info.runtime_instance_id, project_id=info.project_id,
-            job_id=run_id), timeout=self.timeout)).run
+            job_id=run_id), deadline=deadline)).run
         if (run.runtime_instance_id, run.project_id, run.job_id) != (info.runtime_instance_id, info.project_id, run_id):
             raise RuntimeRejected('IDENTITY_MISMATCH', 'Run state does not match selected identity')
         return self._run(run)

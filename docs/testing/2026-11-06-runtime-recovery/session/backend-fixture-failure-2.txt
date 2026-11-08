@@ -1,0 +1,37 @@
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+_ LocalHTTPTests.test_shared_cookie_csrf_recovery_keeps_current_session_and_requires_explicit_save _
+
+self = <test_local_auth.LocalHTTPTests testMethod=test_shared_cookie_csrf_recovery_keeps_current_session_and_requires_explicit_save>
+
+    def test_shared_cookie_csrf_recovery_keeps_current_session_and_requires_explicit_save(self):
+        old_me, old_headers = self.login()
+        old_cookie = self.client.cookies.get(COOKIE)
+        base = '/api/editor/configured'
+        context = self.client.get(base + '/context').json()
+        presentation = deepcopy(context['draft']['presentation'])
+        presentation['pages'][presentation['defaultPageId']]['name'] = 'Cross-tab draft'
+        body = {'projectId': context['runtime']['projectId'], 'presentation': presentation,
+                'expectedDraftRevision': context['draft']['draftRevision']}
+        with self.app.state.auth.db() as db:
+            db.execute('UPDATE sessions SET expires=?', (time.time() - 1,))
+        # A second tab reenters; TestClient's real cookie jar now sends its fresh cookie
+        # while the first tab still supplies its original cached CSRF header.
+        current_me, _ = self.login()
+        current_cookie = self.client.cookies.get(COOKIE)
+        self.assertNotEqual(current_cookie, old_cookie)
+        self.assertNotEqual(current_me['csrf'], old_me['csrf'])
+        self.assertEqual(current_me['userId'], old_me['userId'])
+        for headers in (old_headers, {'Origin': ORIGIN}):
+            denied = self.client.put(base + '/draft', headers=headers, json=body)
+            self.assertEqual(denied.status_code, 403, denied.text)
+            self.assertEqual(denied.json(), {'detail': 'CSRF denied', 'code': 'CSRF_MISMATCH'})
+            self.assertNotIn('set-cookie', denied.headers)
+>           self.assertEqual(self.client.get(base + '/context').json()['draft'], context['draft'])
+E           AssertionError: {'pre[55 chars]page-dd7c2112cb76b326', 'pageOrder': ['page-dd[294 chars]: {}} != {'pre[55 chars]page-a5e5edb6d928e778', 'pageOrder': ['page-a5[294 chars]: {}}
+E           Diff is 1367 characters long. Set self.maxDiff to None to see it.
+
+web_panel/tests/test_local_auth.py:206: AssertionError
+=========================== short test summary info ============================
+FAILED web_panel/tests/test_local_auth.py::LocalHTTPTests::test_shared_cookie_csrf_recovery_keeps_current_session_and_requires_explicit_save
+1 failed, 1 passed, 17 deselected in 0.53s

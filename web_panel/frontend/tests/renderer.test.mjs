@@ -6,6 +6,7 @@ import ts from 'typescript';
 const require=createRequire(import.meta.url);
 for(const extension of ['.ts','.tsx'])require.extensions[extension]=(module,path)=>module._compile(ts.transpileModule(readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText,path);
 const React=require('react');const {renderToStaticMarkup}=require('react-dom/server');
+const {JSDOM}=require('jsdom');
 const {PanelRenderer}=require('../src/renderer/PanelRenderer.tsx');
 const render=(components,extra={})=>renderToStaticMarkup(React.createElement(PanelRenderer,{panel:{id:'p',pages:[{id:'page',title:'Page',components}]},pageId:'page',onPage(){},onAction(){},state:'ready',...extra}));
 test('binding uses the validated scopeId and nested style whitelist',()=>{
@@ -187,6 +188,44 @@ test('Resume removes pinned result whose live ordinal expired even without a new
  assert.equal(isScopeResultExpired({...pinned,resultKey:'new',resultOrdinal:'11'},status,undefined),false);
 });
 
+
+test('responsive preferred heights are lower bounds for images, text and containers',()=>{
+ globalThis.location={origin:'http://panel.example'};
+ const components=[
+  {id:'detection',type:'image',label:'Detection',binding:{sourceId:'image',scopeId:'scope'},responsive:{minHeight:240,preferredHeight:260}},
+  {id:'static',type:'image',label:'Static',props:{assetUrl:'/api/assets/p/static.png'},responsive:{minHeight:100,preferredHeight:100}},
+  {id:'text',type:'text',props:{text:'Natural text may wrap beyond its preferred height.'},responsive:{minHeight:64,preferredHeight:96}},
+  {id:'group',type:'container',label:'Group',responsive:{minHeight:64,preferredHeight:180},grid:{type:'responsive',direction:'vertical'},children:[{id:'child',type:'text',props:{text:'Child content'}}]},
+ ];
+ const panel={id:'p',pages:[{id:'page',title:'Page',layout:{type:'responsive',direction:'wrap'},components}]};
+ const results={scope:{resultKey:'r',sources:{image:{state:'available',image:{url:'/api/assets/p/detection.png'}}}}};
+ const dom=new JSDOM(render(components,{panel,results}));
+ try {
+  for(const [id,minimum] of [['detection',260],['static',100],['text',96],['group',180]]){
+   const card=dom.window.document.querySelector(`[data-component-id="${id}"]`);
+   assert.equal(card.style.minHeight,`${minimum}px`,id);
+   assert.equal(card.style.height,'',`${id} must allow natural content to grow`);
+  }
+  assert.equal(dom.window.document.querySelectorAll('img.result-image').length,2);
+  assert.match(dom.window.document.querySelector('[data-component-id="group"]').textContent,/Child content/);
+ } finally {dom.window.close();}
+});
+test('responsive automatic height preserves explicit and omitted minimums',()=>{
+ const {responsiveStyle}=require('../src/renderer/PanelRenderer.tsx');
+ const parent={type:'responsive',direction:'vertical'};
+ for(const [responsive,minimum] of [
+  [{minHeight:240,preferredHeight:0},240],
+  [{minHeight:120,preferredHeight:80},120],
+  [{minHeight:0,preferredHeight:0},0],
+  [{preferredHeight:0},undefined],
+  [undefined,undefined],
+ ]){
+  const style=responsiveStyle({id:'content',type:'text',responsive},parent);
+  assert.equal(style.minHeight,minimum);
+  assert.equal(style.height,undefined);
+ }
+ assert.deepEqual(responsiveStyle({id:'legacy',type:'image',responsive:{preferredHeight:100}},{type:'grid',columns:2}),{});
+});
 
 test('spacers are transparent occupancy without card chrome or business fallback',()=>{
  const html=render([{id:'gap',type:'spacer',label:'SHOULD NOT SHOW',props:{title:'HIDDEN TITLE',spacerMode:'fixed',cardStyle:'soft',style:{backgroundColor:'red'}}}]);

@@ -1,0 +1,154 @@
+{
+  "base_sha": "cdf1250ccc41b78f79b25b87e6db197809875384",
+  "date": "2026-11-06",
+  "status": "passed_focused_and_related_regressions",
+  "node": "24.22.1",
+  "python": "3.10.22",
+  "source_files": [
+    {
+      "path": "web_panel/backend/emo_web_panel/app.py",
+      "sha256": "96e82f9149902f14c4a429e2839e23a8644b2593175c9815545ca5243d7e22c2"
+    },
+    {
+      "path": "web_panel/frontend/src/data/api.ts",
+      "sha256": "88f231e40d55b22cce8346dcac42fa3fa198a63a551195a9aeecbc42e9e6e219"
+    },
+    {
+      "path": "web_panel/frontend/src/main.tsx",
+      "sha256": "140d3120adda8804b4e51729880d32a60f7f5577b8cb6528e3cdd92352cfb90a"
+    },
+    {
+      "path": "web_panel/frontend/tests/editor_draft_recovery.test.mjs",
+      "sha256": "fd59f4dcae7f4e276f61e78160636aed39855bf9905c85a508ddcd7fdcb03a53"
+    },
+    {
+      "path": "web_panel/frontend/tests/ux-recovery.test.mjs",
+      "sha256": "6be1f8d41874abf9eb31d43d059e783bc4afc719f2bb5d7580866e429067dde7"
+    },
+    {
+      "path": "web_panel/tests/test_local_auth.py",
+      "sha256": "063017790e88216d86d2754085918d6992eafb549069adb908927eb7a5af7fa4"
+    }
+  ],
+  "results": {
+    "frontend_focused": {
+      "passed": 10,
+      "failed": 0
+    },
+    "api_focused": {
+      "passed": 1,
+      "failed": 0
+    },
+    "backend_focused": {
+      "passed": 2,
+      "failed": 0
+    },
+    "frontend_suite": {
+      "passed": 153,
+      "failed": 0
+    },
+    "backend_related_suite": {
+      "passed": 72,
+      "subtests_passed": 134,
+      "failed": 0
+    },
+    "typescript_vite_build": "passed"
+  },
+  "coverage": [
+    "actual App and Editor in jsdom",
+    "second isolated VM loads actual api.ts and shares synthetic cookie jar",
+    "real FastAPI HTTP boundary with AuthStore tokens and TestClient cookie jar",
+    "in-memory and sessionStorage draft preservation",
+    "returned user/project/target identity isolation",
+    "no automatic mutation replay or publication",
+    "no shared cookie logout",
+    "explicit Save after local reentry",
+    "plain permission/Origin403 preserved",
+    "late403 generation guard"
+  ],
+  "not_run": [
+    "long Runtime/browser replay",
+    "manual browser acceptance",
+    "real hardware"
+  ],
+  "receipts": [
+    {
+      "file": "api-red.txt",
+      "status": "expected_failure",
+      "bytes": 918,
+      "sha256": "756d5aea489dcc172d72f4bf005a2527ef4d5deb587fd489b156e88682ae7ce7"
+    },
+    {
+      "file": "frontend-red.txt",
+      "status": "expected_failure",
+      "bytes": 7038,
+      "sha256": "6837d88104b33a2af98220ebbdad53c488bdc7eb0da60fcdb98918531df5f4d3"
+    },
+    {
+      "file": "backend-environment-failure.txt",
+      "status": "collection_failure_missing_fastapi",
+      "bytes": 925,
+      "sha256": "77683e562f5b94232a2b15ceba1619715ee7858f477ba3478e08c977deca62d6"
+    },
+    {
+      "file": "backend-behavior-red.txt",
+      "status": "expected_failure",
+      "bytes": 2431,
+      "sha256": "834d11ea3c7bfb559a881bb11950d40aae1e24766a3f4ec5a7a69a5c31e77b0e"
+    },
+    {
+      "file": "backend-fixture-failure-1.txt",
+      "status": "fixture_failure_unsaved_random_page_ids",
+      "bytes": 2627,
+      "sha256": "58ad5c7f632bde5155352ecd2f8cb10612dd6715880055005572f048e35ed7d3"
+    },
+    {
+      "file": "backend-fixture-failure-2.txt",
+      "status": "fixture_failure_unsaved_random_page_ids",
+      "bytes": 2627,
+      "sha256": "2077b2cde84cf0441c2c2dd5fb52aa15c712a461a4f28bc49eddeceee89121df"
+    },
+    {
+      "file": "api-green.txt",
+      "status": "passed",
+      "bytes": 213,
+      "sha256": "250caac5590dfd906dc64a4f8a60cb465ed0b61af8dd89a845cf3e4d5ab35b1f"
+    },
+    {
+      "file": "frontend-focused-green.txt",
+      "status": "passed",
+      "bytes": 1123,
+      "sha256": "e4d9ed2a1470c79dc6e5318dfe8a655db467605d84e324e2291216a2bf96b1e1"
+    },
+    {
+      "file": "backend-focused-green.txt",
+      "status": "passed",
+      "bytes": 113,
+      "sha256": "4a270a6db08cacb5b01cc93063468500dab6cf9da58d4951a82f0fbcadaa2287"
+    },
+    {
+      "file": "frontend-suite-green.txt",
+      "status": "passed",
+      "bytes": 15270,
+      "sha256": "4428e7b06dc27407538b0eb01643027d989b20a55e822e127b10ad1dcfdd432a"
+    },
+    {
+      "file": "backend-suite-green.txt",
+      "status": "passed",
+      "bytes": 139,
+      "sha256": "177913ee6e4b87b43865093cd43579ecacfdfe225580635c11efca42eb779d1b"
+    },
+    {
+      "file": "frontend-build.txt",
+      "status": "passed",
+      "bytes": 832,
+      "sha256": "23c2ee7c7f18e2281d8b3ceda2c9337f1b9deb1cf74ded149ef35f62edce35d7"
+    },
+    {
+      "file": "web-dependencies.txt",
+      "status": "environment_restored",
+      "bytes": 867,
+      "sha256": "27b323d4202d07cb2dac4650b50fcb5f7cafa97b7e9f1c8ebc949a9893598540"
+    }
+  ]
+}

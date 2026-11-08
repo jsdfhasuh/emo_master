@@ -65,6 +65,7 @@ class ExportPool:
         self.root = root
         root.mkdir(parents=True, exist_ok=True)
         self.callback = callback
+        self.retirementCallback = None
         self.worker = worker
         self.context = multiprocessing.get_context("spawn")
         self.stop = threading.Event()
@@ -106,11 +107,29 @@ class ExportPool:
         parent, child = self.context.Pipe()
         process = self.context.Process(target=self.worker, args=(child, slot["memory"].name), name="display-png-export")
         slot.update(process=process, connection=parent)
-        process.start()
-        child.close()
-        if not parent.poll(10) or parent.recv() != "ready":
+        diagnostic = slot.get("currentDiagnostic")
+        if diagnostic is not None:
+            diagnostic.update(startupStartedNs=time.monotonic_ns(), startupPhase=diagnostic["ownerPhase"])
+        try:
+            process.start()
+            if diagnostic is not None:
+                diagnostic["startupPid"] = process.pid
+            child.close()
+            if not parent.poll(10) or parent.recv() != "ready":
+                raise RuntimeError("exporter startup failed")
+            if diagnostic is not None:
+                diagnostic["startupReadyNs"] = time.monotonic_ns()
+        except BaseException as error:
+            if diagnostic is not None:
+                diagnostic.update(startupErrorType=type(error).__name__, startupDetail=str(error)[:240])
+            # A failed ready handshake (including EOF) does not establish
+            # death. Only successful _reap clears the canonical reader owner.
             self._reap(slot)
-            raise RuntimeError("exporter startup failed")
+            if diagnostic is not None:
+                diagnostic["startupReapedNs"] = time.monotonic_ns()
+            raise
+        finally:
+            child.close()
 
     def descriptors(self):
         return [self._descriptor(slot, 0) for slot in self.slots]
@@ -227,6 +246,7 @@ class ExportPool:
             path = self.root / f"slot-{slot['index']}-lane-{task['lane']}.png"
             outcome = "EXPORT_FAILED"
             reusable = not slot["quarantined"].value
+            readerWasReady = slot["process"] is not None
             stage = "queue_wait"
             diagnostic = {"path": "local-presentation-export", "clock": "host_monotonic",
                 "taskId": task.get("taskId"), "resultKey": task.get("key"), "jobId": task.get("jobId"),
@@ -242,6 +262,13 @@ class ExportPool:
             try:
                 if not reusable:
                     raise RuntimeError("image slab quarantined")
+                if slot["process"] is None and time.monotonic() < task["deadline"]:
+                    # A proved-dead failed replacement leaves this slot idle.
+                    # The next live descriptor makes one local startup attempt;
+                    # expired queued descriptors only retire their own credit.
+                    stage = "startup_wait"
+                    diagnostic["stage"] = stage
+                    self._spawn(slot)
                 if time.monotonic() >= task["deadline"]:
                     # Waiting behind another lane consumes the same deadline.
                     outcome = "EXPORT_TIMEOUT"
@@ -343,9 +370,22 @@ class ExportPool:
                 try:
                     if reusable:
                         path.unlink(missing_ok=True)
-                        if slot["process"] is None and not self.stop.is_set():
+                        if readerWasReady and slot["process"] is None and not self.stop.is_set():
                             diagnostic["ownerPhase"] = "restart"
-                            self._spawn(slot)
+                            try:
+                                self._spawn(slot)
+                            except Exception as error:
+                                diagnostic["retirementErrorType"] = type(error).__name__
+                                diagnostic["retirementDetail"] = str(error)[:240]
+                                if slot["process"] is not None:
+                                    # Startup cleanup did not prove reader death.
+                                    # Preserve the quarantine boundary in that case.
+                                    raise
+                                self.errors.append(repr(error))
+                                self.errors[:] = self.errors[-32:]
+                                # _spawn reaped the failed replacement. The old
+                                # task is retired; each queued successor keeps
+                                # its own reservation until _run handles it.
                         with slot["lock"]:
                             if not diagnostic["laneReleased"]:
                                 self._releaseLane(slot, task, diagnostic)
@@ -356,6 +396,7 @@ class ExportPool:
                 except Exception as error:
                     self._quarantine(slot)
                     diagnostic["retirementErrorType"] = type(error).__name__
+                    diagnostic["retirementDetail"] = str(error)[:240]
                     self.errors.append(repr(error))
                     self.errors[:] = self.errors[-32:]
                 diagnostic["retirementEndedNs"] = time.monotonic_ns()
@@ -363,6 +404,16 @@ class ExportPool:
                 self.diagnostics.append(diagnostic)
                 with slot["lock"]:
                     slot["currentDiagnostic"] = None
+                if "startupErrorType" in diagnostic or "retirementErrorType" in diagnostic:
+                    callback = getattr(self, "retirementCallback", None)
+                    if callback is not None:
+                        try:
+                            callback(dict(diagnostic))
+                        except Exception as error:
+                            # A bounded diagnostic sink must never retain raw
+                            # ownership or change an already-published result.
+                            self.errors.append("retirement diagnostic: " + type(error).__name__)
+                            self.errors[:] = self.errors[-32:]
 
     def ownershipSnapshot(self, jobId):
         """Bounded, read-only, nonblocking metadata; never probe a raw credit.

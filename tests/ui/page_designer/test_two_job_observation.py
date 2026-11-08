@@ -18,6 +18,7 @@ from emo_master.core.presentation.models import Action
 from examples.runtime_pages_p2 import sampleProject
 from test_preview import waitFor
 from tests.runtime.runtime_test_utils import jobFailureDetails
+from tests.ui.page_designer.observation_diagnostics import ObservationEvidence, printObservationFailure
 from tests.ui.page_designer.test_normal_run_viewing import displayedImagesReady
 
 
@@ -36,16 +37,28 @@ def testTwoCompletedNormalJobsChooseCurrentObserveFreezeResumeAndRetire(qtApp, t
     jobs, choices, sessions = [], [], []
     lifecycleCalls = {'StartJob': 0, 'StopJob': 0}
     stage = 'setup'
+    outcome = 'failed'
+    failedAt = None
+    evidence = ObservationEvidence('build/two-job-observation.json', platform=qtApp.platformName(), jobs=jobs)
+    evidence.install(monkeypatch)
 
     def mark(value):
         nonlocal stage
         stage = value
+        evidence.stage = value
         print('TWO_JOB_OBSERVATION ' + value, flush=True)
 
     def wait(value, predicate):
         mark(value)
         # Retain the existing normal-run fixture's 25-second condition deadline.
-        waitFor(predicate)
+        def observed():
+            evidence.observeFirstError(preview)
+            return predicate()
+        try:
+            waitFor(observed)
+        finally:
+            if value.endswith('_image'):
+                evidence.capture(value, preview)
 
     originalStart, originalStop = runtime.StartJob, runtime.StopJob
 
@@ -162,18 +175,31 @@ def testTwoCompletedNormalJobsChooseCurrentObserveFreezeResumeAndRetire(qtApp, t
         assert all(not thread.is_alive() for session in sessions for thread in session.threads)
         assert lifecycleCalls == {'StartJob': 2, 'StopJob': 0}
         mark('designer_closed')
+        outcome = 'passed'
     except BaseException:
+        failedAt = stage
         print('TWO_JOB_OBSERVATION FAILED_AT ' + stage, flush=True)
+        try:
+            printObservationFailure(preview, runtime, jobs, stage)
+        except Exception as diagnosticError:
+            print('TWO_JOB_OBSERVATION DIAGNOSTIC_ERROR ' + repr(diagnosticError), flush=True)
         faulthandler.dump_traceback(all_threads=True)
         raise
     finally:
         mark('cleanup')
         try:
-            if preview.active():
-                preview.closeAsync()
-                waitFor(lambda: not preview.active() or preview.error is not None)
-                assert preview.error is None
-            window.close()
+            try:
+                if preview.active():
+                    preview.closeAsync()
+                    waitFor(lambda: not preview.active() or preview.error is not None)
+                    assert preview.error is None
+                window.close()
+            finally:
+                runtime.close()
+            mark('all_owners_closed')
+        except BaseException:
+            outcome = 'failed'
+            failedAt = failedAt or stage
+            raise
         finally:
-            runtime.close()
-        mark('all_owners_closed')
+            evidence.finish(outcome, stage, failedAt=failedAt)

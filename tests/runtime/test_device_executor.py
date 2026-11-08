@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from threading import Event
 
 import numpy as np
@@ -56,6 +57,73 @@ def testTimeoutDoesNotReleaseNativeOwnerAndCloseIsRetryable():
             following.future.result()
         assert cancelled.value.code == "E_DEVICE_CANCELLED"
         release.set()
+    finally:
+        release.set()
+        executor.close()
+
+
+@pytest.mark.parametrize("outcome", ["cancelled", "completed", "driver_timeout"])
+def testCancellationReceiptWaitPreservesDriverOutcome(outcome):
+    executor = DeviceExecutor("receipt")
+    entered, cancellationObserved, release = Event(), Event(), Event()
+    result = dict(applied=True)
+    failure = (DeviceError("E_DEVICE_CANCELLED", "driver confirmed cancellation", outcome="CANCELLED")
+               if outcome == "cancelled" else FutureTimeoutError("driver timed out"))
+
+    def native(cancelled, _deadline, _generation):
+        entered.set()
+        while not cancelled():
+            if release.wait(.001):
+                return result
+        cancellationObserved.set()
+        assert release.wait(2)
+        if outcome != "completed":
+            raise failure
+        return result
+
+    try:
+        operation = executor.submit("job", native)
+        assert entered.wait(1)
+        with ThreadPoolExecutor(1) as callers:
+            receipt = callers.submit(executor.wait, operation, lambda: True, cancelReceiptTimeout=.5)
+            assert cancellationObserved.wait(1)
+            assert not receipt.done()
+            release.set()
+            if outcome == "completed":
+                assert receipt.result(1) is result
+                assert operation.state == "COMPLETED"
+            else:
+                with pytest.raises(type(failure)) as caught:
+                    receipt.result(1)
+                assert caught.value is failure
+    finally:
+        release.set()
+        executor.close()
+
+
+@pytest.mark.parametrize("cancelReceiptTimeout", [None, .02])
+def testCancellationReceiptDeadlineDoesNotReleaseNativeOwner(cancelReceiptTimeout):
+    executor = DeviceExecutor("cancel-receipt-deadline")
+    entered, release, nextEntered = Event(), Event(), Event()
+
+    def native(*_args):
+        entered.set()
+        assert release.wait(2)
+
+    try:
+        active = executor.submit("job", native)
+        assert entered.wait(1)
+        following = executor.submit("other", lambda *_: nextEntered.set())
+        options = {} if cancelReceiptTimeout is None else dict(cancelReceiptTimeout=cancelReceiptTimeout)
+        with pytest.raises(DeviceError) as caught:
+            executor.wait(active, cancelled=lambda: True, **options)
+        assert caught.value.code == "E_DEVICE_CANCELLED" and caught.value.outcome == "UNKNOWN"
+        assert active.cancellation.is_set() and not active.future.done()
+        assert executor.active is active and not nextEntered.is_set()
+        release.set()
+        active.future.result(1)
+        following.future.result(1)
+        assert nextEntered.is_set()
     finally:
         release.set()
         executor.close()

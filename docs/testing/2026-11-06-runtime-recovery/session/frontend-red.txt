@@ -1,0 +1,125 @@
+✖ cross-tab CSRF recovery preserves stored draft after 保存草稿 without replay or shared-cookie logout (1897.239955ms)
+✖ cross-tab CSRF recovery preserves stored draft after 发布页面 without replay or shared-cookie logout (1599.768439ms)
+✖ cross-tab CSRF recovery preserves page-memory draft after 保存草稿 without replay or shared-cookie logout (1343.854482ms)
+✖ cross-tab CSRF recovery preserves page-memory draft after 发布页面 without replay or shared-cookie logout (1371.556064ms)
+✖ cross-tab reentry restores only the actual returned user identity (1301.908279ms)
+✖ cross-tab reentry restores only the actual returned project identity (1318.688382ms)
+✖ cross-tab reentry restores only the actual returned target identity (1314.629249ms)
+✔ ordinary 403 (Permission denied) does not enter session recovery (269.570533ms)
+✔ ordinary 403 (Origin denied) does not enter session recovery (261.504819ms)
+✔ ordinary 403 (CSRF denied) does not enter session recovery (274.841931ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 3
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12062.237345
+
+✖ failing tests:
+
+test at web_panel/frontend/tests/editor_draft_recovery.test.mjs:280:2
+✖ cross-tab CSRF recovery preserves stored draft after 保存草稿 without replay or shared-cookie logout (1897.239955ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/frontend/tests/editor_draft_recovery.test.mjs:34:142)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/frontend/tests/editor_draft_recovery.test.mjs:289:34)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at web_panel/frontend/tests/editor_draft_recovery.test.mjs:280:2
+✖ cross-tab CSRF recovery preserves stored draft after 发布页面 without replay or shared-cookie logout (1599.768439ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/frontend/tests/editor_draft_recovery.test.mjs:34:142)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/frontend/tests/editor_draft_recovery.test.mjs:289:34)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at web_panel/frontend/tests/editor_draft_recovery.test.mjs:280:2
+✖ cross-tab CSRF recovery preserves page-memory draft after 保存草稿 without replay or shared-cookie logout (1343.854482ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/frontend/tests/editor_draft_recovery.test.mjs:34:142)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/frontend/tests/editor_draft_recovery.test.mjs:289:34)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at web_panel/frontend/tests/editor_draft_recovery.test.mjs:280:2
+✖ cross-tab CSRF recovery preserves page-memory draft after 发布页面 without replay or shared-cookie logout (1371.556064ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/frontend/tests/editor_draft_recovery.test.mjs:34:142)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/frontend/tests/editor_draft_recovery.test.mjs:289:34)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at web_panel/frontend/tests/editor_draft_recovery.test.mjs:310:2
+✖ cross-tab reentry restores only the actual returned user identity (1301.908279ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/frontend/tests/editor_draft_recovery.test.mjs:34:142)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/frontend/tests/editor_draft_recovery.test.mjs:315:24)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at web_panel/frontend/tests/editor_draft_recovery.test.mjs:310:2
+✖ cross-tab reentry restores only the actual returned project identity (1318.688382ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/frontend/tests/editor_draft_recovery.test.mjs:34:142)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/frontend/tests/editor_draft_recovery.test.mjs:315:24)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at web_panel/frontend/tests/editor_draft_recovery.test.mjs:310:2
+✖ cross-tab reentry restores only the actual returned target identity (1314.629249ms)
+  AssertionError [ERR_ASSERTION]: UI condition timed out
+      at waitFor (file:///workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/frontend/tests/editor_draft_recovery.test.mjs:34:142)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/review-f308/repo-repair/web_panel/frontend/tests/editor_draft_recovery.test.mjs:315:24)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

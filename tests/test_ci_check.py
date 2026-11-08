@@ -69,7 +69,9 @@ def testNativeWindowsCiProvidesDesktopWithoutReducingTestSelection():
     assert steps["Run project checks"]["run"] == "python scripts/ci_check.py"
     upload = steps["Upload test results"]
     assert upload["if"] == "always()"
-    assert upload["with"]["path"].splitlines() == ["build/ci-results.xml", "build/ci-failures.log"]
+    assert upload["with"]["path"].splitlines() == [
+        "build/ci-results.xml", "build/ci-failures.log", "build/two-job-observation.json"
+    ]
 
 
 def testReleaseUsesNativeWindowsDesktopAndPreservesFullSourceGate():

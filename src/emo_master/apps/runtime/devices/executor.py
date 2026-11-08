@@ -1,7 +1,8 @@
 """Bounded per-device FIFO with cancellation fenced by real driver exit."""
 from collections import deque
-from concurrent.futures import Future
+from concurrent.futures import Future, wait as waitFutures
 from dataclasses import dataclass, field
+from math import isfinite
 from threading import Condition, Event, Thread
 import time
 from typing import Callable
@@ -24,6 +25,8 @@ class Operation:
     state: str = "QUEUED"
     operationDeadline: float = 0.0
     cleanup: bool = False
+    submittedAt: float = field(default_factory=time.monotonic)
+    startedAt: float | None = None
 
 
 class DeviceExecutor:
@@ -99,7 +102,8 @@ class DeviceExecutor:
                     self._fail(operation, DeviceError("E_DEVICE_WAIT_TIMEOUT", "device queue wait expired"))
                     continue
                 operation.state = "EXECUTING"
-                operation.operationDeadline = time.monotonic() + operation.operationTimeout
+                operation.startedAt = time.monotonic()
+                operation.operationDeadline = operation.startedAt + operation.operationTimeout
                 self.active = operation
             deadline = operation.operationDeadline
             try:
@@ -119,18 +123,24 @@ class DeviceExecutor:
                     self.active = None
                     self.condition.notify_all()
 
-    def wait(self, operation, cancelled=lambda: False):
+    def wait(self, operation, cancelled=lambda: False, *, cancelReceiptTimeout=0.0):
         # Caller abandonment does not release the device thread or native resources.
         while not operation.future.done():
             if cancelled():
                 self.cancel(operation)
+                if cancelReceiptTimeout > 0:
+                    # The caller may keep its receipt channel open briefly;
+                    # only this operation's real future can settle its outcome.
+                    waitFutures((operation.future,), timeout=cancelReceiptTimeout)
                 if operation.future.done():
                     return operation.future.result()
-                raise DeviceError("E_DEVICE_CANCELLED", "operation cancellation requested; awaiting driver exit",
-                                  outcome="UNKNOWN")
+                raise DeviceError("E_DEVICE_CANCELLED", "operation cancellation requested; awaiting operation retirement",
+                                  outcome="UNKNOWN", diagnostics=self._waitDiagnostics(operation))
             with self.condition:
                 queuedExpired = operation.state == "QUEUED" and time.monotonic() >= operation.waitDeadline
                 activeExpired = operation.state == "EXECUTING" and time.monotonic() >= operation.operationDeadline
+                if activeExpired:
+                    waitDiagnostics = self._waitDiagnostics(operation)
                 if queuedExpired:
                     self.queue.remove(operation)
                     self._fail(operation, DeviceError("E_DEVICE_WAIT_TIMEOUT", "device queue wait expired"))
@@ -140,10 +150,23 @@ class DeviceExecutor:
                 self.cancel(operation)
                 if operation.future.done():
                     return operation.future.result()
-                raise DeviceError("E_DEVICE_OPERATION_TIMEOUT", "operation deadline expired; driver still owns device",
-                                  outcome="UNKNOWN")
+                raise DeviceError("E_DEVICE_OPERATION_TIMEOUT", "operation deadline expired; operation has not retired",
+                                  outcome="UNKNOWN", diagnostics=waitDiagnostics)
             operation.cancellation.wait(.01) if not operation.cancellation.is_set() else time.sleep(.01)
         return operation.future.result()
+
+    def _waitDiagnostics(self, operation):
+        # This is the caller's observation, not proof of a driver stall. The
+        # action also includes frame publication/observation and cleanup.
+        # Do not reacquire the executor lock just to log a failed wait: native
+        # completion callbacks may already be holding it while writing receipts.
+        return dict(deviceWait=dict(requestId=operation.requestId, state=operation.state,
+            submittedMonotonicMs=int(operation.submittedAt * 1000),
+            startedMonotonicMs=(int(operation.startedAt * 1000) if operation.startedAt is not None else None),
+            waitDeadlineMonotonicMs=int(operation.waitDeadline * 1000),
+            operationDeadlineMonotonicMs=(int(operation.operationDeadline * 1000)
+                if isfinite(operation.operationDeadline) else None),
+            observedMonotonicMs=int(time.monotonic() * 1000)))
 
     def close(self, timeout=2.0):
         with self.condition:

@@ -1,0 +1,23 @@
+test_declared_unavailable_source_does_not_attempt_a_runtime_asset_read (test_asset_lifecycle.AssetLifecycleTests) ... ERROR
+test_late_advertised_result_is_retired_without_reading_or_replacing_its_image (test_asset_lifecycle.AssetLifecycleTests) ... ERROR
+
+======================================================================
+ERROR: test_declared_unavailable_source_does_not_attempt_a_runtime_asset_read (test_asset_lifecycle.AssetLifecycleTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4e0e3d24442d/repair-5f62/web_panel/tests/test_asset_lifecycle.py", line 94, in test_declared_unavailable_source_does_not_attempt_a_runtime_asset_read
+    self.assertEqual(response.json()['code'], 'SOURCE_UNAVAILABLE')
+KeyError: 'code'
+
+======================================================================
+ERROR: test_late_advertised_result_is_retired_without_reading_or_replacing_its_image (test_asset_lifecycle.AssetLifecycleTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4e0e3d24442d/repair-5f62/web_panel/tests/test_asset_lifecycle.py", line 69, in test_late_advertised_result_is_retired_without_reading_or_replacing_its_image
+    self.assertEqual(expired.json()['code'], 'RESULT_RETIRED')
+KeyError: 'code'
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.449s
+
+FAILED (errors=2)

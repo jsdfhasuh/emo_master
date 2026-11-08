@@ -1,0 +1,8 @@
+{
+  "sourceSHA": "5f62eb7e2eb63e097e8e3385de34c96549eabf07",
+  "mainSha256": "0ec6fae024b7298219b544a10a7a8cd2d09f9644d80fd5ed57b408d097b78970",
+  "testSha256": "2ad7b845669c383228758b2a66e222b8293e8dd08091060ef05ebc35148b6260",
+  "note": "Fixed commit frontend/contracts plus new regression tests; live product source not reverted.",
+  "finalLog": "admission-red-final.log",
+  "initialLogRetained": "admission-red.log"
+}

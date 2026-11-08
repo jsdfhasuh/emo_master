@@ -411,6 +411,9 @@ class JobSupervisor:
                     # The producer clock is authoritative from process start. A
                     # queued heartbeat, unavailable cell or corrupt future sample
                     # must never renew this deadline.
+                    # Do not charge a pause after the read to the sampled
+                    # heartbeat. The producer may have kept publishing meanwhile.
+                    observation = monotonicMs()
                     sample = cell.read()
                     current = monotonicMs()
                     lastHeartbeat = self._heartbeatMonotonic[jobId]
@@ -423,12 +426,14 @@ class JobSupervisor:
                     if legacyHeartbeat is None:
                         return
                     lastHeartbeat = legacyHeartbeat
-                    current = nowMs()
+                    sample = None
+                    observation = current = nowMs()
                 timeoutMs = self._heartbeatTimeouts.get(jobId, self.heartbeatTimeoutMs)
-                if jobId not in self._heartbeatSeen:
-                    intervalMs = self._heartbeatIntervals.get(jobId, 500)
+                intervalMs = self._heartbeatIntervals.get(jobId, 500)
+                seen = jobId in self._heartbeatSeen
+                if not seen:
                     timeoutMs = max(timeoutMs, intervalMs * 2)
-                if current - lastHeartbeat <= timeoutMs:
+                if observation - lastHeartbeat <= timeoutMs:
                     return
                 handle = self._handles.get(jobId)
                 if handle is None:
@@ -458,6 +463,12 @@ class JobSupervisor:
                     code="E_HEARTBEAT_TIMEOUT",
                     projectId=record.projectId,
                     workflowId=record.workflowId,
+                    payload={"pid": process.pid, "heartbeat": {
+                        "clock": "monotonic" if cell is not None else "wall",
+                        "observationMs": observation, "currentMs": current,
+                        "sampleMs": sample, "lastGoodMs": lastHeartbeat,
+                        "timeoutMs": timeoutMs, "intervalMs": intervalMs, "seen": seen,
+                    }},
                 )
                 self._claimTerminal(claim,
                     jobId,
@@ -1283,15 +1294,20 @@ class JobSupervisor:
         group = self.devices.dispatchGroups.get(jobId) if self.devices is not None else None
         if group is None:
             return
+        # Both retirement events belong to the source, including when the last
+        # retiring process is a consumer with a different workflow.
+        source = self.jobRepository.get(group.source)
         self.devices.retire(jobId)
         group.workerRetired(jobId)
         if jobId == group.source:
             self.eventStore.append(jobId, "dispatch.source.ended", "source ended; downstream group remains managed",
+                projectId=source.projectId, workflowId=source.workflowId,
                 payload=dict(runGroupId=group.groupId, downstreamPending=any(s.active or s.queue for s in group.slots.values())))
         if group.retired >= group.members:
             if self.retiredCallback is not None and group.source != jobId:
                 self.retiredCallback(group.source)
             self.eventStore.append(group.source, "dispatch.group.retired", "all run-group processes retired",
+                projectId=source.projectId, workflowId=source.workflowId,
                 payload=dict(runGroupId=group.groupId))
 
     def finishRetirements(self) -> list[str]:

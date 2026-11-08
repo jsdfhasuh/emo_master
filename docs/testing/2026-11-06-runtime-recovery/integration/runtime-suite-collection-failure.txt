@@ -1,0 +1,141 @@
+
+==================================== ERRORS ====================================
+_ ERROR collecting tests/runtime/presentation/test_r3_export_credit_control.py _
+ImportError while importing test module '/workspace/scratch/4e0e3d24442d/review-f308/repo-repair/tests/runtime/presentation/test_r3_export_credit_control.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/root/.local/share/uv/python/cpython-3.10-linux-x86_64-gnu/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/runtime/presentation/test_r3_export_credit_control.py:7: in <module>
+    from scripts import r3_export_credit_control as control
+scripts/r3_export_credit_control.py:24: in <module>
+    from scripts.r3_rpc_marker_control import assetFingerprint  # noqa: E402
+scripts/r3_rpc_marker_control.py:21: in <module>
+    from p2_validate import identity, git  # noqa: E402
+scripts/p2_validate.py:10: in <module>
+    from p1_validate import git, run, sourceIdentity
+scripts/p1_validate.py:22: in <module>
+    from prototypes.runtime_pages_p0.watchdog import ProcessTree  # noqa: E402
+E   ModuleNotFoundError: No module named 'prototypes'
+__ ERROR collecting tests/runtime/presentation/test_r3_rpc_marker_control.py ___
+ImportError while importing test module '/workspace/scratch/4e0e3d24442d/review-f308/repo-repair/tests/runtime/presentation/test_r3_rpc_marker_control.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/root/.local/share/uv/python/cpython-3.10-linux-x86_64-gnu/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/runtime/presentation/test_r3_rpc_marker_control.py:7: in <module>
+    from scripts import r3_rpc_marker_control as control
+scripts/r3_rpc_marker_control.py:21: in <module>
+    from p2_validate import identity, git  # noqa: E402
+scripts/p2_validate.py:10: in <module>
+    from p1_validate import git, run, sourceIdentity
+scripts/p1_validate.py:22: in <module>
+    from prototypes.runtime_pages_p0.watchdog import ProcessTree  # noqa: E402
+E   ModuleNotFoundError: No module named 'prototypes'
+_ ERROR collecting tests/runtime/test_builtin_communication_operator_workflows.py _
+tests/runtime/test_builtin_communication_operator_workflows.py:21: in <module>
+    from tests.runtime.test_dual_plc_field_project import managedDevices
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1006: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:688: in _load_unlocked
+    ???
+../venv/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/runtime/test_dual_plc_field_project.py:32: in <module>
+    spec.loader.exec_module(fixture)
+<frozen importlib._bootstrap_external>:879: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1016: in get_code
+    ???
+<frozen importlib._bootstrap_external>:1073: in get_data
+    ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/scratch/4e0e3d24442d/review-f308/repo-repair/field_tests/plc_dual_mc/build_project.py'
+________ ERROR collecting tests/runtime/test_dual_plc_field_project.py _________
+tests/runtime/test_dual_plc_field_project.py:32: in <module>
+    spec.loader.exec_module(fixture)
+<frozen importlib._bootstrap_external>:879: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1016: in get_code
+    ???
+<frozen importlib._bootstrap_external>:1073: in get_data
+    ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/scratch/4e0e3d24442d/review-f308/repo-repair/field_tests/plc_dual_mc/build_project.py'
+_____ ERROR collecting tests/runtime/test_hardware_trigger_normal_chain.py _____
+tests/runtime/test_hardware_trigger_normal_chain.py:37: in <module>
+    from tests.runtime.test_dual_plc_field_project import managedDevices
+../venv/lib/python3.10/site-packages/shiboken2/files.dir/shibokensupport/__feature__.py:142: in _import
+    return original_import(name, *args, **kwargs)
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1006: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:688: in _load_unlocked
+    ???
+../venv/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/runtime/test_dual_plc_field_project.py:32: in <module>
+    spec.loader.exec_module(fixture)
+<frozen importlib._bootstrap_external>:879: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1016: in get_code
+    ???
+<frozen importlib._bootstrap_external>:1073: in get_data
+    ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/scratch/4e0e3d24442d/review-f308/repo-repair/field_tests/plc_dual_mc/build_project.py'
+________ ERROR collecting tests/runtime/test_rpc_callback_retirement.py ________
+ImportError while importing test module '/workspace/scratch/4e0e3d24442d/review-f308/repo-repair/tests/runtime/test_rpc_callback_retirement.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/root/.local/share/uv/python/cpython-3.10-linux-x86_64-gnu/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/runtime/test_rpc_callback_retirement.py:12: in <module>
+    from prototypes.runtime_pages_p0.network import DisplayFeed, IsolatedServer
+../venv/lib/python3.10/site-packages/shiboken2/files.dir/shibokensupport/__feature__.py:142: in _import
+    return original_import(name, *args, **kwargs)
+E   ModuleNotFoundError: No module named 'prototypes'
+_______ ERROR collecting tests/runtime/test_spawned_hardware_stations.py _______
+tests/runtime/test_spawned_hardware_stations.py:22: in <module>
+    from tests.runtime.test_hardware_trigger_normal_chain import syntheticFrame
+../venv/lib/python3.10/site-packages/shiboken2/files.dir/shibokensupport/__feature__.py:142: in _import
+    return original_import(name, *args, **kwargs)
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1006: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:688: in _load_unlocked
+    ???
+../venv/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/runtime/test_hardware_trigger_normal_chain.py:37: in <module>
+    from tests.runtime.test_dual_plc_field_project import managedDevices
+../venv/lib/python3.10/site-packages/shiboken2/files.dir/shibokensupport/__feature__.py:142: in _import
+    return original_import(name, *args, **kwargs)
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1006: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:688: in _load_unlocked
+    ???
+../venv/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/runtime/test_dual_plc_field_project.py:32: in <module>
+    spec.loader.exec_module(fixture)
+<frozen importlib._bootstrap_external>:879: in exec_module
+    ???
+<frozen importlib._bootstrap_external>:1016: in get_code
+    ???
+<frozen importlib._bootstrap_external>:1073: in get_data
+    ???
+E   FileNotFoundError: [Errno 2] No such file or directory: '/workspace/scratch/4e0e3d24442d/review-f308/repo-repair/field_tests/plc_dual_mc/build_project.py'
+=========================== short test summary info ============================
+ERROR tests/runtime/presentation/test_r3_export_credit_control.py
+ERROR tests/runtime/presentation/test_r3_rpc_marker_control.py
+ERROR tests/runtime/test_builtin_communication_operator_workflows.py - FileNo...
+ERROR tests/runtime/test_dual_plc_field_project.py - FileNotFoundError: [Errn...
+ERROR tests/runtime/test_hardware_trigger_normal_chain.py - FileNotFoundError...
+ERROR tests/runtime/test_rpc_callback_retirement.py
+ERROR tests/runtime/test_spawned_hardware_stations.py - FileNotFoundError: [E...
+!!!!!!!!!!!!!!!!!!! Interrupted: 7 errors during collection !!!!!!!!!!!!!!!!!!!!
+7 errors in 9.07s

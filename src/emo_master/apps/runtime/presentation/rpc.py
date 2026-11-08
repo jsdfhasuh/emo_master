@@ -83,7 +83,10 @@ class DisplayRpc(rpc.DisplayServiceServicer):
                 config = self.service.jobs.get(job.jobId, {})
                 identity = config.get("identity", {})
                 plan = json.loads(config.get("plan", "{}"))
-                dispatch = config.get("dispatch", {})
+                # Group membership belongs to the admitted Job, not its optional
+                # capture attachment (which may never exist or be released).
+                dispatch = config.get("dispatch") or dict(runGroupId=job.runGroupId,
+                    sourceJobId=job.sourceJobId, targetSlotId=job.targetSlotId)
                 result.append(pb.DisplayJob(job_id=job.jobId, status=job.status,
                     project_id=job.projectId, workflow_id=job.workflowId,
                     mode=identity.get("mode", job.executionMode), capture_enabled=bool(config.get("capture")),

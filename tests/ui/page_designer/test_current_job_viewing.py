@@ -116,7 +116,10 @@ def designer(qtApp, tmp_path, monkeypatch):
     if preview.active():
         preview.closeAsync()
         waitFor(lambda: not preview.active())
-    window.close()
+    assert window.close(), 'designer fixture refused close'
+    assert window.runtimeController._closed
+    assert not window.operatorIconProvider.worker.isRunning()
+    assert not window.operatorCatalogWorker.isRunning()
 
 
 def testNormalEntryDoesNotMigrateWithoutExplicitEnable(qtApp, monkeypatch, tmp_path):
@@ -322,11 +325,13 @@ def testObserverOpeningRejectsInvalidPendingFormWithoutRefresh(designer, monkeyp
     before = (editor.pageId, editor.renderer.config, editor.renderer.lastView, len(coordinator.session._undo))
     def invalid():
         raise ValueError('invalid pending input')
-    monkeypatch.setattr(editor.tools, 'commitPending', invalid)
-    with pytest.raises(ValueError, match='invalid pending input'):
-        preview.openObserver()
-    assert preview.observer is observer and preview.hub.windows == {observer}
-    assert (editor.pageId, editor.renderer.config, editor.renderer.lastView, len(coordinator.session._undo)) == before
+    # Restore the invalid form before designer teardown asks it to commit/close.
+    with monkeypatch.context() as pendingForm:
+        pendingForm.setattr(editor.tools, 'commitPending', invalid)
+        with pytest.raises(ValueError, match='invalid pending input'):
+            preview.openObserver()
+        assert preview.observer is observer and preview.hub.windows == {observer}
+        assert (editor.pageId, editor.renderer.config, editor.renderer.lastView, len(coordinator.session._undo)) == before
 
 
 def testObserverRetiresOnDisconnectAndNeverBecomesEditor(designer):

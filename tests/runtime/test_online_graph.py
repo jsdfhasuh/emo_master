@@ -77,6 +77,9 @@ def testDesignerTransportDisconnectDoesNotStopProductionOrReplaceHistory(tmp_pat
         waitFor(lambda: driver.sequence >= 3, timeout=30)
         count = driver.sequence
         waitFor(lambda: driver.sequence > count + 2)
+        # Device IPC and the persisted worker-event bridge progress independently.
+        # Captured frames alone do not mean job.started has reached the repository.
+        waitFor(lambda: service.jobRepository.get(started.job_id).status == "RUNNING", timeout=30)
         assert service.jobRepository.get(started.job_id).status == "RUNNING"
         service.projectConfiguration.start(request(service.projectConfiguration, "while-disconnected"))
         assert finish(service.projectConfiguration, "while-disconnected")["state"] == "COMMITTED"

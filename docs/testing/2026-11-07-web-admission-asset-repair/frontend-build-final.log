@@ -1,0 +1,16 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emo-master-web-panel-ui@0.1.0 build
+> tsc --noEmit && vite build
+
+vite v7.1.12 building for production...
+transforming...
+✓ 48 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                    0.37 kB │ gzip:  0.29 kB
+dist/assets/index-BPJhQw1Z.css     3.69 kB │ gzip:  1.44 kB
+dist/assets/Editor-zza1chk7.css   10.10 kB │ gzip:  2.73 kB
+dist/assets/Editor-T-RNmv2C.js    57.30 kB │ gzip: 18.87 kB
+dist/assets/index-D64PMsmL.js    282.24 kB │ gzip: 90.72 kB
+✓ built in 1.55s

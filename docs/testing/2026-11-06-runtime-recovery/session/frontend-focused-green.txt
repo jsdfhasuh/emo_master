@@ -1,0 +1,18 @@
+✔ cross-tab CSRF recovery preserves stored draft after 保存草稿 without replay or shared-cookie logout (780.489036ms)
+✔ cross-tab CSRF recovery preserves stored draft after 发布页面 without replay or shared-cookie logout (540.915977ms)
+✔ cross-tab CSRF recovery preserves page-memory draft after 保存草稿 without replay or shared-cookie logout (415.257345ms)
+✔ cross-tab CSRF recovery preserves page-memory draft after 发布页面 without replay or shared-cookie logout (397.311284ms)
+✔ cross-tab reentry restores only the actual returned user identity (311.45328ms)
+✔ cross-tab reentry restores only the actual returned project identity (338.715065ms)
+✔ cross-tab reentry restores only the actual returned target identity (288.422554ms)
+✔ ordinary 403 (Permission denied) does not enter session recovery (286.06628ms)
+✔ ordinary 403 (Origin denied) does not enter session recovery (255.697945ms)
+✔ ordinary 403 (CSRF denied) does not enter session recovery (284.26759ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4563.082957

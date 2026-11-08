@@ -506,13 +506,15 @@ class DeviceWorkspace(QDialog):
 
     def openRuntimeLogs(self):
         window = self.c.window
+        deviceId = self.selectedId
+        state = self.states.get(deviceId, {})
+        projectId = str(state.get("projectId") or window._currentProjectId())
+        # The shared log window is a sibling of this modal dialog. Finish the
+        # normal draft/validation close path before handing input to it.
+        if not self.close():
+            return
         window.openLogDialog()
-        view = window.logDialog.view
-        view.rangeCombo.setCurrentIndex(view.rangeCombo.findData("runtime"))
-        state = self.states.get(self.selectedId, {})
-        view.historyInputs["projectId"].setText(str(state.get("projectId") or window._currentProjectId()))
-        view.historyInputs["deviceId"].setText(self.selectedId)
-        view.queryHistory()
+        window.logDialog.view.openDeviceHistory(projectId, deviceId)
 
     def readDiagnostics(self):
         state = self.states.get(self.selectedId)

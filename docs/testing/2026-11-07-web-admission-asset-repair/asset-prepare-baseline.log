@@ -1,0 +1,42 @@
+✔ resource URLs limited to current-origin authorized paths (1.088621ms)
+✔ mutating requests carry CSRF and never put it in URL (1.519751ms)
+✔ server failures are errors rather than fake success (0.473093ms)
+✔ wrong owner result clears image instead of mixing rounds (0.468587ms)
+✔ failed image resolves entire scope with explicit current-round failure (0.349467ms)
+✖ retired exact image is unavailable without substituting or retrying another result (1.275984ms)
+✔ unclassified asset rejection and actual read failure remain errors (0.674196ms)
+✔ prepared image publishes fetched bytes once and releases its object URL (6.141248ms)
+✔ slow image cannot publish a cancelled candidate (11.945648ms)
+✔ hidden page image never blocks the visible scope (0.517179ms)
+✔ visible nested image bindings respect explicit scopes (1.164125ms)
+✔ LAN SHA256 fallback matches standard vectors and multi-block bytes (11.187805ms)
+✔ wrong size or digest never publishes image bytes (1.034339ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 12
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 414.527899
+
+✖ failing tests:
+
+test at tests/helpers.test.mjs:22:1
+✖ retired exact image is unavailable without substituting or retrying another result (1.275984ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'error'
+  - 'unavailable'
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/4e0e3d24442d/repair-5f62/web_panel/frontend/tests/helpers.test.mjs:28:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'error',
+    expected: 'unavailable',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,18 @@
+{
+  "command": [
+    "/workspace/scratch/4e0e3d24442d/review-f308/venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/runtime/test_device_failure_observability.py",
+    "tests/runtime/test_device_executor.py",
+    "tests/runtime/test_device_manager.py",
+    "tests/runtime/test_device_ipc_cancellation.py",
+    "tests/runtime/test_device_ipc_retirement.py",
+    "tests/runtime/test_device_operational_logs.py",
+    "tests/runtime/test_startup_cancellation.py",
+    "tests/runtime/test_cycle_plan_scope_cleanup.py"
+  ],
+  "exitCode": 0,
+  "seconds": 11.873
+}

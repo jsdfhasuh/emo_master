@@ -13,6 +13,7 @@ from emo_master.apps.runtime.frame_dispatch.scheduler import RunGroup
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb, runtime_pb2_grpc as rpc
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.runtime.main import createRuntimeServer
+from emo_panel_protocol.coverage import DispatchCoverage
 from tests.runtime.runtime_test_utils import waitForTerminal
 from tests.runtime.test_device_production_outcomes import waitFor
 
@@ -111,10 +112,16 @@ def testWaitingCaptureAndCancellationThroughRealProcesses(runtime, tmp_path, mon
             waitFor(lambda: all(slot.completedTotal == 1 for slot in group.slots.values()), timeout=20)
             waitFor(lambda: all(owner.store.snapshot(slot.jobId)["results"] for slot in group.slots.values()), timeout=15)
             metadata = display.ListJobs(pb.DisplayEmpty(project_id=project), timeout=5).jobs
+            root = next(j for j in metadata if j.job_id == started.job_id)
+            assert (root.run_group_id, root.source_job_id, root.target_slot_id) == (group.groupId, started.job_id, "")
+            assert not root.capture_enabled and started.job_id not in owner.jobs
             for key, slot in group.slots.items():
                 assert not service.jobRepository.get(slot.jobId).isTerminal
                 job = next(j for j in metadata if j.job_id == slot.jobId)
                 assert (job.source_job_id, job.run_group_id, job.target_slot_id) == (started.job_id, group.groupId, key)
+                coverage = DispatchCoverage.fromMetadata(root, job)
+                assert not coverage.members[0].enabled and coverage.members[1].enabled
+                assert set(coverage.members[1].sources) == {"count", "image"}
                 result, = owner.store.snapshot(slot.jobId)["results"]
                 assert result.status == "COMPLETE", result
                 assert result.identity.jobId == slot.jobId

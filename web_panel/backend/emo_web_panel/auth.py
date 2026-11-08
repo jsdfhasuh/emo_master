@@ -8,9 +8,14 @@ from pathlib import Path
 PERMISSIONS = {"viewer": ["view"], "operator": ["view", "control"], "admin": ["view", "control", "admin"]}
 
 class AuthStore:
-    def __init__(self, path: Path, ttl=3600):
+    def __init__(self, path: Path, ttl=3600, local_no_auth=False):
         path.parent.mkdir(parents=True, exist_ok=True)
         self.path, self.ttl = path, ttl
+        self.local_no_auth = local_no_auth
+        # Local sessions belong to this service lifetime, never a later password
+        # service (or a later reopening of local mode) using the same data-dir.
+        self.local_instance = secrets.token_hex(16) if local_no_auth else None
+        self.local_user_id = None
         with self.db() as db:
             db.executescript("""CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, salt TEXT, password TEXT, role TEXT);
             CREATE TABLE IF NOT EXISTS sessions (digest TEXT PRIMARY KEY, username TEXT, csrf TEXT, expires REAL);
@@ -22,6 +27,16 @@ class AuthStore:
             if 'user_id' not in [r[1] for r in db.execute('PRAGMA table_info(sessions)')]:
                 db.execute('ALTER TABLE sessions ADD COLUMN user_id TEXT')
                 db.execute('DELETE FROM sessions')
+            columns = {r[1] for r in db.execute('PRAGMA table_info(sessions)')}
+            if 'auth_kind' not in columns:
+                db.execute("ALTER TABLE sessions ADD COLUMN auth_kind TEXT NOT NULL DEFAULT 'password'")
+            if 'local_instance' not in columns:
+                db.execute('ALTER TABLE sessions ADD COLUMN local_instance TEXT')
+            if local_no_auth:
+                db.execute('CREATE TABLE IF NOT EXISTS local_identity (singleton INTEGER PRIMARY KEY CHECK(singleton=1), user_id TEXT NOT NULL)')
+                db.execute('INSERT OR IGNORE INTO local_identity VALUES (1,?)', ('local:' + secrets.token_hex(16),))
+                self.local_user_id = db.execute('SELECT user_id FROM local_identity WHERE singleton=1').fetchone()[0]
+                db.execute("DELETE FROM sessions WHERE auth_kind='local'")
     def db(self):
         db = sqlite3.connect(self.path)
         db.row_factory = sqlite3.Row
@@ -54,9 +69,26 @@ class AuthStore:
         if not token: return None
         digest = hashlib.sha256(token.encode()).hexdigest()
         with self.db() as db:
-            row = db.execute("SELECT u.username,u.user_id,u.role,s.csrf,s.expires FROM sessions s JOIN users u ON u.user_id=s.user_id WHERE digest=?", (digest,)).fetchone()
+            local = db.execute("SELECT user_id,csrf,expires,local_instance FROM sessions WHERE digest=? AND auth_kind='local'", (digest,)).fetchone()
+            if local is not None:
+                if (not self.local_no_auth or local['local_instance'] != self.local_instance
+                        or local['user_id'] != self.local_user_id or local['expires'] <= time.time()):
+                    return None
+                return {'username': self.local_user_id, 'userId': self.local_user_id,
+                        'role': 'admin', 'csrf': local['csrf'], 'permissions': PERMISSIONS['admin'],
+                        'authMode': 'local'}
+            row = db.execute("SELECT u.username,u.user_id,u.role,s.csrf,s.expires FROM sessions s JOIN users u ON u.user_id=s.user_id WHERE digest=? AND s.auth_kind='password'", (digest,)).fetchone()
             if row is None or row["expires"] <= time.time(): return None
             return {"username": row["username"], "userId":row["user_id"], "role": row["role"], "csrf": row["csrf"], "permissions": PERMISSIONS[row["role"]]}
+    def login_local(self):
+        if not self.local_no_auth:
+            raise ValueError('Local passwordless mode is disabled')
+        token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
+        with self.db() as db:
+            db.execute('INSERT INTO sessions (digest,username,csrf,expires,user_id,auth_kind,local_instance) VALUES (?,?,?,?,?,?,?)',
+                       (hashlib.sha256(token.encode()).hexdigest(), self.local_user_id, csrf,
+                        time.time() + self.ttl, self.local_user_id, 'local', self.local_instance))
+        return token
     def logout(self, token):
         with self.db() as db:
             db.execute("DELETE FROM sessions WHERE digest=?", (hashlib.sha256(token.encode()).hexdigest(),))
@@ -82,11 +114,11 @@ class AuthStore:
                 if not isinstance(password,str) or len(password)<12 or len(password)>1024:raise ValueError('Password must be 12..1024 characters')
                 salt=secrets.token_hex(16)
                 db.execute('UPDATE users SET salt=?,password=? WHERE username=?',(salt,self.hash_password(password,salt),username))
-            db.execute('DELETE FROM sessions WHERE username=?',(username,))
+            db.execute("DELETE FROM sessions WHERE username=? AND auth_kind='password'",(username,))
     def delete_user(self, username):
         with self.db() as db:
             db.execute('BEGIN IMMEDIATE')
             row=db.execute('SELECT role FROM users WHERE username=?',(username,)).fetchone()
             if row is None:raise KeyError('User not found')
             if row['role']=='admin' and db.execute("SELECT COUNT(*) FROM users WHERE role='admin'").fetchone()[0]<=1:raise ValueError('Cannot remove last administrator')
-            db.execute('DELETE FROM sessions WHERE username=?',(username,));db.execute('DELETE FROM users WHERE username=?',(username,))
+            db.execute("DELETE FROM sessions WHERE username=? AND auth_kind='password'",(username,));db.execute('DELETE FROM users WHERE username=?',(username,))

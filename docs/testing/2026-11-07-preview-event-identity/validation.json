@@ -1,0 +1,92 @@
+{
+  "actor": "ChatGPT Web",
+  "baseline": "9fa84670d4dd12402ea1b5e505d68c2c4aba6efe",
+  "sourceFilesSHA256": {
+    "src/emo_master/apps/runtime/grpc_server/service.py": "21964845877194055898c65906f219cb15cc447f4b8fb268a0b0eb26939e409c",
+    "src/emo_master/apps/runtime/presentation/service.py": "55afd65de4ddd5cfb260569e1df27a559a8f1e210099127567fa9ce256a4cd39",
+    "tests/runtime/test_preview_event_identity.py": "5dcb5c7f1c64cef2714f65b34a84500d5311a1e8a7a21d7ec33977f8a089921b",
+    "tests/runtime/presentation/test_export_restart_retirement.py": "b07685a29d2ef834caf169435da65e8bf8802ae71070cbc971d01f2e7180f7b8"
+  },
+  "red": [
+    {
+      "tests": "4",
+      "failures": "4",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.606"
+    }
+  ],
+  "runtimeGreen": [
+    {
+      "tests": "41",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "30.623"
+    }
+  ],
+  "webGreen": {
+    "junit": [
+      {
+        "tests": "41",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "9.479"
+      }
+    ],
+    "passed": 35,
+    "subtestsPassed": 6,
+    "skipped": 0,
+    "warnings": 1
+  },
+  "static": {
+    "ruff": "passed",
+    "mypy": {
+      "sourceFiles": 614,
+      "result": "passed"
+    },
+    "diffWhitespace": "passed"
+  },
+  "directCallReview": {
+    "scope": "Runtime direct eventStore.append calls; dynamic worker fields inspected separately",
+    "count": 25,
+    "withoutExplicitBothFields": [
+      {
+        "path": "src/emo_master/apps/runtime/grpc_server/service.py",
+        "line": 2261,
+        "keywords": [
+          "jobId",
+          "eventType",
+          "message",
+          "level",
+          "code",
+          "payload",
+          "notifySinks"
+        ],
+        "call": "self.eventStore.append(jobId='__runtime__', eventType='runtime.event_retention.failed', message=str(message), level='ERROR', code='E_EVENT_PERSISTENCE', payload={'status': 'FAILED', 'message': str(message)}, notifySinks=False)"
+      },
+      {
+        "path": "src/emo_master/apps/runtime/jobs/supervisor.py",
+        "line": 332,
+        "keywords": [
+          null
+        ],
+        "call": "self.eventStore.append(**self._workerEventFields(jobId, record, event))"
+      }
+    ]
+  },
+  "baselineCI": {
+    "head": "9fa84670d4dd12402ea1b5e505d68c2c4aba6efe",
+    "checkout": "c9f83fb8b12a09da5bfa4ba459d996d39331e44e",
+    "ci": 42364381601,
+    "web": 42364381518,
+    "conclusion": "success",
+    "appliesToThisNewPatch": false
+  },
+  "boundaries": [
+    "Controlled error callbacks, not newly observed Dot failures.",
+    "Local Python 3.10.22/Linux automated verification; visible manual and real hardware not run.",
+    "History DB unchanged; original error level/code/state and strict Web isolation retained."
+  ]
+}

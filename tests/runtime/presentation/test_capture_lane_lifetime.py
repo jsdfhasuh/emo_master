@@ -1,6 +1,8 @@
 """Shared raw ownership ends at a verified private copy, before encoding/adoption."""
 import queue
 import threading
+import time
+from types import SimpleNamespace
 from functools import partial
 import multiprocessing
 from multiprocessing.shared_memory import SharedMemory
@@ -33,10 +35,21 @@ def gatedEncoder(connection, memoryName, entered, resume):
 
 
 @pytest.mark.parametrize("laneCount", [1, 2])
-def testNextCaptureWhilePreviousIsStillEncodingPreservesBothPixels(tmp_path, laneCount):
+def testNextCaptureWhilePreviousIsStillEncodingPreservesBothPixels(tmp_path, monkeypatch, laneCount):
     context = multiprocessing.get_context("spawn")
     entered, resume = context.Event(), context.Event()
     results = {}
+    snapshotReleased, inspectionsDone = threading.Event(), threading.Event()
+    # This test gates encoding to inspect ownership, not to measure throughput.
+    # Keep scheduling/assertion time out of the export deadline; the separate
+    # timeout and queued-lane tests exercise the real 500ms wall-clock contract.
+    from emo_master.apps.runtime.presentation import exporter
+    pausedAt = None
+    excludedSeconds = 0.0
+
+    def exportClock():
+        return (pausedAt if pausedAt is not None else time.monotonic()) - excludedSeconds
+
     first = np.full((32, 48, 3), 19, np.uint8)
     second = np.full_like(first, 231)
 
@@ -45,6 +58,26 @@ def testNextCaptureWhilePreviousIsStillEncodingPreservesBothPixels(tmp_path, lan
         results[task["key"]] = cv2.imdecode(np.frombuffer(path.read_bytes(), np.uint8), cv2.IMREAD_UNCHANGED)
 
     pool = ExportPool(tmp_path, callback, worker=partial(gatedEncoder, entered=entered, resume=resume))
+    monkeypatch.setattr(exporter, "time", SimpleNamespace(
+        monotonic=exportClock, monotonic_ns=lambda: int(exportClock() * 1_000_000_000)))
+    releaseLane = pool._releaseLane
+
+    def acknowledgedSnapshot(owner, task, diagnostic, proof="verified_private_snapshot"):
+        nonlocal pausedAt, excludedSeconds
+        releaseLane(owner, task, diagnostic, proof)
+        if task["key"] == "first" and proof == "verified_private_snapshot":
+            pausedAt = time.monotonic()
+            snapshotReleased.set()
+            # Pause before the owner's completion poll as well as the child:
+            # neither side spends its bounded IPC wait on test assertions.
+            try:
+                assert inspectionsDone.wait(5), "test must finish ownership inspection"
+            finally:
+                excludedSeconds += time.monotonic() - pausedAt
+                pausedAt = None
+                resume.set()
+
+    monkeypatch.setattr(pool, "_releaseLane", acknowledgedSnapshot)
     slots = pool.configureLanes(0, laneCount)
     slot = slots[-1]
     collector = ResultCollector({"plan": '{"sources":{},"scopes":{}}', "slots": slots,
@@ -58,9 +91,8 @@ def testNextCaptureWhilePreviousIsStillEncodingPreservesBothPixels(tmp_path, lan
     try:
         assert capture("first", first).get("pendingImage")
         assert entered.wait(5)
-        # Wait for parent acknowledgment handling, never for encoding to finish.
-        # This consumes the existing 500ms budget; it does not extend it.
-        assert slot["free"].acquire(True, .15), "slow encoder must release shared raw after taking a private snapshot"
+        assert snapshotReleased.wait(5), "parent must acknowledge the private snapshot"
+        assert slot["free"].acquire(False), "slow encoder must release shared raw after taking a private snapshot"
         slot["free"].release()
         assert capture("second", second).get("pendingImage")
         assert capture("third", first)["reasonCode"] == "BUDGET_EXCEEDED"
@@ -68,7 +100,7 @@ def testNextCaptureWhilePreviousIsStillEncodingPreservesBothPixels(tmp_path, lan
         assert not results, "first encoder is still gated when shared raw is overwritten"
         with pytest.raises(ValueError, match="owned"):
             pool.releaseSlot(0)
-        resume.set()
+        inspectionsDone.set()
         waitFor(lambda: not pool.slots[0]["busy"])
         assert not pool.errors and set(results) == {"first", "second"}, list(pool.diagnostics)
         np.testing.assert_array_equal(results["first"], first)
@@ -77,6 +109,7 @@ def testNextCaptureWhilePreviousIsStillEncodingPreservesBothPixels(tmp_path, lan
         slot["free"].release()
         assert not pool.slots[0]["pending"]
     finally:
+        inspectionsDone.set()
         resume.set()
         pool.close()
     assert all(slot["process"] is None and not slot["thread"].is_alive() for slot in pool.slots)

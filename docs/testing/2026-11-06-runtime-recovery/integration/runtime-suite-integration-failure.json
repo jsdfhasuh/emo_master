@@ -1,0 +1,33 @@
+{
+  "command": [
+    "/workspace/scratch/4e0e3d24442d/review-f308/venv/bin/python",
+    "-m",
+    "pytest",
+    "tests/runtime",
+    "-q",
+    "--tb=short",
+    "--timeout=120",
+    "--timeout-method=thread",
+    "-o",
+    "faulthandler_timeout=60",
+    "--junitxml=build/recovery-runtime-results.xml"
+  ],
+  "baseCommit": "cdf1250ccc41b78f79b25b87e6db197809875384",
+  "startedAt": "2026-11-06T01:02:47.545867+00:00",
+  "finishedAt": "2026-11-06T01:15:32.864232+00:00",
+  "durationSeconds": 765.318,
+  "exitCode": 1,
+  "junitSha256": "fd2c3c5bb3a85d458c8914fd6783276482eab3a29582ab79049e0d6fe6b43907",
+  "suites": [
+    {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "1",
+      "skipped": "7",
+      "tests": "2974",
+      "time": "763.028",
+      "timestamp": "2026-11-06T09:02:47.847518+08:00",
+      "hostname": "638b78173200"
+    }
+  ]
+}

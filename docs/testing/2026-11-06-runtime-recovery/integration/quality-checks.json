@@ -1,0 +1,51 @@
+{
+  "at": "2026-11-06T01:18:23.991097+00:00",
+  "checks": [
+    {
+      "check": "proto",
+      "command": [
+        "/workspace/scratch/4e0e3d24442d/review-f308/venv/bin/python",
+        "scripts/gen_proto.py",
+        "--check"
+      ],
+      "exitCode": 0,
+      "seconds": 0.146
+    },
+    {
+      "check": "ruff",
+      "command": [
+        "/workspace/scratch/4e0e3d24442d/review-f308/venv/bin/python",
+        "-m",
+        "ruff",
+        "check",
+        "src",
+        "tests"
+      ],
+      "exitCode": 0,
+      "seconds": 0.045
+    },
+    {
+      "check": "mypy",
+      "command": [
+        "/workspace/scratch/4e0e3d24442d/review-f308/venv/bin/python",
+        "-m",
+        "mypy",
+        "--config-file",
+        "mypy.ini",
+        "src"
+      ],
+      "exitCode": 0,
+      "seconds": 0.331
+    },
+    {
+      "check": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exitCode": 0,
+      "seconds": 0.017
+    }
+  ]
+}

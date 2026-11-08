@@ -1,0 +1,102 @@
+{
+  "baseline": "5f62eb7e2eb63e097e8e3385de34c96549eabf07",
+  "executor": "ChatGPT Web",
+  "scope": "Local candidate verification; fixed pushed SHA and remote CI recorded in PR comment",
+  "files": [
+    {
+      "path": "admission-red-final.log",
+      "bytes": 8140,
+      "sha256": "90ac751d1d5e94e09ec6b2142242bd916cb3528d9e274413bfd70ee84690ed95"
+    },
+    {
+      "path": "admission-green-final.log",
+      "bytes": 977,
+      "sha256": "93f6999b5700580aa8db55d64ed55d9a8ad0a43123ba26d5bae834745b510c17"
+    },
+    {
+      "path": "admission-red-source-final.json",
+      "bytes": 422,
+      "sha256": "40a4dcef455b5131f35d8bc492f1604e8d5a38011ee4c38e22b5bd8a17d3a2fb"
+    },
+    {
+      "path": "asset-lifecycle-http-baseline.json",
+      "bytes": 2004,
+      "sha256": "de20475a3941d8b346c805a1aaaef135e58a1dd239b7a39ce0e1479a3de71d05"
+    },
+    {
+      "path": "asset-lifecycle-baseline.log",
+      "bytes": 1499,
+      "sha256": "58af9214c5f7b5d2f802c490708edd2bd3bd18bb0d8fb1ad7625700f269407c9"
+    },
+    {
+      "path": "asset-lifecycle-fixed.log",
+      "bytes": 347,
+      "sha256": "bcd7c3ef291219476cf1abbdb0a08b6a8aa12635b3101e7c59c65f508b963a0c"
+    },
+    {
+      "path": "asset-prepare-baseline.log",
+      "bytes": 1845,
+      "sha256": "135406e6c163383e37d0941d7d71ae6cf19433be30a73d43dc449abca984c481"
+    },
+    {
+      "path": "asset-prepare-fixed.log",
+      "bytes": 1116,
+      "sha256": "45c94a120af1971d8f0da31d764d7422149308e9d0e8d88df2cc28a48641d0a3"
+    },
+    {
+      "path": "frontend-final.log",
+      "bytes": 17813,
+      "sha256": "4d36d371e939a84346b714cf59fcd0f6e6726f85bf3df78f024b40c7535083ba"
+    },
+    {
+      "path": "frontend-build-final.log",
+      "bytes": 624,
+      "sha256": "5dd986221911145ea6c28fc26b1e3f0e025129099ea280557351d34ccc7d0190"
+    },
+    {
+      "path": "web-backend-full.log",
+      "bytes": 25996,
+      "sha256": "05ab09447c5bcffa09b65fc00b94e2e84417a2c96c4da9f2452ea1f2ed78d92f"
+    },
+    {
+      "path": "product-runtime-integration.log",
+      "bytes": 1561,
+      "sha256": "4f1482bae9edf015c14bdd906959d3e1057d7284578e3928d559ee25b2ab15d9"
+    },
+    {
+      "path": "ruff.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "mypy.log",
+      "bytes": 15023,
+      "sha256": "681442ff8aaf8e60809bf9e34d60d7006be0563817e00b8932216a6c1e701315"
+    },
+    {
+      "path": "product-browser-baseline.log",
+      "bytes": 12893,
+      "sha256": "118762a0de04c628e33cb142c5589c319336c1e7205c6e8666a8c8e3be6487e6"
+    },
+    {
+      "path": "windows-observation/two-job-local-final.log",
+      "bytes": 98,
+      "sha256": "348f6cb06379c4590902347907a97132409924f096b7a654e3170518e9750487"
+    },
+    {
+      "path": "windows-observation/two-job-local-final.json",
+      "bytes": 27139,
+      "sha256": "d59d43ea33242a4f8b5f1991b1d2cd6705ac54cd9e13dea1767b6efb1f475458"
+    },
+    {
+      "path": "windows-observation/diagnostic-aux-final.log",
+      "bytes": 98,
+      "sha256": "37209a2446978ab2732009c33b8228a835778f235f6affbc475f06c100716e4d"
+    },
+    {
+      "path": "windows-observation/test_observation_evidence_aux.py",
+      "bytes": 5369,
+      "sha256": "69fdf44614ba65708f76456acb173f7a3dbd0d0927b3bb7f287a3249c0edd294"
+    }
+  ]
+}

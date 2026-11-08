@@ -17,7 +17,13 @@ class Config:
     preview_context: dict | None = None
     preview_token: str | None = None
     preview_token_ttl: int = 120
+    local_no_auth: bool = False
     def __post_init__(self):
+        if self.local_no_auth:
+            if self.host not in {"127.0.0.1", "::1"} or not 1 <= self.port <= 65535:
+                raise ValueError("local-no-auth requires literal loopback and a fixed port (1..65535)")
+            if self.preview or self.allowed_origins:
+                raise ValueError("local-no-auth cannot use preview or allowed origins")
         if self.preview and self.host not in {"127.0.0.1", "localhost", "::1"}:
             raise ValueError("preview only binds loopback")
         if not 0 <= self.port <= 65535:

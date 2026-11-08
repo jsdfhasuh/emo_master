@@ -1,0 +1,113 @@
+{
+  "role": "ChatGPT Web",
+  "date": "2026-11-07",
+  "baseCommit": "a051874d21a1872b5068091622933cdda4c95c2d",
+  "scope": "Development regression evidence, not visible desktop or physical-device acceptance",
+  "environment": {
+    "os": "Linux",
+    "python": "3.10.22",
+    "node": "24.22.1"
+  },
+  "sourceFileSha256": {
+    ".github/workflows/ci.yml": "20f88f22c085294b52ebcfd04050c0b995efad2cf7566371730b2fe2cd17ed6e",
+    "src/emo_master/apps/runtime/devices/ipc.py": "970598675f4edc9adb0f879ef4bbb2b3b1a0487daf794319a94b4d6d531cd131",
+    "src/emo_master/apps/runtime/devices/manager.py": "4a7a9dd171657bd06a98d47fdab306ff870c86f2798c260829a1718676937e96",
+    "src/emo_master/apps/runtime/devices/simulated.py": "c7ac7a24fd1bae2e0c14e302379a1a3cc64e8be77f4f58fb4ab75e9d9e84e4b5",
+    "tests/runtime/test_device_failure_observability.py": "7cf6ffb361e20a2e3c89705c3e4f24bd296944619b524e0b4452b55607f05b57",
+    "tests/runtime/test_device_ipc_cancellation.py": "c498070555b0f26ea8871088a39287754008168afc440a476b994d9650b2b201",
+    "tests/runtime/test_dispatch_continuous_recovery.py": "203d7e0900ea2bd526b76384d1f03f6349868a0ea1972e78fba91110346efa9b",
+    "tests/runtime/test_simulated_camera_completion.py": "181fd14a8e07578edf8e08795e9f4893c81e0898c652636ceb01e7b5bb38facf",
+    "web_panel/frontend/src/components/RuntimeLogs.tsx": "853d403c2dd5fcf39c4652ca5a408e12beef4d11ebc40e97ccbbb939027484d8",
+    "web_panel/frontend/src/main.tsx": "7e1dd1382d5c4bd4ffd3e5e4ff334ac46c6b3377ef391e1153ebf2d70c8e6452",
+    "web_panel/frontend/tests/run-state.test.mjs": "578cb24def258d152e2af918ccf4cb9234a13c69d1c01634de6d9ad4991627a4",
+    "web_panel/frontend/tests/runtime-log-feedback.test.mjs": "aba0ed1660ca63d2bb426e051e7117e7d0197ef5f60b4be09bc724257f8d0721"
+  },
+  "directCounterexamples": {
+    "publishedApp": {
+      "before": {
+        "failed": 4,
+        "passed": 1
+      },
+      "after": {
+        "failed": 0,
+        "passed": 5
+      }
+    },
+    "runtimeLogs": {
+      "before": {
+        "failed": 5,
+        "passed": 1
+      },
+      "after": {
+        "failed": 0,
+        "passed": 6
+      }
+    },
+    "simulatedCamera": {
+      "before": {
+        "tests": 3,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0,
+        "timeSeconds": 0.711,
+        "sha256": "86d5157999f765df5afe0b7057dc4849031ec3b1b82d29151f2dfeecdefe8c13"
+      },
+      "after": {
+        "failed": 0,
+        "passed": 3
+      }
+    }
+  },
+  "finalRuntimeSelection": {
+    "command": "python -m pytest -q tests/runtime/test_simulated_camera_completion.py tests/runtime/test_dispatch_continuous_recovery.py tests/runtime/test_dispatch_queue_integration.py tests/runtime/test_device_stop_receipts.py tests/runtime/test_device_manager.py tests/runtime/test_device_failure_observability.py tests/runtime/test_device_ipc_cancellation.py tests/runtime/test_supervisor_heartbeat_observation.py tests/runtime/test_cycle_plan_scope_cleanup.py tests/test_ci_check.py --timeout=120 --timeout-method=thread --tb=short",
+    "tests": 78,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "timeSeconds": 37.885,
+    "sha256": "a275b261b1d777302175b672cf5621ca21e35bf8faf3ff6f5e79ae267cd0a699"
+  },
+  "frontend": {
+    "command": "npm test",
+    "tests": 194,
+    "passed": 194,
+    "failed": 0,
+    "skipped": 0
+  },
+  "webRuntimeFile": {
+    "command": "EMO_WEB_PRODUCT_RUNTIME=1 python -m unittest discover -s web_panel/tests -p test_product_runtime.py -v",
+    "tests": 5,
+    "passed": 5,
+    "actualRuntimeTests": 3,
+    "reconciliationHelperTests": 2
+  },
+  "staticChecks": {
+    "ruff_src_tests": "passed",
+    "mypy_src": "passed: 614 source files",
+    "protoDrift": "passed",
+    "typescriptVite": "passed",
+    "packageFrontend": "passed"
+  },
+  "continuousDispatch": {
+    "runtimeInstances": 1,
+    "groups": 2,
+    "minimumDistinctConsumerResultsPerGroup": 6,
+    "minimumTotalDecodedImages": 12,
+    "stopTerminal": "ABORTED/E_CANCELLED",
+    "admission": "formal ListWorkflows.can_start restores before explicit restart",
+    "limits": "Normal bounded software integration; no long-duration or desktop claim"
+  },
+  "localBrowser": {
+    "status": "blocked",
+    "reason": "Chromium download endpoint returned Site Unavailable HTML instead of archive",
+    "acceptanceClaim": false
+  },
+  "remoteCI": "See exact head-SHA workflow runs and ChatGPT Web PR comments; no remote success claimed in this local record",
+  "remainingUnresolved": [
+    "Cause of original host/critical-thread execution stalls",
+    "Exact stage before missing first heartbeat",
+    "First Runtime log export RPC timeout",
+    "Historical Error 9 and first Windows empty image",
+    "Exact close cause behind historical VIEW_NOT_FOUND"
+  ]
+}

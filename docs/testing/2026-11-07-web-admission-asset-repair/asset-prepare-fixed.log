@@ -1,0 +1,21 @@
+✔ resource URLs limited to current-origin authorized paths (1.108681ms)
+✔ mutating requests carry CSRF and never put it in URL (1.600763ms)
+✔ server failures are errors rather than fake success (0.527865ms)
+✔ wrong owner result clears image instead of mixing rounds (0.547655ms)
+✔ failed image resolves entire scope with explicit current-round failure (0.35163ms)
+✔ retired exact image is unavailable without substituting or retrying another result (0.923181ms)
+✔ unclassified asset rejection and actual read failure remain errors (0.659294ms)
+✔ prepared image publishes fetched bytes once and releases its object URL (5.686841ms)
+✔ slow image cannot publish a cancelled candidate (11.529142ms)
+✔ hidden page image never blocks the visible scope (0.5378ms)
+✔ visible nested image bindings respect explicit scopes (9.976316ms)
+✔ LAN SHA256 fallback matches standard vectors and multi-block bytes (13.525986ms)
+✔ wrong size or digest never publishes image bytes (1.214746ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 477.265867

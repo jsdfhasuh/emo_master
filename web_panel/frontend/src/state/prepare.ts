@@ -41,7 +41,21 @@ export async function prepareResult(result: Result, signal: AbortSignal, require
         try {
             if (signal.aborted) controller.abort();
             const response = await fetch(url, { credentials: 'same-origin', signal: controller.signal });
-            if (!response.ok) throw new Error('image request failed');
+            if (!response.ok) {
+                // Normal result retirement can overtake a paused browser (for
+                // example while Stop confirmation is open). Keep that exact
+                // result unavailable; never retry against another result's image.
+                const failure = response.status === 404 ? await response.json().catch(() => undefined) : undefined;
+                const reasons: Record<string,string> = {
+                    RESULT_RETIRED: '这轮图片已过期',
+                    SOURCE_UNAVAILABLE: '这轮结果的图片不可用',
+                    FROZEN_RESOURCE_EXPIRED: '冻结的图片已过期，请恢复实时',
+                };
+                if (typeof failure?.code === 'string' && Object.hasOwn(reasons, failure.code)) {
+                    sources[id] = { state: 'unavailable', reason: reasons[failure.code] }; return;
+                }
+                throw new Error('image request failed');
+            }
             const limit = 8 * 1024 * 1024;
             const expectedSize = s.image.byteSize === undefined ? undefined : Number(s.image.byteSize);
             if (expectedSize !== undefined && (!Number.isSafeInteger(expectedSize) || expectedSize < 0 || expectedSize > limit)) throw new Error('invalid declared size');

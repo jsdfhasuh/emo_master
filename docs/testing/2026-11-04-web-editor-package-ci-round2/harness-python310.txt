@@ -1,0 +1,8 @@
+test_dispatch_socket_callback_supports_playwright_wrapping (test_browser_harness.BrowserHarnessTests) ... ok
+test_package_reload_waits_for_saved_ui_and_completed_operation (test_browser_harness.BrowserHarnessTests) ... ok
+test_package_spacer_assertion_checks_option_not_enabled_parent_select (test_browser_harness.BrowserHarnessTests) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.009s
+
+OK

@@ -1,0 +1,287 @@
+{
+  "actor": "ChatGPT Web",
+  "baseline": "5328aac8b54a730c5b2c4d3b0df56c46443e2871",
+  "archive": {
+    "filename": "emo_master_PR11_5328aac8_visible_acceptance_20261107.zip",
+    "bytes": 91372647,
+    "sha256": "3ab8accf3b3cd6eb768d8b56e1ddd9091fe05a75183484453d8fc5cd7fcaa511"
+  },
+  "sourceFilesSHA256": {
+    "src/emo_master/apps/runtime/jobs/supervisor.py": "6454dbbbae23d1a8930259bce5757cf4267bcbe8bf9258a7e8a6c0e184461952",
+    "tests/runtime/test_dispatch_start_retirement.py": "27c2909c5290651077e9cce5483f7e4c092422ce4bcbc6af2b3a87d9cc017544",
+    "tests/runtime/test_dispatch_continuous_recovery.py": "d9f44d6633caf54ee3a0f0c4bde0d646cb3fa3d15980b3fed88cc8e506a27ffc"
+  },
+  "redBeforeFix": {
+    "failed": 3,
+    "reason": "Retirement events have empty source project/workflow identity; one real Runtime/gRPC test included"
+  },
+  "greenFocused": {
+    "passed": 11,
+    "skipped": 0
+  },
+  "affectedRuntime": {
+    "passed": 94,
+    "skipped": 0,
+    "junit": [
+      {
+        "tests": "94",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "24.827"
+      }
+    ]
+  },
+  "webInitialWithoutOptIn": {
+    "passed": 32,
+    "skipped": 3,
+    "subtestsPassed": 6
+  },
+  "webFinalWithOptIn": {
+    "passed": 35,
+    "skipped": 0,
+    "subtestsPassed": 6,
+    "warnings": 1,
+    "junit": [
+      {
+        "tests": "41",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0",
+        "time": "7.662"
+      }
+    ]
+  },
+  "staticChecks": {
+    "ruff": "all src/tests passed",
+    "mypy": "614 source files passed; existing untyped-body notes retained",
+    "gitDiffCheck": "passed"
+  },
+  "capturedDataReplay": {
+    "rootCases": 6,
+    "originalIdentityMismatch": 6,
+    "identityCorrectedInMemoryPass": 6,
+    "foreignProjectStillRejected": 6,
+    "productionASGIHTTP": {
+      "original422": 6,
+      "identityCorrectedControl200": 6,
+      "foreignProject422": 6
+    },
+    "originalHttpQueryAndBodyCaptured": false,
+    "oldDatabaseRewritten": false
+  },
+  "capturedRetirementEvents": [
+    {
+      "rootJobId": "151a4f1d-667c-44db-8e25-e9724bd018c1",
+      "projectId": "pr11-5328aac-web-dispatch",
+      "workflowId": "main",
+      "afterTerminalSequence": 443,
+      "rows": [
+        {
+          "eventId": 55654,
+          "sequence": 444,
+          "timestampMs": 1794037015835,
+          "projectId": "",
+          "workflowId": "",
+          "eventType": "dispatch.source.ended"
+        },
+        {
+          "eventId": 55655,
+          "sequence": 445,
+          "timestampMs": 1794037016026,
+          "projectId": "",
+          "workflowId": "",
+          "eventType": "dispatch.group.retired"
+        }
+      ]
+    },
+    {
+      "rootJobId": "4ad8998d-f710-4dc9-b0ab-c4ce4347f85e",
+      "projectId": "pr11-5328aac-web-dispatch",
+      "workflowId": "main",
+      "afterTerminalSequence": 17629,
+      "rows": [
+        {
+          "eventId": 45398,
+          "sequence": 17630,
+          "timestampMs": 1794036731941,
+          "projectId": "",
+          "workflowId": "",
+          "eventType": "dispatch.source.ended"
+        },
+        {
+          "eventId": 45399,
+          "sequence": 17631,
+          "timestampMs": 1794036731955,
+          "projectId": "",
+          "workflowId": "",
+          "eventType": "dispatch.group.retired"
+        }
+      ]
+    },
+    {
+      "rootJobId": "84b057a8-85c4-410d-8313-17e6829dbff8",
+      "projectId": "pr11-5328aac-web-dispatch",
+      "workflowId": "main",
+      "afterTerminalSequence": 4328,
+      "rows": [
+        {
+          "eventId": 54717,
+          "sequence": 4329,
+          "timestampMs": 1794036975275,
+          "projectId": "",
+          "workflowId": "",
+          "eventType": "dispatch.source.ended"
+        },
+        {
+          "eventId": 54718,
+          "sequence": 4330,
+          "timestampMs": 1794036975283,
+          "projectId": "",
+          "workflowId": "",
+          "eventType": "dispatch.group.retired"
+        }
+      ]
+    },
+    {
+      "rootJobId": "8c05d00f-5c3f-4869-9dd7-1fa251f859a1",
+      "projectId": "pr11-5328aac-web-dispatch",
+      "workflowId": "main",
+      "afterTerminalSequence": 442,
+      "rows": [
+        {
+          "eventId": 57729,
+          "sequence": 443,
+          "timestampMs": 1794037094853,
+          "projectId": "",
+          "workflowId": "",
+          "eventType": "dispatch.source.ended"
+        },
+        {
+          "eventId": 57730,
+          "sequence": 444,
+          "timestampMs": 1794037095039,
+          "projectId": "",
+          "workflowId": "",
+          "eventType": "dispatch.group.retired"
+        }
+      ]
+    },
+    {
+      "rootJobId": "be3f62de-2000-40d3-9250-81572e062bbb",
+      "projectId": "pr11-5328aac-web-dispatch",
+      "workflowId": "main",
+      "afterTerminalSequence": 537,
+      "rows": [
+        {
+          "eventId": 56794,
+          "sequence": 538,
+          "timestampMs": 1794037056500,
+          "projectId": "",
+          "workflowId": "",
+          "eventType": "dispatch.source.ended"
+        },
+        {
+          "eventId": 56795,
+          "sequence": 539,
+          "timestampMs": 1794037056502,
+          "projectId": "",
+          "workflowId": "",
+          "eventType": "dispatch.group.retired"
+        }
+      ]
+    },
+    {
+      "rootJobId": "e4d32975-494b-497d-9aa2-6646bede932f",
+      "projectId": "pr11-5328aac-web-dispatch",
+      "workflowId": "main",
+      "afterTerminalSequence": 747,
+      "rows": [
+        {
+          "eventId": 59322,
+          "sequence": 748,
+          "timestampMs": 1794037148437,
+          "projectId": "",
+          "workflowId": "",
+          "eventType": "dispatch.source.ended"
+        },
+        {
+          "eventId": 59323,
+          "sequence": 749,
+          "timestampMs": 1794037148444,
+          "projectId": "",
+          "workflowId": "",
+          "eventType": "dispatch.group.retired"
+        }
+      ]
+    }
+  ],
+  "runtimeEvidenceChecks": {
+    "job_counts": {
+      "ABORTED": 17,
+      "COMPLETED": 1
+    },
+    "camera_node_observed_elapsed": {
+      "completed": 1527,
+      "cancelled": 12,
+      "completed_min_ms": 1005,
+      "completed_max_ms": 1156,
+      "above_5000_ms": 0,
+      "scope": "node.started to node.completed source timestampMs; includes IPC/operator work, not driver-only CPU or duration"
+    },
+    "initial_dispatch_window": {
+      "root": "4ad8998d-f710-4dc9-b0ab-c4ce4347f85e",
+      "consumer": "a4f45297-82ce-49e2-87c4-e7a6c91bab0a",
+      "ui_endpoint": "2026-11-07T07:31:53.438Z",
+      "complete_results": 905,
+      "first": {
+        "line": 275,
+        "resultKey": "42ef09ea-8624-4b34-af19-3d61d80820ba",
+        "ordinal": 1,
+        "observedAtMs": 1794035783190,
+        "observedAtUTC": "2026-11-07T07:16:23.190833+00:00",
+        "closedNs": 246392632635290,
+        "imageHashes": [
+          "3ae2d30e7ce23613547b4695fddf237093e80222db528067db1350a0e6f811fb"
+        ],
+        "imageOwnershipCorrect": true,
+        "allSourcesAvailable": true
+      },
+      "last": {
+        "line": 1179,
+        "resultKey": "141d46f9-60d6-48e3-a6fa-abdd927086e8",
+        "ordinal": 905,
+        "observedAtMs": 1794036712645,
+        "observedAtUTC": "2026-11-07T07:31:52.645912+00:00",
+        "closedNs": 247321714921874,
+        "imageHashes": [
+          "932f648e624490d330c74893f267ad7a6dbdd9635ecb2b3921b0b3a54dea8fae"
+        ],
+        "imageOwnershipCorrect": true,
+        "allSourcesAvailable": true
+      },
+      "first_observation_to_endpoint_seconds": 930.248,
+      "closure_span_seconds": 929.082286584,
+      "image_hashes": [
+        "2e23b9a01c8c4934f14998ead1666be4b88b701acde9e3792cf840938308f783",
+        "3ae2d30e7ce23613547b4695fddf237093e80222db528067db1350a0e6f811fb",
+        "932f648e624490d330c74893f267ad7a6dbdd9635ecb2b3921b0b3a54dea8fae"
+      ],
+      "warnings_errors": []
+    }
+  },
+  "commands": [
+    "QT_QPA_PLATFORM=offscreen python -m pytest -q tests/runtime/test_dispatch_start_retirement.py::testDispatchRetirementEventsKeepSourceJobIdentity tests/runtime/test_dispatch_continuous_recovery.py",
+    "QT_QPA_PLATFORM=offscreen python -m pytest -q tests/runtime/test_dispatch_start_retirement.py tests/runtime/test_dispatch_continuous_recovery.py tests/runtime/test_terminal_finalization_contract.py tests/runtime/test_device_ipc_cancellation.py tests/runtime/test_simulated_camera_completion.py",
+    "EMO_WEB_PRODUCT_RUNTIME=1 QT_QPA_PLATFORM=offscreen python -m pytest -q web_panel/tests/test_runtime_contract.py web_panel/tests/test_app.py web_panel/tests/test_product_runtime.py",
+    "python -m ruff check src tests",
+    "python -m mypy src",
+    "git diff --check"
+  ],
+  "boundaries": [
+    "Local Python 3.10.22 Linux automated verification; patched visible manual/Windows/hardware acceptance not performed.",
+    "ASGI replay uses captured DB transport fixtures, not original browser responses.",
+    "Old on-disk evidence was not modified; correction applies to newly emitted events.",
+    "Original upload-time report status is superseded by user upload receipt and independently verified ZIP download."
+  ]
+}

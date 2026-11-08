@@ -137,6 +137,84 @@ def testDeviceDialogCloseKeepsDraftAndRejectsInvalidInput(ownedDesignerWindow, t
     assert devices.close()
 
 
+def testDeviceRuntimeLogsKeepDraftAndReleaseModalInput(ownedDesignerWindow, tmp_path,
+        definition, declaration):  # noqa: F811
+    window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+    window.show()
+    c = window.pageCoordinator
+    document = c.session.document()
+    assert document.schemaVersion == '2.9' and document.presentation.schemaVersion == '1.2'
+    disk = (tmp_path / 'device.emoproj').read_bytes()
+    requests = []
+
+    def query(**options):
+        requests.append(options)
+        return dict(ok=True, code='OK', message='', runtimeInstanceId='runtime',
+                    upperEventId=0, nextEventId=0, hasMore=False, events=[])
+
+    window.runtimeClient.queryRuntimeLogs = query
+    c.showDevices()
+    devices = c.devices
+    waitUntil(lambda: devices.pending is None)
+    devices.table.setCurrentCell(0, 0)
+    devices.name.setText('Draft kept before logs')
+    devices.forms['defaults']._controls['gain'].setText('2.5')
+    devices.logs.setPage(dict(deviceId='camera', records=[]))
+    assert QApplication.activeModalWidget() is devices
+    devices.logs.runtimeLogsButton.click()
+
+    assert not devices.isVisible()
+    assert devices.windowModality() == Qt.WindowModal
+    assert window.logDialog.isVisible() and QApplication.activeModalWidget() is None
+    waitUntil(lambda: window.logDialog.view._historyFuture is None)
+    assert [{k: v for k, v in request.items() if k != 'cancellation'} for request in requests] == [
+        dict(projectId=document.project.projectId, deviceId='camera')]
+    saved = c.session.document().devices.definitions['camera']
+    assert saved.name == 'Draft kept before logs' and saved.defaults['gain'] == 2.5
+    assert c.session.dirty and (tmp_path / 'device.emoproj').read_bytes() == disk
+
+    # QWindow input goes through Qt's modality checks; sending directly to a
+    # QLineEdit would bypass the sibling-window block this regression fixes.
+    QApplication.processEvents()
+    dialog = window.logDialog
+    edit = dialog.view.historyInputs['component']
+    QTest.mouseClick(dialog.windowHandle(), Qt.LeftButton, pos=edit.mapTo(dialog, edit.rect().center()))
+    QTest.keyClick(dialog.windowHandle(), Qt.Key_X)
+    assert edit.hasFocus() and edit.text() == 'x'
+    dialog.hide()
+    c.showDevices()
+    assert c.devices is devices and devices.name.text() == saved.name
+    assert devices.forms['defaults']._controls['gain'].text() == '2.5'
+
+
+def testDeviceRuntimeLogsRejectIncompleteInputWithoutOpeningLogs(ownedDesignerWindow, tmp_path,
+        definition, declaration):  # noqa: F811
+    window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+    c = window.pageCoordinator
+    c.showDevices()
+    devices = c.devices
+    waitUntil(lambda: devices.pending is None)
+    devices.table.setCurrentCell(0, 0)
+    before = c.session.payload()
+    disk = (tmp_path / 'device.emoproj').read_bytes()
+    requests = []
+    window.runtimeClient.queryRuntimeLogs = lambda **options: requests.append(options)
+    control = devices.forms['defaults']._controls['gain']
+    control.setText('-')
+    devices.tabs.setCurrentIndex(0)
+    devices.logs.setPage(dict(deviceId='camera', records=[]))
+    try:
+        devices.logs.runtimeLogsButton.click()
+        assert devices.isVisible() and QApplication.activeModalWidget() is devices
+        assert not window.logDialog.isVisible() and not requests
+        assert control.text() == '-' and devices.tabs.currentIndex() == 2
+        assert '请输入有效数值' in devices.status.text()
+        assert c.session.payload() == before and (tmp_path / 'device.emoproj').read_bytes() == disk
+    finally:
+        devices.revert()
+        assert devices.close()
+
+
 def testDeviceDialogCloseDuringMetadataReadCanReopen(ownedDesignerWindow, tmp_path, definition, declaration):  # noqa: F811
     from threading import Event
     window, requirements = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)

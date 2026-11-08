@@ -88,6 +88,9 @@ class DisplaySession:
         self._imageConsumers = {}
         self._wantedImages = frozenset() if self.imageDemand else None
         self._scheduled = set()
+        # One live-image recovery per current result/source. A healthy Snapshot
+        # moves waiting -> queued; only an actual read consumes it as spent.
+        self._imageRetries = {}
         self._pinWaiting = False
         self.imageStates = {}
         self._receivedAt = {}
@@ -184,7 +187,7 @@ class DisplaySession:
     def _wantsImage(self, sourceId):
         return self._wantedImages is None or sourceId in self._wantedImages
 
-    def _enqueueResult(self, result, receivedAt, ownerAge):
+    def _enqueueResult(self, result, receivedAt, ownerAge, *, retry=False):
         key = (self.generation, result.identity.resultKey)
         if key in self._scheduled:
             return True
@@ -193,7 +196,8 @@ class DisplaySession:
         if self._pinWaiting and self.pending.qsize() >= self.pending.maxsize - 1:
             return False
         try:
-            self.pending.put_nowait((self.generation, result, receivedAt, ownerAge))
+            task = (self.generation, result, receivedAt, ownerAge)
+            self.pending.put_nowait((*task, True) if retry else task)
         except queue.Full:
             return False
         self._scheduled.add(key)
@@ -212,6 +216,35 @@ class DisplaySession:
             if "LOADING" in states.values():
                 receivedAt, ownerAge = self._receivedAt[scopeId]
                 self._enqueueResult(result, receivedAt, ownerAge)
+
+    def _retryImages(self, result):
+        """Called under lock only after a successful authoritative health read."""
+        if not self._imageRetries:
+            return
+        scope = result.identity.resultScopeId
+        current = self.latest.get(scope)
+        if (not current or current[0].identity != result.identity or self.stop.is_set()
+                or not self._canReadResults()
+                or self._liveDecision(self.generation, result)['live_decision'] != 'APPLIED'
+                or (self.generation, result.identity.resultKey) in self._scheduled):
+            return
+        confirmed = {source.sourceId: source for source in result.sources}
+        keys = []
+        for source in current[0].sources:
+            key = (scope, result.identity.resultKey, source.sourceId)
+            fresh = confirmed.get(source.sourceId)
+            if (self._imageRetries.get(key) == 'waiting' and source.sourceId in current[2]
+                    and self._wantsImage(source.sourceId) and fresh is not None
+                    and fresh.state == 'AVAILABLE' and fresh.image == source.image):
+                keys.append(key)
+        if keys and self._enqueueResult(current[0], *self._receivedAt[scope], retry=True):
+            for key in keys:
+                self._imageRetries[key] = 'queued'
+
+    def _forgetImageRetries(self, scope):
+        for key in tuple(self._imageRetries):
+            if key[0] == scope:
+                del self._imageRetries[key]
 
     def pins(self):
         with self.lock:
@@ -293,6 +326,7 @@ class DisplaySession:
         self.readyAt.clear()
         self.imageStates.clear()
         self._receivedAt.clear()
+        self._imageRetries.clear()
         self.cursor = self._acceptedCursor = 0
         self.revision += 1
 
@@ -366,6 +400,7 @@ class DisplaySession:
                 self.readyAt.clear()
                 self.imageStates.clear()
                 self._receivedAt.clear()
+                self._imageRetries.clear()
                 self.stats["resets"] += 1
             self.instanceId, self.cursor = snapshot.runtime_instance_id, snapshot.cursor
             self._acceptedCursor = snapshot.cursor
@@ -382,14 +417,20 @@ class DisplaySession:
                     self.readyAt.pop(scope, None)
                     self.imageStates.pop(scope, None)
                     self._receivedAt.pop(scope, None)
+                    self._forgetImageRetries(scope)
+            accepted = []
             for wire in snapshot.results:
                 result = decodeResult(wire)
                 if (result.identity.jobId != self.jobId or result.identity.runtimeInstanceId != self.instanceId):
                     raise ValueError("result belongs to another Runtime/Job")
-                if (result.identity.resultKey in self.seen
-                        or result.identity.resultOrdinal <= self.expired.get(result.identity.resultScopeId, 0)):
+                if result.identity.resultOrdinal <= self.expired.get(result.identity.resultScopeId, 0):
                     continue
+                accepted.append(result)
                 scope = result.identity.resultScopeId
+                current = self.latest.get(scope)
+                if (result.identity.resultKey in self.seen
+                        or (current is not None and current[0].identity == result.identity)):
+                    continue
                 if result.identity.resultOrdinal > self.high.get(scope, 0):
                     self.high[scope] = result.identity.resultOrdinal
                     # An actual new closed result invalidates the preceding image,
@@ -397,6 +438,7 @@ class DisplaySession:
                     self.latest.pop(scope, None)
                     self.imageStates.pop(scope, None)
                     self._receivedAt.pop(scope, None)
+                    self._forgetImageRetries(scope)
                     self.loading[scope] = result
                 self.stats["received"] += 1
                 if self._enqueueResult(result, time.perf_counter_ns(), wire.owner_age_ms):
@@ -406,6 +448,7 @@ class DisplaySession:
                 else:
                     self.stats["dropped"] += 1
             self._connection("CONNECTED")
+            return accepted
 
     def _controlRead(self, method, request):
         # These read-only calls were rejected before execution. Share their
@@ -582,7 +625,8 @@ class DisplaySession:
                 snapshot = self._controlRead(self.stub.Snapshot, request)
                 with self.lock:
                     if self._current(token) and generation == self.generation and self._canReadResults():
-                        self._accept(snapshot)
+                        for result in self._accept(snapshot) or ():
+                            self._retryImages(result)
             except grpc.RpcError as error:
                 with self.lock:
                     if not self._current(token) or generation != self.generation:
@@ -650,9 +694,9 @@ class DisplaySession:
                 with self.lock:
                     self._enqueueDemand()
                 continue
-            generation, result, receivedAt, ownerAge = task
+            generation, result = task[:2]
             try:
-                self._decodeLive(generation, result, receivedAt, ownerAge)
+                self._decodeLive(*task)
             finally:
                 with self.lock:
                     self._scheduled.discard((generation, result.identity.resultKey))
@@ -683,7 +727,7 @@ class DisplaySession:
             image_refs={s.sourceId: dict(owner_result_key=s.image.ownerResultKey, sha256=s.image.sha256,
                                         resource_id=s.image.resourceId) for s in result.sources if s.image})
 
-    def _decodeLive(self, generation, result, receivedAt, ownerAge):
+    def _decodeLive(self, generation, result, receivedAt, ownerAge, retry=False):
         scopeId = result.identity.resultScopeId
         with self.lock:
             if generation != self.generation or result.identity.jobId != self.jobId:
@@ -697,17 +741,31 @@ class DisplaySession:
             sameResult = existing is not None and existing[0].identity.resultKey == result.identity.resultKey
             images = dict(existing[1]) if sameResult else {}
             failures = dict(existing[2]) if sameResult else {}
+        retryable = set()
         decodedAssets = {(source.image.resourceId, source.image.sha256, source.image.byteSize): images[source.sourceId]
                          for source in result.sources if source.image is not None and source.sourceId in images}
         started = time.monotonic()
         for source in result.sources:
-            if source.image is None or source.sourceId in images or source.sourceId in failures:
+            if source.image is None or source.sourceId in images:
                 continue
             with self.lock:
+                key = (scopeId, result.identity.resultKey, source.sourceId)
+                queued = self._imageRetries.get(key) == 'queued'
+                if self.stop.is_set() or not self._canReadResults():
+                    continue
+                if retry and self._liveDecision(generation, result)['live_decision'] != 'APPLIED':
+                    continue
                 if self.imageDemand and (not self._wantsImage(source.sourceId)
                         or generation != self.generation or result.identity.resultOrdinal < self.high.get(scopeId, 0)
                         or result.identity.resultOrdinal <= self.expired.get(scopeId, 0)):
+                    if queued:
+                        self._imageRetries[key] = 'waiting'
                     continue
+                if source.sourceId in failures:
+                    if not queued:
+                        continue
+                    self._imageRetries[key] = 'spent'
+                    del failures[source.sourceId]
             try:
                 image = source.image
                 assetKey = (image.resourceId, image.sha256, image.byteSize)
@@ -718,6 +776,10 @@ class DisplaySession:
                 failures[source.sourceId] = str(error)
                 self.stats["read_failed"] += 1
                 self.reportImageError(result, source.sourceId, error)
+                if isinstance(error, grpc.RpcError) and (error.code() in {
+                        grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.DEADLINE_EXCEEDED}
+                        or (error.code() == grpc.StatusCode.RESOURCE_EXHAUSTED and error.details() == 'asset')):
+                    retryable.add(source.sourceId)
         with self.lock:
             decision = self._liveDecision(generation, result)
             applied = decision["live_decision"] == "APPLIED"
@@ -731,7 +793,11 @@ class DisplaySession:
                 "received_to_model_ms": (time.perf_counter_ns() - receivedAt) / 1e6, **decision})
             if not applied:
                 return
+            if not self.stop.is_set() and self._canReadResults():
+                for sourceId in retryable:
+                    self._imageRetries.setdefault((scopeId, result.identity.resultKey, sourceId), 'waiting')
             for sourceId in images:
+                self._imageRetries.pop((scopeId, result.identity.resultKey, sourceId), None)
                 self.reportImageIssue(result, sourceId)
             self.latest[scopeId] = (result, images, failures)
             self.loading.pop(scopeId, None)
@@ -750,7 +816,7 @@ class DisplaySession:
                                           '客户端图像缓存超过 16777216 字节', level='WARN')
             # Loading another image of an already published result changes the
             # view revision, not the formal-result observer stream.
-            callbacks = () if self.imageDemand and sameResult else tuple(self.listeners)
+            callbacks = () if sameResult else tuple(self.listeners)
         for callback in callbacks:
             try:
                 callback(result)
@@ -788,6 +854,7 @@ class DisplaySession:
     def close(self):
         with self.lock:
             self.stop.set()
+            self._imageRetries.clear()
             self._selectionEpoch += 1
             self._jobUnavailable("UNAVAILABLE", "会话已关闭")
         if self.stream is not None:

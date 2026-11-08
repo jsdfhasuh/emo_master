@@ -67,7 +67,14 @@ jobs:
       - name: Build frontend
         run: npm --prefix frontend run build
       - name: Install test browser
-        run: python -m playwright install --with-deps chromium
+        # These checks use the default headless shell and no media playback.
+        # Keep Linux libraries; avoid installing unused Windows media features.
+        run: |
+          if [[ "$RUNNER_OS" == 'Linux' ]]; then
+            python -m playwright install --with-deps --only-shell chromium
+          else
+            python -m playwright install --only-shell chromium
+          fi
       - name: Package UI and draft fixture
         run: python scripts/package_frontend.py && python dev/fixtures/make_demo_package.py
       - name: Browser fixture checks
@@ -163,7 +170,7 @@ jobs:
         shell: bash
         run: npm --prefix web_panel/frontend ci && npm --prefix web_panel/frontend run build && python web_panel/scripts/package_frontend.py
       - name: Install browser for combined software Runtime acceptance
-        run: python -m pip install playwright && python -m playwright install chromium
+        run: python -m pip install playwright && python -m playwright install --only-shell chromium
       - name: Required SDK 1.5.0 same-Runtime two-Job image and automatic restart acceptance
         run: python web_panel/frontend/tests/product_runtime_e2e.py
       - uses: actions/upload-artifact@v4

@@ -23,7 +23,26 @@ PR 使用当前检出的合并结果与事件中 base 提交的差异；push 使
 
 范围判定失败或缺少明确结果时，两个平台的检查均失败。确认可以跳过时，只执行状态说明步骤，不安装项目依赖或运行 pytest；GitHub job 完成不代表完整测试已经执行，应以检查摘要为准。
 
-完整检查仍通过 `scripts/ci_check.py` 执行 protobuf、Ruff、mypy 和默认完整 pytest。恢复测试仍在默认收集范围内，只移除了工作流中重复执行的那一轮；失败日志、JUnit 和双任务观察结果继续保留。
+完整检查仍通过 `scripts/ci_check.py` 执行 protobuf、Ruff、mypy 和 pytest。Linux 保持默认完整串行执行；Windows 采用下述两个独立 runner 分片，合起来覆盖默认完整收集范围。恢复测试仍在默认收集范围内，只移除了工作流中重复执行的那一轮；失败日志、JUnit 和双任务观察结果继续保留。
+
+## Windows 全量测试分片
+
+Windows 两个分片与 Linux 同时开始。每个 Windows runner 内仍串行运行测试，不使用同一桌面的多进程 pytest；两个分片都保留原生 `windows` QPA、1920×1080 桌面检查、Python 3.10、protobuf、Ruff、mypy 和单用例 120 秒超时。
+
+| 分片 | 实际文件范围 |
+| --- | --- |
+| `designer-ui` | `tests/designer/`、`tests/ui/` |
+| `runtime-other` | 默认 pytest 收集中的其余文件，包含 Runtime、core、plugins、根目录测试以及 examples |
+
+插件先按默认规则完整收集，再按文件选择分片，参数化 case 和文件内顺序不变。新增目录自动进入其余分片，不维护测试文件白名单，也不硬编码测试数量。每个分片通过 pytest 的 deselected 统计明确报告本片未执行的用例；原条件 skip 仍为 skip。
+
+两组分别上传带分片名称的 JUnit、失败日志和 `ci-shard.json`。清单包含完整收集、选择、实际进入执行的 nodeid 和 pytest 退出码；UI 分片继续上传双任务观察结果。原来的 `windows-latest / Python 3.10` 检查成为汇总门禁：只有两个任务成功，完整收集一致、所选集合互斥且并集完整、实际执行集合完整时才通过。报告缺失、分片失败/取消/非预期跳过，或只 collect-only 未执行，均不能产生绿灯。
+
+分片缩短等待时间，总 runner 消耗不会同比减少，重复准备环境还会增加部分开销。原生 Qt、千次导航/显隐、300次Join和全部正常生命周期回归仍在每次完整检查中执行。
+
+本地默认 `python scripts/ci_check.py` 和 Windows release 验证入口继续完整串行执行；只有显式 `--shard designer-ui` 或 `--shard runtime-other` 才分片。主 CI 手动运行也覆盖两平台全量，Windows 使用同样的分片；如需原有单进程完整顺序，可使用默认脚本或 release 既有入口，无需给每个 PR 再加一轮重复测试。
+
+pytest 同时输出最慢30个阶段中耗时至少1秒的记录，方便区分准备、调用和清理成本；这只是诊断输出，不新增测试或性能门槛。
 
 ## 并发与手动运行
 
@@ -51,6 +70,8 @@ Windows 自动任务保留 `editor_draft_recovery.test.mjs` 和 `editor_round3.t
 
 Windows 单独的 `Owning Runtime integration (synthetic data, Windows)` job 沿用原有全部步骤，包含软件 Runtime 的回环连接、同 Runtime 两个 Job 的图片与自动重启验收。这里使用合成数据，不代表真实设备验收。
 
+当前工作流调用的浏览器脚本使用默认 headless 模式，没有指定浏览器 channel，因此安装时用 `--only-shell` 下载实际使用的 Chromium Headless Shell。Linux 保留 `--with-deps` 安装系统依赖；Windows 仅安装浏览器，避免额外安装本轮图片/HTTP/WS场景不使用的 Media Foundation。软件 Runtime 的 Windows 浏览器任务使用相同的 headless 安装方式。手工可见浏览器入口不受此 CI 设置影响。
+
 不在 Windows 自动任务中重复的浏览器脚本为 `catalog_refresh_e2e.py`、`editor_draft_recovery_browser.py`、`editor_dispatch_browser.py`。它们通过 Playwright 拦截 HTTP / WebSocket 验证前端状态逻辑；完整场景仍在 Linux 每次执行，未删除测试或业务断言。涉及平台字体、几何、系统交互、文件与进程入口的检查继续在 Windows 执行。检查摘要会列出本次选择范围，不把未运行的测试记为通过。
 
 ## 界面测试的等待方式
@@ -76,7 +97,7 @@ python -m unittest discover -s tests -p test_ci_scope.py -v
 完整项目环境中的相关回归：
 
 ```bash
-python -m pytest tests/test_ci_scope.py tests/test_ci_check.py tests/test_ci_pytest_reports.py tests/test_release_workflow_contract.py -q
+python -m pytest tests/test_ci_scope.py tests/test_ci_check.py tests/test_ci_pytest_shard.py tests/test_ci_pytest_reports.py tests/test_release_workflow_contract.py -q
 ```
 
 前端组件目录一致性检查读取 Python AST 中的字面常量，不执行 Designer 模块；允许等价格式调整，组件类型缺失或名称不一致仍失败。

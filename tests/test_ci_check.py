@@ -1,4 +1,5 @@
 from pathlib import Path
+from fnmatch import fnmatch
 import shlex
 from types import ModuleType, SimpleNamespace
 import sys
@@ -22,7 +23,22 @@ def testCiPytestReportsNamesAndHasCrossPlatformHangBound(monkeypatch):
     assert "--junitxml=build/ci-results.xml" in command
     assert "--timeout=120" in command and "--timeout-method=thread" in command
     assert command[command.index("-o") + 1] == "faulthandler_timeout=60"
+    assert "--durations=30" in command and "--durations-min=1" in command
+    assert not any(value.startswith("--ci-shard") for value in command)
     assert [name for _, name in calls] == ["proto-drift", "ruff", "mypy", "pytest"]
+
+
+@pytest.mark.parametrize("shard", ["designer-ui", "runtime-other"])
+def testCiShardOnlyChangesPytestSelectionAndKeepsAllChecks(monkeypatch, shard):
+    calls = []
+    monkeypatch.setattr(ci_check, "runStep", lambda command, name: calls.append((command, name)) or 0)
+    assert ci_check.main(["--shard", shard]) == 0
+    assert [name for _, name in calls] == ["proto-drift", "ruff", "mypy", "pytest"]
+    command = calls[-1][0]
+    assert "scripts.ci_pytest_shard" in command
+    assert f"--ci-shard={shard}" in command
+    assert "--ci-shard-report=build/ci-shard.json" in command
+    assert "--timeout=120" in command and "--timeout-method=thread" in command
 
 
 def testCiStopsOnFailedCheckAndPreservesFailureCode(monkeypatch):
@@ -59,13 +75,13 @@ def workflowFile(name):
     return yaml.safe_load((Path(__file__).resolve().parents[1] / ".github/workflows" / name).read_text())
 
 
-def projectCheckStep(job):
+def projectCheckStep(job, shard=None):
     matches = [step for step in job["steps"] if "scripts/ci_check.py" in step.get("run", "")]
     assert len(matches) == 1
-    # No test selection or alternate entry point is passed to the full source check.
-    command = shlex.split(matches[0]["run"])
+    command = shlex.split(matches[0]["run"].replace("${{ matrix.shard }}", shard or ""))
     assert command[0] in {"python", "python3"}
-    assert command[1:] == ["scripts/ci_check.py"]
+    expected = ["scripts/ci_check.py"] + (["--shard", shard] if shard else [])
+    assert command[1:] == expected
     return matches[0]
 
 
@@ -75,24 +91,82 @@ def assertFailureArtifacts(job, paths):
                and paths <= set(step["with"]["path"].splitlines()) for step in uploads)
 
 
-def testNativeWindowsCiKeepsFullCoverageAndFailureEvidenceWhenSelected():
+def testLinuxCiKeepsFullDefaultSourceChecksAndFailureEvidence():
     workflow = workflowFile("ci.yml")
     job = workflow["jobs"]["validate"]
     assert job["timeout-minutes"]
-    assert set(job["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest"}
-    assert job["strategy"]["fail-fast"] is False
+    assert job["runs-on"] == "ubuntu-latest"
+    assert job["name"] == "ubuntu-latest / Python 3.10"
+    assert job["needs"] == "scope"
     projectCheckStep(job)
     assertFailureArtifacts(job, {"build/ci-results.xml", "build/ci-failures.log", "build/two-job-observation.json"})
 
 
+def testWindowsShardsKeepNativeCoverageAndAggregateTheOriginalRequiredCheck():
+    jobs = workflowFile("ci.yml")["jobs"]
+    shards = jobs["windows"]
+    assert shards["runs-on"] == "windows-latest"
+    assert shards["env"]["QT_QPA_PLATFORM"] == "windows"
+    assert shards["needs"] == "scope"
+    assert shards["if"] == "needs.scope.outputs.run_full == 'true'"
+    assert shards["strategy"]["fail-fast"] is False
+    assert set(shards["strategy"]["matrix"]["shard"]) == {"designer-ui", "runtime-other"}
+    for shard in shards["strategy"]["matrix"]["shard"]:
+        projectCheckStep(shards, shard)
+    assertFailureArtifacts(shards, {"build/ci-results.xml", "build/ci-failures.log",
+                                   "build/two-job-observation.json", "build/ci-shard.json"})
+    gate = jobs["windows-summary"]
+    assert gate["name"] == "windows-latest / Python 3.10"
+    assert set(gate["needs"]) == {"scope", "windows"}
+    assert "always()" in gate["if"]
+    upload = next(step["with"] for step in shards["steps"]
+                  if step.get("uses", "").startswith("actions/upload-artifact@"))
+    download = next(step["with"] for step in gate["steps"]
+                    if step.get("uses", "").startswith("actions/download-artifact@"))
+    summary = next(step for step in gate["steps"] if "scripts/ci_shard_summary.py" in step.get("run", ""))
+    command = shlex.split(summary["run"])
+    assert command[:2] == ["python", "scripts/ci_shard_summary.py"]
+    reports = []
+    for shard in shards["strategy"]["matrix"]["shard"]:
+        name = upload["name"].replace("${{ matrix.shard }}", shard)
+        assert fnmatch(name, download["pattern"])
+        reports.append(f"{download['path']}/{name}/ci-shard.json")
+    assert command[2:] == reports
+    assert summary["if"] == "needs.scope.outputs.run_full == 'true'"
+
+
+@pytest.mark.parametrize("jobId", ["validate", "windows-summary"])
 @pytest.mark.parametrize("scopeResult,runFull", [("failure", ""), ("success", ""), ("success", "unknown")])
-def testFailedOrMissingScopeCannotProduceSuccessfulSourceCheck(monkeypatch, scopeResult, runFull):
-    job = workflowFile("ci.yml")["jobs"]["validate"]
+def testFailedOrMissingScopeCannotProduceSuccessfulSourceCheck(monkeypatch, jobId, scopeResult, runFull):
+    job = workflowFile("ci.yml")["jobs"][jobId]
     report = next(step for step in job["steps"] if "SCOPE_RESULT" in step.get("env", {}))
     monkeypatch.setenv("SCOPE_RESULT", scopeResult)
     monkeypatch.setenv("RUN_FULL", runFull)
     with pytest.raises(SystemExit):
         exec(compile(report["run"], "ci-selection-result", "exec"))
+
+
+@pytest.mark.parametrize("shardsResult", ["failure", "cancelled", "skipped", ""])
+def testWindowsGateRejectsIncompleteShardJobs(monkeypatch, shardsResult):
+    gate = workflowFile("ci.yml")["jobs"]["windows-summary"]["steps"][0]
+    monkeypatch.setenv("SCOPE_RESULT", "success")
+    monkeypatch.setenv("RUN_FULL", "true")
+    monkeypatch.setenv("SHARDS_RESULT", shardsResult)
+    with pytest.raises(SystemExit, match="did not all succeed"):
+        exec(compile(gate["run"], "ci-windows-gate", "exec"))
+
+
+@pytest.mark.parametrize("runFull,shardsResult", [("true", "success"), ("false", "skipped")])
+def testWindowsGateAcceptsCompleteJobsOrExplicitlyReportsUnrunChecks(monkeypatch, tmp_path, runFull, shardsResult):
+    gate = workflowFile("ci.yml")["jobs"]["windows-summary"]["steps"][0]
+    summary = tmp_path / "summary.md"
+    monkeypatch.setenv("SCOPE_RESULT", "success")
+    monkeypatch.setenv("RUN_FULL", runFull)
+    monkeypatch.setenv("SHARDS_RESULT", shardsResult)
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
+    exec(compile(gate["run"], "ci-windows-gate", "exec"))
+    if runFull == "false":
+        assert "Full source checks were not run" in summary.read_text()
 
 
 @pytest.mark.parametrize("filename", ["ci.yml", "release-windows.yml"])
@@ -101,7 +175,7 @@ def testFailedOrMissingScopeCannotProduceSuccessfulSourceCheck(monkeypatch, scop
     ("windows", 1280, 1080, False), ("windows", 1920, 720, False),
 ])
 def testNativeDesktopCheckRejectsWrongBackendOrSmallScreen(monkeypatch, filename, platform, width, height, valid):
-    job = workflowFile(filename)["jobs"]["validate"]
+    job = workflowFile(filename)["jobs"]["windows" if filename == "ci.yml" else "validate"]
     check = next(step for step in job["steps"] if "QApplication" in step.get("run", ""))
     geometry = SimpleNamespace(width=lambda: width, height=lambda: height, getRect=lambda: (0, 0, width, height))
     screen = SimpleNamespace(geometry=lambda: geometry, availableGeometry=lambda: geometry, devicePixelRatio=lambda: 1)

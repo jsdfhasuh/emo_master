@@ -36,21 +36,14 @@ jobs:
         run: python scripts/ci_scope.py
   validate:
     needs: scope
-    # Expand both existing check names even for docs/Web-only changes or a failed selector.
+    # Keep the existing Linux check even for docs/Web-only changes or a failed selector.
     if: ${{ !cancelled() }}
-    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
+    name: ubuntu-latest / Python 3.10
+    runs-on: ubuntu-latest
     # Full Linux checks reached the 45-minute job cap after passing; allow setup and cleanup.
-    # Native Windows Qt reached 99% at 60 minutes. Each test remains bounded at 120s.
-    timeout-minutes: ${{ matrix.os == 'windows-latest' && 90 || 60 }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: ["3.10"]
+    timeout-minutes: 60
     env:
-      # Windows offscreen QPA crashes while rendering QMessageBox.
-      QT_QPA_PLATFORM: ${{ matrix.os == 'windows-latest' && 'windows' || 'offscreen' }}
+      QT_QPA_PLATFORM: offscreen
     steps:
       - name: Report source check selection
         shell: python
@@ -71,16 +64,48 @@ jobs:
       - uses: actions/setup-python@v5
         if: needs.scope.outputs.run_full == 'true'
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.10'
       - name: Install dependencies
         if: needs.scope.outputs.run_full == 'true'
         run: python -m pip install -r requirements-dev.txt
+      - name: Run project checks
+        if: needs.scope.outputs.run_full == 'true'
+        run: python scripts/ci_check.py
+      - name: Upload test results
+        if: always() && needs.scope.outputs.run_full == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-ubuntu-latest-py3.10
+          path: |
+            build/ci-results.xml
+            build/ci-failures.log
+            build/two-job-observation.json
+          if-no-files-found: ignore
+  windows:
+    needs: scope
+    if: needs.scope.outputs.run_full == 'true'
+    name: Windows source (${{ matrix.shard }}) / Python 3.10
+    runs-on: windows-latest
+    # Separate native desktops; each shard remains serial and every test is bounded at 120s.
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [designer-ui, runtime-other]
+    env:
+      # Both groups contain Qt tests. Offscreen QPA crashes while rendering QMessageBox.
+      QT_QPA_PLATFORM: windows
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
       - name: Configure native Windows test desktop
-        if: needs.scope.outputs.run_full == 'true' && runner.os == 'Windows'
         shell: pwsh
         run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
       - name: Verify native Windows test desktop
-        if: needs.scope.outputs.run_full == 'true' && runner.os == 'Windows'
         shell: python
         env:
           PYTHONPATH: src
@@ -98,15 +123,58 @@ jobs:
           assert app.platformName() == "windows"
           assert geometry.width() >= 1920 and geometry.height() >= 1080
       - name: Run project checks
-        if: needs.scope.outputs.run_full == 'true'
-        run: python scripts/ci_check.py
+        run: python scripts/ci_check.py --shard ${{ matrix.shard }}
       - name: Upload test results
-        if: always() && needs.scope.outputs.run_full == 'true'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.os }}-py${{ matrix.python-version }}
+          name: test-results-windows-latest-py3.10-${{ matrix.shard }}
           path: |
             build/ci-results.xml
             build/ci-failures.log
             build/two-job-observation.json
+            build/ci-shard.json
           if-no-files-found: ignore
+  windows-summary:
+    needs: [scope, windows]
+    if: ${{ always() }}
+    # Preserve the original required check name; neither shard can pass this gate alone.
+    name: windows-latest / Python 3.10
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify source selection and Windows jobs
+        shell: python
+        env:
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          RUN_FULL: ${{ needs.scope.outputs.run_full }}
+          SHARDS_RESULT: ${{ needs.windows.result }}
+        run: |
+          import os
+          if os.environ['SCOPE_RESULT'] != 'success' or os.environ['RUN_FULL'] not in ('true', 'false'):
+              raise SystemExit('Source check selection failed; this check cannot pass.')
+          if os.environ['RUN_FULL'] == 'false':
+              if os.environ['SHARDS_RESULT'] != 'skipped':
+                  raise SystemExit('Unexpected Windows shard result for skipped source checks.')
+              message = 'Full source checks were not run: only passive documentation and/or independent Web files changed.'
+              print(message)
+              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
+                  summary.write(message + '\n')
+          elif os.environ['SHARDS_RESULT'] != 'success':
+              raise SystemExit('Windows source shards did not all succeed.')
+      - uses: actions/checkout@v4
+        if: needs.scope.outputs.run_full == 'true'
+        with:
+          sparse-checkout: /scripts/ci_shard_summary.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v4
+        if: needs.scope.outputs.run_full == 'true'
+        with:
+          pattern: test-results-windows-latest-py3.10-*
+          path: build/windows-shards
+      - name: Verify complete Windows test coverage
+        if: needs.scope.outputs.run_full == 'true'
+        run: >-
+          python scripts/ci_shard_summary.py
+          build/windows-shards/test-results-windows-latest-py3.10-designer-ui/ci-shard.json
+          build/windows-shards/test-results-windows-latest-py3.10-runtime-other/ci-shard.json

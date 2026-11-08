@@ -31,9 +31,37 @@ PR 使用当前检出的合并结果与事件中 base 提交的差异；push 使
 
 手动运行使用独立的 run ID 分组，不被后续普通提交取消。主 CI 的手动入口始终执行完整源码检查。
 
-## 本轮保留的覆盖
+## Web 两个平台的分工
 
-Windows 原生 Qt、Linux offscreen、全部业务回归、Web 两平台浏览器检查以及真实 Runtime 集成保持原有执行内容。长循环、原型测试和平台矩阵没有在这一轮降频。
+Web CI 保留 `web-panel (ubuntu-latest)`、`web-panel (windows-latest)` 和 Windows 软件 Runtime 集成三个检查名称。每次触发 Web CI 时，Linux 执行全部检查；Windows 日常运行重点保留实际平台集成。手动 `workflow_dispatch` 始终在两个平台执行完整 Web 检查。
+
+| 检查 | Linux 自动 / 手动 | Windows 自动 | Windows 手动 |
+| --- | --- | --- | --- |
+| 完整 Python 后端测试、SDK 版本检查 | 运行 | 运行 | 运行 |
+| 前端 Node 逻辑测试 | 全部运行 | 保留下述两个平台相关测试文件 | 全部运行 |
+| 前端依赖安装、TypeScript 检查和 Vite 构建 | 运行 | 运行 | 运行 |
+| 桌面 / 移动浏览器入口、控制按钮、停止确认与图片身份 | 运行 | 运行 | 运行 |
+| spacer / 画布几何、编辑器剪贴板 / 拖拽 / 图片上传 / 保存导出 | 运行 | 运行 | 运行 |
+| 真实 HTTP / WebSocket、上传下载、目标隔离、无密码本地模式、官方预览 CLI | 运行 | 运行 | 运行 |
+| 模拟 API 的目录刷新、草稿恢复、Dispatch 捕获隔离三个浏览器脚本 | 运行 | 不重复运行 | 运行 |
+| Playwright 夹具回归 `test_browser_harness.py` | 运行 | 运行 | 运行 |
+| 独立 wheel 构建、离开源码目录安装、静态资源与无 Qt 依赖检查 | 运行 | 运行 | 运行 |
+
+Windows 自动任务保留 `editor_draft_recovery.test.mjs` 和 `editor_round3.test.mjs` 两个完整文件：前者覆盖 Windows 原生模块路径及缓存清理，后者包含 Node 调用 Python 的组件目录校验。同文件中的草稿恢复等业务回归一并保留，不使用测试名称过滤，避免改名后零匹配却成功。
+
+Windows 单独的 `Owning Runtime integration (synthetic data, Windows)` job 沿用原有全部步骤，包含软件 Runtime 的回环连接、同 Runtime 两个 Job 的图片与自动重启验收。这里使用合成数据，不代表真实设备验收。
+
+不在 Windows 自动任务中重复的浏览器脚本为 `catalog_refresh_e2e.py`、`editor_draft_recovery_browser.py`、`editor_dispatch_browser.py`。它们通过 Playwright 拦截 HTTP / WebSocket 验证前端状态逻辑；完整场景仍在 Linux 每次执行，未删除测试或业务断言。涉及平台字体、几何、系统交互、文件与进程入口的检查继续在 Windows 执行。检查摘要会列出本次选择范围，不把未运行的测试记为通过。
+
+## 界面测试的等待方式
+
+`tests/designer/test_workflow_navigation.py` 的 picker 点击、键盘导航和窗口尺寸循环使用已有 `waitUntil` 等待真实状态：先处理 Qt 事件，再等待弹窗已暴露、筛选项可点击或当前标签完整可见，超时仍使测试失败。保留 29 个标签、三种宽度、左右布局方向和原有全部断言，避免每次操作固定等待 50 ms。
+
+一次性建窗、截图和像素检查仍保留原有等待。其他验证真实轮询间隔、停止与恢复时序的测试没有批量缩短等待。
+
+## 其他保留的覆盖
+
+主 CI 的 Windows 原生 Qt、Linux offscreen 和完整源码回归不减量。千次导航 / 显隐、300 次 Join、P0 原型与正常停止重启测试均保持原有执行频率和次数。
 
 历史一次性诊断入口移至 [archived-workflows](archived-workflows/README.md)，原文和固定提交条件保留。其余诊断和打包工作流沿用既有触发条件。
 
@@ -52,3 +80,11 @@ python -m pytest tests/test_ci_scope.py tests/test_ci_check.py tests/test_ci_pyt
 ```
 
 前端组件目录一致性检查读取 Python AST 中的字面常量，不执行 Designer 模块；允许等价格式调整，组件类型缺失或名称不一致仍失败。
+
+导航等待修改可在项目 Python 3.10 环境中单独验证：
+
+```bash
+python -m pytest tests/designer/test_workflow_navigation.py -q --durations=10 --timeout=120 --timeout-method=thread
+```
+
+Linux 使用 `QT_QPA_PLATFORM=offscreen`，Windows CI 仍使用原生 `windows` 平台。局部耗时对照只说明同环境中该文件的变化，完整 CI 的耗时以对应固定提交的托管运行记录为准。

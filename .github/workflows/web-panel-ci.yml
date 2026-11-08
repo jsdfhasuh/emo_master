@@ -20,6 +20,11 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    env:
+      # Pure JS/state-fixture regressions run once per change. Windows retains
+      # native-path/Python harnesses, HTTP/WS, dialogs, geometry, file/CLI and wheel.
+      # Manual runs deliberately exercise the full suite on both platforms.
+      FULL_WEB_LOGIC: ${{ matrix.os == 'ubuntu-latest' || github.event_name == 'workflow_dispatch' }}
     defaults:
       run:
         working-directory: web_panel
@@ -32,14 +37,35 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Report Web test coverage
+        run: |
+          if [[ "$FULL_WEB_LOGIC" == 'true' ]]; then
+            echo 'Full Web suite: backend, frontend logic, all browser checks in this workflow and independent wheel.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          Windows platform checks: full backend tests, frontend build, native-path React harness, Node-to-Python AST checks, desktop/mobile browser entry, native confirmation, geometry, real HTTP/WS, editor file operations, local authentication, preview CLI and independent wheel.
+
+          Frontend unit coverage here runs both complete editor_draft_recovery.test.mjs and editor_round3.test.mjs files.
+
+          The full frontend unit suite and the catalog refresh, draft recovery and Dispatch route-fixture browser scripts are not run in this Windows job. They run in the Linux job on every change; workflow_dispatch runs them on both platforms.
+          SUMMARY
+          fi
       - name: Install only isolated Web dependencies
         run: python -m pip install contracts/panel-contract-v1/python/*.whl && python -m pip install -e '.[test]' build playwright
       - name: Verify delivered official SDK version
         run: python -c "from importlib.metadata import version; assert version('emo-panel-protocol') == '1.5.0'"
       - name: Backend tests
         run: python -m unittest discover -s tests -v
+      - name: Install frontend dependencies
+        run: npm --prefix frontend ci
+      - name: Frontend logic regressions
+        if: env.FULL_WEB_LOGIC == 'true'
+        run: npm --prefix frontend test
+      - name: Frontend platform regressions
+        if: env.FULL_WEB_LOGIC == 'false'
+        run: node --test frontend/tests/editor_draft_recovery.test.mjs frontend/tests/editor_round3.test.mjs
       - name: Build frontend
-        run: npm --prefix frontend ci && npm --prefix frontend test && npm --prefix frontend run build
+        run: npm --prefix frontend run build
       - name: Install test browser
         run: python -m playwright install --with-deps chromium
       - name: Package UI and draft fixture
@@ -51,13 +77,16 @@ jobs:
       - name: Shared spacer and expanded canvas browser checks
         run: python frontend/tests/spacer_browser.py
       - name: Current-target catalog refresh browser checks
+        if: env.FULL_WEB_LOGIC == 'true'
         run: python frontend/tests/catalog_refresh_e2e.py
       - name: Editor draft recovery browser checks
+        if: env.FULL_WEB_LOGIC == 'true'
         run: python frontend/tests/editor_draft_recovery_browser.py
+      - name: Browser harness checks
+        run: python -m unittest discover -s frontend/tests -p 'test_browser_harness.py' -v
       - name: Editor Dispatch capture isolation browser checks
-        run: |
-          python -m unittest discover -s frontend/tests -p 'test_browser_harness.py' -v
-          python frontend/tests/editor_dispatch_browser.py
+        if: env.FULL_WEB_LOGIC == 'true'
+        run: python frontend/tests/editor_dispatch_browser.py
       - name: Editor package and grid browser checks
         run: python frontend/tests/editor_package_browser.py
       - name: Browser full Web application checks

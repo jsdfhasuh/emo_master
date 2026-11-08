@@ -295,7 +295,7 @@ class SourceBoundaries(unittest.TestCase):
     def test_no_capture_or_controller_routes(self):
         tool = (REPO / "scripts/r3_windows_wpr_metadata_preflight.py").read_text()
         native = (REPO / "scripts/windows_wpr_session_count.cpp").read_text()
-        workflow = (REPO / ".github/workflows/runtime-wpr-metadata-preflight.yml").read_text()
+        workflow = (REPO / "docs/ci/archived-workflows/runtime-wpr-metadata-preflight.yml").read_text()
         adapter = (REPO / "scripts/diagnostics/windows_wpr_status_capture.py").read_text()
         parser = (REPO / "scripts/diagnostics/windows_wpr_status_absence.py").read_text()
         for source in (tool, adapter, parser, native, workflow):
@@ -316,7 +316,7 @@ class SourceBoundaries(unittest.TestCase):
         self.assertEqual(workflow.count("Remove-Item"), 1)
 
     def test_extracted_workflow_public_output_filter(self):
-        workflow = (REPO / ".github/workflows/runtime-wpr-metadata-preflight.yml").read_text()
+        workflow = (REPO / "docs/ci/archived-workflows/runtime-wpr-metadata-preflight.yml").read_text()
         values = {}
         for name in ("number", "phases", "reasons"):
             values[name] = re.search(r"\$" + name + r" = '([^']+)'", workflow).group(1)
@@ -409,7 +409,7 @@ class SourceBoundaries(unittest.TestCase):
     def test_extracted_workflow_fixture_output_filter(self):
         import sys
         from scripts.diagnostics import windows_wpr_fixture_report as report
-        workflow = (REPO / ".github/workflows/runtime-wpr-metadata-preflight.yml").read_text()
+        workflow = (REPO / "docs/ci/archived-workflows/runtime-wpr-metadata-preflight.yml").read_text()
         pattern = re.search(r"\$fixturePattern = '([^']+)'", workflow).group(1)
         summary_pattern = re.search(r"\$fixtureSummaryPattern = '([^']+)'", workflow).group(1)
         result = report.FixedResult(sys.modules[__name__])

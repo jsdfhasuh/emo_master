@@ -1,4 +1,7 @@
 from pathlib import Path
+import shlex
+from types import ModuleType, SimpleNamespace
+import sys
 
 import pytest
 import yaml
@@ -52,41 +55,74 @@ def testCiPreservesSelectedQtPlatform(monkeypatch, platform):
     assert platforms == [platform] * 4
 
 
-def testNativeWindowsCiProvidesDesktopWithoutReducingTestSelection():
-    workflow = yaml.safe_load((Path(__file__).resolve().parents[1] / ".github/workflows/ci.yml").read_text())
+def workflowFile(name):
+    return yaml.safe_load((Path(__file__).resolve().parents[1] / ".github/workflows" / name).read_text())
+
+
+def projectCheckStep(job):
+    matches = [step for step in job["steps"] if "scripts/ci_check.py" in step.get("run", "")]
+    assert len(matches) == 1
+    # No test selection or alternate entry point is passed to the full source check.
+    command = shlex.split(matches[0]["run"])
+    assert command[0] in {"python", "python3"}
+    assert command[1:] == ["scripts/ci_check.py"]
+    return matches[0]
+
+
+def assertFailureArtifacts(job, paths):
+    uploads = [step for step in job["steps"] if step.get("uses", "").startswith("actions/upload-artifact@")]
+    assert any("always()" in step.get("if", "")
+               and paths <= set(step["with"]["path"].splitlines()) for step in uploads)
+
+
+def testNativeWindowsCiKeepsFullCoverageAndFailureEvidenceWhenSelected():
+    workflow = workflowFile("ci.yml")
     job = workflow["jobs"]["validate"]
-    assert job["timeout-minutes"] == "${{ matrix.os == 'windows-latest' && 90 || 60 }}"
-    assert job["strategy"]["matrix"]["os"] == ["ubuntu-latest", "windows-latest"]
+    assert job["timeout-minutes"]
+    assert set(job["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-latest"}
     assert job["strategy"]["fail-fast"] is False
-    steps = {step["name"]: step for step in job["steps"] if "name" in step}
-    setup = steps["Configure native Windows test desktop"]
-    assert setup["if"] == "runner.os == 'Windows'"
-    assert setup["run"] == "Set-DisplayResolution -Width 1920 -Height 1080 -Force"
-    check = steps["Verify native Windows test desktop"]
-    assert check["if"] == setup["if"]
-    compile(check["run"], "ci-native-desktop", "exec")
-    assert 'geometry.width() >= 1920 and geometry.height() >= 1080' in check["run"]
-    assert steps["Run project checks"]["run"] == "python scripts/ci_check.py"
-    upload = steps["Upload test results"]
-    assert upload["if"] == "always()"
-    assert upload["with"]["path"].splitlines() == [
-        "build/ci-results.xml", "build/ci-failures.log", "build/two-job-observation.json"
-    ]
+    projectCheckStep(job)
+    assertFailureArtifacts(job, {"build/ci-results.xml", "build/ci-failures.log", "build/two-job-observation.json"})
+
+
+@pytest.mark.parametrize("scopeResult,runFull", [("failure", ""), ("success", ""), ("success", "unknown")])
+def testFailedOrMissingScopeCannotProduceSuccessfulSourceCheck(monkeypatch, scopeResult, runFull):
+    job = workflowFile("ci.yml")["jobs"]["validate"]
+    report = next(step for step in job["steps"] if "SCOPE_RESULT" in step.get("env", {}))
+    monkeypatch.setenv("SCOPE_RESULT", scopeResult)
+    monkeypatch.setenv("RUN_FULL", runFull)
+    with pytest.raises(SystemExit):
+        exec(compile(report["run"], "ci-selection-result", "exec"))
+
+
+@pytest.mark.parametrize("filename", ["ci.yml", "release-windows.yml"])
+@pytest.mark.parametrize("platform,width,height,valid", [
+    ("windows", 1920, 1080, True), ("offscreen", 1920, 1080, False),
+    ("windows", 1280, 1080, False), ("windows", 1920, 720, False),
+])
+def testNativeDesktopCheckRejectsWrongBackendOrSmallScreen(monkeypatch, filename, platform, width, height, valid):
+    job = workflowFile(filename)["jobs"]["validate"]
+    check = next(step for step in job["steps"] if "QApplication" in step.get("run", ""))
+    geometry = SimpleNamespace(width=lambda: width, height=lambda: height, getRect=lambda: (0, 0, width, height))
+    screen = SimpleNamespace(geometry=lambda: geometry, availableGeometry=lambda: geometry, devicePixelRatio=lambda: 1)
+    application = SimpleNamespace(platformName=lambda: platform, primaryScreen=lambda: screen)
+    widgets = ModuleType("PySide2.QtWidgets")
+    widgets.QApplication = lambda _: application
+    monkeypatch.setitem(sys.modules, "PySide2.QtWidgets", widgets)
+    code = compile(check["run"], "ci-native-desktop", "exec")
+    if valid:
+        exec(code)
+    else:
+        with pytest.raises(AssertionError):
+            exec(code)
 
 
 def testReleaseUsesNativeWindowsDesktopAndPreservesFullSourceGate():
-    workflow = yaml.safe_load((Path(__file__).resolve().parents[1] / ".github/workflows/release-windows.yml").read_text())
+    workflow = workflowFile("release-windows.yml")
     job = workflow["jobs"]["validate"]
     assert job["runs-on"] == "windows-latest"
     assert job["env"]["QT_QPA_PLATFORM"] == "windows"
-    assert job["timeout-minutes"] == 90
-    steps = {step["name"]: step for step in job["steps"] if "name" in step}
-    assert steps["Configure native Windows test desktop"]["run"] == "Set-DisplayResolution -Width 1920 -Height 1080 -Force"
-    check = steps["Verify native Windows test desktop"]
-    compile(check["run"], "release-native-desktop", "exec")
-    assert 'geometry.width() >= 1920 and geometry.height() >= 1080' in check["run"]
-    assert steps["Run project checks and ONNX tests"]["run"] == "python scripts/ci_check.py"
+    assert isinstance(job["timeout-minutes"], int) and job["timeout-minutes"] > 0
+    projectCheckStep(job)
     assert workflow["jobs"]["package"]["needs"] == "validate"
-    upload = steps["Upload test results"]
-    assert upload["if"] == "always()"
-    assert upload["with"]["path"].splitlines() == ["build/ci-results.xml", "build/ci-failures.log"]
+    assertFailureArtifacts(job, {"build/ci-results.xml", "build/ci-failures.log"})

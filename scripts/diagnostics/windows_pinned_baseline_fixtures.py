@@ -13,7 +13,7 @@ EXECUTION = "ecf8bcfcf193e05807556340d670f05c0f3d9e15"
 TOOLS = "0c1ac2fddf453913a29e03b2cb84043ca7d92afe"
 NONCE = "diagnostic: one pinned baseline Windows trace 655eeac 19d4e683"
 ROOT = Path(__file__).resolve().parents[2]
-WORKFLOW = ROOT / ".github/workflows/runtime-kernel-pinned-baseline.yml"
+WORKFLOW = ROOT / "docs/ci/archived-workflows/runtime-kernel-pinned-baseline.yml"
 
 
 def workflow():

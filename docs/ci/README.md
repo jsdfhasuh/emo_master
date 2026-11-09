@@ -31,12 +31,12 @@ PR 使用当前检出的合并结果与事件中 base 提交的差异；push 使
 
 | 分片 | 实际文件范围 |
 | --- | --- |
-| `runtime` | `tests/runtime/` 及其子目录 |
-| `other` | 默认 pytest 收集中的其余文件，包含 Designer、UI、core、plugins、根目录测试以及 examples |
+| `runtime` | Runtime 执行与运行展示：`tests/runtime/`、`tests/ui/presentation/`、`tests/ui/operator_view/` 及其子目录 |
+| `other` | 默认 pytest 收集中的其余文件，包含 Designer、页面编辑器、core、plugins、根目录测试以及 examples |
 
-插件先按默认规则完整收集，再按文件选择分片，参数化 case 和文件内顺序不变。新增目录自动进入其余分片，不维护测试文件白名单，也不硬编码测试数量。每个分片通过 pytest 的 deselected 统计明确报告本片未执行的用例；原条件 skip 仍为 skip。
+插件先按默认规则完整收集，再按文件选择分片，参数化 case 和文件内顺序不变。未归入上述 `runtime` 范围的新增目录自动进入 `other` 分片，不维护测试文件白名单，也不硬编码测试数量。每个分片通过 pytest 的 deselected 统计明确报告本片未执行的用例；原条件 skip 仍为 skip。
 
-每组分别上传带平台和分片名称的 JUnit、失败日志和 `ci-shard.json`。清单包含完整收集、选择、实际进入执行的 nodeid 和 pytest 退出码；包含 UI 的 `other` 分片继续上传双任务观察结果。原来的 `ubuntu-latest / Python 3.10` 和 `windows-latest / Python 3.10` 检查分别作为该平台的汇总门禁：只有本平台两个任务成功，完整收集一致、所选集合互斥且并集完整、实际执行集合完整时才通过。报告缺失、分片失败/取消/非预期跳过，或只 collect-only 未执行，均不能产生绿灯。两平台分别下载和审计本平台的报告，不用另一平台的结果补足覆盖。
+每组分别上传带平台和分片名称的 JUnit、失败日志和 `ci-shard.json`。清单包含完整收集、选择、实际进入执行的 nodeid 和 pytest 退出码；`tests/ui/page_designer/test_two_job_observation.py` 所在的 `other` 分片继续上传双任务观察结果。原来的 `ubuntu-latest / Python 3.10` 和 `windows-latest / Python 3.10` 检查分别作为该平台的汇总门禁：只有本平台两个任务成功，完整收集一致、所选集合互斥且并集完整、实际执行集合完整时才通过。报告缺失、分片失败/取消/非预期跳过，或只 collect-only 未执行，均不能产生绿灯。两平台分别下载和审计本平台的报告，不用另一平台的结果补足覆盖。
 
 分片缩短等待时间，总 runner 消耗不会同比减少，重复准备环境还会增加部分开销。原生 Qt、千次导航/显隐、300次Join和全部正常生命周期回归仍在每次完整检查中执行。
 

@@ -35,7 +35,8 @@ class SourceShard:
         selected, deselected = [], []
         for item in items:
             parts = item.path.relative_to(config.rootpath).parts
-            runtime = parts[:2] == ("tests", "runtime")
+            runtime = parts[:2] == ("tests", "runtime") or parts[:3] in (
+                ("tests", "ui", "presentation"), ("tests", "ui", "operator_view"))
             matches = runtime == (self.data["shard"] == "runtime")
             (selected if matches else deselected).append(item)
         self.data["selected"] = [item.nodeid for item in selected]

@@ -36,6 +36,7 @@ def test_window(value):
     assert value > 0
 """)
     for path in ("tests/ui/test_panel.py", "tests/runtime/nested/test_job.py",
+                 "tests/ui/presentation/nested/test_results.py", "tests/ui/operator_view/test_monitor.py",
                  "tests/future_area/test_new_area.py", "examples/test_example.py"):
         writeFile(tmp_path, path, "def test_case():\n    assert True\n")
     writeFile(tmp_path, "tests/test_skip.py", """import pytest
@@ -62,7 +63,7 @@ def testRealShardsKeepDefaultCoverageParametersNewPathsAndSkips(syntheticSuite):
     root = syntheticSuite
     baseline, complete = runPytest(root, "full")
     assert baseline.returncode == 0, baseline.stdout + baseline.stderr
-    assert len(complete) == 7
+    assert len(complete) == 9
     reports = []
     for shard in ("runtime", "other"):
         path = root / f"{shard}.json"
@@ -74,7 +75,9 @@ def testRealShardsKeepDefaultCoverageParametersNewPathsAndSkips(syntheticSuite):
         assert report["collected"] == complete
         assert report["selected"] == executed == report["executed"]
         reports.append(report)
-    assert reports[0]["selected"] == ["tests/runtime/nested/test_job.py::test_case"]
+    assert reports[0]["selected"] == ["tests/runtime/nested/test_job.py::test_case",
+                                      "tests/ui/operator_view/test_monitor.py::test_case",
+                                      "tests/ui/presentation/nested/test_results.py::test_case"]
     assert len(reports[1]["selected"]) == 6
     assert set(reports[0]["selected"]).isdisjoint(reports[1]["selected"])
     assert set(reports[0]["selected"] + reports[1]["selected"]) == set(complete)
@@ -87,8 +90,8 @@ def testRealShardsKeepDefaultCoverageParametersNewPathsAndSkips(syntheticSuite):
                             cwd=root, env=dict(os.environ, GITHUB_STEP_SUMMARY=str(summary)),
                             capture_output=True, text=True, timeout=10)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "7 collected cases covered" in result.stdout
-    assert "runtime=1, other=6" in result.stdout
+    assert "9 collected cases covered" in result.stdout
+    assert "runtime=3, other=6" in result.stdout
     assert "original pytest skips remain skips" in summary.read_text(encoding="utf-8")
 
 

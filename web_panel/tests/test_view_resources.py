@@ -109,6 +109,55 @@ class ViewTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(views.streams)
         self.assertTrue(runtime.running)
 
+    async def test_reopened_view_keeps_receiving_while_previous_stream_retires(self):
+        entered, retiring, release = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+        class RetiringRuntime(Runtime):
+            async def snapshot(self, run):
+                if not entered.is_set():
+                    entered.set()
+                    try:
+                        await asyncio.Event().wait()
+                    except asyncio.CancelledError:
+                        retiring.set()
+                        await release.wait()
+                        raise
+                return await super().snapshot(run)
+
+        runtime = RetiringRuntime()
+        views = Views(runtime, poll_interval=.001)
+        previous = views.create('viewer', 'panel', 'run')
+        removal = None
+        try:
+            await views.attach(previous)
+            await asyncio.wait_for(entered.wait(), 1)
+            removal = asyncio.create_task(views.remove(previous['id']))
+            await asyncio.wait_for(retiring.wait(), 1)
+            current = views.create('viewer', 'panel', 'run')
+            await views.attach(current)
+            release.set()
+            await asyncio.wait_for(removal, 1)
+
+            async def next_result():
+                while True:
+                    message = await views.next_message(current)
+                    if message.get('result', {}).get('resultScopeId') == 'a':
+                        return message
+
+            first = await asyncio.wait_for(next_result(), 1)
+            following = await asyncio.wait_for(next_result(), 1)
+            self.assertEqual(first['type'], 'result')
+            self.assertTrue(first['state']['connected'])
+            self.assertNotEqual(first['result']['resultKey'], following['result']['resultKey'])
+            self.assertTrue(runtime.running)
+        finally:
+            release.set()
+            if removal is not None:
+                await asyncio.gather(removal, return_exceptions=True)
+            await views.close()
+        self.assertFalse(views.streams)
+        self.assertFalse(views.views)
+
     async def test_notice_survives_snapshot_pressure_and_instance_reset(self):
         views = Views(Runtime(), max_scopes=2)
         view = views.create('u', 'p', 'run')

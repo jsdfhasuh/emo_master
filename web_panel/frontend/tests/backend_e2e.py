@@ -134,6 +134,14 @@ def target_isolation_check(page,browser,base,data,versions,password,errors):
   bobserver.get_by_role('heading',name='Package b-v1',exact=True).wait_for()
   aobserver.screenshot(path=str(ROOT/'test-tmp'/'target-a-pinned.png'),full_page=True)
   bobserver.screenshot(path=str(ROOT/'test-tmp'/'target-b-isolated.png'),full_page=True)
+ except Exception:
+  # Capture the failing observers before finally closes their contexts.
+  for label,observer in (('a',aobserver),('b',bobserver)):
+   try:
+    observer.screenshot(path=str(ROOT/'test-tmp'/f'target-{label}-failure.png'),full_page=True,timeout=5000)
+    (ROOT/'test-tmp'/f'target-{label}-failure.html').write_text(observer.content(),encoding='utf-8')
+   except Exception:pass
+  raise
  finally:
   aobserver.close();bobserver.close()
 

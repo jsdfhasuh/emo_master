@@ -23,26 +23,32 @@ PR 使用当前检出的合并结果与事件中 base 提交的差异；push 使
 
 范围判定失败或缺少明确结果时，两个平台的检查均失败。确认可以跳过时，只执行状态说明步骤，不安装项目依赖或运行 pytest；GitHub job 完成不代表完整测试已经执行，应以检查摘要为准。
 
-完整检查仍通过 `scripts/ci_check.py` 执行 protobuf、Ruff、mypy 和 pytest。Linux 保持默认完整串行执行；Windows 采用下述两个独立 runner 分片，合起来覆盖默认完整收集范围。恢复测试仍在默认收集范围内，只移除了工作流中重复执行的那一轮；失败日志、JUnit 和双任务观察结果继续保留。
+完整检查仍通过 `scripts/ci_check.py` 执行 protobuf、Ruff、mypy 和 pytest。Linux 和 Windows 各采用下述两个独立 runner 分片，每个平台都覆盖默认完整收集范围。恢复测试仍在默认收集范围内，只移除了工作流中重复执行的那一轮；失败日志、JUnit 和双任务观察结果继续保留。
 
-## Windows 全量测试分片
+## 两平台全量测试分片
 
-Windows 两个分片与 Linux 同时开始。每个 Windows runner 内仍串行运行测试，不使用同一桌面的多进程 pytest；两个分片都保留原生 `windows` QPA、1920×1080 桌面检查、Python 3.10、protobuf、Ruff、mypy 和单用例 120 秒超时。
+范围判断要求完整检查时，两个平台的四个分片同时开始。每个 runner 内仍串行运行测试，不使用同一桌面的多进程 pytest；所有分片保留 Python 3.10、protobuf、Ruff、mypy 和单用例 120 秒超时。Linux 使用 `offscreen` QPA，Windows 两片都验证原生 `windows` QPA 和 1920×1080 桌面。
 
 | 分片 | 实际文件范围 |
 | --- | --- |
-| `designer-ui` | `tests/designer/`、`tests/ui/` |
-| `runtime-other` | 默认 pytest 收集中的其余文件，包含 Runtime、core、plugins、根目录测试以及 examples |
+| `runtime` | `tests/runtime/` 及其子目录 |
+| `other` | 默认 pytest 收集中的其余文件，包含 Designer、UI、core、plugins、根目录测试以及 examples |
 
 插件先按默认规则完整收集，再按文件选择分片，参数化 case 和文件内顺序不变。新增目录自动进入其余分片，不维护测试文件白名单，也不硬编码测试数量。每个分片通过 pytest 的 deselected 统计明确报告本片未执行的用例；原条件 skip 仍为 skip。
 
-两组分别上传带分片名称的 JUnit、失败日志和 `ci-shard.json`。清单包含完整收集、选择、实际进入执行的 nodeid 和 pytest 退出码；UI 分片继续上传双任务观察结果。原来的 `windows-latest / Python 3.10` 检查成为汇总门禁：只有两个任务成功，完整收集一致、所选集合互斥且并集完整、实际执行集合完整时才通过。报告缺失、分片失败/取消/非预期跳过，或只 collect-only 未执行，均不能产生绿灯。
+每组分别上传带平台和分片名称的 JUnit、失败日志和 `ci-shard.json`。清单包含完整收集、选择、实际进入执行的 nodeid 和 pytest 退出码；包含 UI 的 `other` 分片继续上传双任务观察结果。原来的 `ubuntu-latest / Python 3.10` 和 `windows-latest / Python 3.10` 检查分别作为该平台的汇总门禁：只有本平台两个任务成功，完整收集一致、所选集合互斥且并集完整、实际执行集合完整时才通过。报告缺失、分片失败/取消/非预期跳过，或只 collect-only 未执行，均不能产生绿灯。两平台分别下载和审计本平台的报告，不用另一平台的结果补足覆盖。
 
 分片缩短等待时间，总 runner 消耗不会同比减少，重复准备环境还会增加部分开销。原生 Qt、千次导航/显隐、300次Join和全部正常生命周期回归仍在每次完整检查中执行。
 
-本地默认 `python scripts/ci_check.py` 和 Windows release 验证入口继续完整串行执行；只有显式 `--shard designer-ui` 或 `--shard runtime-other` 才分片。主 CI 手动运行也覆盖两平台全量，Windows 使用同样的分片；如需原有单进程完整顺序，可使用默认脚本或 release 既有入口，无需给每个 PR 再加一轮重复测试。
+本地默认 `python scripts/ci_check.py` 和 Windows release 验证入口继续完整串行执行；只有显式 `--shard runtime` 或 `--shard other` 才分片。主 CI 手动运行也使用相同分片覆盖两平台全量；如需原有单进程完整顺序，可使用默认脚本或 release 既有入口，无需给每个 PR 再加一轮重复测试。
 
 pytest 同时输出最慢30个阶段中耗时至少1秒的记录，方便区分准备、调用和清理成本；这只是诊断输出，不新增测试或性能门槛。
+
+## Actions 运行时维护
+
+主 CI、Web CI 及其汇总步骤使用明确声明 Node.js 24 的官方 Actions：`checkout@v7`、`setup-python@v7`、`setup-node@v7`、`upload-artifact@v7` 和 `download-artifact@v8`。Action 自身运行时与项目运行时分别配置；项目仍使用 Python 3.10，Web 构建仍使用 Node.js 22。
+
+Web 的 `setup-node` 显式关闭自动包管理器缓存，保持原有安装行为。测试结果沿用默认 ZIP 上传，每个 artifact 下载到独立子目录；下载摘要不匹配仍失败。分片汇总依赖这些目录和清单，升级 Action 后应验证实际上传、下载及汇总，不能仅凭 YAML 语法正确就认为迁移完成。
 
 ## 并发与手动运行
 

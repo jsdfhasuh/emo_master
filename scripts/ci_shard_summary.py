@@ -1,4 +1,4 @@
-"""Check the two Windows shard manifests without installing project dependencies."""
+"""Check a platform's two source shard manifests without project dependencies."""
 import argparse
 import json
 import os
@@ -27,27 +27,27 @@ def readReport(path, expectedShard):
     return collections
 
 
-def summarize(designerReport, runtimeReport):
-    designer = readReport(designerReport, "designer-ui")
-    runtime = readReport(runtimeReport, "runtime-other")
-    if designer["collected"] != runtime["collected"]:
+def summarize(runtimeReport, otherReport):
+    runtime = readReport(runtimeReport, "runtime")
+    other = readReport(otherReport, "other")
+    if runtime["collected"] != other["collected"]:
         raise ValueError("The shards did not collect the same complete suite")
-    if designer["selected"] & runtime["selected"]:
+    if runtime["selected"] & other["selected"]:
         raise ValueError("A test was selected by both shards")
-    if designer["selected"] | runtime["selected"] != designer["collected"]:
+    if runtime["selected"] | other["selected"] != runtime["collected"]:
         raise ValueError("The shard union does not match the complete collection")
-    return (f"Windows source checks: {len(designer['collected'])} collected cases covered; "
-            f"designer-ui={len(designer['selected'])}, runtime-other={len(runtime['selected'])}. "
+    return (f"Source checks: {len(runtime['collected'])} collected cases covered; "
+            f"runtime={len(runtime['selected'])}, other={len(other['selected'])}. "
             "Both shards completed successfully; original pytest skips remain skips.")
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("designer_report", type=Path)
     parser.add_argument("runtime_report", type=Path)
+    parser.add_argument("other_report", type=Path)
     args = parser.parse_args(argv)
     try:
-        message = summarize(args.designer_report, args.runtime_report)
+        message = summarize(args.runtime_report, args.other_report)
     except (OSError, ValueError, KeyError, TypeError) as error:
         print(f"[ci-shards] {error}", file=sys.stderr)
         return 1

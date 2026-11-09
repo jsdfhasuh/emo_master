@@ -28,7 +28,7 @@ def testCiPytestReportsNamesAndHasCrossPlatformHangBound(monkeypatch):
     assert [name for _, name in calls] == ["proto-drift", "ruff", "mypy", "pytest"]
 
 
-@pytest.mark.parametrize("shard", ["designer-ui", "runtime-other"])
+@pytest.mark.parametrize("shard", ["runtime", "other"])
 def testCiShardOnlyChangesPytestSelectionAndKeepsAllChecks(monkeypatch, shard):
     calls = []
     monkeypatch.setattr(ci_check, "runStep", lambda command, name: calls.append((command, name)) or 0)
@@ -91,43 +91,41 @@ def assertFailureArtifacts(job, paths):
                and paths <= set(step["with"]["path"].splitlines()) for step in uploads)
 
 
-def testLinuxCiKeepsFullDefaultSourceChecksAndFailureEvidence():
-    workflow = workflowFile("ci.yml")
-    job = workflow["jobs"]["validate"]
-    assert job["timeout-minutes"]
-    assert job["runs-on"] == "ubuntu-latest"
-    assert job["name"] == "ubuntu-latest / Python 3.10"
-    assert job["needs"] == "scope"
-    projectCheckStep(job)
-    assertFailureArtifacts(job, {"build/ci-results.xml", "build/ci-failures.log", "build/two-job-observation.json"})
-
-
-def testWindowsShardsKeepNativeCoverageAndAggregateTheOriginalRequiredCheck():
+@pytest.mark.parametrize("platform,runner,qtPlatform", [
+    ("linux", "ubuntu-latest", "offscreen"), ("windows", "windows-latest", "windows"),
+])
+def testPlatformShardsKeepFullCoverageAndAggregateTheOriginalRequiredCheck(platform, runner, qtPlatform):
     jobs = workflowFile("ci.yml")["jobs"]
-    shards = jobs["windows"]
-    assert shards["runs-on"] == "windows-latest"
-    assert shards["env"]["QT_QPA_PLATFORM"] == "windows"
+    shards = jobs[platform]
+    assert shards["timeout-minutes"]
+    assert shards["runs-on"] == runner
+    assert shards["env"]["QT_QPA_PLATFORM"] == qtPlatform
     assert shards["needs"] == "scope"
     assert shards["if"] == "needs.scope.outputs.run_full == 'true'"
     assert shards["strategy"]["fail-fast"] is False
-    assert set(shards["strategy"]["matrix"]["shard"]) == {"designer-ui", "runtime-other"}
+    assert set(shards["strategy"]["matrix"]["shard"]) == {"runtime", "other"}
     for shard in shards["strategy"]["matrix"]["shard"]:
         projectCheckStep(shards, shard)
     assertFailureArtifacts(shards, {"build/ci-results.xml", "build/ci-failures.log",
                                    "build/two-job-observation.json", "build/ci-shard.json"})
-    gate = jobs["windows-summary"]
-    assert gate["name"] == "windows-latest / Python 3.10"
-    assert set(gate["needs"]) == {"scope", "windows"}
+    gate = jobs[f"{platform}-summary"]
+    assert gate["name"] == f"{runner} / Python 3.10"
+    assert set(gate["needs"]) == {"scope", platform}
     assert "always()" in gate["if"]
+    status = next(step for step in gate["steps"] if "SHARDS_RESULT" in step.get("env", {}))
+    assert status["env"]["SHARDS_RESULT"] == "${{ needs." + platform + ".result }}"
     upload = next(step["with"] for step in shards["steps"]
                   if step.get("uses", "").startswith("actions/upload-artifact@"))
     download = next(step["with"] for step in gate["steps"]
                     if step.get("uses", "").startswith("actions/download-artifact@"))
+    assert upload.get("archive", True) is True
+    assert download.get("merge-multiple", False) is False
+    assert download.get("digest-mismatch", "error") == "error"
     summary = next(step for step in gate["steps"] if "scripts/ci_shard_summary.py" in step.get("run", ""))
     command = shlex.split(summary["run"])
     assert command[:2] == ["python", "scripts/ci_shard_summary.py"]
     reports = []
-    for shard in shards["strategy"]["matrix"]["shard"]:
+    for shard in ("runtime", "other"):
         name = upload["name"].replace("${{ matrix.shard }}", shard)
         assert fnmatch(name, download["pattern"])
         reports.append(f"{download['path']}/{name}/ci-shard.json")
@@ -135,7 +133,7 @@ def testWindowsShardsKeepNativeCoverageAndAggregateTheOriginalRequiredCheck():
     assert summary["if"] == "needs.scope.outputs.run_full == 'true'"
 
 
-@pytest.mark.parametrize("jobId", ["validate", "windows-summary"])
+@pytest.mark.parametrize("jobId", ["linux-summary", "windows-summary"])
 @pytest.mark.parametrize("scopeResult,runFull", [("failure", ""), ("success", ""), ("success", "unknown")])
 def testFailedOrMissingScopeCannotProduceSuccessfulSourceCheck(monkeypatch, jobId, scopeResult, runFull):
     job = workflowFile("ci.yml")["jobs"][jobId]
@@ -146,25 +144,32 @@ def testFailedOrMissingScopeCannotProduceSuccessfulSourceCheck(monkeypatch, jobI
         exec(compile(report["run"], "ci-selection-result", "exec"))
 
 
-@pytest.mark.parametrize("shardsResult", ["failure", "cancelled", "skipped", ""])
-def testWindowsGateRejectsIncompleteShardJobs(monkeypatch, shardsResult):
-    gate = workflowFile("ci.yml")["jobs"]["windows-summary"]["steps"][0]
+@pytest.mark.parametrize("platform", ["linux", "windows"])
+@pytest.mark.parametrize("runFull,shardsResult", [
+    ("true", "failure"), ("true", "cancelled"), ("true", "skipped"), ("true", ""),
+    ("false", "success"),
+])
+def testPlatformGateRejectsIncompleteOrUnexpectedShardJobs(monkeypatch, platform, runFull, shardsResult):
+    gate = workflowFile("ci.yml")["jobs"][f"{platform}-summary"]["steps"][0]
     monkeypatch.setenv("SCOPE_RESULT", "success")
-    monkeypatch.setenv("RUN_FULL", "true")
+    monkeypatch.setenv("RUN_FULL", runFull)
     monkeypatch.setenv("SHARDS_RESULT", shardsResult)
-    with pytest.raises(SystemExit, match="did not all succeed"):
-        exec(compile(gate["run"], "ci-windows-gate", "exec"))
+    expected = "did not all succeed" if runFull == "true" else "Unexpected .* shard result"
+    with pytest.raises(SystemExit, match=expected):
+        exec(compile(gate["run"], f"ci-{platform}-gate", "exec"))
 
 
+@pytest.mark.parametrize("platform", ["linux", "windows"])
 @pytest.mark.parametrize("runFull,shardsResult", [("true", "success"), ("false", "skipped")])
-def testWindowsGateAcceptsCompleteJobsOrExplicitlyReportsUnrunChecks(monkeypatch, tmp_path, runFull, shardsResult):
-    gate = workflowFile("ci.yml")["jobs"]["windows-summary"]["steps"][0]
+def testPlatformGateAcceptsCompleteJobsOrExplicitlyReportsUnrunChecks(monkeypatch, tmp_path, platform,
+                                                                   runFull, shardsResult):
+    gate = workflowFile("ci.yml")["jobs"][f"{platform}-summary"]["steps"][0]
     summary = tmp_path / "summary.md"
     monkeypatch.setenv("SCOPE_RESULT", "success")
     monkeypatch.setenv("RUN_FULL", runFull)
     monkeypatch.setenv("SHARDS_RESULT", shardsResult)
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
-    exec(compile(gate["run"], "ci-windows-gate", "exec"))
+    exec(compile(gate["run"], f"ci-{platform}-gate", "exec"))
     if runFull == "false":
         assert "Full source checks were not run" in summary.read_text()
 

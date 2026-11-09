@@ -18,7 +18,7 @@ def runStep(command: list[str], name: str) -> int:
 
 def main(argv: list[str] | None = None) -> int:
   parser = argparse.ArgumentParser(description="Run source checks, optionally selecting one CI test shard.")
-  parser.add_argument("--shard", choices=("designer-ui", "runtime-other"))
+  parser.add_argument("--shard", choices=("runtime", "other"))
   options = parser.parse_args([] if argv is None else argv)
   os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
   pytestCommand = [sys.executable, "-m", "pytest", "-p", "scripts.ci_pytest_reports", "-vv", "--tb=short",

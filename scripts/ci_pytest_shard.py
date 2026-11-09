@@ -5,7 +5,7 @@ import json
 import pytest
 
 
-SHARDS = ("designer-ui", "runtime-other")
+SHARDS = ("runtime", "other")
 
 
 def pytest_addoption(parser):
@@ -35,8 +35,8 @@ class SourceShard:
         selected, deselected = [], []
         for item in items:
             parts = item.path.relative_to(config.rootpath).parts
-            designerUi = parts[:2] in (("tests", "designer"), ("tests", "ui"))
-            matches = designerUi == (self.data["shard"] == "designer-ui")
+            runtime = parts[:2] == ("tests", "runtime")
+            matches = runtime == (self.data["shard"] == "runtime")
             (selected if matches else deselected).append(item)
         self.data["selected"] = [item.nodeid for item in selected]
         config.hook.pytest_deselected(items=deselected)

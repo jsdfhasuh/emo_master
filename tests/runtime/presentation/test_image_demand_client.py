@@ -88,6 +88,28 @@ def demandBackend(root, monkeypatch, *, mode='normal', count=1, dual=False):
         presentation.close()
 
 
+def runJobWithImageDemandGate(spec, cancelEvent, eventQueue, communicationPipe=None, devicePipe=None,
+                             *, nextResult, release):
+    """Keep the real worker alive while a test controls its next image result."""
+    from examples.p3_selector import Selector
+    from emo_master.apps.runtime.jobs.worker_main import runJobProcess
+
+    original = Selector.executeNode
+
+    def gatedExecute(self, inputs, params, runtimeContext):
+        if runtimeContext['iterationPath'][-1] > 0:
+            nextResult.set()
+            if not release.wait(30):
+                raise RuntimeError('test must release the next image-demand result')
+        return original(self, inputs, params, runtimeContext)
+
+    Selector.executeNode = gatedExecute
+    try:
+        runJobProcess(spec, cancelEvent, eventQueue, communicationPipe, devicePipe)
+    finally:
+        Selector.executeNode = original
+
+
 def latest(session):
     return session.readSnapshot().scopes.get('root')
 

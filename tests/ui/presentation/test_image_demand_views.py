@@ -5,7 +5,9 @@ from emo_master.clients.runtime.display_session import DisplaySession
 from emo_master.core.presentation.models import Action
 from emo_master.ui.presentation.hub import DisplayHub
 from emo_master.ui.presentation.renderer import RuntimePages
-from tests.runtime.presentation.test_image_demand_client import demandBackend, latest, idle
+from tests.runtime.presentation.test_image_demand_client import (
+    demandBackend, latest, idle, runJobWithImageDemandGate,
+)
 from tests.ui.presentation.test_real import until
 
 
@@ -205,8 +207,16 @@ def testDestroyedHubsRetireDemandTokensBeforeReplacement(qtApp, tmp_path, monkey
 
 
 def testDeletingOneWindowWithoutClosePreservesSurvivorDemand(qtApp, tmp_path, monkeypatch):
+    from functools import partial
+    import multiprocessing
     from PySide2.QtCore import QCoreApplication, QEvent
     from shiboken2 import isValid
+    from emo_master.apps.runtime.jobs import supervisor
+
+    context = multiprocessing.get_context('spawn')
+    nextResult, release = context.Event(), context.Event()
+    monkeypatch.setattr(supervisor, 'runJobProcess',
+                        partial(runJobWithImageDemandGate, nextResult=nextResult, release=release))
     with demandBackend(tmp_path, monkeypatch, count=3, dual=True) as backend:
         session = DisplaySession(backend.address, backend.jobId, imageDemand=True)
         hub = DisplayHub(session)
@@ -217,11 +227,14 @@ def testDeletingOneWindowWithoutClosePreservesSurvivorDemand(qtApp, tmp_path, mo
         second.show()
         try:
             until(qtApp, lambda: imageReady(first, 'detail', 'detail-original') and imageReady(second))
+            until(qtApp, nextResult.is_set)
             ordinal = second.displayed['root'].result.identity.resultOrdinal
+            assert ordinal == 1
             first.deleteLater()
             QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
             assert not isValid(first) and first not in hub.windows
             assert session._wantedImages == {'image'} and len(hub.windows) == 1
+            release.set()
             until(qtApp, lambda: second.displayed and imageReady(second) and
                   second.displayed['root'].result.identity.resultOrdinal > ordinal)
             assert set(second.displayed['root'].images) == {'image'}
@@ -229,6 +242,7 @@ def testDeletingOneWindowWithoutClosePreservesSurvivorDemand(qtApp, tmp_path, mo
             QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
             assert not hub.windows and not session._imageConsumers and not hub.timer.isActive()
         finally:
+            release.set()
             if isValid(first):
                 first.close()
             if isValid(second):

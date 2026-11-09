@@ -481,10 +481,12 @@ class Views:
             if stream:
                 stream['viewers'].discard(vid)
                 if not stream['viewers']:
+                    # A reconnect may attach while cancellation is awaiting cleanup.
+                    # Retire this stream first so it cannot acquire a new viewer.
+                    self.streams.pop(key, None)
                     tasks=[task for task in (stream['task'],stream.get('stateTask')) if task]
                     for task in tasks:task.cancel()
                     await asyncio.gather(*tasks, return_exceptions=True)
-                    self.streams.pop(key, None)
         for field in ('scopes', 'latest', 'recent', 'scopeRecent', 'frozenScopes','scopeStatus','scopeNotices'):
             view[field].clear()
         while not view['queue'].empty():

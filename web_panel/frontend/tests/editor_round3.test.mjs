@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import {webcrypto} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
 import ts from 'typescript';
 const require=createRequire(import.meta.url);
 require.extensions['.ts']=(module,path)=>module._compile(ts.transpileModule(readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,path);
@@ -43,7 +44,47 @@ test('grid properties reject overlap and out-of-grid positions without changing 
  assert.throws(()=>setGridPlacement(d,pid,a.componentId,{...a.layout,columnSpan:2}),/重叠/);assert.deepEqual(a.layout,before);
  assert.throws(()=>setGridPlacement(d,pid,a.componentId,{...a.layout,column:2}),/超出/);assert.deepEqual(a.layout,before);
 });
+function assertPaletteNames(names,source){
+ // Read the literal data without importing the palette module or Qt.
+ const palette=JSON.parse(execFileSync('python',['-c',`
+import ast, json, sys
+module = ast.parse(sys.stdin.buffer.read().decode("utf-8"))
+definitions = [
+    node.value
+    for node in module.body
+    if isinstance(node, (ast.Assign, ast.AnnAssign))
+    for target in (node.targets if isinstance(node, ast.Assign) else [node.target])
+    if isinstance(target, ast.Name) and target.id == "COMPONENTS"
+]
+if len(definitions) != 1:
+    raise ValueError("Expected one top-level COMPONENTS constant")
+print(json.dumps({kind: title for kind, title, _ in ast.literal_eval(definitions[0])}))
+`],{input:source,encoding:'utf8'}));
+ // Web intentionally supports a subset of the Designer component types.
+ for(const [type,name] of Object.entries(names))assert.equal(palette[type],name,`${type}: ${name}`);
+}
+
 test('component names match the Designer palette without changing internal types',()=>{
- const palette=readFileSync(new URL('../../../src/emo_master/apps/designer/page_designer/palette.py',import.meta.url),'utf8');
- for(const [type,name] of Object.entries(componentNames))assert.ok(palette.includes(`('${type}', '${name}',`),`${type}: ${name}`);
+ const source=readFileSync(new URL('../../../src/emo_master/apps/designer/page_designer/palette.py',import.meta.url),'utf8');
+ assertPaletteNames(componentNames,source);
+});
+
+test('palette comparison accepts equivalent Python formatting without executing the module',()=>{
+ const names={text:'文字',number:'数值'};
+ for(const source of [
+  "COMPONENTS=(('text','文字','Text'),('number','数值','Number'),('clock','日期时间','Clock'))",
+  `raise RuntimeError("The palette module must not execute")
+COMPONENTS: tuple = (
+    ("text", "文字", "Text"),
+    ("number", "数值", "Number"),
+    ("clock", "日期时间", "Clock"),
+)`,
+ ])assertPaletteNames(names,source);
+});
+
+test('palette comparison rejects renamed or missing types even if old names remain in comments',()=>{
+ for(const source of [
+  "# ('text', '文字', 'Old name')\nCOMPONENTS=(('text','正文','Text'),)",
+  "# ('text', '文字', 'Old type')\nCOMPONENTS=(('paragraph','文字','Text'),)",
+ ])assert.throws(()=>assertPaletteNames({text:'文字'},source),{code:'ERR_ASSERTION'});
 });

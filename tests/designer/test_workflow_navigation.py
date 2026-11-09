@@ -5,7 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from PySide2.QtCore import QEventLoop, QSettings, QSize, Qt, QTimer
+from PySide2.QtCore import QCoreApplication, QEventLoop, QSettings, QSize, Qt, QTimer
 from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QStackedWidget, QStyle, QStyleOptionTab, QTabBar, QToolButton
 
@@ -14,6 +14,7 @@ from emo_master.apps.designer.ui.widgets import WorkflowTabs
 from tests.designer.test_workflow_entry_markers import readableNativeFont  # noqa: F401
 from tests.runtime.test_workflow_debug_control import nestedProject
 from tests.designer.navigation_fixture import navigationPayload, saveNavigationProject
+from tests.designer.qt_wait import waitUntil
 
 
 PAYLOAD = navigationPayload()
@@ -24,6 +25,25 @@ def settle():
     loop = QEventLoop()
     QTimer.singleShot(50, loop.quit)
     loop.exec_()
+
+
+def waitForNavigation(predicate):
+    # Deliver queued layout/native events even if the action changed selection
+    # synchronously, then wait for observable readiness rather than a fixed delay.
+    QCoreApplication.processEvents()
+    waitUntil(predicate)
+
+
+def currentTabVisible(tabs, index):
+    bar = tabs.tabBar()
+    return (tabs.currentIndex() == index and bar.isTabVisible(index)
+            and bar.rect().contains(bar.tabRect(index)))
+
+
+def pickerItemVisible(picker, workflowId):
+    item = picker.list.currentItem()
+    return (item is not None and item.data(Qt.UserRole) == workflowId
+            and picker.list.viewport().rect().contains(picker.list.visualItemRect(item)))
 
 
 def makeTabs(width, direction=Qt.LeftToRight):
@@ -49,17 +69,18 @@ def testAll29TabsReachableByPickerClicksAndBrowsingDoesNotChangeSelection(width,
     for index, (workflowId, title) in enumerate(WORKFLOWS):
         before = tabs.currentIndex(), list(changes)
         QTest.mouseClick(tabs._allButton, Qt.LeftButton)
-        settle()
         picker = tabs._picker
+        waitForNavigation(lambda: picker.isVisible() and picker.windowHandle().isExposed()
+                          and picker.list.count() == 29)
         assert picker.isVisible() and picker.list.count() == 29
         picker.search.setText(workflowId)
-        settle()
+        waitForNavigation(lambda: pickerItemVisible(picker, workflowId))
         item = picker.list.currentItem()
         assert item.data(Qt.UserRole) == workflowId and title in item.text()
         assert (tabs.currentIndex(), changes) == before
         QTest.mouseClick(picker.list.viewport(), Qt.LeftButton,
                          pos=picker.list.visualItemRect(item).center())
-        settle()
+        waitForNavigation(lambda: not picker.isVisible() and currentTabVisible(tabs, index))
         assert not picker.isVisible()
         assert tabs.currentIndex() == index and bar.tabData(index) == workflowId
         assert bar.rect().contains(bar.tabRect(index))
@@ -78,11 +99,11 @@ def testKeyboardSelectionScrollsCurrentTabIntoViewWithoutArrowButtons(direction)
     backward = Qt.Key_Left if direction == Qt.LeftToRight else Qt.Key_Right
     for index in range(1, 29):
         QTest.keyClick(bar, forward)
-        settle()
+        waitForNavigation(lambda: currentTabVisible(tabs, index))
         assert tabs.currentIndex() == index
         assert bar.rect().contains(bar.tabRect(index))
     QTest.keyClick(bar, backward)
-    settle()
+    waitForNavigation(lambda: currentTabVisible(tabs, 27))
     assert tabs.currentIndex() == 27 and bar.rect().contains(bar.tabRect(27))
 
 
@@ -170,12 +191,13 @@ def testResizingAndMarkerChangesKeepOverflowUsableAndSelectionStable(direction):
     bar = tabs.tabBar()
     for width in [380, 1129, 640, 1500, 380]:
         tabs.resize(width, tabs.height())
-        settle()
+        before = tabs.currentIndex()
+        waitForNavigation(lambda: tabs.width() == width and currentTabVisible(tabs, before))
         for index in [3, 4, 12, 28, 0]:
             tabs.setCurrentIndex(index)
             tabs.setRuntimeStatus(index, 'RUNNING', 'Job test: running')
             tabs.setRuntimeStatus(index, 'FAILED', 'Job test: failed')
-            settle()
+            waitForNavigation(lambda: currentTabVisible(tabs, index))
             assert bar.rect().contains(bar.tabRect(index))
             first = next(bar.tabRect(i) for i in range(bar.count()) if bar.isTabVisible(i))
             assert first.right() == bar.width() - 1 if direction == Qt.RightToLeft else first.left() == 0

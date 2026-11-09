@@ -5,35 +5,93 @@ on:
     branches: [main, agent/runtime-workflow-architecture-v1]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
-  validate:
-    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
-    # Full Linux checks reached the 45-minute job cap after passing; allow setup and cleanup.
-    # Native Windows Qt reached 99% at 60 minutes. Each test remains bounded at 120s.
-    timeout-minutes: ${{ matrix.os == 'windows-latest' && 90 || 60 }}
+  scope:
+    name: Select source checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run_full: ${{ steps.changes.outputs.run_full }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+          sparse-checkout: |
+            /scripts/ci_scope.py
+            /tests/test_ci_scope.py
+          sparse-checkout-cone-mode: false
+      - name: Verify source check selection
+        run: python -m unittest discover -s tests -p test_ci_scope.py -v
+      - name: Select source checks
+        id: changes
+        run: python scripts/ci_scope.py
+  linux:
+    needs: scope
+    if: needs.scope.outputs.run_full == 'true'
+    name: Linux source (${{ matrix.shard }}) / Python 3.10
+    runs-on: ubuntu-latest
+    # Independent runners; each shard keeps the existing serial test execution.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: ["3.10"]
+        shard: [runtime, other]
     env:
-      # Windows offscreen QPA crashes while rendering QMessageBox.
-      QT_QPA_PLATFORM: ${{ matrix.os == 'windows-latest' && 'windows' || 'offscreen' }}
+      QT_QPA_PLATFORM: offscreen
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.10'
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Run project checks
+        run: python scripts/ci_check.py --shard ${{ matrix.shard }}
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-ubuntu-latest-py3.10-${{ matrix.shard }}
+          path: |
+            build/ci-results.xml
+            build/ci-failures.log
+            build/two-job-observation.json
+            build/ci-shard.json
+          if-no-files-found: ignore
+  windows:
+    needs: scope
+    if: needs.scope.outputs.run_full == 'true'
+    name: Windows source (${{ matrix.shard }}) / Python 3.10
+    runs-on: windows-latest
+    # Separate native desktops; each shard remains serial and every test is bounded at 120s.
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [runtime, other]
+    env:
+      # Both groups contain Qt tests. Offscreen QPA crashes while rendering QMessageBox.
+      QT_QPA_PLATFORM: windows
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.10'
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
       - name: Configure native Windows test desktop
-        if: runner.os == 'Windows'
         shell: pwsh
         run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
       - name: Verify native Windows test desktop
-        if: runner.os == 'Windows'
         shell: python
         env:
           PYTHONPATH: src
@@ -50,35 +108,102 @@ jobs:
               "scale": screen.devicePixelRatio()}), flush=True)
           assert app.platformName() == "windows"
           assert geometry.width() >= 1920 and geometry.height() >= 1080
-      - name: Validate generated protobuf
-        run: python scripts/gen_proto.py --check
-      - name: Run runtime recovery regressions
-        run: >-
-          python -m pytest -q --tb=short
-          tests/runtime/test_supervisor_heartbeat_observation.py
-          tests/runtime/test_cycle_plan_scope_cleanup.py
-          tests/runtime/test_device_failure_observability.py
-          tests/runtime/test_simulated_camera_completion.py
-          tests/runtime/test_dispatch_continuous_recovery.py
-          tests/runtime/presentation/test_export_restart_retirement.py
-          --timeout=120 --timeout-method=thread -o faulthandler_timeout=60
-          --junitxml=build/recovery-regressions.xml
-      - name: Upload runtime recovery regression results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: runtime-recovery-${{ matrix.os }}-py${{ matrix.python-version }}-attempt${{ github.run_attempt }}
-          path: build/recovery-regressions.xml
-          if-no-files-found: ignore
       - name: Run project checks
-        run: python scripts/ci_check.py
+        run: python scripts/ci_check.py --shard ${{ matrix.shard }}
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: test-results-${{ matrix.os }}-py${{ matrix.python-version }}
+          name: test-results-windows-latest-py3.10-${{ matrix.shard }}
           path: |
             build/ci-results.xml
             build/ci-failures.log
             build/two-job-observation.json
+            build/ci-shard.json
           if-no-files-found: ignore
+  linux-summary:
+    needs: [scope, linux]
+    if: ${{ always() }}
+    # Keep the original Linux check for full runs, scope skips and selector failures.
+    name: ubuntu-latest / Python 3.10
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify source selection and Linux jobs
+        shell: python
+        env:
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          RUN_FULL: ${{ needs.scope.outputs.run_full }}
+          SHARDS_RESULT: ${{ needs.linux.result }}
+        run: |
+          import os
+          if os.environ['SCOPE_RESULT'] != 'success' or os.environ['RUN_FULL'] not in ('true', 'false'):
+              raise SystemExit('Source check selection failed; this check cannot pass.')
+          if os.environ['RUN_FULL'] == 'false':
+              if os.environ['SHARDS_RESULT'] != 'skipped':
+                  raise SystemExit('Unexpected Linux shard result for skipped source checks.')
+              message = 'Full source checks were not run: only passive documentation and/or independent Web files changed.'
+              print(message)
+              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
+                  summary.write(message + '\n')
+          elif os.environ['SHARDS_RESULT'] != 'success':
+              raise SystemExit('Linux source shards did not all succeed.')
+      - uses: actions/checkout@v7
+        if: needs.scope.outputs.run_full == 'true'
+        with:
+          sparse-checkout: /scripts/ci_shard_summary.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v8
+        if: needs.scope.outputs.run_full == 'true'
+        with:
+          pattern: test-results-ubuntu-latest-py3.10-*
+          path: build/linux-shards
+      - name: Verify complete Linux test coverage
+        if: needs.scope.outputs.run_full == 'true'
+        run: >-
+          python scripts/ci_shard_summary.py
+          build/linux-shards/test-results-ubuntu-latest-py3.10-runtime/ci-shard.json
+          build/linux-shards/test-results-ubuntu-latest-py3.10-other/ci-shard.json
+  windows-summary:
+    needs: [scope, windows]
+    if: ${{ always() }}
+    # Preserve the original required check name; neither shard can pass this gate alone.
+    name: windows-latest / Python 3.10
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify source selection and Windows jobs
+        shell: python
+        env:
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          RUN_FULL: ${{ needs.scope.outputs.run_full }}
+          SHARDS_RESULT: ${{ needs.windows.result }}
+        run: |
+          import os
+          if os.environ['SCOPE_RESULT'] != 'success' or os.environ['RUN_FULL'] not in ('true', 'false'):
+              raise SystemExit('Source check selection failed; this check cannot pass.')
+          if os.environ['RUN_FULL'] == 'false':
+              if os.environ['SHARDS_RESULT'] != 'skipped':
+                  raise SystemExit('Unexpected Windows shard result for skipped source checks.')
+              message = 'Full source checks were not run: only passive documentation and/or independent Web files changed.'
+              print(message)
+              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
+                  summary.write(message + '\n')
+          elif os.environ['SHARDS_RESULT'] != 'success':
+              raise SystemExit('Windows source shards did not all succeed.')
+      - uses: actions/checkout@v7
+        if: needs.scope.outputs.run_full == 'true'
+        with:
+          sparse-checkout: /scripts/ci_shard_summary.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@v8
+        if: needs.scope.outputs.run_full == 'true'
+        with:
+          pattern: test-results-windows-latest-py3.10-*
+          path: build/windows-shards
+      - name: Verify complete Windows test coverage
+        if: needs.scope.outputs.run_full == 'true'
+        run: >-
+          python scripts/ci_shard_summary.py
+          build/windows-shards/test-results-windows-latest-py3.10-runtime/ci-shard.json
+          build/windows-shards/test-results-windows-latest-py3.10-other/ci-shard.json

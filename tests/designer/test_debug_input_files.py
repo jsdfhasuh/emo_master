@@ -91,13 +91,13 @@ def testDebugWindowUploadsImageAndKeepsPriorInputOnFailure(runtime, tmp_path, mo
         editor, *_ = editorFor(runtime, "vision.inference.yolo")
         dialog = OperatorDebugWindow(editor)
         editor._debugWindow = dialog
-        ready = lambda: dialog.run.isEnabled()
+        ready = dialog.run.isEnabled
         select = dialog.selectFile
     else:
         payload = nestedProject()
         payload["workflows"]["main"]["inputs"] = {"image": {"type": "image", "required": True}}
         dialog = WorkflowDebugWindow(RuntimeClient(runtime), payload, "main")
-        ready = lambda: dialog.startButton.isEnabled()
+        ready = dialog.startButton.isEnabled
         select = dialog.file
     dialog.show()
     try:

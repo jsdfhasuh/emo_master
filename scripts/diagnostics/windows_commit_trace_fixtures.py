@@ -155,7 +155,7 @@ def testProfileScopeAndCircularPool():
 
 def testOneShotWorkflowGuardAndNoRawPublication():
     root = Path(__file__).resolve().parents[2]
-    source = (root / ".github/workflows/runtime-kernel-trace-diagnostics.yml").read_text()
+    source = (root / "docs/ci/archived-workflows/runtime-kernel-trace-diagnostics.yml").read_text()
     for expected in ("github.run_attempt == 1", "github.event.before == '" + trace.BASE + "'", trace.NONCE,
                      "persist-credentials: false", "branches: [agent/runtime-workflow-architecture-v1]"):
         assert expected in source
@@ -365,7 +365,7 @@ def testTargetsCompleteStopsOnlyTraceAndStillWaitsForSuite(monkeypatch, tmp_path
 
 def testPreflightOnlyWorkflowHasNoCaptureInvocation():
     root = Path(__file__).resolve().parents[2]
-    workflow = root / ".github/workflows/runtime-kernel-preflight-only.yml"
+    workflow = root / "docs/ci/archived-workflows/runtime-kernel-preflight-only.yml"
     source = workflow.read_text()
     assert "github.run_attempt == 1" in source
     assert "github.event.before == 'ecf8bcfcf193e05807556340d670f05c0f3d9e15'" in source

@@ -222,11 +222,35 @@ class WorkflowNavigationController:
 
         self.popup.present('选择要进入的工作流', rows, choose, w.workflowNavigationControls.definition)
 
-    def references(self, target):
+    def references(self, target=None):
         # Inspect a copy of the live draft: do not apply editor parameters or
         # mutate/canonicalize the user's graph merely to list references.
         store = self.window.workflowController._capturedWorkflowStoreCopy()
-        return [ref for ref in store.getWorkflowDependencyReferences() if ref['targetWorkflowId'] == target]
+        return [ref for ref in store.getWorkflowDependencyReferences()
+                if target is None or ref['targetWorkflowId'] == target]
+
+    def referenceChains(self, target):
+        incoming = {}
+        for ref in self.references():
+            incoming.setdefault(ref['targetWorkflowId'], []).append(ref)
+        chains = []
+
+        def visit(workflowId, chain, visited):
+            callers = incoming.get(workflowId, [])
+            if not callers and chain:
+                chains.append((chain, False))
+            for ref in callers:
+                source = ref['sourceWorkflowId']
+                path = [ref, *chain]
+                if source in visited:
+                    chains.append((path, True))
+                else:
+                    # Track ancestors per path so shared workflows retain every
+                    # call site while an unfinished cyclic draft stays browsable.
+                    visit(source, path, visited | {source})
+
+        visit(target, [], {target})
+        return chains
 
     def showReferences(self, target=None):
         w = self.window
@@ -235,13 +259,16 @@ class WorkflowNavigationController:
             self.message('该工作流已不存在。')
             return
         names = workflowDisplayNames(w.workflowStore.workflows)
-        refs = self.references(target)
         rows = []
-        for ref in refs:
-            source, nodeId = ref['sourceWorkflowId'], ref['sourceNodeId']
-            label = (f'{names[source]} → {ref["sourceNodeName"]}\n'
-                     f'{source} / {nodeId} · {ref["relationLabel"]}')
-            rows.append((label, ref))
+        for chain, cycle in self.referenceChains(target):
+            steps = [f'{names[ref["sourceWorkflowId"]]} / {ref["sourceNodeName"]}' for ref in chain]
+            details = [f'{ref["sourceWorkflowId"]} / {ref["sourceNodeId"]} · {ref["relationLabel"]}'
+                       for ref in chain]
+            label = ' → '.join([*steps, names[target]])
+            if cycle:
+                label += '（循环引用）'
+            label += '\n' + ' → '.join([*details, target])
+            rows.append((label, dict(chain=chain)))
         session = self.session
 
         def choose(payload):
@@ -249,11 +276,13 @@ class WorkflowNavigationController:
                 return
             def identity(ref):
                 return ref['sourceWorkflowId'], ref['sourceNodeId'], ref['relation'], ref['targetWorkflowId']
-            if target not in w.workflowStore.workflows or not any(
-                    identity(ref) == identity(payload) for ref in self.references(target)):
+            current = {identity(ref) for ref in self.references()}
+            chain = payload['chain']
+            if target not in w.workflowStore.workflows or any(identity(ref) not in current for ref in chain):
                 self.message('调用来源已变化或被删除，请重新查找。')
                 return
-            self.navigate(payload['sourceWorkflowId'], payload['sourceNodeId'])
+            caller = chain[-1]
+            self.navigate(caller['sourceWorkflowId'], caller['sourceNodeId'])
 
-        title = f'{names[target]} 的调用来源（{len(rows)}）'
+        title = f'{names[target]} 的调用来源（{len(rows)} 条链路）'
         self.popup.present(title, rows, choose, w.workflowNavigationControls.references)

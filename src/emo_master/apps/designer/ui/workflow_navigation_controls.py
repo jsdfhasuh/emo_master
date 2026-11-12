@@ -54,6 +54,7 @@ class NavigationLocationsPopup(QFrame):
         self.search.setClearButtonEnabled(True)
         self.search.installEventFilter(self)
         self.tree = WorkflowRelationshipTree(self)
+        self.tree.setVerticalScrollMode(WorkflowRelationshipTree.ScrollPerPixel)
         self.tree.setHeaderHidden(True)
         self.tree.setRootIsDecorated(False)
         self.tree.setIndentation(0)

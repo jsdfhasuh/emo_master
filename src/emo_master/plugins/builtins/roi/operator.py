@@ -90,7 +90,8 @@ _PARAM_SCHEMA: dict[str, object] = {
 }
 
 
-_REGION_PROPERTIES = deepcopy(_PARAM_SCHEMA["properties"])
+_PARAM_PROPERTIES = cast(dict[str, Any], _PARAM_SCHEMA["properties"])
+_REGION_PROPERTIES = deepcopy(_PARAM_PROPERTIES)
 for _name in ("padValue", "interpolation"):
     _REGION_PROPERTIES.pop(_name)
 _REGION_PROPERTIES.update({
@@ -98,11 +99,11 @@ _REGION_PROPERTIES.update({
     "purpose": {"title": "区域用途", "type": "string", "enum": ["keep", "exclude"], "default": "keep"},
     "enabled": {"title": "启用", "type": "boolean", "default": True},
 })
-_PARAM_SCHEMA["properties"]["roiType"]["enum"].append("regions")
-_PARAM_SCHEMA["properties"]["roiType"]["xOptionLabels"] = {
+_PARAM_PROPERTIES["roiType"]["enum"].append("regions")
+_PARAM_PROPERTIES["roiType"]["xOptionLabels"] = {
     "bbox": "矩形", "rotatedBox": "旋转矩形", "polygon": "多边形", "regions": "组合区域",
 }
-_PARAM_SCHEMA["properties"]["regions"] = {
+_PARAM_PROPERTIES["regions"] = {
     "title": "区域配置", "type": "array", "default": [],
     "items": {"type": "object", "properties": _REGION_PROPERTIES},
     "xVisibleWhen": {"roiType": ["regions"]},

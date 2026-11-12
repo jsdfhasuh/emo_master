@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from PySide2.QtCore import QByteArray, Qt
 from PySide2.QtGui import QColor, QImage, QPixmap
@@ -65,7 +65,7 @@ class RoiEditorController(PurePreviewControllerBase):
         self._selected = -1
         self._regionsMode = False
         self._legacyParams: dict[str, Any] = {}
-        self._history = []
+        self._history: list[tuple[list[dict[str, Any]], int, bool, dict[str, Any], int, str]] = []
         self._previewDraft = False
         self.controls: dict[str, Any] = {}
         self.outputViews: dict[str, ImageView] = {}
@@ -74,11 +74,12 @@ class RoiEditorController(PurePreviewControllerBase):
         self._resultButtons: list[QPushButton | QAction] = []
 
     def bind(self, rootWidget: object, context: Any) -> None:
+        rootWidget = cast(QWidget, rootWidget)
         for layout in rootWidget.findChildren(QLayout):
             layout.setContentsMargins(0, 0, 0, 0)
             layout.setSpacing(8)
         self.bindPreviewBase(rootWidget, context)
-        self.localImageButton.setIcon(icon("folder-open"))
+        cast(QPushButton, self.localImageButton).setIcon(icon("folder-open"))
         placeholder = requiredChild(rootWidget, QWidget, "canvasPlaceholder")
         self.canvas = RoiCanvas()
         self.canvas.setBackgroundBrush(self.root.palette().alternateBase())
@@ -269,9 +270,9 @@ class RoiEditorController(PurePreviewControllerBase):
         more.setAccessibleName("预览详情与更多导出")
         more.setPopupMode(QToolButton.InstantPopup)
         menu = QMenu(more)
-        self.viewResultAction = menu.addAction("查看预览详情", self._viewResult)
-        self.exportJsonAction = menu.addAction("导出数据（JSON）", self._exportJson)
-        self.exportArchiveAction = menu.addAction("导出全部结果（ZIP）", self._exportArchive)
+        self.viewResultAction = cast(QAction, menu.addAction("查看预览详情", self._viewResult))
+        self.exportJsonAction = cast(QAction, menu.addAction("导出数据（JSON）", self._exportJson))
+        self.exportArchiveAction = cast(QAction, menu.addAction("导出全部结果（ZIP）", self._exportArchive))
         for action in (self.viewResultAction, self.exportJsonAction, self.exportArchiveAction):
             action.setEnabled(False)
             self._resultButtons.append(action)
@@ -344,9 +345,10 @@ class RoiEditorController(PurePreviewControllerBase):
                          "参数来源", scroll, "roiBindingsSection")
 
     def loadParams(self, params: dict[str, Any]) -> None:
+        canvas = cast(RoiCanvas, self.canvas)
         self._loading = True
         try:
-            self.canvas.setMode("select")
+            canvas.setMode("select")
             self._history.clear()
             self._regionsMode = params.get("roiType") == "regions"
             if self._regionsMode:
@@ -361,7 +363,7 @@ class RoiEditorController(PurePreviewControllerBase):
                           and not (region.get("roiType") == "bbox" and region.get("width", 1) <= 1 and region.get("height", 1) <= 1)
                           for region in self._regions)
             self.newPurposeCombo.setCurrentIndex(1 if hasKeep else 0)
-            self.canvas.purpose = self.newPurposeCombo.currentData()
+            canvas.purpose = self.newPurposeCombo.currentData()
             display = {**params, **(self._regions[0] if self._regionsMode and self._regions else {})}
             self.controls["roiType"].setCurrentIndex(self.controls["roiType"].findData(str(display.get("roiType", "bbox"))))
             for name in ("x", "y", "width", "height", "centerX", "centerY", "angleDegrees"):
@@ -404,10 +406,11 @@ class RoiEditorController(PurePreviewControllerBase):
                 "interpolation": self.controls["interpolation"].currentData()}
 
     def collectPreviewParams(self) -> dict[str, Any]:
+        canvas = cast(RoiCanvas, self.canvas)
         params = self.collectParams()
-        self._previewDraft = bool(self.canvas.draft is not None and not self.canvas.draftError())
+        self._previewDraft = bool(canvas.draft is not None and not canvas.draftError())
         if self._previewDraft:
-            params.update(roiType="regions", regions=[*deepcopy(self._regions), deepcopy(self.canvas.draft)])
+            params.update(roiType="regions", regions=[*deepcopy(self._regions), deepcopy(canvas.draft)])
         return params
 
     def collectParamsForSave(self):
@@ -439,7 +442,7 @@ class RoiEditorController(PurePreviewControllerBase):
         super()._startPreview()
 
     def validate(self) -> object:
-        if self.canvas.draft is not None:
+        if cast(RoiCanvas, self.canvas).draft is not None:
             return "请先完成绘制或取消当前草稿，再应用参数"
         error = RoiOperator().validateParams(self.collectParams())
         return error["message"] if error else None
@@ -614,9 +617,10 @@ class RoiEditorController(PurePreviewControllerBase):
         _ = args
         if self._loading:
             return
+        canvas = cast(RoiCanvas, self.canvas)
         self._remember()
         fields = self._fieldParams()
-        if self.canvas.draft is not None:
+        if canvas.draft is not None:
             self._legacyParams.update(padValue=fields["padValue"], interpolation=fields["interpolation"])
             self.schedulePreview(markDirty=True)
             return
@@ -640,7 +644,7 @@ class RoiEditorController(PurePreviewControllerBase):
                 self._legacyParams = fields
             if oldKind != kind:
                 self._showSelectedRegion()
-        self.canvas.angle = float(self.controls["angleDegrees"].value())
+        canvas.angle = float(self.controls["angleDegrees"].value())
         self._legacyParams.update(padValue=fields["padValue"], interpolation=fields["interpolation"])
         self.refreshParameterVisibility()
         self._syncCanvas()

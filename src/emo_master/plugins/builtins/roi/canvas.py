@@ -1,6 +1,7 @@
 """ROI editing in image coordinates; navigation is shared with other editors."""
 from copy import deepcopy
 import math
+from typing import Any
 
 from PySide2.QtCore import QPointF, Qt, Signal
 from PySide2.QtGui import QColor, QPainter, QPainterPath, QPen, QPolygonF
@@ -35,13 +36,13 @@ def regionPoints(region):
 
 
 class RoiCanvas(ImageView):
-    draftChanged = Signal()
-    regionCommitted = Signal(dict)
-    regionSelected = Signal(int)
-    editStarted = Signal()
-    regionEdited = Signal(int, dict)
-    editFinished = Signal()
-    modeChanged = Signal(str)
+    draftChanged: Any = Signal()
+    regionCommitted: Any = Signal(dict)
+    regionSelected: Any = Signal(int)
+    editStarted: Any = Signal()
+    regionEdited: Any = Signal(int, dict)
+    editFinished: Any = Signal()
+    modeChanged: Any = Signal(str)
 
     def __init__(self):
         super().__init__(minimumZoom=.01, maximumZoom=20)

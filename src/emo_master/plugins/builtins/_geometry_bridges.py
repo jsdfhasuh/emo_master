@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 
 from emo_master.core.contracts.geometry2d import (
-    BBox2D, Circle2D, CircleCollection, CircleItem, ContourCollection,
+    BBox2D, Circle2D, CircleCollection, CircleItem, ContourCollection, ContourItem,
     DetectionCollection, PayloadValidationError, Point2D, ShapeMeasurementCollection,
 )
 
@@ -38,33 +38,59 @@ def error(code: str, message: str) -> dict[str, Any]:
 
 
 class MinimumEnclosingCircleOperator:
-    meta = OperatorMeta("vision.analysis.minimum_enclosing_circle", "最小外接圆", "1.0.0",
+    _PARAM_SCHEMA = {
+        "type": "object",
+        "properties": {
+            "scope": {
+                "title": "轮廓处理方式", "type": "string", "default": "perContour",
+                "enum": ["perContour", "allContours"],
+                "xOptionLabels": {
+                    "perContour": "各轮廓分别求圆",
+                    "allContours": "合并全部轮廓点求单圆",
+                },
+                "description": "合并模式将当前输入集合的所有轮廓顶点一起求一个最小外接圆；不是平均圆心或合并多个图像。",
+            },
+        },
+        "additionalProperties": False,
+    }
+    meta = OperatorMeta("vision.analysis.minimum_enclosing_circle", "最小外接圆", "1.1.0",
         {"contours": port("contourCollection", "1.2")},
         {"circles": port("circleCollection", "1.2"),
          "circleCount": {"type": "integer", "required": True, "nullable": False}},
-        {"type": "object", "properties": {}, "additionalProperties": False})
+        _PARAM_SCHEMA)
 
     def validateParams(self, params):
-        return {"code": "E_PARAM_INVALID", "message": "no parameters are supported"} if params else None
+        scope = params.get("scope", "perContour")
+        if set(params) - {"scope"} or not isinstance(scope, str) or scope not in ("perContour", "allContours"):
+            return {"code": "E_PARAM_INVALID", "message": "scope must be perContour or allContours"}
+        return None
 
     def executeNode(self, inputs, params, runtimeContext):
-        if self.validateParams(params):
-            return {"status": "error", "error": self.validateParams(params)}
+        paramError = self.validateParams(params)
+        if paramError:
+            return {"status": "error", "error": paramError}
         if "contours" not in inputs:
             return error("E_INPUT_MISSING", "contours is required")
         try:
             contours = ContourCollection.fromPayload(inputs["contours"])
+            scope = params.get("scope", "perContour")
+            groups: list[tuple[str, tuple[ContourItem, ...]]] = [
+                (f"enclosing:{item.contourId}", (item,)) for item in contours.items]
+            if scope == "allContours":
+                groups = [("enclosing:allContours", contours.items)] if contours.items else []
             circles = []
-            for item in contours.items:
-                coordinates = np.array([(p.x, p.y) for p in item.polygon.points], dtype=np.float32)
+            for circleId, items in groups:
+                coordinates = np.array(
+                    [(p.x, p.y) for item in items for p in item.polygon.points], dtype=np.float32)
                 if not np.all(np.isfinite(coordinates)):
                     return error("E_INPUT_SHAPE", "contour exceeds finite float32 measurement range")
                 (x, y), radius = cv2.minEnclosingCircle(coordinates.reshape(-1, 1, 2))
-                circles.append(CircleItem(f"enclosing:{item.contourId}",
+                circles.append(CircleItem(circleId,
                     Circle2D(Point2D(float(x), float(y), contours.coordinateSpace), float(radius))))
             result = CircleCollection(tuple(circles), contours.coordinateSpace)
             return {"status": "ok", "outputs": {"circles": result.toPayload(), "circleCount": len(circles)},
-                    "diagnostics": {"algorithm": "cv2.minEnclosingCircle", "sourceContourIds": [i.contourId for i in contours.items]}}
+                    "diagnostics": {"algorithm": "cv2.minEnclosingCircle", "scope": scope,
+                                    "sourceContourIds": [i.contourId for i in contours.items]}}
         except PayloadValidationError as exc:
             return error("E_INPUT_TYPE", str(exc))
         except cv2.error as exc:

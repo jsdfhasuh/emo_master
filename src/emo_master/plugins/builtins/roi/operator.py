@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 from dataclasses import dataclass
 from time import perf_counter
 from typing import Any, TypeGuard, cast
@@ -60,7 +61,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "default": 0.0,
         },
         "points": {
-            "title": "多边形顶点（JSON）",
+            "title": "多边形顶点",
             "type": "array",
             "items": {
                 "type": "object",
@@ -89,11 +90,31 @@ _PARAM_SCHEMA: dict[str, object] = {
 }
 
 
+_REGION_PROPERTIES = deepcopy(_PARAM_SCHEMA["properties"])
+for _name in ("padValue", "interpolation"):
+    _REGION_PROPERTIES.pop(_name)
+_REGION_PROPERTIES.update({
+    "name": {"title": "区域名称", "type": "string"},
+    "purpose": {"title": "区域用途", "type": "string", "enum": ["keep", "exclude"], "default": "keep"},
+    "enabled": {"title": "启用", "type": "boolean", "default": True},
+})
+_PARAM_SCHEMA["properties"]["roiType"]["enum"].append("regions")
+_PARAM_SCHEMA["properties"]["roiType"]["xOptionLabels"] = {
+    "bbox": "矩形", "rotatedBox": "旋转矩形", "polygon": "多边形", "regions": "组合区域",
+}
+_PARAM_SCHEMA["properties"]["regions"] = {
+    "title": "区域配置", "type": "array", "default": [],
+    "items": {"type": "object", "properties": _REGION_PROPERTIES},
+    "xVisibleWhen": {"roiType": ["regions"]},
+    "xValidateWhen": {"roiType": ["regions"]},
+}
+
+
 class RoiOperator:
     meta = OperatorMeta(
         operatorId="vision.preprocess.roi",
         displayName="ROI Extract",
-        version="1.1.0",
+        version="1.2.0",
         inputPorts={
             "image": {"type": "image", "required": True, "nullable": False},
             "frame": {
@@ -133,14 +154,33 @@ class RoiOperator:
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
         params = effectiveModeParams(params, self.meta.paramSchema)
         roiType = params.get("roiType", "bbox")
-        if roiType not in {"bbox", "rotatedBox", "polygon"}:
-            return _paramError("roiType must be bbox, rotatedBox, or polygon")
+        if roiType not in {"bbox", "rotatedBox", "polygon", "regions"}:
+            return _paramError("roiType must be bbox, rotatedBox, polygon, or regions")
         interpolation = params.get("interpolation", "linear")
         if interpolation not in {"nearest", "linear", "cubic"}:
             return _paramError("interpolation must be nearest, linear, or cubic")
         padValue = params.get("padValue", 0)
         if not _isInt(padValue) or not 0 <= padValue <= 255:
             return _paramError("padValue must be an integer in [0, 255]")
+        if roiType == "regions":
+            regions = params.get("regions", [])
+            if not isinstance(regions, list):
+                return _paramError("regions must be an array")
+            for index, region in enumerate(regions):
+                if not isinstance(region, dict):
+                    return _paramError(f"regions[{index}] must be an object")
+                if region.get("roiType") not in {"bbox", "rotatedBox", "polygon"}:
+                    return _paramError(f"regions[{index}].roiType is invalid")
+                if region.get("purpose", "keep") not in {"keep", "exclude"}:
+                    return _paramError(f"regions[{index}].purpose must be keep or exclude")
+                if not isinstance(region.get("enabled", True), bool):
+                    return _paramError(f"regions[{index}].enabled must be a boolean")
+                if "name" in region and not isinstance(region["name"], str):
+                    return _paramError(f"regions[{index}].name must be a string")
+                error = self.validateParams(region)
+                if error:
+                    return _paramError(f"regions[{index}]: {error['message']}")
+            return None
         if roiType == "bbox":
             return _validateBoxParams(params, rotated=False)
         if roiType == "rotatedBox":
@@ -174,8 +214,9 @@ class RoiOperator:
         height, width = image.shape[:2]
         try:
             inputFrame = frameForInput(inputs, width, height)
-            geometry = _geometryFromParams(params, inputFrame.coordinateSpace)
-            geometryMask = _geometryMask(geometry, width, height)
+            geometry, geometryMask = _selectionFromParams(
+                params, inputFrame.coordinateSpace, width, height,
+            )
             fullMask = cv2.bitwise_and(
                 geometryMask,
                 frameMask(inputFrame, width, height),
@@ -248,6 +289,34 @@ class RoiOperator:
             },
             "diagnostics": {"text": "ROI extraction completed"},
         }
+
+
+def _selectionFromParams(params, coordinateSpace, width, height):
+    if params.get("roiType") != "regions":
+        geometry = _geometryFromParams(params, coordinateSpace)
+        return geometry, _geometryMask(geometry, width, height)
+    active = [region for region in params.get("regions", []) if region.get("enabled", True)]
+    keep = [_geometryFromParams(region, coordinateSpace) for region in active
+            if region.get("purpose", "keep") == "keep"]
+    if len(keep) == 1:
+        geometry = keep[0]
+    elif keep:
+        points = [point for region in keep for point in geometryPoints(region)]
+        left, top = min(p[0] for p in points), min(p[1] for p in points)
+        geometry = BBox2D(left, top, max(p[0] for p in points) - left,
+                          max(p[1] for p in points) - top, coordinateSpace)
+    else:
+        geometry = BBox2D(0, 0, width, height, coordinateSpace)
+    mask = np.zeros((height, width), dtype=np.uint8) if keep else np.full((height, width), 255, dtype=np.uint8)
+    for region in keep:
+        cv2.bitwise_or(mask, _geometryMask(region, width, height), dst=mask)
+    for region in active:
+        if region.get("purpose") == "exclude":
+            excluded = _geometryMask(_geometryFromParams(region, coordinateSpace), width, height)
+            mask[excluded != 0] = 0
+    # A geometry2d cannot encode holes or disconnected regions. The roi port
+    # describes the crop envelope; fullMask/croppedMask carry the exact selection.
+    return geometry, mask
 
 
 def _geometryFromParams(

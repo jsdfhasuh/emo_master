@@ -26,6 +26,11 @@ class EditorContextError(RuntimeError):
 
 @runtime_checkable
 class OperatorEditorController(Protocol):
+    """Required lifecycle; mountVariableBindings(scroll) is an optional UI hook.
+
+    The host owns binding state/validation; a controller implementing that hook
+    only places the supplied widget in its own layout after bind/loadParams.
+    """
     def bind(self, rootWidget: object, context: "EditorContext") -> None: ...
 
     def loadParams(self, params: dict[str, object]) -> None: ...

@@ -49,6 +49,7 @@ _ALLOWED_EDITOR_WIDGETS = {
     "QTabWidget",
     "QStackedWidget",
     "QScrollArea",
+    "QSplitter",
     "QListWidget",
     "QTreeWidget",
     "QTableWidget",

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from PySide2.QtCore import QSize, Qt
-from PySide2.QtGui import QPixmap
+from PySide2.QtCore import QEvent, QObject, QPointF, QSize, Qt
+from PySide2.QtGui import QPixmap, QWheelEvent
 from PySide2.QtWidgets import (
-    QLabel, QScrollArea, QSizePolicy, QWidget,
+    QApplication, QLabel, QScrollArea, QSizePolicy, QToolButton, QVBoxLayout, QWidget,
 )
 
 from emo_master.apps.designer.ui.workflow_navigation import WorkflowTabs as WorkflowTabs
@@ -114,3 +114,41 @@ def scrollContent(widget: QWidget, *, name="contentScroll") -> QScrollArea:
     scroll.setWidget(widget)
     scroll.setMinimumSize(0, 0)
     return scroll
+
+
+class CollapsibleSection(QWidget):
+    def __init__(self, title, content, parent=None):
+        super().__init__(parent)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.toggle = QToolButton(self)
+        self.toggle.setText(title)
+        self.toggle.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.toggle.setArrowType(Qt.RightArrow)
+        self.toggle.setCheckable(True)
+        self.toggle.setAccessibleName(title)
+        self.toggle.setToolTip("展开或收起" + title)
+        self.content = content
+        layout.addWidget(self.toggle)
+        layout.addWidget(content)
+        content.hide()
+        self.toggle.toggled.connect(self.setExpanded)
+
+    def setExpanded(self, expanded):
+        self.toggle.setChecked(expanded)
+        self.content.setVisible(expanded)
+        self.toggle.setArrowType(Qt.DownArrow if expanded else Qt.RightArrow)
+
+
+class FormWheelGuard(QObject):
+    """Scroll a form without accidentally editing its numeric/combo controls."""
+    def eventFilter(self, watched, event):
+        if event.type() != QEvent.Wheel:
+            return False
+        viewport = self.parent().viewport()
+        forwarded = QWheelEvent(QPointF(viewport.mapFromGlobal(event.globalPos())),
+            event.globalPosition(), event.pixelDelta(), event.angleDelta(),
+            event.buttons(), event.modifiers(), event.phase(), event.inverted(), event.source())
+        QApplication.sendEvent(viewport, forwarded)
+        event.accept()
+        return True

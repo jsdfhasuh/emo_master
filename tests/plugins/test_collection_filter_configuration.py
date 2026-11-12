@@ -291,7 +291,7 @@ def testManifestAndOperatorAgreeOnSchemaVersionAndFullPorts():
     path = Path(__file__).resolve().parents[2] / "src/emo_master/plugins/builtins/collection_filter/manifest.json"
     manifest = json.loads(path.read_text(encoding="utf-8"))
     meta = CollectionFilterOperator.meta
-    assert manifest["version"] == meta.version == "1.2.0"
+    assert manifest["version"] == meta.version == "1.3.0"
     assert manifest["paramSchema"] == meta.paramSchema
     assert manifest["inputPorts"] == meta.inputPorts
     assert manifest["outputPorts"] == meta.outputPorts

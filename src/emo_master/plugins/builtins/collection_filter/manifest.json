@@ -1,7 +1,7 @@
 {
   "operatorId": "vision.collection.filter",
   "displayName": "Filter Collection",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "entry": "emo_master.plugins.builtins.collection_filter.operator:CollectionFilterOperator",
   "category": "结果处理",
   "iconKey": "filter",
@@ -42,6 +42,8 @@
       "areaEnabled": {"title":"面积筛选","type":"boolean","xVisibleWhen":{"collectionType":["blobs","contours","measurements"]},"xValidateWhen":{"collectionType":["","blobs","contours","measurements"]}},
       "minArea": {"title":"最小面积","type":"number","minimum":0,"default":0,"xVisibleWhen":{"collectionType":["blobs","contours","measurements"],"areaEnabled":[true]},"xValidateWhen":{"collectionType":["","blobs","contours","measurements"],"areaEnabled":[true]}},
       "maxArea": {"title":"最大面积","type":"number","minimum":0,"default":0,"xVisibleWhen":{"collectionType":["blobs","contours","measurements"],"areaEnabled":[true]},"xValidateWhen":{"collectionType":["","blobs","contours","measurements"],"areaEnabled":[true]}},
+      "contourPointsEnabled": {"title":"轮廓点数筛选","type":"boolean","xVisibleWhen":{"collectionType":["contours"]},"xValidateWhen":{"collectionType":["","contours"]}},
+      "minContourPoints": {"title":"最小轮廓点数","type":"integer","minimum":0,"default":0,"description":"按轮廓近似后的顶点数筛选，包含下限；0 表示不限制。","xVisibleWhen":{"collectionType":["contours"],"contourPointsEnabled":[true]},"xValidateWhen":{"collectionType":["","contours"],"contourPointsEnabled":[true]}},
       "perimeterEnabled": {"title":"周长筛选","type":"boolean","xVisibleWhen":{"collectionType":["contours","measurements"]},"xValidateWhen":{"collectionType":["","contours","measurements"]}},
       "minPerimeter": {"title":"最小周长","type":"number","minimum":0,"default":0,"xVisibleWhen":{"collectionType":["contours","measurements"],"perimeterEnabled":[true]},"xValidateWhen":{"collectionType":["","contours","measurements"],"perimeterEnabled":[true]}},
       "maxPerimeter": {"title":"最大周长","type":"number","minimum":0,"default":0,"xVisibleWhen":{"collectionType":["contours","measurements"],"perimeterEnabled":[true]},"xValidateWhen":{"collectionType":["","contours","measurements"],"perimeterEnabled":[true]}},

@@ -706,7 +706,7 @@ if isinstance(geometry, BBox2D):
 | --- | --- | --- | --- |
 | `vision.preprocess.resize` | `image`、可选 `frame` | `image`、`frame` | Stretch、Fit 或 Letterbox，保留回源仿射 |
 | `vision.preprocess.crop` | `image`、可选 `roi/frame` | `image`、`frame` | BBox 或参数裁剪及四边 padding |
-| `vision.preprocess.roi` | `image`、可选 `frame` | `croppedImage/croppedMask/croppedFrame`、`maskedImage/fullMask/maskedFrame`、`roi` | BBox、旋转框或多边形 ROI 的紧致与原尺寸两套输出 |
+| `vision.preprocess.roi` | `image`、可选 `frame` | `croppedImage/croppedMask/croppedFrame`、`maskedImage/fullMask/maskedFrame`、`roi` | 矩形、旋转矩形、多边形及保留/排除组合区域的紧致与原尺寸输出 |
 | `vision.preprocess.color_convert` | `image`、可选 `frame` | `image`、`frame` | BGR/RGB/GRAY/HSV/LAB 颜色空间转换 |
 | `vision.preprocess.blur` | `image`、可选 `frame` | `image`、`frame` | Gaussian、Median 或 Bilateral 去噪 |
 | `vision.preprocess.threshold` | `image`、可选 `frame` | `mask`、`threshold`、`frame` | 固定、Otsu、Triangle 或自适应二值化 |
@@ -728,6 +728,7 @@ if isinstance(geometry, BBox2D):
 | `vision.analysis.template_match` | `image/template`、可选 `frame/roi` | `matches`、`frame` | 六种 OpenCV 方法、峰值提取与 IoU NMS |
 | `vision.analysis.hough_line` | `edge`、可选 `frame` | `lines`、`frame` | 使用 HoughLinesP 检测线段 |
 | `vision.analysis.hough_circle` | `image`、可选 `frame` | `circles`、`frame` | 使用 HOUGH_GRADIENT 检测圆 |
+| `vision.analysis.minimum_enclosing_circle` | `contours:contourCollection` | `circles`、`circleCount` | 逐轮廓或合并当前集合的全部轮廓点求最小外接圆 |
 | `vision.image.absdiff` | `imageA/imageB`、可选 `frameA/frameB` | `image`、`frame` | 对同空间同结构图像做绝对差分 |
 | `vision.image.add_weighted` | `imageA/imageB`、可选 `frameA/frameB` | `image`、`frame` | uint8 饱和加权融合 |
 | `vision.mask.apply` | `image/mask`、可选 `frame/maskFrame` | `image`、`frame` | 按二值 mask 保留像素，其余填固定值 |
@@ -748,7 +749,7 @@ if isinstance(geometry, BBox2D):
 | `communication.tcp.client` | `message`、`text` 或参数文本中的一个 | `sentBytes`、可选 `response:tcpMessage/responseText` | 一次有界 TCP send/exchange 事务，可独立解码文本响应 |
 | `communication.tcp.receive_once` | 无 | `message:tcpMessage`、`peerHost/peerPort`、可选 `text` | 在超时内监听并接收一条消息，可独立解码文本后关闭 |
 
-`vision.collection.filter` 1.2.0 保留七类集合的完整端口声明，但单次执行只接收一种
+`vision.collection.filter` 1.3.0 保留七类集合的完整端口声明，但单次执行只接收一种
 集合。`collectionType` 选择检测结果、连通域、轮廓、形状测量、直线、圆或模板匹配；
 显式选择与实际输入不一致时报 `E_INPUT_TYPE`。旧节点未保存此参数时仍依据输入类型执行。
 Designer 根据已有集合连线带出旧节点的类型，新节点先选择筛选对象；不在打开编辑器时改写工程。
@@ -759,6 +760,17 @@ Designer 根据已有集合连线带出旧节点的类型，新节点先选择�
 新增开关不写入固定 schema 默认值，避免快照补默认值时改变旧节点的结果。
 `xVisibleWhen` 控制参数展示，`xValidateWhen` 控制条件性校验；后者也用于快照和
 全局变量有效参数校验，不删除关闭条件的草稿值。
+
+轮廓可启用 `contourPointsEnabled`，以 `minContourPoints` 筛选近似后多边形的顶点数，
+包含下限。此参数必须为非负整数，默认 0 表示不限制；与面积、周长等已启用条件取 AND。
+其他集合不使用点数条件；关闭该条件时保留草稿值但不校验、不执行，不改变旧工程结果。
+
+`vision.analysis.minimum_enclosing_circle` 1.1.0 的 `scope` 默认为 `perContour`，每条轮廓分别
+调用 `cv2.minEnclosingCircle`，保留原有结果和圆 ID。显式选择 `allContours` 时，把当前输入
+集合的所有轮廓顶点作为同一目标的点集，只调用一次并输出一个圆，ID 为
+`enclosing:allContours`；空集合仍输出零个圆，不伪造圆心。两种方式都保留输入坐标空间，
+诊断保留全部来源轮廓 ID。此合并不是平均圆心、拼成一个多边形或修改二值图，也不是
+霍夫圆或最小二乘拟合；算子不判断不同轮廓是否属于同一物理目标，调用方须先完成筛选和分组。
 
 画布仅显示当前集合输入、对应 kept/rejected 集合和两项数量输出；开启空间筛选且选择
 空间关系后显示 `roi`。新勾选空间筛选时默认使用“中心位于区域内”。绑定决定类型时
@@ -773,7 +785,7 @@ Designer 根据已有集合连线带出旧节点的类型，新节点先选择�
 ### 10.1 ROI 输出契约
 
 `vision.preprocess.roi` 的 `image` 必填，`frame` 可选；缺少 frame 时按整图建立单位
-映射。`roiType` 固定为 `bbox`、`rotatedBox` 或 `polygon`。旋转框正角沿图像坐标顺时针，
+映射。`roiType` 为 `bbox`、`rotatedBox`、`polygon` 或 `regions`。前三种保留旧参数格式与行为。旋转框正角沿图像坐标顺时针，
 多边形允许凹形，但参数层拒绝少于三点、零面积和自相交。
 
 节点固定返回全部七个端口：
@@ -790,6 +802,19 @@ Designer 根据已有集合连线带出旧节点的类型，新节点先选择�
 相交，因此 Letterbox 和显式 padding 不会被当作有效 ROI。部分越界时紧致输出继续
 保持请求尺寸，图像越界部分填 `padValue`、Mask 填 0；完全不与有效 frame 相交时报
 `E_INPUT_SHAPE`。节点不修改输入图像。
+
+自算子 1.2.0 起，`roiType="regions"` 使用 `regions` 数组。每项包含 `roiType`
+（`bbox/rotatedBox/polygon`）和对应几何参数，可带 `name`、`purpose="keep"|"exclude"`
+（默认 keep）、`enabled`（默认 true）。先对启用的保留区域取并集，再扣除所有启用的
+排除区域，最后与输入 frame 有效内容相交；数组顺序不影响结果。没有启用的保留区时
+从整幅图像开始扣除，因此空数组或全部禁用表示整图。完全扣除时报 `E_INPUT_SHAPE`。
+
+只有一个启用保留区时沿用该形状的裁剪变换，包括旋转矩形的旋正；多个保留区使用
+联合轴对齐外接框；没有保留区使用原图尺寸。`roi` 仍为原有 `geometry2d` 类型，描述
+裁剪外包几何，不编码孔洞或多个离散区域。**精确组合区域以 `fullMask/croppedMask`
+为准，不能把 `roi` 当作排除区域已经从几何中扣除的结果。** `padValue/interpolation`
+仍是全局参数。旧单区域变量绑定继续有效；组合区域应绑定整个 `regions`，不能把旧的
+顶层 `x/points/roiType` 绑定静默当作列表中某一项的绑定。
 
 ### 10.2 集合处理契约
 

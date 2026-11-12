@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ExamplePreviewEditor</class>
+ <widget class="QWidget" name="ExamplePreviewEditor">
+  <layout class="QVBoxLayout" name="rootLayout" stretch="1,0">
+   <item><widget class="QSplitter" name="images">
+    <property name="orientation"><enum>Qt::Horizontal</enum></property>
+    <widget class="QWidget" name="sourcePanel"><layout class="QVBoxLayout" name="sourceLayout">
+     <item><widget class="QLabel" name="sourceTitle"><property name="text"><string>原图</string></property></widget></item>
+     <item><widget class="QWidget" name="sourceSlot"><layout class="QVBoxLayout" name="sourceSlotLayout"/></widget></item>
+    </layout></widget>
+    <widget class="QWidget" name="resultPanel"><layout class="QVBoxLayout" name="resultLayout">
+     <item><widget class="QLabel" name="resultTitle"><property name="text"><string>结果预览</string></property></widget></item>
+     <item><widget class="QWidget" name="resultSlot"><layout class="QVBoxLayout" name="resultSlotLayout"/></widget></item>
+    </layout></widget>
+   </widget></item>
+   <item><widget class="QWidget" name="bindingsSlot"><layout class="QVBoxLayout" name="bindingsLayout"/></widget></item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

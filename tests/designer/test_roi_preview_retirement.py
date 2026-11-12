@@ -124,7 +124,7 @@ def testRoiWheelScrollsParametersWithoutEditingEvenWhenFocused(roi, field, focus
     QApplication.sendEvent(control, event)
     assert controller.collectParams() == before
     assert controller._generation == generation and controller._previewSnapshot is snapshot
-    assert controller.exportArchiveButton.isEnabled()
+    assert controller.exportArchiveAction.isEnabled()
     assert bar.value() > 0
     if field == "width":
         control.setFocus(Qt.TabFocusReason)

@@ -291,7 +291,7 @@ class PurePreviewControllerBase:
         def release():
             pass
         try:
-            params = deepcopy(self.collectParams())
+            params = deepcopy(self.collectPreviewParams())
             prepare = getattr(self.context, "preparePurePreview", None)
             if callable(prepare):
                 invocation = prepare(params, self.currentAssetId, requestId)
@@ -433,6 +433,10 @@ class PurePreviewControllerBase:
 
     def onPreviewInvalidated(self) -> None:
         self._previewMetadata = None
+
+    def collectPreviewParams(self) -> dict[str, object]:
+        """Allow an editor to preview an unfinished shape without saving it."""
+        return self.collectParams()
 
     def collectParams(self) -> dict[str, object]:
         raise NotImplementedError

@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.plugin.validator import isVersionCompatible
 
@@ -17,8 +19,9 @@ def testRegistryLoadsValidManifest(tmp_path: Path, monkeypatch) -> None:
     assert scanResult.rejectedOperators == {}
 
 
+@pytest.mark.parametrize("widgetClass", ["QWidget", "QSplitter"])
 def testRegistryLoadsValidatedEditorResourceWithoutImportingController(
-    tmp_path: Path, monkeypatch
+    tmp_path: Path, monkeypatch, widgetClass
 ) -> None:
     packageName = "editor_temp_plugin"
     entry = _writeOperatorPackage(tmp_path, packageName, _validOperatorSource())
@@ -38,7 +41,7 @@ def testRegistryLoadsValidatedEditorResourceWithoutImportingController(
     uiPath.parent.mkdir()
     uiPath.write_text(
         "<?xml version='1.0' encoding='UTF-8'?><ui version='4.0'><class>Editor</class>"
-        "<widget class='QWidget' name='Editor'/><resources/><connections/></ui>",
+        f"<widget class='{widgetClass}' name='Editor'/><resources/><connections/></ui>",
         encoding="utf-8",
     )
     monkeypatch.syspath_prepend(str(tmp_path))

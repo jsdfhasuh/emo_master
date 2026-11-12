@@ -1,7 +1,7 @@
 {
   "operatorId": "vision.analysis.minimum_enclosing_circle",
   "displayName": "最小外接圆",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "inputPorts": {
     "contours": {
       "type": "contourCollection",
@@ -25,12 +25,24 @@
   },
   "paramSchema": {
     "type": "object",
-    "properties": {},
+    "properties": {
+      "scope": {
+        "title": "轮廓处理方式",
+        "type": "string",
+        "default": "perContour",
+        "enum": ["perContour", "allContours"],
+        "xOptionLabels": {
+          "perContour": "各轮廓分别求圆",
+          "allContours": "合并全部轮廓点求单圆"
+        },
+        "description": "合并模式将当前输入集合的所有轮廓顶点一起求一个最小外接圆；不是平均圆心或合并多个图像。"
+      }
+    },
     "additionalProperties": false
   },
   "entry": "emo_master.plugins.builtins._geometry_bridges:MinimumEnclosingCircleOperator",
   "category": "分析",
-  "summary": "逐轮廓计算最小外接圆，保持来源和坐标空间；不是 Hough 圆或质心。",
+  "summary": "逐轮廓或合并轮廓点集计算最小外接圆，保持来源和坐标空间；不是 Hough 圆或质心。",
   "minCoreVersion": "0.6.1",
   "maxCoreVersion": "1.x",
   "iconKey": "default"

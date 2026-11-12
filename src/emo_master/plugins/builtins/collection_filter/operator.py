@@ -63,6 +63,10 @@ _PARAM_SCHEMA: dict[str, object] = {
     "properties": {
         "minArea": {"title": "最小面积", "type": "number", "minimum": 0.0, "default": 0.0},
         "maxArea": {"title": "最大面积", "type": "number", "minimum": 0.0, "default": 0.0},
+        "minContourPoints": {
+            "title": "最小轮廓点数", "type": "integer", "minimum": 0, "default": 0,
+            "description": "按轮廓近似后的顶点数筛选，包含下限；0 表示不限制。",
+        },
         "minPerimeter": {"title": "最小周长", "type": "number", "minimum": 0.0, "default": 0.0},
         "maxPerimeter": {"title": "最大周长", "type": "number", "minimum": 0.0, "default": 0.0},
         "circularityEnabled": {"title": "启用圆度筛选", "type": "boolean", "default": False},
@@ -183,7 +187,7 @@ class CollectionFilterOperator:
     meta = OperatorMeta(
         operatorId="vision.collection.filter",
         displayName="Filter Collection",
-        version="1.2.0",
+        version="1.3.0",
         inputPorts=_collectionInputs(),
         outputPorts=_collectionOutputs(),
         paramSchema=_PARAM_SCHEMA,
@@ -197,6 +201,9 @@ class CollectionFilterOperator:
         for flag in FILTER_GROUPS:
             if not isinstance(params.get(flag, flag != "circularityEnabled"), bool):
                 return _paramError(f"{flag} must be boolean")
+        minContourPoints = params.get("minContourPoints", 0)
+        if not _integer(minContourPoints) or minContourPoints < 0:
+            return _paramError("minContourPoints must be a non-negative integer")
         for minimumName, maximumName in (
             ("minArea", "maxArea"),
             ("minPerimeter", "maxPerimeter"),
@@ -349,7 +356,8 @@ def _matchesItem(
         perimeter = float(itemField(item, "perimeter")[1])
         holeMode = cast(str, params.get("holeMode", "any"))
         return (
-            _range(area, params, "minArea", "maxArea")
+            len(item.polygon.points) >= cast(int, params.get("minContourPoints", 0))
+            and _range(area, params, "minArea", "maxArea")
             and _range(perimeter, params, "minPerimeter", "maxPerimeter")
             and (holeMode == "any" or (holeMode == "hole") == item.isHole)
         )

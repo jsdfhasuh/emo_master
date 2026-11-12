@@ -133,7 +133,10 @@ try:
                     bindingContent = self._bindingPanel
                 bindingScroll = scrollContent(bindingContent)
                 self._bindingScroll = bindingScroll
-                if self._scrollablePlcLayout:
+                mountBindings = getattr(controller, "mountVariableBindings", None)
+                if customRoot is not None and callable(mountBindings):
+                    mountBindings(bindingScroll)
+                elif self._scrollablePlcLayout:
                     # Keep parameter bindings accessible without taking half
                     # the height of the dedicated PLC runtime page.
                     tabs = cast(QTabWidget, cast(QWidget, customRoot).findChild(QTabWidget, "plcTabs"))
@@ -161,6 +164,11 @@ try:
             self._applyButton = QPushButton("应用")
             self._applyButton.setObjectName("primaryButton")
             self._applyButton.setIcon(icon("save", "#ffffff"))
+            self._applyButton.setFixedWidth(self._applyButton.fontMetrics().horizontalAdvance("已应用") + 56)
+            self._applyFeedbackTimer = QTimer(self)
+            self._applyFeedbackTimer.setSingleShot(True)
+            self._applyFeedbackTimer.setInterval(2000)
+            self._applyFeedbackTimer.timeout.connect(self._resetApplyFeedback)
             self._closeButton = QPushButton("关闭")
             buttons.addWidget(self._applyButton)
             buttons.addWidget(self._closeButton)
@@ -264,16 +272,41 @@ try:
 
         def markDirty(self) -> None:
             self._dirtyHint = True
+            self._resetApplyFeedback()
+
+        def _resetApplyFeedback(self) -> None:
+            self._applyFeedbackTimer.stop()
+            self._applyButton.setText("应用")
+            self._applyButton.setIcon(icon("save", "#ffffff"))
+            self._applyButton.setStyleSheet("")
+
+        def _showApplySuccess(self) -> None:
+            self.setStatus("参数已应用")
+            self._statusLabel.setStyleSheet(
+                "color: #166534; background-color: #dcfce7;"
+                "border: 1px solid #86efac; border-radius: 4px; padding: 8px; font-weight: 600;"
+            )
+            self._applyButton.setText("已应用")
+            self._applyButton.setIcon(icon("check", "#ffffff"))
+            self._applyButton.setStyleSheet(
+                "QPushButton { color: #ffffff; background-color: #15803d; border-color: #15803d; }"
+                "QPushButton:hover { background-color: #166534; }"
+                "QPushButton:pressed { background-color: #14532d; }"
+            )
+            self._applyFeedbackTimer.start()
 
         def setStatus(self, message: str) -> None:
             self._statusLabel.setStyleSheet("")
             self._statusLabel.setText(str(message))
 
         def setError(self, message: str) -> None:
+            self._resetApplyFeedback()
             self._statusLabel.setStyleSheet("color: #d45b5b;")
             self._statusLabel.setText(str(message))
 
         def applyChanges(self) -> bool:
+            self._resetApplyFeedback()
+            self.setStatus("")
             try:
                 bindings = self._bindingPanel.bindings() if self._bindingPanel else []
                 if self._schemaForm is not None:
@@ -305,7 +338,7 @@ try:
             self._loadedBindings = bindings
             self.context.variableBindings = bindings
             self._dirtyHint = False
-            self.setStatus("参数已应用")
+            self._showApplySuccess()
             return True
 
         def simulateApply(self) -> None:

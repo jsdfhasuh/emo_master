@@ -1,27 +1,11 @@
-"""Presentation-only layout adaptation for the three bundled editor UIs."""
+"""Legacy layout adaptation for the camera and histogram editor UIs."""
 
-from PySide2.QtCore import QEvent, QObject, QPointF, Qt
-from PySide2.QtGui import QWheelEvent
-from PySide2.QtWidgets import (QAbstractSpinBox, QApplication, QComboBox, QGridLayout,
-    QHBoxLayout, QLabel, QLineEdit, QPushButton, QSplitter, QVBoxLayout, QWidget)
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QPushButton, QSplitter,
+    QVBoxLayout, QWidget)
 
 from emo_master.apps.designer.ui.icon_map import icon
-from emo_master.apps.designer.ui.widgets import PreviewLabel, WrapLabel, scrollContent
-
-
-class _RoiParameterWheelGuard(QObject):
-    """Scrolling the ROI form must not edit a focused numeric/combo field."""
-
-    def eventFilter(self, watched, event):
-        if event.type() != QEvent.Wheel:
-            return False
-        viewport = self.parent().viewport()
-        forwarded = QWheelEvent(QPointF(viewport.mapFromGlobal(event.globalPos())),
-            event.globalPosition(), event.pixelDelta(), event.angleDelta(),
-            event.buttons(), event.modifiers(), event.phase(), event.inverted(), event.source())
-        QApplication.sendEvent(viewport, forwarded)
-        event.accept()
-        return True  # Do not propagate a second scroll or call the field's wheel handler.
+from emo_master.apps.designer.ui.widgets import PreviewLabel, WrapLabel
 
 
 def _take(layout):
@@ -55,12 +39,11 @@ def _panel(layout):
 def prepareBuiltinLayout(root, operatorId):
     name = root.objectName()
     builtinIds = {"HuarayCameraEditor": "vision.io.huaray_camera",
-                  "RoiEditor": "vision.preprocess.roi", "HistogramEditor": "vision.analysis.histogram"}
+                  "HistogramEditor": "vision.analysis.histogram"}
     if builtinIds.get(name) != operatorId:
         return
     previews = {
         "HuarayCameraEditor": ("previewLabel",),
-        "RoiEditor": ("croppedImageLabel", "croppedMaskLabel", "fullMaskLabel", "maskedImageLabel"),
         "HistogramEditor": ("sourceImageLabel",),
     }[name]
     for labelName in previews:
@@ -94,38 +77,6 @@ def prepareBuiltinLayout(root, operatorId):
         params.widget().setMinimumWidth(260)
         splitter.addWidget(params.widget())
         splitter.setSizes([600, 330])
-        splitter.setChildrenCollapsible(False)
-        layout.addWidget(splitter, 1)
-    elif name == "RoiEditor":
-        source, canvas, parameters, outputs = items
-        canvas.widget().setMinimumSize(240, 180)
-        source.layout().setStretch(1, 1)
-        layout.addLayout(source.layout())
-        fields = _take(parameters.layout())
-        form = QVBoxLayout()
-        for index in range(0, len(fields), 2):
-            label = fields[index].widget()
-            label.setWordWrap(True)
-            form.addWidget(label)
-            form.addWidget(fields[index + 1].widget())
-        form.addStretch(1)
-        parametersScroll = scrollContent(_panel(form))
-        parametersScroll.setMinimumWidth(240)
-        parametersScroll.setObjectName("roiParametersScroll")
-        guard = _RoiParameterWheelGuard(parametersScroll)
-        parametersScroll._parameterWheelGuard = guard
-        for field in parametersScroll.findChildren(QWidget):
-            if isinstance(field, (QAbstractSpinBox, QComboBox, QLineEdit)):
-                field.installEventFilter(guard)
-        imageLayout = QVBoxLayout()
-        imageLayout.addWidget(canvas.widget(), 4)
-        for labelName in previews:
-            root.findChild(QLabel, labelName).setMinimumSize(80, 70)
-        imageLayout.addLayout(outputs.layout(), 1)
-        splitter = QSplitter(Qt.Horizontal)
-        splitter.addWidget(_panel(imageLayout))
-        splitter.addWidget(parametersScroll)
-        splitter.setSizes([640, 260])
         splitter.setChildrenCollapsible(False)
         layout.addWidget(splitter, 1)
     else:

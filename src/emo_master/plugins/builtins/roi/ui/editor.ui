@@ -2,43 +2,98 @@
 <ui version="4.0">
  <class>RoiEditor</class>
  <widget class="QWidget" name="RoiEditor">
-  <layout class="QVBoxLayout" name="rootLayout">
-   <item><layout class="QHBoxLayout" name="sourceLayout">
+  <layout class="QVBoxLayout" name="rootLayout" stretch="0,1,0">
+   <property name="leftMargin"><number>0</number></property>
+   <property name="topMargin"><number>0</number></property>
+   <property name="rightMargin"><number>0</number></property>
+   <property name="bottomMargin"><number>0</number></property>
+   <item><layout class="QHBoxLayout" name="sourceLayout" stretch="0,1,0">
     <item><widget class="QLabel" name="sourceLabel"><property name="text"><string>图源</string></property></widget></item>
     <item><widget class="QComboBox" name="sourceCombo"/></item>
     <item><widget class="QPushButton" name="localImageButton"><property name="text"><string>选择本地图片</string></property></widget></item>
    </layout></item>
-   <item><widget class="QWidget" name="canvasPlaceholder"><property name="minimumSize"><size><width>640</width><height>360</height></size></property><layout class="QVBoxLayout" name="canvasLayout"/></widget></item>
-   <item><layout class="QGridLayout" name="parametersLayout">
-    <item row="0" column="0"><widget class="QLabel" name="roiTypeLabel"><property name="text"><string>ROI 类型</string></property></widget></item>
-    <item row="0" column="1"><widget class="QComboBox" name="roiTypeCombo"><item><property name="text"><string>bbox</string></property></item><item><property name="text"><string>rotatedBox</string></property></item><item><property name="text"><string>polygon</string></property></item></widget></item>
-    <item row="0" column="2"><widget class="QLabel" name="interpolationLabel"><property name="text"><string>插值</string></property></widget></item>
-    <item row="0" column="3"><widget class="QComboBox" name="interpolationCombo"><item><property name="text"><string>nearest</string></property></item><item><property name="text"><string>linear</string></property></item><item><property name="text"><string>cubic</string></property></item></widget></item>
-    <item row="0" column="4"><widget class="QLabel" name="padLabel"><property name="text"><string>填充值</string></property></widget></item>
-    <item row="0" column="5"><widget class="QSpinBox" name="padValueSpin"><property name="maximum"><number>255</number></property></widget></item>
-    <item row="1" column="0"><widget class="QLabel" name="xLabel"><property name="text"><string>x</string></property></widget></item>
-    <item row="1" column="1"><widget class="QDoubleSpinBox" name="xSpin"/></item>
-    <item row="1" column="2"><widget class="QLabel" name="yLabel"><property name="text"><string>y</string></property></widget></item>
-    <item row="1" column="3"><widget class="QDoubleSpinBox" name="ySpin"/></item>
-    <item row="1" column="4"><widget class="QLabel" name="widthLabel"><property name="text"><string>width</string></property></widget></item>
-    <item row="1" column="5"><widget class="QDoubleSpinBox" name="widthSpin"/></item>
-    <item row="2" column="0"><widget class="QLabel" name="heightLabel"><property name="text"><string>height</string></property></widget></item>
-    <item row="2" column="1"><widget class="QDoubleSpinBox" name="heightSpin"/></item>
-    <item row="2" column="2"><widget class="QLabel" name="centerXLabel"><property name="text"><string>centerX</string></property></widget></item>
-    <item row="2" column="3"><widget class="QDoubleSpinBox" name="centerXSpin"/></item>
-    <item row="2" column="4"><widget class="QLabel" name="centerYLabel"><property name="text"><string>centerY</string></property></widget></item>
-    <item row="2" column="5"><widget class="QDoubleSpinBox" name="centerYSpin"/></item>
-    <item row="3" column="0"><widget class="QLabel" name="angleLabel"><property name="text"><string>angleDegrees</string></property></widget></item>
-    <item row="3" column="1"><widget class="QDoubleSpinBox" name="angleSpin"><property name="minimum"><double>-180.000000000000000</double></property><property name="maximum"><double>179.999000000000000</double></property></widget></item>
-    <item row="3" column="2"><widget class="QLabel" name="pointsLabel"><property name="text"><string>polygon points (JSON)</string></property></widget></item>
-    <item row="3" column="3" colspan="3"><widget class="QPlainTextEdit" name="pointsEdit"><property name="maximumHeight"><number>80</number></property></widget></item>
-   </layout></item>
-   <item><layout class="QHBoxLayout" name="outputLayout">
-    <item><widget class="QLabel" name="croppedImageLabel"><property name="minimumSize"><size><width>200</width><height>140</height></size></property><property name="text"><string>croppedImage</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="frameShape"><enum>QFrame::StyledPanel</enum></property></widget></item>
-    <item><widget class="QLabel" name="croppedMaskLabel"><property name="minimumSize"><size><width>200</width><height>140</height></size></property><property name="text"><string>croppedMask</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="frameShape"><enum>QFrame::StyledPanel</enum></property></widget></item>
-    <item><widget class="QLabel" name="fullMaskLabel"><property name="minimumSize"><size><width>200</width><height>140</height></size></property><property name="text"><string>fullMask</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="frameShape"><enum>QFrame::StyledPanel</enum></property></widget></item>
-    <item><widget class="QLabel" name="maskedImageLabel"><property name="minimumSize"><size><width>200</width><height>140</height></size></property><property name="text"><string>maskedImage</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="frameShape"><enum>QFrame::StyledPanel</enum></property></widget></item>
-   </layout></item>
+   <item><widget class="QSplitter" name="roiWorkspaceSplitter">
+    <property name="orientation"><enum>Qt::Horizontal</enum></property>
+    <property name="childrenCollapsible"><bool>false</bool></property>
+    <widget class="QSplitter" name="roiImagesSplitter">
+     <property name="orientation"><enum>Qt::Horizontal</enum></property>
+     <property name="childrenCollapsible"><bool>false</bool></property>
+     <widget class="QWidget" name="sourcePanel">
+      <layout class="QVBoxLayout" name="sourcePanelLayout" stretch="0,0,0,1,0,0,0">
+       <item><widget class="QLabel" name="sourceTitle"><property name="text"><string>原图 / 区域选择</string></property></widget></item>
+       <item><widget class="QWidget" name="sourceTools"><layout class="QHBoxLayout" name="sourceToolsLayout"/></widget></item>
+       <item><layout class="QHBoxLayout" name="newPurposeLayout"><item><widget class="QLabel" name="newPurposeLabel"><property name="text"><string>新建用途</string></property></widget></item><item><widget class="QComboBox" name="newPurposeCombo"/></item></layout></item>
+       <item><widget class="QWidget" name="canvasPlaceholder"><layout class="QVBoxLayout" name="canvasLayout"/></widget></item>
+       <item><widget class="QLabel" name="drawingStatus"><property name="wordWrap"><bool>true</bool></property><property name="text"><string>未选择区域</string></property></widget></item>
+       <item><layout class="QHBoxLayout" name="drawingActions"><item><widget class="QPushButton" name="roiFinishButton"><property name="text"><string>完成绘制</string></property></widget></item><item><widget class="QPushButton" name="roiCancelButton"><property name="text"><string>取消</string></property></widget></item></layout></item>
+       <item><widget class="QWidget" name="sourceViewTools"><layout class="QHBoxLayout" name="sourceViewToolsLayout"/></widget></item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="roiResultPanel">
+      <layout class="QVBoxLayout" name="resultLayout" stretch="0,0,1">
+       <item><widget class="QLabel" name="resultTitle"><property name="text"><string>结果预览</string></property></widget></item>
+       <item><widget class="QWidget" name="resultModesPlaceholder"><layout class="QGridLayout" name="resultModesLayout"/></widget></item>
+       <item><widget class="QTabWidget" name="roiOutputTabs">
+        <property name="tabPosition"><enum>QTabWidget::South</enum></property>
+        <property name="usesScrollButtons"><bool>true</bool></property>
+        <widget class="QWidget" name="croppedImagePage"><attribute name="title"><string>裁剪图像</string></attribute><layout class="QVBoxLayout" name="croppedImageLayout"/></widget>
+        <widget class="QWidget" name="maskedImagePage"><attribute name="title"><string>遮罩图像</string></attribute><layout class="QVBoxLayout" name="maskedImageLayout"/></widget>
+        <widget class="QWidget" name="croppedMaskPage"><attribute name="title"><string>裁剪掩膜</string></attribute><layout class="QVBoxLayout" name="croppedMaskLayout"/></widget>
+        <widget class="QWidget" name="fullMaskPage"><attribute name="title"><string>原图掩膜</string></attribute><layout class="QVBoxLayout" name="fullMaskLayout"/></widget>
+       </widget></item>
+      </layout>
+     </widget>
+    </widget>
+    <widget class="QScrollArea" name="roiParametersScroll">
+     <property name="minimumSize"><size><width>200</width><height>0</height></size></property>
+     <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+     <property name="horizontalScrollBarPolicy"><enum>Qt::ScrollBarAlwaysOff</enum></property>
+     <property name="widgetResizable"><bool>true</bool></property>
+     <widget class="QWidget" name="roiParameters">
+      <layout class="QVBoxLayout" name="parametersLayout">
+       <item><widget class="QLabel" name="parametersTitle"><property name="text"><string>区域参数</string></property></widget></item>
+       <item><widget class="QListWidget" name="roiRegionList"><property name="minimumHeight"><number>72</number></property><property name="maximumHeight"><number>110</number></property></widget></item>
+       <item><widget class="QLabel" name="draftRegionLabel"><property name="wordWrap"><bool>true</bool></property><property name="text"><string/></property></widget></item>
+       <item><widget class="QLabel" name="selectedRegionTitle"><property name="text"><string>保留区 1</string></property></widget></item>
+       <item><widget class="QLabel" name="roiTypeLabel"><property name="text"><string>ROI 类型</string></property></widget></item>
+       <item><widget class="QComboBox" name="roiTypeCombo"/></item>
+       <item><widget class="QLabel" name="purposeLabel"><property name="text"><string>区域用途</string></property></widget></item>
+       <item><widget class="QComboBox" name="regionPurposeCombo"/></item>
+       <item><layout class="QGridLayout" name="boxCoordinates">
+        <item row="0" column="0"><widget class="QLabel" name="xLabel"><property name="text"><string>X 坐标</string></property></widget></item>
+        <item row="1" column="0"><widget class="QDoubleSpinBox" name="xSpin"/></item>
+        <item row="0" column="1"><widget class="QLabel" name="yLabel"><property name="text"><string>Y 坐标</string></property></widget></item>
+        <item row="1" column="1"><widget class="QDoubleSpinBox" name="ySpin"/></item>
+        <item row="2" column="0"><widget class="QLabel" name="widthLabel"><property name="text"><string>宽度（像素）</string></property></widget></item>
+        <item row="3" column="0"><widget class="QDoubleSpinBox" name="widthSpin"/></item>
+        <item row="2" column="1"><widget class="QLabel" name="heightLabel"><property name="text"><string>高度（像素）</string></property></widget></item>
+        <item row="3" column="1"><widget class="QDoubleSpinBox" name="heightSpin"/></item>
+       </layout></item>
+       <item><widget class="QLabel" name="centerXLabel"><property name="text"><string>中心 X 坐标</string></property></widget></item>
+       <item><widget class="QDoubleSpinBox" name="centerXSpin"/></item>
+       <item><widget class="QLabel" name="centerYLabel"><property name="text"><string>中心 Y 坐标</string></property></widget></item>
+       <item><widget class="QDoubleSpinBox" name="centerYSpin"/></item>
+       <item><widget class="QLabel" name="angleLabel"><property name="text"><string>旋转角度（度）</string></property></widget></item>
+       <item><widget class="QDoubleSpinBox" name="angleSpin"><property name="minimum"><double>-180.0</double></property><property name="maximum"><double>179.999</double></property></widget></item>
+       <item><widget class="QLabel" name="pointsLabel"><property name="text"><string>多边形顶点</string></property></widget></item>
+       <item><widget class="QWidget" name="pointsPlaceholder"><layout class="QVBoxLayout" name="pointsLayout"/></widget></item>
+       <item><widget class="QWidget" name="advancedPlaceholder"><layout class="QVBoxLayout" name="advancedPlaceholderLayout">
+        <item><widget class="QWidget" name="advancedContent"><layout class="QVBoxLayout" name="advancedLayout">
+         <item><widget class="QLabel" name="interpolationLabel"><property name="text"><string>插值方式</string></property></widget></item>
+         <item><widget class="QComboBox" name="interpolationCombo"/></item>
+         <item><widget class="QLabel" name="padLabel"><property name="text"><string>填充值</string></property></widget></item>
+         <item><widget class="QSpinBox" name="padValueSpin"><property name="maximum"><number>255</number></property></widget></item>
+         <item><widget class="QLabel" name="opacityLabel"><property name="text"><string>选区透明度：25%</string></property></widget></item>
+         <item><widget class="QSlider" name="regionOpacity"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="minimum"><number>5</number></property><property name="maximum"><number>65</number></property><property name="value"><number>25</number></property></widget></item>
+        </layout></widget></item>
+       </layout></widget></item>
+       <item><widget class="QWidget" name="roiDetailsPlaceholder"><layout class="QVBoxLayout" name="detailsLayout"/></widget></item>
+       <item><spacer name="parameterSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>0</width><height>0</height></size></property></spacer></item>
+      </layout>
+     </widget>
+    </widget>
+   </widget></item>
+   <item><widget class="QWidget" name="bindingsPlaceholder"><layout class="QVBoxLayout" name="bindingsLayout"/></widget></item>
   </layout>
  </widget>
  <resources/>

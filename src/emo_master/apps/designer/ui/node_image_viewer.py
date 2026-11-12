@@ -2,77 +2,10 @@
 import time
 
 from PySide2.QtCore import Qt, Signal
-from PySide2.QtGui import QPixmap, QPainter
-from PySide2.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QToolButton, QGraphicsView,
-                              QGraphicsScene, QGraphicsPixmapItem, QLabel, QSizePolicy)
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QToolButton, QLabel
 
 from .widgets import WrapLabel
-
-
-class ImageView(QGraphicsView):
-    zoomChanged = Signal(float)
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setScene(QGraphicsScene(self))
-        self.item = QGraphicsPixmapItem()
-        self.item.setShapeMode(QGraphicsPixmapItem.BoundingRectShape)
-        self.scene().addItem(self.item)
-        self.setRenderHints(QPainter.SmoothPixmapTransform)
-        self.setDragMode(QGraphicsView.ScrollHandDrag)
-        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-        self.setBackgroundBrush(Qt.black)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.zoom = 1.0
-        self.fitting = True
-        self.lastPaintNs = 0
-        self.firstImagePaintNs = 0
-
-    def setImage(self, pixmap):
-        self.item.setPixmap(pixmap if pixmap is not None else QPixmap())
-        self.firstImagePaintNs = 0
-        self.scene().setSceneRect(self.item.boundingRect())
-        self.fitting = True
-        self.fit()
-
-    def setZoom(self, value):
-        if self.item.pixmap().isNull():
-            return
-        self.fitting = False
-        value = max(.1, min(8, float(value)))
-        self.scale(value / self.zoom, value / self.zoom)
-        self.zoom = value
-        self.zoomChanged.emit(value)
-
-    def fit(self):
-        if self.item.pixmap().isNull():
-            self.resetTransform()
-            self.zoom = 1
-            return
-        bounds = self.item.boundingRect()
-        available = self.viewport().size()
-        self.setZoom(min((available.width() - 8) / bounds.width(), (available.height() - 8) / bounds.height()))
-        self.centerOn(bounds.center())
-        self.fitting = True
-
-    def wheelEvent(self, event):
-        if not self.item.pixmap().isNull():
-            delta = event.angleDelta().y() or event.pixelDelta().y()
-            self.setZoom(self.zoom * (1.2 if delta > 0 else 1 / 1.2))
-            event.accept()
-        else:
-            super().wheelEvent(event)
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        if self.fitting:
-            self.fit()
-
-    def paintEvent(self, event):
-        super().paintEvent(event)
-        self.lastPaintNs = time.monotonic_ns()
-        if not self.item.pixmap().isNull() and not self.firstImagePaintNs:
-            self.firstImagePaintNs = self.lastPaintNs
+from .image_view import ImageView
 
 
 class NodeImageViewer(QDialog):

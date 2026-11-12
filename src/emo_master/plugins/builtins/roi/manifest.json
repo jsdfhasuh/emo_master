@@ -1,23 +1,63 @@
 {
   "operatorId": "vision.preprocess.roi",
   "displayName": "ROI Extract",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "entry": "emo_master.plugins.builtins.roi.operator:RoiOperator",
   "category": "预处理",
   "iconKey": "roi",
-  "summary": "按 BBox、旋转框或多边形提取紧致区域与原尺寸遮罩，并保留回源坐标。",
+  "summary": "矩形、旋转矩形、多边形及保留/排除组合区域，输出裁剪图像、精确掩膜与回源坐标。",
   "inputPorts": {
-    "image": {"type": "image", "required": true, "nullable": false},
-    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
   },
   "outputPorts": {
-    "croppedImage": {"type": "image", "required": true, "nullable": false},
-    "croppedMask": {"type": "image", "required": true, "nullable": false},
-    "croppedFrame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"},
-    "maskedImage": {"type": "image", "required": true, "nullable": false},
-    "fullMask": {"type": "image", "required": true, "nullable": false},
-    "maskedFrame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"},
-    "roi": {"type": "geometry2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+    "croppedImage": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "croppedMask": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "croppedFrame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    },
+    "maskedImage": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "fullMask": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "maskedFrame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    },
+    "roi": {
+      "type": "geometry2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
   },
   "paramSchema": {
     "type": "object",
@@ -28,14 +68,21 @@
         "enum": [
           "bbox",
           "rotatedBox",
-          "polygon"
+          "polygon",
+          "regions"
         ],
-        "default": "bbox"
+        "default": "bbox",
+        "xOptionLabels": {
+          "bbox": "矩形",
+          "rotatedBox": "旋转矩形",
+          "polygon": "多边形",
+          "regions": "组合区域"
+        }
       },
       "x": {
         "title": "X 坐标",
         "type": "number",
-        "default": 0,
+        "default": 0.0,
         "xVisibleWhen": {
           "roiType": [
             "bbox"
@@ -50,7 +97,7 @@
       "y": {
         "title": "Y 坐标",
         "type": "number",
-        "default": 0,
+        "default": 0.0,
         "xVisibleWhen": {
           "roiType": [
             "bbox"
@@ -65,8 +112,8 @@
       "width": {
         "title": "宽度（像素）",
         "type": "number",
-        "minimum": 0,
-        "default": 1,
+        "minimum": 0.0,
+        "default": 1.0,
         "xVisibleWhen": {
           "roiType": [
             "bbox",
@@ -83,8 +130,8 @@
       "height": {
         "title": "高度（像素）",
         "type": "number",
-        "minimum": 0,
-        "default": 1,
+        "minimum": 0.0,
+        "default": 1.0,
         "xVisibleWhen": {
           "roiType": [
             "bbox",
@@ -101,7 +148,7 @@
       "centerX": {
         "title": "中心 X 坐标",
         "type": "number",
-        "default": 0,
+        "default": 0.0,
         "xVisibleWhen": {
           "roiType": [
             "rotatedBox"
@@ -116,7 +163,7 @@
       "centerY": {
         "title": "中心 Y 坐标",
         "type": "number",
-        "default": 0,
+        "default": 0.0,
         "xVisibleWhen": {
           "roiType": [
             "rotatedBox"
@@ -131,9 +178,9 @@
       "angleDegrees": {
         "title": "旋转角度（度）",
         "type": "number",
-        "minimum": -180,
-        "exclusiveMaximum": 180,
-        "default": 0,
+        "minimum": -180.0,
+        "exclusiveMaximum": 180.0,
+        "default": 0.0,
         "xVisibleWhen": {
           "roiType": [
             "rotatedBox"
@@ -146,7 +193,7 @@
         }
       },
       "points": {
-        "title": "多边形顶点（JSON）",
+        "title": "多边形顶点",
         "type": "array",
         "items": {
           "type": "object",
@@ -193,6 +240,115 @@
           "cubic"
         ],
         "default": "linear"
+      },
+      "regions": {
+        "title": "区域配置",
+        "type": "array",
+        "default": [],
+        "items": {
+          "type": "object",
+          "properties": {
+            "roiType": {
+              "title": "ROI 类型",
+              "type": "string",
+              "enum": [
+                "bbox",
+                "rotatedBox",
+                "polygon"
+              ],
+              "default": "bbox"
+            },
+            "x": {
+              "title": "X 坐标",
+              "type": "number",
+              "default": 0.0
+            },
+            "y": {
+              "title": "Y 坐标",
+              "type": "number",
+              "default": 0.0
+            },
+            "width": {
+              "title": "宽度（像素）",
+              "type": "number",
+              "minimum": 0.0,
+              "default": 1.0
+            },
+            "height": {
+              "title": "高度（像素）",
+              "type": "number",
+              "minimum": 0.0,
+              "default": 1.0
+            },
+            "centerX": {
+              "title": "中心 X 坐标",
+              "type": "number",
+              "default": 0.0
+            },
+            "centerY": {
+              "title": "中心 Y 坐标",
+              "type": "number",
+              "default": 0.0
+            },
+            "angleDegrees": {
+              "title": "旋转角度（度）",
+              "type": "number",
+              "minimum": -180.0,
+              "exclusiveMaximum": 180.0,
+              "default": 0.0
+            },
+            "points": {
+              "title": "多边形顶点",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "title": "X 坐标",
+                    "type": "number"
+                  },
+                  "y": {
+                    "title": "Y 坐标",
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "default": []
+            },
+            "name": {
+              "title": "区域名称",
+              "type": "string"
+            },
+            "purpose": {
+              "title": "区域用途",
+              "type": "string",
+              "enum": [
+                "keep",
+                "exclude"
+              ],
+              "default": "keep"
+            },
+            "enabled": {
+              "title": "启用",
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "xVisibleWhen": {
+          "roiType": [
+            "regions"
+          ]
+        },
+        "xValidateWhen": {
+          "roiType": [
+            "regions"
+          ]
+        }
       }
     },
     "xModeOperator": "vision.preprocess.roi"

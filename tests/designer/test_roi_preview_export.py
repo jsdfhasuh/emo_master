@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from PySide2.QtCore import Qt
 from PySide2.QtTest import QTest
-from PySide2.QtWidgets import QMessageBox, QScrollArea
+from PySide2.QtWidgets import QMessageBox, QScrollArea, QToolButton
 
 from emo_master.apps.designer.operator_editors import OperatorEditorManager
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
@@ -21,6 +21,57 @@ from tests.runtime.test_operator_debug_rpc import runtime as runtime
 
 
 PORTS = {"croppedImage", "croppedMask", "fullMask", "maskedImage"}
+
+
+def testPolygonDraftRunsThroughRuntimeWithoutApplyingAndExportIdentifiesDraft(roi, tmp_path, monkeypatch):
+    from PySide2.QtCore import QPointF
+    window, controller, _ = roi
+    original = controller.collectParams()
+    before = controller._previewSnapshot
+    controller.newPurposeCombo.setCurrentIndex(controller.newPurposeCombo.findData("exclude"))
+    controller._setTool("polygon")
+    for x, y in ((3, 4), (8, 4), (6, 8)):
+        QTest.mouseClick(controller.canvas.viewport(), Qt.LeftButton,
+                         pos=controller.canvas.mapFromScene(QPointF(x, y)))
+    wait(lambda: controller._previewSnapshot is not None)
+    snapshot = controller._previewSnapshot
+    assert snapshot is not before
+    metadata = json.loads(snapshot.metadataJson)
+    assert metadata["editorState"]["draftIncluded"] is True
+    assert metadata["requestedParams"]["roiType"] == "regions"
+    assert len(metadata["requestedParams"]["regions"]) == 2
+    assert controller.collectParams() == original
+    mask = next(i for i in snapshot.images if i.port == "fullMask")
+    pixels = cv2.imdecode(np.frombuffer(mask.content, np.uint8), cv2.IMREAD_GRAYSCALE)
+    assert pixels[5, 6] == 0
+    assert 0 < np.count_nonzero(pixels) < 56
+    assert not window.applyChanges()
+    archive = tmp_path / "draft.zip"
+    monkeypatch.setattr(support.QFileDialog, "getSaveFileName", lambda *_: (str(archive), ""))
+    controller.exportArchiveAction.trigger()
+    with zipfile.ZipFile(archive) as bundle:
+        assert json.loads(bundle.read("result.json"))["preview"]["editorState"]["draftIncluded"] is True
+    controller.canvas.finishDrawing()
+    wait(lambda: controller._previewSnapshot is not None)
+    assert len(controller.collectParams()["regions"][-1]["points"]) == 3
+    assert json.loads(controller._previewSnapshot.metadataJson)["editorState"]["draftIncluded"] is False
+
+
+def testPreviewRefreshPreservesManualResultZoomAndPan(roi, designerApplication):
+    from PySide2.QtCore import QPointF
+    _, controller, _ = roi
+    view = controller.outputViews["croppedImage"]
+    view.setZoom(20)
+    view.centerOn(QPointF(5, 4))
+    designerApplication.processEvents()
+    center = view.mapToScene(view.viewport().rect().center())
+    controller.controls["padValue"].setValue(19)
+    assert view.pixmap().isNull()
+    wait(lambda: controller._previewSnapshot is not None)
+    assert view.zoom == 20
+    actual = view.mapToScene(view.viewport().rect().center())
+    assert actual.x() == pytest.approx(center.x(), abs=.1)
+    assert actual.y() == pytest.approx(center.y(), abs=.1)
 
 
 @pytest.fixture
@@ -54,7 +105,7 @@ def roi(runtime, tmp_path, monkeypatch):
 def testAllFourImagesHaveFullPixelViewerAndSamePreviewArchive(roi, tmp_path, monkeypatch):
     from emo_master.plugins.builtins.roi import preview_result
     window, controller, _ = roi
-    assert set(controller.outputLabels) == PORTS
+    assert set(controller.outputViews) == PORTS
     snapshot = controller._previewSnapshot
     assert snapshot is not None
     meta = json.loads(snapshot.metadataJson)
@@ -67,7 +118,7 @@ def testAllFourImagesHaveFullPixelViewerAndSamePreviewArchive(roi, tmp_path, mon
     assert set(json.loads(snapshot.outputsJson)) >= {"croppedFrame", "maskedFrame", "roi"}
     archive = tmp_path / "ROI证据.zip"
     monkeypatch.setattr(support.QFileDialog, "getSaveFileName", lambda *_: (str(archive), ""))
-    QTest.mouseClick(controller.exportArchiveButton, Qt.LeftButton)
+    controller.exportArchiveAction.trigger()
     with zipfile.ZipFile(archive) as data:
         manifest = json.loads(data.read("result.json"))
         assert manifest["preview"] == meta
@@ -81,7 +132,7 @@ def testAllFourImagesHaveFullPixelViewerAndSamePreviewArchive(roi, tmp_path, mon
             image = cv2.imdecode(np.frombuffer(exported, np.uint8), cv2.IMREAD_UNCHANGED)
             assert image.shape[:2] == (row["height"], row["width"])
     # The actual viewer QLabel is original pixel size, not the thumbnail size.
-    controller.outputCombo.setCurrentIndex(controller.outputCombo.findData("maskedImage"))
+    controller.outputTabs.setCurrentWidget(controller.outputViews["maskedImage"].parentWidget())
     QTest.mouseClick(controller.viewImageButton, Qt.LeftButton)
     viewer = controller._resultViewers[-1]
     label = viewer.findChild(QScrollArea).widget()
@@ -114,6 +165,48 @@ def testParameterChangeImmediatelyInvalidatesExportsAndOpenViewer(roi, tmp_path,
     assert json.loads(old.metadataJson)["requestedParams"]["width"] == 8
 
 
+def testResultTabsExportSelectedPixelsWithoutRecomputing(roi, tmp_path, monkeypatch):
+    from PySide2.QtWidgets import QPlainTextEdit
+    _, controller, _ = roi
+    snapshot = controller._previewSnapshot
+    params = controller.collectParams()
+    generation = controller._generation
+    for index in range(controller.outputTabs.count()):
+        bar = controller.outputTabs.tabBar()
+        port = bar.tabData(index)
+        QTest.mouseClick(controller.outputModeButtons[port], Qt.LeftButton)
+        assert controller.outputTabs.currentWidget().isAncestorOf(controller.outputViews[port])
+        path = tmp_path / (port + ".png")
+        monkeypatch.setattr(support.QFileDialog, "getSaveFileName", lambda *_, target=path: (str(target), ""))
+        QTest.mouseClick(controller.exportImageButton, Qt.LeftButton)
+        assert path.read_bytes() == next(image.content for image in snapshot.images if image.port == port)
+        assert controller._previewSnapshot is snapshot
+        assert controller._generation == generation
+        assert controller.collectParams() == params
+    controller.viewResultAction.trigger()
+    details = controller._resultViewers[-1].findChild(QPlainTextEdit)
+    assert json.loads(details.toPlainText())["preview"] == json.loads(snapshot.metadataJson)
+
+
+def testExpandingPreviewRecordKeepsImagesAndParametersUsable(roi, designerApplication):
+    window, controller, _ = roi
+    designerApplication.processEvents()
+    window.resize(980, 720)
+    before = controller.collectParams()
+    snapshot = controller._previewSnapshot
+    toggle = window.findChild(QToolButton, "roiPreviewDetailsToggle")
+    QTest.mouseClick(toggle, Qt.LeftButton)
+    designerApplication.processEvents()
+    assert controller.resultIdentityLabel.isVisible()
+    assert window.width() == 980
+    assert controller.canvas.width() >= 240
+    assert controller.outputTabs.width() >= 240
+    assert controller.collectParams() == before
+    assert controller._previewSnapshot is snapshot
+    QTest.mouseClick(toggle, Qt.LeftButton)
+    assert not controller.resultIdentityLabel.isVisible()
+
+
 def testDraftChangeAndRuntimeReconnectCannotExportFrozenPixelsAsCurrent(roi, tmp_path, monkeypatch):
     window, controller, payload = roi
     path = tmp_path / "old.json"
@@ -140,8 +233,8 @@ def testPartialImageDownloadFailureDoesNotPublishMixedResult(roi, monkeypatch):
     monkeypatch.setattr(window.context, "downloadPreviewAsset", download)
     controller.handlePreviewResult(json.loads(reply.outputs_json), assets)
     assert controller._previewSnapshot is None
-    assert not controller.exportArchiveButton.isEnabled()
-    assert all(label.pixmap() is None or label.pixmap().isNull() for label in controller.outputLabels.values())
+    assert not controller.exportArchiveAction.isEnabled()
+    assert all(label.pixmap() is None or label.pixmap().isNull() for label in controller.outputViews.values())
     assert "injected read failure" in window._statusLabel.text()
 
 
@@ -172,7 +265,7 @@ def testReconnectExpiryAndCloseDuringExportNeverReplaceDestination(roi, tmp_path
 def testPngSuffixAndJsonAreFromOriginalPixelsNotThumbnail(roi, tmp_path, monkeypatch):
     _, controller, _ = roi
     snapshot = controller._previewSnapshot
-    controller.outputCombo.setCurrentIndex(controller.outputCombo.findData("maskedImage"))
+    controller.outputTabs.setCurrentWidget(controller.outputViews["maskedImage"].parentWidget())
     target = tmp_path / "原始像素"
     monkeypatch.setattr(support.QFileDialog, "getSaveFileName", lambda *_: (str(target), ""))
     controller._exportImage()

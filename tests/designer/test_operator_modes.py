@@ -400,11 +400,12 @@ def testRoiCustomEditorHidesUnusedFieldsAndPreservesPolygonDraft(tmp_path, desig
         assert not controller.controls["x"].isHidden()
         assert controller.collectParams()["points"] == "unfinished"
         assert controller.validate() is None
-        controller.controls["roiType"].setCurrentText("polygon")
+        controller.controls["roiType"].setCurrentIndex(controller.controls["roiType"].findData("polygon"))
         assert not controller.controls["points"].isHidden()
         assert controller.controls["width"].isHidden()
         assert controller.validate()
-        controller.controls["points"].setPlainText('[{"x":0,"y":0},{"x":10,"y":0},{"x":0,"y":10}]')
+        controller.controls["points"].setPoints([{"x":0,"y":0},{"x":10,"y":0},{"x":0,"y":10}])
+        controller.controls["points"].pointsChanged.emit()
         assert controller.validate() is None
         source = window._bindingPanel.fields[("roiType",)]
         source.setCurrentIndex(source.findData("mode"))

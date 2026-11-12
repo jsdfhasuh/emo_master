@@ -27,6 +27,10 @@ FILTER_GROUPS: dict[str, FilterGroup] = {
         "title": "面积筛选", "types": ("blobs", "contours", "measurements"),
         "fields": ("minArea", "maxArea"),
     },
+    "contourPointsEnabled": {
+        "title": "轮廓点数筛选", "types": ("contours",),
+        "fields": ("minContourPoints",),
+    },
     "perimeterEnabled": {
         "title": "周长筛选", "types": ("contours", "measurements"),
         "fields": ("minPerimeter", "maxPerimeter"),
@@ -79,6 +83,7 @@ FILTER_GROUPS: dict[str, FilterGroup] = {
 
 _NEUTRAL_VALUES: dict[str, object] = {
     "minArea": 0.0, "maxArea": 0.0,
+    "minContourPoints": 0,
     "minPerimeter": 0.0, "maxPerimeter": 0.0,
     "minCircularity": 0.0, "maxCircularity": 1.0,
     "blobLabels": [], "contourMode": "any",

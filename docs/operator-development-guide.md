@@ -303,6 +303,21 @@ dispose()
 
 使用受限 EditorContext 和稳定 objectName，不 import/保存 MainWindow。dispose 幂等并结束线程、timer、future 和原 Runtime 的预览 session；schema form 继续可回退。错误应展开对应高级组并定位字段，不靠禁用合法操作掩盖校验问题。
 
+### 算子自有布局与公共控件
+
+专用编辑器的原图、结果、参数区域及折叠方式由算子的 `.ui` 和控制器决定。不要在平台窗口中新增按 operatorId 重排界面的特判；公共主题、窗口操作、绑定校验及预览权限仍由平台提供。
+
+- `apps.designer.ui.image_view.ImageView`：复用节点大图查看器的图片显示、滚轮缩放、左键/中键平移、`fit()` 和 `setZoom(1)`。`setImage()` 接收原始 QPixmap，`setImageBytes()` 接收编码图片；默认更换图片时重新适应窗口。连续结果刷新可显式传入 `preserveView=True`，保持用户手动缩放和平移；清除旧图后再设置新图也保留视点，处于自动适应时仍自动适应。默认手动缩放范围为 0.1–8 倍，可用构造参数调整；自动适配可低于手动缩放下限，以容纳大图。
+- `apps.designer.ui.widgets.CollapsibleSection`：只管理控件展开/收起，不清空参数或创建另一套状态。
+- 可选 `mountVariableBindings(scroll)`：在 `bind()`、`loadParams()` 之后接收平台创建的参数绑定滚动区，由控制器放入自己的布局。它不改变绑定收集、变量变化刷新、验证及应用路径。未实现时沿用原来的布局安放方式，不要求所有控制器升级。
+- 需要 ROI 绘制等交互时，在算子侧继承 ImageView，通过 `mapToScene()` 读取图像坐标、`drawForeground()` 绘制选区。不要把算子形状和端口名称放进公共控件，也不要让查看图片触发参数写入或算子执行。
+
+可运行的最小布局示例见 [image_preview_editor](../examples/image_preview_editor/README.md)。完整纯预览及导出生命周期参考 [ROI 控制器](../src/emo_master/plugins/builtins/roi/editor.py) 和它声明的 [UI 文件](../src/emo_master/plugins/builtins/roi/ui/editor.ui)。示例不是生产算子或新工程，不替代完整的插件注册与信任流程。
+
+ROI 的 [canvas.py](../src/emo_master/plugins/builtins/roi/canvas.py) 是区域交互参考：只持有图像坐标、绘制草稿和拖动状态，通过信号提交区域变动；形状校验沿用 ROI 算子，像素遮罩沿用 OpenCV。鼠标中键始终平移，选择模式拖动区域或顶点，绘制模式创建新区域。三个有效顶点后自动闭合显示，点首点、Enter 或完成按钮提交，Backspace 退回末点，Esc 取消；双击不提交也不额外加点。
+
+继承 `PurePreviewControllerBase` 的编辑器可覆写 `collectPreviewParams()`：默认仍返回 `collectParams()`，ROI 用它把有效草稿加入纯预览请求，但不加入保存值。未完成草稿由 `collectParamsForSave()` 拦截并给出完成/取消出口。预览仍经过原有防抖、generation、会话身份与资产回收路径，不另起本地算法或绕过 Runtime；ROI 导出记录中的 `editorState.draftIncluded` 区分临时预览。查看、缩放、移动图片、切换结果、调整选区透明度不写参数也不重新执行。
+
 ### Designer 运行与结果入口
 
 当前原生 Qt 界面通过 `FloatingRunPanel` 承载原有运行摘要和节点结果区域，复用现有开始/停止 QAction 和状态拥有者，不产生第二个 Job 控制器、结果缓存或订阅。收起面板仅改变显示，不停止任务；“停止”针对当前所选任务，“停止全部”仍是单独动作。

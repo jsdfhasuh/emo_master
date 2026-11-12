@@ -30,13 +30,15 @@ class ObserverPages(RuntimePages):
 
 class EditorPages(RuntimePages):
     """Keep every renderer navigation inside the editor's page boundary."""
-    def __init__(self, workspace, *args, **kwargs):
+    def __init__(self, workspace, *args, document=None, **kwargs):
         self.workspace = workspace
         self.reloading = False
         from emo_master.core.presentation.assets import pageAssets
-        kwargs['assets'] = pageAssets(workspace.session.document(), workspace.coordinator.directory)
+        kwargs['assets'] = pageAssets(document if document is not None else workspace.session.document(),
+                                     workspace.coordinator.directory)
         kwargs['projectRoot'] = workspace.coordinator.directory
         kwargs['target'] = None  # The editor always retains desktop and web pages.
+        kwargs['editorHost'] = True
         super().__init__(*args, **kwargs)
 
     def fitToAvailableScreen(self, *, resize=True, screen=None):
@@ -92,11 +94,12 @@ class EditorPages(RuntimePages):
 
 
 class PageWorkspace(QWidget):
-    def __init__(self, coordinator):
+    def __init__(self, coordinator, *, document=None):
         super().__init__()
         self.coordinator = coordinator
         self.session = coordinator.session
         self.store = self.session.presentation
+        document = document if document is not None else self.session.document()
         self.pageId = None
         self.closed = False
         self.root = QVBoxLayout(self)
@@ -140,7 +143,8 @@ class PageWorkspace(QWidget):
         canvasLayout = QVBoxLayout(self.canvasHost)
         canvasLayout.setContentsMargins(0, 0, 0, 0)
         self.centerLayout.addWidget(self.canvasHost, 1)
-        self.renderer = EditorPages(self, self.store.snapshot(), label='模拟布局预览 · 不运行算子、不写生产状态')
+        self.renderer = EditorPages(self, document.presentation, document=document,
+                                    label='模拟布局预览 · 不运行算子、不写生产状态')
         self.renderer.editing = True
         from .page_canvas import PageCanvas
         self.canvas = PageCanvas(self, self.renderer)
@@ -238,7 +242,7 @@ class PageWorkspace(QWidget):
             right=True, symbol='sliders-horizontal', expanded=True, expandedSize=QSize(340, 620))
         for panel in (self.floatingToolbox, self.floatingProperties):
             panel.expandedChanged.connect(lambda _: self.coordinator.chrome.update())
-        self.refresh()
+        self.refresh(reload=False, updateChrome=False, document=document)
 
     def previewModeChanged(self, _index):
         if self.previewMode.currentData() == 'follow':
@@ -302,9 +306,11 @@ class PageWorkspace(QWidget):
         except (ValueError, KeyError) as error:
             self.message.setText(str(error))
 
-    def refresh(self):
-        p = self.store.snapshot()
-        self.coordinator.updateWindowTitle()
+    def refresh(self, *, reload=True, updateChrome=True, document=None):
+        # Share one validated document only for this synchronous refresh. Never
+        # retain it across edits, undo, project reload or workflow imports.
+        document = document if document is not None else self.session.document()
+        p = document.presentation
         if self.pageId not in p.pages:
             self.pageId = p.defaultPageId
         self.pageTabs.syncPages(p, self.pageId)
@@ -316,15 +322,17 @@ class PageWorkspace(QWidget):
         self.renderer.setVisible(bool(p.pages))
         self.renderer.banner.setVisible(bool(p.pages))
         self.renderer.fitButton.setVisible(bool(p.pages))
-        self.renderer.reload(p)
+        if reload:
+            self.renderer.reload(p)
         self.coordinator.preview.refreshObserver(p)
         if self.pageId:
             self.renderer.navigate(self.pageId)
         if hasattr(self, 'tools'):
-            self.tools.refresh()
+            self.tools.refresh(document=document)
         self.canvas.updatePageSize()
         self.coordinator.preview.refreshCoverage()
-        self.coordinator.chrome.update()
+        if updateChrome:
+            self.coordinator.chrome.update()
 
     def choosePage(self, row):
         key = self.pageTabs.pageId(row)

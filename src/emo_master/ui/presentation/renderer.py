@@ -108,7 +108,7 @@ class RuntimePages(QWidget):
     designExamplesChanged = Signal(bool)
 
     def __init__(self, presentation, *, hub=None, label="只读运行页面", parent=None, assets=None, projectRoot=None,
-                 target='desktop', historyClient=None):
+                 target='desktop', historyClient=None, editorHost=False):
         super().__init__(parent)
         assertGuiThread()
         self.assets = dict(assets or {})
@@ -128,7 +128,7 @@ class RuntimePages(QWidget):
         self.simulationState = None
         self.detached = False
         self.editing = False
-        self.editorHost = False
+        self.editorHost = editorHost
         self.designExamples = False
         self._designImage = QImage()
         self.currentPageId = None

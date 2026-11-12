@@ -37,3 +37,5 @@ docs/evidence/2026-10-25-workspace-delivery/** -text -whitespace
 docs/testing/2026-11-03-independent-web-editor/** -text -whitespace
 docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/** -text -whitespace
 web_panel/contracts/panel-contract-v1/** -text
+# Keep original pytest diagnostics, including whitespace in failure excerpts.
+docs/testing/2026-11-12-page-switch/*.xml -text -whitespace

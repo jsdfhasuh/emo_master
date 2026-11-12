@@ -7,6 +7,43 @@ from emo_master.apps.designer.state.flow_graph_model import FlowGraphModel
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
 
 
+def testBoundaryMaintenanceKeepsOwnedNodesButPayloadIsDetached():
+    store = WorkflowStore()
+    workflow = store.get()
+    node = {"nodeId": "configured", "kind": "operator", "operatorId": "test.value",
+            "params": {"values": [1, 2]},
+            "paramSchema": {"properties": {"values": {"type": "array"}}}}
+    workflow.nodes.append(node)
+    original = deepcopy(node)
+    workflow.inputs = {"value": "number"}
+    store.ensureBoundaryNodes()
+    assert next(item for item in workflow.nodes if item["nodeId"] == "configured") is node
+    assert node == original
+    boundary = next(item for item in workflow.nodes if item["kind"] == "workflow_input")
+    assert boundary["outputPorts"] == {"value": "number"}
+    payload = store.toPayload()
+    copied = next(item for item in payload["workflows"]["main"]["nodes"]
+                  if item["nodeId"] == "configured")
+    copied["params"]["values"].append(3)
+    copied["paramSchema"]["properties"]["values"]["type"] = "string"
+    assert node == original
+    node["params"]["values"].append(4)
+    assert copied["params"]["values"] == [1, 2, 3]
+
+
+def testCapturedNodesDoNotShareNestedParametersWithTheCanvas():
+    store = WorkflowStore()
+    node = {"nodeId": "configured", "kind": "operator", "operatorId": "test.value",
+            "params": {"values": [1, 2]}, "paramSchema": {"type": "object"}}
+    store.captureActiveGraph({"nodes": [node], "edges": []})
+    captured = next(item for item in store.get().nodes if item["nodeId"] == "configured")
+    node["params"]["values"].append(3)
+    node["paramSchema"]["type"] = "array"
+    store.ensureBoundaryNodes()
+    assert captured["params"]["values"] == [1, 2]
+    assert captured["paramSchema"]["type"] == "object"
+
+
 def _payload() -> dict[str, object]:
     return {
         "schemaVersion": "2.0",

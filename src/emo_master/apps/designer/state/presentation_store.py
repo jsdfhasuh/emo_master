@@ -41,9 +41,11 @@ class PresentationStore:
         self.frozenResults: dict[str, dict[str, str]] = {}
 
     def snapshot(self) -> Presentation:
-        presentation = self._session.document().presentation
+        # Reading page state must not serialize/normalize every workflow. Full
+        # project validation still belongs to load, transactions and save.
+        presentation = self._session.workflows.projectExtensions.get("presentation")
         assert presentation is not None
-        return presentation
+        return Presentation.model_validate(deepcopy(presentation))
 
     @property
     def activePageId(self) -> str | None:

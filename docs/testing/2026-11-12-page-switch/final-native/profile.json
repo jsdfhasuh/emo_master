@@ -1,0 +1,1704 @@
+{
+  "schemaVersion": "1.0",
+  "probe": "designer-performance",
+  "startedUtc": "2026-11-12T02:54:16.691402+00:00",
+  "elapsedMs": 3242.2439999645576,
+  "metadata": {},
+  "detailed": false,
+  "functionClock": "GUI thread CPU time; inclusive totals must not be summed",
+  "heartbeat": {
+    "samples": 1,
+    "medianMs": 3222.236699908972,
+    "p95Ms": 3222.236699908972,
+    "maxMs": 3222.236699908972,
+    "intervalMs": 20,
+    "lateOver50Ms": 1,
+    "series": [
+      {
+        "atMs": 3242.236699908972,
+        "lateMs": 3222.236699908972,
+        "workspace": "unknown"
+      }
+    ]
+  },
+  "events": {},
+  "marks": [],
+  "stallStacks": [
+    {
+      "atMs": 154.35719990637153,
+      "sinceHeartbeatMs": 154.35719990637153,
+      "frames": [
+        [
+          "copy.py",
+          138,
+          "deepcopy"
+        ],
+        [
+          "copy.py",
+          231,
+          "_deepcopy_dict"
+        ],
+        [
+          "copy.py",
+          146,
+          "deepcopy"
+        ],
+        [
+          "copy.py",
+          231,
+          "_deepcopy_dict"
+        ],
+        [
+          "copy.py",
+          146,
+          "deepcopy"
+        ],
+        [
+          "copy.py",
+          231,
+          "_deepcopy_dict"
+        ],
+        [
+          "copy.py",
+          146,
+          "deepcopy"
+        ],
+        [
+          "copy.py",
+          206,
+          "_deepcopy_list"
+        ],
+        [
+          "copy.py",
+          146,
+          "deepcopy"
+        ],
+        [
+          "src/emo_master/apps/designer/state/workflow_store.py",
+          835,
+          "_serializedNodes"
+        ],
+        [
+          "src/emo_master/apps/designer/state/workflow_store.py",
+          641,
+          "<dictcomp>"
+        ],
+        [
+          "src/emo_master/apps/designer/state/workflow_store.py",
+          636,
+          "toPayload"
+        ],
+        [
+          "measure_page_switch.py",
+          83,
+          "countPayload"
+        ],
+        [
+          "src/emo_master/apps/designer/state/project_edit_session.py",
+          91,
+          "payload"
+        ],
+        [
+          "src/emo_master/apps/designer/state/project_edit_session.py",
+          96,
+          "document"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          255,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 218.68910000193864,
+      "sinceHeartbeatMs": 218.68910000193864,
+      "frames": [
+        [
+          "src/emo_master/ui/presentation/renderer.py",
+          184,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          42,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          146,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 294.4694999605417,
+      "sinceHeartbeatMs": 294.4694999605417,
+      "frames": [
+        [
+          "src/emo_master/ui/presentation/page_scroll.py",
+          42,
+          "<lambda>"
+        ],
+        [
+          "src/emo_master/ui/presentation/renderer.py",
+          440,
+          "_build"
+        ],
+        [
+          "src/emo_master/ui/presentation/renderer.py",
+          722,
+          "navigate"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          55,
+          "navigate"
+        ],
+        [
+          "src/emo_master/ui/presentation/renderer.py",
+          191,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          42,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          146,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 377.29179998859763,
+      "sinceHeartbeatMs": 377.29179998859763,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/designer_actions.py",
+          399,
+          "eventFilter"
+        ],
+        [
+          "src/emo_master/ui/presentation/renderer.py",
+          285,
+          "setEditorHost"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          152,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 435.5778999160975,
+      "sinceHeartbeatMs": 435.5778999160975,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          158,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          235,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 495.2739999862388,
+      "sinceHeartbeatMs": 495.2739999862388,
+      "frames": [
+        [
+          "<frozen importlib._bootstrap_external>",
+          147,
+          "_path_stat"
+        ],
+        [
+          "<frozen importlib._bootstrap_external>",
+          1544,
+          "find_spec"
+        ],
+        [
+          "<frozen importlib._bootstrap_external>",
+          1411,
+          "_get_spec"
+        ],
+        [
+          "<frozen importlib._bootstrap_external>",
+          1439,
+          "find_spec"
+        ],
+        [
+          "<frozen importlib._bootstrap>",
+          945,
+          "_find_spec"
+        ],
+        [
+          "<frozen importlib._bootstrap>",
+          1002,
+          "_find_and_load_unlocked"
+        ],
+        [
+          "<frozen importlib._bootstrap>",
+          1027,
+          "_find_and_load"
+        ],
+        [
+          "site-packages/shiboken2/files.dir/shibokensupport/__feature__.py",
+          142,
+          "_import"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          188,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          235,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 553.8605999900028,
+      "sinceHeartbeatMs": 553.8605999900028,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/page_designer/property_panel.py",
+          125,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          196,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          235,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 614.7986999712884,
+      "sinceHeartbeatMs": 614.7986999712884,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/page_designer/property_panel.py",
+          125,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          196,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          235,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 681.4006000058725,
+      "sinceHeartbeatMs": 681.4006000058725,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/page_designer/property_panel.py",
+          125,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          196,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          235,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 797.5749999750406,
+      "sinceHeartbeatMs": 797.5749999750406,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/designer_actions.py",
+          399,
+          "eventFilter"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/property_panel.py",
+          131,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          196,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          235,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 877.0790999988094,
+      "sinceHeartbeatMs": 877.0790999988094,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/designer_actions.py",
+          399,
+          "eventFilter"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/property_panel.py",
+          131,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          196,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          235,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 954.8762999475002,
+      "sinceHeartbeatMs": 954.8762999475002,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/designer_actions.py",
+          399,
+          "eventFilter"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/property_panel.py",
+          131,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          196,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          235,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 1032.2670999448746,
+      "sinceHeartbeatMs": 1032.2670999448746,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/designer_actions.py",
+          399,
+          "eventFilter"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          200,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          235,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 1109.673999948427,
+      "sinceHeartbeatMs": 1109.673999948427,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/designer_actions.py",
+          399,
+          "eventFilter"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          200,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          235,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 1174.287399975583,
+      "sinceHeartbeatMs": 1174.287399975583,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          241,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          235,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 1233.3469999721274,
+      "sinceHeartbeatMs": 1233.3469999721274,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          248,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          235,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 1299.157099914737,
+      "sinceHeartbeatMs": 1299.157099914737,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/widgets.py",
+          114,
+          "scrollContent"
+        ],
+        [
+          "src/emo_master/apps/designer/ui/canvas_overlay.py",
+          227,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          237,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 1373.5553999431431,
+      "sinceHeartbeatMs": 1373.5553999431431,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/theme.py",
+          53,
+          "eventFilter"
+        ],
+        [
+          "src/emo_master/apps/designer/ui/widgets.py",
+          114,
+          "scrollContent"
+        ],
+        [
+          "src/emo_master/apps/designer/ui/canvas_overlay.py",
+          227,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          240,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 1439.0983999473974,
+      "sinceHeartbeatMs": 1439.0983999473974,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/canvas_overlay.py",
+          229,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          240,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 1497.693899902515,
+      "sinceHeartbeatMs": 1497.693899902515,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/canvas_overlay.py",
+          229,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          240,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 1560.8257999410853,
+      "sinceHeartbeatMs": 1560.8257999410853,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/workflow_navigation.py",
+          349,
+          "setEntryMarker"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/navigation.py",
+          16,
+          "syncPages"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          316,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          245,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 1636.831899988465,
+      "sinceHeartbeatMs": 1636.831899988465,
+      "frames": [
+        [
+          "src/emo_panel_protocol/models.py",
+          57,
+          "checkAddress"
+        ],
+        [
+          "site-packages/pydantic/main.py",
+          263,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/editing.py",
+          88,
+          "visit"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/editing.py",
+          100,
+          "visit"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/editing.py",
+          100,
+          "visit"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/editing.py",
+          100,
+          "visit"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/editing.py",
+          100,
+          "visit"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/editing.py",
+          103,
+          "outputChoices"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          307,
+          "refreshCatalog"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          403,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          331,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          245,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 1714.4755999324843,
+      "sinceHeartbeatMs": 1714.4755999324843,
+      "frames": [
+        [
+          "<string>",
+          3,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/editing.py",
+          115,
+          "outputChoices"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          307,
+          "refreshCatalog"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          403,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          331,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          245,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 1806.1289999168366,
+      "sinceHeartbeatMs": 1806.1289999168366,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          375,
+          "refreshCatalog"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          403,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          331,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          245,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 1912.60419995524,
+      "sinceHeartbeatMs": 1912.60419995524,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          365,
+          "refreshCatalog"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          403,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          331,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          245,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 1995.5583999399096,
+      "sinceHeartbeatMs": 1995.5583999399096,
+      "frames": [
+        [
+          "site-packages/pydantic/main.py",
+          542,
+          "model_dump_json"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          337,
+          "refreshCatalog"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          403,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          331,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          245,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 2072.9519999586046,
+      "sinceHeartbeatMs": 2072.9519999586046,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          377,
+          "refreshCatalog"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          403,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          331,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          245,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 2149.972999934107,
+      "sinceHeartbeatMs": 2149.972999934107,
+      "frames": [
+        [
+          "site-packages/pydantic/main.py",
+          542,
+          "model_dump_json"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          322,
+          "refreshCatalog"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          403,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          331,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          245,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 2227.0656999899074,
+      "sinceHeartbeatMs": 2227.0656999899074,
+      "frames": [
+        [
+          "src/emo_master/core/contracts/port_types.py",
+          49,
+          "normalizePortType"
+        ],
+        [
+          "src/emo_master/core/presentation/catalog.py",
+          85,
+          "buildOutputCatalog"
+        ],
+        [
+          "src/emo_master/core/presentation/validation.py",
+          60,
+          "validateBindings"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          398,
+          "refreshCatalog"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          403,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          331,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          245,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 2306.2485000118613,
+      "sinceHeartbeatMs": 2306.2485000118613,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/designer_actions.py",
+          399,
+          "eventFilter"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/responsive_properties.py",
+          71,
+          "load"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          569,
+          "select"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/tools.py",
+          410,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          331,
+          "refresh"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/workspace.py",
+          245,
+          "__init__"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          267,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 2380.2876999834552,
+      "sinceHeartbeatMs": 2380.2876999834552,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/designer_actions.py",
+          399,
+          "eventFilter"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          268,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 2481.1765999766067,
+      "sinceHeartbeatMs": 2481.1765999766067,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/designer_actions.py",
+          399,
+          "eventFilter"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          268,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 2551.117399940267,
+      "sinceHeartbeatMs": 2551.117399940267,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/designer_actions.py",
+          408,
+          "eventFilter"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          268,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 2627.38179997541,
+      "sinceHeartbeatMs": 2627.38179997541,
+      "frames": [
+        [
+          "src/emo_master/apps/designer/ui/canvas_overlay.py",
+          124,
+          "visibleCanvasRect"
+        ],
+        [
+          "src/emo_master/apps/designer/ui/canvas_overlay.py",
+          134,
+          "_reposition"
+        ],
+        [
+          "src/emo_master/apps/designer/ui/canvas_overlay.py",
+          168,
+          "eventFilter"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          268,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 2705.431199981831,
+      "sinceHeartbeatMs": 2705.431199981831,
+      "frames": [
+        [
+          "copy.py",
+          139,
+          "deepcopy"
+        ],
+        [
+          "copy.py",
+          206,
+          "_deepcopy_list"
+        ],
+        [
+          "copy.py",
+          146,
+          "deepcopy"
+        ],
+        [
+          "src/emo_master/apps/designer/state/workflow_store.py",
+          644,
+          "<dictcomp>"
+        ],
+        [
+          "src/emo_master/apps/designer/state/workflow_store.py",
+          636,
+          "toPayload"
+        ],
+        [
+          "measure_page_switch.py",
+          83,
+          "countPayload"
+        ],
+        [
+          "src/emo_master/apps/designer/state/project_edit_session.py",
+          91,
+          "payload"
+        ],
+        [
+          "src/emo_master/apps/designer/state/project_edit_session.py",
+          99,
+          "_signature"
+        ],
+        [
+          "src/emo_master/apps/designer/state/project_edit_session.py",
+          108,
+          "dirty"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          379,
+          "updateWindowTitle"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/chrome.py",
+          175,
+          "update"
+        ],
+        [
+          "src/emo_master/apps/designer/page_designer/coordinator.py",
+          272,
+          "showPages"
+        ],
+        [
+          "measure_page_switch.py",
+          89,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 2776.828999980353,
+      "sinceHeartbeatMs": 2776.828999980353,
+      "frames": [
+        [
+          "measure_page_switch.py",
+          92,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 2831.178699969314,
+      "sinceHeartbeatMs": 2831.178699969314,
+      "frames": [
+        [
+          "measure_page_switch.py",
+          92,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 2892.9966998985037,
+      "sinceHeartbeatMs": 2892.9966998985037,
+      "frames": [
+        [
+          "measure_page_switch.py",
+          92,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 2955.9431999223307,
+      "sinceHeartbeatMs": 2955.9431999223307,
+      "frames": [
+        [
+          "measure_page_switch.py",
+          92,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 3016.5780999232084,
+      "sinceHeartbeatMs": 3016.5780999232084,
+      "frames": [
+        [
+          "measure_page_switch.py",
+          92,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 3066.7922999709845,
+      "sinceHeartbeatMs": 3066.7922999709845,
+      "frames": [
+        [
+          "measure_page_switch.py",
+          92,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 3116.9437000062317,
+      "sinceHeartbeatMs": 3116.9437000062317,
+      "frames": [
+        [
+          "measure_page_switch.py",
+          92,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 3167.7991999313235,
+      "sinceHeartbeatMs": 3167.7991999313235,
+      "frames": [
+        [
+          "measure_page_switch.py",
+          92,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    },
+    {
+      "atMs": 3218.7682999065146,
+      "sinceHeartbeatMs": 3218.7682999065146,
+      "frames": [
+        [
+          "measure_page_switch.py",
+          92,
+          "main"
+        ],
+        [
+          "measure_page_switch.py",
+          144,
+          "<module>"
+        ]
+      ]
+    }
+  ],
+  "areas": [],
+  "functions": [],
+  "omitted": {
+    "beats": 0,
+    "stacks": 0,
+    "marks": 0
+  },
+  "samplingErrors": 0,
+  "limitations": [
+    "函数分析会增加采集开销；不代表关闭探针后的帧率。",
+    "源码标识来自开始记录时的磁盘文件，不能证明进程已加载更新；更新后请重新启动对应目录的Designer。",
+    "响应延迟是Qt定时器调度延迟，不是显示器帧率，也不能单凭延迟认定某个函数是根因。",
+    "调用栈只含Python帧，不包含Qt/GPU原生栈；被长期持有的GIL可能使采样缺失。",
+    "Windows线程CPU时钟可能较粗，短函数应结合调用次数、调用者与多次复现分析。",
+    "事件计数包含Qt事件转发，不等同于用户操作次数。",
+    "没有采集控件文字、绑定值、图片、工程内容、凭据或Python局部变量。"
+  ]
+}

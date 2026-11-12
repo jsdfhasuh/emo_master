@@ -1,0 +1,41 @@
+{
+  "source": {
+    "head": "51bff936ee2f2a0e4c3712441f8e622e33312c3c",
+    "branch": "main",
+    "dirty": true,
+    "files": {
+      "apps/designer/services/performance_probe.py": "dcc803b745a0ddb089495b260777ca3896c3bd1fc5bb28fde96c5a074e96c6ea",
+      "apps/designer/ui/performance_probe.py": "d6e6d4e6b0b793be795c4a7f8d45868171c9301e2639445e746c5a69d2dfc829",
+      "apps/designer/page_designer/responsive_tools.py": "73997d81570f9ceb8fdd4ee7f798b58da4be488f7f1b24d0a08570412a5b22bf",
+      "apps/designer/page_designer/page_canvas.py": "819f68d13e2ca631c6b9eed1c9a31acc9295bd078c9f4152bd97b73c56e6e609",
+      "apps/designer/page_designer/responsive_preview.py": "7db556eb559a948e7715fd460ee55a2dfd33b361bb591ee63579cd1bf4b4a57d",
+      "apps/designer/page_designer/tools.py": "5f0bdb2bae3048bbedfd8b3d25067e38b18e8a14d48a7247d2c456184e92201b",
+      "apps/designer/page_designer/workspace.py": "a94a2e0c91c4ba8db35cc564294db93054efc5c599700c9c401556cf75f4b085",
+      "apps/designer/state/project_edit_session.py": "a39baf81307af410da22c96b11f70ed80132d547e04ab37c08ab3ed2ae80e3fb",
+      "apps/designer/ui/flow_scene.py": "d6a69b6635af1f9c49b9c8fd8eff7ab7f39d9f52e8c061e64c159735e444c070",
+      "apps/designer/ui/flow_routing.py": "85b8596f5614144f2ae85f090199ad877c939057fdce5649d2815963b13cdb55",
+      "core/presentation/responsive.py": "4d71fd83e7bf996529d384e98f8d0ede7a0893f1b6bc13da8d5cbbef088f55d1",
+      "ui/presentation/responsive_layout.py": "1be8309f9930a64e141a0a3f76fb5e1a338ee7d64f46c9a36f66820f772f304a",
+      "ui/presentation/renderer.py": "ed71d6f28757bbaacf8110ce51e1a95a3a699d6f630574a8a7e0ea1dc593512d"
+    }
+  },
+  "baselineModulesFrom": null,
+  "platform": "windows",
+  "scale": 1.0,
+  "detailed": true,
+  "projectSha256": "81b3265e1d582f3d2275fcf8f23f73961d7db099a18c9c385102fafb5ea5225b",
+  "workflows": 46,
+  "nodes": 370,
+  "pages": 2,
+  "choices": 2118,
+  "openMs": 6715.49790003337,
+  "readyMs": 7171.673500095494,
+  "repeatMs": [
+    315.5572999967262,
+    256.14859990309924,
+    318.8495999202132
+  ],
+  "wholeProjectSnapshots": 3,
+  "unchangedProjectAndHistory": true,
+  "limitations": "isolated native/offscreen Qt with stub Runtime; not manual acceptance or hardware execution"
+}

@@ -249,7 +249,6 @@ class EditingTools(QObject):
         self.applyButton.setObjectName('primaryButton')
         outer.addWidget(self.applyButton)
         self.w.propertyPanel = propertyPanel
-        self.refreshCatalog()
         workspace.renderer.setDesignExamples(True)
 
     def commands(self):
@@ -301,10 +300,10 @@ class EditingTools(QObject):
     def distributeSelection(self, axis):
         self.responsive.arrange(distribute=axis)
 
-    def refreshCatalog(self):
+    def refreshCatalog(self, *, document=None):
         manifests = self.commands().manifests
         unsupported = []
-        document = self.w.session.document()
+        document = document if document is not None else self.w.session.document()
         self.choices = outputChoices(document, manifests,
             entryWorkflowIds=[*self.w.coordinator.window.workflowStore.startupWorkflows(),
                               *self.w.coordinator.window.effectiveRunTargetIds()],
@@ -396,17 +395,18 @@ class EditingTools(QObject):
                 '；不隐式缩放，超额明确不可用。实际来源尺寸/现场屏幕尚待确认；新来源仅下一次明确运行生效。')
         except (KeyError, ValueError) as error:
             self.captureNotice.setText('采集配置不可用：' + str(error))
-        problems = validateBindings(self.w.session.document(), manifests)
+        problems = validateBindings(document, manifests)
         if problems:
             self.w.message.setText('\n'.join(f'{p.path}: {p.message}' for p in problems[:8]))
 
-    def refresh(self):
-        self.refreshCatalog()
+    def refresh(self, *, document=None):
+        self.refreshCatalog(document=document)
         self.install()
         self.destination.clear()
         self.destination.addItem('未配置', None)
-        for key in self.w.store.snapshot().pageOrder:
-            self.destination.addItem(self.w.store.snapshot().pages[key].name, key)
+        presentation = self.w.store.snapshot()
+        for key in presentation.pageOrder:
+            self.destination.addItem(presentation.pages[key].name, key)
         self.select(self.selected)
 
     def install(self):
@@ -417,11 +417,12 @@ class EditingTools(QObject):
             widget.setAcceptDrops(True)
         if self.w.pageId in self.w.renderer.pages:
             body = self.w.renderer.pages[self.w.pageId].widget()
-            grids = [(body, self.w.store.snapshot().pages[self.w.pageId].components)]
+            presentation = self.w.store.snapshot()
+            grids = [(body, presentation.pages[self.w.pageId].components)]
             for widget in body.findChildren(QWidget):
                 key = widget.property('componentId')
                 if key:
-                    item = _component(self.w.store.snapshot(), self.w.pageId, key)
+                    item = _component(presentation, self.w.pageId, key)
                     if item.type == 'container':
                         content = widget.containerTitle.body if hasattr(widget, 'containerTitle') else widget
                         grids.append((content, item.children))

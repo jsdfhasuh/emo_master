@@ -164,7 +164,7 @@ class WorkflowStore:
         for rawNode in rawNodes if isinstance(rawNodes, list) else []:
             if not isinstance(rawNode, dict):
                 continue
-            node = dict(rawNode)
+            node = deepcopy(rawNode)
             node.pop("x", None)
             node.pop("y", None)
             previous = previousNodes.get(node.get("nodeId"), {})
@@ -678,14 +678,18 @@ class WorkflowStore:
         for rawNode in workflow.nodes:
             if not isinstance(rawNode, dict):
                 continue
-            node = deepcopy(rawNode)
-            kind = node.get("kind")
+            kind = rawNode.get("kind")
             if isinstance(kind, str) and kind in {"workflow_input", "workflow_output"}:
                 if kind in seenKinds:
                     continue
                 seenKinds.add(kind)
+                node = deepcopy(rawNode)
                 self._normalizeBoundaryNode(workflow, node, kind)
-            normalizedNodes.append(node)
+                normalizedNodes.append(node)
+            else:
+                # Ordinary nodes are already owned by this workflow. Boundary
+                # maintenance must not recopy their parameter schemas on reads.
+                normalizedNodes.append(rawNode)
 
         if "workflow_input" not in seenKinds:
             node = {"nodeId": self._boundaryNodeId(workflow, "workflow_input")}

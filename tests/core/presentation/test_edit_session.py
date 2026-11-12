@@ -12,6 +12,46 @@ from emo_master.core.presentation.models import Action, DataSource, walkComponen
 from emo_master.core.presentation.validation import validateBindings
 
 
+def testPageSnapshotDoesNotSerializeWorkflowsAndIsDetached(project, monkeypatch):
+    session = ProjectEditSession(project.model_dump())
+    expected = session.document().presentation
+    before = deepcopy(session.workflows.projectExtensions)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("page reads must not build a whole-project snapshot")
+
+    monkeypatch.setattr(session, "document", forbidden)
+    monkeypatch.setattr(session.workflows, "toPayload", forbidden)
+    snapshot = session.presentation.snapshot()
+    assert snapshot == expected
+    snapshot.pages["overview"].name = "caller-owned"
+    snapshot.pages["overview"].components[0].props.title = "caller-owned"
+    snapshot.dataSources["count"].nodeId = "caller-owned"
+    snapshot.pageOrder.reverse()
+    assert session.workflows.projectExtensions == before
+    assert session.presentation.snapshot() == expected
+
+
+def testPageSnapshotSeesHistoryAndReloadWithoutStaleCache(project):
+    session = ProjectEditSession(project.model_dump())
+    original = session.presentation.snapshot()
+    session.presentation.renamePage("overview", "Changed")
+    assert session.presentation.snapshot().pages["overview"].name == "Changed"
+    assert session.undo() and session.presentation.snapshot() == original
+    assert session.redo()
+    assert session.presentation.snapshot().pages["overview"].name == "Changed"
+    session.workflows.loadPayload(project.model_dump())
+    session.acceptLoaded()
+    assert session.presentation.snapshot() == original
+
+
+def testPageSnapshotStillValidatesPageStructure(project):
+    session = ProjectEditSession(project.model_dump())
+    session.workflows.projectExtensions["presentation"]["pageOrder"].append("missing")
+    with pytest.raises(ValueError):
+        session.presentation.snapshot()
+
+
 def testPageCopyRebindUndoAndDeleteAreIsolated(project, manifests):
     session = ProjectEditSession(project.model_dump())
     store = session.presentation

@@ -48,19 +48,19 @@ class PageCoordinator:
         from .chrome import WorkspaceChrome
         self.chrome = WorkspaceChrome(self)
 
-    def sync(self):
+    def sync(self, *, updateChrome=True):
         if self.editor:
             self.editor.tools.commitPending()
         if self.devices:
             self.devices.commitPending()
         self.window.workflowController.captureActiveWorkflow()
         self.session.checkpoint()
-        if hasattr(self, 'chrome'):
+        if updateChrome and hasattr(self, 'chrome'):
             self.chrome.update()
 
-    def _canSync(self):
+    def _canSync(self, *, updateChrome=True):
         try:
-            self.sync()
+            self.sync(updateChrome=updateChrome)
             return True
         except ValueError as error:
             self.preview.message('请先修正未提交的输入：' + str(error))
@@ -242,7 +242,7 @@ class PageCoordinator:
         self.chrome.update()
 
     def showFlow(self):
-        if not self._canSync():
+        if not self._canSync(updateChrome=False):
             return
         self.stack.setCurrentIndex(0)
         if self.preview.observer is not None:
@@ -250,9 +250,10 @@ class PageCoordinator:
         self.chrome.update()
 
     def showPages(self):
-        if not self._canSync():
+        if not self._canSync(updateChrome=False):
             return
-        if self.session.document().presentation is None:
+        document = self.session.document()
+        if document.presentation is None:
             answer = QMessageBox.question(self.window, '启用页面设计',
                 '此项目将采用 2.2 格式。保存时保留原项目文件的 .bak 备份；旧版本需使用备份。继续？',
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -260,12 +261,13 @@ class PageCoordinator:
                 self.chrome.update()
                 return
             self.session.enablePresentation()
+            document = self.session.document()
         if self.editor is None:
             from .workspace import PageWorkspace
-            self.editor = PageWorkspace(self)
+            self.editor = PageWorkspace(self, document=document)
             self.stack.addWidget(self.editor)
-        if self.editor.renderer.config != self.session.presentation.snapshot():
-            self.editor.refresh()
+        if self.editor.renderer.config != document.presentation:
+            self.editor.refresh(document=document)
         self.stack.setCurrentWidget(self.editor)
         self.chrome.update()
 

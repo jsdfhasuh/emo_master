@@ -76,7 +76,7 @@ class PerformanceProbeController(QObject):
         self.duration.setSuffix(' 秒')
         options.addWidget(self.duration)
         self.detailed = QCheckBox('记录函数耗时')
-        self.detailed.setChecked(True)
+        self.detailed.setChecked(False)
         self.detailed.setToolTip('使用已有流程探针的 cProfile/pstats 分析方式；会增加采集开销。\n'
                                 '关闭后仍记录界面延迟和卡顿时的 Python 调用栈，适合对照采集。')
         options.addWidget(self.detailed)

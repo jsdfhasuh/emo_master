@@ -460,10 +460,10 @@ class PreviewController(QObject):
         return observer
 
     def refreshObserver(self, presentation):
-        presentation = self._jobPresentation(presentation)
         observer = self.observer
         if observer is None or not isValid(observer) or observer.detached:
             return
+        presentation = self._jobPresentation(presentation)
         observer.setProjectRoot(self.coordinator.directory)
         if observer.frozen is not None:
             # Undo may return to the displayed configuration while a result is

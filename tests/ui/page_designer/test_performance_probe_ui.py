@@ -34,6 +34,7 @@ def testSharedMenuAndCaptureDoNotChangeProject(designer, probe):  # noqa: F811
     assert action in c.chrome.menus['视图'].actions()
     assert action.isVisible() and action.isEnabled()
     before, history = c.session.payload(), len(c.session._undo)
+    probe.detailed.setChecked(True)
     probe.start()
     probe.dialog.close()  # Keep manual canvas use possible, with bounded auto-stop.
     assert probe.running and probe.limitTimer.isActive()
@@ -55,6 +56,18 @@ def testSharedMenuAndCaptureDoNotChangeProject(designer, probe):  # noqa: F811
     assert action.isVisible() and action.isEnabled()
     c.showFlow()
     assert action.isVisible() and action.isEnabled()
+
+
+def testDefaultCaptureIsLightweightAndStillExportsDiagnostics(probe):
+    assert not probe.detailed.isChecked()
+    probe.start()
+    probe.mark()
+    waitEvents(60)
+    probe.stop()
+    report = json.loads((probe.destination / 'report.json').read_text(encoding='utf-8'))
+    assert not report['detailed'] and not report['functions']
+    assert report['heartbeat']['samples'] > 0 and len(report['marks']) == 1
+    assert not probe.running and sys.getprofile() is None
 
 
 @pytest.mark.parametrize('detailed', [False, True])

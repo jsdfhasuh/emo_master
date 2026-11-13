@@ -1,0 +1,14 @@
+{
+  "sourceSha": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "branch": "codex/logging-consolidation-20261103",
+  "worktreeAlreadyDirty": true,
+  "actualRoot": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "files": {
+    "web_panel/frontend/src/editor/Editor.tsx": "d036d198846d75854f46a217f8d01f7ebc043d17f7120dbc7e0be7d2307cd473",
+    "web_panel/backend/emo_web_panel/runtime_client.py": "5f48a3df6b5658b5aa4465ebff3b89ee2d9b6a4073b3a1b8394c564fd1dd2473",
+    "src/emo_master/core/presentation/capture_limits.py": "ed2e71337fe76ab34ea3772ecada60e0578453fb3004d0431336d89621267d4a",
+    "src/emo_master/apps/runtime/presentation/collector.py": "1210faccc6e86dff6390e3f35f1efafae3aa2d6e0f9b615cb32d23df19d58e19",
+    "src/emo_master/apps/runtime/presentation/service.py": "1cd56f22c35ed74cc6ade99f3772ba8c424474110bb03f2d27ef1eb3c2636980",
+    "src/emo_master/apps/runtime/presentation/output_requests.py": "42856fdccf4ef17fbd87f81f0ac9e95e7097a8f9dd5199dadc616797211ad58e"
+  }
+}

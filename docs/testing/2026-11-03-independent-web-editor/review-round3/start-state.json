@@ -1,0 +1,48 @@
+{
+  "branch": "codex/logging-consolidation-20261103",
+  "head": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "status": " M docs/development/panel-contract-v1.md\n M packages/emo_panel_protocol/pyproject.toml\n M proto/runtime.proto\n M scripts/build_panel_contract.py\n M src/emo_master/apps/designer/page_designer/chrome.py\n M src/emo_master/apps/designer/page_designer/coordinator.py\n M src/emo_master/apps/designer/page_designer/delivery.py\n M src/emo_master/apps/designer/page_designer/property_panel.py\n M src/emo_master/apps/designer/page_designer/tools.py\n D src/emo_master/apps/designer/page_designer/web_preview.py\n M src/emo_master/apps/runtime/grpc_server/service.py\n M src/emo_master/apps/runtime/jobs/read_model.py\n M src/emo_master/apps/runtime/presentation/assets.py\n M src/emo_master/apps/runtime/presentation/collector.py\n M src/emo_master/apps/runtime/presentation/normal_capture.py\n M src/emo_master/apps/runtime/presentation/service.py\n M src/emo_master/core/presentation/capture_limits.py\n M src/emo_panel_protocol/__init__.py\n M src/emo_panel_protocol/generated/runtime_pb2.py\n M src/emo_panel_protocol/generated/runtime_pb2_grpc.py\n M tests/core/presentation/test_panel_contract.py\n D tests/designer/test_web_preview.py\n D tests/designer/test_web_preview_shutdown.py\n M tests/ui/page_designer/test_panel_menu_state.py\n M tests/ui/page_designer/test_terminal_properties.py\n M web_panel/README.md\n M web_panel/backend/emo_web_panel/app.py\n M web_panel/backend/emo_web_panel/mock_runtime.py\n M web_panel/backend/emo_web_panel/packages.py\n M web_panel/backend/emo_web_panel/runtime_client.py\n M web_panel/contracts/panel-contract-v1/README.md\n M web_panel/contracts/panel-contract-v1/contract-manifest.json\n M web_panel/contracts/panel-contract-v1/proto/runtime.proto\n D web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.4.0-py3-none-any.whl\n M web_panel/contracts/panel-contract-v1/schemas/runtime-rpc.schema.json\n M web_panel/contracts/panel-contract-v1/typescript/panel-contract.ts\n M web_panel/docs/DEPLOYMENT.md\n M web_panel/frontend/src/data/api.ts\n M web_panel/frontend/src/main.tsx\n M web_panel/frontend/src/renderer/PanelRenderer.tsx\n M web_panel/frontend/tests/renderer.test.mjs\n M web_panel/pyproject.toml\n M web_panel/scripts/verify_wheel.py\n M web_panel/tests/test_contract_manifest.py\n M web_panel/tests/test_official_packages.py\n M web_panel/tests/test_product_runtime.py\n M web_panel/tests/test_runtime_contract.py\n?? docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/\n?? docs/testing/2026-11-03-independent-web-editor/\n?? scripts/independent_web_editor_demo.py\n?? scripts/package_independent_web_editor_delivery.py\n?? src/emo_master/apps/runtime/presentation/output_capture.py\n?? src/emo_master/apps/runtime/presentation/output_requests.py\n?? src/emo_panel_protocol/output_requests.py\n?? tests/runtime/presentation/test_equivalent_image_capture.py\n?? tests/runtime/presentation/test_external_output_requests.py\n?? web_panel/backend/emo_web_panel/editor.py\n?? web_panel/backend/emo_web_panel/editor_routes.py\n?? web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.5.0-py3-none-any.whl\n?? web_panel/contracts/panel-contract-v1/schemas/output-request-config.schema.json\n?? web_panel/frontend/src/editor/\n?? web_panel/frontend/tests/editor.test.mjs\n?? web_panel/frontend/tests/editor_preview_height_browser.py\n?? web_panel/frontend/tests/editor_review_browser.py\n?? web_panel/frontend/tests/independent_editor_e2e.py\n?? web_panel/scripts/check_installed_editor.py\n?? web_panel/tests/test_editor.py\n?? web_panel/tests/test_editor_concurrency.py\n?? web_panel/tests/test_editor_target_isolation.py\n?? web_panel/tests/test_web_start_capture.py\n",
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "priorArtifacts": {
+    "web_panel/dist/emo_master_web_panel-0.1.0a1-py3-none-any.whl": {
+      "sha256": "c10957f0ee447cb3d34f443da16522d9f667e0a3d9f8f4dbf76d11c3385051ce",
+      "byteSize": 188804
+    },
+    "build/independent-web-editor/runtime/emo_master-0.6.6-py3-none-any.whl": {
+      "sha256": "aeb26acc932485cb6942b7cc0bffa10bb24118d5007913ca6da73febebd6ecd1",
+      "byteSize": 1662929
+    },
+    "web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.5.0-py3-none-any.whl": {
+      "sha256": "97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d",
+      "byteSize": 40265
+    },
+    "build/independent-web-editor/independent-web-editor-delivery.zip": {
+      "sha256": "4edd41ffd241caf506fda09e9168687aaefd6f418b81cf68743512229546ca26",
+      "byteSize": 1857758
+    },
+    "build/independent-web-editor/verification-evidence.zip": {
+      "sha256": "195d8d3532a38b859697259a6c12164bc728e2531d4a56da5a9dde724fdd94b8",
+      "byteSize": 5693132
+    },
+    "build/independent-web-editor/delivery-manifest.json": {
+      "sha256": "03e8e77f0e47523dbf9c58cc68f30737b6d5637a929fcf4f90a69945f7ea5115",
+      "byteSize": 3598
+    },
+    "build/independent-web-editor/archive-verification.json": {
+      "sha256": "a9efb56ea39c236ffd7bc099910128abda3d2fed843b80b5321e1839c9d786da",
+      "byteSize": 3206
+    },
+    "docs/testing/2026-11-03-independent-web-editor/README.md": {
+      "sha256": "3fd26df2c6b55ba29984635ffc570defaf26d3313a0de7acac15b1f81e2ce1f4",
+      "byteSize": 18819
+    },
+    "docs/testing/2026-11-03-independent-web-editor/review-round2/README.md": {
+      "sha256": "0f43ea4fa3f900b504f2b87e0b9bbc53d5f39e3bdaa4c6b340cb837504322036",
+      "byteSize": 10430
+    },
+    "docs/testing/2026-11-03-independent-web-editor/delivery-artifacts.json": {
+      "sha256": "561020f2ddd2c26192a39a88b03e823f4f64274ae7eafc78f9140ad169078ecc",
+      "byteSize": 2116
+    }
+  }
+}

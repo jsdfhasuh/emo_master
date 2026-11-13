@@ -1,0 +1,142 @@
+[
+  {
+    "operation": "gateway_environment",
+    "python": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\.venv\\Scripts\\python.exe",
+    "protocolVersion": "1.5.0",
+    "protocolPath": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\src\\emo_panel_protocol\\__init__.py"
+  },
+  {
+    "operation": "save_external_count",
+    "reply": {
+      "capabilities": {
+        "implicitResize": false,
+        "maxImageSources": 2,
+        "maxOpenResults": 8,
+        "maxScopes": 16,
+        "maxSourceIds": 16,
+        "profile": "normal-two-lane-v1",
+        "rawBytesPerJob": 8388608,
+        "rawBytesPerSourceDual": 4194304,
+        "rawBytesPerSourceSingle": 8388608
+      },
+      "config": {
+        "schemaVersion": "1.0",
+        "scopes": {
+          "external-scope-6f02d88d0595b6df87672892dc6a9aba": {
+            "callPath": [],
+            "commitPolicy": "workflow_terminal",
+            "entryWorkflowId": "main",
+            "scopeWorkflowId": "main"
+          }
+        },
+        "sources": {
+          "external-source-219ee0b5171caccad11bf75bab018a08": {
+            "callPath": [],
+            "expectedType": "integer",
+            "fieldPath": [],
+            "kind": "node_output",
+            "name": null,
+            "nodeId": "count",
+            "port": "count",
+            "resultScopeId": "external-scope-6f02d88d0595b6df87672892dc6a9aba",
+            "ruleVersion": "1.0",
+            "workflowId": "main"
+          }
+        }
+      },
+      "configRevision": "c25c5966902adfeff76e329126955b22df4fa54bacc2395c64d5e93520e0bc2f",
+      "diagnostics": [],
+      "documentRevision": "1",
+      "projectId": "independent-web-editor-software-demo",
+      "projectName": "独立 Web 编辑器 · 本机模拟",
+      "requestId": "web-capture-config-1",
+      "runtimeInstanceId": "7682c2af-1b7e-404f-b5d4-2bc20beecb01",
+      "state": "SAVED",
+      "ok": true,
+      "code": "OK",
+      "message": ""
+    }
+  },
+  {
+    "operation": "start",
+    "reply": {
+      "state": "accepted",
+      "outcome": "ACCEPTED",
+      "runId": "7ed3998c-ab64-4e49-a150-0773b67196ea",
+      "startRequestId": "web-with-stale-qt-1",
+      "message": "job accepted",
+      "status": "ACCEPTED",
+      "configurationRevision": "0"
+    }
+  },
+  {
+    "operation": "external_count_result",
+    "reply": [
+      {
+        "runtimeInstanceId": "7682c2af-1b7e-404f-b5d4-2bc20beecb01",
+        "jobId": "7ed3998c-ab64-4e49-a150-0773b67196ea",
+        "resultScopeId": "external-scope-6f02d88d0595b6df87672892dc6a9aba",
+        "invocationId": "def6ed8f-c53c-4a60-9540-896ee161b3cc",
+        "resultKey": "cfd537b0-385a-42f5-af2e-2c21dbeccca5",
+        "resultOrdinal": "1",
+        "executionRevision": "ad8014b12253303bcaa1e1ad9831d212042425f9bfe2ecac1453a01237183581",
+        "capturePlanRevision": "531f8832a6127a70e9c766289b0230840b7200517f025b745cc426f0913156c6",
+        "mode": "runtime",
+        "projectId": "independent-web-editor-software-demo",
+        "cursor": "2",
+        "latestStartedOrdinals": {
+          "external-scope-6f02d88d0595b6df87672892dc6a9aba": "1"
+        },
+        "expiredScopeOrdinals": {},
+        "status": "complete",
+        "executionTerminal": "COMPLETED",
+        "runState": "running",
+        "sources": {
+          "external-source-219ee0b5171caccad11bf75bab018a08": {
+            "sourceId": "external-source-219ee0b5171caccad11bf75bab018a08",
+            "state": "available",
+            "valueJson": "2",
+            "value": 2
+          }
+        },
+        "closedResult": {
+          "identity": {
+            "runtimeInstanceId": "7682c2af-1b7e-404f-b5d4-2bc20beecb01",
+            "jobId": "7ed3998c-ab64-4e49-a150-0773b67196ea",
+            "resultScopeId": "external-scope-6f02d88d0595b6df87672892dc6a9aba",
+            "invocationId": "def6ed8f-c53c-4a60-9540-896ee161b3cc",
+            "resultKey": "cfd537b0-385a-42f5-af2e-2c21dbeccca5",
+            "resultOrdinal": 1,
+            "executionRevision": "ad8014b12253303bcaa1e1ad9831d212042425f9bfe2ecac1453a01237183581",
+            "capturePlanRevision": "531f8832a6127a70e9c766289b0230840b7200517f025b745cc426f0913156c6",
+            "mode": "runtime"
+          },
+          "expectedSourceIds": [
+            "external-source-219ee0b5171caccad11bf75bab018a08"
+          ],
+          "sources": [
+            {
+              "sourceId": "external-source-219ee0b5171caccad11bf75bab018a08",
+              "state": "AVAILABLE",
+              "valueJson": "2"
+            }
+          ],
+          "status": "COMPLETE",
+          "executionTerminal": "COMPLETED",
+          "timing": {
+            "captureStartedNs": 72828999214500,
+            "scopeEndedNs": 72829014956400,
+            "closedNs": 72829018784600,
+            "clock": "runtime_monotonic"
+          }
+        },
+        "receivedAt": "2026-11-03T23:52:07.319800+00:00"
+      }
+    ]
+  },
+  {
+    "operation": "explicit_qt_start",
+    "ok": false,
+    "message": "presentation.dataSources.stale-qt: output node/port missing"
+  }
+]

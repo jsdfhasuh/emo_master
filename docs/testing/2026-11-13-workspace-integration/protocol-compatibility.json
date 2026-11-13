@@ -1,0 +1,80 @@
+{
+  "base_sha": "556acb10760a9463fe832aa4d8e7fc5c0a95a67e",
+  "current_head": "556acb10760a9463fe832aa4d8e7fc5c0a95a67e",
+  "workspace": "dirty; proto/runtime.proto and generated/runtime_pb2.py, plus documentation/evidence additions",
+  "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+  "base_descriptor_sha256": "25e4d4408a9f979c0c4185de5106b325bda7d982654efd186138f9c0e9094f0b",
+  "new_descriptor_sha256": "4b0df56ffc36c53f559daa7f363a7089dc01d7e8acee4113d4f36d731a49e4ce",
+  "new_generated_file_sha256": "3e53d85708e39c93328c656756b1f79c28453721760ba03a93f500a54cf67bc4",
+  "additions": [
+    {
+      "message": "OperatorInfo",
+      "number": 18,
+      "name": "next_cycle_parameter_paths_json",
+      "type": "string"
+    },
+    {
+      "message": "OperatorInfo",
+      "number": 19,
+      "name": "min_core_version",
+      "type": "string"
+    },
+    {
+      "message": "OperatorInfo",
+      "number": 20,
+      "name": "max_core_version",
+      "type": "string"
+    },
+    {
+      "message": "ListOperatorsReply",
+      "number": 3,
+      "name": "runtime_instance_id",
+      "type": "string"
+    }
+  ],
+  "checks": [
+    {
+      "name": "descriptor_semantics_only_four_additive_string_fields",
+      "passed": true
+    },
+    {
+      "name": "generated_python_only_descriptor_and_serialized_offsets_changed",
+      "passed": true
+    },
+    {
+      "name": "old_operator_to_new_preserves_all_legacy_fields_and_defaults_new_fields",
+      "passed": true
+    },
+    {
+      "name": "old_list_reply_to_new_defaults_runtime_instance_and_preserves_legacy_fields",
+      "passed": true
+    },
+    {
+      "name": "new_operator_to_old_keeps_legacy_fields_and_unknown_fields_survive_roundtrip",
+      "passed": true
+    },
+    {
+      "name": "new_list_reply_to_old_preserves_reply_and_nested_unknown_fields",
+      "passed": true
+    },
+    {
+      "name": "empty_declaration_array_distinct_from_missing_and_survives_old_reader",
+      "passed": true
+    },
+    {
+      "name": "proto3_empty_string_and_absent_share_unknown_metadata_semantics",
+      "passed": true
+    },
+    {
+      "name": "nonempty_parameter_paths_preserved_by_old_binary_reader",
+      "passed": true
+    },
+    {
+      "name": "grpc_stub_file_unchanged",
+      "passed": true
+    }
+  ],
+  "passed": 10,
+  "failed": 0,
+  "scope": "Binary protobuf compatibility using separate old/new DescriptorPool objects; no service population, UI, installed wheel, device or LAN acceptance."
+}

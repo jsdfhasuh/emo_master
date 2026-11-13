@@ -1,0 +1,21 @@
+[
+  {
+    "operation": "gateway_environment",
+    "python": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\.venv\\Scripts\\python.exe",
+    "protocolVersion": "1.5.0",
+    "protocolPath": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\src\\emo_panel_protocol\\__init__.py"
+  },
+  {
+    "operation": "query_runtime_logs_without_job",
+    "reply": {
+      "ok": true,
+      "code": "OK",
+      "message": "",
+      "runtimeInstanceId": "5b5bdd77-f128-4be5-a05e-346e2d8b7827",
+      "upperEventId": "0",
+      "nextEventId": "0",
+      "hasMore": false,
+      "events": []
+    }
+  }
+]

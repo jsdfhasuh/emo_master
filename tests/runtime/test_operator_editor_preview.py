@@ -79,11 +79,14 @@ def testRuntimePublishesValidatedEditorAssetAndRunsFormalRoiPreview(
         )
         editor = json.loads(roiInfo.editor_spec_json)
         assert editor["previewMode"] == "pure"
-        assert roiInfo.version == "1.1.0"
+        manifest = json.loads(
+            Path("src/emo_master/plugins/builtins/roi/manifest.json").read_text(encoding="utf-8")
+        )
+        assert roiInfo.version == manifest["version"]
 
         assetReply = service.GetOperatorEditorAsset(
             runtime_pb2.GetOperatorEditorAssetRequest(
-                operator_id="vision.preprocess.roi", version="1.1.0"
+                operator_id="vision.preprocess.roi", version=roiInfo.version
             ),
             None,
         )
@@ -230,7 +233,7 @@ def testEditorAssetIsRegistrationSnapshot(tmp_path: Path) -> None:
         resource.write_bytes(b"changed after registry scan")
         reply = service.GetOperatorEditorAsset(
             runtime_pb2.GetOperatorEditorAssetRequest(
-                operator_id="vision.preprocess.roi", version="1.1.0"
+                operator_id="vision.preprocess.roi", version=descriptor.manifest.version
             ),
             None,
         )

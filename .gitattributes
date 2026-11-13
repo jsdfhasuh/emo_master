@@ -36,6 +36,10 @@ docs/evidence/2026-10-25-workspace-delivery/** -text -whitespace
 # Preserve the reviewed Web editor evidence and SDK manifest hashes.
 docs/testing/2026-11-03-independent-web-editor/** -text -whitespace
 docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/** -text -whitespace
+# Preserve the supplied plan archive bytes and its SHA256SUMS manifest.
+docs/plans/2026-11-13-independent-project-authoring-v6/** -text
+docs/plans/2026-11-13-independent-project-authoring-v6/README-OpenSpec.md whitespace=-blank-at-eol
 web_panel/contracts/panel-contract-v1/** -text
 # Keep original pytest diagnostics, including whitespace in failure excerpts.
 docs/testing/2026-11-12-page-switch/*.xml -text -whitespace
+docs/testing/2026-11-13-workspace-integration/*.xml -text -whitespace

@@ -447,6 +447,11 @@ message OperatorInfo {
   string device_requirements_json = 16;
   reserved 17;
   reserved "device_binding_since";
+  // JSON distinguishes an empty declaration ("[]") from an older target
+  // which does not transmit this metadata (the absent/empty string).
+  string next_cycle_parameter_paths_json = 18;
+  string min_core_version = 19;
+  string max_core_version = 20;
 }
 
 message OperatorIconInfo {
@@ -481,6 +486,7 @@ message GetOperatorIconAssetReply {
 message ListOperatorsReply {
   repeated OperatorInfo operators = 1;
   string camera_recovery_warnings_json = 2;
+  string runtime_instance_id = 3;
 }
 
 message GetOperatorEditorAssetRequest {

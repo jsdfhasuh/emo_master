@@ -1,0 +1,188 @@
+{
+  "document_version": "v6",
+  "change_id": "add-independent-project-authoring",
+  "date": "2026-11-12",
+  "source_head": "556acb10760a9463fe832aa4d8e7fc5c0a95a67e",
+  "status": "PASS",
+  "scope": "Local documentation checks only; not official CLI or application validation.",
+  "stats": {
+    "capabilities": 5,
+    "requirements": 27,
+    "scenarios": 40,
+    "implementation_tasks": 25,
+    "completed_tasks": 0,
+    "acceptance_groups": 7,
+    "mermaid_blocks": 3,
+    "json_examples": 2
+  },
+  "checks": [
+    {
+      "check": "capabilities_unchanged",
+      "status": "PASS",
+      "details": [
+        "candidate-project-precheck",
+        "mcp-authoring-access",
+        "operator-capability-discovery",
+        "project-draft-authoring",
+        "project-resource-delivery"
+      ]
+    },
+    {
+      "check": "change_metadata",
+      "status": "PASS",
+      "details": "schema: spec-driven\ncreated: \"2026-11-12\""
+    },
+    {
+      "check": "proposal_sections",
+      "status": "PASS",
+      "details": "Why / What Changes / Capabilities / Impact"
+    },
+    {
+      "check": "spec_candidate-project-precheck",
+      "status": "PASS",
+      "details": {
+        "requirements": 3,
+        "scenarios": 6
+      }
+    },
+    {
+      "check": "spec_mcp-authoring-access",
+      "status": "PASS",
+      "details": {
+        "requirements": 7,
+        "scenarios": 7
+      }
+    },
+    {
+      "check": "spec_operator-capability-discovery",
+      "status": "PASS",
+      "details": {
+        "requirements": 6,
+        "scenarios": 8
+      }
+    },
+    {
+      "check": "spec_project-draft-authoring",
+      "status": "PASS",
+      "details": {
+        "requirements": 7,
+        "scenarios": 13
+      }
+    },
+    {
+      "check": "spec_project-resource-delivery",
+      "status": "PASS",
+      "details": {
+        "requirements": 4,
+        "scenarios": 6
+      }
+    },
+    {
+      "check": "tasks_unique_unchecked",
+      "status": "PASS",
+      "details": {
+        "tasks": 25,
+        "completed": 0
+      }
+    },
+    {
+      "check": "acceptance_still_seven_groups",
+      "status": "PASS",
+      "details": [
+        "G1",
+        "G2",
+        "G3",
+        "G4",
+        "G5",
+        "G6",
+        "G7"
+      ]
+    },
+    {
+      "check": "fences_closed",
+      "status": "PASS",
+      "details": []
+    },
+    {
+      "check": "json_examples",
+      "status": "PASS",
+      "details": {
+        "examples": 2,
+        "errors": []
+      }
+    },
+    {
+      "check": "relative_links",
+      "status": "PASS",
+      "details": []
+    },
+    {
+      "check": "mermaid_blocks",
+      "status": "PASS",
+      "details": {
+        "blocks": 3,
+        "rendered": false
+      }
+    },
+    {
+      "check": "no_main_specs",
+      "status": "PASS",
+      "details": "Only change deltas, not implemented capability records"
+    },
+    {
+      "check": "new_baseline",
+      "status": "PASS",
+      "details": "main 556acb10760a9463fe832aa4d8e7fc5c0a95a67e"
+    },
+    {
+      "check": "recursive_schema_and_roi",
+      "status": "PASS",
+      "details": "Existing command and catalog extended; no new service/tool family"
+    },
+    {
+      "check": "detached_lightweight_reads",
+      "status": "PASS",
+      "details": "Keep new page-only validation and detached objects; full edit/save checks retained"
+    },
+    {
+      "check": "v5_contracts_preserved",
+      "status": "PASS",
+      "details": "Local/target distinction, diagnostics, versioned cancellation and file transfer preserved"
+    }
+  ],
+  "spec_statistics": {
+    "candidate-project-precheck": {
+      "requirements": 3,
+      "scenarios": 6
+    },
+    "mcp-authoring-access": {
+      "requirements": 7,
+      "scenarios": 7
+    },
+    "operator-capability-discovery": {
+      "requirements": 6,
+      "scenarios": 8
+    },
+    "project-draft-authoring": {
+      "requirements": 7,
+      "scenarios": 13
+    },
+    "project-resource-delivery": {
+      "requirements": 4,
+      "scenarios": 6
+    }
+  },
+  "official_cli": {
+    "status": "NOT_RUN",
+    "reason": "openspec executable not found; no new installation attempt in v6"
+  },
+  "not_run": [
+    "Mermaid rendering",
+    "application tests",
+    "GitHub CI conclusions",
+    "MCP client integration",
+    "Designer interaction",
+    "Runtime precheck/execution"
+  ],
+  "input_v5_zip_sha256": "f0aa63f6c1abb07a0b6ff015194ebf69c1053f1d5f7c0333b5cd54382bae42bb"
+}

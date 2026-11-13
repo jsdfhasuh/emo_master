@@ -1,0 +1,71 @@
+{
+  "sourceSha": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "branch": "codex/logging-consolidation-20261103",
+  "realWorkingDirectory": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "gitStatus": " M docs/development/panel-contract-v1.md\n M packages/emo_panel_protocol/pyproject.toml\n M proto/runtime.proto\n M scripts/build_panel_contract.py\n M src/emo_master/apps/designer/page_designer/chrome.py\n M src/emo_master/apps/designer/page_designer/coordinator.py\n M src/emo_master/apps/designer/page_designer/delivery.py\n M src/emo_master/apps/designer/page_designer/property_panel.py\n M src/emo_master/apps/designer/page_designer/tools.py\n D src/emo_master/apps/designer/page_designer/web_preview.py\n M src/emo_master/apps/runtime/grpc_server/service.py\n M src/emo_master/apps/runtime/jobs/read_model.py\n M src/emo_master/apps/runtime/presentation/assets.py\n M src/emo_master/apps/runtime/presentation/collector.py\n M src/emo_master/apps/runtime/presentation/normal_capture.py\n M src/emo_master/apps/runtime/presentation/service.py\n M src/emo_master/core/presentation/capture_limits.py\n M src/emo_panel_protocol/__init__.py\n M src/emo_panel_protocol/generated/runtime_pb2.py\n M src/emo_panel_protocol/generated/runtime_pb2_grpc.py\n M tests/core/presentation/test_panel_contract.py\n D tests/designer/test_web_preview.py\n D tests/designer/test_web_preview_shutdown.py\n M tests/ui/page_designer/test_panel_menu_state.py\n M tests/ui/page_designer/test_terminal_properties.py\n M web_panel/README.md\n M web_panel/backend/emo_web_panel/app.py\n M web_panel/backend/emo_web_panel/mock_runtime.py\n M web_panel/backend/emo_web_panel/packages.py\n M web_panel/backend/emo_web_panel/runtime_client.py\n M web_panel/contracts/panel-contract-v1/README.md\n M web_panel/contracts/panel-contract-v1/contract-manifest.json\n M web_panel/contracts/panel-contract-v1/proto/runtime.proto\n D web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.4.0-py3-none-any.whl\n M web_panel/contracts/panel-contract-v1/schemas/runtime-rpc.schema.json\n M web_panel/contracts/panel-contract-v1/typescript/panel-contract.ts\n M web_panel/docs/DEPLOYMENT.md\n M web_panel/frontend/src/data/api.ts\n M web_panel/frontend/src/main.tsx\n M web_panel/frontend/src/renderer/PanelRenderer.tsx\n M web_panel/frontend/tests/renderer.test.mjs\n M web_panel/pyproject.toml\n M web_panel/scripts/verify_wheel.py\n M web_panel/tests/test_contract_manifest.py\n M web_panel/tests/test_official_packages.py\n M web_panel/tests/test_product_runtime.py\n M web_panel/tests/test_runtime_contract.py\n?? docs/handoffs/runtime-web-panel-v1/sdk-1.5.0/\n?? docs/testing/2026-11-03-independent-web-editor/\n?? scripts/independent_web_editor_demo.py\n?? scripts/package_independent_web_editor_delivery.py\n?? src/emo_master/apps/runtime/presentation/output_capture.py\n?? src/emo_master/apps/runtime/presentation/output_requests.py\n?? src/emo_panel_protocol/output_requests.py\n?? tests/runtime/presentation/test_equivalent_image_capture.py\n?? tests/runtime/presentation/test_external_output_requests.py\n?? web_panel/backend/emo_web_panel/editor.py\n?? web_panel/backend/emo_web_panel/editor_routes.py\n?? web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.5.0-py3-none-any.whl\n?? web_panel/contracts/panel-contract-v1/schemas/output-request-config.schema.json\n?? web_panel/frontend/src/editor/\n?? web_panel/frontend/tests/editor.test.mjs\n?? web_panel/frontend/tests/editor_review_browser.py\n?? web_panel/frontend/tests/independent_editor_e2e.py\n?? web_panel/scripts/check_installed_editor.py\n?? web_panel/tests/test_editor.py\n?? web_panel/tests/test_editor_concurrency.py\n?? web_panel/tests/test_web_start_capture.py\n",
+  "sourceFiles": {
+    "web_panel/backend/emo_web_panel/app.py": "fd643b39730e97c320516d7750975fbbfe004652b55bcd861129fd2e9ea5d2d7",
+    "web_panel/backend/emo_web_panel/editor_routes.py": "094aa16fa3986198e2b8dbb66e1ac64019d99e0f00a9037ae9e2d2a8a4c758b9",
+    "web_panel/backend/emo_web_panel/editor.py": "661e489bd1073081ab59c4359ac86fc25399a593bfb1e0a19896ba9ec5d79f09",
+    "web_panel/frontend/src/editor/Editor.tsx": "4ffacd5b198dace8ed1702b0b28f57adf3af415f0546618e2737c3645e7e4b6f",
+    "web_panel/frontend/src/renderer/PanelRenderer.tsx": "eb325f5ef9d8f2af1ea56167416acd8b5ab3d4f6460bf27c296d17effbfc2000",
+    "scripts/package_independent_web_editor_delivery.py": "b0c085fec078fb1a65fe5ca2f2655bb80a5bc984a07ff143703b058a06435b9a"
+  },
+  "preservedArtifacts": {
+    "build/independent-web-editor/runtime/emo_master-0.6.6-py3-none-any.whl": {
+      "backup": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\previous-before-review-round2\\build__independent-web-editor__runtime__emo_master-0.6.6-py3-none-any.whl",
+      "sha256": "aeb26acc932485cb6942b7cc0bffa10bb24118d5007913ca6da73febebd6ecd1",
+      "byteSize": 1662929
+    },
+    "web_panel/dist/emo_master_web_panel-0.1.0a1-py3-none-any.whl": {
+      "backup": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\previous-before-review-round2\\web_panel__dist__emo_master_web_panel-0.1.0a1-py3-none-any.whl",
+      "sha256": "d098b3c99700276d2587c9013579575007a7f4d19dc024d723b964709a3719eb",
+      "byteSize": 188352
+    },
+    "web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.5.0-py3-none-any.whl": {
+      "backup": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\previous-before-review-round2\\web_panel__contracts__panel-contract-v1__python__emo_panel_protocol-1.5.0-py3-none-any.whl",
+      "sha256": "97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d",
+      "byteSize": 40265
+    },
+    "build/independent-web-editor/independent-web-editor-delivery.zip": {
+      "backup": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\previous-before-review-round2\\build__independent-web-editor__independent-web-editor-delivery.zip",
+      "sha256": "fd2ea0f8755b82875e2fa8d42a43b949b462e5275f1d219a4620b2e8a791a05b",
+      "byteSize": 1849713
+    },
+    "build/independent-web-editor/verification-evidence.zip": {
+      "backup": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\previous-before-review-round2\\build__independent-web-editor__verification-evidence.zip",
+      "sha256": "f1750d8b8af2948f24c030e40094ceff3e1cfbcdc36bd4600f1c98f102901de8",
+      "byteSize": 2901019
+    },
+    "build/independent-web-editor/delivery-manifest.json": {
+      "backup": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\previous-before-review-round2\\build__independent-web-editor__delivery-manifest.json",
+      "sha256": "3bce90783b100f4dda86ac52e29667719bb6eb8f209067072f30432aaea65fb5",
+      "byteSize": 3281
+    },
+    "build/independent-web-editor/archive-verification.json": {
+      "backup": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\previous-before-review-round2\\build__independent-web-editor__archive-verification.json",
+      "sha256": "913bce512f64ef4de8f584633cd0376b309e1c0b457b5bd701b871a41a28e26a",
+      "byteSize": 2831
+    },
+    "build/independent-web-editor/START-HERE.md": {
+      "backup": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\previous-before-review-round2\\build__independent-web-editor__START-HERE.md",
+      "sha256": "7005fb8e3141af1df69ea95c2f4f0729e358d12d23e988a98b94cf7a47347cca",
+      "byteSize": 1607
+    },
+    "docs/testing/2026-11-03-independent-web-editor/review-fixes/README.md": {
+      "backup": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\previous-before-review-round2\\docs__testing__2026-11-03-independent-web-editor__review-fixes__README.md",
+      "sha256": "673530e832320e6a561915dc34226c48eda13409ed9413724df88cc261d8bd1d",
+      "byteSize": 9486
+    },
+    "docs/testing/2026-11-03-independent-web-editor/README.md": {
+      "backup": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\independent-web-editor\\previous-before-review-round2\\docs__testing__2026-11-03-independent-web-editor__README.md",
+      "sha256": "aae07951e12f3fd7f298eb675e73ba26f36d7dc70a17541b459ecaa385c42fcc",
+      "byteSize": 17379
+    }
+  },
+  "scope": [
+    "Per-Runtime publication coordination without cross-target control queueing",
+    "Fixed-terminal preview logical height with spacer layout"
+  ],
+  "restrictions": "No reset, commit, push, merge, deployment, live devices or field data"
+}

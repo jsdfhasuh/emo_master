@@ -1,0 +1,126 @@
+[
+  {
+    "operation": "gateway_environment",
+    "python": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\web_panel\\.venv\\Scripts\\python.exe",
+    "protocolVersion": "1.5.0",
+    "protocolPath": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\src\\emo_panel_protocol\\__init__.py"
+  },
+  {
+    "operation": "start",
+    "reply": {
+      "state": "accepted",
+      "outcome": "ACCEPTED",
+      "runId": "0878b6d3-5d06-45db-a2da-77849f31f446",
+      "startRequestId": "web-product-runtime-start-1",
+      "message": "job accepted",
+      "status": "ACCEPTED",
+      "configurationRevision": "0"
+    }
+  },
+  {
+    "operation": "run_state_without_external_requests",
+    "reply": {
+      "id": "0878b6d3-5d06-45db-a2da-77849f31f446",
+      "runId": "0878b6d3-5d06-45db-a2da-77849f31f446",
+      "jobId": "0878b6d3-5d06-45db-a2da-77849f31f446",
+      "runtimeInstanceId": "7e8bf444-72fe-4100-91ca-c2de3ac3c73a",
+      "projectId": "panel-contract-demo",
+      "workflowId": "main",
+      "name": "Main",
+      "runGroupId": "",
+      "sourceJobId": "",
+      "targetSlotId": "",
+      "state": "starting",
+      "status": "STARTING",
+      "active": true,
+      "ownsResources": true,
+      "captureEnabled": false,
+      "displayResourcesReleased": false,
+      "allowedActions": [
+        "stop"
+      ],
+      "startRequestId": "web-product-runtime-start-1",
+      "acceptedAtMs": "1793749909434",
+      "startedAtMs": "0",
+      "endedAtMs": "0",
+      "errorCode": "",
+      "message": ""
+    }
+  },
+  {
+    "operation": "query_runtime_logs_for_actual_job",
+    "reply": {
+      "ok": true,
+      "code": "OK",
+      "message": "",
+      "runtimeInstanceId": "7e8bf444-72fe-4100-91ca-c2de3ac3c73a",
+      "upperEventId": "1",
+      "nextEventId": "1",
+      "hasMore": false,
+      "events": [
+        {
+          "eventId": "1",
+          "sequence": "1",
+          "timestampMs": "1793749909436",
+          "jobId": "0878b6d3-5d06-45db-a2da-77849f31f446",
+          "projectId": "panel-contract-demo",
+          "workflowId": "main",
+          "nodeId": "",
+          "workflowRunId": "",
+          "parentWorkflowRunId": "",
+          "nodeRunId": "",
+          "iterationPath": [],
+          "eventType": "job.accepted",
+          "level": "INFO",
+          "code": "",
+          "message": "job accepted",
+          "payload": {
+            "legacySnapshotPolicy": "ALL",
+            "previewProjectKey": "54ae499a3d43399f7af406d4c1249d11cd498342fc4162a1d9911573ced4ab09"
+          },
+          "originApp": "runtime",
+          "component": "execution",
+          "runtimeInstanceId": "7e8bf444-72fe-4100-91ca-c2de3ac3c73a"
+        }
+      ]
+    }
+  },
+  {
+    "operation": "query_runtime_logs_across_jobs",
+    "reply": {
+      "ok": true,
+      "code": "OK",
+      "message": "",
+      "runtimeInstanceId": "7e8bf444-72fe-4100-91ca-c2de3ac3c73a",
+      "upperEventId": "1",
+      "nextEventId": "1",
+      "hasMore": false,
+      "events": [
+        {
+          "eventId": "1",
+          "sequence": "1",
+          "timestampMs": "1793749909436",
+          "jobId": "0878b6d3-5d06-45db-a2da-77849f31f446",
+          "projectId": "panel-contract-demo",
+          "workflowId": "main",
+          "nodeId": "",
+          "workflowRunId": "",
+          "parentWorkflowRunId": "",
+          "nodeRunId": "",
+          "iterationPath": [],
+          "eventType": "job.accepted",
+          "level": "INFO",
+          "code": "",
+          "message": "job accepted",
+          "payload": {
+            "legacySnapshotPolicy": "ALL",
+            "previewProjectKey": "54ae499a3d43399f7af406d4c1249d11cd498342fc4162a1d9911573ced4ab09"
+          },
+          "originApp": "runtime",
+          "component": "execution",
+          "runtimeInstanceId": "7e8bf444-72fe-4100-91ca-c2de3ac3c73a"
+        }
+      ]
+    }
+  }
+]

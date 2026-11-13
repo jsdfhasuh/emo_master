@@ -155,10 +155,19 @@ def main():
             report["localValidation"] = tool("validate_project_draft")
             assert report["localValidation"]["status"] == "PASSED", report["localValidation"]
             state = tool("save_project_draft")
+            state = tool("adopt_project_declarations", targetId="isolated")
+            report["declarationAdoption"] = {"draftRevision": state["draftRevision"],
+                                              "context": state["declarationContext"]}
+            report["localValidationAfterAdoption"] = tool("validate_project_draft")
+            assert report["localValidationAfterAdoption"]["status"] == "PASSED"
             report["afterRepair"] = tool("precheck_project_draft", targetId="isolated")
             assert report["afterRepair"]["status"] == "PASSED", report["afterRepair"]
             assert report["afterRepair"]["draftRevision"] != report["beforeRepair"]["draftRevision"]
             exported = tool("export_project_draft", format="project-zip")
+            assert exported["draftRevision"] == report["afterRepair"]["draftRevision"]
+            assert "precheck" not in exported
+            assert exported["checkReport"] == {"status": "not_attached", "draftRevision": exported["draftRevision"],
+                                               "performedByExport": False}
             downloaded = http.get(exported["download"]["path"])
             downloaded.raise_for_status()
             assert len(downloaded.content) == exported["sizeBytes"] and hashlib.sha256(downloaded.content).hexdigest() == exported["sha256"]

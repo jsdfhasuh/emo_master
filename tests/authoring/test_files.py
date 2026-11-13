@@ -112,7 +112,9 @@ def test_fixed_export_roundtrip_does_not_save_or_package_logs(services):
                                         authentication="workspace-bearer")
     assert hashlib.sha256(frozen).hexdigest() == exported["sha256"]
     assert exported["sizeBytes"] == len(frozen)
-    assert exported["precheck"]["status"] == "not_run"
+    assert "precheck" not in exported
+    assert exported["checkReport"] == {"status": "not_attached", "draftRevision": state["draftRevision"],
+                                       "performedByExport": False}
     imported = files.import_project(frozen, "handoff.zip")
     assert imported["draftId"] != state["draftId"]
     assert imported["project"]["project"]["projectId"] == state["project"]["project"]["projectId"]

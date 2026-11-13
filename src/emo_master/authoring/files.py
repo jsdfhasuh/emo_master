@@ -6,7 +6,8 @@ undo record or an in-flight snapshot can keep reading the original bytes.
 """
 from __future__ import annotations
 
-from contextlib import contextmanager
+import asyncio
+from contextlib import asynccontextmanager, contextmanager
 from copy import deepcopy
 from dataclasses import asdict
 import hashlib
@@ -65,6 +66,7 @@ def _inventory(document: ProjectDocument, directory: Path):
                                  status=422, errors=invalid) from error
         missing_ids = {issue.get("resourceId") for issue in issues}
         available = document.model_copy(deep=True)
+        assert available.resources is not None  # The source plan was checked above.
         available.resources.items = {key: value for key, value in available.resources.items.items()
                                      if key not in missing_ids}
         return verifyResources(available, directory), issues
@@ -136,8 +138,8 @@ class FilesService:
                 temp_name.replace(destination)
                 temp_name = None
                 with draft.session.transaction():
-                    plan.items[resource_id] = Resource(path=relative, sha256=digest,
-                                                       size=len(content), purpose=purpose)
+                    plan.items[resource_id] = Resource.model_validate(dict(
+                        path=relative, sha256=digest, size=len(content), purpose=purpose))
                     draft.session.workflows.projectExtensions["resources"] = plan.model_dump(mode="json")
                 self.drafts.commit(draft, before)
                 committed = True
@@ -207,10 +209,11 @@ class FilesService:
             resolved, missing = _inventory(document, project_path.parent)
             state = self.drafts.create(document.project.name, payload=document.model_dump(mode="json"))
             with self.drafts.locked(state["draftId"]) as draft:
-                for resource_id, source in resolved.items():
-                    target = draft.directory / document.resources.items[resource_id].path
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copyfile(source, target)
+                if document.resources is not None:
+                    for resource_id, source in resolved.items():
+                        target = draft.directory / document.resources.items[resource_id].path
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copyfile(source, target)
             return dict(state, missingInputs=missing)
 
     def _freeze(self, draft_id: str, expected_revision: str, directory: Path):
@@ -223,10 +226,11 @@ class FilesService:
         reloaded = loadProjectDocument(project_path)
         if reloaded != document:
             raise AuthoringError("EXPORT_ROUNDTRIP", "Formal project save/reload changed its content", status=500)
-        for resource_id, source in resolved.items():
-            target = directory / document.resources.items[resource_id].path
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source, target)
+        if document.resources is not None:
+            for resource_id, source in resolved.items():
+                target = directory / document.resources.items[resource_id].path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, target)
         return document, revision, missing
 
     @staticmethod
@@ -267,8 +271,8 @@ class FilesService:
                                 mediaType="application/zip" if format == "project-zip" else "application/json",
                                 sizeBytes=len(content), sha256=hashlib.sha256(content).hexdigest(),
                                 missingInputs=missing,
-                                precheck=dict(status="not_run", draftRevision=revision),
-                                checkReport=dict(status="not_checked", draftRevision=revision),
+                                checkReport=dict(status="not_attached", draftRevision=revision,
+                                                 performedByExport=False),
                                 download=dict(method="GET", path=f"/api/project-exports/{export_id}/content",
                                               authentication="workspace-bearer"))
             with self._exports_lock:
@@ -308,3 +312,22 @@ class FilesService:
             yield path, dict(draftId=draft_id, draftRevision=revision,
                              projectId=document.project.projectId, missingInputs=missing,
                              sizeBytes=len(content), sha256=hashlib.sha256(content).hexdigest())
+
+    @asynccontextmanager
+    async def async_snapshot_zip(self, draft_id: str, expected_revision: str):
+        """Prepare off-loop, retaining the directory until real work has exited."""
+        snapshot = self.snapshot_zip(draft_id, expected_revision)
+        preparation = asyncio.create_task(asyncio.to_thread(snapshot.__enter__))
+        try:
+            yield await asyncio.shield(preparation)
+        finally:
+            # Cancelling the await does not stop __enter__'s worker. It must
+            # finish before __exit__ may remove its partially prepared files.
+            try:
+                await asyncio.shield(preparation)
+            except Exception:
+                # A failed __enter__ already ran the synchronous context's
+                # cleanup; preserve its original error without double exiting.
+                pass
+            else:
+                await asyncio.to_thread(snapshot.__exit__, None, None, None)

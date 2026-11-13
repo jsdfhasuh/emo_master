@@ -1,4 +1,9 @@
-"""Pin SDK 1.5.0 development delivery and embedded consumer bytes on both OSes."""
+"""Pin the immutable SDK 1.5.0 handoff and its embedded consumer bytes.
+
+The rolling source proto is checked by scripts/gen_proto.py --check in source
+CI. The existing owning-Runtime integration exercises this SDK against that
+Runtime; historical delivery bytes must not be relabelled as current output.
+"""
 import hashlib
 import json
 from pathlib import Path
@@ -33,16 +38,19 @@ class ContractManifestTests(unittest.TestCase):
         self.assertEqual(len(wheel), 40265)
         self.assertEqual(hashlib.sha256(wheel).hexdigest(), WHEEL_SHA)
 
-    def test_vendored_tree_is_exact_current_handoff_manifest_and_generated_sdk(self):
-        self.assertEqual(json.loads((HANDOFF / 'contract-manifest.json').read_bytes()),
-                         json.loads((CONTRACT / 'contract-manifest.json').read_bytes()))
-        self.assertEqual((CONTRACT / 'proto/runtime.proto').read_bytes(),
-                         (PANEL.parent / 'proto/runtime.proto').read_bytes())
+    def test_vendored_tree_and_sdk_match_the_immutable_historical_handoff(self):
+        manifest = json.loads((HANDOFF / 'contract-manifest.json').read_bytes())
+        self.assertEqual((HANDOFF / 'contract-manifest.json').read_bytes(),
+                         (CONTRACT / 'contract-manifest.json').read_bytes())
+        for name in manifest['files']:
+            with self.subTest(handoff_file=name):
+                self.assertEqual((CONTRACT / name).read_bytes(), (HANDOFF / name).read_bytes())
         with zipfile.ZipFile(CONTRACT / WHEEL_PATH) as archive:
             self.assertIsNone(archive.testzip())
-            for name in ('runtime_pb2.py','runtime_pb2_grpc.py'):
-                self.assertEqual(archive.read('emo_panel_protocol/generated/' + name),
-                    (PANEL.parent / 'src/emo_panel_protocol/generated' / name).read_bytes())
+            with zipfile.ZipFile(HANDOFF / WHEEL_PATH) as original:
+                for name in ('runtime_pb2.py', 'runtime_pb2_grpc.py'):
+                    member = 'emo_panel_protocol/generated/' + name
+                    self.assertEqual(archive.read(member), original.read(member))
             self.assertFalse(any(name.startswith('emo_master/') for name in archive.namelist()))
 
     def test_embedded_fixtures_are_the_same_sdk_delivery(self):

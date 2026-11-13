@@ -16,13 +16,140 @@ import pytest
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.runtime.main import createRuntimeServer
 from emo_master.apps.runtime.project_config import candidate
+from emo_master.authoring import catalog
 from emo_master.authoring.http import create_app
 from tests.authoring.test_transport import HEADERS, TOKEN, running_http
+from tests.authoring.test_transport import real_target as real_target
 from tests.runtime.test_candidate_project_precheck import imageProject, package
 
 
 async def _event(event, timeout=10):
     assert await asyncio.to_thread(event.wait, timeout), "Expected real worker boundary was not reached"
+
+
+@pytest.mark.parametrize("phase", ["prepare", "stream"])
+def test_precheck_preparation_and_reader_keep_files_until_workers_exit(
+        tmp_path, monkeypatch, real_target, phase):
+    """Both local boundaries remain responsive and retain their actual inputs."""
+    from mcp import ClientSession, types
+    from mcp.client.streamable_http import streamablehttp_client
+    from mcp.shared.exceptions import McpError
+
+    target, runtime = real_target
+    app = create_app(tmp_path / "authoring", TOKEN, {"isolated": target})
+    service = app.state.authoring
+    entered, release, exited = Event(), Event(), Event()
+    owned_paths, calls = [], []
+    original_zip = service.files._write_zip
+    original_file_work = catalog._file_work
+    original_precheck = service.catalog.precheck
+
+    def hold(path):
+        owned_paths.append(Path(path))
+        entered.set()
+        assert release.wait(20), "Test did not release the candidate worker"
+
+    def blocking_zip(directory, document, destination):
+        original_zip(directory, document, destination)
+        try:
+            hold(destination)
+        finally:
+            exited.set()
+
+    async def controlled_file_work(function, *args):
+        if phase == "stream" and getattr(function, "__name__", "") == "read":
+            def blocking_read(size):
+                try:
+                    hold(function.__self__.name)
+                    return function(size)
+                finally:
+                    exited.set()
+            return await original_file_work(blocking_read, *args)
+        return await original_file_work(function, *args)
+
+    async def observed_precheck(*args, **kwargs):
+        calls.append(args)
+        return await original_precheck(*args, **kwargs)
+
+    if phase == "prepare":
+        monkeypatch.setattr(service.files, "_write_zip", blocking_zip)
+    monkeypatch.setattr(catalog, "_file_work", controlled_file_work)
+    monkeypatch.setattr(service.catalog, "precheck", observed_precheck)
+
+    async def scenario(base):
+        async with httpx.AsyncClient(base_url=base, headers=HEADERS, timeout=10) as http:
+            payload, image = imageProject(runtime)
+            imported = await http.post("/api/project-drafts/imports", params={"filename": "image.zip"},
+                                       content=package(payload, image))
+            assert imported.status_code == 200, imported.text
+            state = imported.json()
+            other = (await http.post("/api/project-drafts", json={"name": "Independent"})).json()
+            other = (await http.get("/api/project-drafts/" + other["draftId"])).json()
+            async with streamablehttp_client(base + "/mcp", headers=HEADERS) as (read, write, _):
+                async with ClientSession(read, write) as client:
+                    initialized = await client.initialize()
+                    assert initialized.protocolVersion == "2025-11-25"
+                    changed = await client.call_tool("apply_project_command", {
+                        "draftId": state["draftId"], "expectedDraftRevision": state["draftRevision"],
+                        "command": {"type": "project.rename", "name": "Keep committed edit"}})
+                    assert not changed.isError
+                    state = changed.structuredContent
+                    state = (await http.get("/api/project-drafts/" + state["draftId"])).json()
+                    assert state["project"]["project"]["name"] == "Keep committed edit"
+                    request_id = client._request_id
+                    pending = asyncio.create_task(client.call_tool("precheck_project_draft", {
+                        "draftId": state["draftId"], "expectedDraftRevision": state["draftRevision"],
+                        "targetId": "isolated"}))
+                    try:
+                        await _event(entered)
+                        # This HTTP response must arrive while the real local
+                        # worker is still held; no timing SLA is assumed.
+                        independent = await http.get("/api/project-drafts/" + other["draftId"])
+                        assert independent.status_code == 200
+                        assert independent.json() == other
+                        assert not release.is_set() and not exited.is_set()
+                        path = owned_paths[0]
+                        assert path.is_file()
+                        root = path.parent
+                        if phase == "prepare":
+                            assert calls == []
+                        await client.send_notification(types.ClientNotification(types.CancelledNotification(
+                            params=types.CancelledNotificationParams(requestId=request_id,
+                                                                   reason="Cancel local candidate work"))))
+                        with pytest.raises(McpError, match="Request cancelled"):
+                            await asyncio.wait_for(pending, 5)
+                        assert not exited.is_set()
+                        assert path.is_file() and root.is_dir()
+                        current = await http.get("/api/project-drafts/" + state["draftId"])
+                        assert current.json() == state
+                        assert current.json()["canUndo"]
+                    finally:
+                        if not pending.done():
+                            pending.cancel()
+                        release.set()
+                    await _event(exited)
+                    deadline = time.monotonic() + 10
+                    while (root.exists() or service._prechecks) and time.monotonic() < deadline:
+                        await asyncio.sleep(.01)
+                    assert not root.exists()
+                    assert not service._prechecks
+                    if phase == "prepare":
+                        assert calls == [], "A cancelled preparation must not start the target stage"
+            # Reconnection reads the same draft and revision without replaying
+            # the already committed operation.
+            async with streamablehttp_client(base + "/mcp", headers=HEADERS) as (read, write, _):
+                async with ClientSession(read, write) as client:
+                    await client.initialize()
+                    current = await client.call_tool("get_project_draft", {"draftId": state["draftId"]})
+                    assert not current.isError
+                    assert current.structuredContent == state
+            assert runtime.loadedDocument is None and runtime.jobRepository.all() == []
+
+    try:
+        with running_http(app) as base:
+            asyncio.run(scenario(base))
+    finally:
+        release.set()
 
 
 def test_official_mcp_cancel_preserves_committed_draft_and_work_owned_cleanup(tmp_path, monkeypatch):

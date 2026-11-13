@@ -146,6 +146,7 @@ def test_live_mcp_http_candidate_and_file_roundtrip(tmp_path, real_target):
                     assert "mask" in str(choices)
                     local = await call("validate_project_draft", {"draftId": draft_id, "expectedDraftRevision": state["draftRevision"]})
                     assert local["scope"] == "local" and local["compileStatus"] == "not_run"
+                    state = await call("save_project_draft", {"draftId": draft_id, "expectedDraftRevision": state["draftRevision"]})
                     report = await call("precheck_project_draft", {"draftId": draft_id, "expectedDraftRevision": state["draftRevision"], "targetId": "local"})
                     assert report["status"] == "PASSED", report
                     assert report["compileStatus"] == "passed"
@@ -154,8 +155,11 @@ def test_live_mcp_http_candidate_and_file_roundtrip(tmp_path, real_target):
                     invalid = await client.call_tool("apply_project_command", {"draftId": draft_id, "expectedDraftRevision": "stale",
                         "command": {"type": "project.rename", "name": "must not happen"}})
                     assert invalid.isError and invalid.structuredContent["draftRevision"] == state["draftRevision"]
-                    state = await call("save_project_draft", {"draftId": draft_id, "expectedDraftRevision": state["draftRevision"]})
                     exported = await call("export_project_draft", {"draftId": draft_id, "expectedDraftRevision": state["draftRevision"], "format": "project-zip"})
+                    assert exported["draftRevision"] == report["draftRevision"]
+                    assert "precheck" not in exported
+                    assert exported["checkReport"] == {"status": "not_attached", "draftRevision": report["draftRevision"],
+                                                       "performedByExport": False}
                     download = await http.get(exported["download"]["path"])
                     assert download.status_code == 200
                     assert len(download.content) == exported["sizeBytes"]
@@ -165,6 +169,14 @@ def test_live_mcp_http_candidate_and_file_roundtrip(tmp_path, real_target):
                         assert any(name.endswith(".emoproj") for name in package.namelist())
                     anonymous = await http.get(exported["download"]["path"], headers={"Authorization": "Bearer wrong"})
                     assert anonymous.status_code == 401
+                    await edit({"type": "project.rename", "name": "Edited after target check"})
+                    changed_export = await call("export_project_draft", {"draftId": draft_id,
+                        "expectedDraftRevision": state["draftRevision"], "format": "project-file"})
+                    assert changed_export["draftRevision"] != report["draftRevision"]
+                    assert changed_export["checkReport"] == {"status": "not_attached", "draftRevision": state["draftRevision"],
+                                                             "performedByExport": False}
+                    assert "precheck" not in changed_export
+                    assert report["status"] == "PASSED"  # The prior result is preserved with its own revision.
             # Connection closure does not own or remove the saved draft.
             current = (await http.get(f"/api/project-drafts/{draft_id}")).json()
             assert current["draftRevision"] == state["draftRevision"]

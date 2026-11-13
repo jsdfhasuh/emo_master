@@ -210,6 +210,7 @@ def create_app(data_dir: Path, token: str, targets=None, *, enable_mcp=True, all
 
     for path, tool in (("commands", "apply_project_command"), ("undo", "undo_project_edit"),
                        ("redo", "redo_project_edit"), ("save", "save_project_draft"),
+                       ("declarations", "adopt_project_declarations"),
                        ("validate", "validate_project_draft"), ("precheck", "precheck_project_draft"),
                        ("exports", "export_project_draft")):
         app.add_route("/api/project-drafts/{draft_id}/" + path, operation(tool), methods=["POST"])

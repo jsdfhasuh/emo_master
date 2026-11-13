@@ -31,6 +31,7 @@ class Draft:
 
     operators: dict = field(default_factory=dict)
     device_types: dict = field(default_factory=dict)
+    declaration_context: dict = field(default_factory=dict)
 
     @property
     def id(self):
@@ -177,6 +178,94 @@ class DraftService:
         with self.locked(draft_id) as draft:
             return {"draftId": draft_id, "draftRevision": draft.revision,
                     "presentation": draft.session.presentation.snapshot().model_dump(mode="json")}
+
+    def adopt_declarations(self, draft_id, expected_revision, target_id):
+        """Adopt an explicit target's exact declarations without editing content."""
+        from emo_master.core.plugin.devices import DeviceType
+        with self.locked(draft_id, expected_revision) as draft:
+            document = draft.session.document()
+
+            def fail(code, message, field_path, *, status=409, **location):
+                raise AuthoringError(code, message, status, draftId=draft_id, draftRevision=draft.revision,
+                    targetId=target_id, diagnostics=[{'code': code, 'message': message,
+                        'projectId': document.project.projectId, 'fieldPath': field_path, **location}])
+
+            if self.catalog is None:
+                fail('CATALOG_UNAVAILABLE', 'A configured Runtime declaration is required',
+                     'declarationContext.targetId', status=503)
+            versions = {}
+            for index, dependency in enumerate(document.dependencies.operators):
+                if (not isinstance(dependency, dict) or set(dependency) != {'operatorId', 'version'}
+                        or not isinstance(dependency['operatorId'], str) or not dependency['operatorId']
+                        or not isinstance(dependency['version'], str) or not dependency['version']):
+                    fail('E_DECLARATION_VERSION_REQUIRED', 'Declaration adoption requires a saved exact operator version',
+                         f'dependencies.operators.{index}')
+                operator_id, version = dependency['operatorId'], dependency['version']
+                if operator_id in versions:
+                    fail('E_OPERATOR_DEPENDENCY', 'Duplicate operator dependency', f'dependencies.operators.{index}')
+                versions[operator_id] = version
+            for workflow_id, workflow in document.workflows.items():
+                for node in workflow.nodes:
+                    if node.kind == 'operator' and node.operatorId not in versions:
+                        fail('E_DECLARATION_VERSION_REQUIRED', 'Operator has no saved exact dependency version',
+                             'operatorId', workflowId=workflow_id, nodeId=node.nodeId)
+
+            def query(method, *args, field_path):
+                try:
+                    return method(target_id, *args)
+                except AuthoringError as error:
+                    fail(error.code, error.message, field_path, status=error.status)
+
+            observation = query(self.catalog.list_operators, field_path='declarationContext.targetId')
+            instance_id = observation.get('runtimeInstanceId')
+            operators = {}
+            for operator_id, version in sorted(versions.items()):
+                location = 'dependencies.operators.' + operator_id
+                metadata = query(self.catalog.get_operator, operator_id, field_path=location)
+                if metadata.get('operatorId') != operator_id or metadata.get('version') != version:
+                    fail('E_OPERATOR_DEPENDENCY', 'Target operator version does not match the saved dependency', location)
+                if instance_id and metadata.get('runtimeInstanceId') and metadata['runtimeInstanceId'] != instance_id:
+                    fail('E_RUNTIME_IDENTITY', 'Target Runtime changed during declaration adoption', location)
+                for name in ('inputPorts', 'outputPorts', 'paramSchema', 'deviceRequirements'):
+                    if not isinstance(metadata.get(name), dict):
+                        fail('E_DECLARATION_INCOMPLETE', 'Target did not provide the required declaration field',
+                             location + '.' + name, status=422)
+                existing = draft.operators.get((operator_id, version))
+                if existing is not None and any(existing.get(name) != metadata.get(name) for name in
+                        ('inputPorts', 'outputPorts', 'paramSchema', 'deviceRequirements')):
+                    fail('DECLARATION_CONFLICT', 'The saved operator version has conflicting declarations', location)
+                operators[(operator_id, version)] = deepcopy(metadata)
+            device_types = {}
+            for device_id, definition in document.devices.definitions.items():
+                location = f'devices.definitions.{device_id}.driverVersion'
+                type_id = definition.deviceTypeId
+                if type_id not in device_types:
+                    metadata = query(self.catalog.get_device_type, type_id, field_path=location)
+                    try:
+                        checked = DeviceType.model_validate(metadata.get('declaration', metadata))
+                    except ValueError:
+                        fail('E_DECLARATION_INCOMPLETE', 'Target returned an invalid device declaration', location, status=422)
+                    device_types[type_id] = checked
+                declaration = device_types[type_id]
+                if declaration.deviceTypeId != type_id or declaration.version != definition.driverVersion:
+                    fail('E_DEVICE_DEPENDENCY', 'Target device version does not match the saved driver version', location)
+                existing = draft.device_types.get(type_id)
+                if existing is not None and existing != declaration:
+                    fail('DECLARATION_CONFLICT', 'The saved device version has conflicting declarations', location)
+            context = {'targetId': target_id, 'runtimeInstanceId': instance_id or None,
+                       'operators': [{'operatorId': key, 'version': version} for key, version in sorted(versions.items())],
+                       'deviceTypes': [{'typeId': key, 'version': value.version} for key, value in sorted(device_types.items())]}
+
+            def stable(values):
+                return {key: {name: value for name, value in metadata.items() if name != 'observedAt'}
+                        for key, metadata in values.items()}
+            changed = (stable(operators) != stable(draft.operators) or device_types != draft.device_types
+                       or context != draft.declaration_context)
+            # Publish the whole context only after every declaration matches.
+            draft.operators, draft.device_types, draft.declaration_context = operators, device_types, context
+            if changed:
+                draft.revision = uuid4().hex
+            return {**self.state(draft), 'changed': changed, 'declarationContext': deepcopy(context)}
 
     def _operator(self, target_id, operator_id, draft):
         if self.catalog is None:
@@ -348,6 +437,20 @@ class DraftService:
             positions = workflow.layout.setdefault("nodePositions", {})
             pos = positions.get(original["nodeId"], {"x": 20., "y": 20.})
             positions[copied["nodeId"]] = {"x": pos["x"] + 40, "y": pos["y"] + 100}
+            from emo_master.core.project.resources import ParameterTarget, ResourcePlan
+            plan = ResourcePlan.model_validate(store.projectExtensions['resources'])
+            for collection in (plan.parameterBindings, plan.siteBindings):
+                additions = []
+                for binding in collection:
+                    target = binding.target
+                    if (isinstance(target, ParameterTarget) and target.workflowId == command['workflowId']
+                            and target.nodeId == original['nodeId']):
+                        replacement = binding.model_copy(deep=True)
+                        replacement.target = ParameterTarget(workflowId=target.workflowId,
+                            nodeId=copied['nodeId'], parameterPath=list(target.parameterPath))
+                        additions.append(replacement)
+                collection.extend(additions)
+            store.projectExtensions['resources'] = ResourcePlan.model_validate(plan.model_dump()).model_dump()
             return {"nodeId": copied["nodeId"]}
         elif kind in {"control.create", "control.configure"}:
             return self._control(draft, command)

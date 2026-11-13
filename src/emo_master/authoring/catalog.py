@@ -16,6 +16,35 @@ from emo_panel_protocol.generated import runtime_pb2 as pb, runtime_pb2_grpc
 from .errors import AuthoringError
 
 
+# Protobuf's builder installs these classes dynamically (no generated stubs).
+# Resolve the actual imported protocol classes without suppressing type checks.
+CandidateProjectChunk = getattr(pb, "CandidateProjectChunk")
+CandidateProjectMetadata = getattr(pb, "CandidateProjectMetadata")
+
+
+async def _file_work(function, *args):
+    """A cancelled read/hash still owns its input until the worker has exited."""
+    pending = asyncio.create_task(asyncio.to_thread(function, *args))
+    try:
+        return await asyncio.shield(pending)
+    except asyncio.CancelledError:
+        try:
+            await pending
+        except Exception:
+            pass
+        raise
+
+
+def _package_digest(path):
+    digest = hashlib.sha256()
+    size = 0
+    with path.open("rb") as reader:
+        for chunk in iter(lambda: reader.read(256 * 1024), b""):
+            digest.update(chunk)
+            size += len(chunk)
+    return size, digest.hexdigest()
+
+
 def _json_field(raw, field, unavailable, *, expected=None):
     if raw == "":
         unavailable.append(field)
@@ -68,7 +97,7 @@ def operator_dto(info, *, target_id, runtime_instance_id, observed_at):
 class RuntimeCatalog:
     def __init__(self, targets: dict[str, str], *, timeout=5.0):
         self.targets = {key: ConnectionProfile(address, timeout) for key, address in targets.items()}
-        self._cache = {}
+        self._cache: dict[str, dict[str, dict[str, object]]] = {}
         self._cache_lock = RLock()
 
     def _profile(self, target_id):
@@ -150,7 +179,8 @@ class RuntimeCatalog:
         raise AuthoringError("E_DEVICE_TYPE_NOT_LISTED", "Target does not list this device type",
                              status=404, targetId=target_id, typeId=type_id)
 
-    async def precheck(self, target_id, zip_path: Path, revision, *, expected_instance=None):
+    async def precheck(self, target_id, zip_path: Path, revision, *, expected_instance=None,
+                       size_bytes=None, sha256=None):
         profile = self._profile(target_id)
         if expected_instance is None:
             observation = await asyncio.to_thread(self.list_operators, target_id)
@@ -158,24 +188,23 @@ class RuntimeCatalog:
         if not expected_instance:
             raise AuthoringError("E_RUNTIME_IDENTITY", "Target did not provide its Runtime instance identity",
                                  status=502, targetId=target_id)
-        digest = hashlib.sha256()
-        with zip_path.open("rb") as reader:
-            for chunk in iter(lambda: reader.read(256 * 1024), b""):
-                digest.update(chunk)
-
-        async def chunks():
-            yield pb.CandidateProjectChunk(metadata=pb.CandidateProjectMetadata(
-                draft_revision=revision, expected_runtime_instance_id=expected_instance or "",
-                size_bytes=zip_path.stat().st_size, sha256=digest.hexdigest()))
-            with zip_path.open("rb") as reader:
-                while chunk := reader.read(256 * 1024):
-                    yield pb.CandidateProjectChunk(data=chunk)
+        if size_bytes is None or sha256 is None:
+            size_bytes, sha256 = await _file_work(_package_digest, zip_path)
 
         channel = createChannel(profile, asynchronous=True)
         call = None
         try:
             stub = runtime_pb2_grpc.RuntimeServiceStub(channel)
-            call = stub.ValidateCandidateProject(chunks(), timeout=profile.timeoutSeconds)
+            # Explicit writes keep a single owner for the file reader rather
+            # than leaving a separate gRPC iterator task reading after cancel.
+            call = stub.ValidateCandidateProject(timeout=profile.timeoutSeconds)
+            await call.write(CandidateProjectChunk(metadata=CandidateProjectMetadata(
+                draft_revision=revision, expected_runtime_instance_id=expected_instance,
+                size_bytes=size_bytes, sha256=sha256)))
+            with zip_path.open("rb") as reader:
+                while chunk := await _file_work(reader.read, 256 * 1024):
+                    await call.write(CandidateProjectChunk(data=chunk))
+            await call.done_writing()
             reply = await call
             if not reply.ok:
                 raise AuthoringError(reply.code or "E_PRECHECK", reply.message or "Candidate request failed", status=502)

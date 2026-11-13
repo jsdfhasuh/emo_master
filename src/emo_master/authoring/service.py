@@ -30,6 +30,7 @@ class AuthoringService:
         self.drafts = DraftService(Path(data_dir), self.catalog)
         self.files = FilesService(self.drafts, max_transfer_bytes=max_transfer_bytes)
         self.max_transfer_bytes = max_transfer_bytes
+        self._prechecks: set[asyncio.Task] = set()
 
     def tool_definitions(self):
         specs = [
@@ -55,6 +56,8 @@ class AuthoringService:
             ("redo_project_edit", "Redo one semantic edit in this draft only.", object_schema(REVISION, REVISION)),
             ("save_project_draft", "Save through the official project save path; incomplete legal drafts may be saved.",
              object_schema(REVISION, REVISION)),
+            ("adopt_project_declarations", "Restore an existing draft's declarations from an explicit target at saved exact versions; does not change project content.",
+             object_schema({**REVISION, **TARGET}, [*REVISION, *TARGET])),
             ("get_output_choices", "Discover bindable outputs from this draft, not the online project.", object_schema(DRAFT, DRAFT)),
             ("get_project_presentation", "Read only the detached presentation snapshot without rebuilding every workflow.", object_schema(DRAFT, DRAFT)),
             ("validate_project_draft", "Perform local, offline-capable validation; does not compile on the target or execute.",
@@ -72,7 +75,7 @@ class AuthoringService:
                  "annotations": {"readOnlyHint": name in readers,
                                  "destructiveHint": False, "openWorldHint": name in {
                                      "list_operators", "get_operator", "list_device_types", "get_device_type",
-                                     "precheck_project_draft"}}}
+                                     "precheck_project_draft", "adopt_project_declarations"}}}
                 for name, description, schema in specs]
         for definition in definitions:
             if definition["name"] == "apply_project_command":
@@ -119,10 +122,23 @@ class AuthoringService:
         draft_id = a.get("draftId")
         revision = a.get("expectedDraftRevision")
         if name == "precheck_project_draft":
-            # The snapshot context owns its ZIP until the gRPC call has stopped reading it.
-            with self.files.snapshot_zip(draft_id, revision) as (path, metadata):
-                report = await self.catalog.precheck(a["targetId"], path, metadata["draftRevision"])
-            return dict(report, draftId=draft_id, targetId=a["targetId"])
+            async def precheck():
+                async with self.files.async_snapshot_zip(draft_id, revision) as (path, metadata):
+                    report = await self.catalog.precheck(
+                        a["targetId"], path, metadata["draftRevision"],
+                        size_bytes=metadata["sizeBytes"], sha256=metadata["sha256"])
+                return dict(report, draftId=draft_id, targetId=a["targetId"])
+
+            # The request may finish cancelling before its preparation/read
+            # worker exits. This operation keeps owning its files until then.
+            operation = asyncio.create_task(precheck())
+            self._prechecks.add(operation)
+            operation.add_done_callback(self._prechecks.discard)
+            try:
+                return await asyncio.shield(operation)
+            except asyncio.CancelledError:
+                operation.cancel()
+                raise
         operations = {
             "get_authoring_capabilities": lambda: self.capabilities(),
             "list_operators": lambda: self.catalog.list_operators(a["targetId"], a.get("query"), a.get("category")),
@@ -137,6 +153,7 @@ class AuthoringService:
             "undo_project_edit": lambda: self.drafts.undo(draft_id, revision),
             "redo_project_edit": lambda: self.drafts.redo(draft_id, revision),
             "save_project_draft": lambda: self.drafts.save(draft_id, revision),
+            "adopt_project_declarations": lambda: self.drafts.adopt_declarations(draft_id, revision, a["targetId"]),
             "get_output_choices": lambda: self.drafts.output_choices(draft_id),
             "get_project_presentation": lambda: self.drafts.read_presentation(draft_id),
             "validate_project_draft": lambda: self.drafts.validate(draft_id, revision),

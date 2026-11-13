@@ -7,6 +7,7 @@ built-in simulated definition; the test never connects any device or runs a Job.
 from copy import deepcopy
 import hashlib
 import io
+import os
 from pathlib import Path
 from shutil import copytree
 import zipfile
@@ -170,7 +171,10 @@ def test_external_inspector_download_sample_continues_in_native_designer(
         record_property):
     """Open the exact external-client delivery, separately from the HTTP fixture."""
     _, runtime = real_target
-    source = Path(__file__).resolve().parents[2] / "examples" / "independent_project_authoring"
+    default_source = Path(__file__).resolve().parents[2] / "examples" / "independent_project_authoring"
+    # Repair acceptance can point at the bytes downloaded in that same run.
+    # The test still edits only its temporary copy, including for local inputs.
+    source = Path(os.environ.get("EMO_AUTHORING_HANDOFF_PROJECT_DIR", str(default_source)))
     destination = tmp_path / "inspector-delivery"
     copytree(source, destination)
     project_path = destination / "project.emoproj"
@@ -211,4 +215,5 @@ def test_external_inspector_download_sample_continues_in_native_designer(
     assert window.grab().save(str(screenshot))
     record_property("qt_platform", retainedQtApplication.platformName())
     record_property("projectId", original.project.projectId)
+    record_property("source_project", str(source.resolve()))
     record_property("native_screenshot", str(screenshot))

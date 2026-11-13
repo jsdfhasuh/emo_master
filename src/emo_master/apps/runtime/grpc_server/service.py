@@ -480,6 +480,10 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
             )
         return runtime_pb2.ValidateProjectReply(ok=True, errors=[])
 
+    def ValidateCandidateProject(self, request_iterator, context):  # type: ignore[override]
+        from emo_master.apps.runtime.project_config.candidate import validateCandidateStream
+        return validateCandidateStream(self, request_iterator, context)
+
     @_withProjectStateLock
     def StartJob(self, request, context):  # type: ignore[override]
         requestId = str(getattr(request, "start_request_id", ""))
@@ -1209,6 +1213,9 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
                         descriptor.manifest.outputPorts, ensure_ascii=True
                     ),
                     param_schema_json=json.dumps(descriptor.manifest.paramSchema, ensure_ascii=True),
+                    next_cycle_parameter_paths_json=json.dumps(descriptor.manifest.nextCycleParameterPaths),
+                    min_core_version=descriptor.manifest.minCoreVersion,
+                    max_core_version=descriptor.manifest.maxCoreVersion,
                     category=descriptor.manifest.category,
                     icon_key=descriptor.manifest.iconKey,
                     icon=runtime_pb2.OperatorIconInfo(
@@ -1236,6 +1243,7 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
                 )
             )
         return runtime_pb2.ListOperatorsReply(operators=operators,
+            runtime_instance_id=self.runtimeInstanceId,
             camera_recovery_warnings_json=json.dumps(
                 getattr(getattr(self, "livePreviewManager", None), "recoveryWarnings", []), ensure_ascii=False))
 

@@ -2,41 +2,10 @@
 from dataclasses import replace
 
 from emo_master.plugins.builtins.collection_filter.configuration import COLLECTION_TYPES
+from emo_master.apps.designer.state.port_applicability import activeFilterPorts, filterCollectionType
 
 
 OPERATOR_ID = "vision.collection.filter"
-
-
-def filterCollectionType(node, edges):
-    selected = node.params.get("collectionType")
-    if selected:
-        return selected
-    connected = {edge.toPort for edge in edges
-                 if edge.toNode == node.nodeId and edge.toPort in COLLECTION_TYPES}
-    if len(connected) == 1:
-        return next(iter(connected))
-    # A legacy node can have its input disconnected while its outputs remain wired.
-    outputs = {edge.fromPort for edge in edges if edge.fromNode == node.nodeId}
-    candidates = {kind for kind in COLLECTION_TYPES
-                  if outputs.intersection({"kept" + kind.capitalize(), "rejected" + kind.capitalize()})}
-    return next(iter(candidates)) if len(candidates) == 1 else ""
-
-
-def activeFilterPorts(params, collectionType="", dynamicParameters=()):
-    dynamic = set(dynamicParameters)
-    selected = params.get("collectionType") or collectionType
-    types = set(COLLECTION_TYPES) if "collectionType" in dynamic else (
-        {selected} if selected in COLLECTION_TYPES else set())
-    inputs = set(types)
-    outputs = {"keptCount", "rejectedCount"}
-    for kind in types:
-        outputs.update({"kept" + kind.capitalize(), "rejected" + kind.capitalize()})
-    spatial = params.get("spatialEnabled", params.get("spatialMode", "none") != "none"
-                         or "spatialMode" in dynamic)
-    if types and (spatial or "spatialEnabled" in dynamic) and (
-            params.get("spatialMode", "none") != "none" or "spatialMode" in dynamic):
-        inputs.add("roi")
-    return inputs, outputs
 
 
 def collectionFilterPresentation(model, node, edges, dynamicParameters=()):

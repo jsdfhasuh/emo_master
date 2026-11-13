@@ -374,6 +374,11 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.ValidateProjectRequest.SerializeToString,
                 response_deserializer=runtime__pb2.ValidateProjectReply.FromString,
                 _registered_method=True)
+        self.ValidateCandidateProject = channel.stream_unary(
+                '/emo_master.runtime.RuntimeService/ValidateCandidateProject',
+                request_serializer=runtime__pb2.CandidateProjectChunk.SerializeToString,
+                response_deserializer=runtime__pb2.CandidateProjectReply.FromString,
+                _registered_method=True)
         self.StartJob = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/StartJob',
                 request_serializer=runtime__pb2.StartJobRequest.SerializeToString,
@@ -967,6 +972,12 @@ class RuntimeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ValidateCandidateProject(self, request_iterator, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def StartJob(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -1525,6 +1536,11 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
                     servicer.ValidateProject,
                     request_deserializer=runtime__pb2.ValidateProjectRequest.FromString,
                     response_serializer=runtime__pb2.ValidateProjectReply.SerializeToString,
+            ),
+            'ValidateCandidateProject': grpc.stream_unary_rpc_method_handler(
+                    servicer.ValidateCandidateProject,
+                    request_deserializer=runtime__pb2.CandidateProjectChunk.FromString,
+                    response_serializer=runtime__pb2.CandidateProjectReply.SerializeToString,
             ),
             'StartJob': grpc.unary_unary_rpc_method_handler(
                     servicer.StartJob,
@@ -3543,6 +3559,33 @@ class RuntimeService(object):
             '/emo_master.runtime.RuntimeService/ValidateProject',
             runtime__pb2.ValidateProjectRequest.SerializeToString,
             runtime__pb2.ValidateProjectReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ValidateCandidateProject(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_unary(
+            request_iterator,
+            target,
+            '/emo_master.runtime.RuntimeService/ValidateCandidateProject',
+            runtime__pb2.CandidateProjectChunk.SerializeToString,
+            runtime__pb2.CandidateProjectReply.FromString,
             options,
             channel_credentials,
             insecure,

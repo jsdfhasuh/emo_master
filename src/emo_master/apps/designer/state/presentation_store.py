@@ -36,9 +36,17 @@ class PresentationStore:
 
     def __init__(self, session: ProjectEditSession) -> None:
         self._session = session
+        self.validator = None
         self._activePageId: str | None = None
         self.displayedResults: dict[str, dict[str, str]] = {}
         self.frozenResults: dict[str, dict[str, str]] = {}
+
+    def _edit(self, edit):
+        def checked(presentation):
+            edit(presentation)
+            if self.validator is not None:
+                self.validator(presentation)
+        self._session.editPresentation(checked)
 
     def snapshot(self) -> Presentation:
         # Reading page state must not serialize/normalize every workflow. Full
@@ -61,19 +69,19 @@ class PresentationStore:
             if p.defaultPageId is None:
                 p.defaultPageId = pageId
 
-        self._session.editPresentation(edit)
+        self._edit(edit)
         return pageId
 
     def renamePage(self, pageId: str, name: str) -> None:
         def edit(p: Presentation):
             p.pages[pageId].name = name
-        self._session.editPresentation(edit)
+        self._edit(edit)
 
     def reorderPages(self, pageOrder: list[str]) -> None:
-        self._session.editPresentation(lambda p: setattr(p, "pageOrder", list(pageOrder)))
+        self._edit(lambda p: setattr(p, "pageOrder", list(pageOrder)))
 
     def setDefaultPage(self, pageId: str) -> None:
-        self._session.editPresentation(lambda p: setattr(p, "defaultPageId", pageId))
+        self._edit(lambda p: setattr(p, "defaultPageId", pageId))
 
     def putComponent(self, pageId: str, component: Component) -> None:
         def edit(p: Presentation):
@@ -84,7 +92,7 @@ class PresentationStore:
                     break
             else:
                 children.append(component.model_copy(deep=True))
-        self._session.editPresentation(edit)
+        self._edit(edit)
 
     def copyPage(self, pageId: str, name: str | None = None) -> str:
         copiedId = str(uuid4())
@@ -99,7 +107,7 @@ class PresentationStore:
                         action.pageId = copiedId
             p.pages[copiedId] = copied
             p.pageOrder.insert(p.pageOrder.index(pageId) + 1, copiedId)
-        self._session.editPresentation(edit)
+        self._edit(edit)
         return copiedId
 
     def referencesTo(self, pageId: str) -> list[tuple[str, str, str]]:
@@ -127,7 +135,7 @@ class PresentationStore:
                                 raise ValueError("replacement page does not support detail scope")
             if p.defaultPageId == pageId:
                 p.defaultPageId = repairTo or next(iter(p.pageOrder), None)
-        self._session.editPresentation(edit)
+        self._edit(edit)
 
     def rebind(self, pageId: str, componentId: str, prop: str, source: DataSource | None) -> None:
         def edit(p: Presentation):
@@ -148,7 +156,7 @@ class PresentationStore:
             used = {key for page in p.pages.values() for item in walkComponents(page.components)
                     for key in item.bindings.values()}
             p.dataSources = {key: value for key, value in p.dataSources.items() if key in used}
-        self._session.editPresentation(edit)
+        self._edit(edit)
 
     def navigate(self, action: Action) -> None:
         action = Action.model_validate(action.model_dump())

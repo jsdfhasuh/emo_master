@@ -4,33 +4,9 @@ from __future__ import annotations
 from dataclasses import replace
 
 
+from emo_master.apps.designer.state.port_applicability import activeCoordinatePorts
+
 OPERATOR_ID = "vision.geometry.coordinate_calculator"
-_MEASUREMENT_OUTPUTS = {
-    "points", "centroid", "bounds", "segmentLengths", "pathLength", "perimeter",
-    "signedArea", "area", "firstToLastDistance", "firstToLastAngleDegrees", "resultCount",
-}
-_MODES = {"measure", "transform", "scalarMultiply", "add", "subtract", "dot"}
-
-
-def activeCoordinatePorts(params, dynamicParameters=()):
-    mode = params.get("mode", "transform")
-    modes = _MODES if "mode" in dynamicParameters or mode not in _MODES else {mode}
-    inputs, outputs = {"points"}, set()
-    for selected in modes:
-        if selected in {"add", "subtract", "dot"}:
-            inputs.add("otherPoints")
-            outputs.update({
-                "add": {"points", "resultCount"},
-                "subtract": {"vectors", "magnitudes", "resultCount"},
-                "dot": {"values", "dotSum", "resultCount"},
-            }[selected])
-        else:
-            if selected == "scalarMultiply":
-                inputs.add("scalar")
-            outputs.update(_MEASUREMENT_OUTPUTS)
-            if params.get("closed", False) or "closed" in dynamicParameters:
-                outputs.add("polygon")
-    return inputs, outputs
 
 
 def coordinatePortPresentation(model, node, edges, dynamicParameters=()):

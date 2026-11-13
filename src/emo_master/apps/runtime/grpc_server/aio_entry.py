@@ -175,7 +175,12 @@ class AioRuntimeServer:
                 self._retire(category, token, pending, iterator, constructing, completed)
         return call
 
-    def _upload(self, method):
+    def _upload(self, method, *, candidate=False):
+        # Candidate ZIPs use the same work-owned bulk admission and spool, but
+        # their own wire messages and result; they are not Preview assets.
+        messageType = pb.CandidateProjectChunk if candidate else pb.PreviewUploadChunk
+        replyType = pb.CandidateProjectReply if candidate else pb.PreviewAssetReply
+        maxBytes = (128 if candidate else 64) * 1024 * 1024
         async def call(requests, context):
             completed = await self._admit("bulk", context)
             token = SyncContext()
@@ -185,13 +190,16 @@ class AioRuntimeServer:
                 spool = await asyncio.shield(pending)
                 size = count = totalWire = 0
                 async for chunk in requests:
-                    size += len(chunk.content)
+                    content = chunk.data if candidate else chunk.content
+                    size += len(content)
                     count += 1
-                    if size > 64 * 1024 * 1024:
-                        return pb.PreviewAssetReply(ok=False, code="E_PREVIEW_ASSET_INVALID", message="preview upload exceeds 64 MiB")
+                    if size > maxBytes or candidate and len(content) > 256 * 1024:
+                        return replyType(ok=False,
+                            code="E_CANDIDATE_TRANSFER" if candidate else "E_PREVIEW_ASSET_INVALID",
+                            message="candidate upload size exceeded" if candidate else "preview upload exceeds 64 MiB")
                     raw = chunk.SerializeToString()
                     totalWire += 4 + len(raw)
-                    if count > 1024 or totalWire > 68 * 1024 * 1024:
+                    if (not candidate and count > 1024) or totalWire > maxBytes * (8 if candidate else 1) + 4 * 1024 * 1024:
                         await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "upload framing quota")
 
                     def write(data=raw):
@@ -208,9 +216,9 @@ class AioRuntimeServer:
                             countBytes = spool.read(4)
                             if not countBytes:
                                 return
-                            yield pb.PreviewUploadChunk.FromString(spool.read(int.from_bytes(countBytes, "little")))
+                            yield messageType.FromString(spool.read(int.from_bytes(countBytes, "little")))
                     reply = method(chunks(), token)
-                    if not token.is_active() and reply.ok:
+                    if not candidate and not token.is_active() and reply.ok:
                         self.runtime.previewAssetStore.removeTransient(reply.asset_id)
                     return reply
                 pending = self.loop.run_in_executor(self.pools["bulk"], execute)
@@ -238,7 +246,7 @@ class AioRuntimeServer:
             elif name == "ExecutePlcDebugCommand":
                 wrapper = self._plcCommand(handler)
             elif method.client_streaming:
-                wrapper = self._upload(handler)
+                wrapper = self._upload(handler, candidate=name == "ValidateCandidateProject")
             elif method.server_streaming:
                 wrapper = self._stream(handler, category)
             else:

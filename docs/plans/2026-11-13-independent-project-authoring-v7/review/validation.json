@@ -1,0 +1,816 @@
+{
+  "version": "v7",
+  "date": "2026-11-13",
+  "status": "PASS_LOCAL_DOCUMENT_CHECKS",
+  "reference_commit": "b61a96f6d8135497531eabf18245118de253ee03",
+  "reference_review": "previous_turn_only",
+  "source_zip": "emo_master_web_mcp_openspec_v6.zip",
+  "source_sha256": "c6fb71a2325a02c55c0f5ff8721fd5b9a539ebf1d76a0436527a49a005a3ae81",
+  "official_openspec_cli": {
+    "available": false,
+    "executed": false,
+    "reason": "Not installed; no npm install attempted in this turn"
+  },
+  "runtime_tests_executed": false,
+  "mermaid_rendered": false,
+  "stats": {
+    "capabilities": 5,
+    "requirements": 27,
+    "scenarios": 40,
+    "tasks": 25,
+    "unchecked_tasks": 25,
+    "delivery_phases": 4,
+    "acceptance_groups": 7,
+    "mermaid_fences": 3,
+    "json_examples": 2,
+    "relative_links": 10
+  },
+  "checks": [
+    {
+      "name": "change_metadata",
+      "passed": true,
+      "details": {
+        "schema": "spec-driven",
+        "created": "2026-11-12"
+      }
+    },
+    {
+      "name": "capability_directories_match_proposal",
+      "passed": true,
+      "details": [
+        "candidate-project-precheck",
+        "mcp-authoring-access",
+        "operator-capability-discovery",
+        "project-draft-authoring",
+        "project-resource-delivery"
+      ]
+    },
+    {
+      "name": "proposal_sections",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "added_requirements:candidate-project-precheck",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:candidate-project-precheck/Non-executing candidate isolation",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:candidate-project-precheck/Non-executing candidate isolation",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:candidate-project-precheck/Check B while A is running",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:candidate-project-precheck/Genuine checks and truthful reports",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:candidate-project-precheck/Genuine checks and truthful reports",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:candidate-project-precheck/Compile a valid image candidate",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:candidate-project-precheck/Report missing inputs without fabricating success",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:candidate-project-precheck/Separate transport errors",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:candidate-project-precheck/Correct and recheck the same project",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:candidate-project-precheck/Work-owned cancellation and cleanup",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:candidate-project-precheck/Work-owned cancellation and cleanup",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:candidate-project-precheck/Cancel an active precheck",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "unique_requirements:candidate-project-precheck",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "added_requirements:mcp-authoring-access",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:mcp-authoring-access/One authoring service with optional MCP",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:mcp-authoring-access/One authoring service with optional MCP",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:mcp-authoring-access/Use the same draft through two interfaces",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:mcp-authoring-access/Actionable tool contracts",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:mcp-authoring-access/Actionable tool contracts",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:mcp-authoring-access/Discover then configure an operator",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:mcp-authoring-access/Single workspace access boundary",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:mcp-authoring-access/Single workspace access boundary",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:mcp-authoring-access/Deny unauthenticated file access",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:mcp-authoring-access/Connection-independent drafts",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:mcp-authoring-access/Connection-independent drafts",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:mcp-authoring-access/Reconnect after an uncertain edit response",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:mcp-authoring-access/Explicit client file transfer and handoff",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:mcp-authoring-access/Explicit client file transfer and handoff",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:mcp-authoring-access/Deliver an AI-created image project",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:mcp-authoring-access/Version-bound protocol behavior",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:mcp-authoring-access/Version-bound protocol behavior",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:mcp-authoring-access/Cancel a request with the selected protocol",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:mcp-authoring-access/Machine-readable diagnostics for correction",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:mcp-authoring-access/Machine-readable diagnostics for correction",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:mcp-authoring-access/Act on a located error",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "unique_requirements:mcp-authoring-access",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "added_requirements:operator-capability-discovery",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:operator-capability-discovery/Targeted catalog discovery",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:operator-capability-discovery/Targeted catalog discovery",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:operator-capability-discovery/Find an operator by purpose",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:operator-capability-discovery/Distinguish absence from a query failure",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:operator-capability-discovery/Complete operator details",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:operator-capability-discovery/Complete operator details",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:operator-capability-discovery/Read Threshold configuration constraints",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:operator-capability-discovery/Read nested ROI region declarations",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:operator-capability-discovery/Explicit metadata provenance and unknowns",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:operator-capability-discovery/Explicit metadata provenance and unknowns",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:operator-capability-discovery/Distinguish missing metadata from an empty declaration",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:operator-capability-discovery/Discoverable implemented editing operations",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:operator-capability-discovery/Discoverable implemented editing operations",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:operator-capability-discovery/Runtime support exceeds editing support",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:operator-capability-discovery/Separate declaration editing and readiness",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:operator-capability-discovery/Separate declaration editing and readiness",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:operator-capability-discovery/Configurable operator with a missing model",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:operator-capability-discovery/Observation-only discovery",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:operator-capability-discovery/Observation-only discovery",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:operator-capability-discovery/Inspect a device-dependent operator",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "unique_requirements:operator-capability-discovery",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "added_requirements:project-draft-authoring",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:project-draft-authoring/Independent project sessions",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:project-draft-authoring/Independent project sessions",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-draft-authoring/Edit without a desktop process",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:project-draft-authoring/Complete official project format",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:project-draft-authoring/Complete official project format",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-draft-authoring/Save and reopen a complete project",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-draft-authoring/Read detached page state without full project rebuild",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:project-draft-authoring/Atomic semantic editing",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:project-draft-authoring/Atomic semantic editing",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-draft-authoring/Apply and undo an edit",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-draft-authoring/Reject an invalid edit",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:project-draft-authoring/Complete semantic operation coverage",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:project-draft-authoring/Complete semantic operation coverage",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-draft-authoring/Configure an operator with variable bindings",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-draft-authoring/Configure advanced project content",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-draft-authoring/Configure compound regions without a graphical editor",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:project-draft-authoring/Revision and saved-state boundaries",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:project-draft-authoring/Revision and saved-state boundaries",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-draft-authoring/Reject an outdated edit",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-draft-authoring/Recover saved content",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:project-draft-authoring/Draft-local page bindings",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:project-draft-authoring/Draft-local page bindings",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-draft-authoring/Bind a newly created output",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:project-draft-authoring/Local validation without online runtime",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:project-draft-authoring/Local validation without online runtime",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-draft-authoring/Validate an incomplete draft while offline",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-draft-authoring/Distinguish local success from target readiness",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "unique_requirements:project-draft-authoring",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "added_requirements:project-resource-delivery",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:project-resource-delivery/Complete uploads before registration",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:project-resource-delivery/Complete uploads before registration",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-resource-delivery/Register a PNG resource",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-resource-delivery/Incomplete upload",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:project-resource-delivery/Stable resource versions",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:project-resource-delivery/Stable resource versions",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-resource-delivery/Replace while an older snapshot is in use",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:project-resource-delivery/Formal project import",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:project-resource-delivery/Formal project import",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-resource-delivery/Import a project with missing resources",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "normative_word:project-resource-delivery/Snapshot-bound editable exports",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "requirement_has_scenario:project-resource-delivery/Snapshot-bound editable exports",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-resource-delivery/Deliver a complete project to Designer",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "scenario_when_then:project-resource-delivery/Refuse an incomplete full package",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "unique_requirements:project-resource-delivery",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "unchanged_requirement_and_scenario_totals",
+      "passed": true,
+      "details": {
+        "requirements": 27,
+        "scenarios": 40
+      }
+    },
+    {
+      "name": "all_25_tasks_unchecked_unique",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "task_1_1_incomplete",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "four_delivery_phases",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "seven_acceptance_groups",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "no_main_spec_claimed",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "field_names_numbers_preserved",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "unknown_not_folded_to_empty",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "registered_target_versions_with_assertions_retained",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "archive_unchanged_guidance",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "reference_sha_in_active_documents",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "unrelated_contract_preserved:file-transfer.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "unrelated_contract_preserved:specs/project-draft-authoring/spec.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "unrelated_contract_preserved:specs/project-resource-delivery/spec.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "unrelated_contract_preserved:specs/candidate-project-precheck/spec.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "unrelated_contract_preserved:specs/mcp-authoring-access/spec.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "historical_note_preserved:review/changes-v5.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "historical_note_preserved:review/baseline-alignment-v6.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "three_diagrams_unchanged",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:README-OpenSpec.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "relative_link:README-OpenSpec.md:review/baseline-alignment-v7.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "relative_link:README-OpenSpec.md:review/baseline-alignment-v6.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "relative_link:README-OpenSpec.md:review/changes-v5.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "relative_link:README-OpenSpec.md:review/validation.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:openspec/changes/add-independent-project-authoring/acceptance.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:openspec/changes/add-independent-project-authoring/design.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "relative_link:openspec/changes/add-independent-project-authoring/design.md:file-transfer.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "relative_link:openspec/changes/add-independent-project-authoring/design.md:file-transfer.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:openspec/changes/add-independent-project-authoring/file-transfer.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:openspec/changes/add-independent-project-authoring/proposal.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "relative_link:openspec/changes/add-independent-project-authoring/proposal.md:sources.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:openspec/changes/add-independent-project-authoring/sources.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:openspec/changes/add-independent-project-authoring/specs/candidate-project-precheck/spec.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:openspec/changes/add-independent-project-authoring/specs/mcp-authoring-access/spec.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:openspec/changes/add-independent-project-authoring/specs/operator-capability-discovery/spec.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:openspec/changes/add-independent-project-authoring/specs/project-draft-authoring/spec.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:openspec/changes/add-independent-project-authoring/specs/project-resource-delivery/spec.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:openspec/changes/add-independent-project-authoring/tasks.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:review/baseline-alignment-v6.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:review/baseline-alignment-v7.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "relative_link:review/baseline-alignment-v7.md:validation.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "relative_link:review/baseline-alignment-v7.md:../openspec/changes/add-independent-project-authoring/sources.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:review/changes-v5.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "fences_closed:review/validation.md",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "relative_link:review/validation.md:validation.json",
+      "passed": true,
+      "details": null
+    },
+    {
+      "name": "json_examples_parse",
+      "passed": true,
+      "details": {
+        "examples": 2
+      }
+    },
+    {
+      "name": "mermaid_fences_count",
+      "passed": true,
+      "details": {
+        "diagrams": 3
+      }
+    }
+  ]
+}

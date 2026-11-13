@@ -82,6 +82,27 @@ message ValidateProjectReply {
   repeated string errors = 2;
 }
 
+// Read-only candidate checking. One metadata message followed by one ZIP byte
+// stream; this never initializes or replaces the online project.
+message CandidateProjectMetadata {
+  string draft_revision = 1;
+  string expected_runtime_instance_id = 2;
+  uint64 size_bytes = 3;
+  string sha256 = 4;
+}
+message CandidateProjectChunk {
+  oneof payload {
+    CandidateProjectMetadata metadata = 1;
+    bytes data = 2;
+  }
+}
+message CandidateProjectReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string report_json = 4;
+}
+
 message StartJobRequest {
   string project_id = 1;
   string workflow_id = 2;
@@ -889,6 +910,7 @@ service RuntimeService {
   rpc GetCommunicationState(CommunicationRequest) returns (CommunicationReply);
   rpc ControlCommunication(CommunicationRequest) returns (CommunicationReply);
   rpc ValidateProject(ValidateProjectRequest) returns (ValidateProjectReply);
+  rpc ValidateCandidateProject(stream CandidateProjectChunk) returns (CandidateProjectReply);
   rpc StartJob(StartJobRequest) returns (StartJobReply);
   rpc GetStartRequest(StartRequestLookup) returns (StartJobReply);
   rpc StopJob(StopJobRequest) returns (StopJobReply);

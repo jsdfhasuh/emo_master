@@ -45,9 +45,23 @@
 #### Scenario: Deliver a complete project to Designer
 
 - **WHEN** 客户端导出资源齐全的图像工程 ZIP，解压后用 Designer 正式入口打开
-- **THEN** 工程能继续编辑和保存，未声明的运行日志和历史输出不会被递归打包，导出响应说明对应草稿修订及检查状态
+- **THEN** 工程能继续编辑和保存，未声明的运行日志和历史输出不会被递归打包，导出响应说明对应草稿修订，并区分报告是否附带与工程检查结论
 
 #### Scenario: Refuse an incomplete full package
 
 - **WHEN** 客户端请求完整 ZIP，但尚有必要声明资源未提供
 - **THEN** 拒绝将其作为完整交付并列出缺项；仍允许单独工程文件导出并明确其限制
+
+### Requirement: Truthful exported report association
+
+系统 SHALL 将导出动作是否检查、是否附带报告与工程是否已检查区分表达。没有附带报告时使用明确的未附带语义，不据此宣称该版本未检查。附带目标报告时须匹配 draftId、draftRevision、targetId、runtimeInstanceId，并保留报告原来的检查/编译/执行范围。没有报告不阻断合法导出，不要求强制再次预检或建立报告存储服务。
+
+#### Scenario: Export a revision that was already checked
+
+- **WHEN** 某修订刚完成目标预检，客户端导出同一修订
+- **THEN** 导出要么附带准确匹配的原报告，要么明确本次没有附带报告/导出未运行检查；不得固定返回“该工程版本未预检”与已有结果相矛盾
+
+#### Scenario: Do not reuse a stale passed report
+
+- **WHEN** 预检后工程修订变化，或报告目标身份不匹配，再请求导出
+- **THEN** 旧 PASSED 不得被关联为当前导出已通过的证据，固定文件与返回修订仍对应新快照

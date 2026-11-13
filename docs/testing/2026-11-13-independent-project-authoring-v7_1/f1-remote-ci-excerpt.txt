@@ -1,0 +1,10 @@
+Linux source (runtime) / Python 3.10	UNKNOWN STEP	2026-11-13T03:04:06.2977716Z [ci-check] running proto-drift: /opt/hostedtoolcache/Python/3.10.22/x64/bin/python scripts/gen_proto.py --check
+Linux source (runtime) / Python 3.10	UNKNOWN STEP	2026-11-13T03:04:06.3653987Z [ci-check] running ruff: /opt/hostedtoolcache/Python/3.10.22/x64/bin/python -m ruff check src tests
+Linux source (runtime) / Python 3.10	UNKNOWN STEP	2026-11-13T03:04:06.5508496Z [ci-check] running mypy: /opt/hostedtoolcache/Python/3.10.22/x64/bin/python -m mypy --config-file mypy.ini src
+Linux source (runtime) / Python 3.10	UNKNOWN STEP	2026-11-13T03:04:12.4826956Z src/emo_master/authoring/catalog.py:71: error: Need type annotation for "_cache" (hint: "_cache: dict[<type>, <type>] = ...")  [var-annotated]
+Linux source (runtime) / Python 3.10	UNKNOWN STEP	2026-11-13T03:04:15.6362715Z src/emo_master/authoring/files.py:68: error: Item "None" of "ResourcePlan | None" has no attribute "items"  [union-attr]
+Linux source (runtime) / Python 3.10	UNKNOWN STEP	2026-11-13T03:04:15.6363787Z src/emo_master/authoring/files.py:140: error: Argument "purpose" to "Resource" has incompatible type "str"; expected "Literal['input_image', 'model', 'page_image', 'icon']"  [arg-type]
+Linux source (runtime) / Python 3.10	UNKNOWN STEP	2026-11-13T03:04:15.6364573Z src/emo_master/authoring/files.py:211: error: Item "None" of "ResourcePlan | None" has no attribute "items"  [union-attr]
+Linux source (runtime) / Python 3.10	UNKNOWN STEP	2026-11-13T03:04:15.6365143Z src/emo_master/authoring/files.py:227: error: Item "None" of "ResourcePlan | None" has no attribute "items"  [union-attr]
+Linux source (runtime) / Python 3.10	UNKNOWN STEP	2026-11-13T03:04:16.6128292Z Found 5 errors in 2 files (checked 633 source files)
+Linux source (runtime) / Python 3.10	UNKNOWN STEP	2026-11-13T03:04:16.6286211Z [ci-check] failed mypy with code 1

@@ -1,0 +1,36 @@
+{
+  "reason": "Raw CI diagnostics include pre-existing ignored private acceptance tests; originals preserved locally, excluded from Git publication.",
+  "localDirectory": ".tmp/v7_1-private-ci-evidence",
+  "files": [
+    {
+      "name": "f1-ci-other-console.txt",
+      "sizeBytes": 2165092,
+      "sha256": "9baefa17a635ed535a39b79aadc17e19549fc3b1045d49e8a6d2e865ad3e1f79"
+    },
+    {
+      "name": "f1-other-ci-failures.log",
+      "sizeBytes": 501824,
+      "sha256": "48c4666a4b07cc63e2c210cf9ab173f561a0871858082985cd6849e9d85844f8"
+    },
+    {
+      "name": "f1-other-ci-results.xml",
+      "sizeBytes": 1540429,
+      "sha256": "774abdb697d93d6250e96b3d404b6c1393e37d228bef439e50fbbcdfb4c0bf1a"
+    },
+    {
+      "name": "f1-other-ci-shard.json",
+      "sizeBytes": 2667355,
+      "sha256": "52a238d0d497f9560df6eb91523a78b9de267fc0aed6ba6befe9e061d4ef45a2"
+    },
+    {
+      "name": "f1-other-summary.json",
+      "sizeBytes": 14123,
+      "sha256": "c18a2297e22aeb603a6a76a845f902c5fbe532022d788564e301dccd5f714d5a"
+    },
+    {
+      "name": "f1-other-two-job-observation.json",
+      "sizeBytes": 27875,
+      "sha256": "4d885ce005fd951a773ae962f6f215a4086bf0b6790a107a95b7cda6aed6a513"
+    }
+  ]
+}

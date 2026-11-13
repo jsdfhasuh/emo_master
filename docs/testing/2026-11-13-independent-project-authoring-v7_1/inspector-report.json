@@ -1,0 +1,141 @@
+{
+  "python": "3.10.21",
+  "sdk": "1.30.0",
+  "client": "MCP Inspector",
+  "fileMode": "Inspector + HTTP helper",
+  "success": true,
+  "protocolVersions": [
+    "2025-11-25"
+  ],
+  "steps": [
+    "tools/list",
+    "get_authoring_capabilities",
+    "list_operators",
+    "get_operator",
+    "get_operator",
+    "get_operator",
+    "create_project_draft",
+    "apply_project_command",
+    "apply_project_command",
+    "apply_project_command",
+    "precheck_project_draft",
+    "HTTP raw-byte upload and SHA256",
+    "apply_project_command",
+    "get_output_choices",
+    "apply_project_command",
+    "apply_project_command",
+    "apply_project_command",
+    "apply_project_command",
+    "apply_project_command",
+    "undo_project_edit",
+    "redo_project_edit",
+    "validate_project_draft",
+    "save_project_draft",
+    "adopt_project_declarations",
+    "validate_project_draft",
+    "precheck_project_draft",
+    "export_project_draft",
+    "HTTP authenticated download, SHA256, anonymous denial"
+  ],
+  "designer": "not_run",
+  "hardware": "not_run",
+  "clientVersion": "2.13.0",
+  "beforeRepair": {
+    "scope": "target",
+    "draftRevision": "a9bb5179c4384582a1224a59c44cec94",
+    "runtimeInstanceId": "efe6f48f-8428-43fb-80e9-104cb61703ed",
+    "status": "INCOMPLETE",
+    "compileStatus": "not_run",
+    "executionStatus": "not_run",
+    "errors": [],
+    "warnings": [],
+    "missingInputs": [
+      {
+        "code": "E_CANDIDATE_INPUT_MISSING",
+        "message": "required input has not been uploaded",
+        "projectId": "e83eee9e-fd2d-4617-947c-c54de9d882eb",
+        "workflowId": "main",
+        "nodeId": "loader",
+        "fieldPath": "params.imagePath"
+      }
+    ],
+    "projectId": "e83eee9e-fd2d-4617-947c-c54de9d882eb",
+    "draftId": "43e48906785b47229f60e2565d71f656",
+    "targetId": "isolated"
+  },
+  "localValidation": {
+    "scope": "local",
+    "draftId": "43e48906785b47229f60e2565d71f656",
+    "draftRevision": "2e8b006e8f224105a72412d051304f8e",
+    "status": "PASSED",
+    "compileStatus": "not_run",
+    "executionStatus": "not_run",
+    "diagnostics": []
+  },
+  "declarationAdoption": {
+    "draftRevision": "e44e6af05b884b2c96ef04b587e90ff1",
+    "context": {
+      "targetId": "isolated",
+      "runtimeInstanceId": "efe6f48f-8428-43fb-80e9-104cb61703ed",
+      "operators": [
+        {
+          "operatorId": "vision.io.image_loader",
+          "version": "1.1.0"
+        },
+        {
+          "operatorId": "vision.preprocess.threshold",
+          "version": "1.1.0"
+        }
+      ],
+      "deviceTypes": []
+    }
+  },
+  "localValidationAfterAdoption": {
+    "scope": "local",
+    "draftId": "43e48906785b47229f60e2565d71f656",
+    "draftRevision": "e44e6af05b884b2c96ef04b587e90ff1",
+    "status": "PASSED",
+    "compileStatus": "not_run",
+    "executionStatus": "not_run",
+    "diagnostics": []
+  },
+  "afterRepair": {
+    "scope": "target",
+    "draftRevision": "e44e6af05b884b2c96ef04b587e90ff1",
+    "runtimeInstanceId": "efe6f48f-8428-43fb-80e9-104cb61703ed",
+    "status": "PASSED",
+    "compileStatus": "passed",
+    "executionStatus": "not_run",
+    "errors": [],
+    "warnings": [],
+    "missingInputs": [],
+    "projectId": "e83eee9e-fd2d-4617-947c-c54de9d882eb",
+    "draftId": "43e48906785b47229f60e2565d71f656",
+    "targetId": "isolated"
+  },
+  "download": {
+    "exportId": "b69afc3cee7c4dbba39720a16c3b9847",
+    "draftId": "43e48906785b47229f60e2565d71f656",
+    "draftRevision": "e44e6af05b884b2c96ef04b587e90ff1",
+    "filename": "project.zip",
+    "mediaType": "application/zip",
+    "sizeBytes": 3018,
+    "sha256": "80b35a5facfc301797e89159291a5872f0c13ef4cff204918fa1d36b6b941533",
+    "missingInputs": [],
+    "checkReport": {
+      "status": "not_attached",
+      "draftRevision": "e44e6af05b884b2c96ef04b587e90ff1",
+      "performedByExport": false
+    },
+    "download": {
+      "method": "GET",
+      "path": "/api/project-exports/b69afc3cee7c4dbba39720a16c3b9847/content",
+      "authentication": "workspace-bearer"
+    }
+  },
+  "projectFile": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\.tmp\\independent-authoring-v7_1-inspector\\download\\project.emoproj",
+  "isolatedSoftwareRun": {
+    "jobId": "0848af44-25a3-4c19-ad23-eccf04698311",
+    "status": "COMPLETED"
+  }
+}

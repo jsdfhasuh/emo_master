@@ -1,0 +1,22 @@
+{
+  "head": "3f717510751f4bd0d8277c3c2bf676236f51f49e",
+  "branch": "main",
+  "dirty": true,
+  "recordedAt": "2026-11-13T15:19:37.6045540+08:00",
+  "files": {
+    "pyproject.toml": "48e4c7e4293e704086687633cf15c17667f109b03bb5b40cf6a13767587598bf",
+    "requirements-dev.txt": "74aeaab302eea7555dd5c773fbf4316a35e2b3daf1d9d37c3608b8581200e2f6",
+    "scripts/authoring_acceptance.py": "d23287c090cc4f01a0c44cd9cfe4f20ec3b327a5a03373bc65c222385d9f1535",
+    "src/emo_master/authoring/catalog.py": "52902025372d7ea0cbb063c2e468dbc7faac0191d02598d7235e5f5c06708fed",
+    "src/emo_master/authoring/drafts.py": "45da7a7c72aced33f599f15ba3b037006096f974c6bf44b3895c24c6d39111ae",
+    "src/emo_master/authoring/files.py": "e9857606c103fc08a5622e420773c6ddff9185f0030ed247052a555f408a3e30",
+    "src/emo_master/authoring/http.py": "8ab4873f818c5b3fe500b813102dbf178b2617a2cd149412adc9b39e33b91d55",
+    "src/emo_master/authoring/service.py": "7bacc6974c8521edb113f8a9922cea8af1e4f94d7222fd21cbb93e0cc581cb59",
+    "tests/authoring/test_cancellation.py": "c97aef41296e94f4d2512bb062957abe1aa3f50a1f6433846150b27506bb6fab",
+    "tests/authoring/test_designer_handoff.py": "b3279ea2c0e57ba281f440a043988d2d7a381ddf675be697583024295f33a9e9",
+    "tests/authoring/test_files.py": "ab514a1aae28d1a130646589b0195f844820685eb219b9e6309e12489b6d4954",
+    "tests/authoring/test_transport.py": "3112d04e720d7aecba86864593930a86c9d9ef5be871af617f5cf2c5e55d765a",
+    "tests/authoring/test_declaration_adoption.py": "c627add5962fbf83e3351d83098efc14d9ccd1e2ba9aa7c78c6e9fbc72ca0413",
+    "web_panel/tests/test_contract_manifest.py": "4b3b7c124e611006a5b363d7188d0f5202dce410c9861a2d1a3225ef89ed1885"
+  }
+}

@@ -1,0 +1,9 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_______ testSpecializedLocalImageErrorRecoveryPreviewAndClose[roi-2.1] ________
+tests\designer\test_draft_pure_preview_ui.py:60: in testSpecializedLocalImageErrorRecoveryPreviewAndClose
+    assert not controller.canvas._image.isNull()
+E   AttributeError: 'RoiCanvas' object has no attribute '_image'. Did you mean: '_toImage'?
+=========================== short test summary info ===========================
+FAILED tests/designer/test_draft_pure_preview_ui.py::testSpecializedLocalImageErrorRecoveryPreviewAndClose[roi-2.1]
+1 failed in 8.20s

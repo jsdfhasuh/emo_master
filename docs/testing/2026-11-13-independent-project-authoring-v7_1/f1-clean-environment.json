@@ -1,0 +1,36 @@
+{
+  "python": "3.10.21",
+  "prefix": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\.tmp\\v7_1-f1-clean",
+  "basePrefix": "D:\\Conda\\envs\\emo_master",
+  "includeSystemSitePackages": false,
+  "packages": {
+    "httpx": {
+      "version": "0.28.1",
+      "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\.tmp\\v7_1-f1-clean\\Lib\\site-packages\\httpx\\__init__.py"
+    },
+    "httpx2": {
+      "version": "2.14.0",
+      "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\.tmp\\v7_1-f1-clean\\Lib\\site-packages\\httpx2\\__init__.py"
+    },
+    "mcp": {
+      "version": "1.30.0",
+      "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\.tmp\\v7_1-f1-clean\\Lib\\site-packages\\mcp\\__init__.py"
+    },
+    "fastapi": {
+      "version": "0.162.5",
+      "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\.tmp\\v7_1-f1-clean\\Lib\\site-packages\\fastapi\\__init__.py"
+    },
+    "starlette": {
+      "version": "1.7.0",
+      "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\.tmp\\v7_1-f1-clean\\Lib\\site-packages\\starlette\\__init__.py"
+    },
+    "mypy": {
+      "version": "2.3.1",
+      "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\.tmp\\v7_1-f1-clean\\Lib\\site-packages\\mypy\\__init__.cp310-win_amd64.pyd"
+    },
+    "pytest": {
+      "version": "9.2.0",
+      "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\.tmp\\v7_1-f1-clean\\Lib\\site-packages\\pytest\\__init__.py"
+    }
+  }
+}

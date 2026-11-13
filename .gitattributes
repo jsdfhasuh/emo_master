@@ -45,6 +45,11 @@ docs/plans/2026-11-13-independent-project-authoring-v7/README-OpenSpec.md whites
 docs/testing/2026-11-13-independent-project-authoring/*.xml -text -whitespace
 docs/testing/2026-11-13-independent-project-authoring/*.txt -text -whitespace
 docs/testing/2026-11-13-independent-project-authoring/inspector-report.json -text -whitespace
+# Preserve supplied v7.1 review sources and raw repair verification records.
+docs/testing/2026-11-13-independent-project-authoring-v7_1/review/** -text -whitespace
+docs/testing/2026-11-13-independent-project-authoring-v7_1/*.xml -text -whitespace
+docs/testing/2026-11-13-independent-project-authoring-v7_1/*.txt -text -whitespace
+docs/testing/2026-11-13-independent-project-authoring-v7_1/*-report.json -text -whitespace
 web_panel/contracts/panel-contract-v1/** -text
 # Keep original pytest diagnostics, including whitespace in failure excerpts.
 docs/testing/2026-11-12-page-switch/*.xml -text -whitespace

@@ -1,0 +1,80 @@
+{
+  "exitstatus": 1,
+  "collected": 9876,
+  "selected": 6501,
+  "executed": 6501,
+  "uniqueExecuted": 6501,
+  "consoleSummary": {
+    "passed": 6185,
+    "failed": 292,
+    "errors": 21,
+    "skipped": 3,
+    "deselected": 3375,
+    "subtestsPassed": 66,
+    "elapsedSeconds": 2263.82,
+    "processExit": 1
+  },
+  "finalCurrentAuthoring": {
+    "passed": 59,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "elapsedSeconds": 42.99,
+    "evidence": "clean-authoring-current.xml",
+    "separateRun": true
+  },
+  "originalProcessBoundary": "The original CI process collected before the final two F4 test fixes; its two authoring failures are not the final current authoring result.",
+  "sourceCollectionBoundary": {
+    "dependencyVenvClean": true,
+    "sourceTree": "current worktree, not a clean clone",
+    "equivalentToRemoteCICollection": false,
+    "existingLocalIgnoredPrivateFileCount": 9,
+    "existingLocalIgnoredPrivateFailed": 276,
+    "existingLocalIgnoredPrivateErrors": 21,
+    "otherFailed": 16,
+    "otherFailedBreakdown": {
+      "earlyCollectedCurrentTaskF4": 2,
+      "trackedDesigner": 12,
+      "trackedPackageVerifier": 1,
+      "trackedPageDelivery": 1
+    }
+  },
+  "trackedFailuresByFile": [
+    {
+      "file": "tests/authoring/test_declaration_adoption.py",
+      "failed": 2,
+      "errors": 0
+    },
+    {
+      "file": "tests/designer/test_draft_pure_preview_ui.py",
+      "failed": 4,
+      "errors": 0
+    },
+    {
+      "file": "tests/designer/test_operator_bubble_mouse_events.py",
+      "failed": 5,
+      "errors": 0
+    },
+    {
+      "file": "tests/designer/test_operator_icon_integration.py",
+      "failed": 2,
+      "errors": 0
+    },
+    {
+      "file": "tests/designer/test_yolo_parameter_presentation.py",
+      "failed": 1,
+      "errors": 0
+    },
+    {
+      "file": "tests/test_runtime_package_verifier.py",
+      "failed": 1,
+      "errors": 0
+    },
+    {
+      "file": "tests/ui/page_designer/test_delivery_path.py",
+      "failed": 1,
+      "errors": 0
+    }
+  ],
+  "rawEvidence": "Preserved locally; byte hashes and sizes in local-ci-evidence-manifest.json. No private test names or raw diagnostic text are published."
+}

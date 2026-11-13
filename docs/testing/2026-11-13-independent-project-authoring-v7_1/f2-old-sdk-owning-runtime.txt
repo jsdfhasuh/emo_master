@@ -1,0 +1,15 @@
+test_editor_publish_registers_real_outputs_before_explicit_start_and_stop (test_product_runtime.EditorPublishedRuntimeTests) ... Executing <Task pending name='Task-1' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:95> wait_for=<Future pending cb=[Task.task_wakeup()] created at D:\Conda\envs\emo_master\lib\asyncio\base_events.py:429> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.110 seconds
+Executing <Task pending name='Task-1' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:101> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 2.297 seconds
+Product Runtime evidence: \\?\D:\jsdfhasuh\documents\my_project\emo_master\web_panel\test-results\product-runtime\test_editor_publish_registers_real_outputs_before_explicit_start_and_stop
+ok
+test_actual_runtime_history_without_jobs_and_image_ownership (test_product_runtime.ProductRuntimeTests) ... Product Runtime evidence: \\?\D:\jsdfhasuh\documents\my_project\emo_master\web_panel\test-results\product-runtime\test_actual_runtime_history_without_jobs_and_image_ownership
+ok
+test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay (test_product_runtime.ProductRuntimeTests) ... Product Runtime evidence: \\?\D:\jsdfhasuh\documents\my_project\emo_master\web_panel\test-results\product-runtime\test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay
+ok
+test_reconciliation_timeout_does_not_invent_acceptance (test_product_runtime.StartReconciliationTests) ... ok
+test_unknown_queries_same_intent_without_another_start (test_product_runtime.StartReconciliationTests) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 13.838s
+
+OK

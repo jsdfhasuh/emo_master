@@ -1,0 +1,62 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+__________ test_fixed_export_roundtrip_does_not_save_or_package_logs __________
+tests\authoring\test_files.py:115: in test_fixed_export_roundtrip_does_not_save_or_package_logs
+    assert "precheck" not in exported
+E   AssertionError: assert 'precheck' not in {'exportId': '76743c9787c04582a86021eb590c226f', 'draftId': '3c27fa0a8e8d4ec89ed2c6c4f09eaaa9', 'draftRevision': '006fa3944dec4553b72bd1589dc7da18', 'filename': 'project.zip', ...}
+_______________ test_live_mcp_http_candidate_and_file_roundtrip _______________
+  + Exception Group Traceback (most recent call last):
+  |   File "D:\jsdfhasuh\documents\my_project\emo_master\tests\authoring\test_transport.py", line 186, in test_live_mcp_http_candidate_and_file_roundtrip
+  |     asyncio.run(scenario(base))
+  |   File "D:\Conda\envs\emo_master\lib\asyncio\runners.py", line 44, in run
+  |     return loop.run_until_complete(main)
+  |   File "D:\Conda\envs\emo_master\lib\asyncio\base_events.py", line 649, in run_until_complete
+  |     return future.result()
+  |   File "D:\jsdfhasuh\documents\my_project\emo_master\tests\authoring\test_transport.py", line 92, in scenario
+  |     async with streamablehttp_client(base + "/mcp", headers=HEADERS) as (read, write, _):
+  |   File "D:\Conda\envs\emo_master\lib\contextlib.py", line 217, in __aexit__
+  |     await self.gen.athrow(typ, value, traceback)
+  |   File "D:\Conda\envs\emo_master\lib\site-packages\mcp\client\streamable_http.py", line 742, in streamablehttp_client
+  |     async with streamable_http_client(
+  |   File "D:\Conda\envs\emo_master\lib\contextlib.py", line 217, in __aexit__
+  |     await self.gen.athrow(typ, value, traceback)
+  |   File "D:\Conda\envs\emo_master\lib\site-packages\mcp\client\streamable_http.py", line 672, in streamable_http_client
+  |     async with anyio.create_task_group() as tg:
+  |   File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\anyio\_backends\_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  | exceptiongroup.ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "D:\Conda\envs\emo_master\lib\site-packages\mcp\client\streamable_http.py", line 695, in streamable_http_client
+    |     yield (
+    |   File "D:\Conda\envs\emo_master\lib\site-packages\mcp\client\streamable_http.py", line 747, in streamablehttp_client
+    |     yield streams
+    |   File "D:\jsdfhasuh\documents\my_project\emo_master\tests\authoring\test_transport.py", line 93, in scenario
+    |     async with ClientSession(read, write) as client:
+    |   File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\anyio\_backends\_asyncio.py", line 847, in __aexit__
+    |     raise BaseExceptionGroup(
+    | exceptiongroup.ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "D:\jsdfhasuh\documents\my_project\emo_master\tests\authoring\test_transport.py", line 160, in scenario
+      |     assert "precheck" not in exported
+      | AssertionError: assert 'precheck' not in {'exportId': 'efe3cf2b73ff455cbabcf5da03f52893', 'draftId': '590bf2d4fb9c492391e1e06cc8705836', 'draftRevision': 'adbf2900e60741dead7de22714b2910e', 'filename': 'project.zip', ...}
+      +------------------------------------
+============================== warnings summary ===============================
+..\..\..\..\Conda\envs\emo_master\lib\site-packages\fastapi\testclient.py:1
+  D:\Conda\envs\emo_master\lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+..\..\..\..\Conda\envs\emo_master\lib\site-packages\starlette\testclient.py:53
+  D:\Conda\envs\emo_master\lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+tests/authoring/test_transport.py::test_live_mcp_http_candidate_and_file_roundtrip
+  D:\Conda\envs\emo_master\lib\contextlib.py:103: DeprecationWarning: Use `streamable_http_client` instead.
+    self.gen = func(*args, **kwds)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/authoring/test_files.py::test_fixed_export_roundtrip_does_not_save_or_package_logs
+FAILED tests/authoring/test_transport.py::test_live_mcp_http_candidate_and_file_roundtrip
+2 failed, 3 warnings in 8.42s

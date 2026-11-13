@@ -1,0 +1,88 @@
+{
+  "startedAt": "2026-11-13T15:18:03.3762572+08:00",
+  "head": "3f717510751f4bd0d8277c3c2bf676236f51f49e",
+  "branch": "main",
+  "python": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\.tmp\\v7_1-f1-clean\\Scripts\\python.exe",
+  "scope": "Current working tree; separate from earlier running shard process",
+  "inputs": [
+    {
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\tests\\authoring\\test_declaration_adoption.py",
+      "Hash": "C627ADD5962FBF83E3351D83098EFC14D9CCD1E2BA9AA7C78C6E9FBC72CA0413"
+    },
+    {
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\src\\emo_master\\authoring\\drafts.py",
+      "Hash": "45DA7A7C72ACED33F599F15BA3B037006096F974C6BF44B3895C24C6D39111AE"
+    },
+    {
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\src\\emo_master\\authoring\\service.py",
+      "Hash": "7BACC6974C8521EDB113F8A9922CEA8AF1E4F94D7222FD21CBB93E0CC581CB59"
+    },
+    {
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\src\\emo_master\\authoring\\http.py",
+      "Hash": "8AB4873F818C5B3FE500B813102DBF178B2617A2CD149412ADC9B39E33B91D55"
+    },
+    {
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\src\\emo_master\\authoring\\catalog.py",
+      "Hash": "52902025372D7EA0CBB063C2E468DBC7FAAC0191D02598D7235E5F5C06708FED"
+    },
+    {
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\src\\emo_master\\authoring\\files.py",
+      "Hash": "E9857606C103FC08A5622E420773C6DDFF9185F0030ED247052A555F408A3E30"
+    }
+  ]
+}
+...........................................................              [100%]
+============================== warnings summary ===============================
+tests/authoring/test_cancellation.py::test_precheck_preparation_and_reader_keep_files_until_workers_exit[prepare]
+tests/authoring/test_cancellation.py::test_precheck_preparation_and_reader_keep_files_until_workers_exit[prepare]
+tests/authoring/test_cancellation.py::test_precheck_preparation_and_reader_keep_files_until_workers_exit[stream]
+tests/authoring/test_cancellation.py::test_precheck_preparation_and_reader_keep_files_until_workers_exit[stream]
+tests/authoring/test_cancellation.py::test_official_mcp_cancel_preserves_committed_draft_and_work_owned_cleanup
+tests/authoring/test_cancellation.py::test_official_mcp_cancel_preserves_committed_draft_and_work_owned_cleanup
+tests/authoring/test_transport.py::test_live_mcp_http_candidate_and_file_roundtrip
+  D:\Conda\envs\emo_master\lib\contextlib.py:103: DeprecationWarning: Use `streamable_http_client` instead.
+    self.gen = func(*args, **kwds)
+
+tests/authoring/test_designer_handoff.py::test_http_export_opens_edits_saves_and_compiles_in_native_designer
+  tests\authoring\test_designer_handoff.py:28: PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')
+    def test_http_export_opens_edits_saves_and_compiles_in_native_designer(
+
+tests/authoring/test_designer_handoff.py::test_external_inspector_download_sample_continues_in_native_designer
+  tests\authoring\test_designer_handoff.py:169: PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')
+    def test_external_inspector_download_sample_continues_in_native_designer(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+59 passed, 9 warnings in 42.99s
+{
+  "completedAt": "2026-11-13T15:19:10.0651356+08:00",
+  "exitCode": 0,
+  "result": "59 passed, 9 warnings in 42.99s",
+  "inputsAfter": [
+    {
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\tests\\authoring\\test_declaration_adoption.py",
+      "Hash": "C627ADD5962FBF83E3351D83098EFC14D9CCD1E2BA9AA7C78C6E9FBC72CA0413"
+    },
+    {
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\src\\emo_master\\authoring\\drafts.py",
+      "Hash": "45DA7A7C72ACED33F599F15BA3B037006096F974C6BF44B3895C24C6D39111AE"
+    },
+    {
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\src\\emo_master\\authoring\\service.py",
+      "Hash": "7BACC6974C8521EDB113F8A9922CEA8AF1E4F94D7222FD21CBB93E0CC581CB59"
+    },
+    {
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\src\\emo_master\\authoring\\http.py",
+      "Hash": "8AB4873F818C5B3FE500B813102DBF178B2617A2CD149412ADC9B39E33B91D55"
+    },
+    {
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\src\\emo_master\\authoring\\catalog.py",
+      "Hash": "52902025372D7EA0CBB063C2E468DBC7FAAC0191D02598D7235E5F5C06708FED"
+    },
+    {
+      "Path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\src\\emo_master\\authoring\\files.py",
+      "Hash": "E9857606C103FC08A5622E420773C6DDFF9185F0030ED247052A555F408A3E30"
+    }
+  ]
+}
+
+Snapshot verification: all six recorded source/test hashes unchanged during this run.

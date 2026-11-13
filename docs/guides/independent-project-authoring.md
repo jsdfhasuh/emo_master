@@ -49,6 +49,12 @@ HTTP 对应 `POST /api/project-drafts/{draftId}/commands`，body 省略 URL 中�
 
 每草稿独立会话、锁和撤销历史；成功的实际编辑生成新修订，一项语义操作只有一次事务。失败回滚，旧修订返回当前修订供客户端重新读取，不自动重放写入。undo、redo、save 都需要当前修订。保存后正常重启恢复最后保存的内容和新会话修订，不恢复未保存修改或内存撤销历史。
 
+正常重启或导入工程后，声明不会因一次目录查询自动归属于草稿。先读取草稿，再调用 `adopt_project_declarations`，输入 `draftId`、当前 `expectedDraftRevision` 和明确 `targetId`；HTTP 对应 `POST /api/project-drafts/{draftId}/declarations`，body 传修订和目标。这条操作按工程已保存的算子依赖版本、设备类型及驱动版本重新采用目标真实声明，恢复本地校验、输出选项和声明相关编辑，不需要创建再删除临时节点。
+
+声明采用不修改工程内容、参数、绑定或依赖版本，不改变保存时间、dirty 或内容撤销历史。检查上下文实际变化时返回新修订，后续调用必须使用该修订；重复采用同一声明不会仅因观察时间不同而反复生成修订。目标离线、版本不匹配或依赖缺少版本锁时返回明确诊断，保留原上下文和工程；仍可读取、保存，缺少可用声明时本地校验如实返回 INCOMPLETE。不会自动借用另一草稿或最近查询目标的声明。
+
+`node.copy` 同时复制指向源节点的资源／现场参数绑定，在同一事务中把目标改为实际返回的新 `nodeId`。资源继续复用原 `resourceId` 和已有字节；源节点绑定不变，undo/redo 同时撤销／恢复副本及其绑定。
+
 页面输出使用 `get_output_choices`，来源为当前草稿。只读页面使用 `get_project_presentation` / `GET .../presentation` 的局部快照；完整事务、保存、导出和预检继续使用完整校验及快照隔离。
 
 ## 上传、绑定、导出及下载
@@ -98,7 +104,7 @@ if ((Get-Item -LiteralPath $destination).Length -ne $export.sizeBytes -or `
 }
 ```
 
-`download.path` 为同源固定路径 `/api/project-exports/{exportId}/content`，必须带相同凭据。只展示 URL 不算下载。导出中的 `checkReport=not_checked` 表示导出自身没有执行目标预检；已取得的预检报告由调用者按其 `draftRevision` 核对，不能借用旧版本结果。
+`download.path` 为同源固定路径 `/api/project-exports/{exportId}/content`，必须带相同凭据。只展示 URL 不算下载。导出中的 `checkReport` 为 `{"status":"not_attached","draftRevision":"本次导出修订","performedByExport":false}`：它说明本导出没有附带检查报告，导出动作没有执行检查；不否认该修订先前已取得的 PASSED，也不证明该修订通过。服务不额外返回无作用域的 `precheck=not_run`。客户端保留已取得的报告，并核对其 `draftId/draftRevision/targetId/runtimeInstanceId`，不能把旧修订或另一目标的结果用于新导出。
 
 ## 校验、预检及取消
 
@@ -114,4 +120,4 @@ if ((Get-Item -LiteralPath $destination).Length -ne $export.sizeBytes -or `
 
 `scripts/authoring_acceptance.py --inspector <Inspector的clients/launcher/build/index.js> --output <新的空证据目录>` 启动隔离本机服务，通过外部 Inspector 完成发现、编辑、缺项诊断修复、上传绑定、页面 mask、撤销重做、预检、导出及 HTTP 下载。之后它在隔离软件 Runtime 显式加载并运行下载工程一次；这是验收脚本的单独操作，不是 MCP 运行工具。脚本保存 `report.json`、`download.zip` 和解压后的完整工程，不访问现场设备。
 
-本轮实际证据、已完成任务及桌面验证方式见 [交付记录](../testing/2026-11-13-independent-project-authoring/README.md)。
+V7 首轮交付见 [原交付记录](../testing/2026-11-13-independent-project-authoring/README.md)；V7.1 六项修复、本轮重新执行的结果、同一下载物的 Designer 验证及尚未关闭的检查见 [修复记录](../testing/2026-11-13-independent-project-authoring-v7_1/README.md)。两轮证据分别保存，不把原有测试数量计成本轮结果。

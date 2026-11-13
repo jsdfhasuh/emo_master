@@ -1,0 +1,91 @@
+Requirement already satisfied: PySide2>=5.15 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 1)) (5.15.2.1)
+Requirement already satisfied: grpcio==1.78.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 2)) (1.78.0)
+Requirement already satisfied: grpcio-tools==1.78.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 3)) (1.78.0)
+Requirement already satisfied: protobuf==6.33.6 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 4)) (6.33.6)
+Requirement already satisfied: pydantic>=2.6 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 5)) (2.14.3)
+Requirement already satisfied: opencv-python<4.11,>=4.9 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 6)) (4.10.0.84)
+Requirement already satisfied: PyYAML>=6.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 7)) (6.0.3)
+Requirement already satisfied: fastapi>=0.110 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 8)) (0.162.5)
+Requirement already satisfied: uvicorn>=0.29 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 9)) (0.54.0)
+Requirement already satisfied: onnxruntime==1.23.2 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 10)) (1.23.2)
+Requirement already satisfied: onnx==1.16.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 11)) (1.16.0)
+Requirement already satisfied: numpy<2 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 12)) (1.26.4)
+Requirement already satisfied: Pillow<13,>=10 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 13)) (12.3.0)
+Requirement already satisfied: defusedxml==0.7.1 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 14)) (0.7.1)
+Requirement already satisfied: jsonschema<5,>=4.18 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements.txt (line 15)) (4.26.0)
+Requirement already satisfied: pytest>=8.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements-dev.txt (line 2)) (9.2.0)
+Requirement already satisfied: pytest-timeout==2.4.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements-dev.txt (line 3)) (2.4.0)
+Requirement already satisfied: pytest-cov>=5.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements-dev.txt (line 4)) (7.1.0)
+Requirement already satisfied: mypy==2.3.1 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements-dev.txt (line 5)) (2.3.1)
+Requirement already satisfied: ruff==0.15.6 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from -r requirements-dev.txt (line 6)) (0.15.6)
+Collecting httpx<1,>=0.27.1
+  Using cached httpx-0.28.1-py3-none-any.whl (73 kB)
+Collecting httpx2<3,>=2.14
+  Using cached httpx2-2.14.0-py3-none-any.whl (96 kB)
+Collecting mcp==1.30.0
+  Downloading mcp-1.30.0-py3-none-any.whl (234 kB)
+Requirement already satisfied: typing-extensions~=4.12 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from grpcio==1.78.0->-r requirements.txt (line 2)) (4.16.0)
+Requirement already satisfied: setuptools>=77.0.1 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from grpcio-tools==1.78.0->-r requirements.txt (line 3)) (79.0.1)
+Requirement already satisfied: packaging in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from onnxruntime==1.23.2->-r requirements.txt (line 10)) (26.3)
+Requirement already satisfied: flatbuffers in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from onnxruntime==1.23.2->-r requirements.txt (line 10)) (25.12.19)
+Requirement already satisfied: sympy in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from onnxruntime==1.23.2->-r requirements.txt (line 10)) (1.14.0)
+Requirement already satisfied: coloredlogs in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from onnxruntime==1.23.2->-r requirements.txt (line 10)) (15.0.1)
+Requirement already satisfied: pathspec>=1.0.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from mypy==2.3.1->-r requirements-dev.txt (line 5)) (1.1.1)
+Requirement already satisfied: librt>=0.13.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from mypy==2.3.1->-r requirements-dev.txt (line 5)) (0.16.0)
+Requirement already satisfied: tomli>=1.1.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from mypy==2.3.1->-r requirements-dev.txt (line 5)) (2.5.0)
+Requirement already satisfied: mypy_extensions>=1.0.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from mypy==2.3.1->-r requirements-dev.txt (line 5)) (1.2.0)
+Requirement already satisfied: ast-serialize<1.0.0,>=0.6.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from mypy==2.3.1->-r requirements-dev.txt (line 5)) (0.13.1)
+Collecting python-multipart>=0.0.9
+  Downloading python_multipart-0.0.32-py3-none-any.whl (30 kB)
+Collecting sse-starlette>=1.6.1
+  Downloading sse_starlette-3.5.1-py3-none-any.whl (17 kB)
+Collecting pydantic-settings>=2.5.2
+  Downloading pydantic_settings-2.15.0-py3-none-any.whl (69 kB)
+Collecting httpx-sse>=0.4
+  Downloading httpx_sse-0.4.3-py3-none-any.whl (9.0 kB)
+Collecting pywin32>=310
+  Downloading pywin32-312-cp310-cp310-win_amd64.whl (6.9 MB)
+Requirement already satisfied: anyio>=4.5 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from mcp==1.30.0->-r requirements-dev.txt (line 10)) (4.16.0)
+Requirement already satisfied: typing-inspection>=0.4.1 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from mcp==1.30.0->-r requirements-dev.txt (line 10)) (0.4.5)
+Requirement already satisfied: starlette>=0.27 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from mcp==1.30.0->-r requirements-dev.txt (line 10)) (1.7.0)
+Collecting pyjwt[crypto]>=2.10.1
+  Downloading pyjwt-2.15.1-py3-none-any.whl (33 kB)
+Requirement already satisfied: shiboken2==5.15.2.1 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from PySide2>=5.15->-r requirements.txt (line 1)) (5.15.2.1)
+Requirement already satisfied: pydantic-core==2.50.4 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from pydantic>=2.6->-r requirements.txt (line 5)) (2.50.4)
+Requirement already satisfied: annotated-types>=0.6.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from pydantic>=2.6->-r requirements.txt (line 5)) (0.8.0)
+Requirement already satisfied: opentelemetry-api>=1.44.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from fastapi>=0.110->-r requirements.txt (line 8)) (1.45.2)
+Requirement already satisfied: annotated-doc>=0.0.2 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from fastapi>=0.110->-r requirements.txt (line 8)) (0.0.6)
+Requirement already satisfied: h11>=0.8 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from uvicorn>=0.29->-r requirements.txt (line 9)) (0.16.0)
+Requirement already satisfied: click>=7.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from uvicorn>=0.29->-r requirements.txt (line 9)) (8.5.1)
+Requirement already satisfied: referencing>=0.28.4 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from jsonschema<5,>=4.18->-r requirements.txt (line 15)) (0.37.0)
+Requirement already satisfied: jsonschema-specifications>=2023.03.6 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from jsonschema<5,>=4.18->-r requirements.txt (line 15)) (2025.9.1)
+Requirement already satisfied: rpds-py>=0.25.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from jsonschema<5,>=4.18->-r requirements.txt (line 15)) (0.30.0)
+Requirement already satisfied: attrs>=22.2.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from jsonschema<5,>=4.18->-r requirements.txt (line 15)) (26.1.0)
+Requirement already satisfied: pygments>=2.15 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from pytest>=8.0->-r requirements-dev.txt (line 2)) (2.21.0)
+Requirement already satisfied: pluggy<2,>=1.6 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from pytest>=8.0->-r requirements-dev.txt (line 2)) (1.7.0)
+Requirement already satisfied: iniconfig>=2 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from pytest>=8.0->-r requirements-dev.txt (line 2)) (2.3.1)
+Requirement already satisfied: exceptiongroup>=1 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from pytest>=8.0->-r requirements-dev.txt (line 2)) (1.3.1)
+Requirement already satisfied: colorama>=0.4 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from pytest>=8.0->-r requirements-dev.txt (line 2)) (0.4.6)
+Requirement already satisfied: coverage[toml]>=7.10.6 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from pytest-cov>=5.0->-r requirements-dev.txt (line 4)) (7.16.2)
+Requirement already satisfied: idna in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from httpx<1,>=0.27.1->-r requirements-dev.txt (line 8)) (3.20)
+Collecting httpcore==1.*
+  Using cached httpcore-1.0.9-py3-none-any.whl (78 kB)
+Collecting certifi
+  Using cached certifi-2026.10.23-py3-none-any.whl (135 kB)
+Collecting truststore>=0.10
+  Using cached truststore-0.10.5-py3-none-any.whl (19 kB)
+Collecting httpcore2==2.14.0
+  Using cached httpcore2-2.14.0-py3-none-any.whl (84 kB)
+Collecting python-dotenv>=0.21.0
+  Downloading python_dotenv-1.2.4-py3-none-any.whl (23 kB)
+Collecting cryptography>=3.4.0
+  Downloading cryptography-50.0.2-cp39-abi3-win_amd64.whl (3.9 MB)
+Requirement already satisfied: humanfriendly>=9.1 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from coloredlogs->onnxruntime==1.23.2->-r requirements.txt (line 10)) (10.0)
+Requirement already satisfied: mpmath<1.4,>=1.1.0 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from sympy->onnxruntime==1.23.2->-r requirements.txt (line 10)) (1.3.0)
+Collecting cffi>=2.0.0
+  Downloading cffi-2.1.1-cp310-cp310-win_amd64.whl (185 kB)
+Requirement already satisfied: pyreadline3 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from humanfriendly>=9.1->coloredlogs->onnxruntime==1.23.2->-r requirements.txt (line 10)) (3.5.6)
+Collecting pycparser
+  Downloading pycparser-3.11-py3-none-any.whl (51 kB)
+Installing collected packages: truststore, pywin32, python-multipart, python-dotenv, pyjwt, pycparser, httpx-sse, certifi, httpcore2, httpcore, cffi, pydantic-settings, httpx2, httpx, cryptography, sse-starlette, mcp
+Successfully installed certifi-2026.10.23 cffi-2.1.1 cryptography-50.0.2 httpcore-1.0.9 httpcore2-2.14.0 httpx-0.28.1 httpx-sse-0.4.3 httpx2-2.14.0 mcp-1.30.0 pycparser-3.11 pydantic-settings-2.15.0 pyjwt-2.15.1 python-dotenv-1.2.4 python-multipart-0.0.32 pywin32-312 sse-starlette-3.5.1 truststore-0.10.5

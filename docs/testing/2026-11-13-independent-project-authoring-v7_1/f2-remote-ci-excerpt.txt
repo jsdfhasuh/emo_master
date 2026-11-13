@@ -1,0 +1,8 @@
+web-panel (ubuntu-latest)	UNKNOWN STEP	2026-11-13T03:03:42.2958717Z test_vendored_tree_is_exact_current_handoff_manifest_and_generated_sdk (test_contract_manifest.ContractManifestTests) ... FAIL
+web-panel (ubuntu-latest)	UNKNOWN STEP	2026-11-13T03:03:52.8051461Z test_cancelled_or_failed_publication_can_query_continue_end_and_publish_again (test_editor_target_isolation.EditorTargetIsolationTests) ... ok
+web-panel (ubuntu-latest)	UNKNOWN STEP	2026-11-13T03:04:08.4508580Z FAIL: test_vendored_tree_is_exact_current_handoff_manifest_and_generated_sdk (test_contract_manifest.ContractManifestTests)
+web-panel (ubuntu-latest)	UNKNOWN STEP	2026-11-13T03:04:08.4509491Z Traceback (most recent call last):
+web-panel (ubuntu-latest)	UNKNOWN STEP	2026-11-13T03:04:08.4510179Z   File "/home/runner/work/emo_master/emo_master/web_panel/tests/test_contract_manifest.py", line 39, in test_vendored_tree_is_exact_current_handoff_manifest_and_generated_sdk
+web-panel (ubuntu-latest)	UNKNOWN STEP	2026-11-13T03:04:08.4511653Z AssertionError: b'syn[2514 chars]n\r\nmessage StartJobRequest {\r\n  string pro[36252 chars]\r\n' != b'syn[2514 chars]n\r\n// Read-only candidate checking. One meta[37254 chars]\r\n'
+web-panel (ubuntu-latest)	UNKNOWN STEP	2026-11-13T03:04:08.4513073Z Ran 229 tests in 30.692s
+web-panel (ubuntu-latest)	UNKNOWN STEP	2026-11-13T03:04:08.4513331Z FAILED (failures=1, skipped=7)

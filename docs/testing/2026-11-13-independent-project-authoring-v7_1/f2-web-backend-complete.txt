@@ -1,0 +1,244 @@
+test_admin_crud_and_request_lookup (test_app.AppTests) ... ok
+test_gateway_entry_initialization_failure_is_logged_and_writer_closed (test_app.AppTests) ... ok
+test_history_filter_and_opaque_images (test_app.AppTests) ... ok
+test_idempotent_start_and_explicit_new_intent (test_app.AppTests) ... ok
+test_json_objects_and_duplicate_account (test_app.AppTests) ... ok
+test_log_validation_failure_boundary_and_fixed_gateway_range (test_app.AppTests) ... ok
+test_login_csrf_permissions (test_app.AppTests) ... ok
+test_login_origin (test_app.AppTests) ... ok
+test_package_switch_preserves_existing_view_revision_and_assets (test_app.AppTests) ... ok
+test_pending_views_expire_and_delete (test_app.AppTests) ... ok
+test_preview_is_readonly_even_admin (test_app.AppTests) ... ok
+test_real_mode_never_falls_back (test_app.AppTests) ... ok
+test_runtime_log_level_spacing_matches_query_and_export (test_app.AppTests) ... ok
+test_runtime_logs_permissions_history_download_and_structured_error (test_app.AppTests) ... ok
+test_view_owner_history_and_websocket (test_app.AppTests) ... ok
+test_wrong_runtime_no_side_effect (test_app.AppTests) ... ok
+test_declared_unavailable_source_does_not_attempt_a_runtime_asset_read (test_asset_lifecycle.AssetLifecycleTests) ... ok
+test_late_advertised_result_is_retired_without_reading_or_replacing_its_image (test_asset_lifecycle.AssetLifecycleTests) ... ok
+test_last_admin_and_revoked_sessions (test_auth.AuthTests) ... ok
+test_concurrent_admin_demotions_leave_one_admin (test_auth.ConcurrentAdminTests) ... ok
+test_password_reset_during_hash_cannot_mint_old_session (test_auth.LoginRaceTests) ... ok
+test_preflight_rejection_is_not_unknown (test_contract_gateway.OperationsContractTests) ... ok
+test_unknown_reconciles_only_original_instance_endpoint_and_request (test_contract_gateway.OperationsContractTests) ... ok
+test_single_use_token_and_all_production_mutators_denied (test_contract_gateway.PreviewGateTests) ... ok
+test_aliases_share_actual_identity_and_restart_cannot_leak_results (test_contract_gateway.ViewContractTests) ... ok
+test_all_authoritative_files_match_development_handoff (test_contract_manifest.ContractManifestTests) ... ok
+test_embedded_fixtures_are_the_same_sdk_delivery (test_contract_manifest.ContractManifestTests) ... ok
+test_vendored_tree_and_sdk_match_the_immutable_historical_handoff (test_contract_manifest.ContractManifestTests) ... ok
+test_exact_run_recovers_both_read_admissions_without_catalog_or_writes (test_control_read_admission.ControlReadAdmissionTests) ... ok
+test_info_recovers_one_explicit_control_admission_refusal (test_control_read_admission.ControlReadAdmissionTests) ... ok
+test_other_read_errors_are_not_retried (test_control_read_admission.ControlReadAdmissionTests) ... ok
+test_start_and_stop_are_never_retried (test_control_read_admission.ControlReadAdmissionTests) ... ok
+test_async_cancellation_during_backoff_does_not_resubmit (test_control_read_admission.ControlReadBudgetTests) ... ok
+test_info_and_run_share_one_timeout_and_persistent_refusal_stops (test_control_read_admission.ControlReadBudgetTests) ... ok
+test_different_file_owner_rejected (test_create_user_cli.CreateUserCliTests) ... skipped 'POSIX ownership check'
+test_duplicate_user_does_not_reset_password_or_role (test_create_user_cli.CreateUserCliTests) ... ok
+test_file_bootstrap_then_normal_http_login (test_create_user_cli.CreateUserCliTests) ... ok
+test_interactive_input_still_confirms (test_create_user_cli.CreateUserCliTests) ... ok
+test_interactive_mismatch_still_fails_before_creating_database (test_create_user_cli.CreateUserCliTests) ... ok
+test_invalid_contents_never_create_database_or_leak_content (test_create_user_cli.CreateUserCliTests) ... ok
+test_missing_or_directory_file_fails_without_database (test_create_user_cli.CreateUserCliTests) ... ok
+test_password_file_never_prompts (test_create_user_cli.CreateUserCliTests) ... ok
+test_public_permissions_rejected_and_read_only_private_file_accepted (test_create_user_cli.CreateUserCliTests) ... skipped 'POSIX ownership and permission checks'
+test_symlink_and_fifo_rejected_without_waiting (test_create_user_cli.CreateUserCliTests) ... skipped 'POSIX FIFO and symlink fixtures'
+test_utf8_bom_line_endings_and_character_limits (test_create_user_cli.CreateUserCliTests) ... ok
+test_changed_membership_rejected (test_dispatch_contract.DispatchContractTests) ... ok
+test_consumer_selection_never_expands_to_group (test_dispatch_contract.DispatchContractTests) ... ok
+test_group_source_problems_use_each_sdk_coverage_owner (test_dispatch_contract.DispatchContractTests) ... ok
+test_multiple_consumer_scopes_must_be_disjoint (test_dispatch_contract.DispatchContractTests) ... ok
+test_ordinary_job_remains_single (test_dispatch_contract.DispatchContractTests) ... ok
+test_root_includes_only_exact_direct_consumers (test_dispatch_contract.DispatchContractTests) ... ok
+test_uncaptured_root_preserves_group_and_consumer_coverage (test_dispatch_contract.DispatchContractTests) ... ok
+test_highly_compressible_bmp_previews_publishes_and_reimports_without_relaxing_zip_limits (test_editor.EditorTests) ... ok
+test_invalid_rollback_keeps_active_page_and_original_source (test_editor.EditorTests) ... ok
+test_lost_submit_reply_is_queried_then_explicitly_completed_without_replay (test_editor.EditorTests) ... ok
+test_ordinary_generated_package_keeps_existing_compressed_bytes_and_identity (test_editor.EditorTests) ... ok
+test_pending_older_reply_does_not_activate_after_actual_config_changed (test_editor.EditorTests) ... ok
+test_publish_freezes_until_explicit_start_layout_only_and_rollback (test_editor.EditorTests) ... ok
+test_quota_rejection_links_runtime_sources_to_web_controls_without_saving_requests (test_editor.EditorTests) ... ok
+test_two_pages_full_source_resources_reopen_preview_without_execution (test_editor.EditorTests) ... ok
+test_type_errors_stale_draft_wrong_target_and_missing_real_preview_task (test_editor.EditorTests) ... ok
+test_unknown_without_receipt_can_be_ended_without_replay_or_losing_draft (test_editor.EditorTests) ... ok
+test_validation_disconnect_retains_candidate_for_explicit_continue (test_editor.EditorTests) ... ok
+test_duplicate_complete_followed_by_new_publish_keeps_latest_page_and_capture_together (test_editor_concurrency.EditorConcurrencyTests) ... ok
+test_publish_and_target_address_edit_share_existing_target_coordination (test_editor_concurrency.EditorConcurrencyTests) ... Executing <Task pending name='Task-434' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:101> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.172 seconds
+ok
+test_cancelled_or_failed_publication_can_query_continue_end_and_publish_again (test_editor_target_isolation.EditorTargetIsolationTests) ... Executing <Task pending name='Task-458' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:101> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.156 seconds
+Executing <Task pending name='Task-458' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:101> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.219 seconds
+ok
+test_other_runtime_publication_completes_while_publication_waits (test_editor_target_isolation.EditorTargetIsolationTests) ... Executing <Task pending name='Task-543' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:101> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.188 seconds
+ok
+test_other_runtime_start_completes_while_publication_waits (test_editor_target_isolation.EditorTargetIsolationTests) ... Executing <Task pending name='Task-577' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:101> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.172 seconds
+ok
+test_other_runtime_stop_completes_while_publication_waits (test_editor_target_isolation.EditorTargetIsolationTests) ... Executing <Task pending name='Task-609' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:101> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.219 seconds
+ok
+test_queued_grant_on_publishing_target_does_not_hold_shared_user_guard (test_editor_target_isolation.EditorTargetIsolationTests) ... Executing <Task pending name='Task-637' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:101> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.219 seconds
+ok
+test_same_target_address_change_and_delete_wait_for_publication (test_editor_target_isolation.EditorTargetIsolationTests) ... Executing <Task pending name='Task-675' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:101> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.141 seconds
+Executing <Task pending name='Task-675' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:101> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.172 seconds
+ok
+test_actual_view_attach_and_state_use_formal_messages_for_both_groups (test_formal_browser_messages.FormalBrowserTests) ... ok
+test_control_result_known_empty_or_real_group_and_unknown_nullable (test_formal_browser_messages.FormalBrowserTests) ... ok
+test_official_fixtures_keep_ordinary_empty_and_grouped_real_ids (test_formal_browser_messages.FormalBrowserTests) ... ok
+test_stop_keeps_optional_empty_or_group_presence_and_rejects_absence (test_formal_browser_messages.FormalBrowserTests) ... ok
+test_frozen_read_failure_is_gateway_message_not_forged_contract (test_freeze_contract.FreezeContractTests) ... ok
+test_group_shares_each_member_and_never_joins_unrelated_job (test_freeze_contract.FreezeContractTests) ... ok
+test_slow_asset_uses_exact_advertised_recent_result_not_newest (test_freeze_contract.FreezeContractTests) ... ok
+test_terminal_freeze_expires_without_another_frame (test_freeze_contract.FreezeContractTests) ... ok
+test_timer_cancelled_on_resume_remove_and_close (test_freeze_contract.FreezeContractTests) ... ok
+test_stop_timeout_observes_original_job_terminal_without_replay (test_freeze_contract.StopReconcileTests) ... ok
+test_declared_aggregate_and_filter_policy (test_history_aggregate.HistoryAggregateTests) ... ok
+test_cli_disables_proxy_headers_and_warns_about_admin_access (test_local_auth.LocalConfigTests) ... ok
+test_default_remains_password_mode (test_local_auth.LocalConfigTests) ... ok
+test_local_configuration_is_explicit_loopback_only (test_local_auth.LocalConfigTests) ... ok
+test_bootstrap_requires_explicit_header_and_complete_same_origin (test_local_auth.LocalHTTPTests) ... ok
+test_boundary_is_global_including_health_and_static_entry (test_local_auth.LocalHTTPTests) ... ok
+test_csrf_logout_and_renewal (test_local_auth.LocalHTTPTests) ... ok
+test_disabling_local_mode_rejects_old_local_cookie (test_local_auth.LocalHTTPTests) ... ok
+test_expired_http_session_requires_fresh_explicit_bootstrap (test_local_auth.LocalHTTPTests) ... ok
+test_first_start_no_users_get_does_not_create_session_and_bootstrap_reuses_cookie (test_local_auth.LocalHTTPTests) ... ok
+test_ipv6_and_default_port_authorities (test_local_auth.LocalHTTPTests) ... ok
+test_live_websocket_revokes_after_logout_and_releases_view (test_local_auth.LocalHTTPTests) ... ok
+test_live_websocket_revokes_after_session_expiry (test_local_auth.LocalHTTPTests) ... ok
+test_origin_and_permission_denials_never_report_csrf_recovery_code (test_local_auth.LocalHTTPTests) ... ok
+test_password_mode_remains_default_and_existing_users_work_in_local_mode (test_local_auth.LocalHTTPTests) ... ok
+test_restart_preserves_saved_draft_not_session_and_never_writes_runtime (test_local_auth.LocalHTTPTests) ... ok
+test_shared_cookie_csrf_recovery_keeps_current_session_and_requires_explicit_save (test_local_auth.LocalHTTPTests) ... ok
+test_websocket_requires_same_origin_and_unforwarded_loopback_peer (test_local_auth.LocalHTTPTests) ... ok
+test_expiry_logout_and_regular_user_isolation (test_local_auth.LocalStoreTests) ... ok
+test_no_account_stable_separate_identity_and_process_scoped_tokens (test_local_auth.LocalStoreTests) ... ok
+test_identity_is_consistent_and_cross_target_control_rejected (test_mock_identity.MockIdentityTests) ... ok
+test_same_instance_alias_shares_but_independent_b_stream_does_not (test_mock_identity.MockIdentityTests) ... ok
+test_b_only_viewer_receives_b_image_while_a_stream_is_open (test_mock_identity.MockTargetHttpTests) ... ok
+test_asset_byte_count_digest_filename_and_pixels (test_official_packages.OfficialPackageTests) ... ok
+test_canonical_vectors_authoritative_sdk (test_official_packages.OfficialPackageTests) ... ok
+test_capture_requirements_cover_published_sources (test_official_packages.OfficialPackageTests) ... ok
+test_delivered_spacer_demo_preserves_both_modes_without_capture_sources (test_official_packages.OfficialPackageTests) ... ok
+test_exact_export_and_sdk_revision (test_official_packages.OfficialPackageTests) ... ok
+test_expansion_rejects_invalid_placement_or_undeclared_requirement (test_official_packages.OfficialPackageTests) ... ok
+test_expansion_survives_official_install_and_normalization (test_official_packages.OfficialPackageTests) ... ok
+test_no_runtime_paths_or_unknown_props (test_official_packages.OfficialPackageTests) ... ok
+test_official_grid_spacer_cannot_request_elastic_occupancy (test_official_packages.OfficialPackageTests) ... ok
+test_official_spacer_rejects_bindings_actions_and_children (test_official_packages.OfficialPackageTests) ... ok
+test_page_and_binding_references (test_official_packages.OfficialPackageTests) ... ok
+test_renderer_requirements_fail_closed (test_official_packages.OfficialPackageTests) ... ok
+test_revision_tampering_and_rollback (test_official_packages.OfficialPackageTests) ... ok
+test_spacer_survives_official_install_and_normalization (test_official_packages.OfficialPackageTests) ... ok
+test_windows_deep_editor_packages_install_and_reopen (test_official_packages.OfficialPackageTests) ... ok
+test_windows_local_rename_retries_once_and_preserves_failure_limit (test_official_packages.OfficialPackageTests) ... ok
+test_windows_long_package_asset_uses_extended_io_path (test_official_packages.OfficialPackageTests) ... ok
+test_accepted_start_confirms_command_not_job_and_does_not_keep_querying (test_operations_state.OperationStateTests) ... ok
+test_accepted_stop_reports_stopping_then_actual_terminal_and_retained_resources (test_operations_state.OperationStateTests) ... ok
+test_accepted_without_job_identity_remains_queryable_unknown (test_operations_state.OperationStateTests) ... ok
+test_rejection_keeps_reason_not_generic_acceptance (test_operations_state.OperationStateTests) ... ok
+test_stop_reconciliation_rejects_changed_original_identity (test_operations_state.OperationStateTests) ... ok
+test_unknown_start_lookup_accepted_uses_same_transition_without_replay (test_operations_state.OperationStateTests) ... ok
+test_unknown_stop_aborted_resolves_original_empty_group_without_inventing_ack (test_operations_state.OperationStateTests) ... ok
+test_quota_json_preserves_addresses_and_origins_over_grpc (test_output_request_diagnostics.OutputRequestDiagnosticsTests) ... ok
+test_a_b_activation_rollback_pinned_view_and_scoped_notices (test_package_context.PackageContextTests) ... ok
+test_formal_project_mismatch_leaves_activation_and_associations (test_package_context.PackageContextTests) ... ok
+test_project_change_does_not_reuse_prior_project_activation (test_package_context.PackageContextTests) ... ok
+test_shared_package_update_never_revokes_other_target_acl (test_package_context.PackageContextTests) ... ok
+test_legacy_migration_explicit_known_targets_only_and_once (test_package_context.PackageMigrationTests) ... ok
+test_actual_demo_fixture_installs_all_component_types (test_packages.PackageTests) ... ok
+test_aggregate_is_allowlisted (test_packages.PackageTests) ... ok
+test_all_component_types_and_nested_container (test_packages.PackageTests) ... ok
+test_assets_validate_declared_type_digest_and_magic (test_packages.PackageTests) ... ok
+test_clock_format_timezone (test_packages.PackageTests) ... ok
+test_corrupt_json_duplicate_keys_and_nonfinite (test_packages.PackageTests) ... ok
+test_depth_and_children_rejected (test_packages.PackageTests) ... ok
+test_duplicate_archive_and_symlink (test_packages.PackageTests) ... ok
+test_duplicate_component_and_unknown_type (test_packages.PackageTests) ... ok
+test_grid_and_mobile_require_supported_schema (test_packages.PackageTests) ... ok
+test_history_selection_requires_real_table (test_packages.PackageTests) ... ok
+test_image_modes_are_exclusive (test_packages.PackageTests) ... ok
+test_install_activate_rollback_and_asset (test_packages.PackageTests) ... ok
+test_malformed_types_are_validation_errors (test_packages.PackageTests) ... ok
+test_official_or_unknown_contract_not_misread_as_draft (test_packages.PackageTests) ... ok
+test_per_type_property_matrix (test_packages.PackageTests) ... ok
+test_same_revision_different_bytes_rejected (test_packages.PackageTests) ... ok
+test_size_count_ratio_limits (test_packages.PackageTests) ... ok
+test_spacer_is_static_fixed_grid_occupancy (test_packages.PackageTests) ... ok
+test_typed_renderer_properties (test_packages.PackageTests) ... ok
+test_unknown_files_schema_scripts_and_navigation (test_packages.PackageTests) ... ok
+test_unknown_ids_and_corrupt_stored_asset (test_packages.PackageTests) ... ok
+test_unsafe_paths (test_packages.PackageTests) ... ok
+test_fixture_provider_is_explicit_and_read_only (test_preview.FixtureTests) ... ok
+test_context_identity_validation (test_preview.PreviewTests) ... ok
+test_context_required_and_loopback_only (test_preview.PreviewTests) ... ok
+test_preview_cli (test_preview.PreviewTests) ... ok
+test_unavailable_runtime_never_falls_back_or_announces_ready (test_preview.PreviewTests) ... ok
+test_editor_publish_registers_real_outputs_before_explicit_start_and_stop (test_product_runtime.EditorPublishedRuntimeTests) ... skipped 'Opt-in full owning Runtime integration; requires its separate dependencies'
+test_actual_runtime_history_without_jobs_and_image_ownership (test_product_runtime.ProductRuntimeTests) ... skipped 'Opt-in full owning Runtime integration; requires its separate dependencies'
+test_actual_runtime_start_without_external_capture_lookup_stop_and_no_replay (test_product_runtime.ProductRuntimeTests) ... skipped 'Opt-in full owning Runtime integration; requires its separate dependencies'
+test_reconciliation_timeout_does_not_invent_acceptance (test_product_runtime.StartReconciliationTests) ... ok
+test_unknown_queries_same_intent_without_another_start (test_product_runtime.StartReconciliationTests) ... ok
+test_acl_references_delete (test_registry.RegistryTests) ... ok
+test_acl_validation (test_registry.RegistryTests) ... ok
+test_admin_only_mutation (test_registry.RegistryTests) ... ok
+test_crud_persistence (test_registry.RegistryTests) ... ok
+test_explicit_acl (test_registry.RegistryTests) ... ok
+test_invalid_addresses (test_registry.RegistryTests) ... ok
+test_malformed_configuration (test_registry.RegistryTests) ... ok
+test_no_cross_target_leak (test_registry.RegistryTests) ... ok
+test_revoke_deleted_user (test_registry.RegistryTests) ... ok
+test_role_ceiling (test_registry.RegistryTests) ... ok
+test_direct_state_still_requires_session_and_target_view_acl (test_run_state_http.RunStateHttpTests) ... ok
+test_existing_mock_without_direct_state_keeps_catalog_fallback (test_run_state_http.RunStateHttpTests) ... ok
+test_runtime_rejections_keep_not_found_and_validation_http_semantics (test_run_state_http.RunStateHttpTests) ... ok
+test_asset_integrity_releases_lease_on_failure (test_runtime_contract.RuntimeContractTests) ... ok
+test_browser_safe_never_rounds_large_nested_integer (test_runtime_contract.RuntimeContractTests) ... ok
+test_history_zero_based_wire_and_opaque_image_and_revision (test_runtime_contract.RuntimeContractTests) ... ok
+test_identity_and_authoritative_resources_and_large_counters (test_runtime_contract.RuntimeContractTests) ... ok
+test_log_query_preserves_identity_payload_ids_errors_and_optional_zero (test_runtime_contract.RuntimeContractTests) ... ok
+test_metadata_only_snapshot_preserves_scope_ordinals (test_runtime_contract.RuntimeContractTests) ... ok
+test_no_capture_never_start (test_runtime_contract.RuntimeContractTests) ... ok
+test_preview_pins_identity_but_allows_layout_document_revision (test_runtime_contract.RuntimeContractTests) ... ok
+test_sdk_coverage_decoding_and_shared_stream_cursor (test_runtime_contract.RuntimeContractTests) ... ok
+test_selected_job_metadata_keeps_frozen_revisions_after_project_change (test_runtime_contract.RuntimeContractTests) ... ok
+test_stale_control_rejected_before_mutation (test_runtime_contract.RuntimeContractTests) ... ok
+test_start_pins_cas_and_preserves_intent_and_stop_job (test_runtime_contract.RuntimeContractTests) ... ok
+test_stop_explicit_empty_ungrouped_identity (test_runtime_contract.RuntimeContractTests) ... ok
+test_unknown_start_never_replays_and_lookup_same_id (test_runtime_contract.RuntimeContractTests) ... ok
+test_empty_expiry_snapshot_retires_live_and_queued_original (test_scope_status.ScopeStatusTests) ... ok
+test_expiry_threshold_preserves_newer_result_other_scope_and_frozen (test_scope_status.ScopeStatusTests) ... ok
+test_late_view_inherits_expiry_even_without_cached_result (test_scope_status.ScopeStatusTests) ... ok
+test_latest_started_keeps_complete_result_and_forwards_decimal (test_scope_status.ScopeStatusTests) ... ok
+test_historical_recovery_rechecks_current_viewer_permission (test_selected_package_recovery.SelectedPackageRecoveryTests) ... ok
+test_instance_change_invalidates_both_old_and_current_selection (test_selected_package_recovery.SelectedPackageRecoveryTests) ... ok
+test_old_release_requires_original_target_project_and_expected_instance (test_selected_package_recovery.SelectedPackageRecoveryTests) ... ok
+test_recover_old_release_same_job_and_frozen_coverage (test_selected_package_recovery.SelectedPackageRecoveryTests) ... ok
+test_unpublished_package_cannot_be_recovered_even_by_admin (test_selected_package_recovery.SelectedPackageRecoveryTests) ... ok
+test_persisted_intent_not_replayed (test_services.ServicesTests) ... ok
+test_shared_subscription_independent_freeze_and_cleanup (test_services.ServicesTests) ... ok
+test_alias_client_cannot_close_while_other_alias_uses_shared_stream (test_shared_alias.SharedAliasTests) ... ok
+test_declared_fixed_history_image_without_live_run (test_target_api.TargetApiTests) ... ok
+test_duplicate_package_association_does_not_change_active (test_target_api.TargetApiTests) ... ok
+test_freeze_pins_exact_fetched_bytes_and_resume_releases (test_target_api.TargetApiTests) ... ok
+test_mock_status_is_runtime_owned_and_events_use_cursor (test_target_api.TargetApiTests) ... ok
+test_new_same_name_user_cannot_read_old_operation (test_target_api.TargetApiTests) ... ok
+test_no_run_history_workflow_and_target_change_guard (test_target_api.TargetApiTests) ... ok
+test_package_static_assets_require_associated_target (test_target_api.TargetApiTests) ... ok
+test_persisted_runtime_address_wins_over_bootstrap_cli (test_target_api.TargetApiTests) ... ok
+test_target_acl_covers_http_resources_history_and_controls (test_target_api.TargetApiTests) ... ok
+test_viewer_acl_revocation_closes_ws (test_target_api.TargetApiTests) ... ok
+test_coalesces_waiters_cancellation_sha_and_ttl (test_view_resources.CacheTests) ... ok
+test_concurrency_byte_eviction_and_shutdown (test_view_resources.CacheTests) ... ok
+test_frozen_exact_bytes_pinned_until_expiry_or_owner_release (test_view_resources.CacheTests) ... ok
+test_bounded_short_stress_and_byte_budget (test_view_resources.ViewTests) ... Executing <Task pending name='Task-1550' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at D:\Conda\envs\emo_master\lib\unittest\async_case.py:95> wait_for=<Future pending cb=[Task.task_wakeup()] created at D:\Conda\envs\emo_master\lib\asyncio\base_events.py:429> created at D:\Conda\envs\emo_master\lib\unittest\async_case.py:117> took 0.156 seconds
+ok
+test_freeze_resume_drop_old_pending_and_do_not_extend_deadline (test_view_resources.ViewTests) ... ok
+test_freeze_ttl_expires_as_missing_not_silently_latest (test_view_resources.ViewTests) ... ok
+test_frozen_result_keeps_current_runtime_state (test_view_resources.ViewTests) ... ok
+test_multiscope_actual_display_freeze_isolation_and_latest_resume (test_view_resources.ViewTests) ... ok
+test_notice_survives_snapshot_pressure_and_instance_reset (test_view_resources.ViewTests) ... ok
+test_readonly_snapshot_recovers_after_one_disconnect (test_view_resources.ViewTests) ... ok
+test_reopened_view_keeps_receiving_while_previous_stream_retires (test_view_resources.ViewTests) ... ok
+test_runtime_alias_streams_shared_and_cancelled_without_stopping (test_view_resources.ViewTests) ... ok
+test_web_start_uses_valid_external_request_despite_deleted_qt_source (test_web_start_capture.IndependentWebCaptureTests) ... skipped 'Opt-in full owning Runtime integration; requires its separate dependencies'
+
+----------------------------------------------------------------------
+Ran 229 tests in 67.546s
+
+OK (skipped=7)

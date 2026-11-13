@@ -1,6 +1,6 @@
 # 最小文件往返契约与客户端辅助步骤
 
-**v5 拟议契约，待实施。** 本文件补充 design.md D6/D8，不代表端点已经运行。保持一套工作区 Bearer 凭据，不建设独立文件服务。示例采用 Windows PowerShell 5.1+ 的 HTTP 辅助方式；实际交付应记录为“选定 MCP 客户端 + HTTP 辅助”，而不是纯 MCP 自动读取电脑文件。
+**V7 文件往返契约的 V7.1 修订。** 接口主体已有实现；本版主要更正导出报告语义，不要求重做上传下载。 本文件补充 design.md D6/D8，不将本次文档修订当作已运行修复版端点。保持一套工作区 Bearer 凭据，不建设独立文件服务。示例采用 Windows PowerShell 5.1+ 的 HTTP 辅助方式；实际交付应记录为“选定 MCP 客户端 + HTTP 辅助”，而不是纯 MCP 自动读取电脑文件。
 
 ## 1. 能力响应与上传
 
@@ -36,6 +36,11 @@
   "mediaType": "application/zip",
   "sizeBytes": 1234,
   "sha256": "{服务计算的64位十六进制摘要}",
+  "checkReport": {
+    "status": "not_attached",
+    "draftRevision": "{冻结的草稿修订}",
+    "performedByExport": false
+  },
   "download": {
     "method": "GET",
     "path": "/api/project-exports/{exportId}/content",
@@ -44,13 +49,19 @@
 }
 ```
 
-`download.path` 是相对于已配置服务根地址的同源路径，指向该 exportId 的固定文件，重复下载不重新读取当前草稿。下载客户端添加 Authorization 头；服务不在 URL、结果或工程中返回 token。导出响应按 design.md 说明预检未执行/已有结果的所属修订，不能借用其他版本的通过报告。
+`download.path` 是相对于已配置服务根地址的同源路径，指向该 exportId 的固定文件，重复下载不重新读取当前草稿。下载客户端添加 Authorization 头；服务不在 URL、结果或工程中返回 token。导出响应按 design.md D6 区分“未附带报告”与检查结论，不能借用其他修订或目标的通过报告。
 
 只把路径显示给用户不算交付完成；普通浏览器点击通常不会自动附加自定义 Authorization 头。首期采用下面的携带凭据下载，或记录选定客户端的等价能力，不为方便点击而取消鉴权。匿名下载应被拒绝。
 
+### 2.1 报告语义（F6）
+
+上例为本版最小方案：`not_attached` 只表示本导出没有附带预检报告；`performedByExport=false` 只表示导出动作没有调用检查。它既不否认先前已有的 PASSED，也不证明此修订通过。客户端保留已经取得的报告，并按其草稿/修订/目标/实例身份判断关联。
+
+不要额外固定返回无作用域的 `precheck.status=not_run` 或 `checkReport.status=not_checked`。若实现改为附报告，返回真实匹配报告；修订变化或目标不明时不附旧通过结果。对外指南和 Inspector 断言必须与所选语义一起更新，文件下载认证/大小/摘要约定不变。
+
 ## 3. 一条可复用的 PowerShell 上传路径
 
-以下步骤针对**实现完成后的**接口。先在本机安全设置 `EMO_WEB_URL` 与 `EMO_WORKSPACE_TOKEN` 环境变量；不要把真实 token 写入聊天、日志或计划。示例不打印 header。文件路径和 draftId 由操作者选择，代码不猜最近草稿。
+以下步骤用于修复后的实际接口复验；本轮未执行这些命令。先在本机安全设置 `EMO_WEB_URL` 与 `EMO_WORKSPACE_TOKEN` 环境变量；不要把真实 token 写入聊天、日志或计划。示例不打印 header。文件路径和 draftId 由操作者选择，代码不猜最近草稿。
 
 ```powershell
 $ErrorActionPreference = 'Stop'
@@ -84,7 +95,7 @@ if ([long]$uploaded.sizeBytes -ne $file.Length -or $uploaded.sha256 -ne $hash) {
 $uploaded | Select-Object draftId, resourceId, draftRevision, sizeBytes, sha256
 ```
 
-`-InFile` 由 HTTP 客户端发送文件及其长度。需要替换时，query 再加入经 URL 编码的现有 resourceId。随后由 MCP 按 `get_authoring_capabilities` 返回的真实绑定命令 schema 提交 `resourceId` 和 `uploaded.draftRevision`；绑定目标使用正式 ParameterTarget/DeviceParameterTarget，不在示例中假造尚未固定的命令字段。绑定成功后继续使用返回的新修订。
+`-InFile` 由 HTTP 客户端发送文件及其长度。需要替换时，query 再加入经 URL 编码的现有 resourceId。随后由 MCP 按 `get_authoring_capabilities` 返回的真实绑定命令 schema 提交 `resourceId` 和 `uploaded.draftRevision`；绑定目标使用正式 ParameterTarget/DeviceParameterTarget，具体命令以服务当前 inputSchema 为准。绑定成功后继续使用返回的新修订。
 
 ## 4. 一条携带凭据的导出下载路径
 

@@ -1,0 +1,39 @@
+{
+  "package_revision": "v7.1-repair",
+  "created": "2026-11-13",
+  "fixed_review_commit": "3f717510751f4bd0d8277c3c2bf676236f51f49e",
+  "input_zip": {
+    "name": "emo_master_web_mcp_openspec_v7.zip",
+    "sha256": "dd88f86798e4307e8a3b19534b683ad8af86d8240e4846219dd63c2b6b65189d",
+    "verified_member_checksums": 18
+  },
+  "input_review": {
+    "name": "emo_master_3f717510_authoring_review.md",
+    "sha256": "b5082aaacdc9bae112d38ed802a80602210e6f83d196c7833f32afd79b941bb7",
+    "copied_byte_identical": true
+  },
+  "connector_reads": [
+    {
+      "path": "openspec/changes/add-independent-project-authoring/tasks.md",
+      "ref": "3f717510751f4bd0d8277c3c2bf676236f51f49e",
+      "scope": "first-delivery task states and evidence notes"
+    },
+    {
+      "path": "openspec/changes/add-independent-project-authoring/design.md",
+      "ref": "3f717510751f4bd0d8277c3c2bf676236f51f49e",
+      "scope": "lines 1-50"
+    }
+  ],
+  "not_performed": [
+    "latest-branch lookup",
+    "current-CI lookup",
+    "source-code modification",
+    "functional tests",
+    "official OpenSpec CLI validation",
+    "push"
+  ],
+  "defaults_selected_in_this_revision": [
+    "explicit existing-draft declaration adoption",
+    "explicit not-attached export-report semantics"
+  ]
+}

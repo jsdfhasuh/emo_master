@@ -62,6 +62,11 @@
 - **WHEN** 客户端依据支持组合区域的目标声明，经通用配置命令提交含保留与排除区域的 ROI 参数，并执行保存重读和撤销重做
 - **THEN** 区域用途、启用标记、几何字段和点集保持正确，一次配置只形成一次事务；过程不依赖 ROI 的 Qt 编辑器，声明中的 UI 预览能力不被冒充为 MCP 执行能力
 
+#### Scenario: Copy a configured resource-bound node
+
+- **WHEN** 客户端通过公开 `node.copy` 复制已有图片/模型资源绑定或现场参数绑定的普通节点
+- **THEN** 新节点与指向它的资源计划绑定在同一事务生成，绑定目标使用返回的新 nodeId，资源字节继续引用原 resourceId，原绑定不变；一次撤销/重做同时恢复节点和绑定，不把空路径的新节点当成完整复制成功
+
 ### Requirement: Revision and saved-state boundaries
 
 系统 SHALL 对每草稿写操作检查 expectedDraftRevision 并串行修改。连接断开不删除草稿；服务重启恢复最后成功保存内容并生成新会话修订，不承诺恢复未保存修改及全部撤销历史。真实修改工作结束前不得释放其互斥边界。
@@ -74,7 +79,7 @@
 #### Scenario: Recover saved content
 
 - **WHEN** 服务正常重启，客户端重新读取先前保存的草稿
-- **THEN** 返回最后保存内容和新的会话修订，旧客户端不能用重启前修订直接覆盖
+- **THEN** 返回最后保存内容和新的会话修订，旧客户端不能用重启前修订直接覆盖；保存/导入后的声明恢复沿用能力发现规范中的正常采用路径，不以创建并删除临时节点替代
 
 ### Requirement: Draft-local page bindings
 

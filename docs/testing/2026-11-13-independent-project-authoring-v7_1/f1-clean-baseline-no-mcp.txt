@@ -1,0 +1,1 @@
+{"success": true, "python": "3.10.21", "systemSitePackages": false, "mcpInstalled": false, "httpxInstalled": false, "httpCreateReadSave": "passed", "interpreter": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\.tmp\\v7_1-f1-clean\\Scripts\\python.exe"}

@@ -1,0 +1,10 @@
+{
+  "sdkVersion": "1.5.0",
+  "sdkPath": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\.tmp\\v7_1-f2-web-clean\\lib\\site-packages\\emo_panel_protocol\\__init__.py",
+  "generatedPath": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\.tmp\\v7_1-f2-web-clean\\lib\\site-packages\\emo_panel_protocol\\generated\\runtime_pb2.py",
+  "wheelSha256": "97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d",
+  "sdkGeneratedMatchesHistoricalWheel": true,
+  "coreInstalled": false,
+  "qtInstalled": false,
+  "includeSystemSitePackages": false
+}

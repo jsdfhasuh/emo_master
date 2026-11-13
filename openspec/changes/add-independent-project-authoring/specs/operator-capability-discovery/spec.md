@@ -69,3 +69,17 @@
 
 - **WHEN** 客户端读取相机或 PLC 相关算子的声明
 - **THEN** 返回已有设备要求，不建立设备连接，不改变在线工程，也不将查询成功当成硬件可用验证
+
+### Requirement: Declaration adoption for existing drafts
+
+系统 SHALL 为已保存、正常重启或导入的现有草稿提供可发现的声明恢复/重新采用途径，依据明确目标、工程算子依赖版本和设备类型/驱动版本。采用真实声明不得隐式升级工程依赖或改变节点参数、绑定；同一业务路径可由 HTTP/MCP 使用。已知的目标来源和版本必须保留，不把其他草稿或最近查询目标的声明自动借来。
+
+#### Scenario: Continue authoring after restart or import
+
+- **WHEN** 客户端重新读取已保存/导入的工程，按正常声明采用入口选择匹配目标及版本
+- **THEN** 声明重新关联到该草稿，本地校验、草稿输出和声明相关编辑恢复其可执行范围，项目内容保持；不需要先新增再删除临时同类节点
+
+#### Scenario: Keep unavailable declarations truthful
+
+- **WHEN** 目标离线或其真实声明不能满足工程已保存的依赖版本
+- **THEN** 返回明确缺项/不匹配，原草稿仍可读取与保存，适用本地检查可以 INCOMPLETE；不更改工程版本、伪造 PASSED 或借用其他目标声明

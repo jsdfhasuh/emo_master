@@ -1,0 +1,27 @@
+tools/list
+get_authoring_capabilities
+list_operators
+get_operator
+get_operator
+get_operator
+create_project_draft
+apply_project_command
+apply_project_command
+apply_project_command
+precheck_project_draft
+apply_project_command
+get_output_choices
+apply_project_command
+apply_project_command
+apply_project_command
+apply_project_command
+apply_project_command
+undo_project_edit
+redo_project_edit
+validate_project_draft
+save_project_draft
+adopt_project_declarations
+validate_project_draft
+precheck_project_draft
+export_project_draft
+Evidence: D:\jsdfhasuh\documents\my_project\emo_master\.tmp\independent-authoring-v7_1-inspector\report.json

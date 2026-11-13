@@ -1,0 +1,111 @@
+Collecting PySide2>=5.15
+  Downloading PySide2-5.15.2.1-5.15.2-cp35.cp36.cp37.cp38.cp39.cp310-none-win_amd64.whl (137.4 MB)
+Collecting grpcio==1.78.0
+  Using cached grpcio-1.78.0-cp310-cp310-win_amd64.whl (4.8 MB)
+Collecting grpcio-tools==1.78.0
+  Downloading grpcio_tools-1.78.0-cp310-cp310-win_amd64.whl (1.2 MB)
+Collecting protobuf==6.33.6
+  Using cached protobuf-6.33.6-cp310-abi3-win_amd64.whl (437 kB)
+Collecting pydantic>=2.6
+  Downloading pydantic-2.14.3-py3-none-any.whl (494 kB)
+Collecting opencv-python<4.11,>=4.9
+  Downloading opencv_python-4.10.0.84-cp37-abi3-win_amd64.whl (38.8 MB)
+Collecting PyYAML>=6.0
+  Downloading pyyaml-6.0.3-cp310-cp310-win_amd64.whl (158 kB)
+Collecting fastapi>=0.110
+  Downloading fastapi-0.162.5-py3-none-any.whl (151 kB)
+Collecting uvicorn>=0.29
+  Using cached uvicorn-0.54.0-py3-none-any.whl (87 kB)
+Collecting onnxruntime==1.23.2
+  Downloading onnxruntime-1.23.2-cp310-cp310-win_amd64.whl (13.5 MB)
+Collecting onnx==1.16.0
+  Downloading onnx-1.16.0-cp310-cp310-win_amd64.whl (14.4 MB)
+Collecting numpy<2
+  Downloading numpy-1.26.4-cp310-cp310-win_amd64.whl (15.8 MB)
+Collecting Pillow<13,>=10
+  Using cached pillow-12.3.0-cp310-cp310-win_amd64.whl (7.2 MB)
+Collecting defusedxml==0.7.1
+  Downloading defusedxml-0.7.1-py2.py3-none-any.whl (25 kB)
+Collecting jsonschema<5,>=4.18
+  Downloading jsonschema-4.26.0-py3-none-any.whl (90 kB)
+Collecting pytest>=8.0
+  Using cached pytest-9.2.0-py3-none-any.whl (411 kB)
+Collecting pytest-timeout==2.4.0
+  Downloading pytest_timeout-2.4.0-py3-none-any.whl (14 kB)
+Collecting pytest-cov>=5.0
+  Downloading pytest_cov-7.1.0-py3-none-any.whl (22 kB)
+Collecting mypy==2.3.1
+  Downloading mypy-2.3.1-cp310-cp310-win_amd64.whl (11.2 MB)
+Collecting ruff==0.15.6
+  Downloading ruff-0.15.6-py3-none-win_amd64.whl (11.8 MB)
+Collecting typing-extensions~=4.12
+  Using cached typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Requirement already satisfied: setuptools>=77.0.1 in d:\jsdfhasuh\documents\my_project\emo_master\.tmp\v7_1-f1-clean\lib\site-packages (from grpcio-tools==1.78.0->-r requirements.txt (line 3)) (79.0.1)
+Collecting coloredlogs
+  Downloading coloredlogs-15.0.1-py2.py3-none-any.whl (46 kB)
+Collecting packaging
+  Using cached packaging-26.3-py3-none-any.whl (129 kB)
+Collecting flatbuffers
+  Downloading flatbuffers-25.12.19-py2.py3-none-any.whl (26 kB)
+Collecting sympy
+  Downloading sympy-1.14.0-py3-none-any.whl (6.3 MB)
+Collecting tomli>=1.1.0
+  Using cached tomli-2.5.0-py3-none-any.whl (14 kB)
+Collecting pathspec>=1.0.0
+  Downloading pathspec-1.1.1-py3-none-any.whl (57 kB)
+Collecting mypy_extensions>=1.0.0
+  Downloading mypy_extensions-1.2.0-py3-none-any.whl (5.1 kB)
+Collecting ast-serialize<1.0.0,>=0.6.0
+  Downloading ast_serialize-0.13.1-cp39-abi3-win_amd64.whl (1.2 MB)
+Collecting librt>=0.13.0
+  Downloading librt-0.16.0-cp310-cp310-win_amd64.whl (124 kB)
+Collecting shiboken2==5.15.2.1
+  Downloading shiboken2-5.15.2.1-5.15.2-cp35.cp36.cp37.cp38.cp39.cp310-none-win_amd64.whl (2.3 MB)
+Collecting annotated-types>=0.6.0
+  Using cached annotated_types-0.8.0-py3-none-any.whl (13 kB)
+Collecting pydantic-core==2.50.4
+  Downloading pydantic_core-2.50.4-cp310-cp310-win_amd64.whl (2.3 MB)
+Collecting typing-inspection>=0.4.4
+  Downloading typing_inspection-0.4.5-py3-none-any.whl (14 kB)
+Collecting anyio>=4.1.0
+  Using cached anyio-4.16.0-py3-none-any.whl (134 kB)
+Collecting starlette>=0.46.0
+  Using cached starlette-1.7.0-py3-none-any.whl (78 kB)
+Collecting annotated-doc>=0.0.2
+  Downloading annotated_doc-0.0.6-py3-none-any.whl (5.3 kB)
+Collecting opentelemetry-api>=1.44.0
+  Using cached opentelemetry_api-1.45.2-py3-none-any.whl (60 kB)
+Collecting click>=7.0
+  Downloading click-8.5.1-py3-none-any.whl (126 kB)
+Collecting h11>=0.8
+  Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+Collecting rpds-py>=0.25.0
+  Downloading rpds_py-0.30.0-cp310-cp310-win_amd64.whl (235 kB)
+Collecting attrs>=22.2.0
+  Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+Collecting referencing>=0.28.4
+  Downloading referencing-0.37.0-py3-none-any.whl (26 kB)
+Collecting jsonschema-specifications>=2023.03.6
+  Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+Collecting exceptiongroup>=1
+  Using cached exceptiongroup-1.3.1-py3-none-any.whl (16 kB)
+Collecting colorama>=0.4
+  Using cached colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+Collecting pygments>=2.15
+  Using cached pygments-2.21.0-py3-none-any.whl (1.3 MB)
+Collecting iniconfig>=2
+  Using cached iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+Collecting pluggy<2,>=1.6
+  Using cached pluggy-1.7.0-py3-none-any.whl (27 kB)
+Collecting coverage[toml]>=7.10.6
+  Downloading coverage-7.16.2-cp310-cp310-win_amd64.whl (226 kB)
+Collecting idna>=2.8
+  Using cached idna-3.20-py3-none-any.whl (69 kB)
+Collecting humanfriendly>=9.1
+  Downloading humanfriendly-10.0-py2.py3-none-any.whl (86 kB)
+Collecting mpmath<1.4,>=1.1.0
+  Downloading mpmath-1.3.0-py3-none-any.whl (536 kB)
+Collecting pyreadline3
+  Downloading pyreadline3-3.5.6-py3-none-any.whl (85 kB)
+Installing collected packages: mpmath, flatbuffers, typing-extensions, tomli, sympy, shiboken2, ruff, rpds-py, PyYAML, pyreadline3, pygments, protobuf, pluggy, Pillow, pathspec, packaging, numpy, mypy_extensions, librt, iniconfig, idna, h11, defusedxml, coverage, colorama, click, attrs, ast-serialize, annotated-types, annotated-doc, uvicorn, typing-inspection, referencing, PySide2, pydantic-core, opentelemetry-api, opencv-python, onnx, mypy, humanfriendly, grpcio, exceptiongroup, pytest, pydantic, jsonschema-specifications, grpcio-tools, coloredlogs, anyio, starlette, pytest-timeout, pytest-cov, onnxruntime, jsonschema, fastapi
+Successfully installed Pillow-12.3.0 PySide2-5.15.2.1 PyYAML-6.0.3 annotated-doc-0.0.6 annotated-types-0.8.0 anyio-4.16.0 ast-serialize-0.13.1 attrs-26.1.0 click-8.5.1 colorama-0.4.6 coloredlogs-15.0.1 coverage-7.16.2 defusedxml-0.7.1 exceptiongroup-1.3.1 fastapi-0.162.5 flatbuffers-25.12.19 grpcio-1.78.0 grpcio-tools-1.78.0 h11-0.16.0 humanfriendly-10.0 idna-3.20 iniconfig-2.3.1 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 librt-0.16.0 mpmath-1.3.0 mypy-2.3.1 mypy_extensions-1.2.0 numpy-1.26.4 onnx-1.16.0 onnxruntime-1.23.2 opencv-python-4.10.0.84 opentelemetry-api-1.45.2 packaging-26.3 pathspec-1.1.1 pluggy-1.7.0 protobuf-6.33.6 pydantic-2.14.3 pydantic-core-2.50.4 pygments-2.21.0 pyreadline3-3.5.6 pytest-9.2.0 pytest-cov-7.1.0 pytest-timeout-2.4.0 referencing-0.37.0 rpds-py-0.30.0 ruff-0.15.6 shiboken2-5.15.2.1 starlette-1.7.0 sympy-1.14.0 tomli-2.5.0 typing-extensions-4.16.0 typing-inspection-0.4.5 uvicorn-0.54.0

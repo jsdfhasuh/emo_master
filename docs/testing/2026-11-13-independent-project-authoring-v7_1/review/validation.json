@@ -1,0 +1,181 @@
+{
+  "package_revision": "v7.1-repair",
+  "date": "2026-11-13",
+  "status": "passed",
+  "scope": "local-document-structure-only",
+  "checks": [
+    {
+      "check": "exactly_five_existing_capabilities",
+      "status": "passed",
+      "details": [
+        "candidate-project-precheck",
+        "mcp-authoring-access",
+        "operator-capability-discovery",
+        "project-draft-authoring",
+        "project-resource-delivery"
+      ]
+    },
+    {
+      "check": "same_change_id",
+      "status": "passed",
+      "details": null
+    },
+    {
+      "check": "unchanged_schema_metadata",
+      "status": "passed",
+      "details": null
+    },
+    {
+      "check": "requirement_scenario_structure",
+      "status": "passed",
+      "details": {
+        "requirements": 30,
+        "scenarios": 46,
+        "errors": []
+      }
+    },
+    {
+      "check": "unique_task_ids",
+      "status": "passed",
+      "details": [
+        "0.1",
+        "0.2",
+        "1.1",
+        "1.2",
+        "1.3",
+        "1.4",
+        "1.5",
+        "1.6",
+        "2.1",
+        "2.2",
+        "2.3",
+        "2.4",
+        "3.1",
+        "3.2",
+        "3.3",
+        "3.4",
+        "3.5",
+        "4.1",
+        "4.2",
+        "4.3",
+        "4.4",
+        "4.5",
+        "5.1",
+        "5.2",
+        "5.3",
+        "6.0",
+        "6.1",
+        "6.2",
+        "6.3",
+        "6.4",
+        "6.5",
+        "6.6",
+        "6.7"
+      ]
+    },
+    {
+      "check": "twenty_five_historical_checked_entries",
+      "status": "passed",
+      "details": null
+    },
+    {
+      "check": "eight_unchecked_repair_tasks",
+      "status": "passed",
+      "details": null
+    },
+    {
+      "check": "seven_original_acceptance_groups",
+      "status": "passed",
+      "details": null
+    },
+    {
+      "check": "F1_present_in_proposal_design_tasks_acceptance",
+      "status": "passed",
+      "details": null
+    },
+    {
+      "check": "F2_present_in_proposal_design_tasks_acceptance",
+      "status": "passed",
+      "details": null
+    },
+    {
+      "check": "F3_present_in_proposal_design_tasks_acceptance",
+      "status": "passed",
+      "details": null
+    },
+    {
+      "check": "F4_present_in_proposal_design_tasks_acceptance",
+      "status": "passed",
+      "details": null
+    },
+    {
+      "check": "F5_present_in_proposal_design_tasks_acceptance",
+      "status": "passed",
+      "details": null
+    },
+    {
+      "check": "F6_present_in_proposal_design_tasks_acceptance",
+      "status": "passed",
+      "details": null
+    },
+    {
+      "check": "local_markdown_links",
+      "status": "passed",
+      "details": []
+    },
+    {
+      "check": "balanced_code_fences",
+      "status": "passed",
+      "details": []
+    },
+    {
+      "check": "parseable_json_examples",
+      "status": "passed",
+      "details": {
+        "count": 2,
+        "errors": []
+      }
+    },
+    {
+      "check": "mermaid_blocks_retained",
+      "status": "passed",
+      "details": {
+        "count": 3,
+        "rendered": false
+      }
+    },
+    {
+      "check": "source_review_byte_identical",
+      "status": "passed",
+      "details": null
+    },
+    {
+      "check": "no_false_all_tasks_unstarted_statement",
+      "status": "passed",
+      "details": null
+    },
+    {
+      "check": "source_revision_preserved",
+      "status": "passed",
+      "details": null
+    },
+    {
+      "check": "same_prompt_copy",
+      "status": "passed",
+      "details": null
+    }
+  ],
+  "official_openspec_cli": {
+    "executed": false,
+    "reason": "openspec executable not found in PATH; not installed for this artifact task"
+  },
+  "not_executed": [
+    "source modification",
+    "MCP/Runtime/Designer tests",
+    "current remote CI lookup",
+    "official OpenSpec strict validation",
+    "Mermaid rendering",
+    "push"
+  ],
+  "zip_crc": "checked by packaging phase after creating the archive"
+}

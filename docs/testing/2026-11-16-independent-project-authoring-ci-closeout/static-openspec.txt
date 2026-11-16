@@ -1,0 +1,12 @@
+HEAD=9dce7543232042c6840d9cc20c72a4a903556154
+START_UTC=2026-11-16T00:43:09.4334201Z
+WORKTREE=Current uncommitted closeout plan; not a clean HEAD validation.
+OpenSpec CLI not found in PATH.
+EXIT=127
+CLI_FALLBACK=Existing official CLI in npm cache; no project dependency installed or changed.
+2.0.0
+CLI_VERSION_EXIT=0
+COMMAND=Existing cached openspec.cmd validate add-independent-project-authoring --strict
+Change 'add-independent-project-authoring' is valid
+END_UTC=2026-11-16T00:44:12.4278923Z
+FINAL_EXIT=0

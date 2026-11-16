@@ -1,0 +1,18 @@
+HEAD=9dce7543232042c6840d9cc20c72a4a903556154
+BRANCH=main
+WORKTREE_AFTER_R2_FIX:
+ M openspec/changes/add-independent-project-authoring/acceptance.md
+ M openspec/changes/add-independent-project-authoring/tasks.md
+ M tests/designer/test_draft_pure_preview_ui.py
+ M tests/runtime/test_operator_icon_assets.py
+ M tests/runtime/test_operator_port_specs.py
+?? .tmp/
+?? docs/testing/2026-11-16-independent-project-authoring-ci-closeout/
+?? openspec/changes/add-independent-project-authoring/ci-closeout.md
+COMMAND=D:/Conda/envs/emo_master/python.exe -m pytest tests/designer/test_draft_pure_preview_ui.py -q --tb=short --junitxml=docs/testing/2026-11-16-independent-project-authoring-ci-closeout/r2-after.xml
+ENV=PYTHONPATH=src;. PYTHONIOENCODING=utf-8 QT_QPA_PLATFORM=windows
+SOURCE_SCOPE=9dce7543 plus current uncommitted workspace; R2 changes only test preview observation interfaces, source image content/dimensions, four output ports, and rendered crop dimensions; no product changes.
+Python 3.10.21
+..............                                                           [100%]
+14 passed in 8.73s
+EXIT=0

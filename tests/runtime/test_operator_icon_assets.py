@@ -19,6 +19,7 @@ from tests.icon_fixtures import SVG
 
 def iconService():
     service = RuntimeService.__new__(RuntimeService)
+    service.runtimeInstanceId = "icon-runtime-fixture"
     manifest = PluginManifest("test.icon", "Icon", "1.0.0", "test:Icon", "Other", "default", "", {}, {}, {}, "0.1", "1.x")
     asset = PluginIconAsset(SVG, "image/svg+xml", hashlib.sha256(SVG).hexdigest())
     descriptor = PluginDescriptor(manifest, object, iconAsset=asset)
@@ -47,6 +48,8 @@ def network(service):
 @pytest.mark.parametrize("remote", [False, True])
 def testAssetAndCatalogRoundtrip(remote):
     service = iconService()
+    reply = service.ListOperators(pb.ListOperatorsRequest(), None)
+    assert reply.runtime_instance_id == service.runtimeInstanceId
     def check(client):
         operators = client.listOperators(timeoutMs=500)
         info = operators[0]

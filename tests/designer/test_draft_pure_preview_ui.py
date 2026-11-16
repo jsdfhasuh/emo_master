@@ -57,13 +57,20 @@ def testSpecializedLocalImageErrorRecoveryPreviewAndClose(runtime, tmp_path, mon
                 f"future={future!r}, reply={future.result() if future is not None and future.done() else None!r}") from error
         assert controller.currentAssetId in window.context._pureDraftAssets
         if directory == "roi":
-            assert not controller.canvas._image.isNull()
-            assert all(label.pixmap() is not None and not label.pixmap().isNull()
-                for label in controller.outputLabels.values())
+            source = controller.canvas.pixmap()
+            assert not source.isNull()
+            assert (source.width(), source.height()) == (24, 16)
+            image = source.toImage()
+            assert image.pixelColor(0, 0).red() == 0
+            assert image.pixelColor(23, 15).red() == 127
+            assert set(controller.outputViews) == {"croppedImage", "croppedMask", "fullMask", "maskedImage"}
+            assert all(not view.pixmap().isNull() for view in controller.outputViews.values())
             controller.controls["width"].setValue(9)
             controller.controls["height"].setValue(5)
             wait(lambda: controller._future is not None and controller._future.done()
                 and controller._future.result().assets[0].width == 9)
+            wait(lambda: (controller.outputViews["croppedImage"].pixmap().width(),
+                controller.outputViews["croppedImage"].pixmap().height()) == (9, 5))
         else:
             assert controller.chart._histogram["pixelCount"] == 24 * 16
             assert not controller.sourceImageLabel.pixmap().isNull()

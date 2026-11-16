@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 import pytest
-from PySide2.QtCore import QPoint, Qt
+from PySide2.QtCore import QCoreApplication, QEvent, QPoint, Qt
 from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QLineEdit
 
@@ -107,6 +107,9 @@ def testCompactYoloWindowKeepsValuesSourcesAndActionsUsable(designerApplication,
         assert not window._bindingScroll.isVisible()
         assert not window._applyButton.visibleRegion().isEmpty()
         assert not window._closeButton.visibleRegion().isEmpty()
+        # Applying shows a styled status label and posts a layout request.
+        # Let the viewport reach its new size before asking it to scroll.
+        QCoreApplication.sendPostedEvents(None, QEvent.LayoutRequest)
         form.focusField('onMissingCrop')
         designerApplication.processEvents()
         assert policy.visibleRegion().boundingRect() == policy.rect()

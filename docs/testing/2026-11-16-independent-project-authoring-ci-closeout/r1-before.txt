@@ -1,0 +1,153 @@
+HEAD=9dce7543232042c6840d9cc20c72a4a903556154
+BRANCH=main
+WORKTREE_BEFORE:
+?? .tmp/
+?? docs/testing/2026-11-16-independent-project-authoring-ci-closeout/
+COMMAND=D:/Conda/envs/emo_master/python.exe -m pytest tests/runtime/test_operator_icon_assets.py tests/runtime/test_operator_port_specs.py tests/designer/test_operator_icon_integration.py::testActualRuntimeContractFeedsCustomQtIcons -q --tb=short --junitxml=docs/testing/2026-11-16-independent-project-authoring-ci-closeout/r1-before.xml
+ENV=PYTHONPATH=src;. PYTHONIOENCODING=utf-8 QT_QPA_PLATFORM=windows
+Python 3.10.21
+FF.....F..F.F.FF                                                         [100%]
+================================== FAILURES ===================================
+_____________________ testAssetAndCatalogRoundtrip[False] _____________________
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_icon_assets.py:63: in testAssetAndCatalogRoundtrip
+    check(RuntimeClient(service))
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_icon_assets.py:51: in check
+    operators = client.listOperators(timeoutMs=500)
+src\emo_master\apps\designer\services\runtime_client.py:412: in listOperators
+    else self._displayCall("ListOperators", request, timeoutMs or self.deadlineMs, cancellationToken, owner))
+src\emo_master\apps\designer\services\runtime_client.py:827: in _displayCall
+    reply = method(request, context)
+src\emo_master\apps\runtime\grpc_server\service.py:1246: in ListOperators
+    runtime_instance_id=self.runtimeInstanceId,
+E   AttributeError: 'RuntimeService' object has no attribute 'runtimeInstanceId'
+_____________________ testAssetAndCatalogRoundtrip[True] ______________________
+src\emo_master\apps\designer\services\runtime_client.py:821: in _displayCall
+    reply = call.result()
+D:\Conda\envs\emo_master\lib\site-packages\grpc\_channel.py:874: in result
+    raise self
+E   grpc._channel._MultiThreadedRendezvous: <_MultiThreadedRendezvous of RPC that terminated with:
+E   	status = StatusCode.UNKNOWN
+E   	details = "Exception calling application: 'RuntimeService' object has no attribute 'runtimeInstanceId'"
+E   	debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"Exception calling application: \'RuntimeService\' object has no attribute \'runtimeInstanceId\'", grpc_status:2}"
+E   >
+
+The above exception was the direct cause of the following exception:
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_icon_assets.py:61: in testAssetAndCatalogRoundtrip
+    check(client)
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_icon_assets.py:51: in check
+    operators = client.listOperators(timeoutMs=500)
+src\emo_master\apps\designer\services\runtime_client.py:412: in listOperators
+    else self._displayCall("ListOperators", request, timeoutMs or self.deadlineMs, cancellationToken, owner))
+src\emo_master\apps\designer\services\runtime_client.py:837: in _displayCall
+    raise RuntimeClientError(str(err.code()), err.details() or "display RPC failed") from err
+E   emo_master.apps.designer.services.runtime_client.RuntimeClientError: Exception calling application: 'RuntimeService' object has no attribute 'runtimeInstanceId'
+------------------------------ Captured log call ------------------------------
+ERROR    grpc._server:_server.py:636 Exception calling application: 'RuntimeService' object has no attribute 'runtimeInstanceId'
+Traceback (most recent call last):
+  File "D:\Conda\envs\emo_master\lib\site-packages\grpc\_server.py", line 608, in _call_behavior
+    response_or_iterator = behavior(argument, context)
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\runtime\grpc_server\service.py", line 1246, in ListOperators
+    runtime_instance_id=self.runtimeInstanceId,
+AttributeError: 'RuntimeService' object has no attribute 'runtimeInstanceId'
+__________________ testNoResourceAndOldMetadataCompatibility __________________
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_icon_assets.py:84: in testNoResourceAndOldMetadataCompatibility
+    assert client.listOperators()[0].icon["status"] == "none"
+src\emo_master\apps\designer\services\runtime_client.py:411: in listOperators
+    reply = (self._call("ListOperators", request) if timeoutMs is None and cancellationToken is None
+src\emo_master\apps\designer\services\runtime_client.py:1715: in _call
+    return method(request, None)
+src\emo_master\apps\runtime\grpc_server\service.py:1246: in ListOperators
+    runtime_instance_id=self.runtimeInstanceId,
+E   AttributeError: 'RuntimeService' object has no attribute 'runtimeInstanceId'
+__________________ testRealChannelRecoveryRenewsDisplayScope __________________
+src\emo_master\apps\designer\services\runtime_client.py:821: in _displayCall
+    reply = call.result()
+D:\Conda\envs\emo_master\lib\site-packages\grpc\_channel.py:874: in result
+    raise self
+E   grpc._channel._MultiThreadedRendezvous: <_MultiThreadedRendezvous of RPC that terminated with:
+E   	status = StatusCode.UNKNOWN
+E   	details = "Exception calling application: 'RuntimeService' object has no attribute 'runtimeInstanceId'"
+E   	debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"Exception calling application: \'RuntimeService\' object has no attribute \'runtimeInstanceId\'", grpc_status:2}"
+E   >
+
+The above exception was the direct cause of the following exception:
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_icon_assets.py:162: in testRealChannelRecoveryRenewsDisplayScope
+    assert client.listOperators(timeoutMs=1000)
+src\emo_master\apps\designer\services\runtime_client.py:412: in listOperators
+    else self._displayCall("ListOperators", request, timeoutMs or self.deadlineMs, cancellationToken, owner))
+src\emo_master\apps\designer\services\runtime_client.py:837: in _displayCall
+    raise RuntimeClientError(str(err.code()), err.details() or "display RPC failed") from err
+E   emo_master.apps.designer.services.runtime_client.RuntimeClientError: Exception calling application: 'RuntimeService' object has no attribute 'runtimeInstanceId'
+------------------------------ Captured log call ------------------------------
+ERROR    grpc._server:_server.py:636 Exception calling application: 'RuntimeService' object has no attribute 'runtimeInstanceId'
+Traceback (most recent call last):
+  File "D:\Conda\envs\emo_master\lib\site-packages\grpc\_server.py", line 608, in _call_behavior
+    response_or_iterator = behavior(argument, context)
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\runtime\grpc_server\service.py", line 1246, in ListOperators
+    runtime_instance_id=self.runtimeInstanceId,
+AttributeError: 'RuntimeService' object has no attribute 'runtimeInstanceId'
+____________ testListOperatorsKeepsLegacyTypesAndExposesFullSpecs _____________
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_port_specs.py:131: in testListOperatorsKeepsLegacyTypesAndExposesFullSpecs
+    reply = RuntimeService.ListOperators(
+src\emo_master\apps\runtime\grpc_server\service.py:1246: in ListOperators
+    runtime_instance_id=self.runtimeInstanceId,
+E   AttributeError: 'RuntimeService' object has no attribute 'runtimeInstanceId'
+_____________ testActualRuntimeContractFeedsCustomQtIcons[False] ______________
+tests\designer\test_operator_icon_integration.py:196: in testActualRuntimeContractFeedsCustomQtIcons
+    check(client)
+tests\designer\test_operator_icon_integration.py:181: in check
+    waitForCatalog(window)
+tests\designer\qt_wait.py:16: in waitForCatalog
+    waitUntil(lambda: window.operatorCatalogController.hasCatalog)
+tests\designer\qt_wait.py:8: in waitUntil
+    raise AssertionError("condition did not become true before timeout")
+E   AssertionError: condition did not become true before timeout
+______________ testActualRuntimeContractFeedsCustomQtIcons[True] ______________
+tests\designer\test_operator_icon_integration.py:192: in testActualRuntimeContractFeedsCustomQtIcons
+    check(client)
+tests\designer\test_operator_icon_integration.py:181: in check
+    waitForCatalog(window)
+tests\designer\qt_wait.py:16: in waitForCatalog
+    waitUntil(lambda: window.operatorCatalogController.hasCatalog)
+tests\designer\qt_wait.py:8: in waitUntil
+    raise AssertionError("condition did not become true before timeout")
+E   AssertionError: condition did not become true before timeout
+------------------------------ Captured log call ------------------------------
+ERROR    grpc._server:_server.py:636 Exception calling application: 'RuntimeService' object has no attribute 'runtimeInstanceId'
+Traceback (most recent call last):
+  File "D:\Conda\envs\emo_master\lib\site-packages\grpc\_server.py", line 608, in _call_behavior
+    response_or_iterator = behavior(argument, context)
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\runtime\grpc_server\service.py", line 1246, in ListOperators
+    runtime_instance_id=self.runtimeInstanceId,
+AttributeError: 'RuntimeService' object has no attribute 'runtimeInstanceId'
+ERROR    grpc._server:_server.py:636 Exception calling application: 'RuntimeService' object has no attribute 'runtimeInstanceId'
+Traceback (most recent call last):
+  File "D:\Conda\envs\emo_master\lib\site-packages\grpc\_server.py", line 608, in _call_behavior
+    response_or_iterator = behavior(argument, context)
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\runtime\grpc_server\service.py", line 874, in QueryRuntimeLogs
+    ok=False, runtime_instance_id=self.runtimeInstanceId,
+AttributeError: 'RuntimeService' object has no attribute 'runtimeInstanceId'
+ERROR    grpc._server:_server.py:636 Exception calling application: 'RuntimeService' object has no attribute 'jobSupervisor'
+Traceback (most recent call last):
+  File "D:\Conda\envs\emo_master\lib\site-packages\grpc\_server.py", line 608, in _call_behavior
+    response_or_iterator = behavior(argument, context)
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\runtime\grpc_server\service.py", line 71, in locked
+    self.jobSupervisor.assertMutationAllowed()
+AttributeError: 'RuntimeService' object has no attribute 'jobSupervisor'
+ERROR    grpc._server:_server.py:636 Exception calling application: 'RuntimeService' object has no attribute 'jobSupervisor'
+Traceback (most recent call last):
+  File "D:\Conda\envs\emo_master\lib\site-packages\grpc\_server.py", line 608, in _call_behavior
+    response_or_iterator = behavior(argument, context)
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\runtime\grpc_server\service.py", line 71, in locked
+    self.jobSupervisor.assertMutationAllowed()
+AttributeError: 'RuntimeService' object has no attribute 'jobSupervisor'
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_operator_icon_assets.py::testAssetAndCatalogRoundtrip[False]
+FAILED tests/runtime/test_operator_icon_assets.py::testAssetAndCatalogRoundtrip[True]
+FAILED tests/runtime/test_operator_icon_assets.py::testNoResourceAndOldMetadataCompatibility
+FAILED tests/runtime/test_operator_icon_assets.py::testRealChannelRecoveryRenewsDisplayScope
+FAILED tests/runtime/test_operator_port_specs.py::testListOperatorsKeepsLegacyTypesAndExposesFullSpecs
+FAILED tests/designer/test_operator_icon_integration.py::testActualRuntimeContractFeedsCustomQtIcons[False]
+FAILED tests/designer/test_operator_icon_integration.py::testActualRuntimeContractFeedsCustomQtIcons[True]
+7 failed, 9 passed in 74.73s (0:01:14)
+EXIT=1

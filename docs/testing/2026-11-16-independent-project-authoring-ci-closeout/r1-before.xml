@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="16" time="74.186" timestamp="2026-11-16T08:38:47.191360+08:00" hostname="视觉电脑"><testcase classname="tests.runtime.test_operator_icon_assets" name="testAssetAndCatalogRoundtrip[False]" time="0.086"><failure message="AttributeError: 'RuntimeService' object has no attribute 'runtimeInstanceId'">D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_icon_assets.py:63: in testAssetAndCatalogRoundtrip
+    check(RuntimeClient(service))
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_icon_assets.py:51: in check
+    operators = client.listOperators(timeoutMs=500)
+src\emo_master\apps\designer\services\runtime_client.py:412: in listOperators
+    else self._displayCall("ListOperators", request, timeoutMs or self.deadlineMs, cancellationToken, owner))
+src\emo_master\apps\designer\services\runtime_client.py:827: in _displayCall
+    reply = method(request, context)
+src\emo_master\apps\runtime\grpc_server\service.py:1246: in ListOperators
+    runtime_instance_id=self.runtimeInstanceId,
+E   AttributeError: 'RuntimeService' object has no attribute 'runtimeInstanceId'</failure></testcase><testcase classname="tests.runtime.test_operator_icon_assets" name="testAssetAndCatalogRoundtrip[True]" time="1.211"><failure message="emo_master.apps.designer.services.runtime_client.RuntimeClientError: Exception calling application: 'RuntimeService' object has no attribute 'runtimeInstanceId'">src\emo_master\apps\designer\services\runtime_client.py:821: in _displayCall
+    reply = call.result()
+D:\Conda\envs\emo_master\lib\site-packages\grpc\_channel.py:874: in result
+    raise self
+E   grpc._channel._MultiThreadedRendezvous: &lt;_MultiThreadedRendezvous of RPC that terminated with:
+E   	status = StatusCode.UNKNOWN
+E   	details = "Exception calling application: 'RuntimeService' object has no attribute 'runtimeInstanceId'"
+E   	debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"Exception calling application: \'RuntimeService\' object has no attribute \'runtimeInstanceId\'", grpc_status:2}"
+E   &gt;
+
+The above exception was the direct cause of the following exception:
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_icon_assets.py:61: in testAssetAndCatalogRoundtrip
+    check(client)
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_icon_assets.py:51: in check
+    operators = client.listOperators(timeoutMs=500)
+src\emo_master\apps\designer\services\runtime_client.py:412: in listOperators
+    else self._displayCall("ListOperators", request, timeoutMs or self.deadlineMs, cancellationToken, owner))
+src\emo_master\apps\designer\services\runtime_client.py:837: in _displayCall
+    raise RuntimeClientError(str(err.code()), err.details() or "display RPC failed") from err
+E   emo_master.apps.designer.services.runtime_client.RuntimeClientError: Exception calling application: 'RuntimeService' object has no attribute 'runtimeInstanceId'</failure></testcase><testcase classname="tests.runtime.test_operator_icon_assets" name="testResourceRequestFailures[fields0-E_ICON_REQUEST_INVALID]" time="0.004" /><testcase classname="tests.runtime.test_operator_icon_assets" name="testResourceRequestFailures[fields1-E_ICON_REQUEST_INVALID]" time="0.005" /><testcase classname="tests.runtime.test_operator_icon_assets" name="testResourceRequestFailures[fields2-E_ICON_OPERATOR_NOT_FOUND]" time="0.003" /><testcase classname="tests.runtime.test_operator_icon_assets" name="testResourceRequestFailures[fields3-E_ICON_VERSION_MISMATCH]" time="0.003" /><testcase classname="tests.runtime.test_operator_icon_assets" name="testResourceRequestFailures[fields4-E_ICON_DIGEST_MISMATCH]" time="0.003" /><testcase classname="tests.runtime.test_operator_icon_assets" name="testNoResourceAndOldMetadataCompatibility" time="0.004"><failure message="AttributeError: 'RuntimeService' object has no attribute 'runtimeInstanceId'">D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_icon_assets.py:84: in testNoResourceAndOldMetadataCompatibility
+    assert client.listOperators()[0].icon["status"] == "none"
+src\emo_master\apps\designer\services\runtime_client.py:411: in listOperators
+    reply = (self._call("ListOperators", request) if timeoutMs is None and cancellationToken is None
+src\emo_master\apps\designer\services\runtime_client.py:1715: in _call
+    return method(request, None)
+src\emo_master\apps\runtime\grpc_server\service.py:1246: in ListOperators
+    runtime_instance_id=self.runtimeInstanceId,
+E   AttributeError: 'RuntimeService' object has no attribute 'runtimeInstanceId'</failure></testcase><testcase classname="tests.runtime.test_operator_icon_assets" name="testRealUnaryDeadlineAndOwnerCancellationDoNotCloseChannel" time="0.229" /><testcase classname="tests.runtime.test_operator_icon_assets" name="testLateEmbeddedResultRejectedAndFutureAttachRace" time="0.060" /><testcase classname="tests.runtime.test_operator_icon_assets" name="testRealChannelRecoveryRenewsDisplayScope" time="0.422"><failure message="emo_master.apps.designer.services.runtime_client.RuntimeClientError: Exception calling application: 'RuntimeService' object has no attribute 'runtimeInstanceId'">src\emo_master\apps\designer\services\runtime_client.py:821: in _displayCall
+    reply = call.result()
+D:\Conda\envs\emo_master\lib\site-packages\grpc\_channel.py:874: in result
+    raise self
+E   grpc._channel._MultiThreadedRendezvous: &lt;_MultiThreadedRendezvous of RPC that terminated with:
+E   	status = StatusCode.UNKNOWN
+E   	details = "Exception calling application: 'RuntimeService' object has no attribute 'runtimeInstanceId'"
+E   	debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"Exception calling application: \'RuntimeService\' object has no attribute \'runtimeInstanceId\'", grpc_status:2}"
+E   &gt;
+
+The above exception was the direct cause of the following exception:
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_icon_assets.py:162: in testRealChannelRecoveryRenewsDisplayScope
+    assert client.listOperators(timeoutMs=1000)
+src\emo_master\apps\designer\services\runtime_client.py:412: in listOperators
+    else self._displayCall("ListOperators", request, timeoutMs or self.deadlineMs, cancellationToken, owner))
+src\emo_master\apps\designer\services\runtime_client.py:837: in _displayCall
+    raise RuntimeClientError(str(err.code()), err.details() or "display RPC failed") from err
+E   emo_master.apps.designer.services.runtime_client.RuntimeClientError: Exception calling application: 'RuntimeService' object has no attribute 'runtimeInstanceId'</failure></testcase><testcase classname="tests.runtime.test_operator_port_specs" name="testCompilerPreservesRegisteredPortSpecs" time="0.036" /><testcase classname="tests.runtime.test_operator_port_specs" name="testListOperatorsKeepsLegacyTypesAndExposesFullSpecs" time="0.004"><failure message="AttributeError: 'RuntimeService' object has no attribute 'runtimeInstanceId'">D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_port_specs.py:131: in testListOperatorsKeepsLegacyTypesAndExposesFullSpecs
+    reply = RuntimeService.ListOperators(
+src\emo_master\apps\runtime\grpc_server\service.py:1246: in ListOperators
+    runtime_instance_id=self.runtimeInstanceId,
+E   AttributeError: 'RuntimeService' object has no attribute 'runtimeInstanceId'</failure></testcase><testcase classname="tests.runtime.test_operator_port_specs" name="testOptionalOnlySubflowExecutesWithoutInput" time="0.117" /><testcase classname="tests.designer.test_operator_icon_integration" name="testActualRuntimeContractFeedsCustomQtIcons[False]" time="10.738"><failure message="AssertionError: condition did not become true before timeout">tests\designer\test_operator_icon_integration.py:196: in testActualRuntimeContractFeedsCustomQtIcons
+    check(client)
+tests\designer\test_operator_icon_integration.py:181: in check
+    waitForCatalog(window)
+tests\designer\qt_wait.py:16: in waitForCatalog
+    waitUntil(lambda: window.operatorCatalogController.hasCatalog)
+tests\designer\qt_wait.py:8: in waitUntil
+    raise AssertionError("condition did not become true before timeout")
+E   AssertionError: condition did not become true before timeout</failure></testcase><testcase classname="tests.designer.test_operator_icon_integration" name="testActualRuntimeContractFeedsCustomQtIcons[True]" time="3.426"><failure message="AssertionError: condition did not become true before timeout">tests\designer\test_operator_icon_integration.py:192: in testActualRuntimeContractFeedsCustomQtIcons
+    check(client)
+tests\designer\test_operator_icon_integration.py:181: in check
+    waitForCatalog(window)
+tests\designer\qt_wait.py:16: in waitForCatalog
+    waitUntil(lambda: window.operatorCatalogController.hasCatalog)
+tests\designer\qt_wait.py:8: in waitUntil
+    raise AssertionError("condition did not become true before timeout")
+E   AssertionError: condition did not become true before timeout</failure></testcase></testsuite></testsuites>

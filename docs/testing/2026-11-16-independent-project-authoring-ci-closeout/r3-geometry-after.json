@@ -1,0 +1,7091 @@
+{
+  "platform": "windows",
+  "phases": {
+    "460": {
+      "shown": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 640,
+              "height": 480
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 640,
+              "height": 480
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": false,
+            "hidden": true
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 30
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 30
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 131,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 130,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": false,
+            "hidden": true
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 438,
+              "height": 658
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 438,
+              "height": 658
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 438,
+              "height": 658
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 446
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 438,
+              "height": 658
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 438,
+              "height": 658
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 11,
+              "width": 438,
+              "height": 658
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 438,
+              "height": 658
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 730,
+              "y": 156,
+              "width": 460,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 520
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 120
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 120
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 100,
+            "height": 30
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 100,
+            "height": 30
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": 131,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 130,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": false,
+          "hidden": true
+        },
+        "label": null,
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 438,
+            "height": 658
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 438,
+            "height": 658
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 480
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 480
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": 7,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": false,
+          "hidden": true
+        },
+        "statusText": "",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 287,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 78,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 78,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 391,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 0,
+          "minimum": 0,
+          "maximum": 0,
+          "pageStep": 658
+        },
+        "policyInViewport": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "crop_enabled": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 28
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 8,
+              "y": 630,
+              "width": 412,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 412,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 412,
+              "height": 28
+            },
+            "sizeHint": {
+              "width": 319,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 318,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 672
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 672
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 658
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 552
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 534
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 658
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 658
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 11,
+              "width": 438,
+              "height": 658
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 438,
+              "height": 658
+            },
+            "visible": {
+              "x": 428,
+              "y": 0,
+              "width": 10,
+              "height": 658
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 730,
+              "y": 156,
+              "width": 460,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 520
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 120
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 120
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 630,
+            "width": 412,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 412,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 412,
+            "height": 28
+          },
+          "sizeHint": {
+            "width": 319,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 318,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "label": {
+          "type": "WrapLabel",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 600,
+            "width": 84,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 84,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 428,
+            "height": 658
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 428,
+            "height": 658
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 480
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 480
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": 7,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": false,
+          "hidden": true
+        },
+        "statusText": "",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 287,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 78,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 78,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 391,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 0,
+          "minimum": 0,
+          "maximum": 14,
+          "pageStep": 658
+        },
+        "policyInViewport": {
+          "x": 8,
+          "y": 630
+        }
+      },
+      "applied_before_focus": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 2
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 8,
+              "y": 630,
+              "width": 412,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 412,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 412,
+              "height": 2
+            },
+            "sizeHint": {
+              "width": 319,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 318,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 672
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 672
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 632
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 552
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 534
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 632
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 632
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 37,
+              "width": 438,
+              "height": 632
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 438,
+              "height": 632
+            },
+            "visible": {
+              "x": 428,
+              "y": 0,
+              "width": 10,
+              "height": 632
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 730,
+              "y": 156,
+              "width": 460,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 563
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 145
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 146
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 630,
+            "width": 412,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 412,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 412,
+            "height": 2
+          },
+          "sizeHint": {
+            "width": 319,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 318,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "label": {
+          "type": "WrapLabel",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 600,
+            "width": 84,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 84,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 428,
+            "height": 632
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 428,
+            "height": 632
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 11,
+            "y": 11,
+            "width": 438,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 438,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 438,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 96,
+            "height": 37
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 19
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "statusText": "参数已应用",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 287,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 391,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 0,
+          "minimum": 0,
+          "maximum": 40,
+          "pageStep": 632
+        },
+        "policyInViewport": {
+          "x": 8,
+          "y": 630
+        }
+      },
+      "layout_requests_delivered": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 8,
+              "y": 630,
+              "width": 412,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 412,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 319,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 318,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 672
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 672
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 552
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 534
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 54,
+              "width": 438,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 438,
+              "height": 615
+            },
+            "visible": {
+              "x": 428,
+              "y": 0,
+              "width": 10,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 730,
+              "y": 156,
+              "width": 460,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 563
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 145
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 145
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 630,
+            "width": 412,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 412,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": 319,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 318,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "label": {
+          "type": "WrapLabel",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 600,
+            "width": 84,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 15
+          },
+          "sizeHint": {
+            "width": 84,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 428,
+            "height": 615
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 428,
+            "height": 615
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 11,
+            "y": 11,
+            "width": 438,
+            "height": 37
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 438,
+            "height": 37
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 438,
+            "height": 37
+          },
+          "sizeHint": {
+            "width": 96,
+            "height": 37
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 19
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "statusText": "参数已应用",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 287,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 391,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 0,
+          "minimum": 0,
+          "maximum": 57,
+          "pageStep": 615
+        },
+        "policyInViewport": {
+          "x": 8,
+          "y": 630
+        }
+      },
+      "focused_one_process": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 8,
+              "y": 630,
+              "width": 412,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 412,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 412,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 319,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 318,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": -57,
+              "width": 428,
+              "height": 672
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 672
+            },
+            "visible": {
+              "x": 0,
+              "y": 57,
+              "width": 428,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 552
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 534
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 54,
+              "width": 438,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 438,
+              "height": 615
+            },
+            "visible": {
+              "x": 428,
+              "y": 0,
+              "width": 10,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 730,
+              "y": 156,
+              "width": 460,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 563
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 145
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 145
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 630,
+            "width": 412,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 412,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 412,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 319,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 318,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "label": {
+          "type": "WrapLabel",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 600,
+            "width": 84,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 84,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 428,
+            "height": 615
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 428,
+            "height": 615
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 11,
+            "y": 11,
+            "width": 438,
+            "height": 37
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 438,
+            "height": 37
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 438,
+            "height": 37
+          },
+          "sizeHint": {
+            "width": 96,
+            "height": 37
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 19
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "statusText": "参数已应用",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 287,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 391,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 57,
+          "minimum": 0,
+          "maximum": 57,
+          "pageStep": 615
+        },
+        "policyInViewport": {
+          "x": 8,
+          "y": 573
+        }
+      },
+      "focused_five_processes": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 8,
+              "y": 630,
+              "width": 412,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 412,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 412,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 319,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 318,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": -57,
+              "width": 428,
+              "height": 672
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 672
+            },
+            "visible": {
+              "x": 0,
+              "y": 57,
+              "width": 428,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 552
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 534
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 54,
+              "width": 438,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 438,
+              "height": 615
+            },
+            "visible": {
+              "x": 428,
+              "y": 0,
+              "width": 10,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 730,
+              "y": 156,
+              "width": 460,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 563
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 145
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 145
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 630,
+            "width": 412,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 412,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 412,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 319,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 318,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "label": {
+          "type": "WrapLabel",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 600,
+            "width": 84,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 84,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 428,
+            "height": 615
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 428,
+            "height": 615
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 11,
+            "y": 11,
+            "width": 438,
+            "height": 37
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 438,
+            "height": 37
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 438,
+            "height": 37
+          },
+          "sizeHint": {
+            "width": 96,
+            "height": 37
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 19
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "statusText": "参数已应用",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 287,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 391,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 57,
+          "minimum": 0,
+          "maximum": 57,
+          "pageStep": 615
+        },
+        "policyInViewport": {
+          "x": 8,
+          "y": 573
+        }
+      },
+      "refocused": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 8,
+              "y": 630,
+              "width": 412,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 412,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 412,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 319,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 318,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": -57,
+              "width": 428,
+              "height": 672
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 672
+            },
+            "visible": {
+              "x": 0,
+              "y": 57,
+              "width": 428,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 552
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 534
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 54,
+              "width": 438,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 438,
+              "height": 615
+            },
+            "visible": {
+              "x": 428,
+              "y": 0,
+              "width": 10,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 730,
+              "y": 156,
+              "width": 460,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 563
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 145
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 145
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 630,
+            "width": 412,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 412,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 412,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 319,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 318,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "label": {
+          "type": "WrapLabel",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 600,
+            "width": 84,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 84,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 428,
+            "height": 615
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 428,
+            "height": 615
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 11,
+            "y": 11,
+            "width": 438,
+            "height": 37
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 438,
+            "height": 37
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 438,
+            "height": 37
+          },
+          "sizeHint": {
+            "width": 96,
+            "height": 37
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 19
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "statusText": "参数已应用",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 287,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 391,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 57,
+          "minimum": 0,
+          "maximum": 57,
+          "pageStep": 615
+        },
+        "policyInViewport": {
+          "x": 8,
+          "y": 573
+        }
+      },
+      "scroll_maximum": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 275,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 8,
+              "y": 630,
+              "width": 412,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 412,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 412,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 319,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 318,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": -57,
+              "width": 428,
+              "height": 672
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 672
+            },
+            "visible": {
+              "x": 0,
+              "y": 57,
+              "width": 428,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 552
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 534
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 428,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 54,
+              "width": 438,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 438,
+              "height": 615
+            },
+            "visible": {
+              "x": 428,
+              "y": 0,
+              "width": 10,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 730,
+              "y": 156,
+              "width": 460,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 460,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 563
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 145
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 145
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 630,
+            "width": 412,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 412,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 412,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 319,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 318,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "label": {
+          "type": "WrapLabel",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 600,
+            "width": 84,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 84,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 428,
+            "height": 615
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 428,
+            "height": 615
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 11,
+            "y": 11,
+            "width": 438,
+            "height": 37
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 438,
+            "height": 37
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 438,
+            "height": 37
+          },
+          "sizeHint": {
+            "width": 96,
+            "height": 37
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 19
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "statusText": "参数已应用",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 287,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 391,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 57,
+          "minimum": 0,
+          "maximum": 57,
+          "pageStep": 615
+        },
+        "policyInViewport": {
+          "x": 8,
+          "y": 573
+        }
+      }
+    },
+    "620": {
+      "shown": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 640,
+              "height": 480
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 640,
+              "height": 480
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": false,
+            "hidden": true
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 30
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 100,
+              "height": 30
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 131,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 130,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": false,
+            "hidden": true
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 658
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 658
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 658
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 446
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 658
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 658
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 11,
+              "width": 598,
+              "height": 658
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 658
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 650,
+              "y": 156,
+              "width": 620,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 520
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 120
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 120
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 100,
+            "height": 30
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 100,
+            "height": 30
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": 131,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 130,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": false,
+          "hidden": true
+        },
+        "label": null,
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 658
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 658
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 480
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 480
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": 7,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": false,
+          "hidden": true
+        },
+        "statusText": "",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 447,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 78,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 78,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 551,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 0,
+          "minimum": 0,
+          "maximum": 0,
+          "pageStep": 658
+        },
+        "policyInViewport": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "crop_enabled": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 149,
+              "y": 510,
+              "width": 441,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 441,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 441,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 319,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 318,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 658
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 658
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 658
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 552
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 534
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 658
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 658
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 11,
+              "width": 598,
+              "height": 658
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 658
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 650,
+              "y": 156,
+              "width": 620,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 520
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 120
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 120
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 149,
+            "y": 510,
+            "width": 441,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 441,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 441,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 319,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 318,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "label": {
+          "type": "WrapLabel",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 510,
+            "width": 84,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 84,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 658
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 658
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 480
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 640,
+            "height": 480
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": 7,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": false,
+          "hidden": true
+        },
+        "statusText": "",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 447,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 78,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 78,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 551,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 0,
+          "minimum": 0,
+          "maximum": 0,
+          "pageStep": 658
+        },
+        "policyInViewport": {
+          "x": 149,
+          "y": 510
+        }
+      },
+      "applied_before_focus": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 149,
+              "y": 510,
+              "width": 441,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 441,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 441,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 319,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 318,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 632
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 632
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 632
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 552
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 534
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 632
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 632
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 37,
+              "width": 598,
+              "height": 632
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 632
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 650,
+              "y": 156,
+              "width": 620,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 563
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 145
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 146
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 149,
+            "y": 510,
+            "width": 441,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 441,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 441,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 319,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 318,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "label": {
+          "type": "WrapLabel",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 510,
+            "width": 84,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 84,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 632
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 632
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 11,
+            "y": 11,
+            "width": 598,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 96,
+            "height": 37
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 19
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "statusText": "参数已应用",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 447,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 551,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 0,
+          "minimum": 0,
+          "maximum": 0,
+          "pageStep": 632
+        },
+        "policyInViewport": {
+          "x": 149,
+          "y": 510
+        }
+      },
+      "layout_requests_delivered": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 149,
+              "y": 510,
+              "width": 441,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 441,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 441,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 319,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 318,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 552
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 534
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 54,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 650,
+              "y": 156,
+              "width": 620,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 563
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 145
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 145
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 149,
+            "y": 510,
+            "width": 441,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 441,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 441,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 319,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 318,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "label": {
+          "type": "WrapLabel",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 510,
+            "width": 84,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 84,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 615
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 615
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 11,
+            "y": 11,
+            "width": 598,
+            "height": 37
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 37
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 37
+          },
+          "sizeHint": {
+            "width": 96,
+            "height": 37
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 19
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "statusText": "参数已应用",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 447,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 551,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 0,
+          "minimum": 0,
+          "maximum": 0,
+          "pageStep": 615
+        },
+        "policyInViewport": {
+          "x": 149,
+          "y": 510
+        }
+      },
+      "focused_one_process": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 149,
+              "y": 510,
+              "width": 441,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 441,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 441,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 319,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 318,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 552
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 534
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 54,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 650,
+              "y": 156,
+              "width": 620,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 563
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 145
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 145
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 149,
+            "y": 510,
+            "width": 441,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 441,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 441,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 319,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 318,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "label": {
+          "type": "WrapLabel",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 510,
+            "width": 84,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 84,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 615
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 615
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 11,
+            "y": 11,
+            "width": 598,
+            "height": 37
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 37
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 37
+          },
+          "sizeHint": {
+            "width": 96,
+            "height": 37
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 19
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "statusText": "参数已应用",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 447,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 551,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 0,
+          "minimum": 0,
+          "maximum": 0,
+          "pageStep": 615
+        },
+        "policyInViewport": {
+          "x": 149,
+          "y": 510
+        }
+      },
+      "focused_five_processes": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 149,
+              "y": 510,
+              "width": 441,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 441,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 441,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 319,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 318,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 552
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 534
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 54,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 650,
+              "y": 156,
+              "width": 620,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 563
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 145
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 145
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 149,
+            "y": 510,
+            "width": 441,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 441,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 441,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 319,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 318,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "label": {
+          "type": "WrapLabel",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 510,
+            "width": 84,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 84,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 615
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 615
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 11,
+            "y": 11,
+            "width": 598,
+            "height": 37
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 37
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 37
+          },
+          "sizeHint": {
+            "width": 96,
+            "height": 37
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 19
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "statusText": "参数已应用",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 447,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 551,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 0,
+          "minimum": 0,
+          "maximum": 0,
+          "pageStep": 615
+        },
+        "policyInViewport": {
+          "x": 149,
+          "y": 510
+        }
+      },
+      "refocused": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 149,
+              "y": 510,
+              "width": 441,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 441,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 441,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 319,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 318,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 552
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 534
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 54,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 650,
+              "y": 156,
+              "width": 620,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 563
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 145
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 145
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 149,
+            "y": 510,
+            "width": 441,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 441,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 441,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 319,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 318,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "label": {
+          "type": "WrapLabel",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 510,
+            "width": 84,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 84,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 615
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 615
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 11,
+            "y": 11,
+            "width": 598,
+            "height": 37
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 37
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 37
+          },
+          "sizeHint": {
+            "width": 96,
+            "height": 37
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 19
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "statusText": "参数已应用",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 447,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 551,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 0,
+          "minimum": 0,
+          "maximum": 0,
+          "pageStep": 615
+        },
+        "policyInViewport": {
+          "x": 149,
+          "y": 510
+        }
+      },
+      "scroll_maximum": {
+        "parents": [
+          {
+            "type": "QComboBox",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 304,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 182,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "",
+            "geometry": {
+              "x": 149,
+              "y": 510,
+              "width": 441,
+              "height": 34
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 441,
+              "height": 34
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 441,
+              "height": 34
+            },
+            "sizeHint": {
+              "width": 319,
+              "height": 34
+            },
+            "minimumSizeHint": {
+              "width": 318,
+              "height": 34
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "SchemaParamForm",
+            "name": "",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 552
+            },
+            "minimumSizeHint": {
+              "width": 356,
+              "height": 534
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QWidget",
+            "name": "qt_scrollarea_viewport",
+            "geometry": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSizeHint": {
+              "width": -1,
+              "height": -1
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "QScrollArea",
+            "name": "contentScroll",
+            "geometry": {
+              "x": 11,
+              "y": 54,
+              "width": 598,
+              "height": 615
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 598,
+              "height": 615
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            },
+            "sizeHint": {
+              "width": 486,
+              "height": 458
+            },
+            "minimumSizeHint": {
+              "width": 58,
+              "height": 58
+            },
+            "minimumSize": {
+              "width": 0,
+              "height": 0
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          },
+          {
+            "type": "OperatorWorkspaceWindow",
+            "name": "",
+            "geometry": {
+              "x": 650,
+              "y": 156,
+              "width": 620,
+              "height": 720
+            },
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "visible": {
+              "x": 0,
+              "y": 0,
+              "width": 620,
+              "height": 720
+            },
+            "sizeHint": {
+              "width": 508,
+              "height": 563
+            },
+            "minimumSizeHint": {
+              "width": 296,
+              "height": 145
+            },
+            "minimumSize": {
+              "width": 296,
+              "height": 145
+            },
+            "visibleToWindow": true,
+            "hidden": false
+          }
+        ],
+        "field": {
+          "type": "QWidget",
+          "name": "",
+          "geometry": {
+            "x": 149,
+            "y": 510,
+            "width": 441,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 441,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 441,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 319,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 318,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "label": {
+          "type": "WrapLabel",
+          "name": "",
+          "geometry": {
+            "x": 8,
+            "y": 510,
+            "width": 84,
+            "height": 20
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 84,
+            "height": 20
+          },
+          "sizeHint": {
+            "width": 84,
+            "height": 20
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 20
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "viewport": {
+          "type": "QWidget",
+          "name": "qt_scrollarea_viewport",
+          "geometry": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 615
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 615
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "sizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSizeHint": {
+            "width": -1,
+            "height": -1
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "status": {
+          "type": "OptionalWrapLabel",
+          "name": "operatorEditorStatus",
+          "geometry": {
+            "x": 11,
+            "y": 11,
+            "width": 598,
+            "height": 37
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 37
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 598,
+            "height": 37
+          },
+          "sizeHint": {
+            "width": 96,
+            "height": 37
+          },
+          "minimumSizeHint": {
+            "width": 0,
+            "height": 19
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "statusText": "参数已应用",
+        "apply": {
+          "type": "QPushButton",
+          "name": "primaryButton",
+          "geometry": {
+            "x": 447,
+            "y": 675,
+            "width": 98,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 98,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 92,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 98,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "close": {
+          "type": "QPushButton",
+          "name": "",
+          "geometry": {
+            "x": 551,
+            "y": 675,
+            "width": 58,
+            "height": 34
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "visible": {
+            "x": 0,
+            "y": 0,
+            "width": 58,
+            "height": 34
+          },
+          "sizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSizeHint": {
+            "width": 58,
+            "height": 34
+          },
+          "minimumSize": {
+            "width": 0,
+            "height": 0
+          },
+          "visibleToWindow": true,
+          "hidden": false
+        },
+        "scrollbar": {
+          "value": 0,
+          "minimum": 0,
+          "maximum": 0,
+          "pageStep": 615
+        },
+        "policyInViewport": {
+          "x": 149,
+          "y": 510
+        }
+      }
+    }
+  }
+}

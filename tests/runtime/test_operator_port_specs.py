@@ -123,6 +123,7 @@ def testCompilerPreservesRegisteredPortSpecs() -> None:
 def testListOperatorsKeepsLegacyTypesAndExposesFullSpecs() -> None:
     descriptor = _descriptor()
     service = object.__new__(RuntimeService)
+    service.runtimeInstanceId = "port-spec-runtime-fixture"
     service.pluginScanResult = RegistryScanResult(
         activeOperators={descriptor.manifest.operatorId: descriptor},
         rejectedOperators={},
@@ -131,6 +132,7 @@ def testListOperatorsKeepsLegacyTypesAndExposesFullSpecs() -> None:
     reply = RuntimeService.ListOperators(
         service, runtime_pb2.ListOperatorsRequest(), None
     )
+    assert reply.runtime_instance_id == service.runtimeInstanceId
     info = reply.operators[0]
 
     assert dict(info.input_ports) == {"roi": "geometry2d"}

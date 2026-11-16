@@ -39,6 +39,26 @@ Inspector 2.13.0 + 官方 Python MCP SDK 1.30.0 / 协议 `2025-11-25` 的现有�
 
 本轮实际下载物：`.tmp/independent-authoring-ci-closeout-20261116-inspector/download.zip`（3022 字节，SHA-256 `c1485c40d9aaf98ee81f9bd9a2c700f3ae663570db160bc6d200661c318d1248`），工程在相邻 `download/project.emoproj`。这是合成无硬件工程，未纳入私有工作区提交。
 
-最终提交与远端 CI 尚待执行。只有最终交付 SHA 的原主 CI 和 Web 检查均实际完成并通过，才关闭任务 6.7。
+修复提交 `f17e8a912ce482fe3c81a2a35ad8c38eb51ec586` 已在原 `main` 分支推送；推送后 local/remote 相同、ahead/behind 0/0，工作区只剩私有 `.tmp/`。对应 [执行评论](https://github.com/jsdfhasuh/emo_master/commit/f17e8a912ce482fe3c81a2a35ad8c38eb51ec586#commitcomment-210177783) 已标明 Sol / ChatGPT Web 计划来源及验证边界。
 
-人工桌面操作、打包产物和现场硬件本轮未执行；原生 Qt 自动化不记作人工操作。没有生产发布、启停或相机/PLC 访问。
+该修复提交的远端结果均已实际完成：
+
+| 工作流 | run / attempt | 固定 head_sha | 实际结论 |
+| --- | --- | --- | --- |
+| 原主 CI | [43782967435](https://github.com/jsdfhasuh/emo_master/actions/runs/43782967435) / 1 | `f17e8a912ce482fe3c81a2a35ad8c38eb51ec586` | **completed / success**；Windows/Linux × runtime/other 四分片、选择与双平台汇总，共 7 个作业全部 success。 |
+| 原 Web panel isolated checks（workflow_dispatch，完整双平台） | [43782988301](https://github.com/jsdfhasuh/emo_master/actions/runs/43782988301) / 1 | 同上 | **completed / success**；Windows、Linux 和 Owning Runtime integration 三作业全部 success，含既有构建、wheel 和软件 Runtime 验收。 |
+
+主 CI 本轮实际 pytest 统计如下，各平台相同用例不相加为唯一用例；分片 deselected 是另一个分片的选择，不记作通过或跳过。本轮没有新增 skip/xfail。
+
+| 平台 / 分片 | passed | skipped | failed / error | 额外 subtests passed |
+| --- | ---: | ---: | --- | ---: |
+| Linux runtime | 3364 | 7 | 0 / 0 | 0 |
+| Windows runtime | 3369 | 2 | 0 / 0 | 0 |
+| Linux other | 6176 | 24 | 0 / 0 | 66 |
+| Windows other | 6197 | 3 | 0 / 0 | 66 |
+
+双平台 other 的本轮 JUnit 原件分别核实 **59 authoring / 59 passed / 0 failed / 0 errors / 0 skipped**；它们已包含在对应 other 统计内。原件只下载到 `.tmp/ci-closeout-20261116-f17e8a9-main/`，公开摘要记录 artifact 来源/摘要与聚合计数，不提交原 XML 或完整日志。
+
+公开 run/jobs 摘要见 `ci-implementation-main.json`、`ci-implementation-web.json`；不提交完整原始 CI 日志或私有诊断。依据以上实际结果关闭 6.7；原 25 项与 6.0–6.6 保留，活动 change 不归档。收尾记录提交只修改计划/报告，其代码和测试与修复提交相同；推送后继续核对它自身的原主 CI 与 Web，最终固定 SHA/run 及完成结论写入该提交下的 Sol / ChatGPT Web 计划来源评论及交付回复，不用旧 SHA 的成功替代最终检查。
+
+人工桌面操作、Designer 冻结产物验收和现场硬件本轮未执行；原生 Qt 自动化不记作人工操作，Web CI 的构建/wheel 自测也不替代 Designer 打包验收。没有生产发布、启停或相机/PLC 访问。

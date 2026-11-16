@@ -3,7 +3,7 @@
 计划整理：ChatGPT Web，2026-11-14。执行对象：Sol。
 活动变更仍为 `add-independent-project-authoring`；这是原任务 **6.7 的细化**，不是新的功能版本、独立 change 或架构重写。
 
-**本计划待实施。** 固定依据为 `9dce7543232042c6840d9cc20c72a4a903556154`（下称 9dce7543）的源码、活动计划和上一轮已下载的 CI 产物。它不是对执行时最新 main 的状态承诺。任务完成状态只在 [tasks.md](tasks.md) 维护，本文不另建一套复选框。
+计划固定依据为 `9dce7543232042c6840d9cc20c72a4a903556154`（下称 9dce7543）的源码、活动计划和上一轮已下载的 CI 产物。它不是对执行时最新 main 的状态承诺。任务完成状态只在 [tasks.md](tasks.md) 维护，本文不另建一套复选框；2026-11-16 的实际实施与验证见 [收尾报告](../../../docs/testing/2026-11-16-independent-project-authoring-ci-closeout/README.md)。
 
 ## 1. 这次改什么，不改什么
 

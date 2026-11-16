@@ -1,0 +1,250 @@
+{
+  "recordedAtUtc": "2026-11-16T01:32:52.835750+00:00",
+  "repository": "jsdfhasuh/emo_master",
+  "run": {
+    "id": 43782967435,
+    "name": "CI",
+    "run_attempt": 1,
+    "head_sha": "f17e8a912ce482fe3c81a2a35ad8c38eb51ec586",
+    "head_branch": "main",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/jsdfhasuh/emo_master/actions/runs/43782967435",
+    "event": "push",
+    "path": ".github/workflows/ci.yml",
+    "created_at": "2026-11-16T00:52:55Z",
+    "updated_at": "2026-11-16T01:27:07Z"
+  },
+  "jobs": [
+    {
+      "id": 133024139248,
+      "name": "Select source checks",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/jsdfhasuh/emo_master/actions/runs/43782967435/job/133024139248",
+      "started_at": "2026-11-16T00:52:58Z",
+      "completed_at": "2026-11-16T00:53:04Z",
+      "run_attempt": 1,
+      "head_sha": "f17e8a912ce482fe3c81a2a35ad8c38eb51ec586"
+    },
+    {
+      "id": 133024181638,
+      "name": "Windows source (other) / Python 3.10",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/jsdfhasuh/emo_master/actions/runs/43782967435/job/133024181638",
+      "started_at": "2026-11-16T00:53:06Z",
+      "completed_at": "2026-11-16T01:26:56Z",
+      "run_attempt": 1,
+      "head_sha": "f17e8a912ce482fe3c81a2a35ad8c38eb51ec586"
+    },
+    {
+      "id": 133024181652,
+      "name": "Linux source (other) / Python 3.10",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/jsdfhasuh/emo_master/actions/runs/43782967435/job/133024181652",
+      "started_at": "2026-11-16T00:53:06Z",
+      "completed_at": "2026-11-16T01:14:05Z",
+      "run_attempt": 1,
+      "head_sha": "f17e8a912ce482fe3c81a2a35ad8c38eb51ec586"
+    },
+    {
+      "id": 133024181711,
+      "name": "Windows source (runtime) / Python 3.10",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/jsdfhasuh/emo_master/actions/runs/43782967435/job/133024181711",
+      "started_at": "2026-11-16T00:53:06Z",
+      "completed_at": "2026-11-16T01:20:19Z",
+      "run_attempt": 1,
+      "head_sha": "f17e8a912ce482fe3c81a2a35ad8c38eb51ec586"
+    },
+    {
+      "id": 133024181760,
+      "name": "Linux source (runtime) / Python 3.10",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/jsdfhasuh/emo_master/actions/runs/43782967435/job/133024181760",
+      "started_at": "2026-11-16T00:53:06Z",
+      "completed_at": "2026-11-16T01:10:43Z",
+      "run_attempt": 1,
+      "head_sha": "f17e8a912ce482fe3c81a2a35ad8c38eb51ec586"
+    },
+    {
+      "id": 133030673033,
+      "name": "ubuntu-latest / Python 3.10",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/jsdfhasuh/emo_master/actions/runs/43782967435/job/133030673033",
+      "started_at": "2026-11-16T01:14:08Z",
+      "completed_at": "2026-11-16T01:14:23Z",
+      "run_attempt": 1,
+      "head_sha": "f17e8a912ce482fe3c81a2a35ad8c38eb51ec586"
+    },
+    {
+      "id": 133034670759,
+      "name": "windows-latest / Python 3.10",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/jsdfhasuh/emo_master/actions/runs/43782967435/job/133034670759",
+      "started_at": "2026-11-16T01:26:58Z",
+      "completed_at": "2026-11-16T01:27:07Z",
+      "run_attempt": 1,
+      "head_sha": "f17e8a912ce482fe3c81a2a35ad8c38eb51ec586"
+    }
+  ],
+  "sourceChecks": [
+    {
+      "jobId": 133024181638,
+      "platform": "Windows",
+      "shard": "other",
+      "conclusion": "success",
+      "pytestSummary": "6197 passed, 3 skipped, 3371 deselected, 17 warnings, 66 subtests passed in 1862.92s (0:31:02)",
+      "counts": {
+        "passed": 6197,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 3,
+        "deselected": 3371,
+        "warnings": 17,
+        "xfailed": 0,
+        "xpassed": 0,
+        "subtestsPassed": 66,
+        "elapsedSeconds": 1862.92
+      },
+      "authoring": {
+        "source": "Downloaded current-run JUnit artifact; testcase classname starts with tests.authoring.",
+        "caseCount": 59,
+        "counts": {
+          "passed": 59,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "includedInThisShard": true,
+        "artifact": {
+          "id": 14189879011,
+          "name": "test-results-windows-latest-py3.10-other",
+          "size_in_bytes": 501237,
+          "digest": "sha256:ec5ada1ed117ee25d08b3635b6af18e53f1bbe2b9ac76f5065d48b9ea1d6858c"
+        },
+        "junitSha256": "210aaac3e555e1d2eab572eea7bdde3f6ce521ab96472043d44766b2c630da9c",
+        "rawArtifactSavedOnlyUnderTmp": true
+      },
+      "rawLogsSaved": false,
+      "junitTestcaseCount": 6200
+    },
+    {
+      "jobId": 133024181652,
+      "platform": "Linux",
+      "shard": "other",
+      "conclusion": "success",
+      "pytestSummary": "6176 passed, 24 skipped, 3371 deselected, 17 warnings, 66 subtests passed in 1187.26s (0:19:47)",
+      "counts": {
+        "passed": 6176,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 24,
+        "deselected": 3371,
+        "warnings": 17,
+        "xfailed": 0,
+        "xpassed": 0,
+        "subtestsPassed": 66,
+        "elapsedSeconds": 1187.26
+      },
+      "authoring": {
+        "source": "Downloaded current-run JUnit artifact; testcase classname starts with tests.authoring.",
+        "caseCount": 59,
+        "counts": {
+          "passed": 59,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "includedInThisShard": true,
+        "artifact": {
+          "id": 14189748969,
+          "name": "test-results-ubuntu-latest-py3.10-other",
+          "size_in_bytes": 498573,
+          "digest": "sha256:7a79f32337f279bae921395f56c29862721baa42fa50117f1bcb24fdc11404db"
+        },
+        "junitSha256": "cdd3e673b05c7d646bc67aa7527641c9784f9dd0c71caaac474362f52c6ad779",
+        "rawArtifactSavedOnlyUnderTmp": true
+      },
+      "rawLogsSaved": false,
+      "junitTestcaseCount": 6200
+    },
+    {
+      "jobId": 133024181711,
+      "platform": "Windows",
+      "shard": "runtime",
+      "conclusion": "success",
+      "pytestSummary": "3369 passed, 2 skipped, 6200 deselected in 1509.02s (0:25:09)",
+      "counts": {
+        "passed": 3369,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 2,
+        "deselected": 6200,
+        "warnings": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "subtestsPassed": 0,
+        "elapsedSeconds": 1509.02
+      },
+      "authoring": {
+        "source": "Completed job log execution result lines; authoring is outside the runtime shard.",
+        "caseCount": 0,
+        "counts": {
+          "passed": 0,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "includedInThisShard": false
+      },
+      "rawLogsSaved": false
+    },
+    {
+      "jobId": 133024181760,
+      "platform": "Linux",
+      "shard": "runtime",
+      "conclusion": "success",
+      "pytestSummary": "3364 passed, 7 skipped, 6200 deselected in 988.14s (0:16:28)",
+      "counts": {
+        "passed": 3364,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 7,
+        "deselected": 6200,
+        "warnings": 0,
+        "xfailed": 0,
+        "xpassed": 0,
+        "subtestsPassed": 0,
+        "elapsedSeconds": 988.14
+      },
+      "authoring": {
+        "source": "Completed job log execution result lines; authoring is outside the runtime shard.",
+        "caseCount": 0,
+        "counts": {
+          "passed": 0,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "includedInThisShard": false
+      },
+      "rawLogsSaved": false
+    }
+  ],
+  "evidenceScope": {
+    "runAndJobs": "Public GitHub REST metadata for this fixed run and attempt.",
+    "testResults": "Pytest summary from completed public job logs; authoring counts independently verified in the two other-shard JUnit artifacts by testcase classname.",
+    "rawLogsSaved": false,
+    "historicalPrivateDiagnosticsRead": false,
+    "crossPlatformCountNote": "Windows and Linux are separate executions of overlapping test groups; do not add them as unique tests.",
+    "rawArtifactsSavedOnlyUnderTmp": true,
+    "authoringCountNote": "Each other shard contains 59 authoring cases, all passed. Three parameter IDs contain spaces; JUnit is the stable authoring count source."
+  }
+}

@@ -459,7 +459,10 @@ def testNavigationControlsAndReferencePopupRenderAtNarrowWidth(window):
     settle()
     item = popup.tree.topLevelItem(0)
     assert popup.tree.visualItemRect(item).height() > 40
-    assert longName in item.text(0) and 'first' in item.text(0)
+    assert w.workflowStore.get('main').name == longName.strip()
+    assert item.text(0).split('\n')[0] == '路径 1 · ' + w.workflowStore.get('main').name
+    assert '节点 ID：first' in item.toolTip(0)
+    assert '节点 ID' not in item.text(0) and '调用节点' in item.text(0)
     evidence = Path('build/workflow_history_20261012') / ('scale' + os.environ.get('QT_SCALE_FACTOR', '1'))
     evidence.mkdir(parents=True, exist_ok=True)
     assert popup.grab().save(str(evidence / 'callers.png'))

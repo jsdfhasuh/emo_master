@@ -10,6 +10,18 @@ from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields
 from emo_master.ui.workflow_labels import workflowDisplayNames
 
 
+_REFERENCE_RELATION_LABELS = {
+    'subflow': '子工作流调用',
+    'dispatch': '启动工作流',
+    'repeat-body': '重复执行',
+    'foreach-body': '逐项执行',
+    'while-body': '条件循环',
+    'while-condition': '循环条件判断',
+    'loop-body': '循环执行',
+    'loop-condition': '循环条件判断',
+}
+
+
 class WorkflowNavigationController:
     def __init__(self, window):
         self.window = window
@@ -260,15 +272,31 @@ class WorkflowNavigationController:
             return
         names = workflowDisplayNames(w.workflowStore.workflows)
         rows = []
-        for chain, cycle in self.referenceChains(target):
-            steps = [f'{names[ref["sourceWorkflowId"]]} / {ref["sourceNodeName"]}' for ref in chain]
-            details = [f'{ref["sourceWorkflowId"]} / {ref["sourceNodeId"]} · {ref["relationLabel"]}'
-                       for ref in chain]
-            label = ' → '.join([*steps, names[target]])
-            if cycle:
-                label += '（循环引用）'
-            label += '\n' + ' → '.join([*details, target])
-            rows.append((label, dict(chain=chain)))
+        chains = self.referenceChains(target)
+        for pathIndex, (chain, cycle) in enumerate(chains):
+            destinationLabel = '当前工作流' if target == w.activeWorkflowId else '查找目标'
+            branch = (f'{names[target]}\n{destinationLabel}', dict(
+                itemType='workflow', workflowId=target, nodeId=None, chain=chain,
+                tooltip=f'工作流：{names[target]}\n工作流 ID：{target}\n{destinationLabel}'))
+            for index in reversed(range(len(chain))):
+                ref = chain[index]
+                source, nodeId = ref['sourceWorkflowId'], ref['sourceNodeId']
+                relation = _REFERENCE_RELATION_LABELS.get(ref['relation'], '工作流调用')
+                nodeName = {'subflow': '子工作流调用', 'loop': '循环控制', 'dispatch': '启动工作流'}.get(
+                    ref['sourceNodeName'], ref['sourceNodeName'])
+                prefix = f'路径 {pathIndex + 1} · ' if index == 0 and len(chains) > 1 else ''
+                subtitle = f'调用节点：{nodeName}'
+                if index == 0:
+                    subtitle = ('循环引用 · ' if cycle else '起点 · ') + subtitle
+                label = f'{prefix}{names[source]}\n{subtitle}'
+                tooltip = (f'工作流：{names[source]}\n工作流 ID：{source}\n'
+                           f'调用节点：{ref["sourceNodeName"]}\n节点 ID：{nodeId}\n'
+                           f'调用方式：{relation}\n下一级：{names[ref["targetWorkflowId"]]}')
+                branch = (label, dict(itemType='workflow', workflowId=source, nodeId=nodeId, chain=chain,
+                    status='cycle' if index == 0 and cycle else 'normal', tooltip=tooltip,
+                    searchText=f'{source}\n{nodeId}\n{ref["sourceNodeName"]}\n{ref["relationLabel"]}',
+                    children=[branch]))
+            rows.append(branch)
         session = self.session
 
         def choose(payload):
@@ -281,8 +309,7 @@ class WorkflowNavigationController:
             if target not in w.workflowStore.workflows or any(identity(ref) not in current for ref in chain):
                 self.message('调用来源已变化或被删除，请重新查找。')
                 return
-            caller = chain[-1]
-            self.navigate(caller['sourceWorkflowId'], caller['sourceNodeId'])
+            self.navigate(payload['workflowId'], payload['nodeId'])
 
         title = f'{names[target]} 的调用来源（{len(rows)} 条链路）'
         self.popup.present(title, rows, choose, w.workflowNavigationControls.references)

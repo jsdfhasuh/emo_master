@@ -74,11 +74,12 @@ class NavigationLocationsPopup(QFrame):
         self.title.setAccessibleName(title)
         self.search.clear()
         self.tree.clear()
+        hierarchical = any(payload.get('children') for _label, payload in rows)
+        self.tree.setRootIsDecorated(hierarchical)
+        self.tree.setIndentation(14 if hierarchical else 0)
         for label, payload in rows:
-            item = QTreeWidgetItem([label])
-            item.setData(0, Qt.UserRole, payload)
-            item.setToolTip(0, label)
-            self.tree.addTopLevelItem(item)
+            self._addLocation(self.tree.invisibleRootItem(), label, payload)
+        self.tree.expandAll()
         self._filter('')
         screen = anchor.screen().availableGeometry()
         self.resize(min(560, screen.width()), min(430, screen.height()))
@@ -88,22 +89,54 @@ class NavigationLocationsPopup(QFrame):
         self.show()
         self.search.setFocus()
 
+    def _addLocation(self, parent, label, payload):
+        item = QTreeWidgetItem(parent, [label])
+        item.setData(0, Qt.UserRole, {key: value for key, value in payload.items()
+                                    if key not in {'children', 'tooltip', 'searchText'}})
+        tooltip = payload.get('tooltip', label)
+        item.setToolTip(0, tooltip)
+        item.setData(0, Qt.UserRole + 1, (label + '\n' + payload.get('searchText', tooltip)).casefold())
+        self.tree.styleItem(item, payload)
+        for childLabel, childPayload in payload.get('children', []):
+            self._addLocation(item, childLabel, childPayload)
+
+    def _items(self, root):
+        yield root
+        for index in range(root.childCount()):
+            yield from self._items(root.child(index))
+
     def _filter(self, text):
         query = text.strip().casefold()
         visible = []
+        matches = []
         for i in range(self.tree.topLevelItemCount()):
-            item = self.tree.topLevelItem(i)
-            item.setHidden(query not in item.text(0).casefold())
-            if not item.isHidden():
-                visible.append(item)
+            root = self.tree.topLevelItem(i)
+            items = list(self._items(root))
+            matching = [item for item in items if query in item.data(0, Qt.UserRole + 1)]
+            root.setHidden(not matching)
+            if matching:
+                visible.extend(items)
+                matches.extend(matching)
+                if query:
+                    # A matching inner step must retain its whole caller path.
+                    for item in items:
+                        item.setExpanded(True)
         current = self.tree.currentItem()
-        if current is None or current.isHidden():
-            self.tree.setCurrentItem(visible[0] if visible else None)
+        candidates = matches if query else visible
+        if current not in candidates:
+            self.tree.setCurrentItem(candidates[0] if candidates else None)
+        if query and self.tree.currentItem() is not None:
+            self.tree.scrollToItem(self.tree.currentItem())
         self.empty.setVisible(not visible)
 
     def _choose(self, item, _column=0):
         if item is None or item.isHidden() or not self.isVisible():
             return
+        parent = item.parent()
+        while parent is not None:
+            if parent.isHidden() or not parent.isExpanded():
+                return
+            parent = parent.parent()
         payload = item.data(0, Qt.UserRole)
         self.hide()
         if self._navigate is not None:

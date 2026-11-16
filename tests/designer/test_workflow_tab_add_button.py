@@ -42,7 +42,12 @@ def testCommandsHaveFixedSlotsSeparateFromTabs(designerApplication, titles, dire
     assert abs(button.center().y() - rect.center().y()) <= 2
     assert tabs.rect().contains(button)
     assert tabs._addButton.visibleRegion().boundingRect() == tabs._addButton.rect()
-    assert tabs._allButton.size() == tabs._addButton.size()
+    assert tabs._allButton.height() == tabs._addButton.height()
+    if len(titles) > 1:
+        assert tabs._allButton.text() == str(len(titles))
+        assert tabs._allButton.width() >= tabs._allButton.sizeHint().width()
+    else:
+        assert tabs._allButton.size() == tabs._addButton.size()
     assert not tabs._allButton.icon().isNull()
     assert tabs._allButton.accessibleName() == '全部工作流'
     assert bar.count() == len(titles) and all(bar.isTabVisible(i) for i in range(bar.count()))

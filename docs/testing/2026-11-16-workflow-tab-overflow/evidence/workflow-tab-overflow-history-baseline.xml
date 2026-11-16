@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="2.404" timestamp="2026-11-16T10:32:02.208602+08:00" hostname="DESKTOP-IAED81O"><testcase classname="tests.designer.test_workflow_history_navigation" name="testNavigationControlsAndReferencePopupRenderAtNarrowWidth" time="0.947"><failure message="AssertionError: assert ('第一工位很长的坐标识别与矫正工作流 Long workflow name 第一工位很长的坐标识别与矫正工作流 Long workflow name 第一工位很长的坐标识别与矫正工作流 Long workflow name ' in '路径 1 · 第一工位很长的坐标识别与矫正工作流 Long workflow name 第一工位很长的坐标识别与矫正工作流 Long workflow name 第一工位很长的坐标识别与矫正工作流 Long workflow name\n起点 · 调用节点：子工作流调用')&#10; +  where '路径 1 · 第一工位很长的坐标识别与矫正工作流 Long workflow name 第一工位很长的坐标识别与矫正工作流 Long workflow name 第一工位很长的坐标识别与矫正工作流 Long workflow name\n起点 · 调用节点：子工作流调用' = &lt;built-in method text of PySide2.QtWidgets.QTreeWidgetItem object at 0x000001CCB3B891C0&gt;(0)&#10; +    where &lt;built-in method text of PySide2.QtWidgets.QTreeWidgetItem object at 0x000001CCB3B891C0&gt; = &lt;PySide2.QtWidgets.QTreeWidgetItem object at 0x000001CCB3B891C0&gt;.text">window = &lt;emo_master.apps.designer.ui.main_window.MainWindow(0x1ccb5049290) at 0x000001CCB7D97E80&gt;
+
+    def testNavigationControlsAndReferencePopupRenderAtNarrowWidth(window):
+        w, nav = window, window.workflowNavigation
+        longName = '第一工位很长的坐标识别与矫正工作流 Long workflow name ' * 3
+        w.renameWorkflow('main', longName)
+        w.activateWorkflow('child')
+        nav.showReferences()
+        settle()
+        popup = nav.popup
+        popup.resize(380, 420)
+        settle()
+        item = popup.tree.topLevelItem(0)
+        assert popup.tree.visualItemRect(item).height() &gt; 40
+&gt;       assert longName in item.text(0) and 'first' in item.toolTip(0)
+E       AssertionError: assert ('第一工位很长的坐标识别与矫正工作流 Long workflow name 第一工位很长的坐标识别与矫正工作流 Long workflow name 第一工位很长的坐标识别与矫正工作流 Long workflow name ' in '路径 1 · 第一工位很长的坐标识别与矫正工作流 Long workflow name 第一工位很长的坐标识别与矫正工作流 Long workflow name 第一工位很长的坐标识别与矫正工作流 Long workflow name\n起点 · 调用节点：子工作流调用')
+E        +  where '路径 1 · 第一工位很长的坐标识别与矫正工作流 Long workflow name 第一工位很长的坐标识别与矫正工作流 Long workflow name 第一工位很长的坐标识别与矫正工作流 Long workflow name\n起点 · 调用节点：子工作流调用' = &lt;built-in method text of PySide2.QtWidgets.QTreeWidgetItem object at 0x000001CCB3B891C0&gt;(0)
+E        +    where &lt;built-in method text of PySide2.QtWidgets.QTreeWidgetItem object at 0x000001CCB3B891C0&gt; = &lt;PySide2.QtWidgets.QTreeWidgetItem object at 0x000001CCB3B891C0&gt;.text
+
+tests\designer\test_workflow_history_navigation.py:462: AssertionError</failure></testcase></testsuite></testsuites>

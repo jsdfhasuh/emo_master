@@ -54,3 +54,6 @@ web_panel/contracts/panel-contract-v1/** -text
 # Keep original pytest diagnostics, including whitespace in failure excerpts.
 docs/testing/2026-11-12-page-switch/*.xml -text -whitespace
 docs/testing/2026-11-13-workspace-integration/*.xml -text -whitespace
+# Preserve archived tab regressions and final workspace-delivery reports.
+docs/testing/2026-11-16-workflow-tab-overflow/evidence/** -text -whitespace
+docs/testing/2026-11-16-workspace-delivery/*.xml -text -whitespace

@@ -26,6 +26,8 @@ class _WorkflowLabel:
 
 
 class _WorkflowTabBar(QTabBar):
+    overflowChanged: Any = Signal(int, int)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._fitting = False
@@ -43,7 +45,11 @@ class _WorkflowTabBar(QTabBar):
 
     def _fitTabs(self):
         current = self.currentIndex()
-        if self._fitting or current < 0:
+        if self._fitting:
+            return
+        if current < 0:
+            self.setExpanding(False)
+            self.overflowChanged.emit(0, 0)
             return
         self._fitting = True
         try:
@@ -69,8 +75,12 @@ class _WorkflowTabBar(QTabBar):
                 visible = first <= index < last
                 if self.isTabVisible(index) != visible:
                     self.setTabVisible(index, visible)
+            # Distribute the remainder across fitted tabs instead of leaving
+            # a tab-sized blank area at the end while browsing overflow.
+            self.setExpanding(first > 0 or last < self.count())
         finally:
             self._fitting = False
+        self.overflowChanged.emit(first, self.count() - last)
 
     def setCurrentIndex(self, index):
         super().setCurrentIndex(index)
@@ -95,6 +105,21 @@ class _WorkflowTabBar(QTabBar):
             event.accept()
             return
         super().keyPressEvent(event)
+
+    def wheelEvent(self, event):
+        delta = event.angleDelta()
+        if delta.isNull():
+            delta = event.pixelDelta()
+        if not delta.isNull():
+            horizontal = abs(delta.x()) > abs(delta.y())
+            distance = delta.x() if horizontal else delta.y()
+            step = -1 if distance > 0 else 1
+            if horizontal and self.layoutDirection() == Qt.RightToLeft:
+                step = -step
+            index = self.currentIndex() + step
+            if 0 <= index < self.count():
+                self.setCurrentIndex(index)
+        event.accept()
 
     def tabSizeHint(self, index):
         size = super().tabSizeHint(index)
@@ -231,6 +256,7 @@ class WorkflowTabs(QWidget):
 
     def __init__(self, *, noun='工作流'):
         super().__init__()
+        self._noun = noun
         self._labels: dict[str, _WorkflowLabel] = {}
         self._bar = _WorkflowTabBar(self)
         self._bar.currentChanged.connect(self.currentChanged.emit)
@@ -263,6 +289,27 @@ class WorkflowTabs(QWidget):
         self._picker = _WorkflowPicker(self, noun)
         self._picker.workflowRequested.connect(self.selectWorkflow)
         self._picker.workflowRequested.connect(lambda _: self._bar.setFocus())
+        self._bar.overflowChanged.connect(self._updateOverflowCount)
+
+    def _updateOverflowCount(self, before, after):
+        total = self.count()
+        hidden = before + after
+        text = f'+{hidden}' if hidden else (str(total) if total > 1 else '')
+        self._allButton.setText(text)
+        self._allButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon if text else Qt.ToolButtonIconOnly)
+        # Reserve for the total, not the changing hidden count, so navigation
+        # cannot resize the toolbar and change how many tabs fit in it.
+        width = 32
+        if total > 1:
+            metrics = self._allButton.fontMetrics()
+            width = (self._allButton.sizeHint().width() - metrics.horizontalAdvance(text)
+                     + metrics.horizontalAdvance(f'+{total}'))
+        self._allButton.setFixedWidth(width)
+        tooltip = f'全部{self._noun}（共 {total} 个，可搜索）'
+        if hidden:
+            tooltip += f'\n还有 {hidden} 个未显示（前面 {before} 个，后面 {after} 个）'
+        self._allButton.setToolTip(tooltip)
+        self._allButton.setAccessibleDescription(tooltip)
 
     def tabBar(self):
         return self._bar

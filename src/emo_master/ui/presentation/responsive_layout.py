@@ -14,7 +14,7 @@ class ResponsiveWidgetLayout(QLayout):
         self._items = []
         self._components = {}
         self.childRects = {}
-        self.setContentsMargins(9, 9, 9, 9)
+        self.setContentsMargins(0, 0, 0, 0)
         self.setSpacing(rules.spacing)
 
     def addItem(self, item):
@@ -73,11 +73,16 @@ class ResponsiveWidgetLayout(QLayout):
 
     def sizeHint(self):
         measures = self._measurements()
-        width = max((max(m.responsive.minWidth, m.responsive.preferredWidth) for m in measures), default=240)
-        return QSize(round(width + 18), self.heightForWidth(width + 18))
+        margins = self.contentsMargins()
+        widths = [max(m.responsive.minWidth, m.responsive.preferredWidth or m.hintWidth) for m in measures]
+        width = (sum(widths) + self.spacing() * (len(widths) - 1)
+                 if widths and self.rules.direction == 'horizontal' else max(widths, default=0))
+        width = round(width) + margins.left() + margins.right()
+        return QSize(width, self.heightForWidth(width))
 
     def minimumSize(self):
-        return QSize(0, 32 - self.canvasTop)
+        margins = self.contentsMargins()
+        return QSize(0, margins.top() + margins.bottom() - self.canvasTop)
 
     def setGeometry(self, rect):
         super().setGeometry(rect)

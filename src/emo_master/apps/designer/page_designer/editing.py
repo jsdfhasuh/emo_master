@@ -11,7 +11,7 @@ from emo_master.ui.workflow_labels import workflowDisplayNames
 
 
 ACCEPTED = {'number': {'integer', 'number'}, 'text': {'integer', 'number', 'boolean', 'string', 'json'},
-            'image': {'image'}, 'indicator': {'boolean', 'string'}, 'table': {'collection'}}
+            'image': {'image'}, 'indicator': {'integer', 'boolean', 'string'}, 'table': {'collection'}}
 
 
 def manifestsFromCatalog(catalog):
@@ -163,7 +163,7 @@ class PageCommands:
     def add(self, pageId, kind, row, column, parentId=None):
         component = Component(componentId=str(uuid4()), type=kind,
                               layout={'row': row, 'column': column},
-                              props=Props(fontSize=24, fontWeight='bold') if kind == 'page_title' else Props())
+                              props=Props(typography={'value': {'size': 24, 'weight': 'bold'}}) if kind == 'page_title' else Props())
         if self.session.document().presentation.schemaVersion == '1.0':
             component.grid = Grid()
         self.session.editPresentation(lambda p: self.children(p, pageId, parentId).append(component))
@@ -242,6 +242,7 @@ class PageCommands:
             target = _component(p, pageId, componentId)
             target.props.imageResourceId = None
             target.props.imagePath = None
+            target.props.recordValue = None
             prop = {'image': 'image', 'table': 'rows'}.get(target.type, 'value')
             sourceId = next((k for k, value in p.dataSources.items() if value == source), None) or str(uuid4())
             p.dataSources[sourceId] = source

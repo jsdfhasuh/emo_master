@@ -36,7 +36,7 @@ def testManifestTracksEveryArtifactAndHonestValidationScope(contract):
         data = (output / name).read_bytes()
         assert expected == dict(sha256=hashlib.sha256(data).hexdigest(), byteSize=len(data))
     document = loadProjectDocument(output / 'sample-panels/source/demo.emoproj')
-    assert (document.schemaVersion, document.presentation.schemaVersion) == ('2.9', '1.2')
+    assert (document.schemaVersion, document.presentation.schemaVersion) == ('2.10', '1.3')
     with zipfile.ZipFile(output / 'sample-panels/demo.emoweb') as archive:
         snapshot = json.loads(archive.read('presentation.json'))
         assert {'live', 'history'} == set(snapshot['pages'])
@@ -123,7 +123,7 @@ def testHistoryDtoRejectsMismatchedRowsAndFalseImageAvailability():
     with pytest.raises(ValidationError, match='opaque reference'):
         HistoryImageReference(status='AVAILABLE')
     with pytest.raises(ValidationError, match='width'):
-        HistoryPage(columns=[dict(name='id')], rows=[dict(rowId='one', values=[])], page=0,
+        HistoryPage(columns=[dict(name='id')], rows=[dict(rowId='one', keyValues=[1], values=[])], page=0,
             pageSize=20, hasNext=False, historyDefinitionRevision='a' * 64, stableRowIdentity=True)
 
 
@@ -131,7 +131,7 @@ def testPreviewContractRequiresExplicitReadOnlyModeAndConnection(contract):
     from emo_panel_protocol.preview import PreviewContext
     from pydantic import ValidationError
     output, manifest = contract
-    assert manifest['sdkVersion'] == '1.5.0'
+    assert manifest['sdkVersion'] == '1.6.0'
     fixture = json.loads((output / 'fixtures/preview-fixtures.json').read_text())
     online = json.loads((output / 'fixtures/preview-runtime.json').read_text())
     assert PreviewContext.model_validate(online).runtime.target == '192.0.2.10:50051'

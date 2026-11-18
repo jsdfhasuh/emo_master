@@ -12,42 +12,28 @@ from emo_master.core.presentation.catalog import buildOutputCatalog
 from emo_master.core.presentation.models import Component, DataSource, Props
 
 
-def testLegacyPropsGetBoundedAppearanceDefaults(project):
-    props = Props.model_validate({'title': 'Legacy page', 'text': 'Ready'})
-    assert (props.fontFamily, props.fontSize, props.fontWeight, props.textColor, props.cardStyle) == (
-        'system', 0, 'normal', 'default', 'plain')
-    assert project.presentation.schemaVersion == '1.0'
+def testCurrentAppearanceRoundTrip():
+    props = Props(surface={'kind': 'card', 'radius': 18, 'padding': {'left': 0}},
+                  typography={'value': {'size': 36, 'weight': 'bold', 'color': 'primary'}})
+    assert Props().surface is None and Props().typography is None
     assert Props.model_validate_json(props.model_dump_json()) == props
 
 
-@pytest.mark.parametrize('size', [0, 8, 12, 24, 48])
-def testFontSizeIsAutomaticOrBoundedPixels(size):
-    assert Props(fontSize=size).fontSize == size
+@pytest.mark.parametrize('size', [None, 8, 12, 24, 96])
+def testTypographyUsesBoundedPixelsOrInherits(size):
+    assert Props(typography={'value': {'size': size}}).typography.value.size == size
 
 
-@pytest.mark.parametrize('size', [-1, 1, 2, 3, 4, 5, 6, 7, 49, True, False, 8.0, '12', None])
-def testFontSizeRejectsSmallAndNonIntegerSizes(size):
+@pytest.mark.parametrize('size', [-1, 1, 7, 97, True, 8.0, '12'])
+def testTypographyRejectsSmallAndNonIntegerSizes(size):
     with pytest.raises(ValidationError):
-        Props(fontSize=size)
-
-
-@pytest.mark.parametrize(('field', 'values'), [
-    ('fontFamily', ['system', 'sans', 'serif', 'monospace']),
-    ('fontWeight', ['normal', 'bold']),
-    ('textColor', ['default', 'neutral', 'green', 'red', 'amber']),
-    ('cardStyle', ['plain', 'soft', 'outlined']),
-])
-def testAppearanceEnumsRoundTrip(field, values):
-    for value in values:
-        props = Props.model_validate({field: value})
-        assert getattr(Props.model_validate_json(props.model_dump_json()), field) == value
+        Props(typography={'value': {'size': size}})
 
 
 @pytest.mark.parametrize('values', [
-    {'fontFamily': 'Arial'}, {'fontFamily': 'sans; color: red'},
-    {'fontWeight': 700}, {'fontWeight': 'light'}, {'textColor': '#00ff00'},
-    {'cardStyle': 'QLabel { background: red; }'}, {'styleSheet': 'color: red'},
-    {'fontSize': 1000000},
+    {'surface': {'background': '#00ff00'}}, {'surface': {'radius': -1}},
+    {'surface': {'padding': {'left': 65}}}, {'styleSheet': 'color: red'},
+    {'typography': {'value': {'weight': 700}}}, {'typography': {'value': {'color': '#00ff00'}}},
 ])
 def testAppearanceRejectsFreeFormStylesAndUnknownProperties(values):
     with pytest.raises(ValidationError):
@@ -56,6 +42,7 @@ def testAppearanceRejectsFreeFormStylesAndUnknownProperties(values):
 
 @pytest.mark.parametrize(('kind', 'value', 'key', 'decoded'), [
     ('boolean', True, 'true', True), ('boolean', False, 'false', False),
+    ('integer', 1, '1', 1), ('string', '1', '"1"', '1'),
     ('boolean', 'true', 'true', True), ('boolean', 'false', 'false', False),
     ('string', 'OK', '"OK"', 'OK'), ('string', 'false', '"false"', 'false'),
     ('string', '', '""', ''), ('string', 'NG 待确认', '"NG 待确认"', 'NG 待确认'),
@@ -79,7 +66,7 @@ def testIndicatorInputRejectsCoercionUnsupportedTypesAndLongKeys(kind, value):
 
 
 @pytest.mark.parametrize('key', [
-    'OK', 'False', ' false', 'false ', '0', '1', 'null', '{}', '[]',
+    'OK', 'False', ' false', 'false ', '01', '1.0', 'null', '{}', '[]',
     '"\\u004fK"', '"x" ' , '"' + 'x' * 255 + '"', None, False,
 ])
 def testIndicatorDecodeRejectsNoncanonicalModelKeys(key):
@@ -210,7 +197,7 @@ def testActionModesReuseExistingActionWithoutMutation(project, mode, target, sco
     presentation = project.presentation
     before = presentation.model_dump()
     action = actionFromFields(presentation, 'overview', mode, target, scope)
-    assert (None if action is None else action.model_dump()) == expected
+    assert (None if action is None else action.model_dump(exclude={'componentId'})) == expected
     assert presentation.model_dump() == before
 
 

@@ -31,8 +31,8 @@ def testActualNewEntryPreservesOnlineAndReopens(ownedDesignerWindow, tmp_path, m
         monkeypatch.setattr(w, '_projectEntryDialogFactory', lambda: EntryDialogStub('new_blank', ''))
         assert w.showStartupProjectEntry()
     raw = loadProject(b)
-    assert raw['schemaVersion'] == '2.9'
-    assert raw['presentation']['schemaVersion'] == '1.2'
+    assert raw['schemaVersion'] == '2.10'
+    assert raw['presentation']['schemaVersion'] == '1.3'
     assert all(key in raw for key in ('resources', 'production', 'presentation', 'globalVariables'))
     assert raw['devices']['schemaVersion'] == '1.0'
     assert raw['project']['projectId'] != aId

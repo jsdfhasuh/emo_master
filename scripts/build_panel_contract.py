@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT / 'src'))
 from emo_panel_protocol import __version__  # noqa: E402
 from emo_panel_protocol.canonical import canonicalJson, revisionOf  # noqa: E402
 from emo_panel_protocol.messages import BrowserMessage, HistoryAggregate, HistoryPage  # noqa: E402
+from emo_panel_protocol.models import Presentation  # noqa: E402
 from emo_panel_protocol.published import PanelManifest, PublishedPresentation  # noqa: E402
 from emo_panel_protocol.preview import PreviewContext  # noqa: E402
 from emo_panel_protocol.results import ClosedResult  # noqa: E402
@@ -25,6 +26,7 @@ from emo_panel_protocol.output_requests import OutputRequestConfig  # noqa: E402
 
 
 MODELS = {
+    'presentation': Presentation,
     'published-presentation': PublishedPresentation, 'panel-manifest': PanelManifest,
     'closed-result': ClosedResult, 'history-page': HistoryPage,
     'history-aggregate': HistoryAggregate, 'browser-message': BrowserMessage,
@@ -178,7 +180,8 @@ def sampleProject(root):
                 dict(componentId='summary', type='container', children=[
                     dict(componentId='count', type='number', bindings={'value': 'count'}),
                     dict(componentId='spring', type='spacer', props=dict(spacerMode='flex')),
-                    dict(componentId='verdict', type='indicator', bindings={'value': 'verdict'})]),
+                    dict(componentId='verdict', type='indicator', bindings={'value': 'verdict'},
+                         props=dict(indicatorStates={'true': dict(text='OK', color='green')}))]),
                 dict(componentId='logo', type='image', props={'imageResourceId': 'demo'}),
                 dict(componentId='to-history', type='navigation_button', props={'text': 'History'},
                      actions={'clicked': dict(type='navigate', pageId='history')}),
@@ -219,9 +222,9 @@ def fixtureValues(manifest):
             dict(sourceId='verdict', state='AVAILABLE', valueJson='true')],
         status='COMPLETE', executionTerminal='COMPLETED', timing=None)
     history = dict(columns=[dict(name='id', type='scalar'), dict(name='verdict', type='scalar')], rows=[
-        dict(rowId=revisionOf([1]), values=[1, 'OK'], imageRefs={
+        dict(rowId=revisionOf([1]), keyValues=[1], values=[1, 'OK'], imageRefs={
             'record-image': dict(status='AVAILABLE', imageRef='fixture-opaque-image-1')}),
-        dict(rowId=revisionOf([2]), values=[2, 'NG'], imageRefs={'record-image': dict(status='EMPTY')})],
+        dict(rowId=revisionOf([2]), keyValues=[2], values=[2, 'NG'], imageRefs={'record-image': dict(status='EMPTY')})],
         page=0, pageSize=20, hasNext=False, historyDefinitionRevision=manifest['historyDefinitionRevision'],
         stableRowIdentity=True)
     return {
@@ -263,10 +266,12 @@ def fixtureValues(manifest):
 
 
 def buildContract(output, *, wheel=True, regenerateProto=True):
+    from emo_panel_protocol.theme import LIGHT_THEME
     output = Path(output).resolve()
     if regenerateProto:
         subprocess.run([sys.executable, str(ROOT / 'scripts/gen_proto.py')], cwd=ROOT, check=True)
     output.mkdir(parents=True, exist_ok=True)
+    writeJson(output / 'theme.json', LIGHT_THEME)
     schemas = {name: {'$schema': JSON_SCHEMA, **model.model_json_schema()} for name, model in MODELS.items()}
     schemas['runtime-rpc'] = protobufSchema()
     for name, schema in schemas.items():
@@ -328,6 +333,9 @@ def buildContract(output, *, wheel=True, regenerateProto=True):
                 wheelFiles.append('python/' + artifact.name)
         if not wheelFiles:
             raise ValueError('SDK wheel build returned no artifact')
+        for artifact in destination.glob('emo_panel_protocol-*.whl'):
+            if 'python/' + artifact.name not in wheelFiles:
+                artifact.unlink()
     sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     dirty = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).strip())
     files = {path.relative_to(output).as_posix(): dict(sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
@@ -339,6 +347,10 @@ def buildContract(output, *, wheel=True, regenerateProto=True):
         sampleValidation=dict(model='PASS', saveReload='PASS', workflowCompile='PASS',
             normalCapture='PASS', designerOpen='NOT_RUN'), files=files)
     writeJson(output / 'contract-manifest.json', contract)
+    if output == ROOT / 'web_panel/contracts/panel-contract-v1':
+        embedded = ROOT / 'web_panel/backend/emo_web_panel/contract_data'
+        shutil.copytree(output / 'fixtures', embedded / 'fixtures', dirs_exist_ok=True)
+        shutil.copyfile(sampleRoot / 'demo.png', embedded / 'demo.png')
     return contract
 
 

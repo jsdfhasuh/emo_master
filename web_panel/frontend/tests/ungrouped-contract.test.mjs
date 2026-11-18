@@ -11,7 +11,7 @@ const {PanelRenderer}=require('../src/renderer/PanelRenderer.tsx');
 const React=require('react');const {renderToStaticMarkup}=require('react-dom/server');
 const fixture=name=>JSON.parse(readFileSync(new URL(`../../contracts/panel-contract-v1/fixtures/${name}.json`,import.meta.url),'utf8'));
 const normalize=wire=>normalizeMessage(wire,'view',wire.previousJobId || wire.jobId,wire.runtimeInstanceId,[wire.jobId]);
-const renderStatus=status=>renderToStaticMarkup(React.createElement(PanelRenderer,{panel:{id:'panel',pages:[{id:'page',title:'Page',components:[{id:'status',type:'runtime_status'}]}]},pageId:'page',onPage(){},onAction(){},state:'ready',runtimeState:status}));
+const renderStatus=status=>renderToStaticMarkup(React.createElement(PanelRenderer,{panel:{id:'panel',pages:[{id:'page',title:'Page',components:[{id:'status',type:'runtime_status',props:{statusField:'job_state'}}]}]},pageId:'page',onPage(){},onAction(){},state:'ready',runtimeState:status}));
 
 test('SDK 1.1.1 ordinary job_state, job_changed and control_result preserve explicit empty group',()=>{
  for(const name of ['ungrouped-running','ungrouped-job-changed','ungrouped-start-accepted','ungrouped-stop-accepted','ungrouped-aborted']){

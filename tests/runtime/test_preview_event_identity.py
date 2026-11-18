@@ -18,8 +18,8 @@ def testPreviewFailureEventsRetainOwningJobIdentity(tmp_path, monkeypatch, failu
         payload = WorkflowStore().toPayload()
         payload["project"]["projectId"] = "later-loaded-project"
         service.loadedDocument = ProjectDocument.model_validate(payload)
-        assert service.loadedDocument.schemaVersion == "2.9"
-        assert service.loadedDocument.presentation.schemaVersion == "1.2"
+        assert service.loadedDocument.schemaVersion == "2.10"
+        assert service.loadedDocument.presentation.schemaVersion == "1.3"
         assert service.loadedDocument.project.projectId != job.projectId
         assert service.loadedDocument.entryWorkflowId != job.workflowId
 

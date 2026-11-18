@@ -71,9 +71,11 @@ class WorkspaceChrome(QObject):
         self.pageActions.append(self.previewAction)
         self.menus['视图'].addAction(self.previewAction)
         self.menus['文件'].addAction(w._toolbarActions['校验项目'])
-        from .delivery import exportDialog
+        from .delivery import exportDialog, exportWebPanelDialog
         self.exportAction = self.action('导出项目包…', lambda: self.command(lambda: exportDialog(coordinator)))
         self.menus['文件'].addAction(self.exportAction)
+        self.menus['文件'].addAction(self.action('导出 Web 页面包…',
+            lambda: self.command(lambda: exportWebPanelDialog(coordinator))))
         self.menus['运行'].addAction(w._toolbarActions['刷新算子'])
         capture = self.menus['运行'].addMenu('结果采集设置')
         policies = QActionGroup(capture)

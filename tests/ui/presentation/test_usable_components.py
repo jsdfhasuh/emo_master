@@ -31,10 +31,10 @@ def testLegalNullUsesEmptyTextButZeroFalseAndMissingDoNot(qtApp, tmp_path, kind)
         result = scope.result.model_copy(update={'sources': (ClosedSource(sourceId='count', state='UNAVAILABLE',
             reasonCode=reason, reason=reason),), 'status': 'INCOMPLETE'})
         window.submit(replace(view, scopes={'root': replace(scope, result=result)}))
-        assert widget.text() == window.displayMessage(reason) and '未检测' not in widget.text()
+        assert widget.text() == ('未检测' if kind == 'indicator' else window.displayMessage(reason))
         assert widget.toolTip() == reason
     window.submit(replace(view, connection='DISCONNECTED', detail='transport lost'))
-    assert widget.text() == '结果连接已中断，请检查连接'
+    assert widget.text() == ('未检测' if kind == 'indicator' else '结果连接已中断，请检查连接')
     assert 'DISCONNECTED' in widget.toolTip() and 'transport lost' in widget.toolTip()
     window.close()
 
@@ -64,17 +64,17 @@ def testScreenAspectFitsUnchangedSurfaceReservation(width, height, ratio):
 def testAppearanceAppliesAndSurfaceIsAccounted(qtApp, tmp_path):
     config = sampleProjectP3(tmp_path).presentation
     component = next(c for c in config.pages['overview'].components if c.type == 'number')
-    component.props.fontSize = 32
-    component.props.fontFamily = 'monospace'
-    component.props.cardStyle = 'soft'
-    component.props.textColor = 'amber'
+    from emo_panel_protocol.models import Surface, Typography
+    from emo_panel_protocol.theme import LIGHT_THEME
+    component.props.typography = Typography(value={'size': 32, 'color': 'amber'})
+    component.props.surface = Surface(kind='none', background='subtle')
     window = RuntimePages(config)
     window.show()
     qtApp.processEvents()
     widget = window.widgets['overview'][component.componentId][1]
-    assert widget.font().pixelSize() == 32
-    assert '#925900' in widget.styleSheet()
-    assert '#edf3fa' in widget.parentWidget().styleSheet()
+    assert widget.value.font().pixelSize() == 32
+    assert LIGHT_THEME['foreground']['amber'] in widget.value.styleSheet()
+    assert LIGHT_THEME['subtle'] in widget.parentWidget().styleSheet()
     assert window.surfaceBytes() <= SURFACE_LIMIT
     window.close()
 
@@ -166,7 +166,10 @@ def testConfiguredTextCannotLoadUnaccountedRichTextImages(qtApp, tmp_path):
     component.props.title = '<b>plain title</b>'
     window = RuntimePages(config)
     widget = window.widgets['overview'][component.componentId][1]
-    assert widget.textFormat() == Qt.PlainText and widget.text() == component.props.text
+    assert widget.value.toPlainText() == component.props.text
+    assert '<img ' not in widget.value.toHtml()
+    widget.setText('A' * 160 + '\n末行')
+    assert widget.value.heightForWidth(80) > widget.value.fontMetrics().height() * 2
     assert all(label.textFormat() == Qt.PlainText for label in widget.parentWidget().findChildren(QLabel))
     window.close()
 

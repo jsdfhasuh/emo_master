@@ -37,9 +37,11 @@ def source(overflow=False):
 
 GEOMETRY = """() => {
  const t=document.querySelector('.editor-preview-terminal'),c=t.querySelector('.panel-responsive');
+ const chrome=t.querySelector('.editor-preview-header'),page=getComputedStyle(c.parentElement);
  const geom=e=>{const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,width:r.width,height:r.height}};
  return {windowHeight:innerHeight,terminal:geom(t),content:geom(c),topWidget:geom(t.querySelector('[data-component-id=top]')),
    bottomWidget:geom(t.querySelector('[data-component-id=bottom]')),spacer:geom(t.querySelector('[data-component-id=flex-space]')),
+   chromeHeight:geom(chrome).height,pageTopPadding:parseFloat(page.paddingTop),pageBottomPadding:parseFloat(page.paddingBottom),
    contentStyleHeight:c.style.height,terminalScrollHeight:t.scrollHeight,terminalClientHeight:t.clientHeight,
    terminalOverflowY:getComputedStyle(t).overflowY,terminalScrollTop:t.scrollTop,
    contentTopInTerminal:c.getBoundingClientRect().top-t.getBoundingClientRect().top,
@@ -63,7 +65,7 @@ def measure_case(browser, origin, label, mode, kind):
                 page.get_by_label('实时预览任务').select_option('run-A')
             page.get_by_role('button', name='示例预览' if mode == 'fixtures' else '实时预览', exact=True).click()
             page.get_by_role('dialog').wait_for()
-            page.wait_for_function("() => document.querySelector('.editor-preview-terminal > .panel-responsive')?.style.height")
+            page.wait_for_function("() => document.querySelector('.editor-preview-terminal .panel-responsive')?.style.height")
             page.wait_for_timeout(100)
             value = page.evaluate(GEOMETRY)
             if kind == 'overflow':
@@ -81,13 +83,14 @@ def assert_geometry(values, kind):
         t, c, b = value['terminal'], value['content'], value['bottomWidget']
         if kind == 'fixed':
             assert abs(t['height'] - 768) <= 1, 'fixed terminal stretched with browser height'
-            assert abs(c['height'] - 752) <= 1, 'internal flow does not account for terminal height and 16px top gap'
-            assert abs(value['contentTopInTerminal'] - 16) <= 1
-            assert abs(value['footerBottomInTerminal'] - 768) <= 1, 'footer misses terminal logical bottom'
+            available = 768 - value['chromeHeight'] - value['pageTopPadding'] - value['pageBottomPadding']
+            assert abs(c['height'] - available) <= 1, 'flow must account for shell and page padding'
+            assert abs(value['contentTopInTerminal'] - value['chromeHeight'] - value['pageTopPadding']) <= 1
+            assert abs(value['footerBottomInTerminal'] - (768 - value['pageBottomPadding'])) <= 1, 'footer misses terminal logical bottom'
             assert value['terminalScrollHeight'] == value['terminalClientHeight'], 'normal content unexpectedly overflows'
-            assert abs(value['topWidget']['height'] - 108) <= 1 and abs(b['height'] - 108) <= 1, 'fixed content was squeezed'
+            assert abs(value['topWidget']['height'] - 64) <= 1 and abs(b['height'] - 64) <= 1, 'configured minimums changed'
         elif kind == 'follow':
-            assert abs(c['height'] - (value['windowHeight'] - c['top'] - 16)) <= 1, 'follow mode lost original window measurement'
+            assert abs(c['height'] - (value['windowHeight'] - c['top'] - value['pageBottomPadding'])) <= 1, 'follow mode lost viewport measurement'
             assert abs(b['bottom'] - c['bottom']) <= 1
         else:
             assert abs(t['height'] - 768) <= 1, 'overflow expanded the chosen terminal'

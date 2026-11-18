@@ -307,6 +307,12 @@
         },
         "descending": {
           "type": "boolean"
+        },
+        "anchorKeyJson": {
+          "type": "string"
+        },
+        "anchorStep": {
+          "type": "integer"
         }
       },
       "additionalProperties": false
@@ -1243,6 +1249,56 @@
       },
       "additionalProperties": false
     },
+    "RpcCandidateProjectChunk": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/$defs/RpcCandidateProjectMetadata"
+        },
+        "data": {
+          "type": "string",
+          "contentEncoding": "base64"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcCandidateProjectMetadata": {
+      "type": "object",
+      "properties": {
+        "draftRevision": {
+          "type": "string"
+        },
+        "expectedRuntimeInstanceId": {
+          "type": "string"
+        },
+        "sizeBytes": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "sha256": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcCandidateProjectReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "reportJson": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "RpcStartJobRequest": {
       "type": "object",
       "properties": {
@@ -1608,6 +1664,9 @@
         },
         "cameraRecoveryWarningsJson": {
           "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -1670,6 +1729,15 @@
           }
         },
         "deviceRequirementsJson": {
+          "type": "string"
+        },
+        "nextCycleParameterPathsJson": {
+          "type": "string"
+        },
+        "minCoreVersion": {
+          "type": "string"
+        },
+        "maxCoreVersion": {
           "type": "string"
         }
       },
@@ -3593,6 +3661,12 @@
       "response": "#/$defs/RpcValidateProjectReply",
       "serverStreaming": false,
       "clientStreaming": false
+    },
+    "RuntimeService/ValidateCandidateProject": {
+      "request": "#/$defs/RpcCandidateProjectChunk",
+      "response": "#/$defs/RpcCandidateProjectReply",
+      "serverStreaming": false,
+      "clientStreaming": true
     },
     "RuntimeService/StartJob": {
       "request": "#/$defs/RpcStartJobRequest",

@@ -1,0 +1,113 @@
+{
+  "head": "82d05914bda9c0390a2f94bcf6b2794e59ff3484",
+  "workingTree": "Includes uncommitted OpenSpec implementation",
+  "browser": "Headless Google Chrome via Playwright",
+  "runtime": "Normal software Runtime and Web HTTP/WS via installed SDK 1.6.0",
+  "archivedTraversal": {
+    "sdkVersion": "1.6.0",
+    "volumes": [
+      {
+        "job": "db0900e7-64a6-43bd-b47c-1333448c7d2d",
+        "writeId": "89b14f57-7efd-4b8e-857a-3dcef7ab98c6",
+        "sequence": 1
+      },
+      {
+        "job": "d9c31e96-681d-4cbe-9bc3-64903d3e6ba0",
+        "writeId": "3b3f5ec0-d3ac-4606-b830-236f39c5bf0c",
+        "sequence": 2
+      },
+      {
+        "job": "9ea9d523-0bcf-40e9-83fa-388ec7a3e3d1",
+        "writeId": "d834e6a6-cad0-4260-a7bf-3d66e7e73d87",
+        "sequence": 3
+      },
+      {
+        "job": "2f649cff-d058-465b-baaf-c8343295f686",
+        "writeId": "5bdc980e-3641-4a80-8afe-46051ce778a0",
+        "sequence": 4
+      },
+      {
+        "job": "d279eaff-94c5-4843-a167-1579688c432d",
+        "writeId": "a03fd0bb-d30d-4422-aec9-9f663181b704",
+        "sequence": 5
+      },
+      {
+        "job": "3d695abc-3762-4d1d-8699-979d5b71ee83",
+        "writeId": "ad8cffe1-3f5d-4832-a39f-aaf460738c1b",
+        "sequence": 6
+      }
+    ],
+    "displayedRecords": [
+      "a03fd0bb-d30d-4422-aec9-9f663181b704",
+      "d834e6a6-cad0-4260-a7bf-3d66e7e73d87",
+      "3b3f5ec0-d3ac-4606-b830-236f39c5bf0c",
+      "ad8cffe1-3f5d-4832-a39f-aaf460738c1b"
+    ],
+    "errors": [],
+    "health": {
+      "status": "ok",
+      "mode": "grpc",
+      "productionContractReady": true,
+      "panelContractVersion": "1.0",
+      "sdkVersion": "1.6.0",
+      "preview": false,
+      "localNoAuth": false
+    },
+    "outputRequestRevision": "1c4bc5a3c20199e44dde03ba163ded80b3a5427afe302357b83eb4260c4821b3",
+    "resumedArchiveCount": 5,
+    "productionImageDigest": "7ee289e1d46aacfc9f7e7017bf688560638feef6e229c89b501a68f2130b694e",
+    "status": "PASS",
+    "checks": [
+      "five archived records; three per page",
+      "selected third; appended sixth; next loaded second by key",
+      "previous returned third; switch page restored second with fresh image refs",
+      "latest selected sixth; one-column filter and clear worked",
+      "both image views matched decoded archived pixels; collapse hid log",
+      "frozen fifth remained visible after sixth; resume then selected sixth"
+    ],
+    "confirmedFailedStart": {
+      "explicitRetry": true,
+      "archiveWritten": false,
+      "code": "E_HEARTBEAT_TIMEOUT",
+      "started": false
+    }
+  },
+  "finalPackageAndWebEditor": {
+    "sdkVersion": "1.6.0",
+    "volumes": [
+      {
+        "job": "475c5f32-4712-41c2-a64a-675a6bb1ebae",
+        "writeId": "612fa920-3a5a-4e5e-a639-cbef83093f81",
+        "sequence": 2
+      },
+      {
+        "job": "4f070c28-1222-426a-bf6d-a6ddd9743da6",
+        "writeId": "dce669c6-7fca-4c39-afef-31072ac1d3f6",
+        "sequence": 3
+      }
+    ],
+    "displayedRecords": [
+      "dce669c6-7fca-4c39-afef-31072ac1d3f6"
+    ],
+    "errors": [],
+    "health": {
+      "status": "ok",
+      "mode": "grpc",
+      "productionContractReady": true,
+      "panelContractVersion": "1.0",
+      "sdkVersion": "1.6.0",
+      "preview": false,
+      "localNoAuth": false
+    },
+    "resumedArchiveCount": 3,
+    "productionImageDigest": "1450a179eeb7c18f7b2347831b2b085811cd42cdaa336bc9af847edd0babb6c7",
+    "editor": {
+      "appearanceUndoRedo": true,
+      "typographyResetUndo": true,
+      "savedReopened": true,
+      "runtimeHistoryPreview": true
+    },
+    "status": "PASS",
+    "packageSha256": "60f027c9250993c5baca1d5a26af94e7f1126afb50fd669ff3cd8086f1dac62c"
+  }
+}

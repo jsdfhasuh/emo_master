@@ -11,7 +11,7 @@ class Handler(SimpleHTTPRequestHandler):
 server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
 threading.Thread(target=server.serve_forever,daemon=True).start()
 origin=f'http://127.0.0.1:{server.server_port}'
-panel={'id':'demo-panel','name':'演示面板','packageRevision':'draft-1','pages':[{'id':'home','title':'生产总览','components':[{'id':'title','type':'page_title'},{'id':'image','type':'image','label':'本轮图片','binding':'image'},{'id':'score','type':'number','label':'分数','binding':'score','props':{'style':{'fontSize':24}}},{'id':'verdict','type':'indicator','label':'判定','binding':'verdict'},{'id':'clock','type':'clock'},{'id':'state','type':'runtime_status'},{'id':'table','type':'table','props':{'value':[{'x':1}]}},{'id':'text','type':'text','props':{'text':'<script>window.PWNED=1</script>'}},{'id':'box','type':'container','children':[{'id':'nested','type':'text','props':{'text':'嵌套内容'}}]},{'id':'nav','type':'page_navigation'},{'id':'button','type':'navigation_button','props':{'action':'navigate','targetPageId':'detail','text':'详情'}},{'id':'history-table','type':'sqlite_table'},{'id':'aggregate','type':'sqlite_value'}]},{'id':'detail','title':'详情','components':[{'id':'detail-title','type':'page_title'}]}]}
+panel={'id':'demo-panel','name':'演示面板','packageRevision':'draft-1','pages':[{'id':'home','title':'生产总览','components':[{'id':'title','type':'page_title'},{'id':'image','type':'image','label':'本轮图片','binding':'image'},{'id':'score','type':'number','label':'分数','binding':'score','props':{'typography':{'value':{'size':24}}}},{'id':'verdict','type':'indicator','label':'判定','binding':'verdict'},{'id':'clock','type':'clock'},{'id':'state','type':'runtime_status'},{'id':'table','type':'table','props':{'value':[{'x':1}]}},{'id':'text','type':'text','props':{'text':'<script>window.PWNED=1</script>'}},{'id':'box','type':'container','children':[{'id':'nested','type':'text','props':{'text':'嵌套内容'}}]},{'id':'nav','type':'page_navigation'},{'id':'button','type':'navigation_button','props':{'action':'navigate','targetPageId':'detail','text':'详情'}},{'id':'history-table','type':'sqlite_table','props':{'columns':['id','result']}},{'id':'aggregate','type':'sqlite_value'}]},{'id':'detail','title':'详情','components':[{'id':'detail-title','type':'page_title'}]}]}
 result={'resultKey':'r1','resultScopeId':'scope-1','sources':{'image':{'state':'ready','image':{'url':'/api/assets/demo-image','ownerResultKey':'r1'}},'score':{'state':'ready','value':97},'verdict':{'state':'ready','value':'OK'}}}
 state={'logged':False,'start':0,'stop':0,'freeze':0,'next_start':'accepted','next_stop':'accepted','job_status':'running','operations':{}}
 def mock(route):
@@ -31,7 +31,8 @@ def mock(route):
  elif path=='/api/views/view-1' and route.request.method=='DELETE':data={}
  elif path=='/api/views/view-1/freeze':state['freeze']+=1;data={'result':result}
  elif path=='/api/views/view-1/resume':data={'result':result}
- elif '/history/' in path:data={'rows':[{'id':1,'result':'OK'}],'total':1,'page':1,'pageSize':20}
+ elif '/history/' in path:data={'rows':[{'rowId':'1','keyValues':[1],'values':[1,'OK'],'imageRefs':{}}],
+  'columns':[{'name':'id'},{'name':'result'}],'page':0,'pageSize':20,'hasNext':False,'stableRowIdentity':True}
  elif path=='/api/packages':data=[]
  elif path=='/api/admin/users':data=[{'username':'tester','role':'admin'}]
  elif path=='/api/admin/runtimes':data=[{'id':'configured','alias':'演示','mode':'mock','address':''}]
@@ -62,19 +63,19 @@ with sync_playwright() as p:
   page.goto(origin);page.get_by_label('用户名').fill('tester');page.get_by_label('密码').fill('fixture');page.get_by_role('button',name='登录',exact=True).click()
   page.get_by_text('97',exact=True).wait_for();assert page.get_by_text('97',exact=True).evaluate('(element)=>getComputedStyle(element).fontSize')=='24px';assert page.get_by_text('嵌套内容',exact=True).count()==1
   assert page.evaluate('window.PWNED') is None
-  page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看，后台仍在运行').wait_for();assert state['freeze']==1
+  page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看').wait_for();assert state['freeze']==1
   page.get_by_role('button',name='恢复实时',exact=True).click()
   held=[]
   page.route('**/api/assets/held-image',lambda route:held.append(route))
   candidate=json.loads(json.dumps(result));candidate['resultKey']='late';candidate['sources']['score']['value']=888;candidate['sources']['image']['image']={'url':'/api/assets/held-image','ownerResultKey':'late'}
   sockets[-1].send(json.dumps({'type':'result','result':candidate}))
   page.wait_for_timeout(100);assert held
-  page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看，后台仍在运行').wait_for()
+  page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看').wait_for()
   try:held.pop().fulfill(content_type='image/png',body=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a1ioAAAAASUVORK5CYII='))
   except Exception:pass # Browser may already have cancelled the old candidate fetch.
   page.wait_for_timeout(100);assert page.get_by_text('888',exact=True).count()==0
   page.get_by_text('97',exact=True).wait_for()
-  page.get_by_role('button',name='恢复实时',exact=True).click();page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('启动已受理：demo-run',exact=False).wait_for();assert state['start']==1
+  page.get_by_role('button',name='恢复实时',exact=True).click();page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('启动已受理',exact=True).wait_for();assert state['start']==1
   page.get_by_role('button',name='详情',exact=True).first.click();page.get_by_role('heading',name='详情',exact=True).wait_for()
   page.set_viewport_size({'width':390,'height':844});page.get_by_role('button',name='生产总览',exact=True).first.click();page.get_by_text('97',exact=True).wait_for();assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
   page.screenshot(path=str(ROOT/'browser-mobile.png'),full_page=True)
@@ -95,17 +96,17 @@ with sync_playwright() as p:
   # Real accepted/unknown/ABORTED response semantics, not an always-succeeded mock.
   assert page.get_by_role('button',name='结束跟踪（不重发）',exact=True).count()==0
   page.once('dialog',lambda dialog:dialog.accept());page.get_by_role('button',name='停止选中运行',exact=True).click()
-  page.get_by_text('停止已受理：demo-run',exact=False).wait_for();assert state['stop']==1
+  page.get_by_text('停止已受理',exact=True).wait_for();assert state['stop']==1
   assert page.get_by_role('button',name='结束跟踪（不重发）',exact=True).count()==0
   state['next_start']='unknown';page.get_by_role('button',name='启动工作流',exact=True).click()
   page.get_by_role('button',name='查询操作结果',exact=True).wait_for();assert state['start']==3
-  page.get_by_role('button',name='查询操作结果',exact=True).click();page.get_by_text('启动已受理：demo-run',exact=False).wait_for()
-  assert state['start']==3;assert page.get_by_role('button',name='查询操作结果',exact=True).count()==0
+  page.get_by_role('button',name='查询操作结果',exact=True).click();page.get_by_text('启动已受理',exact=True).wait_for()
+  page.get_by_role('button',name='查询操作结果',exact=True).wait_for(state='detached');assert state['start']==3
   state['next_stop']='unknown';page.once('dialog',lambda dialog:dialog.accept());page.get_by_role('button',name='停止选中运行',exact=True).click()
   page.get_by_role('button',name='查询操作结果',exact=True).wait_for();assert state['stop']==2
-  page.get_by_role('button',name='查询操作结果',exact=True).click();page.get_by_text('原 Job 已确认：ABORTED',exact=False).wait_for()
-  assert state['stop']==2;assert page.get_by_role('button',name='查询操作结果',exact=True).count()==0
-  page.get_by_label('原控制运行状态',exact=True).get_by_text('权威状态：ABORTED',exact=False).wait_for()
+  page.get_by_role('button',name='查询操作结果',exact=True).click();page.get_by_text('停止已受理',exact=True).wait_for()
+  page.get_by_role('button',name='查询操作结果',exact=True).wait_for(state='detached');assert state['stop']==2
+  page.get_by_text('运行诊断',exact=True).click();page.get_by_label('原控制运行状态',exact=True).get_by_text('权威状态：ABORTED',exact=False).wait_for()
   state['next_start']='rejected';page.get_by_role('button',name='启动工作流',exact=True).click()
   page.get_by_role('alert').filter(has_text='fixture admission rejected').wait_for()
   assert page.get_by_role('button',name='结束跟踪（不重发）',exact=True).count()==0

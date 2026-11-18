@@ -13,7 +13,7 @@ def testAcceptanceProjectOpenAndRealOverflow(designer, tmp_path):  # noqa: F811
     coordinator.showPages()
     editor = coordinator.editor
     assert (coordinator.session.document().schemaVersion,
-            coordinator.session.document().presentation.schemaVersion) == ('2.9', '1.2')
+            coordinator.session.document().presentation.schemaVersion) == ('2.10', '1.3')
     editor.canvas.setPreviewSize(360, 640)
     settle()
     before, history = coordinator.session.payload(), len(coordinator.session._undo)

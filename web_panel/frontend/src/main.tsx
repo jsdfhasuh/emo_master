@@ -14,6 +14,7 @@ import type { CommandReply } from './state/commands';
 import { LatestScopeQueue, resumeExpiredScopes } from './state/latest';
 import { prepareResult, releaseResult, pageImageSources } from './state/prepare';
 import { PanelRenderer } from './renderer/PanelRenderer';
+import { hasPageNavigation, PageNavigation, themeStyle } from './renderer/presentation';
 import './style.css';
 import { WorkflowInputs } from './components/WorkflowInputs';
 import { RuntimeStatus } from './components/RuntimeStatus';
@@ -580,12 +581,37 @@ function App() {
     } }
     const canControl = me?.role !== 'viewer' && Boolean(runtimes.find(r=>r.id===runtimeId)?.permissions?.includes('control'));
     const viewRun=runs.find(run=>run.id===runId && run.runtimeInstanceId===runtimeInfo?.runtimeInstanceId && run.projectId===runtimeInfo?.projectId);
+    const controlRun = runs.find(run => run.id === controlRunId);
+    const workflow = workflows.find(item => item.id === workflowId);
+    const shell = panel?.shell;
+    const currentPage = panel?.pages.find(item => item.id === page) ?? panel?.pages[0];
+    const jobState = viewRun?.status || runtimeState || viewRun?.state || '无运行';
+    const connection = runId ? status : runtimeInfo ? '已连接' : status;
+    const logo = shell?.logoResourceId && panel ? `/api/assets/${encodeURIComponent(panel.id)}/${encodeURIComponent(shell.logoResourceId)}` : undefined;
+    const commandNotice = lastCommand && commandResolution(lastCommand.kind,lastCommand.reply).message === notice;
     if (booting) return <main>正在检查会话…</main>;
     if (!me)
         return <main className="login"><h1>Emo Web 操作员面板</h1><p>独立展示客户端，不执行工作流或控制设备驱动。</p>{localNoAuth && <><LocalModeWarning/><button disabled={busy} onClick={enterLocal}>{busy ? '正在进入…' : '进入本机模式'}</button></>}<form onSubmit={login}><label>用户名<input name="username" autoComplete="username" required/></label><label>密码<input name="password" type="password" autoComplete="current-password" required/></label><button disabled={busy}>{busy ? '登录中…' : '登录'}</button></form>{error && <p role="alert">{error}</p>}</main>;
     if (editorRoute) return <Suspense fallback={<main>正在加载 Web 页面编辑器…</main>}><Editor me={me} onLogout={logout}/></Suspense>;
-    return <main><header><div><h1>Emo Web 操作员面板</h1><p>{me.preview ? '只读预览 · 不启动或停止生产' : me.mode === 'mock' ? '模拟 Runtime · 演示数据，不代表生产设备' : '真实 Runtime 模式 · 能力以合同为准'}</p></div><div>{me.role==='admin' && !me.preview && <a href="/editor">编辑 Web 页面</a>} {me.authMode==='local'?'本机管理员':me.username} · {me.role}<button disabled={busy} onClick={logout}>退出</button></div></header>
- {error && <div className="alert" role="alert">{error}<button onClick={() => setError('')}>关闭</button></div>}{catalogError && <div className="alert" role="alert">{catalogError}<button onClick={() => setCatalogError('')}>关闭</button></div>}{subscriptionError && <div className="alert" role="alert">{subscriptionError}<button onClick={() => setSubscriptionError('')}>关闭</button></div>}{notice && <div className="notice" role="status">{notice}</div>}
+    return <main className="operator-shell" style={themeStyle}>
+    <header className="operator-header">
+        <div className="operator-heading">
+            {logo && <img className="operator-logo" src={logo} alt=""/>}
+            <div><h1>{shell?.title || panel?.name || panel?.title || 'Emo Web 操作员面板'}</h1>
+                {shell?.subtitle && <p>{shell.subtitle}</p>}
+            </div>
+        </div>
+        <div className="operator-header-items">
+            {me.preview && <small>只读预览</small>}
+            {me.mode === 'mock' && <small>模拟 Runtime</small>}
+            {shell?.showConnection !== false && <span className="operator-status" aria-label="连接状态">{connection}</span>}
+            {shell?.showJobState !== false && <span className="operator-status" aria-label="运行状态">{jobState}</span>}
+            {me.role==='admin' && !me.preview && <a href="/editor">编辑 Web 页面</a>}
+            <small>{me.authMode==='local'?'本机管理员':me.username}</small>
+            <button disabled={busy} onClick={logout}>退出</button>
+        </div>
+    </header>
+ {error && <div className="alert" role="alert">{error}<button onClick={() => setError('')}>关闭</button></div>}{catalogError && <div className="alert" role="alert">{catalogError}<button onClick={() => setCatalogError('')}>关闭</button></div>}{subscriptionError && <div className="alert" role="alert">{subscriptionError}<button onClick={() => setSubscriptionError('')}>关闭</button></div>}{notice && <div className="notice" role="status">{commandNotice ? lastCommand.kind === 'start' ? '启动已受理' : '停止已受理' : notice}</div>}
  {Object.entries(captureNotices).filter(([,capture])=>capture.viewId===viewId).map(([jobId,capture])=><div className="notice" role="status" key={jobId}>运行 {runs.find(run=>run.id===jobId)?.name || jobId}：{capture.message}</div>)}
  {(me.localNoAuth || me.authMode==='local' || localNoAuth) && <LocalModeWarning me={me}/>}
  <section className="toolbar"><label>Runtime<select aria-label="Runtime 目标" value={runtimeId} onChange={e => selectTarget(e.target.value)}>{runtimes.map(r => <option key={r.id} value={r.id}>{r.alias || r.id} · {r.mode}</option>)}</select></label><label>页面包<select aria-label="页面包" value={panel?.id || ''} onChange={async (e) => { const rid=activeRuntime.current,ticket=++catalogGeneration.current;catalogAbort.current?.abort();setCatalogBusy(false);try {
@@ -593,24 +619,69 @@ function App() {
     }
     catch (e) {
         if(rid===activeRuntime.current && ticket===catalogGeneration.current)setError((e as Error).message);
-    } }}>{panels.map(p => <option key={p.id} value={p.id}>{p.name || p.title || p.id}</option>)}</select></label><label>查看运行<select aria-label="查看运行" disabled={catalogBusy} value={runId} onChange={e => setRunId(e.target.value)}><option value="">无运行 · 页面 / 历史预览</option>{runs.map(r => <option key={r.id} value={r.id}>{r.name || r.id} · {r.state}</option>)}</select></label><button disabled={catalogBusy} onClick={() => refresh({adoptPublished:true}).catch(()=>{})}>刷新页面包和状态</button><small aria-label="当前 Runtime 身份">{runtimeInfo?.runtimeInstanceId || '—'} / {runtimeInfo?.projectId || '—'} · 配置 {runtimeInfo?.configurationRevision || runtimeInfo?.documentRevision || '—'}</small><span className="status">{status} {lastUpdate && `· 最后更新 ${lastUpdate}`}</span></section>
+    } }}>{panels.map(p => <option key={p.id} value={p.id}>{p.shell?.title || p.name || p.title || p.packageRevision?.slice(0,12) || p.id.slice(0,12)}</option>)}</select></label><label>查看运行<select aria-label="查看运行" disabled={catalogBusy} value={runId} onChange={e => setRunId(e.target.value)}><option value="">无运行 · 页面 / 历史预览</option>{runs.map(r => <option key={r.id} value={r.id}>{r.name || r.id} · {r.state}</option>)}</select></label><button disabled={catalogBusy} onClick={() => refresh({adoptPublished:true}).catch(()=>{})}>刷新页面包和状态</button></section>
  {pending&&<section className="notice"><strong>待确认操作：{pending.kind} / {pending.target}</strong><button disabled={busy} onClick={queryPending}>查询操作结果</button>{pending.state!=='submitting'&&<button onClick={()=>{if(confirm('结束本次跟踪不会停止或重新执行任何命令。请确认已核对运行状态，后续新操作将是新的意图。'))clearPending()}}>结束跟踪（不重发）</button>}</section>}
- {lastCommand && lastCommand.runtimeId===runtimeId && (!lastCommand.runtimeInstanceId || lastCommand.runtimeInstanceId===runtimeInfo?.runtimeInstanceId) && (!lastCommand.projectId || lastCommand.projectId===runtimeInfo?.projectId) && lastCommand.runId && (()=>{const authoritative=runs.find(run=>run.id===lastCommand.runId) || lastCommand.reply.run;return <section className="notice" aria-label="原控制运行状态"><strong>原控制 Job：{lastCommand.runId}</strong><p>权威状态：{authoritative?.status || authoritative?.state || lastCommand.reply.status || '待刷新'} · 持有资源：{authoritative?.ownsResources===undefined?'未知':authoritative.ownsResources?'是':'否'} · 展示资源已释放：{authoritative?.displayResourcesReleased===undefined?'未知':authoritative.displayResourcesReleased?'是':'否'}</p><small>命令受理不等于 Job 结束；状态与资源按原 Job 更新。</small></section>})()}
- <section className="toolbar"><button disabled={!result || frozen} onClick={() => action('freeze')}>冻结查看</button><button disabled={!frozen} onClick={() => action('resume_live')}>恢复实时</button><span>{frozen ? '已冻结查看，后台仍在运行' : '实时查看'}</span>{canControl && <><span className="control-target">控制目标：{controlRunId || '未选择'}（独立于查看运行）</span><label>停止目标<select aria-label="停止控制目标" disabled={catalogBusy} value={controlRunId} onChange={e=>setControlRunId(e.target.value)}><option value="">明确选择停止对象</option>{runs.map(r=><option key={r.id} value={r.id}>{r.name||r.id} · {r.state}</option>)}</select></label><button className="danger" disabled={busy || catalogBusy || !controlRunId || Boolean(runs.find(r=>r.id===controlRunId)?.allowedActions && !runs.find(r=>r.id===controlRunId)?.allowedActions?.some(a=>a.toLowerCase()==='stop'))} onClick={() => { if (confirm(`停止当前明确选中的运行 ${controlRunId}？`))
-        control('stop'); }}>停止选中运行</button></>}</section>
- {canControl && <section className="toolbar"><label>启动工作流<select aria-label="启动工作流目标" disabled={catalogBusy} value={workflowId} onChange={e => { inputDirty.current=false;setWorkflowId(e.target.value); setWorkflowInputs(workflows.find(w=>w.id===e.target.value)?.inputsJson || JSON.stringify(workflows.find(w=>w.id===e.target.value)?.inputs || {})); }}><option value="">{workflows.length?'明确选择工作流':'无可用工作流 / 合同能力未就绪'}</option>{workflows.map(w => <option key={w.id} value={w.id}>{w.name || w.id}</option>)}</select></label><WorkflowInputs workflow={workflows.find(w=>w.id===workflowId)} value={workflowInputs} onChange={value=>{inputDirty.current=true;selectionRef.current={...selectionRef.current,workflowInputs:value,dirty:true};setWorkflowInputs(value)}}/><button disabled={busy || catalogBusy || !workflowId || !runtimeId || workflows.find(w=>w.id===workflowId)?.canStart === false} onClick={() => control('start')}>启动工作流</button><small>独立启动目标，不使用历史选行；输入由后端再次校验。</small>{workflows.find(w=>w.id===workflowId)?.canStart === false && <p role="status">暂不能启动：{workflows.find(w=>w.id===workflowId)?.startBlockReason || 'Runtime 未提供具体原因，请刷新状态或联系管理员。'} 可使用“刷新页面包和状态”重试查询。</p>}{workflows.find(w => w.id === workflowId)?.inputSchema && <details><summary>输入约束</summary><pre>{JSON.stringify(workflows.find(w => w.id === workflowId)?.inputSchema, null, 2)}</pre></details>}</section>}
- {panel ? <><nav className="page-nav">{panel.pages.map(p => <button key={p.id} aria-current={page === p.id ? 'page' : undefined} onClick={() => changePage(p.id)}>{p.title}</button>)}</nav><PanelRenderer panel={panel} pageId={page} onPage={changePage} result={result} results={scopes} viewId={viewId} onAction={action} state={status} runtimeState={viewRun?.status || runtimeState || viewRun?.state}/></> : <p>暂无已发布页面，请联系管理员。</p>}
- {me.role === 'admin' && <details className="admin"><summary>页面包管理</summary><p>独立编辑器生成的页面请在编辑器中管理源版本与回退，同时核对后续任务采集请求。此处仅保留兼容 SDK 包的导入与展示切换，不改变其他目标的版本或访问。</p><input aria-label="导入页面包" type="file" accept=".emoweb,.zip" disabled={busy} onChange={e => { if (e.target.files?.[0])
-        upload(e.target.files[0]); }}/>{packages.map(p => <div key={p.id || p.packageId} data-package-id={p.id || p.packageId}>{p.name || (p.manifest ? `${p.manifest.projectId} / ${p.manifest.packageRevision}` : p.id || p.packageId)} · 关联：{p.runtimeIds?.join(', ') || '未关联'} {p.active && '已启用'} {p.editorManaged ? <a href={`/editor?runtimeId=${encodeURIComponent(runtimeId)}`}>在编辑器管理源版本与回退（重新核对采集请求）</a> : <button disabled={!runtimeId} onClick={async () => { const activatedRuntime=runtimeId,activatedProject=runtimeInfo?.projectId;if (!confirm(`将此版本启用 / 切回到 ${runtimeId}，仅更新该目标当前正式工程的启用版本？其他 Runtime 不受影响。不会改动生产工程。`)) return; try {
+ <section className="toolbar operator-actions">
+    <button disabled={!result || frozen} onClick={() => action('freeze')}>冻结查看</button>
+    <button disabled={!frozen} onClick={() => action('resume_live')}>恢复实时</button>
+    <span>{frozen ? '已冻结查看' : '实时查看'}</span>
+    {canControl && shell?.showControls !== false && <>
+        <label>启动工作流<select aria-label="启动工作流目标" disabled={catalogBusy} value={workflowId}
+            onChange={event => {
+                const selected = workflows.find(item => item.id === event.target.value);
+                inputDirty.current=false;
+                setWorkflowId(event.target.value);
+                setWorkflowInputs(selected?.inputsJson || JSON.stringify(selected?.inputs || {}));
+            }}>
+            <option value="">{workflows.length?'明确选择工作流':'无可用工作流'}</option>
+            {workflows.map(item => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
+        </select></label>
+        <details className="operator-inputs">
+            <summary>工作流输入</summary>
+            <WorkflowInputs workflow={workflow} value={workflowInputs} onChange={value=>{
+                inputDirty.current=true;
+                selectionRef.current={...selectionRef.current,workflowInputs:value,dirty:true};
+                setWorkflowInputs(value);
+            }}/>
+            {workflow?.inputSchema && <details><summary>输入约束</summary><pre>{JSON.stringify(workflow.inputSchema, null, 2)}</pre></details>}
+        </details>
+        <button className="panel-action panel-action-primary" disabled={busy || catalogBusy || !workflowId || !runtimeId || workflow?.canStart === false}
+            onClick={() => control('start')}>启动工作流</button>
+        <label>停止目标<select aria-label="停止控制目标" disabled={catalogBusy} value={controlRunId} onChange={e=>setControlRunId(e.target.value)}>
+            <option value="">明确选择停止对象</option>
+            {runs.map(run=><option key={run.id} value={run.id}>{run.name||run.id} · {run.state}</option>)}
+        </select></label>
+        <button className="danger" disabled={busy || catalogBusy || !controlRunId ||
+            Boolean(controlRun?.allowedActions && !controlRun.allowedActions.some(action=>action.toLowerCase()==='stop'))}
+            onClick={() => { if (confirm(`停止当前明确选中的运行 ${controlRunId}？`)) void control('stop'); }}>停止选中运行</button>
+        {workflow?.canStart === false && <p role="status">暂不能启动：{workflow.startBlockReason || '请刷新状态后重试'}</p>}
+    </>}
+ </section>
+ {panel && currentPage ? <>
+    {!hasPageNavigation(currentPage.components) && <div className="operator-nav"><PageNavigation panel={panel} pageId={currentPage.id} onPage={changePage}/></div>}
+    <PanelRenderer panel={panel} pageId={page} onPage={changePage} result={result} results={scopes} viewId={viewId}
+        onAction={action} state={connection} runtimeState={jobState}/>
+ </> : <p>暂无已发布页面，请联系管理员。</p>}
+ <details className="operator-diagnostics" key={`${runtimeId}:${panel?.id}:${panel?.packageRevision}`}
+    open={shell?.diagnosticsInitiallyExpanded ?? false}>
+    <summary>运行诊断</summary>
+    {commandNotice && <p role="status">{notice}</p>}
+    <small aria-label="当前 Runtime 身份">{runtimeInfo?.runtimeInstanceId || '—'} / {runtimeInfo?.projectId || '—'} · 配置 {runtimeInfo?.configurationRevision || runtimeInfo?.documentRevision || '—'}</small>
+    {lastUpdate && <p>最后更新 {lastUpdate}</p>}
+    {lastCommand && lastCommand.runtimeId===runtimeId && (!lastCommand.runtimeInstanceId || lastCommand.runtimeInstanceId===runtimeInfo?.runtimeInstanceId) && (!lastCommand.projectId || lastCommand.projectId===runtimeInfo?.projectId) && lastCommand.runId && (()=>{const authoritative=runs.find(run=>run.id===lastCommand.runId) || lastCommand.reply.run;return <section className="notice" aria-label="原控制运行状态"><strong>原控制 Job：{lastCommand.runId}</strong><p>权威状态：{authoritative?.status || authoritative?.state || lastCommand.reply.status || '待刷新'} · 持有资源：{authoritative?.ownsResources===undefined?'未知':authoritative.ownsResources?'是':'否'} · 展示资源已释放：{authoritative?.displayResourcesReleased===undefined?'未知':authoritative.displayResourcesReleased?'是':'否'}</p><small>命令受理不等于 Job 结束；状态与资源按原 Job 更新。</small></section>})()}
+    {!canControl && runtimeId && <p>当前目标只读：未授予生产控制权限。</p>}
+    <aside aria-label="作用域进度">{Object.entries(scopeStatuses).map(([key,value])=><p key={key}>{value.jobId} / {value.scopeId}：{scopeActivity(value,scopes[value.scopeId],frozenKeys.current?.[value.scopeId]===scopes[value.scopeId]?.resultKey && Boolean(scopes[value.scopeId]))}</p>)}</aside>
+    <RuntimeStatus runtimeId={runtimeId} runId={runId} runtimeInstanceId={viewRun?.runtimeInstanceId} projectId={viewRun?.projectId}/>
+    <footer>Panel Contract v1 · {panel?.packageRevision || '—'} · {result?.resultKey || '等待结果'}</footer>
+ </details>
+ {me.role === 'admin' && <details className="admin"><summary>页面包管理</summary><p>导入后可为当前 Runtime 启用页面包并同步采集请求。新请求在下次明确启动工作流时生效。独立编辑器生成的版本在编辑器中管理。</p><input aria-label="导入页面包" type="file" accept=".emoweb,.zip" disabled={busy} onChange={e => { if (e.target.files?.[0])
+        upload(e.target.files[0]); }}/>{packages.map(p => <div key={p.id || p.packageId} data-package-id={p.id || p.packageId}>{p.name || (p.manifest ? `${p.manifest.projectId} / ${p.manifest.packageRevision}` : p.id || p.packageId)} · 关联：{p.runtimeIds?.join(', ') || '未关联'} {p.active && '已启用'} {p.editorManaged ? <a href={`/editor?runtimeId=${encodeURIComponent(runtimeId)}`}>在编辑器管理源版本与回退（重新核对采集请求）</a> : <button disabled={!runtimeId} onClick={async () => { const activatedRuntime=runtimeId,activatedProject=runtimeInfo?.projectId;if (!confirm(`为 ${runtimeId} 启用此页面包并同步后续作业的采集请求？已启动作业继续使用原采集范围。`)) return; try {
         await api(`/api/packages/${encodeURIComponent(p.id || p.packageId || '')}/activate`, { method: 'POST', body: JSON.stringify({ runtimeId,projectId:runtimeInfo?.projectId }) });
-        if(activeRuntime.current===activatedRuntime && infoRef.current?.projectId===activatedProject){await refresh({adoptPublished:true});setNotice('当前目标页面包已切换；其他目标未改变');}
+        if(activeRuntime.current===activatedRuntime && infoRef.current?.projectId===activatedProject){await refresh({adoptPublished:true});setNotice('当前目标已启用此页面包');}
     }
     catch (e) {
         if(activeRuntime.current===activatedRuntime && infoRef.current?.projectId===activatedProject)setError((e as Error).message);
     } }}>对当前目标启用 / 切回此版本</button>}</div>)}</details>}
- {!canControl && runtimeId && <p>当前目标只读：未授予生产控制权限。</p>}
- <aside aria-label="作用域进度">{Object.entries(scopeStatuses).map(([key,value])=><p key={key}>{value.jobId} / {value.scopeId}：{scopeActivity(value,scopes[value.scopeId],frozenKeys.current?.[value.scopeId]===scopes[value.scopeId]?.resultKey && Boolean(scopes[value.scopeId]))}</p>)}</aside>
- <RuntimeStatus runtimeId={runtimeId} runId={runId} runtimeInstanceId={runs.find(r=>r.id===runId)?.runtimeInstanceId} projectId={runs.find(r=>r.id===runId)?.projectId}/>
- {me.role === 'admin' && <Admin current={me.username}/>}<footer>Panel Contract v1 · {panel?.packageRevision || '—'} · {result?.resultKey || '等待结果'} · 不替代现场设备验收</footer></main>;
+ {me.role === 'admin' && <Admin current={me.username}/>}</main>;
 }
 createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);

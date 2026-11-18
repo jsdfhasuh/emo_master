@@ -10,7 +10,7 @@ from .store import ConfigurationError
 
 def prepareImport(runtime, request):
     document = ProjectDocument.model_validate_json(request.project_json)
-    if document.schemaVersion not in {'2.6', '2.7', '2.8', '2.9'}:
+    if document.schemaVersion not in {'2.6', '2.7', '2.8', '2.9', '2.10'}:
         raise ConfigurationError('E_CONFIG_INVALID', 'remote import requires a supported online project format')
     payload = document.model_dump(mode='json')
     source = runtime.workspaceRoot.parent / 'online-projects' / hashlib.sha256(

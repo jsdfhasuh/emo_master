@@ -73,11 +73,17 @@ class HistoryRpcMixin:
             images = [c for page in presentation.pages.values() for c in walkComponents(page.components)
                       if c.props.imagePath is not None and c.props.imagePath.kind == 'selected_row'
                       and c.props.imagePath.componentId == component.componentId]
+            requiresIdentity = bool(images) or any(
+                (c.props.recordValue is not None and c.props.recordValue.componentId == component.componentId)
+                or any(action.componentId == component.componentId for action in c.actions.values())
+                for page in presentation.pages.values() for c in walkComponents(page.components))
             result = readPage(source, page=request.page, pageSize=request.page_size or 20,
                 filterColumn=request.filter_column, filterText=request.filter_text,
                 orderBy=request.order_by or None,
                 descending=request.descending if request.HasField('descending') else None,
-                selectionFields=tuple(c.props.imagePath.field for c in images), projectRoot=root)
+                selectionFields=tuple(c.props.imagePath.field for c in images), projectRoot=root,
+                anchorKey=json.loads(request.anchor_key_json) if request.anchor_key_json else None,
+                anchorStep=request.anchor_step, requiresIdentity=requiresIdentity)
             rows = []
             for index, values in enumerate(result.rows):
                 imageRefs = {}
@@ -90,11 +96,14 @@ class HistoryRpcMixin:
                     else:
                         imageRefs[image.componentId] = dict(status='AVAILABLE', imageRef=self._historyImageRef(
                             request.context, image.componentId, value))
-                rows.append(dict(rowId=result.rowIds[index], values=values, imageRefs=imageRefs))
+                rows.append(dict(rowId=result.rowIds[index], values=values, imageRefs=imageRefs,
+                                 keyValues=result.keyValues[index]))
             payload = dict(columns=[dict(name=name, type='scalar') for name in result.columns], rows=rows,
                 page=result.page, pageSize=request.page_size or 20, hasNext=result.hasNext,
                 historyDefinitionRevision=request.context.history_definition_revision,
-                stableRowIdentity=all(result.rowIds) if result.rowIds else True)
+                stableRowIdentity=result.stableRowIdentity)
+            if result.selectedRowId is not None:
+                payload['selectedRowId'] = result.selectedRowId
             return pb.HistoryReply(ok=True, result_json=json.dumps(payload, ensure_ascii=True, allow_nan=False))
         except (ValueError, OSError, OverflowError) as error:
             return self._historyFailure(error)

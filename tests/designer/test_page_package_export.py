@@ -44,8 +44,8 @@ def testResponsiveDraftExportPreservesPagesDevicesAndSavedProject(ownedDesignerW
     with zipfile.ZipFile(package) as archive:
         manifest = json.loads(archive.read('manifest.json'))
         payload = json.loads(archive.read('project.json'))
-    assert manifest['format'] == FORMAT and manifest['projectSchema'] == '2.9'
-    assert payload['presentation']['schemaVersion'] == '1.2'
+    assert manifest['format'] == FORMAT and manifest['projectSchema'] == '2.10'
+    assert payload['presentation']['schemaVersion'] == '1.3'
     assert payload['devices']['schemaVersion'] == '1.0'
     assert 'device.simulated.camera' in manifest['requiredDeviceTypes']
     installed = installRuntimePackage(package, tmp_path / 'installed')

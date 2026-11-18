@@ -232,8 +232,12 @@ with sync_playwright() as runtime:
             assert value['contentBottom']<=value['contentBoundary']+1,value
             content.append(value)
         for cid,expected in (('height-image',240),('height-static',100),('height-auto',240)):
-            value=page.locator(f'[data-component-id="{cid}"] img').evaluate('(el)=>({height:el.getBoundingClientRect().height,naturalHeight:el.naturalHeight})')
-            assert value['naturalHeight']==expected and abs(value['height']-expected)<1,(cid,value)
+            value=page.locator(f'[data-component-id="{cid}"] img').evaluate('''(el)=>{
+                const {width,height}=el.getBoundingClientRect();
+                return {width,height,naturalWidth:el.naturalWidth,naturalHeight:el.naturalHeight};
+            }''')
+            assert value['naturalHeight']==expected,(cid,value)
+            assert abs(value['height']-value['width']*value['naturalHeight']/value['naturalWidth'])<1,(cid,value)
         order=('height-image','height-static','height-text','height-container','height-following')
         for before,after in zip(order,order[1:]):
             a,b=rect(page,before),rect(page,after)

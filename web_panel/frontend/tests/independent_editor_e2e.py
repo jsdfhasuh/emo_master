@@ -175,7 +175,7 @@ def main():
                 page.get_by_role("button", name="保存草稿", exact=True).click()
                 expect(page.get_by_text("草稿已保存；正式页面和 Runtime 采集请求未改变。", exact=True)).to_be_visible()
                 saved = request("GET", BASE_PATH + "/context")["draft"]
-                assert saved["presentation"]["schemaVersion"] == "1.2"
+                assert saved["presentation"]["schemaVersion"] == "1.3"
                 assert len(saved["presentation"]["pages"]) == 2
                 assert all(p["targets"] == ["web"] for p in saved["presentation"]["pages"].values())
                 assert len(saved["resources"]) == 1

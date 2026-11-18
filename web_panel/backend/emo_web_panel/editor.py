@@ -19,13 +19,13 @@ from urllib.parse import quote
 
 from emo_panel_protocol.canonical import canonicalJson, revisionOf
 from emo_panel_protocol.models import Presentation, walkComponents
-from emo_panel_protocol.published import PublishedPresentation, PanelManifest
+from emo_panel_protocol.published import PublishedPresentation, PanelManifest, compositionRequirements
 
 from .packages import PackageError, PackageStore, _official_image
 
 
 SUPPORTED = {"image", "text", "number", "indicator", "runtime_status", "table",
-             "navigation_button", "container", "page_title", "page_navigation", "spacer"}
+             "navigation_button", "container", "page_title", "page_navigation", "spacer", "sqlite_table"}
 
 
 class DraftConflict(ValueError):
@@ -34,7 +34,7 @@ class DraftConflict(ValueError):
 
 def blank_presentation():
     page = "page-" + secrets.token_hex(8)
-    return {"schemaVersion": "1.2", "defaultPageId": page, "pageOrder": [page],
+    return {"schemaVersion": "1.3", "defaultPageId": page, "pageOrder": [page],
             "navigation": {"mode": "tabs"}, "resultScopes": {}, "dataSources": {},
             "pages": {page: {"name": "检测页", "targets": ["web"],
                               "layout": {"type": "responsive", "direction": "vertical"},
@@ -43,8 +43,10 @@ def blank_presentation():
 
 def validate_source(raw, resources):
     model = Presentation.model_validate(raw)
-    if model.schemaVersion != "1.2" or not model.pages:
-        raise ValueError("Web 页面源必须使用 Presentation 1.2，且至少保留一页")
+    if model.schemaVersion != "1.3" or not model.pages:
+        raise ValueError("Web 页面源必须使用 Presentation 1.3，且至少保留一页")
+    if model.shell and model.shell.logoResourceId and model.shell.logoResourceId not in resources:
+        raise ValueError("页头图片资源不存在")
     for pid, page in model.pages.items():
         if page.targets != ["web"]:
             raise ValueError(f"{pid}: 独立 Web 页面 targets 必须为 [web]")
@@ -57,6 +59,9 @@ def validate_source(raw, resources):
                 raise ValueError(f"{path}: 此组件不在首期独立编辑范围")
             if item.props.imagePath is not None:
                 raise ValueError(f"{path}: 请上传静态资源，不能使用浏览器本机路径")
+            if item.type == "sqlite_table" and (item.props.sqlite.location != "runtime"
+                    or item.props.sqlite.databasePath or item.props.sqlite.table or item.props.sqlite.recordKey):
+                raise ValueError(f"{path}: 请从组件区选择已有的 Runtime 历史来源")
             for resource in (item.props.imageResourceId, item.props.iconResourceId):
                 if resource and resource not in resources:
                     raise ValueError(f"{path}: 静态资源不存在 {resource}")
@@ -67,7 +72,7 @@ def validate_source(raw, resources):
                 if source.resultScopeId not in model.resultScopes:
                     raise ValueError(f"{path}: 来源结果作用域不存在")
                 allowed = {"image": {"image"}, "number": {"integer", "number"},
-                           "indicator": {"boolean", "string"}, "table": {"collection"},
+                           "indicator": {"integer", "boolean", "string"}, "table": {"collection"},
                            "text": {"integer", "number", "boolean", "string", "json", "geometry"}}
                 if item.type == "runtime_status":
                     raise ValueError(f"{path}: 任务状态使用原生任务状态，不绑定业务采集输出")
@@ -94,7 +99,7 @@ def output_config(model):
 def link_diagnostics(source, diagnostics):
     """Web-owned links from generic Runtime addresses to editable controls."""
     result = deepcopy(diagnostics)
-    model = Presentation.model_validate(source)
+    model = (PublishedPresentation if source['schemaVersion'] == 'published-1' else Presentation).model_validate(source)
     for diagnostic in result:
         source_ids = set(diagnostic.get("sourceIds", []))
         scope_ids = set(diagnostic.get("scopeIds", []))
@@ -113,7 +118,7 @@ def link_diagnostics(source, diagnostics):
     return result
 
 
-def build_package(project_id, model, resources, read_resource):
+def build_package(project_id, model, resources, read_resource, *, history_sources=None, history_revision=""):
     """One-way authoring -> PublishedPresentation conversion, never saved as source."""
     config = output_config(model)
     payload = model.model_dump(mode="json", exclude_none=True)
@@ -121,23 +126,40 @@ def build_package(project_id, model, resources, read_resource):
     payload["dataSources"] = config["sources"]
     payload["resultScopes"] = config["scopes"]
     requirements = {"layout.ordered-responsive-v1", "result.closed-v1", "actions.readonly-v1"}
+    requirements.update(compositionRequirements(payload))
     referenced = set()
+    if logo := payload.get('shell', {}).get('logoResourceId'):
+        referenced.add(logo)
+    history_sources = history_sources or {}
 
-    def convert(items):
+    def convert(items, table_ids):
         for item in items:
             requirements.add("component." + item["type"] + "@1.0")
             item["props"].pop("sqlite", None)
             item["props"].pop("imagePath", None)
+            source = history_sources.get(item["componentId"])
+            if item["type"] == "sqlite_table":
+                if not source or source["kind"] != "table":
+                    raise ValueError(f'{item["componentId"]}: 当前 Runtime 历史来源已变化，请更新启用页面包和编辑器目录')
+                requirements.add("history.query-v1")
+                item["history"] = {key: value for key, value in source.items() if key != "title"}
+            if (item["type"] == "image" and source and source["kind"] in {"fixed_image", "selected_row_image"}
+                    and not item["bindings"] and not item["props"].get("imageResourceId")):
+                if source["kind"] == "selected_row_image" and source.get("sourceComponentId") not in table_ids:
+                    raise ValueError(f'{item["componentId"]}: 历史图像及记录组件必须在同一页面')
+                requirements.add("history.image-v1")
+                item["history"] = {key: value for key, value in source.items() if key != "title"}
             referenced.update(item["props"][key] for key in ("imageResourceId", "iconResourceId")
                               if item["props"].get(key))
-            convert(item["children"])
-    for page in payload["pages"].values():
+            convert(item["children"], table_ids)
+    for page_id, page in payload["pages"].items():
         page.pop("targets", None)
         if page.get("canvasTop"):
             requirements.add("layout.expanded-canvas-v1")
         if page["layout"]["type"] == "grid":
             requirements.add("layout.grid-v1")
-        convert(page["components"])
+        convert(page["components"], {item.componentId for item in walkComponents(model.pages[page_id].components)
+                                    if item.type == "sqlite_table"})
     snapshot = PublishedPresentation.model_validate(payload).model_dump(mode="json", exclude_none=True)
     capture = {"ruleVersion": "1.0", "sources": sorted(
         {canonicalJson(source) for source in config["sources"].values()}) , "scopes": config["scopes"]}
@@ -152,7 +174,8 @@ def build_package(project_id, model, resources, read_resource):
         raise ValueError("页面静态资源合计超过 64 MiB")
     manifest = {"format": "emo-web-panel-1", "projectId": project_id, "panelContractVersion": "1.0",
                 "rendererRequirements": sorted(requirements), "presentation": "presentation.json",
-                "sourcePresentationVersion": "1.2", "historyDefinitionRevision": revisionOf({}),
+                "sourcePresentationVersion": model.schemaVersion,
+                "historyDefinitionRevision": history_revision if "history.query-v1" in requirements or "history.image-v1" in requirements else revisionOf({}),
                 "assets": assets, "captureRequirements": capture}
     manifest["packageRevision"] = revisionOf({"manifest": manifest, "presentation": snapshot})
     manifest = PanelManifest.model_validate(manifest).model_dump(mode="json")
@@ -250,10 +273,25 @@ class EditorStore:
             raise PackageError("静态资源内容与声明不匹配")
         return data, metadata["mimeType"]
 
-    def prepare(self, rid, project, source):
+    def history_sources(self, rid, project, revision):
+        """Use the current edition's path-free declarations for this Runtime."""
+        active = self.packages.active(rid, project)
+        if not active or not revision or active["manifest"]["historyDefinitionRevision"] != revision:
+            return {}
+        def browse(items):
+            for component in items:
+                if reference := component.get("history"):
+                    yield reference["componentId"], {**reference, "title": component["props"].get("title", "")}
+                yield from browse(component["children"])
+        return {key: value for page in active.get("officialPresentation", {}).get("pages", {}).values()
+                for key, value in browse(page["components"])}
+
+    def prepare(self, rid, project, source, history_revision=""):
         resources = self.assets(rid, project)
         model = validate_source(source, resources)
-        raw, manifest, snapshot, config = build_package(project, model, resources, lambda resource: self.resource(rid, project, resource))
+        history_sources = self.history_sources(rid, project, history_revision)
+        raw, manifest, snapshot, config = build_package(project, model, resources, lambda resource: self.resource(rid, project, resource),
+                                                        history_sources=history_sources, history_revision=history_revision)
         package = self.packages.install(raw)
         with sqlite3.connect(self.database) as db:
             db.execute("INSERT OR IGNORE INTO web_editor_packages VALUES (?,?,?)", (package["packageId"], rid, project))
@@ -292,6 +330,19 @@ class EditorStore:
         # publication path. Independent Runtime targets do not share RPC waits.
         return self._publish_locks.setdefault(rid, asyncio.Lock())
 
+    def _new_publication(self, rid, project, info, current, package, source, config, *, request_id=None, installed=False):
+        record = {"runtimeId": rid, "projectId": project, "versionId": "web-" + secrets.token_hex(12),
+                  "requestId": request_id or "web-publish-" + secrets.token_hex(16),
+                  "state": "PREPARED", "message": "候选页面已保存，尚未更新采集请求", "createdAt": time.time(),
+                  "source": deepcopy(source), "sourceRevision": revisionOf(source), "config": config,
+                  "packageId": package["packageId"], "packageRevision": package["manifest"]["packageRevision"],
+                  "runtimeInstanceId": info["runtimeInstanceId"], "installedPackage": installed, "diagnostics": []}
+        record["submitBody"] = {"runtimeInstanceId": info["runtimeInstanceId"], "projectId": project,
+                    "expectedDocumentRevision": info.get("documentRevision", info.get("configurationRevision", "0")),
+                    "expectedConfigRevision": current["configRevision"], "requestId": record["requestId"], "config": config}
+        self.update(record)
+        return record
+
     async def publish(self, rid, project, client, *, expected=None, request_id=None, source=None):
         async with self._publication_lock(rid):
             draft = self.draft(rid, project)
@@ -309,24 +360,41 @@ class EditorStore:
                     raise DraftConflict("上次发布尚待确认，请查询并继续完成原发布")
             if expected is not None and expected != draft["draftRevision"]:
                 raise DraftConflict("草稿版本已变化，请先保存并重新核对")
-            package, panel, config = self.prepare(rid, project, source)
             info, current = await client.info(), await client.output_requests()
             if info["projectId"] != project:
                 raise DraftConflict("Runtime 工程已切换，请重新选择目标")
-            record = {"runtimeId": rid, "projectId": project, "versionId": "web-" + secrets.token_hex(12),
-                      "requestId": request_id or "web-publish-" + secrets.token_hex(16),
-                      "state": "PREPARED", "message": "候选页面已保存，尚未更新采集请求", "createdAt": time.time(),
-                      "source": deepcopy(source), "sourceRevision": revisionOf(source), "config": config,
-                      "packageId": package["packageId"], "packageRevision": package["manifest"]["packageRevision"],
-                      "runtimeInstanceId": info["runtimeInstanceId"], "diagnostics": []}
-            body = {"runtimeInstanceId": info["runtimeInstanceId"], "projectId": project,
-                    "expectedDocumentRevision": info.get("documentRevision", info.get("configurationRevision", "0")),
-                    "expectedConfigRevision": current["configRevision"], "requestId": record["requestId"], "config": config}
-            record["submitBody"] = body
-            self.update(record)
+            package, _panel, config = self.prepare(rid, project, source, info.get("historyDefinitionRevision", ""))
+            record = self._new_publication(rid, project, info, current, package, source, config, request_id=request_id)
             return await self._submit_prepared(record, client, current=current)
 
-    async def _submit_prepared(self, record, client, *, current=None):
+    async def synchronize_package(self, rid, project, client, info, package):
+        """Register the immutable package's exact capture definition using normal publication receipts."""
+        async with self._publication_lock(rid):
+            pending = next((item for item in self.versions(rid, project)
+                            if item["state"] in {"REQUEST_UNKNOWN", "REQUEST_SAVED"}), None)
+            if pending is not None:
+                if not pending.get("installedPackage") or pending["packageId"] != package["packageId"]:
+                    raise DraftConflict("请先完成或结束当前目标待确认的页面发布")
+                record = self.version(rid, project, pending["versionId"])
+                record = await self._reconcile(record, client, activate=False)
+            else:
+                current = await client.output_requests()
+                source = package["officialPresentation"]
+                config = output_config(PublishedPresentation.model_validate(source))
+                record = self._new_publication(rid, project, info, current, package, source, config, installed=True)
+                record = await self._submit_prepared(record, client, current=current, activate=False)
+            if record["state"] != "REQUEST_SAVED":
+                message = record["message"]
+                if record["state"] == "REQUEST_UNKNOWN":
+                    message = "采集请求结果待确认。再次启用此页面包可查询原请求。"
+                raise DraftConflict(message)
+            problem, diagnostics = await self._saved_capture_problem(record, client)
+            if problem:
+                self.update({**record, "message": problem, "diagnostics": diagnostics})
+                raise DraftConflict(problem)
+            return record
+
+    async def _submit_prepared(self, record, client, *, current=None, activate=True):
         body = record["submitBody"]
         try:
             validation = await client.validate_output_requests(body)
@@ -347,7 +415,7 @@ class EditorStore:
         if current.get("config") == record["config"]:
             record.update(state="REQUEST_SAVED", configRevision=current["configRevision"], message="采集配置已确认，页面启用待完成")
             self.update(record)
-            return await self._complete(record, client)
+            return await self._complete(record, client) if activate else record
         # Persist the uncertain state *before* sending the one explicit write.
         record.update(state="REQUEST_UNKNOWN", message="正在提交采集请求；结果未知时查询原请求，不自动重放")
         self.update(record)
@@ -355,7 +423,7 @@ class EditorStore:
             reply = await client.submit_output_requests(body)
         except Exception:
             return self.update(record)
-        return await self._accept_reply(record, reply, client)
+        return await self._accept_reply(record, reply, client, activate=activate)
 
 
     async def _accept_reply(self, record, reply, client, *, activate=True):
@@ -397,29 +465,33 @@ class EditorStore:
             return await self._complete(record, client) if activate else record
         return record
 
-    async def _complete(self, record, client):
+    async def _saved_capture_problem(self, record, client):
         try:
             current = await client.output_requests()
         except Exception:
-            record.update(state="REQUEST_SAVED", message="采集配置已更新，连接恢复后可继续启用页面")
-            return self.update(record)
+            return "采集配置已更新，连接恢复后可继续启用页面", []
         if (current.get("runtimeInstanceId") != record["runtimeInstanceId"] or
                 current.get("projectId") != record["projectId"] or
                 current.get("configRevision") != record.get("configRevision") or
                 current.get("config") != record["config"]):
-            record.update(state="REQUEST_SAVED", message="已保存请求与当前 Runtime 配置不一致，请刷新目标并核对；页面尚未启用")
-            return self.update(record)
+            return "已保存请求与当前 Runtime 配置不一致，请刷新目标并核对；页面尚未启用", []
         if current.get("diagnostics"):
-            record.update(state="REQUEST_SAVED", diagnostics=current["diagnostics"],
-                          message="采集请求已保存，但当前流程来源已失效；页面尚未启用，请修复绑定后重新发布")
-            return self.update(record)
+            return "采集请求已保存，但当前流程来源已失效；页面尚未启用，请修复绑定后重新发布", current["diagnostics"]
+        return "", []
+
+    async def _complete(self, record, client):
+        problem, diagnostics = await self._saved_capture_problem(record, client)
+        if problem:
+            return self.update({**record, "state": "REQUEST_SAVED", "message": problem, "diagnostics": diagnostics})
         try:
             self.packages.activate(record["packageId"], record["runtimeId"], record["projectId"])
         except Exception:
             record.update(state="REQUEST_SAVED", message="采集配置已更新，页面启用待完成")
             return self.update(record)
-        record.update(state="PUBLISHED", message="页面已发布；当前任务保持原采集配置，新来源下次明确启动生效")
-        return self.update(record)
+        return self.mark_published(record)
+
+    def mark_published(self, record):
+        return self.update({**record, "state": "PUBLISHED", "message": "页面已发布；当前任务保持原采集配置，新来源下次明确启动生效"})
 
     async def _abandon(self, record, client):
         """End page coordination only; never infer that an uncertain write did not run."""

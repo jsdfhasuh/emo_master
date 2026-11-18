@@ -54,7 +54,7 @@ def placeComponents(p, pageId, *, keys=(), kind=None, parentId=None, index=None,
     items = selectionRoots(p, pageId, keys)
     if kind is not None:
         items = [Component(componentId=str(uuid4()), type=kind,
-            props=Props(fontSize=24, fontWeight='bold') if kind == 'page_title' else Props())]
+            props=Props(typography={'value': {'size': 24, 'weight': 'bold'}}) if kind == 'page_title' else Props())]
     if not items:
         return selected
     for item in items:

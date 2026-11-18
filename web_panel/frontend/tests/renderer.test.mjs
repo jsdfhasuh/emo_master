@@ -9,9 +9,9 @@ const React=require('react');const {renderToStaticMarkup}=require('react-dom/ser
 const {JSDOM}=require('jsdom');
 const {PanelRenderer}=require('../src/renderer/PanelRenderer.tsx');
 const render=(components,extra={})=>renderToStaticMarkup(React.createElement(PanelRenderer,{panel:{id:'p',pages:[{id:'page',title:'Page',components}]},pageId:'page',onPage(){},onAction(){},state:'ready',...extra}));
-test('binding uses the validated scopeId and nested style whitelist',()=>{
- const html=render([{id:'n',type:'number',binding:{sourceId:'score',scopeId:'second'},props:{style:{color:'#123456',fontSize:24,fontWeight:'bold'}}}],{result:{resultKey:'a',sources:{score:{state:'available',value:11}}},results:{second:{resultKey:'b',sources:{score:{state:'available',value:42}}}}});
- assert.match(html,/>42 /);assert.doesNotMatch(html,/>11 /);assert.match(html,/color:#123456/);assert.match(html,/font-size:24px/);assert.match(html,/font-weight:bold/);
+test('binding uses the validated scopeId and current text role style',()=>{
+ const html=render([{id:'n',type:'number',binding:{sourceId:'score',scopeId:'second'},props:{typography:{value:{color:'primary',size:24,weight:'bold'}}}}],{result:{resultKey:'a',sources:{score:{state:'available',value:11}}},results:{second:{resultKey:'b',sources:{score:{state:'available',value:42}}}}});
+ assert.match(html,/>42</);assert.doesNotMatch(html,/>11</);assert.match(html,/color:#2459d1/);assert.match(html,/font-size:24px/);assert.match(html,/font-weight:bold/);
 });
 test('official vision collection envelopes render their declared items as table rows',()=>{
  const html=render([{id:'table',type:'table',binding:'measurements',props:{columns:[{title:'面积',fieldPath:['area']}]}}],{result:{resultKey:'r',sources:{measurements:{state:'available',valueJson:JSON.stringify({type:'blobCollection',schemaVersion:'1.1',coordinateSpace:{},items:[{area:1600},{area:900}]})}}}});
@@ -26,12 +26,14 @@ test('unavailable bound values never render fallback or stale OK business values
  for(const type of ['text','number','indicator','table']){
  const html=render([{id:'c',type,binding:'bad',props:{value:'OK',text:'OK'}}],{result:{resultKey:'r',sources:{bad:{state:'error',value:'OK',reason:'sensor offline'}}}});
  assert.match(html,/sensor offline/);assert.doesNotMatch(html,/>OK</);
- const absent=render([{id:'c',type,binding:'absent',props:{value:'OK'}}]);assert.match(absent,/不可用/);assert.doesNotMatch(absent,/>OK</);
+ const absent=render([{id:'c',type,binding:'absent',props:{value:'OK'}}]);
+ assert.match(absent,type==='indicator'?/>—<|本轮数据未就绪/:/不可用/);assert.doesNotMatch(absent,/>OK</);
  }
 });
-test('draft nested grid, field selection and all permitted safe styles render',()=>{
- const html=render([{id:'n',type:'text',binding:{sourceId:'data',field:'verdict'},props:{grid:{column:2,columnSpan:2},style:{color:'red',fontWeight:'600',fontSize:96}}}],{result:{resultKey:'r',sources:{data:{state:'available',value:{verdict:'PASS'}}}}});
- assert.match(html,/>PASS</);assert.match(html,/grid-column:2 \/ span 2/);assert.match(html,/color:red/);assert.match(html,/font-weight:600/);assert.match(html,/font-size:96px/);
+test('draft nested grid, field selection and configured surface render',()=>{
+ const html=render([{id:'n',type:'text',binding:{sourceId:'data',field:'verdict'},layout:{row:0,column:1,columnSpan:2},props:{surface:{kind:'card',radius:8,padding:{top:2}},typography:{value:{color:'red',weight:'bold',size:96}}}}],{result:{resultKey:'r',sources:{data:{state:'available',value:{verdict:'PASS'}}}}});
+ assert.match(html,/>PASS</);assert.match(html,/grid-column:2 \/ span 2/);assert.match(html,/color:#a92235/);assert.match(html,/font-weight:bold/);assert.match(html,/font-size:96px/);
+ assert.match(html,/border-radius:8px/);assert.match(html,/padding:2px 16px 16px 16px/);
 });
 test('clock timezone, navigation plain icon and fixed history image are supported',()=>{
  globalThis.location={origin:'http://panel.example'};
@@ -39,16 +41,19 @@ test('clock timezone, navigation plain icon and fixed history image are supporte
  assert.match(html,/UTC/);assert.match(html,/▶/);assert.match(html,/\/api\/views\/v\/images\/fixed/);
 });
 test('aggregate null stays empty, never substitutes row count',()=>{
- const {historyAggregateText}=require('../src/renderer/PanelRenderer.tsx');assert.equal(historyAggregateText({value:null,total:0}),'—');assert.equal(historyAggregateText({total:100}),'统计能力未就绪');assert.equal(historyAggregateText({value:0,total:9}),'0');
+ const {historyAggregateText}=require('../src/renderer/HistoryView.tsx');assert.equal(historyAggregateText({value:null,total:0}),'—');assert.equal(historyAggregateText({total:100}),'统计能力未就绪');assert.equal(historyAggregateText({value:0,total:9}),'0');
 });
 test('official number valueJson preserves unsafe integer without rounding',()=>{
  const html=render([{id:'n',type:'number',binding:'count'}],{result:{resultKey:'r',sources:{count:{state:'AVAILABLE',valueJson:'9007199254740993'}}}});
  assert.match(html,/9007199254740993/);assert.doesNotMatch(html,/9007199254740992/);
 });
-test('official indicator JSON keys do not confuse boolean with string',()=>{
- const components=[{id:'n',type:'indicator',binding:'x',props:{indicatorStates:{true:{text:'BOOLEAN',color:'green'},'"true"':{text:'STRING',color:'red'}}}}];
- assert.match(render(components,{result:{resultKey:'r',sources:{x:{state:'AVAILABLE',valueJson:'true'}}}}),/BOOLEAN/);
- assert.match(render(components,{result:{resultKey:'r',sources:{x:{state:'AVAILABLE',valueJson:'"true"'}}}}),/STRING/);
+test('official indicator keys distinguish booleans, strings and exact integers',()=>{
+ const components=[{id:'n',type:'indicator',binding:'x',props:{emptyText:'未匹配',indicatorStates:{
+  true:{text:'BOOLEAN',color:'green'},'"1"':{text:'STRING',color:'red'},1:{text:'INTEGER',color:'blue'},'9007199254740993':{text:'EXACT',color:'blue'},
+ }}}];
+ for(const [valueJson,expected] of [['true','BOOLEAN'],['"1"','STRING'],['1','INTEGER'],['1.0','未匹配'],
+  ['9007199254740993','EXACT'],['null','未匹配'],['"9007199254740993"','未匹配']])
+  assert.match(render(components,{result:{resultKey:'r',sources:{x:{state:'AVAILABLE',valueJson}}}}),new RegExp('>'+expected+'<'));
 });
 test('official responsive layout preserves child order and fieldPath columns',()=>{
  const components=[{id:'wrap',type:'container',grid:{type:'responsive',direction:'wrap',spacing:7},children:[{id:'b',type:'text',props:{text:'FIRST'},layout:{row:3}},{id:'a',type:'table',binding:'rows',layout:{row:0},props:{columns:[{title:'Nested',fieldPath:['part','count']}],pageSize:1}}]}];
@@ -56,13 +61,18 @@ test('official responsive layout preserves child order and fieldPath columns',()
  assert.ok(html.indexOf('FIRST')<html.indexOf('Nested'));assert.match(html,/flex-wrap:wrap/);assert.match(html,/gap:7px/);assert.match(html,/>3</);assert.doesNotMatch(html,/>5</);
 });
 test('official history refresh reselects only stable identities with new refs',()=>{
- const {normalizeHistory,restoreHistorySelection}=require('../src/renderer/PanelRenderer.tsx');
- const page={columns:[{name:'id'}],rows:[{rowId:'one',values:[1],imageRefs:{picture:{status:'AVAILABLE',imageRef:'new'}}}],stableRowIdentity:true,historyDefinitionRevision:'rev'};
- const normalized=normalizeHistory(page);const restored=restoreHistorySelection(normalized,{rowId:'one',imageRefs:{picture:{imageRef:'old'}}},'rev');
- assert.equal(restored.__displayValues.id,1);assert.equal(restored.imageRefs.picture.imageRef,'new');
- assert.equal(restoreHistorySelection({...normalized,stableRowIdentity:false},{rowId:'one'},'rev'),undefined);
- assert.equal(restoreHistorySelection(normalized,{rowId:'one'},'different'),undefined);
- assert.equal(restoreHistorySelection(normalized,{rowId:'missing'},'rev'),undefined);
+ const {normalizeHistory,returnedSelection,encodeHistoryKey}=require('../src/renderer/HistoryView.tsx');
+ const {parseLosslessJSON}=require('../src/data/lossless.ts');
+ const page={columns:[{name:'id'}],rows:[{rowId:'two',keyValues:[2],values:[2]},
+  {rowId:'one',keyValues:[1],values:[1],imageRefs:{picture:{status:'AVAILABLE',imageRef:'new'}}}],
+  stableRowIdentity:true,historyDefinitionRevision:'rev',selectedRowId:'one'};
+ const normalized=normalizeHistory(page);const restored=returnedSelection(normalized);
+ assert.equal(restored.displayValues.id,1);assert.equal(restored.imageRefs.picture.imageRef,'new');
+ assert.equal(returnedSelection({...normalized,selectedRowId:'missing'}),undefined);
+ assert.equal(returnedSelection({...normalized,selectedRowId:undefined}).rowId,'two');
+ const values=parseLosslessJSON('[9007199254740993,1,1.0,"1",true,"\\u0000"]',true);
+ assert.deepEqual(values,[9007199254740993n,1n,1,'1',true,'\0']);
+ assert.equal(encodeHistoryKey([values[0],values[3]]),'[9007199254740993,"1"]');
 });
 test('lossless JSON handles nested data, escaped strings, and finite floats',()=>{
  const {parseLosslessJSON}=require('../src/data/lossless.ts');
@@ -132,7 +142,13 @@ test('only SDK validated group runIds can supply group result and state',()=>{
 });
 test('official history renders declared filter columns and authoritative sort defaults',()=>{
  const html=render([{id:'records',type:'sqlite_table',history:{componentId:'records',kind:'table',orderBy:'id',descending:true},props:{columns:[{key:'id',title:'ID'},{key:'verdict',title:'Verdict'}]}}],{viewId:'view'});
- assert.match(html,/aria-label="records 筛选列"/);assert.match(html,/所有声明列/);assert.match(html,/<option value="id" selected="">ID<\/option>/);assert.match(html,/<option value="desc" selected="">降序<\/option>/);
+ const {document}=new JSDOM(html).window;
+ const filter=document.querySelector('[aria-label="records 筛选列"]');
+ assert.deepEqual(Array.from(filter.options,item=>item.value),['id','verdict']);
+ assert.equal(filter.value,'id');
+ assert.equal(document.querySelector('[aria-label="records 排序"]').value,'id');
+ assert.equal(document.querySelector('.history-sort button').textContent,'降序');
+ assert.equal(document.querySelector('.history-filter button[type=submit]').textContent,'筛选');
 });
 test('gateway-transformed mixed results retain available image routing and official epoch',()=>{
  const {normalizeMessage}=require('../src/data/contract.ts');
@@ -206,7 +222,7 @@ test('responsive preferred heights are lower bounds for images, text and contain
    assert.equal(card.style.minHeight,`${minimum}px`,id);
    assert.equal(card.style.height,'',`${id} must allow natural content to grow`);
   }
-  assert.equal(dom.window.document.querySelectorAll('img.result-image').length,2);
+  assert.equal(dom.window.document.querySelectorAll('.panel-image-view img').length,2);
   assert.match(dom.window.document.querySelector('[data-component-id="group"]').textContent,/Child content/);
  } finally {dom.window.close();}
 });
@@ -265,7 +281,7 @@ test('fixed preview height sizes the vertical flow and adds upward extension onl
  const components=[{id:'top',type:'text',props:{text:'Header'}},{id:'space',type:'spacer',props:{spacerMode:'flex'}},{id:'bottom',type:'text',props:{text:'Footer'}}];
  const panel={id:'p',pages:[{id:'page',title:'Page',canvasTop:-120,layout:{type:'responsive',direction:'vertical'},components}]};
  const fixed=render(components,{panel,viewportHeight:768});
- assert.match(fixed,/padding-top:120px;min-height:872px/);assert.match(fixed,/height:752px/);
- assert.equal((fixed.match(/height:752px/g) || []).length,1);
- const following=render(components,{panel});assert.doesNotMatch(following,/height:752px/);
+ assert.match(fixed,/padding-top:120px;min-height:840px/);assert.match(fixed,/height:720px/);
+ assert.equal((fixed.match(/height:720px/g) || []).length,1);
+ const following=render(components,{panel});assert.doesNotMatch(following,/height:720px/);
 });

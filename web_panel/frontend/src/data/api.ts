@@ -11,9 +11,9 @@ export function onSessionExpired(listener: (message: string) => void) {
 }
 export function getSessionGeneration() { return sessionGeneration; }
 export function setCsrf(value: string) { csrf = value; sessionGeneration++; }
-type ApiOptions = RequestInit & { ignoreSessionExpiry?: boolean };
+type ApiOptions = RequestInit & { ignoreSessionExpiry?: boolean; preserveIntegerType?: boolean };
 async function request(path: string, options: ApiOptions = {}): Promise<Response> {
-    const { ignoreSessionExpiry, ...fetchOptions } = options;
+    const { ignoreSessionExpiry, preserveIntegerType: _preserveIntegerType, ...fetchOptions } = options;
     const requestSession = sessionGeneration;
     const headers = new Headers(options.headers);
     if (options.body && !(options.body instanceof Blob))
@@ -44,7 +44,7 @@ async function request(path: string, options: ApiOptions = {}): Promise<Response
 }
 export async function api<T>(path: string, options: ApiOptions = {}): Promise<T> {
     const res = await request(path, options);
-    return res.status === 204 ? undefined as T : parseLosslessJSON(await res.text()) as T;
+    return res.status === 204 ? undefined as T : parseLosslessJSON(await res.text(), options.preserveIntegerType) as T;
 }
 export async function apiBlob(path: string, options: RequestInit = {}): Promise<Blob> {
     return (await request(path, options)).blob();

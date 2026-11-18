@@ -310,7 +310,7 @@ def test_cli_no_mcp_runs_without_optional_sdk_or_qt_imports(tmp_path):
             loaded = client.get("/api/project-drafts/" + state["draftId"])
             assert loaded.status_code == 200
             assert loaded.json()["project"]["project"]["name"] == "No MCP or Qt"
-            assert loaded.json()["project"]["schemaVersion"] == "2.9"
+            assert loaded.json()["project"]["schemaVersion"] == "2.10"
             assert json.loads(report.read_text(encoding="utf-8")) == []
     finally:
         process.terminate()

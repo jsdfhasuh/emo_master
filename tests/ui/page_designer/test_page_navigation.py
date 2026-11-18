@@ -34,7 +34,11 @@ def assertCurrent(editor, pageId):
     assert editor.pageTabs.pageId(editor.pageTabs.currentIndex()) == pageId
     assert editor.renderer.stack.currentWidget() is editor.renderer.pages[pageId]
     assert editor.tools._loadedPage == pageId
-    assert editor.renderer.pageNavigation.picker.currentData() == pageId
+    navigation = editor.renderer.pageNavigation
+    if navigation.tabs is None:
+        assert [key for key, button in navigation.buttons.items() if button.isChecked()] == [pageId]
+    else:
+        assert navigation.tabs.tabData(navigation.tabs.currentIndex()) == pageId
 
 
 @pytest.mark.parametrize('route', ['mouse', 'keyboard', 'picker'])
@@ -109,7 +113,7 @@ def testInvalidInputBlocksNavigationAndRetainsOriginalTarget(designer, route):  
     second = editor.store.createPage('B')
     editor.refresh()
     editor.tools.fields['title'].setText('保留 A 的输入')
-    editor.tools.addExtraRow(values=('boolean', 'invalid boolean', '保留映射', 'green'))
+    editor.tools.addExtraRow(values=('boolean', 'invalid boolean', '保留映射', 'green', 'soft'))
     before = coordinator.session.payload()
     history = len(coordinator.session._undo)
 
@@ -140,9 +144,9 @@ def testPreviewNavigationDoesNotChangeEditingPage(designer, state, route):  # no
     preview = coordinator.preview.openObserver()
     preview.simulation.setCurrentIndex(preview.simulation.findData(state))
     if route == 'top':
-        picker = preview.pageNavigation.picker
-        picker.setCurrentIndex(picker.findData(second))
-        picker.activated.emit(picker.currentIndex())
+        tabs = preview.pageNavigation.tabs
+        index = next(i for i in range(tabs.count()) if tabs.tabData(i) == second)
+        QTest.mouseClick(tabs, Qt.LeftButton, pos=tabs.tabRect(index).center())
     else:
         preview.act(Action(type='navigate', pageId=second))
     assert preview.currentPageId == second
@@ -160,7 +164,7 @@ def testPreviewNavigationDoesNotChangeEditingPage(designer, state, route):  # no
 def testInvalidInputBlocksOpeningOrRefreshingPreview(designer, alreadyOpen):  # noqa: F811
     coordinator, editor, original = setupPage(designer, 'indicator')
     existing = coordinator.preview.openObserver() if alreadyOpen else None
-    editor.tools.addExtraRow(values=('boolean', 'invalid boolean', '保留输入', 'green'))
+    editor.tools.addExtraRow(values=('boolean', 'invalid boolean', '保留输入', 'green', 'soft'))
     before = coordinator.session.payload()
     with pytest.raises(ValueError):
         coordinator.preview.openObserver()
@@ -224,7 +228,7 @@ def testDetailPreviewPinsDisplayedResultAndDefersNewLayout(designer, qtApp):  # 
         renderer.resumeLive()
         assert renderer.frozen is None and renderer.config == editor.store.snapshot()
         item = _component(editor.store.snapshot(), 'overview', 'overview-count')
-        assert item.props.title == '仅应用到总览页' and item.props.fontSize == 16
+        assert item.props.title == '仅应用到总览页' and item.props.typography.value.size == 16
         assert len(coordinator.session._undo) == history + 1 and len(backend.presentation.jobs) == 1
     finally:
         if renderer is not None:

@@ -36,7 +36,7 @@ def imageProject(root, registry):
             dict(componentId=key + '-view', type='image', bindings={'image': key}, layout={'row': row})
             for row, key in enumerate(('qt-original', 'qt-mask'))])})
     document = ProjectDocument.model_validate(raw)
-    assert document.schemaVersion == '2.9' and document.presentation.schemaVersion == '1.2'
+    assert document.schemaVersion == '2.10' and document.presentation.schemaVersion == '1.3'
     assert document.devices.schemaVersion == '1.0' and not document.devices.definitions
     saveProject(path, document.model_dump(mode='json'))
     reloaded = loadProjectDocument(path)

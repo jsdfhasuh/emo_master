@@ -171,7 +171,7 @@ def testDeletingViewedCompletedWorkflowReturnsToRemainingPage(qtApp, tmp_path, m
         assert oldSession.stop.is_set()
         assert window.pages.config.pageOrder == ['remaining'] and window.pages.isVisible()
         assert not window.returnRunButton.isVisible()
-        assert '已从工程删除' in window.viewingLabel.text() and window.viewingLabel.isVisible()
+        assert '已从工程删除' in window.pages.hostMessage.text() and window.pages.hostMessage.isVisible()
         assert window.controller.sessions['remaining'].jobId == remainingJob
         assert window.selectedWorkflowIds == ['remaining'] and window.startButton.isEnabled()
         assert not calls and len(window.controller.runtime.jobRepository.all()) == 2

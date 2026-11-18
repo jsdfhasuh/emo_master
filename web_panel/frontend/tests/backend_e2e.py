@@ -9,7 +9,7 @@ from emo_web_panel.app import create_app
 from emo_web_panel.auth import AuthStore
 from emo_web_panel.mock_runtime import MockRuntime, demo_panel, IMAGE
 from emo_web_panel.config import Config
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import expect, sync_playwright
 
 def make_package(directory,revision):
  panel=demo_panel();panel['pages'][0]['title']=f'Package {revision}'
@@ -23,6 +23,7 @@ def make_package(directory,revision):
 def logging_check(page,base):
  """Actual Chromium + FastAPI + synthetic Runtime logs; no real devices."""
  from playwright.sync_api import expect
+ page.get_by_text('运行诊断',exact=True).click()
  page.get_by_text('权威计数与任务事件',exact=True).click()
  logs=page.get_by_role('region',name='Runtime 日志')
  logs.get_by_label('范围',exact=True).select_option('history')
@@ -47,6 +48,7 @@ def logging_check(page,base):
  page.screenshot(path=str(ROOT/'test-tmp'/'logging-history.png'),full_page=True)
  page.get_by_text('账户与 Runtime 管理',exact=True).click()
  page.get_by_text('权威计数与任务事件',exact=True).click()
+ page.get_by_text('运行诊断',exact=True).click()
 
 
 def target_isolation_check(page,browser,base,data,versions,password,errors):
@@ -195,6 +197,7 @@ def review_live_cursor_browser():
      try:
       page.goto(f'http://127.0.0.1:{port}');page.get_by_label('用户名',exact=True).fill('reviewer')
       page.get_by_label('密码',exact=True).fill('Temporary-review-password!');page.get_by_role('button',name='登录',exact=True).click()
+      page.get_by_text('运行诊断',exact=True).click()
       page.get_by_text('权威计数与任务事件',exact=True).click();logs=page.get_by_role('region',name='Runtime 日志')
       if scenario=='status-first':
        expect(page.locator('.runtime-events')).to_contain_text('计数来源：mock-runtime-authoritative')
@@ -254,11 +257,11 @@ def main():
     browser=p.chromium.launch(**({'executable_path':os.environ['CHROMIUM_PATH']} if os.environ.get('CHROMIUM_PATH') else {}),headless=True,args=['--no-sandbox','--disable-dev-shm-usage']);page=browser.new_page(viewport={'width':1280,'height':900});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     try:
      page.goto(f'http://127.0.0.1:{port}');page.get_by_label('用户名',exact=True).fill('tester');page.get_by_label('密码',exact=True).fill(password);page.get_by_role('button',name='登录',exact=True).click()
-     page.get_by_text('99.50',exact=False).wait_for();logging_check(page,f'http://127.0.0.1:{port}');page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看，后台仍在运行').wait_for();page.get_by_role('button',name='恢复实时',exact=True).click()
+     page.get_by_text('99.50',exact=False).wait_for();logging_check(page,f'http://127.0.0.1:{port}');page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看').wait_for();page.get_by_role('button',name='恢复实时',exact=True).click()
      page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('操作已受理：',exact=False).wait_for()
      page.get_by_text('账户与 Runtime 管理',exact=True).click();page.get_by_label('新用户名',exact=True).fill('readonly');page.get_by_label('初始密码',exact=True).fill('Readonly-fixture-123!');page.get_by_role('button',name='创建用户',exact=True).click();page.get_by_role('cell',name='readonly',exact=True).wait_for()
      history=page.locator('section.panel-card').filter(has=page.get_by_label('history-table 筛选', exact=True))
-     history.get_by_text('共 30 条',exact=False).wait_for();assert history.locator('tbody tr').count()==10
+     expect(history.locator('tbody tr')).to_have_count(10)
      page.get_by_role('button',name='编辑 / 授权',exact=False).first.click()
      with page.expect_response(lambda response:'/api/admin/runtimes/configured/grants' in response.url and response.request.method=='PUT') as grant_response:
       page.get_by_label('readonly 查看 configured',exact=True).check()
@@ -270,12 +273,15 @@ def main():
       page.get_by_label('readonly 查看 second',exact=True).check()
      assert second_grant.value.ok
      page.get_by_label('删除时撤销目标授权',exact=True).check();page.once('dialog',lambda dialog:dialog.accept());page.get_by_role('row').filter(has=page.get_by_role('button',name='编辑 / 授权 Second edited',exact=True)).get_by_role('button',name='删除目标',exact=True).click();page.get_by_role('button',name='编辑 / 授权 Second edited',exact=True).wait_for(state='detached')
-     page.get_by_label('查看运行',exact=True).select_option('');history.get_by_text('共 30 条',exact=False).wait_for()
+     page.get_by_label('查看运行',exact=True).select_option('');expect(history.locator('tbody tr')).to_have_count(10)
      page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('操作已受理：',exact=False).wait_for()
      page.get_by_label('查看运行',exact=True).select_option('demo-run');page.get_by_text('99.50',exact=False).wait_for()
-     page.get_by_label('history-table 筛选', exact=True).fill('NG');history.get_by_text('共 7 条',exact=False).wait_for();assert history.locator('tbody tr').count()==7
-     history.locator('tbody tr').first.click();history.get_by_role('img',name='选中历史记录',exact=True).wait_for()
-     page.wait_for_function('(image)=>image.complete && image.naturalWidth>0',arg=history.get_by_role('img',name='选中历史记录',exact=True).element_handle())
+     history.get_by_label('history-table 筛选列', exact=True).select_option('result')
+     page.get_by_label('history-table 筛选', exact=True).fill('NG')
+     history.get_by_role('button',name='筛选',exact=True).click()
+     expect(history.locator('tbody tr')).to_have_count(7)
+     history.locator('tbody tr').first.click();page.get_by_role('img',name='选中历史记录',exact=True).wait_for()
+     page.wait_for_function('(image)=>image.complete && image.naturalWidth>0',arg=page.get_by_role('img',name='选中历史记录',exact=True).element_handle())
      page.get_by_label('停止控制目标',exact=True).select_option('demo-run');page.once('dialog',lambda dialog:dialog.accept())
      with page.expect_response(lambda response:response.url.endswith('/api/runs/demo-run/stop') and response.request.method=='POST') as stopped:
       page.get_by_role('button',name='停止选中运行',exact=True).click()

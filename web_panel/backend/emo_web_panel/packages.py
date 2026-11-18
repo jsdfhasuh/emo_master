@@ -311,6 +311,7 @@ def _image_matches(data, mime):
 
 # Requirements implemented by the gateway renderer, not arbitrary RPC capabilities.
 OFFICIAL_REQUIREMENTS = frozenset({f"component.{kind}@1.0" for kind in TYPES} | {
+    "presentation.composable-v1", "history.record-selection-v1", "shell.operational-v1",
     "actions.readonly-v1", "history.image-v1", "history.query-v1",
     "layout.ordered-responsive-v1", "layout.grid-v1", "result.closed-v1",
     "layout.expanded-canvas-v1",
@@ -389,6 +390,8 @@ def _official_presentation(manifest, doc, files):
         raise PackageError("Unknown source result scope")
     seen = {}
     history_links = []
+    if published.shell and published.shell.logoResourceId and published.shell.logoResourceId not in model.assets:
+        raise PackageError("Unknown shell logo resource")
     def component(value, page_ids, parent_layout, depth=0):
         if depth > 8 or len(seen) >= 1024 or value.componentId in seen:
             raise PackageError("Duplicate or excessively nested published component")
@@ -417,13 +420,17 @@ def _official_presentation(manifest, doc, files):
                 raise PackageError("Unknown navigation target")
             if action.resultScopeId is not None and action.resultScopeId not in published.resultScopes:
                 raise PackageError("Unknown action result scope")
+            if action.componentId is not None:
+                history_links.append((page_ids, action.componentId, None))
+        if ref := value.props.recordValue:
+            history_links.append((page_ids, ref.componentId, ref.field if ref.kind == 'field' else None))
         history = value.history
         if history is not None:
             expected = {"table": "sqlite_table", "aggregate": "sqlite_value", "fixed_image": "image", "selected_row_image": "image"}[history.kind]
             if value.type != expected or history.componentId != value.componentId or value.bindings or value.props.imageResourceId:
                 raise PackageError("Invalid published history component")
             if history.kind == "selected_row_image":
-                history_links.append((page_ids, history.sourceComponentId))
+                history_links.append((page_ids, history.sourceComponentId, None))
             elif history.sourceComponentId is not None:
                 raise PackageError("Only selected-row history references a table")
         elif value.type in {"sqlite_table", "sqlite_value"}:
@@ -433,9 +440,9 @@ def _official_presentation(manifest, doc, files):
     page_components = {}
     for pid in published.pageOrder:
         page = published.pages[pid]
-        if page.canvasTop and (page.layout.type != "responsive" or model.sourcePresentationVersion != "1.2"
+        if page.canvasTop and (page.layout.type != "responsive"
                               or "layout.expanded-canvas-v1" not in model.rendererRequirements):
-            raise PackageError("Expanded canvas requires responsive presentation 1.2 and renderer support")
+            raise PackageError("Expanded canvas requires responsive layout and renderer support")
         if any(item.responsive.canvasOffsetY < page.canvasTop for item in page.components):
             raise PackageError("Component canvas offset exceeds page canvasTop")
         if any(scope not in published.resultScopes for scope in page.resultScopeIds):
@@ -444,9 +451,14 @@ def _official_presentation(manifest, doc, files):
         for item in page.components:
             component(item, pid, page.layout)
         page_components[pid] = set(seen) - before
-    for pid, cid in history_links:
+    for pid, cid, field in history_links:
         if cid not in page_components[pid] or seen.get(cid) != "sqlite_table":
-            raise PackageError("Selected-row image requires a table on the same page")
+            raise PackageError("History reference requires a table on the same page")
+        if field:
+            from emo_panel_protocol.models import walkComponents
+            table = next(item for item in walkComponents(published.pages[pid].components) if item.componentId == cid)
+            if field not in table.history.columns:
+                raise PackageError("Record value references an undeclared field")
     return _normalize_official(manifest, doc)
 
 
@@ -466,7 +478,8 @@ def _normalize_official(manifest, doc):
                 props["sourceComponentId"] = history.get("sourceComponentId")
         action = c.get("actions", {}).get("clicked")
         if action:
-            props.update(action=action["type"], targetPageId=action.get("pageId"))
+            props.update(action=action["type"], targetPageId=action.get("pageId"),
+                         targetComponentId=action.get("componentId"))
         value = {**c, "id": c["componentId"], "label": props.get("title", ""), "props": props,
                  "children": [component(child) for child in c.get("children", [])]}
         bindings = c.get("bindings", {})

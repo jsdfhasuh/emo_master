@@ -38,7 +38,7 @@ const rename=value=>input(nameInput(),value);
 async function refresh(){await click('刷新目录和任务');await waitFor(()=>!button('保存草稿')?.disabled);}
 async function save(){await click('保存草稿');await waitFor(()=>document.querySelector('.editor-draft-state')?.textContent.includes('已保存'));}
 async function login(username='alice'){await input(document.querySelector('input[name="username"]'),username);await input(document.querySelector('input[name="password"]'),'synthetic');await act(async()=>document.querySelector('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));await waitFor(()=>nameInput());}
-function source(name='A saved'){return {schemaVersion:'1.2',defaultPageId:'page',pageOrder:['page'],navigation:{mode:'tabs'},dataSources:{},resultScopes:{},pages:{page:{name,targets:['web'],layout:{type:'responsive',direction:'vertical',spacing:12},components:[],resultScopeIds:[]}}};}
+function source(name='A saved'){return {schemaVersion:'1.3',defaultPageId:'page',pageOrder:['page'],navigation:{mode:'tabs'},dataSources:{},resultScopes:{},pages:{page:{name,targets:['web'],layout:{type:'responsive',direction:'vertical',spacing:12},components:[],resultScopeIds:[]}}};}
 async function fixture(options={}){
  clearSourceModules();
  history.replaceState(null,'',options.route || '/editor');

@@ -39,7 +39,7 @@ def createProject(target):
     }
     payload['presentation'].update(defaultPageId='short', pageOrder=list(pages), pages=pages)
     document = ProjectDocument.model_validate(payload)
-    assert (document.schemaVersion, document.presentation.schemaVersion) == ('2.9', '1.2')
+    assert (document.schemaVersion, document.presentation.schemaVersion) == ('2.10', '1.3')
     target = Path(target)
     target.parent.mkdir(parents=True, exist_ok=True)
     saveProject(target, document.model_dump(mode='json'))

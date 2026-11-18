@@ -32,7 +32,7 @@ def window(ownedDesignerWindow, tmp_path):
     store.get('coordinates').nodes.append(dict(nodeId='measure', kind='subflow', displayName='Measure hole',
                                              targetWorkflowId='holes'))
     payload = store.toPayload('Call chain navigation')
-    assert payload['schemaVersion'] == '2.9' and payload['presentation']['schemaVersion'] == '1.2'
+    assert payload['schemaVersion'] == '2.10' and payload['presentation']['schemaVersion'] == '1.3'
     document = ProjectDocument.model_validate(payload)
     WorkflowCompiler({}).compile(document)
     path = tmp_path / 'call-chains.emoproj'

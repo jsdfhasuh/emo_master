@@ -117,7 +117,8 @@ class Placement(Model):
 
 class IndicatorStyle(Model):
     text: str = Field(max_length=256)
-    color: Literal['neutral', 'green', 'red', 'amber'] = 'neutral'
+    color: Literal['neutral', 'green', 'red', 'amber', 'blue'] = 'neutral'
+    background: Literal['none', 'soft'] = 'none'
 
 
 class TableColumn(Model):
@@ -137,6 +138,7 @@ class SqliteSource(Model):
     aggregate: Literal["count", "sum", "avg", "min", "max"] = "count"
     valueColumn: str = Field(default="", max_length=256)
     location: Literal["display_local", "runtime"] = "display_local"
+    recordKey: Annotated[str, Field(min_length=1, max_length=256)] | None = None
 
     @model_serializer(mode="wrap")
     def serializeLocation(self, handler):
@@ -150,7 +152,7 @@ class SqliteSource(Model):
         if len(self.columns) != len(set(self.columns)):
             raise ValueError("SQLite columns must be unique")
         if any("\x00" in value for value in (
-                self.databasePath, self.table, self.orderBy, self.valueColumn, *self.columns)):
+                self.databasePath, self.table, self.orderBy, self.valueColumn, self.recordKey or '', *self.columns)):
             raise ValueError("SQLite paths and identifiers cannot contain NUL")
         return self
 
@@ -187,6 +189,68 @@ class ImagePathSource(Model):
         return self
 
 
+class Padding(Model):
+    top: int | None = Field(default=None, ge=0, le=64)
+    right: int | None = Field(default=None, ge=0, le=64)
+    bottom: int | None = Field(default=None, ge=0, le=64)
+    left: int | None = Field(default=None, ge=0, le=64)
+
+
+class Surface(Model):
+    kind: Literal['none', 'card'] | None = None
+    background: Literal['transparent', 'surface', 'subtle'] | None = None
+    border: Literal['none', 'subtle'] | None = None
+    radius: int | None = Field(default=None, ge=0, le=32)
+    padding: Padding | None = None
+
+
+class TextRole(Model):
+    size: int | None = Field(default=None, ge=8, le=96)
+    weight: Literal['normal', 'bold'] | None = None
+    color: Literal['default', 'neutral', 'primary', 'green', 'red', 'amber'] | None = None
+
+
+class Typography(Model):
+    title: TextRole | None = None
+    value: TextRole | None = None
+    helper: TextRole | None = None
+
+
+class ImageView(Model):
+    sizing: Literal['fixed', 'aspect'] = 'aspect'
+    aspectRatio: float | None = Field(default=None, gt=0)
+    background: Literal['subtle', 'dark', 'transparent'] = 'subtle'
+    horizontalAlign: Literal['start', 'center', 'end'] = 'center'
+    verticalAlign: Literal['start', 'center', 'end'] = 'center'
+
+
+class Collapse(Model):
+    initiallyCollapsed: bool = False
+
+
+class HistoryView(Model):
+    mode: Literal['table', 'list'] = 'table'
+    titleField: str | None = Field(default=None, min_length=1, max_length=256)
+    subtitleField: str | None = Field(default=None, min_length=1, max_length=256)
+    trailingField: str | None = Field(default=None, min_length=1, max_length=256)
+
+
+class RecordField(Model):
+    componentId: Id
+    kind: Literal['field']
+    field: str = Field(min_length=1, max_length=256)
+
+
+class RecordMeta(Model):
+    componentId: Id
+    kind: Literal['meta']
+    meta: Literal['position', 'count']
+
+
+RecordValue = Annotated[RecordField | RecordMeta, Field(discriminator='kind')]
+HISTORY_ACTIONS = frozenset({'history_previous', 'history_next', 'history_first'})
+
+
 class VisualProps(Model):
     spacerMode: Literal["fixed", "flex"] = "fixed"
     imageResourceId: Id | None = None
@@ -199,11 +263,18 @@ class VisualProps(Model):
     indicatorStates: dict[str, IndicatorStyle] = Field(default_factory=dict, max_length=16)
     columns: list[TableColumn] = Field(default_factory=list, max_length=16)
     pageSize: int = Field(default=20, ge=1, le=100)
-    fontFamily: Literal["system", "sans", "serif", "monospace"] = "system"
-    fontSize: int = Field(default=0, ge=0, le=48)
-    fontWeight: Literal["normal", "bold"] = "normal"
-    textColor: Literal["default", "neutral", "green", "red", "amber"] = "default"
-    cardStyle: Literal["plain", "soft", "outlined"] = "plain"
+    surface: Surface | None = None
+    typography: Typography | None = None
+    valueLayout: Literal['vertical', 'horizontal'] = 'vertical'
+    helperText: str = Field(default='', max_length=1024)
+    indicatorView: Literal['text', 'badge', 'row'] = 'text'
+    showMarker: bool | None = None
+    imageView: ImageView | None = None
+    buttonStyle: Literal['primary', 'secondary', 'link'] = 'secondary'
+    collapse: Collapse | None = None
+    statusField: Literal['connection', 'job_state'] | None = None
+    historyView: HistoryView | None = None
+    recordValue: RecordValue | None = None
 
     @model_serializer(mode="wrap")
     def serializeVisual(self, handler):
@@ -212,21 +283,14 @@ class VisualProps(Model):
             payload.pop("spacerMode", None)
         return payload
 
-    @field_validator('fontSize')
-    @classmethod
-    def checkFontSize(cls, value: int) -> int:
-        if 0 < value < 8:
-            raise ValueError('fontSize must be 0 (automatic) or 8–48 pixels')
-        return value
-
     @model_validator(mode='after')
     def checkStates(self) -> VisualProps:
         for key in self.indicatorStates:
             if len(key) > 256:
                 raise ValueError('indicator key too long')
             value = json.loads(key)
-            if type(value) not in (bool, str) or json.dumps(value, ensure_ascii=False) != key:
-                raise ValueError('indicator keys must be canonical JSON boolean/string literals')
+            if type(value) not in (int, bool, str) or json.dumps(value, ensure_ascii=False) != key:
+                raise ValueError('indicator keys must be canonical JSON integer/boolean/string literals')
         return self
 
 
@@ -247,13 +311,20 @@ class Props(VisualProps):
         return payload
 
 class Action(Model):
-    type: Literal["navigate", "freeze", "resume_live"]
+    type: Literal["navigate", "freeze", "resume_live", 'history_previous', 'history_next', 'history_first']
     pageId: Id | None = None
     context: Literal["live", "displayed_result"] = "live"
     resultScopeId: Id | None = None
+    componentId: Id | None = None
 
     @model_validator(mode="after")
     def checkTarget(self) -> Action:
+        if self.type in HISTORY_ACTIONS:
+            if not self.componentId or self.pageId or self.resultScopeId or self.context != 'live':
+                raise ValueError('history action requires componentId without page or result context')
+            return self
+        if self.componentId is not None:
+            raise ValueError('only history actions accept componentId')
         if (self.pageId is not None) != (self.type == "navigate"):
             raise ValueError("navigate requires pageId; other actions forbid pageId")
         if self.context == "displayed_result" and not self.resultScopeId:
@@ -289,6 +360,11 @@ class Component(Model):
             value = dict(value)
             value["responsive"] = {"width": "content", "minWidth": 24, "preferredWidth": 24,
                                    "minHeight": 24, "preferredHeight": 24, "alignSelf": "start"}
+        elif (isinstance(value, dict) and isinstance(value.get('responsive', {}), dict)
+              and value.get('type') in {'text', 'number', 'indicator', 'runtime_status',
+                                        'page_title', 'clock', 'container'}):
+            value = {**value, 'responsive': {'minWidth': 0, 'preferredWidth': 0, 'minHeight': 0,
+                                               **value.get('responsive', {})}}
         return value
 
     @model_validator(mode="after")
@@ -313,6 +389,16 @@ class Component(Model):
             raise ValueError(f"unsupported binding property for {self.type}")
         if self.actions and self.type != "navigation_button":
             raise ValueError("actions require navigation_button")
+        if self.props.recordValue is not None and (self.type not in {'text', 'number', 'indicator'} or self.bindings):
+            raise ValueError('recordValue requires a text, number or indicator without output bindings')
+        if self.props.historyView is not None and self.type != 'sqlite_table':
+            raise ValueError('historyView requires sqlite_table')
+        if self.props.collapse is not None and self.type != 'container':
+            raise ValueError('collapse requires a container')
+        if self.props.statusField is not None and (self.type != 'runtime_status' or self.bindings):
+            raise ValueError('statusField requires an unbound runtime_status')
+        if self.props.imageView is not None and self.type != 'image':
+            raise ValueError('imageView requires an image')
         return self
 
 
@@ -351,11 +437,29 @@ class Navigation(Model):
     mode: Literal["tabs", "buttons"] = "tabs"
 
 
+class PageAppearance(Model):
+    theme: Literal['light'] = 'light'
+    contentMaxWidth: int = Field(default=0, ge=0, le=4096)
+    pagePadding: int = Field(default=24, ge=0, le=64)
+
+
+class PageShell(Model):
+    title: str = Field(default='', max_length=1024)
+    subtitle: str = Field(default='', max_length=1024)
+    logoResourceId: Id | None = None
+    diagnosticsInitiallyExpanded: bool = False
+    showConnection: bool = True
+    showJobState: bool = True
+    showControls: bool = True
+
+
 class Presentation(Model):
-    schemaVersion: Literal["1.0", "1.1", "1.2"] = "1.2"
+    schemaVersion: Literal["1.0", "1.1", "1.2", "1.3"] = "1.3"
     defaultPageId: Id | None = None
     pageOrder: list[Id] = Field(default_factory=list, max_length=128)
     navigation: Navigation = Field(default_factory=Navigation)
+    appearance: PageAppearance | None = None
+    shell: PageShell | None = None
     resultScopes: dict[Id, ResultScope] = Field(default_factory=dict)
     dataSources: dict[Id, DataSource] = Field(default_factory=dict)
     pages: dict[Id, Page] = Field(default_factory=dict)
@@ -418,11 +522,11 @@ class Presentation(Model):
                     visit(child.children, child.grid, depth + 1)
 
         for page in self.pages.values():
-            if page.canvasTop and (self.schemaVersion != '1.2' or not isinstance(page.layout, ResponsiveLayout)):
-                raise ValueError('expanded canvas requires responsive presentation 1.2')
+            if page.canvasTop and (self.schemaVersion not in {'1.2', '1.3'} or not isinstance(page.layout, ResponsiveLayout)):
+                raise ValueError('expanded canvas requires a responsive page')
             if any(item.responsive.canvasOffsetY < page.canvasTop for item in page.components):
                 raise ValueError('component canvas offset exceeds page canvasTop')
-            if self.schemaVersion != '1.2':
+            if self.schemaVersion not in {'1.2', '1.3'}:
                 if page.targets != ['desktop']:
                     raise ValueError('page targets require presentation schemaVersion 1.2')
                 for component in walkComponents(page.components):

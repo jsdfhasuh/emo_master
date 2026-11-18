@@ -1,5 +1,4 @@
-"""Remote declarations extend formats without changing old local documents."""
-from copy import deepcopy
+"""Remote declarations and editing in the current presentation format."""
 
 import pytest
 from pydantic import ValidationError
@@ -10,47 +9,18 @@ from emo_master.apps.designer.state.workflow_store import WorkflowStore
 from emo_master.core.presentation.models import Action, Component, DataSource, ImagePathSource, Page, Presentation, ResultScope
 from emo_master.core.presentation.targets import effectiveImageLocation, presentationForTarget
 from emo_master.core.presentation.validation import validateBindings
-from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.project.snapshots import captureDefinition
 from emo_master.core.workflow.compiler import WorkflowCompiler
 
 
-def testNewDefaultAndExplicitLegacyUpgradeRoundtrip(tmp_path):
+def testNewDefaultRoundtrip(tmp_path):
     payload = WorkflowStore().toPayload()
-    assert (payload['schemaVersion'], payload['presentation']['schemaVersion']) == ('2.9', '1.2')
+    assert (payload['schemaVersion'], payload['presentation']['schemaVersion']) == ('2.10', '1.3')
     document = ProjectDocument.model_validate(payload)
     assert WorkflowCompiler().compile(document)
     saveProject(tmp_path / 'new.emoproj', payload)
     assert loadProjectDocument(tmp_path / 'new.emoproj') == document
-    for version, pageVersion in [('2.7', '1.0'), ('2.8', '1.1')]:
-        old = deepcopy(payload)
-        old['schemaVersion'], old['presentation']['schemaVersion'] = version, pageVersion
-        assert migrateProjectPayload(old)['schemaVersion'] == version
-        withoutPageVersion = deepcopy(old)
-        withoutPageVersion['presentation'].pop('schemaVersion')
-        assert ProjectDocument.model_validate(withoutPageVersion).presentation.schemaVersion == pageVersion
-        upgraded = migrateProjectPayload(old, enableRemotePresentation=True)
-        assert (upgraded['schemaVersion'], upgraded['presentation']['schemaVersion']) == ('2.9', '1.2')
-        assert upgraded['devices'] == old['devices']
-        assert upgraded['production'] == old['production']
-
-
-def testOldFormatsRejectRemoteSemanticsAndKeepLocalSerialization():
-    local = Presentation(schemaVersion='1.1', defaultPageId='p', pageOrder=['p'], pages={
-        'p': Page(name='Page', components=[Component(componentId='t', type='sqlite_table'),
-            Component(componentId='i', type='image', props={'imagePath': {'kind': 'fixed', 'path': 'image.png', 'baseDirectory': '.'}})])})
-    wire = local.model_dump()
-    assert 'targets' not in wire['pages']['p']
-    assert 'location' not in wire['pages']['p']['components'][1]['props']['imagePath']
-    bad = deepcopy(wire)
-    bad['pages']['p']['targets'] = ['web']
-    with pytest.raises(ValidationError, match='schemaVersion 1.2'):
-        Presentation.model_validate(bad)
-    bad = deepcopy(wire)
-    bad['pages']['p']['components'][0]['props']['sqlite'] = {'location': 'runtime'}
-    with pytest.raises(ValidationError, match='schemaVersion 1.2'):
-        Presentation.model_validate(bad)
 
 
 @pytest.mark.parametrize('targets', [[], ['web', 'web'], ['mobile']])
@@ -81,9 +51,8 @@ def testTerminalViewsFilterNavigationButCaptureRetainsBothSources():
     assert presentationForTarget(presentation, 'desktop').pages['desktop'].components[-1].actions == {}
 
 
-def testTargetAndRuntimeLocationUpgradeUndoCopySave(tmp_path):
+def testTargetAndRuntimeLocationUndoCopySave(tmp_path):
     payload = WorkflowStore().toPayload()
-    payload['schemaVersion'], payload['presentation']['schemaVersion'] = '2.8', '1.1'
     session = ProjectEditSession(payload)
     pageId = session.presentation.createPage('History')
     session.editPresentation(lambda p: p.pages[pageId].components.extend([
@@ -94,7 +63,7 @@ def testTargetAndRuntimeLocationUpgradeUndoCopySave(tmp_path):
         p.pages[pageId].targets = ['desktop', 'web']
         p.pages[pageId].components[0].props.sqlite.location = 'runtime'
     session.editPresentation(edit)
-    assert session.document().schemaVersion == '2.9'
+    assert session.document().schemaVersion == '2.10'
     assert session.undo() and session.payload() == old
     assert session.redo()
     copiedId = session.presentation.copyPage(pageId)

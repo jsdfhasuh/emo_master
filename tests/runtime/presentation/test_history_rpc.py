@@ -26,8 +26,7 @@ def historyRuntime(tmp_path):
         db.executemany('INSERT INTO records VALUES(?,?,?,?)', [
             (1, 'OK', 3.5, 'record.png'), (2, 'NG', 1.0, 'missing.png'), (3, 'OK', 4.0, '../outside.png')])
     payload = WorkflowStore().toPayload()
-    payload['schemaVersion'] = '2.9'
-    payload['presentation'] = dict(schemaVersion='1.2', defaultPageId='history', pageOrder=['history'],
+    payload['presentation'] = dict(schemaVersion='1.3', defaultPageId='history', pageOrder=['history'],
         pages=dict(history=dict(name='History', targets=['desktop', 'web'], components=[
             dict(componentId='rows', type='sqlite_table', props=dict(sqlite=dict(location='runtime',
                 databasePath='records.db', table='records', columns=['id', 'result'], orderBy='id', descending=False))),
@@ -68,10 +67,17 @@ def testPageAggregateAndImagesWithoutJobs(historyRuntime):
     page = json.loads(reply.result_json)
     assert page['hasNext'] and page['rows'][0]['values'] == [1, 'OK']
     assert page['stableRowIdentity'] and page['rows'][0]['rowId']
+    assert page['rows'][0]['keyValues'] == [1]
     ref = page['rows'][0]['imageRefs']['photo']['imageRef']
     assert 'record.png' not in reply.result_json
     image = stub.ReadHistoryImage(pb.ReadHistoryImageRequest(context=context, image_ref=ref), timeout=5)
     assert image.ok and image.status == 'AVAILABLE' and (image.width, image.height) == (7, 5)
+    same = stub.QueryHistoryPage(pb.QueryHistoryPageRequest(context=context, component_id='rows',
+        page_size=2, anchor_key_json=json.dumps(page['rows'][0]['keyValues']), anchor_step=0), timeout=5)
+    assert same.ok, same.message
+    restored = json.loads(same.result_json)
+    assert restored['selectedRowId'] == page['rows'][0]['rowId']
+    assert restored['rows'][0]['imageRefs']['photo']['imageRef'] != ref
     missing = stub.ReadHistoryImage(pb.ReadHistoryImageRequest(context=context,
         image_ref=page['rows'][1]['imageRefs']['photo']['imageRef']), timeout=5)
     assert missing.ok and missing.status == 'MISSING'
@@ -100,15 +106,28 @@ def testHistoryIdentitySortFilterAndImageConfinement(historyRuntime):
     changed = document.presentation.model_copy(deep=True)
     changed.pages['history'].name = 'Renamed'
     assert historyRevision(changed) == context.history_definition_revision
+    changed.pages['history'].components[0].props.sqlite.recordKey = 'id'
+    assert historyRevision(changed) != context.history_definition_revision
     changed.pages['history'].components[0].props.sqlite.columns = ['id']
     assert historyRevision(changed) != context.history_definition_revision
 
 
 def testQtHistoryPageUsesRpcForTablesAndSelectedImages(historyRuntime, retainedQtApplication):
-    _service, stub, context, document = historyRuntime
+    service, stub, context, document = historyRuntime
     from emo_master.clients.runtime.history import HistoryClient
     from emo_master.ui.presentation.renderer import RuntimePages
-    adapter = HistoryClient(lambda name, request: getattr(stub, name)(request, timeout=5),
+    requests = []
+
+    def call(name, request):
+        requests.append((name, request))
+        if name == 'ReadHistoryImage' and request.image_ref and sum(
+                method == name and bool(item.image_ref) for method, item in requests) == 1:
+            # The first real opaque ref is deliberately retired before decoding.
+            with service._projectStateLock:
+                service._historyRefs.pop(request.image_ref, None)
+        return getattr(stub, name)(request, timeout=5)
+
+    adapter = HistoryClient(call,
         runtimeInstanceId=context.runtime_instance_id, projectId=context.project_id, presentation=document.presentation)
     # Deliberately use an unrelated Designer directory. Runtime sources must
     # never try to open its local records.db or picture paths.
@@ -126,9 +145,12 @@ def testQtHistoryPageUsesRpcForTablesAndSelectedImages(historyRuntime, retainedQ
             assert condition()
         waitFor(lambda: table.loaded and total.loaded and not table.busy)
         assert table.model.rows[0] == (1, 'OK') and total.value.text() == '8.50'
-        table.table.selectRow(0)
         waitFor(lambda: not photo.image.isNull())
         assert photo.remoteReader is not None
+        retries = [request for name, request in requests
+                   if name == 'QueryHistoryPage' and request.HasField('anchor_key_json')]
+        assert len(retries) == 1 and json.loads(retries[0].anchor_key_json) == [1]
+        assert retries[0].anchor_step == 0
     finally:
         pages.close()
         pages.deleteLater()

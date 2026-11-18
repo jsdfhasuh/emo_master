@@ -2,9 +2,9 @@
 from PySide2.QtCore import QPoint, QRect, QSize, Qt
 from PySide2.QtWidgets import QFrame, QGridLayout, QLabel, QLayout, QLayoutItem, QSizePolicy, QWidget
 
-from emo_master.core.presentation.models import ResponsiveLayout
+from emo_master.core.presentation.models import PageAppearance, ResponsiveLayout
+from emo_master.ui.presentation.appearance import roleStyle, surfaceStyle
 from emo_master.ui.presentation.container_title import ContainerTitle
-from emo_master.ui.presentation.renderer import appearanceStyle
 from emo_master.ui.presentation.responsive_layout import ResponsiveWidgetLayout
 from emo_master.ui.presentation.page_scroll import pageContentSize
 
@@ -72,10 +72,11 @@ def candidateGeometry(renderer, pageId, candidatePage, prototypes=None, *, minim
     containers = {}
     borrowed = {}
 
-    def populate(host, components, rules, *, canvasTop=0):
+    def populate(host, components, rules, *, canvasTop=0, padding=(0, 0, 0, 0)):
         responsive = isinstance(rules, ResponsiveLayout)
         layout = ResponsiveWidgetLayout(host, rules, canvasTop=canvasTop) if responsive else QGridLayout(host)
         layout.setSpacing(rules.spacing)
+        layout.setContentsMargins(*padding)
         if not responsive:
             end = max((c.layout.row + c.layout.rowSpan for c in components), default=0)
             layout.setRowStretch(end, 1)
@@ -90,15 +91,16 @@ def candidateGeometry(renderer, pageId, candidatePage, prototypes=None, *, minim
                 card.setObjectName('card')
                 card.setProperty('componentId', component.componentId)
                 card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-                colors = {'plain': 'white', 'soft': '#edf3fa', 'outlined': 'transparent'}
-                card.setStyleSheet('QFrame#card {background:' + colors[component.props.cardStyle] +
-                    ';border:1px solid #c4d0de;border-radius:6px;}')
+                margins = surfaceStyle(card, component)
                 content = card
-                if component.props.title:
+                if component.props.title or component.props.collapse:
                     title = ContainerTitle(card, component.props.title,
-                        appearanceStyle(component.props), editing=True)
+                        roleStyle(component.props, 'title'), margins=margins, collapse=component.props.collapse)
+                    live = nativeItems.get(component.componentId)
+                    if component.props.collapse and live and hasattr(live.widget(), 'containerTitle'):
+                        title.label.setChecked(live.widget().containerTitle.label.isChecked())
                     content = title.body
-                populate(content, component.children, component.grid)
+                populate(content, component.children, component.grid, padding=margins if content is card else (0, 0, 0, 0))
                 if not component.children:
                     card.setMinimumHeight(90)
                     placeholder = QLabel('容器 · 拖入组件', content)
@@ -133,7 +135,11 @@ def candidateGeometry(renderer, pageId, candidatePage, prototypes=None, *, minim
             arrange(child)
 
     try:
-        layout = populate(root, candidatePage.components, candidatePage.layout, canvasTop=candidatePage.canvasTop)
+        appearance = renderer.config.appearance or PageAppearance()
+        layout = populate(root, candidatePage.components, candidatePage.layout, canvasTop=candidatePage.canvasTop,
+                          padding=(appearance.pagePadding,) * 4)
+        if appearance.contentMaxWidth:
+            minimumSize = QSize(min(appearance.contentMaxWidth, minimumSize.width()), minimumSize.height())
         root.ensurePolished()
         # Floating page scrollbars never take width from the content viewport.
         root.resize(pageContentSize(layout, minimumSize))

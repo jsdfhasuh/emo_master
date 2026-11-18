@@ -88,7 +88,11 @@ class PageCanvas(DesignerGraphicsView):
                     target = QSize(max(1, self.viewport().width() - 16),
                                    max(1, self.viewport().height() - 16 - canvasTop))
                     if scroll is not None:
-                        target = pageContentSize(scroll.widget().layout(), self.contentMinimumSize(canvasTop)) + extra
+                        minimum = self.contentMinimumSize(canvasTop)
+                        maximum = renderer.config.appearance.contentMaxWidth if renderer.config.appearance else 0
+                        width = min(minimum.width(), maximum) if maximum else minimum.width()
+                        size = pageContentSize(scroll.widget().layout(), QSize(width, minimum.height()))
+                        target = QSize(max(minimum.width(), size.width()), size.height()) + extra
                 renderer.setMinimumSize(0, 0)
                 renderer.setMaximumSize(target)
                 renderer.resize(target)

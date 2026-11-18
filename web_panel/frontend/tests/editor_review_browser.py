@@ -32,7 +32,7 @@ def component(cid='component-A'):
 
 def presentation(project='A', two=False):
     pid = f'page-{project}'
-    doc = {'schemaVersion': '1.2', 'defaultPageId': pid, 'pageOrder': [pid],
+    doc = {'schemaVersion': '1.3', 'defaultPageId': pid, 'pageOrder': [pid],
            'navigation': {'mode': 'tabs'}, 'dataSources': {}, 'resultScopes': {},
            'pages': {pid: {'name': f'{project} 检测页', 'targets': ['web'],
                            'layout': {'type': 'responsive', 'direction': 'vertical', 'spacing': 12,

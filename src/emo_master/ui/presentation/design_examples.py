@@ -22,7 +22,7 @@ def sampleImage():
 
 
 def populate(renderer):
-    from .renderer import ImageView, COLORS, appearanceStyle
+    from .renderer import ImageView
     for component, widget in renderer.widgets.get(renderer.currentPageId, {}).values():
         props = component.props
         if props.imageResourceId or props.imagePath is not None or component.type in {'page_navigation', 'page_title', 'clock', 'sqlite_table', 'sqlite_value'}:
@@ -52,9 +52,8 @@ def populate(renderer):
         elif component.type == 'number':
             widget.setText(f'{128.5:.{props.decimals}f}' + props.unit)
         elif component.type == 'indicator':
-            style = next(iter(props.indicatorStates.values()), None)
-            widget.setText((style.text if style else '● OK') + ' · 示例')
-            widget.setStyleSheet(appearanceStyle(props) + 'color:' + COLORS[style.color if style else 'green'] + ';')
+            import json
+            widget.setValue(json.loads(next(iter(props.indicatorStates))) if props.indicatorStates else None)
         elif component.type == 'runtime_status':
             widget.setText('示例数据 · 客户端连接状态')
         elif component.type == 'text' and (component.bindings or not props.text):

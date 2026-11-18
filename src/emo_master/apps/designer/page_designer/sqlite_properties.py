@@ -41,6 +41,7 @@ class SqliteProperties(QWidget):
         self.columns.setMaximumHeight(170)
         self.columns.setDragDropMode(QAbstractItemView.InternalMove)
         self.orderBy = QComboBox()
+        self.recordKey = QComboBox()
         self.direction = QComboBox()
         self.direction.addItem('降序', True)
         self.direction.addItem('升序', False)
@@ -49,10 +50,11 @@ class SqliteProperties(QWidget):
                            ('最小值', 'min'), ('最大值', 'max')]:
             self.aggregate.addItem(title, key)
         self.valueColumn = QComboBox()
-        self.tableWidgets = (self.columns, self.orderBy, self.direction)
+        self.tableWidgets = (self.columns, self.orderBy, self.direction, self.recordKey)
         self.valueWidgets = (self.aggregate, self.valueColumn)
         for label, widget in [('数据表 / 视图', self.table), ('显示字段（勾选，可拖动排序）', self.columns),
                               ('排序字段', self.orderBy), ('排序方向', self.direction),
+                              ('稳定键（视图回看需指定）', self.recordKey),
                               ('统计方式', self.aggregate), ('统计字段', self.valueColumn)]:
             self.form.addRow(label, widget)
             if isinstance(widget, QComboBox):
@@ -95,7 +97,7 @@ class SqliteProperties(QWidget):
         self._pick(self.table, known, source.table)
         self.table.blockSignals(False)
         fields = known.get(source.table, [])
-        self._fields(fields, source.columns, source.orderBy, source.valueColumn)
+        self._fields(fields, source.columns, source.orderBy, source.valueColumn, source.recordKey or '')
         self.direction.setCurrentIndex(self.direction.findData(source.descending))
         self.aggregate.setCurrentIndex(self.aggregate.findData(source.aggregate))
         for widget in self.tableWidgets:
@@ -107,7 +109,7 @@ class SqliteProperties(QWidget):
         self.updateValueField()
         self.updateLocation()
 
-    def _fields(self, fields, selected=(), orderBy='', valueColumn=''):
+    def _fields(self, fields, selected=(), orderBy='', valueColumn='', recordKey=''):
         self.columns.clear()
         for name in dict.fromkeys([*selected, *fields]):
             item = QListWidgetItem(name)
@@ -117,6 +119,7 @@ class SqliteProperties(QWidget):
             self.columns.addItem(item)
         self._pick(self.orderBy, fields, orderBy, '首个显示字段')
         self._pick(self.valueColumn, fields, valueColumn)
+        self._pick(self.recordKey, fields, recordKey, '主键 / rowid')
 
     def selectedColumns(self):
         return [self.columns.item(i).data(Qt.UserRole) for i in range(self.columns.count())
@@ -126,10 +129,10 @@ class SqliteProperties(QWidget):
         return (self.databasePath.text().strip(), self.table.currentData() or '',
                 tuple(self.selectedColumns()), self.orderBy.currentData() or '',
                 self.direction.currentData(), self.aggregate.currentData(),
-                self.valueColumn.currentData() or '', self.location.currentData())
+                self.valueColumn.currentData() or '', self.location.currentData(), self.recordKey.currentData() or '')
 
     def payload(self):
-        path, table, columns, order, descending, aggregate, value, location = self.state()
+        path, table, columns, order, descending, aggregate, value, location, recordKey = self.state()
         if path and not table:
             raise ValueError('SQLite：请读取表和字段，并选择数据表。')
         if table and not path:
@@ -141,7 +144,8 @@ class SqliteProperties(QWidget):
         if len(columns) > 32:
             raise ValueError('SQLite：最多选择 32 个显示字段。')
         return dict(databasePath=path, table=table, columns=list(columns), orderBy=order,
-                    descending=descending, aggregate=aggregate, valueColumn=value, location=location)
+                    descending=descending, aggregate=aggregate, valueColumn=value, location=location,
+                    recordKey=recordKey or None)
 
     def chooseDatabase(self):
         if self.location.currentData() == 'runtime':
@@ -178,7 +182,8 @@ class SqliteProperties(QWidget):
         fields = schema.get(table, [])
         keep = old[1] == table and (same or bool(old[2]))
         selected = [name for name in old[2] if name in fields] if keep else fields[:min(8, len(fields))]
-        self._fields(fields, selected, old[3] if old[3] in fields else '', old[6] if old[6] in fields else '')
+        self._fields(fields, selected, old[3] if old[3] in fields else '', old[6] if old[6] in fields else '',
+                     old[8] if old[8] in fields else '')
         self.message.setText(f'已读取 {len(schema)} 个表 / 视图。选择字段后点击“应用修改”。' if schema
                              else '此数据库没有可查询的数据表或视图。')
 

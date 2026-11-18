@@ -46,6 +46,8 @@ class OperatorWindow(QWidget):
         self.runtimeFactory, self.explicitProject = runtimeFactory, projectPath
         self.projectPath = str(projectPath or self.preferences.value("projectPath", ""))
         self.controller = self.session = self.hub = self.pages = None
+        self._historyViewContext = None
+        self._historyViewState = {}
         self.sessionCoverage = None
         self.viewSession = self.viewRunInfo = self.viewPresentation = self.viewCoverage = None
         self.viewNotice = ''
@@ -67,6 +69,11 @@ class OperatorWindow(QWidget):
         self.pageFocus = {}
         self.initializationFailed = False
         layout = QVBoxLayout(self)
+        self.technicalHost = QWidget()
+        technical = QVBoxLayout(self.technicalHost)
+        technical.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.technicalHost)
+        self.hostLayout = layout
         header = QHBoxLayout()
         header.addWidget(QLabel("EmoMaster Runtime"))
         self.projectLabel = QLabel("未加载工程")
@@ -79,7 +86,7 @@ class OperatorWindow(QWidget):
         self.logsButton = self._button("查看日志", QStyle.SP_FileDialogContentsView, self.showLogs)
         header.addWidget(self.settingsButton)
         header.addWidget(self.logsButton)
-        layout.addLayout(header)
+        technical.addLayout(header)
         toolbar = QHBoxLayout()
         self.openButton = self._button("选择工程", QStyle.SP_DirOpenIcon, self.chooseProject)
         self.reloadButton = self._button("重新加载", QStyle.SP_BrowserReload, self.reloadProject)
@@ -95,22 +102,26 @@ class OperatorWindow(QWidget):
         self.viewingLabel.setWordWrap(True)
         self.returnRunButton.hide()
         self.viewingLabel.hide()
-        for button in (self.openButton, self.reloadButton, self.updateButton, self.targetsButton, self.startButton, self.stopButton):
+        for button in (self.openButton, self.reloadButton, self.updateButton, self.targetsButton):
             toolbar.addWidget(button)
-        layout.addLayout(toolbar)
+        technical.addLayout(toolbar)
+        self.hostControls = QHBoxLayout()
+        technical.addLayout(self.hostControls)
+        self.hostControls.addWidget(self.startButton)
+        self.hostControls.addWidget(self.stopButton)
         communicationRow = QHBoxLayout()
         communicationRow.addWidget(self.viewRunsButton)
         communicationRow.addWidget(self.returnRunButton)
         communicationRow.addWidget(self.viewingLabel, 1)
         communicationRow.addStretch()
         communicationRow.addWidget(self.communicationButton)
-        layout.addLayout(communicationRow)
+        technical.addLayout(communicationRow)
         self.message = QLabel("正在准备 Runtime")
         self.message.setTextFormat(Qt.PlainText)
         self.message.setWordWrap(True)
         self.message.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         self.message.setMaximumHeight(100)
-        layout.addWidget(self.message)
+        technical.addWidget(self.message)
         self.backButton = self._button("返回", QStyle.SP_ArrowBack, self.backFromTool)
         self.backButton.hide()
         layout.addWidget(self.backButton, 0, Qt.AlignLeft)
@@ -546,6 +557,8 @@ class OperatorWindow(QWidget):
             self.workflowTabs = None
             self.workflowControls.clear()
         if self.pages:
+            self._saveHistoryState(self.pages)
+            self._restoreHostTools()
             self.pageLayout.removeWidget(self.pages)
             self.pages.close()
             self.pages.deleteLater()
@@ -553,6 +566,38 @@ class OperatorWindow(QWidget):
         if self.hub:
             self.hub.deleteLater()
             self.hub = None
+
+    def _historyStateFor(self, pages):
+        context = pages.historyClient.context
+        scope = (context.runtime_instance_id, context.project_id, context.history_definition_revision)
+        if scope != self._historyViewContext:
+            self._historyViewContext = scope
+            self._historyViewState.clear()
+        return self._historyViewState
+
+    def _saveHistoryState(self, pages, workflowId=None):
+        self._historyStateFor(pages)[workflowId] = pages.historyReviewState()
+
+    def _restoreHistoryState(self, pages, workflowId=None):
+        state = self._historyStateFor(pages).get(workflowId)
+        if state is not None:
+            pages.restoreHistoryReviewState(state)
+
+    def _restoreHostTools(self):
+        if self.technicalHost.parentWidget() is self:
+            return
+        self.hostLayout.insertWidget(0, self.technicalHost)
+        self.hostControls.addWidget(self.startButton)
+        self.hostControls.addWidget(self.stopButton)
+        self.technicalHost.show()
+
+    def _attachHostTools(self):
+        if not self.pages.config.pageOrder:
+            return
+        self.pages.diagnostics.layout().insertWidget(0, self.technicalHost)
+        self.pages.hostControls.addWidget(self.startButton)
+        self.pages.hostControls.addWidget(self.stopButton)
+        self.technicalHost.show()
 
     def _showPages(self):
         document = self.controller.document
@@ -567,8 +612,10 @@ class OperatorWindow(QWidget):
                     runtimeInstanceId=self.controller.runtime.runtimeInstanceId, projectId=document.project.projectId,
                     presentation=document.presentation))
             self.pages.setCaptureCoverage(self.viewCoverage)
+            self._restoreHistoryState(self.pages)
             self.pages.banner.hide()
             self.pageLayout.addWidget(self.pages)
+            self._attachHostTools()
             self.pages.show()
             self._businessReady()
             return
@@ -587,8 +634,10 @@ class OperatorWindow(QWidget):
                 presentation=document.presentation),
             projectRoot=getattr(getattr(self.controller, 'runtime', None), 'loadedProjectPath', None))
         self.pages.setCaptureCoverage(self.sessionCoverage)
+        self._restoreHistoryState(self.pages)
         self.pages.banner.hide()
         self.pageLayout.addWidget(self.pages)
+        self._attachHostTools()
         self.pages.show()
         self._businessReady()
 
@@ -604,6 +653,7 @@ class OperatorWindow(QWidget):
     def _removeWorkflowPages(self, key):
         pages = self.workflowPages.pop(key, None)
         if pages:
+            self._saveHistoryState(pages, key)
             self.workflowControls[key]["layout"].removeWidget(pages)
             pages.close()
             pages.deleteLater()
@@ -619,6 +669,8 @@ class OperatorWindow(QWidget):
                 self.session = None
                 self.sessionCoverage = None
             if self.pages:
+                self._saveHistoryState(self.pages)
+                self._restoreHostTools()
                 self.pageLayout.removeWidget(self.pages)
                 self.pages.close()
                 self.pages.deleteLater()
@@ -661,6 +713,7 @@ class OperatorWindow(QWidget):
                                      presentation=self.controller.document.presentation),
                                  projectRoot=getattr(getattr(self.controller, 'runtime', None), 'loadedProjectPath', None))
             pages.setCaptureCoverage(self.workflowCoverages.get(key))
+            self._restoreHistoryState(pages, key)
             pages.banner.hide()
             self.workflowPages[key] = pages
             self.workflowControls[key]["layout"].addWidget(pages)
@@ -733,6 +786,14 @@ class OperatorWindow(QWidget):
             self.state.get("workflows", {}).get(key, {}).get("canStart", True) for key in self.selectedWorkflowIds))
         rows = self.state.get("workflows", {})
         multi = len(rows) > 1
+        document = self.controller.document if self.controller is not None else None
+        shell = document.presentation.shell if document is not None and document.presentation else None
+        showControls = shell is None or shell.showControls
+        self.startButton.setVisible(showControls)
+        self.stopButton.setVisible(showControls)
+        if self.pages:
+            failure = self.error or (self.state.get('message', '') if self.state.get('state') == 'FAULT' else '')
+            self.pages.setHostMessage(failure or self.viewNotice, problem=bool(failure))
         self.startButton.setText(f"开始（{len(self.selectedWorkflowIds)} 个流程）" if len(self.selectedWorkflowIds) > 1 else "开始")
         self.stopButton.setText("全部停止" if multi else "停止")
         self.stopButton.setEnabled(enabled and (any(row.get('activeJobIds') or row['jobId'] and not row['canLoad']
@@ -757,6 +818,8 @@ class OperatorWindow(QWidget):
         self.communicationButton.setEnabled(self.controller is not None and not self.closing)
         names = dict(READY="就绪", RUNNING="检测中", STOPPING="停止中", FAULT="故障")
         for key, controls in self.workflowControls.items():
+            controls["start"].setVisible(showControls)
+            controls["stop"].setVisible(showControls)
             row = rows.get(key, {})
             controls["start"].setEnabled(enabled and row.get("canStart", False))
             controls["stop"].setEnabled(enabled and bool(row.get('activeJobIds') or row.get("jobId")) and not row.get("canLoad", True))

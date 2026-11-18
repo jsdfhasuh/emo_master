@@ -243,6 +243,8 @@ message QueryHistoryPageRequest {
   string filter_text = 6;
   string order_by = 7;
   optional bool descending = 8;
+  optional string anchor_key_json = 9;
+  optional int32 anchor_step = 10;
 }
 message QueryHistoryAggregateRequest {
   HistoryContext context = 1;

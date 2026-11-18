@@ -23,7 +23,7 @@ def currentProductionProject(root, *, mode='single', autoStart=False, projectId=
     data = imageBytes(value)
     (root / 'input.png').write_bytes(data)
     payload = WorkflowStore().toPayload(root.name)
-    assert payload['schemaVersion'] == '2.9'
+    assert (payload['schemaVersion'], payload['presentation']['schemaVersion']) == ('2.10', '1.3')
     if projectId is not None:
         payload['project']['projectId'] = projectId
     payload['production'].update(mode=mode, autoStart=autoStart)

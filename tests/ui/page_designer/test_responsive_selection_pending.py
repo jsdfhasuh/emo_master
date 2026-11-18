@@ -86,7 +86,7 @@ def testPendingSelectionCommitRefreshesCanvasAndSavedMarker(responsivePage, dest
     assert editor.renderer.config == editor.store.snapshot()
     assert editor.renderer.pages[editor.pageId].verticalScrollBar().value() == 150
     rendered = _component(editor.renderer.config, editor.pageId, keys[1])
-    assert rendered.props.fontSize == 32
+    assert rendered.props.typography.value.size == 32
     assert rendered.props.title == 'Pending title accepted on selection'
     assert coordinator.session.dirty and coordinator.window.windowTitle() != cleanTitle
     assert len(coordinator.session._undo) == history + 1
@@ -96,4 +96,4 @@ def testPendingSelectionCommitRefreshesCanvasAndSavedMarker(responsivePage, dest
     assert coordinator.window.windowTitle() == cleanTitle
     coordinator.history(True)
     settle()
-    assert _component(editor.renderer.config, editor.pageId, keys[1]).props.fontSize == 32
+    assert _component(editor.renderer.config, editor.pageId, keys[1]).props.typography.value.size == 32

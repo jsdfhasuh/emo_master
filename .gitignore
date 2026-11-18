@@ -29,6 +29,10 @@ dist/
 *.sqlite3
 *.log
 
+# Empty schema fixture delivered with the page composition sample.
+!/examples/generic_page_composition/archive/history.sqlite3
+/examples/generic_page_composition/archive/images/
+
 # Editors and operating systems
 .idea/
 .vscode/

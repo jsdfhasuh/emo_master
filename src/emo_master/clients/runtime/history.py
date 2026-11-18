@@ -17,6 +17,10 @@ class HistoryImageRef:
     message: str = ''
 
 
+class HistoryImageExpired(ValueError):
+    """The selected record can be read again to obtain a fresh reference."""
+
+
 class HistoryClient:
     def __init__(self, call, *, runtimeInstanceId, projectId, presentation):
         self._invoke = call
@@ -78,17 +82,23 @@ class HistoryClient:
             order_by=arguments.get('orderBy', ''))
         if arguments.get('descending') is not None:
             request.descending = arguments['descending']
+        if arguments.get('anchorKey') is not None:
+            request.anchor_key_json = json.dumps(arguments['anchorKey'], allow_nan=False)
+            request.anchor_step = arguments.get('anchorStep', 0)
         value = self._payload(self.call('QueryHistoryPage', request))
         selections = tuple({key: HistoryImageRef(imageRef=ref.get('imageRef', ''),
             status=ref['status'], message=ref.get('message', '')) for key, ref in row['imageRefs'].items()}
             for row in value['rows'])
         return SqlitePage(tuple(column['name'] for column in value['columns']),
             tuple(tuple(row['values']) for row in value['rows']), value['page'], value['hasNext'],
-            selections, tuple(row['rowId'] if value['stableRowIdentity'] else '' for row in value['rows']))
+            selections, tuple(row['rowId'] for row in value['rows']),
+            tuple(tuple(row['keyValues']) for row in value['rows']),
+            value.get('selectedRowId'), value['stableRowIdentity'])
 
-    def readValue(self, componentId):
+    def readValue(self, componentId, *, filterColumn='', filterText=''):
         return self._payload(self.call('QueryHistoryAggregate', pb.QueryHistoryAggregateRequest(
-            context=self.context, component_id=componentId)))['value']
+            context=self.context, component_id=componentId,
+            filter_column=filterColumn, filter_text=filterText)))['value']
 
     def readImage(self, ref):
         if isinstance(ref, PathValueError):
@@ -104,6 +114,8 @@ class HistoryClient:
             request.component_id = ref.componentId
         reply = self.call('ReadHistoryImage', request)
         if not reply.ok:
+            if reply.code == 'E_HISTORY_IMAGE_EXPIRED':
+                raise HistoryImageExpired(reply.code + ': ' + reply.message)
             raise ValueError(reply.code + ': ' + reply.message)
         if reply.status != 'AVAILABLE':
             raise ValueError(reply.message or reply.status)
@@ -140,8 +152,8 @@ class LazyHistoryClient:
     def readPage(self, componentId, **arguments):
         return self._read('readPage', componentId, **arguments)
 
-    def readValue(self, componentId):
-        return self._read('readValue', componentId)
+    def readValue(self, componentId, **arguments):
+        return self._read('readValue', componentId, **arguments)
 
     def readImage(self, ref):
         return self._read('readImage', ref)

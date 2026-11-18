@@ -62,6 +62,11 @@ def validateBindings(
     def report(path: str, message: str, code: str = "binding_invalid") -> None:
         issues.append(Issue(path, code, message))
 
+    if presentation.shell and (logo := presentation.shell.logoResourceId):
+        asset = project.resources.items.get(logo) if project.resources else None
+        if asset is None or asset.purpose not in {'page_image', 'icon'}:
+            report('presentation.shell.logoResourceId', '页头标志需要有效的工程图片资源', 'resource_invalid')
+
     for scopeId, scopeDefinition in presentation.resultScopes.items():
         try:
             if scopeDefinition.entryWorkflowId not in project.workflows:
@@ -103,7 +108,7 @@ def validateBindings(
 
     accepted = {"image": {"image"}, "number": {"integer", "number"},
                 "text": {"integer", "number", "string", "boolean", "json"},
-                "indicator": {"boolean", "string"}, "table": {"collection"},
+                "indicator": {"integer", "boolean", "string"}, "table": {"collection"},
                 "runtime_status": {"string"}}
     for pageId, page in presentation.pages.items():
         pageComponents = {item.componentId: item for item in walkComponents(page.components)}
@@ -119,7 +124,19 @@ def validateBindings(
             static = ((component.type == "text" and bool(component.props.text))
                       or (component.type == "image" and (bool(component.props.imageResourceId)
                                                        or component.props.imagePath is not None))
-                      or component.type == "runtime_status")
+                      or component.type == "runtime_status" or component.props.recordValue is not None)
+            if ref := component.props.recordValue:
+                target = pageComponents.get(ref.componentId)
+                if target is None or target.type != 'sqlite_table':
+                    report(f'{path}.props.recordValue', '请选择同页历史来源')
+                elif ref.kind == 'field' and ref.field not in target.props.sqlite.columns:
+                    report(f'{path}.props.recordValue', '记录字段必须由历史来源声明')
+                elif ref.kind == 'meta' and ref.meta == 'count' and target.props.sqlite.aggregate != 'count':
+                    report(f'{path}.props.recordValue', '记录总数要求历史来源使用 count')
+            if historyView := component.props.historyView:
+                fields = (historyView.titleField, historyView.subtitleField, historyView.trailingField)
+                if any(field and field not in component.props.sqlite.columns for field in fields):
+                    report(f'{path}.props.historyView', '列表字段必须由历史来源声明')
             imagePath = component.props.imagePath
             if imagePath is not None:
                 imageLocation = f"{path}.props.imagePath"
@@ -165,6 +182,10 @@ def validateBindings(
                     report(path, "runtime status must use the platform status source")
             for event, action in component.actions.items():
                 actionPath = f"{path}.actions.{event}"
+                if action.componentId:
+                    target = pageComponents.get(action.componentId)
+                    if target is None or target.type != 'sqlite_table':
+                        report(actionPath, '历史动作需要同页历史来源')
                 if action.pageId and action.pageId not in presentation.pages:
                     report(actionPath, "navigation target missing", "navigation_invalid")
                 elif action.pageId and not set(page.targets) <= set(presentation.pages[action.pageId].targets):

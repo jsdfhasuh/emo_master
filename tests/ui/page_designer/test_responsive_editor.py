@@ -43,8 +43,12 @@ def responsivePage(designer, monkeypatch):  # noqa: F811
     assert editor.pageId is not None, editor.message.text()
     keys = [editor.tools.responsive.commands().place(editor.pageId, kind=kind)[0]
             for kind in ('text', 'number', 'text', 'number')]
-    coordinator.session.editPresentation(lambda p: setattr(p.pages[editor.pageId], 'layout',
-        ResponsiveLayout(direction='wrap', equalWidth=True)))
+    def configure(presentation):
+        page = presentation.pages[editor.pageId]
+        page.layout = ResponsiveLayout(direction='wrap', equalWidth=True)
+        for component in page.components:
+            component.responsive.preferredWidth = 240
+    coordinator.session.editPresentation(configure)
     editor.refresh()
     designer.resize(1500, 900)
     settle()
@@ -54,8 +58,8 @@ def responsivePage(designer, monkeypatch):  # noqa: F811
 def testNewPageUsesProxyCanvasAndWidthPreviewReflowsWithoutMutation(responsivePage):
     coordinator, editor, keys = responsivePage
     document = coordinator.session.document()
-    assert document.schemaVersion == '2.9'
-    assert document.presentation.schemaVersion == '1.2'
+    assert document.schemaVersion == '2.10'
+    assert document.presentation.schemaVersion == '1.3'
     assert editor.canvas.proxy.widget() is editor.renderer
     assert editor.renderer.config.pages[editor.pageId].layout.type == 'responsive'
     cards = dict(editor.renderer.cards[editor.pageId])
@@ -162,7 +166,7 @@ def testCrossContainerPlacementReordersAndSaveReopenRetainsLayout(responsivePage
     directory = tmp_path / 'responsive'
     assert coordinator.window.saveProjectToDirectory(str(directory))
     assert coordinator.window.loadProjectDirectory(str(directory))
-    assert coordinator.session.document().schemaVersion == '2.9'
+    assert coordinator.session.document().schemaVersion == '2.10'
     assert coordinator.session.document().presentation == ordered
 
 
@@ -346,7 +350,7 @@ def testPendingAppearanceResizeGhostMatchesAppliedGeometry(responsivePage, kind,
     viewport = editor.canvas.viewport()
     QTest.mousePress(viewport, Qt.LeftButton, Qt.NoModifier, start)
     assert editor.tools.responsive.resize is not None
-    assert _component(editor.store.snapshot(), editor.pageId, key).props.fontSize == 32
+    assert _component(editor.store.snapshot(), editor.pageId, key).props.typography.value.size == 32
     assert len(coordinator.session._undo) == history + 1
     accepted = editor.store.snapshot()
     # A narrower card must account for the newly accepted wrapped title.

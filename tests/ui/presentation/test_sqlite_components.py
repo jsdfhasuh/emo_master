@@ -51,6 +51,24 @@ def testMetadataPaginationFilteringAndQuotedNames(database):
     assert readPage(quoted).rows == (('quoted',),)
 
 
+def testHistoryViewAnchorsIgnoreNewRowsAndReturnActualPage(database):
+    with sqlite3.connect(database.databasePath) as connection:
+        connection.executemany('INSERT INTO "inspection log" VALUES (?, ?, ?, ?)',
+                                [(4, 'OK', 4.5, None), (5, 'OK', 5.5, None)])
+    view = database.model_copy(update={'table': 'summary', 'columns': ['value'], 'recordKey': 'id'})
+    first = readPage(view, pageSize=3)
+    assert first.keyValues == ((5,), (4,), (3,))
+    with sqlite3.connect(database.databasePath) as connection:
+        connection.execute('INSERT INTO "inspection log" VALUES (?, ?, ?, ?)', (6, 'OK', 6.5, None))
+    following = readPage(view, pageSize=3, anchorKey=first.keyValues[-1], anchorStep=1)
+    assert following.page == 1 and following.keyValues[following.rowIds.index(following.selectedRowId)] == (2,)
+    prior = readPage(view, pageSize=3, anchorKey=(2,), anchorStep=-1)
+    assert prior.selectedRowId == first.rowIds[-1] and prior.page == 1
+    with pytest.raises(ValueError, match='不在当前筛选'):
+        readPage(view, filterColumn='value', filterText='4.5', anchorKey=(3,))
+    assert not readPage(view.model_copy(update={'recordKey': None})).stableRowIdentity
+
+
 def testReadsNeverCreateDatabaseAndRejectStaleSelection(database, tmp_path):
     absent = tmp_path / 'absent.db'
     with pytest.raises(ValueError, match='不存在'):
@@ -106,6 +124,9 @@ def testNativeHistoryPagingFilteringSortingAndRefresh(qtApp, database):
     with sqlite3.connect(database.databasePath) as connection:
         connection.execute('DELETE FROM "inspection log" WHERE id=1')
     view.refreshButton.click()
+    waitRead(qtApp, view)
+    assert not view.model.rows and '不存在' in view.message.text()
+    view.review('history_first')
     waitRead(qtApp, view)
     assert view.model.rows[0][0] == 2
     assert not view.model.flags(view.model.index(0, 0)) & Qt.ItemIsEditable

@@ -1,14 +1,10 @@
-"""Draft renderer fixture; not an official Designer export or .emoproj."""
-import json
-import sys
-import zipfile
+"""Stage the current generated Designer sample for Web development."""
 from pathlib import Path
-sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'backend'))
-from emo_web_panel.mock_runtime import demo_panel
-panel=demo_panel()
-presentation={'pages':panel['pages']}
-manifest={'format':'emo-web-panel-1','projectId':'demo-project','packageRevision':'draft-1','panelContractVersion':'draft-unverified','rendererRequirements':[],'presentationFile':'presentation.json','assets':[]}
-path=Path(__file__).with_name('demo.emoweb')
-with zipfile.ZipFile(path,'w',compression=zipfile.ZIP_DEFLATED) as z:
- z.writestr('manifest.json',json.dumps(manifest));z.writestr('presentation.json',json.dumps(presentation))
-print(path)
+from shutil import copyfile
+
+
+directory = Path(__file__).resolve().parent
+source = directory.parents[1] / 'contracts/panel-contract-v1/sample-panels/demo.emoweb'
+destination = directory / 'demo.emoweb'
+copyfile(source, destination)
+print(destination)

@@ -73,7 +73,7 @@ def testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave(designer, monkeyp
     tools = editor.tools
     tools.fields['title'].setText('未按应用的标题')
     tools.fields['fontSize'].setValue(32)
-    tools.addExtraRow(values=('boolean', 'true', '保留判定文字', 'green'))
+    tools.addExtraRow(values=('boolean', 'true', '保留判定文字', 'green', 'soft'))
     monkeypatch.setattr(QInputDialog, 'getItem', lambda *a, **k: ('bind', True))
     history = len(coordinator.session._undo)
 
@@ -83,7 +83,7 @@ def testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave(designer, monkeyp
     assert event.dropAction() == (Qt.MoveAction if operation == 'move' else Qt.CopyAction)
     item = _component(editor.store.snapshot(), pageId, key)
     assert item.props.title == '未按应用的标题'
-    assert item.props.fontSize == 32
+    assert item.props.typography.value.size == 32
     assert item.props.indicatorStates['true'].text == '保留判定文字'
     assert len(coordinator.session._undo) == history + 2  # one form edit, one drop
     if operation == 'palette':
@@ -95,7 +95,7 @@ def testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave(designer, monkeyp
         assert item.layout.row > 0
     tools.select(key)
     assert tools.fields['title'].text() == item.props.title
-    assert tools.fields['fontSize'].value() == item.props.fontSize
+    assert tools.fields['fontSize'].value() == item.props.typography.value.size
     assert tools.extra.item(0, 2).text() == '保留判定文字'
     savedPresentation = editor.store.snapshot()
     directory = tmp_path / 'saved'
@@ -114,7 +114,7 @@ def testNativeDropRejectsInvalidPendingFormWithoutMutation(designer, monkeypatch
     tools = editor.tools
     tools.fields['title'].setText('保留未提交的标题')
     tools.fields['fontSize'].setValue(32)
-    tools.addExtraRow(values=('boolean', 'invalid boolean', '保留输入', 'green'))
+    tools.addExtraRow(values=('boolean', 'invalid boolean', '保留输入', 'green', 'soft'))
     dialogs = []
     monkeypatch.setattr(QInputDialog, 'getItem', lambda *a, **k: (dialogs.append('binding') or 'bind', True))
     before = coordinator.session.payload()

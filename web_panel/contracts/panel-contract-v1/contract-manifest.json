@@ -1,13 +1,13 @@
 {
   "panelContractVersion": "1.0",
-  "sdkVersion": "1.5.0",
-  "sourceSha": "d92ffd37960e8b8f527136151ab9ccb80054e78f",
+  "sdkVersion": "1.6.0",
+  "sourceSha": "82d05914bda9c0390a2f94bcf6b2794e59ff3484",
   "sourceDirty": true,
-  "projectSchemaVersion": "2.9",
-  "presentationSchemaVersion": "1.2",
+  "projectSchemaVersion": "2.10",
+  "presentationSchemaVersion": "1.3",
   "status": "complete",
   "sdkWheels": [
-    "python/emo_panel_protocol-1.5.0-py3-none-any.whl"
+    "python/emo_panel_protocol-1.6.0-py3-none-any.whl"
   ],
   "sampleValidation": {
     "model": "PASS",
@@ -26,7 +26,7 @@
       "byteSize": 784
     },
     "fixtures/history-aggregate.json": {
-      "sha256": "1bd35fc79e82935f1654f890c9e4121d5de56fc92afef02231649c981ea5a713",
+      "sha256": "6ea4e940cb4eccd2f7c432b98d2c9d6335ae4c632cc625dc747ae470de06b619",
       "byteSize": 145
     },
     "fixtures/history-image-available.json": {
@@ -46,8 +46,8 @@
       "byteSize": 48
     },
     "fixtures/history-page.json": {
-      "sha256": "d8972cf9adbe5cd7508fcae29ef67b7f1a4c170c4ea8e3ebf5038aa384460c6b",
-      "byteSize": 910
+      "sha256": "3204471cc34d292e1eabd6ff5b7e2d594f9b9d4a7dbdc801cef98e3e9d3066c8",
+      "byteSize": 996
     },
     "fixtures/history-revision-changed.json": {
       "sha256": "1d53e55e42ef56eea75651e958e19746819ec724bf77b5d4c710a6f5a017fb04",
@@ -66,11 +66,11 @@
       "byteSize": 239
     },
     "fixtures/preview-fixtures.json": {
-      "sha256": "f37556948415ec357b300bc5caf4ccf84dd5e3bce2866414a9dc6d5ca38b8ae0",
+      "sha256": "13c15f243e9627181fe35954b7bfb2a2f4fe3ce0b8000071d607a65ac0f28902",
       "byteSize": 311
     },
     "fixtures/preview-runtime.json": {
-      "sha256": "167dac4a4a8a7ef127a715ac21274ca63d58e19300e7215437e3bd7b6f9a76a1",
+      "sha256": "f18511bfcb53002c39853b019583a194ccc267de1e00fa656f15e666c2f49089",
       "byteSize": 506
     },
     "fixtures/realtime.json": {
@@ -114,24 +114,24 @@
       "byteSize": 277
     },
     "proto/runtime.proto": {
-      "sha256": "fc8b0f2cbf1367ed67d04eb9bb406fcda89915dfbf4f585abda5fa830e0695ed",
-      "byteSize": 36524
+      "sha256": "d4bd35d15a071a6eb54414216b8dacf3d8ab90c3fb5be239b1e27b3c3eba9920",
+      "byteSize": 37546
     },
-    "python/emo_panel_protocol-1.5.0-py3-none-any.whl": {
-      "sha256": "97db049bbbc86152f899af809c4e670b582e345b061f6a3e439d6722f5d33a6d",
-      "byteSize": 40265
+    "python/emo_panel_protocol-1.6.0-py3-none-any.whl": {
+      "sha256": "3df37d363906015f8beea9279584b3ff21ed49f6a40ae708bfd0b9993901b89f",
+      "byteSize": 42868
     },
     "README.md": {
-      "sha256": "1c9b8dd8d644ef705aca7882e6f66d69451ddd0d4d48648411ba9155d92409ee",
-      "byteSize": 26805
+      "sha256": "2cd8e813d70f30e3a7854a3babd75720f4b886357d661e89711595da51176eda",
+      "byteSize": 26807
     },
     "sample-panels/demo.emoweb": {
-      "sha256": "da6f55a962ea11758df0326587b9bc60d73eecb9d1723ced5fe10555471efc21",
-      "byteSize": 2403
+      "sha256": "f74fe069dac3a6f13d16ab5052ba95b704144f57d42fb72c26060a75babe556e",
+      "byteSize": 2522
     },
     "sample-panels/source/demo.emoproj": {
-      "sha256": "eaa4ef7665836951eb891ef6951fc7fa0a59f07715a0a87eada57714cb208de1",
-      "byteSize": 28943
+      "sha256": "8ab5871ce1ff44985999c9140d7665d4050d502893f1b16eea6919e2ab3265b2",
+      "byteSize": 33360
     },
     "sample-panels/source/demo.png": {
       "sha256": "a4ee2e10f34181b8f6856e44e232bfa58e69b95fecccdcd87fcc257cb0a8ffbc",
@@ -150,32 +150,40 @@
       "byteSize": 934
     },
     "schemas/history-page.schema.json": {
-      "sha256": "ce9a19af182e54839e8aa45b8ae93bf6f24a54f227d2ecae680a2fa61beb6774",
-      "byteSize": 3706
+      "sha256": "1b6bf9f5174a13821380bb953eee0a796f9cf411ca48634bc0499076483d2513",
+      "byteSize": 4458
     },
     "schemas/output-request-config.schema.json": {
       "sha256": "9698e3cbab534b3969ec58f24fb1106e8304b849b2bde2e63efbc1db246bd027",
       "byteSize": 6121
     },
     "schemas/panel-manifest.schema.json": {
-      "sha256": "cbc0f06939fd77a0ffa785cb37d91bbdad15a5a7eb12f980ea88d673b491bcf6",
-      "byteSize": 2900
+      "sha256": "c05cc0f72a68497a66072b107c50fdd4d139b9ee21a2a2bfaaa000b4c4dd1bea",
+      "byteSize": 2849
+    },
+    "schemas/presentation.schema.json": {
+      "sha256": "a8ddc31fa90d021d46e59b7903cc0dc1e08a1aefd72ba6a58283dfc757b3ceaa",
+      "byteSize": 40900
     },
     "schemas/preview-context.schema.json": {
       "sha256": "3888f20a87b7c1b03bfe48bd33c87ff057fe1a83edf0a7fabb8440ba2a84d450",
       "byteSize": 2466
     },
     "schemas/published-presentation.schema.json": {
-      "sha256": "1c8408ff12148aa9513c9fb1c131fbc817f43cc8e39a90b9aaf36e7e53440aac",
-      "byteSize": 23670
+      "sha256": "8af67fb2baefd3a98cafcf92f677bf1400fcb07e232f3eff789916a54724f4d0",
+      "byteSize": 38551
     },
     "schemas/runtime-rpc.schema.json": {
-      "sha256": "f26073798bba87fd523afd846cd05112d3f586e67420adbff8dbbdd1a389ac43",
-      "byteSize": 98172
+      "sha256": "d2e7eeed418a0dc2c3f09eaed196ce9ffc07920aa6372082b7375273a9d17860",
+      "byteSize": 99987
+    },
+    "theme.json": {
+      "sha256": "2012c1a1bf4361f40f2dbeea6e73ab9aaf505e7ae38c1d4a96953ad77c584437",
+      "byteSize": 793
     },
     "typescript/panel-contract.ts": {
-      "sha256": "67d7b815b301391d5a91694437f8ec20262e40bf094f0d91b6f4869e81b8daa7",
-      "byteSize": 32515
+      "sha256": "06e5955ecd861336a3c93e2e41061b12ba8f89a15d19a2224c6592815fefecf9",
+      "byteSize": 37703
     }
   }
 }

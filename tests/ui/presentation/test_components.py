@@ -15,7 +15,7 @@ from tests.ui.presentation.test_renderer import resultView
 
 def testStrictPropsDefaultsAndMappings():
     assert Props().pageSize==20 and Props().columns==[]
-    for invalid in ({'pageSize':101},{'indicatorStates':{'1':{'text':'OK'}}},
+    for invalid in ({'pageSize':101},{'indicatorStates':{'1.0':{'text':'OK'}}},
                     {'columns':[{'title':'x','fieldPath':['x'],'unknown':True}]}):
         with pytest.raises(ValueError):
             Props.model_validate(invalid)
@@ -35,10 +35,9 @@ def testBoundTextDisplaysStringsWithoutJsonQuotes(qtApp, tmp_path, value, expect
     window.close()
 
 
-def testSansUsesWindowsCjkSansFamily(qtApp, monkeypatch):
+def testCurrentTypographyUsesConfiguredLogicalPixels(qtApp):
     from emo_master.ui.presentation import renderer
-    monkeypatch.setattr(renderer.sys, 'platform', 'win32')
-    assert "font-family:'Microsoft YaHei UI'" in renderer.appearanceStyle(Props(fontFamily='sans'))
+    assert 'font-size:18px' in renderer.appearanceStyle(Props(typography={'value': {'size': 18}}))
 
 
 def testSpanningImageKeepsAdjacentScalarFooterCompact(qtApp, tmp_path):
@@ -75,7 +74,7 @@ def testCollectionPagingSortingEmptyAndNewIdentity(qtApp):
     widget.close()
 
 
-@pytest.mark.parametrize('value,expected',[('false','不合格'),('true','合格'),('null','—'),('"other"','未映射判定值: "other"')])
+@pytest.mark.parametrize('value,expected',[('false','不合格'),('true','合格'),('null','—'),('"other"','—')])
 def testIndicatorOnlyUsesExplicitValueNeverComplete(qtApp,tmp_path,value,expected):
     config=sampleProjectP3(tmp_path).presentation
     component=next(c for c in config.pages['overview'].components if c.type=='number')
@@ -183,7 +182,7 @@ def testImageSidebarTableFitsPreviewWithoutOuterScroll(qtApp, tmp_path, monkeypa
         Component(componentId='overlay', type='image', bindings={'image': 'image'},
                   layout=Placement(row=0, column=0, rowSpan=3, columnSpan=8)),
         Component(componentId='count', type='number', bindings={'value': 'count'},
-                  props=Props(title='Count', fontSize=18),
+                  props=Props(title='Count', typography={'value': {'size': 18}}),
                   layout=Placement(row=0, column=8, columnSpan=4)),
         Component(componentId='raw', type='image', bindings={'image': 'image'},
                   layout=Placement(row=1, column=8, columnSpan=4)),

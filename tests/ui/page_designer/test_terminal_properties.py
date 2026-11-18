@@ -40,7 +40,7 @@ def testQtPagePropertiesDoNotRewriteExistingTargets(designer, tmp_path, targets)
 
 def testNewDesignerPageStillDefaultsToQtDesktop(designer):  # noqa: F811
     coordinator, editor, _ = setupPage(designer)
-    assert coordinator.session.document().presentation.schemaVersion == '1.2'
+    assert coordinator.session.document().presentation.schemaVersion == '1.3'
     assert editor.store.snapshot().pages[editor.pageId].targets == ['desktop']
     assert not hasattr(editor.tools, 'pageTargets')
 

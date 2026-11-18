@@ -21,7 +21,10 @@
           "status": "AVAILABLE",
           "imageRef": "fixture-opaque-image-1"
         }
-      }
+      },
+      "keyValues": [
+        1
+      ]
     },
     {
       "rowId": "038966de9f6b9a901b20b4c6ca8b2a46009feebe031babc842d43690c0bc222b",
@@ -33,12 +36,15 @@
         "record-image": {
           "status": "EMPTY"
         }
-      }
+      },
+      "keyValues": [
+        2
+      ]
     }
   ],
   "page": 0,
   "pageSize": 20,
   "hasNext": false,
-  "historyDefinitionRevision": "ac6f154409d44008c9c7df03794003b979738c85dddb42887788070ea3d661ff",
+  "historyDefinitionRevision": "d0169cbc591d66c305ccd0e95873763ccb1f6903a281a712b43db84a44c5afef",
   "stableRowIdentity": true
 }

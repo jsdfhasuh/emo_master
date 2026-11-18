@@ -62,13 +62,12 @@ class PackageTests(unittest.TestCase):
             self.store.install(bundle(components=[{'id':'other','type':'text','props':{}}]))
         self.assertEqual(len(self.store.list()),1)
 
-    def test_actual_demo_fixture_installs_all_component_types(self):
-        from emo_web_panel.mock_runtime import demo_panel
-        demo=demo_panel()
-        installed=self.store.install(bundle(extras={
-            'presentation.json':json.dumps({'pages':demo['pages']}).encode()}))
-        types={c['type'] for c in installed['presentation']['pages'][0]['components']}
-        self.assertEqual(types,TYPES)
+    def test_actual_generated_demo_fixture_installs_current_package(self):
+        package = Path(__file__).resolve().parents[1] / 'contracts/panel-contract-v1/sample-panels/demo.emoweb'
+        installed = self.store.install(package.read_bytes())
+        self.assertEqual(installed['manifest']['sourcePresentationVersion'], '1.3')
+        self.assertEqual([page['id'] for page in installed['presentation']['pages']], ['live', 'history'])
+        self.assertIn('layout.expanded-canvas-v1', installed['manifest']['rendererRequirements'])
 
     def test_aggregate_is_allowlisted(self):
         for value in ['count','sum','avg','min','max']:

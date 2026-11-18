@@ -1,14 +1,14 @@
 # Panel Contract v1：Runtime 客户端与 Web 页面交接合同
 
-合同版本 `1.0`，当前 Python SDK 为 `emo_panel_protocol 1.5.0`。工程当前版本为
-`2.9` / Presentation `1.2`，发布快照为 `published-1`，ZIP 页面包为
+合同版本 `1.0`，当前 Python SDK 为 `emo_panel_protocol 1.6.0`。工程当前版本为
+`2.10` / Presentation `1.3`，发布快照为 `published-1`，ZIP 页面包为
 `emo-web-panel-1`（扩展名 `.emoweb`）。这些版本分别管理不同边界，不互相替代。
 
 2026-11-02 开发增量：SDK **1.3.0** 支持响应式根页面持久向上扩展，增加 `Page.canvasTop`
 及 `ResponsiveItem.canvasOffsetY`（默认 0，-32768..0），派生发布页同步保留。
-包声明 `layout.expanded-canvas-v1`，消费者检查根级、上下界及 Presentation 1.2；
+包声明 `layout.expanded-canvas-v1`，消费者检查根级、上下界及 Presentation 1.3；
 Web 以根部扩展空间和组件相对纵向偏移实现，保持响应式流占位与原有伸展规则。
-工程继续为 2.9 / 页面 1.2。生成脚本的样例包含向上扩展 96px 的标题。
+当前工程为 2.10 / 页面 1.3。生成脚本的样例包含向上扩展 96px 的标题。
 本增量交接以 manifest 的 `sourceSha`、`sourceDirty` 和文件摘要为准，未提交源码不标为干净发布。
 
 2026-10-31 的[固定交接入口](../handoffs/runtime-web-panel-v1/README.md)提供仓库内可直接下载的 ZIP、实现源码 SHA 和文件摘要。
@@ -29,7 +29,7 @@ python scripts/build_panel_contract.py
 正式交付可同时生成 ZIP，使用新的版本目录以保持历史产物可追溯：
 
 ```powershell
-python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.5.0 --archive build/panel-contract-v1-sdk-1.5.0.zip
+python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.6.0 --archive build/panel-contract-v1-sdk-1.6.0.zip
 ```
 
 `--archive` 归档前核对 manifest 的全部文件摘要，ZIP 仅包含这些文件及 manifest。
@@ -311,7 +311,7 @@ Dot 用独立 RPC 通道消费此配置，启动和断线重连时调用 `Previe
 协议和状态语义。真实浏览器、原生 Qt、冻结包、另一台电脑的连接与真实设备分别记录。
 本合同不把未执行的层级标为 PASS，不授权部署、安装、提交、推送或操作现场设备。
 
-## 独立 Web 编辑器输出请求（SDK 1.5.0）
+## 独立 Web 编辑器输出请求（SDK 1.6.0）
 
 能力 `output_requests_v1` 表示 Runtime 支持与页面无关的外部输出采集请求。
 以下 RPC 都在 RuntimeService 上；不使用 DisplayService.Prepare/Start 发布正式页面。

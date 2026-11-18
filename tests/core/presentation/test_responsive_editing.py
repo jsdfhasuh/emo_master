@@ -18,8 +18,8 @@ def sessionFor(components, direction='vertical'):
         'p': Page(name='Page', layout=ResponsiveLayout(direction=direction), components=components)
     }).model_dump(mode='json')
     session = ProjectEditSession(payload)
-    assert session.document().schemaVersion == '2.9'
-    assert session.document().presentation.schemaVersion == '1.2'
+    assert session.document().schemaVersion == '2.10'
+    assert session.document().presentation.schemaVersion == '1.3'
     return session, ResponsiveCommands(session)
 
 

@@ -25,7 +25,7 @@ require.extensions['.css']=()=>{};
 const button=name=>[...document.querySelectorAll('button')].find(x=>x.textContent.trim()===name);
 const alerts=()=>[...document.querySelectorAll('.alert')].map(x=>x.textContent);
 const value=()=>document.querySelector('[data-component-id="count"] .number')?.textContent.trim();
-const connectionText=()=>document.querySelector('.status')?.textContent;
+const connectionText=()=>document.querySelector('[aria-label="连接状态"]')?.textContent;
 async function waitFor(check,limit=3000){const end=Date.now()+limit;while(Date.now()<end){if(check())return;await act(async()=>{await new Promise(r=>setTimeout(r,10));});}assert.ok(check(),'UI condition timed out');}
 async function click(name){const el=button(name);assert.ok(el,`button ${name}`);assert.equal(el.disabled,false);await act(async()=>el.dispatchEvent(new MouseEvent('click',{bubbles:true})));}
 async function choose(job){await act(async()=>{const el=document.querySelector('select[aria-label="查看运行"]');assert.ok(el);el.value=job;el.dispatchEvent(new Event('change',{bubbles:true}));});}

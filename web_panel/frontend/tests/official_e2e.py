@@ -108,7 +108,7 @@ def main():
                     assert page.get_by_role('button', name='停止选中运行', exact=True).count() == 0
                     assert page.get_by_label('导入页面包', exact=True).count() == 0
                     page.get_by_role('button', name='冻结查看', exact=True).click()
-                    page.get_by_text('已冻结查看，后台仍在运行', exact=True).wait_for()
+                    page.get_by_text('已冻结查看', exact=True).wait_for()
                     page.get_by_role('button', name='恢复实时', exact=True).click()
                     page.screenshot(path=str(EVIDENCE / 'official-live-desktop.png'), full_page=True)
                     # Mutation denial must be server-side too, not just hidden controls.
@@ -126,20 +126,22 @@ def main():
                     expect(page.locator('section.panel-card > strong')).to_have_text('2')
                     assert history.get_by_role('columnheader').all_text_contents() == ['id', 'verdict']
                     loaded_image(page, 'img[src*="/history-images/fixed-image"]')
+                    selected_image = '[data-component-id="record-image"] img'
                     history.get_by_role('row').filter(has=page.get_by_role('cell', name='OK', exact=True)).click()
-                    loaded_image(page, 'img[src*="/history-images/record-image"]')
+                    loaded_image(page, selected_image)
                     history.get_by_role('button', name='刷新历史', exact=True).click()
                     expect(history.locator('tbody tr[aria-selected="true"]')).to_have_count(1)
-                    loaded_image(page, 'img[src*="/history-images/record-image"]')
+                    loaded_image(page, selected_image)
                     # EMPTY must retire the previously loaded selected-row image.
                     history.get_by_role('row').filter(has=page.get_by_role('cell', name='NG', exact=True)).click()
-                    expect(page.locator('img[src*="/history-images/record-image"]')).to_have_count(0)
+                    expect(page.locator(selected_image)).to_have_count(0)
                     page.get_by_label('查看运行', exact=True).select_option('')
                     expect(history.locator('tbody tr')).to_have_count(2)
                     history.get_by_label('records 筛选列', exact=True).select_option('verdict')
                     history.get_by_label('records 筛选', exact=True).fill('NG')
+                    history.get_by_role('button', name='筛选', exact=True).click()
                     expect(history.locator('tbody tr')).to_have_count(1)
-                    history.get_by_label('records 筛选', exact=True).fill('')
+                    history.get_by_role('button', name='清除', exact=True).click()
                     expect(history.locator('tbody tr')).to_have_count(2)
                     page.screenshot(path=str(EVIDENCE / 'official-history-desktop.png'), full_page=True)
                     page.set_viewport_size({'width':390, 'height':844})

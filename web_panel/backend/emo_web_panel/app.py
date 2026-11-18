@@ -184,7 +184,7 @@ def create_app(config: Config, runtime=None, gateway_log=None):
                            **(getattr(req.state, 'asset_diagnostic', {}) if response.status_code >= 400 else {}))
         return response
     @app.get('/api/health')
-    async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':'1.5.0','preview':config.preview,'localNoAuth':config.local_no_auth}
+    async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':'1.6.0','preview':config.preview,'localNoAuth':config.local_no_auth}
     @app.post('/api/local/session')
     async def local_session(req:Request):
         if not config.local_no_auth:raise HTTPException(404,'Local passwordless mode is disabled')
@@ -566,7 +566,8 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         resources.release_owner('view:'+vid)
         return views.resume(v)
     @app.get('/api/views/{vid}/history/{component_id}')
-    async def history(vid:str,component_id:str,req:Request,page:int=1,pageSize:int=10,q:str='',sort:str='',order:str='asc',filterColumn:str=''):
+    async def history(vid:str,component_id:str,req:Request,page:int=1,pageSize:int=10,q:str='',sort:str='',order:str='asc',
+                      filterColumn:str='',anchorKeyJson:str='',anchorStep:int=0,aggregate:bool=False):
         who=await identity(req);v=views.get(vid,who['userId']);p=v['presentation']
         await package_access(who,v['panelId'],v['runtimeId'])
         def find(cs):
@@ -576,12 +577,23 @@ def create_app(config: Config, runtime=None, gateway_log=None):
                 if nested:return nested
         component=next((found for page in p['pages'] if (found:=find(page['components']))),None)
         if not component:raise HTTPException(404,'Undeclared history source')
-        if not 1<=page<=10000 or not 1<=pageSize<=100:raise HTTPException(422,'Invalid page')
+        if not 1<=pageSize<=100 or (not anchorKeyJson and not 1<=page<=10000):
+            raise HTTPException(422,'Invalid page')
+        if anchorKeyJson:
+            page = 1
+        if anchorStep not in {-1,0,1} or (anchorStep and not anchorKeyJson):
+            raise HTTPException(422,'历史翻条参数无效')
         client=await client_for(who,v['runtimeId'])
         props=component.get('props',{})
+        kind = 'aggregate' if component['type']=='sqlite_value' or aggregate else 'table'
         if p.get('officialPresentation'):
-            return await client.history(component_id,page,pageSize,q=q,sort=sort,order=order,filter_column=filterColumn,context=v['historyContext'],kind='aggregate' if component['type']=='sqlite_value' else 'table')
-        return await client.history(component_id,page,pageSize,q=q,sort=sort or 'id',order=order,aggregation=props.get('aggregation',props.get('aggregate','count')),field=props.get('aggregateField','measurement'),follow_filter=props.get('followsFilter',False))
+            return await client.history(component_id,page,pageSize,q=q,sort=sort,order=order,
+                filter_column=filterColumn,context=v['historyContext'],kind=kind,
+                anchor_key_json=anchorKeyJson,anchor_step=anchorStep)
+        return await client.history(component_id,page,pageSize,q=q,sort=sort or 'id',order=order,
+            filter_column=filterColumn,aggregation=props.get('aggregation',props.get('aggregate','count')),
+            field=props.get('aggregateField','measurement'),follow_filter=props.get('followsFilter',False),
+            kind=kind,anchor_key_json=anchorKeyJson,anchor_step=anchorStep)
     async def mock_image(who,rid,image_ref):
         client=await client_for(who,rid)
         if not isinstance(client,MockRuntime) or image_ref!='demo-image':raise HTTPException(404,'Unknown opaque image reference')
@@ -621,8 +633,17 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         await package_access(who,v['panelId'],v['runtimeId']);client=await client_for(who,v['runtimeId'])
         component=view_component(v,component_id)
         if not component or component['type']!='image' or not component.get('history'):raise HTTPException(404,'History image not declared')
-        data,mime,status=await client.history_image(component_id=None if imageRef else component_id,image_ref=imageRef or None,context=v['historyContext'])
-        if status!='AVAILABLE':raise HTTPException(404,{'status':status,'message':'History image unavailable'})
+        if isinstance(client,MockRuntime):
+            return await mock_image(who,v['runtimeId'],imageRef)
+        try:
+            data,mime,status=await client.history_image(component_id=None if imageRef else component_id,
+                image_ref=imageRef or None,context=v['historyContext'])
+        except RuntimeRejected as error:
+            if error.code != 'E_HISTORY_IMAGE_EXPIRED':
+                raise
+            return JSONResponse({'detail':str(error),'code':error.code},status_code=410)
+        if status!='AVAILABLE':
+            raise HTTPException(404,'所选记录的图片不可用')
         return Response(data,media_type=mime)
     @app.get('/api/views/{vid}/assets/{source_id}')
     async def bound_result_image(vid:str,source_id:str,req:Request,scope:str,resultKey:str):
@@ -705,11 +726,24 @@ def create_app(config: Config, runtime=None, gateway_log=None):
             item=await asyncio.to_thread(packages.get,pid)
             project=item['manifest']['projectId']
             if b.get('projectId',project)!=project:raise HTTPException(409,'Package and selected project differ')
-            # Validate every target before the one SQLite activation transaction.
+            official='officialPresentation' in item
+            connections=[]
             for rid in rids:
-                client=await client_for(who,rid)
-                if (await client.info())['projectId']!=project:raise HTTPException(409,'Package project does not match target Runtime formal project')
+                client=await client_for(who,rid,'control' if official else 'view')
+                info=await client.info()
+                if info['projectId']!=project:raise HTTPException(409,'Package project does not match target Runtime formal project')
+                requirements=item['manifest'].get('rendererRequirements',())
+                if {'history.query-v1','history.image-v1'}.intersection(requirements) and \
+                        item['manifest']['historyDefinitionRevision']!=info.get('historyDefinitionRevision'):
+                    raise HTTPException(409,'页面包历史定义与当前 Runtime 工程不同，请重新发布')
+                connections.append((rid,client,info))
+            publications=[]
+            if official:
+                for rid,client,info in connections:
+                    publications.append(await app.state.editor.synchronize_package(rid,project,client,info,item))
             result=await asyncio.to_thread(packages.activate_many,pid,rids,project)
+            for publication in publications:
+                await asyncio.to_thread(app.state.editor.mark_published,publication)
             await asyncio.to_thread(auth.audit,who['username'],'activate_package',json.dumps({'packageId':pid,'runtimeIds':rids,'projectId':project}), 'succeeded')
             for v in views.views.values():
                 if v['runtimeId'] in rids and v.get('projectId')==project:

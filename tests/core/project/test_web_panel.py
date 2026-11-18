@@ -14,10 +14,10 @@ def panelDocument(root):
     Image.new('RGB', (5, 5), 'blue').save(root / 'logo.png')
     data = (root / 'logo.png').read_bytes()
     payload = WorkflowStore().toPayload()
-    payload['schemaVersion'] = '2.9'
+    payload['schemaVersion'] = '2.10'
     payload['resources']['items']['logo'] = dict(path='logo.png', sha256=hashlib.sha256(data).hexdigest(),
         size=len(data), purpose='page_image')
-    payload['presentation'] = dict(schemaVersion='1.2', defaultPageId='local', pageOrder=['local', 'web'], pages=dict(
+    payload['presentation'] = dict(schemaVersion='1.3', defaultPageId='local', pageOrder=['local', 'web'], pages=dict(
         local=dict(name='Desktop', components=[]), web=dict(name='Panel', targets=['web'], components=[
             dict(componentId='logo', type='image', props=dict(imageResourceId='logo')),
             dict(componentId='rows', type='sqlite_table', props=dict(sqlite=dict(location='runtime',

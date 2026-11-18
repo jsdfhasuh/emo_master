@@ -59,7 +59,7 @@ class GrpcRuntimeClient:
             from emo_panel_protocol.connection import ConnectionProfile, createChannel
             from emo_panel_protocol.generated import runtime_pb2, runtime_pb2_grpc
         except ImportError as exc:
-            raise ContractUnavailable('Install the supplied emo_panel_protocol 1.5.0 SDK and its declared dependencies') from exc
+            raise ContractUnavailable('Install the supplied emo_panel_protocol 1.6.0 SDK and its declared dependencies') from exc
         self.pb = runtime_pb2
         profile = ConnectionProfile(self.address, self.timeout, self.max_receive_bytes)
         if self.preview_context is not None:
@@ -128,7 +128,7 @@ class GrpcRuntimeClient:
                 'historyDefinitionRevision': info.history_definition_revision,
                 'productionMode': info.production_mode, 'productionExecutionMode': info.production_execution_mode,
                 'startupWorkflowIds': list(info.startup_workflow_ids), 'capabilities': list(info.capabilities),
-                'contractStatus': 'panel-contract-1.0-sdk-1.5.0'}
+                'contractStatus': 'panel-contract-1.0-sdk-1.6.0'}
 
     async def _output_request(self, method, body=None):
         body = body or {}
@@ -546,9 +546,12 @@ class GrpcRuntimeClient:
                                       history_definition_revision=info.history_definition_revision)
 
     async def history(self, component_id, page, page_size, *, q='', sort='', order='asc', context=None,
-                      kind='table', filter_column='', aggregation='count', field='', follow_filter=False):
+                      kind='table', filter_column='', aggregation='count', field='', follow_filter=False,
+                      anchor_key_json='', anchor_step=0):
         from emo_panel_protocol.messages import HistoryPage, HistoryAggregate
         ctx = await self._history_context(context)
+        if anchor_key_json:
+            page = 1
         if not 1 <= page <= 10000 or not 1 <= page_size <= 100 or order not in {'asc', 'desc'}:
             raise ValueError('Invalid history page/sort')
         if kind == 'aggregate':
@@ -558,8 +561,10 @@ class GrpcRuntimeClient:
         else:
             reply = self._ok(await self.runtime.QueryHistoryPage(self.pb.QueryHistoryPageRequest(context=ctx,
                 component_id=component_id, page=page-1, page_size=page_size, filter_column=filter_column,
-                filter_text=q, order_by=sort, descending=order == 'desc'), timeout=self.timeout))
-            value = HistoryPage.model_validate_json(reply.result_json).model_dump(mode='json')
+                filter_text=q, order_by=sort, descending=order == 'desc',
+                anchor_key_json=anchor_key_json, anchor_step=anchor_step), timeout=self.timeout))
+            # Preserve null cells inside values while omitting absent selectedRowId.
+            value = HistoryPage.model_validate_json(reply.result_json).model_dump(mode='json', exclude_none=True)
         if value['historyDefinitionRevision'] != ctx.history_definition_revision:
             raise RuntimeRejected('E_HISTORY_REVISION_CHANGED', 'History reply revision changed')
         return value

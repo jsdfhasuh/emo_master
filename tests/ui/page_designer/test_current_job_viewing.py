@@ -127,7 +127,7 @@ def testNormalEntryDoesNotMigrateWithoutExplicitEnable(qtApp, monkeypatch, tmp_p
     monkeypatch.delenv('EMO_PAGE_DESIGNER', raising=False)
     monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.No)
     window = MainWindow(Client())
-    assert window.pageCoordinator.session.document().schemaVersion == '2.9'
+    assert window.pageCoordinator.session.document().schemaVersion == '2.10'
     saveProject(tmp_path, legacyPayload())
     assert window.loadProjectDirectory(str(tmp_path), confirmed=True)
     coordinator = window.pageCoordinator
@@ -557,7 +557,8 @@ def testLocalDataRestoresPagesOmittedByWorkflowObservationBeforeReading(designer
     observer.source.setCurrentIndex(2)
     waitFor(lambda: not preview.busy and not preview.closing)
     assert observer.config == coordinator.session.presentation.snapshot()
-    assert observer.pageNavigation.picker.findData('local-history') >= 0
+    tabs = observer.pageNavigation.tabs
+    assert 'local-history' in [tabs.tabData(i) for i in range(tabs.count())]
     assert reads == []
     assert client.calls == calls
     database = observer.widgets['overview']['overview-local'][1]

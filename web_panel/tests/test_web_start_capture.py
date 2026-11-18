@@ -34,7 +34,7 @@ def run_independent_capture_server(root):
             pages={'qt': {'name': 'Qt deleted binding', 'targets': ['desktop'],
                 'components': [{'componentId': 'qt-number', 'type': 'number', 'bindings': {'value': 'stale-qt'}}]}})
         document = ProjectDocument.model_validate(payload)
-        assert document.schemaVersion == '2.9' and document.presentation.schemaVersion == '1.2'
+        assert document.schemaVersion == '2.10' and document.presentation.schemaVersion == '1.3'
         saveProject(path, document.model_dump(mode='json'))
         restored = loadProjectDocument(path)
         assert restored == document

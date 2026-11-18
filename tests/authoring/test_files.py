@@ -48,8 +48,8 @@ def test_upload_revisions_replacement_and_undo_keep_old_bytes(services):
     root = drafts.get_draft(state["draftId"]).directory
     first_path = root / resource["path"]
     assert first_path.read_bytes() == b"image bytes"
-    assert state["project"]["schemaVersion"] == "2.9"
-    assert state["project"]["presentation"]["schemaVersion"] == "1.2"
+    assert state["project"]["schemaVersion"] == "2.10"
+    assert state["project"]["presentation"]["schemaVersion"] == "1.3"
     with files.snapshot_zip(state["draftId"], state["draftRevision"]) as (candidate, snapshot):
         replaced = _upload(files, state, b"replacement bytes", resource_id=uploaded["resourceId"])
         current = drafts.read(state["draftId"])
@@ -127,7 +127,7 @@ def test_fixed_export_roundtrip_does_not_save_or_package_logs(services):
     assert imported_payload == original_payload
     assert not imported["missingInputs"]
     imported_root = drafts.get_draft(imported["draftId"]).directory
-    assert loadProjectDocument(imported_root / "project.emoproj").schemaVersion == "2.9"
+    assert loadProjectDocument(imported_root / "project.emoproj").schemaVersion == "2.10"
     with zipfile.ZipFile(io.BytesIO(frozen)) as archive:
         resource_path = state["project"]["resources"]["items"][uploaded["resourceId"]]["path"]
         assert set(archive.namelist()) == {"project.emoproj", resource_path}

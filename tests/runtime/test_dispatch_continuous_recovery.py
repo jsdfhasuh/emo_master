@@ -20,7 +20,7 @@ def testContinuousConsumerImagesSurviveStopAndRestartInSameRuntime(runtime, tmp_
     payload = demoProject(tmp_path).model_dump(mode="json")
     payload["devices"]["definitions"]["camera"]["defaults"]["exposureUs"] = 1_000_000
     document = ProjectDocument.model_validate(payload)
-    assert document.schemaVersion == "2.9" and document.presentation.schemaVersion == "1.2"
+    assert document.schemaVersion == "2.10" and document.presentation.schemaVersion == "1.3"
     assert document.runtime.maxConcurrentJobs == 2
     path = tmp_path / "continuous-dispatch.emoproj"
     saveProject(path, document.model_dump(mode="json"))

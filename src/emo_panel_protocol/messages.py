@@ -38,6 +38,7 @@ class HistoryRow(Model):
     rowId: str
     values: list[Scalar]
     imageRefs: dict[Id, HistoryImageReference] = Field(default_factory=dict)
+    keyValues: list[Scalar]
 
 
 class HistoryPage(Model):
@@ -48,13 +49,19 @@ class HistoryPage(Model):
     hasNext: bool
     historyDefinitionRevision: Revision
     stableRowIdentity: bool
+    selectedRowId: str | None = None
 
     @model_validator(mode='after')
     def checkRows(self):
         if any(len(row.values) != len(self.columns) for row in self.rows):
             raise ValueError('history row width must match columns')
-        if self.stableRowIdentity and any(not row.rowId for row in self.rows):
-            raise ValueError('stable row identity requires nonempty row IDs')
+        if self.stableRowIdentity and any(
+                not row.rowId or not row.keyValues or any(value is None for value in row.keyValues)
+                for row in self.rows):
+            raise ValueError('stable history rows require row IDs and nonempty key values')
+        if self.selectedRowId is not None and (
+                not self.stableRowIdentity or sum(row.rowId == self.selectedRowId for row in self.rows) != 1):
+            raise ValueError('history selection must identify a unique row on the page')
         return self
 
 

@@ -3,8 +3,8 @@
   "mode": "runtime",
   "readOnly": true,
   "projectId": "panel-contract-demo",
-  "packageRevision": "752ef880fa2c54278189017b66a09d2cbfe31f3a92317852f1cb6043001e6bc1",
-  "historyDefinitionRevision": "ac6f154409d44008c9c7df03794003b979738c85dddb42887788070ea3d661ff",
+  "packageRevision": "6e4aeec72e94a849714bdccf54d15262a40f1c5b7289ba1302614dc8f3db3e09",
+  "historyDefinitionRevision": "d0169cbc591d66c305ccd0e95873763ccb1f6903a281a712b43db84a44c5afef",
   "runtime": {
     "target": "192.0.2.10:50051",
     "timeoutSeconds": 5.0,

@@ -27,7 +27,7 @@ def loadStopProject(service, client, tmp_path, dispatch):
         workflow["layout"]["nodePositions"].pop("dispatch")
         payload["presentation"] = WorkflowStore().toPayload()["presentation"]
     document = ProjectDocument.model_validate(payload)
-    assert document.schemaVersion == "2.9" and document.presentation.schemaVersion == "1.2"
+    assert document.schemaVersion == "2.10" and document.presentation.schemaVersion == "1.3"
     path = tmp_path / "stop-receipts.emoproj"
     saveProject(path, document.model_dump(mode="json"))
     assert loadProjectDocument(path) == document

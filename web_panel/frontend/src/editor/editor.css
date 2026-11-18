@@ -3,3 +3,22 @@
 
 .editor-preview-scroll{overflow:auto;max-width:100%}.editor-preview-terminal{min-width:240px;background:#111e2b}.editor-preview-size{font-size:12px;color:#99afc4}
 .editor-draft-conflict{margin:12px 0;padding:14px;border:1px solid #b99453;border-radius:8px;background:#2b291f}.editor-draft-conflict h2{font-size:16px;margin-top:0}.editor-draft-conflict p{font-size:12px;overflow-wrap:anywhere}.editor-draft-conflict details{margin:12px 0}.editor-draft-conflict label{display:block;margin-top:10px}.editor-draft-conflict textarea{display:block;width:100%;min-height:180px;max-height:360px;resize:vertical;font-family:monospace;font-size:11px}.editor-draft-conflict button{margin:4px 8px 4px 0}
+
+.editor-canvas .editor-component{border:0;background:transparent;border-radius:0;padding:0}
+.editor-canvas .editor-component:hover{outline:1px dashed var(--panel-border);outline-offset:1px}
+.editor-canvas .editor-component.selected,.editor-canvas .editor-component:focus-visible{outline:2px solid var(--panel-primary);outline-offset:2px}
+.editor-canvas .editor-container{min-height:0;border:0;padding:0}
+.editor-canvas .editor-container:empty{position:absolute;inset:0}
+.editor-canvas .editor-component p,.editor-canvas .editor-component h2{margin:0}
+.editor-canvas .editor-component h3{margin:0 0 8px}
+.editor-canvas .editor-component.is-spacer{min-height:0!important}
+.editor-canvas .editor-component.is-spacer:hover{outline-style:dashed}
+.editor-canvas .editor-nav-button{min-height:32px;background:var(--panel-surface);border-color:var(--panel-border);padding:6px 10px}
+.editor-canvas .editor-nav-button.panel-action-primary{background:var(--panel-primary);border-color:var(--panel-primary);color:white}
+.editor-canvas .editor-nav-button.panel-action-link{background:transparent;border-color:transparent;color:var(--panel-primary)}
+.editor-canvas .editor-component .editor-resize{position:absolute;right:-1px;bottom:-1px;padding:0;color:white;background:#268ab0;border:0}
+.editor-preview .preview-shell{color:var(--panel-text);margin:0;border-color:var(--panel-border)}
+.editor-preview .editor-preview-header>.operator-nav{background:var(--panel-page);padding-bottom:8px}
+.editor-preview .editor-preview-header>.operator-nav button{color:var(--panel-text);background:var(--panel-surface);
+    border-color:var(--panel-border);padding:6px 10px}
+.editor-preview .editor-preview-header>.operator-nav button[aria-current=page]{color:var(--panel-primary);background:var(--panel-blue-soft)}

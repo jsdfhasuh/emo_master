@@ -181,6 +181,9 @@ def requiredProjectChanges(online, local, selected, *, deviceTypes=None, operato
             if "resourceId" in binding:
                 require(("resources", "items", binding["resourceId"]), "resource binding")
         presentation = candidate.get("presentation") or {}
+        logo = (presentation.get("shell") or {}).get("logoResourceId")
+        if logo:
+            require(("resources", "items", logo), "presentation/shell")
         def scope(key, owner):
             if key:
                 require(("presentation", "resultScopes", key), owner)

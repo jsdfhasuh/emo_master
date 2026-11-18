@@ -49,7 +49,7 @@ def node(state, node_id):
 def test_complete_blank_independent_saved_restart_and_detached_reads(drafts, tmp_path):
     first, other = drafts.create("First"), drafts.create("Other")
     project = first["project"]
-    assert project["schemaVersion"] == "2.9" and project["presentation"]["schemaVersion"] == "1.2"
+    assert project["schemaVersion"] == "2.10" and project["presentation"]["schemaVersion"] == "1.3"
     assert project["devices"]["definitions"] == {} and "communication" not in project
     assert {"resources", "production", "globalVariables", "runtime", "dependencies"} <= set(project)
     before = deepcopy(project["project"])

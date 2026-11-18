@@ -1,5 +1,4 @@
 """Structural/resource acceptance only: no hardware/model inference is started."""
-from copy import deepcopy
 import hashlib
 import importlib.util
 import json
@@ -14,7 +13,6 @@ from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.apps.runtime.workflow.runner import WorkflowRunner
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.apps.designer.state.project_store import loadProjectDocument
-from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.project.runtime_directory import prepareRuntimeProject
 from emo_master.core.project.runtime_package import buildRuntimePackage, installRuntimePackage, trustedDeviceTypes
@@ -25,10 +23,16 @@ ROOT = Path(__file__).resolve().parents[2]
 EXAMPLE = ROOT / "examples/hardware_trigger_normal_fixture"
 
 
+def fixtureModule():
+    spec = importlib.util.spec_from_file_location("hardware_fixture", EXAMPLE / "build_project.py")
+    fixture = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fixture)
+    return fixture
+
+
 def sourceProject(tmp_path):
     source = tmp_path / "source"
     source.mkdir()
-    payload = json.loads((EXAMPLE / "project.json").read_text(encoding="utf-8"))
     for station in (1, 2):
         filename = f"station{station}_reference.txt"
         (source / filename).write_bytes((EXAMPLE / filename).read_bytes())
@@ -36,29 +40,33 @@ def sourceProject(tmp_path):
     # files/paths/hashes; it cannot establish ONNX or old-algorithm equivalence.
     for model in ("a", "b", "holes"):
         (source / f"{model}.onnx").write_bytes(f"fixture model boundary: {model}".encode())
-    (source / "project.json").write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    document = fixtureModule().writeProject(source / "project.json")
     scan = PluginRegistry(__version__).scan(ROOT / "src/emo_master/plugins")
     assert not scan.rejectedOperators
-    return source, ProjectDocument.model_validate(payload), scan.activeOperators
+    return source, document, scan.activeOperators
 
 
 def testGeneratedFixtureMatchesCurrentManagedSource(tmp_path):
-    spec = importlib.util.spec_from_file_location("hardware_fixture", EXAMPLE / "build_project.py")
-    fixture = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(fixture)
-    payload = json.loads((EXAMPLE / "project.json").read_text(encoding="utf-8"))
-    source = deepcopy(payload)
+    fixture = fixtureModule()
+    source = json.loads((EXAMPLE / "project.json").read_text(encoding="utf-8"))
     for workflow in source["workflows"].values():
         for node in workflow["nodes"]:
             if node["kind"] == "operator":
                 for field in ("inputPorts", "outputPorts", "paramSchema"):
                     node.pop(field)
-    # Keep the committed 2.7 acceptance input unchanged; new outputs use the
-    # current format and must preserve that input's business/device structure.
-    upgraded = migrateProjectPayload(source, enableRemotePresentation=True)
+    # The historical fixture is evidence for the workflow and page composition.
+    # Its retired appearance defaults are outside this comparison.
+    for page in source["presentation"]["pages"].values():
+        for component in page["components"]:
+            for field in ("fontFamily", "fontSize", "fontWeight", "textColor", "cardStyle"):
+                component["props"].pop(field, None)
+    baseline = ProjectDocument.model_validate(source)
     generated = ProjectDocument.model_validate(fixture.buildProject())
-    assert generated.model_dump() == upgraded
-    assert generated.schemaVersion == "2.9" and generated.presentation.schemaVersion == "1.2"
+    assert generated.model_dump(exclude={"schemaVersion", "presentation"}) == baseline.model_dump(
+        exclude={"schemaVersion", "presentation"})
+    for field in ("defaultPageId", "pageOrder", "navigation", "pages", "dataSources", "resultScopes"):
+        assert getattr(generated.presentation, field) == getattr(baseline.presentation, field)
+    assert generated.schemaVersion == "2.10" and generated.presentation.schemaVersion == "1.3"
     destination = tmp_path / "generated.emoproj"
     written = fixture.writeProject(destination)
     assert loadProjectDocument(destination) == written
@@ -83,7 +91,7 @@ def testFixtureSaveReloadExportRelocationAndCoordinateAdmission(tmp_path):
     with zipfile.ZipFile(package) as archive:
         manifest = json.loads(archive.read("manifest.json"))
         exported = ProjectDocument.model_validate_json(archive.read("project.json"))
-        assert exported.schemaVersion == "2.7"
+        assert (exported.schemaVersion, exported.presentation.schemaVersion) == ("2.10", "1.3")
         assert exported.devices == document.devices
         assert len(exported.devices.definitions) == 8
         assert exported.globalVariables == document.globalVariables

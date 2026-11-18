@@ -136,7 +136,7 @@ def testActualDesignerOpenParametersSaveReopenAndCompile(runtime, tmp_path, owne
         editor.forceClose()
     assert window.saveProjectToDirectory(str(path))
     saved = loadProjectDocument(path)
-    assert saved.schemaVersion == "2.9" and saved.devices.definitions == {}
+    assert saved.schemaVersion == "2.10" and saved.devices.definitions == {}
     assert saved.presentation is not None and saved.resources is not None and saved.production is not None
     WorkflowCompiler(operatorRegistry=_registry()).compile(saved)
     assert window.loadProjectDirectory(str(path), confirmed=True)

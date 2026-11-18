@@ -14,6 +14,7 @@ import zipfile
 
 import httpx
 from PIL import Image
+import pytest
 
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
 from emo_master.apps.designer.state.project_store import loadProjectDocument
@@ -117,7 +118,7 @@ def test_http_export_opens_edits_saves_and_compiles_in_native_designer(
         archive.extractall(destination)
     project_path = destination / "project.emoproj"
     original = loadProjectDocument(project_path)
-    assert original.schemaVersion == "2.9" and original.presentation.schemaVersion == "1.2"
+    assert original.schemaVersion == "2.10" and original.presentation.schemaVersion == "1.3"
     assert verifyResources(original, destination)[uploaded["resourceId"]]
 
     from emo_master.apps.designer.ui.main_window import _nativeQt
@@ -142,7 +143,7 @@ def test_http_export_opens_edits_saves_and_compiles_in_native_designer(
     assert not window.pageCoordinator.session.dirty
 
     edited = loadProjectDocument(project_path)
-    assert edited.schemaVersion == "2.9" and edited.presentation.schemaVersion == "1.2"
+    assert edited.schemaVersion == "2.10" and edited.presentation.schemaVersion == "1.3"
     assert edited.project.projectId == original.project.projectId
     assert edited.workflows["main"].name == "Designer edited workflow"
     assert next(node.displayName for node in edited.workflows["main"].nodes if node.nodeId == "threshold") == "Designer edited threshold"
@@ -166,20 +167,19 @@ def test_http_export_opens_edits_saves_and_compiles_in_native_designer(
     record_property("native_screenshot", str(screenshot))
 
 
+@pytest.mark.skipif(not os.environ.get("EMO_AUTHORING_HANDOFF_PROJECT_DIR"),
+                    reason="requires an exact download from a current external client run")
 def test_external_inspector_download_sample_continues_in_native_designer(
         tmp_path, real_target, ownedDesignerWindow, retainedQtApplication, isolatedDesignerSettings,  # noqa: F811
         record_property):
     """Open the exact external-client delivery, separately from the HTTP fixture."""
     _, runtime = real_target
-    default_source = Path(__file__).resolve().parents[2] / "examples" / "independent_project_authoring"
-    # Repair acceptance can point at the bytes downloaded in that same run.
-    # The test still edits only its temporary copy, including for local inputs.
-    source = Path(os.environ.get("EMO_AUTHORING_HANDOFF_PROJECT_DIR", str(default_source)))
+    source = Path(os.environ["EMO_AUTHORING_HANDOFF_PROJECT_DIR"])
     destination = tmp_path / "inspector-delivery"
     copytree(source, destination)
     project_path = destination / "project.emoproj"
     original = loadProjectDocument(project_path)
-    assert original.schemaVersion == "2.9" and original.presentation.schemaVersion == "1.2"
+    assert original.schemaVersion == "2.10" and original.presentation.schemaVersion == "1.3"
     assert original.devices.schemaVersion == "1.0"
     assert verifyResources(original, destination)
 

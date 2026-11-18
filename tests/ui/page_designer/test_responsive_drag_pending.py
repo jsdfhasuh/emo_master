@@ -73,7 +73,7 @@ def testPendingAppearanceIsResolvedBeforeNativeDrag(responsivePage, monkeypatch,
 
     if valid:
         assert captures['rendered'].props.title == captures['saved'].props.title == title
-        assert captures['rendered'].props.fontSize == captures['saved'].props.fontSize == 32
+        assert captures['rendered'].props.typography.value.size == captures['saved'].props.typography.value.size == 32
         assert captures['card'] is not originalCard
         assert captures['card'].height() > originalHeight
         assert len(coordinator.session._undo) == history + 1

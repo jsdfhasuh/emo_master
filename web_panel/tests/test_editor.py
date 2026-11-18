@@ -11,6 +11,7 @@ from PIL import Image
 
 from emo_web_panel.app import create_app
 from emo_web_panel.config import Config
+from emo_web_panel.editor import build_package, validate_source
 from emo_web_panel.packages import PackageError, PackageStore
 
 
@@ -89,7 +90,7 @@ class EditorTests(unittest.TestCase):
         reopened = create_app(self.config).state.editor.draft("configured", self.project)
         self.assertEqual(reopened, saved)
         self.assertIsInstance(reopened["presentation"]["pages"], dict)
-        self.assertEqual(reopened["presentation"]["schemaVersion"], "1.2")
+        self.assertEqual(reopened["presentation"]["schemaVersion"], "1.3")
         self.assertTrue(all(page["targets"] == ["web"] for page in reopened["presentation"]["pages"].values()))
 
     def test_highly_compressible_bmp_previews_publishes_and_reimports_without_relaxing_zip_limits(self):
@@ -150,6 +151,37 @@ class EditorTests(unittest.TestCase):
             imported = PackageStore(Path(destination))
             installed = imported.install(previous.getvalue())
             self.assertEqual(imported.install(response.content)["packageId"], installed["packageId"])
+
+    def test_uploaded_current_package_enables_exact_capture_and_recovers_original_receipt(self):
+        source = validate_source(self.pages(("result_image", "count")), {})
+        raw, _manifest, _snapshot, expected = build_package(self.project, source, {}, None)
+        imported = self.client.post("/api/packages", content=raw, headers=self.headers)
+        self.assertEqual(imported.status_code, 200, imported.text)
+        package_id = imported.json()["packageId"]
+        runtime = self.app.state.runtime
+        self.assertEqual(runtime.output_config["sources"], {})
+
+        submissions = []
+        original = runtime.submit_output_requests
+
+        async def lost_reply(body):
+            submissions.append(body["requestId"])
+            await original(body)
+            raise TimeoutError("Runtime saved the request before the reply was lost")
+
+        runtime.submit_output_requests = lost_reply
+        endpoint = "/api/packages/" + package_id + "/activate"
+        body = {"runtimeId": "configured", "projectId": self.project}
+        pending = self.client.post(endpoint, headers=self.headers, json=body)
+        self.assertEqual(pending.status_code, 409, pending.text)
+        self.assertNotEqual(self.client.get("/api/panels").json()[0]["id"], package_id)
+        self.assertEqual(runtime.output_config, expected)
+
+        resolved = self.client.post(endpoint, headers=self.headers, json=body)
+        self.assertEqual(resolved.status_code, 200, resolved.text)
+        self.assertEqual(self.client.get("/api/panels").json()[0]["id"], package_id)
+        self.assertEqual(len(submissions), 1)
+        self.assertEqual(runtime.control_count, 0)
 
     def test_publish_freezes_until_explicit_start_layout_only_and_rollback(self):
         initial = self.save(self.pages(("result_image", "count", "result")))

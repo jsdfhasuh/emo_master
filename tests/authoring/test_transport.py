@@ -66,7 +66,7 @@ def test_http_without_optional_mcp_auth_origin_and_input_contract(tmp_path):
         caps = client.get("/api/authoring-capabilities", headers=HEADERS).json()
         assert caps["fileTransfer"]["resourceUpload"]["purposeValues"] == ["input_image", "model", "page_image", "icon"]
         state = client.post("/api/project-drafts", headers=HEADERS, json={"name": "HTTP"}).json()
-        assert state["project"]["schemaVersion"] == "2.9"
+        assert state["project"]["schemaVersion"] == "2.10"
         path = "/api/project-drafts/" + state["draftId"]
         state = client.get(path, headers=HEADERS).json()
         bad = client.post(path + "/commands", headers=HEADERS, json={

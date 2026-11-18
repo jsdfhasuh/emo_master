@@ -11,29 +11,36 @@ from emo_master.ui.presentation.sqlite_widgets import SqliteTableView
 
 
 @pytest.mark.parametrize('stable', [False, True])
-def testClientHonorsStableIdentityFlagEvenWithNonemptyRowIds(stable):
+def testClientReturnsTypedKeysWithStableIdentity(stable):
     from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
     payload = dict(columns=[dict(name='id', type='scalar')], rows=[
-        dict(rowId='response-local-id', values=[1], imageRefs={})], page=0, hasNext=False,
+        dict(rowId='response-local-id' if stable else '', keyValues=[1] if stable else [],
+             values=[1], imageRefs={})], page=0, hasNext=False,
         stableRowIdentity=stable)
     client = HistoryClient(lambda _method, _request: pb.HistoryReply(ok=True, result_json=json.dumps(payload)),
         runtimeInstanceId='runtime', projectId='project', presentation=Presentation())
     result = client.readPage('rows')
     assert result.rowIds == (('response-local-id',) if stable else ('',))
+    assert result.keyValues == (((1,),) if stable else ((),))
+    assert result.stableRowIdentity is stable
     assert result.rows == ((1,),)
 
 
-def page(ids, revision, *, rowIds=None, pageNumber=0, hasNext=False):
+def page(ids, revision, *, rowIds=None, pageNumber=0, hasNext=False, selectedRowId=None):
+    rowIds = tuple(str(value) for value in ids) if rowIds is None else tuple(rowIds)
     return SqlitePage(('id',), tuple((value,) for value in ids), pageNumber, hasNext,
         tuple({'image': HistoryImageRef(imageRef=f'{revision}-{value}')} for value in ids),
-        tuple(str(value) for value in ids) if rowIds is None else tuple(rowIds))
+        rowIds, tuple((value,) if rowId else () for value, rowId in zip(ids, rowIds)),
+        selectedRowId, all(rowIds))
 
 
 class History:
     def __init__(self, result):
         self.result = result
+        self.arguments = {}
 
-    def readPage(self, _componentId, **_arguments):
+    def readPage(self, _componentId, **arguments):
+        self.arguments = arguments
         if isinstance(self.result, Exception):
             raise self.result
         return self.result
@@ -64,11 +71,11 @@ def historyView(qtApp):
 
 
 @pytest.mark.parametrize('action', ['refresh', 'sort', 'filter'])
-def testSameIdentityUsesFreshReferencesAfterReordering(qtApp, historyView, action):
+def testRefreshUsesAnchorAndNewQuerySelectsFreshFirstRow(qtApp, historyView, action):
     view = historyView
     changes = []
     view.selectedRowChanged.connect(changes.append)
-    view.historyClient.result = page((2, 1), 'new')
+    view.historyClient.result = page((2, 1), 'new', selectedRowId='1' if action == 'refresh' else None)
     if action == 'sort':
         view.sortColumn(0)
     elif action == 'filter':
@@ -78,32 +85,35 @@ def testSameIdentityUsesFreshReferencesAfterReordering(qtApp, historyView, actio
         view.refresh()
     assert view.selectedRow() is None and changes[-1] is None
     waitRead(qtApp, view)
-    assert view.table.selectionModel().selectedRows()[0].row() == 1
-    assert view.selectedRow()['image'].imageRef == 'new-1'
-    assert changes[-1]['image'].imageRef == 'new-1'
+    assert view.table.selectionModel().selectedRows()[0].row() == (1 if action == 'refresh' else 0)
+    assert view.historyClient.arguments['anchorKey'] == ((1,) if action == 'refresh' else None)
+    expected = 'new-1' if action == 'refresh' else 'new-2'
+    assert view.selectedRow()['image'].imageRef == expected
+    assert changes[-1]['image'].imageRef == expected
 
 
-@pytest.mark.parametrize('ids, rowIds', [((2, 3), ('2', '3')), ((1, 2), ('', ''))])
-def testMissingOrUnstableIdentityClearsInsteadOfRestoringRowNumber(qtApp, historyView, ids, rowIds):
+def testMissingAnchorClearsInsteadOfRestoringRowNumber(qtApp, historyView):
     view = historyView
-    view.historyClient.result = page(ids, 'new', rowIds=rowIds)
+    view.historyClient.result = ValueError('所选记录已不存在')
     view.refresh()
     waitRead(qtApp, view)
     assert view.selectedRow() is None
     assert not view.table.selectionModel().selectedRows()
+    assert '不存在' in view.message.text()
 
 
 def testUnstableOriginalSelectionDoesNotBecomeStableAfterRefresh(qtApp, historyView):
     view = historyView
     view.historyClient.result = page((1, 2), 'unstable', rowIds=('', ''))
-    view.refresh()
+    view.review('history_first')
     waitRead(qtApp, view)
     view.table.selectRow(0)
     assert view.selectedRow()['image'].imageRef == 'unstable-1'
     view.historyClient.result = page((1, 2), 'stable')
     view.refresh()
     waitRead(qtApp, view)
-    assert view.selectedRow() is None
+    assert view.historyClient.arguments['anchorKey'] is None
+    assert view.selectedRow()['image'].imageRef == 'stable-1'
 
 
 def testQueryFailureDiscardsSelectionBeforeNextSuccessfulRefresh(qtApp, historyView):
@@ -115,7 +125,7 @@ def testQueryFailureDiscardsSelectionBeforeNextSuccessfulRefresh(qtApp, historyV
     view.historyClient.result = page((1, 2), 'reconnected')
     view.refresh()
     waitRead(qtApp, view)
-    assert view.model.rowCount() == 2 and view.selectedRow() is None
+    assert view.model.rowCount() == 2 and view.selectedRow()['image'].imageRef == 'reconnected-1'
 
 
 @pytest.mark.parametrize('reset', ['hide', 'source', 'preview', 'clear'])
@@ -135,9 +145,10 @@ def testPendingRefreshCannotRestoreSelectionAfterContextReset(qtApp, historyView
     assert view.selectedRow() is None and not view.table.selectionModel().selectedRows()
 
 
-def testPagingDoesNotRestoreEvenIfRecordOccursOnNewPage(qtApp, historyView):
+def testPagingEstablishesNewFirstSelectionWithoutAnAnchor(qtApp, historyView):
     view = historyView
     view.historyClient.result = page((1, 3), 'next', pageNumber=1)
     view.move(1)
     waitRead(qtApp, view)
-    assert view.page == 1 and view.selectedRow() is None
+    assert view.page == 1 and view.historyClient.arguments['anchorKey'] is None
+    assert view.selectedRow()['image'].imageRef == 'next-1'

@@ -106,7 +106,7 @@ def testRealImageCompileAndMissingResourceRepairWithoutOnlineMutation(runtime, t
     projectFile = tmp_path / 'online' / 'online.emoproj'
     projectFile.parent.mkdir()
     saveProject(projectFile, online)
-    assert loadProjectDocument(projectFile).schemaVersion == '2.9'
+    assert loadProjectDocument(projectFile).schemaVersion == '2.10'
     assert runtime.LoadProject(pb.LoadProjectRequest(project_path=str(projectFile)), None).ok
     before = (runtime.loadedDocument.model_dump(), runtime.loadedProjectFile,
               deepcopy(runtime.projectConfiguration.current), runtime.jobRepository.all())
@@ -282,7 +282,7 @@ def testCandidateBPrecheckDoesNotReplaceActuallyRunningA(tmp_path):
         projectFile = tmp_path / 'online' / 'a.emoproj'
         projectFile.parent.mkdir()
         saveProject(projectFile, a)
-        assert loadProjectDocument(projectFile).schemaVersion == '2.9'
+        assert loadProjectDocument(projectFile).schemaVersion == '2.10'
         loaded = stub.LoadProject(pb.LoadProjectRequest(project_path=str(projectFile)), timeout=10)
         assert loaded.ok, loaded.message
         started = stub.StartJob(pb.StartJobRequest(project_id=a['project']['projectId'], workflow_id='main'), timeout=10)

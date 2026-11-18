@@ -18,11 +18,9 @@ def pages(*components, count=2):
 
 
 def choose(navigation, pageId):
-    picker = navigation.picker
-    picker.setFocus()
-    index = picker.findData(pageId)
-    key = Qt.Key_Down if index > picker.currentIndex() else Qt.Key_Up
-    QTest.keyClick(picker, key)
+    tabs = navigation.tabs
+    index = next(i for i in range(tabs.count()) if tabs.tabData(i) == pageId)
+    QTest.mouseClick(tabs, Qt.LeftButton, pos=tabs.tabRect(index).center())
 
 
 def testSinglePageHasNoAutomaticHeaderAndReloadUpdatesFallback(qtApp):
@@ -48,14 +46,14 @@ def testOptionalNavigationReplacesFallbackAndCanReturnFromUncustomizedPage(qtApp
     qtApp.processEvents()
     custom = window.widgets['a']['navigation'][1]
     assert window.pageNavigation.isHidden()
-    assert custom.picker.currentData() == 'a'
+    assert custom.tabs.tabData(custom.tabs.currentIndex()) == 'a'
     choose(custom, 'b')
     assert window.currentPageId == 'b'
     assert window.pageNavigation.isVisible()
     choose(window.pageNavigation, 'a')
     assert window.currentPageId == 'a'
     assert window.pageNavigation.isHidden()
-    assert custom.picker.currentData() == 'a'
+    assert custom.tabs.tabData(custom.tabs.currentIndex()) == 'a'
     window.close()
 
 
@@ -100,7 +98,7 @@ def testEditingNavigationStaysOnCurrentPageAndTitleUsesConfiguredText(qtApp):
     navigation = window.widgets['a']['navigation'][1]
     choose(navigation, 'b')
     assert window.currentPageId == 'a'
-    assert navigation.picker.currentData() == 'a'
+    assert navigation.tabs.tabData(navigation.tabs.currentIndex()) == 'a'
     assert window.pageNavigation.isHidden()
     assert window.widgets['a']['title'][1].text() == '产线看板'
     window.close()

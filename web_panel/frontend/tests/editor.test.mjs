@@ -28,7 +28,7 @@ test('history clears selections which are absent or belong to another surviving 
 });
 
 test('new source retains current Presentation format, Web target and complete separate identity maps',()=>{
-    const doc=newPresentation();assert.equal(doc.schemaVersion,'1.2');assert.deepEqual(doc.pages[doc.defaultPageId].targets,['web']);assert.deepEqual(doc.dataSources,{});assert.deepEqual(doc.resultScopes,{});assert.equal(doc.pageOrder.length,1);
+    const doc=newPresentation();assert.equal(doc.schemaVersion,'1.3');assert.deepEqual(doc.pages[doc.defaultPageId].targets,['web']);assert.deepEqual(doc.dataSources,{});assert.deepEqual(doc.resultScopes,{});assert.equal(doc.pageOrder.length,1);
 });
 test('direct binding uses catalogue IDs and layout or display-name changes never recreate source identity',()=>{
     const doc=newPresentation(),pid=doc.defaultPageId;const c=newComponent('number');doc.pages[pid].components.push(c);
@@ -42,7 +42,7 @@ test('incompatible output gives a concrete reason without partially changing doc
 });
 test('single-direction rendering preserves complete editable source and resource references',()=>{
     const doc=newPresentation(),pid=doc.defaultPageId;const image=newComponent('image');image.props.imageResourceId='asset-stable';image.props.emptyText='等待本轮图片';doc.pages[pid].components.push(image);const counter=newComponent('number');doc.pages[pid].components.push(counter);bindChoice(doc,pid,counter.componentId,choice());
-    const before=clone(doc),view=renderModel(doc,id=>`/api/editor/r/assets/${id}?projectId=p`);assert.deepEqual(doc,before);assert.equal(view.pages[0].components[0].props.assetUrl,'/api/editor/r/assets/asset-stable?projectId=p');assert.equal(view.pages[0].components[1].binding.sourceId,'source-count');view.pages[0].components[0].props.emptyText='changed';assert.equal(image.props.emptyText,'等待本轮图片');assert.equal(doc.schemaVersion,'1.2');assert.deepEqual(doc.pages[pid].targets,['web']);
+    const before=clone(doc),view=renderModel(doc,id=>`/api/editor/r/assets/${id}?projectId=p`);assert.deepEqual(doc,before);assert.equal(view.pages[0].components[0].props.assetUrl,'/api/editor/r/assets/asset-stable?projectId=p');assert.equal(view.pages[0].components[1].binding.sourceId,'source-count');view.pages[0].components[0].props.emptyText='changed';assert.equal(image.props.emptyText,'等待本轮图片');assert.equal(doc.schemaVersion,'1.3');assert.deepEqual(doc.pages[pid].targets,['web']);
 });
 test('copy changes component identity recursively but keeps shared immutable binding definitions',()=>{
     const c=newComponent('container');c.children.push(newComponent('number'));c.children[0].bindings.value='same-source';const copied=copyComponent(c);assert.notEqual(copied.componentId,c.componentId);assert.notEqual(copied.children[0].componentId,c.children[0].componentId);assert.equal(copied.children[0].bindings.value,'same-source');copied.children[0].props.title='Copy';assert.notEqual(c.children[0].props.title,'Copy');

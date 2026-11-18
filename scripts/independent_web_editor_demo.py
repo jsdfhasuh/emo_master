@@ -72,7 +72,7 @@ def create_demo_project(directory: Path, registry, *, continuous: bool = True):
     payload["production"].update(autoStart=False, mode="continuous" if continuous else "single",
                                  cycleIntervalMs=250)
     document = ProjectDocument.model_validate(payload)
-    assert document.schemaVersion == "2.9" and document.presentation.schemaVersion == "1.2"
+    assert document.schemaVersion == "2.10" and document.presentation.schemaVersion == "1.3"
     saveProject(path, document.model_dump(mode="json"))
     reloaded = loadProjectDocument(path)
     assert reloaded == document

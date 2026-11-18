@@ -68,21 +68,15 @@ def testExpansionRetainsFlowSlotsWidthAndFlexibleHeight(direction, width):
     assert expandedHeight >= height + 120
 
 
-def testReorderGroupingAndOlderResponsiveUpgradeRemainUndoable():
+def testExpandedCanvasReorderGroupingAndCopyRemainUndoable():
     from test_responsive_editing import sessionFor, pageOf, text
-    from emo_master.apps.designer.state.project_edit_session import ProjectEditSession
-    from emo_master.apps.designer.page_designer.responsive_editing import ResponsiveCommands
     from emo_master.apps.designer.page_designer.editing import PageCommands
 
-    session, _commands = sessionFor([text('a'), text('b'), text('c')])
-    old = session.payload()
-    old['schemaVersion'], old['presentation']['schemaVersion'] = '2.8', '1.1'
-    session = ProjectEditSession(old)
-    commands = ResponsiveCommands(session)
+    session, commands = sessionFor([text('a'), text('b'), text('c')])
     before = session.payload()
     commands.place('p', keys=['a'], index=0, canvasTop=-120)
-    assert session.document().schemaVersion == '2.9'
-    assert session.document().presentation.schemaVersion == '1.2'
+    assert session.document().schemaVersion == '2.10'
+    assert session.document().presentation.schemaVersion == '1.3'
     assert pageOf(session).canvasTop == -120
     session.undo()
     assert session.payload() == before

@@ -69,26 +69,33 @@ class FixtureRuntime:
                 for key in presentation.get('dataSources', {}) if key not in {'count', 'verdict'}}
 
     async def history(self, component_id, page, page_size, *, q='', sort='', order='asc', context=None,
-                      kind='table', filter_column='', **kwargs):
+                      kind='table', filter_column='', anchor_key_json='', anchor_step=0, **kwargs):
         if not 1 <= page <= 10000 or not 1 <= page_size <= 100 or order not in {'asc', 'desc'}:
             raise ValueError('Invalid fixture history query')
         if context is not None and (context.get('projectId') != self.context.projectId or
                                    context.get('historyDefinitionRevision') != self.context.historyDefinitionRevision):
             raise ValueError('Fixture history context changed')
+        result = self._fixture('history-page')
+        names = [column['name'] for column in result['columns']]
+        if (sort and sort not in names) or (q and filter_column not in names):
+            raise ValueError('Unknown fixture column')
+        rows = result['rows']
+        if q:
+            field = names.index(filter_column)
+            rows = [row for row in rows if q.lower() in str(row['values'][field]).lower()]
         if kind == 'aggregate':
-            result = self._fixture('history-aggregate')
+            result = {**self._fixture('history-aggregate'), 'value': len(rows)}
         else:
-            result = self._fixture('history-page')
-            names = [column['name'] for column in result['columns']]
-            if sort and sort not in names or filter_column and filter_column not in names:
-                raise ValueError('Unknown fixture column')
-            rows = result['rows']
-            if q:
-                rows = [row for row in rows if any(q.lower() in str(value).lower()
-                        for index, value in enumerate(row['values'])
-                        if not filter_column or names[index] == filter_column)]
             if sort:
                 rows.sort(key=lambda row: row['values'][names.index(sort)], reverse=order == 'desc')
+            if anchor_key_json:
+                key = json.loads(anchor_key_json)
+                index = next((n for n, row in enumerate(rows) if row['keyValues'] == key), None)
+                if index is None:
+                    raise ValueError('所选记录已不存在或不在当前筛选结果内')
+                index = min(len(rows) - 1, max(0, index + anchor_step))
+                page = index // page_size + 1
+                result['selectedRowId'] = rows[index]['rowId']
             result['rows'] = rows[(page-1)*page_size:page*page_size]
             result.update(page=page-1, pageSize=page_size, hasNext=page*page_size < len(rows))
         result['historyDefinitionRevision'] = self.context.historyDefinitionRevision

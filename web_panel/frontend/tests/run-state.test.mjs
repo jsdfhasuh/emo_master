@@ -40,7 +40,7 @@ async function fixture(kind='ordinary',{admission=false,image=false}={}){
  sessionStorage.clear();
  const f={kind,jobs:[],requests:[],views:new Map(),sockets:[],nextView:0,runtimeInstanceId:'instance',projectId:'project',configurationRevision:'2',holdNextState:false,heldState:undefined,failNextCatalog:false,holdNextCatalog:false,heldCatalog:undefined,holdNextWorkflows:false,heldWorkflows:[],failNextWorkflows:false};
  const reply=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
- const panel={id:'panel',packageRevision:'published-v1',defaultPageId:'page',pages:[{id:'page',title:'Result',components:[{id:'count',type:'number',label:'Count',binding:{sourceId:'count',scopeId:'scope'}},{id:'state',type:'runtime_status',label:'Runtime status'},...(image?[{id:'image',type:'image',label:'Image',binding:{sourceId:'image',scopeId:'scope'}}]:[])]}]};
+ const panel={id:'panel',packageRevision:'published-v1',defaultPageId:'page',pages:[{id:'page',title:'Result',components:[{id:'count',type:'number',label:'Count',binding:{sourceId:'count',scopeId:'scope'}},{id:'state',type:'runtime_status',label:'Runtime status',props:{statusField:'job_state'}},...(image?[{id:'image',type:'image',label:'Image',binding:{sourceId:'image',scopeId:'scope'}}]:[])]}]};
  class Socket{
   constructor(url){this.url=url;this.view=f.views.get(url.split('/').at(-1));this.readyState=1;f.sockets.push(this);queueMicrotask(()=>this.onopen?.({}));}
   close(){if(this.readyState===3)return;this.readyState=3;queueMicrotask(()=>this.onclose?.({}));}

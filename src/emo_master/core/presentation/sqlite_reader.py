@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 import hashlib
 import json
+import math
 import sqlite3
 import time
 
@@ -72,6 +73,9 @@ class SqlitePage:
     hasNext: bool
     selectionRows: tuple[dict, ...] = ()
     rowIds: tuple[str, ...] = ()
+    keyValues: tuple[tuple, ...] = ()
+    selectedRowId: str | None = None
+    stableRowIdentity: bool = False
 
 
 @dataclass(frozen=True)
@@ -114,11 +118,102 @@ def _displayExpression(column):
             f"THEN substr({name}, 1, {CELL_TEXT_LIMIT}) || '…' ELSE {name} END ELSE {name} END")
 
 
+def _keyColumns(connection, source, available):
+    if source.recordKey:
+        if source.recordKey not in available:
+            raise ValueError('记录键字段不存在，请重新选择')
+        return [quoteIdentifier(source.recordKey)]
+    table = quoteIdentifier(source.table)
+    primary = sorted((row for row in connection.execute(f'PRAGMA table_info({table})') if row[5]),
+                     key=lambda row: row[5])
+    if primary:
+        return [quoteIdentifier(row[1]) for row in primary]
+    kind = connection.execute('SELECT type FROM sqlite_master WHERE name = ?', (source.table,)).fetchone()[0]
+    if kind == 'table':
+        # These are SQLite-reserved aliases unless shadowed by declared columns.
+        return [name for name in ('_rowid_', 'rowid', 'oid') if name not in available][:1]
+    return []
+
+
+def _keyValid(values):
+    return all(type(value) in (str, int, float)
+               and (type(value) is not float or math.isfinite(value)) for value in values)
+
+
+def _rowId(values):
+    return hashlib.sha256(json.dumps(list(values), ensure_ascii=True).encode()).hexdigest()
+
+
+def _order(sort, descending, identity, *, reverse=False):
+    return ', '.join([sort + (' DESC' if descending != reverse else ' ASC')] +
+                     [column + (' DESC' if reverse else ' ASC') for column in identity])
+
+
+def _sideOf(sort, descending, identity, point, *, before):
+    """Compare with the same NULL ordering and directions as ORDER BY."""
+    value, *key = point
+    smaller = before != descending
+    if value is None:
+        different, parameters = ('0' if smaller else f'{sort} IS NOT NULL'), []
+    else:
+        different = (f'{sort} IS NULL OR {sort} < ?' if smaller else f'{sort} > ?')
+        parameters = [value]
+    if len(identity) == 1:
+        columns, placeholders = identity[0], '?'
+    else:
+        columns = '(' + ', '.join(identity) + ')'
+        placeholders = '(' + ', '.join('?' for _ in identity) + ')'
+    operation = '<' if before else '>'
+    tie = f'{sort} IS ? AND {columns} {operation} {placeholders}'
+    return f'(({different}) OR ({tie}))', (*parameters, value, *key)
+
+
+def _locateAnchor(connection, table, where, parameters, sort, descending, identity, key, step):
+    if not identity or len(key) != len(identity) or not _keyValid(key):
+        raise ValueError('无有效的稳定记录键')
+    pointSql = f'SELECT {", ".join([sort, *identity])} FROM {table} WHERE {where}'
+    equalKey = ' AND '.join(f'{column} IS ?' for column in identity)
+    rows = connection.execute(f'{pointSql} AND {equalKey} LIMIT 2', (*parameters, *key)).fetchall()
+    if not rows:
+        raise ValueError('所选记录已不存在或不在当前筛选结果内')
+    if len(rows) != 1:
+        raise ValueError('记录键重复，无法稳定定位')
+    point = rows[0]
+    if step:
+        before = step < 0
+        side, sideParameters = _sideOf(sort, descending, identity, point, before=before)
+        orderBy = _order(sort, descending, identity, reverse=before)
+        neighbor = connection.execute(f'{pointSql} AND {side} ORDER BY {orderBy} LIMIT 1',
+                                      (*parameters, *sideParameters)).fetchone()
+        if neighbor is not None:
+            point = neighbor
+    if not _keyValid(point[1:]):
+        raise ValueError('记录键必须是非空的数字或文字')
+    # A duplicate could straddle a page boundary, so check the actual target
+    # explicitly while remaining inside this request's short read transaction.
+    if step and point != rows[0]:
+        matching = connection.execute(f'{pointSql} AND {equalKey} LIMIT 2',
+                                      (*parameters, *point[1:])).fetchall()
+        if len(matching) != 1:
+            raise ValueError('记录键重复，无法稳定定位')
+    side, sideParameters = _sideOf(sort, descending, identity, point, before=True)
+    position = connection.execute(f'SELECT COUNT(*) FROM {table} WHERE {where} AND {side}',
+                                  (*parameters, *sideParameters)).fetchone()[0]
+    return position, _rowId(point[1:])
+
+
 def readPage(source, *, pageSize=20, page=0, filterColumn='', filterText='',
-             orderBy=None, descending=None, selectionFields=(), projectRoot=None) -> SqlitePage:
+             orderBy=None, descending=None, selectionFields=(), projectRoot=None,
+             anchorKey=None, anchorStep=0, requiresIdentity=False) -> SqlitePage:
     if not 1 <= pageSize <= 100 or page < 0:
         raise ValueError('分页参数无效')
+    if anchorStep not in (-1, 0, 1) or (anchorKey is None and anchorStep):
+        raise ValueError('历史翻条参数无效')
+    if anchorKey is not None and not isinstance(anchorKey, (list, tuple)):
+        raise ValueError('记录键必须是标量数组')
     with _connection(source.databasePath, projectRoot) as connection:
+        if anchorKey is not None:
+            connection.execute('BEGIN')
         available = _columns(connection, source.table)
         columns = list(source.columns)
         fields = tuple(dict.fromkeys(selectionFields))
@@ -132,37 +227,37 @@ def readPage(source, *, pageSize=20, page=0, filterColumn='', filterText='',
         if sort not in available:
             raise ValueError('排序字段不存在，请重新选择')
         descending = source.descending if descending is None else descending
-        where, parameters = '', []
+        where, parameters = '1', []
         if filterText:
             if filterColumn not in columns:
                 raise ValueError('请选择要筛选的显示字段')
             pattern = filterText.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
-            where = ' WHERE CAST(' + quoteIdentifier(filterColumn) + " AS TEXT) LIKE ? ESCAPE '\\'"
+            where = 'CAST(' + quoteIdentifier(filterColumn) + " AS TEXT) LIKE ? ESCAPE '\\'"
             parameters.append('%' + pattern + '%')
         expressions = [_displayExpression(c) for c in columns]
         expressions.extend(expression for field in fields for expression in _selectionExpressions(field, available))
-        primary = sorted((row for row in connection.execute('PRAGMA table_info(' + quoteIdentifier(source.table) + ')')
-                          if row[5]), key=lambda row: row[5])
-        identity = [quoteIdentifier(row[1]) for row in primary]
-        if not identity and connection.execute(
-                "SELECT type FROM sqlite_master WHERE name = ?", (source.table,)).fetchone()[0] == 'table':
-            identity = [next((name for name in ('_rowid_', 'rowid', 'oid') if name not in available), '')]
-            identity = [name for name in identity if name]
+        identity = _keyColumns(connection, source, available)
+        if requiresIdentity and not identity:
+            raise ValueError('此历史来源需要声明稳定记录键，才能查看同条详情或逐条浏览')
         identityOffset = len(expressions)
         expressions.extend(identity)
-        sortExpressions = [quoteIdentifier(sort) + (' DESC' if descending else ' ASC')]
-        sortExpressions.extend(identity)
-        sql = ('SELECT ' + ', '.join(expressions) +
-               ' FROM ' + quoteIdentifier(source.table) + where +
-               ' ORDER BY ' + ', '.join(sortExpressions) +
-               ' LIMIT ? OFFSET ?')
+        table, sort = quoteIdentifier(source.table), quoteIdentifier(sort)
+        selectedRowId = None
+        if anchorKey is not None:
+            position, selectedRowId = _locateAnchor(connection, table, where, parameters, sort,
+                                                     descending, identity, anchorKey, anchorStep)
+            page = position // pageSize
+        sql = (f'SELECT {", ".join(expressions)} FROM {table} WHERE {where} '
+               f'ORDER BY {_order(sort, descending, identity)} LIMIT ? OFFSET ?')
         rows = connection.execute(sql, (*parameters, pageSize + 1, page * pageSize)).fetchall()
+        keys = tuple(tuple(row[identityOffset:]) for row in rows[:pageSize])
+        rowIds = tuple(_rowId(key) if key and _keyValid(key) else '' for key in keys)
+        if identity and (not all(rowIds) or len(set(rowIds)) != len(rowIds)):
+            raise ValueError('记录键为空、重复或不是数字或文字，无法稳定定位')
         selected = tuple({field: _selectionValue(row[len(columns) + index * 2], row[len(columns) + index * 2 + 1])
                           for index, field in enumerate(fields)} for row in rows[:pageSize])
         return SqlitePage(tuple(columns), tuple(tuple(row[:len(columns)]) for row in rows[:pageSize]),
-                          page, len(rows) > pageSize, selected,
-                          tuple(hashlib.sha256(json.dumps(list(row[identityOffset:]), default=str,
-                              ensure_ascii=True).encode()).hexdigest() if identity else '' for row in rows[:pageSize]))
+                          page, len(rows) > pageSize, selected, rowIds, keys, selectedRowId, bool(identity))
 
 
 def readValue(source, *, projectRoot=None, filterColumn='', filterText=''):

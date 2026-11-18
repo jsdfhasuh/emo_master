@@ -1,5 +1,5 @@
 import type { DataSource, ResultScope } from '../../../contracts/panel-contract-v1/typescript/panel-contract';
-import type { Component, Layout, Panel, Result } from '../contracts/types';
+import type { Appearance, Component, Layout, Panel, PanelShell, Result } from '../contracts/types';
 
 /** The editable document is the complete Presentation source, never a renderer DTO. */
 export interface SourceComponent {
@@ -7,24 +7,35 @@ export interface SourceComponent {
     responsive:NonNullable<Component['responsive']>; props:Record<string,unknown>;
     bindings:Record<string,string>; actions:NonNullable<Component['actions']>; children:SourceComponent[]; grid:Layout;
 }
-export interface SourcePage { name:string; targets:['web']; layout:Layout; components:SourceComponent[]; resultScopeIds:string[]; canvasTop?:number; }
+export interface SourcePage { name:string; targets:Array<'desktop'|'web'>; layout:Layout; components:SourceComponent[]; resultScopeIds:string[]; canvasTop?:number; }
 export interface Presentation {
-    schemaVersion:'1.2'; defaultPageId:string|null; pageOrder:string[]; navigation:{mode:'tabs'|'buttons'};
+    schemaVersion:'1.3'; defaultPageId:string|null; pageOrder:string[]; navigation:{mode:'tabs'|'buttons'};
+    appearance?:Appearance|null; shell?:PanelShell|null;
     pages:Record<string,SourcePage>; dataSources:Record<string,DataSource>; resultScopes:Record<string,ResultScope>;
 }
 export interface Choice {
     label:string; source:DataSource; scope:ResultScope; sourceId?:string; scopeId?:string;
     enabled?:boolean; reason?:string; issues?:Array<{message:string;code?:string}>;
 }
-export const componentNames:Record<string,string> = {image:'图像',text:'文字',number:'数值',indicator:'判定指示',runtime_status:'连接状态',table:'集合表格',navigation_button:'导航按钮',container:'容器',page_title:'页面标题',page_navigation:'页面导航',spacer:'空白块'};
+export const componentNames:Record<string,string> = {image:'图像',text:'文字',number:'数值',indicator:'判定指示',runtime_status:'连接状态',table:'集合表格',sqlite_table:'SQLite 历史表格',navigation_button:'导航按钮',container:'容器',page_title:'页面标题',page_navigation:'页面导航',spacer:'空白块'};
 export const freshId=(prefix:string)=>`${prefix}-${Array.from(crypto.getRandomValues(new Uint8Array(10)),x=>x.toString(16).padStart(2,'0')).join('')}`;
 export const clone=<T,>(value:T):T=>JSON.parse(JSON.stringify(value));
 export const newPage=(name='新页面'):SourcePage=>({name,targets:['web'],layout:{type:'responsive',direction:'wrap',spacing:12,alignment:'stretch',justify:'start',equalWidth:false},components:[],resultScopeIds:[]});
 export function newPresentation():Presentation {
-    const id=freshId('page');return {schemaVersion:'1.2',defaultPageId:id,pageOrder:[id],navigation:{mode:'tabs'},pages:{[id]:newPage('检测页')},dataSources:{},resultScopes:{}};
+    const id=freshId('page');return {schemaVersion:'1.3',defaultPageId:id,pageOrder:[id],navigation:{mode:'tabs'},pages:{[id]:newPage('检测页')},dataSources:{},resultScopes:{}};
 }
 export function newComponent(type:string):SourceComponent {
-    return {componentId:freshId('component'),type,version:'1.0',layout:{row:0,column:0,rowSpan:1,columnSpan:1},responsive:{width:type==='spacer'?'content':'fill',minWidth:type==='spacer'?24:160,preferredWidth:type==='image'?480:240,minHeight:type==='image'?240:type==='spacer'?24:64,preferredHeight:0,weight:1,alignSelf:'auto'},props:{title:componentNames[type] || type,...(type==='text'?{text:'文本内容'}:{}),...(type==='table'?{columns:[{title:'结果',fieldPath:[]}],pageSize:20}:{}),...(type==='navigation_button'?{text:'打开详情'}:{}),...(type==='indicator'?{indicatorStates:{'true':{text:'OK',color:'green'},'false':{text:'NG',color:'red'},'"OK"':{text:'OK',color:'green'},'"NG"':{text:'NG',color:'red'}}}:{})},bindings:{},actions:{},children:[],grid:{type:'responsive',direction:'wrap',spacing:12,alignment:'stretch',justify:'start',equalWidth:false}};
+    const compact = ['text','number','indicator','runtime_status','page_title','container'].includes(type);
+    return {componentId:freshId('component'),type,version:'1.0',layout:{row:0,column:0,rowSpan:1,columnSpan:1},
+        responsive:{width:type==='spacer'?'content':'fill',minWidth:type==='spacer'?24:compact?0:160,
+            preferredWidth:type==='image'?480:type==='spacer'?24:compact?0:240,
+            minHeight:type==='image'?160:type==='spacer'?24:compact?0:32,preferredHeight:0,weight:1,alignSelf:'auto'},
+        props:{title:componentNames[type] || type,...(type==='text'?{text:'文本内容'}:{}),
+            ...(type==='table'?{columns:[{title:'结果',fieldPath:[]}],pageSize:20}:{}),
+            ...(type==='navigation_button'?{text:'打开详情'}:{}),
+            ...(type==='runtime_status'?{statusField:'connection'}:{}),
+            ...(type==='sqlite_table'?{sqlite:{table:'',columns:[],location:'runtime'},pageSize:20}:{})},
+        bindings:{},actions:{},children:[],grid:{type:'responsive',direction:'wrap',spacing:12,alignment:'stretch',justify:'start',equalWidth:false}};
 }
 export function walk(components:SourceComponent[]):SourceComponent[] {return components.flatMap(c=>[c,...walk(c.children)]);}
 export function findComponent(doc:Presentation,id:string):SourceComponent|undefined {return Object.values(doc.pages).flatMap(p=>walk(p.components)).find(c=>c.componentId===id);}
@@ -42,7 +53,22 @@ export function removeComponent(children:SourceComponent[],id:string):SourceComp
     const at=children.findIndex(c=>c.componentId===id);if(at>=0)return children.splice(at,1)[0];
     for(const c of children){const found=removeComponent(c.children,id);if(found)return found;}
 }
-export function copyComponent(c:SourceComponent):SourceComponent {const copied=clone(c);for(const item of walk([copied]))item.componentId=freshId('component');return copied;}
+function copyComponents(components:SourceComponent[]):SourceComponent[] {
+    const copied=clone(components);
+    const items=walk(copied);
+    const ids=new Map(items.map(item=>[item.componentId,freshId('component')]));
+    for(const item of items){
+        item.componentId=ids.get(item.componentId)!;
+        const action=item.actions.clicked;
+        if(action?.componentId && ids.has(action.componentId))action.componentId=ids.get(action.componentId);
+        for(const key of ['imagePath','recordValue']){
+            const reference=item.props[key] as {componentId?:string} | null | undefined;
+            if(reference?.componentId && ids.has(reference.componentId))reference.componentId=ids.get(reference.componentId);
+        }
+    }
+    return copied;
+}
+export function copyComponent(c:SourceComponent):SourceComponent {return copyComponents([c])[0];}
 export interface ComponentClipboard {component:SourceComponent;dataSources:Presentation['dataSources'];resultScopes:Presentation['resultScopes'];}
 export function copyToClipboard(doc:Presentation,c:SourceComponent):ComponentClipboard {
     const saved:ComponentClipboard={component:clone(c),dataSources:{},resultScopes:{}};const scopes=new Set<string>();
@@ -70,7 +96,7 @@ export function resizedGridPlacement(initial:SourceComponent['layout'],columns:n
     return {...initial,columnSpan:Math.max(1,Math.min(columns-(initial.column || 0),(initial.columnSpan || 1)+Math.round(dx/columnStep))),rowSpan:Math.max(1,Math.min(128,(initial.rowSpan || 1)+Math.round(dy/64)))};
 }
 export function copyPage(page:SourcePage,originalId:string,newId:string):SourcePage {
-    const copied={...clone(page),name:`${page.name} 副本`,components:page.components.map(copyComponent)};
+    const copied={...clone(page),name:`${page.name} 副本`,components:copyComponents(page.components)};
     for(const c of walk(copied.components))if(c.actions.clicked?.type==='navigate' && c.actions.clicked.pageId===originalId)c.actions.clicked.pageId=newId;
     return copied;
 }
@@ -110,6 +136,8 @@ export function bindChoice(doc:Presentation,pageId:string,componentId:string,cho
     doc.dataSources[sourceId]=source;
     component.bindings={[component.type==='image'?'image':component.type==='table'?'rows':'value']:sourceId};
     delete component.props.imageResourceId;
+    delete component.props.imagePath;
+    delete component.props.recordValue;
     if(!doc.pages[pageId].resultScopeIds.includes(scopeId))doc.pages[pageId].resultScopeIds.push(scopeId);
 }
 export function tidyBindings(doc:Presentation):void {
@@ -125,7 +153,10 @@ export function tidyBindings(doc:Presentation):void {
 /** Pure one-way projection, used while arranging unsaved source. */
 export function renderModel(doc:Presentation,assetUrl?:(id:string)=>string):Panel {
     const component=(c:SourceComponent):Component=>{const sourceId=Object.values(c.bindings)[0];return {id:c.componentId,type:c.type,label:String(c.props.title || ''),props:{...clone(c.props),...(c.props.imageResourceId && assetUrl?{assetUrl:assetUrl(String(c.props.imageResourceId))}:{}),...(c.props.iconResourceId && assetUrl?{iconUrl:assetUrl(String(c.props.iconResourceId))}:{})},layout:clone(c.layout),responsive:clone(c.responsive),grid:clone(c.grid),actions:clone(c.actions),children:c.children.map(component),...(sourceId?{binding:{sourceId,scopeId:doc.dataSources[sourceId]?.resultScopeId}}:{})};};
-    return {id:'editor-draft',name:'Web 草稿',packageRevision:'unsaved-draft',defaultPageId:doc.defaultPageId || undefined,navigation:clone(doc.navigation),pages:doc.pageOrder.map(id=>({id,title:doc.pages[id].name,layout:clone(doc.pages[id].layout),canvasTop:doc.pages[id].canvasTop,components:doc.pages[id].components.map(component)}))};
+    return {id:'editor-draft',name:'Web 草稿',packageRevision:'unsaved-draft',defaultPageId:doc.defaultPageId || undefined,
+        navigation:clone(doc.navigation),appearance:doc.appearance ?? undefined,shell:doc.shell ?? undefined,
+        logoUrl:doc.shell?.logoResourceId && assetUrl ? assetUrl(doc.shell.logoResourceId) : undefined,
+        pages:doc.pageOrder.map(id=>({id,title:doc.pages[id].name,layout:clone(doc.pages[id].layout),canvasTop:doc.pages[id].canvasTop,components:doc.pages[id].components.map(component)}))};
 }
 export function exampleResults(doc:Presentation):Record<string,Result> {
     return Object.fromEntries(Object.keys(doc.resultScopes).map(scopeId=>[scopeId,{resultKey:`sample-${scopeId}`,resultScopeId:scopeId,sources:Object.fromEntries(Object.entries(doc.dataSources).filter(([,source])=>source.resultScopeId===scopeId).map(([id,source])=>[id,{state:source.expectedType==='image'?'unavailable':'available',reason:source.expectedType==='image'?'示例图片占位 · 真实图片从 DisplayService 获取':undefined,value:source.expectedType==='boolean'?true:source.expectedType==='integer'?12:source.expectedType==='number'?98.5:source.expectedType==='collection'?[{label:'示例产品',confidence:0.98,count:12}]:source.expectedType==='json'?{result:'OK',count:12}:'OK'}]))}]));

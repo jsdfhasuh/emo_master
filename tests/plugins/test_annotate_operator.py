@@ -162,3 +162,40 @@ def testAnnotateDrawsAllClassicCollectionsAndLineCircleGeometry() -> None:
     assert result["outputs"]["drawnCount"] == 6
     assert np.count_nonzero(result["outputs"]["overlay"]) > 0
     assert np.count_nonzero(image) == 0
+
+
+def testAnnotateChineseClassStylesAndDashedLineOnGrayscaleCopy() -> None:
+    image = np.full((108, 186), 28, dtype=np.uint8)
+    space = CoordinateSpace2D(sourceId="simulation", imageWidth=186, imageHeight=108)
+    frame = BBox2D(0, 0, 186, 108, space)
+    detections = DetectionCollection(tuple(
+        Detection2D.fromGeometry(str(index), index, label, 0.92,
+                                 BBox2D(x, 36, 35, 22, space))
+        for index, (label, x) in enumerate((("upper", 8), ("lower", 65), ("centre", 127)))
+    ), space).toPayload()
+    lines = LineCollection((LineItem("ref", Line2D(Point2D(8, 92, space), Point2D(170, 92, space))),), space)
+    inputs = {"image": image, "frame": frame.toPayload(), "detections": detections, "lines": lines.toPayload()}
+    colors = [[42, 209, 78], [82, 109, 241], [43, 199, 250]]
+    styles = {name: {"displayLabel": label, "color": color} for name, label, color in
+              zip(("upper", "lower", "centre"), ("上端", "下端", "定位点"), colors)}
+    params = {"classStyles": styles, "colorMode": "bgr", "labelBackground": True, "showConfidence": False,
+              "lineStyle": "dashed", "endpointMarker": "dot", "lineColor": [255, 255, 255]}
+    result = AnnotateOperator().executeNode(inputs, params, {})
+    assert result["status"] == "ok" and result["outputs"]["drawnCount"] == 4
+    overlay = result["outputs"]["overlay"]
+    assert overlay.shape == (108, 186, 3)
+    for x, color in zip((8, 65, 127), colors):
+        assert overlay[58, x + 15].tolist() == color
+        labelArea = overlay[10:35, x:x+26, :]
+        assert np.any(np.all(labelArea == color, axis=2))
+        assert np.any(np.all(labelArea == [255, 255, 255], axis=2) | np.all(labelArea == [0, 0, 0], axis=2))
+    assert np.all(overlay[90, [8, 170]] == 255)
+    line = overlay[92, 16:162]
+    assert np.any(np.all(line == [28, 28, 28], axis=1))
+    assert np.any(np.all(line == [255, 255, 255], axis=1))
+    np.testing.assert_array_equal(image, np.full((108, 186), 28, dtype=np.uint8))
+    assert result["outputs"]["frame"] == frame.toPayload()
+    assert DetectionCollection.fromPayload(detections).items[0].label == "upper"
+
+    error = AnnotateOperator().validateParams({"classStyles": {"upper": {"color": [True, 10, 250]}}})
+    assert error is not None and error["code"] == "E_PARAM_INVALID"

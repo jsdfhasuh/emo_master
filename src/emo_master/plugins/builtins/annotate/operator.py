@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from importlib.resources import as_file, files
 from time import perf_counter
 from typing import Any, TypeGuard, cast
 
 import cv2
 import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 
 from emo_master.core.contracts.geometry2d import (
     BlobCollection,
@@ -41,6 +43,12 @@ class OperatorMeta:
     paramSchema: dict[str, object]
 
 
+_BGR_SCHEMA = {
+    "type": "array",
+    "items": {"type": "integer", "minimum": 0, "maximum": 255},
+    "minItems": 3,
+    "maxItems": 3,
+}
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
@@ -51,6 +59,25 @@ _PARAM_SCHEMA: dict[str, object] = {
         "drawRoi": {"title": "绘制 ROI", "type": "boolean", "default": True},
         "thickness": {"title": "线条宽度（像素）", "type": "integer", "minimum": 1, "default": 2},
         "fontScale": {"title": "字体缩放比例", "type": "number", "exclusiveMinimum": 0.0, "default": 0.5},
+        "classStyles": {
+            "title": "类别显示名称与颜色",
+            "type": "object",
+            "default": {},
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "displayLabel": {"type": "string", "minLength": 1},
+                    "color": _BGR_SCHEMA,
+                },
+                "additionalProperties": False,
+            },
+        },
+        "labelBackground": {"title": "绘制标签底色", "type": "boolean", "default": False},
+        "showConfidence": {"title": "显示置信度", "type": "boolean", "default": True},
+        "colorMode": {"title": "输出颜色模式", "type": "string", "enum": ["preserve", "bgr"], "default": "preserve"},
+        "lineColor": {"title": "线段颜色（BGR）", "xOptionalPresence": True, **_BGR_SCHEMA},
+        "lineStyle": {"title": "线段样式", "type": "string", "enum": ["solid", "dashed"], "default": "solid"},
+        "endpointMarker": {"title": "线段端点", "type": "string", "enum": ["none", "dot"], "default": "none"},
         "blobColor": {
             "title": "连通域颜色",
             "type": "array",
@@ -83,7 +110,7 @@ class AnnotateOperator:
     meta = OperatorMeta(
         operatorId="vision.render.annotate",
         displayName="Annotate",
-        version="1.1.0",
+        version="1.2.0",
         inputPorts={
             "image": {"type": "image", "required": True, "nullable": False},
             "frame": {
@@ -139,6 +166,9 @@ class AnnotateOperator:
         ):
             if not isinstance(params.get(name, True), bool):
                 return _paramError(f"{name} must be boolean")
+        for name, defaultFlag in (("labelBackground", False), ("showConfidence", True)):
+            if not isinstance(params.get(name, defaultFlag), bool):
+                return _paramError(f"{name} must be boolean")
         thickness = params.get("thickness", 2)
         if not _isInt(thickness) or thickness < 1:
             return _paramError("thickness must be an integer >= 1")
@@ -152,6 +182,25 @@ class AnnotateOperator:
         ):
             if not _isColor(params.get(name, default)):
                 return _paramError(f"{name} must contain three integers in [0, 255]")
+        if "lineColor" in params and not _isColor(params["lineColor"]):
+            return _paramError("lineColor must contain three integers in [0, 255]")
+        for name, options in (
+            ("colorMode", ("preserve", "bgr")),
+            ("lineStyle", ("solid", "dashed")),
+            ("endpointMarker", ("none", "dot")),
+        ):
+            if params.get(name, options[0]) not in options:
+                return _paramError(f"{name} must be one of {', '.join(options)}")
+        styles = params.get("classStyles", {})
+        if not isinstance(styles, dict):
+            return _paramError("classStyles must be an object")
+        for label, style in styles.items():
+            if not isinstance(label, str) or not isinstance(style, dict) or style.keys() - {"displayLabel", "color"}:
+                return _paramError("classStyles entries must contain displayLabel and/or color")
+            if "displayLabel" in style and (not isinstance(style["displayLabel"], str) or not style["displayLabel"]):
+                return _paramError("classStyles displayLabel must be a non-empty string")
+            if "color" in style and not _isColor(style["color"]):
+                return _paramError("classStyles color must contain three integers in [0, 255]")
         return None
 
     def executeNode(
@@ -212,14 +261,17 @@ class AnnotateOperator:
         except ValueError as err:
             return _error("E_INPUT_SHAPE", f"invalid image frame: {err}")
 
-        overlay = image.copy()
+        overlay = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR) if image.ndim == 2 and params.get("colorMode") == "bgr" else image.copy()
         thickness = cast(int, params.get("thickness", 2))
         fontScale = float(cast(int | float, params.get("fontScale", 0.5)))
-        blobColor = _outputColor(image, cast(list[int], params.get("blobColor", [0, 255, 0])))
-        detectionColor = _outputColor(
-            image, cast(list[int], params.get("detectionColor", [0, 165, 255]))
-        )
-        roiColor = _outputColor(image, cast(list[int], params.get("roiColor", [255, 0, 255])))
+        drawLabels = cast(bool, params.get("drawLabels", True))
+        classStyles = cast(dict[str, dict[str, Any]], params.get("classStyles", {}))
+        baseDetectionColor = cast(list[int], params.get("detectionColor", [0, 165, 255]))
+        blobColor = _outputColor(overlay, cast(list[int], params.get("blobColor", [0, 255, 0])))
+        detectionColor = _outputColor(overlay, baseDetectionColor)
+        lineColor = _outputColor(overlay, cast(list[int], params.get("lineColor", baseDetectionColor)))
+        roiColor = _outputColor(overlay, cast(list[int], params.get("roiColor", [255, 0, 255])))
+        labels: list[_Label] = []
         drawnCount = 0
 
         if blobs is not None:
@@ -236,51 +288,37 @@ class AnnotateOperator:
                         blobColor,  # type: ignore[arg-type]
                         -1,
                     )
-                if cast(bool, params.get("drawLabels", True)):
-                    _drawText(
-                        overlay,
-                        f"{blob.blobId} area={blob.area:g}",
-                        blob.bbox.x,
-                        blob.bbox.y,
-                        blobColor,
-                        fontScale,
-                        thickness,
-                    )
+                if drawLabels:
+                    labels.append(_Label(f"{blob.blobId} area={blob.area:g}", blob.bbox.x, blob.bbox.y, blobColor))
                 drawnCount += 1
         if detections is not None:
             for detection in detections.items:
+                style = classStyles.get(detection.label, {})
+                color = _outputColor(overlay, style.get("color", baseDetectionColor))
                 geometry = (
                     detection.geometry
                     if detection.geometry is not None
                     else detection.bbox
                 )
                 if cast(bool, params.get("drawBBoxes", True)):
-                    _drawGeometry(overlay, geometry, detectionColor, thickness)
-                if cast(bool, params.get("drawLabels", True)):
-                    _drawText(
-                        overlay,
-                        f"{detection.label} {detection.confidence:.2f}",
-                        detection.bbox.x,
-                        detection.bbox.y,
-                        detectionColor,
-                        fontScale,
-                        thickness,
-                    )
+                    _drawGeometry(overlay, geometry, color, thickness)
+                if drawLabels:
+                    label = style.get("displayLabel", detection.label)
+                    if params.get("showConfidence", True):
+                        label = f"{label} {detection.confidence:.2f}"
+                    labels.append(_Label(label, detection.bbox.x, detection.bbox.y, color))
                 drawnCount += 1
         if contours is not None:
             for contour in contours.items:
                 _drawGeometry(overlay, contour.polygon, detectionColor, thickness)
-                if cast(bool, params.get("drawLabels", True)):
+                if drawLabels:
                     boxPoints = geometryPoints(contour.polygon)
-                    _drawText(
-                        overlay,
+                    labels.append(_Label(
                         contour.contourId,
                         min(point[0] for point in boxPoints),
                         min(point[1] for point in boxPoints),
                         detectionColor,
-                        fontScale,
-                        thickness,
-                    )
+                    ))
                 drawnCount += 1
         if measurements is not None:
             for measurement in measurements.items:
@@ -297,20 +335,19 @@ class AnnotateOperator:
                     detectionColor,  # type: ignore[arg-type]
                     -1,
                 )
-                if cast(bool, params.get("drawLabels", True)):
-                    _drawText(
-                        overlay,
+                if drawLabels:
+                    labels.append(_Label(
                         f"A={measurement.area:g} P={measurement.perimeter:g} C={measurement.circularity:.3f}",
                         measurement.bbox.x,
                         measurement.bbox.y,
                         detectionColor,
-                        fontScale,
-                        thickness,
-                    )
+                    ))
                 drawnCount += 1
         if lines is not None:
             for item in lines.items:
-                _drawGeometry(overlay, item.line, detectionColor, thickness)
+                _drawLine(overlay, item.line, lineColor, thickness,
+                          dashed=params.get("lineStyle") == "dashed",
+                          endpoints=params.get("endpointMarker") == "dot")
                 drawnCount += 1
         if circles is not None:
             for item in circles.items:
@@ -319,20 +356,14 @@ class AnnotateOperator:
         if matches is not None:
             for match in matches.items:
                 _drawGeometry(overlay, match.bbox, detectionColor, thickness)
-                if cast(bool, params.get("drawLabels", True)):
-                    _drawText(
-                        overlay,
-                        f"{matches.label} {match.quality:.2f}",
-                        match.bbox.x,
-                        match.bbox.y,
-                        detectionColor,
-                        fontScale,
-                        thickness,
-                    )
+                if drawLabels:
+                    labels.append(_Label(f"{matches.label} {match.quality:.2f}", match.bbox.x, match.bbox.y, detectionColor))
                 drawnCount += 1
         if roi is not None and cast(bool, params.get("drawRoi", True)):
             _drawGeometry(overlay, roi, roiColor, thickness)
             drawnCount += 1
+        if labels:
+            overlay = _drawLabels(overlay, labels, fontScale, background=params.get("labelBackground") is True)
 
         return {
             "status": "ok",
@@ -388,14 +419,7 @@ def _drawGeometry(
         )
         return
     if isinstance(geometry, Line2D):
-        cv2.line(
-            image,
-            (int(round(geometry.start.x)), int(round(geometry.start.y))),
-            (int(round(geometry.end.x)), int(round(geometry.end.y))),
-            color,  # type: ignore[arg-type]
-            thickness,
-            cv2.LINE_AA,
-        )
+        _drawLine(image, geometry, color, thickness, dashed=False, endpoints=False)
         return
     if isinstance(geometry, Circle2D):
         cv2.circle(
@@ -418,25 +442,76 @@ def _drawGeometry(
     )
 
 
-def _drawText(
+@dataclass(frozen=True)
+class _Label:
+    text: str
+    x: float
+    y: float
+    color: int | tuple[int, int, int]
+
+
+def _drawLabels(
     image: np.ndarray[Any, Any],
-    text: str,
-    x: float,
-    y: float,
-    color: int | tuple[int, int, int],
+    labels: list[_Label],
     fontScale: float,
+    *,
+    background: bool,
+) -> np.ndarray[Any, Any]:
+    gray = image.ndim == 2
+    canvas = Image.fromarray(image if gray else cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    draw = ImageDraw.Draw(canvas)
+    resource = files(__package__).joinpath("NotoSansSC-Regular.otf")
+    with as_file(resource) as fontPath:
+        font = ImageFont.truetype(str(fontPath), max(1, round(32 * fontScale)))
+        padding = max(2, font.size // 6) if background else 0
+        for label in labels:
+            left, top, right, bottom = draw.textbbox((0, 0), label.text, font=font)
+            boxWidth = right - left + 2 * padding
+            boxHeight = bottom - top + 2 * padding
+            x = max(0, min(round(label.x), canvas.width - boxWidth))
+            y = max(0, min(round(label.y) - boxHeight, canvas.height - boxHeight))
+            fill = label.color if isinstance(label.color, int) else label.color[::-1]
+            if background:
+                draw.rectangle((x, y, x + boxWidth, y + boxHeight), fill=fill)
+                luminance = fill if isinstance(fill, int) else sum(a * b for a, b in zip(fill, (0.299, 0.587, 0.114)))
+                ink = 0 if luminance >= 145 else 255
+                fill = ink if gray else (ink, ink, ink)
+            draw.text((x + padding - left, y + padding - top), label.text, font=font, fill=fill)
+    pixels = np.asarray(canvas)
+    return pixels.copy() if gray else cv2.cvtColor(pixels, cv2.COLOR_RGB2BGR)
+
+
+def _drawLine(
+    image: np.ndarray[Any, Any],
+    line: Line2D,
+    color: int | tuple[int, int, int],
     thickness: int,
+    *,
+    dashed: bool,
+    endpoints: bool,
 ) -> None:
-    cv2.putText(
-        image,
-        text,
-        (max(0, int(round(x))), max(10, int(round(y)) - 4)),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        fontScale,
-        color,  # type: ignore[arg-type]
-        max(1, thickness),
-        cv2.LINE_AA,
-    )
+    start = (round(line.start.x), round(line.start.y))
+    end = (round(line.end.x), round(line.end.y))
+    stroke = (color,) if isinstance(color, int) else color
+    if dashed:
+        height, width = image.shape[:2]
+        visible, first, last = cv2.clipLine((0, 0, width, height), start, end)
+        if visible:
+            deltaX, deltaY = last[0] - first[0], last[1] - first[1]
+            length = math.hypot(deltaX, deltaY)
+            dash = max(8, thickness * 4)
+            gap = max(6, thickness * 3)
+            for offset in range(0, math.ceil(length), dash + gap):
+                a = offset / length
+                b = min(length, offset + dash) / length
+                p = (round(first[0] + a * deltaX), round(first[1] + a * deltaY))
+                q = (round(first[0] + b * deltaX), round(first[1] + b * deltaY))
+                cv2.line(image, p, q, stroke, thickness, cv2.LINE_AA)
+    else:
+        cv2.line(image, start, end, stroke, thickness, cv2.LINE_AA)
+    if endpoints:
+        for point in (start, end):
+            cv2.circle(image, point, max(3, thickness + 1), stroke, -1, cv2.LINE_AA)
 
 
 def _outputColor(

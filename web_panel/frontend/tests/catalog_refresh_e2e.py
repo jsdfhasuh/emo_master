@@ -72,7 +72,7 @@ try:
    identity=page.get_by_label('当前 Runtime 身份',exact=True);refresh=page.get_by_role('button',name='刷新页面包和状态',exact=True)
    expect(identity).to_contain_text('A-1 / project-A');expect(refresh).to_be_enabled()
    page.get_by_label('查看运行',exact=True).select_option('a1');page.get_by_label('停止控制目标',exact=True).select_option('a1')
-   editor=page.get_by_label('工作流输入',exact=True);editor.fill('{"threshold":42}')
+   page.locator('.operator-inputs summary').click();editor=page.get_by_label('工作流输入',exact=True);editor.fill('{"threshold":42}')
    state['A'].update(runs=['a1','a2'],workflows=['wa1','wa2'],revision='2',default=9)
    refresh.click();expect(identity).to_contain_text('配置 2');expect(refresh).to_be_enabled()
    expect(page.get_by_label('查看运行',exact=True)).to_have_value('a1');expect(page.get_by_label('停止控制目标',exact=True)).to_have_value('a1')
@@ -170,7 +170,7 @@ try:
    expect(identity).to_contain_text('B-2 / project-B-new');expect(refresh).to_be_enabled()
    query.click()
    expect(query).to_have_count(0)
-   expect(page.get_by_text('启动已受理：fixture-job；Job 尚未结束',exact=False)).to_be_visible()
+   expect(page.get_by_text('启动已受理',exact=True)).to_be_visible();page.get_by_text('运行诊断',exact=True).click()
    expect(page.get_by_label('原控制运行状态',exact=True)).to_contain_text('持有资源：是')
    expect(page.get_by_label('原控制运行状态',exact=True)).to_contain_text('展示资源已释放：否')
    assert state['operation_queries']==[original] and len(state['command_posts'])==1

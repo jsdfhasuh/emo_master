@@ -60,8 +60,8 @@ def freezeNormalCapture(document, registry, resourceRoot, workflowId, *, counter
 def executionDefinition(document, registry, workflowId):
     return {"projectId": document.project.projectId,
                  **({"globalVariables": {key: value.model_dump() for key, value in document.globalVariables.items()}}
-                    if document.schemaVersion in {"2.4", "2.5", "2.6", "2.7", "2.8", "2.9"} else {}),
-                 **({"devices": document.devices.model_dump()} if document.schemaVersion in {"2.6", "2.7", "2.8", "2.9"} else {}),
+                    if document.schemaVersion in {"2.4", "2.5", "2.6", "2.7", "2.8", "2.9", "2.10"} else {}),
+                 **({"devices": document.devices.model_dump()} if document.schemaVersion in {"2.6", "2.7", "2.8", "2.9", "2.10"} else {}),
                  **({"communication": document.communication.model_dump()} if document.communication is not None else {}),
                  "workflowId": workflowId,
                  "workflows": {key: value.model_dump() for key, value in document.workflows.items()},

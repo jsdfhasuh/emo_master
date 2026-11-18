@@ -142,7 +142,7 @@ def test_advanced_commands_from_http_preserve_full_project_and_save_reload(publi
     assert read.status_code == 200 and read.json()['project'] == state['project']
     document = loadProjectDocument(root / 'project-drafts' / state['draftId'] / 'project.emoproj')
     assert document.model_dump(mode='json') == state['project']
-    assert document.schemaVersion == '2.9' and document.presentation.schemaVersion == '1.2'
+    assert document.schemaVersion == '2.10' and document.presentation.schemaVersion == '1.3'
     assert document.presentation.pages[overview].targets == ['desktop', 'web']
     assert document.presentation.pages[overview].components[1].actions['clicked'].pageId == detail
     assert document.presentation.navigation.mode == 'buttons'

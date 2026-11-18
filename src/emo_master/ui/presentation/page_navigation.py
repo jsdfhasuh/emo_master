@@ -1,44 +1,62 @@
-"""Compact page selection shared by the shell and optional page components."""
+"""Native tab and button page navigation using the project page order."""
 from PySide2.QtCore import Qt, Signal
-from PySide2.QtWidgets import QComboBox, QHBoxLayout, QLabel, QSizePolicy, QWidget
+from PySide2.QtWidgets import QHBoxLayout, QPushButton, QTabBar, QWidget
+
+from .appearance import plainLabel
 
 
 class PageNavigation(QWidget):
     pageRequested = Signal(str)
 
-    def __init__(self, presentation, *, title='页面', parent=None):
+    def __init__(self, presentation, *, title='', parent=None):
         super().__init__(parent)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         if title:
-            label = QLabel(title)
-            label.setTextFormat(Qt.PlainText)
-            layout.addWidget(label)
-        self.picker = QComboBox()
-        self.picker.setObjectName('pagePicker')
-        self.picker.setAccessibleName('选择页面')
-        self.picker.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
-        self.picker.setMinimumContentsLength(10)
-        self.picker.setMinimumWidth(0)
-        self.picker.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        layout.addWidget(self.picker, 1)
+            layout.addWidget(plainLabel(title))
+        self.content = QHBoxLayout()
+        self.content.setContentsMargins(0, 0, 0, 0)
+        layout.addLayout(self.content)
+        layout.addStretch()
+        self.setAccessibleName('选择页面')
         self.setPages(presentation)
-        self.picker.activated.connect(self._activated)
 
     def setPages(self, presentation):
-        self.picker.clear()
-        for pageId in presentation.pageOrder:
-            name = presentation.pages[pageId].name
-            self.picker.addItem(name, pageId)
-            self.picker.setItemData(self.picker.count() - 1, name, Qt.ToolTipRole)
-        self.picker.setEnabled(self.picker.count() > 1)
+        while self.content.count():
+            self.content.takeAt(0).widget().deleteLater()
+        self.buttons = {}
+        self.tabs = None
+        if presentation.navigation.mode == 'tabs':
+            self.tabs = QTabBar()
+            self.tabs.setDrawBase(False)
+            self.tabs.setExpanding(False)
+            self.tabs.setElideMode(Qt.ElideRight)
+            self.content.addWidget(self.tabs)
+            for pageId in presentation.pageOrder:
+                name = presentation.pages[pageId].name
+                index = self.tabs.addTab(name)
+                self.tabs.setTabData(index, pageId)
+                self.tabs.setTabToolTip(index, name)
+            self.tabs.currentChanged.connect(self._tabChanged)
+        else:
+            for pageId in presentation.pageOrder:
+                button = QPushButton(presentation.pages[pageId].name)
+                button.setCheckable(True)
+                button.clicked.connect(lambda _checked=False, key=pageId: self.pageRequested.emit(key))
+                self.content.addWidget(button)
+                self.buttons[pageId] = button
 
     def selectPage(self, pageId):
-        index = self.picker.findData(pageId)
-        self.picker.setCurrentIndex(index)
-        self.picker.setToolTip(self.picker.currentText())
+        if self.tabs is not None:
+            blocked = self.tabs.blockSignals(True)
+            for index in range(self.tabs.count()):
+                if self.tabs.tabData(index) == pageId:
+                    self.tabs.setCurrentIndex(index)
+                    break
+            self.tabs.blockSignals(blocked)
+        for key, button in self.buttons.items():
+            button.setChecked(key == pageId)
 
-    def _activated(self, _index):
-        pageId = self.picker.currentData()
-        if pageId:
-            self.pageRequested.emit(pageId)
+    def _tabChanged(self, index):
+        if index >= 0:
+            self.pageRequested.emit(self.tabs.tabData(index))

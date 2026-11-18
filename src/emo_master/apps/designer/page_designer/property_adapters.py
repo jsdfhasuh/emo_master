@@ -7,12 +7,12 @@ from collections.abc import Iterable
 from emo_master.core.contracts.port_types import normalizePortSpec, normalizePortType
 from emo_master.core.presentation.catalog import OutputEntry, sourceType
 from emo_master.core.presentation.models import (
-    Action, DataSource, IndicatorStyle, Presentation, Props, TableColumn,
+    Action, DataSource, HISTORY_ACTIONS, IndicatorStyle, Presentation, Props, TableColumn, walkComponents,
 )
 from emo_master.core.presentation.validation import pageScopes
 
 
-def encodeIndicatorKey(kind: str, value: bool | str) -> str:
+def encodeIndicatorKey(kind: str, value: int | bool | str) -> str:
     """Encode a typed editor value, never treating plain string input as JSON.
 
     Boolean editors may supply a bool or the exact text ``true``/``false``.
@@ -23,18 +23,26 @@ def encodeIndicatorKey(kind: str, value: bool | str) -> str:
             value = value == 'true'
         if type(value) is not bool:
             raise ValueError('boolean indicator value must be true or false')
+    elif kind == 'integer':
+        if isinstance(value, str):
+            try:
+                value = int(value, 10)
+            except ValueError as error:
+                raise ValueError('整数判定值必须为整数') from error
+        if type(value) is not int:
+            raise ValueError('整数判定值必须为整数')
     elif kind == 'string':
         if type(value) is not str:
             raise ValueError('string indicator value must be text')
     else:
-        raise ValueError('indicator type must be boolean or string')
+        raise ValueError('indicator type must be integer, boolean or string')
     key = json.dumps(value, ensure_ascii=False)
     if len(key) > 256:
         raise ValueError('indicator key too long')
     return key
 
 
-def decodeIndicatorKey(key: str) -> tuple[str, bool | str]:
+def decodeIndicatorKey(key: str) -> tuple[str, int | bool | str]:
     """Return the editor type and value for an existing canonical model key."""
     if type(key) is not str or len(key) > 256:
         raise ValueError('indicator key must be canonical JSON boolean/string literal')
@@ -42,13 +50,13 @@ def decodeIndicatorKey(key: str) -> tuple[str, bool | str]:
         value = json.loads(key)
     except (TypeError, ValueError) as error:
         raise ValueError('indicator key must be canonical JSON boolean/string literal') from error
-    if type(value) not in (bool, str) or json.dumps(value, ensure_ascii=False) != key:
-        raise ValueError('indicator key must be canonical JSON boolean/string literal')
-    return ('boolean' if type(value) is bool else 'string', value)
+    if type(value) not in (int, bool, str) or json.dumps(value, ensure_ascii=False) != key:
+        raise ValueError('indicator key must be canonical JSON integer/boolean/string literal')
+    return ({bool: 'boolean', int: 'integer', str: 'string'}[type(value)], value)
 
 
 def indicatorStatesFromRows(
-    rows: Iterable[tuple[str, bool | str, str, str]],
+    rows: Iterable[tuple],
 ) -> dict[str, IndicatorStyle]:
     """Validate typed (kind, value, display text, color) rows without data loss.
 
@@ -56,13 +64,14 @@ def indicatorStatesFromRows(
     remove explicitly deleted rows rather than filter values by truthiness.
     """
     states: dict[str, IndicatorStyle] = {}
-    for kind, value, label, color in rows:
+    for kind, value, label, color, *background in rows:
         if len(states) >= 16:
             raise ValueError('indicator mappings cannot exceed 16 rows')
         key = encodeIndicatorKey(kind, value)
         if key in states:
             raise ValueError(f'duplicate indicator value: {key}')
-        states[key] = IndicatorStyle.model_validate({'text': label, 'color': color})
+        states[key] = IndicatorStyle.model_validate({'text': label, 'color': color,
+                                                       'background': background[0] if background else 'none'})
     return Props(indicatorStates=states).indicatorStates
 
 
@@ -101,6 +110,7 @@ def actionFromFields(
     mode: str,
     targetPageId: str | None = None,
     resultScopeId: str | None = None,
+    componentId: str | None = None,
 ) -> Action | None:
     """Build a read-only Action from UI fields with explicit target/scope checks.
 
@@ -109,6 +119,11 @@ def actionFromFields(
     """
     if pageId not in presentation.pages:
         raise ValueError('current page is missing')
+    if mode in HISTORY_ACTIONS:
+        if not any(c.componentId == componentId and c.type == 'sqlite_table'
+                   for c in walkComponents(presentation.pages[pageId].components)):
+            raise ValueError('请选择同页历史来源')
+        return Action.model_validate(dict(type=mode, componentId=componentId))
     if mode not in {'none', 'navigate', 'detail', 'freeze', 'resume_live'}:
         raise ValueError('unsupported page action')
     if mode not in {'navigate', 'detail'} and targetPageId is not None:

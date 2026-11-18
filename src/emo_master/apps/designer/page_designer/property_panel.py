@@ -9,7 +9,7 @@ CONTENT = {
     'container': {'title'}, 'runtime_status': {'title'},
     'page_title': {'text'}, 'page_navigation': {'title'}, 'clock': {'title'},
     'spacer': {'spacerMode'},
-    'sqlite_table': {'title', 'pageSize'}, 'sqlite_value': {'title', 'unit', 'decimals'},
+    'sqlite_table': {'title', 'pageSize', 'emptyText'}, 'sqlite_value': {'title', 'unit', 'decimals'},
 }
 LAYOUT = {'row', 'column', 'rowSpan', 'columnSpan', 'columns'}
 
@@ -17,7 +17,7 @@ LAYOUT = {'row', 'column', 'rowSpan', 'columnSpan', 'columns'}
 def editorMessage(message):
     """Keep model diagnostics in logs/tooltips, with actionable form text."""
     for diagnostic, text in [
-            ('fontSize must be', '字号请选择“自动”，或输入 8–48。'),
+            ('typography.value.size', '主值字号请选择“自动”，或输入 8–96。'),
             ('components overlap', '组件位置重叠，请调整行、列或占用范围。'),
             ('component exceeds grid columns', '组件超出页面列数，请减小列位置或占用列数。'),
             ('duplicate indicator value', '判定映射中有重复的值，请修改或删除重复行。'),
@@ -90,7 +90,7 @@ class PropertyGroups:
             name = reverse.get(widget)
             group = ('图片来源' if widget is tools.imageProperties or name == 'imageResourceId' else
                      '数据库来源' if widget is tools.sqliteProperties else
-                     '位置与大小' if name in LAYOUT or name == 'spacerMode' or widget is tools.responsiveProperties else '外观' if name == 'fontSize' or widget in tools.appearance.values()
+                     '位置与大小' if name in LAYOUT or name == 'spacerMode' or widget is tools.responsiveProperties else '外观' if name == 'fontSize' or widget is tools.compositionButton
                      else '数据来源' if widget is tools.binding or widget in tools.bindingButtons else '内容')
             if group not in self.groups:
                 box = QGroupBox(group)
@@ -138,6 +138,8 @@ class PropertyGroups:
                 visible = True
             if widget is t.pageName:
                 visible = kind is None
+            if widget is t.compositionButton:
+                visible = True
             if name in CONTENT.get(kind, set()):
                 visible = True
             elif name in {'title', 'text', 'emptyText', 'unit', 'decimals', 'pageSize', 'imageResourceId', 'iconResourceId'}:
@@ -148,10 +150,10 @@ class PropertyGroups:
                 visible = kind == 'spacer'
             if name == 'columns':
                 visible = kind in (None, 'container')
-            if widget in (t.destination, t.actionMode, t.actionScope):
+            if widget in (t.destination, t.actionMode, t.actionScope, t.historyTarget):
                 visible = kind == 'navigation_button'
             if widget in (t.extra, t.extraAdd, t.extraRemove, t.fieldHint):
-                visible = kind in ('table', 'indicator')
+                visible = kind in ('table', 'indicator', 'sqlite_table')
             if widget is t.binding or widget in t.bindingButtons:
                 visible = kind in ('image', 'number', 'text', 'indicator', 'table')
                 if kind == 'image':

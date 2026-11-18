@@ -3,7 +3,7 @@
 Run after building/package_frontend.py, in CI with a separately provisioned
 Runtime interpreter and Chromium. Never substitutes MockRuntime/FixtureRuntime,
 intercepts RPC replies, installs dependencies, or touches a real device.
-SDK >=1.5.0, editor-published output requests, and the ordinary Job's empty group ID in an official terminal
+SDK >=1.6.0, editor-published output requests, and the ordinary Job's empty group ID in an official terminal
 BrowserJobState are mandatory; no compatibility fallback can satisfy this test.
 """
 import hashlib
@@ -132,8 +132,8 @@ def main():
     from playwright.sync_api import sync_playwright, expect
     from emo_panel_protocol.messages import BrowserMessage
     sdk_version = importlib.metadata.version('emo_panel_protocol')
-    if tuple(map(int, sdk_version.split('.')[:3])) < (1, 5, 0):
-        raise AssertionError('Final empty-group acceptance requires the delivered official SDK >=1.5.0')
+    if tuple(map(int, sdk_version.split('.')[:3])) < (1, 6, 0):
+        raise AssertionError('Final empty-group acceptance requires the delivered official SDK >=1.6.0')
     if not (PANEL / 'backend/emo_web_panel/static/index.html').is_file():
         raise AssertionError('Build and package the real frontend before this acceptance test')
     EVIDENCE.mkdir(parents=True, exist_ok=True)
@@ -197,7 +197,7 @@ def main():
                     page.get_by_label('用户名', exact=True).fill(username)
                     page.get_by_label('密码', exact=True).fill(password)
                     page.get_by_role('button', name='登录', exact=True).click()
-                    page.get_by_text('真实 Runtime 模式 · 能力以合同为准', exact=True).wait_for()
+                    page.get_by_role('heading', name='Emo Web 操作员面板', exact=True).wait_for()
                     me = read_json(page.request.get('/api/me'))
                     assert me['mode'] == 'grpc' and not me.get('preview'), me
                     initial = read_json(page.request.get('/api/runtimes/configured/status'))['runtime']
@@ -224,12 +224,18 @@ def main():
                         page.get_by_label('组件输出绑定', exact=True).select_option(str(choice_index))
                         if port == 'count':
                             page.get_by_label('小数位', exact=True).fill('2')
+                        if port == 'result':
+                            page.get_by_role('button', name='添加判定规则').click()
+                            page.get_by_label('判定规则1输出值', exact=True).fill('OK')
+                            page.get_by_label('判定规则1文字', exact=True).fill('OK')
+                            page.get_by_label('判定规则1颜色', exact=True).select_option('green')
                         sources[port] = choice['sourceId']
                     page.locator('.editor-palette').get_by_role('button', name=re.compile('连接状态$')).click()
+                    page.get_by_label('宿主状态', exact=True).select_option('job_state')
                     page.get_by_role('button', name='保存草稿', exact=True).click()
                     page.get_by_text('草稿已保存；正式页面和 Runtime 采集请求未改变。', exact=True).wait_for()
                     saved = read_json(page.request.get(editor_path + '/context'))
-                    assert saved['draft']['presentation']['schemaVersion'] == '1.2', saved['draft']
+                    assert saved['draft']['presentation']['schemaVersion'] == '1.3', saved['draft']
                     assert all(item['targets'] == ['web'] for item in saved['draft']['presentation']['pages'].values())
                     assert saved['requests']['config']['sources'] == {}, saved['requests']
                     assert read_json(page.request.get('/api/runtimes/configured/runs')) == [], 'Saving must not start a Job'
@@ -322,7 +328,7 @@ def main():
                     BrowserMessage.model_validate_json(json.dumps(stop_control))
                     report['officialStopControlResult'] = stop_control
                     expect(page.get_by_role('button', name='结束跟踪（不重发）', exact=True)).to_have_count(0)
-                    expect(page.get_by_text('停止已受理：', exact=False)).to_be_visible()
+                    expect(page.get_by_text('停止已受理', exact=True)).to_be_visible()
                     def retired():
                         state = read_json(page.request.get(f'/api/runs/{job}?runtimeId=configured'))
                         report['afterStop'] = state
@@ -332,6 +338,7 @@ def main():
                     terminal = wait_until(page, retired, 'original Job ABORTED with resources retired', timeout=40)
                     # Formal state must update the screen without a catalog
                     # refresh masking a stale command reply or run option.
+                    page.get_by_text('运行诊断', exact=True).click()
                     original_status = page.get_by_label('原控制运行状态', exact=True)
                     expect(original_status).to_contain_text(job)
                     expect(original_status).to_contain_text('权威状态：ABORTED')
@@ -345,9 +352,9 @@ def main():
                     expect(page.get_by_role('button', name='结束跟踪（不重发）', exact=True)).to_have_count(0)
                     report['renderedTerminalStatus'] = original_status.inner_text()
                     report['automaticRunStateVerified'] = True
-                    published_status = page.locator('section.panel-card p').filter(has_text='运行：')
+                    published_status = page.locator('section.panel-card .panel-field-value').filter(has_text=re.compile('^ABORTED$'))
                     expect(published_status).to_have_count(1)
-                    expect(published_status).to_contain_text('运行：ABORTED')
+                    expect(published_status).to_be_visible()
                     report['renderedPublishedRuntimeStatus'] = published_status.inner_text()
                     assert len(read_json(page.request.get('/api/runtimes/configured/runs'))) == 1
                     official_state = wait_until(page, lambda:next((m for m in messages

@@ -59,8 +59,7 @@ def openHistory(app, config):
 def testOneSelectedRowDrivesTwoImagesWithoutShowingPathColumns(qtApp, history):
     window, table, original, result = openHistory(qtApp, history)
     assert table.model.columns == ('id',)
-    assert original.image.isNull() and result.image.isNull()
-    table.table.selectRow(0)
+    assert table.table.selectionModel().selectedRows()[0].row() == 0
     settle(qtApp, lambda: not original.image.isNull() and not result.image.isNull())
     assert original.image.pixelColor(0, 0) == QColor('red')
     assert result.image.pixelColor(0, 0) == QColor('green')
@@ -99,8 +98,12 @@ def testNewQueryImmediatelyClearsSelectionAndImages(qtApp, history, action):
         assert table.table.selectionModel().selectedRows()[0].row() == 0
         assert original.image.pixelColor(0, 0) == QColor('red')
     else:
-        # The selected record no longer belongs to this filtered/sorted page.
-        assert table.selectedRow() is None and original.image.isNull()
+        assert table.table.selectionModel().selectedRows()[0].row() == 0
+        if action == 'filter':
+            settle(qtApp, lambda: not original.image.isNull())
+            assert original.image.pixelColor(0, 0) == QColor('blue')
+        else:
+            assert original.image.isNull()  # First in descending order has no stored image.
     window.close()
 
 
@@ -116,7 +119,9 @@ def testSelectionsAreWindowLocalAndNavigationReloadRetiresImages(qtApp, history)
     assert table.selectedRow() is None and image.image.isNull()
     first.navigate('third')  # Evicts history from the two-page cache.
     first.navigate('history')
-    assert first.widgets['history']['original'][1].image.isNull()
+    restored = first.widgets['history']['original'][1]
+    settle(qtApp, lambda: not restored.image.isNull())
+    assert restored.image.pixelColor(0, 0) == QColor('red')
     changed = history.model_copy(deep=True)
     changed.pages['history'].components.pop()  # Deleted source remains a visible draft error.
     first.reload(changed)

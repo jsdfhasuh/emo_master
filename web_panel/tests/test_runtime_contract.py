@@ -115,7 +115,8 @@ class Service(rpc.RuntimeServiceServicer, rpc.DisplayServiceServicer):
     async def QueryHistoryPage(self, request, context):
         self.pages.append(request)
         return pb.HistoryReply(ok=True, result_json=json.dumps({'columns':[{'name':'count'}],
-            'rows':[{'rowId':'row-1','values':[9007199254740993],'imageRefs':{'image':{'status':'AVAILABLE','imageRef':'opaque-ref'}}}],
+            'rows':[{'rowId':'row-1','keyValues':[9007199254740993],'values':[9007199254740993],
+                     'imageRefs':{'image':{'status':'AVAILABLE','imageRef':'opaque-ref'}}}],
             'page':request.page,'pageSize':request.page_size,'hasNext':False,'stableRowIdentity':True,
             'historyDefinitionRevision':self.history_revision}))
 

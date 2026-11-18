@@ -8,7 +8,7 @@ import zipfile
 from PIL import Image
 
 from emo_panel_protocol.canonical import canonicalJson, revisionOf
-from emo_panel_protocol.published import PanelManifest, PublishedPresentation
+from emo_panel_protocol.published import PanelManifest, PublishedPresentation, compositionRequirements
 from emo_master.core.presentation.history import historyRevision
 from emo_master.core.presentation.models import walkComponents
 from emo_master.core.presentation.targets import effectiveImageLocation, presentationForTarget
@@ -24,6 +24,8 @@ def publishedSnapshot(document, *, manifests=None):
     original = document.presentation
     if original is None:
         raise PanelPublishError('工程尚未设计页面')
+    if document.schemaVersion != '2.10' or original.schemaVersion != '1.3':
+        raise PanelPublishError('发布需要当前工程 2.10 / 页面 1.3')
     presentation = presentationForTarget(original, 'web')
     if not presentation.pages:
         raise PanelPublishError('没有 Web 页面，请在页面属性中选择 Web 目标')
@@ -51,7 +53,12 @@ def publishedSnapshot(document, *, manifests=None):
     capture = captureDefinition(presentation)
     payload = presentation.model_dump(mode='json')
     payload['schemaVersion'] = 'published-1'
+    if payload['shell'] is None:
+        payload['shell'] = {}
+    if not payload['shell'].get('title'):
+        payload['shell']['title'] = document.project.name
     requirements = {'layout.ordered-responsive-v1', 'result.closed-v1', 'actions.readonly-v1'}
+    requirements.update(compositionRequirements(payload))
 
     def exportComponents(components, pageId):
         for item in components:
@@ -97,6 +104,8 @@ def buildWebPanel(document, projectRoot, output, *, manifests=None):
     referenced = {component['props'][field] for page in snapshot['pages'].values()
         for component in _walk(page['components']) for field in ('imageResourceId', 'iconResourceId')
         if field in component['props']}
+    if logo := snapshot.get('shell', {}).get('logoResourceId'):
+        referenced.add(logo)
     total = 0
     for key in sorted(referenced):
         resource = document.resources.items.get(key) if document.resources else None

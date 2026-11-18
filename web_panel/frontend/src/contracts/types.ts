@@ -12,15 +12,35 @@ export interface Me {
     permissions?: string[];
 }
 export interface Layout { type?: string; direction?: string; columns?: number; spacing?: number; alignment?: string; justify?: string; equalWidth?: boolean; }
+export interface Appearance { theme?: 'light'; contentMaxWidth?: number; pagePadding?: number; }
+export interface PanelShell {
+    title?: string; subtitle?: string; logoResourceId?: string; diagnosticsInitiallyExpanded?: boolean;
+    showConnection?: boolean; showJobState?: boolean; showControls?: boolean;
+}
+export interface Surface {
+    kind?: 'none' | 'card'; background?: 'transparent' | 'surface' | 'subtle';
+    border?: 'none' | 'subtle'; radius?: number;
+    padding?: Partial<Record<'top' | 'right' | 'bottom' | 'left', number>>;
+}
+export interface TextStyle { size?: number; weight?: 'normal' | 'bold'; color?: string; }
+export type Typography = Partial<Record<'title' | 'value' | 'helper', TextStyle>>;
+export interface ImageView {
+    sizing?: 'fixed' | 'aspect'; aspectRatio?: number | null; background?: 'subtle' | 'dark' | 'transparent';
+    horizontalAlign?: 'start' | 'center' | 'end'; verticalAlign?: 'start' | 'center' | 'end';
+}
+export interface IndicatorStyle { text: string; color: string; background?: 'none' | 'soft'; }
 export interface Component {
     history?: {kind:string;componentId:string;sourceComponentId?:string;orderBy?:string;descending?:boolean};
     layout?: {row?:number;column?:number;rowSpan?:number;columnSpan?:number};
     responsive?: {width?:string;minWidth?:number;preferredWidth?:number;weight?:number;minHeight?:number;preferredHeight?:number;alignSelf?:string;canvasOffsetY?:number};
-    actions?: {clicked?: {type:string;pageId?:string;context?:string;resultScopeId?:string}};
+    actions?: {clicked?: {type:string;pageId?:string;context?:string;resultScopeId?:string;componentId?:string}};
     id: string;
     type: string;
     label?: string;
-    props?: Record<string, unknown> & {spacerMode?: 'fixed' | 'flex'};
+    props?: Record<string, unknown> & {
+        spacerMode?: 'fixed' | 'flex'; surface?: Surface; typography?: Typography; imageView?: ImageView;
+        collapse?: {initiallyCollapsed?: boolean}; indicatorStates?: Record<string, IndicatorStyle>;
+    };
     binding?: string | {
         sourceId?: string;
         field?: string;
@@ -49,6 +69,10 @@ export interface Panel {
     projectId?: string;
     runtimeInstanceId?: string;
     navigation?:{mode?:'tabs'|'buttons'};
+    appearance?: Appearance;
+    shell?: PanelShell;
+    logoUrl?: string;
+    historyDefinitionRevision?: string;
     title?: string;
     id: string;
     name: string;
@@ -110,10 +134,10 @@ export interface Envelope {
 }
 export interface History {
     rows: Record<string, unknown>[];
-    total?: number;
     hasNext?: boolean;
     stableRowIdentity?: boolean;
     historyDefinitionRevision?: string;
+    selectedRowId?: string;
     columns?: {name:string;type?:string}[];
     page: number;
     pageSize: number;

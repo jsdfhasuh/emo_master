@@ -143,7 +143,7 @@ def testDeviceRuntimeLogsKeepDraftAndReleaseModalInput(ownedDesignerWindow, tmp_
     window.show()
     c = window.pageCoordinator
     document = c.session.document()
-    assert document.schemaVersion == '2.9' and document.presentation.schemaVersion == '1.2'
+    assert document.schemaVersion == '2.10' and document.presentation.schemaVersion == '1.3'
     disk = (tmp_path / 'device.emoproj').read_bytes()
     requests = []
 

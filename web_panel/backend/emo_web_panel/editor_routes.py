@@ -34,6 +34,7 @@ def install_editor_routes(app, config, packages, identity, client_for, json_obje
                for state in (catalog, requests)):
             raise HTTPException(409, "Runtime 工程在读取期间变化，请刷新目录")
         return {"runtime": info, "catalog": catalog, "requests": requests,
+                "historySources": await asyncio.to_thread(store.history_sources, rid, project, info.get("historyDefinitionRevision", "")),
                 "draft": await asyncio.to_thread(store.draft, rid, project),
                 "versions": await asyncio.to_thread(store.versions, rid, project)}
 
@@ -65,7 +66,8 @@ def install_editor_routes(app, config, packages, identity, client_for, json_obje
         who, client, info, project = await target(req, rid, body.get("projectId"), True)
         if body.get("mode") not in {"fixtures", "runtime"}:
             raise HTTPException(422, "选择示例预览或已有任务实时预览")
-        package, panel, output = await asyncio.to_thread(store.prepare, rid, project, body.get("presentation"))
+        package, panel, output = await asyncio.to_thread(store.prepare, rid, project, body.get("presentation"),
+                                                        info.get("historyDefinitionRevision", ""))
         response = {"mode": body["mode"], "panel": panel, "presentation": panel,
                     "source": body["presentation"], "sourceProblems": {},
                     "label": "示例数据 · 不执行检测" if body["mode"] == "fixtures" else "已有任务 · 只读实时预览"}
@@ -130,7 +132,10 @@ def install_editor_routes(app, config, packages, identity, client_for, json_obje
         body = await json_object(req)
         async with target_lock(rid):
             who, client, info, project = await target(req, rid, body.get("projectId"), True)
-            record = await store.reconcile(await asyncio.to_thread(store.version, rid, project, version_id), client)
+            record = await asyncio.to_thread(store.version, rid, project, version_id)
+            if record.get("installedPackage"):
+                raise HTTPException(409, "请在页面包管理中继续启用此导入版本")
+            record = await store.reconcile(record, client)
             notify(record)
             return record
 
@@ -140,6 +145,8 @@ def install_editor_routes(app, config, packages, identity, client_for, json_obje
         async with target_lock(rid):
             who, client, info, project = await target(req, rid, body.get("projectId"), True)
             old = await asyncio.to_thread(store.version, rid, project, body.get("versionId"))
+            if old.get("installedPackage"):
+                raise HTTPException(409, "请在页面包管理中启用此导入版本")
             record = await store.publish(rid, project, client, request_id=body.get("requestId"), source=old["source"])
             notify(record)
             return record

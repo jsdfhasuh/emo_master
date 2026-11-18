@@ -287,7 +287,7 @@ class EditorPublishedRuntimeTests(unittest.IsolatedAsyncioTestCase):
         from emo_web_panel.config import Config
 
         fixture = json.loads((Path(self.directory.name) / 'project/web-editor-demo.emoproj').read_text(encoding='utf-8'))
-        self.assertEqual((fixture['schemaVersion'], fixture['presentation']['schemaVersion']), ('2.9', '1.2'))
+        self.assertEqual((fixture['schemaVersion'], fixture['presentation']['schemaVersion']), ('2.10', '1.3'))
         self.assertEqual(fixture['devices']['definitions'], {})
         self.assertEqual(fixture['presentation']['pages'], {}, 'Capture must not come from a Qt page')
         app = create_app(Config(Path(self.directory.name) / 'gateway', mode='grpc', runtime_address=self.client.address))

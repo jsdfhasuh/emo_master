@@ -7,14 +7,15 @@ import sys
 import time
 from types import MappingProxyType
 
-from PySide2.QtCore import Qt, QRect, Signal, QEvent
-from PySide2.QtGui import QPainter, QColor, QImage, QFontDatabase, QIcon, QPixmap
+from PySide2.QtCore import Qt, QRect, QSize, Signal, QEvent
+from PySide2.QtGui import QPainter, QColor, QFont, QImage, QIcon, QPixmap
 from PySide2.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout,
-    QStackedWidget, QFrame, QSizePolicy, QApplication, QMenu,
+    QStackedWidget, QFrame, QSizePolicy, QApplication, QMenu, QToolButton,
 )
 
-from emo_master.core.presentation.models import Presentation, ResponsiveLayout, walkComponents
+from emo_master.core.presentation.models import ImageView as ImageConfig
+from emo_master.core.presentation.models import PageAppearance, PageShell, Presentation, ResponsiveLayout, walkComponents
 from emo_master.core.presentation.messages import budgetMessage
 from emo_master.core.presentation.values import readValue
 from emo_master.core.project.snapshots import captureDefinition, revisionOf
@@ -23,10 +24,9 @@ from emo_master.ui.presentation.images import assertGuiThread, ownedImage
 from emo_master.ui.presentation.table import CollectionView
 from emo_master.ui.presentation.page_navigation import PageNavigation
 from emo_master.ui.presentation.page_scroll import PageScrollArea
+from emo_master.ui.presentation.appearance import THEME, ValueView, plainLabel, roleStyle, surfaceStyle
 
 
-COLORS = {'default': '#223247', 'neutral': '#576477', 'green': '#176f42',
-          'red': '#af2734', 'amber': '#925900'}
 SURFACE_LIMIT = 16 * 1024 * 1024
 
 
@@ -44,13 +44,7 @@ def surfaceBounds(width, height, ratio):
 
 
 def appearanceStyle(props):
-    # Every interpolated token is a validated enum or bounded integer.
-    family = {'system': QApplication.font().family(),
-              'sans': 'Microsoft YaHei UI' if sys.platform == 'win32' else 'sans-serif',
-              'serif': 'serif', 'monospace': QFontDatabase.systemFont(QFontDatabase.FixedFont).family()}[props.fontFamily]
-    family = family.replace("'", '').replace(';', '')
-    size = f'font-size:{props.fontSize}px;' if props.fontSize else ''
-    return f"font-family:'{family}';{size}font-weight:{props.fontWeight};color:{COLORS[props.textColor]};"
+    return roleStyle(props)
 
 
 class ImageView(QWidget):
@@ -60,14 +54,38 @@ class ImageView(QWidget):
         self.message = "尚无结果"
         self.key = ""
         self.painted = None
-        self.setMinimumSize(240, 180)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setViewConfig(None)
+
+    def setViewConfig(self, config, height=0):
+        self.config = config or ImageConfig()
+        self.fixedHeight = height or 180
+        policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        policy.setHeightForWidth(self.config.sizing == 'aspect')
+        self.setSizePolicy(policy)
+        self.updateGeometry()
+
+    def aspectRatio(self):
+        if self.config.aspectRatio is not None:
+            return self.config.aspectRatio
+        return self.image.width() / self.image.height() if not self.image.isNull() else 4 / 3
+
+    def heightForWidth(self, width):
+        return round(min(8192, width / self.aspectRatio())) if self.config.sizing == 'aspect' else self.fixedHeight
+
+    def sizeHint(self):
+        return QSize(240, self.heightForWidth(240))
+
+    def minimumSizeHint(self):
+        return QSize(0, 0 if self.config.sizing == 'aspect' else self.fixedHeight)
 
     def setImage(self, image, key, message=""):
         assertGuiThread()
         if self.image.cacheKey() == image.cacheKey() and self.key == key and self.message == message:
             return
+        ratio = self.aspectRatio()
         self.image, self.key, self.message = image, key, message
+        if self.config.sizing == 'aspect' and self.aspectRatio() != ratio:
+            self.updateGeometry()
         self.update()
 
     def contextMenuEvent(self, event):
@@ -86,15 +104,18 @@ class ImageView(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor("#e9eef4"))
+        if self.config.background != 'transparent':
+            painter.fillRect(self.rect(), QColor(THEME[self.config.background]))
         if not self.image.isNull():
             size = self.image.size().scaled(self.size(), Qt.KeepAspectRatio)
-            x, y = (self.width() - size.width()) // 2, (self.height() - size.height()) // 2
+            offsets = {'start': 0, 'center': 0.5, 'end': 1}
+            x = round((self.width() - size.width()) * offsets[self.config.horizontalAlign])
+            y = round((self.height() - size.height()) * offsets[self.config.verticalAlign])
             painter.drawImage(QRect(x, y, size.width(), size.height()), self.image)
             if self.painted:
                 self.painted(self.key, time.perf_counter_ns())
         else:
-            painter.setPen(QColor("#576477"))
+            painter.setPen(QColor(THEME['surface' if self.config.background == 'dark' else 'muted']))
             painter.drawText(self.rect().adjusted(14, 14, -14, -14), Qt.AlignCenter | Qt.TextWordWrap, self.message)
         painter.end()
 
@@ -134,59 +155,106 @@ class RuntimePages(QWidget):
         self.currentPageId = None
         self.pages = {}
         self.widgets = {}
+        self._historyReview = {}
         self.cards = {}
         self.layoutHosts = {}
         self.displayed = {}
         self.lastView = None
+        self._hostConnected = False
+        self._hostJobState = '尚未开始'
         self.frozen = None
         self.frozenGeneration = None
         self.records = deque(maxlen=256)
         self._recordedPaints = deque(maxlen=128)
+        self._collapseStates = {}
         self._screenWindow = None
         self._screenSource = None
+        self._label = label
         self.setWindowTitle(label)
         self.resize(1060, 720)
         self.setMinimumSize(460, 360)
         self.fitToAvailableScreen(resize=False)
-        self.setStyleSheet("QWidget {font-family: 'Microsoft YaHei'; font-size: 13px; color:#223247;} "
-            "QWidget#runtimePages {background:#f5f7fa;} QFrame#card {background:white; border:1px solid #dce3eb; border-radius:6px;} "
-            "QPushButton {padding:9px 14px; background:#e3edf8; border:1px solid #c4d7ec; border-radius:4px;} "
-            "QPushButton:checked {background:#2168ae; color:white;} QLabel#number {font-size:36px; font-weight:600;}")
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        if sys.platform == 'win32':
+            self.setFont(QFont('Microsoft YaHei UI'))
+        self.setStyleSheet(
+            f"QWidget {{font-size:13px;color:{THEME['text']};}}"
+            f"QWidget#runtimePages {{background:{THEME['page']};}}"
+            f"QPushButton {{padding:5px 12px;background:{THEME['surface']};border:1px solid {THEME['border']};border-radius:6px;}}"
+            f"QPushButton:checked,QPushButton[buttonStyle=primary] {{background:{THEME['primary']};color:white;}}"
+            f"QPushButton[buttonStyle=link] {{background:transparent;color:{THEME['primary']};border:1px solid transparent;}}"
+            f"QPushButton:focus {{border:1px solid {THEME['primary']};}}"
+            f"QPushButton:disabled {{color:{THEME['muted']};background:{THEME['subtle']};}}"
+            f"QTabBar::tab {{padding:7px 15px;color:{THEME['muted']};border-bottom:2px solid transparent;}}"
+            f"QTabBar::tab:selected {{color:{THEME['primary']};border-color:{THEME['primary']};font-weight:bold;}}")
         self.setObjectName("runtimePages")
         layout = QVBoxLayout(self)
         self.banner = QLabel(label)
         self.banner.setTextFormat(Qt.PlainText)
         self.banner.setWordWrap(True)
+        self.header = QWidget()
+        head = QHBoxLayout(self.header)
+        head.setContentsMargins(12, 8, 12, 0)
+        self.logo = QLabel()
+        head.addWidget(self.logo)
+        titles = QVBoxLayout()
+        titles.setSpacing(2)
+        self.shellTitle = plainLabel('', f"font-size:20px;font-weight:bold;color:{THEME['text']};")
+        self.shellSubtitle = plainLabel('', f"color:{THEME['muted']};")
+        titles.addWidget(self.shellTitle)
+        titles.addWidget(self.shellSubtitle)
+        head.addLayout(titles, 1)
+        self.headerStatus = plainLabel('')
+        head.addWidget(self.headerStatus)
+        self.headerJob = plainLabel('')
+        head.addWidget(self.headerJob)
+        self.hostControls = QHBoxLayout()
+        head.addLayout(self.hostControls)
+        self.hostMessage = plainLabel('', f"color:{THEME['foreground']['red']};")
+        self.hostMessage.hide()
+        layout.addWidget(self.header)
+        layout.addWidget(self.hostMessage)
         layout.addWidget(self.banner)
         self.status = QLabel("未连接 · 等待明确选择任务")
         self.status.setTextFormat(Qt.PlainText)
         self.status.setWordWrap(True)
-        layout.addWidget(self.status)
         self.jobStatus = QLabel('任务执行状态不可用 · 尚无已核验的任务身份')
         self.jobStatus.setTextFormat(Qt.PlainText)
         self.jobStatus.setWordWrap(True)
-        layout.addWidget(self.jobStatus)
         controls = QHBoxLayout()
+        self.pageNavigation = PageNavigation(self.config)
+        self.pageNavigation.pageRequested.connect(self.navigate)
+        controls.addWidget(self.pageNavigation, 1)
+        controls.addStretch()
+        self.modeLabel = plainLabel('实时')
+        controls.addWidget(self.modeLabel)
         self.resumeButton = QPushButton("恢复实时")
         self.resumeButton.clicked.connect(self.resumeLive)
         controls.addWidget(self.resumeButton)
         self.fitButton = QPushButton('适配当前屏幕')
         self.fitButton.clicked.connect(lambda: self.fitToAvailableScreen())
-        controls.addWidget(self.fitButton)
-        self.modeLabel = QLabel("实时 · 冻结仅影响本窗口")
-        controls.addWidget(self.modeLabel, 1)
-        self.pageNavigation = PageNavigation(self.config)
-        self.pageNavigation.setMaximumWidth(320)
-        self.pageNavigation.pageRequested.connect(self.navigate)
-        controls.addWidget(self.pageNavigation)
         layout.addLayout(controls)
+        self.diagnosticToggle = QToolButton()
+        self.diagnosticToggle.setText('技术诊断')
+        self.diagnosticToggle.setCheckable(True)
+        self.diagnosticToggle.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        controls.addWidget(self.diagnosticToggle)
+        self.diagnostics = QWidget()
+        diagnosticBody = QVBoxLayout(self.diagnostics)
+        diagnosticBody.setContentsMargins(12, 0, 12, 0)
+        diagnosticBody.addWidget(self.status)
+        diagnosticBody.addWidget(self.jobStatus)
+        diagnosticBody.addWidget(self.fitButton, 0, Qt.AlignLeft)
+        layout.addWidget(self.diagnostics)
         self.stack = QStackedWidget()
         layout.addWidget(self.stack, 1)
         self.identity = QLabel("尚无已显示结果")
         self.identity.setTextFormat(Qt.PlainText)
         self.identity.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.identity.setWordWrap(True)
-        layout.addWidget(self.identity)
+        diagnosticBody.addWidget(self.identity)
+        self.diagnosticToggle.toggled.connect(self._showDiagnostics)
+        self._setShell()
         if self.config.defaultPageId:
             self.navigate(self.config.defaultPageId)
         else:
@@ -195,6 +263,31 @@ class RuntimePages(QWidget):
         if hub:
             hub.attach(self)
 
+    def _showDiagnostics(self, visible):
+        self.diagnostics.setVisible(visible)
+        self.diagnosticToggle.setArrowType(Qt.DownArrow if visible else Qt.RightArrow)
+
+    def _setShell(self):
+        shell = self.config.shell or PageShell()
+        self.shellTitle.setText(shell.title or self._label)
+        self.shellSubtitle.setText(shell.subtitle)
+        self.shellSubtitle.setVisible(bool(shell.subtitle))
+        self.headerStatus.setVisible(shell.showConnection)
+        self.headerJob.setVisible(shell.showJobState)
+        self.headerStatus.setText('尚未连接结果服务')
+        self.headerJob.setText('尚未开始')
+        self.logo.hide()
+        if self.editorHost:
+            self.diagnosticToggle.hide()
+        else:
+            self.diagnosticToggle.setChecked(shell.diagnosticsInitiallyExpanded)
+        self._showDiagnostics(shell.diagnosticsInitiallyExpanded and not self.editorHost)
+
+    def setHostMessage(self, message, *, problem=False):
+        self.hostMessage.setStyleSheet(f"color:{THEME['foreground']['red'] if problem else THEME['muted']};")
+        self.hostMessage.setText(message)
+        self.hostMessage.setVisible(bool(message))
+
     def setBasicStatus(self, state, *, connected, connectionDetail="", operation=""):
         """Show an owner's exact task without creating a result-observer session.
 
@@ -202,15 +295,17 @@ class RuntimePages(QWidget):
         hub, capture and result-identity rules, including their disconnected UI.
         """
         assertGuiThread()
-        if self.config.pageOrder:
-            return
+        self._hostConnected = connected
+        self._hostJobState = '尚未开始'
         self.status.setText("Runtime：已连接（本机）" if connected else "Runtime：连接状态不可用")
+        self.headerStatus.setText(self.status.text())
         self.status.setToolTip(connectionDetail)
         jobId, status = state.get("jobId", ""), state.get("jobStatus", "")
         names = {"ACCEPTED": "已接受，等待启动", "STARTING": "启动中", "RUNNING": "运行中",
                  "STOPPING": "停止中", "COMPLETED": "已完成", "FAILED": "执行失败", "ABORTED": "已中止"}
         terminal = status in {"COMPLETED", "FAILED", "ABORTED"}
         if jobId:
+            self._hostJobState = names.get(status, '状态待确认')
             text = ("最近任务：" if terminal else "当前任务：") + names.get(status, "状态待确认")
             if status:
                 text += f" ({status})"
@@ -230,6 +325,10 @@ class RuntimePages(QWidget):
             if connectionDetail:
                 text += "\n" + connectionDetail
         self.jobStatus.setText(text)
+        self.headerJob.setText(self._hostJobState)
+        self._showHostStatus()
+        if self.config.pageOrder:
+            return
         self.stack.currentWidget().setText("尚未配置运行页面\n当前仅显示基础任务状态；任务完成不等于产品 OK/NG。")
         for widget in (self.resumeButton, self.fitButton, self.modeLabel, self.identity):
             widget.hide()
@@ -282,7 +381,6 @@ class RuntimePages(QWidget):
         self.syncNavigation()
         self._syncLocalPreviews()
         self.setMinimumSize(0, 0)
-        self.setStyleSheet(self.styleSheet().replace("font-family: 'Microsoft YaHei'; font-size: 13px; ", ''))
         self.fitButton.setText('适配编辑区')
         if self.parentWidget():
             self.parentWidget().installEventFilter(self)
@@ -357,6 +455,7 @@ class RuntimePages(QWidget):
         if self.projectRoot == projectRoot:
             return
         self.projectRoot = projectRoot
+        self._historyReview.clear()
         for rows in self.widgets.values():
             for component, widget in rows.values():
                 if component.props.imagePath is not None or component.type in {'sqlite_table', 'sqlite_value'}:
@@ -392,9 +491,11 @@ class RuntimePages(QWidget):
             widget.deleteLater()
         self.pages.clear()
         self.widgets.clear()
+        self._historyReview.clear()
         self.cards.clear()
         self.layoutHosts.clear()
         self.config = config
+        self._setShell()
         self.pageNavigation.setPages(config)
         try:
             self.expectedCapture = revisionOf(captureDefinition(captureConfig))
@@ -425,24 +526,32 @@ class RuntimePages(QWidget):
             for component, child in self.widgets.pop(old).values():
                 if component.props.imagePath is not None:
                     child.dispose()
+                elif component.type == 'sqlite_table':
+                    self._historyReview[(old, component.componentId)] = child.saveReviewState()
             self.stack.removeWidget(widget)
             widget.deleteLater()
         page = self.config.pages[pageId]
         scroll = PageScrollArea()
+        scroll.setFrameShape(QFrame.NoFrame)
         scroll.setWidgetResizable(True)
+        scroll.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
         body = QWidget()
         body.setProperty('pageGrid', pageId)
+        appearance = self.config.appearance or PageAppearance()
+        if appearance.contentMaxWidth:
+            body.setMaximumWidth(appearance.contentMaxWidth)
         self.widgets[pageId] = {}
         self.cards[pageId] = {}
         self.layoutHosts[pageId] = {}
-        self._children(body, page.components, page.layout, pageId, canvasTop=page.canvasTop)
+        self._children(body, page.components, page.layout, pageId, canvasTop=page.canvasTop,
+                       padding=(appearance.pagePadding,) * 4)
         self._connectLocalImages(pageId)
         scroll.setWidget(body)
         scroll.setCanvasExtension(0 if self.editorHost else -page.canvasTop)
         self.stack.addWidget(scroll)
         self.pages[pageId] = scroll
 
-    def _children(self, parent, components, grid, pageId, parentId=None, *, canvasTop=0):
+    def _children(self, parent, components, grid, pageId, parentId=None, *, canvasTop=0, padding=(0, 0, 0, 0)):
         from .editor_grid import EditorGridLayout
         responsive = isinstance(grid, ResponsiveLayout)
         if responsive:
@@ -451,6 +560,7 @@ class RuntimePages(QWidget):
         else:
             layout = (EditorGridLayout if self.editorHost else QGridLayout)(parent)
         self.layoutHosts[pageId][parentId] = parent
+        layout.setContentsMargins(*padding)
         layout.setSpacing(grid.spacing)
         fixedRows = {row for c in components if c.type not in {'image', 'table', 'sqlite_table', 'container'}
                      for row in range(c.layout.row, c.layout.row + c.layout.rowSpan)}
@@ -475,20 +585,24 @@ class RuntimePages(QWidget):
                 card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
             card.setProperty('componentId', component.componentId)
             self.cards[pageId][component.componentId] = card
-            backgrounds = {'plain': 'white', 'soft': '#edf3fa', 'outlined': 'transparent'}
-            if component.type != 'spacer':
-                card.setStyleSheet('QFrame#card {background:' + backgrounds[component.props.cardStyle] +
-                    ';border:1px solid #c4d0de;border-radius:6px;}')
+            margins = surfaceStyle(card, component) if component.type != 'spacer' else (0, 0, 0, 0)
             if component.type == "spacer":
                 self.widgets[pageId][component.componentId] = (component, card)
             elif component.type == "container":
                 content = card
-                if component.props.title:
+                if component.props.title or component.props.collapse:
                     from .container_title import ContainerTitle
                     card.containerTitle = ContainerTitle(card, component.props.title,
-                        appearanceStyle(component.props), editing=self.editorHost)
+                        roleStyle(component.props, 'title'), margins=margins,
+                        collapse=component.props.collapse)
                     content = card.containerTitle.body
-                self._children(content, component.children, component.grid, pageId, component.componentId)
+                    if component.props.collapse:
+                        key = (pageId, component.componentId)
+                        toggle = card.containerTitle.label
+                        toggle.setChecked(self._collapseStates.get(key, toggle.isChecked()))
+                        toggle.toggled.connect(lambda expanded, key=key: self._collapseStates.__setitem__(key, expanded))
+                self._children(content, component.children, component.grid, pageId, component.componentId,
+                               padding=margins if content is card else (0, 0, 0, 0))
                 if self.editorHost and not component.children:
                     card.setMinimumHeight(90)
                     if isinstance(component.grid, ResponsiveLayout):
@@ -497,12 +611,13 @@ class RuntimePages(QWidget):
                         content.layout().addWidget(QLabel('容器 · 拖入组件'), 0, 0)
             else:
                 box = QVBoxLayout(card)
-                if self.editorHost:
-                    box.setContentsMargins(9, 28, 9, 9)
-                if component.props.title:
+                box.setContentsMargins(*margins)
+                box.setSpacing(5)
+                if component.props.title and component.type not in {
+                        'text', 'number', 'indicator', 'runtime_status', 'navigation_button'}:
                     title = QLabel(component.props.title)
                     title.setTextFormat(Qt.PlainText)
-                    title.setStyleSheet(appearanceStyle(component.props))
+                    title.setStyleSheet(roleStyle(component.props, 'title'))
                     title.setWordWrap(True)
                     box.addWidget(title)
                 if component.type == "image":
@@ -524,14 +639,7 @@ class RuntimePages(QWidget):
                     else:
                         widget = ImageView()
                         widget.painted = self._painted
-                    if self.editorHost:
-                        widget.setMinimumSize(100, 96)
-                        widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-                    if responsive:
-                        # The responsive card owns the available width. Let
-                        # its image fit that width instead of clipping a wider
-                        # child that retains the legacy grid minimum.
-                        widget.setMinimumWidth(0)
+                    widget.setViewConfig(component.props.imageView, component.responsive.preferredHeight)
                     if component.bindings:
                         widget.message = '已绑定 · 等待明确任务结果'
                 elif component.type == 'table' and sum(isinstance(w, CollectionView) for rows in self.widgets.values() for _c, w in rows.values()) < 4:
@@ -539,6 +647,7 @@ class RuntimePages(QWidget):
                 elif component.type == "navigation_button":
                     widget = QPushButton(component.props.text or component.props.title or "导航")
                     widget.clicked.connect(lambda _checked=False, item=component: self.act(item.actions.get("clicked")))
+                    widget.setProperty('buttonStyle', component.props.buttonStyle)
                 elif component.type == 'page_navigation':
                     widget = PageNavigation(self.config, title=component.props.text)
                     widget.selectPage(pageId)
@@ -554,16 +663,31 @@ class RuntimePages(QWidget):
                     from .sqlite_widgets import SqliteTableView, SqliteValueView
                     preview = self._localPreviewEnabled()
                     if component.type == 'sqlite_table':
-                        fields = {c.props.imagePath.field for c in walkComponents(self.config.pages[pageId].components)
+                        pageComponents = list(walkComponents(self.config.pages[pageId].components))
+                        fields = {c.props.imagePath.field for c in pageComponents
                                   if c.props.imagePath is not None and c.props.imagePath.kind == 'selected_row'
                                   and c.props.imagePath.componentId == component.componentId}
+                        needsCount = any(c.props.recordValue is not None
+                            and c.props.recordValue.componentId == component.componentId
+                            and c.props.recordValue.kind == 'meta' and c.props.recordValue.meta == 'count'
+                            for c in pageComponents)
+                        requiresIdentity = bool(fields) or any(
+                            (c.props.recordValue is not None and c.props.recordValue.componentId == component.componentId)
+                            or any(action.componentId == component.componentId for action in c.actions.values())
+                            for c in pageComponents)
                         widget = SqliteTableView(component.props.sqlite, pageSize=component.props.pageSize,
-                                                preview=preview, selectionFields=sorted(fields), projectRoot=self.projectRoot)
+                            preview=preview, selectionFields=sorted(fields), projectRoot=self.projectRoot,
+                            props=component.props, needsCount=needsCount, requiresIdentity=requiresIdentity)
+                        state = self._historyReview.get((pageId, component.componentId))
+                        if state is not None:
+                            widget.restoreReviewState(state)
                     else:
                         widget = SqliteValueView(component.props.sqlite, decimals=component.props.decimals,
                                                  unit=component.props.unit, preview=preview, projectRoot=self.projectRoot)
                     widget.historyClient = self.historyClient
                     widget.componentId = component.componentId
+                elif component.type in {'text', 'number', 'indicator', 'runtime_status'}:
+                    widget = ValueView(component)
                 else:
                     widget = QLabel(component.props.text if component.type == "text" and not component.bindings
                                     else '已绑定 · 等待明确任务结果' if component.bindings else "未绑定")
@@ -587,12 +711,9 @@ class RuntimePages(QWidget):
                         note = '来源: ' + (source.port or source.name or source.kind)[:32]
                     else:
                         note = '来源缺失' if component.bindings else '未选择来源 · 拖入流程结果'
-                    badge = QLabel(note)
-                    badge.setObjectName('bindingHint')
-                    badge.setWordWrap(True)
-                    badge.setToolTip(str(source) if source else note)
-                    box.addWidget(badge)
-                widget.setStyleSheet(appearanceStyle(component.props))
+                    card.setToolTip(note)
+                if not isinstance(widget, ValueView):
+                    widget.setStyleSheet(appearanceStyle(component.props))
                 self.widgets[pageId][component.componentId] = (component, widget)
             p = component.layout
             if responsive:
@@ -614,6 +735,25 @@ class RuntimePages(QWidget):
         from .sqlite_widgets import SqliteTableView
         rows = self.widgets[pageId]
         for component, widget in rows.values():
+            recordValue = component.props.recordValue
+            action = component.actions.get('clicked')
+            recordTarget = rows.get(recordValue.componentId) if recordValue is not None else None
+            actionTarget = rows.get(action.componentId) if action is not None and action.componentId else None
+            if recordTarget is not None and isinstance(recordTarget[1], SqliteTableView):
+                table = recordTarget[1]
+                def updateValue(field=recordValue, source=table, target=widget):
+                    target.setValue(source.recordValue(field))
+                table.stateChanged.connect(updateValue)
+                updateValue()
+            elif action is not None and action.type in {'history_first', 'history_previous', 'history_next'}:
+                if actionTarget is None or not isinstance(actionTarget[1], SqliteTableView):
+                    widget.setEnabled(False)
+                    continue
+                table = actionTarget[1]
+                def updateAction(button=widget, source=table, kind=action.type):
+                    button.setEnabled(source.canReview(kind))
+                table.stateChanged.connect(updateAction)
+                updateAction()
             source = component.props.imagePath
             if source is None or source.kind != 'selected_row':
                 continue
@@ -626,7 +766,34 @@ class RuntimePages(QWidget):
                 continue
             table = target[1]
             table.selectedRowChanged.connect(widget.setSelectedRow)
+            widget.referenceExpired.connect(table.retryExpiredImage)
             widget.setSelectedRow(table.selectedRow())
+
+    def historyReviewState(self):
+        tables = dict(self._historyReview)
+        for pageId, rows in self.widgets.items():
+            for component, widget in rows.values():
+                if component.type == 'sqlite_table':
+                    tables[pageId, component.componentId] = widget.saveReviewState()
+        return self.currentPageId, tables, dict(self._collapseStates)
+
+    def restoreHistoryReviewState(self, state):
+        # The operator host restores before showing a replacement renderer.
+        pageId, tables, collapsed = state
+        self._historyReview.update(tables)
+        self._collapseStates.update(collapsed)
+        for mountedPage, rows in self.widgets.items():
+            for component, widget in rows.values():
+                saved = tables.get((mountedPage, component.componentId))
+                if component.type == 'sqlite_table' and saved is not None:
+                    widget.restoreReviewState(saved)
+        for mountedPage, cards in self.cards.items():
+            for componentId, card in cards.items():
+                title = getattr(card, 'containerTitle', None)
+                if title is not None and isinstance(title.label, QToolButton) and (mountedPage, componentId) in collapsed:
+                    title.label.setChecked(collapsed[mountedPage, componentId])
+        if pageId in self.config.pages:
+            self.navigate(pageId)
 
     def _readHistoryImage(self, ref):
         if self.historyClient is None:
@@ -634,7 +801,10 @@ class RuntimePages(QWidget):
         return self.historyClient.readImage(ref)
 
     def setHistoryClient(self, client):
+        if client is self.historyClient:
+            return
         self.historyClient = client
+        self._historyReview.clear()
         for rows in self.widgets.values():
             for component, widget in rows.values():
                 if component.type in {'sqlite_table', 'sqlite_value'}:
@@ -642,6 +812,11 @@ class RuntimePages(QWidget):
                     widget._generation += 1
                     widget.loaded = False
                     widget._clear()
+                    if widget.isVisible():
+                        if widget.busy and component.type == 'sqlite_table':
+                            widget._resumeAfterWorker = True
+                        else:
+                            widget.refresh()
                 elif component.props.imagePath is not None and widget.remoteReader:
                     widget.reload()
 
@@ -670,6 +845,18 @@ class RuntimePages(QWidget):
 
     def _renderAssets(self):
         from .static_assets import readAsset
+        shell = self.config.shell
+        logo = self.assets.get(shell.logoResourceId) if shell and shell.logoResourceId else None
+        if logo is not None:
+            try:
+                image = readAsset(logo, SURFACE_LIMIT, icon=True)
+                self.logo.setPixmap(QPixmap.fromImage(image))
+                self.logo.show()
+            except (ValueError, OSError):
+                self.logo.hide()
+        else:
+            self.logo.clear()
+            self.logo.hide()
         # Drop previous decoded ownership before allocating replacements.
         for component, widget in self.widgets.get(self.currentPageId, {}).values():
             if component.props.imageResourceId:
@@ -722,6 +909,7 @@ class RuntimePages(QWidget):
             self._build(pageId)
         self.currentPageId = pageId
         self.stack.setCurrentWidget(self.pages[pageId])
+        self._showHostStatus()
         self._renderAssets()
         self.syncNavigation()
         if self.designExamples:
@@ -736,9 +924,12 @@ class RuntimePages(QWidget):
 
     def syncNavigation(self):
         page = self.config.pages.get(self.currentPageId)
-        custom = page is not None and any(c.type == 'page_navigation' for c in walkComponents(page.components))
+        components = list(walkComponents(page.components)) if page is not None else []
+        custom = any(c.type == 'page_navigation' for c in components)
+        customResume = any(a.type == 'resume_live' for c in components for a in c.actions.values())
         self.pageNavigation.selectPage(self.currentPageId)
         self.pageNavigation.setVisible(not self.editorHost and len(self.config.pages) > 1 and not custom)
+        self.resumeButton.setVisible(not self.editorHost and bool(self.frozen) and not customResume)
         for rows in self.widgets.values():
             for component, widget in rows.values():
                 if component.type == 'page_navigation':
@@ -770,6 +961,10 @@ class RuntimePages(QWidget):
             self.navigate(action.pageId)
         elif action.type == "resume_live":
             self.resumeLive()
+        elif action.type in {'history_first', 'history_previous', 'history_next'}:
+            item = self.widgets.get(self.currentPageId, {}).get(action.componentId)
+            if item is not None and item[0].type == 'sqlite_table':
+                item[1].review(action.type)
         else:
             scopeId = action.resultScopeId
             target = action.pageId if action.type == "navigate" else self.currentPageId
@@ -790,6 +985,7 @@ class RuntimePages(QWidget):
             self.hub.resume(self)
         self.frozen = self.frozenGeneration = None
         self.modeLabel.setText("实时 · 冻结仅影响本窗口")
+        self.syncNavigation()
         if submit and self.hub:
             self.submit(self.hub.session.readSnapshot())
         elif submit and self.simulationState:
@@ -922,10 +1118,18 @@ class RuntimePages(QWidget):
         from emo_master.ui.presentation.job_status import jobStatusText
         # Execution remains live even when business values below use a pin.
         self.jobStatus.setText(jobStatusText(getattr(view, 'job', None)))
+        self._hostConnected = view.connection == 'CONNECTED'
+        job = getattr(view, 'job', None)
+        from emo_master.ui.presentation.job_status import JOB_STATES
+        self._hostJobState = JOB_STATES.get(job.status, '状态待确认') if job and job.availability == 'AVAILABLE' else '尚无任务状态'
+        self._showHostStatus()
         if self.simulationState:
             self.banner.setText('离线模拟 · ' + self.simulationState + ' · 示例状态，不代表真实检测')
+            self.banner.show()
             self.status.setText('模拟 · 不读取或写入 Runtime / 计数')
             self.jobStatus.setText('离线模拟 · 无真实任务执行状态')
+        elif view.runtimeInstanceId and view.jobId and not self.editorHost:
+            self.banner.hide()
         if self.frozen and view.generation != self.frozenGeneration:
             self.resumeLive(submit=False)
         if self.frozen:
@@ -954,10 +1158,9 @@ class RuntimePages(QWidget):
                 continue
             if component.type in {"navigation_button", "page_navigation", "page_title", "clock", "sqlite_table", "sqlite_value", "spacer"}:
                 continue
-            if component.type == "text" and not component.bindings:
+            if component.props.recordValue or (component.type == "text" and not component.bindings):
                 continue
             if component.type == 'runtime_status' and not component.bindings:
-                widget.setText('客户端连接：' + self.lastView.connection + ' · ' + self.lastView.detail)
                 continue
             source = self.config.dataSources.get(next(iter(component.bindings.values()), ''))
             if source is not None and source.resultScopeId in held:
@@ -1003,21 +1206,10 @@ class RuntimePages(QWidget):
                 else:
                     widget.setToolTip('')
                 widget.setImage(image, scope.result.identity.resultKey if scope else "", error)
-            elif component.type == "number":
-                widget.setText(error or (component.props.emptyText if value is None else
-                    (f"{value:.{component.props.decimals}f}" if type(value) is float else str(value)) + component.props.unit))
-            elif component.type == "text":
-                text = error or (component.props.emptyText if value is None else
-                                 value if isinstance(value, str) else json.dumps(value, ensure_ascii=False))
-                widget.setText(text if len(text) <= 4096 else text[:4096] + '…（显示截断）')
-            elif component.type == 'indicator':
-                state = component.props.indicatorStates.get(json.dumps(value, ensure_ascii=False)) if not error else None
-                style = appearanceStyle(component.props) + 'color:' + COLORS[state.color if state else 'neutral']
-                if widget.styleSheet() != style:
-                    widget.setStyleSheet(style)
-                widget.setText(error or (component.props.emptyText if value is None else state.text if state else '未映射判定值: ' + json.dumps(value, ensure_ascii=False)))
-            elif component.type == 'runtime_status':
-                widget.setText(error or str(value))
+            elif isinstance(widget, ValueView):
+                widget.setValue(value, error)
+                if diagnostic:
+                    widget.setToolTip(diagnostic)
             elif isinstance(widget, CollectionView):
                 widget.submit(value, scope.result.identity.resultKey if scope else 'simulation-' + self.simulationState if self.simulationState else '', error)
             elif component.type == 'table':
@@ -1033,6 +1225,15 @@ class RuntimePages(QWidget):
                 continue
             self.records.append({"key": scope.result.identity.resultKey, "ready_ns": scope.readyNs,
                                  "gui_ns": time.perf_counter_ns(), "scope_end_ns": scope.result.timing.scopeEndedNs if scope.result.timing else None})
+
+    def _showHostStatus(self):
+        connection = '●  已连接' if self._hostConnected else '未连接结果服务'
+        self.headerStatus.setText(connection)
+        self.headerStatus.setStyleSheet(f"color:{THEME['foreground']['green'] if self._hostConnected else THEME['muted']};")
+        self.headerJob.setText(self._hostJobState)
+        for component, widget in self.widgets.get(self.currentPageId, {}).values():
+            if component.type == 'runtime_status' and not component.bindings:
+                widget.setValue(self._hostJobState if component.props.statusField == 'job_state' else connection)
 
     def _painted(self, key, stamp):
         if key and key not in self._recordedPaints:

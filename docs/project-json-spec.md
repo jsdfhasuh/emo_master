@@ -1,11 +1,10 @@
-# 工程文件规范：当前版本 2.9
+# 工程文件规范：当前版本 2.10
 
 本规范适用于 `.emoproj` 和 `project.json` 中的工程 JSON。**新建、生成和交付工程使用
-`schemaVersion: "2.9"`、`presentation.schemaVersion: "1.2"`，包括不使用设备的图片、视频和模型处理工程。**
-旧格式可读不代表新工程应该继续生成旧格式；创建约束见 [AGENTS.md](../AGENTS.md)。
+`schemaVersion: "2.10"`、`presentation.schemaVersion: "1.3"`，包括不使用设备的图片、视频和模型处理工程。**
+创作、保存和发布使用当前工程格式。创建约束见 [AGENTS.md](../AGENTS.md)。
 
-最后核对：2026-11-02；源码 HEAD：`8df8599fc026c424a49e87cc53fb45f6b371f16f`，加本轮持久画布扩展工作区修改。
-2.8/1.1 响应式布局已在基线实现；2.9/1.2 的终端与数据位置能力来自本轮工作区修改，不能归于该 HEAD 本身。格式推进时同步更新规范，不把历史版本号作为永久常量。
+通用页面组合自 2.10 / 1.3 提供。普通工程编辑撤销和恢复默认通过同一当前模型执行。
 
 ## 1. 格式依据与创建入口
 
@@ -26,8 +25,8 @@ from emo_master.core.project.models import ProjectDocument
 
 target = Path("new-project/New Project.emoproj")
 payload = WorkflowStore().toPayload("New Project")
-assert payload["schemaVersion"] == "2.9"
-assert payload["presentation"]["schemaVersion"] == "1.2"
+assert payload["schemaVersion"] == "2.10"
+assert payload["presentation"]["schemaVersion"] == "1.3"
 # Add workflow nodes and edges before validating the finished document.
 document = ProjectDocument.model_validate(payload)
 saveProject(target, document.model_dump(mode="json"))
@@ -41,24 +40,22 @@ assert reloaded == document
 注意以下历史入口与常量：
 
 - `migration.SCHEMA_VERSION` 当前为 **2.1**，是历史迁移基线，不是最新工程版本声明。
-- `createProjectSkeleton()` 已复用 `WorkflowStore().toPayload()` 和 `saveProject()`，生成完整的 **2.9** 空白工程；业务工程生成器仍应按上述流程补充并校验业务配置。
-- 默认 `migrateProjectPayload()` 保留已支持版本，不会把所有旧工程升级到 2.9。
-- `enableRemotePresentation=True` 将已支持的 2.7/2.8 明确升级为 2.9/1.2，保持原网格或响应式布局、设备和绑定；更早工程须先走既有设备迁移，不删除旧通信配置。
-  `enableDevices=True` 当前迁移目标仍为 **2.6**，也不能当作 2.9 创建入口。
+- `createProjectSkeleton()` 已复用 `WorkflowStore().toPayload()` 和 `saveProject()`，生成完整的 **2.10** 空白工程；业务工程生成器仍应按上述流程补充并校验业务配置。
+- 当前生成路径直接创建 2.10 / 1.3。通用页面属性没有单独的升级或迁移入口。
 
 新工程优先指定 `.emoproj` 文件名。扩展名与 schema 版本独立，`project.json` 也可承载
-2.9。目录式保存 API 保留 `project.json` 默认名；目录内有多个工程文件时应选择明确文件。
+2.10。目录式保存 API 保留 `project.json` 默认名；目录内有多个工程文件时应选择明确文件。
 
-## 2. 完整 2.9 示例
+## 2. 完整 2.10 示例
 
 下面是可校验、可编译的无设备空白工程，不是省略字段的结构片段。
 `projectId` 和时间戳仅作示例；创建独立工程时由创建入口重新生成。
 
 ```json
 {
-  "schemaVersion": "2.9",
+  "schemaVersion": "2.10",
   "project": {
-    "projectId": "example-project-29",
+    "projectId": "example-project-210",
     "name": "New Project",
     "revision": 1,
     "createdAt": "2026-10-30T00:00:00Z",
@@ -109,7 +106,7 @@ assert reloaded == document
     "definitions": {}
   },
   "presentation": {
-    "schemaVersion": "1.2",
+    "schemaVersion": "1.3",
     "defaultPageId": null,
     "pageOrder": [],
     "navigation": {"mode": "tabs"},
@@ -137,21 +134,21 @@ assert reloaded == document
 
 下表区分模型要求和新工程推荐输出；生成文件使用上面的完整默认结构。
 
-| 字段 | 2.9 要求及含义 |
+| 字段 | 2.10 要求及含义 |
 | --- | --- |
-| `schemaVersion` | 必填，字符串 `"2.9"`，不是数值 `2.9`。 |
+| `schemaVersion` | 必填，字符串 `"2.10"`。 |
 | `project` | 必填；`projectId`、`name`、`createdAt`、`updatedAt` 为字符串，`revision` 为正整数，默认 1。ID 标识工程，时间由创建/保存流程维护。 |
 | `entryWorkflowId` | 必填，引用已有工作流，作为未另行配置时的默认入口。 |
 | `workflowOrder` | 必填，Designer 页签顺序；每个工作流 ID 恰好一次，不能遗漏、重复或引用不存在的流程。 |
 | `workflows` | 必填且至少一个工作流；键为稳定 workflowId。 |
 | `runtime` | 可由模型补默认值；新工程显式保存，见下表。 |
 | `dependencies` | 默认 `{"operators": []}`；业务工程按实际算子依赖填写，不把空依赖列表当通用模板。 |
-| `devices` | 2.9 必须包含 `schemaVersion: "1.0"`。`definitions` 按 deviceId 保存设备定义，无设备时为空；`bindings` 是保留字段，不能代替设备定义或节点绑定。 |
-| `presentation` | 必须为非 null 对象；工程 2.9 要求内部版本 `1.2`，没有页面时也保留默认结构。1.2 不能写入 2.8 或更早工程；2.8/1.1 原格式继续可读。 |
+| `devices` | 2.10 必须包含 `schemaVersion: "1.0"`。`definitions` 按 deviceId 保存设备定义，无设备时为空；`bindings` 是保留字段，不能代替设备定义或节点绑定。 |
+| `presentation` | 必须为非 null 对象；工程 2.10 要求内部版本 `1.3`。没有页面时也保留默认结构。 |
 | `resources` | 必须为非 null 对象；内部版本 `1.0`，没有资源时保留空计划。 |
 | `production` | 必须为非 null 对象；不自动生产时保留默认设置。 |
 | `globalVariables` | 按 variableId 保存声明，默认 `{}`，不保存运行中的变量状态。 |
-| `communication` | **2.9 沿用 2.7 的统一设备规则，不使用旧顶层通信配置**；新工程不写此字段。非 null 的旧配置对象会被拒绝，模型序列化也会移除该字段。 |
+| `communication` | **2.10 沿用 2.7 的统一设备规则，不使用旧顶层通信配置**；新工程不写此字段。非 null 的旧配置对象会被拒绝，模型序列化也会移除该字段。 |
 
 ### Runtime 与生产设置
 
@@ -255,7 +252,7 @@ Dispatch 节点另支持两个可选参数，不改变工程顶层 schema：
   或 `source="input"` 加 `inputName`；同一路径及父子路径不能有多个生效来源。
 - 节点不能覆写设备连接和策略；引用的设备须存在，设备槽和可覆盖字段须符合插件声明。
 
-2.9 沿用 2.7 的统一设备规则：TCP 与其他设备一样进入 `devices.definitions`，由算子绑定设备。
+2.10 沿用 2.7 的统一设备规则：TCP 与其他设备一样进入 `devices.definitions`，由算子绑定设备。
 TCP Server、单次客户端、单次接收及通道 selectors 的完整规则见
 [项目 TCP 设备](guides/project-tcp-service.md)。
 不要复制 2.5/2.6 的顶层 `communication`，也不要为了满足新 schema 给本地视频、图片或
@@ -263,14 +260,23 @@ YOLO 处理流程添加虚假 TCP/相机设备。旧通信工程不能靠删除�
 
 基础模型见 [设备模型](../src/emo_master/core/project/devices.py)；
 继承、资源归属等基础规则见 [设备契约](guides/device-catalog-contract-v1.md)。
-该历史契约中的 2.6 顶层通信描述不作为 2.9 新工程模板。
+该历史契约中的 2.6 顶层通信描述不作为 2.10 新工程模板。
 
 ## 6. 页面、资源与目录
 
-新工程使用 `presentation.schemaVersion="1.2"`，空工程保留示例中的导航、页面顺序、结果作用域和
+新工程使用 `presentation.schemaVersion="1.3"`，空工程保留示例中的导航、页面顺序、结果作用域和
 数据源结构。页面 `image.props.imageResourceId` 引用 `page_image` 资源，与动态绑定互斥；
 `navigation_button.props.iconResourceId` 引用 `icon` 资源。执行期私有路径不写回工程 JSON。
 页面字段详见 [页面契约](runtime-pages-p1-contract.md)，其中历史阶段的发布限制不是本规范的当前版本结论。
+
+### 通用外观与历史回看
+
+- `presentation.appearance` 配置内容最大宽度和页内边距，`presentation.shell` 配置标题、副标题、受管图片标志、状态显示和技术诊断初始状态。开始和停止沿用宿主操作。
+- `props.surface` 与 `props.typography` 按角色覆盖默认内边距、背景及字样。删除自定义组可恢复当前默认。普通字段可使用 `minWidth=0`、`minHeight=0`、`preferredHeight=0`。
+- `props.imageView` 配置留白、对齐和宽高比。当前图像按等比包含显示。
+- `sqlite_table` 的 `historyView` 选择表格或列表。视图回看声明唯一稳定 `sqlite.recordKey`。`recordValue` 指向同页历史组件的声明列或 position/count，图片仍使用选中行路径。历史按钮按键查询同条或相邻条。
+
+字段范围和当前默认见 [通用页面契约](../openspec/changes/enhance-generic-page-composition/contracts.md)。
 
 ### 显示终端与数据位置 1.2
 
@@ -280,7 +286,7 @@ YOLO 处理流程添加虚假 TCP/相机设备。旧通信工程不能靠删除�
 
 固定图片的 `props.imagePath.location` 使用相同两值，默认 `display_local`。`kind="selected_row"` 不保存独立 `location`，只能继承同页来源表格的位置。Runtime 固定图和选中行图都须声明 `baseDirectory` 作为允许读取的根目录；读取接口只接受正式组件身份或记录生成的图片引用，不接受浏览器文件路径。本地图片改为随网页交付时，应明确转换成已有工程静态资源。
 
-这些字段的非默认语义要求工程 `2.9` / 页面 `1.2`。2.8/1.1 与2.7/1.0仍按原格式打开保存；在属性中明确应用网页目标或Runtime来源，会把支持的2.7/2.8草稿升级到2.9/1.2并记录撤销，保存与显式写入Runtime仍是不同动作。旧客户端可能拒绝新格式，不提供悄悄删除新字段的降级保存。
+工程 2.10 / 页面 1.3 保留这些目标和 Runtime 数据位置。保存工程与显式写入 Runtime 分别使用各自的原有入口。
 
 ### 响应式布局 1.1（1.2 继续沿用）
 
@@ -288,7 +294,7 @@ SDK 1.2.0 新增 `spacer` 空白块组件。`props.spacerMode` 为 `fixed`（默
 `flex`。默认 `responsive` 为24×24逻辑像素固定占位；尺寸和权重继续使用现有响应式字段。
 固定块不被组内等宽或默认拉伸放大；弹性块沿响应式父布局主轴分配剩余空间，换行只作用于
 所在行。旧grid使用行列跨度固定占位。空白块无绑定、动作、子组件或采集来源，运行端透明。
-工程仍为2.9/页面1.2；终端预览宽高属于Designer查看状态，不写入页面模型。
+当前工程为 2.10 / 页面 1.3；终端预览宽高属于Designer查看状态，不写入页面模型。
 
 SDK 1.3.0 增加持久向上扩展：响应式根页面可保存 `canvasTop`（-32768..0，默认0），
 根组件可保存 `responsive.canvasOffsetY`（同范围、默认0，且不得小于页面canvasTop）。
@@ -419,8 +425,9 @@ Designer 只读预览支持同页绑定一个 Dispatch 生产入口和一个已�
 | 2.5 | 增加旧顶层 communication；`enableCommunication=True`。 |
 | 2.6 | 增加设备目录 1.0、节点设备绑定及设备资源目标，同时保留 communication；`enableDevices=True`。 |
 | 2.7 | TCP 统一设备化，不再使用旧顶层 communication；保留页面、资源、生产、变量和设备目录。 |
-| **2.9（当前）** | 页面版本 1.2，增加 desktop/web 显示终端和 Runtime 数据位置；沿用 1.1 响应式布局，旧工程显式升级，不隐式改变本地数据库归属。 |
+| 2.9 | 页面版本 1.2，增加 desktop/web 显示终端和 Runtime 数据位置；沿用 1.1 响应式布局，旧工程显式升级，不隐式改变本地数据库归属。 |
 | 2.8 | 页面版本 1.1，增加上下／并排／换行布局与组件响应式尺寸规则；其余统一设备、资源、生产及变量结构保留。 |
+| **2.10（当前）** | 页面版本 1.3，加入通用外观、宿主页头、按稳定键查看历史记录及同页字段引用。 |
 
 [迁移函数](../src/emo_master/core/project/migration.py)的默认行为不是“全部升级到最新”。
 旧 2.0 Loop 迁移时标记 `contractVersion=1`，保留旧 `results:list` / `state:object`
@@ -429,7 +436,7 @@ Designer 只读预览支持同页绑定一个 Dispatch 生产入口和一个已�
 
 响应式模型不承担旧页面布局保真转换；旧工程读取与显式新页面编辑分别处理，不把仅改版本字符串当成转换成功。
 
-除明确兼容/迁移测试或用户要求的旧版本交付外，不再新建 2.1～2.8 工程。
+除明确兼容/迁移测试或用户要求的旧版本交付外，新建工程使用 2.10。
 现存用户工程、历史夹具和证据文件不因本规范更新而批量改写。
 
 ## 8. 生成与交付检查

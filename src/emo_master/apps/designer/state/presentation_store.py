@@ -26,9 +26,9 @@ def _copyComponentIds(components: list[Component]) -> None:
     ids = {item.componentId: str(uuid4()) for item in copied}
     for item in copied:
         item.componentId = ids[item.componentId]
-        source = item.props.imagePath
-        if source is not None and source.componentId in ids:
-            source.componentId = ids[source.componentId]
+        for source in (item.props.imagePath, item.props.recordValue, *item.actions.values()):
+            if source is not None and source.componentId in ids:
+                source.componentId = ids[source.componentId]
 
 
 class PresentationStore:
@@ -147,6 +147,7 @@ class PresentationStore:
             if component.type == "image":
                 component.props.imageResourceId = None
                 component.props.imagePath = None
+            component.props.recordValue = None
             sourceId = next((key for key, value in p.dataSources.items() if value == canonical), None)
             if sourceId is None:
                 sourceId = str(uuid4())

@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from collections.abc import Mapping
 
 from emo_master.core.contracts.port_types import JSON_PAYLOAD_PORT_TYPES, normalizePortSpec, normalizePortType
+from emo_master.core.contracts.sqlite_writer import OPERATOR_ID as SQLITE_WRITER_ID
 from emo_master.core.plugin.models import PluginManifest
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.presentation.models import CallStep, DataSource
@@ -42,6 +43,8 @@ _FIELDS = {
                             ("items", "*", "confidence"): "collection"},
     "point2d": {("x",): "number", ("y",): "number"},
 }
+_SQLITE_RECEIPT_FIELDS = {("writeId",): "string", ("status",): "string", ("primaryKey",): "integer",
+                          ("execution", "workflowRunId"): "string"}
 
 
 def presentationType(spec: object) -> str:
@@ -99,8 +102,9 @@ def _entry(workflowId, nodeId, name, operatorId, port, spec, hint="", issues=())
     except ValueError as error:
         normalized = {"type": "object"}
         issues = (*issues, Issue(f"{workflowId}.{nodeId}.{port}", "port_invalid", str(error)))
-    return OutputEntry(workflowId, nodeId, name, operatorId, port, normalized,
-                       dict(_FIELDS.get(normalizePortType(normalized), {})), hint, issues)
+    fields = (_SQLITE_RECEIPT_FIELDS if (operatorId, port) == (SQLITE_WRITER_ID, 'receipt')
+              else _FIELDS.get(normalizePortType(normalized), {}))
+    return OutputEntry(workflowId, nodeId, name, operatorId, port, normalized, dict(fields), hint, issues)
 
 
 def resolveCallPath(project: ProjectDocument, entry: str, path: list[CallStep]) -> str:

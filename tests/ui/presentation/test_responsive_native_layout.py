@@ -91,8 +91,8 @@ def testResizeReflowsStableCardsWithoutChangingConfiguration(qtApp):
 def testNestedContainerReflowsAndMeasuresWrappedTitles(qtApp):
     group = Component(componentId='group', type='container', props={'title': 'Long container title ' * 8},
         grid=ResponsiveLayout(direction='horizontal'), children=[
-            Component(componentId='image', type='image'),
-            Component(componentId='value', type='text', props={'text': 'Result'})])
+            Component(componentId='image', type='image', props={'imageView': {'sizing': 'fixed'}}),
+            Component(componentId='value', type='text', props={'text': 'Result'}, responsive={'minWidth': 140})])
     presentation = Presentation(defaultPageId='p', pageOrder=['p'], pages={
         'p': Page(name='Nested', components=[group])})
     viewer = RuntimePages(presentation)

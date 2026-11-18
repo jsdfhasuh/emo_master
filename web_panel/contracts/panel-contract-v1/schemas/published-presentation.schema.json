@@ -8,7 +8,10 @@
           "enum": [
             "navigate",
             "freeze",
-            "resume_live"
+            "resume_live",
+            "history_previous",
+            "history_next",
+            "history_first"
           ],
           "title": "Type",
           "type": "string"
@@ -51,6 +54,21 @@
           ],
           "default": null,
           "title": "Resultscopeid"
+        },
+        "componentId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Componentid"
         }
       },
       "required": [
@@ -84,6 +102,18 @@
         "nodeId"
       ],
       "title": "CallStep",
+      "type": "object"
+    },
+    "Collapse": {
+      "additionalProperties": false,
+      "properties": {
+        "initiallyCollapsed": {
+          "default": false,
+          "title": "Initiallycollapsed",
+          "type": "boolean"
+        }
+      },
+      "title": "Collapse",
       "type": "object"
     },
     "DataSource": {
@@ -330,6 +360,123 @@
       "title": "HistoryReference",
       "type": "object"
     },
+    "HistoryView": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "default": "table",
+          "enum": [
+            "table",
+            "list"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "titleField": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Titlefield"
+        },
+        "subtitleField": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subtitlefield"
+        },
+        "trailingField": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Trailingfield"
+        }
+      },
+      "title": "HistoryView",
+      "type": "object"
+    },
+    "ImageView": {
+      "additionalProperties": false,
+      "properties": {
+        "sizing": {
+          "default": "aspect",
+          "enum": [
+            "fixed",
+            "aspect"
+          ],
+          "title": "Sizing",
+          "type": "string"
+        },
+        "aspectRatio": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aspectratio"
+        },
+        "background": {
+          "default": "subtle",
+          "enum": [
+            "subtle",
+            "dark",
+            "transparent"
+          ],
+          "title": "Background",
+          "type": "string"
+        },
+        "horizontalAlign": {
+          "default": "center",
+          "enum": [
+            "start",
+            "center",
+            "end"
+          ],
+          "title": "Horizontalalign",
+          "type": "string"
+        },
+        "verticalAlign": {
+          "default": "center",
+          "enum": [
+            "start",
+            "center",
+            "end"
+          ],
+          "title": "Verticalalign",
+          "type": "string"
+        }
+      },
+      "title": "ImageView",
+      "type": "object"
+    },
     "IndicatorStyle": {
       "additionalProperties": false,
       "properties": {
@@ -344,9 +491,19 @@
             "neutral",
             "green",
             "red",
-            "amber"
+            "amber",
+            "blue"
           ],
           "title": "Color",
+          "type": "string"
+        },
+        "background": {
+          "default": "none",
+          "enum": [
+            "none",
+            "soft"
+          ],
+          "title": "Background",
           "type": "string"
         }
       },
@@ -370,6 +527,150 @@
         }
       },
       "title": "Navigation",
+      "type": "object"
+    },
+    "Padding": {
+      "additionalProperties": false,
+      "properties": {
+        "top": {
+          "anyOf": [
+            {
+              "maximum": 64,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Top"
+        },
+        "right": {
+          "anyOf": [
+            {
+              "maximum": 64,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Right"
+        },
+        "bottom": {
+          "anyOf": [
+            {
+              "maximum": 64,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bottom"
+        },
+        "left": {
+          "anyOf": [
+            {
+              "maximum": 64,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Left"
+        }
+      },
+      "title": "Padding",
+      "type": "object"
+    },
+    "PageAppearance": {
+      "additionalProperties": false,
+      "properties": {
+        "theme": {
+          "const": "light",
+          "default": "light",
+          "title": "Theme",
+          "type": "string"
+        },
+        "contentMaxWidth": {
+          "default": 0,
+          "maximum": 4096,
+          "minimum": 0,
+          "title": "Contentmaxwidth",
+          "type": "integer"
+        },
+        "pagePadding": {
+          "default": 24,
+          "maximum": 64,
+          "minimum": 0,
+          "title": "Pagepadding",
+          "type": "integer"
+        }
+      },
+      "title": "PageAppearance",
+      "type": "object"
+    },
+    "PageShell": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "default": "",
+          "maxLength": 1024,
+          "title": "Title",
+          "type": "string"
+        },
+        "subtitle": {
+          "default": "",
+          "maxLength": 1024,
+          "title": "Subtitle",
+          "type": "string"
+        },
+        "logoResourceId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Logoresourceid"
+        },
+        "diagnosticsInitiallyExpanded": {
+          "default": false,
+          "title": "Diagnosticsinitiallyexpanded",
+          "type": "boolean"
+        },
+        "showConnection": {
+          "default": true,
+          "title": "Showconnection",
+          "type": "boolean"
+        },
+        "showJobState": {
+          "default": true,
+          "title": "Showjobstate",
+          "type": "boolean"
+        },
+        "showControls": {
+          "default": true,
+          "title": "Showcontrols",
+          "type": "boolean"
+        }
+      },
+      "title": "PageShell",
       "type": "object"
     },
     "Placement": {
@@ -663,57 +964,214 @@
           "title": "Pagesize",
           "type": "integer"
         },
-        "fontFamily": {
-          "default": "system",
-          "enum": [
-            "system",
-            "sans",
-            "serif",
-            "monospace"
+        "surface": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Surface"
+            },
+            {
+              "type": "null"
+            }
           ],
-          "title": "Fontfamily",
+          "default": null
+        },
+        "typography": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Typography"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "valueLayout": {
+          "default": "vertical",
+          "enum": [
+            "vertical",
+            "horizontal"
+          ],
+          "title": "Valuelayout",
           "type": "string"
         },
-        "fontSize": {
-          "default": 0,
-          "maximum": 48,
-          "minimum": 0,
-          "title": "Fontsize",
-          "type": "integer"
-        },
-        "fontWeight": {
-          "default": "normal",
-          "enum": [
-            "normal",
-            "bold"
-          ],
-          "title": "Fontweight",
+        "helperText": {
+          "default": "",
+          "maxLength": 1024,
+          "title": "Helpertext",
           "type": "string"
         },
-        "textColor": {
-          "default": "default",
+        "indicatorView": {
+          "default": "text",
           "enum": [
-            "default",
-            "neutral",
-            "green",
-            "red",
-            "amber"
+            "text",
+            "badge",
+            "row"
           ],
-          "title": "Textcolor",
+          "title": "Indicatorview",
           "type": "string"
         },
-        "cardStyle": {
-          "default": "plain",
-          "enum": [
-            "plain",
-            "soft",
-            "outlined"
+        "showMarker": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
           ],
-          "title": "Cardstyle",
+          "default": null,
+          "title": "Showmarker"
+        },
+        "imageView": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImageView"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "buttonStyle": {
+          "default": "secondary",
+          "enum": [
+            "primary",
+            "secondary",
+            "link"
+          ],
+          "title": "Buttonstyle",
           "type": "string"
+        },
+        "collapse": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Collapse"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "statusField": {
+          "anyOf": [
+            {
+              "enum": [
+                "connection",
+                "job_state"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Statusfield"
+        },
+        "historyView": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HistoryView"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "recordValue": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "field": "#/$defs/RecordField",
+                  "meta": "#/$defs/RecordMeta"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/RecordField"
+                },
+                {
+                  "$ref": "#/$defs/RecordMeta"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recordvalue"
         }
       },
       "title": "PublishedProps",
+      "type": "object"
+    },
+    "RecordField": {
+      "additionalProperties": false,
+      "properties": {
+        "componentId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Componentid",
+          "type": "string"
+        },
+        "kind": {
+          "const": "field",
+          "title": "Kind",
+          "type": "string"
+        },
+        "field": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        }
+      },
+      "required": [
+        "componentId",
+        "kind",
+        "field"
+      ],
+      "title": "RecordField",
+      "type": "object"
+    },
+    "RecordMeta": {
+      "additionalProperties": false,
+      "properties": {
+        "componentId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Componentid",
+          "type": "string"
+        },
+        "kind": {
+          "const": "meta",
+          "title": "Kind",
+          "type": "string"
+        },
+        "meta": {
+          "enum": [
+            "position",
+            "count"
+          ],
+          "title": "Meta",
+          "type": "string"
+        }
+      },
+      "required": [
+        "componentId",
+        "kind",
+        "meta"
+      ],
+      "title": "RecordMeta",
       "type": "object"
     },
     "ResponsiveItem": {
@@ -883,6 +1341,87 @@
       "title": "ResultScope",
       "type": "object"
     },
+    "Surface": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "anyOf": [
+            {
+              "enum": [
+                "none",
+                "card"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kind"
+        },
+        "background": {
+          "anyOf": [
+            {
+              "enum": [
+                "transparent",
+                "surface",
+                "subtle"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Background"
+        },
+        "border": {
+          "anyOf": [
+            {
+              "enum": [
+                "none",
+                "subtle"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Border"
+        },
+        "radius": {
+          "anyOf": [
+            {
+              "maximum": 32,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Radius"
+        },
+        "padding": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Padding"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Surface",
+      "type": "object"
+    },
     "TableColumn": {
       "additionalProperties": false,
       "properties": {
@@ -907,6 +1446,103 @@
         "title"
       ],
       "title": "TableColumn",
+      "type": "object"
+    },
+    "TextRole": {
+      "additionalProperties": false,
+      "properties": {
+        "size": {
+          "anyOf": [
+            {
+              "maximum": 96,
+              "minimum": 8,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Size"
+        },
+        "weight": {
+          "anyOf": [
+            {
+              "enum": [
+                "normal",
+                "bold"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weight"
+        },
+        "color": {
+          "anyOf": [
+            {
+              "enum": [
+                "default",
+                "neutral",
+                "primary",
+                "green",
+                "red",
+                "amber"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Color"
+        }
+      },
+      "title": "TextRole",
+      "type": "object"
+    },
+    "Typography": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TextRole"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TextRole"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "helper": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TextRole"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Typography",
       "type": "object"
     }
   },
@@ -937,6 +1573,28 @@
     },
     "navigation": {
       "$ref": "#/$defs/Navigation"
+    },
+    "appearance": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PageAppearance"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "shell": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PageShell"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "resultScopes": {
       "patternProperties": {

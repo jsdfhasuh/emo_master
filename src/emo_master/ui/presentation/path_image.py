@@ -80,7 +80,7 @@ def decodePathImage(data, targetSize=QSize(1600, 1000), budget=IMAGE_LIMIT):
 
 
 class _ImageReply(QObject):
-    ready = Signal(int, object, str, str)
+    ready = Signal(int, object, str, str, bool)
 
 
 class _ImageRead(QRunnable):
@@ -95,6 +95,8 @@ class _ImageRead(QRunnable):
         self.reply = _ImageReply(QCoreApplication.instance())
 
     def run(self):
+        from emo_master.clients.runtime.history import HistoryImageExpired
+        expired = False
         try:
             try:
                 if self.remoteReader:
@@ -106,12 +108,15 @@ class _ImageRead(QRunnable):
                 message = ''
             except (OSError, ValueError, OverflowError) as error:
                 image, key, message = QImage(), '', str(error)
-            self.reply.ready.emit(self.generation, image, key, message)
+                expired = isinstance(error, HistoryImageExpired)
+            self.reply.ready.emit(self.generation, image, key, message, expired)
         finally:
             self.reply.deleteLater()
 
 
 class PathImageView(ImageView):
+    referenceExpired = Signal()
+
     def __init__(self, baseDirectory='', preview=False, parent=None, *, availableBytes=None, projectRoot=None):
         super().__init__(parent)
         self.baseDirectory, self.preview = baseDirectory, bool(preview)
@@ -146,7 +151,11 @@ class PathImageView(ImageView):
         elif self.selectionField not in row:
             self.setPath(PathValueError('所选记录缺少图片路径字段'))
         else:
-            self.setPath(row[self.selectionField])
+            value = row[self.selectionField]
+            if value == self._desired:
+                self.reload()
+            else:
+                self.setPath(value)
 
     def setPath(self, value):
         if value == self._desired:
@@ -200,8 +209,8 @@ class PathImageView(ImageView):
         self._empty('正在加载 Runtime 图片…' if self.remoteReader else '正在加载本地图片…')
         QThreadPool.globalInstance().start(worker)
 
-    @Slot(int, object, str, str)  # type: ignore[operator]
-    def _finished(self, generation, image, key, message):
+    @Slot(int, object, str, str, bool)  # type: ignore[operator]
+    def _finished(self, generation, image, key, message, expired=False):
         self._worker = None
         if generation != self._generation:
             self._schedule()
@@ -210,6 +219,8 @@ class PathImageView(ImageView):
             return
         if message:
             self._empty(message)
+            if expired:
+                self.referenceExpired.emit()
             return
         if image.sizeInBytes() > min(IMAGE_LIMIT, max(0, int(self.availableBytes()))):
             self._empty('界面图像容量不足，请关闭其它图像页面后重试')

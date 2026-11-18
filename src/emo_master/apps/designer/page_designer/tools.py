@@ -125,26 +125,21 @@ class EditingTools(QObject):
         self.form.addRow('目标页面', self.destination)
         self.actionMode = QComboBox()
         for label, value in [('未配置', 'none'), ('跳转页面（实时）', 'navigate'),
-                ('查看已显示结果详情', 'detail'), ('固定当前结果', 'freeze'), ('继续更新', 'resume_live')]:
+                ('查看已显示结果详情', 'detail'), ('固定当前结果', 'freeze'), ('继续更新', 'resume_live'),
+                ('历史上一条', 'history_previous'), ('历史下一条', 'history_next'), ('重新读取历史首页', 'history_first')]:
             self.actionMode.addItem(label, value)
         self.form.addRow('点击后', self.actionMode)
         self.actionScope = QComboBox()
         self.form.addRow('结果所属流程', self.actionScope)
-        self.appearance = {}
-        for name, label, choices in [
-            ('fontFamily', '字体', [('系统字体', 'system'), ('无衬线', 'sans'), ('衬线', 'serif'), ('等宽', 'monospace')]),
-            ('fontWeight', '字重', [('常规', 'normal'), ('粗体', 'bold')]),
-            ('textColor', '文字颜色', [('默认', 'default'), ('中性', 'neutral'), ('绿', 'green'), ('红', 'red'), ('琥珀', 'amber')]),
-            ('cardStyle', '卡片样式', [('白底', 'plain'), ('浅色', 'soft'), ('轮廓', 'outlined')])]:
-            combo = QComboBox()
-            for title, value in choices:
-                combo.addItem(title, value)
-            self.appearance[name] = combo
-            self.form.addRow(label, combo)
+        self.historyTarget = QComboBox()
+        self.form.addRow('历史来源', self.historyTarget)
+        self.compositionButton = QPushButton('组件外观与表现…')
+        self.compositionButton.clicked.connect(lambda: self.w.run(self.editAppearance))
+        self.form.addRow(self.compositionButton)
         self.fields['fontSize'] = QSpinBox()
-        self.fields['fontSize'].setRange(0, 48)
+        self.fields['fontSize'].setRange(0, 96)
         self.fields['fontSize'].setSpecialValueText('自动')
-        self.form.addRow('字号（自动或8—48像素）', self.fields['fontSize'])
+        self.form.addRow('主值字号（自动或 8—96 像素）', self.fields['fontSize'])
         self.binding = QComboBox()
         self.binding.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
         self.binding.setMinimumContentsLength(10)
@@ -163,7 +158,7 @@ class EditingTools(QObject):
                 self.bindingButtons.append(button)
             if label in ('复制控件', '删除控件'):
                 self.operationButtons.append(button)
-        self.extra = QTableWidget(0, 4)
+        self.extra = QTableWidget(0, 5)
         self.extra.setHorizontalHeaderLabels(['类型/列标题', '值/字段', '显示文字', '颜色'])
         self.extra.setMaximumHeight(170)
         self.extra.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -454,21 +449,27 @@ class EditingTools(QObject):
             return
         item = _component(self.w.store.snapshot(), self.w.pageId, self.selected)
         row = self.extra.rowCount()
-        if item.type == 'indicator':
-            kind, value, label, color = values or ('boolean', 'true', 'OK', 'green')
+        if item.type in {'indicator', 'sqlite_table'}:
+            kind, value, label, color, background = values or ('boolean', 'true', 'OK', 'green', 'none')
             self.extra.insertRow(row)
             types = QComboBox()
             types.addItem('布尔', 'boolean')
             types.addItem('文字', 'string')
+            types.addItem('整数', 'integer')
             types.setCurrentIndex(types.findData(kind))
             self.extra.setCellWidget(row, 0, types)
-            self.extra.setItem(row, 1, QTableWidgetItem(str(value).lower() if type(value) is bool else value))
+            self.extra.setItem(row, 1, QTableWidgetItem(str(value).lower() if type(value) is bool else str(value)))
             self.extra.setItem(row, 2, QTableWidgetItem(label))
             colors = QComboBox()
-            for title, key in [('中性', 'neutral'), ('绿', 'green'), ('红', 'red'), ('琥珀', 'amber')]:
+            for title, key in [('中性', 'neutral'), ('绿', 'green'), ('红', 'red'), ('琥珀', 'amber'), ('蓝', 'blue')]:
                 colors.addItem(title, key)
             colors.setCurrentIndex(colors.findData(color))
             self.extra.setCellWidget(row, 3, colors)
+            backgrounds = QComboBox()
+            backgrounds.addItem('无', 'none')
+            backgrounds.addItem('浅底', 'soft')
+            backgrounds.setCurrentIndex(backgrounds.findData(background))
+            self.extra.setCellWidget(row, 4, backgrounds)
         elif item.type == 'table':
             try:
                 choices = self._tableChoices()
@@ -496,9 +497,9 @@ class EditingTools(QObject):
         values = tuple((name, field.currentData() if isinstance(field, QComboBox) else
                         field.text() if isinstance(field, QLineEdit) else field.value())
                        for name, field in self.fields.items())
-        rows = tuple(tuple(self._cellValue(r, c) for c in range(4)) for r in range(self.extra.rowCount()))
+        rows = tuple(tuple(self._cellValue(r, c) for c in range(5)) for r in range(self.extra.rowCount()))
         return (values, self.pageName.text(), self.destination.currentData(), self.actionMode.currentData(), self.actionScope.currentData(),
-                tuple((name, field.currentData()) for name, field in self.appearance.items()), rows,
+                self.historyTarget.currentData(), rows,
                 self.sqliteProperties.state(), self.imageProperties.state(), self.responsiveProperties.state())
 
     def refreshImageMode(self):
@@ -515,6 +516,30 @@ class EditingTools(QObject):
         if self._loadedPage != self.w.pageId:
             raise ValueError('属性输入仍属于上一页面，请先应用或修正后再切页')
         self.apply()
+
+    def editAppearance(self):
+        self.commitPending()
+        from .appearance_properties import editComponentAppearance, editPageAppearance
+        selected = self.selected
+        pageId = self.w.pageId
+        presentation = self.w.store.snapshot()
+        if selected is None:
+            resources = self.w.session.document().resources
+            result = editPageAppearance(self.w, presentation, resources.items if resources else {})
+            if result is not None:
+                def edit(p):
+                    p.appearance, p.shell, p.navigation.mode = result
+                self.w.session.editPresentation(edit)
+        else:
+            item = _component(presentation, pageId, selected)
+            result = editComponentAppearance(self.w, item, presentation.pages[pageId])
+            if result is not None:
+                def edit(p):
+                    target = _component(p, pageId, selected)
+                    target.props = Props.model_validate({**target.props.model_dump(), **result})
+                    if result.get('recordValue') is not None:
+                        target.bindings.clear()
+                self.w.session.editPresentation(edit)
 
     def updateParentNavigation(self):
         self.parentRow.setVisible(self.selected is not None)
@@ -569,11 +594,13 @@ class EditingTools(QObject):
                 self.responsiveProperties.load(self.w.store.snapshot().pages[self.w.pageId].layout, None)
             self.responsiveProperties.setItemVisible(False)
             self.title.setText('页面属性')
+            self.compositionButton.setText('页面设置 · 全局外观…')
             self.propertyGroups.select(None)
             self._loadedPage = self.w.pageId
             self._loadedFields = self._fieldState()
             return
         from .palette import TITLES
+        self.compositionButton.setText('组件外观与表现…')
         self.updateParentNavigation()
         self.responsiveProperties.load(component.grid if component.type == 'container' else None, component.responsive)
         self.responsiveProperties.setItemVisible(True)
@@ -617,10 +644,10 @@ class EditingTools(QObject):
             field.setCurrentIndex(max(0, field.findData(value)))
         for name in ['row', 'column', 'rowSpan', 'columnSpan']:
             self.fields[name].setValue(getattr(component.layout, name))
-        for name in ['decimals', 'pageSize', 'fontSize']:
+        for name in ['decimals', 'pageSize']:
             self.fields[name].setValue(getattr(component.props, name))
-        for name, field in self.appearance.items():
-            field.setCurrentIndex(field.findData(getattr(component.props, name)))
+        typography = component.props.typography
+        self.fields['fontSize'].setValue(typography.value.size or 0 if typography and typography.value else 0)
         self.fields['columns'].setValue(getattr(component.grid if component.type == 'container'
                                        else self.w.store.snapshot().pages[self.w.pageId].layout, 'columns', 1))
         action = component.actions.get('clicked')
@@ -632,6 +659,13 @@ class EditingTools(QObject):
         self.actionScope.clear()
         self.actionScope.addItem('未选择', None)
         p = self.w.store.snapshot()
+        from emo_master.core.presentation.models import walkComponents
+        self.historyTarget.clear()
+        self.historyTarget.addItem('未选择', None)
+        for target in walkComponents(p.pages[self.w.pageId].components):
+            if target.type == 'sqlite_table':
+                self.historyTarget.addItem(target.props.title or target.componentId, target.componentId)
+        self.historyTarget.setCurrentIndex(max(0, self.historyTarget.findData(action.componentId if action else None)))
         for key in sorted(pageScopes(p, self.w.pageId)):
             scope = p.resultScopes.get(key)
             if scope is None:
@@ -642,12 +676,15 @@ class EditingTools(QObject):
         self.actionScope.setCurrentIndex(max(0, self.actionScope.findData(action.resultScopeId if action else None)))
         self.actionScope.setEnabled(component.type == 'navigation_button')
         self.extra.setRowCount(0)
-        self.extra.setHorizontalHeaderLabels(['列标题', '选择字段', '', ''] if component.type == 'table' else ['类型', '值', '显示文字', '颜色'])
+        self.extra.setHorizontalHeaderLabels(['列标题', '选择字段', '', '', ''] if component.type == 'table' else
+                                             ['类型', '值', '显示文字', '颜色', '背景'])
         self.extra.setColumnHidden(2, component.type == 'table')
         self.extra.setColumnHidden(3, component.type == 'table')
+        self.extra.setColumnHidden(4, component.type == 'table')
         self.extra.setToolTip('布尔值填写 true/false；文字值保持原文')
         data = [(c.title, tuple(c.fieldPath)) for c in component.props.columns] if component.type == 'table' else [
-            (*decodeIndicatorKey(key), style.text, style.color) for key, style in component.props.indicatorStates.items()]
+            (*decodeIndicatorKey(key), style.text, style.color, style.background)
+            for key, style in component.props.indicatorStates.items()]
         for row in data:
             self.addExtraRow(values=row)
         self._loadedPage = self.w.pageId
@@ -672,6 +709,8 @@ class EditingTools(QObject):
             self.w.floatingProperties.setExpanded(True)
             field = next((widget for name, widget in self.fields.items() if name in message), self.extra
                          if any(word in message for word in ('boolean', 'duplicate', '字段')) else self.fields['columnSpan'])
+            if 'typography.value.size' in message:
+                field = self.fields['fontSize']
             if not self.selected and 'name' in message:
                 field = self.pageName
             if 'SQLite' in message or 'sqlite' in message:
@@ -712,10 +751,14 @@ class EditingTools(QObject):
         item = _component(self.w.store.snapshot(), self.w.pageId, self.selected)
         props = item.props.model_dump()
         from .property_panel import CONTENT
-        applicable = CONTENT[item.type] | {'fontSize'}
+        applicable = CONTENT[item.type]
         props.update({key: self.fields[key].text() for key in ['title', 'text', 'emptyText', 'unit'] if key in applicable})
-        props.update({key: self.fields[key].value() for key in ['decimals', 'pageSize', 'fontSize'] if key in applicable})
-        props.update({key: field.currentData() for key, field in self.appearance.items()})
+        props.update({key: self.fields[key].value() for key in ['decimals', 'pageSize'] if key in applicable})
+        fonts = props.get('typography') or {}
+        current = (fonts.get('value') or {}).get('size')
+        valueSize = self.fields['fontSize'].value() or None
+        if valueSize != current:
+            props['typography'] = {**fonts, 'value': {**(fonts.get('value') or {}), 'size': valueSize}}
         props.update({key: self.fields[key].currentData() for key in ['imageResourceId', 'iconResourceId']
                       if key in applicable})
         if item.type == 'spacer':
@@ -727,13 +770,13 @@ class EditingTools(QObject):
                 props['imageResourceId'] = None
             elif props['imageResourceId'] is None:
                 raise ValueError('图片路径：请选择静态图片资源。')
-        rows = [[self._cellValue(r, c) for c in range(4)]
+        rows = [[self._cellValue(r, c) for c in range(5)]
                 for r in range(self.extra.rowCount())]
         if item.type == 'table':
-            if any(not isinstance(path, (list, tuple)) for _, path, _, _ in rows):
+            if any(not isinstance(path, (list, tuple)) for _, path, *_ in rows):
                 raise ValueError('请选择已知表格字段；未知结构不能自动推断')
-            props['columns'] = [{'title': title, 'fieldPath': list(path)} for title, path, _, _ in rows]
-        if item.type == 'indicator':
+            props['columns'] = [{'title': title, 'fieldPath': list(path)} for title, path, *_ in rows]
+        if item.type in {'indicator', 'sqlite_table'}:
             props['indicatorStates'] = indicatorStatesFromRows(rows)
         if item.type in ('sqlite_table', 'sqlite_value'):
             props['sqlite'] = self.sqliteProperties.payload()
@@ -743,7 +786,8 @@ class EditingTools(QObject):
             mode = self.actionMode.currentData()
             action = actionFromFields(self.w.store.snapshot(), self.w.pageId, mode,
                 targetPageId=self.destination.currentData() if mode in ('navigate', 'detail') else None,
-                resultScopeId=self.actionScope.currentData() if mode in ('detail', 'freeze') else None)
+                resultScopeId=self.actionScope.currentData() if mode in ('detail', 'freeze') else None,
+                componentId=self.historyTarget.currentData() if mode.startswith('history_') else None)
             actions = {'clicked': action} if action else {}
         self.commands().update(self.w.pageId, self.selected, props=Props(**props), layout=layout,
             actions=actions, columns=columns if item.type == 'container' and item.grid.type == 'grid' else None,

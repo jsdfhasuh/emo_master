@@ -1,0 +1,20 @@
+{
+  "date": "2026-11-18",
+  "baseline": "31afa5ecab8b7ddb53f0d6bdedc620f0a243e340",
+  "evidence": "actual baseline readPage direct invocation, temporary database; not full Runtime/UI test",
+  "before_insert_page0_ids": [
+    5,
+    4
+  ],
+  "selected_id": 4,
+  "inserted_id": 6,
+  "after_insert_page1_ids": [
+    4,
+    3
+  ],
+  "naive_next_id": 4,
+  "expected_next_existing_id": 3,
+  "empty_filter_column_with_text": "请选择要筛选的显示字段",
+  "source_modified": false,
+  "notes": "仅作为修订依据；新按键查询尚未实现。此小库pageSize=2为本次基线反例，交付示例设计为pageSize=3。"
+}

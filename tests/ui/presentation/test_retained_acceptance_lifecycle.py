@@ -33,13 +33,9 @@ def drainDeletes(app):
 
 
 def selectPage(window, pageId):
-    picker = window.pageNavigation.picker
-    picker.setFocus()
-    target = picker.findData(pageId)
-    # The exercise visits consecutive pages and wraps to the first, retaining
-    # exactly one user navigation per iteration instead of intermediate hops.
-    assert target == 0 or target == picker.currentIndex() + 1
-    QTest.keyClick(picker, Qt.Key_Home if target == 0 else Qt.Key_Down)
+    tabs = window.pageNavigation.tabs
+    index = next(i for i in range(tabs.count()) if tabs.tabData(i) == pageId)
+    QTest.mouseClick(tabs, Qt.LeftButton, pos=tabs.tabRect(index).center())
 
 
 def warmTimerBackend(app):

@@ -123,8 +123,10 @@ class AppTests(unittest.TestCase):
         self.assertEqual(self.client.get('/api/operations/by-request/lookup-123456').status_code,404)
     def test_history_filter_and_opaque_images(self):
         h=self.login();v=self.client.post('/api/views',headers=h,json={'panelId':'demo-panel','runId':'demo-run'}).json()['id']
-        rows=self.client.get(f'/api/views/{v}/history/history-table?q=NG&sort=id&order=desc&pageSize=2').json()
-        self.assertEqual(rows['total'],7);self.assertEqual([r['id'] for r in rows['rows']],['28','24'])
+        rows=self.client.get(f'/api/views/{v}/history/history-table?q=NG&filterColumn=result&sort=id&order=desc&pageSize=2').json()
+        self.assertEqual([r['keyValues'] for r in rows['rows']],[['28'],['24']])
+        total=self.client.get(f'/api/views/{v}/history/history-table?q=NG&filterColumn=result&aggregate=true').json()
+        self.assertEqual(total['value'],7)
         self.assertEqual(self.client.get('/api/history-images/demo-image').headers['content-type'],'image/png')
         self.assertEqual(self.client.get('/api/history-images/arbitrary-file').status_code,404)
     def test_json_objects_and_duplicate_account(self):
@@ -167,7 +169,7 @@ class AppTests(unittest.TestCase):
         self.assertEqual(self.client.get('/api/operations/'+a.json()['operationId']).json()['state'],'succeeded')
     def test_view_owner_history_and_websocket(self):
         h=self.login();v=self.client.post('/api/views',headers=h,json={'panelId':'demo-panel','runId':'demo-run'}).json()['id']
-        self.assertEqual(self.client.get(f'/api/views/{v}/history/history-table').json()['total'],30)
+        self.assertEqual(self.client.get(f'/api/views/{v}/history/history-table?aggregate=true').json()['value'],30)
         self.assertEqual(self.client.get(f'/api/views/{v}/history/not-declared').status_code,404)
         with self.client.websocket_connect(f'/ws/views/{v}') as ws:
             msg=ws.receive_json();self.assertEqual(msg['type'],'result')

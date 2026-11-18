@@ -8,7 +8,7 @@ require.extensions['.ts']=(module,path)=>module._compile(ts.transpileModule(read
 const {draftKey,rememberDraft,recoverDraft}=require('../src/editor/drafts.ts');
 const entries=new Map();
 globalThis.sessionStorage={getItem:key=>entries.get(key) || null,setItem:(key,value)=>entries.set(key,value),removeItem:key=>entries.delete(key)};
-const draft=()=>({presentation:{schemaVersion:'1.2',pageOrder:['page'],pages:{page:{name:'unsaved'}}},saved:'saved source',draftRevision:'original-revision',pageId:'page',selected:'component'});
+const draft=()=>({presentation:{schemaVersion:'1.3',pageOrder:['page'],pages:{page:{name:'unsaved'}}},saved:'saved source',draftRevision:'original-revision',pageId:'page',selected:'component'});
 
 test('recovery keys isolate user, configured target and project without Runtime instance',()=>{
  const key=draftKey('alice','target','project'),value=draft();rememberDraft(key,value);

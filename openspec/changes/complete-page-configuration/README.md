@@ -6,6 +6,8 @@
 
 ChatGPT Web 提供计划及基于 `a9554a0e` 的初版补丁。Codex 在 `70062e6a` 整合补丁，浏览器验收对应 `53b38e1f`。
 
+ChatGPT Web 审查了完成记录 `e3b6947e`。本轮 CI 收尾由 Codex 执行，任务 3.5 核对 Linux pytest、官方预览、独立 wheel 安装以及同一软件 Runtime 两次启停的结果。
+
 - [变更理由与范围](proposal.md)
 - [字段和实现设计](design.md)
 - [任务状态](tasks.md)

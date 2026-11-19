@@ -42,12 +42,23 @@
 
 V1.3 首次提交 `6882a3f61b57cd4c1efe23ee50ecce2c140d1fa9` 的 Web CI 三个作业通过。两个平台都通过了图片退役和此前被它挡住的浏览器、正式预览及独立 wheel 安装。Ubuntu 执行完整前端、目录刷新、草稿恢复及 Dispatch 检查。Windows 软件 Runtime 通过 SDK 1.7.0 的真实登录与两任务图像归属、启停、终态及重新启动。[Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44432730348)
 
-同一提交的 Source CI 已解除原 mypy 阻塞。pytest 发现了页面格式和默认外观变更后仍沿用旧输入的测试、打包自测及交付探针，也发现了 Qt 作业目标提示、重开时的布局高度及 Designer 紧凑卡片缩放手柄问题。相关修复在本机通过，正在准备远端复验。[首次 Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44432730165)
+同一提交的 Source CI 四个分片都通过原先阻断的 mypy 并进入 pytest。pytest 发现了页面格式和默认外观变更后仍沿用旧输入的测试、打包自测及交付探针，也发现了 Qt 作业目标提示、重开时的布局高度及 Designer 紧凑卡片缩放手柄问题。首次 Windows other 分片到达 99% 后被补充提交触发的新运行取代。已获得的 Windows other 失败用例均包含在首次 Linux other 失败集合内。[首次 Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44432730165)
 
 - Runtime 软件模拟和静态资源测试 17 项通过。测试通过现有生成器取得当前工程，历史工程保留用于比较。
-- Qt 宿主和展示测试 36 项通过。同一双页工程的原生 Qt 启停、冻结、履历时间及日志也已复验。
+- Qt 宿主和展示测试 36 项通过。另执行原生 Qt 的展开画布、空白块、响应式布局和会话测试，26 项通过。同一双页工程的原生 Qt 启停、冻结、历史时间及日志也已复验。
 - Designer 的编辑、布局和绑定等 76 项通过。另有 39 项属性相关回归通过 Windows 原生 Qt 和 offscreen 两种运行方式。
 - 受影响的打包自测和 Designer 导出至独立查看器链路通过。P3 的实际鼠标、键盘切页检查也已通过。
+
+正式代码提交 `f5e0a120d2e8d03b6f1da389882d0b96e38da0ae` 的 Source CI 和 Web CI 均成功完成。Source CI 四个分片都完成 Protobuf、Ruff、mypy 和 pytest，首轮失败用例逐项复验通过。Web CI 的 Linux、Windows、软件 Runtime 三个作业通过，原先受阻的步骤在适用的平台执行通过。[最终 Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44438081575) · [最终 Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44438081589)
+
+| Source CI 分片 | pytest 实际结果 |
+| --- | --- |
+| Linux Runtime | 3366 通过，7 跳过 |
+| Linux other | 6186 通过，25 跳过，66 个子测试通过 |
+| Windows Runtime | 3371 通过，2 跳过 |
+| Windows other | 6207 通过，4 跳过，66 个子测试通过 |
+
+Codex 已在两次代码提交下记录计划来源、实际实施者、改动和验收结果。[首次实施评论](https://github.com/jsdfhasuh/emo_master/commit/6882a3f61b57cd4c1efe23ee50ecce2c140d1fa9#commitcomment-210760753) · [补充提交评论](https://github.com/jsdfhasuh/emo_master/commit/f5e0a120d2e8d03b6f1da389882d0b96e38da0ae#commitcomment-210765183)
 
 ## 验收范围
 

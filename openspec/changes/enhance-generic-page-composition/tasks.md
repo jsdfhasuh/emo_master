@@ -1,6 +1,6 @@
 # V1.3 唯一实施任务清单
 
-**状态：R1–R5 已通过本轮复验，R6 待最终 GitHub Actions 验收。** [实际验证记录](../../../docs/testing/2026-11-18-generic-page-composition-v1.3/README.md)
+**状态：R1–R6 已完成。** 正式代码提交 `f5e0a120d2e8d03b6f1da389882d0b96e38da0ae` 通过 Source CI 与 Web CI。[实际验证记录](../../../docs/testing/2026-11-18-generic-page-composition-v1.3/README.md)
 
 基线：ce8f84caf4d0fd779e579b23ff82fa4e80de978d。先核对实际 HEAD、AGENTS 和未提交改动；后续已经修好的内容验证后复用。本文件是唯一待办清单，不在交接、报告或各 spec 再建立平行勾选表。
 
@@ -22,7 +22,7 @@ review-report.md / review-evidence.json 记录本次审查结果：历史 29 项
 
 - [x] R5. 补齐 Qt/Web 整行状态浅底。indicatorView=row 的 soft 背景覆盖标题/圆点/值所在整行；badge 只包围紧凑状态值，text 使用文本语义；无映射/缺值清除上一状态色并中性显示。使用同一主题与现有映射，无新颜色配置层。完成依据：acceptance B 的一次视图检查。
 
-- [ ] R6. 完成当前检查、视觉与交付收尾。修正 appearance.py 的主题类型关系；定位并修复原 asset_retirement_browser 和 product_runtime_e2e 失败，不削弱原行为断言。执行受影响的现有检查、Web 构建及官方 OpenSpec strict；本轮若无 proto 变更不修改生成的 RPC 文件。当前 SDK 变化后确认消费者和生成物一致，最终稳定版本运行既有有效 CI 并检查原先 skipped 步骤。更新一份最终证据记录和同一示例的受影响截图，逐项据实勾选 R1–R6；执行会话已授权推送时附实际执行者评论。完成依据：acceptance 第 4–5 节。
+- [x] R6. 完成当前检查、视觉与交付收尾。修正 appearance.py 的主题类型关系；定位并修复原 asset_retirement_browser 和 product_runtime_e2e 失败，不削弱原行为断言。执行受影响的现有检查、Web 构建及官方 OpenSpec strict；本轮若无 proto 变更不修改生成的 RPC 文件。当前 SDK 变化后确认消费者和生成物一致，最终稳定版本运行既有有效 CI 并检查原先 skipped 步骤。更新一份最终证据记录和同一示例的受影响截图，逐项据实勾选 R1–R6；执行会话已授权推送时附实际执行者评论。完成依据：acceptance 第 4–5 节。
 
 ## 停止条件
 

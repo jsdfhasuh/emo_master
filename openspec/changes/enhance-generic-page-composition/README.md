@@ -5,7 +5,7 @@
 **R1–R6 已完成。** 正式代码验收对应 `f5e0a120`，完成记录由 `0b7aa5bc` 更新。[V1.3 验收记录](../../../docs/testing/2026-11-18-generic-page-composition-v1.3/README.md)
 
 2026-11-19 后续需求：按钮/页头配置、状态标题与左圆点、两点构线及历史工具栏显隐，见独立的
-[V1.4 通用页面配置补齐](../complete-page-configuration/README.md)。新任务与其未完成验收项在该变更内跟踪，不回写本页 R1–R6 的已完成结论。
+[V1.4 通用页面配置补齐](../complete-page-configuration/README.md)。该变更记录了五项能力及真实浏览器验收结果。
 
 本轮固定审核基线为 [ce8f84ca](https://github.com/jsdfhasuh/emo_master/commit/ce8f84caf4d0fd779e579b23ff82fa4e80de978d)。最初计划的 31afa5ec 只保留为历史设计依据。执行者先比较实际 HEAD 的后续修复，不回退代码或覆盖用户改动。V1.3 是计划文档版本，不自动代表工程、页面或 SDK 的版本号。
 

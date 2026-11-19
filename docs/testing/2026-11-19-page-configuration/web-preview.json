@@ -1,24 +1,266 @@
 {
-  "status": "BLOCKED_BEFORE_BROWSER_LAUNCH",
-  "sourceSha": "a9554a0ea80311a6870f4544af2398b6446c088b",
-  "sourceDirty": true,
-  "projectSha256": "8ce506a337c11ec9d2fd6644f4fa74fd31929d9978d1ccc7e48ad1ea2784e149",
-  "packageSha256": "1cb56db977f776b5779bdda80771f4a06a07e57f28b03d24c1beb2703936768f",
-  "frontendBuild": "PASS: TypeScript and Vite; packaged into Web backend static assets",
-  "sdkVersion": "1.8.0",
-  "browser": "/usr/bin/chromium",
-  "blocker": "Chromium process_singleton_posix.cc failed to create AF_UNIX socket: Operation not permitted (EPERM).",
-  "permissionAttempt": "Tool rejected require_escalated because sandbox_approval=false; no permissions were changed.",
+  "source": "Chromium → Web HTTP/WS → real repository software Runtime",
   "physicalDevices": false,
-  "screenshots": [],
-  "browserAcceptanceExecuted": false,
-  "plannedVerification": "Chromium → Web HTTP/WS → repository software Runtime; same delivered emoproj/emoweb",
-  "script": "examples/generic_page_composition/capture_web_preview.py",
-  "notVerified": [
-    "Actual Chromium production and history render",
-    "Browser controls and history navigation",
-    "Web layout at 1366x768 and 1920x1080"
+  "sdkVersion": "1.8.0",
+  "sourceSha": "53b38e1f69572fd34d7dcbf89866419e50b49683",
+  "sourceDirty": true,
+  "projectSha256": "b7f466d4c5d4fcaa20bd6d75150b8bad65225d7ed6ca9084d9bff4273666775e",
+  "packageSha256": "79ba22e96289c6997c5b06ccff26695fc88181c3b121765cdc4271992dd26715",
+  "screenshots": [
+    "web-production-1366x768.png",
+    "web-history-1366x768.png",
+    "web-production-1920x1080.png",
+    "web-history-1920x1080.png"
   ],
-  "deliveredProjectSha256": "b7f466d4c5d4fcaa20bd6d75150b8bad65225d7ed6ca9084d9bff4273666775e",
-  "projectBytesNote": "The attempted project had CRLF line endings; delivery retains the LF bytes used for the Qt captures. Parsed project content and emoweb are identical. No browser page was reached."
+  "runs": [
+    {
+      "sequence": 1,
+      "jobId": "2909c621-ca85-4b33-8425-5f3ab89f7a68",
+      "state": "COMPLETED",
+      "recordKey": "f2f3149e-181e-4068-8648-6129aba2b94c",
+      "statusRows": [
+        {
+          "id": "result-direction",
+          "title": "方向判定",
+          "value": "符合",
+          "titleColor": "rgb(20, 112, 68)",
+          "valueColor": "rgb(20, 112, 68)",
+          "markerColor": "rgb(20, 112, 68)",
+          "markerBeforeTitle": true
+        },
+        {
+          "id": "result-batch",
+          "title": "样本分类",
+          "value": "标准样本",
+          "titleColor": "rgb(36, 89, 209)",
+          "valueColor": "rgb(36, 89, 209)",
+          "markerColor": "rgb(36, 89, 209)",
+          "markerBeforeTitle": true
+        },
+        {
+          "id": "result-overall",
+          "title": "综合判定",
+          "value": "通过",
+          "titleColor": "rgb(20, 112, 68)",
+          "valueColor": "rgb(20, 112, 68)",
+          "markerColor": "rgb(20, 112, 68)",
+          "markerBeforeTitle": true
+        }
+      ]
+    },
+    {
+      "sequence": 2,
+      "jobId": "dc009038-5fc5-44ba-9292-3075884ae13e",
+      "state": "COMPLETED",
+      "recordKey": "fc8b1570-b3e7-48db-a9bd-3dc36d199339",
+      "statusRows": [
+        {
+          "id": "result-direction",
+          "title": "方向判定",
+          "value": "符合",
+          "titleColor": "rgb(20, 112, 68)",
+          "valueColor": "rgb(20, 112, 68)",
+          "markerColor": "rgb(20, 112, 68)",
+          "markerBeforeTitle": true
+        },
+        {
+          "id": "result-batch",
+          "title": "样本分类",
+          "value": "标准样本",
+          "titleColor": "rgb(36, 89, 209)",
+          "valueColor": "rgb(36, 89, 209)",
+          "markerColor": "rgb(36, 89, 209)",
+          "markerBeforeTitle": true
+        },
+        {
+          "id": "result-overall",
+          "title": "综合判定",
+          "value": "通过",
+          "titleColor": "rgb(20, 112, 68)",
+          "valueColor": "rgb(20, 112, 68)",
+          "markerColor": "rgb(20, 112, 68)",
+          "markerBeforeTitle": true
+        }
+      ]
+    },
+    {
+      "sequence": 3,
+      "jobId": "7582a153-d994-4d64-b5a9-a98c10dac64c",
+      "state": "COMPLETED",
+      "recordKey": "1c88a616-fde3-498d-b52b-d250c9f0c43b",
+      "statusRows": [
+        {
+          "id": "result-direction",
+          "title": "方向判定",
+          "value": "符合",
+          "titleColor": "rgb(20, 112, 68)",
+          "valueColor": "rgb(20, 112, 68)",
+          "markerColor": "rgb(20, 112, 68)",
+          "markerBeforeTitle": true
+        },
+        {
+          "id": "result-batch",
+          "title": "样本分类",
+          "value": "标准样本",
+          "titleColor": "rgb(36, 89, 209)",
+          "valueColor": "rgb(36, 89, 209)",
+          "markerColor": "rgb(36, 89, 209)",
+          "markerBeforeTitle": true
+        },
+        {
+          "id": "result-overall",
+          "title": "综合判定",
+          "value": "通过",
+          "titleColor": "rgb(20, 112, 68)",
+          "valueColor": "rgb(20, 112, 68)",
+          "markerColor": "rgb(20, 112, 68)",
+          "markerBeforeTitle": true
+        }
+      ]
+    },
+    {
+      "sequence": 4,
+      "jobId": "17ab4c9e-9658-4fc3-bb6a-af8102f40bce",
+      "state": "COMPLETED",
+      "recordKey": "06c4d4dc-a54d-44e1-a442-8e6057fce5ee",
+      "statusRows": [
+        {
+          "id": "result-direction",
+          "title": "方向判定",
+          "value": "符合",
+          "titleColor": "rgb(20, 112, 68)",
+          "valueColor": "rgb(20, 112, 68)",
+          "markerColor": "rgb(20, 112, 68)",
+          "markerBeforeTitle": true
+        },
+        {
+          "id": "result-batch",
+          "title": "样本分类",
+          "value": "复核样本",
+          "titleColor": "rgb(146, 83, 0)",
+          "valueColor": "rgb(146, 83, 0)",
+          "markerColor": "rgb(146, 83, 0)",
+          "markerBeforeTitle": true
+        },
+        {
+          "id": "result-overall",
+          "title": "综合判定",
+          "value": "需复核",
+          "titleColor": "rgb(146, 83, 0)",
+          "valueColor": "rgb(146, 83, 0)",
+          "markerColor": "rgb(146, 83, 0)",
+          "markerBeforeTitle": true
+        }
+      ]
+    }
+  ],
+  "browserErrors": [],
+  "browserVersion": "157.0.4341.42",
+  "health": {
+    "status": "ok",
+    "mode": "grpc",
+    "productionContractReady": true,
+    "panelContractVersion": "1.0",
+    "sdkVersion": "1.8.0",
+    "preview": false,
+    "localNoAuth": false
+  },
+  "packageId": "79ba22e96289c6997c5b06ccff26695fc88181c3b121765cdc4271992dd26715",
+  "centerLine": {
+    "samples": 30,
+    "white": 16,
+    "gaps": 14
+  },
+  "historySteps": [
+    {
+      "action": "open",
+      "position": 1,
+      "sequence": 4,
+      "recordKey": "06c4d4dc-a54d-44e1-a442-8e6057fce5ee"
+    },
+    {
+      "action": "next",
+      "position": 2,
+      "sequence": 3,
+      "recordKey": "1c88a616-fde3-498d-b52b-d250c9f0c43b"
+    },
+    {
+      "action": "next",
+      "position": 3,
+      "sequence": 2,
+      "recordKey": "fc8b1570-b3e7-48db-a9bd-3dc36d199339"
+    },
+    {
+      "action": "next",
+      "position": 4,
+      "sequence": 1,
+      "recordKey": "f2f3149e-181e-4068-8648-6129aba2b94c"
+    },
+    {
+      "action": "previous",
+      "position": 3,
+      "sequence": 2,
+      "recordKey": "fc8b1570-b3e7-48db-a9bd-3dc36d199339"
+    },
+    {
+      "action": "restore",
+      "position": 3,
+      "sequence": 2,
+      "recordKey": "fc8b1570-b3e7-48db-a9bd-3dc36d199339"
+    },
+    {
+      "action": "latest",
+      "position": 1,
+      "sequence": 4,
+      "recordKey": "06c4d4dc-a54d-44e1-a442-8e6057fce5ee"
+    }
+  ],
+  "history": {
+    "records": 4,
+    "hiddenToolbars": true,
+    "crossedPage": true,
+    "returnedToLatest": true,
+    "selectedRecord": "06c4d4dc-a54d-44e1-a442-8e6057fce5ee",
+    "selectedSequence": 4,
+    "mainAndDetailMatchSameArchiveRecord": true
+  },
+  "controls": [
+    {
+      "text": "开始检测",
+      "disabled": false,
+      "background": "rgb(36, 89, 209)",
+      "color": "rgb(255, 255, 255)",
+      "height": 44,
+      "radius": "8px",
+      "padding": "10px 18px"
+    },
+    {
+      "text": "停止检测",
+      "disabled": true,
+      "background": "rgb(238, 242, 248)",
+      "color": "rgb(83, 100, 123)",
+      "height": 44,
+      "radius": "8px",
+      "padding": "10px 18px"
+    }
+  ],
+  "logo": {
+    "width": 64,
+    "height": 64,
+    "objectFit": "contain",
+    "naturalWidth": 96,
+    "naturalHeight": 96
+  },
+  "header": {
+    "titleSize": "26px",
+    "subtitleSize": "14px",
+    "padding": "16px 24px"
+  },
+  "stopAction": {
+    "runId": "98983e03-b5aa-485a-b7a0-87c4ac6e6e4c",
+    "targetConfirmed": true,
+    "command": "accepted",
+    "terminal": "ABORTED"
+  },
+  "status": "PASS"
 }

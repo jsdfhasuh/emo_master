@@ -1,5 +1,7 @@
 # Codex 接手提示词 · V1.4
 
+> 本文保留 ChatGPT Web 初版交接时的任务说明。Codex 已完成整合与 3.4 补验，当前状态见[任务清单](tasks.md)和[验收记录](../../../docs/testing/2026-11-19-page-configuration/README.md)。
+
 请在 `jsdfhasuh/emo_master` 完成通用页面配置 V1.4 的本地整合和剩余验收。
 
 先读仓库 AGENTS.md、本目录 proposal/design/tasks/spec，以及

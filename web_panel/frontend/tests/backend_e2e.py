@@ -278,6 +278,7 @@ def main():
      page.get_by_text('账户与 Runtime 管理',exact=True).click();page.get_by_label('新用户名',exact=True).fill('readonly');page.get_by_label('初始密码',exact=True).fill('Readonly-fixture-123!');page.get_by_role('button',name='创建用户',exact=True).click();page.get_by_role('cell',name='readonly',exact=True).wait_for()
      history=page.locator('section.panel-card').filter(has=page.get_by_label('history-table 筛选', exact=True))
      expect(history.locator('tbody tr')).to_have_count(10)
+     expect(history.get_by_role('columnheader')).to_have_text(['ID', 'Result'])
      page.get_by_role('button',name='编辑 / 授权',exact=False).first.click()
      with page.expect_response(lambda response:'/api/admin/runtimes/configured/grants' in response.url and response.request.method=='PUT') as grant_response:
       page.get_by_label('readonly 查看 configured',exact=True).check()
@@ -296,8 +297,17 @@ def main():
      page.get_by_label('history-table 筛选', exact=True).fill('NG')
      history.get_by_role('button',name='筛选',exact=True).click()
      expect(history.locator('tbody tr')).to_have_count(7)
-     history.locator('tbody tr').first.click();page.get_by_role('img',name='选中历史记录',exact=True).wait_for()
+     history.locator('tbody tr').nth(1).click();page.get_by_role('img',name='选中历史记录',exact=True).wait_for()
      page.wait_for_function('(image)=>image.complete && image.naturalWidth>0',arg=page.get_by_role('img',name='选中历史记录',exact=True).element_handle())
+     selected_row = history.locator('tbody tr[aria-selected="true"]')
+     expect(selected_row).to_have_count(1)
+     selected_cells = selected_row.get_by_role('cell').all_text_contents()
+     with page.expect_response(lambda r: '/history/history-table?' in r.url and 'anchorKeyJson=' in r.url) as refreshed:
+      history.get_by_role('button',name='刷新历史',exact=True).click()
+     assert refreshed.value.ok
+     expect(selected_row.get_by_role('cell')).to_have_text(selected_cells)
+     history.get_by_role('button',name='清除',exact=True).click()
+     expect(history.locator('tbody tr')).to_have_count(10)
      page.get_by_label('停止控制目标',exact=True).select_option('demo-run');page.once('dialog',lambda dialog:dialog.accept())
      with page.expect_response(lambda response:response.url.endswith('/api/runs/demo-run/stop') and response.request.method=='POST') as stopped:
       page.get_by_role('button',name='停止选中运行',exact=True).click()

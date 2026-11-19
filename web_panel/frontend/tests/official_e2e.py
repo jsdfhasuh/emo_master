@@ -102,10 +102,13 @@ def main():
                     page.get_by_label('查看运行', exact=True).select_option('demo-j1')
                     expect(page.locator('.number')).to_contain_text('12.00')
                     expect(page.locator('.indicator')).to_contain_text('OK')
-                    loaded_image(page, 'img[src*="/api/assets/"]')
+                    static_image = '[data-component-id="logo"] img[src*="/api/assets/"]'
+                    loaded_image(page, static_image)
+                    loaded_image(page, 'header img.operator-logo')
                     assert page.locator('time').count() == 1
                     assert page.get_by_role('button', name='启动工作流', exact=True).count() == 0
                     assert page.get_by_role('button', name='停止选中运行', exact=True).count() == 0
+                    expect(page.locator('.operator-control')).to_have_count(0)
                     assert page.get_by_label('导入页面包', exact=True).count() == 0
                     page.get_by_role('button', name='冻结查看', exact=True).click()
                     page.get_by_text('已冻结查看', exact=True).wait_for()
@@ -121,19 +124,24 @@ def main():
                     replay = page.request.post('/api/preview/session', data={'token':urlsplit(ready_url).query[6:]})
                     assert replay.status == 403
                     page.get_by_role('button', name='History', exact=True).click()
-                    history = page.locator('section.panel-card').filter(has=page.get_by_label('records 筛选', exact=True))
-                    expect(history.locator('tbody tr')).to_have_count(2)
+                    history = page.locator('[data-component-id="records"]')
+                    records = history.get_by_role('listitem')
+                    expect(records).to_have_count(2)
+                    expect(records.locator('strong')).to_have_text(['2', '1'])
+                    expect(history.locator('.history-filter,.history-sort,.history-paging')).to_have_count(0)
                     expect(page.locator('section.panel-card > strong')).to_have_text('2')
-                    assert history.get_by_role('columnheader').all_text_contents() == ['id', 'verdict']
                     loaded_image(page, 'img[src*="/history-images/fixed-image"]')
                     selected_image = '[data-component-id="record-image"] img'
-                    history.get_by_role('row').filter(has=page.get_by_role('cell', name='OK', exact=True)).click()
+                    ok_record = records.filter(has=page.get_by_text('1', exact=True)).get_by_role('button')
+                    ng_record = records.filter(has=page.get_by_text('2', exact=True)).get_by_role('button')
+                    ok_record.click()
                     loaded_image(page, selected_image)
-                    history.get_by_role('button', name='刷新历史', exact=True).click()
-                    expect(history.locator('tbody tr[aria-selected="true"]')).to_have_count(1)
+                    page.locator('.page-nav').get_by_role('tab', name='Live demo', exact=True).click()
+                    page.get_by_role('button', name='History', exact=True).click()
+                    expect(ok_record).to_have_attribute('aria-pressed', 'true')
                     loaded_image(page, selected_image)
                     # EMPTY must retire the previously loaded selected-row image.
-                    history.get_by_role('row').filter(has=page.get_by_role('cell', name='NG', exact=True)).click()
+                    ng_record.click()
                     expect(page.locator(selected_image)).to_have_count(0)
                     with page.expect_response(lambda response: urlsplit(response.url).path.endswith('/history/records')) as refreshed:
                         with page.expect_response(lambda response: urlsplit(response.url).path == '/api/views'
@@ -143,13 +151,14 @@ def main():
                     assert history_view.value.ok
                     view_id = history_view.value.json()['id']
                     assert refreshed.value.ok and f'/views/{view_id}/history/records' in refreshed.value.url
-                    expect(history.locator('tbody tr')).to_have_count(2)
-                    history.get_by_label('records 筛选列', exact=True).select_option('verdict')
-                    history.get_by_label('records 筛选', exact=True).fill('NG')
-                    history.get_by_role('button', name='筛选', exact=True).click()
-                    expect(history.locator('tbody tr')).to_have_count(1)
-                    history.get_by_role('button', name='清除', exact=True).click()
-                    expect(history.locator('tbody tr')).to_have_count(2)
+                    expect(records).to_have_count(2)
+                    history_page = refreshed.value.json()
+                    assert [column['name'] for column in history_page['columns']] == ['id', 'verdict']
+                    assert [row['values'] for row in history_page['rows']] == [[2, 'NG'], [1, 'OK']]
+                    # Hiding the toolbar leaves the preview's read-only field filter available.
+                    filtered = page.request.get(f'/api/views/{view_id}/history/records',
+                                                params={'filterColumn': 'verdict', 'q': 'NG'})
+                    assert filtered.ok and [row['values'] for row in filtered.json()['rows']] == [[2, 'NG']]
                     page.screenshot(path=str(EVIDENCE / 'official-history-desktop.png'), full_page=True)
                     page.set_viewport_size({'width':390, 'height':844})
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'History overflows mobile viewport'
@@ -157,7 +166,7 @@ def main():
                     page.locator('.page-nav').get_by_role('tab', name='Live demo', exact=True).click()
                     page.get_by_label('查看运行', exact=True).select_option('demo-j1')
                     expect(page.locator('.number')).to_contain_text('12.00')
-                    loaded_image(page, 'img[src*="/api/assets/"]')
+                    loaded_image(page, static_image)
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Live page overflows mobile viewport'
                     page.screenshot(path=str(EVIDENCE / 'official-live-mobile.png'), full_page=True)
                     assert not errors, errors

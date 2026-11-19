@@ -18,3 +18,5 @@
 - [ ] 3.5 CI 集成收尾。通过 Source CI 与 Web CI，核实 Linux 两个 pytest 分片和同一 Runtime 两次启动、图像身份、两次停止的实际结果。
 
 3.4 对应代码 `53b38e1f`。初版环境的 IPC 阻断已作为历史证据保留。实际操作、截图、软件版本与验证边界见[本轮验收记录](../../../docs/testing/2026-11-19-page-configuration/README.md)。
+
+3.5 首轮修复后，[同一 Runtime 的双 Job 浏览器检查](https://github.com/jsdfhasuh/emo_master/actions/runs/44506832095/job/135500520899)通过。独立 Web 检查随后发现正式预览样例已同时显示页头 Logo 和页面图片，历史页也已配置为隐藏工具栏的列表。补验同时覆盖正式列表的切页恢复，以及表格启用工具栏时的筛选、刷新和清除。

@@ -107,4 +107,33 @@ python examples/generic_page_composition/capture_preview.py examples/generic_pag
 
 Linux 无桌面环境可设置 `QT_QPA_PLATFORM=offscreen`；Windows 原生走查应使用正常桌面，不把 offscreen 等同于人工验收。
 
-未验收项：本轮完整 GitHub CI、Windows 原生人工操作、冻结 EXE、现场相机/PLC/工位精度。它们没有被宣称通过，也没有因此扩展本轮五项软件能力的范围。
+## 5. CI 集成收尾
+
+**3.5 已完成。** 正式代码 `912af529` 的 Source CI 和 Web CI 均已通过。[Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44509448074/attempts/2) · [Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44509447970)
+
+ChatGPT Web 提供计划、初版补丁和对 `e3b6947e` 的审查意见。Codex 核对 Actions 日志，修复以下问题并执行补验。任务 3.4 的工程、发布包和四张 Edge 截图沿用第 4 节的记录。
+
+| 提交 | 失败原因与修复 | 本地复验 |
+| --- | --- | --- |
+| `3bff260d` | Linux mypy 无法识别 MVS 的 Windows DLL 回退路径。为该分支增加显式平台条件。前端目录测试和双 Job 浏览器测试改为检查包含短 ID、大写状态的正式标签。 | Linux 和 Windows 两种 mypy 目标均通过。Windows MVS 模拟测试 24 项、运行状态测试 32 项通过。Edge 实际跑完两次启停。 |
+| `e3d6a737` | 官方预览样例同时显示页头 Logo 和页面图片，历史页采用隐藏工具栏的列表。分别定位两张图片，在正式列表验证记录恢复及空图回收，在启用工具栏的表格验证列、筛选、刷新保留选择和清除。 | 官方只读预览和带可见工具栏的表格浏览器流程均通过。 |
+| `912af529` | 仓库外安装 Web wheel 的检查仍精确要求 SDK 1.7.0。更新为配套 SDK 1.8.0，继续核对已安装元数据、模块版本、协议夹具、静态资源与依赖隔离。 | 在临时目录重建 Web wheel，在新的 Python 环境中安装并执行现有检查和 CLI，通过。 |
+
+本地定向检查使用对应提交前的工作树；工作区另有四份 11 月 13 日的文档行尾差异。GitHub 运行使用提交 `912af5298cb6dfbe1a8ede9efed230a37d379e74` 的检出内容。
+
+**源码分片。** 已核对各分片的 JUnit 和 `ci-shard.json`。每个平台收集 9,659 项，两分片无重叠，执行集合与所选集合一致。下表按 pytest 用例计数，子测试未另行累加。两平台覆盖汇总均通过。
+
+| 平台与分片 | 通过 | 原有跳过 | 失败／错误 |
+| --- | ---: | ---: | ---: |
+| [Linux Runtime](https://github.com/jsdfhasuh/emo_master/actions/runs/44509448074/job/135509799227) | 3,383 | 10 | 0 |
+| [Linux 其他](https://github.com/jsdfhasuh/emo_master/actions/runs/44509448074/job/135509799191) | 6,236 | 30 | 0 |
+| [Windows Runtime 重跑](https://github.com/jsdfhasuh/emo_master/actions/runs/44509448074/job/135530779293) | 3,391 | 2 | 0 |
+| [Windows 其他](https://github.com/jsdfhasuh/emo_master/actions/runs/44509448074/job/135509799198) | 6,262 | 4 | 0 |
+
+**Web CI 三个任务均通过。** Linux 完整前端逻辑套件 204 项全部通过。Linux 和 Windows 都完成了官方只读预览、桌面与移动端浏览器检查，以及源码目录外安装 SDK 1.8.0 和 Web wheel。第三个任务使用真实软件 Runtime。[Linux Web 检查](https://github.com/jsdfhasuh/emo_master/actions/runs/44509447970/job/135509529267) · [Windows Web 检查](https://github.com/jsdfhasuh/emo_master/actions/runs/44509447970/job/135509528503) · [软件 Runtime 浏览器检查](https://github.com/jsdfhasuh/emo_master/actions/runs/44509447970/job/135509528978)
+
+**云端双 Job 证据。** 已下载并核对该提交的 `product-browser/report.json` 与 `websocket.json`。同一 Runtime 受理两次启动和两次停止。两个 Job 的短 ID 依次为 `90bdcdc2`、`2c2f5fde`，结果键前缀分别为 `dc6701f6`、`a9fe17c4`。第二个 Job 的图片归属键与其完整结果键相同，浏览器显示尺寸为 320×240。两个 Job 停止后的权威状态均为 `ABORTED`，执行资源均已释放。该时刻的展示资源状态均为 `displayResourcesReleased=false`，页面按 Runtime 回报显示。浏览器错误列表为空。[Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44509447970)
+
+**Windows Runtime 首次运行。** 两条多图用例未取得预期的 `COMPLETE`。其中双 Job 用例的工作流已结束，后图编码已完成，但组装器到达 500 ms 封口期限时仍在等待回调，记录为 `EXPORT_TIMEOUT`。同一份诊断记录了原图接收入库耗时 406 ms。另一条用例只记录了结果完整性断言失败。两条用例所属源码与测试从上次通过的 `f5e0a120` 到本次提交无差异。本机 Windows 原样运行 `test_multi_capture.py` 得到 23 项通过。CI 保留原预算、资源约束和断言，仅在同一代码 SHA 上重跑失败分片及其汇总。[首次 Windows Runtime 日志](https://github.com/jsdfhasuh/emo_master/actions/runs/44509448074/job/135509799270)
+
+未执行 Windows 原生 Qt 人工走查、冻结 EXE、现场相机／PLC 或工位精度验收。

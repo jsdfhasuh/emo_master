@@ -15,8 +15,8 @@
 - [x] 3.2 同一可编辑双页示例展示五项配置，生成发布包；连线来自本次所选目标中心。
 - [x] 3.3 完成本环境可执行的正常路径验证、Qt 实际截图及验收记录，注明源 SHA 与未提交工作区范围。
 - [x] 3.4 Windows Edge 连接真实软件 Runtime，完成四次生产归档、双向跨页回看、切页恢复、返回最新及单独一次确认停止。已逐张检查两种分辨率的生产页和历史页截图。
-- [ ] 3.5 CI 集成收尾。通过 Source CI 与 Web CI，核实 Linux 两个 pytest 分片和同一 Runtime 两次启动、图像身份、两次停止的实际结果。
+- [x] 3.5 CI 集成收尾。`912af529` 的 Source CI 和 Web CI 均通过。已核对 Linux/Windows 四份 pytest 报告，以及同一 Runtime 两次启动、第二个 Job 图片归属与两次停止的浏览器记录。
 
 3.4 对应代码 `53b38e1f`。初版环境的 IPC 阻断已作为历史证据保留。实际操作、截图、软件版本与验证边界见[本轮验收记录](../../../docs/testing/2026-11-19-page-configuration/README.md)。
 
-3.5 首轮修复后，[同一 Runtime 的双 Job 浏览器检查](https://github.com/jsdfhasuh/emo_master/actions/runs/44506832095/job/135500520899)通过。独立 Web 检查随后发现正式预览样例已同时显示页头 Logo 和页面图片，历史页也已配置为隐藏工具栏的列表。补验同时覆盖正式列表的切页恢复，以及表格启用工具栏时的筛选、刷新和清除。
+3.5 的 Windows Runtime 分片在同一 SHA、同一 500 ms 预算下重跑通过；首次多图超时保留在验收记录第 5 节。Web 三个任务均通过。[Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44509448074/attempts/2) · [Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44509447970)

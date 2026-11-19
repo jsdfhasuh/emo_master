@@ -1,6 +1,6 @@
 # 独立 Web 编辑器交付、启动与备份恢复
 
-Web 后端是普通 gRPC 客户端，目标电脑不需要安装 `emo_master`、Qt、设备驱动、推理包或 Node。目标电脑需要 Python 3.10+、Web wheel、配套 SDK 1.6.0 wheel 及其普通依赖。开发 wheel 不包含 Python 解释器；离线安装应另备对应 Python/系统架构的依赖 wheelhouse。
+Web 后端是普通 gRPC 客户端，目标电脑不需要安装 `emo_master`、Qt、设备驱动、推理包或 Node。目标电脑需要 Python 3.10+、Web wheel、配套 SDK 1.7.0 wheel 及其普通依赖。开发 wheel 不包含 Python 解释器；离线安装应另备对应 Python/系统架构的依赖 wheelhouse。
 
 ## 构建机
 
@@ -16,7 +16,7 @@ npm --prefix web_panel/frontend run build
 & web_panel/.venv/Scripts/python.exe -m build --wheel web_panel --outdir web_panel/dist
 ```
 
-一起交付 `web_panel/dist/emo_master_web_panel-0.1.0a1-py3-none-any.whl` 和 `web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.6.0-py3-none-any.whl`。SDK manifest 记录固定源码基线、工作区修改状态、格式版本和文件摘要，见同目录 `contract-manifest.json`。同步安装当前 Web wheel 与 SDK wheel。
+一起交付 `web_panel/dist/emo_master_web_panel-0.1.0a1-py3-none-any.whl` 和 `web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.7.0-py3-none-any.whl`。SDK manifest 记录固定源码基线、工作区修改状态、格式版本和文件摘要，见同目录 `contract-manifest.json`。同步安装当前 Web wheel 与 SDK wheel。
 
 ## Windows 安装和本机启动
 
@@ -24,7 +24,7 @@ npm --prefix web_panel/frontend run build
 
 ```powershell
 py -3.10 -m venv .venv
-& .venv/Scripts/python.exe -m pip install ./emo_panel_protocol-1.6.0-py3-none-any.whl ./emo_master_web_panel-0.1.0a1-py3-none-any.whl
+& .venv/Scripts/python.exe -m pip install ./emo_panel_protocol-1.7.0-py3-none-any.whl ./emo_master_web_panel-0.1.0a1-py3-none-any.whl
 & .venv/Scripts/emo-web-panel.exe --data-dir D:/EmoWeb/panel-data create-user admin
 & .venv/Scripts/emo-web-panel.exe --data-dir D:/EmoWeb/panel-data serve --mode grpc --runtime-address 127.0.0.1:50051
 ```

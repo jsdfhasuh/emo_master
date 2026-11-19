@@ -1,0 +1,64 @@
+{
+  "head": "ce8f84caf4d0fd779e579b23ff82fa4e80de978d",
+  "workingTree": "Uncommitted V1.3 implementation and test changes",
+  "upstreamFailedRun": "https://github.com/jsdfhasuh/emo_master/actions/runs/44271357295",
+  "browserBundle": "index-BpMqOlij.js",
+  "physicalDevices": false,
+  "manualAcceptance": false,
+  "productRuntime": {
+    "status": "PASS",
+    "verification": "Chromium -> Web HTTP/WS -> repository software Runtime",
+    "sdkVersion": "1.7.0",
+    "sdkWheelSha256": "ae02cf74b5b1c680f68e981fcaa008138107899588f62d4e9d8458737424d3ea",
+    "installedSdkFilesMatchedToWheel": 16,
+    "published": "PUBLISHED",
+    "authenticatedBrowserSession": true,
+    "runtimeInstanceId": "243726de-bbf2-4f86-a02a-37a29ed24a71",
+    "projectId": "independent-web-editor-software-demo",
+    "acceptedJobIds": [
+      "8698bf2d-7451-4753-beba-166ffe372c22",
+      "71a3e3fb-3c07-4f14-8d7c-9cc35c9bb833"
+    ],
+    "startPosts": 2,
+    "stopPosts": 2,
+    "ordinaryEmptyGroup": "PASS",
+    "jobTerminalStates": [
+      "ABORTED",
+      "ABORTED"
+    ],
+    "executionResourcesReleased": true,
+    "automaticStartAdmission": true,
+    "sameRuntimeRestart": true,
+    "resultKeys": [
+      "e4ef65f7-da01-4cf1-971a-28f80dbd4805",
+      "a9b60565-1604-45ea-b0d7-af742e6342b2"
+    ],
+    "renderedImageSize": [
+      320,
+      240
+    ]
+  },
+  "assetRetirement": {
+    "status": "PASSED",
+    "verification": "Chromium + real Web gateway + explicit synthetic Runtime",
+    "chromium": "157.0.8103.79",
+    "beforeModalKey": "mock-1",
+    "snapshotsDuringConfirmation": 5,
+    "returnedResultRetired": 1,
+    "stopCommands": 1,
+    "runtimeStopped": true,
+    "displayedKeyAfterStop": "mock-6",
+    "pageErrors": []
+  },
+  "browserSmoke": "PASS on latest packaged build",
+  "unchangedChecks": {
+    "responsiveSpacerBrowserCases": 15,
+    "draftRecoveryBrowser": "PASS",
+    "dispatchCaptureIsolationBrowser": "PASS",
+    "editorPackageAndGridBrowser": "PASS",
+    "localPasswordlessBrowser": "PASS",
+    "officialPreviewCliAndBrowser": "PASS",
+    "browserHarness": "PASS",
+    "independentWheelBuildAndCleanInstall": "PASS on index-BpMqOlij.js; SDK 1.7.0 and no Qt/Runtime imports"
+  }
+}

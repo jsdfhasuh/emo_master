@@ -3,7 +3,7 @@
 Run after building/package_frontend.py, in CI with a separately provisioned
 Runtime interpreter and Chromium. Never substitutes MockRuntime/FixtureRuntime,
 intercepts RPC replies, installs dependencies, or touches a real device.
-SDK >=1.6.0, editor-published output requests, and the ordinary Job's empty group ID in an official terminal
+SDK >=1.7.0, editor-published output requests, and the ordinary Job's empty group ID in an official terminal
 BrowserJobState are mandatory; no compatibility fallback can satisfy this test.
 """
 import hashlib
@@ -45,6 +45,34 @@ def read_json(response):
         # APIResponse has no request attribute. Preserve the actual HTTP error.
         raise AssertionError(f'{response.url}: {response.status} {response.text()}')
     return response.json()
+
+
+def expect_selected_package(page, package_id):
+    from playwright.sync_api import expect
+    settings = page.get_by_role('button', name='运行设置', exact=True)
+    opened = settings.get_attribute('aria-expanded') == 'true'
+    if not opened:
+        settings.click()
+    try:
+        expect(page.get_by_label('页面包', exact=True)).to_have_value(package_id)
+    finally:
+        if not opened:
+            settings.click()
+
+
+def accepted_start(page, response):
+    accepted = read_json(response)
+    if accepted['state'] == 'unknown':
+        request_id = response.request.post_data_json['requestId']
+        assert accepted['startRequestId'] == request_id
+        lookup_path = f'/api/operations/by-request/{request_id}'
+        with page.expect_response(lambda reply: urlsplit(reply.url).path == lookup_path
+                                  and reply.request.method == 'GET') as lookup:
+            page.get_by_role('button', name='查询操作结果', exact=True).click()
+        accepted = read_json(lookup.value)
+        assert accepted['intent']['requestId'] == request_id
+    assert accepted['state'] == 'accepted' and accepted['runId'], accepted
+    return accepted
 
 
 def start_runtime(directory, log):
@@ -132,8 +160,8 @@ def main():
     from playwright.sync_api import sync_playwright, expect
     from emo_panel_protocol.messages import BrowserMessage
     sdk_version = importlib.metadata.version('emo_panel_protocol')
-    if tuple(map(int, sdk_version.split('.')[:3])) < (1, 6, 0):
-        raise AssertionError('Final empty-group acceptance requires the delivered official SDK >=1.6.0')
+    if tuple(map(int, sdk_version.split('.')[:3])) < (1, 7, 0):
+        raise AssertionError('Final empty-group acceptance requires the delivered official SDK >=1.7.0')
     if not (PANEL / 'backend/emo_web_panel/static/index.html').is_file():
         raise AssertionError('Build and package the real frontend before this acceptance test')
     EVIDENCE.mkdir(parents=True, exist_ok=True)
@@ -196,10 +224,17 @@ def main():
                     page.goto(base)
                     page.get_by_label('用户名', exact=True).fill(username)
                     page.get_by_label('密码', exact=True).fill(password)
-                    page.get_by_role('button', name='登录', exact=True).click()
-                    page.get_by_role('heading', name='Emo Web 操作员面板', exact=True).wait_for()
+                    with page.expect_response(lambda response: urlsplit(response.url).path == '/api/session'
+                                              and response.request.method == 'POST') as login:
+                        page.get_by_role('button', name='登录', exact=True).click()
+                    signed_in = read_json(login.value)
+                    assert signed_in['username'] == username and signed_in['role'] == 'admin', 'Unexpected login account'
+                    expect(page.get_by_role('link', name='编辑 Web 页面', exact=True)).to_be_visible()
+                    expect(page.get_by_label('查看运行', exact=True)).to_be_enabled()
+                    expect(page.get_by_label('启动工作流目标', exact=True).locator('option[value="main"]')).to_have_count(1)
                     me = read_json(page.request.get('/api/me'))
-                    assert me['mode'] == 'grpc' and not me.get('preview'), me
+                    assert (me['userId'], me['username'], me['role']) == (signed_in['userId'], username, 'admin'), 'Browser session identity differs from login'
+                    assert me['mode'] == 'grpc' and not me.get('preview') and me['localNoAuth'] is False, 'Expected a normal gRPC session'
                     initial = read_json(page.request.get('/api/runtimes/configured/status'))['runtime']
                     assert initial['projectId'] == 'independent-web-editor-software-demo', initial
                     assert initial['productionExecutionMode'] == 'continuous', initial
@@ -225,8 +260,10 @@ def main():
                         if port == 'count':
                             page.get_by_label('小数位', exact=True).fill('2')
                         if port == 'result':
+                            assert choice['source']['expectedType'] == 'boolean'
                             page.get_by_role('button', name='添加判定规则').click()
-                            page.get_by_label('判定规则1输出值', exact=True).fill('OK')
+                            page.get_by_label('判定规则1类型', exact=True).select_option('boolean')
+                            expect(page.get_by_label('判定规则1输出值', exact=True)).to_have_value('true')
                             page.get_by_label('判定规则1文字', exact=True).fill('OK')
                             page.get_by_label('判定规则1颜色', exact=True).select_option('green')
                         sources[port] = choice['sourceId']
@@ -256,12 +293,11 @@ def main():
                     report.update(editorPublication=publication, registeredOutputRequests=registered['requests'],
                                   capturedSourceIds=sources)
                     page.goto(base)
-                    expect(page.get_by_label('页面包', exact=True)).to_have_value(package_id)
+                    expect_selected_package(page, package_id)
                     page.get_by_label('启动工作流目标', exact=True).select_option('main')
                     with page.expect_response(lambda r:urlsplit(r.url).path == '/api/runs/start' and r.request.method == 'POST') as started:
                         page.get_by_role('button', name='启动工作流', exact=True).click()
-                    accepted = read_json(started.value)
-                    assert accepted['state'] == 'accepted' and accepted['runId'], accepted
+                    accepted = accepted_start(page, started.value)
                     job = accepted['runId']
                     start_control = accepted['controlMessage']
                     BrowserMessage.model_validate_json(json.dumps(start_control))
@@ -392,12 +428,12 @@ def main():
                     # Use the same Runtime, published page and ordinary UI again.
                     start_button = page.get_by_role('button', name='启动工作流', exact=True)
                     expect(start_button).to_be_enabled()
-                    expect(page.get_by_label('页面包', exact=True)).to_have_value(package_id)
+                    expect_selected_package(page, package_id)
                     with page.expect_response(lambda r:urlsplit(r.url).path == '/api/runs/start'
                                               and r.request.method == 'POST') as restarted:
                         start_button.click()
-                    second_reply = read_json(restarted.value)
-                    assert second_reply['state'] == 'accepted' and second_reply['runId'] != job, second_reply
+                    second_reply = accepted_start(page, restarted.value)
+                    assert second_reply['runId'] != job, second_reply
                     second_job = second_reply['runId']
                     expect(page.get_by_label('查看运行', exact=True).locator(f'option[value="{second_job}"]')).to_have_count(1)
                     page.get_by_label('查看运行', exact=True).select_option(second_job)
@@ -439,7 +475,7 @@ def main():
                     expect(original_status).to_contain_text('权威状态：ABORTED')
                     expect(original_status).to_contain_text('持有资源：否')
                     expect(start_button).to_be_enabled()
-                    expect(page.get_by_label('页面包', exact=True)).to_have_value(package_id)
+                    expect_selected_package(page, package_id)
                     for label in ('查看运行', '停止控制目标'):
                         expect(page.get_by_label(label, exact=True)).to_have_value(second_job)
                         expect(page.get_by_label(label, exact=True).locator('option:checked')).to_contain_text('aborted')

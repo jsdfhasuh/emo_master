@@ -294,14 +294,22 @@ class VisualProps(Model):
         return self
 
 
+class HistorySource(Model):
+    """A Web-authored reference to an existing Runtime history declaration."""
+
+    componentId: Id
+    sourceComponentId: Id | None = None
+
+
 class Props(VisualProps):
     imagePath: ImagePathSource | None = None
     sqlite: SqliteSource = Field(default_factory=SqliteSource)
+    historySource: HistorySource | None = None
 
     @model_serializer(mode="wrap")
     def serializeResources(self, handler):
         payload = handler(self)
-        for field in ("imageResourceId", "iconResourceId", "imagePath"):
+        for field in ("imageResourceId", "iconResourceId", "imagePath", "historySource"):
             if payload.get(field) is None:
                 payload.pop(field, None)
         if self.spacerMode == "fixed":
@@ -382,6 +390,15 @@ class Component(Model):
             raise ValueError("only container can have children")
         if self.props.sqlite != SqliteSource() and self.type not in {"sqlite_table", "sqlite_value"}:
             raise ValueError("SQLite source requires a SQLite component")
+        history = self.props.historySource
+        if history is not None:
+            if self.type not in {'image', 'sqlite_table', 'sqlite_value'}:
+                raise ValueError('historySource requires image, sqlite_table or sqlite_value')
+            if history.sourceComponentId is not None and self.type != 'image':
+                raise ValueError('only a selected-record image accepts a history table instance')
+            if (self.bindings or self.props.imageResourceId or self.props.imagePath is not None
+                    or self.props.sqlite != SqliteSource()):
+                raise ValueError('historySource is mutually exclusive with an owned, bound or static source')
         allowed = {"image": {"image"}, "table": {"rows"}, "container": set(),
                    "navigation_button": set(), "page_title": set(), "page_navigation": set(),
                    "clock": set(), "sqlite_table": set(), "sqlite_value": set(), "spacer": set()}.get(self.type, {"value"})
@@ -534,4 +551,12 @@ class Presentation(Model):
                             component.props.imagePath is not None and component.props.imagePath.location == 'runtime'):
                         raise ValueError('Runtime data location requires presentation schemaVersion 1.2')
             visit(page.components, page.layout, 1)
+            instances = {component.componentId: component for component in walkComponents(page.components)}
+            for component in instances.values():
+                history = component.props.historySource
+                if history is None or history.sourceComponentId is None:
+                    continue
+                table = instances.get(history.sourceComponentId)
+                if table is None or table.type != 'sqlite_table' or table.props.historySource is None:
+                    raise ValueError('historySource.sourceComponentId requires a same-page referenced history table')
         return self

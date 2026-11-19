@@ -1,6 +1,6 @@
 # Panel Contract v1：Runtime 客户端与 Web 页面交接合同
 
-合同版本 `1.0`，当前 Python SDK 为 `emo_panel_protocol 1.6.0`。工程当前版本为
+合同版本 `1.0`，当前 Python SDK 为 `emo_panel_protocol 1.7.0`。工程当前版本为
 `2.10` / Presentation `1.3`，发布快照为 `published-1`，ZIP 页面包为
 `emo-web-panel-1`（扩展名 `.emoweb`）。这些版本分别管理不同边界，不互相替代。
 
@@ -29,7 +29,7 @@ python scripts/build_panel_contract.py
 正式交付可同时生成 ZIP，使用新的版本目录以保持历史产物可追溯：
 
 ```powershell
-python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.6.0 --archive build/panel-contract-v1-sdk-1.6.0.zip
+python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.7.0 --archive build/panel-contract-v1-sdk-1.7.0.zip
 ```
 
 `--archive` 归档前核对 manifest 的全部文件摘要，ZIP 仅包含这些文件及 manifest。
@@ -209,6 +209,10 @@ protobuf 64 位字段保留十进制字符串；ClosedResult 的数值与 valueJ
 
 ## 历史查询与图片
 
+独立 Web 草稿使用 `props.historySource.componentId` 引用现有 Runtime 历史声明。外层 `componentId` 标识页面中的控件实例，供历史表格选择、记录字段和翻条动作引用。选中行图片的 `historySource.sourceComponentId` 指向本页表格实例。复制页面时保留 Runtime 声明 ID，并把页内关联重映射到复制后的实例。
+
+发布包把这些引用写入现有 `history`。发布时在现有目录核对图片的 Runtime 父表。网关接收 UI 实例 ID，查询或读固定图时解析出 Runtime 声明 ID。选中行的 `imageRefs` 以 Runtime 图片声明 ID 取值。原生 Designer 的工程仍保存实际 SQLite 和图片路径声明。
+
 来源为正式在线工程中 `location=runtime` 的 componentId。上下文包含 Runtime 实例、
 projectId、historyDefinitionRevision。页面包与草稿不能直接授予读盘权限；网页不提交文件路径或 SQL。
 选中行图片继承同页 sqlite_table 的位置，固定图片声明自己的 Runtime 路径及允许根目录。
@@ -311,7 +315,7 @@ Dot 用独立 RPC 通道消费此配置，启动和断线重连时调用 `Previe
 协议和状态语义。真实浏览器、原生 Qt、冻结包、另一台电脑的连接与真实设备分别记录。
 本合同不把未执行的层级标为 PASS，不授权部署、安装、提交、推送或操作现场设备。
 
-## 独立 Web 编辑器输出请求（SDK 1.6.0）
+## 独立 Web 编辑器输出请求（SDK 1.7.0）
 
 能力 `output_requests_v1` 表示 Runtime 支持与页面无关的外部输出采集请求。
 以下 RPC 都在 RuntimeService 上；不使用 DisplayService.Prepare/Start 发布正式页面。

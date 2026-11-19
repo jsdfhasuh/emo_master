@@ -10,6 +10,7 @@ import tempfile
 from contextlib import AsyncExitStack, asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
+from emo_panel_protocol import __version__ as SDK_VERSION
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, Response, FileResponse
 from starlette.background import BackgroundTask
@@ -184,7 +185,7 @@ def create_app(config: Config, runtime=None, gateway_log=None):
                            **(getattr(req.state, 'asset_diagnostic', {}) if response.status_code >= 400 else {}))
         return response
     @app.get('/api/health')
-    async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':'1.6.0','preview':config.preview,'localNoAuth':config.local_no_auth}
+    async def health():return {'status':'ok','mode':config.mode,'productionContractReady':config.mode=='grpc','panelContractVersion':'1.0','sdkVersion':SDK_VERSION,'preview':config.preview,'localNoAuth':config.local_no_auth}
     @app.post('/api/local/session')
     async def local_session(req:Request):
         if not config.local_no_auth:raise HTTPException(404,'Local passwordless mode is disabled')
@@ -587,7 +588,8 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         props=component.get('props',{})
         kind = 'aggregate' if component['type']=='sqlite_value' or aggregate else 'table'
         if p.get('officialPresentation'):
-            return await client.history(component_id,page,pageSize,q=q,sort=sort,order=order,
+            source = component['history']['componentId']
+            return await client.history(source,page,pageSize,q=q,sort=sort,order=order,
                 filter_column=filterColumn,context=v['historyContext'],kind=kind,
                 anchor_key_json=anchorKeyJson,anchor_step=anchorStep)
         return await client.history(component_id,page,pageSize,q=q,sort=sort or 'id',order=order,
@@ -635,8 +637,11 @@ def create_app(config: Config, runtime=None, gateway_log=None):
         if not component or component['type']!='image' or not component.get('history'):raise HTTPException(404,'History image not declared')
         if isinstance(client,MockRuntime):
             return await mock_image(who,v['runtimeId'],imageRef)
+        reference = component['history']
+        if (reference['kind'] == 'selected_row_image') != bool(imageRef):
+            raise HTTPException(404,'History image reference does not match the source')
         try:
-            data,mime,status=await client.history_image(component_id=None if imageRef else component_id,
+            data,mime,status=await client.history_image(component_id=None if imageRef else reference['componentId'],
                 image_ref=imageRef or None,context=v['historyContext'])
         except RuntimeRejected as error:
             if error.code != 'E_HISTORY_IMAGE_EXPIRED':

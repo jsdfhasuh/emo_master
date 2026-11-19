@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useReducer, useState } from 'react';
 import type { Component, History, Page } from '../contracts/types';
 import { api, apiBlob, ApiError, safeAssetUrl } from '../data/api';
-import { ImageView, IndicatorValue } from './presentation';
+import { ImageView, IndicatorValue, indicatorState } from './presentation';
 
 export const historyText = (value: unknown, empty = '—') => value == null || value === '' ? empty : String(value);
 export const historyAggregateText = (data: object, empty = '—') =>
@@ -246,15 +246,15 @@ export function HistoryTable({ component, review }: {component: Component; revie
             {rows.map((row, index) => {
                 const values = rowValues(row);
                 const title = historyText(values?.[configured?.titleField || columns[0]?.key], empty);
+                const trailing = configured?.trailingField ? values?.[configured.trailingField] : undefined;
                 return <div role="listitem" key={String(row.rowId || index)}>
                     <button className="history-record" aria-pressed={session?.selected === row} disabled={busy} onClick={() => select(row)}>
                         <span><strong>{title}</strong>
                             {configured?.subtitleField && <small>{historyText(values?.[configured.subtitleField], empty)}</small>}
                         </span>
                         {configured?.trailingField && <IndicatorValue props={{...component.props, indicatorView: 'badge'}}
-                            value={typeof values?.[configured.trailingField] === 'number' ? undefined : values?.[configured.trailingField]}
-                            emptyText={empty}
-                            typedKey={typeof values?.[configured.trailingField] === 'bigint' ? String(values[configured.trailingField]) : undefined}/>}
+                            state={indicatorState(component.props, typeof trailing === 'number' ? undefined : trailing,
+                                typeof trailing === 'bigint' ? String(trailing) : undefined)} emptyText={empty}/>}
                     </button>
                 </div>;
             })}
@@ -282,7 +282,9 @@ export function HistoryImage({ component, viewId, review, label }: {
     const target = typeof props?.sourceComponentId === 'string' ? props.sourceComponentId : undefined;
     const session = target ? review.current(target) : undefined;
     const selected = session?.selected;
-    const ref = (selected?.imageRefs as Record<string, {status: string; imageRef?: string; message?: string}> | undefined)?.[component.id];
+    const sourceId = component.history?.componentId;
+    const ref = sourceId ? (selected?.imageRefs as
+        Record<string, {status: string; imageRef?: string; message?: string}> | undefined)?.[sourceId] : undefined;
     let path: string | undefined;
     if (ref?.status === 'AVAILABLE' && ref.imageRef)
         path = `/api/views/${encodeURIComponent(viewId)}/history-images/${encodeURIComponent(component.id)}?imageRef=${encodeURIComponent(ref.imageRef)}`;

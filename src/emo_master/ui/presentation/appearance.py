@@ -21,14 +21,15 @@ def roleStyle(props, role='value'):
     return f"font-size:{style['size']}px;font-weight:{style['weight']};color:{COLORS[style['color']]};"
 
 
-def surfaceStyle(card, component):
+def surfaceStyle(card, component, *, statusBackground=None):
     surface = component.props.surface
     fields = surface.model_dump(exclude_none=True) if surface else {}
     framed = fields.get('kind', 'card' if component.type == 'container' else 'none') == 'card'
     background = fields.get('background', 'surface' if framed else 'transparent')
     border = fields.get('border', 'subtle' if framed else 'none')
     radius = fields.get('radius', 12 if framed else 0)
-    card.setStyleSheet(f"QFrame#card {{background:{THEME.get(background, 'transparent')};"
+    fill = statusBackground or THEME.get(background, 'transparent')
+    card.setStyleSheet(f"QFrame#card {{background:{fill};"
                        f"border:{'1px solid ' + THEME['border'] if border == 'subtle' else '0'};"
                        f"border-radius:{radius}px;}}")
     padding = fields.get('padding', {})
@@ -52,7 +53,7 @@ def plainLabel(text, style=''):
 
 class WrappedText(QTextEdit):
     """Selectable plain text whose measured height uses the same wrap policy."""
-    def __init__(self, style):
+    def __init__(self, style, alignment):
         super().__init__()
         self.setReadOnly(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -62,7 +63,10 @@ class WrappedText(QTextEdit):
         self.document().setDocumentMargin(0)
         self.measure = QTextDocument(self)
         self.measure.setDocumentMargin(0)
-        self.measure.setDefaultTextOption(self.document().defaultTextOption())
+        option = self.document().defaultTextOption()
+        option.setAlignment(alignment)
+        self.document().setDefaultTextOption(option)
+        self.measure.setDefaultTextOption(option)
         policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         policy.setHeightForWidth(True)
         self.setSizePolicy(policy)
@@ -83,6 +87,8 @@ class WrappedText(QTextEdit):
     def setText(self, text):
         self.measure.setPlainText(text)
         self.setPlainText(text)
+        # Invalidate the leaf's layout item before its parent measures the new text.
+        self.updateGeometry()
 
     def text(self):
         return self.toPlainText()
@@ -92,9 +98,11 @@ class WrappedText(QTextEdit):
 
 
 class ValueView(QWidget):
-    def __init__(self, component):
-        super().__init__()
+    def __init__(self, component, card):
+        super().__init__(card)
         self.component = component
+        self.card = card
+        self.statusBackground = None
         props = component.props
         body = QVBoxLayout(self)
         body.setSpacing(3)
@@ -107,11 +115,18 @@ class ValueView(QWidget):
             body.addLayout(row)
         if props.title:
             row.addWidget(plainLabel(props.title, roleStyle(props, 'title')), 1 if horizontal else 0)
-        self.value = WrappedText(roleStyle(props)) if component.type == 'text' else plainLabel('', roleStyle(props))
+        endAligned = horizontal and bool(props.title)
+        alignment = Qt.AlignRight if endAligned else Qt.AlignLeft
+        if component.type == 'text':
+            self.value = WrappedText(roleStyle(props), alignment)
+        else:
+            self.value = plainLabel('', roleStyle(props))
+            self.value.setAlignment(alignment | Qt.AlignVCenter)
         self.value.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
-        if horizontal and props.title:
+        if component.type == 'indicator' and props.indicatorView == 'badge':
+            row.addWidget(self.value, 0, alignment | Qt.AlignVCenter)
+        elif endAligned:
             row.addWidget(self.value, 1)
-            self.value.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         else:
             row.addWidget(self.value)
         if props.helperText:
@@ -128,8 +143,13 @@ class ValueView(QWidget):
             color = state.color if state else 'neutral'
             marker = props.showMarker if props.showMarker is not None else props.indicatorView != 'text'
             style = roleStyle(props) + f'color:{COLORS[color]};'
-            if state and state.background == 'soft':
-                style += f"background:{THEME['soft'][color]};border-radius:5px;padding:2px 6px;"
+            background = THEME['soft'][color] if state and state.background == 'soft' else None
+            if props.indicatorView == 'row':
+                if background != self.statusBackground:
+                    self.statusBackground = background
+                    surfaceStyle(self.card, self.component, statusBackground=background)
+            elif props.indicatorView == 'badge' and background:
+                style += f"background:{background};border-radius:5px;padding:2px 6px;"
             if self.value.styleSheet() != style:
                 self.value.setStyleSheet(style)
             self.setText(('●  ' if marker and state else '') + (state.text if state else props.emptyText))

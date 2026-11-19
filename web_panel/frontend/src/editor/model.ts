@@ -1,10 +1,10 @@
-import type { DataSource, ResultScope } from '../../../contracts/panel-contract-v1/typescript/panel-contract';
+import type { DataSource, HistorySource, ResultScope } from '../../../contracts/panel-contract-v1/typescript/panel-contract';
 import type { Appearance, Component, Layout, Panel, PanelShell, Result } from '../contracts/types';
 
 /** The editable document is the complete Presentation source, never a renderer DTO. */
 export interface SourceComponent {
     componentId:string; type:string; version?:'1.0'; layout:NonNullable<Component['layout']>;
-    responsive:NonNullable<Component['responsive']>; props:Record<string,unknown>;
+    responsive:NonNullable<Component['responsive']>; props:Record<string,unknown> & {historySource?:HistorySource};
     bindings:Record<string,string>; actions:NonNullable<Component['actions']>; children:SourceComponent[]; grid:Layout;
 }
 export interface SourcePage { name:string; targets:Array<'desktop'|'web'>; layout:Layout; components:SourceComponent[]; resultScopeIds:string[]; canvasTop?:number; }
@@ -34,7 +34,7 @@ export function newComponent(type:string):SourceComponent {
             ...(type==='table'?{columns:[{title:'结果',fieldPath:[]}],pageSize:20}:{}),
             ...(type==='navigation_button'?{text:'打开详情'}:{}),
             ...(type==='runtime_status'?{statusField:'connection'}:{}),
-            ...(type==='sqlite_table'?{sqlite:{table:'',columns:[],location:'runtime'},pageSize:20}:{})},
+            ...(type==='sqlite_table'?{pageSize:20}:{})},
         bindings:{},actions:{},children:[],grid:{type:'responsive',direction:'wrap',spacing:12,alignment:'stretch',justify:'start',equalWidth:false}};
 }
 export function walk(components:SourceComponent[]):SourceComponent[] {return components.flatMap(c=>[c,...walk(c.children)]);}
@@ -53,6 +53,18 @@ export function removeComponent(children:SourceComponent[],id:string):SourceComp
     const at=children.findIndex(c=>c.componentId===id);if(at>=0)return children.splice(at,1)[0];
     for(const c of children){const found=removeComponent(c.children,id);if(found)return found;}
 }
+export function keepLocalHistoryLinks(page:SourcePage) {
+    const items=walk(page.components);
+    const tables=new Set(items.filter(item=>item.type==='sqlite_table').map(item=>item.componentId));
+    for(const item of items){
+        const history=item.props.historySource;
+        if(history?.sourceComponentId && !tables.has(history.sourceComponentId))delete history.sourceComponentId;
+        const record=item.props.recordValue as {componentId:string} | undefined;
+        if(record && !tables.has(record.componentId))delete item.props.recordValue;
+        const action=item.actions.clicked;
+        if(action?.componentId && !tables.has(action.componentId))delete item.actions.clicked;
+    }
+}
 function copyComponents(components:SourceComponent[]):SourceComponent[] {
     const copied=clone(components);
     const items=walk(copied);
@@ -61,6 +73,8 @@ function copyComponents(components:SourceComponent[]):SourceComponent[] {
         item.componentId=ids.get(item.componentId)!;
         const action=item.actions.clicked;
         if(action?.componentId && ids.has(action.componentId))action.componentId=ids.get(action.componentId);
+        const history=item.props.historySource;
+        if(history?.sourceComponentId && ids.has(history.sourceComponentId))history.sourceComponentId=ids.get(history.sourceComponentId);
         for(const key of ['imagePath','recordValue']){
             const reference=item.props[key] as {componentId?:string} | null | undefined;
             if(reference?.componentId && ids.has(reference.componentId))reference.componentId=ids.get(reference.componentId);
@@ -119,7 +133,7 @@ export function arrangeGrid(children:SourceComponent[],layout:Layout):void {
 export function definitionKey(value:unknown):string {if(Array.isArray(value))return `[${value.map(definitionKey).join(',')}]`;if(value && typeof value==='object')return `{${Object.entries(value).filter(([,v])=>v!==undefined && v!==null).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>`${JSON.stringify(k)}:${definitionKey(v)}`).join(',')}}`;return JSON.stringify(value);}
 export function sameSource(a:DataSource|undefined,b:DataSource):boolean {return Boolean(a) && definitionKey({callPath:[],fieldPath:[],ruleVersion:'1.0',...a})===definitionKey({callPath:[],fieldPath:[],ruleVersion:'1.0',...b});}
 export function compatible(type:string,source:DataSource):string {
-    const accepted:Record<string,string[]>={image:['image'],number:['integer','number'],indicator:['boolean','string'],table:['collection'],text:['integer','number','string','boolean','json','geometry']};
+    const accepted:Record<string,string[]>={image:['image'],number:['integer','number'],indicator:['integer','boolean','string'],table:['collection'],text:['integer','number','string','boolean','json','geometry']};
     if(!accepted[type])return '此组件不绑定检测输出';
     return accepted[type].includes(source.expectedType)?'':`${componentNames[type]}不支持 ${source.expectedType} 输出`;
 }
@@ -137,6 +151,7 @@ export function bindChoice(doc:Presentation,pageId:string,componentId:string,cho
     component.bindings={[component.type==='image'?'image':component.type==='table'?'rows':'value']:sourceId};
     delete component.props.imageResourceId;
     delete component.props.imagePath;
+    delete component.props.historySource;
     delete component.props.recordValue;
     if(!doc.pages[pageId].resultScopeIds.includes(scopeId))doc.pages[pageId].resultScopeIds.push(scopeId);
 }

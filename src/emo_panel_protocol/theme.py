@@ -1,6 +1,29 @@
 """Current light presentation theme, shared through the generated Panel SDK."""
 
-LIGHT_THEME = {
+from typing import TypedDict
+
+
+class _TextRole(TypedDict):
+    size: int
+    weight: str
+    color: str
+
+
+class _LightTheme(TypedDict):
+    page: str
+    surface: str
+    subtle: str
+    border: str
+    text: str
+    muted: str
+    primary: str
+    dark: str
+    foreground: dict[str, str]
+    soft: dict[str, str]
+    typography: dict[str, _TextRole]
+
+
+LIGHT_THEME: _LightTheme = {
     'page': '#f3f5f9',
     'surface': '#ffffff',
     'subtle': '#eef2f8',

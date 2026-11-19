@@ -27,7 +27,7 @@ import uvicorn
 from emo_web_panel.app import create_app
 from emo_web_panel.config import Config
 from emo_web_panel.mock_runtime import IMAGE, MockRuntime
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright, expect
 
 
 class AssetRuntime(MockRuntime):
@@ -130,11 +130,15 @@ async def run(output, observe_only=False):
                         await image.wait_for()
                         await page.wait_for_function('(image) => image.complete && image.naturalWidth > 0',
                                                      arg=await image.element_handle())
+                        await page.get_by_text('运行诊断', exact=True).click()
+                        displayed_key = page.get_by_label('已显示结果标识', exact=True)
+                        await expect(displayed_key).to_be_visible()
+
                         async def displayed_key_is_retained():
-                            parts = (await page.locator('footer').inner_text()).split(' · ')
-                            key = parts[2] if len(parts) > 2 else ''
+                            key = (await displayed_key.inner_text()).strip()
                             return key if any(key in view['scopeRecent'].get('scope-1', {})
-                                for view in app.state.views.views.values() if view['connected']) else None
+                                for view in list(app.state.views.views.values())
+                                if view['connected'] and view['runId'] == 'demo-run') else None
                         report['visibleKeyBeforeModal'] = await wait_until(displayed_key_is_retained,
                             'visible result belongs to the currently retained scope')
                         report['beforeModalOrdinal'] = runtime.ordinal
@@ -145,6 +149,7 @@ async def run(output, observe_only=False):
                         report['modalOpenedOrdinal'] = runtime.ordinal
                         report['modalText'] = dialog.message
                         try:
+                            assert 'demo-run' in dialog.message
                             # Actual state condition, not an assumed machine sleep.
                             await wait_until(lambda: runtime.ordinal >= report['modalOpenedOrdinal'] + 5,
                                              'five ordinary results while native confirmation remains open')
@@ -171,8 +176,7 @@ async def run(output, observe_only=False):
                         await wait_until(lambda: any(item['status'] == 200
                             and item['query'].get('resultKey') == current_key
                             for item in report['gatewayAssets']), 'current result image remains available')
-                        await page.wait_for_function("key => document.querySelector('footer')?.textContent?.split(' · ').includes(key)",
-                                                     arg=current_key)
+                        await expect(displayed_key).to_have_text(current_key)
                         await page.wait_for_function('(image) => image.complete && image.naturalWidth > 0',
                                                      arg=await image.element_handle())
                         assert runtime.ordinal == stopped_ordinal, 'No new result is generated after Stop'

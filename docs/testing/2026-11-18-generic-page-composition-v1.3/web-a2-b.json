@@ -1,0 +1,37 @@
+{
+  "sdkVersion": "1.7.0",
+  "volumes": [],
+  "displayedRecords": [],
+  "errors": [],
+  "health": {
+    "status": "ok",
+    "mode": "grpc",
+    "productionContractReady": true,
+    "panelContractVersion": "1.0",
+    "sdkVersion": "1.7.0",
+    "preview": false,
+    "localNoAuth": false
+  },
+  "outputRequestRevision": "1c4bc5a3c20199e44dde03ba163ded80b3a5427afe302357b83eb4260c4821b3",
+  "runId": "46932286-ab5a-419e-9364-fae8adea2da4",
+  "writeId": "16c3163e-59b2-452a-8bb3-8994d1ee9e9e",
+  "rowColors": {
+    "mapped": "rgb(232, 247, 238)",
+    "afterClear": "rgb(238, 242, 248)"
+  },
+  "targetsPreserved": true,
+  "editor": {
+    "entries": [
+      "directory click",
+      "drag and drop",
+      "attribute select"
+    ],
+    "mapping": {
+      "1": "整数编码一"
+    },
+    "saveReopen": true,
+    "livePreviewJob": "7bbf106a-d01f-4bb3-8af7-8016c21b8661",
+    "published": "aafc12356372fce266b560663a23e6ec04f45c9c1bbec6281d6652aacafde71f"
+  },
+  "status": "PASS"
+}

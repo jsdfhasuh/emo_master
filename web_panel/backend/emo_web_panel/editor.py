@@ -18,8 +18,8 @@ import zipfile
 from urllib.parse import quote
 
 from emo_panel_protocol.canonical import canonicalJson, revisionOf
-from emo_panel_protocol.models import Presentation, walkComponents
-from emo_panel_protocol.published import PublishedPresentation, PanelManifest, compositionRequirements
+from emo_panel_protocol.models import Presentation, SqliteSource, walkComponents
+from emo_panel_protocol.published import HistoryReference, PublishedPresentation, PanelManifest, compositionRequirements
 
 from .packages import PackageError, PackageStore, _official_image
 
@@ -59,8 +59,7 @@ def validate_source(raw, resources):
                 raise ValueError(f"{path}: 此组件不在首期独立编辑范围")
             if item.props.imagePath is not None:
                 raise ValueError(f"{path}: 请上传静态资源，不能使用浏览器本机路径")
-            if item.type == "sqlite_table" and (item.props.sqlite.location != "runtime"
-                    or item.props.sqlite.databasePath or item.props.sqlite.table or item.props.sqlite.recordKey):
+            if item.props.sqlite != SqliteSource() or (item.type == "sqlite_table" and item.props.historySource is None):
                 raise ValueError(f"{path}: 请从组件区选择已有的 Runtime 历史来源")
             for resource in (item.props.imageResourceId, item.props.iconResourceId):
                 if resource and resource not in resources:
@@ -118,6 +117,51 @@ def link_diagnostics(source, diagnostics):
     return result
 
 
+def page_history(page, sources):
+    """Project each Web instance from its current Runtime declaration."""
+    items = list(walkComponents(page.components))
+    expected = {"sqlite_table": {"table"}, "sqlite_value": {"aggregate"},
+                "image": {"fixed_image", "selected_row_image"}}
+    references = {}
+    for item in items:
+        source = item.props.historySource
+        if source is None:
+            continue
+        declared = sources.get(source.componentId)
+        if declared is None or declared["kind"] not in expected[item.type]:
+            raise ValueError(f"{item.componentId}: 当前 Runtime 目录没有这个类型的历史来源")
+        row_image = declared["kind"] == "selected_row_image"
+        if row_image != bool(source.sourceComponentId):
+            raise ValueError(f"{item.componentId}: 选中行图片需要关联同页表格，固定图片独立读取")
+        reference = {key: value for key, value in declared.items() if key != "title"}
+        reference["sourceComponentId"] = source.sourceComponentId
+        references[item.componentId] = HistoryReference.model_validate(reference)
+    for item in items:
+        reference = references.get(item.componentId)
+        if reference and reference.kind == "selected_row_image":
+            table = references.get(reference.sourceComponentId)
+            if table is None or table.kind != "table" or table.componentId != sources[reference.componentId].get("sourceComponentId"):
+                raise ValueError(f"{item.componentId}: 请选择与该图片 Runtime 来源匹配的同页表格")
+        if view := item.props.historyView:
+            if reference is None or any(field and field not in reference.columns for field in
+                    (view.titleField, view.subtitleField, view.trailingField)):
+                raise ValueError(f"{item.componentId}: 列表字段必须由历史来源声明")
+        if record := item.props.recordValue:
+            table = references.get(record.componentId)
+            if table is None or table.kind != "table":
+                raise ValueError(f"{item.componentId}: 请选择同页历史表格")
+            if record.kind == "field" and record.field not in table.columns:
+                raise ValueError(f"{item.componentId}: 记录字段必须由历史来源声明")
+            if record.kind == "meta" and record.meta == "count" and table.aggregate != "count":
+                raise ValueError(f"{item.componentId}: 记录总数要求历史来源使用 count")
+        for action in item.actions.values():
+            if action.componentId is not None:
+                table = references.get(action.componentId)
+                if table is None or table.kind != "table":
+                    raise ValueError(f"{item.componentId}: 历史动作需要同页历史表格")
+    return references
+
+
 def build_package(project_id, model, resources, read_resource, *, history_sources=None, history_revision=""):
     """One-way authoring -> PublishedPresentation conversion, never saved as source."""
     config = output_config(model)
@@ -132,34 +176,25 @@ def build_package(project_id, model, resources, read_resource, *, history_source
         referenced.add(logo)
     history_sources = history_sources or {}
 
-    def convert(items, table_ids):
+    def convert(items, references):
         for item in items:
             requirements.add("component." + item["type"] + "@1.0")
             item["props"].pop("sqlite", None)
             item["props"].pop("imagePath", None)
-            source = history_sources.get(item["componentId"])
-            if item["type"] == "sqlite_table":
-                if not source or source["kind"] != "table":
-                    raise ValueError(f'{item["componentId"]}: 当前 Runtime 历史来源已变化，请更新启用页面包和编辑器目录')
-                requirements.add("history.query-v1")
-                item["history"] = {key: value for key, value in source.items() if key != "title"}
-            if (item["type"] == "image" and source and source["kind"] in {"fixed_image", "selected_row_image"}
-                    and not item["bindings"] and not item["props"].get("imageResourceId")):
-                if source["kind"] == "selected_row_image" and source.get("sourceComponentId") not in table_ids:
-                    raise ValueError(f'{item["componentId"]}: 历史图像及记录组件必须在同一页面')
-                requirements.add("history.image-v1")
-                item["history"] = {key: value for key, value in source.items() if key != "title"}
+            item["props"].pop("historySource", None)
+            if source := references.get(item["componentId"]):
+                requirements.add("history.query-v1" if source.kind in {"table", "aggregate"} else "history.image-v1")
+                item["history"] = source.model_dump(mode="json", exclude_none=True)
             referenced.update(item["props"][key] for key in ("imageResourceId", "iconResourceId")
                               if item["props"].get(key))
-            convert(item["children"], table_ids)
+            convert(item["children"], references)
     for page_id, page in payload["pages"].items():
         page.pop("targets", None)
         if page.get("canvasTop"):
             requirements.add("layout.expanded-canvas-v1")
         if page["layout"]["type"] == "grid":
             requirements.add("layout.grid-v1")
-        convert(page["components"], {item.componentId for item in walkComponents(model.pages[page_id].components)
-                                    if item.type == "sqlite_table"})
+        convert(page["components"], page_history(model.pages[page_id], history_sources))
     snapshot = PublishedPresentation.model_validate(payload).model_dump(mode="json", exclude_none=True)
     capture = {"ruleVersion": "1.0", "sources": sorted(
         {canonicalJson(source) for source in config["sources"].values()}) , "scopes": config["scopes"]}
@@ -278,13 +313,22 @@ class EditorStore:
         active = self.packages.active(rid, project)
         if not active or not revision or active["manifest"]["historyDefinitionRevision"] != revision:
             return {}
-        def browse(items):
-            for component in items:
-                if reference := component.get("history"):
-                    yield reference["componentId"], {**reference, "title": component["props"].get("title", "")}
-                yield from browse(component["children"])
-        return {key: value for page in active.get("officialPresentation", {}).get("pages", {}).values()
-                for key, value in browse(page["components"])}
+        snapshot = active.get("officialPresentation")
+        if not snapshot:
+            return {}
+        published = PublishedPresentation.model_validate(snapshot)
+        sources = {}
+        for page_id in published.pageOrder:
+            items = list(walkComponents(published.pages[page_id].components))
+            tables = {item.componentId: item.history.componentId for item in items
+                      if item.history is not None and item.history.kind == "table"}
+            for item in items:
+                if reference := item.history:
+                    value = reference.model_dump(mode="json", exclude_none=True)
+                    if reference.kind == "selected_row_image":
+                        value["sourceComponentId"] = tables[reference.sourceComponentId]
+                    sources.setdefault(reference.componentId, {**value, "title": item.props.title})
+        return sources
 
     def prepare(self, rid, project, source, history_revision=""):
         resources = self.assets(rid, project)

@@ -16,6 +16,10 @@ test('page-local context returns the direct nested layout and never selects anot
  assert.equal(componentContext(d.pages[pid],child.componentId).parentLayout,c.grid);
  assert.equal(componentContext(d.pages.other,child.componentId),undefined);
  assert.throws(()=>bindChoice(d,'other',child.componentId,choice),/当前页面/);
+ const indicator=newComponent('indicator');d.pages[pid].components.push(indicator);
+ bindChoice(d,pid,indicator.componentId,choice);
+ assert.equal(indicator.bindings.value,'count');
+ assert.equal(d.dataSources.count.expectedType,'integer');
 });
 test('clipboard restores the deleted subtree sources and action scopes with stable identities',()=>{
  const d=newPresentation(),pid=d.defaultPageId,c=newComponent('container'),child=newComponent('text');c.children=[child];d.pages[pid].components=[c];bindChoice(d,pid,child.componentId,choice);

@@ -292,6 +292,7 @@
       "additionalProperties": false,
       "properties": {
         "componentId": {
+          "description": "Component ID of the declared Runtime history source",
           "maxLength": 160,
           "minLength": 1,
           "pattern": "^\\S+$",
@@ -350,6 +351,7 @@
             }
           ],
           "default": null,
+          "description": "Same-page table instance followed by a selected-row image",
           "title": "Sourcecomponentid"
         }
       },

@@ -112,6 +112,7 @@ def exercise(browser, role):
     try:
         page.goto(f"http://127.0.0.1:{server.server_port}")
         expect(page.get_by_text("VISIBLE-PAGE-OLD", exact=True)).to_be_visible()
+        page.get_by_role("button", name="运行设置", exact=True).click()
         refresh = page.get_by_role("button", name="刷新页面包和状态", exact=True)
         expect(refresh).to_be_enabled()
         state["actions"].append("explicitly select job-existing")
@@ -142,7 +143,8 @@ def exercise(browser, role):
         expect(page.get_by_text("VISIBLE-PAGE-OLD", exact=True)).to_be_visible()
         recovered_socket.send(json.dumps({"type": "result", "result": {"resultKey": "same-existing-job-result", "jobId": "job-existing",
             "resultScopeId": "scope-1", "sources": {"existing": {"state": "available", "value": 2}}}}))
-        expect(page.locator("footer")).to_contain_text("same-existing-job-result")
+        page.get_by_text("运行诊断", exact=True).click()
+        expect(page.get_by_label("已显示结果标识", exact=True)).to_have_text("same-existing-job-result")
         recovered = snapshot()
         assert len(state["actions"]) == action_count
         assert recovered["panelId"] == "package-old" and recovered["jobId"] == "job-existing"

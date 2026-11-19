@@ -28,9 +28,17 @@
 
 系统 SHALL 使用一份有限浅色语义 token，并复用已有 responsive 尺寸、权重、对齐和换行规则。Qt 的 sizeHint、minimumSize、heightForWidth、实际布局及 Designer 候选拖放测量 SHALL 使用有效字体、真实内容和配置内边距，不叠加与配置无关的固定尺寸。页面默认使用浅色主题、contentMaxWidth=0、pagePadding=24；显式配置覆盖当前默认。
 
+text 的动态内容变化 SHALL 使实际文本控件及其父布局重新测量：`width=content` 使用新内容的自然宽度，fill 或多行内容按当前可用宽度重算高度。更新 SHALL 保留配置的对齐，不继续使用初始占位符的尺寸，也不因替换纯文本而把横排主值恢复为左对齐。实现复用 Qt 的几何失效通知和既有布局，不增加第二套测量或页面重建机制。
+
 #### Scenario: Measure a padded page
+
 - **WHEN** 页面或卡片使用显式内边距与当前字体
 - **THEN** Qt 的本机布局和拖放预览采用相同可用空间
+
+#### Scenario: Remeasure updated text without losing alignment
+
+- **WHEN** 同一 text 从中性占位更新为完整时间或多行日志，随后切换到较短记录，其中横排字段配置为主值末端对齐
+- **THEN** 内容宽度或换行高度随实际文本更新，完整时间和日志可读，较短内容收回多余高度，末端对齐保持；不需要重新打开页面或手动调整窗口触发正确测量
 
 ### Requirement: Use configured content and control sizes
 
@@ -46,7 +54,7 @@ Designer 的绑定提示、选中标记和编辑辅助 SHALL 通过现有画布�
 #### Scenario: Resize the delivered pages
 
 - **WHEN** 同一双页工程在 1366×768 和 1920×1080 逻辑视口中显示
-- **THEN** 主区按已声明的列宽规则分配空间，较窄时正常换行，页签和主要操作可访问；超高内容可滚动，不通过缩放整页或绝对截图坐标维持布局
+- **THEN** 主区按已声明的列宽规则分配空间，较窄时正常换行，页签和主要操作可访问；超高内容可滚动，不通过缩放整页或绝对截图坐标维持布局，也不以所有详情必须挤进第一屏作为验收要求
 
 ### Requirement: Separate title value and helper typography
 

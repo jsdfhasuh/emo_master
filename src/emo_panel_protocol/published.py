@@ -11,13 +11,13 @@ from .models import (Action, ComponentType, DataSource, Grid, HISTORY_ACTIONS, I
 
 
 class HistoryReference(Model):
-    componentId: Id
+    componentId: Id = Field(description='Component ID of the declared Runtime history source')
     kind: Literal['table', 'aggregate', 'fixed_image', 'selected_row_image']
     columns: list[str] = Field(default_factory=list)
     orderBy: str = ''
     descending: bool = True
     aggregate: Literal['count', 'sum', 'avg', 'min', 'max'] = 'count'
-    sourceComponentId: Id | None = None
+    sourceComponentId: Id | None = Field(default=None, description='Same-page table instance followed by a selected-row image')
 
 
 class PublishedProps(VisualProps):
@@ -104,7 +104,8 @@ def compositionRequirements(presentation):
                     or any(state.get('background') == 'soft' or state.get('color') == 'blue'
                            for state in props.get('indicatorStates', {}).values())):
                 required.add('presentation.composable-v1')
-            if (props.get('recordValue') or props.get('historyView') or props.get('sqlite', {}).get('recordKey')
+            if (props.get('recordValue') or props.get('historyView') or props.get('historySource')
+                    or props.get('sqlite', {}).get('recordKey')
                     or any(action['type'] in HISTORY_ACTIONS for action in component['actions'].values())):
                 required.add('history.record-selection-v1')
             if props.get('statusField'):

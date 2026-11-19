@@ -1,44 +1,37 @@
 # 通用页面组合与历史回看能力增强
 
-**计划 V1.2 · 2026-11-18（北京时间）。依据无存量工程前提修订。**
-
-参考基线：31afa5ecab8b7ddb53f0d6bdedc620f0a243e340。事实见 [source-map.md](source-map.md)，本次审核见 [review-report.md](review-report.md)。
+**计划 V1.3 · 2026-11-18（北京时间）。已交付 V1.2 的定点收尾。**
 
 ## Why
 
-用户希望用平台正式可编辑能力，得到目标图的生产监控与历史回看：清楚的页头和页签、主要图像、紧凑结果侧栏、历史记录列表、局部图与默认折叠的原始详情。现有基础已包含响应式布局、输出绑定、resultScope、历史查询及宿主控制；差距主要在控件表达、内容测量与历史选择联动。
+用户要用通用控件实现生产监控与历史回看两个可编辑页面，并达到原参考图的结构和信息密度。固定实现提交 ce8f84ca 已具有正式模型、双页工程、标注以及实际 ImageSaver/SQLiteWriter 归档和稳定键回看能力；这些实现与有效证据继续复用。
 
-V1.0 有几项超出目标的机制，也漏了正常使用链路。仅增加颜色和卡片属性不能消除 64px 等通用最小高度；仅在静态历史库点选不能证明新生产记录可回看；仅保存 rowId 不能解决持续生产下 OFFSET 漂移。V1.1收敛额外配置并补齐上述阻断；用户进一步明确没有现成工程，V1.2因此移除旧格式/旧包/旧SDK兼容任务，使用单一当前实现。
+代码审核和直接复现确认三个正常操作断点：Qt 动态文本尺寸及对齐更新失效、Web 指示器整数绑定被拒绝、Web 复制已声明 Runtime 历史页后发布失败。实际 Web 页头仍有多行常驻管理工具，状态浅底只作用于值区域，尚未完成原视觉目标。当前源 CI 与 Web CI 也未全部通过。详见 review-report.md。
 
 ## What Changes
 
-- 增强七组已有控件：container、text/number、indicator、page_navigation、image、navigation_button、sqlite_table；不新增业务专用类型。
-- 增加有限表面/文字/状态/图像显示配置，修正紧凑测量及 Designer 编辑辅助对布局的影响；配置入口、撤销、保存与发布一起可用。
-- 运行外壳沿用宿主状态和开始/停止；诊断默认收起，显式导航沿用自动隐藏宿主导航规则。
-- 历史列表与表格共用查询；选中记录驱动图像和标量，既有 QueryHistoryPage 最小扩展按真实键定位同条/邻条，支持持续新增与切页恢复。
-- 扩展现有 Annotate 的类别色、中文标签、置信度和线条表达；结果图仍由原工作流产生。
-- 当前正式工程统一 2.10 / 页面 1.3；当前SDK及全部消费者同步更新，不提供旧工程迁移、旧页面包兼容或旧SDK固定字节保证。
-- 交付一个正式可编辑双页工程，用既有 ImageSaver 和 SQLiteWriter 跑通模拟生产到历史；不另建组合预设引擎或第二个演示项目。
+- 修正既有 WrappedText/ValueView 的动态测量失效与对齐保持。
+- 同步 Web 正式绑定入口对 integer/boolean/string 指示器的类型支持。
+- 在唯一正式创作模型增加直接引用既有 Runtime 历史声明的 historySource；沿用已有 Published history 与 RPC，贯通复制、保存、发布、查询、图片及再次编辑。
+- 用当前 shell 和宿主控件收拢 Web 页头；次级配置进入运行设置，观察/控制目标仍可辨别和选择。
+- 明确 indicatorView=row 的 soft 背景覆盖整行，badge 保持紧凑值区域，text 保持文本表现。
+- 修复已确认类型检查失败；根据实际根因修复两条失败浏览器路径，完成既有有效 CI 后续步骤。
+- 同一示例和原 A/B/C 用户旅程只补受影响步骤，正式模型变化时同步当前 SDK、生成物及消费者。
 
 ## Capabilities
 
 ### New Capabilities
 
-- page-composition：组合外观、真实紧凑布局、图像比例和折叠。
-- page-value-presentation：保持类型的状态映射、结果显示动作及纯文本详情。
-- history-record-review：记录列表、图像、标量同条联动和按键逐条浏览。
-- operational-page-shell：紧凑运行页头、导航、实时状态和宿主操作。
-- vision-annotation-presentation：通用类别/线条标注及可部署中文绘图。
-- page-authoring-delivery：正式编辑、格式、Qt/Web 与可运行示例交付。
+沿用本 change 尚未归档的六项能力：page-composition、page-value-presentation、history-record-review、operational-page-shell、vision-annotation-presentation、page-authoring-delivery。V1.3 只补齐这些能力的正常行为，不增加第七项平台能力。
 
 ### Modified Capabilities
 
-本基线尚无对应已归档主规范，因此使用 ADDED Requirements。既有 add-independent-project-authoring 活动 change 进度不重写；实际执行基线有后续规范时先比较再落到正式归属。
+继续使用现有 ADDED Requirements。执行时如后续提交已经归档到主规范，应按实际归属合并同样的修正，不创建重复规范。
 
 ## Impact
 
-影响正式页面/工程模型、Designer、Qt presentation、现有 Runtime 历史查询及 protobuf 可选参数、Web 编辑/渲染与协议消费者、Annotate。具体路径见 source-map。
+本轮主要影响 Qt presentation 的文字/状态表现、Web 编辑器、既有发布投影与历史网关、正式 SDK model/生成物、Web 宿主页头和相关现有测试。代码落点见 source-map.md，完整身份语义见 contracts.md 第 5.6 节。
 
-业务判断、PLC 地址/码值、模型训练不在本变更中。现有权限、结果作用域、资源保护和查询预算继续使用。首轮不增加任意脚本/表达式、布局框架、历史服务、长期快照、模板平台或 Qt 技术栈迁移。
+Runtime 数据库查询、anchor 算法、ImageSaver/SQLiteWriter、Annotate 与生产同次结果机制默认保持现有实现；只有修复确实触及其行为才补跑对应检查。
 
-实现完成以 [acceptance.md](acceptance.md) 的三条用户旅程为准；条目多、字段可序列化或截图好看均不能单独代表完成。
+用户没有存量工程，不增加兼容、迁移、别名注册表、第二布局/历史服务、新 RPC、脚垫/PLC 专用控件或新验收矩阵。完成以 tasks.md 的六项收尾和 acceptance.md 的受影响用户路径为准。

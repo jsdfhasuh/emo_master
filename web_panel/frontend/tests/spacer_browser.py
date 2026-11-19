@@ -174,8 +174,13 @@ with sync_playwright() as runtime:
         assert abs((b['height']-24)-2*(a['height']-24))<2,(a,b)
         assert rect(page,'vertical-content')['height']>=64
         report.append({'case':'vertical-weighted','one':a,'two':b})
-        page.set_viewport_size({'width':1280,'height':400})
-        page.wait_for_timeout(60)
+        # Leave less room than the declared 64px content, 48px spacers and gaps.
+        # This derives the viewport from the current shell height.
+        available_top = page.locator('.panel-page').evaluate('''page => Math.ceil(
+            page.getBoundingClientRect().top + 2 * parseFloat(getComputedStyle(page).paddingTop))''')
+        page.set_viewport_size({'width':1280,'height':available_top+100})
+        page.wait_for_function('''() => ['vertical-one','vertical-two'].every(id =>
+            Math.abs(document.querySelector(`[data-component-id="${id}"]`).getBoundingClientRect().height - 24) < 1)''')
         assert abs(rect(page,'vertical-one')['height']-24)<1 and abs(rect(page,'vertical-two')['height']-24)<1
         assert rect(page,'vertical-content')['height']>=64
         report.append({'case':'vertical-insufficient-fallback','one':rect(page,'vertical-one'),'two':rect(page,'vertical-two')})

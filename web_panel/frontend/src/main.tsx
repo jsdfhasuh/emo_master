@@ -66,6 +66,7 @@ function App() {
     const [subscriptionError, setSubscriptionError] = useState('');
     const sessionEpoch = useRef(0);
     const [busy, setBusy] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(false);
     const [panels, setPanels] = useState<Panel[]>([]);
     const [panel, setPanel] = useState<Panel>();
     const [page, setPage] = useState('');
@@ -163,7 +164,7 @@ function App() {
     }
     function endSession(message = '') {
         sessionEpoch.current++;
-        selectTarget('');setRuntimes([]);setMe(undefined);setCsrf('');
+        selectTarget('');setRuntimes([]);setSettingsOpen(false);setMe(undefined);setCsrf('');
         // Keep the user-keyed original request in sessionStorage for explicit queries.
         setPending(undefined);controlId.current=undefined;setBusy(false);setCatalogBusy(false);
         setCatalogError('');setNotice('');setError(message);bootstrapSession=undefined;
@@ -584,6 +585,7 @@ function App() {
     const controlRun = runs.find(run => run.id === controlRunId);
     const workflow = workflows.find(item => item.id === workflowId);
     const shell = panel?.shell;
+    const runtimeTarget = runtimes.find(target => target.id === runtimeId);
     const currentPage = panel?.pages.find(item => item.id === page) ?? panel?.pages[0];
     const jobState = viewRun?.status || runtimeState || viewRun?.state || '无运行';
     const connection = runId ? status : runtimeInfo ? '已连接' : status;
@@ -593,7 +595,12 @@ function App() {
     if (!me)
         return <main className="login"><h1>Emo Web 操作员面板</h1><p>独立展示客户端，不执行工作流或控制设备驱动。</p>{localNoAuth && <><LocalModeWarning/><button disabled={busy} onClick={enterLocal}>{busy ? '正在进入…' : '进入本机模式'}</button></>}<form onSubmit={login}><label>用户名<input name="username" autoComplete="username" required/></label><label>密码<input name="password" type="password" autoComplete="current-password" required/></label><button disabled={busy}>{busy ? '登录中…' : '登录'}</button></form>{error && <p role="alert">{error}</p>}</main>;
     if (editorRoute) return <Suspense fallback={<main>正在加载 Web 页面编辑器…</main>}><Editor me={me} onLogout={logout}/></Suspense>;
-    return <main className="operator-shell" style={themeStyle}>
+    const contentWidth = panel?.appearance?.contentMaxWidth;
+    const shellStyle = {
+        ...themeStyle,
+        '--operator-inset': contentWidth ? `max(24px, (100% - ${contentWidth - 2 * (panel?.appearance?.pagePadding ?? 24)}px) / 2)` : '24px',
+    } as React.CSSProperties;
+    return <main className="operator-shell" style={shellStyle}>
     <header className="operator-header">
         <div className="operator-heading">
             {logo && <img className="operator-logo" src={logo} alt=""/>}
@@ -604,29 +611,32 @@ function App() {
         <div className="operator-header-items">
             {me.preview && <small>只读预览</small>}
             {me.mode === 'mock' && <small>模拟 Runtime</small>}
+            {runtimeTarget && <strong className="operator-target">{runtimeTarget.alias || runtimeTarget.id}</strong>}
             {shell?.showConnection !== false && <span className="operator-status" aria-label="连接状态">{connection}</span>}
             {shell?.showJobState !== false && <span className="operator-status" aria-label="运行状态">{jobState}</span>}
+            {commandNotice && <span className="operator-status" role="status">{lastCommand.kind === 'start' ? '启动已受理' : '停止已受理'}</span>}
             {me.role==='admin' && !me.preview && <a href="/editor">编辑 Web 页面</a>}
+            <button aria-expanded={settingsOpen} aria-controls="operator-settings"
+                onClick={() => setSettingsOpen(open => !open)}>运行设置</button>
             <small>{me.authMode==='local'?'本机管理员':me.username}</small>
             <button disabled={busy} onClick={logout}>退出</button>
         </div>
     </header>
- {error && <div className="alert" role="alert">{error}<button onClick={() => setError('')}>关闭</button></div>}{catalogError && <div className="alert" role="alert">{catalogError}<button onClick={() => setCatalogError('')}>关闭</button></div>}{subscriptionError && <div className="alert" role="alert">{subscriptionError}<button onClick={() => setSubscriptionError('')}>关闭</button></div>}{notice && <div className="notice" role="status">{commandNotice ? lastCommand.kind === 'start' ? '启动已受理' : '停止已受理' : notice}</div>}
+ {error && <div className="alert" role="alert">{error}<button onClick={() => setError('')}>关闭</button></div>}{catalogError && <div className="alert" role="alert">{catalogError}<button onClick={() => setCatalogError('')}>关闭</button></div>}{subscriptionError && <div className="alert" role="alert">{subscriptionError}<button onClick={() => setSubscriptionError('')}>关闭</button></div>}{notice && !commandNotice && <div className="notice" role="status">{notice}</div>}
  {Object.entries(captureNotices).filter(([,capture])=>capture.viewId===viewId).map(([jobId,capture])=><div className="notice" role="status" key={jobId}>运行 {runs.find(run=>run.id===jobId)?.name || jobId}：{capture.message}</div>)}
  {(me.localNoAuth || me.authMode==='local' || localNoAuth) && <LocalModeWarning me={me}/>}
- <section className="toolbar"><label>Runtime<select aria-label="Runtime 目标" value={runtimeId} onChange={e => selectTarget(e.target.value)}>{runtimes.map(r => <option key={r.id} value={r.id}>{r.alias || r.id} · {r.mode}</option>)}</select></label><label>页面包<select aria-label="页面包" value={panel?.id || ''} onChange={async (e) => { const rid=activeRuntime.current,ticket=++catalogGeneration.current;catalogAbort.current?.abort();setCatalogBusy(false);try {
-        const next=await api<Panel>(`/api/panels/${encodeURIComponent(e.target.value)}?${targetContext(rid,infoRef.current?.projectId,infoRef.current?.runtimeInstanceId)}`);if(rid===activeRuntime.current && ticket===catalogGeneration.current)setPanel(next);
-    }
-    catch (e) {
-        if(rid===activeRuntime.current && ticket===catalogGeneration.current)setError((e as Error).message);
-    } }}>{panels.map(p => <option key={p.id} value={p.id}>{p.shell?.title || p.name || p.title || p.packageRevision?.slice(0,12) || p.id.slice(0,12)}</option>)}</select></label><label>查看运行<select aria-label="查看运行" disabled={catalogBusy} value={runId} onChange={e => setRunId(e.target.value)}><option value="">无运行 · 页面 / 历史预览</option>{runs.map(r => <option key={r.id} value={r.id}>{r.name || r.id} · {r.state}</option>)}</select></label><button disabled={catalogBusy} onClick={() => refresh({adoptPublished:true}).catch(()=>{})}>刷新页面包和状态</button></section>
  {pending&&<section className="notice"><strong>待确认操作：{pending.kind} / {pending.target}</strong><button disabled={busy} onClick={queryPending}>查询操作结果</button>{pending.state!=='submitting'&&<button onClick={()=>{if(confirm('结束本次跟踪不会停止或重新执行任何命令。请确认已核对运行状态，后续新操作将是新的意图。'))clearPending()}}>结束跟踪（不重发）</button>}</section>}
  <section className="toolbar operator-actions">
+    <label>查看运行<select aria-label="查看运行" title={viewRun?.name || viewRun?.id}
+        disabled={catalogBusy} value={runId} onChange={e => setRunId(e.target.value)}>
+        <option value="">无运行 · 页面 / 历史预览</option>
+        {runs.map(run => <option key={run.id} value={run.id}>{run.name || run.id} · {run.state}</option>)}
+    </select></label>
     <button disabled={!result || frozen} onClick={() => action('freeze')}>冻结查看</button>
     <button disabled={!frozen} onClick={() => action('resume_live')}>恢复实时</button>
     <span>{frozen ? '已冻结查看' : '实时查看'}</span>
     {canControl && shell?.showControls !== false && <>
-        <label>启动工作流<select aria-label="启动工作流目标" disabled={catalogBusy} value={workflowId}
+        <label>启动工作流<select aria-label="启动工作流目标" title={workflow?.name || workflow?.id} disabled={catalogBusy} value={workflowId}
             onChange={event => {
                 const selected = workflows.find(item => item.id === event.target.value);
                 inputDirty.current=false;
@@ -636,18 +646,10 @@ function App() {
             <option value="">{workflows.length?'明确选择工作流':'无可用工作流'}</option>
             {workflows.map(item => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
         </select></label>
-        <details className="operator-inputs">
-            <summary>工作流输入</summary>
-            <WorkflowInputs workflow={workflow} value={workflowInputs} onChange={value=>{
-                inputDirty.current=true;
-                selectionRef.current={...selectionRef.current,workflowInputs:value,dirty:true};
-                setWorkflowInputs(value);
-            }}/>
-            {workflow?.inputSchema && <details><summary>输入约束</summary><pre>{JSON.stringify(workflow.inputSchema, null, 2)}</pre></details>}
-        </details>
         <button className="panel-action panel-action-primary" disabled={busy || catalogBusy || !workflowId || !runtimeId || workflow?.canStart === false}
             onClick={() => control('start')}>启动工作流</button>
-        <label>停止目标<select aria-label="停止控制目标" disabled={catalogBusy} value={controlRunId} onChange={e=>setControlRunId(e.target.value)}>
+        <label>停止目标<select aria-label="停止控制目标" title={controlRun?.name || controlRun?.id}
+            disabled={catalogBusy} value={controlRunId} onChange={e=>setControlRunId(e.target.value)}>
             <option value="">明确选择停止对象</option>
             {runs.map(run=><option key={run.id} value={run.id}>{run.name||run.id} · {run.state}</option>)}
         </select></label>
@@ -657,12 +659,54 @@ function App() {
         {workflow?.canStart === false && <p role="status">暂不能启动：{workflow.startBlockReason || '请刷新状态后重试'}</p>}
     </>}
  </section>
+ <section className="operator-settings" id="operator-settings" aria-label="运行设置" hidden={!settingsOpen}>
+    <div className="toolbar">
+        <label>Runtime<select aria-label="Runtime 目标" value={runtimeId} onChange={e => selectTarget(e.target.value)}>
+            {runtimes.map(r => <option key={r.id} value={r.id}>{r.alias || r.id} · {r.mode}</option>)}
+        </select></label>
+        <label>页面包<select aria-label="页面包" value={panel?.id || ''} onChange={async e => {
+            const rid = activeRuntime.current;
+            const ticket = ++catalogGeneration.current;
+            catalogAbort.current?.abort();
+            setCatalogBusy(false);
+            try {
+                const next = await api<Panel>(`/api/panels/${encodeURIComponent(e.target.value)}?${targetContext(rid,infoRef.current?.projectId,infoRef.current?.runtimeInstanceId)}`);
+                if (rid === activeRuntime.current && ticket === catalogGeneration.current) setPanel(next);
+            } catch (e) {
+                if (rid === activeRuntime.current && ticket === catalogGeneration.current) setError((e as Error).message);
+            }
+        }}>
+            {panels.map(p => <option key={p.id} value={p.id}>{p.shell?.title || p.name || p.title || p.packageRevision?.slice(0,12) || p.id.slice(0,12)}</option>)}
+        </select></label>
+        <button disabled={catalogBusy} onClick={() => refresh({adoptPublished:true}).catch(()=>{})}>刷新页面包和状态</button>
+        {canControl && shell?.showControls !== false && <details className="operator-inputs">
+            <summary>工作流输入</summary>
+            <WorkflowInputs workflow={workflow} value={workflowInputs} onChange={value=>{
+                inputDirty.current=true;
+                selectionRef.current={...selectionRef.current,workflowInputs:value,dirty:true};
+                setWorkflowInputs(value);
+            }}/>
+            {workflow?.inputSchema && <details><summary>输入约束</summary><pre>{JSON.stringify(workflow.inputSchema, null, 2)}</pre></details>}
+        </details>}
+    </div>
+    {me.role === 'admin' && <>
+        <details className="admin"><summary>页面包管理</summary><p>导入后可为当前 Runtime 启用页面包并同步采集请求。新请求在下次明确启动工作流时生效。独立编辑器生成的版本在编辑器中管理。</p><input aria-label="导入页面包" type="file" accept=".emoweb,.zip" disabled={busy} onChange={e => { if (e.target.files?.[0])
+            upload(e.target.files[0]); }}/>{packages.map(p => <div key={p.id || p.packageId} data-package-id={p.id || p.packageId}>{p.name || (p.manifest ? `${p.manifest.projectId} / ${p.manifest.packageRevision}` : p.id || p.packageId)} · 关联：{p.runtimeIds?.join(', ') || '未关联'} {p.active && '已启用'} {p.editorManaged ? <a href={`/editor?runtimeId=${encodeURIComponent(runtimeId)}`}>在编辑器管理源版本与回退（重新核对采集请求）</a> : <button disabled={!runtimeId} onClick={async () => { const activatedRuntime=runtimeId,activatedProject=runtimeInfo?.projectId;if (!confirm(`为 ${runtimeId} 启用此页面包并同步后续作业的采集请求？已启动作业继续使用原采集范围。`)) return; try {
+            await api(`/api/packages/${encodeURIComponent(p.id || p.packageId || '')}/activate`, { method: 'POST', body: JSON.stringify({ runtimeId,projectId:runtimeInfo?.projectId }) });
+            if(activeRuntime.current===activatedRuntime && infoRef.current?.projectId===activatedProject){await refresh({adoptPublished:true});setNotice('当前目标已启用此页面包');}
+        }
+        catch (e) {
+            if(activeRuntime.current===activatedRuntime && infoRef.current?.projectId===activatedProject)setError((e as Error).message);
+        } }}>对当前目标启用 / 切回此版本</button>}</div>)}</details>
+        <Admin current={me.username}/>
+    </>}
+ </section>
  {panel && currentPage ? <>
     {!hasPageNavigation(currentPage.components) && <div className="operator-nav"><PageNavigation panel={panel} pageId={currentPage.id} onPage={changePage}/></div>}
     <PanelRenderer panel={panel} pageId={page} onPage={changePage} result={result} results={scopes} viewId={viewId}
         onAction={action} state={connection} runtimeState={jobState}/>
  </> : <p>暂无已发布页面，请联系管理员。</p>}
- <details className="operator-diagnostics" key={`${runtimeId}:${panel?.id}:${panel?.packageRevision}`}
+ <details className="operator-diagnostics" key={runtimeId}
     open={shell?.diagnosticsInitiallyExpanded ?? false}>
     <summary>运行诊断</summary>
     {commandNotice && <p role="status">{notice}</p>}
@@ -672,16 +716,8 @@ function App() {
     {!canControl && runtimeId && <p>当前目标只读：未授予生产控制权限。</p>}
     <aside aria-label="作用域进度">{Object.entries(scopeStatuses).map(([key,value])=><p key={key}>{value.jobId} / {value.scopeId}：{scopeActivity(value,scopes[value.scopeId],frozenKeys.current?.[value.scopeId]===scopes[value.scopeId]?.resultKey && Boolean(scopes[value.scopeId]))}</p>)}</aside>
     <RuntimeStatus runtimeId={runtimeId} runId={runId} runtimeInstanceId={viewRun?.runtimeInstanceId} projectId={viewRun?.projectId}/>
-    <footer>Panel Contract v1 · {panel?.packageRevision || '—'} · {result?.resultKey || '等待结果'}</footer>
+    <footer>Panel Contract v1 · {panel?.packageRevision || '—'} · <span aria-label="已显示结果标识">{result?.resultKey || '等待结果'}</span></footer>
  </details>
- {me.role === 'admin' && <details className="admin"><summary>页面包管理</summary><p>导入后可为当前 Runtime 启用页面包并同步采集请求。新请求在下次明确启动工作流时生效。独立编辑器生成的版本在编辑器中管理。</p><input aria-label="导入页面包" type="file" accept=".emoweb,.zip" disabled={busy} onChange={e => { if (e.target.files?.[0])
-        upload(e.target.files[0]); }}/>{packages.map(p => <div key={p.id || p.packageId} data-package-id={p.id || p.packageId}>{p.name || (p.manifest ? `${p.manifest.projectId} / ${p.manifest.packageRevision}` : p.id || p.packageId)} · 关联：{p.runtimeIds?.join(', ') || '未关联'} {p.active && '已启用'} {p.editorManaged ? <a href={`/editor?runtimeId=${encodeURIComponent(runtimeId)}`}>在编辑器管理源版本与回退（重新核对采集请求）</a> : <button disabled={!runtimeId} onClick={async () => { const activatedRuntime=runtimeId,activatedProject=runtimeInfo?.projectId;if (!confirm(`为 ${runtimeId} 启用此页面包并同步后续作业的采集请求？已启动作业继续使用原采集范围。`)) return; try {
-        await api(`/api/packages/${encodeURIComponent(p.id || p.packageId || '')}/activate`, { method: 'POST', body: JSON.stringify({ runtimeId,projectId:runtimeInfo?.projectId }) });
-        if(activeRuntime.current===activatedRuntime && infoRef.current?.projectId===activatedProject){await refresh({adoptPublished:true});setNotice('当前目标已启用此页面包');}
-    }
-    catch (e) {
-        if(activeRuntime.current===activatedRuntime && infoRef.current?.projectId===activatedProject)setError((e as Error).message);
-    } }}>对当前目标启用 / 切回此版本</button>}</div>)}</details>}
- {me.role === 'admin' && <Admin current={me.username}/>}</main>;
+ </main>;
 }
 createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);

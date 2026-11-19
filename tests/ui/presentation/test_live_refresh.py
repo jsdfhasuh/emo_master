@@ -14,6 +14,7 @@ from emo_master.core.presentation.models import Presentation
 from emo_master.core.presentation.results import ClosedResult, ClosedSource, ImageRef, ResultIdentity
 from emo_master.ui.presentation.hub import DisplayHub
 from emo_master.ui.presentation.renderer import ImageView, RuntimePages
+from emo_panel_protocol.theme import LIGHT_THEME
 
 
 def livePresentation():
@@ -133,7 +134,7 @@ def testNewFramesDoNotRepaintStaticContent(liveWindow, qtApp):
 def testUnchangedIndicatorStyleIsNotReapplied(liveWindow):
     window, current = liveWindow
     indicator = window.widgets['main']['ok'][1]
-    events = Events(indicator)
+    events = Events(indicator.value)
     current[0] = liveView(window, 3)
     window.hub.tick()
     assert events.counts[QEvent.StyleChange] == 0
@@ -141,7 +142,7 @@ def testUnchangedIndicatorStyleIsNotReapplied(liveWindow):
     window.hub.tick()
     assert events.counts[QEvent.StyleChange] > 0
     assert indicator.text() == 'NG'
-    assert '#af2734' in indicator.styleSheet()
+    assert LIGHT_THEME['foreground']['red'] in indicator.value.styleSheet()
 
 
 def testHealthUpdateReusesImagesWithoutRequestingPaint(liveWindow, monkeypatch):

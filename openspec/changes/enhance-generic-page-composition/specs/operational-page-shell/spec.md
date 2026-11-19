@@ -8,14 +8,14 @@
 
 ### Requirement: One current operational header
 
-系统 SHALL 使用统一的 `presentation.shell` 显示配置，包含 `title`、`subtitle`、`logoResourceId`、`showConnection`、`showJobState`、`showControls` 和布尔字段 `diagnosticsInitiallyExpanded`。未配置 shell 时也 SHALL 使用本版紧凑默认，诊断初始展开值为 false；标题为空时使用工程显示名，Logo 沿用受管页面图片资源及现有保存、校验和发布路径。
+系统 SHALL 使用统一的 `presentation.shell`，包含 `title`、`subtitle`、`logoResourceId`、`showConnection`、`showJobState`、`showControls` 和布尔字段 `diagnosticsInitiallyExpanded`。未配置时 SHALL 使用当前紧凑默认，诊断初始折叠，空标题取工程名；Logo沿用受管资源路径。自定义字段只覆盖当前默认，不按工程版本分支。
 
-shell 的自定义字段 SHALL 只覆盖当前默认；不按工程版本维护另一套页头。Action、绑定、resultScope 和宿主控制继续复用原机制。
+Web 常驻区 SHALL 呈现页面身份、必要状态、当前目标摘要、主导航和既有开始/停止；Runtime连接参数、页面包管理和工作流输入 SHALL 从可见的“运行设置”入口展开。设置、控制、Action、绑定和resultScope复用现有行为，不新增 shell.mode、运行模式或业务启停Action。
 
 #### Scenario: Configure and reopen a concise header
 
 - **WHEN** 用户配置标题、Logo、状态可见性与诊断初始折叠，保存并重新打开或发布同一工程
-- **THEN** Qt 与 Web 按相同配置显示页头和受管 Logo，配置不启动工作流；未声明 shell 的页面也使用同一紧凑默认
+- **THEN** Qt 与 Web 按相同配置显示页头和受管 Logo，Web 次级配置可从运行设置展开而不常驻多行管理工具条，配置不启动工作流；未声明 shell 的页面也使用同一紧凑默认
 
 ### Requirement: Collapsible diagnostics retain actionable summaries
 
@@ -32,12 +32,12 @@ shell 的自定义字段 SHALL 只覆盖当前默认；不按工程版本维护�
 
 系统 SHALL 将开始和停止保留在宿主页头的内建操作区，由 `showControls` 控制可见性，复用原宿主命令、实际目标及既有可用性和权限判断。页面 SHALL 不新增启动或停止 Action。
 
-原宿主需要显式选择控制目标时，紧凑页头 SHALL 保留正常选择入口和目标标识。观察对象与控制对象不同时仍应能够区分；切页、冻结和历史选择不隐式修改控制目标。显示操作区不授予原本没有的控制权限。
+原宿主需要显式选择观察或控制目标时，紧凑页头 SHALL 保留可到达的选择入口，并在常驻摘要中让用户辨别当前观察对象和实际控制对象。两者不同时 SHALL 分别标明，不能仅隐藏到技术诊断中，也不能为了简化外观自动合并目标；完整技术标识可以放在设置或诊断详情中。选择入口可以使用运行设置内的既有选择器，当前选择结果仍需在页头清楚反馈。切页、冻结和历史选择不隐式修改控制目标。显示操作区不授予原本没有的控制权限。
 
 #### Scenario: Operate the existing selected target
 
-- **WHEN** 操作者通过紧凑页头对原宿主已确定且允许操作的目标执行开始或停止
-- **THEN** 使用原有命令与目标处理，每次操作不产生第二条控制链路；随后查看历史不会改变该目标
+- **WHEN** 操作者通过原选择入口确定观察和控制目标，并在紧凑页头对允许操作的目标执行开始或停止
+- **THEN** 页头能辨别当前观察对象与实际控制对象，使用原有权限、可用性、命令与目标处理，每次操作不产生第二条控制链路；随后查看历史或展开运行设置不会改变该目标
 
 ### Requirement: Navigation follows the existing page definition
 

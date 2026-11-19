@@ -2,6 +2,8 @@
 
 ## Purpose
 
+V1.3收尾继续使用当前正式格式；已交付能力复用，只补已确认的创作和发布断点。
+
 以当前正式格式实现并交付页面增强。用户没有需要迁移的既有工程，本轮不承担旧工程、旧页面包或旧 SDK 兼容；Designer、Runtime、Web 和生成物同步采用同一当前契约。交付一个可继续编辑的双页工程，实际展示模拟生产结果写图、写库后在历史页查看同一条记录。
 
 ## ADDED Requirements
@@ -71,3 +73,18 @@ Designer、Runtime、Web 的 SDK、生成 Schema、TypeScript 和打包消费者
 
 - **WHEN** 用户在交付工程中更换一个测量字段、单位及状态映射，保存重开并查看 Qt 和 Web 页面
 - **THEN** 修改保留，普通组件和布局继续可用，不依赖特定工位控件或仅用于效果图的 HTML
+
+
+### Requirement: Web copies retain declared Runtime history sources
+
+系统 SHALL 在当前创作模型提供 props.historySource：componentId引用已有Runtime来源，选中行图片的sourceComponentId引用同页表格实例。引用与实际来源声明、生产绑定、静态图片互斥；原生Designer保持拥有来源声明的语义。
+
+Web SHALL 为显示实例生成UI ID；复制保留来源ID，重映射复制集合内的页内关联。发布 SHALL 复用既有Published history，不新增目录或RPC。
+
+网关 SHALL 先解析获准UI实例，再按Runtime来源查询；图片按Runtime来源查找imageRefs，选择状态按UI实例隔离。纯模型校验形状与页内关系，现有发布上下文校验目录成员、列和图片父表。再次编辑 SHALL 从active包恢复原来源目录。
+
+#### Scenario: Copy a history page and publish it again
+
+- **WHEN** 用户从当前Runtime已声明来源添加历史表及主图/局部图，复制包含记录字段与历史按钮的页面，保存重开并正式发布，随后再次打开编辑器发布
+- **THEN** 两页各自选择记录，主图、局部图、字段及翻条按钮都跟随本页表格，RPC仍访问原声明来源，重新编辑和发布可完成
+- **AND** 复制没有新增数据库来源、RPC或生产采集，也没有使原页面选择被复制页抢走

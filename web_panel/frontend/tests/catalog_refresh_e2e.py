@@ -70,6 +70,10 @@ try:
   try:
    page.goto(origin);page.get_by_label('用户名',exact=True).fill('operator');page.get_by_label('密码',exact=True).fill('fixture');page.get_by_role('button',name='登录',exact=True).click()
    identity=page.get_by_label('当前 Runtime 身份',exact=True);refresh=page.get_by_role('button',name='刷新页面包和状态',exact=True)
+   settings=page.get_by_role('button',name='运行设置',exact=True)
+   expect(settings).to_have_attribute('aria-expanded','false')
+   expect(refresh).to_be_hidden()
+   settings.click();expect(settings).to_have_attribute('aria-expanded','true')
    expect(identity).to_contain_text('A-1 / project-A');expect(refresh).to_be_enabled()
    page.get_by_label('查看运行',exact=True).select_option('a1');page.get_by_label('停止控制目标',exact=True).select_option('a1')
    page.locator('.operator-inputs summary').click();editor=page.get_by_label('工作流输入',exact=True);editor.fill('{"threshold":42}')
@@ -147,6 +151,7 @@ try:
     page.get_by_label('用户名',exact=True).fill(username)
     page.get_by_label('密码',exact=True).fill('fixture')
     page.get_by_role('button',name='登录',exact=True).click()
+    settings.click()
     expect(identity).to_contain_text('A-1 / project-A');expect(refresh).to_be_enabled()
 
    state['catalog_status']=200;login_as('other-operator')

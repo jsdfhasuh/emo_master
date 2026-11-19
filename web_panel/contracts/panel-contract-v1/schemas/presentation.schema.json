@@ -386,6 +386,39 @@
       "title": "Grid",
       "type": "object"
     },
+    "HistorySource": {
+      "additionalProperties": false,
+      "description": "A Web-authored reference to an existing Runtime history declaration.",
+      "properties": {
+        "componentId": {
+          "maxLength": 160,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Componentid",
+          "type": "string"
+        },
+        "sourceComponentId": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "pattern": "^\\S+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcecomponentid"
+        }
+      },
+      "required": [
+        "componentId"
+      ],
+      "title": "HistorySource",
+      "type": "object"
+    },
     "HistoryView": {
       "additionalProperties": false,
       "properties": {
@@ -1123,6 +1156,17 @@
         },
         "sqlite": {
           "$ref": "#/$defs/SqliteSource"
+        },
+        "historySource": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HistorySource"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "title": "Props",

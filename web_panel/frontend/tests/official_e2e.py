@@ -135,7 +135,14 @@ def main():
                     # EMPTY must retire the previously loaded selected-row image.
                     history.get_by_role('row').filter(has=page.get_by_role('cell', name='NG', exact=True)).click()
                     expect(page.locator(selected_image)).to_have_count(0)
-                    page.get_by_label('查看运行', exact=True).select_option('')
+                    with page.expect_response(lambda response: urlsplit(response.url).path.endswith('/history/records')) as refreshed:
+                        with page.expect_response(lambda response: urlsplit(response.url).path == '/api/views'
+                                                  and response.request.method == 'POST'
+                                                  and response.request.post_data_json.get('runId', '') == '') as history_view:
+                            page.get_by_label('查看运行', exact=True).select_option('')
+                    assert history_view.value.ok
+                    view_id = history_view.value.json()['id']
+                    assert refreshed.value.ok and f'/views/{view_id}/history/records' in refreshed.value.url
                     expect(history.locator('tbody tr')).to_have_count(2)
                     history.get_by_label('records 筛选列', exact=True).select_option('verdict')
                     history.get_by_label('records 筛选', exact=True).fill('NG')
@@ -147,7 +154,7 @@ def main():
                     page.set_viewport_size({'width':390, 'height':844})
                     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'History overflows mobile viewport'
                     page.screenshot(path=str(EVIDENCE / 'official-history-mobile.png'), full_page=True)
-                    page.locator('.page-nav').get_by_role('button', name='Live demo', exact=True).click()
+                    page.locator('.page-nav').get_by_role('tab', name='Live demo', exact=True).click()
                     page.get_by_label('查看运行', exact=True).select_option('demo-j1')
                     expect(page.locator('.number')).to_contain_text('12.00')
                     loaded_image(page, 'img[src*="/api/assets/"]')

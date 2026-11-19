@@ -12,21 +12,25 @@
 
 indicatorStates SHALL 接受规范 JSON 的整数、布尔和字符串键，按原始类型精确匹配。映射只影响文字、语义前景、浅背景和标记，不改写值。既有规范键校验继续适用，不使用模糊字符串转换或表达式代替。
 
+Designer 与 Web 正式编辑器 SHALL 都能从属性入口新建、编辑和保存整数、布尔及字符串映射。Web 的类型选项、行默认值、解析、校验和保存 SHALL 使用同一组支持类型；不得只在模型或加载已有工程时支持 integer，而要求用户手写 JSON 才能创作整数映射。
+
 #### Scenario: Display exact typed values directly
 
-- **WHEN** 用户直接绑定已有输出，并为整数 1、布尔 true 和字符串 "1" 分别配置映射，保存并在 Qt/Web 显示
-- **THEN** 各输入只匹配自己的类型和值，配置可以继续编辑，无须增加工作流转换节点
+- **WHEN** 用户在 Designer 或 Web 正式属性面板直接绑定已有输出，并为整数 1、布尔 true 和字符串 "1" 分别新建映射，再保存重开并在 Qt/Web 显示
+- **THEN** 各输入只匹配自己的类型和值，三种类型都能继续通过原属性入口编辑，整数映射无须手写 JSON 或增加工作流转换节点
 
 ### Requirement: State representations share a neutral empty display
 
 系统 SHALL 支持 text、badge 和 row 表现，当前默认 text；row 可以在一行内呈现名称、标记与状态词。多个 indicator 可以组合成紧凑的判定组，不要求每行再加卡片。
 
-NULL、数据不可用和未映射值 SHALL 在内部保持各自含义，但显示配置统一复用既有 `emptyText` 及中性色，不增加三套回退文案字段。它们不能被转换成业务 NG、成功、0 或 false；原有诊断信息继续保留在既有诊断路径。
+在 Qt 与 Web 中，`indicatorView=row` 的已映射 `background=soft` SHALL 作用于整条判定行，覆盖名称、标记、状态词及该行配置的内边距；不能只给右侧状态词加一个浅色小块。badge 的状态背景 SHALL 只形成状态值的紧凑徽标；text SHALL 只采用文本前景语义，不由状态映射生成浅底容器。组件显式 surface 继续按页面组合规则应用，不为三种表现增加专用控件或新的背景字段。
+
+NULL、数据不可用和未映射值 SHALL 在内部保持各自含义，但显示配置统一复用既有 `emptyText` 及中性色，不增加三套回退文案字段。更新到这些状态时 SHALL 清除上一条映射产生的彩色背景，不遗留成功或失败色；组件明确配置的中性表面仍可保留。它们不能被转换成业务 NG、成功、0 或 false；原有诊断信息继续保留在既有诊断路径。
 
 #### Scenario: Show mapped states and missing data
 
-- **WHEN** 一个判定组收到已映射状态，随后某个字段为空、不可用或没有对应映射
-- **THEN** 已映射项按配置显示，其余项统一显示各自控件的中性 emptyText，内部仍保留实际原因，不能伪装成失败或成功判定
+- **WHEN** 一个判定组的 row、badge 和 text 按配置显示同类已映射状态，随后某个字段为空、不可用或没有对应映射
+- **THEN** Qt 与 Web 的 row 整行、badge 状态值和 text 文本分别采用约定表现；其余项清除旧状态色并显示中性 emptyText，内部仍保留实际原因，不能伪装成失败或成功判定
 
 ### Requirement: Readable plain text and source timestamps
 
@@ -37,7 +41,7 @@ NULL、数据不可用和未映射值 SHALL 在内部保持各自含义，但显
 #### Scenario: Read multiline details and a declared timestamp
 
 - **WHEN** 历史记录提供有换行的日志及已声明的日期/时间文本列
-- **THEN** 时间按来源文本显示，日志保持换行并自动折行，已有读取截断标记得到保留，文本不被解释为富文本或脚本
+- **THEN** 时间按来源文本完整显示，日志保持换行并自动折行，动态更新按 page-composition 的规则重算尺寸并保留对齐，已有读取截断标记得到保留，文本不被解释为富文本或脚本
 
 ### Requirement: Existing result review actions stay read only
 

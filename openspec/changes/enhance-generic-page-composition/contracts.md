@@ -1,6 +1,6 @@
 # 配置与运行契约
 
-**V1.2 · 无存量工程前提。** 本文件锁定最小可交付语义。JSON 是目标页面 1.3 的局部示意，不是完整可运行工程。字段进入现有正式模型、编辑器和发布链路；局部类名与函数拆分由实现者按仓库风格处理。
+**V1.3 · ce8f84ca 已实现基础上的收尾契约；无存量工程前提继续有效。** 本文件锁定最小可交付语义。JSON 是目标页面 1.3 的局部示意，不是完整可运行工程。字段进入现有正式模型、编辑器和发布链路；局部类名与函数拆分由实现者按仓库风格处理。
 
 ## 1. 当前格式与统一默认
 
@@ -14,7 +14,7 @@
 | 属性继承 | 未自定义属性继承当前主题/组件默认；恢复默认清除该项自定义，不关联格式版本变化 |
 | 序列化 | 当前模型统一读写；只要求当前工程和当前发布包往返完整，不为旧包摘要维持特殊省略规则 |
 | 当前发布 | 沿用 published-1、emo-web-panel-1、panelContractVersion=1.0 的现有外层结构，sourcePresentationVersion 为 1.3 |
-| 当前 SDK | 目标 1.6.0，Designer/Runtime/Web/生成物同步更新；执行时如版本已被正式占用则统一采用下一小版本 |
+| 当前 SDK | 已交付基线为1.6.0；本轮 historySource 改变 owning model，按仓库规则使用下一未占用正式版本并同步消费者。文档V1.3本身不触发版本升级；不得覆盖同名旧wheel |
 
 新建仍走正式 WorkflowStore/保存入口，并保留设备、变量、资源、生产、Dispatch 和结果采集的现有功能。这是当前工程功能完整性，不是旧文件兼容要求。受本轮影响的旧fixture/生成样例可以更新到当前格式；不用保留专门证明旧行为的测试。已有不支持版本提示可以继续使用，无需新增兼容向导或恢复框架。
 
@@ -43,6 +43,8 @@ token 至少包含页面背景、卡片、边框、主/次文字、主色及 gre
 | showControls | true；仅显示宿主原本允许的操作 |
 
 开始/停止直接复用宿主控制入口、目标选择、可用性和已有确认行为。showControls 只决定显示。连接/操作失败以简短事实提示呈现；Job ID、资源释放、原始日志等放进可展开诊断区。
+
+Web 主栏集中显示工程身份、连接/任务状态、当前观察对象与控制对象摘要、原开始/停止及目标选择入口。Runtime/页面包选择、工作流输入等次级配置放进可展开的“运行设置”，不再以两条完整工具栏常驻主体上方。当前目标可辨别，改变目标继续原显式选择路径；切页、冻结和设置折叠不改目标。诊断是独立入口，保留简短错误摘要。不增加 shell.mode、页面启停 Action 或新控制服务。
 
 导航沿用现有优先级：当前页含显式 page_navigation 时，宿主自动隐藏自己的重复导航；没有时显示宿主导航。允许项目有意在页顶、页底各放一个导航。不增加 navigationPlacement、配置冲突错误或生产启动拦截。
 
@@ -75,6 +77,7 @@ Designer 选中框、绑定提示等编辑辅助通过既有画布覆盖层或�
 - props.helperText：空时不占位；保留已有 unit/decimals/emptyText。
 - text 按纯文本保留换行，并允许长行自动换行。历史文本沿用读取器已有 4096 字符截断及省略提示；不为普通 text 新建长度策略，不增加任意文件读取。
 - 日期/时间可直接使用来源声明的显示列；示例需要分别显示时间和日期时，使用既有 SQLite VIEW 的声明列。首版不新增格式 DSL、HTML 或时区系统。
+- 动态 text 从占位符改为时间、长字段或多行日志，以及再切回短文本时，须让自身及父布局获得当前测量，保留配置的横排对齐。尺寸取实际字体、可用宽度和换行；不能靠固定高度、隐藏换行或内部无滚动裁切掩盖问题。
 
 ### 3.3 状态
 
@@ -84,7 +87,9 @@ Designer 选中框、绑定提示等编辑辅助通过既有画布覆盖层或�
 - IndicatorStyle 保留 text/color，color 增加 blue；可选 background=none/soft。
 - 空值、数据不可用和未映射值统一用已有 emptyText 作中性显示；内部保留原因用于诊断。无需三套 stateFallbacks 配置。
 
-row 显示左侧名称与右侧状态，可组合圆点和浅底色；不强制再套一层有边框卡片。history list 的 trailing 复用同一映射。
+row 显示左侧名称与右侧状态。匹配状态的 background=soft 覆盖包含标题、圆点和值的整行；状态色按原语义token，padding/边框/圆角仍用既有 surface，不增加第二套外观字段。badge 的浅底只覆盖紧凑状态值区域，text 保持纯文字状态表现。无映射、NULL或不可用时清除上一状态前景/浅底，使用已有 neutral emptyText。history list 的 trailing 复用紧凑状态映射，不因此给整条历史记录染成业务状态色。
+
+Designer 和 Web 正式新建、目录点击、拖放及属性绑定都必须接受支持的 integer/boolean/string；整型状态的渲染支持必须贯通创作与保存发布。整数1、布尔true、字符串“1”继续精确区分。
 
 ```json
 {
@@ -195,6 +200,66 @@ position 为本次返回 page×pageSize + 页内选中索引 + 1；时间倒序�
 
 二者只表示最近查询结果，不随后台生产实时重排。简单查看已读同页记录不必重复 count；新查询结果按 generation 丢弃旧回调。无 count 就不显示总数；count 与列表来自独立请求，不承诺同一数据库瞬间。界面可选显示“第 i 条”或“第 i/N 条”，两者都不是记录身份。
 
+
+### 5.6 Web 历史来源引用与复制
+
+本节锁定已复现复制缺陷的修复设计。原生工程拥有 SQLite/ImagePath 声明；独立 Web 页面引用 Runtime 已经声明的来源。两者是当前职责的区别，不是新旧格式分支。生产 DataSource 与结果作用域不变。
+
+#### 唯一可编辑引用组
+
+在现有正式 Props 中增加可选 historySource，使用严格 ID 类型：
+
+~~~json
+{
+  "historySource": {
+    "componentId": "runtime-main-image",
+    "sourceComponentId": "table-ui-a"
+  }
+}
+~~~
+
+- historySource.componentId：直接引用现有 historySources 目录中的 Runtime 正式来源ID，复制时不变。
+- historySource.sourceComponentId：仅选中行图片使用，指向同一页面负责选择记录的 sqlite_table 控件实例ID；表格、统计值和固定图片不设置。
+- 只允许已有 image/sqlite_table/sqlite_value 类型按实际支持路径使用。Web 当前创作面板仍按其已有组件范围开放，不因本字段新增统计控件功能。
+- 不保存数据库路径、表名、SQL、图片文件路径或整份来源元数据。来源 kind、可选列、默认排序继续来自现有目录。
+- 与普通生产 bindings、静态图片、imagePath 或实际非默认 sqlite 来源配置互斥。Props.sqlite 的模型默认空值不是第二个来源，也不要求伪造 location=runtime 的空壳。
+- Web 新建历史控件保留正常生成的UI ID，并显式写入 historySource。保存、重开、正式操作与当前fixture都采用同一字段；不为旧Web草稿增加隐式ID回退或迁移。
+- 原生 .emoproj 仍使用实际 SQLite/ImagePath 声明；原生 Designer 复制继续复制其声明，不强制转换为引用原Runtime来源。
+
+纯模型验证字段形状、互斥和页内关联，不联网或读取目录。原生工程仍经 core/presentation/validation.py 验证实际数据库/表/列。Web 的来源kind、列成员及图片归属在现有 prepare/build_package 的目录上下文和发布包语义校验中确认，不拿默认空 sqlite.columns 否决合法外部引用。
+
+#### 三种身份及发布投影
+
+| 位置 | 语义 |
+| --- | --- |
+| Component.componentId | 页面的控件实例；复制后新建，页面选择会话使用它 |
+| Props.historySource.componentId → PublishedComponent.history.componentId | Runtime已声明的来源地址；复制后保持 |
+| Props.historySource.sourceComponentId → PublishedComponent.history.sourceComponentId | 选中行图片所跟随的同页表格UI实例 |
+
+发布沿用已有 Published history 字段，不增加另一组发布ID；kind/columns/orderBy等从原目录派生后，移除创作属性 historySource 和原有私有路径。原生导出的实例与来源ID可以自然相同；Web复制件可以不同，两者都走当前发布模型。
+
+selected-row image 必须关联同页表格，且“图片Runtime声明的父表来源ID”与“该表格引用的Runtime来源ID”一致。recordValue/historyView字段继续由该表的已声明列验证。图片 Runtime 声明与父表来源的一致性，由 prepare/build_package 的现有目录上下文核对；离线页面包校验删除“UI ID必须等于来源ID”的条件，保留类型、同页表格引用、声明列及包完整性校验。
+
+#### 复制和重新编辑
+
+复用 copyComponents 的现有一次ID映射：
+
+1. 被复制组件的外层ID换新；historySource.componentId不变。
+2. historySource.sourceComponentId、recordValue.componentId、历史动作componentId等页内引用指向复制集合内部时，改成对应的新ID；不在复制集合且仍在同页时保持原目标。
+3. 复制单个表格创建独立选择会话，不抢走原有图片/字段。复制整组/整页时，详情与按钮跟随新的表格实例。
+4. 在现有 Web 图片属性面板提供同页表格实例选择，展示可区分的控件标题；多个合法表格实例时由用户选择，不静默绑定任意实例。
+5. 再次打开已发布页的编辑上下文时，从现有 active 包恢复目录；将图片 history.sourceComponentId 的表格UI ID解析成该表格 history.componentId 的Runtime来源ID，按Runtime来源ID去重。不得把复制后的显示实例注册成新Runtime来源。
+
+不新增复制事务框架、别名注册表、数据库目录或新确认流程。单图/整组复制属于上述规则，不增加所有剪贴板与跨工程组合的验收矩阵。
+
+#### 查询与图片的实际消费
+
+HTTP仍接收页面UI实例ID并先找到当前包中允许访问的组件，再将其已声明的 history.componentId 交给原 QueryHistoryPage/QueryHistoryAggregate 或固定图片接口。禁止把任意客户端ID直接当Runtime地址。
+
+前端选中会话、recordValue、历史按钮与图片联动使用本页表格UI ID。Runtime返回的 imageRefs 继续以Runtime图片来源ID为键，因此显示图片用图片的 history.componentId 查找引用。opaque imageRef读取、上下文、超时和一次到期恢复继续原实现。
+
+本节不新增RPC、不修改anchor参数、不重写Runtime来源声明，也不让UI复制改变Runtime的historyDefinitionRevision。必须一起贯通 source-map 中的创建、复制、发布、包校验、网关、HistoryView和目录再读取，不能只修 copyPage 或放宽相等校验。
+
 ## 6. 有限动作
 
 | type | 目标与行为 |
@@ -237,3 +302,6 @@ position 为本次返回 page×pageSize + 页内选中索引 + 1；时间倒序�
 发布保持原路径保护、上下文校验和未知能力处理；新字段参与正式 Schema 与投影。recordKey/私有来源变化参与 historyDefinitionRevision，字号颜色等纯显示变化不改变它。没有目标的动作、引用不存在字段等实际不可执行配置继续定位错误；纯视觉重复导航不升级为阻断错误。
 
 当前生成目录沿用 web_panel/contracts/panel-contract-v1/，通过既有生成器更新 schema/TS/wheel/manifest，Web 真正安装当前SDK。当前消费者和CI统一到这份生成物，不保留旧SDK的加载、摘要或固定字节验收；历史交接文档无需清理。源文件落点见 [source-map.md](source-map.md)，实施顺序见 [tasks.md](tasks.md)。
+
+
+V1.3 的 historySource 必须进入唯一 owning model 并由原生成器生成当前Schema/TypeScript/wheel/manifest；Web实际安装同版SDK。工程2.10/页面1.3沿用当前格式，不为计划文档另建版本分支。未改proto时不修改生成RPC文件。本文第5.6节是当前Web来源引用的唯一规则，不引入临时复制侧表。

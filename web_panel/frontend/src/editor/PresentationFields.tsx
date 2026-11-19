@@ -134,13 +134,18 @@ export function ComponentPresentationFields({component,update}: {
     </>;
 }
 
-export type HistorySource = NonNullable<Component['history']> & {
-    columns?:string[]; title?:string; orderBy?:string; descending?:boolean;
+export type HistoryCatalogEntry = NonNullable<Component['history']> & {
+    columns?:string[]; title?:string; aggregate?:'count'|'sum'|'avg'|'min'|'max';
 };
 
-const optionsOf = (components:SourceComponent[]) => components.map(component=>({
-    value:component.componentId,label:String(component.props.title || component.componentId),
-}));
+function optionsOf(components:SourceComponent[]) {
+    const titles=components.map(component=>String(component.props.title || component.componentId));
+    return components.map((component,index)=>({
+        value:component.componentId,
+        label:titles.filter(title=>title===titles[index]).length > 1
+            ? `${titles[index]} · ${component.componentId}` : titles[index],
+    }));
+}
 
 export function ComponentActionFields({component,doc,page,update}: {
     component:SourceComponent; doc:Presentation; page:SourcePage; update:(change:(component:SourceComponent)=>void)=>void;
@@ -183,16 +188,35 @@ export function ComponentActionFields({component,doc,page,update}: {
 
 export function HistoryFields({component,page,update,sources}: {
     component:SourceComponent; page:SourcePage; update:(change:(component:SourceComponent)=>void)=>void;
-    sources:Record<string,HistorySource>;
+    sources:Record<string,HistoryCatalogEntry>;
 }) {
     const {type,props}=component;
     const tables = walk(page.components).filter(item=>item.type === 'sqlite_table');
     const tableOptions = optionsOf(tables);
-    const columns = (id?:string) => id ? sources[id]?.columns ?? [] : [];
+    const entry = (item?:SourceComponent) => item?.props.historySource
+        ? sources[item.props.historySource.componentId] : undefined;
+    const tableSource = (id?:string) => entry(tables.find(table=>table.componentId===id));
+    const columns = (id?:string) => tableSource(id)?.columns ?? [];
     const set = (key:string,value:unknown) => update(item=>{if(value == null)delete item.props[key];else item.props[key]=value;});
+    if (type === 'image' && props.historySource) {
+        const reference=props.historySource;
+        const source=entry(component);
+        const choices=source?.kind === 'selected_row_image'
+            ? optionsOf(tables.filter(table=>table.props.historySource?.componentId===source.sourceComponentId)) : [];
+        return <section><h2>历史图片</h2>
+            {source ? <small>Runtime 来源 · {source.title || source.componentId}</small>
+                : <p role="status">当前 Runtime 目录缺少这个图片来源。</p>}
+            {source?.kind === 'selected_row_image' && (choices.length
+                ? <SelectField label="历史图片表格" value={reference.sourceComponentId ?? undefined}
+                    options={choices} empty="请选择同页表格"
+                    onChange={sourceComponentId=>set('historySource',{componentId:reference.componentId,
+                        sourceComponentId:sourceComponentId || undefined})}/>
+                : <p role="status">请先在当前页面添加与该图片匹配的历史表格。</p>)}
+        </section>;
+    }
     if (type === 'sqlite_table') {
         const view = props.historyView as {mode?:string;titleField?:string;subtitleField?:string;trailingField?:string} | undefined;
-        const source = sources[component.componentId];
+        const source = entry(component);
         return <section><h2>历史记录</h2>
             {source ? <small>Runtime 来源 · {source.title || source.componentId}</small> : <p role="status">当前启用页面包缺少这个 Runtime 历史来源。请启用与 Runtime 工程匹配的页面包。</p>}
             <NumericField label="历史每页条数" value={Number(props.pageSize || 20)} min={1} max={100} onChange={value=>set('pageSize',value)}/>
@@ -222,7 +246,10 @@ export function HistoryFields({component,page,update,sources}: {
                     : {componentId:record.componentId,kind:'meta',meta:'position'})}/>
             {record.kind === 'field'
                 ? <SelectField label="记录字段" value={record.field} options={columns(record.componentId)} onChange={field=>set('recordValue',{...record,field})}/>
-                : <SelectField label="查询信息" value={record.meta} options={[{value:'position',label:'位置'},{value:'count',label:'总量'}]}
+                : <SelectField label="查询信息" value={record.meta} options={[
+                    {value:'position',label:'位置'},
+                    ...(tableSource(record.componentId)?.aggregate === 'count' ? [{value:'count',label:'总量'}] : []),
+                ]}
                     onChange={meta=>set('recordValue',{...record,meta})}/>}
         </>}
     </section>;

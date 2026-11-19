@@ -389,6 +389,7 @@ def _official_presentation(manifest, doc, files):
     if any(source.resultScopeId not in published.resultScopes for source in published.dataSources.values()):
         raise PackageError("Unknown source result scope")
     seen = {}
+    history_tables = {}
     history_links = []
     if published.shell and published.shell.logoResourceId and published.shell.logoResourceId not in model.assets:
         raise PackageError("Unknown shell logo resource")
@@ -421,18 +422,25 @@ def _official_presentation(manifest, doc, files):
             if action.resultScopeId is not None and action.resultScopeId not in published.resultScopes:
                 raise PackageError("Unknown action result scope")
             if action.componentId is not None:
-                history_links.append((page_ids, action.componentId, None))
+                history_links.append((page_ids, action.componentId, None, False))
         if ref := value.props.recordValue:
-            history_links.append((page_ids, ref.componentId, ref.field if ref.kind == 'field' else None))
+            history_links.append((page_ids, ref.componentId, ref.field if ref.kind == 'field' else None,
+                                  ref.kind == 'meta' and ref.meta == 'count'))
         history = value.history
         if history is not None:
             expected = {"table": "sqlite_table", "aggregate": "sqlite_value", "fixed_image": "image", "selected_row_image": "image"}[history.kind]
-            if value.type != expected or history.componentId != value.componentId or value.bindings or value.props.imageResourceId:
+            if value.type != expected or value.bindings or value.props.imageResourceId:
                 raise PackageError("Invalid published history component")
             if history.kind == "selected_row_image":
-                history_links.append((page_ids, history.sourceComponentId, None))
+                history_links.append((page_ids, history.sourceComponentId, None, False))
             elif history.sourceComponentId is not None:
                 raise PackageError("Only selected-row history references a table")
+            if history.kind == "table":
+                history_tables[value.componentId] = history
+                if view := value.props.historyView:
+                    if any(field is not None and field not in history.columns for field in
+                           (view.titleField, view.subtitleField, view.trailingField)):
+                        raise PackageError("History list refers to an undeclared field")
         elif value.type in {"sqlite_table", "sqlite_value"}:
             raise PackageError("History component missing Runtime declaration")
         for child in value.children:
@@ -451,14 +459,14 @@ def _official_presentation(manifest, doc, files):
         for item in page.components:
             component(item, pid, page.layout)
         page_components[pid] = set(seen) - before
-    for pid, cid, field in history_links:
-        if cid not in page_components[pid] or seen.get(cid) != "sqlite_table":
+    for pid, cid, field, needs_count in history_links:
+        if cid not in page_components[pid] or cid not in history_tables:
             raise PackageError("History reference requires a table on the same page")
-        if field:
-            from emo_panel_protocol.models import walkComponents
-            table = next(item for item in walkComponents(published.pages[pid].components) if item.componentId == cid)
-            if field not in table.history.columns:
-                raise PackageError("Record value references an undeclared field")
+        table = history_tables[cid]
+        if field and field not in table.columns:
+            raise PackageError("Record value references an undeclared field")
+        if needs_count and table.aggregate != 'count':
+            raise PackageError("Record count requires a count history source")
     return _normalize_official(manifest, doc)
 
 

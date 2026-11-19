@@ -12,7 +12,10 @@ from emo_web_panel.config import Config
 from playwright.sync_api import expect, sync_playwright
 
 def make_package(directory,revision):
- panel=demo_panel();panel['pages'][0]['title']=f'Package {revision}'
+ panel=demo_panel()
+ # The asset-retention mock package starts from the live mock panel. Its history
+ # image is exercised in the mock panel above the upload workflow.
+ panel['pages'][0]['components']=[item for item in panel['pages'][0]['components'] if 'history' not in item]
  panel['pages'][0]['components'].append({'id':'package-static','type':'image','label':'Package asset','props':{'assetId':'pinned'}})
  manifest={'format':'emo-web-panel-1','projectId':'demo-project','packageRevision':revision,'panelContractVersion':'draft-unverified','rendererRequirements':[],'presentationFile':'presentation.json','assets':[{'id':'pinned','path':'assets/pinned.png','mimeType':'image/png','sha256':hashlib.sha256(IMAGE).hexdigest()}]}
  path=directory/f'{revision}.emoweb'
@@ -71,7 +74,7 @@ def target_isolation_check(page,browser,base,data,versions,password,errors):
  path=make_package(data,'b-v1')
  with page.expect_response(lambda r:r.url.endswith('/api/packages') and r.request.method=='POST') as upload:
   page.get_by_label('导入页面包',exact=True).set_input_files(str(path))
- assert upload.value.ok
+ assert upload.value.ok,upload.value.text()
  bid=hashlib.sha256(path.read_bytes()).hexdigest()
  installed=page.request.get(base+'/api/packages?runtimeId=line-b&projectId=demo-project')
  assert installed.ok
@@ -97,6 +100,7 @@ def target_isolation_check(page,browser,base,data,versions,password,errors):
   aobserver.get_by_label('查看运行',exact=True).select_option('demo-run')
   aobserver.get_by_text('99.50',exact=False).wait_for()
   login(bobserver,'bviewer','B-viewer-fixture-123!');bobserver.get_by_role('heading',name='Package b-v1',exact=True).wait_for()
+  bobserver.get_by_role('button',name='运行设置',exact=True).click()
   bobserver.get_by_label('查看运行',exact=True).select_option('demo-run')
   bobserver.get_by_text('99.50',exact=False).wait_for()
   live_b_image=bobserver.get_by_role('img',name='检测结果',exact=True)
@@ -241,6 +245,16 @@ def review_live_cursor_browser():
  print('PASS: RuntimeLogs browser lifecycle: logs/status both orderings, actual instance reset, live DOM1000, hidden reopen, history/export1202')
 
 
+def start_and_check_receipt(page):
+ from playwright.sync_api import expect
+ with page.expect_response(lambda reply: reply.url.endswith('/api/runs/start') and reply.request.method=='POST') as accepted:
+  page.get_by_role('button',name='启动工作流',exact=True).click()
+ assert accepted.value.ok,accepted.value.text()
+ expect(page.get_by_text('启动已受理',exact=True)).to_be_visible()
+ details=page.locator('.operator-diagnostics')
+ expect(details.get_by_text('操作已受理：',exact=False)).to_contain_text('操作已受理：')
+
+
 def main():
  review_live_cursor_browser()
  with tempfile.TemporaryDirectory(dir=ROOT/'test-tmp') as d:
@@ -257,8 +271,10 @@ def main():
     browser=p.chromium.launch(**({'executable_path':os.environ['CHROMIUM_PATH']} if os.environ.get('CHROMIUM_PATH') else {}),headless=True,args=['--no-sandbox','--disable-dev-shm-usage']);page=browser.new_page(viewport={'width':1280,'height':900});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     try:
      page.goto(f'http://127.0.0.1:{port}');page.get_by_label('用户名',exact=True).fill('tester');page.get_by_label('密码',exact=True).fill(password);page.get_by_role('button',name='登录',exact=True).click()
-     page.get_by_text('99.50',exact=False).wait_for();logging_check(page,f'http://127.0.0.1:{port}');page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看').wait_for();page.get_by_role('button',name='恢复实时',exact=True).click()
-     page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('操作已受理：',exact=False).wait_for()
+     page.get_by_text('99.50',exact=False).wait_for()
+     page.get_by_role('button',name='运行设置',exact=True).click()
+     logging_check(page,f'http://127.0.0.1:{port}');page.get_by_role('button',name='冻结查看',exact=True).click();page.get_by_text('已冻结查看').wait_for();page.get_by_role('button',name='恢复实时',exact=True).click()
+     start_and_check_receipt(page)
      page.get_by_text('账户与 Runtime 管理',exact=True).click();page.get_by_label('新用户名',exact=True).fill('readonly');page.get_by_label('初始密码',exact=True).fill('Readonly-fixture-123!');page.get_by_role('button',name='创建用户',exact=True).click();page.get_by_role('cell',name='readonly',exact=True).wait_for()
      history=page.locator('section.panel-card').filter(has=page.get_by_label('history-table 筛选', exact=True))
      expect(history.locator('tbody tr')).to_have_count(10)
@@ -274,7 +290,7 @@ def main():
      assert second_grant.value.ok
      page.get_by_label('删除时撤销目标授权',exact=True).check();page.once('dialog',lambda dialog:dialog.accept());page.get_by_role('row').filter(has=page.get_by_role('button',name='编辑 / 授权 Second edited',exact=True)).get_by_role('button',name='删除目标',exact=True).click();page.get_by_role('button',name='编辑 / 授权 Second edited',exact=True).wait_for(state='detached')
      page.get_by_label('查看运行',exact=True).select_option('');expect(history.locator('tbody tr')).to_have_count(10)
-     page.get_by_role('button',name='启动工作流',exact=True).click();page.get_by_text('操作已受理：',exact=False).wait_for()
+     start_and_check_receipt(page)
      page.get_by_label('查看运行',exact=True).select_option('demo-run');page.get_by_text('99.50',exact=False).wait_for()
      history.get_by_label('history-table 筛选列', exact=True).select_option('result')
      page.get_by_label('history-table 筛选', exact=True).fill('NG')
@@ -291,13 +307,14 @@ def main():
      observer=browser.new_page();notices=[]
      observer.on('websocket',lambda ws:ws.on('framereceived',lambda payload:notices.append(json.loads(payload))))
      observer.goto(f'http://127.0.0.1:{port}');observer.get_by_label('用户名',exact=True).fill('readonly');observer.get_by_label('密码',exact=True).fill('Readonly-fixture-123!');observer.get_by_role('button',name='登录',exact=True).click();observer.get_by_text('99.50',exact=False).wait_for()
+     observer.get_by_role('button',name='运行设置',exact=True).click()
      page.get_by_text('页面包管理',exact=True).click()
      versions=[];previous_title='Demo production'
      for revision in ['e2e-v1','e2e-v2']:
       package_path=make_package(data,revision)
       with page.expect_response(lambda response:response.url.endswith('/api/packages') and response.request.method=='POST') as uploaded:
        page.get_by_label('导入页面包',exact=True).set_input_files(str(package_path))
-      assert uploaded.value.ok
+      assert uploaded.value.ok,uploaded.value.text()
       installed=page.request.get(f'http://127.0.0.1:{port}/api/packages?runtimeId=configured&projectId=demo-project');assert installed.ok
       matching=[item for item in installed.json() if item['manifest']['packageRevision']==revision]
       assert len(matching)==1;pid=matching[0]['packageId'];assert pid==hashlib.sha256(package_path.read_bytes()).hexdigest();versions.append(pid)

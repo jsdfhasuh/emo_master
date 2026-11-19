@@ -4,11 +4,13 @@ from types import SimpleNamespace
 import math
 
 import pytest
+from PySide2.QtGui import QColor
 
-from emo_master.core.presentation.models import Props, Action
+from emo_master.core.presentation.models import Props, Action, Component, Page, Presentation
 from emo_master.core.presentation.results import ClosedSource
 from emo_master.ui.presentation.renderer import RuntimePages, surfaceBounds, SURFACE_LIMIT
 from emo_master.ui.presentation.table import CollectionView
+from emo_panel_protocol.theme import LIGHT_THEME
 from examples.runtime_pages_p3 import sampleProjectP3
 from tests.ui.presentation.test_renderer import resultView
 
@@ -39,6 +41,49 @@ def testLegalNullUsesEmptyTextButZeroFalseAndMissingDoNot(qtApp, tmp_path, kind)
     window.close()
 
 
+def testIndicatorFillsRowSurfaceAndClearsStaleColor(qtApp):
+    styles = ('row', 'badge', 'text')
+    components = [Component(componentId=style, type='indicator', props={
+        'title': 'Result', 'indicatorView': style, 'emptyText': 'Pending',
+        'surface': {'kind': 'card', 'radius': 8, 'padding': {'left': 14, 'right': 18}},
+        'indicatorStates': {'1': {'text': 'Pass', 'color': 'green', 'background': 'soft'}},
+    }) for style in styles]
+    viewer = RuntimePages(Presentation(defaultPageId='p', pageOrder=['p'], pages={
+        'p': Page(name='Indicators', components=components)}))
+    viewer.resize(640, 500)
+    viewer.show()
+    qtApp.processEvents()
+
+    def samples(card):
+        image = card.grab().toImage()
+        return [image.pixelColor(x, image.height() // 2) for x in (6, image.width() - 7)]
+
+    try:
+        row, badge, text = [viewer.widgets['p'][key][1] for key in styles]
+        cards = viewer.cards['p']
+        baseline = cards['row'].styleSheet()
+        margins = cards['row'].layout().contentsMargins()
+        normal = QColor(LIGHT_THEME['surface'])
+        green = LIGHT_THEME['soft']['green']
+        for view in (row, badge, text):
+            view.setValue(1)
+        qtApp.processEvents()
+        assert samples(cards['row']) == [QColor(green)] * 2
+        assert cards['row'].styleSheet() == baseline.replace(LIGHT_THEME['surface'], green)
+        assert cards['row'].layout().contentsMargins() == margins
+        assert samples(cards['badge']) == samples(cards['text']) == [normal] * 2
+        assert green in badge.value.styleSheet() and badge.value.width() < badge.width()
+        assert green not in text.value.styleSheet()
+        for value, error in ((True, ''), (None, ''), (1, 'SOURCE_MISSING')):
+            row.setValue(1)
+            row.setValue(value, error)
+            assert row.text() == 'Pending'
+            assert cards['row'].styleSheet() == baseline
+            assert samples(cards['row']) == [normal] * 2
+    finally:
+        viewer.close()
+
+
 def testEmptyCollectionAndNullRemainDifferentFromFault(qtApp):
     table = CollectionView(Props(emptyText='未发现目标', columns=[{'title': 'value', 'fieldPath': []}]))
     table.submit([], 'empty', '')
@@ -65,7 +110,6 @@ def testAppearanceAppliesAndSurfaceIsAccounted(qtApp, tmp_path):
     config = sampleProjectP3(tmp_path).presentation
     component = next(c for c in config.pages['overview'].components if c.type == 'number')
     from emo_panel_protocol.models import Surface, Typography
-    from emo_panel_protocol.theme import LIGHT_THEME
     component.props.typography = Typography(value={'size': 32, 'color': 'amber'})
     component.props.surface = Surface(kind='none', background='subtle')
     window = RuntimePages(config)

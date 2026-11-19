@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import * as theme from '../../../contracts/panel-contract-v1/theme.json';
-import type { Appearance, Component, ImageView as ImageSettings, Panel, Surface, Typography } from '../contracts/types';
+import type { Appearance, Component, ImageView as ImageSettings, IndicatorStyle, Panel, Surface, Typography } from '../contracts/types';
 
 const tones = theme.foreground as Record<string, string>;
 const softTones = theme.soft as Record<string, string>;
@@ -56,17 +56,24 @@ export function roleStyle(typography: Typography | undefined, role: keyof Typogr
     };
 }
 
-export function IndicatorValue({ props, value, emptyText = '—', typedKey }: {
-    props?: Component['props']; value: unknown; emptyText?: string; typedKey?: string;
-}) {
+export function indicatorState(props: Component['props'], value: unknown, typedKey?: string): IndicatorStyle | undefined {
     const key = typedKey ?? (typeof value === 'boolean' || typeof value === 'string' || (typeof value === 'number' && Number.isInteger(value)) ? JSON.stringify(value) : undefined);
-    const mapped = key !== undefined && props?.indicatorStates && Object.hasOwn(props.indicatorStates, key) ? props.indicatorStates[key] : undefined;
-    const tone = mapped?.color ?? 'neutral';
+    return key !== undefined && props?.indicatorStates && Object.hasOwn(props.indicatorStates, key) ? props.indicatorStates[key] : undefined;
+}
+
+export function indicatorBackground(state?: IndicatorStyle) {
+    return state?.background === 'soft' ? softTones[state.color] : undefined;
+}
+
+export function IndicatorValue({ props, state, emptyText = '—' }: {
+    props?: Component['props']; state?: IndicatorStyle; emptyText?: string;
+}) {
+    const badge = props?.indicatorView === 'badge';
     const marker = props?.showMarker ?? (props?.indicatorView === 'badge' || props?.indicatorView === 'row');
-    return <span className={`indicator panel-indicator ${props?.indicatorView === 'badge' || mapped?.background === 'soft' ? 'panel-indicator-badge' : ''}`}
-        style={{ ...roleStyle(props?.typography, 'value'), color: tones[tone], background: mapped?.background === 'soft' ? softTones[tone] : undefined }}>
-        {marker && mapped && <span className="panel-indicator-marker" aria-hidden="true"/>}
-        {mapped?.text ?? emptyText}
+    return <span className={`indicator panel-indicator ${badge ? 'panel-indicator-badge' : ''}`}
+        style={{ ...roleStyle(props?.typography, 'value'), color: tones[state?.color ?? 'neutral'], backgroundColor: badge ? indicatorBackground(state) : undefined }}>
+        {marker && state && <span className="panel-indicator-marker" aria-hidden="true"/>}
+        {state?.text ?? emptyText}
     </span>;
 }
 

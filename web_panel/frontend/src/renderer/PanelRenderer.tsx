@@ -3,7 +3,7 @@ import type { Component, Panel, Result, Layout } from '../contracts/types';
 import { preparedImageUrl } from '../state/prepare';
 import { parseLosslessJSON } from '../data/lossless';
 import type { CSSProperties } from 'react';
-import { ImageView, IndicatorValue, PageNavigation, pageAppearance, roleStyle, surfaceStyle } from './presentation';
+import { ImageView, IndicatorValue, PageNavigation, indicatorBackground, indicatorState, pageAppearance, roleStyle, surfaceStyle } from './presentation';
 import { HistoryImage, HistoryTable, historyAction, useHistoryReview } from './HistoryView';
 import type { RecordReference } from './HistoryView';
 const gridOf = (c: Component) => ({ ...(c.props || {}), ...(typeof c.props?.grid === 'object' ? c.props.grid : {}), ...c.grid }) as NonNullable<Component['grid']>;
@@ -153,6 +153,7 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
                 {typeof p.helperText === 'string' && p.helperText && <p className="panel-field-helper" style={roleStyle(p.typography,'helper')}>{p.helperText}</p>}
             </>;
         }
+        const surface = surfaceStyle(c.type,p.surface);
         let body;
         switch (c.type) {
             case 'image': {
@@ -185,9 +186,12 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
                 const numericKey = typeof value === 'bigint' ? String(value) : undefined;
                 const typedNumber = recordValue?.kind === 'field' || source?.valueJson !== undefined;
                 const indicatorValue = failed || (typedNumber && typeof value === 'number') ? undefined : value;
+                const state = indicatorState(p, indicatorValue, failed ? undefined : numericKey);
+                const row = p.indicatorView === 'row';
+                if (row) surface.backgroundColor = indicatorBackground(state) ?? surface.backgroundColor;
                 body = fieldBody(<span title={failed ? source?.reason || '本轮数据未就绪' : undefined}>
-                    <IndicatorValue props={p} value={indicatorValue} emptyText={emptyText} typedKey={failed ? undefined : numericKey}/>
-                </span>,p.indicatorView === 'row');
+                    <IndicatorValue props={p} state={state} emptyText={emptyText}/>
+                </span>,row || !stacked);
                 break;
             }
             case 'runtime_status': {
@@ -244,7 +248,7 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
         const collapsed = collapsedGroups[collapseKey] ?? collapse?.initiallyCollapsed ?? false;
         const stretches = c.type === 'container' && hasVerticalSpacer(c.children || [],c.grid);
         return <section className="panel-card" data-component-id={c.id} key={c.id} style={{
-            ...responsiveStyle(c,parentLayout,verticalSpacer,equalBasis), ...surfaceStyle(c.type,p.surface),
+            ...responsiveStyle(c,parentLayout,verticalSpacer,equalBasis), ...surface,
             ...(stretches ? {display:'flex',flexDirection:'column'} : {}),
             ...(collapsed ? {minHeight:0} : {}),
             ...(parentLayout?.type !== 'responsive' ? {

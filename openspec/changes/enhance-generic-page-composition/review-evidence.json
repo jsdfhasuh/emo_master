@@ -1,20 +1,97 @@
 {
+  "planRevision": "V1.3",
   "date": "2026-11-18",
-  "baseline": "31afa5ecab8b7ddb53f0d6bdedc620f0a243e340",
-  "evidence": "actual baseline readPage direct invocation, temporary database; not full Runtime/UI test",
-  "before_insert_page0_ids": [
-    5,
-    4
+  "timezone": "Asia/Shanghai",
+  "implementationBaseline": "ce8f84caf4d0fd779e579b23ff82fa4e80de978d",
+  "status": "plan_patch_only_implementation_pending",
+  "historicalPlanEvidence": {
+    "date": "2026-11-18",
+    "baseline": "31afa5ecab8b7ddb53f0d6bdedc620f0a243e340",
+    "evidence": "actual baseline readPage direct invocation, temporary database; not full Runtime/UI test",
+    "before_insert_page0_ids": [
+      5,
+      4
+    ],
+    "selected_id": 4,
+    "inserted_id": 6,
+    "after_insert_page1_ids": [
+      4,
+      3
+    ],
+    "naive_next_id": 4,
+    "expected_next_existing_id": 3,
+    "empty_filter_column_with_text": "请选择要筛选的显示字段",
+    "source_modified": false,
+    "notes": "仅作为修订依据；新按键查询尚未实现。此小库pageSize=2为本次基线反例，交付示例设计为pageSize=3。"
+  },
+  "confirmedFindings": [
+    {
+      "id": "F1",
+      "scope": "Qt dynamic text",
+      "probe": {
+        "timestampExpectedWidth": 159,
+        "timestampActualWidth": 13,
+        "multilineExpectedHeight": 72,
+        "multilineActualHeight": 18,
+        "alignmentBefore": 130,
+        "alignmentAfter": 1
+      },
+      "environment": "Python 3.10.22 / PySide2 5.15.2.1 / Linux offscreen",
+      "artifact": "docs/testing/2026-11-18-generic-page-composition/qt-history-1920x1080.png"
+    },
+    {
+      "id": "F2",
+      "scope": "Web editor integer binding",
+      "result": "判定指示不支持 integer 输出",
+      "booleanAccepted": true,
+      "path": "web_panel/frontend/src/editor/model.ts"
+    },
+    {
+      "id": "F3",
+      "scope": "Web copy of declared Runtime history page",
+      "originalBuild": "passed",
+      "copiedBuild": "ValueError: 当前 Runtime 历史来源已变化",
+      "method": "current copyPage + validate_source/build_package; not a Designer-copy finding"
+    }
   ],
-  "selected_id": 4,
-  "inserted_id": 6,
-  "after_insert_page1_ids": [
-    4,
-    3
-  ],
-  "naive_next_id": 4,
-  "expected_next_existing_id": 3,
-  "empty_filter_column_with_text": "请选择要筛选的显示字段",
-  "source_modified": false,
-  "notes": "仅作为修订依据；新按键查询尚未实现。此小库pageSize=2为本次基线反例，交付示例设计为pageSize=3。"
+  "reusableVerification": {
+    "commit": "ce8f84caf4d0fd779e579b23ff82fa4e80de978d",
+    "historyTests": {
+      "passed": 29,
+      "environment": "Linux offscreen; Python3.10.22/PySide2 5.15.2.1"
+    },
+    "annotateTests": {
+      "passed": 5
+    },
+    "actualArchive": {
+      "runs": 6,
+      "pageSize": 3,
+      "restoredAfterAppend": 3,
+      "nextAfterAppend": 2,
+      "latest": 6,
+      "filtered": [
+        5,
+        4
+      ],
+      "filteredCount": 2,
+      "productionAndArchivedPixelsEqual": true
+    },
+    "webBuild": "passed",
+    "protobufCheck": "passed"
+  },
+  "ciObservation": {
+    "sourceRun": {
+      "id": 44271356400,
+      "result": "failure",
+      "cause": "mypy appearance.py:13 in all four source jobs"
+    },
+    "webRun": {
+      "id": 44271357295,
+      "result": "failure",
+      "isolated": "asset_retirement_browser retained-scope wait timeout on Ubuntu/Windows",
+      "owningRuntime": "5 tests passed; browser /api/me 401"
+    },
+    "interpretation": "Browser failure root cause remains to be established; skipped steps are not passed."
+  },
+  "verificationBoundary": "Existing probes and CI observations are from the baseline audit, not execution of V1.3 fixes. No production devices or source changes in this plan-only request."
 }

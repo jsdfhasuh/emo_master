@@ -66,6 +66,23 @@ test('duplicated page remaps self-navigation while keeping cross-page targets an
  const page=newPage('检测页'),container=newComponent('container'),self=newComponent('navigation_button'),other=newComponent('navigation_button'),counter=newComponent('number');self.actions.clicked={type:'navigate',pageId:'original',context:'live'};other.actions.clicked={type:'navigate',pageId:'details',context:'live'};counter.bindings.value='source-stable';container.children=[self,other,counter];page.components=[container];page.resultScopeIds=['scope-stable'];const copied=copyPage(page,'original','copied');assert.equal(copied.components[0].children[0].actions.clicked.pageId,'copied');assert.equal(copied.components[0].children[1].actions.clicked.pageId,'details');assert.equal(copied.components[0].children[2].bindings.value,'source-stable');assert.deepEqual(copied.resultScopeIds,['scope-stable']);assert.notEqual(copied.components[0].componentId,container.componentId);assert.equal(self.actions.clicked.pageId,'original');
 });
 
+test('history copies keep Runtime identities and remap only copied local instances',()=>{
+ const page=newPage('历史记录'),group=newComponent('container'),table=newComponent('sqlite_table'),image=newComponent('image'),detail=newComponent('text'),next=newComponent('navigation_button');
+ table.props.historySource={componentId:'runtime-table'};
+ image.props.historySource={componentId:'runtime-photo',sourceComponentId:table.componentId};
+ detail.props.recordValue={componentId:table.componentId,kind:'field',field:'key'};
+ next.actions.clicked={type:'history_next',componentId:table.componentId};
+ group.children=[table,image,detail,next];page.components=[group];
+ const copied=copyPage(page,'original','copy'),[newTable,newImage,newDetail,newNext]=copied.components[0].children;
+ assert.notEqual(newTable.componentId,table.componentId);
+ assert.deepEqual(newTable.props.historySource,{componentId:'runtime-table'});
+ assert.deepEqual(newImage.props.historySource,{componentId:'runtime-photo',sourceComponentId:newTable.componentId});
+ assert.equal(newDetail.props.recordValue.componentId,newTable.componentId);
+ assert.equal(newNext.actions.clicked.componentId,newTable.componentId);
+ assert.deepEqual(copyComponent(image).props.historySource,image.props.historySource);
+ assert.equal(image.props.historySource.sourceComponentId,table.componentId);
+});
+
 test('entering a grid makes direct elastic spacers fixed without changing nested responsive spacers',()=>{
  const gap=newComponent('spacer'),container=newComponent('container'),nested=newComponent('spacer');gap.props.spacerMode='flex';nested.props.spacerMode='flex';container.children=[nested];const children=[gap,container];
  arrangeGrid(children,{type:'responsive',direction:'vertical'});assert.equal(gap.props.spacerMode,'flex');

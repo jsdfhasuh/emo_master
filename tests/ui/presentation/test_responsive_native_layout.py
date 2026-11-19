@@ -113,6 +113,59 @@ def testNestedContainerReflowsAndMeasuresWrappedTitles(qtApp):
         viewer.deleteLater()
 
 
+def testDynamicTextRemovesStaleSizeInParentLayoutAndRetainsRightAlignment(qtApp):
+    compact = {'width': 'content', 'minWidth': 0, 'minHeight': 0, 'preferredWidth': 0}
+    header = Component(componentId='header', type='container',
+        grid=ResponsiveLayout(direction='horizontal', justify='space-between'), children=[
+            Component(componentId='heading', type='text', props={'text': 'History'}, responsive=compact),
+            Component(componentId='time', type='text', responsive=compact),
+        ])
+    receipt = Component(componentId='receipt', type='text', props={'title': 'Request', 'valueLayout': 'horizontal'},
+                        responsive={'minHeight': 0})
+    log = Component(componentId='log', type='text', responsive={'minHeight': 0})
+    page = Page(name='History', components=[header, receipt, log])
+    viewer = RuntimePages(Presentation(defaultPageId='p', pageOrder=['p'], pages={'p': page}))
+    viewer.resize(660, 600)
+    viewer.show()
+    settle()
+    try:
+        ids = ('time', 'receipt', 'log')
+        views = [viewer.widgets['p'][key][1] for key in ids]
+        cards = [viewer.cards['p'][key] for key in ids]
+        for view in views:
+            view.setValue(None)
+        settle()
+        before = [card.size() for card in cards]
+
+        def rightEdge():
+            field = views[1].value
+            block = field.document().lastBlock()
+            layout = block.layout()
+            return layout.lineAt(layout.lineCount() - 1).naturalTextRect().right()
+
+        assert abs(rightEdge() - views[1].value.viewport().width()) <= 1
+        contents = ('2026-11-18 20:43:21 UTC', 'request-' + '9' * 160, 'Accepted\nCaptured\nSaved\nFinished')
+        for view, content in zip(views, contents):
+            view.setValue(content)
+        settle()
+        assert cards[0].width() > before[0].width()
+        assert cards[1].height() > before[1].height()
+        assert cards[2].height() > before[2].height()
+        for view, content in zip(views, contents):
+            text = view.value
+            assert text.toPlainText() == content
+            assert text.document().size().height() <= text.viewport().height()
+        assert abs(rightEdge() - views[1].value.viewport().width()) <= 1
+        for view in views:
+            view.setValue(None)
+        settle()
+        assert [card.size() for card in cards] == before
+        assert abs(rightEdge() - views[1].value.viewport().width()) <= 1
+    finally:
+        viewer.close()
+        viewer.deleteLater()
+
+
 def testResizePreservesTablePageSelectionAndDoesNotRepeatSqliteQuery(qtApp, monkeypatch):
     from emo_master.ui.presentation.sqlite_widgets import SqliteTableView
 

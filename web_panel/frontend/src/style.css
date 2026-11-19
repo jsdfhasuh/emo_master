@@ -22,7 +22,7 @@ body:has(.operator-shell){background:var(--panel-page,#f4f7fb)}
 .operator-shell a,.panel-page a{color:var(--panel-primary)}
 .operator-shell summary,.panel-page summary{cursor:pointer}
 .operator-header{
-    margin:0;padding:14px 24px;gap:12px;flex-wrap:wrap;
+    margin:0;padding:9px var(--operator-inset);gap:8px 12px;flex-wrap:wrap;
     background:var(--panel-surface);border-bottom:1px solid var(--panel-border)
 }
 .operator-heading,.operator-header-items{display:flex;gap:12px;align-items:center;flex-wrap:wrap;min-width:0}
@@ -31,12 +31,17 @@ body:has(.operator-shell){background:var(--panel-page,#f4f7fb)}
 .operator-logo{width:40px;height:40px;object-fit:contain}
 .operator-status{font-size:12px;border-radius:999px;background:var(--panel-blue-soft);padding:4px 8px}
 .operator-header-items button,.operator-shell .toolbar button+button,.panel-page button+button{margin-left:0}
-.operator-shell>.toolbar{border:0;border-radius:0;margin:0;padding:7px 24px;background:var(--panel-surface);
+.operator-shell>.toolbar{border:0;border-radius:0;margin:0;padding:6px var(--operator-inset);background:var(--panel-surface);
     border-bottom:1px solid var(--panel-border);font-size:13px;gap:8px 12px}
+.operator-actions select{max-width:21ch;text-overflow:ellipsis}
+.operator-target{color:var(--panel-muted);font-size:13px}
 .operator-actions p{margin:0}
+.operator-settings{padding:8px var(--operator-inset);background:var(--panel-surface);border-bottom:1px solid var(--panel-border)}
+.operator-settings>.toolbar{margin:0;padding:0;background:transparent;font-size:13px}
+.operator-settings .admin{border-color:var(--panel-border);border-radius:8px;margin-top:8px}
 .operator-inputs{position:relative}
 .operator-inputs[open]{flex-basis:100%;padding:8px 0}
-.operator-nav{padding:9px 24px 0}
+.operator-nav{padding:9px var(--operator-inset) 0}
 .operator-shell>.alert,.operator-shell>.notice,.operator-shell>.local-mode-warning{margin:8px 24px}
 .operator-shell .alert{color:var(--panel-red);background:var(--panel-red-soft)}
 .operator-shell .notice{color:var(--panel-text);background:var(--panel-blue-soft)}
@@ -103,6 +108,7 @@ body:has(.operator-shell){background:var(--panel-page,#f4f7fb)}
 .panel-collapse-content[hidden]{display:none}
 
 @media(max-width:700px){
-    .operator-header,.operator-shell>.toolbar,.operator-nav{padding-inline:12px}
+    .operator-header,.operator-shell>.toolbar,.operator-settings,.operator-nav{padding-inline:12px}
+    .operator-actions select{max-width:none}
     .operator-shell>.alert,.operator-shell>.notice,.operator-shell>details,.operator-shell>.admin{margin-inline:12px}
 }

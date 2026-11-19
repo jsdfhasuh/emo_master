@@ -11,17 +11,17 @@ import { LatestScopeQueue } from '../state/latest';
 import type { ScopeStatuses } from '../state/scopes';
 import { PanelRenderer, responsiveStyle } from '../renderer/PanelRenderer';
 import type { Me, Panel, Result, Run, RuntimeTarget, Layout } from '../contracts/types';
-import { arrangeGrid, bindChoice, clone, compatible, componentContext, componentNames, copyComponent, copyPage, copyToClipboard, exampleResults, findComponent, freshId, newComponent, newPage, newPresentation, pasteFromClipboard, removeComponent, renderModel, resizedGridPlacement, restoreSelection, setGridPlacement, sameSource, tidyBindings, walk } from './model';
+import { arrangeGrid, bindChoice, clone, compatible, componentContext, componentNames, copyComponent, copyPage, copyToClipboard, exampleResults, findComponent, freshId, keepLocalHistoryLinks, newComponent, newPage, newPresentation, pasteFromClipboard, removeComponent, renderModel, resizedGridPlacement, restoreSelection, setGridPlacement, sameSource, tidyBindings, walk } from './model';
 import type { Choice, ComponentClipboard, Presentation, SourceComponent } from './model';
 import type { Component, IndicatorStyle } from '../contracts/types';
-import { hasPageNavigation, ImageView, IndicatorValue, PageNavigation, pageAppearance, roleStyle, surfaceStyle, themeStyle } from '../renderer/presentation';
+import { hasPageNavigation, ImageView, IndicatorValue, PageNavigation, indicatorBackground, indicatorState, pageAppearance, roleStyle, surfaceStyle, themeStyle } from '../renderer/presentation';
 import { ComponentActionFields, ComponentPresentationFields, HistoryFields, PagePresentationFields } from './PresentationFields';
-import type { HistorySource } from './PresentationFields';
+import type { HistoryCatalogEntry } from './PresentationFields';
 import './editor.css';
 
 interface Version {versionId:string;installedPackage?:boolean;requestId?:string;state:string;createdAt?:string|number;message?:string;requestRevision?:string;requestConfigRevision?:string;packageId?:string;diagnostics?:Array<{code?:string;message:string;componentRefs?:Array<{pageId:string;pageName?:string;componentId:string;componentName?:string}>}>;}
 interface SourceDiagnostic {sourceId?:string;scopeId?:string;code:string;message:string;}
-interface EditorContext {historySources?:Record<string,HistorySource>;runtime:{runtimeInstanceId:string;projectId:string;documentRevision?:string;configurationRevision?:string;projectName?:string};catalog:{choices:Array<Choice & {title?:string;available?:boolean;hint?:string}>;capabilities?:Record<string,unknown>};requests?:{configRevision?:string;diagnostics?:SourceDiagnostic[]};draft?:{presentation:Presentation;draftRevision:string;resources?:Record<string,{resourceId:string;url?:string}>};versions:Version[];}
+interface EditorContext {historySources?:Record<string,HistoryCatalogEntry>;runtime:{runtimeInstanceId:string;projectId:string;documentRevision?:string;configurationRevision?:string;projectName?:string};catalog:{choices:Array<Choice & {title?:string;available?:boolean;hint?:string}>;capabilities?:Record<string,unknown>};requests?:{configRevision?:string;diagnostics?:SourceDiagnostic[]};draft?:{presentation:Presentation;draftRevision:string;resources?:Record<string,{resourceId:string;url?:string}>};versions:Version[];}
 type ServerDraft = NonNullable<EditorContext['draft']>;
 interface JobMetadata {jobId:string;runtimeInstanceId:string;projectId:string;projectRevision?:string;executionRevision?:string;capturePlanRevision?:string;}
 interface Preview {panel?:Panel;presentation?:Panel;viewId?:string;sourceProblems?:Record<string,string>;runIds?:string[];jobMetadata?:JobMetadata;}
@@ -90,22 +90,26 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
     function changePage(id:string){if(!docRef.current?.pages[id])return;pageRef.current=id;setPageId(id);setSelected('');}
     function updateComponent(change:(c:SourceComponent)=>void){edit(next=>{const c=componentContext(next.pages[pageId],selected)?.component;if(c)change(c);});}
     function updatePlacement(key:keyof SourceComponent['layout'],value:number){edit(next=>{const c=componentContext(next.pages[pageId],selected)?.component;if(c)setGridPlacement(next,pageId,selected,{...c.layout,[key]:value});});}
-    function deleteSelection(){if(selected){edit(next=>{removeComponent(next.pages[pageId].components,selected);});setSelected('');}}
+    function deleteSelection(){if(selected){edit(next=>{const page=next.pages[pageId];removeComponent(page.components,selected);keepLocalHistoryLinks(page);});setSelected('');}}
     function duplicateSelection(){if(!component)return;const copy=copyComponent(component);edit(next=>{const parent=walk(next.pages[pageId].components).find(c=>c.children.some(child=>child.componentId===selected));const children=parent?.children || next.pages[pageId].components;children.splice(children.findIndex(c=>c.componentId===selected)+1,0,copy);autoGrid(children,parent?.grid || next.pages[pageId].layout);});setSelected(copy.componentId);}
     function autoGrid(children:SourceComponent[],layout:Layout){arrangeGrid(children,layout);}
     function insert(type:string,parentId?:string){const c=newComponent(type);edit(next=>{const parent=parentId?findComponent(next,parentId):undefined;const children=parent?.type==='container'?parent.children:next.pages[pageId].components;children.push(c);autoGrid(children,parent?.grid || next.pages[pageId].layout);});setSelected(c.componentId);}
-    function addHistory(source:HistorySource) {
+    function addHistory(source:HistoryCatalogEntry) {
+        const item=newComponent(source.kind === 'table' ? 'sqlite_table' : 'image');
+        item.props.title=source.title || item.props.title;
+        item.props.historySource={componentId:source.componentId};
         edit(next=>{
-            const item=newComponent(source.kind === 'table' ? 'sqlite_table' : 'image');
-            item.componentId=source.componentId;
-            item.props.title=source.title || item.props.title;
-            if(source.kind === 'table')item.props.sqlite={location:'runtime',columns:source.columns ?? [],orderBy:source.orderBy ?? '',descending:source.descending ?? true};
+            if(source.kind === 'selected_row_image'){
+                const matches=walk(next.pages[pageId].components).filter(table=>table.type==='sqlite_table'
+                    && table.props.historySource?.componentId===source.sourceComponentId);
+                if(matches.length === 1)item.props.historySource!.sourceComponentId=matches[0].componentId;
+            }
             const target=component?.type==='container'?findComponent(next,selected):undefined;
             const children=target?.children || next.pages[pageId].components;
             children.push(item);
             autoGrid(children,target?.grid || next.pages[pageId].layout);
         });
-        setSelected(source.componentId);
+        setSelected(item.componentId);
     }
     function move(id:string,target?:string,inside=false){if(id===target)return;edit(next=>{const c=findComponent(next,id);if(!c)return;const dest=target?findComponent(next,target):undefined;if(dest && walk([c]).some(child=>child.componentId===dest.componentId))throw Error('不能将容器移入自身');const moved=removeComponent(next.pages[pageId].components,id);if(!moved)return;const parent=inside && dest?.type==='container'?dest:dest?walk(next.pages[pageId].components).find(c=>c.children.some(child=>child.componentId===target)):undefined;const children=parent?.children || next.pages[pageId].components;const index=inside?children.length:children.findIndex(c=>c.componentId===target);children.splice(index<0?children.length:index,0,moved);autoGrid(children,parent?.grid || next.pages[pageId].layout);});}
     function drop(e:DragEvent,id?:string,inside=false){e.preventDefault();e.stopPropagation();const choice=e.dataTransfer.getData('application/emo-source');if(choice && id){const item=choices[Number(choice)];if(item)edit(next=>bindChoice(next,pageId,id,item));return;}const type=e.dataTransfer.getData('application/emo-component');if(type){insert(type,inside?id:undefined);return;}const moving=e.dataTransfer.getData('application/emo-move');if(moving)move(moving,id,inside);}
@@ -157,7 +161,7 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
     useEffect(()=>{const unsubscribe=onSessionExpired(()=>{recovery.current?.();});return()=>{unsubscribe();recovery.current?.();};},[]);
     useEffect(()=>{const before=(e:BeforeUnloadEvent)=>{recovery.current?.();if(changed){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',before);return()=>window.removeEventListener('beforeunload',before);},[changed]);
     useEffect(()=>{const key=(e:KeyboardEvent)=>{if((e.target as HTMLElement).closest('input,textarea,select,[contenteditable]'))return;
-        if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='y'){e.preventDefault();redo();}else if(e.key==='Delete'){e.preventDefault();deleteSelection();}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='d'){e.preventDefault();duplicateSelection();}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='c' && component){try{if(docRef.current)clipboard.current=copyToClipboard(docRef.current,component);}catch(e){setError(explain(e));}}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='v' && clipboard.current){e.preventDefault();let pasted='';edit(next=>{const c=pasteFromClipboard(next,clipboard.current!);next.pages[pageId].components.push(c);autoGrid(next.pages[pageId].components,next.pages[pageId].layout);pasted=c.componentId;});if(pasted)setSelected(pasted);}};
+        if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='y'){e.preventDefault();redo();}else if(e.key==='Delete'){e.preventDefault();deleteSelection();}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='d'){e.preventDefault();duplicateSelection();}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='c' && component){try{if(docRef.current)clipboard.current=copyToClipboard(docRef.current,component);}catch(e){setError(explain(e));}}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='v' && clipboard.current){e.preventDefault();let pasted='';edit(next=>{const c=pasteFromClipboard(next,clipboard.current!);const page=next.pages[pageId];page.components.push(c);keepLocalHistoryLinks(page);autoGrid(page.components,page.layout);pasted=c.componentId;});if(pasted)setSelected(pasted);}};
         window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);});
     useEffect(()=>()=>{ownedResults.current.forEach(releaseResult);ownedResults.current.clear();},[]);
     useEffect(()=>{const visible=new Set(Object.values(results));for(const old of ownedResults.current)if(!visible.has(old)){releaseResult(old);ownedResults.current.delete(old);}},[results]);
@@ -242,6 +246,7 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
                 item.props[item.type==='navigation_button'?'iconResourceId':'imageResourceId']=response.resourceId;
                 item.bindings={};
                 delete item.props.imagePath;
+                delete item.props.historySource;
             }
         });
         setNotice('静态资源已上传到 Web 存储，保存草稿后可继续编辑。');
@@ -281,6 +286,7 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
         const placeholder=String(props.emptyText ?? '—');
         const heading=<h3 style={roleStyle(props.typography,'title')}>{title}</h3>;
         const valueStyle=roleStyle(props.typography,'value');
+        const surface=surfaceStyle(c.type,props.surface);
         let content:React.ReactNode;
         if(c.type==='container'){
             content=<>
@@ -301,16 +307,19 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
         }else if(c.type==='table' || c.type==='sqlite_table'){
             content=<p style={roleStyle(props.typography,'title')}>{title || componentNames[c.type]}</p>;
         }else if(c.type!=='spacer'){
-            const horizontal=props.valueLayout==='horizontal' || c.type==='indicator' && props.indicatorView==='row';
+            const row=c.type==='indicator' && props.indicatorView==='row';
+            const horizontal=props.valueLayout==='horizontal' || row;
+            const state=c.type==='indicator' ? indicatorState(props, undefined, Object.keys(props.indicatorStates ?? {})[0]) : undefined;
+            if(row) surface.backgroundColor=indicatorBackground(state) ?? surface.backgroundColor;
             const value=c.type==='indicator'
-                ? <IndicatorValue props={props} value={undefined} typedKey={Object.keys(props.indicatorStates ?? {})[0]} emptyText={placeholder}/>
+                ? <IndicatorValue props={props} state={state} emptyText={placeholder}/>
                 : <span className="panel-field-value" style={valueStyle}>{c.type==='text'?String(props.text || placeholder):placeholder}
                     {c.type==='number' && Boolean(props.unit) && <> <small style={roleStyle(props.typography,'helper')}>{String(props.unit)}</small></>}</span>;
             content=<><div className={`panel-field ${horizontal?'panel-field-horizontal':''}`}>{title && <span style={roleStyle(props.typography,'title')}>{title}</span>}{value}</div>
                 {typeof props.helperText === 'string' && props.helperText && <p className="panel-field-helper" style={roleStyle(props.typography,'helper')}>{props.helperText}</p>}</>;
         }
         return <section key={c.componentId} className={`editor-component ${selected===c.componentId?'selected':''} ${c.type==='spacer'?'is-spacer':''}`}
-            style={{...position,...surfaceStyle(c.type,props.surface)}} tabIndex={0}
+            style={{...position,...surface}} tabIndex={0}
             aria-label={`${componentNames[c.type] || c.type} ${title}`} title={tooltip || undefined} data-editor-component={c.componentId}
             draggable onDragStart={e=>{e.stopPropagation();e.dataTransfer.setData('application/emo-move',c.componentId);}}
             onClick={e=>{e.stopPropagation();setSelected(c.componentId);}} onFocus={e=>{if(e.target===e.currentTarget)setSelected(c.componentId);}}
@@ -332,8 +341,8 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
         {diagnostics.length>0 && <details open className="editor-diagnostics"><summary>当前工程有 {diagnostics.length} 项外部来源不可用</summary><p>以下诊断针对当前 Runtime 工程；页面源和原绑定已保留。已运行任务继续按自身工程与采集快照解释，未自动启动检测。</p>{diagnostics.map((diagnostic,index)=><p key={index}><strong>{diagnostic.sourceId || diagnostic.scopeId}</strong> · {diagnostic.code}：{diagnostic.message}{doc && Object.entries(doc.pages).flatMap(([,p])=>walk(p.components).filter(c=>Object.values(c.bindings).some(id=>diagnostic.sourceId===id || !diagnostic.sourceId && doc.dataSources[id]?.resultScopeId===diagnostic.scopeId)).map(c=><small key={c.componentId}>{p.name} / {String(c.props.title || componentNames[c.type])}</small>))}</p>)}</details>}
         {!doc || !page?<p className="editor-empty">{busy?'正在读取 Runtime 工程与草稿…':'当前无可编辑页面，请选择可用 Runtime。'}</p>:<><section className="editor-page-bar"><nav aria-label="编辑页面标签">{doc.pageOrder.map(id=><button key={id} aria-current={pageId===id?'page':undefined} onClick={()=>changePage(id)}>{doc.defaultPageId===id?'⌂ ':''}{doc.pages[id].name}</button>)}</nav><button title="新建页面" onClick={()=>pageAction('new')}>＋ 新页面</button><button onClick={()=>pageAction('duplicate')}>复制页</button><button onClick={()=>pageAction('left')}>←</button><button onClick={()=>pageAction('right')}>→</button><button onClick={()=>pageAction('home')}>设为首页</button><button disabled={doc.pageOrder.length<2} onClick={()=>pageAction('delete')}>删除页</button>{doc.pageOrder.length===1 && <button onClick={twoPages}>创建首期两页结构</button>}</section>
         <section className="editor-workspace" style={{gridTemplateColumns:`${leftOpen?'224px':'40px'} minmax(0,1fr) ${rightOpen?'286px':'40px'}`}}><aside className="editor-toolbox"><button className="editor-collapse" aria-label={leftOpen?'折叠工具区':'展开工具区'} onClick={()=>setLeftOpen(x=>!x)}>{leftOpen?'‹ 工具区':'›'}</button>{leftOpen && <><div className="editor-tool-tabs"><button aria-pressed={tab==='components'} onClick={()=>setTab('components')}>组件</button><button aria-pressed={tab==='sources'} onClick={()=>setTab('sources')}>流程结果</button></div><input aria-label="搜索组件或输出" placeholder={tab==='components'?'搜索组件':'搜索流程、节点或输出'} value={search} onChange={e=>setSearch(e.target.value)}/>{tab==='components'?<div className="editor-palette">{Object.entries(componentNames).filter(([type,name])=>type!=='sqlite_table' && `${type} ${name}`.includes(search)).map(([type,name])=><button key={type} draggable onDragStart={e=>e.dataTransfer.setData('application/emo-component',type)} onClick={()=>insert(type,component?.type==='container'?selected:undefined)}><span>{type==='image'?'▧':type==='container'?'▣':type==='number'?'#':type==='table'?'▤':'＋'}</span>{name}</button>)}<button onClick={()=>insert('image')}>＋ 静态图片</button>
-            {Object.values(historySources).filter(source=>(source.kind==='table'||source.kind==='fixed_image'||source.kind==='selected_row_image' && walk(page.components).some(item=>item.componentId===source.sourceComponentId))
-                && !findComponent(doc,source.componentId) && (!search || `${source.title || source.componentId} 历史`.includes(search)))
+            {Object.values(historySources).filter(source=>source.kind!=='aggregate'
+                && (!search || `${source.title || source.componentId} 历史`.includes(search)))
                 .map(source=><button key={source.componentId} onClick={()=>addHistory(source)}>＋ {source.title || source.componentId}</button>)}</div>:<div className="editor-source-list">{choices.filter(c=>c.label.includes(search)).map(c=>{const index=choices.indexOf(c),reason=component?compatible(component.type,c.source):'';return <button key={c.sourceId || index} className={!c.enabled || reason?'incompatible':''} title={c.reason || reason || c.label} draggable={c.enabled} onDragStart={e=>e.dataTransfer.setData('application/emo-source',String(index))} onClick={()=>edit(next=>bindChoice(next,pageId,selected,c))}><strong>{c.label}</strong><small>{c.source.expectedType}{reason?` · ${reason}`:''}</small>{c.reason && <small>{c.reason}</small>}</button>;})}{!choices.length && <p>当前工程没有可绑定输出，请先在 Designer 配置流程并写入 Runtime。</p>}<p className="editor-help">选择组件后点击输出，或将输出拖到组件上。节点改名不改变来源身份。</p></div>}</>}</aside>
         <div className="editor-stage"><div className="editor-canvas-toolbar"><span>{page.name}</span><button disabled={!history.length} onClick={undo}>撤销</button><button disabled={!future.length} onClick={redo}>重做</button><button disabled={!component} onClick={duplicateSelection}>复制组件</button><button disabled={!component} onClick={deleteSelection}>删除组件</button><small>拖动排序 · 右下角调整尺寸</small></div><div className="editor-canvas-scroll" ref={canvas}><div className="editor-terminal" style={{width:viewport==='follow'?'100%':Number(viewport.split('x')[0]),minHeight:viewport==='follow'?560:Number(viewport.split('x')[1]),transform:`scale(${zoom})`,transformOrigin:'top left'}}><div className="editor-canvas panel-page" style={{...pageAppearance(doc.appearance ?? undefined),...layoutStyle(page.layout)}} onClick={()=>setSelected('')} onDragOver={e=>e.preventDefault()} onDrop={e=>drop(e)}>{page.components.length?page.components.map(c=>card(c,page.layout)):<div className="editor-canvas-empty"><span>＋</span><h2>从一个组件开始</h2><p>点击左侧组件，或将组件拖到画布。</p><button onClick={twoPages}>创建检测页与详情页</button></div>}</div></div></div><div className="editor-canvas-footer"><label>终端预览<select aria-label="终端尺寸" value={viewport} onChange={e=>{setViewport(e.target.value);setZoom(1);}}><option value="follow">跟随窗口</option><option value="1920x1080">1920 × 1080</option><option value="1366x768">1366 × 768</option><option value="1024x768">1024 × 768</option><option value="390x844">390 × 844</option></select></label><button onClick={()=>{const width=viewport==='follow'?canvas.current?.clientWidth || 1:Number(viewport.split('x')[0]);setZoom(Math.min(1,Math.max(0.15,((canvas.current?.clientWidth || width)-32)/width)));}}>适应画布</button><button onClick={()=>setZoom(x=>Math.min(1.5,x+0.1))}>＋</button><button onClick={()=>setZoom(x=>Math.max(0.2,x-0.1))}>−</button><small>{Math.round(zoom*100)}% · {page.components.length} 个顶层组件</small></div></div>
         <aside className="editor-properties"><button className="editor-collapse" aria-label={rightOpen?'折叠属性区':'展开属性区'} onClick={()=>setRightOpen(x=>!x)}>{rightOpen?'属性 ›':'‹'}</button>{rightOpen && <><section><h2>页面</h2><label>页面名称<input aria-label="页面名称" value={page.name} onChange={e=>edit(next=>{next.pages[pageId].name=e.target.value;})}/></label><LayoutFields value={page.layout} onChange={value=>edit(next=>{next.pages[pageId].layout=value;autoGrid(next.pages[pageId].components,value);})}/><PagePresentationFields doc={doc} edit={edit} uploadLogo={file=>void perform(()=>upload(file,true))} busy={busy}/><small>Presentation 1.3 · Web 终端</small></section>{component?<><section><h2>{componentNames[component.type]}属性</h2><small className="editor-id">{component.componentId}</small><label>标题<input aria-label="组件标题" value={String(component.props.title || '')} onChange={e=>updateComponent(c=>{c.props.title=e.target.value;})}/></label>{['text','navigation_button'].includes(component.type) && <label>文字<textarea aria-label="组件文字" value={String(component.props.text || '')} onChange={e=>updateComponent(c=>{c.props.text=e.target.value;})}/></label>}<label>空值提示<input value={String(component.props.emptyText ?? '—')} onChange={e=>updateComponent(c=>{c.props.emptyText=e.target.value;})}/></label>{component.type==='number' && <><label>单位<input value={String(component.props.unit || '')} onChange={e=>updateComponent(c=>{c.props.unit=e.target.value;})}/></label><NumberField label="小数位" value={Number(component.props.decimals ?? 2)} min={0} max={12} onChange={value=>updateComponent(c=>{c.props.decimals=value;})}/></>}{component.type==='navigation_button' && <ComponentActionFields component={component} doc={doc} page={page} update={updateComponent}/>} {['indicator','sqlite_table'].includes(component.type) && <IndicatorFields states={component.props.indicatorStates} onChange={states=>updateComponent(c=>{c.props.indicatorStates=states;})}/>}{component.type==='table' && <><TableFields columns={component.props.columns} onChange={columns=>updateComponent(c=>{c.props.columns=columns;})}/><NumberField label="每页行数" value={Number(component.props.pageSize || 20)} min={1} max={100} onChange={value=>updateComponent(c=>{c.props.pageSize=value;})}/></>}</section>

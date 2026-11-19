@@ -93,6 +93,57 @@ class EditorTests(unittest.TestCase):
         self.assertEqual(reopened["presentation"]["schemaVersion"], "1.3")
         self.assertTrue(all(page["targets"] == ["web"] for page in reopened["presentation"]["pages"].values()))
 
+    def test_history_instances_publish_and_rebuild_the_original_runtime_catalog(self):
+        source = self.pages(ports=())
+        first = source["defaultPageId"]
+        for page, prefix in ((first, "original"), ("details", "copy")):
+            source["pages"][page]["resultScopeIds"] = []
+            table = f"{prefix}-table"
+            source["pages"][page]["components"] = [
+                {"type": "sqlite_table", "componentId": table, "props": {
+                    "historySource": {"componentId": "runtime-records"},
+                    "historyView": {"mode": "list", "titleField": "stamp"}}},
+                {"type": "image", "componentId": f"{prefix}-image", "props": {
+                    "historySource": {"componentId": "runtime-main", "sourceComponentId": table}}},
+                {"type": "text", "componentId": f"{prefix}-key", "props": {
+                    "recordValue": {"componentId": table, "kind": "field", "field": "key"}}},
+                {"type": "navigation_button", "componentId": f"{prefix}-next", "actions": {
+                    "clicked": {"type": "history_next", "componentId": table}}},
+            ]
+        catalog = {
+            "runtime-records": {"kind": "table", "componentId": "runtime-records", "columns": ["stamp", "key"]},
+            "runtime-main": {"kind": "selected_row_image", "componentId": "runtime-main",
+                             "sourceComponentId": "runtime-records"},
+        }
+        saved = self.save(source)
+        model = validate_source(saved["presentation"], {})
+        history_revision = "a" * 64
+        raw, manifest, published, _ = build_package(self.project, model, {}, None,
+            history_sources=catalog, history_revision=history_revision)
+        self.assertEqual(manifest["historyDefinitionRevision"], history_revision)
+        self.assertNotIn("historySource", published["pages"]["details"]["components"][1]["props"])
+        image = published["pages"]["details"]["components"][1]
+        self.assertEqual(image["componentId"], "copy-image")
+        self.assertEqual(image["history"]["componentId"], "runtime-main")
+        self.assertEqual(image["history"]["sourceComponentId"], "copy-table")
+        editor = self.app.state.editor
+        package = editor.packages.install(raw)
+        editor.packages.activate(package["packageId"], "configured", self.project)
+        reopened = editor.draft("configured", self.project)
+        self.assertEqual(reopened, saved)
+        rebuilt = editor.history_sources("configured", self.project, history_revision)
+        self.assertEqual(set(rebuilt), {"runtime-records", "runtime-main"})
+        self.assertEqual(rebuilt["runtime-main"]["sourceComponentId"], "runtime-records")
+        second, *_ = build_package(self.project, validate_source(reopened["presentation"], {}), {}, None,
+            history_sources=rebuilt, history_revision=history_revision)
+        self.assertEqual(second, raw)
+        wrong = deepcopy(source)
+        wrong["pages"]["details"]["components"][0]["props"]["historySource"]["componentId"] = "other-records"
+        wrong_catalog = {**catalog, "other-records": {**catalog["runtime-records"], "componentId": "other-records"}}
+        with self.assertRaisesRegex(ValueError, "匹配的同页表格"):
+            build_package(self.project, validate_source(wrong, {}), {}, None,
+                history_sources=wrong_catalog, history_revision=history_revision)
+
     def test_highly_compressible_bmp_previews_publishes_and_reimports_without_relaxing_zip_limits(self):
         buffer = BytesIO()
         Image.new("RGB", (1024, 1024), "white").save(buffer, "BMP")

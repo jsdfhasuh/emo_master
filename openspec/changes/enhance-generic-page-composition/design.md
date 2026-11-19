@@ -1,12 +1,28 @@
 # 设计
 
-**V1.2：先把正常功能做完整，再用最少的直接验证证明它。** 配置细节以 [contracts.md](contracts.md) 为准，审核变化见 [review-report.md](review-report.md)。
+**V1.3：复用已交付基础，只关闭已确认的正常路径缺口。** 配置细节以 [contracts.md](contracts.md) 为准，审核变化见 [review-report.md](review-report.md)。
 
 ## Context
 
-目标是让用户在 emo_master 内编辑并使用生产监控、历史回看两个独立 Page。固定基线为 31afa5ecab8b7ddb53f0d6bdedc620f0a243e340；Python 3.10 / PySide2 / Qt Widgets 和现有 Web 技术栈继续使用。基础能力与源码依据见 [source-map.md](source-map.md)。
+目标是让用户在 emo_master 内编辑并使用生产监控、历史回看两个独立 Page。当前实现审核基线为 ce8f84caf4d0fd779e579b23ff82fa4e80de978d；最初31afa5ec只作历史设计依据；Python 3.10 / PySide2 / Qt Widgets 和现有 Web 技术栈继续使用。基础能力与源码依据见 [source-map.md](source-map.md)。
 
 此次复查发现：V1.0 的正常使用要求仍有缺口，而部分纯视觉选择被写成配置阻断，保存/发布/截图验收在不同阶段重复出现。V1.1补齐可编辑布局和生产到历史闭环；V1.2依据用户“没有现成工程”的明确说明，再删除旧工程、旧包、旧SDK和旧渲染兼容工作，直接统一当前正式实现。
+
+## V1.3 审查后的当前状态
+
+D1–D10继续描述本change的整体架构，其中大部分已由ce8f84ca实现。当前实施只以tasks中的R1–R6为准：动态文字、整数绑定、Web历史引用复制、紧凑Web页头、整行状态浅底、CI/交付收尾。原历史29项、Annotate5项及真实5+1归档证据按影响复用，不重新执行全部旧任务。
+
+### 本轮具体设计
+
+- 动态文字：在WrappedText内容变化处失效自身测量并通知现有父布局；setPlainText后保持配置对齐，避免内部布局沿用占位符尺寸。尺寸沿用当前字体/可用宽度，不引入另一套布局求解。
+- 指示器：Web compatible/bindChoice与正式模型接受相同integer/bool/string；row把soft应用到整行，badge只包围值，text文本表现。空值清旧色，沿用当前token和映射。
+- Web来源身份：采用contracts 5.6的单一historySource创作引用，发布仍用已有history。实例ID只用于页面选择；正式来源ID用于RPC和imageRefs。目录元数据不重复存入草稿，也不建立alias注册层。原生Designer继续拥有并复制实际来源声明。
+- 纯模型验证引用形状和页内关系；Web已有发布上下文验证目录成员、列和图片父表，原生工程仍验证实际SQLite声明。默认空SqliteSource不算实际来源。
+- 必须打通原Editor创建/复制、字段面板、build_package、包校验、网关的查询及固定图、HistoryView，以及active包再次构建historySources的路径。第一次发布成功后还要能再编辑发布，不能把显示实例误当新Runtime来源。
+- 页头：主栏保留当前目标标识、状态和原启停；次级Runtime/页面包配置、工作流输入进入运行设置，原显式选择/权限/确认不变。诊断保持可展开，不加shell.mode或页面控制Action。
+- CI：局部补正主题类型关系；根据实际请求和可访问入口确认浏览器失败原因。同步页面变化时保留原业务断言，不用跳过、弱化鉴权或延长所有超时替代修复。
+
+本次正式historySource改变SDK owning model，按仓库规则推进下一未占用当前版本，原生成目录及全部消费者一起更新。文档版本V1.3不直接要求工程/页面/协议版本升级；没有RPC变化就保持proto及生成RPC不动。
 
 ## Goals / Non-Goals
 
@@ -116,13 +132,12 @@ C：保存这一条，历史查到同一条，选择/翻条/切页恢复可用�
 
 ## 实施顺序
 
-1. 正式模型/版本与编辑入口；共享显示解析和真实测量。
-2. Qt/Web 控件表达、导航与轻量外壳。
-3. 历史标量/稳定键、最小 anchor 契约、列表与会话联动。
-4. Annotate、同一模拟归档工程、当前 SDK 与正式发布。
-5. 集中完成三条旅程，修复实际缺口，更新使用文档和真实完成状态。
+1. 核对后续HEAD和当前证据，读取contracts 5.6，实施R1/R2两个局部缺陷。
+2. 完成R3的来源身份全链，正式model稳定后统一生成当前SDK。
+3. 收尾R4/R5页头和状态行，用同一示例核对实际效果。
+4. 按acceptance只补受影响路径，完成R6当前CI与交付记录。
 
-任务只维护 [tasks.md](tasks.md)。A/B/C 为最终用户旅程，不要求三个独立发行包。暂未完成的工作不因某张截图可用就标为完成。
+唯一任务清单为tasks.md。规格Scenario解释行为，不对应必须新增测试的数量；一次最终工程的编辑/发布/查看可同时覆盖多项要求。
 
 ## 范围控制
 
@@ -133,8 +148,8 @@ C：保存这一条，历史查到同一条，选择/翻条/切页恢复可用�
 
 ## 交付约束与实施说明
 
-- 审查基线为 `31afa5ecab8b7ddb53f0d6bdedc620f0a243e340`；执行时对照实际后续提交复用已完成内容。
-- 当前 SDK 基线目标为 1.6.0；执行时如已占用，使用实际下一正式版本并统一消费者，不建立并行兼容目录。
+- 本轮实现审核基线为ce8f84caf4d0fd779e579b23ff82fa4e80de978d；执行时对照后续提交复用已完成修复。
+- 当前 SDK 已交付基线为1.6.0；historySource进入owning model后使用下一未占用正式版本并同步真实消费者，不覆盖同名旧wheel或建立并行兼容目录。
 - 直接沿用 `web_panel/contracts/panel-contract-v1/` 作为当前生成目录；Schema、TypeScript、manifest 和 wheel 由原正式生成器更新，实际 Web 依赖、健康信息、打包脚本及 CI 安装入口同步。
 - 历史交接目录可以留档，但不构成本轮字节冻结、固定摘要或旧包兼容门槛；不追加清理历史档案任务。
 - 编辑、布局、运行、历史和发布统一归入 acceptance.md 的三个用户旅程；同一工件的一次完整操作可覆盖多项要求，不为每个 Scenario 另建测试或重复录制证据。

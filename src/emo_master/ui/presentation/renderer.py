@@ -687,7 +687,7 @@ class RuntimePages(QWidget):
                     widget.historyClient = self.historyClient
                     widget.componentId = component.componentId
                 elif component.type in {'text', 'number', 'indicator', 'runtime_status'}:
-                    widget = ValueView(component)
+                    widget = ValueView(component, card)
                 else:
                     widget = QLabel(component.props.text if component.type == "text" and not component.bindings
                                     else '已绑定 · 等待明确任务结果' if component.bindings else "未绑定")

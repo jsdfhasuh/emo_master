@@ -109,7 +109,7 @@ Linux 无桌面环境可设置 `QT_QPA_PLATFORM=offscreen`；Windows 原生走�
 
 ## 5. CI 集成收尾
 
-**3.5 已完成。** 正式代码 `912af529` 的 Source CI 和 Web CI 均已通过。[Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44509448074/attempts/2) · [Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44509447970)
+**3.5 已完成。** 最后两处测试时序修正落在 `429ac2e9` 和 `568a944a`。最终测试提交 `568a944a54806db615d77c0071b9c62aed268569` 的完整 Source CI 首次运行全部通过。Web CI 对应正式代码 `912af529`，三个任务全部通过。已比对两者的 Web、产品源码、协议、依赖和 Web 工作流，内容一致。[最终 Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44533294908) · [Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44509447970)
 
 ChatGPT Web 提供计划、初版补丁和对 `e3b6947e` 的审查意见。Codex 核对 Actions 日志，修复以下问题并执行补验。任务 3.4 的工程、发布包和四张 Edge 截图沿用第 4 节的记录。
 
@@ -139,5 +139,7 @@ ChatGPT Web 提供计划、初版补丁和对 `e3b6947e` 的审查意见。Codex
 **运行中配额测试。** 完成记录 `9c96c68e` 再次触发完整 Source CI。Windows Runtime 有 1 项失败，另 3,390 项通过、2 项原有跳过。第一次启动已经产生显示结果，第二次启动也已按配额拒绝，但仓库中的原 Job 当时仍为 `STARTING`。该测试要求原 Job 处于 `RUNNING`。`429ac2e9` 在第二次启动前等待同一 Job 进入这个状态，保留原来的配额、回收等待、Job 数量和最终状态断言。本机 Windows 在提交前运行完整的 `test_normal_restart.py`，3 项通过。[原始失败日志](https://github.com/jsdfhasuh/emo_master/actions/runs/44520264621/job/135546880381) · [修复提交](https://github.com/jsdfhasuh/emo_master/commit/429ac2e91622c246f0a355d5e8ef110069bdc410)
 
 `429ac2e9` 的配额测试在 Linux 和 Windows 均通过。Windows Runtime 分片另有 1 项失败（3,390 项通过、2 项原有跳过）。模拟相机请求序号已到 2，Job 仓库仍显示 `STARTING`，用例在发出停止请求前失败。设备 IPC 和监督器分别上报进度。模拟设备测试现用原有 30 秒时限等待请求序号和同一 Job 的 `RUNNING` 状态，再执行停止、终态、宿主退出及资源释放断言。本机 Windows 完整运行 `test_cancellable_device_wait.py`，4 项通过。[Windows Runtime 日志](https://github.com/jsdfhasuh/emo_master/actions/runs/44526752371/job/135569301229)
+
+**最终源码复验。** 已逐份核对 `568a944a` 的四份 pytest 报告和分片清单。Linux 共 9,619 项通过、40 项原有跳过，Windows 共 9,653 项通过、6 项原有跳过。每个平台的两份分片合计覆盖所收集的 9,659 项，两个改过的用例均在两个平台实际通过。四个源码分片及两平台汇总均首次通过。[最终 Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44533294908/attempts/1)
 
 未执行 Windows 原生 Qt 人工走查、冻结 EXE、现场相机／PLC 或工位精度验收。

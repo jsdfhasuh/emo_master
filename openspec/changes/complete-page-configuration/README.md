@@ -8,6 +8,8 @@ ChatGPT Web 提供计划及基于 `a9554a0e` 的初版补丁。Codex 在 `70062e
 
 ChatGPT Web 审查了完成记录 `e3b6947e`，Codex 执行本轮 CI 修复和验证。正式代码 `912af529` 已通过 Linux 和 Windows 完整源码分片、官方预览、独立 wheel 安装及同一软件 Runtime 两次启停。Windows Runtime 首次失败和原样重跑结果见验收记录第 5 节。[Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44509448074/attempts/2) · [Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44509447970)
 
+记录提交 `9c96c68e` 的 Windows 分片观察到首张显示图已到达时，Job 状态仍为 `STARTING`。运行中配额测试现等待原 Job 进入 `RUNNING` 后再请求第二次启动，继续检查拒绝原因、回收等待、Job 数量及原 Job 状态。[首次出现的 CI 日志](https://github.com/jsdfhasuh/emo_master/actions/runs/44520264621/job/135546880381) · [后续核验记录](../../../docs/testing/2026-11-19-page-configuration/README.md#5-ci-集成收尾)
+
 - [变更理由与范围](proposal.md)
 - [字段和实现设计](design.md)
 - [任务状态](tasks.md)

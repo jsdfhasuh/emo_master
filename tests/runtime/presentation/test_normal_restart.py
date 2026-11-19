@@ -37,6 +37,8 @@ def testRunningCaptureQuotaRejectsWithoutWaiting(captureRuntime, monkeypatch):
     first = stub.StartJob(startRequest(owner), timeout=10)
     assert first.ok, first.message
     waitFor(lambda: owner.presentation.store.snapshot(first.job_id)['results'])
+    # The display result can arrive before the supervisor publishes RUNNING.
+    waitFor(lambda: owner.runtime.jobRepository.get(first.job_id).status == 'RUNNING')
 
     def unexpectedWait(*args, **kwargs):
         pytest.fail('running Jobs must not wait for display retirement')

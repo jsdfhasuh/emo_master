@@ -116,8 +116,9 @@ def testSpawnedJobStopCancelsUnlimitedHardwareWaitAndRetiresHost(tmp_path):
         driver.apiFactory = TimeoutImv
         started = service.StartJob(pb.StartJobRequest(workflow_id="main"), None)
         assert started.ok, started.message
-        waitFor(lambda: driver.sequence == 2, timeout=30)
-        assert service.jobRepository.get(started.job_id).status == "RUNNING"
+        # Device IPC and the supervisor publish their progress independently.
+        waitFor(lambda: driver.sequence == 2 and
+                service.jobRepository.get(started.job_id).status == "RUNNING", timeout=30)
         assert service.StopJob(pb.StopJobRequest(job_id=started.job_id, mode="graceful"), None).ok
         waitFor(lambda: not service.jobSupervisor.ownsJobResources(started.job_id), timeout=30)
         record = service.jobRepository.get(started.job_id)

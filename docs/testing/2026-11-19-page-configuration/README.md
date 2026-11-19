@@ -136,4 +136,8 @@ ChatGPT Web 提供计划、初版补丁和对 `e3b6947e` 的审查意见。Codex
 
 **Windows Runtime 首次运行。** 两条多图用例未取得预期的 `COMPLETE`。其中双 Job 用例的工作流已结束，后图编码已完成，但组装器到达 500 ms 封口期限时仍在等待回调，记录为 `EXPORT_TIMEOUT`。同一份诊断记录了原图接收入库耗时 406 ms。另一条用例只记录了结果完整性断言失败。两条用例所属源码与测试从上次通过的 `f5e0a120` 到本次提交无差异。本机 Windows 原样运行 `test_multi_capture.py` 得到 23 项通过。CI 保留原预算、资源约束和断言，仅在同一代码 SHA 上重跑失败分片及其汇总。[首次 Windows Runtime 日志](https://github.com/jsdfhasuh/emo_master/actions/runs/44509448074/job/135509799270)
 
+**运行中配额测试。** 完成记录 `9c96c68e` 再次触发完整 Source CI。Windows Runtime 有 1 项失败，另 3,390 项通过、2 项原有跳过。第一次启动已经产生显示结果，第二次启动也已按配额拒绝，但仓库中的原 Job 当时仍为 `STARTING`。该测试要求原 Job 处于 `RUNNING`。`429ac2e9` 在第二次启动前等待同一 Job 进入这个状态，保留原来的配额、回收等待、Job 数量和最终状态断言。本机 Windows 在提交前运行完整的 `test_normal_restart.py`，3 项通过。[原始失败日志](https://github.com/jsdfhasuh/emo_master/actions/runs/44520264621/job/135546880381) · [修复提交](https://github.com/jsdfhasuh/emo_master/commit/429ac2e91622c246f0a355d5e8ef110069bdc410)
+
+`429ac2e9` 的配额测试在 Linux 和 Windows 均通过。Windows Runtime 分片另有 1 项失败（3,390 项通过、2 项原有跳过）。模拟相机请求序号已到 2，Job 仓库仍显示 `STARTING`，用例在发出停止请求前失败。设备 IPC 和监督器分别上报进度。模拟设备测试现用原有 30 秒时限等待请求序号和同一 Job 的 `RUNNING` 状态，再执行停止、终态、宿主退出及资源释放断言。本机 Windows 完整运行 `test_cancellable_device_wait.py`，4 项通过。[Windows Runtime 日志](https://github.com/jsdfhasuh/emo_master/actions/runs/44526752371/job/135569301229)
+
 未执行 Windows 原生 Qt 人工走查、冻结 EXE、现场相机／PLC 或工位精度验收。

@@ -270,7 +270,7 @@ test('a delayed directory keeps newer streamed Job state while refreshing its me
   f.holdNextCatalog=true;await click('刷新页面包和状态');await waitFor(()=>f.heldCatalog);
   await f.send(stateOf(job('ordinary','ABORTED',{active:false,ownsResources:false,displayResourcesReleased:true,allowedActions:[]})));
   await f.releaseCatalog();await waitFor(()=>!button('刷新页面包和状态').disabled);
-  assert.match(option('查看运行','ordinary'),/Refreshed name · aborted/i);
+  assert.equal(option('查看运行','ordinary'),'Refreshed name · ordinary · ABORTED');
   assert.match(authority(),/权威状态：ABORTED/);assert.match(authority(),/持有资源：否/);
   assert.match(authority(),/展示资源已释放：是/);assert.match(renderedState(),/ABORTED/);
   assert.equal(button('停止选中运行').disabled,true);
@@ -288,7 +288,7 @@ test('a delayed directory cannot roll back a fully retired command after polling
   await waitFor(()=>/展示资源已释放：是/.test(authority()));
   const reads=f.snapshot().jobReads.length;
   await f.releaseCatalog();await waitFor(()=>!button('刷新页面包和状态').disabled);
-  assert.match(option('查看运行','root'),/Root metadata · aborted/i);
+  assert.equal(option('查看运行','root'),'Root metadata · root · ABORTED');
   assert.match(authority(),/权威状态：ABORTED/);assert.match(authority(),/持有资源：否/);
   assert.match(authority(),/展示资源已释放：是/);assert.equal(button('停止选中运行').disabled,true);
   assert.equal(document.querySelector('select[aria-label="查看运行"]').value,'consumer');

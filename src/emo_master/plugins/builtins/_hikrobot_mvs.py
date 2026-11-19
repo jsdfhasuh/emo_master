@@ -39,6 +39,9 @@ def _importWindowsBindings() -> Any:
         # from that lookup, and portable launches may start with a clean PATH.
         lastError = err
 
+    if sys.platform != "win32":
+        raise lastError
+
     is64Bit = sys.maxsize > 2**32
     platformDir = "Win64_x64" if is64Bit else "Win32_i86"
     incompatibleDir = "win32_i86" if is64Bit else "win64_x64"

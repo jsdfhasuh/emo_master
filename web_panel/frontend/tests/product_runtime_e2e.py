@@ -383,7 +383,7 @@ def main():
                     for label in ('查看运行', '停止控制目标'):
                         selection = page.get_by_label(label, exact=True)
                         expect(selection).to_have_value(job)
-                        expect(selection.locator('option:checked')).to_contain_text('aborted')
+                        expect(selection.locator('option:checked')).to_contain_text(f' · {job[:8]} · ABORTED')
                     expect(page.get_by_role('button', name='查询操作结果', exact=True)).to_have_count(0)
                     expect(page.get_by_role('button', name='结束跟踪（不重发）', exact=True)).to_have_count(0)
                     report['renderedTerminalStatus'] = original_status.inner_text()
@@ -478,7 +478,7 @@ def main():
                     expect_selected_package(page, package_id)
                     for label in ('查看运行', '停止控制目标'):
                         expect(page.get_by_label(label, exact=True)).to_have_value(second_job)
-                        expect(page.get_by_label(label, exact=True).locator('option:checked')).to_contain_text('aborted')
+                        expect(page.get_by_label(label, exact=True).locator('option:checked')).to_contain_text(f' · {second_job[:8]} · ABORTED')
                     starts = [r for r in requests if r['path'] == '/api/runs/start']
                     stops = [r for r in requests if r['path'].endswith('/stop')]
                     assert len(starts) == 2 and len(stops) == 2, requests

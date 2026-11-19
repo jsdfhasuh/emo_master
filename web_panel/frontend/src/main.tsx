@@ -15,6 +15,8 @@ import { LatestScopeQueue, resumeExpiredScopes } from './state/latest';
 import { prepareResult, releaseResult, pageImageSources } from './state/prepare';
 import { PanelRenderer } from './renderer/PanelRenderer';
 import { hasPageNavigation, PageNavigation, themeStyle } from './renderer/presentation';
+import { HostControlButton, shellHeaderStyle, shellTextStyle } from './renderer/shell';
+import { runLabel, runTooltip } from './state/runLabel';
 import './style.css';
 import { WorkflowInputs } from './components/WorkflowInputs';
 import { RuntimeStatus } from './components/RuntimeStatus';
@@ -601,11 +603,11 @@ function App() {
         '--operator-inset': contentWidth ? `max(24px, (100% - ${contentWidth - 2 * (panel?.appearance?.pagePadding ?? 24)}px) / 2)` : '24px',
     } as React.CSSProperties;
     return <main className="operator-shell" style={shellStyle}>
-    <header className="operator-header">
+    <header className="operator-header" style={shellHeaderStyle(shell)}>
         <div className="operator-heading">
-            {logo && <img className="operator-logo" src={logo} alt=""/>}
-            <div><h1>{shell?.title || panel?.name || panel?.title || 'Emo Web 操作员面板'}</h1>
-                {shell?.subtitle && <p>{shell.subtitle}</p>}
+            {logo && <img className="operator-logo" src={logo} alt="" style={{width:shell?.logoWidth ?? 40,height:shell?.logoHeight ?? 40}}/>}
+            <div><h1 style={shellTextStyle(shell,'title')}>{shell?.title || panel?.name || panel?.title || 'Emo Web 操作员面板'}</h1>
+                {shell?.subtitle && <p style={shellTextStyle(shell,'helper')}>{shell.subtitle}</p>}
             </div>
         </div>
         <div className="operator-header-items">
@@ -627,10 +629,10 @@ function App() {
  {(me.localNoAuth || me.authMode==='local' || localNoAuth) && <LocalModeWarning me={me}/>}
  {pending&&<section className="notice"><strong>待确认操作：{pending.kind} / {pending.target}</strong><button disabled={busy} onClick={queryPending}>查询操作结果</button>{pending.state!=='submitting'&&<button onClick={()=>{if(confirm('结束本次跟踪不会停止或重新执行任何命令。请确认已核对运行状态，后续新操作将是新的意图。'))clearPending()}}>结束跟踪（不重发）</button>}</section>}
  <section className="toolbar operator-actions">
-    <label>查看运行<select aria-label="查看运行" title={viewRun?.name || viewRun?.id}
+    <label>查看运行<select aria-label="查看运行" title={runTooltip(viewRun)}
         disabled={catalogBusy} value={runId} onChange={e => setRunId(e.target.value)}>
         <option value="">无运行 · 页面 / 历史预览</option>
-        {runs.map(run => <option key={run.id} value={run.id}>{run.name || run.id} · {run.state}</option>)}
+        {runs.map(run => <option key={run.id} value={run.id}>{runLabel(run)}</option>)}
     </select></label>
     <button disabled={!result || frozen} onClick={() => action('freeze')}>冻结查看</button>
     <button disabled={!frozen} onClick={() => action('resume_live')}>恢复实时</button>
@@ -646,16 +648,20 @@ function App() {
             <option value="">{workflows.length?'明确选择工作流':'无可用工作流'}</option>
             {workflows.map(item => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
         </select></label>
-        <button className="panel-action panel-action-primary" disabled={busy || catalogBusy || !workflowId || !runtimeId || workflow?.canStart === false}
-            onClick={() => control('start')}>启动工作流</button>
-        <label>停止目标<select aria-label="停止控制目标" title={controlRun?.name || controlRun?.id}
+        <HostControlButton control={shell?.startControl} kind="start" fallbackLabel="启动工作流"
+            title={workflow ? `启动工作流：${workflow.name || workflow.id} · ${workflow.id}` : '尚未选择启动工作流'}
+            disabled={busy || catalogBusy || !workflowId || !runtimeId || workflow?.canStart === false}
+            onClick={() => control('start')}/>
+        <label>停止目标<select aria-label="停止控制目标" title={runTooltip(controlRun)}
             disabled={catalogBusy} value={controlRunId} onChange={e=>setControlRunId(e.target.value)}>
             <option value="">明确选择停止对象</option>
-            {runs.map(run=><option key={run.id} value={run.id}>{run.name||run.id} · {run.state}</option>)}
+            {runs.map(run=><option key={run.id} value={run.id}>{runLabel(run)}</option>)}
         </select></label>
-        <button className="danger" disabled={busy || catalogBusy || !controlRunId ||
+        <HostControlButton control={shell?.stopControl} kind="stop" fallbackLabel="停止选中运行"
+            title={controlRun ? `停止运行：${runTooltip(controlRun)}` : '尚未选择停止对象'}
+            disabled={busy || catalogBusy || !controlRunId ||
             Boolean(controlRun?.allowedActions && !controlRun.allowedActions.some(action=>action.toLowerCase()==='stop'))}
-            onClick={() => { if (confirm(`停止当前明确选中的运行 ${controlRunId}？`)) void control('stop'); }}>停止选中运行</button>
+            onClick={() => { if (confirm(`停止当前明确选中的运行 ${controlRunId}？`)) void control('stop'); }}/>
         {workflow?.canStart === false && <p role="status">暂不能启动：{workflow.startBlockReason || '请刷新状态后重试'}</p>}
     </>}
  </section>

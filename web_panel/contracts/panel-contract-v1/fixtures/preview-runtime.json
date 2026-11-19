@@ -3,7 +3,7 @@
   "mode": "runtime",
   "readOnly": true,
   "projectId": "panel-contract-demo",
-  "packageRevision": "6e4aeec72e94a849714bdccf54d15262a40f1c5b7289ba1302614dc8f3db3e09",
+  "packageRevision": "70a18d4d534a23be043604018f48449558dba7d7557f96a249d559fdf6e38c53",
   "historyDefinitionRevision": "d0169cbc591d66c305ccd0e95873763ccb1f6903a281a712b43db84a44c5afef",
   "runtime": {
     "target": "192.0.2.10:50051",

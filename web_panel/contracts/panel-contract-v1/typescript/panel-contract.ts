@@ -27,6 +27,8 @@ export type Collapse = { "initiallyCollapsed"?: boolean };
 
 export type Component = { "componentId": string; "type": "image" | "text" | "number" | "indicator" | "runtime_status" | "table" | "navigation_button" | "container" | "page_title" | "page_navigation" | "clock" | "sqlite_table" | "sqlite_value" | "spacer"; "version"?: "1.0"; "layout"?: Placement; "responsive"?: ResponsiveItem; "props"?: Props; "bindings"?: { [key: string]: unknown }; "actions"?: { [key: string]: Action }; "children"?: Array<Component>; "grid"?: (Grid | ResponsiveLayout) };
 
+export type ControlAppearance = { "style"?: ("primary" | "secondary" | "link" | null); "text"?: (TextRole | null); "radius"?: (number | null); "padding"?: (Padding | null); "minWidth"?: (number | null); "minHeight"?: (number | null); "showIcon"?: boolean };
+
 export type DataSource = { "kind": "node_output" | "workflow_output" | "global_counter" | "global_variable" | "runtime_status"; "resultScopeId": string; "workflowId"?: (string | null); "callPath"?: Array<CallStep>; "nodeId"?: (string | null); "port"?: (string | null); "fieldPath"?: Array<string>; "expectedType": "integer" | "number" | "string" | "boolean" | "image" | "collection" | "geometry" | "json"; "name"?: (string | null); "variableId"?: (string | null); "ruleVersion"?: "1.0" };
 
 export type FrameProvenance = { "frameIdentity": string; "coordinateSpaceId": string; "trust": "proven" | "unknown"; "parentFrameIdentity"?: (string | null); "adapterVersion"?: (string | null) };
@@ -47,7 +49,9 @@ export type HistoryRow = { "rowId": string; "values": Array<(string | number | n
 
 export type HistorySource = { "componentId": string; "sourceComponentId"?: (string | null) };
 
-export type HistoryView = { "mode"?: "table" | "list"; "titleField"?: (string | null); "subtitleField"?: (string | null); "trailingField"?: (string | null) };
+export type HistoryView = { "mode"?: "table" | "list"; "titleField"?: (string | null); "subtitleField"?: (string | null); "trailingField"?: (string | null); "showFilter"?: boolean; "showSort"?: boolean; "showPagination"?: boolean };
+
+export type HostControl = { "label"?: (string | null); "appearance"?: (ControlAppearance | null) };
 
 export type ImagePathSource = { "kind": "fixed" | "selected_row"; "path"?: string; "componentId"?: (string | null); "field"?: string; "baseDirectory"?: string; "location"?: ("display_local" | "runtime" | null) };
 
@@ -67,7 +71,7 @@ export type Page = { "name": string; "layout"?: (Grid | ResponsiveLayout); "canv
 
 export type PageAppearance = { "theme"?: "light"; "contentMaxWidth"?: number; "pagePadding"?: number };
 
-export type PageShell = { "title"?: string; "subtitle"?: string; "logoResourceId"?: (string | null); "diagnosticsInitiallyExpanded"?: boolean; "showConnection"?: boolean; "showJobState"?: boolean; "showControls"?: boolean };
+export type PageShell = { "title"?: string; "subtitle"?: string; "logoResourceId"?: (string | null); "logoWidth"?: number; "logoHeight"?: number; "headerSurface"?: (Surface | null); "headerTypography"?: (Typography | null); "startControl"?: (HostControl | null); "stopControl"?: (HostControl | null); "diagnosticsInitiallyExpanded"?: boolean; "showConnection"?: boolean; "showJobState"?: boolean; "showControls"?: boolean };
 
 export type PanelManifest = { "format"?: "emo-web-panel-1"; "projectId": string; "packageRevision": string; "panelContractVersion"?: "1.0"; "rendererRequirements": Array<string>; "presentation"?: "presentation.json"; "sourcePresentationVersion": "1.3"; "historyDefinitionRevision": string; "assets": { [key: string]: unknown }; "captureRequirements": { [key: string]: unknown } };
 
@@ -79,7 +83,7 @@ export type PreviewContext = { "previewContextVersion"?: "1"; "mode": "fixtures"
 
 export type PreviewRuntime = { "target": string; "timeoutSeconds"?: number; "maxReceiveMessageBytes"?: number; "runtimeInstanceId": string; "documentRevision": string };
 
-export type Props = { "spacerMode"?: "fixed" | "flex"; "imageResourceId"?: (string | null); "iconResourceId"?: (string | null); "title"?: string; "text"?: string; "emptyText"?: string; "unit"?: string; "decimals"?: number; "indicatorStates"?: { [key: string]: IndicatorStyle }; "columns"?: Array<TableColumn>; "pageSize"?: number; "surface"?: (Surface | null); "typography"?: (Typography | null); "valueLayout"?: "vertical" | "horizontal"; "helperText"?: string; "indicatorView"?: "text" | "badge" | "row"; "showMarker"?: (boolean | null); "imageView"?: (ImageView | null); "buttonStyle"?: "primary" | "secondary" | "link"; "collapse"?: (Collapse | null); "statusField"?: ("connection" | "job_state" | null); "historyView"?: (HistoryView | null); "recordValue"?: ((RecordField | RecordMeta) | null); "imagePath"?: (ImagePathSource | null); "sqlite"?: SqliteSource; "historySource"?: (HistorySource | null) };
+export type Props = { "spacerMode"?: "fixed" | "flex"; "imageResourceId"?: (string | null); "iconResourceId"?: (string | null); "title"?: string; "text"?: string; "emptyText"?: string; "unit"?: string; "decimals"?: number; "indicatorStates"?: { [key: string]: IndicatorStyle }; "columns"?: Array<TableColumn>; "pageSize"?: number; "surface"?: (Surface | null); "typography"?: (Typography | null); "valueLayout"?: "vertical" | "horizontal"; "helperText"?: string; "indicatorView"?: "text" | "badge" | "row"; "showMarker"?: (boolean | null); "titleFollowsState"?: boolean; "markerPosition"?: "value" | "title"; "imageView"?: (ImageView | null); "buttonStyle"?: "primary" | "secondary" | "link"; "collapse"?: (Collapse | null); "statusField"?: ("connection" | "job_state" | null); "historyView"?: (HistoryView | null); "recordValue"?: ((RecordField | RecordMeta) | null); "imagePath"?: (ImagePathSource | null); "sqlite"?: SqliteSource; "historySource"?: (HistorySource | null) };
 
 export type PublishedAsset = { "path": string; "sha256": string; "byteSize": number; "mimeType": "image/png" | "image/jpeg" | "image/bmp" };
 
@@ -89,7 +93,7 @@ export type PublishedPage = { "name": string; "layout": (Grid | ResponsiveLayout
 
 export type PublishedPresentation = { "schemaVersion"?: "published-1"; "defaultPageId": string; "pageOrder": Array<string>; "navigation": Navigation; "appearance"?: (PageAppearance | null); "shell"?: (PageShell | null); "resultScopes": { [key: string]: unknown }; "dataSources": { [key: string]: unknown }; "pages": { [key: string]: unknown } };
 
-export type PublishedProps = { "spacerMode"?: "fixed" | "flex"; "imageResourceId"?: (string | null); "iconResourceId"?: (string | null); "title"?: string; "text"?: string; "emptyText"?: string; "unit"?: string; "decimals"?: number; "indicatorStates"?: { [key: string]: IndicatorStyle }; "columns"?: Array<TableColumn>; "pageSize"?: number; "surface"?: (Surface | null); "typography"?: (Typography | null); "valueLayout"?: "vertical" | "horizontal"; "helperText"?: string; "indicatorView"?: "text" | "badge" | "row"; "showMarker"?: (boolean | null); "imageView"?: (ImageView | null); "buttonStyle"?: "primary" | "secondary" | "link"; "collapse"?: (Collapse | null); "statusField"?: ("connection" | "job_state" | null); "historyView"?: (HistoryView | null); "recordValue"?: ((RecordField | RecordMeta) | null) };
+export type PublishedProps = { "spacerMode"?: "fixed" | "flex"; "imageResourceId"?: (string | null); "iconResourceId"?: (string | null); "title"?: string; "text"?: string; "emptyText"?: string; "unit"?: string; "decimals"?: number; "indicatorStates"?: { [key: string]: IndicatorStyle }; "columns"?: Array<TableColumn>; "pageSize"?: number; "surface"?: (Surface | null); "typography"?: (Typography | null); "valueLayout"?: "vertical" | "horizontal"; "helperText"?: string; "indicatorView"?: "text" | "badge" | "row"; "showMarker"?: (boolean | null); "titleFollowsState"?: boolean; "markerPosition"?: "value" | "title"; "imageView"?: (ImageView | null); "buttonStyle"?: "primary" | "secondary" | "link"; "collapse"?: (Collapse | null); "statusField"?: ("connection" | "job_state" | null); "historyView"?: (HistoryView | null); "recordValue"?: ((RecordField | RecordMeta) | null) };
 
 export type RecordField = { "componentId": string; "kind": "field"; "field": string };
 

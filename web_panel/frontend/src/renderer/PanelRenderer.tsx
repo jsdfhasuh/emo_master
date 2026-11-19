@@ -3,7 +3,7 @@ import type { Component, Panel, Result, Layout } from '../contracts/types';
 import { preparedImageUrl } from '../state/prepare';
 import { parseLosslessJSON } from '../data/lossless';
 import type { CSSProperties } from 'react';
-import { ImageView, IndicatorValue, PageNavigation, indicatorBackground, indicatorState, pageAppearance, roleStyle, surfaceStyle } from './presentation';
+import { ImageView, IndicatorTitle, IndicatorValue, PageNavigation, indicatorBackground, indicatorState, pageAppearance, roleStyle, surfaceStyle } from './presentation';
 import { HistoryImage, HistoryTable, historyAction, useHistoryReview } from './HistoryView';
 import type { RecordReference } from './HistoryView';
 const gridOf = (c: Component) => ({ ...(c.props || {}), ...(typeof c.props?.grid === 'object' ? c.props.grid : {}), ...c.grid }) as NonNullable<Component['grid']>;
@@ -144,10 +144,10 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
         const stacked = p.valueLayout !== 'horizontal';
         const inlineTitle = ['text','number','indicator','runtime_status'].includes(c.type);
         const label = <span className="panel-field-label" style={roleStyle(p.typography,'title')}>{title}</span>;
-        function fieldBody(content:React.ReactNode,horizontal=!stacked) {
+        function fieldBody(content:React.ReactNode,horizontal=!stacked,fieldLabel:React.ReactNode=label) {
             return <>
                 <div className={`panel-field ${horizontal?'panel-field-horizontal':''}`}>
-                    {title && label}
+                    {title && fieldLabel}
                     {content}
                 </div>
                 {typeof p.helperText === 'string' && p.helperText && <p className="panel-field-helper" style={roleStyle(p.typography,'helper')}>{p.helperText}</p>}
@@ -190,8 +190,8 @@ export function PanelRenderer({ panel, pageId, onPage, result, results, viewId, 
                 const row = p.indicatorView === 'row';
                 if (row) surface.backgroundColor = indicatorBackground(state) ?? surface.backgroundColor;
                 body = fieldBody(<span title={failed ? source?.reason || '本轮数据未就绪' : undefined}>
-                    <IndicatorValue props={p} state={state} emptyText={emptyText}/>
-                </span>,row || !stacked);
+                    <IndicatorValue props={p} state={state} emptyText={emptyText} hasTitle={Boolean(title)}/>
+                </span>,row || !stacked,<IndicatorTitle props={p} state={state} title={title}/>);
                 break;
             }
             case 'runtime_status': {

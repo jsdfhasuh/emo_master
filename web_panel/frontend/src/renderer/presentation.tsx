@@ -65,11 +65,27 @@ export function indicatorBackground(state?: IndicatorStyle) {
     return state?.background === 'soft' ? softTones[state.color] : undefined;
 }
 
-export function IndicatorValue({ props, state, emptyText = '—' }: {
-    props?: Component['props']; state?: IndicatorStyle; emptyText?: string;
+function indicatorMarker(props?: Component['props']) {
+    return props?.showMarker ?? (props?.indicatorView === 'badge' || props?.indicatorView === 'row');
+}
+
+export function IndicatorTitle({ props, state, title }: {
+    props?: Component['props']; state?: IndicatorStyle; title: string;
+}) {
+    const tone = tones[state?.color ?? 'neutral'];
+    return <span className="panel-field-label" style={{...roleStyle(props?.typography, 'title'),
+        ...(props?.titleFollowsState ? {color: tone} : {}), display: 'inline-flex', alignItems: 'center', gap: 8}}>
+        {props?.markerPosition === 'title' && indicatorMarker(props) && state &&
+            <span className="panel-indicator-marker" style={{color: tone}} aria-hidden="true"/>}
+        <span>{title}</span>
+    </span>;
+}
+
+export function IndicatorValue({ props, state, emptyText = '—', hasTitle = false }: {
+    props?: Component['props']; state?: IndicatorStyle; emptyText?: string; hasTitle?: boolean;
 }) {
     const badge = props?.indicatorView === 'badge';
-    const marker = props?.showMarker ?? (props?.indicatorView === 'badge' || props?.indicatorView === 'row');
+    const marker = indicatorMarker(props) && !(hasTitle && props?.markerPosition === 'title');
     return <span className={`indicator panel-indicator ${badge ? 'panel-indicator-badge' : ''}`}
         style={{ ...roleStyle(props?.typography, 'value'), color: tones[state?.color ?? 'neutral'], backgroundColor: badge ? indicatorBackground(state) : undefined }}>
         {marker && state && <span className="panel-indicator-marker" aria-hidden="true"/>}

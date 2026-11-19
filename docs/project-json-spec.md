@@ -276,6 +276,22 @@ YOLO 处理流程添加虚假 TCP/相机设备。旧通信工程不能靠删除�
 - `props.imageView` 配置留白、对齐和宽高比。当前图像按等比包含显示。
 - `sqlite_table` 的 `historyView` 选择表格或列表。视图回看声明唯一稳定 `sqlite.recordKey`。`recordValue` 指向同页历史组件的声明列或 position/count，图片仍使用选中行路径。历史按钮按键查询同条或相邻条。
 
+SDK 1.8.0 在当前页面格式上补充以下通用配置；Qt、Web 和作者入口共享它们：
+
+| 字段 | 默认 / 范围 | 用途 |
+| --- | --- | --- |
+| `shell.logoWidth` / `logoHeight` | 40 / 40；宽 1–512，高 1–256 | logo 原图在此范围内等比包含，不再先缩为按钮图标。 |
+| `shell.headerSurface` | 省略使用当前默认 | 复用 Surface 配置页头背景、边框、圆角、内距。 |
+| `shell.headerTypography` | 省略使用当前默认 | `title` 为标题，`helper` 为副标题；复用文字角色。 |
+| `shell.startControl` / `stopControl` | 省略使用宿主默认 | `label` 覆盖按钮文字；`appearance` 配置按钮表现，动作仍由宿主执行。 |
+| `ControlAppearance` | 各项可省略 | `style=primary/secondary/link`、`text=TextRole`、`radius=0..32`、`padding=Padding`、`minWidth=0..512`、`minHeight=0..128`、`showIcon=false`。 |
+| `props.titleFollowsState` | false | indicator 标题使用当前状态颜色。 |
+| `props.markerPosition` | value；value/title | 与 showMarker 组合，把圆点放在值或标题前。 |
+| `props.historyView.showFilter/showSort/showPagination` | true / true / true | 分别显示筛选、排序和分页控制；不禁用外部记录导航。 |
+
+结构化按钮样式在 Qt 生成 QSS、在 Web 生成 CSS；禁用状态继续对应真实宿主状态。完整设计见
+[通用页面配置补齐](../openspec/changes/complete-page-configuration/design.md)。
+
 字段范围和当前默认见 [通用页面契约](../openspec/changes/enhance-generic-page-composition/contracts.md)。
 
 ### 显示终端与数据位置 1.2

@@ -132,6 +132,50 @@ def testNativeHistoryPagingFilteringSortingAndRefresh(qtApp, database):
     assert not view.model.flags(view.model.index(0, 0)) & Qt.ItemIsEditable
 
 
+def testHistoryToolbarVisibilityIsIndependent(qtApp, database):
+    from emo_master.core.presentation.models import Props
+    for hidden in ('showFilter', 'showSort', 'showPagination'):
+        view = SqliteTableView(database, preview=True, props=Props(historyView={
+            'mode': 'list', 'titleField': 'id', hidden: False,
+        }))
+        try:
+            for field, toolbar in (('showFilter', view.filterBar), ('showSort', view.sortBar),
+                                   ('showPagination', view.paginationBar)):
+                assert toolbar.isHidden() == (field == hidden)
+        finally:
+            view.close()
+
+
+@pytest.mark.parametrize('mode', ['list', 'table'])
+def testHiddenHistoryToolbarsKeepRecordNavigationAndLatest(qtApp, database, mode):
+    from emo_master.core.presentation.models import Props
+    from emo_panel_protocol.models import RecordField
+    selectedId = RecordField(componentId='records', kind='field', field='id')
+    view = SqliteTableView(database, pageSize=1, requiresIdentity=True, props=Props(historyView={
+        'mode': mode, 'titleField': 'id', 'showFilter': False, 'showSort': False, 'showPagination': False,
+    }))
+    try:
+        view.show()
+        waitRead(qtApp, view)
+        assert all(not bar.isVisible() for bar in (view.filterBar, view.sortBar, view.paginationBar))
+        assert not view.table.horizontalHeader().sectionsClickable()
+        assert not view.table.horizontalHeader().isSortIndicatorShown()
+        assert view.recordValue(selectedId) == 3
+        view.review('history_next')
+        waitRead(qtApp, view)
+        assert view.page == 1 and view.recordValue(selectedId) == 2
+        view.review('history_previous')
+        waitRead(qtApp, view)
+        assert view.page == 0 and view.recordValue(selectedId) == 3
+        with sqlite3.connect(database.databasePath) as connection:
+            connection.execute('INSERT INTO "inspection log" VALUES (?, ?, ?, ?)', (4, 'OK', 4.5, None))
+        view.review('history_first')
+        waitRead(qtApp, view)
+        assert view.page == 0 and view.recordValue(selectedId) == 4
+    finally:
+        view.close()
+
+
 def testDesignPreviewDoesNotReadAndLateResultCannotReplacePreview(qtApp, database, monkeypatch):
     from emo_master.ui.presentation import sqlite_widgets
     entered, release = threading.Event(), threading.Event()

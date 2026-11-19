@@ -77,6 +77,15 @@ class EditorTests(unittest.TestCase):
         self.assertEqual(upload.status_code, 200, upload.text)
         asset = upload.json()
         source = self.pages()
+        source['shell'] = dict(title='配置后的页头', logoResourceId=asset['resourceId'], logoWidth=120,
+            logoHeight=48, headerSurface=dict(background='surface', padding=dict(left=28)),
+            headerTypography=dict(title=dict(size=26)),
+            startControl=dict(label='开始检测', appearance=dict(style='primary', radius=8, minHeight=44)),
+            stopControl=dict(label='停止检测', appearance=dict(style='secondary', showIcon=False)))
+        indicator = next(component for component in source['pages'][source['defaultPageId']]['components']
+                         if component['type'] == 'indicator')
+        indicator['props'] = dict(title='检测状态', indicatorView='row', titleFollowsState=True,
+                                  markerPosition='title', showMarker=True)
         source["pages"][source["defaultPageId"]]["components"].append({"componentId": "logo", "type": "image", "props": {"imageResourceId": asset["resourceId"]}})
         saved = self.save(source, "")
         preview = self.client.post(self.base + "/preview", headers=self.headers,
@@ -84,6 +93,12 @@ class EditorTests(unittest.TestCase):
         self.assertEqual(preview.status_code, 200, preview.text)
         panel = preview.json()["panel"]
         self.assertEqual(len(panel["pages"]), 2)
+        self.assertEqual(panel['shell']['startControl']['label'], '开始检测')
+        self.assertEqual(panel['shell']['logoWidth'], 120)
+        rendered = next(component for page in panel['pages'] for component in page['components']
+                        if component['type'] == 'indicator')
+        self.assertTrue(rendered['props']['titleFollowsState'])
+        self.assertEqual(rendered['props']['markerPosition'], 'title')
         self.assertEqual(self.client.get("/api/assets/" + panel["id"] + "/" + asset["resourceId"]).content, buffer.getvalue())
         self.assertEqual(self.app.state.runtime.control_count, 0)
         self.assertEqual(self.app.state.runtime.output_config["sources"], {})
@@ -102,7 +117,8 @@ class EditorTests(unittest.TestCase):
             source["pages"][page]["components"] = [
                 {"type": "sqlite_table", "componentId": table, "props": {
                     "historySource": {"componentId": "runtime-records"},
-                    "historyView": {"mode": "list", "titleField": "stamp"}}},
+                    "historyView": {"mode": "list", "titleField": "stamp", "showFilter": False,
+                                    "showSort": False, "showPagination": False}}},
                 {"type": "image", "componentId": f"{prefix}-image", "props": {
                     "historySource": {"componentId": "runtime-main", "sourceComponentId": table}}},
                 {"type": "text", "componentId": f"{prefix}-key", "props": {
@@ -121,6 +137,8 @@ class EditorTests(unittest.TestCase):
         raw, manifest, published, _ = build_package(self.project, model, {}, None,
             history_sources=catalog, history_revision=history_revision)
         self.assertEqual(manifest["historyDefinitionRevision"], history_revision)
+        view = published['pages']['details']['components'][0]['props']['historyView']
+        self.assertTrue(all(view[key] is False for key in ('showFilter', 'showSort', 'showPagination')))
         self.assertNotIn("historySource", published["pages"]["details"]["components"][1]["props"])
         image = published["pages"]["details"]["components"][1]
         self.assertEqual(image["componentId"], "copy-image")

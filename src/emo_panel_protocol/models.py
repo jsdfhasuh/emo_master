@@ -233,6 +233,9 @@ class HistoryView(Model):
     titleField: str | None = Field(default=None, min_length=1, max_length=256)
     subtitleField: str | None = Field(default=None, min_length=1, max_length=256)
     trailingField: str | None = Field(default=None, min_length=1, max_length=256)
+    showFilter: bool = True
+    showSort: bool = True
+    showPagination: bool = True
 
 
 class RecordField(Model):
@@ -269,6 +272,8 @@ class VisualProps(Model):
     helperText: str = Field(default='', max_length=1024)
     indicatorView: Literal['text', 'badge', 'row'] = 'text'
     showMarker: bool | None = None
+    titleFollowsState: bool = False
+    markerPosition: Literal['value', 'title'] = 'value'
     imageView: ImageView | None = None
     buttonStyle: Literal['primary', 'secondary', 'link'] = 'secondary'
     collapse: Collapse | None = None
@@ -460,10 +465,31 @@ class PageAppearance(Model):
     pagePadding: int = Field(default=24, ge=0, le=64)
 
 
+class ControlAppearance(Model):
+    style: Literal['primary', 'secondary', 'link'] | None = None
+    text: TextRole | None = None
+    radius: int | None = Field(default=None, ge=0, le=32)
+    padding: Padding | None = None
+    minWidth: int | None = Field(default=None, ge=0, le=512)
+    minHeight: int | None = Field(default=None, ge=0, le=128)
+    showIcon: bool = False
+
+
+class HostControl(Model):
+    label: str | None = Field(default=None, min_length=1, max_length=256)
+    appearance: ControlAppearance | None = None
+
+
 class PageShell(Model):
     title: str = Field(default='', max_length=1024)
     subtitle: str = Field(default='', max_length=1024)
     logoResourceId: Id | None = None
+    logoWidth: int = Field(default=40, ge=1, le=512)
+    logoHeight: int = Field(default=40, ge=1, le=256)
+    headerSurface: Surface | None = None
+    headerTypography: Typography | None = None
+    startControl: HostControl | None = None
+    stopControl: HostControl | None = None
     diagnosticsInitiallyExpanded: bool = False
     showConnection: bool = True
     showJobState: bool = True

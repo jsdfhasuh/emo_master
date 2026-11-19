@@ -2,6 +2,8 @@
 
 本文件由 emo-master-operator-authoring skill 的 inspect_catalog.py 生成。开发流程和分类分析见 [算子与设备插件开发指南](operator-development-guide.md)。
 
+2026-11-19 新增 `vision.geometry.line_from_points @ 1.0.0`（两点生成线段）：连接两个已选点，输出既有 lineCollection，供 Annotate 绘制实线或虚线。参见[两点生成线段](guides/line-from-points.md)。下面原扫描快照保留其生成时状态。
+
 2026-11-18 工业相机采集算子 `vision.io.huaray_camera @ 1.2.0` 的 `camera` 槽支持大华／华睿 IMV 和海康 MVS。海康设备类型 `device.camera.hikrobot_mvs @ 1.0.0` 按序列号连接 GigE 或 USB3 Vision 相机。参见[海康 MVS 相机采集](guides/hikrobot-mvs-camera.md)。
 
 2026-10-25 增量：新增 `vision.io.rtsp_capture @ 1.0.0` 与 `device.camera.rtsp @ 1.0.0`，

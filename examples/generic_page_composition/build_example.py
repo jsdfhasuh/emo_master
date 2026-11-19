@@ -79,9 +79,6 @@ def makeAssets(root):
     assets.mkdir(parents=True, exist_ok=True)
     saveImage(assets / 'sample-a.jpg', syntheticImage(1))
     saveImage(assets / 'sample-b.jpg', syntheticImage(2))
-    guide = np.zeros((HEIGHT, WIDTH), np.uint8)
-    cv2.line(guide, (205, 181), (530, 381), 255, 1, cv2.LINE_8)
-    saveImage(assets / 'edge.png', guide)
 
     # The fixture emits declared boxes in YOLO tensor form. It is never a trained model.
     predictions = np.array([
@@ -109,7 +106,6 @@ def makeAssets(root):
     return {
         'sample-a': ('assets/sample-a.jpg', 'input_image', ('input-a', 'imagePath')),
         'sample-b': ('assets/sample-b.jpg', 'input_image', ('input-b', 'imagePath')),
-        'guide': ('assets/edge.png', 'input_image', ('guide', 'imagePath')),
         'synthetic-model': ('assets/synthetic.onnx', 'model', ('detect', 'modelPath')),
         'logo': ('assets/logo.png', 'icon', None),
     }
@@ -154,18 +150,28 @@ def configureWorkflow(payload, registry, root):
     loader('input-a', 'assets/sample-a.jpg', '模拟工件 A', 490, 200)
     loader('input-b', 'assets/sample-b.jpg', '模拟工件 B', 490, 374)
     node('sample', 'vision.flow.select_value', '选择模拟工件', 960, 202)
-    loader('guide', 'assets/edge.png', '模拟测量线输入', 960, 392)
-    node('line', 'vision.analysis.hough_line', '提取基准线', 1200, 392,
-         rho=2, thetaDegrees=.5, threshold=32, minLineLength=260, maxLineGap=12)
     node('detect', 'vision.inference.yolo', '模拟位置信息', 1200, 202,
          modelPath='assets/synthetic.onnx', drawOverlay=False, outputCrop=True, cropTargetIndex=2)
-    node('annotate', 'vision.render.annotate', '标注检测证据', 1440, 202,
+    for label, title, y in (('upper', '上端', 470), ('lower', '下端', 690)):
+        node(f'{label}-filter', 'vision.collection.filter', f'筛选{title}类别', 1440, y,
+             collectionType='detections', detectionLabelsEnabled=True, detectionLabels=[label])
+        node(f'{label}-select', 'vision.collection.select', f'选择{title}目标', 1680, y,
+             collectionType='detections', mode='first')
+        node(f'{label}-bbox', 'vision.geometry.detection_bbox', f'提取{title}区域', 1920, y)
+        node(f'{label}-center', 'vision.geometry.extract_points', f'提取{title}中心', 2160, y,
+             inputType='bbox', feature='bboxCenter')
+        edge('detect', 'detections', f'{label}-filter', 'detections')
+        edge(f'{label}-filter', 'keptDetections', f'{label}-select', 'detections')
+        edge(f'{label}-select', 'selectedDetections', f'{label}-bbox', 'detections')
+        edge(f'{label}-bbox', 'bbox', f'{label}-center', 'bbox')
+    node('line', 'vision.geometry.line_from_points', '连接本次两个中心', 2400, 470)
+    node('annotate', 'vision.render.annotate', '标注检测证据', 2640, 202,
          classStyles=CLASSES, labelBackground=True, showConfidence=False, colorMode='bgr',
          lineColor=[255, 255, 255], lineStyle='dashed', endpointMarker='dot', thickness=3, fontScale=.67)
     node('class-count', 'vision.collection.count', '定位数量', 1440, 20, collectionType='detections')
-    node('save-main', 'vision.io.image_saver', '归档主图', 1680, 202,
+    node('save-main', 'vision.io.image_saver', '归档主图', 2880, 202,
          outputPath='archive/images/main.png', namingMode='unique')
-    node('save-local', 'vision.io.image_saver', '归档局部图', 1680, 392,
+    node('save-local', 'vision.io.image_saver', '归档局部图', 2880, 392,
          outputPath='archive/images/detail.png', namingMode='unique')
 
     node('code-pass', 'vision.math.integer_add', '模拟结果 1', 880, -340, leftValue=1)
@@ -176,7 +182,7 @@ def configureWorkflow(payload, registry, root):
     node('result-code', 'vision.math.exact_integer', '输出结果码', 1600, -340)
     node('angle-scale', 'vision.value.number', '模拟角度分母', 1600, -510, value=20)
     node('angle', 'vision.math.percentage', '模拟角度偏差', 1835, -340)
-    node('write', 'vision.io.sqlite_writer', '保存本次检测记录', 2110, 202,
+    node('write', 'vision.io.sqlite_writer', '保存本次检测记录', 3120, 202,
          configVersion=1, databasePath=DATABASE, table='records', failurePolicy='stop',
          fileReferencePathMode='project_relative', mappings=[
              mapping('sequence', 'INTEGER', 'sequence', 'count'),
@@ -188,7 +194,7 @@ def configureWorkflow(payload, registry, root):
              mapping('sampled_at', 'UTC_TIME', context='timestampUtc'),
              mapping('workflow_run_id', 'TEXT', context='workflowRunId'),
              mapping('review_note', 'TEXT', constant=None),
-             mapping('record_log', 'TEXT', constant='[模拟输入] 从受管样例读取图像。\n[标注] 按预设模拟位置绘制三类目标及测量基准线。\n[归档] 主图和局部图均通过 ImageSaver 写入，随后提交本条记录。'),
+             mapping('record_log', 'TEXT', constant='[模拟输入] 从受管样例读取图像。\n[标注] 按本次检测选择两个目标中心并绘制连接虚线。\n[归档] 主图和局部图均通过 ImageSaver 写入，随后提交本条记录。'),
          ])
     for connection in (
         ('enable', 'value', 'trigger', 'left'), ('trigger', 'result', 'sequence', 'increment'),
@@ -196,7 +202,8 @@ def configureWorkflow(payload, registry, root):
         ('first-batch', 'result', 'sample', 'condition'), ('input-a', 'image', 'sample', 'trueValue'),
         ('input-b', 'image', 'sample', 'falseValue'), ('sample', 'value', 'detect', 'image'),
         ('sample', 'value', 'annotate', 'image'), ('detect', 'frame', 'annotate', 'frame'),
-        ('detect', 'frame', 'line', 'frame'), ('guide', 'image', 'line', 'edge'),
+        ('detect', 'frame', 'line', 'frame'), ('upper-center', 'points', 'line', 'startPoints'),
+        ('lower-center', 'points', 'line', 'endPoints'),
         ('detect', 'detections', 'annotate', 'detections'), ('line', 'lines', 'annotate', 'lines'),
         ('detect', 'detections', 'class-count', 'detections'), ('detect', 'croppedImage', 'save-local', 'image'),
         ('annotate', 'overlay', 'save-main', 'image'),
@@ -208,7 +215,7 @@ def configureWorkflow(payload, registry, root):
     ):
         edge(*connection)
     locations['__workflow_input__'] = dict(x=-236, y=20)
-    locations['__workflow_output__'] = dict(x=2335, y=202)
+    locations['__workflow_output__'] = dict(x=3355, y=202)
     payload['production'].update(mode='single', autoStart=False)
     payload['dependencies']['operators'] = [dict(operatorId=key, version=version) for key, version in sorted(used.items())]
     database = root / DATABASE
@@ -279,7 +286,7 @@ def productionPage():
         component('live-job', 'runtime_status', statusField='job_state', title='作业状态',
                   responsive=dict(width='content', minHeight=28)),
         component('sample-no', 'number', source='sequence', title='本次采样', decimals=0,
-                  valueLayout='horizontal', responsive=dict(width='content')),
+                  valueLayout='horizontal', responsive=dict(width='content', minWidth=148)),
     ], direction='horizontal', justify='space-between', alignment='center', inset=padding(12, 16), background='subtle')
     actions = group('production-image-header', [
         text('production-image-title', '检测图像', size=20, bold=True, compact=True),
@@ -301,6 +308,7 @@ def productionPage():
 
     def indicator(key, title, source, states):
         return component(key, 'indicator', source=source, title=title, valueLayout='horizontal', indicatorView='row',
+            titleFollowsState=True, markerPosition='title', showMarker=True,
             indicatorStates=states, typography=typography(20, weight='bold', role='title') | typography(16, weight='bold'),
             responsive=dict(minHeight=56), surface=dict(kind='none', background='subtle', radius=8, padding=padding(12)))
 
@@ -356,7 +364,8 @@ def historyPage():
     records = component(HISTORY, 'sqlite_table', pageSize=3, responsive=dict(minHeight=180),
         sqlite=dict(databasePath=DATABASE, table='history_records', columns=columns, orderBy='id', descending=True,
                     recordKey='write_id', location='runtime'),
-        historyView=dict(mode='list', titleField='sample_time', subtitleField='sample_date', trailingField='result_code'),
+        historyView=dict(mode='list', titleField='sample_time', subtitleField='sample_date', trailingField='result_code',
+                         showFilter=False, showSort=False, showPagination=False),
         indicatorStates=RESULT_STATES)
     listing = group('history-list-card', [text('history-list-title', '检测记录', size=20, bold=True),
         text('history-list-order', '采样时间倒序 · UTC', size=14, color='neutral'), records],
@@ -410,7 +419,14 @@ def build(root):
                 target=dict(workflowId='main', nodeId=node, parameterPath=[parameter])))
     payload['presentation'].update(defaultPageId='production', pageOrder=['production', 'history'],
         appearance=dict(theme='light', contentMaxWidth=1200, pagePadding=24),
-        shell=dict(title='工件视觉检测站', subtitle='生产监控与检测记录 · 软件模拟', logoResourceId='logo'),
+        shell=dict(title='工件视觉检测站', subtitle='生产监控与检测记录 · 软件模拟', logoResourceId='logo',
+            logoWidth=64, logoHeight=64,
+            headerSurface=dict(background='surface', border='none', padding=padding(16, 24)),
+            headerTypography=typography(26, weight='bold', role='title') | typography(14, color='neutral', role='helper'),
+            startControl=dict(label='开始检测', appearance=dict(style='primary', radius=8,
+                padding=padding(10, 18), minHeight=44, showIcon=False)),
+            stopControl=dict(label='停止检测', appearance=dict(style='secondary', radius=8,
+                padding=padding(10, 18), minHeight=44, showIcon=False))),
         pages={'production': productionPage(), 'history': historyPage()},
         resultScopes={SCOPE: dict(entryWorkflowId='main', scopeWorkflowId='main')},
         dataSources={

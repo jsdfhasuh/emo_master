@@ -82,7 +82,61 @@
       "mode": "tabs"
     },
     "appearance": null,
-    "shell": null,
+    "shell": {
+      "title": "Inspection",
+      "subtitle": "Editable shared page shell",
+      "logoResourceId": "demo",
+      "logoWidth": 72,
+      "logoHeight": 48,
+      "headerSurface": {
+        "kind": null,
+        "background": "surface",
+        "border": "subtle",
+        "radius": null,
+        "padding": null
+      },
+      "headerTypography": {
+        "title": {
+          "size": 24,
+          "weight": null,
+          "color": null
+        },
+        "value": null,
+        "helper": {
+          "size": 14,
+          "weight": null,
+          "color": null
+        }
+      },
+      "startControl": {
+        "label": "Start inspection",
+        "appearance": {
+          "style": "primary",
+          "text": null,
+          "radius": 8,
+          "padding": null,
+          "minWidth": null,
+          "minHeight": 40,
+          "showIcon": false
+        }
+      },
+      "stopControl": {
+        "label": "Stop inspection",
+        "appearance": {
+          "style": "secondary",
+          "text": null,
+          "radius": 8,
+          "padding": null,
+          "minWidth": null,
+          "minHeight": 40,
+          "showIcon": false
+        }
+      },
+      "diagnosticsInitiallyExpanded": false,
+      "showConnection": true,
+      "showJobState": true,
+      "showControls": true
+    },
     "resultScopes": {
       "root": {
         "entryWorkflowId": "main",
@@ -167,6 +221,8 @@
               "helperText": "",
               "indicatorView": "text",
               "showMarker": null,
+              "titleFollowsState": false,
+              "markerPosition": "value",
               "imageView": null,
               "buttonStyle": "secondary",
               "collapse": null,
@@ -220,6 +276,8 @@
               "helperText": "",
               "indicatorView": "text",
               "showMarker": null,
+              "titleFollowsState": false,
+              "markerPosition": "value",
               "imageView": null,
               "buttonStyle": "secondary",
               "collapse": null,
@@ -273,6 +331,8 @@
               "helperText": "",
               "indicatorView": "text",
               "showMarker": null,
+              "titleFollowsState": false,
+              "markerPosition": "value",
               "imageView": null,
               "buttonStyle": "secondary",
               "collapse": null,
@@ -326,6 +386,8 @@
               "helperText": "",
               "indicatorView": "text",
               "showMarker": null,
+              "titleFollowsState": false,
+              "markerPosition": "value",
               "imageView": null,
               "buttonStyle": "secondary",
               "collapse": null,
@@ -379,6 +441,8 @@
               "helperText": "",
               "indicatorView": "text",
               "showMarker": null,
+              "titleFollowsState": false,
+              "markerPosition": "value",
               "imageView": null,
               "buttonStyle": "secondary",
               "collapse": null,
@@ -432,6 +496,8 @@
               "helperText": "",
               "indicatorView": "text",
               "showMarker": null,
+              "titleFollowsState": false,
+              "markerPosition": "value",
               "imageView": null,
               "buttonStyle": "secondary",
               "collapse": null,
@@ -485,6 +551,8 @@
               "helperText": "",
               "indicatorView": "text",
               "showMarker": null,
+              "titleFollowsState": false,
+              "markerPosition": "value",
               "imageView": null,
               "buttonStyle": "secondary",
               "collapse": null,
@@ -529,6 +597,8 @@
                   "helperText": "",
                   "indicatorView": "text",
                   "showMarker": null,
+                  "titleFollowsState": false,
+                  "markerPosition": "value",
                   "imageView": null,
                   "buttonStyle": "secondary",
                   "collapse": null,
@@ -585,6 +655,8 @@
                   "helperText": "",
                   "indicatorView": "text",
                   "showMarker": null,
+                  "titleFollowsState": false,
+                  "markerPosition": "value",
                   "imageView": null,
                   "buttonStyle": "secondary",
                   "collapse": null,
@@ -624,7 +696,7 @@
                   "alignSelf": "auto"
                 },
                 "props": {
-                  "title": "",
+                  "title": "Result",
                   "text": "",
                   "emptyText": "\u2014",
                   "unit": "",
@@ -642,8 +714,10 @@
                   "typography": null,
                   "valueLayout": "vertical",
                   "helperText": "",
-                  "indicatorView": "text",
-                  "showMarker": null,
+                  "indicatorView": "row",
+                  "showMarker": true,
+                  "titleFollowsState": true,
+                  "markerPosition": "title",
                   "imageView": null,
                   "buttonStyle": "secondary",
                   "collapse": null,
@@ -710,6 +784,8 @@
               "helperText": "",
               "indicatorView": "text",
               "showMarker": null,
+              "titleFollowsState": false,
+              "markerPosition": "value",
               "imageView": null,
               "buttonStyle": "secondary",
               "collapse": null,
@@ -763,6 +839,8 @@
               "helperText": "",
               "indicatorView": "text",
               "showMarker": null,
+              "titleFollowsState": false,
+              "markerPosition": "value",
               "imageView": null,
               "buttonStyle": "secondary",
               "collapse": null,
@@ -842,11 +920,21 @@
               "helperText": "",
               "indicatorView": "text",
               "showMarker": null,
+              "titleFollowsState": false,
+              "markerPosition": "value",
               "imageView": null,
               "buttonStyle": "secondary",
               "collapse": null,
               "statusField": null,
-              "historyView": null,
+              "historyView": {
+                "mode": "list",
+                "titleField": "id",
+                "subtitleField": null,
+                "trailingField": "verdict",
+                "showFilter": false,
+                "showSort": false,
+                "showPagination": false
+              },
               "recordValue": null,
               "sqlite": {
                 "databasePath": "demo-history.sqlite",
@@ -909,6 +997,8 @@
               "helperText": "",
               "indicatorView": "text",
               "showMarker": null,
+              "titleFollowsState": false,
+              "markerPosition": "value",
               "imageView": null,
               "buttonStyle": "secondary",
               "collapse": null,
@@ -973,6 +1063,8 @@
               "helperText": "",
               "indicatorView": "text",
               "showMarker": null,
+              "titleFollowsState": false,
+              "markerPosition": "value",
               "imageView": null,
               "buttonStyle": "secondary",
               "collapse": null,
@@ -1033,6 +1125,8 @@
               "helperText": "",
               "indicatorView": "text",
               "showMarker": null,
+              "titleFollowsState": false,
+              "markerPosition": "value",
               "imageView": null,
               "buttonStyle": "secondary",
               "collapse": null,
@@ -1074,8 +1168,8 @@
     "items": {
       "demo": {
         "path": "demo.png",
-        "sha256": "a4ee2e10f34181b8f6856e44e232bfa58e69b95fecccdcd87fcc257cb0a8ffbc",
-        "size": 136,
+        "sha256": "7dbd4245412e15f25b5686de28113ebac23501708632419e7f82a39b9d25e655",
+        "size": 119,
         "purpose": "page_image"
       }
     },

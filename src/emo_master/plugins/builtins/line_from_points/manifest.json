@@ -1,0 +1,21 @@
+{
+  "operatorId": "vision.geometry.line_from_points",
+  "displayName": "两点生成线段",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._geometry_bridges:LineFromPointsOperator",
+  "category": "几何",
+  "iconKey": "default",
+  "summary": "连接两个已选单点；任一端为空时输出空线段集合，沿用当前 frame 的坐标空间。",
+  "inputPorts": {
+    "startPoints": {"type": "list<point2d>", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "endPoints": {"type": "list<point2d>", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "lines": {"type": "lineCollection", "required": true, "nullable": false, "schemaVersion": "1.2"},
+    "lineCount": {"type": "integer", "required": true, "nullable": false}
+  },
+  "paramSchema": {"type": "object", "properties": {}, "additionalProperties": false},
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x"
+}

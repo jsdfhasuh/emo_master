@@ -25,6 +25,7 @@ from emo_master.ui.presentation.table import CollectionView
 from emo_master.ui.presentation.page_navigation import PageNavigation
 from emo_master.ui.presentation.page_scroll import PageScrollArea
 from emo_master.ui.presentation.appearance import THEME, ValueView, plainLabel, roleStyle, surfaceStyle
+from emo_master.ui.presentation.shell import applyShellHeader, configureHostButton
 
 
 SURFACE_LIMIT = 16 * 1024 * 1024
@@ -196,6 +197,7 @@ class RuntimePages(QWidget):
         head = QHBoxLayout(self.header)
         head.setContentsMargins(12, 8, 12, 0)
         self.logo = QLabel()
+        self.logo.setAlignment(Qt.AlignCenter)
         head.addWidget(self.logo)
         titles = QVBoxLayout()
         titles.setSpacing(2)
@@ -209,6 +211,7 @@ class RuntimePages(QWidget):
         self.headerJob = plainLabel('')
         head.addWidget(self.headerJob)
         self.hostControls = QHBoxLayout()
+        self.previewControls = {}
         head.addLayout(self.hostControls)
         self.hostMessage = plainLabel('', f"color:{THEME['foreground']['red']};")
         self.hostMessage.hide()
@@ -269,6 +272,8 @@ class RuntimePages(QWidget):
 
     def _setShell(self):
         shell = self.config.shell or PageShell()
+        applyShellHeader(self.header, self.shellTitle, self.shellSubtitle, shell)
+        self.logo.setFixedSize(shell.logoWidth, shell.logoHeight)
         self.shellTitle.setText(shell.title or self._label)
         self.shellSubtitle.setText(shell.subtitle)
         self.shellSubtitle.setVisible(bool(shell.subtitle))
@@ -282,6 +287,22 @@ class RuntimePages(QWidget):
         else:
             self.diagnosticToggle.setChecked(shell.diagnosticsInitiallyExpanded)
         self._showDiagnostics(shell.diagnosticsInitiallyExpanded and not self.editorHost)
+        self._setPreviewControls()
+
+    def _setPreviewControls(self):
+        if not self.editorHost:
+            return
+        shell = self.config.shell or PageShell()
+        for kind, label in (('start', '开始'), ('stop', '停止')):
+            if kind not in self.previewControls:
+                button = QPushButton()
+                button.setEnabled(False)
+                self.hostControls.addWidget(button)
+                self.previewControls[kind] = button
+            button = self.previewControls[kind]
+            configureHostButton(button, getattr(shell, kind + 'Control'), kind=kind,
+                                fallbackLabel=label, tooltip='仅预览按钮外观，不执行任务')
+            button.setVisible(shell.showControls)
 
     def setHostMessage(self, message, *, problem=False):
         self.hostMessage.setStyleSheet(f"color:{THEME['foreground']['red'] if problem else THEME['muted']};")
@@ -371,6 +392,7 @@ class RuntimePages(QWidget):
     def setEditorHost(self):
         """Keep the embedded editor native-sized, separate from screen fitting."""
         self.editorHost = True
+        self._setPreviewControls()
         self.syncNavigation()
         self._syncLocalPreviews()
         self.setMinimumSize(0, 0)
@@ -838,12 +860,17 @@ class RuntimePages(QWidget):
 
     def _renderAssets(self):
         from .static_assets import readAsset
-        shell = self.config.shell
-        logo = self.assets.get(shell.logoResourceId) if shell and shell.logoResourceId else None
+        shell = self.config.shell or PageShell()
+        logo = self.assets.get(shell.logoResourceId) if shell.logoResourceId else None
         if logo is not None:
             try:
-                image = readAsset(logo, SURFACE_LIMIT, icon=True)
-                self.logo.setPixmap(QPixmap.fromImage(image))
+                image = readAsset(logo, SURFACE_LIMIT)
+                ratio = self.devicePixelRatioF()
+                pixmap = QPixmap.fromImage(image).scaled(
+                    QSize(round(shell.logoWidth * ratio), round(shell.logoHeight * ratio)),
+                    Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                pixmap.setDevicePixelRatio(ratio)
+                self.logo.setPixmap(pixmap)
                 self.logo.show()
             except (ValueError, OSError):
                 self.logo.hide()

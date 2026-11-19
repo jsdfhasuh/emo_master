@@ -113,8 +113,21 @@ class ValueView(QWidget):
         if horizontal:
             row.setSpacing(8)
             body.addLayout(row)
-        if props.title:
-            row.addWidget(plainLabel(props.title, roleStyle(props, 'title')), 1 if horizontal else 0)
+        self.title = plainLabel(props.title, roleStyle(props, 'title')) if props.title else None
+        self.titleMarker = None
+        if self.title is not None:
+            if component.type == 'indicator' and props.markerPosition == 'title':
+                titleGroup = QWidget(self)
+                titleLayout = QHBoxLayout(titleGroup)
+                titleLayout.setContentsMargins(0, 0, 0, 0)
+                titleLayout.setSpacing(8)
+                self.titleMarker = plainLabel('●')
+                self.titleMarker.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+                titleLayout.addWidget(self.titleMarker)
+                titleLayout.addWidget(self.title, 1)
+                row.addWidget(titleGroup, 1 if horizontal else 0)
+            else:
+                row.addWidget(self.title, 1 if horizontal else 0)
         endAligned = horizontal and bool(props.title)
         alignment = Qt.AlignRight if endAligned else Qt.AlignLeft
         if component.type == 'text':
@@ -142,6 +155,14 @@ class ValueView(QWidget):
                 self.setToolTip('未映射判定值: ' + json.dumps(value, ensure_ascii=False))
             color = state.color if state else 'neutral'
             marker = props.showMarker if props.showMarker is not None else props.indicatorView != 'text'
+            if self.title is not None:
+                titleStyle = roleStyle(props, 'title')
+                if props.titleFollowsState:
+                    titleStyle += f'color:{COLORS[color]};'
+                self.title.setStyleSheet(titleStyle)
+            if self.titleMarker is not None:
+                self.titleMarker.setStyleSheet(f'font-size:12px;color:{COLORS[color]};')
+                self.titleMarker.setVisible(bool(marker and state))
             style = roleStyle(props) + f'color:{COLORS[color]};'
             background = THEME['soft'][color] if state and state.background == 'soft' else None
             if props.indicatorView == 'row':
@@ -152,7 +173,8 @@ class ValueView(QWidget):
                 style += f"background:{background};border-radius:5px;padding:2px 6px;"
             if self.value.styleSheet() != style:
                 self.value.setStyleSheet(style)
-            self.setText(('●  ' if marker and state else '') + (state.text if state else props.emptyText))
+            valueMarker = marker and state and self.titleMarker is None
+            self.setText(('●  ' if valueMarker else '') + (state.text if state else props.emptyText))
         elif kind == 'number':
             text = (f'{value:.{props.decimals}f}' if type(value) is float else str(value)) if type(value) in (int, float) else None
             self.setText(error or (text + props.unit if text is not None else props.emptyText))

@@ -116,6 +116,99 @@
       "title": "Collapse",
       "type": "object"
     },
+    "ControlAppearance": {
+      "additionalProperties": false,
+      "properties": {
+        "style": {
+          "anyOf": [
+            {
+              "enum": [
+                "primary",
+                "secondary",
+                "link"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Style"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TextRole"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "radius": {
+          "anyOf": [
+            {
+              "maximum": 32,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Radius"
+        },
+        "padding": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Padding"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "minWidth": {
+          "anyOf": [
+            {
+              "maximum": 512,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minwidth"
+        },
+        "minHeight": {
+          "anyOf": [
+            {
+              "maximum": 128,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minheight"
+        },
+        "showIcon": {
+          "default": false,
+          "title": "Showicon",
+          "type": "boolean"
+        }
+      },
+      "title": "ControlAppearance",
+      "type": "object"
+    },
     "DataSource": {
       "additionalProperties": false,
       "description": "Value object: stores return detached copies; rebind replaces the reference.",
@@ -415,9 +508,56 @@
           ],
           "default": null,
           "title": "Trailingfield"
+        },
+        "showFilter": {
+          "default": true,
+          "title": "Showfilter",
+          "type": "boolean"
+        },
+        "showSort": {
+          "default": true,
+          "title": "Showsort",
+          "type": "boolean"
+        },
+        "showPagination": {
+          "default": true,
+          "title": "Showpagination",
+          "type": "boolean"
         }
       },
       "title": "HistoryView",
+      "type": "object"
+    },
+    "HostControl": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "appearance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ControlAppearance"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "HostControl",
       "type": "object"
     },
     "ImageView": {
@@ -650,6 +790,64 @@
           ],
           "default": null,
           "title": "Logoresourceid"
+        },
+        "logoWidth": {
+          "default": 40,
+          "maximum": 512,
+          "minimum": 1,
+          "title": "Logowidth",
+          "type": "integer"
+        },
+        "logoHeight": {
+          "default": 40,
+          "maximum": 256,
+          "minimum": 1,
+          "title": "Logoheight",
+          "type": "integer"
+        },
+        "headerSurface": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Surface"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "headerTypography": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Typography"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "startControl": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HostControl"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "stopControl": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HostControl"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "diagnosticsInitiallyExpanded": {
           "default": false,
@@ -1024,6 +1222,20 @@
           ],
           "default": null,
           "title": "Showmarker"
+        },
+        "titleFollowsState": {
+          "default": false,
+          "title": "Titlefollowsstate",
+          "type": "boolean"
+        },
+        "markerPosition": {
+          "default": "value",
+          "enum": [
+            "value",
+            "title"
+          ],
+          "title": "Markerposition",
+          "type": "string"
         },
         "imageView": {
           "anyOf": [

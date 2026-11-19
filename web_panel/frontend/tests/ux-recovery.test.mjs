@@ -25,7 +25,8 @@ test('disabled workflow renders the official reason without enabling Start',()=>
  const expression=source.slice(start+1,end+3);
  const js=ts.transpileModule('function render(){return ('+expression+')} ',{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
  const workflow={id:'w',canStart:false,startBlockReason:'RESOURCE_BUSY'};
- const ctx={exports:{},require,canControl:true,shell:undefined,catalogBusy:false,busy:false,workflowId:'w',runtimeId:'r',
+ const ctx={exports:{},require,...require('../src/renderer/shell.tsx'),...require('../src/state/runLabel.ts'),
+    canControl:true,shell:undefined,catalogBusy:false,busy:false,workflowId:'w',runtimeId:'r',
     workflows:[workflow],workflow,workflowInputs:'{}',WorkflowInputs:()=>null,controlRunId:'',controlRun:undefined,runs:[]};
  const element=vm.runInNewContext(js+';render()',ctx);
  const html=require('react-dom/server').renderToStaticMarkup(element);

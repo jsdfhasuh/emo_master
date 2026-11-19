@@ -36,9 +36,15 @@ MODELS = {
 JSON_SCHEMA = 'https://json-schema.org/draft/2020-12/schema'
 
 
-def writeJson(path, value):
+def writeText(path, value):
+    """Retain a checked-in artifact's line endings when rebuilding on another OS."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + '\n', encoding='utf-8')
+    newline = '\r\n' if path.exists() and b'\r\n' in path.read_bytes() else '\n'
+    path.write_text(value, encoding='utf-8', newline=newline)
+
+
+def writeJson(path, value):
+    writeText(path, json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + '\n')
 
 
 def typeScript(schema):
@@ -165,6 +171,11 @@ def sampleProject(root):
     }
     presentation = payload['presentation']
     presentation.update(defaultPageId='live', pageOrder=['live', 'history'],
+        shell=dict(title='Inspection', subtitle='Editable shared page shell', logoResourceId='demo',
+            logoWidth=72, logoHeight=48, headerSurface=dict(background='surface', border='subtle'),
+            headerTypography=dict(title=dict(size=24), helper=dict(size=14)),
+            startControl=dict(label='Start inspection', appearance=dict(style='primary', radius=8, minHeight=40)),
+            stopControl=dict(label='Stop inspection', appearance=dict(style='secondary', radius=8, minHeight=40))),
         resultScopes={'root': dict(entryWorkflowId='main', scopeWorkflowId='main')},
         dataSources={
             'count': dict(kind='global_variable', variableId='count', resultScopeId='root', expectedType='integer'),
@@ -181,14 +192,18 @@ def sampleProject(root):
                     dict(componentId='count', type='number', bindings={'value': 'count'}),
                     dict(componentId='spring', type='spacer', props=dict(spacerMode='flex')),
                     dict(componentId='verdict', type='indicator', bindings={'value': 'verdict'},
-                         props=dict(indicatorStates={'true': dict(text='OK', color='green')}))]),
+                         props=dict(title='Result', indicatorView='row', titleFollowsState=True,
+                                    markerPosition='title', showMarker=True,
+                                    indicatorStates={'true': dict(text='OK', color='green')}))]),
                 dict(componentId='logo', type='image', props={'imageResourceId': 'demo'}),
                 dict(componentId='to-history', type='navigation_button', props={'text': 'History'},
                      actions={'clicked': dict(type='navigate', pageId='history')}),
             ]),
             'history': dict(name='History demo', targets=['desktop', 'web'], components=[
                 dict(componentId='records', type='sqlite_table', props={'sqlite': dict(location='runtime',
-                    databasePath='demo-history.sqlite', table='records', columns=['id', 'verdict'], orderBy='id')}),
+                    databasePath='demo-history.sqlite', table='records', columns=['id', 'verdict'], orderBy='id'),
+                    'historyView': dict(mode='list', titleField='id', trailingField='verdict',
+                                        showFilter=False, showSort=False, showPagination=False)}),
                 dict(componentId='total', type='sqlite_value', props={'sqlite': dict(location='runtime',
                     databasePath='demo-history.sqlite', table='records', aggregate='count')}),
                 dict(componentId='record-image', type='image', props={'imagePath': dict(kind='selected_row',
@@ -277,10 +292,10 @@ def buildContract(output, *, wheel=True, regenerateProto=True):
     for name, schema in schemas.items():
         writeJson(output / 'schemas' / (name + '.schema.json'), schema)
     (output / 'typescript').mkdir(exist_ok=True)
-    (output / 'typescript' / 'panel-contract.ts').write_text(generateTypes(schemas), encoding='utf-8')
+    writeText(output / 'typescript' / 'panel-contract.ts', generateTypes(schemas))
     (output / 'proto').mkdir(exist_ok=True)
     shutil.copyfile(ROOT / 'proto/runtime.proto', output / 'proto/runtime.proto')
-    shutil.copyfile(ROOT / 'docs/development/panel-contract-v1.md', output / 'README.md')
+    writeText(output / 'README.md', (ROOT / 'docs/development/panel-contract-v1.md').read_text(encoding='utf-8'))
     sampleRoot = output / 'sample-panels' / 'source'
     sampleRoot.mkdir(parents=True, exist_ok=True)
     # Save through the real project API in a fresh workspace, so repeated builds
@@ -289,7 +304,10 @@ def buildContract(output, *, wheel=True, regenerateProto=True):
         sample = Path(directory)
         document, manifest = sampleProject(sample)
         for name in ('demo.emoproj', 'demo.png'):
-            shutil.copyfile(sample / name, sampleRoot / name)
+            if name.endswith('.emoproj'):
+                writeText(sampleRoot / name, (sample / name).read_text(encoding='utf-8'))
+            else:
+                shutil.copyfile(sample / name, sampleRoot / name)
         shutil.copyfile(sample / 'demo.emoweb', output / 'sample-panels' / 'demo.emoweb')
     fixtureIndex = {}
     for name, (schema, value) in fixtureValues(manifest).items():

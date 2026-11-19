@@ -1,6 +1,6 @@
 # emo_master 独立 Web 页面编辑器与运行面板
 
-`web_panel/` 是独立的 Python 3.10+/FastAPI + React 应用。它通过受控 LAN 的普通 gRPC 连接 Runtime，使用 **Panel Contract 1.0 / SDK 1.7.0**，无需运行 Windows Designer。Web 后端只依赖轻量 SDK，不导入 `emo_master`、Qt、设备驱动或推理包。
+`web_panel/` 是独立的 Python 3.10+/FastAPI + React 应用。它通过受控 LAN 的普通 gRPC 连接 Runtime，使用 **Panel Contract 1.0 / SDK 1.8.0**，无需运行 Windows Designer。Web 后端只依赖轻量 SDK，不导入 `emo_master`、Qt、设备驱动或推理包。
 
 本期从新建 Web 页面开始。Web 管理完整 Presentation 1.3 编辑源、资源、草稿和发布版本；Windows Designer 继续管理 Qt 页面。Runtime 按工程保存与 UI 无关的输出采集请求，正常任务统一使用它，结果和图片复用 DisplayService。实现起始基线为 `d92ffd37960e8b8f527136151ab9ccb80054e78f`；当前源码交付及整体操作复查入口见[交接说明](../docs/handoffs/2026-11-04-independent-web-editor-review.md)。源码交付不代表已部署。
 
@@ -10,7 +10,7 @@
 
 ```powershell
 py -3.10 -m venv web_panel/.venv
-& web_panel/.venv/Scripts/python.exe -m pip install web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.7.0-py3-none-any.whl
+& web_panel/.venv/Scripts/python.exe -m pip install web_panel/contracts/panel-contract-v1/python/emo_panel_protocol-1.8.0-py3-none-any.whl
 & web_panel/.venv/Scripts/python.exe -m pip install -e './web_panel[test]' build
 npm --prefix web_panel/frontend ci
 npm --prefix web_panel/frontend run build
@@ -77,7 +77,7 @@ npm --prefix web_panel/frontend run build
 & web_panel/.venv/Scripts/python.exe -m build --wheel web_panel --outdir web_panel/dist
 ```
 
-将 Web wheel 和供应的 SDK 1.7.0 wheel 一起交付。Web wheel 含已构建前端，目标电脑运行不需要 Node。保留独立 Python 环境，使用一个 ASGI worker 共享结果订阅和有界图片缓存。SDK 可从 `contracts/panel-contract-v1/` 获取。
+将 Web wheel 和供应的 SDK 1.8.0 wheel 一起交付。Web wheel 含已构建前端，目标电脑运行不需要 Node。保留独立 Python 环境，使用一个 ASGI worker 共享结果订阅和有界图片缓存。SDK 可从 `contracts/panel-contract-v1/` 获取。
 
 检查证据见仓库 `docs/testing/2026-11-03-independent-web-editor/`。源码自动测试、实际软件 Runtime、真实浏览器、原生 Qt、wheel 安装验证和现场设备是不同层级；未执行的层级不能记为通过。现场验收不由合成演示替代。
 

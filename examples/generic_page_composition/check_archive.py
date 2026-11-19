@@ -139,10 +139,10 @@ def verifyJobs(channel, runtimeId, project, database):
                 # The display service may use a different PNG compression level.
                 pixels = asPixels(actual.data)
                 np.testing.assert_array_equal(asPixels(image), pixels)
-                # The fixture edge yields one diagonal guide. Check both drawn and
-                # open positions in a central band between the colored boxes.
+                # This run's selected upper/lower centers are (222, 206) and
+                # (402, 282). Check dashed pixels between their colored boxes.
                 xs = np.arange(290, 320)
-                ys = np.rint(182 + (xs - 206) * (381 - 182) / (530 - 206)).astype(int)
+                ys = np.rint(206 + (xs - 222) * (282 - 206) / (402 - 222)).astype(int)
                 white = np.all(pixels[ys, xs] == 255, axis=1)
                 assert any(white) and not all(white)
 

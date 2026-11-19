@@ -96,7 +96,8 @@ def testBuiltinSqlitePreservesActualCoreCapabilityGate():
     # do not lower their gates just to retain an old rejection-set fixture.
     migrationOperators = {
         "vision.analysis.minimum_enclosing_circle", "vision.geometry.detection_bbox",
-        "vision.geometry.extract_points", "vision.geometry.reframe_points", "vision.flow.error",
+        "vision.geometry.extract_points", "vision.geometry.reframe_points", "vision.geometry.line_from_points",
+        "vision.flow.error",
         "communication.gateway.coordinate_format", "communication.gateway.ack_validate",
     }
     currentCoreOperators = {

@@ -2,6 +2,9 @@
 
 **R1–R6 已完成。** 正式代码验收对应 `f5e0a120`，完成记录由 `0b7aa5bc` 更新。本文保留验收判据，实际结果见 [V1.3 验收记录](../../../docs/testing/2026-11-18-generic-page-composition-v1.3/README.md)。用户没有存量工程，不验收旧工程/旧草稿/旧包/旧SDK兼容。
 
+2026-11-19 新增五项能力使用独立的 [V1.4 任务清单](../complete-page-configuration/tasks.md) 和
+[本轮验收记录](../../../docs/testing/2026-11-19-page-configuration/README.md)。下文继续表示 V1.3 的验收范围，不将后续未验收项混入旧完成记录。
+
 本轮仍只有原A设计保存发布、B生产运行显示、C归档历史三个用户旅程。一次正式工程操作可以覆盖多条Requirement/Scenario；当前tasks只有R1–R6，不要求每个Scenario都对应一个新测试。
 
 ## 1. 继续使用同一个工程

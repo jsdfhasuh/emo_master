@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useReducer, useState } from 'react';
-import type { Component, History, Page } from '../contracts/types';
+import type { Component, History, HistoryView as HistoryLayout, Page } from '../contracts/types';
 import { api, apiBlob, ApiError, safeAssetUrl } from '../data/api';
 import { ImageView, IndicatorValue, indicatorState } from './presentation';
 
@@ -13,7 +13,6 @@ type HistoryAction = 'history_previous' | 'history_next' | 'history_first';
 export type RecordReference =
     { componentId: string; kind: 'field'; field: string } |
     { componentId: string; kind: 'meta'; meta: 'position' | 'count' };
-type HistoryLayout = { mode: 'table' | 'list'; titleField?: string; subtitleField?: string; trailingField?: string };
 export interface HistoryQuery { page: number; q: string; sort: string; order: 'asc' | 'desc'; filterColumn: string; }
 interface ReviewSession {
     component: Component;
@@ -218,7 +217,7 @@ export function HistoryTable({ component, review }: {component: Component; revie
     const select = (row: Row) => { if (session && !busy) review.select(session, row); };
     const hasNext = data?.hasNext;
     return <div className="history-review" aria-busy={busy}>
-        {!!columns.length && <form className="history-filter" onSubmit={event => {
+        {!!columns.length && configured?.showFilter !== false && <form className="history-filter" onSubmit={event => {
             event.preventDefault(); load({filterColumn, q: keyword, page: 0});
         }}>
             <select aria-label={`${component.id} 筛选列`} value={filterColumn} disabled={busy}
@@ -230,7 +229,7 @@ export function HistoryTable({ component, review }: {component: Component; revie
             <button type="submit" disabled={busy}>筛选</button>
             <button type="button" disabled={busy} onClick={() => {setKeyword(''); load({q: '', filterColumn, page: 0});}}>清除</button>
         </form>}
-        {!!columns.length && <div className="history-sort">
+        {!!columns.length && configured?.showSort !== false && <div className="history-sort">
             <select aria-label={`${component.id} 排序`} value={query.sort} disabled={busy}
                 onChange={event => load({sort: event.target.value, page: 0})}>
                 {!columns.some(column => column.key === query.sort) && <option value={query.sort}>默认排序</option>}
@@ -266,12 +265,12 @@ export function HistoryTable({ component, review }: {component: Component; revie
                 {columns.map(column => <td key={column.key}>{historyText(rowValues(row)?.[column.key], empty)}</td>)}
             </tr>)}</tbody>
         </table></div>}
-        <nav className="history-paging" aria-label="历史分页">
+        {configured?.showPagination !== false && <nav className="history-paging" aria-label="历史分页">
             <button disabled={busy || query.page <= 0} onClick={() => load({page: query.page - 1})}>上一页</button>
             <button disabled={busy || !hasNext} onClick={() => load({page: query.page + 1})}>下一页</button>
             <span>第 {query.page + 1} 页</span>
             <button disabled={busy} onClick={() => load({}, true)}>刷新历史</button>
-        </nav>
+        </nav>}
     </div>;
 }
 

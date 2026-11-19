@@ -23,7 +23,7 @@ SUPPORTED_FOLDERS = (
     "color_convert", "contour", "crop", "detection_bbox", "empty_operator", "equalize",
     "flip", "flow_error", "flow_if", "flow_switch", "gateway_ack_validate",
     "gateway_coordinate_format", "geometry_points", "global_counter", "histogram",
-    "hough_circle", "hough_line", "in_range", "mask_logic", "minimum_enclosing_circle",
+    "hough_circle", "hough_line", "in_range", "line_from_points", "mask_logic", "minimum_enclosing_circle",
     "morphology", "perspective", "points_reframe", "resize", "rgb_statistics", "roi",
     "rotate", "shape_measurement", "template_match", "threshold", "variable_read", "variable_write",
     "coordinate_calculator", "value_select",

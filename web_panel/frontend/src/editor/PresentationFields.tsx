@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { Appearance, Component, ImageView, PanelShell, Surface, TextStyle, Typography } from '../contracts/types';
+import type { Appearance, Component, ControlAppearance, HistoryView, HostControl, ImageView, PanelShell, Surface, TextStyle, Typography } from '../contracts/types';
 import type { Presentation, SourceComponent, SourcePage } from './model';
 import { componentNames, walk } from './model';
 
@@ -37,6 +37,54 @@ function OverrideGroup({label,value,enable,reset,children}: {
     </fieldset>;
 }
 
+function TextStyleFields({label,value,change}: {label:string;value?:TextStyle;change:(patch:TextStyle)=>void}) {
+    return <>
+        <NumericField label={label+'字号'} value={value?.size} min={8} max={96} onChange={size=>change({size})}/>
+        <SelectField label={label+'字重'} value={value?.weight} empty={defaultOption} options={['normal','bold']}
+            onChange={weight=>change({weight:weight as TextStyle['weight'] || undefined})}/>
+        <SelectField label={label+'颜色'} value={value?.color} empty={defaultOption}
+            options={['default','neutral','primary','green','red','amber']} onChange={color=>change({color:color || undefined})}/>
+    </>;
+}
+
+function ShellSurfaceFields({value,change}: {value?:Surface;change:(value:Surface|undefined)=>void}) {
+    const update=(patch:Surface)=>change({...value,...patch});
+    return <OverrideGroup label="页头表面" value={value} enable={()=>change({})} reset={()=>change(undefined)}>
+        <SelectField label="页头表面类型" value={value?.kind} empty={defaultOption} options={['none','card']}
+            onChange={kind=>update({kind:kind as Surface['kind'] || undefined})}/>
+        <SelectField label="页头背景" value={value?.background} empty={defaultOption} options={['transparent','surface','subtle']}
+            onChange={background=>update({background:background as Surface['background'] || undefined})}/>
+        <SelectField label="页头边框" value={value?.border} empty={defaultOption} options={['none','subtle']}
+            onChange={border=>update({border:border as Surface['border'] || undefined})}/>
+        <NumericField label="页头圆角" value={value?.radius} min={0} max={32} onChange={radius=>update({radius})}/>
+        {(['top','right','bottom','left'] as const).map((side,index)=><NumericField key={side}
+            label={`页头${['上','右','下','左'][index]}内边距`} value={value?.padding?.[side]} min={0} max={64}
+            onChange={size=>update({padding:{...value?.padding,[side]:size}})}/>)}
+    </OverrideGroup>;
+}
+
+function HostControlFields({label,value,change}: {label:string;value?:HostControl;change:(value:HostControl)=>void}) {
+    const appearance=value?.appearance;
+    const update=(patch:ControlAppearance)=>change({...value,appearance:{...appearance,...patch}});
+    return <details><summary>{label}</summary>
+        <label>{label}文字<input aria-label={label+'文字'} placeholder="使用宿主默认" maxLength={256}
+            value={value?.label ?? ''} onChange={event=>change({...value,label:event.target.value || undefined})}/></label>
+        <OverrideGroup label={label+'外观'} value={appearance} enable={()=>update({})} reset={()=>change({...value,appearance:undefined})}>
+            <SelectField label={label+'样式'} value={appearance?.style} empty={defaultOption} options={['primary','secondary','link']}
+                onChange={style=>update({style:style as ControlAppearance['style'] || undefined})}/>
+            <TextStyleFields label={label} value={appearance?.text} change={patch=>update({text:{...appearance?.text,...patch}})}/>
+            <NumericField label={label+'圆角'} value={appearance?.radius} min={0} max={32} onChange={radius=>update({radius})}/>
+            <NumericField label={label+'最小宽度'} value={appearance?.minWidth} min={0} max={512} onChange={minWidth=>update({minWidth})}/>
+            <NumericField label={label+'最小高度'} value={appearance?.minHeight} min={0} max={128} onChange={minHeight=>update({minHeight})}/>
+            {(['top','right','bottom','left'] as const).map((side,index)=><NumericField key={side}
+                label={`${label}${['上','右','下','左'][index]}内边距`} value={appearance?.padding?.[side]} min={0} max={64}
+                onChange={size=>update({padding:{...appearance?.padding,[side]:size}})}/>)}
+            <label>{label}显示图标<input type="checkbox" checked={appearance?.showIcon ?? false}
+                onChange={event=>update({showIcon:event.target.checked})}/></label>
+        </OverrideGroup>
+    </details>;
+}
+
 export function PagePresentationFields({doc,edit,uploadLogo,busy}: {
     doc:Presentation; edit:(change:(next:Presentation)=>void)=>void; uploadLogo:(file:File)=>void; busy:boolean;
 }) {
@@ -60,6 +108,19 @@ export function PagePresentationFields({doc,edit,uploadLogo,busy}: {
             <label>上传页头图片<input type="file" accept="image/png,image/jpeg,image/bmp" disabled={busy}
                 onChange={event=>{const file=event.target.files?.[0];if(file)uploadLogo(file);event.target.value='';}}/></label>
             {shell?.logoResourceId && <button onClick={()=>changeShell({logoResourceId:undefined})}>移除页头图片</button>}
+            <NumericField label="Logo 显示宽度" value={shell?.logoWidth ?? 40} min={1} max={512}
+                onChange={logoWidth=>changeShell({logoWidth})}/>
+            <NumericField label="Logo 显示高度" value={shell?.logoHeight ?? 40} min={1} max={256}
+                onChange={logoHeight=>changeShell({logoHeight})}/>
+            <ShellSurfaceFields value={shell?.headerSurface} change={headerSurface=>changeShell({headerSurface})}/>
+            <OverrideGroup label="页头文字" value={shell?.headerTypography} enable={()=>changeShell({headerTypography:{}})}
+                reset={()=>changeShell({headerTypography:undefined})}>
+                {(['title','helper'] as const).map((role,index)=><TextStyleFields key={role} label={index?'页头副标题':'页头标题'}
+                    value={shell?.headerTypography?.[role]} change={patch=>changeShell({headerTypography:{...shell?.headerTypography,
+                        [role]:{...shell?.headerTypography?.[role],...patch}}})}/>)}
+            </OverrideGroup>
+            <HostControlFields label="开始按钮" value={shell?.startControl} change={startControl=>changeShell({startControl})}/>
+            <HostControlFields label="停止按钮" value={shell?.stopControl} change={stopControl=>changeShell({stopControl})}/>
             {([
                 ['showConnection','显示连接状态',true],['showJobState','显示任务状态',true],
                 ['showControls','显示宿主控制',true],['diagnosticsInitiallyExpanded','初始展开诊断',false],
@@ -113,6 +174,10 @@ export function ComponentPresentationFields({component,update}: {
             <SelectField label="判定显示" value={String(props.indicatorView || 'text')} options={['text','badge','row']} onChange={value=>set('indicatorView',value)}/>
             <SelectField label="圆点" value={props.showMarker == null ? '' : String(props.showMarker)} empty={defaultOption}
                 options={[{value:'true',label:'显示'},{value:'false',label:'隐藏'}]} onChange={value=>set('showMarker',value ? value === 'true' : undefined)}/>
+            <SelectField label="圆点位置" value={String(props.markerPosition ?? 'value')}
+                options={[{value:'value',label:'状态值前'},{value:'title',label:'标题前'}]} onChange={value=>set('markerPosition',value)}/>
+            <label>标题跟随状态颜色<input type="checkbox" checked={Boolean(props.titleFollowsState)}
+                onChange={event=>set('titleFollowsState',event.target.checked)}/></label>
         </>}
         {type === 'runtime_status' && !Object.keys(component.bindings).length &&
             <SelectField label="宿主状态" value={String(props.statusField ?? 'connection')} options={[{value:'connection',label:'连接'},{value:'job_state',label:'任务'}]}
@@ -215,13 +280,16 @@ export function HistoryFields({component,page,update,sources}: {
         </section>;
     }
     if (type === 'sqlite_table') {
-        const view = props.historyView as {mode?:string;titleField?:string;subtitleField?:string;trailingField?:string} | undefined;
+        const view = props.historyView as HistoryView | undefined;
         const source = entry(component);
         return <section><h2>历史记录</h2>
             {source ? <small>Runtime 来源 · {source.title || source.componentId}</small> : <p role="status">当前启用页面包缺少这个 Runtime 历史来源。请启用与 Runtime 工程匹配的页面包。</p>}
             <NumericField label="历史每页条数" value={Number(props.pageSize || 20)} min={1} max={100} onChange={value=>set('pageSize',value)}/>
             <SelectField label="历史显示方式" value={view?.mode ?? 'table'} options={[{value:'table',label:'表格'},{value:'list',label:'列表'}]}
-                onChange={mode=>set('historyView',mode === 'list' ? {mode} : undefined)}/>
+                onChange={mode=>set('historyView',{...view,mode})}/>
+            {([['showFilter','显示筛选栏'],['showSort','显示排序控制'],['showPagination','显示分页栏']] as const)
+                .map(([key,label])=><label key={key}>{label}<input type="checkbox" checked={view?.[key] ?? true}
+                    onChange={event=>set('historyView',{...view,[key]:event.target.checked})}/></label>)}
             {view?.mode === 'list' && (['titleField','subtitleField','trailingField'] as const).map((key,index)=>
                 <SelectField key={key} label={['列表主字段','列表副字段','列表状态字段'][index]} value={view[key]} empty="未指定"
                     options={columns(component.componentId)} onChange={value=>set('historyView',{...view,[key]:value || undefined})}/>)}

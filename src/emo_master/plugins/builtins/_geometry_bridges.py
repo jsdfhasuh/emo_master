@@ -15,7 +15,8 @@ import numpy as np
 
 from emo_master.core.contracts.geometry2d import (
     BBox2D, Circle2D, CircleCollection, CircleItem, ContourCollection, ContourItem,
-    DetectionCollection, PayloadValidationError, Point2D, ShapeMeasurementCollection,
+    DetectionCollection, Line2D, LineCollection, LineItem, PayloadValidationError, Point2D,
+    ShapeMeasurementCollection,
 )
 
 
@@ -210,4 +211,46 @@ class PointsReframeOperator:
         except PayloadValidationError as exc:
             return error("E_INPUT_TYPE", str(exc))
         except (ValueError, np.linalg.LinAlgError) as exc:
+            return error("E_INPUT_SHAPE", str(exc))
+
+
+class LineFromPointsOperator:
+    """Join two selected points; the frame also identifies an empty result."""
+
+    meta = OperatorMeta("vision.geometry.line_from_points", "两点生成线段", "1.0.0",
+        {"startPoints": port("list<point2d>"), "endPoints": port("list<point2d>"),
+         "frame": port("bbox2d")},
+        {"lines": port("lineCollection", "1.2"),
+         "lineCount": {"type": "integer", "required": True, "nullable": False}},
+        {"type": "object", "properties": {}, "additionalProperties": False})
+
+    def validateParams(self, params):
+        if params:
+            return {"code": "E_PARAM_INVALID", "message": "select endpoints before constructing a line"}
+        return None
+
+    def executeNode(self, inputs, params, runtimeContext):
+        paramError = self.validateParams(params)
+        if paramError:
+            return {"status": "error", "error": paramError}
+        if any(name not in inputs for name in self.meta.inputPorts):
+            return error("E_INPUT_MISSING", "startPoints, endPoints and frame are required")
+        try:
+            space = BBox2D.fromPayload(inputs["frame"]).coordinateSpace
+            endpoints = []
+            for name in ("startPoints", "endPoints"):
+                values = inputs[name]
+                if not isinstance(values, list):
+                    return error("E_INPUT_TYPE", f"{name} must be an array")
+                if len(values) > 1:
+                    return error("E_INPUT_SHAPE", f"{name} requires zero or one selected point")
+                point = Point2D.fromPayload(values[0]) if values else None
+                if point is not None and point.coordinateSpace != space:
+                    return error("E_INPUT_SHAPE", "endpoints must use the frame coordinateSpace; reframe points first")
+                endpoints.append(point)
+            start, end = endpoints
+            items = () if start is None or end is None else (LineItem("segment", Line2D(start, end)),)
+            lines = LineCollection(items, space)
+            return {"status": "ok", "outputs": {"lines": lines.toPayload(), "lineCount": len(items)}}
+        except PayloadValidationError as exc:
             return error("E_INPUT_SHAPE", str(exc))

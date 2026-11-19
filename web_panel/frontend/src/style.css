@@ -28,7 +28,7 @@ body:has(.operator-shell){background:var(--panel-page,#f4f7fb)}
 .operator-heading,.operator-header-items{display:flex;gap:12px;align-items:center;flex-wrap:wrap;min-width:0}
 .operator-heading h1{font-size:20px;line-height:1.3}
 .operator-heading p{font-size:12px;color:var(--panel-muted);margin:3px 0 0}
-.operator-logo{width:40px;height:40px;object-fit:contain}
+.operator-logo{object-fit:contain;flex-shrink:0}
 .operator-status{font-size:12px;border-radius:999px;background:var(--panel-blue-soft);padding:4px 8px}
 .operator-header-items button,.operator-shell .toolbar button+button,.panel-page button+button{margin-left:0}
 .operator-shell>.toolbar{border:0;border-radius:0;margin:0;padding:6px var(--operator-inset);background:var(--panel-surface);
@@ -36,6 +36,13 @@ body:has(.operator-shell){background:var(--panel-page,#f4f7fb)}
 .operator-actions select{max-width:21ch;text-overflow:ellipsis}
 .operator-target{color:var(--panel-muted);font-size:13px}
 .operator-actions p{margin:0}
+.operator-shell .operator-control,.preview-shell .operator-control{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    color:var(--host-control-color);background:var(--host-control-background);border-color:var(--host-control-border)
+}
+.operator-shell .operator-control:hover:not(:disabled),.preview-shell .operator-control:hover:not(:disabled){background:var(--host-control-hover-background)}
+.operator-shell .operator-control:disabled,.preview-shell .operator-control:disabled{color:var(--panel-muted);background:var(--panel-subtle);border-color:var(--panel-border);opacity:1}
+.operator-control svg{flex-shrink:0}
 .operator-settings{padding:8px var(--operator-inset);background:var(--panel-surface);border-bottom:1px solid var(--panel-border)}
 .operator-settings>.toolbar{margin:0;padding:0;background:transparent;font-size:13px}
 .operator-settings .admin{border-color:var(--panel-border);border-radius:8px;margin-top:8px}

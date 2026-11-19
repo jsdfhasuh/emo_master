@@ -21,6 +21,7 @@ from emo_master.clients.runtime.display_session import DisplaySession
 from emo_master.clients.runtime.history import HistoryClient
 from emo_master.ui.presentation.hub import DisplayHub
 from emo_master.ui.presentation.renderer import RuntimePages
+from emo_master.ui.presentation.shell import configureHostButton
 from emo_master.core.presentation.assets import pageAssets
 from emo_master.apps.operator_runtime.settings import (
     DEFAULT_ROOT_KEY, LISTENER_SETTINGS_KEY, listenerSettingsJson, readListenerSettings, resolveDataRoot,
@@ -791,8 +792,14 @@ class OperatorWindow(QWidget):
         showControls = shell is None or shell.showControls
         self.startButton.setVisible(showControls)
         self.stopButton.setVisible(showControls)
-        self.startButton.setText(f"开始（{len(self.selectedWorkflowIds)} 个流程）" if len(self.selectedWorkflowIds) > 1 else "开始")
-        self.stopButton.setText("全部停止" if multi else "停止")
+        targets = '、'.join(self.controller.workflows[key].name for key in self.selectedWorkflowIds
+                          if self.controller is not None and key in self.controller.workflows)
+        configureHostButton(self.startButton, shell.startControl if shell else None, kind='start',
+            fallbackLabel=f"开始（{len(self.selectedWorkflowIds)} 个流程）" if len(self.selectedWorkflowIds) > 1 else "开始",
+            tooltip=f'启动已选流程：{targets}' if targets else '尚未选择启动流程')
+        configureHostButton(self.stopButton, shell.stopControl if shell else None, kind='stop',
+            fallbackLabel="全部停止" if multi else "停止",
+            tooltip='停止全部活动运行' if multi else '停止当前控制运行；存在多个运行时选择停止对象')
         self.stopButton.setEnabled(enabled and (any(row.get('activeJobIds') or row['jobId'] and not row['canLoad']
             for row in rows.values()) if multi else bool(self.state.get('activeJobIds') or self.state['jobId'])
             and not self.state['canLoad']))
@@ -837,6 +844,11 @@ class OperatorWindow(QWidget):
             row = rows.get(key, {})
             controls["start"].setEnabled(enabled and row.get("canStart", False))
             controls["stop"].setEnabled(enabled and bool(row.get('activeJobIds') or row.get("jobId")) and not row.get("canLoad", True))
+            workflowName = self.controller.workflows[key].name if key in self.controller.workflows else key
+            configureHostButton(controls['start'], shell.startControl if shell else None, kind='start',
+                fallbackLabel='开始流程', tooltip=f'启动流程：{workflowName}')
+            configureHostButton(controls['stop'], shell.stopControl if shell else None, kind='stop',
+                fallbackLabel='停止流程', tooltip=f'停止流程的活动运行：{workflowName}')
             controls["label"].setText(names.get(row.get("state"), "未加载") +
                 (f"\nJob: {row['jobId']}" if row.get("jobId") else "") +
                 (f"\n{row['message']}" if row.get("message") else ""))

@@ -16,7 +16,14 @@ export interface Appearance { theme?: 'light'; contentMaxWidth?: number; pagePad
 export interface PanelShell {
     title?: string; subtitle?: string; logoResourceId?: string; diagnosticsInitiallyExpanded?: boolean;
     showConnection?: boolean; showJobState?: boolean; showControls?: boolean;
+    logoWidth?: number; logoHeight?: number; headerSurface?: Surface; headerTypography?: Typography;
+    startControl?: HostControl; stopControl?: HostControl;
 }
+export interface ControlAppearance {
+    style?: 'primary' | 'secondary' | 'link'; text?: TextStyle; radius?: number;
+    padding?: Surface['padding']; minWidth?: number; minHeight?: number; showIcon?: boolean;
+}
+export interface HostControl { label?: string; appearance?: ControlAppearance; }
 export interface Surface {
     kind?: 'none' | 'card'; background?: 'transparent' | 'surface' | 'subtle';
     border?: 'none' | 'subtle'; radius?: number;
@@ -29,6 +36,10 @@ export interface ImageView {
     horizontalAlign?: 'start' | 'center' | 'end'; verticalAlign?: 'start' | 'center' | 'end';
 }
 export interface IndicatorStyle { text: string; color: string; background?: 'none' | 'soft'; }
+export interface HistoryView {
+    mode?: 'table' | 'list'; titleField?: string; subtitleField?: string; trailingField?: string;
+    showFilter?: boolean; showSort?: boolean; showPagination?: boolean;
+}
 export interface Component {
     history?: {kind:string;componentId:string;sourceComponentId?:string;orderBy?:string;descending?:boolean};
     layout?: {row?:number;column?:number;rowSpan?:number;columnSpan?:number};

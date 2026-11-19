@@ -100,6 +100,7 @@ def compositionRequirements(presentation):
                                                           'collapse', 'showMarker'))
                     or props.get('helperText') or props.get('valueLayout', 'vertical') != 'vertical'
                     or props.get('indicatorView', 'text') != 'text'
+                    or props.get('titleFollowsState') or props.get('markerPosition', 'value') != 'value'
                     or props.get('buttonStyle', 'secondary') != 'secondary'
                     or any(state.get('background') == 'soft' or state.get('color') == 'blue'
                            for state in props.get('indicatorStates', {}).values())):

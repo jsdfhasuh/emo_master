@@ -97,6 +97,42 @@ def testEmptyCollectionAndNullRemainDifferentFromFault(qtApp):
     table.close()
 
 
+def testIndicatorTitleAndSeparateMarkerUseCurrentState(qtApp):
+    component = Component(componentId='state', type='indicator', props={
+        'title': 'Inspection', 'indicatorView': 'row', 'titleFollowsState': True,
+        'markerPosition': 'title', 'typography': {'title': {'color': 'primary'}},
+        'indicatorStates': {
+            'true': {'text': 'Pass', 'color': 'green'},
+            'false': {'text': 'Fail', 'color': 'red'},
+        },
+    })
+    viewer = RuntimePages(Presentation(defaultPageId='p', pageOrder=['p'], pages={
+        'p': Page(name='Indicators', components=[component])}))
+    viewer.show()
+    view = viewer.widgets['p']['state'][1]
+    try:
+        for value, text, color in ((True, 'Pass', 'green'), (False, 'Fail', 'red')):
+            view.setValue(value)
+            assert view.text() == text  # The marker belongs to the title, not the result text.
+            assert view.title.text() == 'Inspection'
+            assert LIGHT_THEME['foreground'][color] in view.title.styleSheet()
+            assert LIGHT_THEME['foreground'][color] in view.titleMarker.styleSheet()
+            assert not view.titleMarker.isHidden()
+        view.setValue(None)
+        assert view.text() == '—' and view.titleMarker.isHidden()
+        assert LIGHT_THEME['foreground']['neutral'] in view.title.styleSheet()
+        view.component.props.titleFollowsState = False
+        view.setValue(True)
+        assert LIGHT_THEME['primary'] in view.title.styleSheet()
+        assert LIGHT_THEME['foreground']['green'] not in view.title.styleSheet()
+        assert LIGHT_THEME['foreground']['green'] in view.titleMarker.styleSheet()
+        view.component.props.showMarker = False
+        view.setValue(True)
+        assert view.titleMarker.isHidden()
+    finally:
+        viewer.close()
+
+
 @pytest.mark.parametrize('width,height,ratio', [(1920,1080,1), (3440,1440,1), (3840,2160,2), (1080,1920,1.5)])
 def testScreenAspectFitsUnchangedSurfaceReservation(width, height, ratio):
     actual = surfaceBounds(width, height, ratio)

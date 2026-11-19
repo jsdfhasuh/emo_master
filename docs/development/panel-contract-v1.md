@@ -1,6 +1,6 @@
 # Panel Contract v1：Runtime 客户端与 Web 页面交接合同
 
-合同版本 `1.0`，当前 Python SDK 为 `emo_panel_protocol 1.7.0`。工程当前版本为
+合同版本 `1.0`，当前 Python SDK 为 `emo_panel_protocol 1.8.0`。工程当前版本为
 `2.10` / Presentation `1.3`，发布快照为 `published-1`，ZIP 页面包为
 `emo-web-panel-1`（扩展名 `.emoweb`）。这些版本分别管理不同边界，不互相替代。
 
@@ -29,7 +29,7 @@ python scripts/build_panel_contract.py
 正式交付可同时生成 ZIP，使用新的版本目录以保持历史产物可追溯：
 
 ```powershell
-python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.7.0 --archive build/panel-contract-v1-sdk-1.7.0.zip
+python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.8.0 --archive build/panel-contract-v1-sdk-1.8.0.zip
 ```
 
 `--archive` 归档前核对 manifest 的全部文件摘要，ZIP 仅包含这些文件及 manifest。
@@ -363,3 +363,18 @@ Web 自行记录待启用状态并继续原发布。恢复旧待启用版本前�
 正式结果继续使用既有 DisplayService、ResultCollector、图片资源和同次结果身份。
 流程修改造成来源失效时配置仍保留并返回诊断；仍存在的作用域可发布明确 UNAVAILABLE
 来源与有效来源的同次结果，已消失的作用域不生成伪结果。Web 不应把旧图片或旧判定当作有效实时数据。
+
+## 通用页面配置（SDK 1.8.0）
+
+当前工程 2.10 / 页面 1.3 新增的源字段直接投影到 PublishedPresentation，官方 Schema、
+TypeScript 和 wheel 均从当前模型生成：
+
+- `shell.logoWidth/logoHeight` 定义 logo 原图的等比显示范围，默认 40×40。
+- `shell.headerSurface/headerTypography` 复用共享表面和字体角色；title/helper 分别表示主标题和副标题。
+- `shell.startControl/stopControl` 包含可选 label 与 appearance。按钮 appearance 使用
+  style、text、radius、padding、minWidth/minHeight、showIcon；实际任务控制仍由宿主完成。
+- indicator 的 `titleFollowsState` 和 `markerPosition` 支持同次状态驱动标题及标题前圆点。
+- `historyView.showFilter/showSort/showPagination` 独立隐藏 UI；既有查询、选中记录及外部导航不改变。
+
+以上字段可通过两端作者入口修改、保存和重开，并随正式页面包传递。
+设计及验证范围见 [页面配置补齐](../../openspec/changes/complete-page-configuration/README.md)。

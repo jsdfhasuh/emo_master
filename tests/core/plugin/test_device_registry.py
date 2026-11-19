@@ -94,6 +94,24 @@ def testOperatorRequirementsAreOptionalAndStrict():
     assert manifest is None and errors[0].code == "E_DEVICE_REQUIREMENT"
 
 
+@pytest.mark.parametrize("available", ["device.camera.huaray_imv", "device.camera.hikrobot_mvs", None])
+def testOriginalCameraRegistersWithEitherCameraDeclaration(monkeypatch, available):
+    root = ROOT / "src/emo_master/plugins/builtins/huaray_camera"
+    registry = PluginRegistry("0.6.1")
+    types, rejected = registry.scanDeviceTypes([root])
+    assert not rejected
+    subset = {available: types[available]} if available else {}
+    monkeypatch.setattr(registry, "scanDeviceTypes", lambda _roots: (subset, {}))
+    result = registry.scan(root)
+    operatorId = "vision.io.huaray_camera"
+    if available:
+        requirement = result.activeOperators[operatorId].manifest.deviceRequirements["camera"]
+        assert requirement.acceptsDeclaration(types[available])
+        assert not requirement.acceptsDeclaration(types[available].model_copy(update={"capabilities": []}))
+    else:
+        assert result.rejectedOperators[operatorId][0].code == "E_DEVICE_REQUIREMENT"
+
+
 def testRootReadFailureDoesNotAbortOtherDeviceRoots(tmp_path, monkeypatch):
     write(tmp_path / "good", "plugin", declaration())
     original = Path.glob

@@ -16,6 +16,7 @@ class ManagedCameraDebugDialog(QDialog):
         super().__init__(parent)
         self.client, self.projectId, self.deviceId = client, projectId, deviceId
         self.definition = definition
+        self.supportsTuning = definition.deviceTypeId == "device.camera.huaray_imv"
         self.runtimeId = ""
         self.state = None
         self.sessionId = ""
@@ -85,6 +86,12 @@ class ManagedCameraDebugDialog(QDialog):
         for button in (self.readButton, self.trialButton):
             button.setEnabled(False)
             row.addWidget(button)
+        if not self.supportsTuning:
+            for control in (self.exposure, self.gain):
+                trialForm.labelForField(control).hide()
+                control.hide()
+            for widget in (self.readButton, self.trialButton, self.actual):
+                widget.hide()
         row.addStretch()
         row.addWidget(close)
         layout.addLayout(row)
@@ -162,7 +169,7 @@ class ManagedCameraDebugDialog(QDialog):
     def diagnostic(self, action):
         if self.pending is not None or not self.sessionId or self.closed:
             return
-        if self.tuningVersion < 1:
+        if not self.supportsTuning or self.tuningVersion < 1:
             self.status.setText('Runtime 不支持参数回读和试调，请升级 Runtime')
             return
         self.stopLive()
@@ -225,8 +232,16 @@ class ManagedCameraDebugDialog(QDialog):
                 self.scalePreview()
                 metadata = result["metadata"]
                 acquisition = metadata.get("acquisition", {})
+                exposure = acquisition.get('actualExposureUs', '未提供')
+                evidence = acquisition.get('exposureEvidence')
+                if evidence == 'configuration_readback_not_frame_metadata':
+                    exposureText = f"曝光回读 {exposure} μs（相机当前值）"
+                elif evidence == 'frame_metadata':
+                    exposureText = f"本帧曝光 {exposure} μs"
+                else:
+                    exposureText = f"曝光 {exposure} μs"
                 self.status.setText(f"帧 {acquisition.get('blockId', metadata.get('frameId', '-'))} · 周期 {metadata.get('cycleId', '诊断试调')}\n"
-                    f"曝光回读 {acquisition.get('actualExposureUs', '未提供')} us（非逐帧曝光证据）"
+                    + exposureText
                     + (' · 试调前参数已恢复' if acquisition.get('restored') else ''))
                 if metadata.get('source') == 'production':
                     from datetime import datetime
@@ -248,7 +263,7 @@ class ManagedCameraDebugDialog(QDialog):
                 self.mode.setText('生产已启动 · 转为观看已有采集结果')
         self.captureButton.setEnabled(bool(self.sessionId) and not self.closed)
         for button in (self.readButton, self.trialButton):
-            button.setEnabled(bool(self.sessionId) and not self.closed)
+            button.setEnabled(self.supportsTuning and bool(self.sessionId) and not self.closed)
             button.setToolTip('' if self.tuningVersion else '需要支持参数诊断的新版 Runtime')
         self.liveButton.setEnabled(bool(self.sessionId) and bool(self.previewVersion) and not self.closed)
         if self.pendingKind == 'open' and self.previewVersion:

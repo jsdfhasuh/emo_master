@@ -30,6 +30,11 @@ A node binds a declared slot to a device and optional static selectors:
 This is a structural example. Slot names and selector schemas come from the
 operator manifest's `deviceRequirements`. Each requirement names
 `deviceTypeId`, `requiredCapabilities` and a closed-object `selectorSchema`.
+An optional `alternativeDeviceTypeIds` array allows the same slot to bind another
+registered type. At least one listed type must provide all required capabilities
+and selectors for the operator to register. During binding the selected type
+must itself meet those requirements. Its own connection and parameter schemas
+govern the device instance.
 The device declaration maps selectors to stable item IDs with
 `bindingSelectors`, for example `connection.channels`, `channelId`, `name`.
 

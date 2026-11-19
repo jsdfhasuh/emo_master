@@ -4,7 +4,7 @@ from time import monotonic, sleep
 
 from PySide2.QtWidgets import QApplication, QMessageBox
 
-from emo_master.apps.designer.ui.device_network import DeviceNetworkDialog
+from emo_master.apps.designer.ui.device_network import DeviceNetworkDialog, MvsDiscoveryDialog
 from tests.runtime.test_device_network import ROW
 
 
@@ -19,6 +19,9 @@ class Client:
         assert self.release.wait(3)
         if action == 'discover':
             return dict(discoveryId='discovery', devices=[deepcopy(ROW)], sdkVersion='synthetic')
+        if action == 'discover_mvs':
+            return dict(devices=[dict(serialNumber='00042', manufacturerName='Hikrobot', modelName='Fixture',
+                                      transport='USB3', ipAddress='')])
         return dict(state='COMPLETED', requestId=kwargs['requestId'], after=dict(ROW, ipAddress='192.0.2.20'))
 
 
@@ -29,6 +32,24 @@ def finish(dialog):
         dialog.finish()
         sleep(.005)
     assert dialog.pending is None
+
+
+def testMvsDiscoveryAdoptsExactSerial(retainedQtApplication):
+    client = Client()
+    dialog = MvsDiscoveryDialog(client, 'project', 'runtime')
+    try:
+        finish(dialog)
+        assert dialog.selectedSerialNumber is None
+        assert dialog.table.item(0, 0).text() == '00042'
+        assert dialog.table.horizontalHeaderItem(1).text() == '厂商' and dialog.table.item(0, 1).text() == 'Hikrobot'
+        assert dialog.table.item(0, 3).text() == 'USB3'
+        assert dialog.forceButton.isHidden()
+        dialog.table.selectRow(0)
+        dialog.adoptButton.click()
+        assert dialog.selectedSerialNumber == '00042'
+        assert [action for action, _ in client.calls] == ['discover_mvs']
+    finally:
+        dialog.close()
 
 
 def testDiscoveryAndHardwareMutationAreSeparateConfirmedActions(retainedQtApplication, tmp_path, monkeypatch):

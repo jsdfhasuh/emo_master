@@ -67,8 +67,14 @@ def executeNetwork(api, action, payload):
 
 def networkHost(writer, action, payload, apiFactory=None):
     try:
-        from emo_master.plugins.builtins._huaray_imv import ImvApi
-        result = dict(ok=True, result=executeNetwork((apiFactory or ImvApi)(), action, payload))
+        if action == 'discover_mvs':
+            from emo_master.plugins.builtins._hikrobot_mvs import discoverMvsDevices
+            devices = (apiFactory or discoverMvsDevices)()
+            response = dict(devices=devices, outcome='COMPLETED')
+        else:
+            from emo_master.plugins.builtins._huaray_imv import ImvApi
+            response = executeNetwork((apiFactory or ImvApi)(), action, payload)
+        result = dict(ok=True, result=response)
     except Exception as error:
         result = dict(ok=False, code=getattr(error, 'code', 'E_NETWORK_HOST'), message=str(error),
                       outcome=getattr(error, 'outcome', 'UNKNOWN' if action == 'force_ip' else 'NOT_EXECUTED'))
@@ -158,13 +164,16 @@ class DeviceNetwork:
         try:
             if self.hosts:
                 raise DeviceError('E_DEVICE_RELEASE_PENDING', 'previous network Host has not retired; close Runtime')
-            if request.action == 'discover':
-                self.discovery = None
-                result = self.runner('discover', {}, self.closing.is_set)
+            if request.action in ('discover', 'discover_mvs'):
+                if request.action == 'discover':
+                    self.discovery = None
+                result = self.runner(request.action, {}, self.closing.is_set)
                 if request.project_id != runtime.loadedProjectId or self.closing.is_set() or runtime._closing:
                     raise DeviceError('E_NETWORK_STALE', 'project changed or Runtime closed during discovery')
-                result.update(discoveryId=uuid4().hex, runtimeInstanceId=runtime.runtimeInstanceId, projectId=runtime.loadedProjectId)
-                self.discovery = (monotonic(), deepcopy(result))
+                result.update(runtimeInstanceId=runtime.runtimeInstanceId, projectId=runtime.loadedProjectId)
+                if request.action == 'discover':
+                    result['discoveryId'] = uuid4().hex
+                    self.discovery = (monotonic(), deepcopy(result))
                 return result
             if request.action != 'force_ip':
                 raise ValueError('unsupported device network action')

@@ -59,6 +59,7 @@ from emo_master.core.project.devices import workflowDeviceIds
 from emo_master.core.workflow.errors import WorkflowCompileError
 
 runtime_pb2: Any = _runtime_pb2
+INDUSTRIAL_CAMERA_TYPES = {"device.camera.huaray_imv", "device.camera.hikrobot_mvs"}
 
 
 def _withProjectStateLock(method: Any) -> Any:
@@ -1008,7 +1009,7 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
                                    enabled=definition.enabled,
                                    connectionLifetime=self.deviceManager.types[definition.deviceTypeId].connectionLifetime,
                                    connectionAddress={field: definition.connection[field]
-                                       for field in ('host', 'port', 'bindAddress', 'bindHost', 'cameraKey', 'serial')
+                                       for field in ('host', 'port', 'bindAddress', 'bindHost', 'cameraKey', 'serial', 'serialNumber')
                                        if field in definition.connection})
                 snapshot = getattr(driver, "snapshot", None)
                 if callable(snapshot):
@@ -1129,7 +1130,7 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
             definition = self.deviceManager.definitions.get(request.device_id)
             if definition is None or revisionOf(definition.model_dump()) != request.expected_definition_revision:
                 raise ValueError("device definition changed; read state again")
-            if definition.deviceTypeId == "device.camera.huaray_imv" and not request.hardware_synchronized:
+            if definition.deviceTypeId in INDUSTRIAL_CAMERA_TYPES and not request.hardware_synchronized:
                 raise ValueError("confirm external triggers are stopped and camera acquisition is synchronized before recovery")
             self.deviceManager.recover(request.device_id, request.expected_generation)
             return self.GetDeviceStates(runtime_pb2.GetDeviceStatesRequest(project_id=request.project_id), context)
@@ -1158,15 +1159,18 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
                     raise ValueError("Runtime configuration is not ready")
                 definition = self.deviceManager.definitions.get(request.device_id)
                 executor = self.deviceManager.executors.get(request.device_id)
-                if (definition is None or definition.deviceTypeId != "device.camera.huaray_imv"
+                if (definition is None or definition.deviceTypeId not in INDUSTRIAL_CAMERA_TYPES
                         or revisionOf(definition.model_dump()) != request.expected_definition_revision
                         or executor is None or executor.generation != request.expected_generation):
                     raise ValueError("camera identity/definition changed; read online state again")
+                tuning = definition.deviceTypeId == "device.camera.huaray_imv"
                 if request.action == "open":
                     sessionId = self.cameraDiagnostics.open(request.device_id, request.expected_definition_revision,
                                                              request.expected_generation)
                     return runtime_pb2.CameraDiagnosticReply(ok=True, session_id=sessionId,
-                        metadata_json='{"cameraTuningVersion":1,"cameraPreviewVersion":1}')
+                        metadata_json=json.dumps({"cameraTuningVersion": int(tuning), "cameraPreviewVersion": 1}))
+                if request.action in {"read_parameters", "trial_capture"} and not tuning:
+                    raise ValueError("this camera does not support parameter readback or trial tuning")
                 if request.action not in {"capture", "read_parameters", "trial_capture", 'watch', 'preview_capture'} or session is None:
                     raise ValueError("unknown camera diagnostic session/action")
                 if (session.deviceId, session.definitionRevision, session.generation) != (

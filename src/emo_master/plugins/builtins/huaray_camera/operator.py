@@ -157,7 +157,7 @@ class OperatorMeta:
 class HuarayCameraOperator:
     meta = OperatorMeta(
         operatorId="vision.io.huaray_camera",
-        displayName="Huaray IMV Camera",
+        displayName="工业相机采集（大华华睿 IMV / 海康 MVS）",
         version="1.2.0",
         inputPorts={},
         outputPorts={

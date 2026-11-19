@@ -289,13 +289,17 @@ def testHostFailureNeverReplaysAndConfirmsExitBeforeReleasingMemory(factory):
     d = definition()
     driver = ManagedImv(d, apiFactory=factory)
     try:
+        # Production connects before dispatching capture. Keep Windows spawn
+        # time out of the deadline intended for the injected acquisition failure.
+        driver.connect(d.defaults, lambda: False, time.monotonic() + 15)
+        connectedSequence = driver.sequence
         with pytest.raises(DeviceError) as failure:
             driver.execute("capture", d.defaults, lambda: False, time.monotonic() + 2)
         assert failure.value.unhealthy and failure.value.outcome == "UNKNOWN"
         assert driver.process is None and driver.memory is None
         with pytest.raises(DeviceError, match="recovery"):
             driver.execute("capture", d.defaults, lambda: False, time.monotonic() + 2)
-        assert driver.sequence == 1
+        assert driver.sequence == connectedSequence + 1
     finally:
         driver.close()
 

@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "1.1",
+  "driverApiVersion": "1.1",
+  "deviceTypeId": "device.camera.hikrobot_mvs",
+  "version": "1.0.0",
+  "displayName": "海康机器人 MVS 工业相机",
+  "category": "相机",
+  "iconKey": "camera",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "0.x",
+  "platforms": ["windows"],
+  "driverEntry": "emo_master.apps.runtime.devices.mvs_host:ManagedMvs",
+  "executionLocation": "camera_host",
+  "operationScheduling": "serial",
+  "connectionLifetime": "persistent",
+  "connectionSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {
+      "serialNumber": {"title": "相机序列号（MVS 中的 Serial Number）", "type": "string",
+        "minLength": 1, "maxLength": 64, "pattern": "^[^\\s\\u0000]+$",
+        "xDeviceIdentity": true, "xResourcePurpose": "camera_serial"},
+      "maxFrameBytes": {"title": "单帧容量上限", "type": "integer", "minimum": 1, "maximum": 134217728,
+        "default": 67108864, "xUnit": "bytes", "xAdvanced": true}
+    },
+    "required": ["serialNumber", "maxFrameBytes"]
+  },
+  "defaultsSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {
+      "triggerMode": {"title": "触发模式", "type": "string", "enum": ["software", "hardware", "freeRun"], "default": "software",
+        "xOptionLabels": {"software": "软件触发", "hardware": "硬件触发", "freeRun": "连续采集"}},
+      "triggerSource": {"title": "触发输入线", "type": "string", "enum": ["Line0", "Line1", "Line2", "Line3"],
+        "default": "Line0", "xEnabledWhen": {"triggerMode": ["hardware"]}},
+      "triggerActivation": {"title": "触发边沿", "type": "string", "enum": ["RisingEdge", "FallingEdge"], "default": "RisingEdge",
+        "xOptionLabels": {"RisingEdge": "上升沿", "FallingEdge": "下降沿"}, "xEnabledWhen": {"triggerMode": ["hardware"]}},
+      "captureTimeoutMs": {"title": "取图超时（硬件触发可设 0 持续等待）", "type": "integer",
+        "minimum": 0, "maximum": 600000, "default": 5000, "xUnit": "ms"},
+      "outputColor": {"title": "输出颜色", "type": "string", "enum": ["bgr", "gray"], "default": "bgr",
+        "xOptionLabels": {"bgr": "彩色（BGR）", "gray": "灰度"}},
+      "exposureMode": {"title": "曝光设置", "type": "string", "enum": ["keep", "manual"], "default": "keep",
+        "xOptionLabels": {"keep": "沿用相机当前设置", "manual": "手动"}},
+      "exposureUs": {"title": "曝光时间", "type": "number", "exclusiveMinimum": 0, "maximum": 60000000,
+        "default": 10000, "xUnit": "μs", "xEnabledWhen": {"exposureMode": ["manual"]}},
+      "gainMode": {"title": "增益设置", "type": "string", "enum": ["keep", "manual"], "default": "keep",
+        "xOptionLabels": {"keep": "沿用相机当前设置", "manual": "手动"}},
+      "gainDb": {"title": "增益", "type": "number", "default": 0, "xUnit": "dB", "xEnabledWhen": {"gainMode": ["manual"]}}
+    },
+    "required": ["triggerMode", "triggerSource", "triggerActivation", "captureTimeoutMs", "outputColor",
+                 "exposureMode", "exposureUs", "gainMode", "gainDb"]
+  },
+  "policiesSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {
+      "connect": {"title": "连接策略", "type": "string", "enum": ["on_first_use", "on_project_open", "on_project_run", "manual"],
+        "default": "on_first_use"},
+      "release": {"title": "释放策略", "type": "string", "enum": ["on_project_close", "when_unused", "idle_timeout", "manual"],
+        "default": "on_project_close"},
+      "idleTimeoutMs": {"title": "空闲释放时长", "type": "integer", "minimum": 1, "maximum": 86400000,
+        "default": 30000, "xUnit": "ms", "xAdvanced": true},
+      "deviceWaitTimeoutMs": {"title": "排队超时", "type": "integer", "minimum": 1, "maximum": 600000,
+        "default": 5000, "xUnit": "ms", "xAdvanced": true},
+      "operationTimeoutMs": {"title": "操作超时", "type": "integer", "minimum": 1, "maximum": 600000,
+        "default": 15000, "xUnit": "ms", "xAdvanced": true}
+    },
+    "required": ["connect", "release", "deviceWaitTimeoutMs", "operationTimeoutMs"]
+  },
+  "cancellableWait": {"action": "capture", "timeoutPath": "captureTimeoutMs", "requires": {"triggerMode": "hardware"}},
+  "overridePaths": ["triggerMode", "triggerSource", "triggerActivation", "captureTimeoutMs", "outputColor",
+                    "exposureMode", "exposureUs", "gainMode", "gainDb"],
+  "dynamicPaths": ["exposureUs", "gainDb"],
+  "parameterRules": [
+    {"present": "triggerSource", "requires": {"triggerMode": "hardware"}, "whenOverridden": true},
+    {"present": "triggerActivation", "requires": {"triggerMode": "hardware"}, "whenOverridden": true},
+    {"present": "exposureUs", "requires": {"exposureMode": "manual"}, "whenOverridden": true},
+    {"present": "gainDb", "requires": {"gainMode": "manual"}, "whenOverridden": true}
+  ],
+  "capabilities": ["capture"],
+  "controlCapabilities": ["connect", "disconnect", "maintenance", "resume", "recover", "test_connection"],
+  "actionSchemas": {"capture": {"type": "object", "properties": {}, "additionalProperties": false}}
+}

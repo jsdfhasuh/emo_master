@@ -2,6 +2,8 @@
 
 本文件由 emo-master-operator-authoring skill 的 inspect_catalog.py 生成。开发流程和分类分析见 [算子与设备插件开发指南](operator-development-guide.md)。
 
+2026-11-18 工业相机采集算子 `vision.io.huaray_camera @ 1.2.0` 的 `camera` 槽支持大华／华睿 IMV 和海康 MVS。海康设备类型 `device.camera.hikrobot_mvs @ 1.0.0` 按序列号连接 GigE 或 USB3 Vision 相机。参见[海康 MVS 相机采集](guides/hikrobot-mvs-camera.md)。
+
 2026-10-25 增量：新增 `vision.io.rtsp_capture @ 1.0.0` 与 `device.camera.rtsp @ 1.0.0`，
 保留旧 `vision.io.rtsp_camera`。当前数量为 78 个算子、7 种设备类型；下面保留原扫描快照，
 其时间、哈希和统计不覆盖此次新增内容。使用和迁移说明见 [RTSP 托管相机](guides/rtsp-managed-camera.md)。

@@ -18,6 +18,9 @@ from emo_master.apps.designer.ui.icon_map import icon, deviceIcon
 from emo_master.apps.designer.ui.param_form import SchemaParamForm
 
 
+_DIAGNOSTIC_CAMERA_TYPES = {"device.camera.huaray_imv", "device.camera.hikrobot_mvs"}
+
+
 def _activeOwnersText(state):
     owners = state.get('activeOwners')
     if owners is None:
@@ -585,7 +588,7 @@ class DeviceWorkspace(QDialog):
             self.commitPending()
             definition = self.c.session.document().devices.definitions[self.selectedId]
             definition = self.deviceTypes[definition.deviceTypeId].validateDefinition(definition)
-            if definition.deviceTypeId == "device.camera.huaray_imv":
+            if definition.deviceTypeId in _DIAGNOSTIC_CAMERA_TYPES:
                 from emo_master.apps.designer.ui.managed_camera_debug import ManagedCameraDebugDialog as DiagnosticDialog
             elif definition.deviceTypeId == "device.plc.mitsubishi_slmp":
                 from emo_master.apps.designer.ui.managed_plc_debug import ManagedPlcDebugDialog as DiagnosticDialog
@@ -654,7 +657,7 @@ class DeviceWorkspace(QDialog):
         definition = self.c.session.document().devices.definitions[self.selectedId]
         self.pending = self.reader.submit(recover, self.c.session.document().project.projectId,
                                           self.stateRuntimeId, self.selectedId, deepcopy(state),
-                                          hardwareSynchronized=definition.deviceTypeId == "device.camera.huaray_imv")
+                                          hardwareSynchronized=definition.deviceTypeId in _DIAGNOSTIC_CAMERA_TYPES)
         self.timer.start(40)
 
     def control(self, action):
@@ -1091,7 +1094,7 @@ class DeviceWorkspace(QDialog):
         supported = dict(connect='connect' in controls, disconnect='disconnect' in controls,
             maintenance='maintenance' in controls, resume='resume' in controls,
             recover='recover' in controls, test='test_connection' in controls and callable(getattr(self.c.window.runtimeClient, 'deviceNetworkCommand', None)),
-            diagnostics=bool(declaration and (declaration.deviceTypeId == 'device.camera.huaray_imv' and 'capture' in capabilities
+            diagnostics=bool(declaration and (declaration.deviceTypeId in _DIAGNOSTIC_CAMERA_TYPES and 'capture' in capabilities
                 or declaration.deviceTypeId == 'device.plc.mitsubishi_slmp' and 'read' in capabilities)),
             network=bool(declaration and declaration.deviceTypeId == 'device.camera.huaray_imv'
                          and callable(getattr(self.c.window.runtimeClient, 'deviceNetworkCommand', None))))

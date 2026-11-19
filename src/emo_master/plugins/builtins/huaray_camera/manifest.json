@@ -1,10 +1,11 @@
 {
   "operatorId": "vision.io.huaray_camera",
-  "displayName": "Huaray IMV Camera",
+  "displayName": "工业相机采集（大华华睿 IMV / 海康 MVS）",
   "version": "1.2.0",
   "deviceRequirements": {
     "camera": {
       "deviceTypeId": "device.camera.huaray_imv",
+      "alternativeDeviceTypeIds": ["device.camera.hikrobot_mvs"],
       "requiredCapabilities": ["capture"]
     }
   },
@@ -12,7 +13,7 @@
   "category": "图像采集",
   "iconKey": "camera",
   "iconResource": "assets/icon.svg",
-  "summary": "通过华睿 IMV SDK 直连相机，每次执行采集一帧并保留作业内连接。",
+  "summary": "绑定大华华睿 IMV 或海康机器人 MVS 工业相机，按设备配置采集图像、坐标、帧号及曝光信息。",
   "inputPorts": {},
   "outputPorts": {
     "image": {

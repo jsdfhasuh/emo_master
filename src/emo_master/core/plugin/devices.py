@@ -9,7 +9,7 @@ import json
 import re
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, model_serializer, model_validator
 
 from emo_master.core.project.devices import (
     DeviceDefinition, DeviceId, DeviceModel, DeviceValueBinding,
@@ -24,12 +24,31 @@ def _deviceInvalid(message, path):
 
 class DeviceRequirement(DeviceModel):
     deviceTypeId: DeviceId
+    alternativeDeviceTypeIds: list[DeviceId] = Field(default_factory=list)
     requiredCapabilities: list[str] = Field(default_factory=list)
     selectorSchema: dict = Field(default_factory=lambda: dict(
         type="object", properties={}, additionalProperties=False))
 
+    @property
+    def acceptedTypeIds(self) -> tuple[str, ...]:
+        return (self.deviceTypeId, *self.alternativeDeviceTypeIds)
+
+    def acceptsDeclaration(self, declaration: DeviceType) -> bool:
+        return (declaration.deviceTypeId in self.acceptedTypeIds
+                and set(self.requiredCapabilities) <= set(declaration.capabilities)
+                and set(self.selectorSchema["properties"]) <= set(declaration.bindingSelectors))
+
+    @model_serializer(mode="wrap")
+    def serializeRequirement(self, handler):
+        result = handler(self)
+        if not self.alternativeDeviceTypeIds:
+            result.pop("alternativeDeviceTypeIds", None)
+        return result
+
     @model_validator(mode="after")
     def validateSelectors(self):
+        if len(set(self.acceptedTypeIds)) != len(self.acceptedTypeIds):
+            raise ValueError("slot device type IDs must be distinct")
         if (self.selectorSchema.get("type") != "object"
                 or not isinstance(self.selectorSchema.get("properties"), dict)
                 or self.selectorSchema.get("additionalProperties") is not False):
@@ -304,7 +323,7 @@ def validateDeviceBinding(requirement, binding, definition, declaration, *, allo
         requirement = DeviceRequirement.model_validate(dict(requirement))
     if not isinstance(binding, DeviceBinding):
         binding = DeviceBinding.model_validate(dict(binding))
-    if definition.deviceTypeId != requirement.deviceTypeId:
+    if definition.deviceTypeId != declaration.deviceTypeId or definition.deviceTypeId not in requirement.acceptedTypeIds:
         raise invalid("device type does not match operator slot")
     if not set(requirement.requiredCapabilities) <= set(declaration.capabilities):
         raise invalid("device lacks required capabilities")

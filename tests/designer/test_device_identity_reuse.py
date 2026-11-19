@@ -17,12 +17,14 @@ from tests.designer.test_device_workspace import windowFor, waitUntil
 def builtin(name):
     root = Path(__file__).resolve().parents[2] / 'src/emo_master/plugins/builtins'
     paths = {'simulated': 'simulated_camera/device_types/camera.json',
-             'plc': 'plc_slmp_read/device_types/slmp.json', 'camera': 'huaray_camera/device_types/imv.json'}
+             'plc': 'plc_slmp_read/device_types/slmp.json', 'camera': 'huaray_camera/device_types/imv.json',
+             'mvs': 'huaray_camera/device_types/mvs.json'}
     return DeviceType.model_validate_json((root / paths[name]).read_text(encoding='utf-8'))
 
 
 @pytest.mark.parametrize('name,connection,other', [
     ('simulated', dict(serial='TEST'), dict(serial='DIFFERENT')),
+    ('mvs', dict(serialNumber='00042'), dict(serialNumber='42')),
     ('plc', dict(host='192.0.2.1', port=10001), dict(host='192.0.2.2', port=10001)),
     ('camera', dict(cameraKey='KEY'), dict(cameraKey='OTHER'))])
 def testDeclaredIdentityIgnoresDefaultsAndNeverMerges(name, connection, other):
@@ -51,18 +53,22 @@ def testUnmarkedOrIncompleteIdentityNeverGuessesAliases(declaration, definition)
     assert not matchingDevices(incomplete, {'existing': incomplete}, declaration)
 
 
-def testDuplicateCatalogEditIsAtomicAndOffersExistingId():
-    metadata = builtin('simulated')
+@pytest.mark.parametrize(('kind', 'operatorId', 'connection'), [
+    ('simulated', 'vision.io.simulated_camera', dict(serial='SAME')),
+    ('mvs', 'vision.io.huaray_camera', dict(serialNumber='00042')),
+])
+def testDuplicateCatalogEditIsAtomicAndOffersExistingId(kind, operatorId, connection):
+    metadata = builtin(kind)
     session = ProjectEditSession(WorkflowStore().toPayload(), enablePresentation=False)
     editor = DeviceCatalogEditor(session, {metadata.deviceTypeId: metadata})
     value = DeviceDefinition(name='original', deviceTypeId=metadata.deviceTypeId, driverVersion=metadata.version,
-                             connection=dict(serial='SAME')).model_dump()
+                             connection=connection).model_dump()
     editor.put(value, deviceId='existing')
     before, undo = session.payload(), len(session._undo)
     with pytest.raises(ValueError, match='existing'):
         editor.put(dict(value, name='different policy'), deviceId='duplicate')
     assert session.payload() == before and len(session._undo) == undo
-    node = dict(nodeId='capture', operatorId='vision.io.simulated_camera',
+    node = dict(nodeId='capture', operatorId=operatorId,
                 deviceBindings=dict(camera=dict(deviceId='duplicate')))
     with pytest.raises(ValueError, match='existing'):
         editor.commitNode('main', node, newDevice=value, deviceId='duplicate')

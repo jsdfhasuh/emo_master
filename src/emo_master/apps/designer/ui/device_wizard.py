@@ -14,7 +14,8 @@ from emo_master.apps.designer.state.device_catalog import (DeviceCatalogEditor, 
     migrateLegacySources, migrateLegacyResourceTargets)
 from emo_master.apps.designer.state.schema_utils import applySchemaDefaults
 from emo_master.apps.designer.ui.param_form import SchemaParamForm
-from emo_master.core.project.devices import DeviceDefinition
+from emo_master.core.plugin.devices import DeviceRequirement, selectorCandidates
+from emo_master.core.project.devices import DeviceDefinition, leafPaths
 
 
 def configurationSchema(schema):
@@ -304,7 +305,8 @@ class DeviceDefinitionDialog(QDialog):
         actions = QHBoxLayout()
         self.discoverButton = QPushButton('发现设备')
         self.discoverButton.clicked.connect(self.discover)
-        self.discoverButton.setEnabled(client is not None and declaration.deviceTypeId == 'device.camera.huaray_imv')
+        self.discoverButton.setEnabled(client is not None and declaration.deviceTypeId in {
+            'device.camera.huaray_imv', 'device.camera.hikrobot_mvs'})
         self.testButton = QPushButton('测试连接')
         self.testButton.clicked.connect(self.testConnection)
         self.testButton.setEnabled(client is not None and "test_connection" in declaration.controlCapabilities)
@@ -405,14 +407,19 @@ class DeviceDefinitionDialog(QDialog):
                     return
             result = future.result()
             if self.setupKind == 'discover':
-                from .device_network import DeviceNetworkDialog
-                dialog = DeviceNetworkDialog(self.client, result['projectId'], result['runtimeInstanceId'], '', {}, self,
-                                             discoveryOnly=True)
-                dialog.exec_()
-                if dialog.selectedCameraKey:
-                    values = self.forms['connection'].getValues()
-                    values['cameraKey'] = dialog.selectedCameraKey
-                    self.forms['connection'].setSchema(self.declaration.connectionSchema, values)
+                if self.declaration.deviceTypeId == 'device.camera.hikrobot_mvs':
+                    from .device_network import MvsDiscoveryDialog
+                    dialog = MvsDiscoveryDialog(self.client, result['projectId'], result['runtimeInstanceId'], self)
+                    dialog.exec_()
+                    field, value = 'serialNumber', dialog.selectedSerialNumber
+                else:
+                    from .device_network import DeviceNetworkDialog
+                    dialog = DeviceNetworkDialog(self.client, result['projectId'], result['runtimeInstanceId'], '', {}, self,
+                                                 discoveryOnly=True)
+                    dialog.exec_()
+                    field, value = 'cameraKey', dialog.selectedCameraKey
+                if value:
+                    self.forms['connection']._controls[field].setText(value)
             else:
                 self.error.setText(result.get('message') or '连接检查通过；未验证采集或业务读写；未保存或发布配置')
                 self.error.setToolTip('')
@@ -484,7 +491,11 @@ class SourceEditor(QWidget):
                 value = value.get(part, missing) if isinstance(value, dict) else missing
                 override = override.get(part, missing) if isinstance(override, dict) else missing
             constant = override if override is not missing else value
-            form = configurationForm({"type": "object", "properties": {"value": dict(spec, title="值")},
+            # Sibling-dependent enablement belongs to the full device form.
+            # Each override is edited separately and validated with its effective siblings on Apply.
+            valueSpec = dict(spec, title="值")
+            valueSpec.pop("xEnabledWhen", None)
+            form = configurationForm({"type": "object", "properties": {"value": valueSpec},
                                       "required": ["value"]}, {} if constant is missing else {"value": constant})
             label = QLabel("设备默认：" + ("未设置" if value is missing else str(value) + " " + spec.get("xUnit", "")))
             label.setWordWrap(True)
@@ -587,11 +598,28 @@ class SourceEditor(QWidget):
         return node
 
 
+def _hasLegacyCameraSources(node, actionFields, workflowId, resources):
+    savedSchema = node.get("paramSchema", {})
+    # Pre-managed 1.2.0 nodes can rely exclusively on the saved direct-camera defaults.
+    if (not node.get("deviceBindings") and "xDeviceActionFields" not in savedSchema and
+            {"selectionMode", "cameraKey", "triggerMode"} <= savedSchema.get("properties", {}).keys()):
+        return True
+    if set(node.get("params", {})) - set(actionFields):
+        return True
+    if any(binding["parameterPath"][0] not in actionFields for binding in node.get("globalVariableBindings", [])):
+        return True
+    for binding in (*resources.get("siteBindings", []), *resources.get("parameterBindings", [])):
+        target = binding["target"]
+        if (target.get("workflowId") == workflowId and target.get("nodeId") == node["nodeId"]
+                and target["parameterPath"][0] not in actionFields):
+            return True
+    return False
+
+
 class DeviceNodeDialog(QDialog):
     def __init__(self, coordinator, node, requirements, parent=None, *, position=None, migrateLegacy=False):
         super().__init__(parent)
         self.c, self.node, self.requirements = coordinator, deepcopy(node), requirements
-        self.migrateLegacy = migrateLegacy and not node.get("deviceBindings")
         self.projectSignature = coordinator.session._signature()
         self.workflowId = coordinator.window.activeWorkflowId
         self.runtimeScope = self._runtimeScope()
@@ -599,6 +627,8 @@ class DeviceNodeDialog(QDialog):
         self.position = position
         self.newDefinitions = {}
         self.slots = {}
+        self.slotTypes = {}
+        self._sourceHints = {}
         self.sources = {}
         self.selectors = {}
         self.onlineSnapshot = None
@@ -619,9 +649,28 @@ class DeviceNodeDialog(QDialog):
         if operatorName and operatorName != node.get("displayName"):
             self.setWindowTitle(self.windowTitle() + f" · {operatorName}")
         self.tabs = QTabWidget()
-        schema = deepcopy(node.get("paramSchema", {}))
+        savedSchema = node.get("paramSchema", {})
+        self.managedSchema = definition.get("paramSchema", {})
+        cameraNode = node["operatorId"] == "vision.io.huaray_camera"
+        if cameraNode and "xDeviceActionFields" not in self.managedSchema:
+            # The built-in catalog is also available while the Designer catalog loads.
+            from emo_master.plugins.builtins.huaray_camera.operator import PARAM_SCHEMA
+            self.managedSchema = PARAM_SCHEMA
+        schema = deepcopy(self.managedSchema if cameraNode else savedSchema)
         self.actionFields = schema.get("xDeviceActionFields")
         values = node.get("params", {})
+        self.hasManagedCamera = cameraNode and bool(node.get("deviceBindings"))
+        if cameraNode:
+            resources = coordinator.session.workflows.projectExtensions.get("resources", {})
+            self.migrateLegacy = _hasLegacyCameraSources(node, self.actionFields, self.workflowId, resources)
+        else:
+            self.migrateLegacy = migrateLegacy and not node.get("deviceBindings")
+        # A saved field's original default is part of the old direct-camera configuration.
+        # Keep it independent of the current schema used to validate the managed node.
+        sourceSchema = savedSchema if savedSchema.get("properties") else schema
+        self.legacyValues = applySchemaDefaults(sourceSchema, values) if self.migrateLegacy else {}
+        if cameraNode and self.legacyValues.get("waitMode") == "hardware":
+            self.legacyValues["captureTimeoutMs"] = 0
         if self.actionFields is not None:
             schema["properties"] = {key: spec for key, spec in schema.get("properties", {}).items()
                                     if key in self.actionFields}
@@ -734,16 +783,19 @@ class DeviceNodeDialog(QDialog):
             if actual != self.requirements:
                 raise ValueError("算子设备声明已变化，请刷新算子后重试")
             for slot, requirement in self.requirements.items():
-                typeId = requirement["deviceTypeId"]
-                if typeId not in self.types:
-                    raise ValueError("设备类型不可用：" + typeId)
+                declared = DeviceRequirement.model_validate(requirement)
+                choices = {typeId: self.types[typeId] for typeId in declared.acceptedTypeIds
+                           if typeId in self.types and declared.acceptsDeclaration(self.types[typeId])}
+                if not choices:
+                    raise ValueError("设备类型不可用：" + " / ".join(declared.acceptedTypeIds))
+                self.slotTypes[slot] = choices
                 page = QWidget()
                 pageLayout = QVBoxLayout(page)
                 line = QHBoxLayout()
                 combo = QComboBox()
                 combo.addItem("请选择设备", None)
                 for key, definition in self.c.session.workflows.devices.get("definitions", {}).items():
-                    if definition["deviceTypeId"] == typeId:
+                    if definition["deviceTypeId"] in choices:
                         combo.addItem(f"{definition['name']} ({key})", key)
                 create = QPushButton("新建设备")
                 create.clicked.connect(lambda _checked=False, slot=slot: self._create(slot))
@@ -766,13 +818,18 @@ class DeviceNodeDialog(QDialog):
             self.error.setText(str(error))
 
     def _create(self, slot):
-        declaration = self.types[self.requirements[slot]["deviceTypeId"]]
+        choices = self.slotTypes[slot]
+        if len(choices) > 1:
+            chooser = DeviceTypeDialog(choices, self)
+            if chooser.exec_() != chooser.Accepted:
+                return
+            declaration = choices[chooser.selection.currentData()]
+        else:
+            declaration = next(iter(choices.values()))
         initial = None
-        if self.actionFields is not None and self.migrateLegacy:
-            legacy = applySchemaDefaults(self.node.get("paramSchema", {}), self.node.get("params", {}))
-            if declaration.deviceTypeId == "device.camera.huaray_imv" and legacy.get("waitMode") == "hardware":
-                legacy["captureTimeoutMs"] = 0
-            initial = {group: {key: value for key, value in legacy.items()
+        if (self.actionFields is not None and self.migrateLegacy and not self.hasManagedCamera
+                and declaration.deviceTypeId == self.requirements[slot]["deviceTypeId"]):
+            initial = {group: {key: value for key, value in self.legacyValues.items()
                                if key in getattr(declaration, group + "Schema")["properties"]}
                        for group in ("connection", "defaults")}
         selected = None
@@ -808,6 +865,18 @@ class DeviceNodeDialog(QDialog):
                 combo.addItem(f"{value['name']} ({key})", key)
             combo.setCurrentIndex(combo.findData(key))
 
+    def _migrateSources(self, node, slot, deviceId, declaration):
+        if self.hasManagedCamera:
+            # Older wizard output could contain both the obsolete direct value and
+            # a newer, valid source for the same managed parameter.
+            overrides = self.node.get("deviceOverrides", {}).get(slot, {})
+            existing = {".".join(path) for path in leafPaths(overrides)}
+            existing.update(self.node.get("deviceValueBindings", {}).get(slot, {}))
+            node = dict(node, globalVariableBindings=[
+                binding for binding in node.get("globalVariableBindings", [])
+                if ".".join(binding["parameterPath"]) not in existing])
+        return migrateLegacySources(node, slot, deviceId, declaration, self.actionFields)
+
     def _sources(self, slot):
         combo, layout = self.slots[slot]
         old = self.sources.pop(slot, None)
@@ -820,17 +889,16 @@ class DeviceNodeDialog(QDialog):
             clearNameFeedback(oldControl, self.error)
             oldControl.hide()
             oldControl.deleteLater()
-        hint = getattr(self, '_sourceHints', {}).pop(slot, None)
+        hint = self._sourceHints.pop(slot, None)
         if hint is not None:
             layout.removeWidget(hint)
             hint.hide()
             hint.deleteLater()
         key = combo.currentData()
         definitions = {**self.c.session.workflows.devices.get("definitions", {}), **self.newDefinitions}
-        if key is None or key not in definitions:
-            if not hasattr(self, '_sourceHints'):
-                self._sourceHints = {}
-            hint = QLabel('选择设备后可配置继承与覆盖' if key is None else '设备引用不存在：' + key)
+        if key is None or key not in definitions or definitions[key]["deviceTypeId"] not in self.slotTypes[slot]:
+            hint = QLabel('选择设备后可配置继承与覆盖' if key is None else
+                          '设备引用不存在：' + key if key not in definitions else '设备类型不可用：' + key)
             hint.setWordWrap(True)
             layout.addWidget(hint)
             self._sourceHints[slot] = hint
@@ -838,11 +906,23 @@ class DeviceNodeDialog(QDialog):
         clearNameFeedback(combo, self.error)
         declaration = self.types[definitions[key]["deviceTypeId"]]
         editorNode = self.node
-        if declaration.deviceTypeId in {"device.camera.huaray_imv", "device.camera.rtsp"} and getattr(self, "migrateLegacy", False):
+        previousId = self.node.get("deviceBindings", {}).get(slot, {}).get("deviceId")
+        previousType = definitions.get(previousId, {}).get("deviceTypeId")
+        if previousType and previousType != declaration.deviceTypeId:
             editorNode = deepcopy(self.node)
-            legacy = applySchemaDefaults(self.node.get("paramSchema", {}), self.node.get("params", {}))
-            if legacy.get("waitMode") == "hardware":
-                legacy["captureTimeoutMs"] = 0
+            overrides = editorNode.get("deviceOverrides", {}).pop(slot, {})
+            bindings = editorNode.get("deviceValueBindings", {}).pop(slot, {})
+            removed = sorted({".".join(path) for path in leafPaths(overrides)} | set(bindings))
+            if removed:
+                hint = QLabel("已切换设备类型，下列节点参数将改为继承新设备：" + "、".join(removed) +
+                              "。可在下方重新设置，点击完成后生效。")
+                hint.setWordWrap(True)
+                layout.addWidget(hint)
+                self._sourceHints[slot] = hint
+        if (self.migrateLegacy and not self.hasManagedCamera
+                and declaration.deviceTypeId in {"device.camera.huaray_imv", "device.camera.rtsp"}):
+            editorNode = deepcopy(self.node)
+            legacy = self.legacyValues
             editorNode.setdefault("deviceOverrides", {})[slot] = {
                 path: legacy[path] for path in declaration.overridePaths if path in legacy}
             for rule in declaration.parameterRules:
@@ -850,13 +930,12 @@ class DeviceNodeDialog(QDialog):
                     editorNode["deviceOverrides"][slot].pop(rule.present, None)
         if self.actionFields is not None and getattr(self, "migrateLegacy", False):
             try:
-                editorNode = migrateLegacySources(editorNode, slot, key, declaration, self.actionFields)
+                editorNode = self._migrateSources(editorNode, slot, key, declaration)
             except ValueError as error:
                 self.error.setText(str(error))
         editor = SourceEditor(declaration, definitions[key], editorNode, slot,
                               self.c.session.document().globalVariables)
-        from emo_master.core.plugin.devices import DeviceRequirement, selectorCandidates
-        requirement = DeviceRequirement.model_validate(self.requirements[slot]) if isinstance(self.requirements[slot], dict) else self.requirements[slot]
+        requirement = DeviceRequirement.model_validate(self.requirements[slot])
         self.selectors[slot] = {}
         for name in requirement.selectorSchema['properties']:
             select = QComboBox(editor)
@@ -891,8 +970,8 @@ class DeviceNodeDialog(QDialog):
                 raise ValueError("设备类型尚未就绪")
             draft = deepcopy(self.node)
             draft["params"] = self.params.getValues()
-            if self.migrateLegacy and self.node['operatorId'] == 'vision.io.rtsp_capture':
-                draft['paramSchema'] = deepcopy(self.operatorDefinition.get('paramSchema', {}))
+            if self.migrateLegacy and self.node['operatorId'] in {'vision.io.rtsp_capture', 'vision.io.huaray_camera'}:
+                draft['paramSchema'] = deepcopy(self.managedSchema)
             resources = self.c.session.document().resources
             resourcePlan = resources.model_dump() if resources else None
             moved = []
@@ -902,6 +981,8 @@ class DeviceNodeDialog(QDialog):
                 if key is None:
                     if self.migrateLegacy and self.node['operatorId'] == 'vision.io.rtsp_capture':
                         raise ValueError('RTSP 迁移需要先选择设备；取消可保留原节点及连接参数')
+                    if self.migrateLegacy and self.node['operatorId'] == 'vision.io.huaray_camera':
+                        raise ValueError('相机迁移需要先选择设备；取消可保留原节点及连接参数')
                     if not allowIncomplete:
                         message = '请选择设备：' + slot
                         combo.setAccessibleDescription(message)
@@ -916,8 +997,8 @@ class DeviceNodeDialog(QDialog):
                     for group in ('deviceBindings', 'deviceOverrides', 'deviceValueBindings'):
                         draft.get(group, {}).pop(slot, None)
                     continue
-                if key not in definitions:
-                    message = '槽位 ' + slot + '：设备引用不存在：' + key
+                if key not in definitions or definitions[key]["deviceTypeId"] not in self.slotTypes[slot]:
+                    message = '槽位 ' + slot + ('：设备引用不存在：' if key not in definitions else '：设备类型不可用：') + key
                     combo.setAccessibleDescription(message)
                     raise ValueError(message)
                 draft.setdefault("deviceBindings", {})[slot] = {"deviceId": key, "selectors": {
@@ -925,14 +1006,19 @@ class DeviceNodeDialog(QDialog):
                     if control.currentData() is not None}}
                 declaration = self.types[definitions[key]["deviceTypeId"]]
                 if self.actionFields is not None and self.migrateLegacy:
-                    draft = migrateLegacySources(draft, slot, key, declaration, self.actionFields)
+                    draft = self._migrateSources(draft, slot, key, declaration)
                     if resourcePlan is not None:
                         resourcePlan, changes = migrateLegacyResourceTargets(resourcePlan, self.workflowId,
                             draft["nodeId"], key, declaration, self.actionFields)
                         moved.extend(changes)
+                previousId = self.node.get("deviceBindings", {}).get(slot, {}).get("deviceId")
+                if previousId in definitions and definitions[previousId]["deviceTypeId"] != declaration.deviceTypeId:
+                    for group in ("deviceOverrides", "deviceValueBindings"):
+                        draft.get(group, {}).pop(slot, None)
                 draft = self.sources[slot].apply(draft, slot)
             if (self.actionFields is not None and self.migrateLegacy
-                    and (self.node.get("params") or self.node.get("globalVariableBindings") or moved)):
+                    and (self.node['operatorId'] == 'vision.io.huaray_camera' or self.node.get("params")
+                         or self.node.get("globalVariableBindings") or moved)):
                 old = self.node.get("params", {})
                 firstSlot = next(iter(self.requirements))
                 selected = definitions[draft["deviceBindings"][firstSlot]["deviceId"]]
@@ -940,8 +1026,30 @@ class DeviceNodeDialog(QDialog):
                     DeviceDefinition.model_validate(selected)).connection
                 from emo_master.apps.designer.state.rtsp_migration import redactDeviceValues
                 safeOld, safeConnection = redactDeviceValues(old), redactDeviceValues(connection)
-                lines = ["节点 ID、输出端口与连线保持不变。", "连接参数移入所选设备。", ""]
-                lines += [f"{key}: {safeOld.get(key, '(默认)')} -> {value}" for key, value in safeConnection.items()]
+                lines = ["节点 ID、输出端口与连线保持不变。"]
+                if (self.node['operatorId'] == 'vision.io.huaray_camera' and not old
+                        and not self.node.get("globalVariableBindings") and not moved):
+                    keys = ("triggerMode", "triggerSource", "captureTimeoutMs", "exposureMode", "gainMode", "outputColor")
+                    lines += ["旧节点使用保存的默认设置：" +
+                              "、".join(f"{key}={self.legacyValues[key]}" for key in keys if key in self.legacyValues)]
+                if self.hasManagedCamera or selected["deviceTypeId"] == "device.camera.hikrobot_mvs":
+                    if self.hasManagedCamera:
+                        lines.append("此节点同时保存了旧直连参数和设备绑定。将使用本页选定的设备参数及来源。")
+                    if selected["deviceTypeId"] == "device.camera.hikrobot_mvs":
+                        lines.append("海康相机序列号：" + str(safeConnection["serialNumber"]))
+                    if old:
+                        lines.append("将移除的旧 IMV 节点参数：" +
+                                     "、".join(f"{key} = {safeOld[key]}" for key in sorted(safeOld)))
+                    for binding in self.node.get("globalVariableBindings", []):
+                        path = ".".join(binding["parameterPath"])
+                        newBinding = draft.get("deviceValueBindings", {}).get(firstSlot, {}).get(path)
+                        if newBinding and newBinding["source"] == "variable":
+                            lines.append(f"设备参数 {path} 将使用变量 {newBinding['variableId']}")
+                        else:
+                            lines.append(f"将移除旧节点变量绑定 {path} ← {binding['variableId']}")
+                else:
+                    lines += ["连接参数移入所选设备。", ""]
+                    lines += [f"{key}: {safeOld.get(key, '(默认)')} -> {value}" for key, value in safeConnection.items()]
                 if moved:
                     lines += ["", "以下资源/现场绑定将移到共享设备属性，影响所有使用该设备的节点：", *moved]
                 if selected["deviceTypeId"] == "device.plc.mitsubishi_slmp":

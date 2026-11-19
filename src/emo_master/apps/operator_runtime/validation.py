@@ -169,6 +169,7 @@ def runValidationCommand(arguments) -> int:
     parser.add_argument("--result-json", type=Path, required=True)
     parser.add_argument("--duration", type=float, default=1)
     parser.add_argument("--restarts", type=int, default=2)
+    parser.add_argument("--camera-drivers", action="store_true", help="Check the installed MVS SDK and synthetic camera Host")
     args = parser.parse_args(arguments)
     if not math.isfinite(args.duration) or args.duration < 0 or args.restarts < 0:
         parser.error("duration and restarts must be nonnegative")
@@ -182,9 +183,13 @@ def runValidationCommand(arguments) -> int:
             atomicJson(args.result_json, dict(status="running", phase=phase, **values))
             nextReport = time.monotonic() + .5
     from emo_master.apps.targeted_repair_selftest import checkTargetedRepairs
-    for name, check in (("builtins", _checkBuiltins), ("migrations", _checkMigrations),
+    checkFunctions = [("builtins", _checkBuiltins), ("migrations", _checkMigrations),
                         ("onnxruntime", _checkOnnxRuntime), ("yoloClassification", _checkYoloClassification),
-                        ("targetedRepairs", checkTargetedRepairs)):
+                        ("targetedRepairs", checkTargetedRepairs)]
+    if args.camera_drivers:
+        from emo_master.apps.camera_driver_selftest import checkCameraDrivers
+        checkFunctions.append(("cameraDrivers", checkCameraDrivers))
+    for name, check in checkFunctions:
         report(name)
         try:
             checks[name] = dict(status="ok", **check())

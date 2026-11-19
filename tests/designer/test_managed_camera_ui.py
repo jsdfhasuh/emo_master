@@ -2,6 +2,8 @@ from copy import deepcopy
 from types import SimpleNamespace
 
 import pytest
+import cv2
+import numpy as np
 
 from PySide2.QtCore import QSettings
 from PySide2.QtWidgets import QDialogButtonBox, QMessageBox
@@ -10,6 +12,7 @@ from emo_master.apps.designer.state.project_store import saveProject
 from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
 from emo_master.apps.designer.ui.managed_camera_debug import ManagedCameraDebugDialog
 from emo_master.core.plugin.registry import PluginRegistry
+from emo_master.core.project.devices import DeviceDefinition
 from emo_master.core.project.snapshots import revisionOf
 from tests.runtime.test_managed_imv import ROOT, cameraProject, definition
 from tests.designer.test_device_workspace import waitUntil
@@ -84,6 +87,40 @@ def testCameraDiagnosticsOpenWithoutHardwareAndConfirmEveryCapture(monkeypatch):
     assert calls[-1] == ("capture", dict(sessionId="session", sequence=1, confirmed=True))
     dialog.reject()
     waitUntil(lambda: calls[-1][0] == "close")
+
+
+@pytest.mark.parametrize(("evidence", "label"), [
+    ("frame_metadata", "本帧曝光 1350 μs"),
+    ("configuration_readback_not_frame_metadata", "曝光回读 1350 μs（相机当前值）"),
+])
+def testMvsDiagnosticCaptureDisplaysExposureSource(monkeypatch, evidence, label):
+    camera = DeviceDefinition(name="测试相机", deviceTypeId="device.camera.hikrobot_mvs",
+                              driverVersion="1.0.0", connection={"serialNumber": "TEST-MVS"})
+    state = dict(generation="g", definitionRevision=revisionOf(camera.model_dump()))
+    ok, jpeg = cv2.imencode(".jpg", np.zeros((3, 4), dtype=np.uint8))
+    assert ok
+    calls = []
+
+    def diagnostic(project, runtime, deviceId, state, action, **kwargs):
+        calls.append(action)
+        if action == "capture":
+            return dict(preview=jpeg.tobytes(), metadata={"acquisition": dict(
+                blockId=23, actualExposureUs=1350, exposureEvidence=evidence)})
+        return dict(sessionId="session", metadata={})
+
+    client = SimpleNamespace(getDeviceStates=lambda _: ("runtime", {"camera": state}), cameraDiagnostic=diagnostic)
+    dialog = ManagedCameraDebugDialog(client, "project", "camera", camera)
+    try:
+        waitUntil(lambda: dialog.pending is None)
+        monkeypatch.setattr(QMessageBox, "question", lambda *_: QMessageBox.Yes)
+        dialog.captureButton.click()
+        waitUntil(lambda: dialog.pending is None)
+        assert calls == ["open", "capture"]
+        assert not dialog.previewPixmap.isNull()
+        assert dialog.status.text().splitlines() == ["帧 23 · 周期 诊断试调", label]
+    finally:
+        dialog.reject()
+        waitUntil(lambda: calls[-1] == "close")
 
 
 @pytest.mark.parametrize("unlimited", [False, True])

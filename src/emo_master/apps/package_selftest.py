@@ -76,6 +76,10 @@ def _checkBuiltins() -> dict[str, object]:
         )
     if "vision.inference.yolo" not in operatorIds:
         raise RuntimeError("vision.inference.yolo is missing")
+    camera = scan.activeOperators["vision.io.huaray_camera"].manifest.deviceRequirements["camera"]
+    for typeId in ("device.camera.huaray_imv", "device.camera.hikrobot_mvs"):
+        if not camera.acceptsDeclaration(scan.deviceTypes[typeId]):
+            raise RuntimeError(f"industrial camera operator cannot bind {typeId}")
 
     editorResources = sorted(
         str(path.relative_to(pluginRoot)).replace("\\", "/")
@@ -109,6 +113,7 @@ def _checkManagedDevices() -> dict[str, object]:
     if rejected:
         raise RuntimeError("managed device metadata rejected: " + ", ".join(rejected))
     expected: dict[str, dict[str, JsonValue]] = {"device.camera.huaray_imv": {"cameraKey": "SELF-TEST-NO-HARDWARE"},
+                "device.camera.hikrobot_mvs": {"serialNumber": "SELF-TEST-NO-HARDWARE"},
                 "device.plc.mitsubishi_slmp": {}, "device.simulated.camera": {"serial": "SELF-TEST"}}
     for key, connection in expected.items():
         declaration = types[key]
@@ -342,6 +347,7 @@ def runSelfTest(
     progressCallback: Callable[[str], None] | None = None,
     guiIcons: bool = False,
     managedRuntime: bool = False,
+    cameraDrivers: bool = False,
 ) -> dict[str, object]:
     checks: dict[str, object] = {}
     errors: list[str] = []
@@ -356,6 +362,9 @@ def runSelfTest(
     )
     if guiIcons:
         checkFunctions += (("guiIcons", _checkGuiIcons),)
+    if cameraDrivers:
+        from emo_master.apps.camera_driver_selftest import checkCameraDrivers
+        checkFunctions += (("cameraDrivers", checkCameraDrivers),)
     if managedRuntime:
         from emo_master.apps.managed_device_selftest import checkManagedRuntime
         checkFunctions += (("managedRuntime", checkManagedRuntime),)
@@ -405,6 +414,7 @@ def _argumentParser() -> argparse.ArgumentParser:
     parser.add_argument("--self-test", action="store_true", required=True)
     parser.add_argument("--gui-icons", action="store_true", help="Require real Qt SVG rendering and example pixels")
     parser.add_argument("--managed-runtime", action="store_true", help="Run two synthetic managed-device Jobs using spawn")
+    parser.add_argument("--camera-drivers", action="store_true", help="Check the installed MVS SDK and synthetic camera Host")
     parser.add_argument("--model", type=Path)
     parser.add_argument("--image", type=Path)
     parser.add_argument("--result-json", type=Path)
@@ -437,6 +447,7 @@ def runSelfTestCommand(arguments: Sequence[str]) -> int:
         progressCallback=writeProgress,
         guiIcons=parsed.gui_icons,
         managedRuntime=parsed.managed_runtime,
+        cameraDrivers=parsed.camera_drivers,
     )
     serialized = json.dumps(payload, ensure_ascii=False, indent=2)
     if parsed.result_json is not None:

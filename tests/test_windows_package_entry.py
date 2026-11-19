@@ -17,6 +17,7 @@ def testPackageSelfTestValidatesBundledResourcesAndOnnxRuntime() -> None:
 
     assert result["status"] == "ok"
     checks = result["checks"]
+    assert "cameraDrivers" not in checks
     assert checks["builtins"]["operatorCount"] >= 49
     assert checks["builtins"]["editorUiCount"] >= 3
     assert checks["onnxruntime"]["provider"] == "CPUExecutionProvider"
@@ -67,6 +68,42 @@ def testPackageSelfTestCommandWritesResultJson(tmp_path: Path) -> None:
 
     assert exitCode == 0
     assert json.loads(resultPath.read_text(encoding="utf-8"))["status"] == "ok"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="MVS SDK supports Windows")
+@pytest.mark.parametrize("product", ["designer", "runtime"])
+def testCameraPackageProbeUsesVersionOnlySdkInSpawnedHost(tmp_path, product):
+    root = Path(__file__).resolve().parents[1]
+    bindings = tmp_path / "Samples/Python/MvImport"
+    bindings.mkdir(parents=True)
+    (bindings / "MvCameraControl_class.py").write_text(
+        "class MvCamera:\n    @staticmethod\n    def MV_CC_GetSDKVersion(): return 0x09080706\n",
+        encoding="ascii",
+    )
+    entry = ["-m", "emo_master.apps.windows_entry"]
+    if product == "runtime":
+        # The independent Runtime package suite exercises the full UI and Dispatch Jobs.
+        # Here the actual CLI parser, driver registry and spawned camera Host are under test.
+        entry = ["-c", """
+import sys
+from unittest.mock import patch
+from emo_master.apps.operator_runtime.validation import runValidationCommand
+with patch("emo_master.apps.operator_runtime.validation._checkWindow", return_value={}), \\
+     patch("emo_master.apps.targeted_repair_selftest.checkTargetedRepairs", return_value={}):
+    sys.exit(runValidationCommand(sys.argv[1:]))
+"""]
+    path = tmp_path / "result.json"
+    completed = subprocess.run([sys.executable, *entry, "--self-test", "--camera-drivers", "--result-json", str(path)],
+        cwd=tmp_path, env=dict(os.environ, PYTHONPATH=str(root / "src"), MVCAM_COMMON_RUNENV=str(tmp_path),
+                               QT_QPA_PLATFORM="offscreen"), capture_output=True, text=True, timeout=90)
+    report = json.loads(path.read_text(encoding="utf-8"))
+    assert completed.returncode == 0, (report, completed.stderr)
+    result = report["checks"]["cameraDrivers"]
+    assert result["operatorId"] == "vision.io.huaray_camera" and result["operatorVersion"] == "1.2.0"
+    assert set(result["deviceTypes"]) == {"device.camera.huaray_imv", "device.camera.hikrobot_mvs"}
+    assert result["hostPid"] > 0 and result["syntheticFrames"] == 2
+    assert not result["hostFrozen"] and not result["hardwareAccessed"]
+    assert result["sdkVersion"] == "9.8.7.6"
 
 
 def testExplicitManagedPackageProbeUsesSpawnWithoutHardware(tmp_path):

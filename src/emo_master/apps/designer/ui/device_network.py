@@ -10,6 +10,11 @@ from .icon_map import icon
 
 
 class DeviceNetworkDialog(QDialog):
+    discoverAction = 'discover'
+    columns: tuple[tuple[str, str], ...] = (
+        ('cameraKey', '设备标识'), ('modelName', '型号'), ('serialNumber', '序列号'),
+        ('macAddress', 'MAC'), ('ipAddress', '设备 IPv4'), ('subnetMask', '子网掩码'),
+        ('interfaceIp', 'Runtime 网卡 IPv4'))
     def __init__(self, client, projectId, runtimeId, deviceId, state, parent=None, *, discoveryOnly=False):
         super().__init__(parent)
         self.client, self.projectId, self.runtimeId, self.deviceId = client, projectId, runtimeId, deviceId
@@ -29,7 +34,7 @@ class DeviceNetworkDialog(QDialog):
         bar = QHBoxLayout()
         self.discoverButton = QPushButton('发现 Runtime 主机设备')
         self.discoverButton.setIcon(icon('search'))
-        self.discoverButton.clicked.connect(lambda: self.start('discover'))
+        self.discoverButton.clicked.connect(lambda: self.start(self.discoverAction))
         bar.addWidget(self.discoverButton)
         self.adoptButton = QPushButton('采用所选标识到草稿')
         self.adoptButton.setIcon(icon('shield-check'))
@@ -37,8 +42,8 @@ class DeviceNetworkDialog(QDialog):
         bar.addWidget(self.adoptButton)
         bar.addStretch()
         layout.addLayout(bar)
-        self.table = QTableWidget(0, 7)
-        self.table.setHorizontalHeaderLabels(['设备标识', '型号', '序列号', 'MAC', '设备 IPv4', '子网掩码', 'Runtime 网卡 IPv4'])
+        self.table = QTableWidget(0, len(self.columns))
+        self.table.setHorizontalHeaderLabels([title for _key, title in self.columns])
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -111,15 +116,16 @@ class DeviceNetworkDialog(QDialog):
         self.timer.stop()
         try:
             result = future.result()
-            if self.kind == 'discover':
+            if self.kind == self.discoverAction:
                 self.discovery = result
                 self.table.setRowCount(0)
                 for row in result['devices']:
                     index = self.table.rowCount()
                     self.table.insertRow(index)
-                    for column, key in enumerate(('cameraKey', 'modelName', 'serialNumber', 'macAddress', 'ipAddress', 'subnetMask', 'interfaceIp')):
+                    for column, (key, _title) in enumerate(self.columns):
                         self.table.setItem(index, column, QTableWidgetItem(str(row.get(key, ''))))
-                self.status.setText(f"已发现 {len(result['devices'])} 台设备 · SDK {result.get('sdkVersion', '')}")
+                version = ' · SDK ' + result['sdkVersion'] if result.get('sdkVersion') else ''
+                self.status.setText(f"已发现 {len(result['devices'])} 台设备{version}")
             else:
                 self.status.setText(result.get('state', '') + ' · ' + result.get('message', '') + '\n回执: ' + result.get('requestId', ''))
                 if self.kind == 'force_ip':
@@ -177,3 +183,22 @@ class DeviceNetworkDialog(QDialog):
 
     def reject(self):
         self.done(QDialog.Rejected)
+
+
+class MvsDiscoveryDialog(DeviceNetworkDialog):
+    discoverAction = 'discover_mvs'
+    columns = (('serialNumber', '序列号'), ('manufacturerName', '厂商'), ('modelName', '型号'),
+               ('transport', '接口'), ('ipAddress', '设备 IPv4'))
+
+    def __init__(self, client, projectId, runtimeId, parent=None):
+        super().__init__(client, projectId, runtimeId, '', {}, parent, discoveryOnly=True)
+        self.setWindowTitle('发现海康 MVS 相机')
+        self.adoptButton.setText('采用所选序列号')
+        self.selectedSerialNumber = None
+        self.start(self.discoverAction)
+
+    def adopt(self):
+        row = self.row()
+        if row and row.get('serialNumber') and self.pending is None:
+            self.selectedSerialNumber = row['serialNumber']
+            self.accept()

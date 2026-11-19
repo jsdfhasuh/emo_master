@@ -89,6 +89,26 @@ def command():
                 subnetMask='255.255.255.0', defaultGateWay='0.0.0.0')
 
 
+def fakeMvsDiscovery():
+    return [dict(serialNumber='00042', manufacturerName='Hikrobot', modelName='Fixture', transport='USB3', ipAddress='')]
+
+
+def testMvsDiscoveryRpcReturnsHostDevicesWithoutImvNetworkReceipt(tmp_path):
+    from emo_master.apps.runtime.devices.network import runNetworkHost
+    runtime = SimulatedImvRuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
+    try:
+        def runner(action, payload, cancelled):
+            assert action == 'discover_mvs'
+            return runNetworkHost(action, payload, cancelled, apiFactory=fakeMvsDiscovery)
+        runtime.deviceNetwork.runner = runner
+        result = RuntimeClient(runtimeService=runtime).deviceNetworkCommand(
+            runtime.loadedProjectId, runtime.runtimeInstanceId, 'discover_mvs')
+        assert result['devices'] == fakeMvsDiscovery()
+        assert 'discoveryId' not in result and runtime.deviceNetwork.discovery is None
+    finally:
+        runtime.close()
+
+
 def testSpawnedNetworkHostUsesOnlyInjectedApi():
     from emo_master.apps.runtime.devices.network import runNetworkHost
     result = runNetworkHost('discover', {}, lambda: False, apiFactory=Api)

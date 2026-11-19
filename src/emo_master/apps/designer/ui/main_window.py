@@ -4853,8 +4853,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
             if self.pageCoordinator is None or not self.pageCoordinator._canSync():
                 return
+            # Cameras detect remaining direct parameters per node in partially migrated projects.
+            legacyProject = (node.operatorId != "vision.io.huaray_camera" and
+                             self.pageCoordinator.session.document().schemaVersion not in {'2.6', '2.7', '2.8', '2.9', '2.10'})
             dialog = DeviceNodeDialog(self.pageCoordinator, asdict(node), definition.get("deviceRequirements", {}), self,
-                                      migrateLegacy=self.pageCoordinator.session.document().schemaVersion not in {'2.6', '2.7', '2.8', '2.9', '2.10'})
+                                      migrateLegacy=legacyProject)
             dialog.exec_()
             return
 

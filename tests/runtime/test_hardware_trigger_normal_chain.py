@@ -30,6 +30,7 @@ from emo_master.core.contracts.device_driver import DeviceError
 from emo_master.plugins.builtins.yolo_inference import operator as yolo
 from emo_master.plugins.builtins.yolo_inference.onnx_backend import OnnxInferenceResult
 from emo_master.plugins.builtins._huaray_imv import IMV_TIMEOUT
+from examples.hardware_trigger_normal_fixture.build_project import buildProject
 from tests.plugins.test_huaray_camera_operator import _FakeImvApi
 from tests.plugins.test_communication_operators import _slmpResponse
 from tests.runtime.plc_debug_server import PlcDebugServer
@@ -195,7 +196,7 @@ class LocalGateway:
 
 
 def setup(tmp_path, monkeypatch, frames, station=1):
-    payload = json.loads((EXAMPLE / "project.json").read_text(encoding="utf-8"))
+    payload = buildProject()
     scan = PluginRegistry(coreVersion=__version__).scan(ROOT / "src/emo_master/plugins")
     assert not scan.rejectedOperators
     for name in ("a", "b", "holes"):

@@ -215,7 +215,8 @@ def testExpiredViewClearsImageWithoutFallingBackToLive(qtApp,live):
         until(qtApp,lambda:'EXPIRED' in window.modeLabel.text())
         assert not window.displayed
         assert window.widgets['overview']['overview-image'][1].image.isNull()
-        assert 'CONNECTED' in window.widgets['overview']['overview-status'][1].text()
+        assert window.lastView.connection == 'CONNECTED'
+        assert '已连接' in window.widgets['overview']['overview-status'][1].text()
         window.resumeLive()
         assert window.displayed
     finally:

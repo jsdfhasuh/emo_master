@@ -134,10 +134,9 @@ def checkManagedRuntime():
     from emo_master.apps.designer.state.workflow_store import WorkflowStore
     from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _pb
     from emo_master.apps.runtime.grpc_server.service import RuntimeService
-    from emo_master.core.project.migration import migrateProjectPayload
 
     pb: Any = _pb
-    payload: dict[str, Any] = migrateProjectPayload(WorkflowStore().toPayload(), enableDevices=True)
+    payload: dict[str, Any] = WorkflowStore().toPayload()
     payload["runtime"]["maxConcurrentJobs"] = 4
     payload["devices"]["definitions"]["camera"] = dict(name="Package self-test",
         deviceTypeId="device.simulated.camera", driverVersion="1.0.0",
@@ -244,7 +243,7 @@ def _checkResourceTransfer(service, root):
         imagePath.write_bytes(source.read_bytes())
         candidate["resources"]["items"][key] = dict(path=imagePath.name, size=imagePath.stat().st_size,
             sha256=hashlib.sha256(imagePath.read_bytes()).hexdigest(), purpose=purpose)
-    candidate["presentation"] = dict(defaultPageId="static", pageOrder=["static"], pages={"static": dict(
+    candidate["presentation"].update(defaultPageId="static", pageOrder=["static"], pages={"static": dict(
         name="Package assets", components=[dict(componentId="image", type="image", props=dict(imageResourceId="page-picture")),
             dict(componentId="button", type="navigation_button", layout=dict(row=1), props=dict(iconResourceId="page-icon"))])})
     uploaded = client.uploadProjectResources(snapshot, candidate, local)

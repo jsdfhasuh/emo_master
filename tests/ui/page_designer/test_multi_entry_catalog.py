@@ -2,7 +2,7 @@
 from types import SimpleNamespace
 
 from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QInputDialog, QLabel
+from PySide2.QtWidgets import QInputDialog
 
 from emo_master.apps.designer.page_designer.editing import outputChoices, PageCommands
 from emo_master.apps.designer.state.project_edit_session import ProjectEditSession
@@ -112,7 +112,8 @@ def testNativeVariableDragAndSecondJobReselectionSaveReload(tmp_path, ownedDesig
             assert root in editor.tools.binding.currentText()
             assert 'None.None' not in editor.tools.title.toolTip()
             widget = editor.renderer.widgets[page][component.componentId][1]
-            hint = widget.parentWidget().findChild(QLabel, 'bindingHint').text()
+            hint = widget.parentWidget().toolTip()
+            assert hint.startswith('来源: ')
             assert 'None' not in hint
             if choice.source.kind == 'global_variable':
                 assert '全局变量 count' in hint

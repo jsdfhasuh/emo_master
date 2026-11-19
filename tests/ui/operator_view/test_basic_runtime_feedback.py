@@ -107,7 +107,10 @@ def testBasicFeedbackDoesNotReplaceCustomPageStatusAndMarksStaleConnection(qtApp
     before = (custom.status.text(), custom.jobStatus.text(), custom.identity.text())
     custom.setBasicStatus(dict(state="READY", jobId="other", jobStatus="COMPLETED"), connected=True)
     assert (custom.status.text(), custom.jobStatus.text(), custom.identity.text()) == before
-    assert not custom.resumeButton.isHidden() and not custom.identity.isHidden()
+    assert "已连接" in custom.headerStatus.text() and custom.headerJob.text() == "已完成"
+    assert custom.resumeButton.isHidden() and not custom.identity.isVisibleTo(custom)
+    custom.diagnosticToggle.setChecked(True)
+    assert custom.identity.isVisibleTo(custom)
     basic = RuntimePages(None)
     basic.setBasicStatus(dict(state="RUNNING", jobId="owned", jobStatus="STOPPING"),
                          connected=False, connectionDetail="status read unavailable")

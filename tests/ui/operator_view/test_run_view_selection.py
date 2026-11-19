@@ -48,6 +48,8 @@ def testViewingConcurrentRemoteRunKeepsExplicitStopSelection(qtApp, tmp_path, mo
             second = remoteStart(window, channel)
             waitFor(lambda: len(window.state.get('activeJobIds', [])) == 2 and not window.busy)
             selectJob(monkeypatch, second)
+            QTest.mouseClick(window.pages.diagnosticToggle, Qt.LeftButton)
+            assert window.viewRunsButton.isVisible()
             QTest.mouseClick(window.viewRunsButton, Qt.LeftButton)
             waitFor(lambda: window.viewSession is not None and not window.busy or window.error)
             assert not window.error
@@ -55,7 +57,9 @@ def testViewingConcurrentRemoteRunKeepsExplicitStopSelection(qtApp, tmp_path, mo
             assert {scope.result.identity.jobId for scope in window.pages.displayed.values()} == {second}
             assert window.viewSession.jobId == second and window.session is originalSession
             assert window.controller.sessions['main'].jobId == first and window.state['jobId'] == first
-            assert second in window.viewingLabel.text() and window.returnRunButton.isVisible()
+            assert not window.pages.diagnostics.isVisible() and window.pages.hostMessage.isVisible()
+            summary = window.pages.hostMessage.text()
+            assert f'查看：Main · {second[:8]}' in summary and f'默认 {first[:8]}' in summary
             defaults = []
             def stopSelected(_parent, title, _label, items, current, _editable):
                 assert title == '停止运行'
@@ -68,6 +72,9 @@ def testViewingConcurrentRemoteRunKeepsExplicitStopSelection(qtApp, tmp_path, mo
             assert window.controller.runtime.jobRepository.get(first).isTerminal
             assert window.controller.runtime.jobRepository.get(second).status == 'RUNNING'
             assert window.viewSession.jobId == second
+            assert f'停止对象：{second[:8]}' in window.pages.hostMessage.text()
+            QTest.mouseClick(window.pages.diagnosticToggle, Qt.LeftButton)
+            assert second in window.viewingLabel.text() and window.returnRunButton.isVisible()
             QTest.mouseClick(window.returnRunButton, Qt.LeftButton)
             waitFor(lambda: not window.busy and window.viewSession is None)
             assert window.controller.runtime.jobRepository.get(second).status == 'RUNNING'

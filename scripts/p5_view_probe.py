@@ -32,13 +32,13 @@ def renderedImagesReady(renderer):
 
 
 def selectPage(renderer, pageId):
-    picker = renderer.pageNavigation.picker
-    index = picker.findData(pageId)
-    assert index >= 0
-    picker.showPopup()
-    item = picker.model().index(index, picker.modelColumn(), picker.rootModelIndex())
-    picker.view().scrollTo(item)
-    QTest.mouseClick(picker.view().viewport(), Qt.LeftButton, pos=picker.view().visualRect(item).center())
+    navigation = renderer.pageNavigation
+    tabs = navigation.tabs
+    if tabs is None:
+        QTest.mouseClick(navigation.buttons[pageId], Qt.LeftButton)
+    else:
+        index = next(index for index in range(tabs.count()) if tabs.tabData(index) == pageId)
+        QTest.mouseClick(tabs, Qt.LeftButton, pos=tabs.tabRect(index).center())
     assert renderer.currentPageId == pageId
 
 

@@ -73,7 +73,8 @@ class ResponsiveHandle(QWidget):
         # Keep targets compact when zoomed out so they do not cover the title
         # drag area; zooming in must not grow them across the card's content.
         zoom = max(1., self.owner.w.canvas.getZoomFactor())
-        corner = max(1, min(round(10 / zoom), card.width() // 2, card.height() // 2))
+        # Reserve a usable side span on compact cards as well as corner grips.
+        corner = max(1, min(round(10 / zoom), card.width() // 3, card.height() // 3))
         band = max(1, min(corner, round(6 / zoom)))
         x, y = self.edges
         if x and y:

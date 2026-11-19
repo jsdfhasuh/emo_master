@@ -77,18 +77,20 @@ def testPanelSyncDoesNotWriteQtPreviewOrExportChecks(designer, monkeypatch):  # 
     assert writes == []
 
 
-def testDesignerKeepsQtActionsWithoutWebExportPreviewOrLauncher(designer):  # noqa: F811
+def testDesignerKeepsQtActionsAndFileMenuWebPackageExport(designer):  # noqa: F811
     from test_pending_inputs import setupPage
     coordinator, _editor, _key = setupPage(designer)
     chrome = coordinator.chrome
     actions = [action for menu in chrome.menus.values() for action in menu.actions()]
-    assert all('Web' not in action.text() and '网页' not in action.text() for action in actions)
+    webActions = [action for action in actions if 'Web' in action.text() or '网页' in action.text()]
+    assert [action.text() for action in webActions] == ['导出 Web 页面包…']
+    assert webActions[0] in chrome.menus['文件'].actions()
     assert chrome.previewAction.text() == '预览页面'
     assert chrome.previewAction.isEnabled() and chrome.previewAction.isVisible()
     assert chrome.previewAction in chrome.menus['视图'].actions()
     assert chrome.exportAction in chrome.menus['文件'].actions()
     assert chrome.publishPages in chrome.menus['Runtime'].actions()
-    for name in ('previewWebAction', 'previewWebRuntimeAction', 'exportWebAction'):
+    for name in ('previewWebAction', 'previewWebRuntimeAction'):
         assert not hasattr(chrome, name)
     assert not hasattr(coordinator, 'webPreview')
     assert not hasattr(coordinator, '_closingWebPreview')

@@ -289,24 +289,21 @@ class RuntimePages(QWidget):
         self.hostMessage.setVisible(bool(message))
 
     def setBasicStatus(self, state, *, connected, connectionDetail="", operation=""):
-        """Show an owner's exact task without creating a result-observer session.
-
-        Only the no-page shell uses this path. Custom pages keep their existing
-        hub, capture and result-identity rules, including their disconnected UI.
-        """
+        """Publish host status while keeping custom-page diagnostics session-owned."""
         assertGuiThread()
         self._hostConnected = connected
-        self._hostJobState = '尚未开始'
-        self.status.setText("Runtime：已连接（本机）" if connected else "Runtime：连接状态不可用")
-        self.headerStatus.setText(self.status.text())
-        self.status.setToolTip(connectionDetail)
         jobId, status = state.get("jobId", ""), state.get("jobStatus", "")
         names = {"ACCEPTED": "已接受，等待启动", "STARTING": "启动中", "RUNNING": "运行中",
                  "STOPPING": "停止中", "COMPLETED": "已完成", "FAILED": "执行失败", "ABORTED": "已中止"}
+        self._hostJobState = names.get(status, '状态待确认') if jobId else '尚未开始'
+        self._showHostStatus()
+        if self.config.pageOrder:
+            return
+        self.status.setText("Runtime：已连接（本机）" if connected else "Runtime：连接状态不可用")
+        self.status.setToolTip(connectionDetail)
         terminal = status in {"COMPLETED", "FAILED", "ABORTED"}
         if jobId:
-            self._hostJobState = names.get(status, '状态待确认')
-            text = ("最近任务：" if terminal else "当前任务：") + names.get(status, "状态待确认")
+            text = ("最近任务：" if terminal else "当前任务：") + self._hostJobState
             if status:
                 text += f" ({status})"
             text += "\nJob: " + jobId
@@ -325,10 +322,6 @@ class RuntimePages(QWidget):
             if connectionDetail:
                 text += "\n" + connectionDetail
         self.jobStatus.setText(text)
-        self.headerJob.setText(self._hostJobState)
-        self._showHostStatus()
-        if self.config.pageOrder:
-            return
         self.stack.currentWidget().setText("尚未配置运行页面\n当前仅显示基础任务状态；任务完成不等于产品 OK/NG。")
         for widget in (self.resumeButton, self.fitButton, self.modeLabel, self.identity):
             widget.hide()
@@ -984,7 +977,7 @@ class RuntimePages(QWidget):
         if self.hub:
             self.hub.resume(self)
         self.frozen = self.frozenGeneration = None
-        self.modeLabel.setText("实时 · 冻结仅影响本窗口")
+        self.modeLabel.setText('实时')
         self.syncNavigation()
         if submit and self.hub:
             self.submit(self.hub.session.readSnapshot())

@@ -5,14 +5,14 @@ from pathlib import Path
 import pytest
 from PySide2.QtCore import QPoint, QPointF, Qt
 from PySide2.QtGui import QDragEnterEvent, QDropEvent
-from PySide2.QtWidgets import QApplication, QInputDialog, QWidget
+from PySide2.QtWidgets import QApplication, QInputDialog
 
 from test_workspace import designer  # noqa: F401
 from emo_master.apps.designer.page_designer.editing import PageCommands, outputChoices
 from emo_master.apps.designer.page_designer.tools import mime
 from emo_master.apps.designer.state.project_edit_session import ProjectEditSession
 from emo_master.core.plugin.models import PluginManifest
-from emo_master.core.presentation.models import Presentation
+from emo_master.core.presentation.models import Grid, Presentation
 from examples.runtime_pages_p2 import sampleProject
 
 
@@ -32,9 +32,10 @@ def blank(root):
     return document
 
 
-def sendDrop(target, payload):
+def sendDrop(target, payload, point=None):
     data = mime(payload)
-    point = QPoint(15, 15)
+    if point is None:
+        point = QPoint(15, 15)
     enter = QDragEnterEvent(point, Qt.CopyAction, data, Qt.LeftButton, Qt.NoModifier)
     QApplication.sendEvent(target, enter)
     event = QDropEvent(QPointF(point), Qt.CopyAction, data, Qt.LeftButton, Qt.NoModifier)
@@ -79,7 +80,10 @@ def testBindingCopyRollbackAndMissingNode(tmp_path):
 
 def testNativeDragComponentVariablePropertiesAndOverlap(designer, monkeypatch, tmp_path):  # noqa: F811
     c = designer.pageCoordinator
-    designer.workflowController.loadPayload(blank(tmp_path).model_dump())
+    payload = c.session.document().model_dump()
+    sample = sampleProject(tmp_path).model_dump()
+    payload.update({key: sample[key] for key in ('entryWorkflowId', 'workflowOrder', 'workflows', 'resources')})
+    designer.workflowController.loadPayload(payload)
     c.session.acceptLoaded()
     from test_preview import waitFor
     waitFor(lambda: designer.operatorCatalogController.state == 'ready')
@@ -92,9 +96,14 @@ def testNativeDragComponentVariablePropertiesAndOverlap(designer, monkeypatch, t
     e = c.editor
     monkeypatch.setattr(QInputDialog, 'getText', lambda *a, **k: ('首页', True))
     e.run(e.newPage)
+    assert c.session.document().schemaVersion == '2.10'
+    assert e.store.snapshot().schemaVersion == '1.3'
+    c.session.editPresentation(lambda p: setattr(p.pages[e.pageId], 'layout', Grid()))
+    e.refresh()
     QApplication.processEvents()
-    body = next(w for w in e.renderer.findChildren(QWidget) if w.property('pageGrid') == e.pageId)
-    assert sendDrop(body, {'kind': 'number'})
+    body = e.renderer.pages[e.pageId].widget()
+    body.layout().activate()
+    assert sendDrop(body, {'kind': 'number'}, body.layout().cellRect(0, 0).center())
     item = e.store.snapshot().pages[e.pageId].components[0]
     original = c.session.payload()
     widget = e.renderer.widgets[e.pageId][item.componentId][1]

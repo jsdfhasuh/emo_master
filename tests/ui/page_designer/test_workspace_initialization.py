@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QApplication, QLabel
+from PySide2.QtWidgets import QApplication
 
 from emo_master.apps.designer.page_designer.tools import EditingTools
 from emo_master.apps.designer.page_designer.workspace import EditorPages
@@ -42,7 +42,7 @@ def testFirstOpenBuildsCatalogAndPageOnlyOnce(designer, monkeypatch):  # noqa: F
     assert not reloadCalls
     assert editor.renderer.currentPageId == page
     assert "value" in editor.renderer.widgets[page]
-    assert editor.renderer.cards[page]["value"].findChild(QLabel, "bindingHint") is not None
+    assert editor.renderer.cards[page]["value"].toolTip() == "未选择来源 · 拖入流程结果"
     assert editor.tools.pageName.text() == "Overview"
     assert editor.pageTabs.count() == 1
     assert editor.tools.destination.count() == 2

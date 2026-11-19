@@ -8,7 +8,7 @@ from test_workspace import designer  # noqa: F401
 from test_responsive_editor import responsivePage, settle  # noqa: F401
 from emo_master.apps.designer.page_designer import responsive_preview
 from emo_master.apps.designer.page_designer.tools import mime
-from emo_master.core.presentation.models import Component, Props, ResponsiveLayout
+from emo_master.core.presentation.models import Component, Props, ResponsiveLayout, TextRole, Typography
 
 
 def rootRects(editor):
@@ -80,15 +80,18 @@ def testCrossContainerPreviewMeasuresWrappedTitlesAndBothParents(responsivePage)
     page.layout = ResponsiveLayout(direction='vertical')
     page.components = [
         Component(componentId='left', type='container',
-                  props=Props(title='检测输入区域与当前工件的说明文字 ' * 3, fontSize=28),
+                  props=Props(title='检测输入区域与当前工件的说明文字 ' * 3,
+                              typography=Typography(title=TextRole(size=28))),
                   grid=ResponsiveLayout(direction='vertical'), children=items[:2]),
         Component(componentId='right', type='container',
-                  props=Props(title='检测结果', fontSize=24),
+                  props=Props(title='检测结果', typography=Typography(title=TextRole(size=24))),
                   grid=ResponsiveLayout(direction='wrap'), children=items[2:]),
     ]
     install(editor, page)
     editor.previewWidth.setValue(500)
     settle()
+    heading = editor.renderer.cards[editor.pageId]['left'].containerTitle.label
+    assert heading.height() > heading.fontMetrics().height()
     target = editor.renderer.cards[editor.pageId][keys[2]]
     compareDrop(editor, {'move': keys[1]}, target, target.rect().center())
 

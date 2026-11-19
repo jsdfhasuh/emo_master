@@ -107,7 +107,7 @@ def testSidePerpendicularMotionDoesNotChangePageOrHistory(responsivePage, edge):
     before, history = editor.store.snapshot(), len(coordinator.session._undo)
     delta = QPoint(0, 30) if edge[0] else QPoint(30, 0)
     QTest.mousePress(window, Qt.LeftButton, Qt.NoModifier, point)
-    assert editor.tools.responsive.resize is not None
+    assert editor.tools.responsive.resize['handle'].edges == edge
     QTest.mouseMove(window, point + delta)
     QTest.mouseRelease(window, Qt.LeftButton, Qt.NoModifier, point + delta)
     settle()

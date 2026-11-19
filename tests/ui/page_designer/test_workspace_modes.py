@@ -50,7 +50,7 @@ def testInvalidInputKeepsWorkspaceSelectionAndText(designer):  # noqa: F811
     assert c.pageActive() and c.chrome.workspaceActions[1].isChecked()
     assert c.chrome.selector.text() == '当前：页面设计'
     assert e.tools.fields['fontSize'].value() == 1 and e.tools.selected == key
-    assert e.tools.propertyError.text() == '字号请选择“自动”，或输入 8–48。'
+    assert e.tools.propertyError.text() == '主值字号请选择“自动”，或输入 8–96。'
     assert 'validation error' in e.tools.propertyError.toolTip()
     assert c.session.payload() == before
     e.tools.fields['fontSize'].setValue(16)

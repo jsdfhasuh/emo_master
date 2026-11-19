@@ -101,8 +101,10 @@ def testSelectionSignalClearsOldPictureBeforeReloadAndOnHide(qtApp, tmp_path):
     table.hide()
     assert table.selectedRow() is None and image.image.isNull()
     table.show()
+    waitReady(qtApp, table)
     table.table.selectRow(0)
     waitReady(qtApp, image)
+    assert table.selectedRow() == {'path': path.name} and not image.image.isNull()
     table.setPreview(True)
     assert table.selectedRow() is None and image.image.isNull()
 

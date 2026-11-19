@@ -38,8 +38,17 @@
 
 基线的历史 29 项、Annotate 5 项和同一模拟流程的 5+1 次真实归档证据保留原归属。基线覆盖连续插入后按键翻条、同次归档图像与记录一致、历史引用刷新，以及 Designer 的工程编辑、保存和重开。[V1.2 实施记录](../2026-11-18-generic-page-composition/)
 
-## 待确认
+## GitHub Actions
 
-本地验证时，`main` 位于 `ce8f84caf4d0fd779e579b23ff82fa4e80de978d`，包含尚未提交的 V1.3 改动。GitHub Actions 的最终提交验收待记录。基线的两条工作流分别为 [Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44271356400) 和 [Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44271357295)。
+V1.3 首次提交 `6882a3f61b57cd4c1efe23ee50ecce2c140d1fa9` 的 Web CI 三个作业通过。两个平台都通过了图片退役和此前被它挡住的浏览器、正式预览及独立 wheel 安装。Ubuntu 执行完整前端、目录刷新、草稿恢复及 Dispatch 检查。Windows 软件 Runtime 通过 SDK 1.7.0 的真实登录与两任务图像归属、启停、终态及重新启动。[Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44432730348)
+
+同一提交的 Source CI 已解除原 mypy 阻塞。pytest 发现了页面格式和默认外观变更后仍沿用旧输入的测试、打包自测及交付探针，也发现了 Qt 作业目标提示、重开时的布局高度及 Designer 紧凑卡片缩放手柄问题。相关修复在本机通过，正在准备远端复验。[首次 Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44432730165)
+
+- Runtime 软件模拟和静态资源测试 17 项通过。测试通过现有生成器取得当前工程，历史工程保留用于比较。
+- Qt 宿主和展示测试 36 项通过。同一双页工程的原生 Qt 启停、冻结、履历时间及日志也已复验。
+- Designer 的编辑、布局和绑定等 76 项通过。另有 39 项属性相关回归通过 Windows 原生 Qt 和 offscreen 两种运行方式。
+- 受影响的打包自测和 Designer 导出至独立查看器链路通过。P3 的实际鼠标、键盘切页检查也已通过。
+
+## 验收范围
 
 现场相机、PLC、工位精度和外部冻结 EXE 未验证。

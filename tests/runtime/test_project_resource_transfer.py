@@ -176,7 +176,7 @@ def testRemoteUploadIsExplicitBeforeCommitAndSurvivesRestart(tmp_path, pageOnly)
                 candidate["workflows"]["main"]["nodes"].pop()
                 candidate["resources"]["parameterBindings"] = []
                 candidate["resources"]["items"]["image"]["purpose"] = "page_image"
-                candidate["presentation"] = dict(defaultPageId="page", pageOrder=["page"], pages={
+                candidate["presentation"].update(defaultPageId="page", pageOrder=["page"], pages={
                     "page": dict(name="Static", components=[dict(componentId="picture", type="image",
                         props=dict(imageResourceId="image"))])})
             from emo_master.core.project.configuration import projectChanges

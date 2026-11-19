@@ -8,7 +8,7 @@ from test_responsive_editor import responsivePage, settle  # noqa: F401
 from test_responsive_resize_edges import prepare
 from emo_master.apps.designer.page_designer.responsive_editing import childrenFor, layoutFor
 from emo_master.apps.designer.state.presentation_store import _component
-from emo_master.core.presentation.models import ResponsiveLayout
+from emo_master.core.presentation.models import ResponsiveLayout, Typography
 
 
 def configure(page, direction, nested):
@@ -146,7 +146,8 @@ def testResizeFeedbackUsesNaturalContentHeight(responsivePage):  # noqa: F811
 
     def edit(p):
         item = _component(p, editor.pageId, key)
-        item.props.fontSize = 32
+        item.props.typography = Typography(value={'size': 32})
+        item.props.text = '检测信息 ' * 14
         item.responsive.preferredHeight = 300
 
     coordinator.session.editPresentation(edit)

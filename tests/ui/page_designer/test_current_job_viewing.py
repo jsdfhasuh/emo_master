@@ -557,8 +557,7 @@ def testLocalDataRestoresPagesOmittedByWorkflowObservationBeforeReading(designer
     observer.source.setCurrentIndex(2)
     waitFor(lambda: not preview.busy and not preview.closing)
     assert observer.config == coordinator.session.presentation.snapshot()
-    tabs = observer.pageNavigation.tabs
-    assert 'local-history' in [tabs.tabData(i) for i in range(tabs.count())]
+    assert observer.pageNavigation.buttons['local-history'].text() == '本地历史'
     assert reads == []
     assert client.calls == calls
     database = observer.widgets['overview']['overview-local'][1]

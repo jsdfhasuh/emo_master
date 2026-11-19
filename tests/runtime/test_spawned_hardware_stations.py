@@ -17,6 +17,7 @@ from emo_master.apps.operator_runtime.controller import ProductionRuntime
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.project.snapshots import revisionOf
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+from examples.hardware_trigger_normal_fixture.build_project import buildProject
 from tests.plugins.test_communication_operators import _recvExact, _slmpResponse
 from tests.runtime.production_fixture import saveDocument, waitFor
 from tests.runtime.test_hardware_trigger_normal_chain import syntheticFrame
@@ -122,7 +123,7 @@ def testNoTriggerStationDoesNotBlockOtherActualHardwareNormalJob(tmp_path, monke
     monkeypatch.setenv("EMO_M5_SIMULATED_CAMERA_ROOT", str(cameras))
     root = tmp_path / "engineering"
     root.mkdir()
-    payload = json.loads((ROOT / "examples/hardware_trigger_normal_fixture/project.json").read_text(encoding="utf-8"))
+    payload = buildProject()
     for role in ("a", "b", "holes"):
         (root / f"{role}.onnx").write_text("M5 simulated ONNX:" + role, encoding="ascii")
     for s in (1, 2):

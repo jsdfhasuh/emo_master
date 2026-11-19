@@ -43,6 +43,6 @@ def testPagePropertyFailureUsesPageSource(designer):  # noqa: F811
 
     entry, = designer.logEntries
     assert (entry.source, entry.level) == ('page_designer', 'ERROR')
-    assert 'fontSize' in entry.message
+    assert 'typography.value.size' in entry.message
     assert coordinator.session.payload() == before
     editor.tools.fields['fontSize'].setValue(16)

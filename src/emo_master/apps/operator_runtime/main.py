@@ -791,9 +791,6 @@ class OperatorWindow(QWidget):
         showControls = shell is None or shell.showControls
         self.startButton.setVisible(showControls)
         self.stopButton.setVisible(showControls)
-        if self.pages:
-            failure = self.error or (self.state.get('message', '') if self.state.get('state') == 'FAULT' else '')
-            self.pages.setHostMessage(failure or self.viewNotice, problem=bool(failure))
         self.startButton.setText(f"开始（{len(self.selectedWorkflowIds)} 个流程）" if len(self.selectedWorkflowIds) > 1 else "开始")
         self.stopButton.setText("全部停止" if multi else "停止")
         self.stopButton.setEnabled(enabled and (any(row.get('activeJobIds') or row['jobId'] and not row['canLoad']
@@ -803,14 +800,31 @@ class OperatorWindow(QWidget):
         self.returnRunButton.setVisible(self.viewSession is not None)
         self.returnRunButton.setEnabled(enabled and self.viewSession is not None)
         self.viewingLabel.setVisible(self.viewSession is not None or bool(self.viewNotice))
+        targetSummary = ''
         if self.viewRunInfo is not None:
             # The status worker may already have adopted a publication while
             # the GUI is still scheduling retirement of the old viewing page.
             names = ' / '.join(self.controller.workflows[key].name if key in self.controller.workflows else key
                                for key in self.viewRunInfo['roots'])
-            self.viewingLabel.setText(f"正在查看：{names} · {self.viewRunInfo['jobId']}")
+            viewed = self.viewRunInfo['jobId']
+            self.viewingLabel.setText(f"正在查看：{names} · {viewed}")
+            activeJobs = self.state.get('activeJobIds', [])
+            if multi:
+                control = '控制：全部运行'
+            elif len(activeJobs) > 1:
+                default = self.state.get('jobId') or activeJobs[0]
+                control = f'停止时选择 · 默认 {default[:8]}'
+            elif activeJobs:
+                control = f'停止对象：{activeJobs[0][:8]}'
+            else:
+                control = '无活动运行'
+            targetSummary = f'查看：{names} · {viewed[:8]}　|　{control}'
         elif self.viewNotice:
             self.viewingLabel.setText(self.viewNotice)
+        if self.pages:
+            failure = self.error or (self.state.get('message', '') if self.state.get('state') == 'FAULT' else '')
+            messages = (targetSummary if self.pages.config.pageOrder else '', failure or self.viewNotice)
+            self.pages.setHostMessage('\n'.join(message for message in messages if message), problem=bool(failure))
         self.settingsButton.setEnabled(not self.closing)
         self.logsButton.setEnabled(not self.closing)
         self.startupPage.chooseButton.setEnabled(self.openButton.isEnabled())

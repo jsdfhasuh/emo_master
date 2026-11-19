@@ -120,7 +120,7 @@ def testSqliteStatisticsRequireValueFieldAndKeepPendingValues(designer, tmp_path
 def testPageTitleDefaultsAndTextCanFollowPageName(designer):  # noqa: F811
     _, editor, key = setupPage(designer, 'page_title')
     props = _component(editor.store.snapshot(), editor.pageId, key).props
-    assert props.text == '' and props.fontSize == 24 and props.fontWeight == 'bold'
+    assert props.text == '' and props.typography.value.size == 24 and props.typography.value.weight == 'bold'
     editor.tools.fields['text'].setText('自定义看板')
     editor.tools.commitPending()
     assert _component(editor.store.snapshot(), editor.pageId, key).props.text == '自定义看板'

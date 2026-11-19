@@ -17,6 +17,7 @@ def main():
     import p3_demo
     from PySide2.QtCore import Qt
     from PySide2.QtTest import QTest
+    from p5_view_probe import selectPage
     app=p3_demo.QApplication.instance() or p3_demo.QApplication([])
     launcher=p3_demo.Launcher()
     args.output.mkdir(parents=True,exist_ok=False)
@@ -43,11 +44,7 @@ def main():
         app.processEvents()
         assert window.grab().save(str(args.output/'overview.png'))
         first=window.displayed['root'].result.identity.resultKey
-        picker = window.pageNavigation.picker
-        picker.showPopup()
-        item = picker.model().index(picker.findData('detail'), picker.modelColumn(), picker.rootModelIndex())
-        picker.view().scrollTo(item)
-        QTest.mouseClick(picker.view().viewport(), Qt.LeftButton, pos=picker.view().visualRect(item).center())
+        selectPage(window, 'detail')
         until(lambda:window.widgets['detail']['detail-count'][1].text()=='3 个')
         app.processEvents()
         assert window.grab().save(str(args.output/'detail.png'))
@@ -67,8 +64,14 @@ def main():
         window.resize(500,480)
         app.processEvents()
         assert window.grab().save(str(args.output/'narrow.png'))
-        picker.setFocus()
-        QTest.keyClick(picker, Qt.Key_Home)
+        tabs = window.pageNavigation.tabs
+        if tabs is None:
+            button = window.pageNavigation.buttons['overview']
+            button.setFocus()
+            QTest.keyClick(button, Qt.Key_Space)
+        else:
+            tabs.setFocus()
+            QTest.keyClick(tabs, Qt.Key_Left)
         assert window.currentPageId=='overview'
         report={'platform':app.platformName(),'scale':args.scale,'device_pixel_ratio':window.devicePixelRatioF(),
                 'keys':[first,second],'observed_counts':[2,3],'jobs':len(launcher.backend.presentation.jobs),

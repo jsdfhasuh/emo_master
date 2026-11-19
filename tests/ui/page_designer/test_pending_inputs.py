@@ -33,7 +33,7 @@ def testSaveCommitsVisibleUnappliedProperties(designer, tmp_path):  # noqa: F811
 
 def testInvalidPendingInputBlocksSaveWithoutDiscardingText(designer, tmp_path, monkeypatch):  # noqa: F811
     coordinator, editor, key = setupPage(designer, 'indicator')
-    editor.tools.addExtraRow(values=('boolean', 'invalid boolean', 'OK', 'green'))
+    editor.tools.addExtraRow(values=('boolean', 'invalid boolean', 'OK', 'green', 'none'))
     before = coordinator.session.payload()
     from PySide2.QtWidgets import QMessageBox
     warnings = []
@@ -63,7 +63,7 @@ def testSelectingAnotherComponentCommitsPendingInput(designer):  # noqa: F811
 def testInvalidInputBlocksComponentSelection(designer):  # noqa: F811
     _, editor, first = setupPage(designer, 'indicator')
     second = editor.tools.commands().add(editor.pageId, 'text', 1, 0)
-    editor.tools.addExtraRow(values=('boolean', 'not boolean', 'OK', 'green'))
+    editor.tools.addExtraRow(values=('boolean', 'not boolean', 'OK', 'green', 'none'))
     with pytest.raises(ValueError):
         editor.tools.select(second)
     assert editor.tools.selected == first

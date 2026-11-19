@@ -3,11 +3,13 @@ from dataclasses import asdict
 import json
 
 import pytest
+from PySide2.QtWidgets import QDialog, QFormLayout, QGroupBox
 
 from test_workspace import designer  # noqa: F401
 from test_pending_inputs import setupPage
 from test_editing import blank, metadata
 from test_preview import waitFor
+from emo_master.apps.designer.page_designer.appearance_properties import SettingsDialog
 from emo_master.apps.designer.state.presentation_store import _component
 from emo_master.core.presentation.models import ResultScope
 
@@ -44,30 +46,51 @@ def testStaticResourcePickerPersistsAndUndoRestores(designer, tmp_path):  # noqa
     assert (tmp_path / 'saved' / 'page.png').read_bytes() == data
 
 
-def testTypedIndicatorPlainTextFalseAndAppearanceSave(designer, tmp_path):  # noqa: F811
+def testTypedIndicatorPlainTextFalseAndAppearanceSave(designer, tmp_path, monkeypatch):  # noqa: F811
     coordinator, editor, key = setupPage(designer, 'indicator')
     tools = editor.tools
-    tools.addExtraRow(values=('string', 'OK', '合格', 'green'))
-    tools.addExtraRow(values=('boolean', False, '不合格', 'red'))
+    tools.addExtraRow(values=('string', 'OK', '合格', 'green', 'none'))
+    tools.addExtraRow(values=('boolean', False, '不合格', 'red', 'soft'))
     tools.fields['fontSize'].setValue(32)
-    tools.appearance['fontFamily'].setCurrentIndex(tools.appearance['fontFamily'].findData('monospace'))
-    tools.appearance['cardStyle'].setCurrentIndex(tools.appearance['cardStyle'].findData('soft'))
+
+    def chooseAppearance(dialog):
+        groups = {group.title(): group for group in dialog.findChildren(QGroupBox)}
+        for title, choices in [('表面（勾选以自定义）', {'类型': 'card', '背景': 'subtle'}),
+                               ('文字（勾选以自定义）', {'主值字重': 'bold'})]:
+            group = groups[title]
+            group.setChecked(True)
+            form = group.layout()
+            for row in range(form.rowCount()):
+                name = form.itemAt(row, QFormLayout.LabelRole).widget().text()
+                if name in choices:
+                    field = form.itemAt(row, QFormLayout.FieldRole).widget()
+                    field.setCurrentIndex(field.findData(choices[name]))
+        dialog.accept()
+        assert dialog.result() == QDialog.Accepted
+        return dialog.result()
+
+    monkeypatch.setattr(SettingsDialog, 'exec_', chooseAppearance)
+    tools.compositionButton.click()
     assert designer.saveProjectToDirectory(str(tmp_path / 'typed'))
     saved = json.loads((tmp_path / 'typed' / 'project.json').read_text(encoding='utf-8'))
     props = saved['presentation']['pages'][editor.pageId]['components'][0]['props']
     assert set(props['indicatorStates']) == {'"OK"', 'false'}
-    assert props['fontSize'] == 32 and props['fontFamily'] == 'monospace' and props['cardStyle'] == 'soft'
+    assert props['indicatorStates']['false']['background'] == 'soft'
+    assert props['typography']['value']['size'] == 32 and props['typography']['value']['weight'] == 'bold'
+    assert props['surface']['kind'] == 'card' and props['surface']['background'] == 'subtle'
     editor.refresh()
     tools.select(key)
     assert tools.extra.item(0, 1).text() == 'OK'
     assert tools.extra.item(1, 1).text() == 'false'
+    assert tools.extra.cellWidget(1, 0).currentData() == 'boolean'
+    assert tools.extra.cellWidget(1, 4).currentData() == 'soft'
     assert not coordinator.session.dirty
 
 
 def testDuplicateTypedValuesPreservePendingFormAndDraft(designer):  # noqa: F811
     coordinator, editor, key = setupPage(designer, 'indicator')
     for title in ('first', 'second'):
-        editor.tools.addExtraRow(values=('string', 'OK', title, 'green'))
+        editor.tools.addExtraRow(values=('string', 'OK', title, 'green', 'none'))
     before = coordinator.session.payload()
     with pytest.raises(ValueError, match='duplicate'):
         editor.tools.commitPending()
@@ -130,20 +153,25 @@ def testAllReadOnlyActionsEditedWithExplicitScope(designer):  # noqa: F811
 
 def testOfflineStatesDoNotTouchRuntimeOrDirtyDraft(designer):  # noqa: F811
     coordinator, editor, key = setupPage(designer, 'indicator')
-    editor.tools.addExtraRow(values=('boolean', True, '模拟合格', 'green'))
-    editor.tools.addExtraRow(values=('boolean', False, '模拟不合格', 'red'))
+    editor.tools.addExtraRow(values=('boolean', True, '模拟合格', 'green', 'none'))
+    editor.tools.addExtraRow(values=('boolean', False, '模拟不合格', 'red', 'none'))
     editor.tools.commitPending()
     editor.refresh()
     coordinator.session.markSaved()
     history = len(coordinator.session._undo)
     preview = coordinator.preview.openObserver()
-    for state, text in [('OK', '模拟合格'), ('NG', '模拟不合格'), ('WAITING', '等待触发'), ('ERROR', 'NODE_FAILED')]:
+    for state, text, diagnostic in [('OK', '模拟合格', ''), ('NG', '模拟不合格', ''),
+                                    ('WAITING', '—', '模拟 · 等待触发 / 尚无结果'),
+                                    ('ERROR', '—', '模拟 · NODE_FAILED · 示例错误')]:
         preview.simulation.setCurrentIndex(preview.simulation.findData(state))
-        assert text in preview.widgets[editor.pageId][key][1].text()
+        _, indicator = preview.widgets[editor.pageId][key]
+        assert indicator.text() == text
+        assert indicator.toolTip() == diagnostic
         assert '模拟状态' in preview.banner.text()
         assert not preview.displayed
     preview.simulation.setCurrentIndex(0)
-    assert 'NODE_FAILED' not in preview.widgets[editor.pageId][key][1].text()
+    _, indicator = preview.widgets[editor.pageId][key]
+    assert not indicator.toolTip()
     assert not coordinator.session.dirty and len(coordinator.session._undo) == history
     assert coordinator.preview.session is None and coordinator.preview.backend is None
     assert designer.currentJobId is None

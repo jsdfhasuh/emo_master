@@ -2,7 +2,7 @@
 import pytest
 from PySide2.QtWidgets import QApplication, QLabel
 
-from emo_master.core.presentation.models import Component, Page, Presentation, ResponsiveLayout
+from emo_master.core.presentation.models import Component, Page, PageAppearance, Presentation, ResponsiveLayout
 from emo_master.ui.presentation.renderer import RuntimePages
 from emo_master.ui.presentation.spacer import SpacerCard
 
@@ -52,7 +52,8 @@ def testVerticalFlexUsesViewportHeightWithoutCreatingOverflow(qtApp):
         flexible, fixed = viewer.cards['p']['s'], viewer.cards['p']['fixed']
         assert fixed.height() == 24
         assert flexible.height() > 24
-        assert flexible.height() + fixed.height() + 18 == scroll.viewport().height()
+        padding = (config.appearance or PageAppearance()).pagePadding
+        assert flexible.height() + fixed.height() + padding * 2 == scroll.viewport().height()
     finally:
         viewer.close()
         viewer.deleteLater()

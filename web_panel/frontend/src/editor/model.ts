@@ -4,7 +4,7 @@ import type { Appearance, Component, Layout, Panel, PanelShell, Result } from '.
 /** The editable document is the complete Presentation source, never a renderer DTO. */
 export interface SourceComponent {
     componentId:string; type:string; version?:'1.0'; layout:NonNullable<Component['layout']>;
-    responsive:NonNullable<Component['responsive']>; props:Record<string,unknown> & {historySource?:HistorySource};
+    responsive:NonNullable<Component['responsive']>; props:NonNullable<Component['props']> & {historySource?:HistorySource};
     bindings:Record<string,string>; actions:NonNullable<Component['actions']>; children:SourceComponent[]; grid:Layout;
 }
 export interface SourcePage { name:string; targets:Array<'desktop'|'web'>; layout:Layout; components:SourceComponent[]; resultScopeIds:string[]; canvasTop?:number; }
@@ -17,7 +17,7 @@ export interface Choice {
     label:string; source:DataSource; scope:ResultScope; sourceId?:string; scopeId?:string;
     enabled?:boolean; reason?:string; issues?:Array<{message:string;code?:string}>;
 }
-export const componentNames:Record<string,string> = {image:'图像',text:'文字',number:'数值',indicator:'判定指示',runtime_status:'连接状态',table:'集合表格',sqlite_table:'SQLite 历史表格',navigation_button:'导航按钮',container:'容器',page_title:'页面标题',page_navigation:'页面导航',spacer:'空白块'};
+export const componentNames:Record<string,string> = {image:'图像',text:'文字',number:'数值',indicator:'判定指示',runtime_status:'连接状态',table:'集合表格',sqlite_table:'SQLite 历史表格',sqlite_value:'SQLite 统计',navigation_button:'导航按钮',container:'容器',page_title:'页面标题',page_navigation:'页面导航',clock:'日期时间',spacer:'空白块'};
 export const freshId=(prefix:string)=>`${prefix}-${Array.from(crypto.getRandomValues(new Uint8Array(10)),x=>x.toString(16).padStart(2,'0')).join('')}`;
 export const clone=<T,>(value:T):T=>JSON.parse(JSON.stringify(value));
 export const newPage=(name='新页面'):SourcePage=>({name,targets:['web'],layout:{type:'responsive',direction:'wrap',spacing:12,alignment:'stretch',justify:'start',equalWidth:false},components:[],resultScopeIds:[]});
@@ -166,13 +166,23 @@ export function tidyBindings(doc:Presentation):void {
     for(const id of Object.keys(doc.resultScopes))if(!scopes.has(id))delete doc.resultScopes[id];
 }
 /** Pure one-way projection, used while arranging unsaved source. */
-export function renderModel(doc:Presentation,assetUrl?:(id:string)=>string):Panel {
-    const component=(c:SourceComponent):Component=>{const sourceId=Object.values(c.bindings)[0];return {id:c.componentId,type:c.type,label:String(c.props.title || ''),props:{...clone(c.props),...(c.props.imageResourceId && assetUrl?{assetUrl:assetUrl(String(c.props.imageResourceId))}:{}),...(c.props.iconResourceId && assetUrl?{iconUrl:assetUrl(String(c.props.iconResourceId))}:{})},layout:clone(c.layout),responsive:clone(c.responsive),grid:clone(c.grid),actions:clone(c.actions),children:c.children.map(component),...(sourceId?{binding:{sourceId,scopeId:doc.dataSources[sourceId]?.resultScopeId}}:{})};};
+export function renderModel(doc:Presentation,assetUrl?:(id:string)=>string,historySources?:Record<string,{columns?:string[]}>):Panel {
+    const component=(c:SourceComponent):Component=>{
+        const sourceId=Object.values(c.bindings)[0];
+        const props=clone(c.props);
+        if (props.imageResourceId && assetUrl) props.assetUrl=assetUrl(String(props.imageResourceId));
+        if (props.iconResourceId && assetUrl) props.iconUrl=assetUrl(String(props.iconResourceId));
+        const columns=props.historySource && historySources?.[props.historySource.componentId]?.columns;
+        if (c.type==='sqlite_table' && columns) props.columns=columns.map(key=>({key,title:key}));
+        return {id:c.componentId,type:c.type,label:String(props.title || ''),props,layout:clone(c.layout),
+            responsive:clone(c.responsive),grid:clone(c.grid),actions:clone(c.actions),children:c.children.map(component),
+            ...(sourceId?{binding:{sourceId,scopeId:doc.dataSources[sourceId]?.resultScopeId}}:{})};
+    };
     return {id:'editor-draft',name:'Web 草稿',packageRevision:'unsaved-draft',defaultPageId:doc.defaultPageId || undefined,
         navigation:clone(doc.navigation),appearance:doc.appearance ?? undefined,shell:doc.shell ?? undefined,
         logoUrl:doc.shell?.logoResourceId && assetUrl ? assetUrl(doc.shell.logoResourceId) : undefined,
         pages:doc.pageOrder.map(id=>({id,title:doc.pages[id].name,layout:clone(doc.pages[id].layout),canvasTop:doc.pages[id].canvasTop,components:doc.pages[id].components.map(component)}))};
 }
 export function exampleResults(doc:Presentation):Record<string,Result> {
-    return Object.fromEntries(Object.keys(doc.resultScopes).map(scopeId=>[scopeId,{resultKey:`sample-${scopeId}`,resultScopeId:scopeId,sources:Object.fromEntries(Object.entries(doc.dataSources).filter(([,source])=>source.resultScopeId===scopeId).map(([id,source])=>[id,{state:source.expectedType==='image'?'unavailable':'available',reason:source.expectedType==='image'?'示例图片占位 · 真实图片从 DisplayService 获取':undefined,value:source.expectedType==='boolean'?true:source.expectedType==='integer'?12:source.expectedType==='number'?98.5:source.expectedType==='collection'?[{label:'示例产品',confidence:0.98,count:12}]:source.expectedType==='json'?{result:'OK',count:12}:'OK'}]))}]));
+    return Object.fromEntries(Object.keys(doc.resultScopes).map(scopeId=>[scopeId,{resultKey:`sample-${scopeId}`,resultScopeId:scopeId,sources:Object.fromEntries(Object.entries(doc.dataSources).filter(([,source])=>source.resultScopeId===scopeId).map(([id,source])=>[id,{state:source.expectedType==='image'?'unavailable':'available',reason:source.expectedType==='image'?'示例图片占位 · 真实图片从 DisplayService 获取':undefined,value:source.expectedType==='boolean'?true:source.expectedType==='integer'?12:source.expectedType==='number'?10:source.expectedType==='collection'?[{label:'示例产品',confidence:0.98,count:12}]:source.expectedType==='json'?{result:'OK',count:12}:'OK'}]))}]));
 }

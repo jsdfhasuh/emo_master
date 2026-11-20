@@ -17,6 +17,10 @@ export type BrowserMessage = (BrowserResult | BrowserCaptureUnavailable | Browse
 
 export type BrowserResult = { "runtimeInstanceId": string; "projectId": string; "event"?: "result"; "cursor": string; "result": ClosedResult };
 
+export type ButtonStateAppearance = { "background"?: ("transparent" | string | null); "color"?: (string | null); "borderColor"?: (string | null); "borderWidth"?: (number | null); "borderStyle"?: ("solid" | "dashed" | "dotted" | null) };
+
+export type ButtonStates = { "default"?: (ButtonStateAppearance | null); "hover"?: (ButtonStateAppearance | null); "pressed"?: (ButtonStateAppearance | null); "disabled"?: (ButtonStateAppearance | null) };
+
 export type CallStep = { "nodeId": string; "relation"?: "subflow" | "loop_body" | "loop_condition" };
 
 export type ClosedResult = { "identity": ResultIdentity; "expectedSourceIds": Array<string>; "sources": Array<ClosedSource>; "status": "COMPLETE" | "INCOMPLETE" | "FAILED" | "CANCELLED"; "executionTerminal": "COMPLETED" | "FAILED" | "CANCELLED" | "UNKNOWN"; "timing"?: (ResultTiming | null) };
@@ -27,7 +31,9 @@ export type Collapse = { "initiallyCollapsed"?: boolean };
 
 export type Component = { "componentId": string; "type": "image" | "text" | "number" | "indicator" | "runtime_status" | "table" | "navigation_button" | "container" | "page_title" | "page_navigation" | "clock" | "sqlite_table" | "sqlite_value" | "spacer"; "version"?: "1.0"; "layout"?: Placement; "responsive"?: ResponsiveItem; "props"?: Props; "bindings"?: { [key: string]: unknown }; "actions"?: { [key: string]: Action }; "children"?: Array<Component>; "grid"?: (Grid | ResponsiveLayout) };
 
-export type ControlAppearance = { "style"?: ("primary" | "secondary" | "link" | null); "text"?: (TextRole | null); "radius"?: (number | null); "padding"?: (Padding | null); "minWidth"?: (number | null); "minHeight"?: (number | null); "showIcon"?: boolean };
+export type ControlAppearance = { "style"?: ("primary" | "secondary" | "link" | null); "text"?: (TextRole | null); "radius"?: (number | null); "padding"?: (Padding | null); "minWidth"?: (number | null); "minHeight"?: (number | null); "showIcon"?: boolean; "background"?: ("transparent" | string | null); "borderColor"?: (string | null); "borderWidth"?: (number | null); "borderStyle"?: ("solid" | "dashed" | "dotted" | null); "iconPosition"?: ("left" | "right" | null); "iconSize"?: (number | null); "iconGap"?: (number | null); "buttonStates"?: (ButtonStates | null); "customStyle"?: (CustomStyle | null) };
+
+export type CustomStyle = { "qtQss"?: (NativeStyle | null); "webCss"?: (NativeStyle | null) };
 
 export type DataSource = { "kind": "node_output" | "workflow_output" | "global_counter" | "global_variable" | "runtime_status"; "resultScopeId": string; "workflowId"?: (string | null); "callPath"?: Array<CallStep>; "nodeId"?: (string | null); "port"?: (string | null); "fieldPath"?: Array<string>; "expectedType": "integer" | "number" | "string" | "boolean" | "image" | "collection" | "geometry" | "json"; "name"?: (string | null); "variableId"?: (string | null); "ruleVersion"?: "1.0" };
 
@@ -57,9 +63,11 @@ export type ImagePathSource = { "kind": "fixed" | "selected_row"; "path"?: strin
 
 export type ImageRef = { "resourceId": string; "ownerResultKey": string; "byteSize": number; "sha256": string; "mimeType": "image/png" | "image/jpeg"; "provenance": FrameProvenance; "ownership"?: "result_store" };
 
-export type ImageView = { "sizing"?: "fixed" | "aspect"; "aspectRatio"?: (number | null); "background"?: "subtle" | "dark" | "transparent"; "horizontalAlign"?: "start" | "center" | "end"; "verticalAlign"?: "start" | "center" | "end" };
+export type ImageView = { "sizing"?: "fixed" | "aspect"; "aspectRatio"?: (number | null); "background"?: ("subtle" | "dark" | "transparent" | string); "horizontalAlign"?: "start" | "center" | "end"; "verticalAlign"?: "start" | "center" | "end" };
 
-export type IndicatorStyle = { "text": string; "color"?: "neutral" | "green" | "red" | "amber" | "blue"; "background"?: "none" | "soft" };
+export type IndicatorStyle = { "text": string; "color"?: ("neutral" | "green" | "red" | "amber" | "blue" | string); "background"?: ("none" | "soft" | string); "borderColor"?: (string | null); "borderWidth"?: (number | null); "borderStyle"?: ("solid" | "dashed" | "dotted" | null) };
+
+export type NativeStyle = { "enabled"?: boolean; "code"?: string };
 
 export type Navigation = { "mode"?: "tabs" | "buttons" };
 
@@ -83,7 +91,7 @@ export type PreviewContext = { "previewContextVersion"?: "1"; "mode": "fixtures"
 
 export type PreviewRuntime = { "target": string; "timeoutSeconds"?: number; "maxReceiveMessageBytes"?: number; "runtimeInstanceId": string; "documentRevision": string };
 
-export type Props = { "spacerMode"?: "fixed" | "flex"; "imageResourceId"?: (string | null); "iconResourceId"?: (string | null); "title"?: string; "text"?: string; "emptyText"?: string; "unit"?: string; "decimals"?: number; "indicatorStates"?: { [key: string]: IndicatorStyle }; "columns"?: Array<TableColumn>; "pageSize"?: number; "surface"?: (Surface | null); "typography"?: (Typography | null); "valueLayout"?: "vertical" | "horizontal"; "helperText"?: string; "indicatorView"?: "text" | "badge" | "row"; "showMarker"?: (boolean | null); "titleFollowsState"?: boolean; "markerPosition"?: "value" | "title"; "imageView"?: (ImageView | null); "buttonStyle"?: "primary" | "secondary" | "link"; "collapse"?: (Collapse | null); "statusField"?: ("connection" | "job_state" | null); "historyView"?: (HistoryView | null); "recordValue"?: ((RecordField | RecordMeta) | null); "imagePath"?: (ImagePathSource | null); "sqlite"?: SqliteSource; "historySource"?: (HistorySource | null) };
+export type Props = { "spacerMode"?: "fixed" | "flex"; "imageResourceId"?: (string | null); "iconResourceId"?: (string | null); "title"?: string; "text"?: string; "emptyText"?: string; "unit"?: string; "decimals"?: number; "indicatorStates"?: { [key: string]: IndicatorStyle }; "columns"?: Array<TableColumn>; "pageSize"?: number; "surface"?: (Surface | null); "typography"?: (Typography | null); "valueLayout"?: "vertical" | "horizontal"; "helperText"?: string; "indicatorView"?: "text" | "badge" | "row"; "showMarker"?: (boolean | null); "titleFollowsState"?: boolean; "markerPosition"?: "value" | "title"; "imageView"?: (ImageView | null); "buttonStyle"?: "primary" | "secondary" | "link"; "iconPosition"?: ("left" | "right" | null); "iconSize"?: (number | null); "iconGap"?: (number | null); "buttonStates"?: (ButtonStates | null); "customStyle"?: (CustomStyle | null); "collapse"?: (Collapse | null); "statusField"?: ("connection" | "job_state" | null); "historyView"?: (HistoryView | null); "recordValue"?: ((RecordField | RecordMeta) | null); "imagePath"?: (ImagePathSource | null); "sqlite"?: SqliteSource; "historySource"?: (HistorySource | null) };
 
 export type PublishedAsset = { "path": string; "sha256": string; "byteSize": number; "mimeType": "image/png" | "image/jpeg" | "image/bmp" };
 
@@ -93,7 +101,7 @@ export type PublishedPage = { "name": string; "layout": (Grid | ResponsiveLayout
 
 export type PublishedPresentation = { "schemaVersion"?: "published-1"; "defaultPageId": string; "pageOrder": Array<string>; "navigation": Navigation; "appearance"?: (PageAppearance | null); "shell"?: (PageShell | null); "resultScopes": { [key: string]: unknown }; "dataSources": { [key: string]: unknown }; "pages": { [key: string]: unknown } };
 
-export type PublishedProps = { "spacerMode"?: "fixed" | "flex"; "imageResourceId"?: (string | null); "iconResourceId"?: (string | null); "title"?: string; "text"?: string; "emptyText"?: string; "unit"?: string; "decimals"?: number; "indicatorStates"?: { [key: string]: IndicatorStyle }; "columns"?: Array<TableColumn>; "pageSize"?: number; "surface"?: (Surface | null); "typography"?: (Typography | null); "valueLayout"?: "vertical" | "horizontal"; "helperText"?: string; "indicatorView"?: "text" | "badge" | "row"; "showMarker"?: (boolean | null); "titleFollowsState"?: boolean; "markerPosition"?: "value" | "title"; "imageView"?: (ImageView | null); "buttonStyle"?: "primary" | "secondary" | "link"; "collapse"?: (Collapse | null); "statusField"?: ("connection" | "job_state" | null); "historyView"?: (HistoryView | null); "recordValue"?: ((RecordField | RecordMeta) | null) };
+export type PublishedProps = { "spacerMode"?: "fixed" | "flex"; "imageResourceId"?: (string | null); "iconResourceId"?: (string | null); "title"?: string; "text"?: string; "emptyText"?: string; "unit"?: string; "decimals"?: number; "indicatorStates"?: { [key: string]: IndicatorStyle }; "columns"?: Array<TableColumn>; "pageSize"?: number; "surface"?: (Surface | null); "typography"?: (Typography | null); "valueLayout"?: "vertical" | "horizontal"; "helperText"?: string; "indicatorView"?: "text" | "badge" | "row"; "showMarker"?: (boolean | null); "titleFollowsState"?: boolean; "markerPosition"?: "value" | "title"; "imageView"?: (ImageView | null); "buttonStyle"?: "primary" | "secondary" | "link"; "iconPosition"?: ("left" | "right" | null); "iconSize"?: (number | null); "iconGap"?: (number | null); "buttonStates"?: (ButtonStates | null); "customStyle"?: (CustomStyle | null); "collapse"?: (Collapse | null); "statusField"?: ("connection" | "job_state" | null); "historyView"?: (HistoryView | null); "recordValue"?: ((RecordField | RecordMeta) | null) };
 
 export type RecordField = { "componentId": string; "kind": "field"; "field": string };
 
@@ -391,10 +399,10 @@ export type RpcWorkflowInfo = { "workflowId"?: string; "name"?: string; "isEntry
 
 export type SqliteSource = { "databasePath"?: string; "table"?: string; "columns"?: Array<string>; "orderBy"?: string; "descending"?: boolean; "aggregate"?: "count" | "sum" | "avg" | "min" | "max"; "valueColumn"?: string; "location"?: "display_local" | "runtime"; "recordKey"?: (string | null) };
 
-export type Surface = { "kind"?: ("none" | "card" | null); "background"?: ("transparent" | "surface" | "subtle" | null); "border"?: ("none" | "subtle" | null); "radius"?: (number | null); "padding"?: (Padding | null) };
+export type Surface = { "kind"?: ("none" | "card" | null); "background"?: ("transparent" | "surface" | "subtle" | string | null); "border"?: ("none" | "subtle" | null); "borderColor"?: (string | null); "borderWidth"?: (number | null); "borderStyle"?: ("solid" | "dashed" | "dotted" | null); "radius"?: (number | null); "padding"?: (Padding | null) };
 
 export type TableColumn = { "title": string; "fieldPath"?: Array<string> };
 
-export type TextRole = { "size"?: (number | null); "weight"?: ("normal" | "bold" | null); "color"?: ("default" | "neutral" | "primary" | "green" | "red" | "amber" | null) };
+export type TextRole = { "size"?: (number | null); "weight"?: ("normal" | "bold" | null); "color"?: ("default" | "neutral" | "primary" | "green" | "red" | "amber" | string | null) };
 
 export type Typography = { "title"?: (TextRole | null); "value"?: (TextRole | null); "helper"?: (TextRole | null) };

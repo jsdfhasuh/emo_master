@@ -1,11 +1,14 @@
 import { useLayoutEffect, useMemo, useReducer, useState } from 'react';
 import type { Component, History, HistoryView as HistoryLayout, Page } from '../contracts/types';
 import { api, apiBlob, ApiError, safeAssetUrl } from '../data/api';
-import { ImageView, IndicatorValue, indicatorState } from './presentation';
+import { ImageView, IndicatorValue, indicatorState, roleStyle } from './presentation';
+import { appearancePart } from './advancedAppearance';
 
 export const historyText = (value: unknown, empty = '—') => value == null || value === '' ? empty : String(value);
-export const historyAggregateText = (data: object, empty = '—') =>
-    'value' in data ? historyText(data.value, empty) : '统计能力未就绪';
+export const historyAggregateText = (data: object, empty = '—', unit = '') => {
+    if (!('value' in data)) return '统计能力未就绪';
+    return data.value == null || data.value === '' ? empty : String(data.value) + unit;
+};
 
 type Row = Record<string, unknown>;
 type Key = (string | number | bigint | boolean)[];
@@ -195,25 +198,34 @@ export function useHistoryReview(viewId: string | undefined, scope: string, revi
 
 type HistoryReview = ReturnType<typeof useHistoryReview>;
 
-export function HistoryTable({ component, review }: {component: Component; review: HistoryReview}) {
+export function HistoryTable({ component, review, owner, sample=false }: {component: Component; review: HistoryReview; owner?:string; sample?:boolean}) {
     const session = review.current(component.id);
     const query = session?.query || initialQuery(component);
     const data = session?.data;
-    const busy = !session || session.busy;
+    const busy = !sample && (!session || session.busy);
     const columns = columnsOf(component);
     const [filterColumn, setFilterColumn] = useState(query.filterColumn);
     const [keyword, setKeyword] = useState(query.q);
     const configured = component.props?.historyView as HistoryLayout | undefined;
     const list = configured?.mode === 'list';
     const empty = typeof component.props?.emptyText === 'string' ? component.props.emptyText : undefined;
+    const typography = component.props?.typography;
+    const valuePart = appearancePart(owner,'value',typography?.value && roleStyle(typography,'value'));
+    const helperPart = appearancePart(owner,'helper',typography?.helper && roleStyle(typography,'helper'));
+    const actionPart = appearancePart(owner,'action');
     const load = (newQuery: Partial<HistoryQuery>, keepAnchor = false) => {
         if (session && !busy) void review.load(session, {...query, ...newQuery}, keepAnchor ? session.anchor : undefined);
     };
     if (component.type === 'sqlite_value') {
-        if (session?.error) return <p role="alert">{session.error}</p>;
-        return busy || !data ? <p role="status">正在读取历史…</p> : <strong>{historyAggregateText(data, empty)}</strong>;
+        if (session?.error) return <p role="alert" {...helperPart}>{session.error}</p>;
+        const aggregate = sample ? {value:12} : data;
+        if (busy || !aggregate) return <p role="status" {...helperPart}>正在读取历史…</p>;
+        const unit = typeof component.props?.unit === 'string' ? component.props.unit : '';
+        return <strong {...valuePart}>{historyAggregateText(aggregate, empty, unit)}</strong>;
     }
-    const rows = data?.rows || [];
+    const rows = sample ? [{rowId:'sample', displayValues:Object.fromEntries(columns.map(column=>[column.key,'示例']))}] : data?.rows || [];
+    const selected = sample ? rows[0] : session?.selected;
+    const cellPart = appearancePart(owner,'cell',typography?.value && roleStyle(typography,'value'));
     const select = (row: Row) => { if (session && !busy) review.select(session, row); };
     const hasNext = data?.hasNext;
     return <div className="history-review" aria-busy={busy}>
@@ -226,8 +238,8 @@ export function HistoryTable({ component, review }: {component: Component; revie
             </select>
             <input aria-label={`${component.id} 筛选`} placeholder="包含关键词" value={keyword} disabled={busy}
                 onChange={event => setKeyword(event.target.value)}/>
-            <button type="submit" disabled={busy}>筛选</button>
-            <button type="button" disabled={busy} onClick={() => {setKeyword(''); load({q: '', filterColumn, page: 0});}}>清除</button>
+            <button {...actionPart} type="submit" disabled={busy}>筛选</button>
+            <button {...actionPart} type="button" disabled={busy} onClick={() => {setKeyword(''); load({q: '', filterColumn, page: 0});}}>清除</button>
         </form>}
         {!!columns.length && configured?.showSort !== false && <div className="history-sort">
             <select aria-label={`${component.id} 排序`} value={query.sort} disabled={busy}
@@ -235,47 +247,47 @@ export function HistoryTable({ component, review }: {component: Component; revie
                 {!columns.some(column => column.key === query.sort) && <option value={query.sort}>默认排序</option>}
                 {columns.map(column => <option key={column.key} value={column.key}>{column.title}</option>)}
             </select>
-            <button disabled={busy} onClick={() => load({order: query.order === 'asc' ? 'desc' : 'asc', page: 0})}>
+            <button {...actionPart} disabled={busy} onClick={() => load({order: query.order === 'asc' ? 'desc' : 'asc', page: 0})}>
                 {query.order === 'asc' ? '升序' : '降序'}
             </button>
         </div>}
-        {session?.error && <p role="alert">{session.error}</p>}
-        {busy ? <p role="status">正在读取历史…</p> : !session?.error && !rows.length && <p>{empty || '暂无记录'}</p>}
-        {list ? <div className="history-list" role="list" aria-label="历史记录">
+        {session?.error && <p role="alert" {...helperPart}>{session.error}</p>}
+        {busy ? <p role="status" {...helperPart}>正在读取历史…</p> : !session?.error && !rows.length && <p {...helperPart}>{empty || '暂无记录'}</p>}
+        {list ? <div className="history-list" role="list" aria-label="历史记录" {...appearancePart(owner,'viewport')}>
             {rows.map((row, index) => {
                 const values = rowValues(row);
                 const title = historyText(values?.[configured?.titleField || columns[0]?.key], empty);
                 const trailing = configured?.trailingField ? values?.[configured.trailingField] : undefined;
                 return <div role="listitem" key={String(row.rowId || index)}>
-                    <button className="history-record" aria-pressed={session?.selected === row} disabled={busy} onClick={() => select(row)}>
-                        <span><strong>{title}</strong>
-                            {configured?.subtitleField && <small>{historyText(values?.[configured.subtitleField], empty)}</small>}
+                    <button className="history-record" {...appearancePart(owner,'item')} aria-pressed={selected === row} disabled={busy} onClick={() => select(row)}>
+                        <span><strong {...valuePart}>{title}</strong>
+                            {configured?.subtitleField && <small {...helperPart}>{historyText(values?.[configured.subtitleField], empty)}</small>}
                         </span>
-                        {configured?.trailingField && <IndicatorValue props={{...component.props, indicatorView: 'badge'}}
+                        {configured?.trailingField && <IndicatorValue owner={owner} props={{...component.props, indicatorView: 'badge'}}
                             state={indicatorState(component.props, typeof trailing === 'number' ? undefined : trailing,
                                 typeof trailing === 'bigint' ? String(trailing) : undefined)} emptyText={empty}/>}
                     </button>
                 </div>;
             })}
-        </div> : <div className="table-scroll"><table>
-            <thead><tr>{columns.map(column => <th key={column.key}>{column.title}</th>)}</tr></thead>
+        </div> : <div className="table-scroll" {...appearancePart(owner,'viewport')}><table {...appearancePart(owner,'table')}>
+            <thead {...appearancePart(owner,'header')}><tr>{columns.map(column => <th {...appearancePart(owner,'cell',typography?.title && roleStyle(typography,'title'))} key={column.key}>{column.title}</th>)}</tr></thead>
             <tbody>{rows.map((row, index) => <tr key={String(row.rowId || index)} tabIndex={busy ? -1 : 0}
-                aria-selected={session?.selected === row} onClick={() => select(row)}
+                {...appearancePart(owner,'item')} aria-selected={selected === row} onClick={() => select(row)}
                 onKeyDown={event => {if (event.key === 'Enter' || event.key === ' ') {event.preventDefault(); select(row);}}}>
-                {columns.map(column => <td key={column.key}>{historyText(rowValues(row)?.[column.key], empty)}</td>)}
+                {columns.map(column => <td {...cellPart} key={column.key}>{historyText(rowValues(row)?.[column.key], empty)}</td>)}
             </tr>)}</tbody>
         </table></div>}
         {configured?.showPagination !== false && <nav className="history-paging" aria-label="历史分页">
-            <button disabled={busy || query.page <= 0} onClick={() => load({page: query.page - 1})}>上一页</button>
-            <button disabled={busy || !hasNext} onClick={() => load({page: query.page + 1})}>下一页</button>
+            <button {...actionPart} disabled={busy || query.page <= 0} onClick={() => load({page: query.page - 1})}>上一页</button>
+            <button {...actionPart} disabled={busy || !hasNext} onClick={() => load({page: query.page + 1})}>下一页</button>
             <span>第 {query.page + 1} 页</span>
-            <button disabled={busy} onClick={() => load({}, true)}>刷新历史</button>
+            <button {...actionPart} disabled={busy} onClick={() => load({}, true)}>刷新历史</button>
         </nav>}
     </div>;
 }
 
-export function HistoryImage({ component, viewId, review, label }: {
-    component: Component; viewId: string; review: HistoryReview; label: string;
+export function HistoryImage({ component, viewId, review, label, owner }: {
+    component: Component; viewId: string; review: HistoryReview; label: string; owner?:string;
 }) {
     const props = component.props;
     const target = typeof props?.sourceComponentId === 'string' ? props.sourceComponentId : undefined;
@@ -288,13 +300,13 @@ export function HistoryImage({ component, viewId, review, label }: {
     if (ref?.status === 'AVAILABLE' && ref.imageRef)
         path = `/api/views/${encodeURIComponent(viewId)}/history-images/${encodeURIComponent(component.id)}?imageRef=${encodeURIComponent(ref.imageRef)}`;
     const identity = JSON.stringify([selected?.rowId, path]);
-    return <HistoryImageContents key={identity} component={component} label={label} path={safeAssetUrl(path)}
+    return <HistoryImageContents owner={owner} key={identity} component={component} label={label} path={safeAssetUrl(path)}
         empty={session?.busy ? '正在读取记录…' : ref?.message || (selected ? '所选记录的图片不可用' : '尚未选择记录')}
         recover={() => {if (target) review.recoverImage(target, selected);}}/>;
 }
 
-function HistoryImageContents({component, label, path, empty, recover}: {
-    component: Component; label: string; path?: string; empty: string; recover: () => void;
+function HistoryImageContents({component, label, path, empty, recover, owner}: {
+    component: Component; label: string; path?: string; empty: string; recover: () => void; owner?:string;
 }) {
     const [image, setImage] = useState<string>();
     const [error, setError] = useState('');
@@ -315,7 +327,7 @@ function HistoryImageContents({component, label, path, empty, recover}: {
         });
         return () => {request.abort(); if (objectUrl) URL.revokeObjectURL(objectUrl);};
     }, [path]);
-    return <ImageView url={image} label={label} settings={component.props?.imageView}
+    return <ImageView owner={owner} typography={component.props?.typography} url={image} label={label} settings={component.props?.imageView}
         fixedHeight={component.responsive?.preferredHeight || component.responsive?.minHeight}
         placeholder={error || (path ? '正在加载图片…' : empty)}/>;
 }

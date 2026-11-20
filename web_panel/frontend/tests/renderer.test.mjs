@@ -42,6 +42,8 @@ test('clock timezone, navigation plain icon and fixed history image are supporte
 });
 test('aggregate null stays empty, never substitutes row count',()=>{
  const {historyAggregateText}=require('../src/renderer/HistoryView.tsx');assert.equal(historyAggregateText({value:null,total:0}),'—');assert.equal(historyAggregateText({total:100}),'统计能力未就绪');assert.equal(historyAggregateText({value:0,total:9}),'0');
+ assert.equal(historyAggregateText({value:4}, '—', ' 条'), '4 条');
+ assert.equal(historyAggregateText({value:null}, '—', ' 条'), '—');
 });
 test('official number valueJson preserves unsafe integer without rounding',()=>{
  const html=render([{id:'n',type:'number',binding:'count'}],{result:{resultKey:'r',sources:{count:{state:'AVAILABLE',valueJson:'9007199254740993'}}}});

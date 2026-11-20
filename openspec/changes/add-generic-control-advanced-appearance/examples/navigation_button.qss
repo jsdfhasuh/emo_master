@@ -1,0 +1,7 @@
+QPushButton[emoPart="action"] {
+    border-left: 6px solid #044D38;
+}
+QPushButton[emoPart="action"]:enabled:hover {
+    background-color: #06664A;
+    color: #FFFFFF;
+}

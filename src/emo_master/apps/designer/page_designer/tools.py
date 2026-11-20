@@ -136,6 +136,10 @@ class EditingTools(QObject):
         self.compositionButton = QPushButton('组件外观与表现…')
         self.compositionButton.clicked.connect(lambda: self.w.run(self.editAppearance))
         self.form.addRow(self.compositionButton)
+        self.advancedAppearanceButton = QPushButton('高级外观…')
+        self.advancedAppearanceButton.setObjectName('advancedAppearanceButton')
+        self.advancedAppearanceButton.clicked.connect(lambda: self.w.run(lambda: self.editAppearance(advanced=True)))
+        self.form.addRow(self.advancedAppearanceButton)
         self.fields['fontSize'] = QSpinBox()
         self.fields['fontSize'].setRange(0, 96)
         self.fields['fontSize'].setSpecialValueText('自动')
@@ -450,7 +454,7 @@ class EditingTools(QObject):
         item = _component(self.w.store.snapshot(), self.w.pageId, self.selected)
         row = self.extra.rowCount()
         if item.type in {'indicator', 'sqlite_table'}:
-            kind, value, label, color, background = values or ('boolean', 'true', 'OK', 'green', 'none')
+            kind, value, label, color, background, *extras = values or ('boolean', 'true', 'OK', 'green', 'none')
             self.extra.insertRow(row)
             types = QComboBox()
             types.addItem('布尔', 'boolean')
@@ -458,16 +462,23 @@ class EditingTools(QObject):
             types.addItem('整数', 'integer')
             types.setCurrentIndex(types.findData(kind))
             self.extra.setCellWidget(row, 0, types)
-            self.extra.setItem(row, 1, QTableWidgetItem(str(value).lower() if type(value) is bool else str(value)))
+            entry = QTableWidgetItem(str(value).lower() if type(value) is bool else str(value))
+            if extras:
+                entry.setData(Qt.UserRole, extras[0])
+            self.extra.setItem(row, 1, entry)
             self.extra.setItem(row, 2, QTableWidgetItem(label))
             colors = QComboBox()
             for title, key in [('中性', 'neutral'), ('绿', 'green'), ('红', 'red'), ('琥珀', 'amber'), ('蓝', 'blue')]:
                 colors.addItem(title, key)
+            if colors.findData(color) < 0:
+                colors.addItem(color, color)
             colors.setCurrentIndex(colors.findData(color))
             self.extra.setCellWidget(row, 3, colors)
             backgrounds = QComboBox()
             backgrounds.addItem('无', 'none')
             backgrounds.addItem('浅底', 'soft')
+            if backgrounds.findData(background) < 0:
+                backgrounds.addItem(background, background)
             backgrounds.setCurrentIndex(backgrounds.findData(background))
             self.extra.setCellWidget(row, 4, backgrounds)
         elif item.type == 'table':
@@ -517,7 +528,7 @@ class EditingTools(QObject):
             raise ValueError('属性输入仍属于上一页面，请先应用或修正后再切页')
         self.apply()
 
-    def editAppearance(self):
+    def editAppearance(self, *, advanced=False):
         self.commitPending()
         from .appearance_properties import editComponentAppearance, editPageAppearance
         selected = self.selected
@@ -532,12 +543,15 @@ class EditingTools(QObject):
                 self.w.session.editPresentation(edit)
         else:
             item = _component(presentation, pageId, selected)
-            result = editComponentAppearance(self.w, item, presentation.pages[pageId])
+            result = editComponentAppearance(self.w, item, presentation.pages[pageId], advanced=advanced,
+                presentation=presentation, pageId=pageId, assets=self.w.renderer.assets,
+                projectRoot=self.w.coordinator.directory, view=self.w.renderer.lastView)
             if result is not None:
                 def edit(p):
                     target = _component(p, pageId, selected)
                     target.props = Props.model_validate({**target.props.model_dump(), **result})
-                    if result.get('recordValue') is not None:
+                    if result.get('recordValue') is not None and result['recordValue'] != (
+                            item.props.recordValue.model_dump(exclude_none=True) if item.props.recordValue else None):
                         target.bindings.clear()
                 self.w.session.editPresentation(edit)
 
@@ -683,7 +697,8 @@ class EditingTools(QObject):
         self.extra.setColumnHidden(4, component.type == 'table')
         self.extra.setToolTip('布尔值填写 true/false；文字值保持原文')
         data = [(c.title, tuple(c.fieldPath)) for c in component.props.columns] if component.type == 'table' else [
-            (*decodeIndicatorKey(key), style.text, style.color, style.background)
+            (*decodeIndicatorKey(key), style.text, style.color, style.background,
+             style.model_dump(include={'borderColor', 'borderWidth', 'borderStyle'}, exclude_none=True))
             for key, style in component.props.indicatorStates.items()]
         for row in data:
             self.addExtraRow(values=row)
@@ -777,7 +792,10 @@ class EditingTools(QObject):
                 raise ValueError('请选择已知表格字段；未知结构不能自动推断')
             props['columns'] = [{'title': title, 'fieldPath': list(path)} for title, path, *_ in rows]
         if item.type in {'indicator', 'sqlite_table'}:
-            props['indicatorStates'] = indicatorStatesFromRows(rows)
+            props['indicatorStates'] = {
+                key: {**state.model_dump(), **(self.extra.item(index, 1).data(Qt.UserRole) or {})}
+                for index, (key, state) in enumerate(indicatorStatesFromRows(rows).items())
+            }
         if item.type in ('sqlite_table', 'sqlite_value'):
             props['sqlite'] = self.sqliteProperties.payload()
         layout = Placement(**{key: self.fields[key].value() for key in ['row', 'column', 'rowSpan', 'columnSpan']})

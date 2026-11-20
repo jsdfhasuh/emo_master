@@ -294,6 +294,23 @@ SDK 1.8.0 在当前页面格式上补充以下通用配置；Qt、Web 和作者�
 
 字段范围和当前默认见 [通用页面契约](../openspec/changes/enhance-generic-page-composition/contracts.md)。
 
+### 高级外观
+
+SDK 1.9.0 在工程 2.10 / 页面 1.3 上增加可选字段。省略时沿用该组件的默认外观。
+
+| 字段位置 | 配置 |
+| --- | --- |
+| `Surface.background`、`TextRole.color`、`IndicatorStyle.color/background`、`ImageView.background` | 原语义值及自定义 `#RRGGBB`。 |
+| `Surface`、`IndicatorStyle`、`ControlAppearance` | `borderColor` 为 `#RRGGBB`，`borderWidth` 为 0–16 逻辑像素，`borderStyle` 为 `solid/dashed/dotted`。 |
+| `ControlAppearance.background` | `#RRGGBB` 或 `transparent`。 |
+| 导航按钮 `props`、宿主按钮 `appearance` | `iconPosition=left/right`，`iconSize=8..64`，`iconGap=0..32`。 |
+| 导航按钮 `props`、宿主按钮 `appearance` | `buttonStates.default/hover/pressed/disabled` 可选覆盖 `background`、`color` 和边框三项。省略的字段取基础外观。 |
+| 可见组件 `props`、宿主按钮 `appearance` | `customStyle.qtQss` 和 `customStyle.webCss` 各含 `enabled`（默认 false）与 `code`（默认空字符串）。 |
+
+启用的本端代码应用在当前对象的默认、通用和状态外观之上。两个语言分支分别编辑，
+保存和发布时一并保留。清空代码保留当前开关与其他配置。选择器按实际控件部位显示，
+可从 Designer 和 Web 的高级外观窗口查询。[样式示例](../openspec/changes/add-generic-control-advanced-appearance/examples/README.md)
+
 ### 显示终端与数据位置 1.2
 
 每页 `targets` 是非空、无重复的 `desktop` / `web` 数组，默认 `["desktop"]`，两个值同时存在表示两端均显示。默认桌面值可省略。Designer 编辑器保留所有页面；运行显示端只呈现对应终端的页面，并从可见页面顺序中选择可用默认页。导航目标必须在来源页面的所有目标终端可见；错误会列明具体导航组件。采集计划仍按工作流/作用域取得全部终端所需来源，不使用过滤后的显示配置冻结采集。

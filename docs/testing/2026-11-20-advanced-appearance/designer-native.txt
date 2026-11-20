@@ -1,0 +1,48 @@
+Project SHA256 3edd4d36bbf0e27919e42bfab52b68a3de055a488f2eb8f9b105da83011635eb
+designer-direction-common.png 850x680
+designer-direction-qss.png 850x680
+designer-number-qss.png 850x680
+designer-start-qss.png 570x900
+designer-stop-qss.png 570x900
+designer-appearance-entry.png 1500x930
+designer-canvas-reopened.png 1500x930
+Host start sample: actual native default, hover, pressed and disabled colors confirmed with QSS off.
+image (main-image) actual Qt properties and local preview selector viewport
+text (production-hint) actual Qt properties and local preview selector value
+number (main-value) actual Qt properties and local preview selector value
+indicator (result-direction) actual Qt properties and local preview selector marker
+runtime_status (live-job) actual Qt properties and local preview selector value
+navigation_button (view-history) actual Qt properties and local preview selector action
+container (production-results) actual Qt properties and local preview selector root
+table (coverage-collection) actual Qt properties and local preview selector header
+page_title (coverage-title) actual Qt properties and local preview selector title
+page_navigation (coverage-navigation) actual Qt properties and local preview selector tab
+clock (coverage-clock) actual Qt properties and local preview selector value
+sqlite_table (coverage-table) actual Qt properties and local preview selector header
+sqlite_value (coverage-count) actual Qt properties and local preview selector value
+sqlite_table (history-records) actual Qt properties and local preview selector table
+PASS Windows native Designer main-window open/save/reopen and actual component/host property entry.
+Production canvas and component previews used RuntimePages.submit with immutable controlled sample values.
+方向=符合; 样本分类=复核样本; 综合判定=需复核; 角度偏差=10.0°; sample raster read from project asset.
+
+Pytest (native Windows platform):
+tests/designer/test_page_configuration_fields.py tests/ui/page_designer/test_usable_properties.py tests/ui/page_designer/test_pending_inputs.py tests/ui/page_designer/test_visual_editor.py
+.....................                                                    [100%]
+21 passed in 19.64s
+
+补充验证使用 Windows 原生 Qt。
+tests/ui/presentation/test_advanced_appearance.py tests/ui/page_designer/test_usable_properties.py::testAdvancedAppearanceDraftPreviewAndUndo
+5 passed in 3.51s
+从 Designer 工具栏复制启用 QSS 的数值卡。复制保留双端代码，修改副本后原控件仍保持原字重和颜色，两个控件拥有不同渲染标识。
+同页相邻文字和容器内嵌文字保留各自字号与颜色。关闭 QSS 后从真实 Qt 绘制图像的边缘像素确认结构化虚线包含边框线段和背景间隔。
+
+Designer 补充诊断与停止四态，示例工程 SHA256 3edd4d36bbf0e27919e42bfab52b68a3de055a488f2eb8f9b105da83011635eb
+Host stop sample: actual native default #FFF7E8, hover #FFF2E1, pressed #F8E0B5 and disabled #E8EDF3 confirmed with QSS on.
+tests/ui/page_designer/test_usable_properties.py::testAdvancedAppearanceDraftPreviewAndUndo
+启用后 qproperty-* 规则提示当前代码未应用且阻止确认。修正后真预览恢复。关闭后可保存原规则文本。
+.                                                                        [100%]
+1 passed in 3.66s
+
+Qt 数值刷新补充验证，Windows 原生 Qt。
+示例角度数值通过实际 RuntimePages.submit 显示入口从 10.0° 更新为 13.5°，保留 52 px、粗体、#214D85。
+同一示例的 SQLite 数值在临时数据库中走既有本地显示端读取。实际插入一行并点刷新，1 条变为 2 条，保留 26 px、粗体、#214D85。

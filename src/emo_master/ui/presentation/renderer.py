@@ -8,7 +8,7 @@ import time
 from types import MappingProxyType
 
 from PySide2.QtCore import Qt, QRect, QSize, Signal, QEvent
-from PySide2.QtGui import QPainter, QColor, QFont, QImage, QIcon, QPixmap
+from PySide2.QtGui import QPainter, QColor, QFont, QImage, QIcon, QPalette, QPixmap
 from PySide2.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout,
     QStackedWidget, QFrame, QSizePolicy, QApplication, QMenu, QToolButton,
@@ -24,8 +24,9 @@ from emo_master.ui.presentation.images import assertGuiThread, ownedImage
 from emo_master.ui.presentation.table import CollectionView
 from emo_master.ui.presentation.page_navigation import PageNavigation
 from emo_master.ui.presentation.page_scroll import PageScrollArea
-from emo_master.ui.presentation.appearance import THEME, ValueView, plainLabel, roleStyle, surfaceStyle
-from emo_master.ui.presentation.shell import applyShellHeader, configureHostButton
+from emo_master.ui.presentation.appearance import THEME, ValueView, backgroundColor, plainLabel, roleStyle, surfaceStyle
+from emo_master.ui.presentation.native_style import NativeAppearance
+from emo_master.ui.presentation.shell import AppearanceButton, applyShellHeader, configureHostButton, configurePageButton
 
 
 SURFACE_LIMIT = 16 * 1024 * 1024
@@ -64,6 +65,13 @@ class ImageView(QWidget):
         policy.setHeightForWidth(self.config.sizing == 'aspect')
         self.setSizePolicy(policy)
         self.updateGeometry()
+
+    def applyAppearance(self, native, props):
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        color = THEME['surface' if self.config.background == 'dark' else 'muted']
+        text = getattr(props.typography, 'helper', None)
+        role = roleStyle(props, 'helper') if text and text.color else f'color:{color};'
+        native.apply(self, 'viewport', role + f'background:{backgroundColor(self.config.background)};')
 
     def aspectRatio(self):
         if self.config.aspectRatio is not None:
@@ -105,8 +113,8 @@ class ImageView(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        if self.config.background != 'transparent':
-            painter.fillRect(self.rect(), QColor(THEME[self.config.background]))
+        if not self.property('emoPart') and self.config.background != 'transparent':
+            painter.fillRect(self.rect(), QColor(backgroundColor(self.config.background)))
         if not self.image.isNull():
             size = self.image.size().scaled(self.size(), Qt.KeepAspectRatio)
             offsets = {'start': 0, 'center': 0.5, 'end': 1}
@@ -116,7 +124,8 @@ class ImageView(QWidget):
             if self.painted:
                 self.painted(self.key, time.perf_counter_ns())
         else:
-            painter.setPen(QColor(THEME['surface' if self.config.background == 'dark' else 'muted']))
+            painter.setPen(self.palette().color(QPalette.WindowText) if self.property('emoPart')
+                           else QColor(THEME['surface' if self.config.background == 'dark' else 'muted']))
             painter.drawText(self.rect().adjusted(14, 14, -14, -14), Qt.AlignCenter | Qt.TextWordWrap, self.message)
         painter.end()
 
@@ -130,7 +139,7 @@ class RuntimePages(QWidget):
     designExamplesChanged = Signal(bool)
 
     def __init__(self, presentation, *, hub=None, label="只读运行页面", parent=None, assets=None, projectRoot=None,
-                 target='desktop', historyClient=None, editorHost=False):
+                 target='desktop', historyClient=None, editorHost=False, appearancePreview=None):
         super().__init__(parent)
         assertGuiThread()
         self.assets = dict(assets or {})
@@ -149,7 +158,8 @@ class RuntimePages(QWidget):
         self.captureCoverage = None
         self.simulationState = None
         self.detached = False
-        self.editing = False
+        self.appearancePreview = appearancePreview
+        self.editing = appearancePreview is not None
         self.editorHost = editorHost
         self.designExamples = False
         self._designImage = QImage()
@@ -295,7 +305,7 @@ class RuntimePages(QWidget):
         shell = self.config.shell or PageShell()
         for kind, label in (('start', '开始'), ('stop', '停止')):
             if kind not in self.previewControls:
-                button = QPushButton()
+                button = AppearanceButton()
                 button.setEnabled(False)
                 self.hostControls.addWidget(button)
                 self.previewControls[kind] = button
@@ -558,9 +568,14 @@ class RuntimePages(QWidget):
         self.widgets[pageId] = {}
         self.cards[pageId] = {}
         self.layoutHosts[pageId] = {}
-        self._children(body, page.components, page.layout, pageId, canvasTop=page.canvasTop,
-                       padding=(appearance.pagePadding,) * 4)
-        self._connectLocalImages(pageId)
+        if self.appearancePreview is None:
+            self._children(body, page.components, page.layout, pageId, canvasTop=page.canvasTop,
+                           padding=(appearance.pagePadding,) * 4)
+            self._connectLocalImages(pageId)
+        else:
+            from emo_master.core.presentation.models import Grid, Placement
+            component = self.appearancePreview.model_copy(update={'layout': Placement()})
+            self._children(body, [component], Grid(columns=1), pageId, padding=(8,) * 4)
         scroll.setWidget(body)
         scroll.setCanvasExtension(0 if self.editorHost else -page.canvasTop)
         self.stack.addWidget(scroll)
@@ -600,7 +615,8 @@ class RuntimePages(QWidget):
                 card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
             card.setProperty('componentId', component.componentId)
             self.cards[pageId][component.componentId] = card
-            margins = surfaceStyle(card, component) if component.type != 'spacer' else (0, 0, 0, 0)
+            native = NativeAppearance(card, component.props.customStyle) if component.type != 'spacer' else None
+            margins = surfaceStyle(card, component, native) if native else (0, 0, 0, 0)
             if component.type == "spacer":
                 self.widgets[pageId][component.componentId] = (component, card)
             elif component.type == "container":
@@ -610,6 +626,8 @@ class RuntimePages(QWidget):
                     card.containerTitle = ContainerTitle(card, component.props.title,
                         roleStyle(component.props, 'title'), margins=margins,
                         collapse=component.props.collapse)
+                    native.apply(card.containerTitle.label, 'action' if component.props.collapse else 'title',
+                                 roleStyle(component.props, 'title'))
                     content = card.containerTitle.body
                     if component.props.collapse:
                         key = (pageId, component.componentId)
@@ -632,7 +650,7 @@ class RuntimePages(QWidget):
                         'text', 'number', 'indicator', 'runtime_status', 'navigation_button'}:
                     title = QLabel(component.props.title)
                     title.setTextFormat(Qt.PlainText)
-                    title.setStyleSheet(roleStyle(component.props, 'title'))
+                    native.apply(title, 'title', roleStyle(component.props, 'title'))
                     title.setWordWrap(True)
                     box.addWidget(title)
                 if component.type == "image":
@@ -655,25 +673,31 @@ class RuntimePages(QWidget):
                         widget = ImageView()
                         widget.painted = self._painted
                     widget.setViewConfig(component.props.imageView, component.responsive.preferredHeight)
+                    widget.applyAppearance(native, component.props)
                     if component.bindings:
                         widget.message = '已绑定 · 等待明确任务结果'
                 elif component.type == 'table' and sum(isinstance(w, CollectionView) for rows in self.widgets.values() for _c, w in rows.values()) < 4:
                     widget = CollectionView(component.props)
+                    widget.applyAppearance(native, component.props)
                 elif component.type == "navigation_button":
-                    widget = QPushButton(component.props.text or component.props.title or "导航")
+                    widget = AppearanceButton(component.props.text or component.props.title or "导航")
                     widget.clicked.connect(lambda _checked=False, item=component: self.act(item.actions.get("clicked")))
-                    widget.setProperty('buttonStyle', component.props.buttonStyle)
+                    configurePageButton(widget, component.props, native)
                 elif component.type == 'page_navigation':
-                    widget = PageNavigation(self.config, title=component.props.text)
+                    widget = PageNavigation(self.config, title=component.props.text, props=component.props, native=native)
                     widget.selectPage(pageId)
                     widget.pageRequested.connect(self._componentNavigate)
                 elif component.type == 'page_title':
                     widget = QLabel(component.props.text or self.config.pages[pageId].name)
                     widget.setTextFormat(Qt.PlainText)
                     widget.setWordWrap(True)
+                    typography = component.props.typography
+                    role = 'title' if typography and typography.title else 'value'
+                    native.apply(widget, 'title', roleStyle(component.props, role))
                 elif component.type == 'clock':
                     from .clock import ClockView
                     widget = ClockView()
+                    native.apply(widget, 'value', roleStyle(component.props))
                 elif component.type in {'sqlite_table', 'sqlite_value'}:
                     from .sqlite_widgets import SqliteTableView, SqliteValueView
                     preview = self._localPreviewEnabled()
@@ -701,17 +725,21 @@ class RuntimePages(QWidget):
                                                  unit=component.props.unit, preview=preview, projectRoot=self.projectRoot)
                     widget.historyClient = self.historyClient
                     widget.componentId = component.componentId
+                    widget.applyAppearance(native, component.props)
                 elif component.type in {'text', 'number', 'indicator', 'runtime_status'}:
-                    widget = ValueView(component, card)
+                    widget = ValueView(component, card, native)
                 else:
                     widget = QLabel(component.props.text if component.type == "text" and not component.bindings
                                     else '已绑定 · 等待明确任务结果' if component.bindings else "未绑定")
                     widget.setTextFormat(Qt.PlainText)
                     widget.setWordWrap(True)
                     widget.setTextInteractionFlags(Qt.TextSelectableByMouse)
-                    if component.type == "number":
-                        widget.setObjectName("number")
+                    native.apply(widget, 'helper', roleStyle(component.props, 'helper'))
                 box.addWidget(widget, 1)
+                if component.props.helperText and component.type in {'image', 'table', 'clock', 'sqlite_table', 'sqlite_value'}:
+                    helper = plainLabel(component.props.helperText)
+                    native.apply(helper, 'helper', roleStyle(component.props, 'helper'))
+                    box.addWidget(helper)
                 if self.editorHost and component.type in ('image', 'number', 'text', 'indicator', 'table'):
                     source = self.config.dataSources.get(next(iter(component.bindings.values()), ''))
                     if component.props.imageResourceId:
@@ -727,8 +755,6 @@ class RuntimePages(QWidget):
                     else:
                         note = '来源缺失' if component.bindings else '未选择来源 · 拖入流程结果'
                     card.setToolTip(note)
-                if not isinstance(widget, ValueView):
-                    widget.setStyleSheet(appearanceStyle(component.props))
                 self.widgets[pageId][component.componentId] = (component, widget)
             p = component.layout
             if responsive:
@@ -970,7 +996,8 @@ class RuntimePages(QWidget):
                     widget.setPreview(preview)
 
     def _localPreviewEnabled(self):
-        return self.editorHost or self.designExamples or bool(self.simulationState) or getattr(self, 'localPreviewOnly', False)
+        return (self.editorHost or self.appearancePreview is not None or self.designExamples or
+                bool(self.simulationState) or getattr(self, 'localPreviewOnly', False))
 
     def act(self, action):
         if self.editing:

@@ -1,0 +1,137 @@
+{
+  "revision": "0.6",
+  "date": "2026-11-20",
+  "source_ref": "6cbff0dcbea671663cf9ab773c6ce5c81690da35",
+  "status": "proposed_not_implemented",
+  "pages": [
+    {
+      "name": "01 总体方案与双端关系",
+      "png": "01_architecture.png",
+      "width": 1800,
+      "height": 1200
+    },
+    {
+      "name": "02 Designer 原始布局与两类入口",
+      "png": "02_designer.png",
+      "width": 1800,
+      "height": 1100
+    },
+    {
+      "name": "03 Qt 运行页原始布局与范围",
+      "png": "03_runtime.png",
+      "width": 1800,
+      "height": 1100
+    },
+    {
+      "name": "04 实施步骤与验收",
+      "png": "04_plan.png",
+      "width": 1800,
+      "height": 1200
+    },
+    {
+      "name": "05 Qt 运行页面拟议效果",
+      "png": "05_after_full.png",
+      "width": 2160,
+      "height": 1430
+    },
+    {
+      "name": "06 改前改后与按钮四态",
+      "png": "06_before_after.png",
+      "width": 1800,
+      "height": 1260
+    },
+    {
+      "name": "07 Designer 原界面新增入口",
+      "png": "07_designer_dialog.png",
+      "width": 1800,
+      "height": 1170
+    },
+    {
+      "name": "08 Designer 自定义 QSS 与预览",
+      "png": "08_designer_advanced_detail.png",
+      "width": 1800,
+      "height": 1280
+    },
+    {
+      "name": "09 Web 原界面改动位置",
+      "png": "09_web_entry.png",
+      "width": 1800,
+      "height": 1370
+    },
+    {
+      "name": "10 Web 自定义 CSS 与预览",
+      "png": "10_web_css.png",
+      "width": 1800,
+      "height": 1370
+    },
+    {
+      "name": "11 页头开始停止按钮 QSS",
+      "png": "11_host_qss.png",
+      "width": 1800,
+      "height": 1370
+    },
+    {
+      "name": "12 Web 运行页面拟议效果",
+      "png": "12_web_after.png",
+      "width": 2160,
+      "height": 1430
+    },
+    {
+      "name": "13 Designer 确定后的画布效果",
+      "png": "13_designer_after.png",
+      "width": 1800,
+      "height": 1170
+    },
+    {
+      "name": "14 完整控件覆盖范围",
+      "png": "14_component_coverage.png",
+      "width": 1800,
+      "height": 1430
+    }
+  ],
+  "originals": [
+    {
+      "file": "originals/designer_20261118_original.png",
+      "bytes": 71661,
+      "sha256": "c7696c9491c862562ed052218fedfeff52429838a583e544a1810c6b80a6732d",
+      "repository_path": "docs/testing/2026-11-18-generic-page-composition/designer-page.png",
+      "url": "https://github.com/jsdfhasuh/emo_master/blob/6cbff0dcbea671663cf9ab773c6ce5c81690da35/docs/testing/2026-11-18-generic-page-composition/designer-page.png",
+      "capture_date": "2026-11-18",
+      "environment_note": "历史 Windows Qt 自动化验收截图"
+    },
+    {
+      "file": "originals/qt_runtime_20261119_original.png",
+      "bytes": 336062,
+      "sha256": "fca565dfd83e896e21ec083fef126b61d43527788d344553055dc2ed69077bee",
+      "repository_path": "docs/testing/2026-11-19-page-configuration/qt-production-1920x1080.png",
+      "url": "https://github.com/jsdfhasuh/emo_master/blob/6cbff0dcbea671663cf9ab773c6ce5c81690da35/docs/testing/2026-11-19-page-configuration/qt-production-1920x1080.png",
+      "capture_date": "2026-11-19",
+      "environment_note": "历史 Linux offscreen QWidget.grab；软件 Runtime 与受控样例"
+    },
+    {
+      "file": "originals/web_editor_20261104_original.png",
+      "bytes": 85036,
+      "sha256": "076748627956144cf32cd7326089c4bd0dc4b2de1a0a6e02acd38e6cd73e99ba",
+      "repository_path": "docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-page-editor.png",
+      "url": "https://github.com/jsdfhasuh/emo_master/blob/6cbff0dcbea671663cf9ab773c6ce5c81690da35/docs/testing/2026-11-03-independent-web-editor/review-round3/final-editor-page-editor.png",
+      "capture_date": "2026-11-04",
+      "environment_note": "历史 React / Edge；HTTP / WS mock；目录日期不等于实际核验日期"
+    },
+    {
+      "file": "originals/web_runtime_20261119_original.png",
+      "bytes": 296341,
+      "sha256": "b38d395533d3cc88470ec4b9135dd4e91d40045185bbe370d593406fe3924a29",
+      "repository_path": "docs/testing/2026-11-19-page-configuration/web-production-1920x1080.png",
+      "url": "https://github.com/jsdfhasuh/emo_master/blob/6cbff0dcbea671663cf9ab773c6ce5c81690da35/docs/testing/2026-11-19-page-configuration/web-production-1920x1080.png",
+      "capture_date": "2026-11-19",
+      "environment_note": "历史 Windows Edge 与软件 Runtime"
+    }
+  ],
+  "note": "Original screenshot bytes are unmodified. UI additions and after states are editable vector prototypes.",
+  "previous_plan_ref": "6c19ef8ab1aa6e8bb9a204660dfece595d166a09",
+  "coverage": {
+    "visible_component_types": 13,
+    "host_controls": 2,
+    "excluded_layout_type": "spacer"
+  }
+}

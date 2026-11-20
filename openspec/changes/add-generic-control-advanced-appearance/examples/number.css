@@ -1,0 +1,4 @@
+/* 加粗角度数值，保留通用外观中的字号与颜色。 */
+[data-emo-part="value"] {
+    font-weight: bold;
+}

@@ -4,14 +4,15 @@ from __future__ import annotations
 import html
 
 from PySide2.QtCore import QAbstractTableModel, QCoreApplication, QModelIndex, QObject, QRunnable, QRect, QSize, Qt, QThreadPool, Signal
-from PySide2.QtGui import QColor, QFont
+from PySide2.QtGui import QColor, QFont, QPalette
 from PySide2.QtWidgets import (
     QComboBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QPushButton, QSizePolicy,
-    QStyledItemDelegate, QStyle, QTableView, QVBoxLayout, QWidget,
+    QStyledItemDelegate, QStyle, QStyleOptionViewItem, QTableView, QVBoxLayout, QWidget,
 )
 
 from emo_master.core.presentation.sqlite_reader import readPage, readValue
-from .appearance import COLORS, THEME, indicatorStyle
+from .appearance import THEME, foreground, indicatorBackground, indicatorStyle, roleStyle
+from .table import applyTableAppearance
 
 
 class _Reply(QObject):
@@ -120,6 +121,10 @@ class _SqliteView(QWidget):
     def _controls(self):
         self.refreshButton.setEnabled(not self.preview and not self.busy)
 
+    def applyAppearance(self, native, props):
+        native.apply(self.message, 'helper', roleStyle(props, 'helper'))
+        native.apply(self.refreshButton, 'action')
+
 
 class SqliteRowsModel(QAbstractTableModel):
     def __init__(self, columns, parent=None, *, listMode=False):
@@ -162,13 +167,17 @@ class _RecordListRow(QStyledItemDelegate):
         self.props, self.emptyText = props, emptyText
 
     def sizeHint(self, option, index):
-        return QSize(110, 52 if self.subtitle >= 0 else 37)
+        lines = 2 if self.subtitle >= 0 else 1
+        return QSize(110, max(52 if lines == 2 else 37, lines * option.fontMetrics.height() + 8))
 
     def paint(self, painter, option, index):
         row = index.model().rows[index.row()]
         rect = option.rect
         painter.save()
-        painter.fillRect(rect, QColor(THEME['soft']['blue'] if option.state & QStyle.State_Selected else THEME['surface']))
+        item = QStyleOptionViewItem(option)
+        self.initStyleOption(item, index)
+        item.text = ''
+        self.parent().style().drawControl(QStyle.CE_ItemViewItem, item, painter, item.widget)
         painter.setPen(QColor(THEME['border']))
         painter.drawLine(rect.bottomLeft(), rect.bottomRight())
         content = rect.adjusted(10, 4, -10, -4)
@@ -183,19 +192,25 @@ class _RecordListRow(QStyledItemDelegate):
             width = min(content.width() // 2, option.fontMetrics.horizontalAdvance(label) + 16)
             textWidth -= width + 9
             chip = QRect(content.right() - width + 1, content.center().y() - 11, width, 22)
-            if indicator and indicator.background == 'soft':
+            background = indicatorBackground(indicator)
+            if background:
                 painter.setPen(Qt.NoPen)
-                painter.setBrush(QColor(THEME['soft'][color]))
+                painter.setBrush(QColor(background))
                 painter.drawRoundedRect(chip, 9, 9)
-            painter.setPen(QColor(COLORS[color]))
+            painter.setPen(QColor(foreground(color)))
             painter.drawText(chip, Qt.AlignCenter, option.fontMetrics.elidedText(label, Qt.ElideRight, max(0, width - 8)))
         for role, field in (('title', self.title), ('subtitle', self.subtitle)):
             if field < 0:
                 continue
             font = QFont(option.font)
-            font.setBold(role == 'title')
+            if role == 'title':
+                font.setBold(True)
             painter.setFont(font)
-            painter.setPen(QColor(THEME['text'] if role == 'title' else COLORS['neutral']))
+            paletteRole = QPalette.HighlightedText if option.state & QStyle.State_Selected else QPalette.Text
+            color = option.palette.color(paletteRole)
+            if role == 'subtitle' and color.name() == THEME['text']:
+                color = QColor(foreground('neutral'))
+            painter.setPen(color)
             value = row[field]
             top = content.top() if role == 'title' or self.subtitle < 0 else content.center().y()
             height = content.height() if self.subtitle < 0 else content.height() // 2
@@ -306,6 +321,17 @@ class SqliteTableView(_SqliteView):
         layout.addWidget(self.paginationBar)
         self.paginationBar.setVisible(historyView is None or historyView.showPagination)
         self._controls()
+
+    def applyAppearance(self, native, props):
+        super().applyAppearance(native, props)
+        applyTableAppearance(self.table, native, props, header=not self.listMode)
+        if self.listMode:
+            height = self.table.fontMetrics().height()
+            subtitle = bool(props.historyView.subtitleField)
+            self.table.verticalHeader().setDefaultSectionSize(max(52 if subtitle else 37, (2 if subtitle else 1) * height + 8))
+        native.apply(self.pageLabel, 'helper', roleStyle(props, 'helper'))
+        for button in (self.filterButton, self.clearFilterButton, self.sortDirection, self.previousButton, self.nextButton):
+            native.apply(button, 'action')
 
     def refresh(self):
         self._query(self._resumeKey or self._currentKey)
@@ -524,6 +550,10 @@ class SqliteValueView(_SqliteView):
         controls.addWidget(self.refreshButton)
         layout.addLayout(controls)
         self._controls()
+
+    def applyAppearance(self, native, props):
+        super().applyAppearance(native, props)
+        native.apply(self.value, 'value', roleStyle(props))
 
     def refresh(self):
         source = self.source

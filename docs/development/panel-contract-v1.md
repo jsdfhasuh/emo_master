@@ -1,6 +1,6 @@
 # Panel Contract v1：Runtime 客户端与 Web 页面交接合同
 
-合同版本 `1.0`，当前 Python SDK 为 `emo_panel_protocol 1.8.0`。工程当前版本为
+合同版本 `1.0`，当前 Python SDK 为 `emo_panel_protocol 1.9.0`。工程当前版本为
 `2.10` / Presentation `1.3`，发布快照为 `published-1`，ZIP 页面包为
 `emo-web-panel-1`（扩展名 `.emoweb`）。这些版本分别管理不同边界，不互相替代。
 
@@ -29,7 +29,7 @@ python scripts/build_panel_contract.py
 正式交付可同时生成 ZIP，使用新的版本目录以保持历史产物可追溯：
 
 ```powershell
-python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.8.0 --archive build/panel-contract-v1-sdk-1.8.0.zip
+python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.9.0 --archive build/panel-contract-v1-sdk-1.9.0.zip
 ```
 
 `--archive` 归档前核对 manifest 的全部文件摘要，ZIP 仅包含这些文件及 manifest。
@@ -378,3 +378,10 @@ TypeScript 和 wheel 均从当前模型生成：
 
 以上字段可通过两端作者入口修改、保存和重开，并随正式页面包传递。
 设计及验证范围见 [页面配置补齐](../../openspec/changes/complete-page-configuration/README.md)。
+
+## 控件高级外观（SDK 1.9.0）
+
+工程、Web 草稿和发布快照共享高级外观字段。颜色与边框字段、图标和按钮状态字段的范围见
+[工程格式规范](../project-json-spec.md#高级外观)。`VisualProps` 和 `ControlAppearance`
+保存可选的 `customStyle.qtQss` 与 `customStyle.webCss`。发布快照同时保留两个分支，
+Qt 和浏览器分别应用对应分支。Web 草稿继续通过其原有保存和发布接口交付。

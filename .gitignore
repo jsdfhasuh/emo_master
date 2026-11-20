@@ -32,6 +32,8 @@ dist/
 # Empty schema fixture delivered with the page composition sample.
 !/examples/generic_page_composition/archive/history.sqlite3
 /examples/generic_page_composition/archive/images/
+!/examples/advanced_appearance/archive/history.sqlite3
+/examples/advanced_appearance/archive/images/
 
 # Editors and operating systems
 .idea/

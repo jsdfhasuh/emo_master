@@ -90,7 +90,8 @@ class PropertyGroups:
             name = reverse.get(widget)
             group = ('图片来源' if widget is tools.imageProperties or name == 'imageResourceId' else
                      '数据库来源' if widget is tools.sqliteProperties else
-                     '位置与大小' if name in LAYOUT or name == 'spacerMode' or widget is tools.responsiveProperties else '外观' if name == 'fontSize' or widget is tools.compositionButton
+                     '位置与大小' if name in LAYOUT or name == 'spacerMode' or widget is tools.responsiveProperties else
+                     '外观' if name == 'fontSize' or widget in (tools.compositionButton, tools.advancedAppearanceButton)
                      else '数据来源' if widget is tools.binding or widget in tools.bindingButtons else '内容')
             if group not in self.groups:
                 box = QGroupBox(group)

@@ -118,14 +118,24 @@ class CollectionView(QWidget):
         self.table.horizontalHeader().setStretchLastSection(True)
         layout.addWidget(self.table, 1)
         controls = QHBoxLayout()
+        self.pageButtons = []
         for title, delta in [('上一页', -1), ('下一页', 1)]:
             button = QPushButton(title)
             button.clicked.connect(lambda _checked=False, step=delta: self.move(step))
             controls.addWidget(button)
+            self.pageButtons.append(button)
         self.pageLabel = QLabel()
         controls.addWidget(self.pageLabel)
         layout.addLayout(controls)
         self.model.modelReset.connect(self.updatePage)
+
+    def applyAppearance(self, native, props):
+        from .appearance import roleStyle
+        applyTableAppearance(self.table, native, props, header=True)
+        for label in (self.message, self.pageLabel):
+            native.apply(label, 'helper', roleStyle(props, 'helper'))
+        for button in self.pageButtons:
+            native.apply(button, 'action')
 
     def updatePage(self):
         pages = max(1, math.ceil(len(self.model.rows)/self.model.pageSize))
@@ -153,3 +163,17 @@ class CollectionView(QWidget):
             self.message.setText(self.emptyText + ' · 0 行' if not self.model.rows else '本次结果集合 · 无历史查询')
         except ValueError as problem:
             self.clear(str(problem))
+
+
+def applyTableAppearance(table, native, props, *, header):
+    from .appearance import THEME, roleStyle
+    base = roleStyle(props)
+    if not header:
+        base += (f"background:{THEME['surface']};selection-background-color:{THEME['soft']['blue']};"
+                 f"selection-color:{THEME['text']};")
+    native.apply(table, 'table', base)
+    viewport = table.viewport()
+    viewport.setAttribute(Qt.WA_StyledBackground, True)
+    native.apply(viewport, 'viewport')
+    if header:
+        native.apply(table.horizontalHeader(), 'header')

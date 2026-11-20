@@ -77,6 +77,144 @@
       "title": "Action",
       "type": "object"
     },
+    "ButtonStateAppearance": {
+      "additionalProperties": false,
+      "properties": {
+        "background": {
+          "anyOf": [
+            {
+              "const": "transparent",
+              "type": "string"
+            },
+            {
+              "maxLength": 7,
+              "minLength": 7,
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Background"
+        },
+        "color": {
+          "anyOf": [
+            {
+              "maxLength": 7,
+              "minLength": 7,
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Color"
+        },
+        "borderColor": {
+          "anyOf": [
+            {
+              "maxLength": 7,
+              "minLength": 7,
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bordercolor"
+        },
+        "borderWidth": {
+          "anyOf": [
+            {
+              "maximum": 16,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Borderwidth"
+        },
+        "borderStyle": {
+          "anyOf": [
+            {
+              "enum": [
+                "solid",
+                "dashed",
+                "dotted"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Borderstyle"
+        }
+      },
+      "title": "ButtonStateAppearance",
+      "type": "object"
+    },
+    "ButtonStates": {
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ButtonStateAppearance"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "hover": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ButtonStateAppearance"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pressed": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ButtonStateAppearance"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "disabled": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ButtonStateAppearance"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "ButtonStates",
+      "type": "object"
+    },
     "CallStep": {
       "additionalProperties": false,
       "properties": {
@@ -204,9 +342,169 @@
           "default": false,
           "title": "Showicon",
           "type": "boolean"
+        },
+        "background": {
+          "anyOf": [
+            {
+              "const": "transparent",
+              "type": "string"
+            },
+            {
+              "maxLength": 7,
+              "minLength": 7,
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Background"
+        },
+        "borderColor": {
+          "anyOf": [
+            {
+              "maxLength": 7,
+              "minLength": 7,
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bordercolor"
+        },
+        "borderWidth": {
+          "anyOf": [
+            {
+              "maximum": 16,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Borderwidth"
+        },
+        "borderStyle": {
+          "anyOf": [
+            {
+              "enum": [
+                "solid",
+                "dashed",
+                "dotted"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Borderstyle"
+        },
+        "iconPosition": {
+          "anyOf": [
+            {
+              "enum": [
+                "left",
+                "right"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Iconposition"
+        },
+        "iconSize": {
+          "anyOf": [
+            {
+              "maximum": 64,
+              "minimum": 8,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Iconsize"
+        },
+        "iconGap": {
+          "anyOf": [
+            {
+              "maximum": 32,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icongap"
+        },
+        "buttonStates": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ButtonStates"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "customStyle": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CustomStyle"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "title": "ControlAppearance",
+      "type": "object"
+    },
+    "CustomStyle": {
+      "additionalProperties": false,
+      "properties": {
+        "qtQss": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NativeStyle"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "webCss": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NativeStyle"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "CustomStyle",
       "type": "object"
     },
     "DataSource": {
@@ -586,14 +884,24 @@
           "title": "Aspectratio"
         },
         "background": {
-          "default": "subtle",
-          "enum": [
-            "subtle",
-            "dark",
-            "transparent"
+          "anyOf": [
+            {
+              "enum": [
+                "subtle",
+                "dark",
+                "transparent"
+              ],
+              "type": "string"
+            },
+            {
+              "maxLength": 7,
+              "minLength": 7,
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            }
           ],
-          "title": "Background",
-          "type": "string"
+          "default": "subtle",
+          "title": "Background"
         },
         "horizontalAlign": {
           "default": "center",
@@ -628,31 +936,114 @@
           "type": "string"
         },
         "color": {
-          "default": "neutral",
-          "enum": [
-            "neutral",
-            "green",
-            "red",
-            "amber",
-            "blue"
+          "anyOf": [
+            {
+              "enum": [
+                "neutral",
+                "green",
+                "red",
+                "amber",
+                "blue"
+              ],
+              "type": "string"
+            },
+            {
+              "maxLength": 7,
+              "minLength": 7,
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            }
           ],
-          "title": "Color",
-          "type": "string"
+          "default": "neutral",
+          "title": "Color"
         },
         "background": {
-          "default": "none",
-          "enum": [
-            "none",
-            "soft"
+          "anyOf": [
+            {
+              "enum": [
+                "none",
+                "soft"
+              ],
+              "type": "string"
+            },
+            {
+              "maxLength": 7,
+              "minLength": 7,
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            }
           ],
-          "title": "Background",
-          "type": "string"
+          "default": "none",
+          "title": "Background"
+        },
+        "borderColor": {
+          "anyOf": [
+            {
+              "maxLength": 7,
+              "minLength": 7,
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bordercolor"
+        },
+        "borderWidth": {
+          "anyOf": [
+            {
+              "maximum": 16,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Borderwidth"
+        },
+        "borderStyle": {
+          "anyOf": [
+            {
+              "enum": [
+                "solid",
+                "dashed",
+                "dotted"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Borderstyle"
         }
       },
       "required": [
         "text"
       ],
       "title": "IndicatorStyle",
+      "type": "object"
+    },
+    "NativeStyle": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "code": {
+          "default": "",
+          "title": "Code",
+          "type": "string"
+        }
+      },
+      "title": "NativeStyle",
       "type": "object"
     },
     "Navigation": {
@@ -1258,6 +1649,72 @@
           "title": "Buttonstyle",
           "type": "string"
         },
+        "iconPosition": {
+          "anyOf": [
+            {
+              "enum": [
+                "left",
+                "right"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Iconposition"
+        },
+        "iconSize": {
+          "anyOf": [
+            {
+              "maximum": 64,
+              "minimum": 8,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Iconsize"
+        },
+        "iconGap": {
+          "anyOf": [
+            {
+              "maximum": 32,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icongap"
+        },
+        "buttonStates": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ButtonStates"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "customStyle": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CustomStyle"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "collapse": {
           "anyOf": [
             {
@@ -1585,6 +2042,12 @@
               "type": "string"
             },
             {
+              "maxLength": 7,
+              "minLength": 7,
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
               "type": "null"
             }
           ],
@@ -1606,6 +2069,52 @@
           ],
           "default": null,
           "title": "Border"
+        },
+        "borderColor": {
+          "anyOf": [
+            {
+              "maxLength": 7,
+              "minLength": 7,
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bordercolor"
+        },
+        "borderWidth": {
+          "anyOf": [
+            {
+              "maximum": 16,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Borderwidth"
+        },
+        "borderStyle": {
+          "anyOf": [
+            {
+              "enum": [
+                "solid",
+                "dashed",
+                "dotted"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Borderstyle"
         },
         "radius": {
           "anyOf": [
@@ -1706,6 +2215,12 @@
                 "red",
                 "amber"
               ],
+              "type": "string"
+            },
+            {
+              "maxLength": 7,
+              "minLength": 7,
+              "pattern": "^#[0-9a-fA-F]{6}$",
               "type": "string"
             },
             {

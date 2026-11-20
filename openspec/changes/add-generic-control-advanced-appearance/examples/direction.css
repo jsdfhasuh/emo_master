@@ -1,0 +1,6 @@
+/* 配色取自当前状态；此规则增加左边框宽度和主值字重。 */
+[data-emo-part="root"] {
+    border-left-width: 4px;
+    border-left-style: solid;
+}
+[data-emo-part="value"] { font-weight: bold; }

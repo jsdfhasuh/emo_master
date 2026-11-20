@@ -24,10 +24,6 @@ from emo_panel_protocol.published import HistoryReference, PublishedPresentation
 from .packages import PackageError, PackageStore, _official_image
 
 
-SUPPORTED = {"image", "text", "number", "indicator", "runtime_status", "table",
-             "navigation_button", "container", "page_title", "page_navigation", "spacer", "sqlite_table"}
-
-
 class DraftConflict(ValueError):
     pass
 
@@ -55,11 +51,10 @@ def validate_source(raw, resources):
                 raise ValueError(f"{pid}: 未定义结果作用域 {scope}")
         for item in walkComponents(page.components):
             path = f"{pid}/{item.componentId}"
-            if item.type not in SUPPORTED:
-                raise ValueError(f"{path}: 此组件不在首期独立编辑范围")
             if item.props.imagePath is not None:
                 raise ValueError(f"{path}: 请上传静态资源，不能使用浏览器本机路径")
-            if item.props.sqlite != SqliteSource() or (item.type == "sqlite_table" and item.props.historySource is None):
+            if item.props.sqlite != SqliteSource() or (
+                    item.type in {"sqlite_table", "sqlite_value"} and item.props.historySource is None):
                 raise ValueError(f"{path}: 请从组件区选择已有的 Runtime 历史来源")
             for resource in (item.props.imageResourceId, item.props.iconResourceId):
                 if resource and resource not in resources:

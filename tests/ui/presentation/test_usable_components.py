@@ -72,7 +72,9 @@ def testIndicatorFillsRowSurfaceAndClearsStaleColor(qtApp):
         assert cards['row'].styleSheet() == baseline.replace(LIGHT_THEME['surface'], green)
         assert cards['row'].layout().contentsMargins() == margins
         assert samples(cards['badge']) == samples(cards['text']) == [normal] * 2
-        assert green in badge.value.styleSheet() and badge.value.width() < badge.width()
+        assert badge.badge.width() < badge.width()
+        chip = badge.badge.grab().toImage()
+        assert chip.pixelColor(2, chip.height() // 2) == QColor(green)
         assert green not in text.value.styleSheet()
         for value, error in ((True, ''), (None, ''), (1, 'SOURCE_MISSING')):
             row.setValue(1)

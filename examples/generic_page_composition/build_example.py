@@ -399,15 +399,10 @@ def output(node, port, expectedType, *fieldPath):
                 expectedType=expectedType, fieldPath=list(fieldPath))
 
 
-def build(root):
-    root = root.resolve()
-    projectFile = root / PROJECT
-    previous = loadProjectDocument(projectFile) if projectFile.is_file() else None
+def inspectionPayload(root, registry):
+    """Create the synthetic inspection workflow, assets and pages from current defaults."""
     assets = makeAssets(root)
-    registry = trustedRegistry()
     payload = WorkflowStore().toPayload('工件视觉检测站 · 软件模拟')
-    if previous:
-        payload['project'].update(projectId=previous.project.projectId, createdAt=previous.project.createdAt)
     assert payload['schemaVersion'] == '2.10' and payload['presentation']['schemaVersion'] == '1.3'
     configureWorkflow(payload, registry, root)
     for key, (path, purpose, binding) in assets.items():
@@ -440,6 +435,17 @@ def build(root):
             'record-key': output('write', 'receipt', 'string', 'writeId'),
             'request-id': output('write', 'receipt', 'string', 'execution', 'workflowRunId'),
         })
+    return payload
+
+
+def build(root):
+    root = root.resolve()
+    projectFile = root / PROJECT
+    previous = loadProjectDocument(projectFile) if projectFile.is_file() else None
+    registry = trustedRegistry()
+    payload = inspectionPayload(root, registry)
+    if previous:
+        payload['project'].update(projectId=previous.project.projectId, createdAt=previous.project.createdAt)
     document = ProjectDocument.model_validate(payload)
     saveProject(projectFile, document.model_dump(mode='json'))
     reloaded = loadProjectDocument(projectFile)

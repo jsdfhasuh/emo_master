@@ -13,8 +13,12 @@ from emo_master.core.presentation.models import Component, DataSource, Props
 
 
 def testCurrentAppearanceRoundTrip():
-    props = Props(surface={'kind': 'card', 'radius': 18, 'padding': {'left': 0}},
-                  typography={'value': {'size': 36, 'weight': 'bold', 'color': 'primary'}})
+    props = Props(surface={'kind': 'card', 'radius': 18, 'padding': {'left': 0},
+                           'background': '#F0F5FC', 'borderColor': '#B9CCE4',
+                           'borderWidth': 1, 'borderStyle': 'dotted'},
+                  typography={'value': {'size': 36, 'weight': 'bold', 'color': '#214D85'}},
+                  customStyle={'qtQss': {'enabled': True, 'code': '* { font-weight: bold; }'},
+                               'webCss': {'enabled': False, 'code': '.unclosed { '}})
     assert Props().surface is None and Props().typography is None
     assert Props.model_validate_json(props.model_dump_json()) == props
 
@@ -31,9 +35,10 @@ def testTypographyRejectsSmallAndNonIntegerSizes(size):
 
 
 @pytest.mark.parametrize('values', [
-    {'surface': {'background': '#00ff00'}}, {'surface': {'radius': -1}},
+    {'surface': {'background': '#00ff0'}}, {'surface': {'radius': -1}},
+    {'surface': {'borderWidth': -1}}, {'surface': {'borderStyle': 'hidden'}},
     {'surface': {'padding': {'left': 65}}}, {'styleSheet': 'color: red'},
-    {'typography': {'value': {'weight': 700}}}, {'typography': {'value': {'color': '#00ff00'}}},
+    {'typography': {'value': {'weight': 700}}}, {'typography': {'value': {'color': 'rgb(0 255 0)'}}},
 ])
 def testAppearanceRejectsFreeFormStylesAndUnknownProperties(values):
     with pytest.raises(ValidationError):
@@ -104,7 +109,8 @@ def testIndicatorRowBoundsAndStylesAreValidated():
     with pytest.raises(ValueError, match='16'):
         indicatorStatesFromRows(rows)
     with pytest.raises(ValidationError):
-        indicatorStatesFromRows([('string', 'OK', 'Pass', '#00ff00')])
+        indicatorStatesFromRows([('string', 'OK', 'Pass', '#00ff0z')])
+    assert indicatorStatesFromRows([('string', 'OK', 'Pass', '#00ff00')])['"OK"'].color == '#00ff00'
     with pytest.raises(ValidationError):
         indicatorStatesFromRows([('string', 'OK', 'x' * 257, 'green')])
 

@@ -19,23 +19,37 @@ export interface PanelShell {
     logoWidth?: number; logoHeight?: number; headerSurface?: Surface; headerTypography?: Typography;
     startControl?: HostControl; stopControl?: HostControl;
 }
-export interface ControlAppearance {
+export type HexColor = `#${string}`;
+export interface BorderAppearance {
+    borderColor?: HexColor; borderWidth?: number; borderStyle?: 'solid' | 'dashed' | 'dotted';
+}
+export interface ButtonStateAppearance extends BorderAppearance {
+    background?: HexColor | 'transparent'; color?: HexColor;
+}
+export type ButtonStates = Partial<Record<'default' | 'hover' | 'pressed' | 'disabled', ButtonStateAppearance>>;
+export interface StyleBranch { enabled: boolean; code: string; }
+export interface CustomStyle { qtQss?: StyleBranch; webCss?: StyleBranch; }
+export interface ButtonAppearance {
+    iconPosition?: 'left' | 'right'; iconSize?: number; iconGap?: number; buttonStates?: ButtonStates;
+}
+export interface ControlAppearance extends ButtonAppearance, BorderAppearance {
     style?: 'primary' | 'secondary' | 'link'; text?: TextStyle; radius?: number;
     padding?: Surface['padding']; minWidth?: number; minHeight?: number; showIcon?: boolean;
+    background?: HexColor | 'transparent'; customStyle?: CustomStyle;
 }
 export interface HostControl { label?: string; appearance?: ControlAppearance; }
-export interface Surface {
-    kind?: 'none' | 'card'; background?: 'transparent' | 'surface' | 'subtle';
+export interface Surface extends BorderAppearance {
+    kind?: 'none' | 'card'; background?: 'transparent' | 'surface' | 'subtle' | HexColor;
     border?: 'none' | 'subtle'; radius?: number;
     padding?: Partial<Record<'top' | 'right' | 'bottom' | 'left', number>>;
 }
 export interface TextStyle { size?: number; weight?: 'normal' | 'bold'; color?: string; }
 export type Typography = Partial<Record<'title' | 'value' | 'helper', TextStyle>>;
 export interface ImageView {
-    sizing?: 'fixed' | 'aspect'; aspectRatio?: number | null; background?: 'subtle' | 'dark' | 'transparent';
+    sizing?: 'fixed' | 'aspect'; aspectRatio?: number | null; background?: 'subtle' | 'dark' | 'transparent' | HexColor;
     horizontalAlign?: 'start' | 'center' | 'end'; verticalAlign?: 'start' | 'center' | 'end';
 }
-export interface IndicatorStyle { text: string; color: string; background?: 'none' | 'soft'; }
+export interface IndicatorStyle extends BorderAppearance { text: string; color: string; background?: 'none' | 'soft' | HexColor; }
 export interface HistoryView {
     mode?: 'table' | 'list'; titleField?: string; subtitleField?: string; trailingField?: string;
     showFilter?: boolean; showSort?: boolean; showPagination?: boolean;
@@ -48,9 +62,10 @@ export interface Component {
     id: string;
     type: string;
     label?: string;
-    props?: Record<string, unknown> & {
+    props?: Record<string, unknown> & ButtonAppearance & {
         spacerMode?: 'fixed' | 'flex'; surface?: Surface; typography?: Typography; imageView?: ImageView;
         collapse?: {initiallyCollapsed?: boolean}; indicatorStates?: Record<string, IndicatorStyle>;
+        customStyle?: CustomStyle;
     };
     binding?: string | {
         sourceId?: string;

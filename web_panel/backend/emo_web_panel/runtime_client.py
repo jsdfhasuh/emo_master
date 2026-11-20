@@ -59,7 +59,7 @@ class GrpcRuntimeClient:
             from emo_panel_protocol.connection import ConnectionProfile, createChannel
             from emo_panel_protocol.generated import runtime_pb2, runtime_pb2_grpc
         except ImportError as exc:
-            raise ContractUnavailable('Install the supplied emo_panel_protocol 1.8.0 SDK and its declared dependencies') from exc
+            raise ContractUnavailable('Install the supplied emo_panel_protocol 1.9.0 SDK and its declared dependencies') from exc
         self.pb = runtime_pb2
         profile = ConnectionProfile(self.address, self.timeout, self.max_receive_bytes)
         if self.preview_context is not None:
@@ -128,7 +128,7 @@ class GrpcRuntimeClient:
                 'historyDefinitionRevision': info.history_definition_revision,
                 'productionMode': info.production_mode, 'productionExecutionMode': info.production_execution_mode,
                 'startupWorkflowIds': list(info.startup_workflow_ids), 'capabilities': list(info.capabilities),
-                'contractStatus': 'panel-contract-1.0-sdk-1.8.0'}
+                'contractStatus': 'panel-contract-1.0-sdk-1.9.0'}
 
     async def _output_request(self, method, body=None):
         body = body or {}

@@ -1,6 +1,6 @@
 import { LocalModeWarning } from '../components/LocalModeWarning';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { CSSProperties, DragEvent } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { ComponentProps, DragEvent } from 'react';
 import { api, ApiError, onSessionExpired } from '../data/api';
 import { draftKey, rememberDraft, recoverDraft } from './drafts';
 import { parseLosslessJSON } from '../data/lossless';
@@ -11,13 +11,13 @@ import { LatestScopeQueue } from '../state/latest';
 import { runLabel, runTooltip } from '../state/runLabel';
 import { HostControlButton, shellHeaderStyle, shellTextStyle } from '../renderer/shell';
 import type { ScopeStatuses } from '../state/scopes';
-import { PanelRenderer, responsiveStyle } from '../renderer/PanelRenderer';
+import { PanelRenderer } from '../renderer/PanelRenderer';
 import type { Me, Panel, Result, Run, RuntimeTarget, Layout } from '../contracts/types';
 import { arrangeGrid, bindChoice, clone, compatible, componentContext, componentNames, copyComponent, copyPage, copyToClipboard, exampleResults, findComponent, freshId, keepLocalHistoryLinks, newComponent, newPage, newPresentation, pasteFromClipboard, removeComponent, renderModel, resizedGridPlacement, restoreSelection, setGridPlacement, sameSource, tidyBindings, walk } from './model';
 import type { Choice, ComponentClipboard, Presentation, SourceComponent } from './model';
 import type { Component, IndicatorStyle } from '../contracts/types';
-import { hasPageNavigation, ImageView, IndicatorTitle, IndicatorValue, PageNavigation, indicatorBackground, indicatorState, pageAppearance, roleStyle, surfaceStyle, themeStyle } from '../renderer/presentation';
-import { ComponentActionFields, ComponentPresentationFields, HistoryFields, PagePresentationFields } from './PresentationFields';
+import { hasPageNavigation, PageNavigation, themeStyle } from '../renderer/presentation';
+import { ColorField, ComponentActionFields, ComponentPresentationFields, HistoryFields, PagePresentationFields } from './PresentationFields';
 import type { HistoryCatalogEntry } from './PresentationFields';
 import './editor.css';
 
@@ -30,7 +30,6 @@ interface Preview {panel?:Panel;presentation?:Panel;viewId?:string;sourceProblem
 const json=(body:unknown,method='POST'):RequestInit=>({method,body:JSON.stringify(body)});
 const explain=(e:unknown)=>e instanceof Error?e.message:String(e);
 const versionLabel=(state:string)=>({PUBLISHED:'发布完成',REQUEST_UNKNOWN:'请求结果未知，请查询',REQUEST_SAVED:'采集配置已更新，页面启用待完成',PREPARED:'页面包已准备，尚未发布',REJECTED:'请求被拒绝',ABANDONED:'发布跟踪已结束，草稿保留'}[state] || state);
-const layoutStyle=(layout:Layout):CSSProperties=>layout.type==='grid'?{display:'grid',gridTemplateColumns:`repeat(${layout.columns || 1},minmax(0,1fr))`,gap:layout.spacing ?? 12,gridAutoRows:'minmax(64px,auto)'}:{display:'flex',flexDirection:layout.direction==='vertical'?'column':'row',flexWrap:layout.direction==='vertical'?'nowrap':'wrap',gap:layout.spacing ?? 12,alignItems:layout.alignment==='start'?'flex-start':layout.alignment==='end'?'flex-end':layout.alignment as CSSProperties['alignItems'],justifyContent:layout.justify==='start'?'flex-start':layout.justify==='end'?'flex-end':layout.justify};
 
 export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
     const [targets,setTargets]=useState<RuntimeTarget[]>([]),[runtimeId,setRuntimeId]=useState('');
@@ -67,10 +66,11 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
     recovery.current=backupDraft;
     const base=`/api/editor/${encodeURIComponent(runtimeId)}`;
     const assetUrl=(id:string)=>`${base}/assets/${encodeURIComponent(id)}?projectId=${encodeURIComponent(projectId)}`;
-    const editingPanel=preview && doc ? (previewPanel || renderModel(doc,assetUrl)) : undefined;
+    const canvasPanel=useMemo(()=>doc && renderModel(doc,assetUrl,context?.historySources),
+        [doc,base,projectId,context?.historySources]);
+    const canvasResults=useMemo(()=>doc ? exampleResults(doc) : {},[doc]);
+    const editingPanel=preview ? previewPanel || canvasPanel : undefined;
     const previewPage=editingPanel?.pages.find(candidate=>candidate.id===pageId);
-    const previewLogo=editingPanel?.logoUrl || (editingPanel?.shell?.logoResourceId
-        && `/api/assets/${encodeURIComponent(editingPanel.id)}/${encodeURIComponent(editingPanel.shell.logoResourceId)}`);
     useLayoutEffect(()=>{
         const header=previewHeader.current;
         if(!header || viewport==='follow')return;
@@ -97,7 +97,7 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
     function autoGrid(children:SourceComponent[],layout:Layout){arrangeGrid(children,layout);}
     function insert(type:string,parentId?:string){const c=newComponent(type);edit(next=>{const parent=parentId?findComponent(next,parentId):undefined;const children=parent?.type==='container'?parent.children:next.pages[pageId].components;children.push(c);autoGrid(children,parent?.grid || next.pages[pageId].layout);});setSelected(c.componentId);}
     function addHistory(source:HistoryCatalogEntry) {
-        const item=newComponent(source.kind === 'table' ? 'sqlite_table' : 'image');
+        const item=newComponent(source.kind === 'table' ? 'sqlite_table' : source.kind==='aggregate' ? 'sqlite_value' : 'image');
         item.props.title=source.title || item.props.title;
         item.props.historySource={componentId:source.componentId};
         edit(next=>{
@@ -162,7 +162,8 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
     useEffect(()=>{const durable=backupDraft();setRecoveryWarning(durable?'':'浏览器暂不能保存恢复副本；草稿仅保留在当前页面，请勿刷新或关闭标签页。');},[doc,saved,projectId,pageId,selected]);
     useEffect(()=>{const unsubscribe=onSessionExpired(()=>{recovery.current?.();});return()=>{unsubscribe();recovery.current?.();};},[]);
     useEffect(()=>{const before=(e:BeforeUnloadEvent)=>{recovery.current?.();if(changed){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',before);return()=>window.removeEventListener('beforeunload',before);},[changed]);
-    useEffect(()=>{const key=(e:KeyboardEvent)=>{if((e.target as HTMLElement).closest('input,textarea,select,[contenteditable]'))return;
+    useEffect(()=>{const key=(e:KeyboardEvent)=>{
+        if(document.querySelector('dialog[open]') || (e.target as HTMLElement).closest('input,textarea,select,[contenteditable]'))return;
         if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='y'){e.preventDefault();redo();}else if(e.key==='Delete'){e.preventDefault();deleteSelection();}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='d'){e.preventDefault();duplicateSelection();}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='c' && component){try{if(docRef.current)clipboard.current=copyToClipboard(docRef.current,component);}catch(e){setError(explain(e));}}else if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='v' && clipboard.current){e.preventDefault();let pasted='';edit(next=>{const c=pasteFromClipboard(next,clipboard.current!);const page=next.pages[pageId];page.components.push(c);keepLocalHistoryLinks(page);autoGrid(page.components,page.layout);pasted=c.componentId;});if(pasted)setSelected(pasted);}};
         window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);});
     useEffect(()=>()=>{ownedResults.current.forEach(releaseResult);ownedResults.current.clear();},[]);
@@ -276,60 +277,43 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
         const complete=()=>finish(true),cancel=()=>finish(false);
         handle.addEventListener('pointermove',movePointer);handle.addEventListener('pointerup',complete);handle.addEventListener('pointercancel',cancel);handle.addEventListener('lostpointercapture',cancel);
     }
-    function card(c:SourceComponent,parentLayout:Layout):React.ReactNode {
-        const bound=Object.values(c.bindings)[0],source=bound?doc?.dataSources[bound]:undefined;
-        const props=c.props as NonNullable<Component['props']>;
-        const title=String(props.title || '');
-        const position:CSSProperties=parentLayout.type==='grid'?
-            {gridColumn:`${(c.layout.column || 0)+1} / span ${c.layout.columnSpan || 1}`,gridRow:`${(c.layout.row || 0)+1} / span ${c.layout.rowSpan || 1}`}:
-            responsiveStyle({id:c.componentId,type:c.type,responsive:c.responsive,props},parentLayout);
+    function card(c:Component,props:ComponentProps<'section'>) {
+        const bound=typeof c.binding==='object' ? c.binding.sourceId : undefined;
+        const source=bound ? doc?.dataSources[bound] : undefined;
+        const title=c.label || '';
         const tooltip=[source && `${source.workflowId} → ${source.nodeId || '流程'} → ${source.port} · ${source.expectedType}`,
             ...(bound ? bindingDiagnostics(bound).map(diagnostic=>diagnostic.message) : [])].filter(Boolean).join('\n');
-        const placeholder=String(props.emptyText ?? '—');
-        const heading=<h3 style={roleStyle(props.typography,'title')}>{title}</h3>;
-        const valueStyle=roleStyle(props.typography,'value');
-        const surface=surfaceStyle(c.type,props.surface);
-        let content:React.ReactNode;
-        if(c.type==='container'){
-            content=<>
-                {title && heading}
-                <div className="editor-container" style={layoutStyle(c.grid)} onDragOver={e=>{e.preventDefault();e.stopPropagation();}}
-                    onDrop={e=>drop(e,c.componentId,true)}>{c.children.map(child=>card(child,c.grid))}</div>
-            </>;
-        }else if(c.type==='image'){
-            const url=props.imageResourceId ? assetUrl(String(props.imageResourceId)) : undefined;
-            content=<>{title && heading}<ImageView key={url} url={url} label={title || '图像'} settings={props.imageView}
-                fixedHeight={c.responsive.preferredHeight || c.responsive.minHeight} placeholder={placeholder}/></>;
-        }else if(c.type==='navigation_button'){
-            content=<span className={`editor-nav-button panel-action-${props.buttonStyle ?? 'secondary'}`}>{String(props.text || '打开')}</span>;
-        }else if(c.type==='page_navigation'){
-            content=<nav>{doc?.pageOrder.map(id=><span key={id}>{doc.pages[id].name}</span>)}</nav>;
-        }else if(c.type==='page_title'){
-            content=<h2 style={roleStyle(props.typography,'title')}>{page?.name}</h2>;
-        }else if(c.type==='table' || c.type==='sqlite_table'){
-            content=<p style={roleStyle(props.typography,'title')}>{title || componentNames[c.type]}</p>;
-        }else if(c.type!=='spacer'){
-            const row=c.type==='indicator' && props.indicatorView==='row';
-            const horizontal=props.valueLayout==='horizontal' || row;
-            const state=c.type==='indicator' ? indicatorState(props, undefined, Object.keys(props.indicatorStates ?? {})[0]) : undefined;
-            if(row) surface.backgroundColor=indicatorBackground(state) ?? surface.backgroundColor;
-            const value=c.type==='indicator'
-                ? <IndicatorValue props={props} state={state} emptyText={placeholder} hasTitle={Boolean(title)}/>
-                : <span className="panel-field-value" style={valueStyle}>{c.type==='text'?String(props.text || placeholder):placeholder}
-                    {c.type==='number' && Boolean(props.unit) && <> <small style={roleStyle(props.typography,'helper')}>{String(props.unit)}</small></>}</span>;
-            const label=c.type==='indicator' ? <IndicatorTitle props={props} state={state} title={title}/> : <span style={roleStyle(props.typography,'title')}>{title}</span>;
-            content=<><div className={`panel-field ${horizontal?'panel-field-horizontal':''}`}>{title && label}{value}</div>
-                {typeof props.helperText === 'string' && props.helperText && <p className="panel-field-helper" style={roleStyle(props.typography,'helper')}>{props.helperText}</p>}</>;
-        }
-        return <section key={c.componentId} className={`editor-component ${selected===c.componentId?'selected':''} ${c.type==='spacer'?'is-spacer':''}`}
-            style={{...position,...surface}} tabIndex={0}
-            aria-label={`${componentNames[c.type] || c.type} ${title}`} title={tooltip || undefined} data-editor-component={c.componentId}
-            draggable onDragStart={e=>{e.stopPropagation();e.dataTransfer.setData('application/emo-move',c.componentId);}}
-            onClick={e=>{e.stopPropagation();setSelected(c.componentId);}} onFocus={e=>{if(e.target===e.currentTarget)setSelected(c.componentId);}}
-            onDragOver={e=>{e.preventDefault();e.stopPropagation();}} onDrop={e=>drop(e,c.componentId)}>
-            {content}
-            {selected===c.componentId && <button aria-label="拖动调整组件尺寸" className="editor-resize" onPointerDown={e=>resize(e,c.componentId)} onClick={e=>e.stopPropagation()}>↘</button>}
+        return <section {...props} className={`editor-component ${selected===c.id?'selected':''} ${c.type==='spacer'?'is-spacer':''}`}
+            tabIndex={0} aria-label={`${componentNames[c.type] || c.type} ${title}`} title={tooltip || undefined} data-editor-component={c.id}
+            draggable onDragStart={e=>{e.stopPropagation();e.dataTransfer.setData('application/emo-move',c.id);}}
+            onClick={e=>{e.stopPropagation();setSelected(c.id);}} onFocus={e=>{if(e.target===e.currentTarget)setSelected(c.id);}}
+            onDragOver={e=>{e.preventDefault();e.stopPropagation();}} onDrop={e=>drop(e,c.id)}>
+            {props.children}
+            {selected===c.id && <button aria-label="拖动调整组件尺寸" className="editor-resize" onPointerDown={e=>resize(e,c.id)} onClick={e=>e.stopPropagation()}>↘</button>}
         </section>;
+    }
+    function headerPreview(panel:Panel, status:string, canvas=false) {
+        const shell=panel.shell;
+        const logo=panel.logoUrl || (shell?.logoResourceId
+            && `/api/assets/${encodeURIComponent(panel.id)}/${encodeURIComponent(shell.logoResourceId)}`);
+        return <header className={`operator-header preview-shell ${canvas?'editor-canvas-header':''}`}
+            style={{...themeStyle,...shellHeaderStyle(shell)}}>
+            <div className="operator-heading">
+                {logo && <img className="operator-logo" src={logo} alt=""
+                    style={{width:shell?.logoWidth ?? 40,height:shell?.logoHeight ?? 40}}/>}
+                <div><h2 style={shellTextStyle(shell,'title')}>{shell?.title || context?.runtime.projectName || panel.name}</h2>
+                    {shell?.subtitle && <p style={shellTextStyle(shell,'helper')}>{shell.subtitle}</p>}</div>
+            </div>
+            <div className="operator-header-items">
+                {shell?.showConnection !== false && <span className="operator-status">{status}</span>}
+                {shell?.showControls !== false && <>
+                    <HostControlButton control={shell?.startControl} kind="start" fallbackLabel="启动工作流"
+                        disabled={!canvas && preview!=='fixtures'} title="仅预览按钮外观，不执行任务" onClick={()=>{}}/>
+                    <HostControlButton control={shell?.stopControl} kind="stop" fallbackLabel="停止选中运行"
+                        disabled={true} title="仅预览按钮外观，不执行任务" onClick={()=>{}}/>
+                </>}
+            </div>
+        </header>;
     }
     if(me.role!=='admin' || me.preview)return <main><h1>Web 页面编辑器</h1>{(me.localNoAuth || me.authMode==='local') && <LocalModeWarning me={me}/>}<p>编辑需要管理员会话。</p><a href="/">返回运行页面</a></main>;
     return <main className="web-editor"><header className="editor-header"><div><span className="editor-eyebrow">EMOMASTER / WEB PANEL</span><h1>Web 页面编辑器</h1></div><div className="editor-session"><a href="/">运行页面 ↗</a><span>{me.authMode==='local'?'本机管理员':me.username}</span><button disabled={busy} onClick={logout}>退出</button></div></header>
@@ -343,35 +327,26 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
         <section className="editor-context-bar"><label>实时预览任务<select aria-label="实时预览任务" title={runTooltip(runs.find(run=>run.id===runId))} value={runId} onChange={e=>{setRunId(e.target.value);setViewId('');setPreview(undefined);setResults({});}}><option value="">明确选择已有任务</option>{runs.map(r=><option key={r.id} value={r.id}>{runLabel(r)}</option>)}</select></label><button disabled={busy || !runtimeId} onClick={()=>perform(()=>loadTarget(runtimeId,true))}>刷新目录和任务</button><small>打开、保存、预览、切页、发布均不触发检测。</small></section>
         {diagnostics.length>0 && <details open className="editor-diagnostics"><summary>当前工程有 {diagnostics.length} 项外部来源不可用</summary><p>以下诊断针对当前 Runtime 工程；页面源和原绑定已保留。已运行任务继续按自身工程与采集快照解释，未自动启动检测。</p>{diagnostics.map((diagnostic,index)=><p key={index}><strong>{diagnostic.sourceId || diagnostic.scopeId}</strong> · {diagnostic.code}：{diagnostic.message}{doc && Object.entries(doc.pages).flatMap(([,p])=>walk(p.components).filter(c=>Object.values(c.bindings).some(id=>diagnostic.sourceId===id || !diagnostic.sourceId && doc.dataSources[id]?.resultScopeId===diagnostic.scopeId)).map(c=><small key={c.componentId}>{p.name} / {String(c.props.title || componentNames[c.type])}</small>))}</p>)}</details>}
         {!doc || !page?<p className="editor-empty">{busy?'正在读取 Runtime 工程与草稿…':'当前无可编辑页面，请选择可用 Runtime。'}</p>:<><section className="editor-page-bar"><nav aria-label="编辑页面标签">{doc.pageOrder.map(id=><button key={id} aria-current={pageId===id?'page':undefined} onClick={()=>changePage(id)}>{doc.defaultPageId===id?'⌂ ':''}{doc.pages[id].name}</button>)}</nav><button title="新建页面" onClick={()=>pageAction('new')}>＋ 新页面</button><button onClick={()=>pageAction('duplicate')}>复制页</button><button onClick={()=>pageAction('left')}>←</button><button onClick={()=>pageAction('right')}>→</button><button onClick={()=>pageAction('home')}>设为首页</button><button disabled={doc.pageOrder.length<2} onClick={()=>pageAction('delete')}>删除页</button>{doc.pageOrder.length===1 && <button onClick={twoPages}>创建首期两页结构</button>}</section>
-        <section className="editor-workspace" style={{gridTemplateColumns:`${leftOpen?'224px':'40px'} minmax(0,1fr) ${rightOpen?'286px':'40px'}`}}><aside className="editor-toolbox"><button className="editor-collapse" aria-label={leftOpen?'折叠工具区':'展开工具区'} onClick={()=>setLeftOpen(x=>!x)}>{leftOpen?'‹ 工具区':'›'}</button>{leftOpen && <><div className="editor-tool-tabs"><button aria-pressed={tab==='components'} onClick={()=>setTab('components')}>组件</button><button aria-pressed={tab==='sources'} onClick={()=>setTab('sources')}>流程结果</button></div><input aria-label="搜索组件或输出" placeholder={tab==='components'?'搜索组件':'搜索流程、节点或输出'} value={search} onChange={e=>setSearch(e.target.value)}/>{tab==='components'?<div className="editor-palette">{Object.entries(componentNames).filter(([type,name])=>type!=='sqlite_table' && `${type} ${name}`.includes(search)).map(([type,name])=><button key={type} draggable onDragStart={e=>e.dataTransfer.setData('application/emo-component',type)} onClick={()=>insert(type,component?.type==='container'?selected:undefined)}><span>{type==='image'?'▧':type==='container'?'▣':type==='number'?'#':type==='table'?'▤':'＋'}</span>{name}</button>)}<button onClick={()=>insert('image')}>＋ 静态图片</button>
-            {Object.values(historySources).filter(source=>source.kind!=='aggregate'
-                && (!search || `${source.title || source.componentId} 历史`.includes(search)))
+        <section className="editor-workspace" style={{gridTemplateColumns:`${leftOpen?'224px':'40px'} minmax(0,1fr) ${rightOpen?'286px':'40px'}`}}><aside className="editor-toolbox"><button className="editor-collapse" aria-label={leftOpen?'折叠工具区':'展开工具区'} onClick={()=>setLeftOpen(x=>!x)}>{leftOpen?'‹ 工具区':'›'}</button>{leftOpen && <><div className="editor-tool-tabs"><button aria-pressed={tab==='components'} onClick={()=>setTab('components')}>组件</button><button aria-pressed={tab==='sources'} onClick={()=>setTab('sources')}>流程结果</button></div><input aria-label="搜索组件或输出" placeholder={tab==='components'?'搜索组件':'搜索流程、节点或输出'} value={search} onChange={e=>setSearch(e.target.value)}/>{tab==='components'?<div className="editor-palette">{Object.entries(componentNames).filter(([type,name])=>!['sqlite_table','sqlite_value'].includes(type) && `${type} ${name}`.includes(search)).map(([type,name])=><button key={type} draggable onDragStart={e=>e.dataTransfer.setData('application/emo-component',type)} onClick={()=>insert(type,component?.type==='container'?selected:undefined)}><span>{type==='image'?'▧':type==='container'?'▣':type==='number'?'#':type==='table'?'▤':'＋'}</span>{name}</button>)}<button onClick={()=>insert('image')}>＋ 静态图片</button>
+            {Object.values(historySources).filter(source=>!search || `${source.title || source.componentId} 历史`.includes(search))
                 .map(source=><button key={source.componentId} onClick={()=>addHistory(source)}>＋ {source.title || source.componentId}</button>)}</div>:<div className="editor-source-list">{choices.filter(c=>c.label.includes(search)).map(c=>{const index=choices.indexOf(c),reason=component?compatible(component.type,c.source):'';return <button key={c.sourceId || index} className={!c.enabled || reason?'incompatible':''} title={c.reason || reason || c.label} draggable={c.enabled} onDragStart={e=>e.dataTransfer.setData('application/emo-source',String(index))} onClick={()=>edit(next=>bindChoice(next,pageId,selected,c))}><strong>{c.label}</strong><small>{c.source.expectedType}{reason?` · ${reason}`:''}</small>{c.reason && <small>{c.reason}</small>}</button>;})}{!choices.length && <p>当前工程没有可绑定输出，请先在 Designer 配置流程并写入 Runtime。</p>}<p className="editor-help">选择组件后点击输出，或将输出拖到组件上。节点改名不改变来源身份。</p></div>}</>}</aside>
-        <div className="editor-stage"><div className="editor-canvas-toolbar"><span>{page.name}</span><button disabled={!history.length} onClick={undo}>撤销</button><button disabled={!future.length} onClick={redo}>重做</button><button disabled={!component} onClick={duplicateSelection}>复制组件</button><button disabled={!component} onClick={deleteSelection}>删除组件</button><small>拖动排序 · 右下角调整尺寸</small></div><div className="editor-canvas-scroll" ref={canvas}><div className="editor-terminal" style={{width:viewport==='follow'?'100%':Number(viewport.split('x')[0]),minHeight:viewport==='follow'?560:Number(viewport.split('x')[1]),transform:`scale(${zoom})`,transformOrigin:'top left'}}><div className="editor-canvas panel-page" style={{...pageAppearance(doc.appearance ?? undefined),...layoutStyle(page.layout)}} onClick={()=>setSelected('')} onDragOver={e=>e.preventDefault()} onDrop={e=>drop(e)}>{page.components.length?page.components.map(c=>card(c,page.layout)):<div className="editor-canvas-empty"><span>＋</span><h2>从一个组件开始</h2><p>点击左侧组件，或将组件拖到画布。</p><button onClick={twoPages}>创建检测页与详情页</button></div>}</div></div></div><div className="editor-canvas-footer"><label>终端预览<select aria-label="终端尺寸" value={viewport} onChange={e=>{setViewport(e.target.value);setZoom(1);}}><option value="follow">跟随窗口</option><option value="1920x1080">1920 × 1080</option><option value="1366x768">1366 × 768</option><option value="1024x768">1024 × 768</option><option value="390x844">390 × 844</option></select></label><button onClick={()=>{const width=viewport==='follow'?canvas.current?.clientWidth || 1:Number(viewport.split('x')[0]);setZoom(Math.min(1,Math.max(0.15,((canvas.current?.clientWidth || width)-32)/width)));}}>适应画布</button><button onClick={()=>setZoom(x=>Math.min(1.5,x+0.1))}>＋</button><button onClick={()=>setZoom(x=>Math.max(0.2,x-0.1))}>−</button><small>{Math.round(zoom*100)}% · {page.components.length} 个顶层组件</small></div></div>
+        <div className="editor-stage"><div className="editor-canvas-toolbar"><span>{page.name}</span><button disabled={!history.length} onClick={undo}>撤销</button><button disabled={!future.length} onClick={redo}>重做</button><button disabled={!component} onClick={duplicateSelection}>复制组件</button><button disabled={!component} onClick={deleteSelection}>删除组件</button><small>拖动排序 · 右下角调整尺寸</small></div><div className="editor-canvas-scroll" ref={canvas}><div className="editor-terminal" style={{width:viewport==='follow'?'100%':Number(viewport.split('x')[0]),minHeight:viewport==='follow'?560:Number(viewport.split('x')[1]),transform:`scale(${zoom})`,transformOrigin:'top left'}}>{canvasPanel?.shell && headerPreview(canvasPanel,'示例已连接',true)}{canvasPanel && <PanelRenderer panel={canvasPanel} pageId={pageId} onPage={()=>{}}
+            results={canvasResults} result={Object.values(canvasResults)[0]} onAction={async()=>false} state="示例已连接" runtimeState="RUNNING" sample
+            viewportHeight={viewport==='follow'?undefined:Number(viewport.split('x')[1])}
+            authoring={{card, container:(c,props)=><div {...props} className={`editor-container ${props.className || ''}`}
+                onDragOver={e=>{e.preventDefault();e.stopPropagation();}} onDrop={e=>drop(e,c.id,true)}/>,
+                page:{onClick:()=>setSelected(''),onDragOver:e=>e.preventDefault(),onDrop:e=>drop(e)},
+                empty:<div className="editor-canvas-empty"><span>＋</span><h2>从一个组件开始</h2><p>点击左侧组件，或将组件拖到画布。</p><button onClick={twoPages}>创建检测页与详情页</button></div>}}/>}</div></div><div className="editor-canvas-footer"><label>终端预览<select aria-label="终端尺寸" value={viewport} onChange={e=>{setViewport(e.target.value);setZoom(1);}}><option value="follow">跟随窗口</option><option value="1920x1080">1920 × 1080</option><option value="1366x768">1366 × 768</option><option value="1024x768">1024 × 768</option><option value="390x844">390 × 844</option></select></label><button onClick={()=>{const width=viewport==='follow'?canvas.current?.clientWidth || 1:Number(viewport.split('x')[0]);setZoom(Math.min(1,Math.max(0.15,((canvas.current?.clientWidth || width)-32)/width)));}}>适应画布</button><button onClick={()=>setZoom(x=>Math.min(1.5,x+0.1))}>＋</button><button onClick={()=>setZoom(x=>Math.max(0.2,x-0.1))}>−</button><small>{Math.round(zoom*100)}% · {page.components.length} 个顶层组件</small></div></div>
         <aside className="editor-properties"><button className="editor-collapse" aria-label={rightOpen?'折叠属性区':'展开属性区'} onClick={()=>setRightOpen(x=>!x)}>{rightOpen?'属性 ›':'‹'}</button>{rightOpen && <><section><h2>页面</h2><label>页面名称<input aria-label="页面名称" value={page.name} onChange={e=>edit(next=>{next.pages[pageId].name=e.target.value;})}/></label><LayoutFields value={page.layout} onChange={value=>edit(next=>{next.pages[pageId].layout=value;autoGrid(next.pages[pageId].components,value);})}/><PagePresentationFields doc={doc} edit={edit} uploadLogo={file=>void perform(()=>upload(file,true))} busy={busy}/><small>Presentation 1.3 · Web 终端</small></section>{component?<><section><h2>{componentNames[component.type]}属性</h2><small className="editor-id">{component.componentId}</small><label>标题<input aria-label="组件标题" value={String(component.props.title || '')} onChange={e=>updateComponent(c=>{c.props.title=e.target.value;})}/></label>{['text','navigation_button'].includes(component.type) && <label>文字<textarea aria-label="组件文字" value={String(component.props.text || '')} onChange={e=>updateComponent(c=>{c.props.text=e.target.value;})}/></label>}<label>空值提示<input value={String(component.props.emptyText ?? '—')} onChange={e=>updateComponent(c=>{c.props.emptyText=e.target.value;})}/></label>{component.type==='number' && <><label>单位<input value={String(component.props.unit || '')} onChange={e=>updateComponent(c=>{c.props.unit=e.target.value;})}/></label><NumberField label="小数位" value={Number(component.props.decimals ?? 2)} min={0} max={12} onChange={value=>updateComponent(c=>{c.props.decimals=value;})}/></>}{component.type==='navigation_button' && <ComponentActionFields component={component} doc={doc} page={page} update={updateComponent}/>} {['indicator','sqlite_table'].includes(component.type) && <IndicatorFields states={component.props.indicatorStates} onChange={states=>updateComponent(c=>{c.props.indicatorStates=states;})}/>}{component.type==='table' && <><TableFields columns={component.props.columns} onChange={columns=>updateComponent(c=>{c.props.columns=columns;})}/><NumberField label="每页行数" value={Number(component.props.pageSize || 20)} min={1} max={100} onChange={value=>updateComponent(c=>{c.props.pageSize=value;})}/></>}</section>
         <HistoryFields component={component} page={page} update={updateComponent} sources={historySources}/>
         {['image','text','number','indicator','table'].includes(component.type) && <section><h2>数据来源</h2><label>绑定输出<select aria-label="组件输出绑定" value={choices.findIndex(choice=>Object.values(component.bindings).some(id=>{const s=doc.dataSources[id];return sameSource(s,choice.source);}))} onChange={e=>{const c=choices[Number(e.target.value)];if(c)edit(next=>bindChoice(next,pageId,selected,c));}}><option value={-1}>选择工作流 → 节点 → 输出引脚</option>{choices.map((choice,index)=>{const reason=compatible(component.type,choice.source) || choice.reason;return <option key={choice.sourceId || index} value={index} disabled={Boolean(reason) || !choice.enabled}>{choice.label}{reason?`（${reason}）`:''}</option>;})}</select></label>{Object.values(component.bindings).map(id=><p className="editor-binding-detail" key={id}>{id}<br/>{doc.dataSources[id]?.resultScopeId}<br/>{doc.dataSources[id]?.expectedType}{bindingDiagnostics(id).map((diagnostic,index)=><strong className="editor-binding-problem" key={index}>{diagnostic.code}：{diagnostic.message}</strong>)}<button onClick={()=>updateComponent(c=>{c.bindings={};})}>解除绑定</button></p>)}{component.type==='image' && <label className="editor-upload">上传静态图片<input aria-label="上传静态图片" type="file" accept="image/png,image/jpeg,image/bmp" disabled={busy} onChange={e=>{const file=e.target.files?.[0];if(file)void perform(()=>upload(file));e.target.value='';}}/></label>}{component.props.imageResourceId? <button onClick={()=>updateComponent(c=>{delete c.props.imageResourceId;})}>移除静态图片</button>:null}</section>}
-        {component.type==='navigation_button' && <section><h2>按钮图标</h2><label>上传按钮图标<input aria-label="上传按钮图标" type="file" accept="image/png,image/jpeg,image/bmp" disabled={busy} onChange={e=>{const file=e.target.files?.[0];if(file)void perform(()=>upload(file));e.target.value='';}}/></label>{component.props.iconResourceId?<button onClick={()=>updateComponent(c=>{delete c.props.iconResourceId;})}>移除按钮图标</button>:null}</section>}<section><h2>布局与尺寸</h2>{parentLayout?.type==='grid'?<>{(['row','column','rowSpan','columnSpan'] as const).map(key=><NumberField key={key} label={key} value={Number(component.layout[key] ?? (key.endsWith('Span')?1:0))} min={key.endsWith('Span')?1:0} max={key==='column'?(parentLayout.columns || 1)-(component.layout.columnSpan || 1):key==='columnSpan'?(parentLayout.columns || 1)-(component.layout.column || 0):key==='row'?4095:128} onChange={value=>updatePlacement(key,value)}/>)}</>:<><label>宽度模式<select value={component.responsive.width || 'fill'} onChange={e=>updateComponent(c=>{c.responsive.width=e.target.value;})}><option value="fill">填充</option><option value="content">内容尺寸</option></select></label>{(['minWidth','preferredWidth','minHeight','preferredHeight','weight'] as const).map((key,index)=><NumberField key={key} label={['最小宽度','首选宽度','最小高度','首选高度','伸展权重'][index]} value={Number(component.responsive[key] || 0)} min={0} max={key==='weight'?100:4096} onChange={value=>updateComponent(c=>{c.responsive[key]=value;})}/>)}<label>对齐<select value={component.responsive.alignSelf || 'auto'} onChange={e=>updateComponent(c=>{c.responsive.alignSelf=e.target.value;})}>{['auto','start','center','end','stretch'].map(value=><option key={value}>{value}</option>)}</select></label></>}{component.type==='container' && <LayoutFields value={component.grid} onChange={value=>updateComponent(c=>{c.grid=value;autoGrid(c.children,value);})}/>}</section><section><h2>外观</h2><ComponentPresentationFields component={component} update={updateComponent}/>{component.type==='spacer' && <label>空白模式<select value={String(component.props.spacerMode || 'fixed')} onChange={e=>updateComponent(c=>{c.props.spacerMode=e.target.value;})}><option value="fixed">固定</option><option value="flex" disabled={parentLayout?.type!=='responsive'}>弹性（响应式布局）</option></select>{parentLayout?.type==='grid' && <small>网格中的空白块占用固定单元格；切换或移入网格时会自动改为固定。</small>}</label>}</section></>:<p className="editor-help">选择画布中的组件以编辑内容、布局和输出绑定。</p>}</>}</aside></section>
+        {component.type==='navigation_button' && <section><h2>按钮图标</h2><label>上传按钮图标<input aria-label="上传按钮图标" type="file" accept="image/png,image/jpeg,image/bmp" disabled={busy} onChange={e=>{const file=e.target.files?.[0];if(file)void perform(()=>upload(file));e.target.value='';}}/></label>{component.props.iconResourceId?<button onClick={()=>updateComponent(c=>{delete c.props.iconResourceId;})}>移除按钮图标</button>:null}</section>}<section><h2>布局与尺寸</h2>{parentLayout?.type==='grid'?<>{(['row','column','rowSpan','columnSpan'] as const).map(key=><NumberField key={key} label={key} value={Number(component.layout[key] ?? (key.endsWith('Span')?1:0))} min={key.endsWith('Span')?1:0} max={key==='column'?(parentLayout.columns || 1)-(component.layout.columnSpan || 1):key==='columnSpan'?(parentLayout.columns || 1)-(component.layout.column || 0):key==='row'?4095:128} onChange={value=>updatePlacement(key,value)}/>)}</>:<><label>宽度模式<select value={component.responsive.width || 'fill'} onChange={e=>updateComponent(c=>{c.responsive.width=e.target.value;})}><option value="fill">填充</option><option value="content">内容尺寸</option></select></label>{(['minWidth','preferredWidth','minHeight','preferredHeight','weight'] as const).map((key,index)=><NumberField key={key} label={['最小宽度','首选宽度','最小高度','首选高度','伸展权重'][index]} value={Number(component.responsive[key] || 0)} min={0} max={key==='weight'?100:4096} onChange={value=>updateComponent(c=>{c.responsive[key]=value;})}/>)}<label>对齐<select value={component.responsive.alignSelf || 'auto'} onChange={e=>updateComponent(c=>{c.responsive.alignSelf=e.target.value;})}>{['auto','start','center','end','stretch'].map(value=><option key={value}>{value}</option>)}</select></label></>}{component.type==='container' && <LayoutFields value={component.grid} onChange={value=>updateComponent(c=>{c.grid=value;autoGrid(c.children,value);})}/>}</section><section><h2>外观</h2><ComponentPresentationFields key={component.componentId} component={component} update={updateComponent} panel={canvasPanel} pageId={pageId} results={canvasResults}/>{component.type==='spacer' && <label>空白模式<select value={String(component.props.spacerMode || 'fixed')} onChange={e=>updateComponent(c=>{c.props.spacerMode=e.target.value==='flex'?'flex':'fixed';})}><option value="fixed">固定</option><option value="flex" disabled={parentLayout?.type!=='responsive'}>弹性（响应式布局）</option></select>{parentLayout?.type==='grid' && <small>网格中的空白块占用固定单元格；切换或移入网格时会自动改为固定。</small>}</label>}</section></>:<p className="editor-help">选择画布中的组件以编辑内容、布局和输出绑定。</p>}</>}</aside></section>
         <details className="editor-versions"><summary>发布版本与回退 · {context?.versions.length || 0}</summary><p>回退会针对当前 Runtime 工程重新校验并登记输出请求；不会重启现有任务。</p>{context?.versions.map(version=><div key={version.versionId}><span>{version.installedPackage ? '导入页面包' : version.versionId} · {versionLabel(version.state)} · {typeof version.createdAt==='number'?new Date(version.createdAt*1000).toLocaleString():version.createdAt || ''}</span>{!version.installedPackage && <button disabled={busy || version.state!=='PUBLISHED'} onClick={()=>perform(()=>publish(version.versionId))}>回退到此源版本</button>}{version.state!=='PUBLISHED' && <button onClick={()=>setPublication(version)}>查看发布状态</button>}</div>)}</details></>}
-        {preview && doc && editingPanel && <div className="editor-preview-backdrop"><section className="editor-preview" role="dialog" aria-modal="true" aria-label={preview==='fixtures'?'示例数据预览':'实时任务预览'}><header><div><h2>{preview==='fixtures'?'示例数据预览 · 非真实检测结果':`实时预览 · 任务 ${runId}`}</h2><p>{preview==='fixtures'?'仅检查布局与显示效果，未启动检测。':liveState}</p></div><button onClick={()=>{previewEpoch.current++;setPreview(undefined);setViewId('');setPreviewPanel(undefined);}}>关闭预览</button></header>{preview==='runtime' && <section className="editor-job-metadata" aria-label="所选任务修订"><p>任务：{previewJobMetadata?.jobId || runId}</p><p>工程修订：{previewJobMetadata?.projectRevision || 'Runtime未提供'}</p><p title={previewJobMetadata?.executionRevision}>执行修订：{previewJobMetadata?.executionRevision || 'Runtime未提供'}</p><p title={previewJobMetadata?.capturePlanRevision}>采集修订：{previewJobMetadata?.capturePlanRevision || 'Runtime未提供'}</p></section>}{preview==='runtime' && <aside className="notice">当前任务只提供启动时已冻结的采集配置。缺失输出：先发布，再明确启动新任务。{Object.entries(sourceProblems.current).map(([id,reason])=><p key={id}>{id}：{reason}</p>)}</aside>}<p className="editor-preview-size">终端尺寸：{viewport==='follow'?'跟随窗口':viewport.replace('x',' × ')}</p><div className="editor-preview-scroll"><div className="editor-preview-terminal" style={{width:viewport==='follow'?'100%':Number(viewport.split('x')[0]),minHeight:viewport==='follow'?560:Number(viewport.split('x')[1]),height:viewport==='follow'?undefined:Number(viewport.split('x')[1]),overflow:viewport==='follow'?undefined:'auto'}}><div ref={previewHeader} className="editor-preview-header"><header className="operator-header preview-shell" style={{...themeStyle,...shellHeaderStyle(editingPanel.shell)}}>
-        <div className="operator-heading">{previewLogo && <img className="operator-logo" src={previewLogo} alt="" style={{width:editingPanel.shell?.logoWidth ?? 40,height:editingPanel.shell?.logoHeight ?? 40}}/>}
-            <div><h2 style={shellTextStyle(editingPanel.shell,'title')}>{editingPanel.shell?.title || context?.runtime.projectName || editingPanel.name}</h2>
-            {editingPanel.shell?.subtitle && <p style={shellTextStyle(editingPanel.shell,'helper')}>{editingPanel.shell.subtitle}</p>}</div>
-        </div>
-        <div className="operator-header-items">
-            {editingPanel.shell?.showConnection !== false && <span className="operator-status">{preview==='fixtures'?'示例数据':liveState}</span>}
-            {editingPanel.shell?.showControls !== false && <>
-                <HostControlButton control={editingPanel.shell?.startControl} kind="start" fallbackLabel="启动工作流"
-                    disabled={true} title="仅预览按钮外观，不执行任务" onClick={()=>{}}/>
-                <HostControlButton control={editingPanel.shell?.stopControl} kind="stop" fallbackLabel="停止选中运行"
-                    disabled={true} title="仅预览按钮外观，不执行任务" onClick={()=>{}}/>
-            </>}
-        </div>
-    </header>
+        {preview && doc && editingPanel && <div className="editor-preview-backdrop"><section className="editor-preview" role="dialog" aria-modal="true" aria-label={preview==='fixtures'?'示例数据预览':'实时任务预览'}><header><div><h2>{preview==='fixtures'?'示例数据预览 · 非真实检测结果':`实时预览 · 任务 ${runId}`}</h2><p>{preview==='fixtures'?'仅检查布局与显示效果，未启动检测。':liveState}</p></div><button onClick={()=>{previewEpoch.current++;setPreview(undefined);setViewId('');setPreviewPanel(undefined);}}>关闭预览</button></header>{preview==='runtime' && <section className="editor-job-metadata" aria-label="所选任务修订"><p>任务：{previewJobMetadata?.jobId || runId}</p><p>工程修订：{previewJobMetadata?.projectRevision || 'Runtime未提供'}</p><p title={previewJobMetadata?.executionRevision}>执行修订：{previewJobMetadata?.executionRevision || 'Runtime未提供'}</p><p title={previewJobMetadata?.capturePlanRevision}>采集修订：{previewJobMetadata?.capturePlanRevision || 'Runtime未提供'}</p></section>}{preview==='runtime' && <aside className="notice">当前任务只提供启动时已冻结的采集配置。缺失输出：先发布，再明确启动新任务。{Object.entries(sourceProblems.current).map(([id,reason])=><p key={id}>{id}：{reason}</p>)}</aside>}<p className="editor-preview-size">终端尺寸：{viewport==='follow'?'跟随窗口':viewport.replace('x',' × ')}</p><div className="editor-preview-scroll"><div className="editor-preview-terminal" style={{width:viewport==='follow'?'100%':Number(viewport.split('x')[0]),minHeight:viewport==='follow'?560:Number(viewport.split('x')[1]),height:viewport==='follow'?undefined:Number(viewport.split('x')[1]),overflow:viewport==='follow'?undefined:'auto'}}><div ref={previewHeader} className="editor-preview-header">{headerPreview(editingPanel,preview==='fixtures'?'示例数据':liveState)}
     {previewPage && !hasPageNavigation(previewPage.components) && <div className="operator-nav" style={themeStyle}>
         <PageNavigation panel={editingPanel} pageId={pageId} onPage={changePage}/>
     </div>}
-    </div><PanelRenderer viewportHeight={viewport==='follow'?undefined:Math.max(0,Number(viewport.split('x')[1])-previewHeaderHeight)} panel={editingPanel} pageId={pageId} onPage={changePage} results={results} result={Object.values(results)[0]} viewId={viewId || undefined} onAction={async()=>false} state={preview==='fixtures'?'示例数据':liveState} runtimeState={preview==='fixtures'?'示例 RUNNING':runs.find(r=>r.id===runId)?.state}/></div></div></section></div>}
+    </div><PanelRenderer viewportHeight={viewport==='follow'?undefined:Math.max(0,Number(viewport.split('x')[1])-previewHeaderHeight)} panel={editingPanel} pageId={pageId} onPage={changePage} sample={preview==='fixtures'} results={results} result={Object.values(results)[0]} viewId={viewId || undefined} onAction={async()=>false} state={preview==='fixtures'?'示例数据':liveState} runtimeState={preview==='fixtures'?'示例 RUNNING':runs.find(r=>r.id===runId)?.state}/></div></div></section></div>}
         <footer>独立 Web 编辑源 · 草稿修订 {draftRevision.current || '未保存'} · {projectId || '未选择工程'}</footer>
     </main>;
 }
@@ -411,12 +386,11 @@ function IndicatorFields({states,onChange}:{states:unknown;onChange:(states:Reco
                         : <input aria-label={`判定规则${index+1}输出值`} value={String(output)} onChange={event=>change(index,JSON.stringify(event.target.value),value)}/>}
                 </label>
                 <label>显示文字<input aria-label={`判定规则${index+1}文字`} value={value.text} onChange={event=>change(index,key,{...value,text:event.target.value})}/></label>
-                <label>颜色<select aria-label={`判定规则${index+1}颜色`} value={value.color} onChange={event=>change(index,key,{...value,color:event.target.value})}>
-                    {['neutral','green','red','amber','blue'].map(color=><option key={color}>{color}</option>)}
-                </select></label>
-                <label>状态背景<select value={value.background ?? 'none'} onChange={event=>change(index,key,{...value,background:event.target.value==='soft'?'soft':'none'})}>
-                    <option value="none">无</option><option value="soft">浅色</option>
-                </select></label>
+                <ColorField label={`判定规则${index+1}颜色`} value={value.color} empty={false}
+                    options={['neutral','green','red','amber','blue']} onChange={color=>change(index,key,{...value,color:color || 'neutral'})}/>
+                <ColorField label="状态背景" value={value.background ?? 'none'} empty={false}
+                    options={[{value:'none',label:'无'},{value:'soft',label:'浅色'}]}
+                    onChange={background=>change(index,key,{...value,background:background as IndicatorStyle['background']})}/>
                 <button onClick={()=>onChange(Object.fromEntries(rows.filter((_,i)=>i!==index)))}>删除规则</button>
             </div>;
         })}

@@ -1,6 +1,7 @@
 """Independent authoring HTTP lifecycle; synthetic Runtime remains explicit."""
 from copy import deepcopy
 from io import BytesIO
+import json
 import tempfile
 import unittest
 import zipfile
@@ -107,6 +108,38 @@ class EditorTests(unittest.TestCase):
         self.assertIsInstance(reopened["presentation"]["pages"], dict)
         self.assertEqual(reopened["presentation"]["schemaVersion"], "1.3")
         self.assertTrue(all(page["targets"] == ["web"] for page in reopened["presentation"]["pages"].values()))
+
+    def test_advanced_appearance_preserves_qss_through_css_draft_and_publication(self):
+        source = self.pages(ports=('count',))
+        component = next(item for item in source['pages'][source['defaultPageId']]['components']
+                         if item['componentId'] == 'nav-details')
+        qss = dict(enabled=False, code='QPushButton[emoPart="action"] { color: #123456; }\n')
+        css = dict(enabled=True, code='[data-emo-part="action"] { border-left-width: 4px; }')
+        component['props'].update(customStyle=dict(qtQss=qss, webCss=css),
+                                  iconPosition='right', iconSize=12, iconGap=6)
+        source['shell'] = dict(startControl=dict(appearance=dict(
+            buttonStates=dict(hover=dict(background='#06664A')),
+            customStyle=dict(qtQss=qss, webCss=css))))
+        first = self.save(source, '')
+        reopened = create_app(self.config).state.editor.draft('configured', self.project)
+        self.assertEqual(reopened, first)
+
+        edited = reopened['presentation']
+        appearance = edited['shell']['startControl']['appearance']
+        appearance['customStyle']['webCss']['code'] = ''
+        saved = self.save(edited, first['draftRevision'])
+        published = self.publish(saved['draftRevision'])
+        self.assertEqual(published['state'], 'PUBLISHED', published)
+        exported = self.client.get(self.base + '/versions/' + published['versionId'] + '/package',
+                                   params={'projectId': self.project})
+        self.assertEqual(exported.status_code, 200, exported.text)
+        with zipfile.ZipFile(BytesIO(exported.content)) as archive:
+            snapshot = json.loads(archive.read('presentation.json'))
+        projected = next(item['props'] for item in snapshot['pages'][snapshot['defaultPageId']]['components']
+                         if item['componentId'] == 'nav-details')
+        self.assertEqual(projected['customStyle'], dict(qtQss=qss, webCss=css))
+        self.assertEqual((projected['iconPosition'], projected['iconSize'], projected['iconGap']), ('right', 12, 6))
+        self.assertEqual(snapshot['shell']['startControl']['appearance'], appearance)
 
     def test_history_instances_publish_and_rebuild_the_original_runtime_catalog(self):
         source = self.pages(ports=())

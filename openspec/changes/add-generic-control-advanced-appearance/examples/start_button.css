@@ -1,0 +1,20 @@
+/* 页头开始按钮的四态。 */
+/* 图标位置、12px 尺寸、6px 间距使用常用表单配置。 */
+[data-emo-part="action"] {
+    background: #087F5B;
+    color: #FFFFFF;
+    border: 1px solid #06664A;
+}
+[data-emo-part="action"]:enabled:hover {
+    background: #06664A;
+    border-color: #045038;
+}
+[data-emo-part="action"]:enabled:active {
+    background: #044D38;
+    border-color: #033B2A;
+}
+[data-emo-part="action"]:disabled {
+    background: #E8EDF3;
+    color: #8190A3;
+    border-color: #D2DCE6;
+}

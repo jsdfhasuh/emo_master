@@ -1,3 +1,5 @@
+@layer emo-panel, emo-appearance;
+@layer emo-panel {
 :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#dce8f5;background:#101923;font-synthesis:none}*{box-sizing:border-box}body{margin:0}main{max-width:1440px;margin:auto;padding:24px}h1{font-size:24px;margin:0}h2{font-size:22px}h3{font-size:14px;color:#a8bacb;margin:0 0 14px}header{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:20px}header p{color:#9ab3c9}button,input,select{font:inherit;border-radius:6px;border:1px solid #455a70;padding:9px 12px;background:#26394d;color:#edf6ff}button{cursor:pointer}button:hover{background:#365775}button:disabled{opacity:.45;cursor:not-allowed}button[aria-current=page]{background:#176d9a;border-color:#53bfee}label{display:flex;gap:8px;align-items:center}button+button{margin-left:6px}header button{margin-left:12px}.toolbar,nav{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.toolbar{padding:12px;background:#182634;margin:10px 0;border-radius:8px}.status{margin-left:auto;color:#86c9e5}.control-target{margin-left:auto}.danger{border-color:#a85454}.panel-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;margin-top:16px}.panel-card{min-width:0}.table-scroll{max-width:100%;overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}td,th{text-align:left;padding:10px;border-bottom:1px solid #405266;white-space:nowrap}tr[aria-selected=true]{background:#345773}tr[tabindex]{cursor:pointer}.alert,.notice{padding:12px;margin:10px 0;border-radius:6px}.alert{background:#642f34}.alert button{float:right}.notice{background:#204e62}.admin{margin-top:24px;padding:16px;border:1px solid #405266}.admin div{padding:8px}.login{max-width:450px;margin:12vh auto}.login label{display:block;margin:18px 0}.login input{display:block;width:100%;margin-top:8px}.login button{width:100%}footer{font-size:12px;color:#97aabe;margin:24px 0}.page-nav{margin-top:16px}@media(max-width:700px){main{padding:12px}header{align-items:flex-start;flex-direction:column}.panel-card{grid-column:1/-1!important;grid-row:auto!important}.toolbar label{width:100%}select{max-width:100%;flex:1}.status,.control-target{margin-left:0;width:100%}}
 textarea{font:inherit;color:inherit;background:#26394d;border:1px solid #455a70;border-radius:6px;padding:8px;max-width:100%;min-width:0}pre{max-width:100%;overflow:auto}main,header,section,details,.toolbar>*{min-width:0}input,select{min-width:0;max-width:100%}.admin>section{overflow-x:auto}small,.notice,.alert,footer{overflow-wrap:anywhere}@media(max-width:700px){.toolbar label{flex-wrap:wrap;min-width:0}.toolbar label>input:not([type=checkbox]),.toolbar label>textarea,.toolbar label>select{flex:1 1 140px;width:100%;min-width:0}.admin{padding:10px}.admin .toolbar{padding:8px}.admin>section>table{display:block;max-width:100%;overflow-x:auto}.number{overflow-wrap:anywhere}button{max-width:100%;white-space:normal}}
 
@@ -118,4 +120,50 @@ body:has(.operator-shell){background:var(--panel-page,#f4f7fb)}
     .operator-header,.operator-shell>.toolbar,.operator-settings,.operator-nav{padding-inline:12px}
     .operator-actions select{max-width:none}
     .operator-shell>.alert,.operator-shell>.notice,.operator-shell>details,.operator-shell>.admin{margin-inline:12px}
+}
+.emo-advanced-icon{display:inline-flex;align-items:center;flex-shrink:0;object-fit:contain;line-height:1}
+.panel-action:has(.emo-advanced-icon){display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.panel-action .nav-icon{margin:0}
+}
+@layer emo-appearance {
+    [data-emo-base~="background-color"]{background-color:var(--emo-background-color)}
+    [data-emo-base~="border-color"]{border-color:var(--emo-border-color)}
+    [data-emo-base~="border-width"]{border-width:var(--emo-border-width)}
+    [data-emo-base~="border-style"]{border-style:var(--emo-border-style)}
+    [data-emo-base~="border-radius"]{border-radius:var(--emo-border-radius)}
+    [data-emo-base~="padding"]{padding:var(--emo-padding)}
+    [data-emo-base~="color"]{color:var(--emo-color)}
+    [data-emo-base~="font-family"]{font-family:var(--emo-font-family)}
+    [data-emo-base~="font-size"]{font-size:var(--emo-font-size)}
+    [data-emo-base~="font-weight"]{font-weight:var(--emo-font-weight)}
+    [data-emo-base~="line-height"]{line-height:var(--emo-line-height)}
+    [data-emo-button-states] {
+        background-color:var(--emo-default-background,var(--emo-default-background,var(--emo-background-color)));
+        color:var(--emo-default-color,var(--emo-default-color,var(--emo-color)));
+        border-color:var(--emo-default-border-color,var(--emo-default-border-color,var(--emo-border-color)));
+        border-width:var(--emo-default-border-width,var(--emo-default-border-width,var(--emo-border-width)));
+        border-style:var(--emo-default-border-style,var(--emo-default-border-style,var(--emo-border-style)));
+    }
+    [data-emo-button-states]:enabled:hover {
+        background-color:var(--emo-hover-background,var(--emo-default-background,var(--emo-background-color)));
+        color:var(--emo-hover-color,var(--emo-default-color,var(--emo-color)));
+        border-color:var(--emo-hover-border-color,var(--emo-default-border-color,var(--emo-border-color)));
+        border-width:var(--emo-hover-border-width,var(--emo-default-border-width,var(--emo-border-width)));
+        border-style:var(--emo-hover-border-style,var(--emo-default-border-style,var(--emo-border-style)));
+    }
+    [data-emo-button-states]:enabled:active {
+        background-color:var(--emo-pressed-background,var(--emo-default-background,var(--emo-background-color)));
+        color:var(--emo-pressed-color,var(--emo-default-color,var(--emo-color)));
+        border-color:var(--emo-pressed-border-color,var(--emo-default-border-color,var(--emo-border-color)));
+        border-width:var(--emo-pressed-border-width,var(--emo-default-border-width,var(--emo-border-width)));
+        border-style:var(--emo-pressed-border-style,var(--emo-default-border-style,var(--emo-border-style)));
+    }
+    [data-emo-button-states]:disabled {
+        background-color:var(--emo-disabled-background,var(--emo-default-background,var(--emo-background-color)));
+        color:var(--emo-disabled-color,var(--emo-default-color,var(--emo-color)));
+        border-color:var(--emo-disabled-border-color,var(--emo-default-border-color,var(--emo-border-color)));
+        border-width:var(--emo-disabled-border-width,var(--emo-default-border-width,var(--emo-border-width)));
+        border-style:var(--emo-disabled-border-style,var(--emo-default-border-style,var(--emo-border-style)));
+    }
+    [data-emo-button-states]{filter:none}
 }

@@ -1,0 +1,8 @@
+/* “查看历史记录”的边框和悬停样式。 */
+[data-emo-part="action"] {
+    border-left: 6px solid #044D38;
+}
+[data-emo-part="action"]:enabled:hover {
+    background-color: #06664A;
+    color: #FFFFFF;
+}

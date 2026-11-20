@@ -2,9 +2,15 @@ import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import * as theme from '../../../contracts/panel-contract-v1/theme.json';
 import type { Appearance, Component, ImageView as ImageSettings, IndicatorStyle, Panel, Surface, Typography } from '../contracts/types';
+import { appearanceBorder, appearancePart } from './advancedAppearance';
 
 const tones = theme.foreground as Record<string, string>;
 const softTones = theme.soft as Record<string, string>;
+const palette = theme as unknown as Record<string, string>;
+
+export const backgroundColor = (value: string) => value === 'transparent' || value.startsWith('#') ? value : palette[value];
+export const textColor = (value: string) => value.startsWith('#') ? value :
+    value === 'primary' ? theme.primary : value === 'neutral' ? theme.muted : tones[value] ?? theme.text;
 
 export const themeStyle = {
     '--panel-page': theme.page,
@@ -36,8 +42,8 @@ export function surfaceStyle(type: string, overrides?: Surface): CSSProperties {
     const padding = overrides?.padding;
     const inset = card ? 16 : 0;
     return {
-        backgroundColor: background === 'transparent' ? 'transparent' : theme[background],
-        border: border === 'subtle' ? `1px solid ${theme.border}` : 'none',
+        backgroundColor: backgroundColor(background),
+        ...appearanceBorder(overrides, border === 'subtle' ? 1 : 0, theme.border),
         borderRadius: overrides?.radius ?? (card ? 12 : 0),
         padding: `${padding?.top ?? inset}px ${padding?.right ?? inset}px ${padding?.bottom ?? inset}px ${padding?.left ?? inset}px`,
     };
@@ -52,7 +58,7 @@ export function roleStyle(typography: Typography | undefined, role: keyof Typogr
     return {
         fontSize: size,
         fontWeight: weight as CSSProperties['fontWeight'],
-        color: color === 'primary' ? theme.primary : color === 'neutral' ? theme.muted : tones[color] ?? theme.text,
+        color: textColor(color),
     };
 }
 
@@ -62,39 +68,53 @@ export function indicatorState(props: Component['props'], value: unknown, typedK
 }
 
 export function indicatorBackground(state?: IndicatorStyle) {
-    return state?.background === 'soft' ? softTones[state.color] : undefined;
+    if (state?.background === 'soft')
+        return state.color.startsWith('#') ? `color-mix(in srgb, ${state.color} 12%, white)` : softTones[state.color];
+    return state?.background?.startsWith('#') ? state.background : undefined;
+}
+
+const indicatorColor = (state?: IndicatorStyle) => state?.color.startsWith('#') ? state.color : tones[state?.color ?? 'neutral'];
+
+export function indicatorSurface(state: IndicatorStyle | undefined, base: CSSProperties): CSSProperties {
+    if (!state) return base;
+    return { ...base, backgroundColor: indicatorBackground(state) ?? base.backgroundColor,
+        ...appearanceBorder(state, Number(base.borderWidth) || 0, String(base.borderColor)), borderStyle: state.borderStyle ?? base.borderStyle };
 }
 
 function indicatorMarker(props?: Component['props']) {
     return props?.showMarker ?? (props?.indicatorView === 'badge' || props?.indicatorView === 'row');
 }
 
-export function IndicatorTitle({ props, state, title }: {
-    props?: Component['props']; state?: IndicatorStyle; title: string;
+export function IndicatorTitle({ props, state, title, owner }: {
+    props?: Component['props']; state?: IndicatorStyle; title: string; owner?: string;
 }) {
-    const tone = tones[state?.color ?? 'neutral'];
-    return <span className="panel-field-label" style={{...roleStyle(props?.typography, 'title'),
-        ...(props?.titleFollowsState ? {color: tone} : {}), display: 'inline-flex', alignItems: 'center', gap: 8}}>
+    const tone = indicatorColor(state);
+    return <span className="panel-field-label" {...appearancePart(owner, 'title', {...roleStyle(props?.typography, 'title'),
+        ...(props?.titleFollowsState ? {color: tone} : {})}, { display: 'inline-flex', alignItems: 'center', gap: 8 })}>
         {props?.markerPosition === 'title' && indicatorMarker(props) && state &&
-            <span className="panel-indicator-marker" style={{color: tone}} aria-hidden="true"/>}
+            <span className="panel-indicator-marker" {...appearancePart(owner, 'marker', {color: tone})} aria-hidden="true"/>}
         <span>{title}</span>
     </span>;
 }
 
-export function IndicatorValue({ props, state, emptyText = '—', hasTitle = false }: {
-    props?: Component['props']; state?: IndicatorStyle; emptyText?: string; hasTitle?: boolean;
+export function IndicatorValue({ props, state, emptyText = '—', hasTitle = false, owner }: {
+    props?: Component['props']; state?: IndicatorStyle; emptyText?: string; hasTitle?: boolean; owner?: string;
 }) {
     const badge = props?.indicatorView === 'badge';
     const marker = indicatorMarker(props) && !(hasTitle && props?.markerPosition === 'title');
+    const tone = indicatorColor(state);
+    const normal = {...roleStyle(props?.typography, 'value'), color: tone};
+    const base = badge && state ? indicatorSurface(state, {...normal, borderWidth: 0, borderColor: theme.border, borderStyle: 'solid'}) : normal;
     return <span className={`indicator panel-indicator ${badge ? 'panel-indicator-badge' : ''}`}
-        style={{ ...roleStyle(props?.typography, 'value'), color: tones[state?.color ?? 'neutral'], backgroundColor: badge ? indicatorBackground(state) : undefined }}>
-        {marker && state && <span className="panel-indicator-marker" aria-hidden="true"/>}
+        {...appearancePart(owner, 'value', base)}>
+        {marker && state && <span className="panel-indicator-marker" {...appearancePart(owner, 'marker', {color: tone})} aria-hidden="true"/>}
         {state?.text ?? emptyText}
     </span>;
 }
 
-export function ImageView({ url, label, settings, fixedHeight, placeholder, onError }: {
+export function ImageView({ url, label, settings, fixedHeight, placeholder, onError, owner, typography }: {
     url?: string; label: string; settings?: ImageSettings; fixedHeight?: number; placeholder: string; onError?: () => void;
+    owner?: string; typography?: Typography;
 }) {
     const [ratio, setRatio] = useState<number>();
     const [failed, setFailed] = useState(false);
@@ -102,17 +122,15 @@ export function ImageView({ url, label, settings, fixedHeight, placeholder, onEr
     const position = `${align[settings?.horizontalAlign ?? 'center']} ${align[settings?.verticalAlign ?? 'center']}`;
     const fixed = settings?.sizing === 'fixed';
     const background = settings?.background ?? 'subtle';
-    return <div className="panel-image-view" style={{
-        backgroundColor: background === 'transparent' ? 'transparent' : theme[background],
-        ...(fixed ? { height: fixedHeight || 180 } : { aspectRatio: settings?.aspectRatio || ratio || 4 / 3 }),
-    }}>
+    return <div className="panel-image-view" {...appearancePart(owner, 'viewport', { backgroundColor: backgroundColor(background) },
+        fixed ? { height: fixedHeight || 180 } : { aspectRatio: settings?.aspectRatio || ratio || 4 / 3 })}>
         {url && !failed ? <img className="result-image" src={url} alt={label} style={{ objectPosition: position }}
             onLoad={event => {
                 const { naturalWidth, naturalHeight } = event.currentTarget;
                 if (naturalWidth && naturalHeight) setRatio(naturalWidth / naturalHeight);
             }}
             onError={() => { setFailed(true); onError?.(); }}/>
-            : <p role="status">{failed ? '图片读取失败或无权访问' : placeholder}</p>}
+            : <p role="status" {...appearancePart(owner, 'helper', typography?.helper && roleStyle(typography, 'helper'))}>{failed ? '图片读取失败或无权访问' : placeholder}</p>}
     </div>;
 }
 
@@ -120,10 +138,13 @@ export function hasPageNavigation(components: Component[]): boolean {
     return components.some(component => component.type === 'page_navigation' || hasPageNavigation(component.children ?? []));
 }
 
-export function PageNavigation({ panel, pageId, onPage }: { panel: Panel; pageId: string; onPage: (page: string) => void }) {
+export function PageNavigation({ panel, pageId, onPage, owner, typography }: {
+    panel: Panel; pageId: string; onPage: (page: string) => void; owner?:string; typography?:Typography;
+}) {
     const tabs = panel.navigation?.mode === 'tabs';
     return <nav className={`page-nav ${tabs ? 'page-tabs' : ''}`} role={tabs ? 'tablist' : undefined} aria-label="页面导航">
         {panel.pages.map(page => <button key={page.id} role={tabs ? 'tab' : undefined}
+            {...appearancePart(owner, tabs ? 'tab' : 'action', typography?.value && roleStyle(typography, 'value'))}
             aria-selected={tabs ? page.id === pageId : undefined} aria-current={page.id === pageId ? 'page' : undefined}
             onClick={() => onPage(page.id)}>{page.title}</button>)}
     </nav>;

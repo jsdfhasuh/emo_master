@@ -21,7 +21,7 @@ from emo_master.clients.runtime.display_session import DisplaySession
 from emo_master.clients.runtime.history import HistoryClient
 from emo_master.ui.presentation.hub import DisplayHub
 from emo_master.ui.presentation.renderer import RuntimePages
-from emo_master.ui.presentation.shell import configureHostButton
+from emo_master.ui.presentation.shell import AppearanceButton, configureHostButton
 from emo_master.core.presentation.assets import pageAssets
 from emo_master.apps.operator_runtime.settings import (
     DEFAULT_ROOT_KEY, LISTENER_SETTINGS_KEY, listenerSettingsJson, readListenerSettings, resolveDataRoot,
@@ -276,7 +276,7 @@ class OperatorWindow(QWidget):
         super().hideEvent(event)
 
     def _button(self, text, icon, action):
-        button = QPushButton(text)
+        button = (AppearanceButton if icon in (QStyle.SP_MediaPlay, QStyle.SP_MediaStop) else QPushButton)(text)
         button.setIcon(self.style().standardIcon(icon))
         button.setToolTip(text)
         button.clicked.connect(action)

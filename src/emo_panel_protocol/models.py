@@ -7,6 +7,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 
 Id = Annotated[str, Field(min_length=1, max_length=160, pattern=r"^\S+$")]
+HexColor = Annotated[str, Field(min_length=7, max_length=7, pattern=r'^#[0-9a-fA-F]{6}$')]
+BorderWidth = Annotated[int, Field(ge=0, le=16)]
+BorderStyle = Literal['solid', 'dashed', 'dotted']
 # An ungrouped Job has a real, explicitly empty group identity. Reuse Id for
 # nonempty groups. The schema also forbids whitespace explicitly because JSON
 # Schema regex engines may let '$' match before a trailing newline.
@@ -117,8 +120,11 @@ class Placement(Model):
 
 class IndicatorStyle(Model):
     text: str = Field(max_length=256)
-    color: Literal['neutral', 'green', 'red', 'amber', 'blue'] = 'neutral'
-    background: Literal['none', 'soft'] = 'none'
+    color: Literal['neutral', 'green', 'red', 'amber', 'blue'] | HexColor = 'neutral'
+    background: Literal['none', 'soft'] | HexColor = 'none'
+    borderColor: HexColor | None = None
+    borderWidth: BorderWidth | None = None
+    borderStyle: BorderStyle | None = None
 
 
 class TableColumn(Model):
@@ -198,8 +204,11 @@ class Padding(Model):
 
 class Surface(Model):
     kind: Literal['none', 'card'] | None = None
-    background: Literal['transparent', 'surface', 'subtle'] | None = None
+    background: Literal['transparent', 'surface', 'subtle'] | HexColor | None = None
     border: Literal['none', 'subtle'] | None = None
+    borderColor: HexColor | None = None
+    borderWidth: BorderWidth | None = None
+    borderStyle: BorderStyle | None = None
     radius: int | None = Field(default=None, ge=0, le=32)
     padding: Padding | None = None
 
@@ -207,7 +216,7 @@ class Surface(Model):
 class TextRole(Model):
     size: int | None = Field(default=None, ge=8, le=96)
     weight: Literal['normal', 'bold'] | None = None
-    color: Literal['default', 'neutral', 'primary', 'green', 'red', 'amber'] | None = None
+    color: Literal['default', 'neutral', 'primary', 'green', 'red', 'amber'] | HexColor | None = None
 
 
 class Typography(Model):
@@ -219,7 +228,7 @@ class Typography(Model):
 class ImageView(Model):
     sizing: Literal['fixed', 'aspect'] = 'aspect'
     aspectRatio: float | None = Field(default=None, gt=0)
-    background: Literal['subtle', 'dark', 'transparent'] = 'subtle'
+    background: Literal['subtle', 'dark', 'transparent'] | HexColor = 'subtle'
     horizontalAlign: Literal['start', 'center', 'end'] = 'center'
     verticalAlign: Literal['start', 'center', 'end'] = 'center'
 
@@ -254,6 +263,31 @@ RecordValue = Annotated[RecordField | RecordMeta, Field(discriminator='kind')]
 HISTORY_ACTIONS = frozenset({'history_previous', 'history_next', 'history_first'})
 
 
+class NativeStyle(Model):
+    enabled: bool = False
+    code: str = ''
+
+
+class CustomStyle(Model):
+    qtQss: NativeStyle | None = None
+    webCss: NativeStyle | None = None
+
+
+class ButtonStateAppearance(Model):
+    background: Literal['transparent'] | HexColor | None = None
+    color: HexColor | None = None
+    borderColor: HexColor | None = None
+    borderWidth: BorderWidth | None = None
+    borderStyle: BorderStyle | None = None
+
+
+class ButtonStates(Model):
+    default: ButtonStateAppearance | None = None
+    hover: ButtonStateAppearance | None = None
+    pressed: ButtonStateAppearance | None = None
+    disabled: ButtonStateAppearance | None = None
+
+
 class VisualProps(Model):
     spacerMode: Literal["fixed", "flex"] = "fixed"
     imageResourceId: Id | None = None
@@ -276,6 +310,11 @@ class VisualProps(Model):
     markerPosition: Literal['value', 'title'] = 'value'
     imageView: ImageView | None = None
     buttonStyle: Literal['primary', 'secondary', 'link'] = 'secondary'
+    iconPosition: Literal['left', 'right'] | None = None
+    iconSize: int | None = Field(default=None, ge=8, le=64)
+    iconGap: int | None = Field(default=None, ge=0, le=32)
+    buttonStates: ButtonStates | None = None
+    customStyle: CustomStyle | None = None
     collapse: Collapse | None = None
     statusField: Literal['connection', 'job_state'] | None = None
     historyView: HistoryView | None = None
@@ -473,6 +512,15 @@ class ControlAppearance(Model):
     minWidth: int | None = Field(default=None, ge=0, le=512)
     minHeight: int | None = Field(default=None, ge=0, le=128)
     showIcon: bool = False
+    background: Literal['transparent'] | HexColor | None = None
+    borderColor: HexColor | None = None
+    borderWidth: BorderWidth | None = None
+    borderStyle: BorderStyle | None = None
+    iconPosition: Literal['left', 'right'] | None = None
+    iconSize: int | None = Field(default=None, ge=8, le=64)
+    iconGap: int | None = Field(default=None, ge=0, le=32)
+    buttonStates: ButtonStates | None = None
+    customStyle: CustomStyle | None = None
 
 
 class HostControl(Model):

@@ -1,0 +1,47 @@
+name: Temporary UI observation probe
+
+on:
+  push:
+    branches: [fix/ui-ci-observations-20261120]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-ui:
+    name: Windows UI failure reproduction
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      QT_QPA_PLATFORM: windows
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.10'
+      - name: Install repository test dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Configure native Windows test desktop
+        shell: pwsh
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+      - name: Exercise the failed UI paths and their immediate context
+        run: >-
+          python -m pytest tests/designer/test_device_status.py
+          tests/ui/page_designer/test_dispatch_live_page.py
+          tests/ui/page_designer/test_dispatch_queue_viewing.py
+          -q --timeout=120 --timeout-method=thread -o faulthandler_timeout=60
+          --basetemp=build/ui-ci-observation
+          --junitxml=build/ui-ci-observation.xml
+      - name: Retain failure diagnostics and tooltip screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-ci-observation-${{ github.sha }}
+          path: |
+            build/ui-ci-observation.xml
+            build/ui-ci-observation/**/status-*.png
+          if-no-files-found: ignore

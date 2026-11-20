@@ -1,5 +1,5 @@
 """One floating surface for the existing run summary and node-result owners."""
-from PySide2.QtCore import QSize
+from PySide2.QtCore import QSize, Qt
 from PySide2.QtWidgets import QMenu, QToolButton
 
 from emo_master.ui.workflow_labels import WORKFLOW_RUN_STYLES, aggregateWorkflowStatus
@@ -14,12 +14,13 @@ class FloatingRunPanel(FloatingPanel):
         super().__init__(window.flowView, window.flowView.viewport(), window.settingsStore,
                          'ui/run_panel', '运行面板', window.rightPanelContainer,
                          right=True, symbol='chart-no-axes-column', expandedSize=QSize(400, 660),
-                         collapsedSize=QSize(328, 46))
+                         collapsedSize=QSize(380, 46))
         self.status = ElidedLabel()
         self.status.setFixedWidth(76)
         self.header.insertWidget(2, self.status)
         self.startButton = QToolButton()
         self.startButton.setDefaultAction(window._toolbarActions['开始运行'])
+        self.startButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.stopButton = QToolButton()
         self.stopButton.setDefaultAction(window._toolbarActions['停止运行'])
         self.stopMenuButton = QToolButton()
@@ -32,7 +33,9 @@ class FloatingRunPanel(FloatingPanel):
         self.stopMenuButton.setPopupMode(QToolButton.InstantPopup)
         for index, button in enumerate((self.startButton, self.stopButton, self.stopMenuButton), 3):
             button.setIconSize(QSize(16, 16))
-            button.setFixedSize(30, 30)
+            button.setFixedHeight(30)
+            if button is not self.startButton:
+                button.setFixedWidth(30)
             button.setStyleSheet('QToolButton { padding: 0; } '
                                 'QToolButton::menu-indicator { image: none; width: 0; height: 0; }')
             self.header.insertWidget(index, button)
@@ -40,6 +43,10 @@ class FloatingRunPanel(FloatingPanel):
 
     def refreshStatus(self):
         window = self.owner
+        startText = '运行'
+        if window.loadedProjectPath is not None:
+            startText = '持续运行' if window.projectRunMode() == 'continuous' else '单次运行'
+        self.startButton.defaultAction().setIconText(startText)
         runtime = window.runtimeController
         statuses = [run.state.jobStatus for run in runtime.runs.values() if runtime.busy(run)]
         count = len(statuses)

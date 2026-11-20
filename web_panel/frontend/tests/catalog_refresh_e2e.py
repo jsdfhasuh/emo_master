@@ -22,7 +22,9 @@ origin=f'http://127.0.0.1:{server.server_port}'
 state={'logged':False,'hold_a':False,'held':[], 'A':{'instance':'A-1','project':'project-A','revision':'1','runs':['a1'],'workflows':['wa1'],'default':1}, 'B':{'instance':'B-1','project':'project-B','revision':'8','runs':['b1'],'workflows':['wb1'],'default':8}}
 state.update(username='operator', catalog_status=200, logout_status=503, command_posts=[], operation_queries=[])
 def info(rid):
- target=state[rid];return {'runtimeInstanceId':target['instance'],'projectId':target['project'],'configurationRevision':target['revision']}
+ target=state[rid];return {'runtimeInstanceId':target['instance'],'projectId':target['project'],'configurationRevision':target['revision'],
+                          'productionExecutionMode':'continuous' if rid=='A' else 'single','productionMode':False,
+                          'capabilities':['project_run_mode_v1']}
 def panel(rid):
  return {'id':'panel-'+rid,'name':'Panel '+rid,'packageRevision':state[rid]['revision'],'pages':[{'id':'home','title':'Page '+rid,'components':[{'id':'text','type':'text','props':{'text':'Current target '+rid}}]}]}
 def mock(route):
@@ -71,6 +73,8 @@ try:
    page.goto(origin);page.get_by_label('用户名',exact=True).fill('operator');page.get_by_label('密码',exact=True).fill('fixture');page.get_by_role('button',name='登录',exact=True).click()
    identity=page.get_by_label('当前 Runtime 身份',exact=True);refresh=page.get_by_role('button',name='刷新页面包和状态',exact=True)
    settings=page.get_by_role('button',name='运行设置',exact=True)
+   run_mode=page.get_by_label('工程运行模式',exact=True)
+   expect(run_mode).to_be_visible();expect(run_mode).to_contain_text('持续运行')
    expect(settings).to_have_attribute('aria-expanded','false')
    expect(refresh).to_be_hidden()
    settings.click();expect(settings).to_have_attribute('aria-expanded','true')
@@ -98,6 +102,7 @@ try:
     except Exception:pass # Aborted A fetch may already have been retired by the browser.
    state['held'].clear();state['hold_a']=False;page.wait_for_timeout(100)
    expect(identity).to_contain_text('B-1 / project-B');expect(identity).to_contain_text('配置 8');expect(page.get_by_text('Current target B',exact=True)).to_have_count(1)
+   expect(run_mode).to_contain_text('单次运行')
    expect(page.get_by_label('查看运行',exact=True).locator('option[value="b1"]')).to_have_count(1);expect(page.get_by_label('查看运行',exact=True).locator('option[value="a2"]')).to_have_count(0)
    expect(page.get_by_label('启动工作流目标',exact=True)).to_have_value('wb1');expect(editor).to_have_value('{"threshold": 8}')
    # Reusing Job IDs in a different Runtime instance must not preserve Stop.
@@ -180,6 +185,8 @@ try:
    expect(page.get_by_label('原控制运行状态',exact=True)).to_contain_text('展示资源已释放：否')
    assert state['operation_queries']==[original] and len(state['command_posts'])==1
    assert page.evaluate("sessionStorage.getItem('emo-pending:operator')") is None
+   state['B']['project']=''
+   refresh.click();expect(run_mode).to_contain_text('未加载工程');expect(start).to_be_disabled()
    assert not errors,errors
   except Exception:
    page.screenshot(path=str(ROOT/'test-tmp/catalog-refresh-failure.png'),full_page=True);(ROOT/'test-tmp/catalog-refresh-failure.html').write_text(page.content(),encoding='utf-8');raise

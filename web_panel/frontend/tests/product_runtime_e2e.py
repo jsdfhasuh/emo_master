@@ -238,6 +238,7 @@ def main():
                     initial = read_json(page.request.get('/api/runtimes/configured/status'))['runtime']
                     assert initial['projectId'] == 'independent-web-editor-software-demo', initial
                     assert initial['productionExecutionMode'] == 'continuous', initial
+                    expect(page.get_by_label('工程运行模式', exact=True)).to_have_text('工程模式 · 持续运行')
                     assert read_json(page.request.get('/api/runtimes/configured/runs')) == [], 'Fixture must not autostart'
                     # Use the independent editor's normal publish path. Merely
                     # activating a legacy Qt package does not register external

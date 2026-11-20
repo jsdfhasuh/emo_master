@@ -181,7 +181,7 @@ def capture(project, output):
                     expect(page.get_by_role('button', name='运行设置', exact=True)).to_be_visible()
                     report['health'] = read_json(page.request.get('/api/health'))
                     assert report['health']['mode'] == 'grpc'
-                    assert report['sdkVersion'] == report['health']['sdkVersion'] == '1.8.0'
+                    assert report['sdkVersion'] == report['health']['sdkVersion'] == '1.9.0'
                     page.get_by_role('button', name='运行设置', exact=True).click()
                     page.get_by_text('页面包管理', exact=True).click()
                     with page.expect_response(lambda reply: urlsplit(reply.url).path == '/api/packages'

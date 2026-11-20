@@ -142,22 +142,46 @@ def testRealSpawnContinuousOneJobPathsResultsStopAndRestart(tmp_path, monkeypatc
     assert owner.closed and owner.runtime._closed
 
 
-def testOrdinaryRuntimeDoesNotApplyProjectContinuousPolicy(tmp_path):
+@pytest.mark.parametrize(("mode", "followProjectMode"), [
+    ("continuous", False), ("continuous", True), ("single", True),
+])
+def testOrdinaryRuntimeAppliesProjectRunModeOnlyWhenRequested(tmp_path, mode, followProjectMode):
     from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
     from emo_master.apps.runtime.grpc_server.service import RuntimeService
     root = tmp_path / "project"
-    document = productionProject(root, save=False)
+    document = productionProject(root, mode=mode, save=False)
     document.resources.parameterBindings.clear()
     document.workflows["main"].nodes[1].params["imagePath"] = str(root / "input.png")
     saveDocument(root, document)
     runtime = RuntimeService(dbPath=tmp_path / "ordinary/runtime.sqlite3")
     try:
         assert runtime.LoadProject(pb.LoadProjectRequest(project_path=str(root)), None).ok
-        reply = runtime.StartJob(pb.StartJobRequest(project_id=document.project.projectId), None)
+        info = runtime.GetRuntimeInfo(pb.RuntimeInfoRequest(), None)
+        assert "project_run_mode_v1" in info.capabilities and not info.production_mode
+        request = pb.StartJobRequest(project_id=document.project.projectId)
+        if followProjectMode:
+            request.follow_project_run_mode = True
+            request.start_request_id = "follow-project-mode"
+            request.expected_runtime_instance_id = info.runtime_instance_id
+        reply = runtime.StartJob(request, None)
         assert reply.ok
+        def cycles():
+            return [e for e in runtime.eventStore.read(reply.job_id) if e.eventType == "workflow.completed"]
+        if followProjectMode and mode == "continuous":
+            waitFor(lambda: len(cycles()) >= 3)
+            assert runtime.jobRepository.get(reply.job_id).status == "RUNNING"
+            assert runtime.StartJob(request, None).job_id == reply.job_id
+            request.follow_project_run_mode = False
+            conflict = runtime.StartJob(request, None)
+            assert not conflict.ok and conflict.status == "REJECTED" and "different arguments" in conflict.message
+            assert len(runtime.jobRepository.all()) == 1
+            assert runtime.StopJob(pb.StopJobRequest(job_id=reply.job_id, mode="graceful"), None).ok
+            waitFor(lambda: runtime.jobRepository.get(reply.job_id).isTerminal)
+            assert runtime.jobRepository.get(reply.job_id).status == "ABORTED"
+            return
         waitFor(lambda: runtime.jobRepository.get(reply.job_id).isTerminal)
         assert runtime.jobRepository.get(reply.job_id).status == "COMPLETED"
-        assert len([e for e in runtime.eventStore.read(reply.job_id) if e.eventType == "workflow.completed"]) == 1
+        assert len(cycles()) == 1
     finally:
         runtime.close()
 

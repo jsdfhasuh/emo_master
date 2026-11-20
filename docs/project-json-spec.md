@@ -162,7 +162,8 @@ assert reloaded == document
 
 `production` 默认 `autoStart=false`、`mode="single"`、`cycleIntervalMs=100`、
 `inputs={}`。`mode` 仅允许 `single` / `continuous`，间隔为正整数毫秒；
-普通 Designer 单次运行不等于启用生产连续策略。
+Designer 的“运行流程”和独立操作员端的“开始”均按工程的 `mode` 和 `cycleIntervalMs` 执行选定的启动流程。
+Designer 打开工程后等待手动运行；“流程调试”仍由单独的调试会话控制。
 
 ### 全局变量
 

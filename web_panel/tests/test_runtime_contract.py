@@ -17,6 +17,9 @@ class Service(rpc.RuntimeServiceServicer, rpc.DisplayServiceServicer):
         self.instance = 'runtime-1'
         self.project = 'project-1'
         self.revision = 7
+        self.mode = 'single'
+        self.production = False
+        self.capabilities = ['runtime_info_v1', 'run_catalog_v1', 'stop_identity_v1', 'history_query_v1', 'history_image_v1']
         self.history_revision = 'a' * 64
         self.starts = []
         self.stops = []
@@ -34,7 +37,8 @@ class Service(rpc.RuntimeServiceServicer, rpc.DisplayServiceServicer):
     async def GetRuntimeInfo(self, request, context):
         return pb.RuntimeInfoReply(ok=True, runtime_instance_id=self.instance, project_id=self.project,
             document_revision=self.revision, history_definition_revision=self.history_revision,
-            protocol_version='1.0', capabilities=['runtime_info_v1', 'run_catalog_v1', 'stop_identity_v1', 'history_query_v1', 'history_image_v1'])
+            protocol_version='1.0', capabilities=self.capabilities, production_mode=self.production,
+            production_execution_mode=self.mode)
 
     def run(self):
         return pb.RunState(runtime_instance_id=self.instance, project_id=self.project, workflow_id='wf',
@@ -199,10 +203,38 @@ class RuntimeContractTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(request.expected_document_revision,7)
         self.assertEqual(request.start_request_id,'stable-request-1')
         self.assertFalse(request.capture_presentation)
+        self.assertTrue(request.follow_project_run_mode)
         await self.client.control('stop','j1',self.body())
         self.assertEqual(self.service.stops[0].job_id,'j1')
         self.assertEqual(self.service.stops[0].mode,'graceful')
         self.assertEqual(self.service.stops[0].expected_run_group_id,'group-1')
+
+    async def test_continuous_requires_supported_host_before_start(self):
+        import tempfile
+        from pathlib import Path
+        from emo_web_panel.services import Operations
+
+        self.service.mode = 'continuous'
+        body = self.body()
+        with tempfile.TemporaryDirectory() as directory:
+            operations = Operations(Path(directory) / 'operations.db')
+            rejected = await operations.execute('tester', body['requestId'], 'start', 'wf', body, self.client)
+        self.assertEqual((rejected['state'], rejected['outcome'], rejected['commandConfirmed']),
+                         ('rejected', 'REJECTED', True))
+        self.assertIn('E_PROJECT_RUN_MODE_UNSUPPORTED', rejected['message'])
+        self.assertEqual(self.service.starts, [])
+
+        # Production hosts have always honored the project mode.
+        self.service.production = True
+        result = await self.client.control('start', 'wf', self.body())
+        self.assertEqual(result['outcome'], 'ACCEPTED')
+        self.assertTrue(self.service.starts[-1].follow_project_run_mode)
+
+        self.service.production = False
+        self.service.capabilities.append('project_run_mode_v1')
+        result = await self.client.control('start', 'wf', self.body() | {'requestId': 'another-start-id'})
+        self.assertEqual(result['outcome'], 'ACCEPTED')
+        self.assertTrue(self.service.starts[-1].follow_project_run_mode)
 
     async def test_stop_explicit_empty_ungrouped_identity(self):
         await self.client.control('stop','j1',self.body() | {'runGroupId':''})

@@ -71,6 +71,7 @@ class IndependentWebCaptureTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_web_start_uses_valid_external_request_despite_deleted_qt_source(self):
         info = await self.client.info()
+        self.assertEqual((info['productionMode'], info['productionExecutionMode']), (False, 'single'))
         catalog = await self.client.output_catalog()
         count = next(item for item in catalog['choices'] if item['source']['nodeId'] == 'count'
                      and item['source']['port'] == 'count' and not item['source']['fieldPath'])
@@ -98,6 +99,13 @@ class IndependentWebCaptureTests(unittest.IsolatedAsyncioTestCase):
         self.observations.append({'operation': 'external_count_result', 'reply': result})
         self.assertTrue(result, 'Actual DisplayService never produced count.count')
         self.assertEqual(result[0]['sources'][count['sourceId']]['value'], 2)
+        async def wait_for_completion():
+            while (await self.client.run_state(web['runId']))['active']:
+                await asyncio.sleep(.05)
+        await asyncio.wait_for(wait_for_completion(), timeout=30)
+        self.assertEqual((await self.client.run_state(web['runId']))['status'], 'COMPLETED')
+        events = (await self.client.job_events(web['runId']))['events']
+        self.assertEqual(sum(event['kind'] == 'workflow.completed' for event in events), 1)
         qt = await self.client.runtime.StartJob(self.client.pb.StartJobRequest(
             project_id=info['projectId'], workflow_id='main', capture_presentation=True,
             start_request_id='qt-with-stale-qt-1', expected_runtime_instance_id=info['runtimeInstanceId'],

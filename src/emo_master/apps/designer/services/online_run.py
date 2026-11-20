@@ -9,13 +9,15 @@ def startOnline(client, snapshot):
     targets = list(dict.fromkeys(payload.get("runtime", {}).get("startupWorkflowIds") or [payload["entryWorkflowId"]]))
     if not targets or any(key not in payload["workflows"] for key in targets):
         raise ValueError("online startup workflow is unavailable")
+    if (payload.get("production") or {}).get("mode") == "continuous":
+        client.requireContinuousProjectRun()
     results = []
     for workflowId in targets:
         requestId = uuid4().hex
         try:
             reply = client.startJob(payload["project"]["projectId"], workflowId,
                 startRequestId=requestId, expectedRuntimeInstanceId=snapshot["runtimeInstanceId"],
-                expectedDocumentRevision=snapshot["documentRevision"])
+                expectedDocumentRevision=snapshot["documentRevision"], followProjectRunMode=True)
             results.append(dict(workflowId=workflowId, requestId=requestId, reply=reply))
         except Exception as error:
             results.append(dict(workflowId=workflowId, requestId=requestId, error=str(error)))

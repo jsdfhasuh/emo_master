@@ -69,6 +69,7 @@ def testRunButtonStartsOnlineSnapshotWithoutChangingDifferentDraft(runtime, owne
         assert dialog.result() == QDialog.Rejected
         assert len(calls) == 1 and calls[0][0][1] == "main"
         assert calls[0][1]["expectedDocumentRevision"] == 1
+        assert calls[0][1]["followProjectRunMode"] is True
         assert calls[0][1]["expectedRuntimeInstanceId"] == runtime.runtimeInstanceId
         assert len(runtime.jobRepository.all()) == 1
         assert monitor.data["snapshot"]["payload"]["workflows"]["main"]["layout"]["nodePositions"]["capture"] == {"x": 77, "y": 88}

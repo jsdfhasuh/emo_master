@@ -39,6 +39,7 @@ class RuntimeController:
         onRunFailed: Callable[[dict[str, object]], None] | None = None,
         refreshRuntimeEventView: Callable[[], None] | None = None,
         appendLocalEvent: Callable[[dict[str, object]], None] | None = None,
+        getProjectRunMode: Callable[[], str] | None = None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.runtimePanelState = runtimePanelState
@@ -53,6 +54,7 @@ class RuntimeController:
         self.setIsJobRunning = setIsJobRunning
         self.getLoadedProjectPath = getLoadedProjectPath
         self.getRunProjectReference = getRunProjectReference or getLoadedProjectPath
+        self.getProjectRunMode = getProjectRunMode or (lambda: "single")
         self.getCurrentJobId = getCurrentJobId
         self.getActiveWorkflowId = getActiveWorkflowId or (lambda: None)
         self.getEntryWorkflowId = getEntryWorkflowId or self.getActiveWorkflowId
@@ -132,6 +134,7 @@ class RuntimeController:
             previousCaptureJob=self._previousCaptureJob,
         )
         worker.captureRequirements = dict(captureRequest) if isinstance(captureRequest, dict) else {}
+        worker.projectRunMode = self.getProjectRunMode()
         worker.inspection = inspection
         if not self._bindQtWorker(worker):
             worker.jobAccepted.connect(self._onJobAccepted)

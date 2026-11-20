@@ -251,26 +251,51 @@ class MvsSession:
             "E_CAMERA_CONFIG_FAILED",
         )
 
-    def _setOptionalEnum(self, name: str, value: str, *, requireAvailable: bool = False) -> None:
-        # A fixed capability (e.g. manual exposure only) has no writable selector.
+    def _nodeAccess(self, name: str) -> int:
         access = self._sdk.MV_XML_AccessMode()
         result = self._camera.MV_XML_GetNodeAccessMode(name, access)
         if result == self._sdk.MV_E_GC_NODE_NOT_FOUND:
-            return
+            return self._sdk.AM_NI
         _require(result, f"check access to {name}", "E_CAMERA_CONFIG_FAILED")
-        if access.value in (self._sdk.AM_RW, self._sdk.AM_WO):
+        return access.value
+
+    def _enumSymbol(self, name: str, number: int) -> str:
+        entry = self._sdk.MVCC_ENUMENTRY()
+        entry.nValue = number
+        _require(self._camera.MV_CC_GetEnumEntrySymbolic(name, entry), name, "E_CAMERA_CONFIG_FAILED")
+        return _deviceText(entry.chSymbolic)
+
+    def _setOptionalEnum(self, name: str, value: str, *, requireAvailable: bool = False) -> None:
+        # A fixed capability (e.g. manual exposure only) has no writable selector.
+        access = self._nodeAccess(name)
+        if access in (self._sdk.AM_RW, self._sdk.AM_WO):
             self._setEnum(name, value)
-        elif access.value == self._sdk.AM_RO:
+        elif access == self._sdk.AM_RO:
             current = self._sdk.MVCC_ENUMVALUE()
             _require(self._camera.MV_CC_GetEnumValue(name, current), name, "E_CAMERA_CONFIG_FAILED")
-            entry = self._sdk.MVCC_ENUMENTRY()
-            entry.nValue = current.nCurValue
-            _require(self._camera.MV_CC_GetEnumEntrySymbolic(name, entry), name, "E_CAMERA_CONFIG_FAILED")
-            actual = _deviceText(entry.chSymbolic)
+            actual = self._enumSymbol(name, current.nCurValue)
             if actual != value:
                 raise MvsError("E_CAMERA_CONFIG_FAILED", f"Read-only {name} is {actual}, requires {value}")
-        elif requireAvailable and access.value != self._sdk.AM_NI:
+        elif requireAvailable and access != self._sdk.AM_NI:
             raise MvsError("E_CAMERA_CONFIG_FAILED", f"Cannot verify {name}={value} (node unavailable)")
+
+    def _configureFrameTrigger(self, mode: str) -> None:
+        name = "TriggerSelector"
+        selector = "FrameStart"
+        if self._nodeAccess(name) in (self._sdk.AM_RW, self._sdk.AM_RO):
+            values = self._sdk.MVCC_ENUMVALUE()
+            _require(self._camera.MV_CC_GetEnumValue(name, values), name, "E_CAMERA_CONFIG_FAILED")
+            supported = {self._enumSymbol(name, number) for number in values.nSupportValue[:values.nSupportedNum]}
+            if selector not in supported and "FrameBurstStart" in supported:
+                selector = "FrameBurstStart"
+        self._setOptionalEnum(name, selector)
+        if selector == "FrameBurstStart" and mode != "freeRun":
+            # One workpiece request must never leave extra burst frames queued for the next one.
+            count = "AcquisitionBurstFrameCount"
+            if self._intValue(count) != 1:
+                _require(self._camera.MV_CC_SetIntValueEx(count, 1), f"{count}=1", "E_CAMERA_CONFIG_FAILED")
+                if self._intValue(count) != 1:
+                    raise MvsError("E_CAMERA_CONFIG_FAILED", f"Could not verify {count}=1")
 
     def _exposureValue(self) -> float:
         value = self._sdk.MVCC_FLOATVALUE()
@@ -297,9 +322,7 @@ class MvsSession:
         if params.get("gainMode", "keep") == "manual":
             self._setOptionalEnum("GainAuto", "Off")
             _require(camera.MV_CC_SetFloatValue("Gain", params["gainDb"]), "Gain", "E_CAMERA_CONFIG_FAILED")
-        # Some cameras have only one frame trigger. Models with a writable
-        # selector may still have an acquisition/burst selector from MVS.
-        self._setOptionalEnum("TriggerSelector", "FrameStart")
+        self._configureFrameTrigger(mode)
         self._setEnum("TriggerMode", "Off" if mode == "freeRun" else "On")
         if mode != "freeRun":
             self._setEnum("TriggerSource", "Software" if mode == "software" else params["triggerSource"])

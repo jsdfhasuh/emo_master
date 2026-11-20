@@ -57,7 +57,9 @@ def sdk(monkeypatch):
     outcomes = []
     failures = {}
     accessModes = {}
-    enumSymbols = {"AcquisitionMode": b"SingleFrame"}
+    enumSymbols = {"AcquisitionMode": b"SingleFrame", "TriggerSelector": b"FrameBurstStart"}
+    triggerSelectors = {3: b"FrameStart", 6: b"FrameBurstStart"}
+    intValues = {"Width": 2, "Height": 2, "OffsetX": 6, "OffsetY": 8, "AcquisitionBurstFrameCount": 1}
 
     def call(name, *args):
         calls.append((name, *args))
@@ -81,6 +83,8 @@ def sdk(monkeypatch):
             return call("open", access, key)
 
         def MV_CC_SetEnumValueByString(self, name, value):
+            if name == "TriggerSelector" and value.encode("ascii") not in triggerSelectors.values():
+                return 0x80000004
             enumSymbols[name] = value.encode("ascii")
             return call(name, value)
 
@@ -90,15 +94,25 @@ def sdk(monkeypatch):
 
         def MV_CC_GetEnumValue(self, name, out):
             out.nCurValue = 0
-            return 0
+            if name == "TriggerSelector":
+                out.nSupportValue = list(triggerSelectors)
+                out.nSupportedNum = len(triggerSelectors)
+                out.nCurValue = next(key for key, symbol in triggerSelectors.items() if symbol == enumSymbols[name])
+            return failures.get(name + " read", 0)
 
         def MV_CC_GetEnumEntrySymbolic(self, name, out):
-            out.chSymbolic = enumSymbols.get(name, b"Off")
+            out.chSymbolic = triggerSelectors[out.nValue] if name == "TriggerSelector" else enumSymbols.get(name, b"Off")
             return 0
 
         def MV_CC_GetIntValueEx(self, name, output):
-            output.nCurValue = {"Width": 2, "Height": 2, "OffsetX": 6, "OffsetY": 8}[name]
-            return 0
+            output.nCurValue = intValues[name]
+            return failures.get(name + " read", 0)
+
+        def MV_CC_SetIntValueEx(self, name, value):
+            status = call(name, value)
+            if not status:
+                intValues[name] = value
+            return status
 
         def MV_CC_GetFloatValue(self, name, output):
             output.fCurValue = 1001.5
@@ -183,6 +197,8 @@ def sdk(monkeypatch):
         devices=devices,
         accessModes=accessModes,
         enumSymbols=enumSymbols,
+        triggerSelectors=triggerSelectors,
+        intValues=intValues,
     )
     monkeypatch.setattr(mvs, "_loadBindings", lambda: fake)
     assert mvs._sdkUsers == 0
@@ -428,6 +444,39 @@ def test_single_frame_configuration_is_changed_before_repeated_triggers(sdk, ses
         assert image.shape == (2, 2)
     assert sdk.calls.index(("AcquisitionMode", "Continuous")) < sdk.calls.index(("start",))
     assert sdk.calls.count(("TriggerSoftware",)) == 2
+
+
+@pytest.mark.parametrize("frameCount", [1, 4])
+def test_burst_only_camera_uses_one_frame_per_software_trigger(sdk, session, frameCount):
+    del sdk.triggerSelectors[3]
+    count = "AcquisitionBurstFrameCount"
+    sdk.intValues[count] = frameCount
+    params = {"triggerMode": "software", "outputColor": "gray"}
+    session.start(params)
+    assert ("TriggerSelector", "FrameBurstStart") in sdk.calls
+    assert sdk.intValues[count] == 1
+    if frameCount == 1:
+        assert (count, 1) not in sdk.calls
+    else:
+        assert sdk.calls.index((count, 1)) < sdk.calls.index(("start",))
+    for _ in range(2):
+        session.capture(params, lambda: None, 4, 100)
+    assert sdk.calls.count(("TriggerSoftware",)) == 2
+
+
+@pytest.mark.parametrize("failure", ["unreadable", "unwritable", "readback_mismatch"])
+def test_burst_mode_fails_before_grabbing_when_one_frame_cannot_be_verified(sdk, session, monkeypatch, failure):
+    del sdk.triggerSelectors[3]
+    count = "AcquisitionBurstFrameCount"
+    sdk.intValues[count] = 3
+    if failure == "readback_mismatch":
+        monkeypatch.setattr(sdk.MvCamera, "MV_CC_SetIntValueEx", lambda self, name, value: 0)
+    else:
+        sdk.failures[count + " read" if failure == "unreadable" else count] = 42
+    with pytest.raises(mvs.MvsError, match=count) as caught:
+        session.start({"triggerMode": "software"})
+    assert caught.value.code == "E_CAMERA_CONFIG_FAILED"
+    assert ("start",) not in sdk.calls and ("TriggerSoftware",) not in sdk.calls
 
 
 @pytest.mark.parametrize(

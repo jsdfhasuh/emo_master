@@ -73,7 +73,8 @@ def testAutomaticGroupingPreviewMatchesMovedAndUnselectedCards(responsivePage, w
     assert rects[keys[2]] != old[keys[2]]
 
 
-def testCrossContainerPreviewMeasuresWrappedTitlesAndBothParents(responsivePage):  # noqa: F811
+@pytest.mark.parametrize('customQss', [False, True])
+def testCrossContainerPreviewMeasuresWrappedTitlesAndBothParents(responsivePage, customQss):  # noqa: F811
     _coordinator, editor, keys = responsivePage
     page = editor.store.snapshot().pages[editor.pageId]
     items = page.components
@@ -81,7 +82,10 @@ def testCrossContainerPreviewMeasuresWrappedTitlesAndBothParents(responsivePage)
     page.components = [
         Component(componentId='left', type='container',
                   props=Props(title='检测输入区域与当前工件的说明文字 ' * 3,
-                              typography=Typography(title=TextRole(size=28))),
+                              typography=Typography(title=TextRole(size=28)),
+                              customStyle={'qtQss': {'enabled': True, 'code':
+                                  'QFrame[emoPart="root"] {border-width:3px;}'
+                                  'QLabel[emoPart="title"] {font-size:36px;}'}} if customQss else None),
                   grid=ResponsiveLayout(direction='vertical'), children=items[:2]),
         Component(componentId='right', type='container',
                   props=Props(title='检测结果', typography=Typography(title=TextRole(size=24))),
@@ -91,6 +95,7 @@ def testCrossContainerPreviewMeasuresWrappedTitlesAndBothParents(responsivePage)
     editor.previewWidth.setValue(500)
     settle()
     heading = editor.renderer.cards[editor.pageId]['left'].containerTitle.label
+    assert heading.font().pixelSize() == (36 if customQss else 28)
     assert heading.height() > heading.fontMetrics().height()
     target = editor.renderer.cards[editor.pageId][keys[2]]
     compareDrop(editor, {'move': keys[1]}, target, target.rect().center())

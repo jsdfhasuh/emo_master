@@ -5,6 +5,7 @@ from PySide2.QtWidgets import QFrame, QGridLayout, QLabel, QLayout, QLayoutItem,
 from emo_master.core.presentation.models import PageAppearance, ResponsiveLayout
 from emo_master.ui.presentation.appearance import roleStyle, surfaceStyle
 from emo_master.ui.presentation.container_title import ContainerTitle
+from emo_master.ui.presentation.native_style import NativeAppearance
 from emo_master.ui.presentation.responsive_layout import ResponsiveWidgetLayout
 from emo_master.ui.presentation.page_scroll import pageContentSize
 
@@ -91,11 +92,14 @@ def candidateGeometry(renderer, pageId, candidatePage, prototypes=None, *, minim
                 card.setObjectName('card')
                 card.setProperty('componentId', component.componentId)
                 card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-                margins = surfaceStyle(card, component)
+                native = NativeAppearance(card, component.props.customStyle)
+                margins = surfaceStyle(card, component, native)
                 content = card
                 if component.props.title or component.props.collapse:
                     title = ContainerTitle(card, component.props.title,
                         roleStyle(component.props, 'title'), margins=margins, collapse=component.props.collapse)
+                    native.apply(title.label, 'action' if component.props.collapse else 'title',
+                                 roleStyle(component.props, 'title'))
                     live = nativeItems.get(component.componentId)
                     if component.props.collapse and live and hasattr(live.widget(), 'containerTitle'):
                         title.label.setChecked(live.widget().containerTitle.label.isChecked())

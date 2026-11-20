@@ -3,7 +3,9 @@
 Unpublished preparations can be removed after an exclusive Runtime restart.
 Published generations require proven owner retirement; a crash is not that proof.
 """
+from hashlib import sha256
 from pathlib import Path
+import re
 
 from emo_master.apps.runtime.context.sqlite_transactions import beginImmediate
 from .store import ConfigurationError
@@ -15,11 +17,10 @@ class ResourceJournal:
         self.lease = None
         self.leasePath = None
         if consumerLeases:
-            import hashlib
             from .resource_lease import ResourceLease
             folder = self.root / '.owners'
             folder.mkdir(parents=True, exist_ok=True)
-            self.leasePath = str(self._path(folder / hashlib.sha256(instanceId.encode()).hexdigest()))
+            self.leasePath = str(self._path(folder / sha256(instanceId.encode()).hexdigest()))
             self.lease = ResourceLease(self.leasePath, create=True)
         with sqlite.connection() as connection:
             beginImmediate(connection)
@@ -34,11 +35,28 @@ class ResourceJournal:
 
     def _path(self, path):
         target = Path(path)
-        resolved = target.resolve()
-        if (not target.is_absolute() or resolved.parent.parent != self.root
-                or target != resolved or target.parent.is_symlink() or target.is_symlink()):
+        if (not target.is_absolute() or target.parent.parent != self.root or target != target.resolve()
+                or target.parent.is_symlink() or target.is_symlink()):
             raise ConfigurationError("E_CONFIG_RESOURCE_PATH", "resource ownership path escaped its managed directory")
         return target
+
+    def _markerPath(self, owner, recorded):
+        # A copied journal still identifies its old root through this deterministic marker.
+        # Validate that identity lexically before touching the current cache.
+        marker = Path(recorded)
+        name = sha256(owner.encode()).hexdigest()
+        root = marker.parent.parent
+        if (not root.is_absolute() or '..' in root.parts or Path(root.name) != Path(self.root.name)
+                or marker != root / '.owners' / name):
+            raise ConfigurationError("E_CONFIG_RESOURCE_PATH", "invalid resource owner lease path")
+        return self._path(self.root / '.owners' / name)
+
+    def _filePath(self, path, recordedRoot):
+        target = Path(path)
+        if (target.parent.parent != recordedRoot or target.parent == recordedRoot / '.owners'
+                or (recordedRoot != self.root and not re.fullmatch(r'[0-9a-f]{32}', target.parent.name))):
+            raise ConfigurationError("E_CONFIG_RESOURCE_PATH", "resource ownership path escaped its managed directory")
+        return self._path(self.root / target.relative_to(recordedRoot))
 
     def reserve(self, path):
         target = self._path(path)
@@ -88,8 +106,10 @@ class ResourceJournal:
             owners = connection.execute("SELECT instanceId, leasePath, retired FROM configurationResourceOwners WHERE instanceId<>? AND leasePath IS NOT NULL",
                                         (self.instanceId,)).fetchall()
         blocked = set()
+        recordedRoots = {}
         for owner, path, retired in owners:
-            marker = self._path(path)
+            marker = self._markerPath(owner, path)
+            recordedRoots[owner] = Path(path).parent.parent
             if retired and not marker.exists():
                 continue
             with retirementLease(marker) as proven:
@@ -105,7 +125,13 @@ class ResourceJournal:
         for path, owner in rows:
             if owner in blocked:
                 continue
-            target = self._path(path)
+            target = self._filePath(path, recordedRoots.get(owner, self.root))
+            if target != Path(path):
+                # Another generation might already own this path in the destination.
+                with self.sqlite.connection() as connection:
+                    if connection.execute("SELECT 1 FROM configurationResourceFiles WHERE path=?",
+                                          (str(target),)).fetchone():
+                        continue
             target.unlink(missing_ok=True)
             if target.parent.exists() and not any(target.parent.iterdir()):
                 target.parent.rmdir()
@@ -119,8 +145,13 @@ class ResourceJournal:
 
     def retainedAfterCrash(self):
         with self.sqlite.connection() as connection:
-            rows = connection.execute("""SELECT f.path, o.retired, o.leasePath FROM configurationResourceFiles f
+            rows = connection.execute("""SELECT f.path, o.retired, o.leasePath, o.instanceId FROM configurationResourceFiles f
                 JOIN configurationResourceOwners o ON f.instanceId=o.instanceId
                 WHERE f.instanceId<>? AND f.exposed=1""", (self.instanceId,)).fetchall()
-        return [path for path, retired, leasePath in rows if not retired or
-                (leasePath is not None and self._path(leasePath).exists())]
+        retained = []
+        for path, retired, leasePath, owner in rows:
+            marker = self._markerPath(owner, leasePath) if leasePath else None
+            if not retired or (marker is not None and marker.exists()):
+                root = Path(leasePath).parent.parent if leasePath else self.root
+                retained.append(str(self._filePath(path, root)))
+        return retained

@@ -1,6 +1,7 @@
 import multiprocessing
 import os
 from pathlib import Path
+from shutil import copytree
 from uuid import uuid4
 
 import pytest
@@ -13,8 +14,9 @@ runtime = prepared.runtime
 imagePath = prepared.imagePath
 
 
-def journal(tmp_path, instance=None):
-    return ResourceJournal(SqliteStore(tmp_path / "runtime.db"), tmp_path / "configuration-resources", instance or uuid4().hex)
+def journal(tmp_path, instance=None, *, consumerLeases=False):
+    return ResourceJournal(SqliteStore(tmp_path / "runtime.db"), tmp_path / "configuration-resources",
+                           instance or uuid4().hex, consumerLeases=consumerLeases)
 
 
 def reserve(owner, name="model.bin"):
@@ -92,6 +94,83 @@ def testUntrustedJournalPathsCannotEscapeCache(tmp_path):
     with pytest.raises(ValueError, match="escaped"):
         owner.reserve(owner.root / "batch" / ".." / ".." / "unrelated.bin")
     assert outside.read_bytes() == b"keep"
+
+
+def testCopiedJournalReclaimsRetiredFilesOnlyInNewCache(tmp_path):
+    source = tmp_path / "source"
+    previous = journal(source, consumerLeases=True)
+    path = reserve(previous)
+    previous.expose([path])
+    previous.retire()
+    destination = tmp_path / "destination"
+    copytree(source, destination)
+    current = journal(destination)
+    moved = current.root / path.relative_to(previous.root)
+    unknown = moved.with_name("keep.txt")
+    unknown.write_text("unknown")
+    current.recover()
+    assert not moved.exists()
+    assert path.read_bytes() == b"owned input"
+    assert unknown.read_text() == "unknown"
+    with current.sqlite.connection() as connection:
+        assert connection.execute("SELECT instanceId FROM configurationResourceOwners").fetchall() == [(current.instanceId,)]
+        assert connection.execute("SELECT path FROM configurationResourceFiles").fetchall() == []
+    current.recover()
+
+
+@pytest.mark.parametrize("unrelatedRoot", [False, True])
+def testCopiedJournalCannotUseUnrelatedFileRecordAsOwnership(tmp_path, unrelatedRoot):
+    source = tmp_path / "source"
+    previous = journal(source, consumerLeases=True)
+    path = reserve(previous)
+    previous.retire()
+    destination = tmp_path / "destination"
+    copytree(source, destination)
+    current = journal(destination)
+    if unrelatedRoot:
+        wrong = tmp_path / "other" / previous.root.name / path.relative_to(previous.root)
+        target = current.root / path.relative_to(previous.root)
+    else:
+        wrong = previous.root / "unmanaged" / path.name
+        target = current.root / "unmanaged" / path.name
+        target.parent.mkdir()
+        target.write_bytes(b"unowned")
+    content = target.read_bytes()
+    with current.sqlite.connection() as connection:
+        connection.execute("UPDATE configurationResourceFiles SET path=?", (str(wrong),))
+    with pytest.raises(ValueError, match="escaped"):
+        current.recover()
+    assert target.read_bytes() == content
+
+
+@pytest.mark.parametrize("missingMarker", [False, True])
+def testCopiedJournalRetainsExposedResourceUntilLocalLeaseRetires(tmp_path, missingMarker):
+    from emo_master.apps.runtime.project_config.resource_lease import ResourceLease
+
+    source = tmp_path / "source"
+    previous = journal(source, consumerLeases=True)
+    path = reserve(previous)
+    previous.expose([path])
+    previous.lease.close()  # Unclean exit leaves a marker and no retirement record.
+    destination = tmp_path / "destination"
+    copytree(source, destination)
+    current = journal(destination)
+    moved = current.root / path.relative_to(previous.root)
+    marker = current.root / Path(previous.leasePath).relative_to(previous.root)
+    if missingMarker:
+        marker.unlink()
+    lease = None if missingMarker else ResourceLease(marker)
+    try:
+        current.recover()
+        assert current.retainedAfterCrash() == [str(moved)]
+        assert moved.exists()
+    finally:
+        if lease:
+            lease.close()
+    if not missingMarker:
+        current.recover()
+        assert not moved.exists()
+    assert path.exists() and Path(previous.leasePath).exists()
 
 
 def testCleanRuntimeRestartReclaimsOldGenerationAndRebuildsCurrent(runtime):

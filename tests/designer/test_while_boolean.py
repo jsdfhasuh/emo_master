@@ -7,6 +7,7 @@ from PySide2.QtWidgets import QMessageBox
 
 from emo_master.apps.designer.ui.main_window import MainWindow
 from emo_master.apps.designer.ui.param_form import SchemaParamForm
+from emo_master.apps.designer.state.project_store import loadProjectDocument, saveProject
 from emo_master.apps.designer.state.workflow_package import buildWorkflowPackage, importWorkflowPackage, previewWorkflowPackageImport
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
 from tests.designer.test_control_flow_usability import _window as legacyWindow
@@ -113,12 +114,51 @@ def testRemovingBooleanStateInvalidatesOpenEditorWithoutReplacingSelection(desig
     assert not window.nodeParamDialog.applyChanges()
 
 
-def testWhileDoesNotDefaultToAWorkflowWhenOnlyIntegerStateExists():
+def testWhileWithOnlyIntegerStateCanUseAlwaysWithoutAConditionWorkflow():
     window = MainWindow(SimpleNamespace(listOperators=lambda: []))
     window.createWorkflow("计数状态")
     window.editWorkflowInterface({"count": "integer"}, {"count": "integer"})
     window.activateWorkflow("main")
-    assert window.addWhileNode() is None
+    node = window.flowModel.nodes[window.addWhileNode()]
+    assert node.loop["conditionMode"] == "always"
+    assert "conditionWorkflowId" not in node.loop
+    assert node.inputPorts == node.outputPorts == {"count": "integer"}
+
+
+def testAlwaysWhileWithOutputOnlyBodyEditsShowsAndReloadsInterval(designerApplication, tmp_path):
+    window = MainWindow(SimpleNamespace(listOperators=lambda: []))
+    bodyId = window.createWorkflow("读取请求")
+    window.editWorkflowInterface({}, {"request": "integer"})
+    window.activateWorkflow("main")
+    nodeId = window.addWhileNode()
+    node = window.flowModel.nodes[nodeId]
+    assert node.loop["bodyWorkflowId"] == bodyId
+    assert node.loop["unlimited"] is True and node.loop["timeoutMs"] == 0
+    assert node.inputPorts == node.outputPorts == {}
+    window.openNodeParamDialog(nodeId)
+    editor = window.nodeParamDialog
+    form = editor._schemaForm
+    assert form._controls["conditionMode"].currentText() == "始终为真"
+    assert all(form._controls[k].isHidden() for k in ("conditionPort", "conditionWorkflowId", "conditionVariableId"))
+    assert form._controls["minIntervalMs"].value() == 0
+    form._controls["minIntervalMs"].setValue(200)
+    assert editor.applyChanges()
+    editor.forceClose()
+    path = tmp_path / "poll.emoproj"
+    saveProject(path, window.workflowController.buildPayload())
+    window.workflowController.loadPayload(loadProjectDocument(path).toPayload())
+    node = window.flowModel.nodes[nodeId]
+    assert node.loop["minIntervalMs"] == 200 and node.loop["conditionMode"] == "always"
+    lines = window.flowScene._nodeItems[nodeId].model.summaryLines
+    assert any("始终为真" in text for text, _ in lines)
+    assert any("200 毫秒" in text for text, _ in lines)
+    references = window.workflowStore.getWorkflowDependencyReferences()
+    assert [r["relation"] for r in references] == ["while-body"]
+    row, = references[0]["dataTransfers"]
+    assert row["port"] == "request" and row["target"] == "本轮循环体输出"
+    window.refreshWorkflowDependencyTree()
+    call = window.workflowDependencyTree.topLevelItem(0).child(0)
+    assert "始终为真" in call.child(call.childCount() - 1).text(0)
 
 
 def testBooleanWhilePackageOnlyDependsOnBodyAndPreservesPortOnImport():

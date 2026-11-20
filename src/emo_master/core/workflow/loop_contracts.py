@@ -93,6 +93,12 @@ def deriveLoopContract(
     if not isinstance(unlimited, bool) or (unlimited and (mode != "while" or version != CURRENT_LOOP_CONTRACT_VERSION)):
         issues.append(LoopContractIssue("E_LOOP_LIMIT_MODE_INVALID",
             "unlimited must be boolean and is supported only by While contractVersion=2", "loop.unlimited"))
+    if "minIntervalMs" in config:
+        interval = config["minIntervalMs"]
+        if (mode != "while" or version != CURRENT_LOOP_CONTRACT_VERSION
+                or type(interval) is not int or interval < 0):
+            issues.append(LoopContractIssue("E_LOOP_INTERVAL_INVALID",
+                "minIntervalMs must be a non-negative integer on While contractVersion=2", "loop.minIntervalMs"))
 
     inputs = interfacePortTypes(bodyInputs)
     outputs = interfacePortTypes(bodyOutputs)
@@ -144,7 +150,7 @@ def deriveLoopContract(
         if mode == "while" and whileConditionMode(config) != "workflow":
             issues.append(LoopContractIssue(
                 "E_LOOP_CONDITION_MODE_UNSUPPORTED",
-                "Boolean While conditions require loop contractVersion=2",
+                "While conditions other than condition workflows require loop contractVersion=2",
                 "loop.conditionMode",
             ))
         if mode == "foreach":
@@ -279,6 +285,10 @@ def _deriveWhileV2(
     issues: list[LoopContractIssue],
     variableDefinitions: Mapping[str, object] | None = None,
 ) -> LoopContract:
+    conditionMode = whileConditionMode(config)
+    if conditionMode == "always":
+        # The body can publish per-iteration results; only paired inputs/outputs carry state.
+        bodyOutputs = {name: port for name, port in bodyOutputs.items() if name in bodyInputs}
     for name, inputType in bodyInputs.items():
         outputType = bodyOutputs.get(name)
         if outputType is None:
@@ -310,8 +320,10 @@ def _deriveWhileV2(
                     "loop.bodyWorkflowId",
                 )
             )
-    conditionMode = whileConditionMode(config)
-    if conditionMode == "boolean":
+    if conditionMode == "always":
+        for key in ("conditionWorkflowId", "conditionPort", "conditionVariableId"):
+            config.pop(key, None)
+    elif conditionMode == "boolean":
         config.pop("conditionWorkflowId", None)
         conditionPort = config.get("conditionPort")
         if not isinstance(conditionPort, str) or conditionPort not in bodyInputs:
@@ -341,7 +353,7 @@ def _deriveWhileV2(
     elif conditionMode != "workflow":
         issues.append(LoopContractIssue(
             "E_LOOP_CONDITION_MODE_INVALID",
-                "While conditionMode must be boolean, globalVariable or workflow",
+            "While conditionMode must be always, boolean, globalVariable or workflow",
             "loop.conditionMode",
         ))
     else:

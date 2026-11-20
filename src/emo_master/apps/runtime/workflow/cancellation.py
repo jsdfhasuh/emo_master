@@ -27,3 +27,9 @@ class CancellationToken:
     def raise_if_cancelled(self) -> None:
         if self.isCancellationRequested:
             raise CancellationRequested("execution cancelled")
+
+    def wait(self, seconds: float) -> None:
+        """Wait between iterations, waking immediately when the Job is stopped."""
+        wait = getattr(self._event, "wait")
+        if wait(seconds):
+            raise CancellationRequested("execution cancelled")

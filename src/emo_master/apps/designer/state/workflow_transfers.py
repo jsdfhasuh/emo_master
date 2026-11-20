@@ -134,6 +134,9 @@ def workflowTransfers(
             if legacy and port != "state":
                 add("output", port, spec, origin, "不参与状态回传", "未使用输出")
                 continue
+            if whileConditionMode(config) == "always" and port not in target.inputs:
+                add("output", port, spec, origin, "本轮循环体输出")
+                continue
             note = "回传下一轮状态；循环结束后返回"
             if port == conditionPort:
                 add("output", port, spec, origin,

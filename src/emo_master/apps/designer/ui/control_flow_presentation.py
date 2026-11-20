@@ -21,16 +21,25 @@ def controlFlowDetails(node, workflows, variables=None):
     elif node.kind == "loop":
         mode = node.loop.get("mode")
         if mode == "while":
-            if whileConditionMode(node.loop) == "boolean":
+            conditionMode = whileConditionMode(node.loop)
+            if conditionMode == "always":
+                lines.append(("继续条件：始终为真", None))
+            elif conditionMode == "boolean":
                 lines.append((f"继续条件：{node.loop.get('conditionPort') or '未设置'}（布尔值）", None))
-            elif whileConditionMode(node.loop) == "globalVariable":
+            elif conditionMode == "globalVariable":
                 variableId = node.loop.get("conditionVariableId")
                 variable = (variables or {}).get(variableId, {})
                 lines.append((f"每轮读取：{variable.get('name', variableId)}（全局布尔值）", None))
             else:
                 reference("条件来源", node.loop.get("conditionWorkflowId"))
                 lines.append(("读取 continue（布尔值）", None))
-            lines.append(("true：执行循环体；false：结束", None))
+            if conditionMode != "always":
+                lines.append(("true：执行循环体；false：结束", None))
+            elif node.loop.get("unlimited") and not node.loop.get("timeoutMs"):
+                lines.append(("点击“停止”结束作业", None))
+            interval = node.loop.get("minIntervalMs")
+            if interval:
+                lines.append((f"每轮最小开始间隔：{interval} 毫秒", None))
             reference("循环体", node.loop.get("bodyWorkflowId"))
         elif mode == "repeat":
             reference(f"重复 {node.loop.get('repeatCount', 0)} 次", node.loop.get("bodyWorkflowId"))

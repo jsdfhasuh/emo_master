@@ -3595,7 +3595,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         return list(self.runTargetIds) if self.runTargetIds else self.workflowStore.startupWorkflows()
 
     def projectRunMode(self) -> str:
-        return self.workflowStore.projectExtensions.get("production", {}).get("mode", "single")
+        production = cast(dict[str, Any], self.workflowStore.projectExtensions.get("production", {}))
+        return production.get("mode", "single")
 
     def runTargetsToolTip(self) -> str:
         names = workflowDisplayNames(self.workflowStore.workflows)
@@ -3603,7 +3604,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         source = "临时运行目标" if self.runTargetIds else "工程启动列表"
         mode = "工程设置为单次运行"
         if self.projectRunMode() == "continuous":
-            interval = self.workflowStore.projectExtensions["production"]["cycleIntervalMs"]
+            production = cast(dict[str, Any], self.workflowStore.projectExtensions["production"])
+            interval = production["cycleIntervalMs"]
             mode = f"工程设置为持续运行，每轮从头执行，两轮开始至少间隔 {interval} ms"
         targetNames = "\n".join(names.get(key, key) for key in targets)
         return f"{mode}\n{source}（{len(targets)} 个）：\n{targetNames}"

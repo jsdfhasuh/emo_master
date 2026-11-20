@@ -283,7 +283,7 @@ export default function Editor({me,onLogout}:{me:Me;onLogout:()=>void}) {
         const title=c.label || '';
         const tooltip=[source && `${source.workflowId} → ${source.nodeId || '流程'} → ${source.port} · ${source.expectedType}`,
             ...(bound ? bindingDiagnostics(bound).map(diagnostic=>diagnostic.message) : [])].filter(Boolean).join('\n');
-        return <section {...props} className={`editor-component ${selected===c.id?'selected':''} ${c.type==='spacer'?'is-spacer':''}`}
+        return <section {...props} className={`${props.className || ''} editor-component ${selected===c.id?'selected':''} ${c.type==='spacer'?'is-spacer':''}`}
             tabIndex={0} aria-label={`${componentNames[c.type] || c.type} ${title}`} title={tooltip || undefined} data-editor-component={c.id}
             draggable onDragStart={e=>{e.stopPropagation();e.dataTransfer.setData('application/emo-move',c.id);}}
             onClick={e=>{e.stopPropagation();setSelected(c.id);}} onFocus={e=>{if(e.target===e.currentTarget)setSelected(c.id);}}

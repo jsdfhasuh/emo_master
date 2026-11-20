@@ -379,8 +379,12 @@ def editComponentAppearance(parent, component, page, *, advanced=False, presenta
     if component.type in ('text', 'number', 'indicator', 'runtime_status', 'navigation_button', 'container'):
         _, form = dialog.group('显示')
     getters = {}
-    activeState = lambda: None
-    activeButtonState = lambda: None
+
+    def activeState():
+        return None
+
+    def activeButtonState():
+        return None
     if component.type in {'text', 'number', 'indicator', 'runtime_status'}:
         getters['valueLayout'] = choice(form, '标题与主值', [('上下', 'vertical'), ('并排', 'horizontal')], props['valueLayout'])
         getters['helperText'] = line(form, '辅助文字', props['helperText'])

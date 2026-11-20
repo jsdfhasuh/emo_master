@@ -24,7 +24,7 @@ python -m examples.advanced_appearance.build_example .tmp/appearance-demo
 
 生成脚本经正式工程 API 保存重读、校验和编译，通过 `buildWebPanel()` 导出页面包并重新读取包内容。
 
-浏览器回放使用独立环境安装的 SDK 1.9.0、本机 Edge 和临时 Runtime。按 Web 项目现有流程构建并打包前端后，
+浏览器回放使用独立环境安装的 SDK 1.10.0、本机 Edge 和临时 Runtime。按 Web 项目现有流程构建并打包前端后，
 在项目 Python 环境执行以下命令。回放会在临时副本中连续采样，并经真实编辑、发布及启停采集截图。
 
 ```powershell

@@ -113,6 +113,7 @@ message StartJobRequest {
   string legacy_snapshot_policy = 7; // Empty means ALL, preserving old clients.
   string inspection_session_id = 8; // Optional, session-only node result retention.
   int64 expected_document_revision = 9; // Optional online snapshot CAS; zero preserves legacy starts.
+  bool follow_project_run_mode = 10; // Apply the loaded project's single/continuous mode on a non-production host.
 }
 
 message StartJobReply {

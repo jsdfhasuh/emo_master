@@ -16,6 +16,7 @@ try:
     class RuntimeWorker(QThread):
         """Runs the long-lived runtime stream outside the Designer UI thread."""
 
+        projectRunMode = "single"
         jobAccepted: Any = Signal(object)
         eventReceived: Any = Signal(object)
         diagnosticReceived: Any = Signal(object)
@@ -125,6 +126,7 @@ except Exception:  # pragma: no cover
     class RuntimeWorker:  # type: ignore[no-redef]
         """Threaded fallback used when Qt is unavailable in headless tooling."""
 
+        projectRunMode = "single"
         def __init__(
             self,
             runtimeClient,
@@ -305,6 +307,8 @@ def _runWorker(worker: RuntimeWorker) -> None:
         if worker.stopRequested():
             return
         # All negotiation/cleanup happens off the GUI thread and before Start.
+        if worker.projectRunMode == "continuous":
+            worker.runtimeClient.requireContinuousProjectRun()
         prepare = getattr(worker.runtimeClient, "prepareStart", None)
         if callable(prepare):
             requirements = getattr(worker, "captureRequirements", {})
@@ -626,6 +630,8 @@ def _startJobCompat(worker: RuntimeWorker):
         for parameter in parameters.values()
     )
     keywordArguments: dict[str, object] = {}
+    if acceptsVarKeywords or "followProjectRunMode" in parameters:
+        keywordArguments["followProjectRunMode"] = True
     sessionId = getattr(worker, 'inspectionSessionId', '')
     if sessionId:
         if not acceptsVarKeywords and 'inspectionSessionId' not in parameters:

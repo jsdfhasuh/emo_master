@@ -1389,6 +1389,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             getCurrentJobId=lambda: self.currentJobId,
             getActiveWorkflowId=lambda: self.activeWorkflowId,
             getEntryWorkflowId=lambda: self.workflowStore.entryWorkflowId,
+            getProjectRunMode=self.projectRunMode,
             appendEvent=self._appendTaskRuntimeEvent,
             onJobAccepted=self._rememberRuntimeLogJob,
             onRunFailed=self._showRunFailure,
@@ -1761,6 +1762,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.flowScene.rebindOperatorIcons()
             self.refreshSidebarNodeList()
             self._refreshNodeDetailsView()
+        self.updateToolbarState()
 
     def _iconContext(self) -> tuple[str, str]:
         return self._projectInstanceToken, self.workflowController.activeWorkflowId
@@ -1862,12 +1864,15 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 from emo_master.core.workflow.loop_contracts import whileConditionMode
                 rawNode = next((node for node in source.nodes if node.get("nodeId") == sourceId), {}) if source else {}
                 loop = rawNode.get("loop", {})
-                if mode == "while" and isinstance(loop, dict) and whileConditionMode(loop) == "boolean":
-                    calls[key]["conditionPort"] = loop.get("conditionPort")
-                elif mode == "while" and isinstance(loop, dict) and whileConditionMode(loop) == "globalVariable":
-                    variableId = loop.get("conditionVariableId")
-                    variable = self._globalVariableDefinitions().get(variableId, {})
-                    calls[key]["conditionPort"] = f"全局变量 {variable.get('name', variableId)}（每轮读取）"
+                if mode == "while" and isinstance(loop, dict):
+                    conditionMode = whileConditionMode(loop)
+                    calls[key]["conditionMode"] = conditionMode
+                    if conditionMode == "boolean":
+                        calls[key]["conditionPort"] = loop.get("conditionPort")
+                    elif conditionMode == "globalVariable":
+                        variableId = loop.get("conditionVariableId")
+                        variable = self._globalVariableDefinitions().get(variableId, {})
+                        calls[key]["conditionPort"] = f"全局变量 {variable.get('name', variableId)}（每轮读取）"
                 result.append(calls[key])
             calls[key]["children"].append(child)
         for call in calls.values():
@@ -1918,7 +1923,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 if isinstance(child, dict):
                     addChild(self._buildWorkflowDependencyTreeItem(child))
             if itemType == "call" and entry.get("relation") == "while":
-                exitItem = QTreeWidgetItem([f"条件为假 → 返回 {entry['sourceWorkflowName']}"])
+                exitText = ("条件始终为真，可点击“停止”结束作业" if entry.get("conditionMode") == "always"
+                            else f"条件为假 → 返回 {entry['sourceWorkflowName']}")
+                exitItem = QTreeWidgetItem([exitText])
                 exitItem.setData(0, USER_ROLE, {"itemType": "control", "relation": "exit"})
                 if _nativeQt:
                     self.workflowDependencyTree.styleItem(exitItem, {"itemType": "control"})
@@ -2959,8 +2966,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if config is None:
                 self.appendFlowLog(
                     "WARN",
-                    "没有兼容的 While 循环体：状态输入/输出必须同名同类型，"
-                    "并提供一个布尔状态端口作为继续条件",
+                    "没有兼容的 While 循环体。每个状态输入都需要同名同类型的输出。",
                 )
                 return None
         return self._addLoopNode(config, "While", sceneX=sceneX, sceneY=sceneY)
@@ -2997,6 +3003,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                     continue
                 if not contract.issues:
                     return candidate
+        for bodyWorkflowId in workflowIds:
+            candidate = dict(contractVersion=2, mode="while", conditionMode="always",
+                             bodyWorkflowId=bodyWorkflowId, unlimited=True,
+                             maxIterations=100, timeoutMs=0)
+            if not self.workflowController.previewLoopContract(candidate).issues:
+                return candidate
         return None
 
     @draftCommand
@@ -3582,11 +3594,19 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         # Empty override follows the authoritative draft, including undo/redo.
         return list(self.runTargetIds) if self.runTargetIds else self.workflowStore.startupWorkflows()
 
+    def projectRunMode(self) -> str:
+        return self.workflowStore.projectExtensions.get("production", {}).get("mode", "single")
+
     def runTargetsToolTip(self) -> str:
         names = workflowDisplayNames(self.workflowStore.workflows)
         targets = self.effectiveRunTargetIds()
-        return (("临时运行目标" if self.runTargetIds else "工程启动列表") + f"（{len(targets)} 个）：\n"
-                + "\n".join(names.get(key, key) for key in targets))
+        source = "临时运行目标" if self.runTargetIds else "工程启动列表"
+        mode = "工程设置为单次运行"
+        if self.projectRunMode() == "continuous":
+            interval = self.workflowStore.projectExtensions["production"]["cycleIntervalMs"]
+            mode = f"工程设置为持续运行，每轮从头执行，两轮开始至少间隔 {interval} ms"
+        targetNames = "\n".join(names.get(key, key) for key in targets)
+        return f"{mode}\n{source}（{len(targets)} 个）：\n{targetNames}"
 
     def openRunTargetsDialog(self):
         if not _nativeQt:
@@ -5186,6 +5206,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             # Remote catalogs may arrive after a minimal project was opened.
             schema = (deepcopy(catalogSchema) if not node.paramSchema else
                       mergeParameterTitles(node.paramSchema, catalogSchema))
+            if node.operatorId == "communication.plc.slmp_write":
+                from emo_master.apps.designer.ui.plc_presentation import configurePlcWriteValues
+                configurePlcWriteValues(schema)
             if node.operatorId == "vision.io.video_loader":
                 edges = (self.flowModel.edges if sourceWorkflowId == self.activeWorkflowId else
                          self.workflowStore.get(sourceWorkflowId).edges)
@@ -5323,9 +5346,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 for key, workflow in self.workflowStore.workflows.items()
             }
             properties["conditionMode"] = {
-                "type": "string", "enum": ["boolean", "globalVariable", "workflow"], "title": "条件来源",
+                "type": "string", "enum": ["boolean", "globalVariable", "always", "workflow"], "title": "条件来源",
                 "default": whileConditionMode(node.loop),
-                "xOptionLabels": {"boolean": "布尔状态端口", "globalVariable": "全局布尔变量 / 常量", "workflow": "条件工作流（旧项目兼容）"},
+                "xOptionLabels": {"boolean": "布尔状态端口", "globalVariable": "全局布尔变量 / 常量",
+                                  "always": "始终为真", "workflow": "条件工作流（旧项目兼容）"},
+            }
+            properties["minIntervalMs"] = {
+                "type": "integer", "minimum": 0, "default": 0, "title": "每轮最小开始间隔（毫秒）",
+                "description": "从本轮开始计时。本轮耗时已达到间隔时立即进入下一轮；0 表示不额外等待。",
             }
             choices = {key: value for key, value in self._globalVariableDefinitions().items() if value["type"] == "boolean"}
             properties["conditionVariableId"] = {
@@ -5344,7 +5372,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             required.append("conditionMode")
             properties = {key: properties[key] for key in (
                 "mode", "conditionMode", "conditionPort", "conditionVariableId", "conditionWorkflowId",
-                "bodyWorkflowId", "cycleBoundary", "unlimited", "maxIterations", "timeoutMs", "repeatCount",
+                "bodyWorkflowId", "cycleBoundary", "minIntervalMs", "unlimited", "maxIterations", "timeoutMs", "repeatCount",
             )}
         elif modeValue == "foreach":
             bodyWorkflowId = node.loop.get("bodyWorkflowId")

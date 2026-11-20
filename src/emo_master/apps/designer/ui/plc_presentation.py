@@ -32,12 +32,34 @@ STATES = {"STARTING": "正在准备", "READY": "就绪", "RUNNING": "执行中",
           "CLOSED": "已结束", "CLOSING": "正在结束"}
 
 
+def configurePlcWriteValues(schema):
+    """Apply the numeric editor to a display copy, including older saved nodes."""
+    field = schema.get("properties", {}).get("values")
+    if not isinstance(field, dict) or field.get("type") != "array":
+        return
+    items = field.get("items")
+    if isinstance(items, dict) and items.get("type") == "number":
+        field.update(
+            title="固定写入值",
+            xWidget="number-list",
+            xPlaceholder="单值填 2，多个值填 2, 3，接线取值时留空",
+            description=(
+                "这个节点可以从起始地址连续写入多个值，所以工程用数组保存写入值。\n"
+                "假设起始地址为 D1031，数据类型为 uint16。\n"
+                "• 填 2，工程保存为 [2]，执行时只向 D1031 写入 2。\n"
+                "• 填 2, 3，执行时向 D1031 写入 2，再向 D1032 写入 3。\n"
+                "使用上游连线提供写入值时，请将此栏留空。"
+            ),
+        )
+
+
 def plcSchema(schema):
     result = deepcopy(schema)
     properties = result.get("properties", {})
     for name, title in FIELD_TITLES.items():
         if name in properties:
             properties[name]["title"] = title
+    configurePlcWriteValues(result)
     if "dataType" in properties:
         properties["dataType"]["xOptionLabels"] = NUMBER_TYPES
         properties["dataType"]["description"] = "数值解释方式，与通信报文的 Binary / ASCII 格式无关。D 区 16 位占 1 个字，32 位占 2 个字。"

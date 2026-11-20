@@ -59,7 +59,7 @@ class GrpcRuntimeClient:
             from emo_panel_protocol.connection import ConnectionProfile, createChannel
             from emo_panel_protocol.generated import runtime_pb2, runtime_pb2_grpc
         except ImportError as exc:
-            raise ContractUnavailable('Install the supplied emo_panel_protocol 1.9.0 SDK and its declared dependencies') from exc
+            raise ContractUnavailable('Install the supplied emo_panel_protocol 1.10.0 SDK and its declared dependencies') from exc
         self.pb = runtime_pb2
         profile = ConnectionProfile(self.address, self.timeout, self.max_receive_bytes)
         if self.preview_context is not None:
@@ -121,6 +121,7 @@ class GrpcRuntimeClient:
         return reply
 
     async def info(self):
+        from emo_panel_protocol import __version__
         info = await self._info()
         return {'runtimeInstanceId': info.runtime_instance_id, 'projectId': info.project_id,
                 'mode': 'grpc', 'protocolVersion': info.protocol_version,
@@ -128,7 +129,7 @@ class GrpcRuntimeClient:
                 'historyDefinitionRevision': info.history_definition_revision,
                 'productionMode': info.production_mode, 'productionExecutionMode': info.production_execution_mode,
                 'startupWorkflowIds': list(info.startup_workflow_ids), 'capabilities': list(info.capabilities),
-                'contractStatus': 'panel-contract-1.0-sdk-1.9.0'}
+                'contractStatus': f'panel-contract-1.0-sdk-{__version__}'}
 
     async def _output_request(self, method, body=None):
         body = body or {}
@@ -465,6 +466,9 @@ class GrpcRuntimeClient:
                 raise ValueError('Stable start requestId required')
             if not isinstance(revision, str) or not revision.isdecimal() or int(revision) != info.document_revision or int(revision) <= 0:
                 raise RuntimeRejected('DOCUMENT_REVISION_CHANGED', 'Refresh production inputs before starting')
+            if (info.production_execution_mode == 'continuous' and not info.production_mode
+                    and 'project_run_mode_v1' not in info.capabilities):
+                raise RuntimeRejected('E_PROJECT_RUN_MODE_UNSUPPORTED', '当前 Runtime 不支持按工程设置持续运行，请升级 Runtime 后重试')
             inputs = body.get('inputs', {})
             if 'inputsJson' in body:
                 inputs = json.loads(body['inputsJson'])
@@ -474,7 +478,7 @@ class GrpcRuntimeClient:
                 inputs_json=json.dumps(inputs, allow_nan=False, ensure_ascii=True, separators=(',', ':')),
                 # Web owns external output requests; this flag opts into Qt pages.
                 capture_presentation=False, start_request_id=request_id, expected_runtime_instance_id=info.runtime_instance_id,
-                expected_document_revision=int(revision))
+                expected_document_revision=int(revision), follow_project_run_mode=True)
             try:
                 reply = await self.runtime.StartJob(request, timeout=self.timeout)
             except Exception as exc:

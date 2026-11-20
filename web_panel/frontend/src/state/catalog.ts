@@ -1,5 +1,29 @@
 import type {Run,WorkflowTarget} from '../contracts/types';
-export interface RuntimeInfo {runtimeInstanceId:string;projectId:string;configurationRevision?:string;documentRevision?:string}
+export interface RuntimeInfo {
+ runtimeInstanceId:string;
+ projectId:string;
+ configurationRevision?:string;
+ documentRevision?:string;
+ mode?:string;
+ productionMode?:boolean;
+ productionExecutionMode?:string;
+ capabilities?:string[];
+}
+
+export function projectRunModeLabel(info?: RuntimeInfo): string {
+ if (!info) return '待获取';
+ if (!info.projectId) return '未加载工程';
+ if (info.mode === 'mock' || info.mode === 'fixtures') return '模拟演示';
+ if (info.productionExecutionMode === 'single') return '单次运行';
+ if (info.productionExecutionMode === 'continuous') {
+  if (info.productionMode === false && !info.capabilities?.includes('project_run_mode_v1')) {
+   return '持续运行（需升级 Runtime）';
+  }
+  return '持续运行';
+ }
+ return 'Runtime 未提供';
+}
+
 export interface CatalogSelection {runId:string;controlRunId:string;workflowId:string;workflowInputs:string;dirty:boolean}
 export function reconcileCatalogSelection(previous:CatalogSelection,oldInfo:RuntimeInfo|undefined,info:RuntimeInfo,runs:Run[],workflows:WorkflowTarget[],initialMock=false) {
  const identityChanged=Boolean(oldInfo && (oldInfo.runtimeInstanceId!==info.runtimeInstanceId || oldInfo.projectId!==info.projectId));

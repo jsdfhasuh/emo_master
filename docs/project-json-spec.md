@@ -162,7 +162,8 @@ assert reloaded == document
 
 `production` 默认 `autoStart=false`、`mode="single"`、`cycleIntervalMs=100`、
 `inputs={}`。`mode` 仅允许 `single` / `continuous`，间隔为正整数毫秒；
-普通 Designer 单次运行不等于启用生产连续策略。
+Designer 的“运行流程”和独立操作员端的“开始”均按工程的 `mode` 和 `cycleIntervalMs` 执行选定的启动流程。
+Designer 打开工程后等待手动运行；“流程调试”仍由单独的调试会话控制。
 
 ### 全局变量
 
@@ -210,6 +211,9 @@ assert reloaded == document
 - While 的 `conditionMode="boolean"` 使用 `conditionPort` 指定布尔状态端口；
   `conditionMode="globalVariable"` 使用 `conditionVariableId` 引用布尔变量。
   这两种模式不要求条件子流程。
+- While v2 的 `conditionMode="always"` 表示条件始终为真。循环体输入经同名输出传给下一轮，额外输出只属于本轮。无输入的单轮检测流程可直接充当循环体。
+  配置 `unlimited=true`、`timeoutMs=0` 后，Designer 和生产运行端均可持续执行该节点，直到停止作业或出现错误。`maxIterations` 仍填写正整数。
+- While v2 的可选 `minIntervalMs` 默认为 0，按相邻两轮开始时间计时。耗时超过间隔时立即进入下一轮；等待期间可响应停止。对已用 While 表达循环的生产入口，设置 `production.mode="single"` 即可。
 
 端口由 `deriveLoopContract` 派生；节点的 `inputPorts/outputPorts` 是画布快照，
 不是编译时的接口依据。旧 `contractVersion=1` 仅供兼容。
@@ -296,7 +300,7 @@ SDK 1.8.0 在当前页面格式上补充以下通用配置；Qt、Web 和作者�
 
 ### 高级外观
 
-SDK 1.9.0 在工程 2.10 / 页面 1.3 上增加可选字段。省略时沿用该组件的默认外观。
+SDK 1.10.0 在工程 2.10 / 页面 1.3 上增加可选字段。省略时沿用该组件的默认外观。
 
 | 字段位置 | 配置 |
 | --- | --- |

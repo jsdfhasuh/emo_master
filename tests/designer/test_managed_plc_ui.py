@@ -2,7 +2,7 @@ from copy import deepcopy
 from types import SimpleNamespace
 
 from PySide2.QtCore import QSettings
-from PySide2.QtWidgets import QDialogButtonBox, QMessageBox
+from PySide2.QtWidgets import QDialogButtonBox, QLineEdit, QMessageBox
 
 from emo_master.apps.designer.state.project_store import saveProject
 from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
@@ -12,6 +12,65 @@ from emo_master.core.project.devices import DeviceDefinition
 from emo_master.plugins.builtins._plc_editor import PlcEditorController
 from tests.runtime.test_managed_slmp import ROOT, plcProject
 from tests.designer.test_device_workspace import waitUntil
+
+
+def testFixedWriteValueInSavedPlcNodeDialog(ownedDesignerWindow, tmp_path):
+    scan = PluginRegistry("0.6.1").scan(ROOT)
+    writeId = "communication.plc.slmp_write"
+    descriptor = scan.activeOperators[writeId].manifest
+    requirements = {writeId: {"plc": {"deviceTypeId": "device.plc.mitsubishi_slmp"}}}
+    client = SimpleNamespace(listOperators=lambda: [SimpleNamespace(**descriptor.model_dump())],
+                             listDeviceTypes=lambda: (scan.deviceTypes, requirements, {}))
+    window = ownedDesignerWindow(client, settingsStore=QSettings(str(tmp_path / "ui.ini"), QSettings.IniFormat))
+    payload = plcProject(10001, write=True)
+    node = payload["workflows"]["main"]["nodes"][0]
+    node["params"].update(startAddress=1031, values=[])
+    node["paramSchema"] = deepcopy(descriptor.paramSchema)
+    node["paramSchema"]["properties"]["values"] = {
+        "title": "写入值", "type": "array", "items": {"type": "number"}, "default": [],
+    }
+    path = tmp_path / "plc.emoproj"
+    saveProject(path, payload)
+    assert window.loadProjectDirectory(str(path), confirmed=True)
+    coordinator = window.pageCoordinator
+
+    def openWriteDialog():
+        coordinator.sync()
+        saved = coordinator.session.document().workflows["main"].nodes[0]
+        dialog = DeviceNodeDialog(coordinator, saved.model_dump(), requirements[writeId], window)
+        dialog.show()
+        waitUntil(lambda: dialog.buttons.button(QDialogButtonBox.Ok).isEnabled())
+        control = dialog.params._controls["values"]
+        assert isinstance(control, QLineEdit)
+        return dialog, control
+
+    dialog, control = openWriteDialog()
+    assert control.text() == ""
+    assert "2" in control.placeholderText() and "留空" in control.placeholderText()
+    control.setText("2")
+    dialog.buttons.button(QDialogButtonBox.Ok).click()
+    assert dialog.result() == dialog.Accepted, dialog.error.text()
+    assert coordinator.session.document().workflows["main"].nodes[0].params["values"] == [2]
+    assert window.saveProjectToDirectory(str(path))
+    assert window.loadProjectDirectory(str(path), confirmed=True)
+
+    dialog, control = openWriteDialog()
+    assert control.text() == "2"
+    for widget in (dialog.params._layout.labelForField(control), control):
+        for detail in ("uint16", "D1031", "D1032", "[2]", "留空"):
+            assert detail in widget.toolTip()
+    for text, expected in (("0", [0]), ("1，2, 3", [1, 2, 3]), ("[2]", [2])):
+        control.setText(text)
+        assert dialog.params.getValues()["values"] == expected
+    control.setText("2,,3")
+    dialog.buttons.button(QDialogButtonBox.Ok).click()
+    assert dialog.isVisible() and dialog.error.text()
+    assert control.text() == "2,,3"
+    assert coordinator.session.document().workflows["main"].nodes[0].params["values"] == [2]
+    control.clear()
+    dialog.buttons.button(QDialogButtonBox.Ok).click()
+    assert dialog.result() == dialog.Accepted, dialog.error.text()
+    assert coordinator.session.document().workflows["main"].nodes[0].params["values"] == []
 
 
 def testManagedDiagnosticUsesFixedDeviceAndConfirmsEveryWrite(monkeypatch):

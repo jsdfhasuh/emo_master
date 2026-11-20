@@ -475,7 +475,7 @@ def testSpawnedWhileReusesConnectionBeyondFrameCapacityAndStops(tmp_path, monkey
     payload['workflows'] = dict(main=main, body=body)
     payload['workflowOrder'] = ['main', 'body']
     payload['globalVariables']['run'] = dict(name='Run', type='boolean', initialValue=True, kind='constant', lifetime='job')
-    payload['devices']['definitions']['camera']['policies']['idleTimeoutMs'] = 500
+    payload['devices']['definitions']['camera']['policies']['release'] = 'on_project_close'
     path = tmp_path / 'while-rtsp.emoproj'
     saveProject(path, payload)
     service = RuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
@@ -485,7 +485,9 @@ def testSpawnedWhileReusesConnectionBeyondFrameCapacityAndStops(tmp_path, monkey
         driver = service.deviceManager.drivers['camera']
         started = service.StartJob(pb.StartJobRequest(workflow_id='main'), None)
         assert started.ok, started.message
-        waitFor(lambda: driver.delivered >= 40, timeout=20)
+        waitFor(lambda: sum(1 for event in service.eventStore.read(started.job_id)
+            if event.workflowId == 'body' and event.nodeId == 'capture'
+            and event.eventType == 'node.completed') >= 40, timeout=20)
         assert len(opens) == 1
         assert len(service.deviceManager.frames.frames) <= 1
         assert service.StopJob(pb.StopJobRequest(job_id=started.job_id, mode='graceful'), None).ok
@@ -493,9 +495,8 @@ def testSpawnedWhileReusesConnectionBeyondFrameCapacityAndStops(tmp_path, monkey
         record = service.jobRepository.get(started.job_id)
         assert (record.status, record.errorCode) in {
             ('ABORTED', 'E_CANCELLED'), ('FAILED', 'E_DEVICE_CANCELLED'), ('FAILED', 'E_DEVICE_OUTCOME_UNKNOWN')}, record
-        waitFor(lambda: native.released.is_set())
-        waitFor(lambda: not driver.snapshot()['ownsResources'])
         assert not service.deviceManager.frames.frames and not service.deviceManager.frames.reservations
-        assert not driver.snapshot()['ownsResources']
     finally:
         service.close()
+    assert native.released.is_set()
+    assert not driver.snapshot()['ownsResources']

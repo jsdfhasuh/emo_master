@@ -7,7 +7,7 @@ import { parseLosslessJSON } from './data/lossless';
 import { normalizeMessage, applySourceProblems, isInitialJobConfirmation } from './data/contract';
 import { mergeScopeStatus, isScopeResultExpired, scopeActivity } from './state/scopes';
 import type { ScopeStatuses } from './state/scopes';
-import { reconcileCatalogSelection, mergeRunCatalog, selectedViewState, targetContext } from './state/catalog';
+import { reconcileCatalogSelection, mergeRunCatalog, projectRunModeLabel, selectedViewState, targetContext } from './state/catalog';
 import type { RuntimeInfo, CatalogSelection } from './state/catalog';
 import { commandResolution } from './state/commands';
 import type { CommandReply } from './state/commands';
@@ -189,12 +189,13 @@ function App() {
             const targets=await api<RuntimeTarget[]>('/api/runtimes',{signal:abort.signal});if(!current())return;
             setRuntimes(targets);const rid=targets.some(target=>target.id===selected)?selected:targets[0]?.id || '';
             if(!rid){activeRuntime.current='';setRuntimeId('');infoRef.current=undefined;setRuntimeInfo(undefined);clearIdentityView();setRuns([]);setWorkflows([]);setRunId('');setControlRunId('');setWorkflowId('');setPanels([]);setPanel(undefined);setPackages([]);setCatalogError('');return;}
-            if(rid!==selected){activeRuntime.current=rid;setRuntimeId(rid);infoRef.current=undefined;clearIdentityView();selectionRef.current={...selectionRef.current,runId:'',controlRunId:'',workflowId:''};setRunId('');setControlRunId('');setWorkflowId('');}
+            if(rid!==selected){selectTarget(rid);return;}
             const oldInfo=infoRef.current;
             const info=await api<RuntimeInfo>(`/api/runtimes/${encodeURIComponent(rid)}/info`,{signal:abort.signal});if(!current() || activeRuntime.current!==rid)return;
-            if(!info.runtimeInstanceId || !info.projectId)throw Error('Runtime 未提供正式实例和工程身份');
+            if(!info.runtimeInstanceId)throw Error('Runtime 未提供实例标识');
             const changed=Boolean(oldInfo && (oldInfo.runtimeInstanceId!==info.runtimeInstanceId || oldInfo.projectId!==info.projectId));
-            if(changed){clearIdentityView();setRuns([]);setWorkflows([]);setRunId('');setControlRunId('');setWorkflowId('');setPanel(undefined);setPanels([]);setNotice('Runtime 实例或工程已改变；旧查看和控制选择已清除。');}
+            if(changed){clearIdentityView();setRuntimeInfo(undefined);infoRef.current=undefined;setRuns([]);setWorkflows([]);setRunId('');setControlRunId('');setWorkflowId('');setPanel(undefined);setPanels([]);setPackages([]);setNotice('Runtime 实例或工程已改变；旧查看和控制选择已清除。');}
+            if(!info.projectId){infoRef.current=info;setRuntimeInfo(info);setCatalogError('');return;}
             const context=targetContext(rid,info.projectId,info.runtimeInstanceId);
             // Keep only a reference to the current runs, even if this refresh
             // was invoked by a closure from an earlier render.
@@ -637,6 +638,7 @@ function App() {
     <button disabled={!result || frozen} onClick={() => action('freeze')}>冻结查看</button>
     <button disabled={!frozen} onClick={() => action('resume_live')}>恢复实时</button>
     <span>{frozen ? '已冻结查看' : '实时查看'}</span>
+    {runtimeTarget && <span aria-label="工程运行模式">工程模式 · {projectRunModeLabel(runtimeInfo)}</span>}
     {canControl && shell?.showControls !== false && <>
         <label>启动工作流<select aria-label="启动工作流目标" title={workflow?.name || workflow?.id} disabled={catalogBusy} value={workflowId}
             onChange={event => {

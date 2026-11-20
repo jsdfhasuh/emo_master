@@ -1,6 +1,6 @@
 # Panel Contract v1：Runtime 客户端与 Web 页面交接合同
 
-合同版本 `1.0`，当前 Python SDK 为 `emo_panel_protocol 1.9.0`。工程当前版本为
+合同版本 `1.0`，当前 Python SDK 为 `emo_panel_protocol 1.10.0`。工程当前版本为
 `2.10` / Presentation `1.3`，发布快照为 `published-1`，ZIP 页面包为
 `emo-web-panel-1`（扩展名 `.emoweb`）。这些版本分别管理不同边界，不互相替代。
 
@@ -29,7 +29,7 @@ python scripts/build_panel_contract.py
 正式交付可同时生成 ZIP，使用新的版本目录以保持历史产物可追溯：
 
 ```powershell
-python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.9.0 --archive build/panel-contract-v1-sdk-1.9.0.zip
+python scripts/build_panel_contract.py --output build/panel-contract-v1-sdk-1.10.0 --archive build/panel-contract-v1-sdk-1.10.0.zip
 ```
 
 `--archive` 归档前核对 manifest 的全部文件摘要，ZIP 仅包含这些文件及 manifest。
@@ -158,7 +158,11 @@ Web 更新依赖后可以移除 `contractStatus=UNGROUPED_JOB_SCHEMA_GAP` 临时
 同一次明确启动意图始终复用 `start_request_id`。超时后查询这个 ID，不生成新 ID 自动补执行。
 停止准确作用于用户所选 Job；停止整组时选择根 Job。不能把历史 J1 的“停止”静默切换为最新 J2。
 同一工作流可以存在多个合法运行，不新增禁止并发的全局锁。消费者不是独立生产入口。
-continuous 循环由 Runtime 执行，Web 不循环调用 StartJob。
+SDK 1.9.0 增加 `StartJobRequest.follow_project_run_mode`。Web 正常启动时设为 true，
+由 Runtime 按已加载工程的 `production.mode` 和周期间隔执行选定工作流。
+`GetRuntimeInfo.production_execution_mode` 给出工程设置；生产宿主以及声明
+`project_run_mode_v1` 的普通宿主都能执行 `continuous`。连接较旧的普通宿主时，
+Web 在持续工程的启动请求发出前提示升级。每次点击“开始”只提交一次启动请求。
 
 `schemas/browser-message.schema.json` 是 Dot 网关需要实现的通知格式，由
 `emo_panel_protocol.messages.BrowserMessage` 定义；不是声明仓库已经有 WebSocket 服务器。
@@ -379,7 +383,7 @@ TypeScript 和 wheel 均从当前模型生成：
 以上字段可通过两端作者入口修改、保存和重开，并随正式页面包传递。
 设计及验证范围见 [页面配置补齐](../../openspec/changes/complete-page-configuration/README.md)。
 
-## 控件高级外观（SDK 1.9.0）
+## 控件高级外观（SDK 1.10.0）
 
 工程、Web 草稿和发布快照共享高级外观字段。颜色与边框字段、图标和按钮状态字段的范围见
 [工程格式规范](../project-json-spec.md#高级外观)。`VisualProps` 和 `ControlAppearance`

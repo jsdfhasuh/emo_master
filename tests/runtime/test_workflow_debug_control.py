@@ -17,11 +17,11 @@ from tests.runtime.test_workflow_while_boolean import runnerFor, booleanPayload,
 
 
 class LiveRun:
-    def __init__(self, runner, inputs):
+    def __init__(self, runner, inputs, *, clock=time.monotonic):
         self.events = queue.Queue()
         self.cancel = CancellationToken()
         self.controller = WorkflowDebugController(self.cancel, DebugVariables({}),
-            lambda kind, **data: self.events.put((kind, deepcopy(data))))
+            lambda kind, **data: self.events.put((kind, deepcopy(data))), clock=clock)
         runner.debugController = self.controller
         self.locations = {(workflow.workflowId, node.nodeId) for workflow in runner.compiledProject.workflows.values()
                           for node in workflow.nodes if node.kind not in {"workflow_input", "workflow_output"}}
@@ -37,7 +37,13 @@ class LiveRun:
     def paused(self):
         until = time.monotonic() + 5
         while time.monotonic() < until:
-            kind, data = self.events.get(timeout=5)
+            try:
+                kind, data = self.events.get(timeout=5)
+            except queue.Empty as error:
+                raise AssertionError(
+                    f"no confirmed pause; error={self.error!r}; result={self.result!r}; "
+                    f"thread_alive={self.thread.is_alive()}"
+                ) from error
             if kind == "paused":
                 return data
         raise AssertionError("no confirmed pause")
@@ -157,7 +163,8 @@ def testPauseSequenceMustBeAnInteger(sequence):
 def testLoopPauseIsExcludedFromTimeoutAndHitCountsAreInvocationScoped():
     payload = booleanPayload()
     payload["workflows"]["main"]["nodes"][1]["loop"]["timeoutMs"] = 100
-    live = LiveRun(runnerFor(payload), {"count": 0, "hasNext": True})
+    clockSeconds = [0.0]
+    live = LiveRun(runnerFor(payload), {"count": 0, "hasNext": True}, clock=lambda: clockSeconds[0])
     try:
         initial = live.paused()
         live.command("breakpoints", breakpoints=[dict(workflowId="body", nodeId="increment", hitCount=2,
@@ -165,7 +172,8 @@ def testLoopPauseIsExcludedFromTimeoutAndHitCountsAreInvocationScoped():
         live.command("continue", initial)
         second = live.paused()
         assert second["identity"]["iterationPath"] == (1,)
-        time.sleep(.2)
+        # Advance the confirmed pause independently of CI thread scheduling.
+        clockSeconds[0] += .2
         live.command("continue", second)
         live.thread.join(5)
         assert live.error is None and live.result.outputs["count"] == 3

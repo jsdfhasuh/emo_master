@@ -154,3 +154,24 @@ def testBooleanWhileRequiresTypedStateContract() -> None:
     contract = deriveLoopContract({"mode": "while", "conditionMode": "boolean",
         "conditionPort": "go", "maxIterations": 10}, {"go": "boolean"}, {"go": "boolean"})
     assert {issue.code for issue in contract.issues} == {"E_LOOP_CONDITION_MODE_UNSUPPORTED"}
+
+
+def testAlwaysWhileCarriesOnlyPairedStateAndKeepsBodyOnlyResultsLocal():
+    config = dict(contractVersion=2, mode="while", conditionMode="always", maxIterations=1,
+                  conditionWorkflowId="unused", conditionVariableId="unused", conditionPort="unused")
+    contract = deriveLoopContract(config, {"counter": "integer"}, {"counter": "integer", "photo": "image"})
+    assert contract.issues == ()
+    assert contract.inputPorts == contract.outputPorts == {"counter": "integer"}
+    assert set(contract.normalizedConfig) == {"contractVersion", "mode", "conditionMode", "maxIterations"}
+    invalid = deriveLoopContract(config, {"counter": "integer"}, {"photo": "image"})
+    assert {issue.code for issue in invalid.issues} == {"E_LOOP_STATE_OUTPUT_MISSING"}
+
+
+@pytest.mark.parametrize("mode, version, interval", [
+    ("while", 2, -1), ("while", 2, True), ("while", 2, 0.5),
+    ("repeat", 2, 20), ("while", 1, 20),
+])
+def testMinimumIterationIntervalRequiresANonnegativeIntegerOnTypedWhile(mode, version, interval):
+    config = dict(contractVersion=version, mode=mode, maxIterations=1, minIntervalMs=interval)
+    contract = deriveLoopContract(config, {}, {}, {}, {"continue": "boolean"})
+    assert "E_LOOP_INTERVAL_INVALID" in {issue.code for issue in contract.issues}

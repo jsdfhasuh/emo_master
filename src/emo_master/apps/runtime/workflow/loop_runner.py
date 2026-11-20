@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from contextlib import nullcontext
 from time import monotonic
-from itertools import count
 from typing import TYPE_CHECKING
 
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
@@ -276,14 +275,26 @@ class LoopRunner:
         state = {name: inputs[name] for name in node.inputPorts}
         metrics: dict[str, object] = {}
         diagnostics: dict[str, object] = {}
-        for index in (count() if node.loop.get("unlimited", False) else range(maximum)):
+        interval = _optionalInt(node.loop, "minIntervalMs", 0) / 1000.0
+        nextStart = None
+        unlimited = node.loop.get("unlimited", False)
+        index = 0
+        while unlimited or index < maximum:
             self._check(cancellation, timeoutMs, startedAt)
+            if nextStart is not None:
+                deadline = min(nextStart, startedAt + timeoutMs / 1000.0) if timeoutMs else nextStart
+                remaining = deadline - self._clock()
+                if remaining > 0:
+                    cancellation.wait(remaining)
+                self._check(cancellation, timeoutMs, startedAt)
             scope = nullcontext(context)
             if node.loop.get("cycleBoundary") == "iteration":
                 if self.workflowRunner.cycleScope is None:
                     raise LoopExecutionError("E_CYCLE_RUNTIME_REQUIRED", "iteration boundaries require the managed Runtime cycle service")
                 scope = self.workflowRunner.cycleScope(context)
             with scope as cycleContext:
+                if interval:
+                    nextStart = self._clock() + interval
                 iterationContext = cycleContext.forIteration(index)
                 self._iterationEvent("loop.iteration.started", iterationContext, index)
                 condition, state = self._whileIteration(node, state, iterationContext, cancellation, metrics, diagnostics)
@@ -291,13 +302,16 @@ class LoopRunner:
             if not condition:
                 return self.workflowRunner.result(state, metrics, diagnostics)
             self._check(cancellation, timeoutMs, startedAt)
+            index += 1
         raise LoopExecutionError(
             "E_LOOP_LIMIT_REACHED", "while loop reached maxIterations"
         )
 
     def _whileIteration(self, node, state, context, cancellation, metrics, diagnostics):
         mode = whileConditionMode(node.loop)
-        if mode == "globalVariable":
+        if mode == "always":
+            condition = True
+        elif mode == "globalVariable":
             condition = self.workflowRunner.globalVariables.get(str(node.loop["conditionVariableId"]))
         elif mode == "boolean":
             condition = state.get(str(node.loop["conditionPort"]))

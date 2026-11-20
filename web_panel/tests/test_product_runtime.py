@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / 'web_panel/contracts/panel-contract-v1'
 
 
-def run_product_server(root, *, continuous=False):
+def run_product_server(root, *, continuous=False, production=False):
     # Imports exclusively in the Runtime subprocess, not the gateway process.
     import contextlib
     import faulthandler
@@ -53,7 +53,7 @@ def run_product_server(root, *, continuous=False):
         db.execute('CREATE TABLE records (id INTEGER PRIMARY KEY, verdict TEXT, image TEXT)')
         db.execute('INSERT INTO records VALUES (1, ?, ?)', ('OK', 'reference.png'))
     with contextlib.redirect_stdout(sys.stderr):
-        service = RuntimeService(dbPath=root / 'runtime.db', workspaceRoot=root / 'jobs', productionMode=continuous)
+        service = RuntimeService(dbPath=root / 'runtime.db', workspaceRoot=root / 'jobs', productionMode=production)
         loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(root / 'project.emoproj')), None)
         if not loaded.ok:
             service.close()
@@ -268,6 +268,55 @@ class ProductRuntimeTests(unittest.IsolatedAsyncioTestCase):
 
 @unittest.skipUnless(os.environ.get('EMO_WEB_PRODUCT_RUNTIME') == '1',
                      'Opt-in full owning Runtime integration; requires its separate dependencies')
+class WebProjectRunModeTests(unittest.IsolatedAsyncioTestCase):
+    server_flag = '--runtime-server-ordinary-continuous'
+    asyncSetUp = ProductRuntimeTests.asyncSetUp
+    asyncTearDown = ProductRuntimeTests.asyncTearDown
+    preserve_evidence = ProductRuntimeTests.preserve_evidence
+
+    async def test_http_start_follows_continuous_project_on_ordinary_runtime(self):
+        import httpx
+        from emo_web_panel.app import create_app
+        from emo_web_panel.config import Config
+
+        app = create_app(Config(Path(self.directory.name) / 'gateway', mode='grpc', runtime_address=self.client.address))
+        app.state.auth.create_user('tester', 'Synthetic-web-run-test!', 'admin')
+        async with app.router.lifespan_context(app), httpx.AsyncClient(
+                transport=httpx.ASGITransport(app), base_url='http://testserver') as web:
+            login = await web.post('/api/session', json={'username': 'tester', 'password': 'Synthetic-web-run-test!'})
+            login.raise_for_status()
+            web.headers['X-CSRF-Token'] = login.json()['csrf']
+            info = (await web.get('/api/runtimes/configured/info')).json()
+            self.assertEqual((info['productionMode'], info['productionExecutionMode']), (False, 'continuous'))
+            body = {key: info[key] for key in ('runtimeInstanceId', 'projectId', 'configurationRevision')}
+            body.update(runtimeId='configured', workflowId='main', requestId='web-continuous-start')
+            start = await web.post('/api/runs/start', json=body)
+            start.raise_for_status()
+            self.assertEqual(start.json()['state'], 'accepted', start.json())
+            job = start.json()['runId']
+            async def wait_for_cycles():
+                while True:
+                    events = (await self.client.job_events(job, '0'))['events']
+                    if sum(event['kind'] == 'workflow.completed' for event in events) >= 3:
+                        return
+                    self.assertTrue((await self.client.run_state(job))['active'], 'Job ended before its third cycle')
+                    await asyncio.sleep(.05)
+
+            await asyncio.wait_for(wait_for_cycles(), timeout=30)
+            self.assertEqual((await self.client.run_state(job))['status'], 'RUNNING')
+            stop = await web.post(f'/api/runs/{job}/stop', json={**body, 'requestId': 'web-continuous-stop', 'runGroupId': ''})
+            stop.raise_for_status()
+            self.assertEqual(stop.json()['state'], 'accepted', stop.json())
+            async def wait_for_stop():
+                while (await self.client.run_state(job))['active']:
+                    await asyncio.sleep(.05)
+            await asyncio.wait_for(wait_for_stop(), timeout=30)
+            self.assertEqual((await self.client.run_state(job))['status'], 'ABORTED')
+            self.assertEqual([run['id'] for run in await self.client.runs()], [job])
+
+
+@unittest.skipUnless(os.environ.get('EMO_WEB_PRODUCT_RUNTIME') == '1',
+                     'Opt-in full owning Runtime integration; requires its separate dependencies')
 class EditorPublishedRuntimeTests(unittest.IsolatedAsyncioTestCase):
     """The browser gate's current-format fixture through actual publish + RPC.
 
@@ -407,7 +456,8 @@ if __name__ == '__main__':
         sys.path.insert(0, str(ROOT))
         from scripts.independent_web_editor_demo import serve
         serve(Path(sys.argv[2]), port=0)
-    elif len(sys.argv) == 3 and sys.argv[1] in {'--runtime-server', '--runtime-server-continuous'}:
-        run_product_server(sys.argv[2], continuous=sys.argv[1] == '--runtime-server-continuous')
+    elif len(sys.argv) == 3 and sys.argv[1] in {'--runtime-server', '--runtime-server-continuous', '--runtime-server-ordinary-continuous'}:
+        run_product_server(sys.argv[2], continuous=sys.argv[1] != '--runtime-server',
+                           production=sys.argv[1] == '--runtime-server-continuous')
     else:
         unittest.main()

@@ -676,6 +676,9 @@ class DeviceNodeDialog(QDialog):
                                     if key in self.actionFields}
             schema["required"] = [key for key in schema.get("required", []) if key in self.actionFields]
             values = {key: value for key, value in values.items() if key in self.actionFields}
+        if node["operatorId"] == "communication.plc.slmp_write":
+            from .plc_presentation import configurePlcWriteValues
+            configurePlcWriteValues(schema)
         self.params = configurationForm(schema, values)
         if schema.get("properties"):
             self.tabs.addTab(scrollWidget(self.params), "节点参数")

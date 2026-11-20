@@ -155,6 +155,17 @@ Web 包为 `6025544b12f7643c573a3a7da3c379f61a5f280ed32b11820a051ffca8fc5c8b`。
   使用空 Starlette 应用单独复现了同一错误。外观草稿、正式发布及生成契约的 33 项定向检查通过。
 - 项目生成与 Web 端到端回放脚本位于 [示例目录](../../../examples/advanced_appearance/README.md)。
 
+## 推送前合并回归
+
+本轮实现提交 `6037f4b6` 合入远端 `main` 的 `8e4d6cd373e7d0d02ad6193d9085966211d3db05`。
+保留远端按工程运行模式启动的 RPC 和 Web 调用。合并后的外观模型、最新 RPC、生成契约与独立安装的
+wheel 使用 SDK 1.10.0。上方记录和截图保留首次功能验收时的源码与环境。
+
+- 共享页面协议、Qt 高级外观、Designer 启动模式和软件 Runtime 连续运行定向回归 351 项通过。
+- Web 后端使用安装后的 SDK 1.10.0 验证契约、草稿、发布、Runtime RPC 和启动采集，48 项通过，1 项可选集成测试跳过。
+- 前端逻辑回归 205 项通过，TypeScript／Vite 构建和 OpenSpec strict 通过。
+- 真实 Edge 使用同一示例重新完成草稿编辑、保存重开、发布、连续采样和停止，停止后任务为 `ABORTED`。[合并后回放](../../../docs/testing/2026-11-20-advanced-appearance/web-merge-verification.json)
+
 [Designer 记录]: ../../../docs/testing/2026-11-20-advanced-appearance/designer-native.txt
 [Designer 原生测试]: ../../../tests/ui/page_designer/test_usable_properties.py
 [原生 Qt 测试]: ../../../tests/ui/presentation/test_advanced_appearance.py

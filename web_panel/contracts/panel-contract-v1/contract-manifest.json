@@ -1,13 +1,13 @@
 {
   "panelContractVersion": "1.0",
-  "sdkVersion": "1.9.0",
-  "sourceSha": "1e47522ccb8451f1665852caa5ae6ff333b340bb",
+  "sdkVersion": "1.10.0",
+  "sourceSha": "6037f4b6374e64e03aca832724787b76968288dc",
   "sourceDirty": true,
   "projectSchemaVersion": "2.10",
   "presentationSchemaVersion": "1.3",
   "status": "complete",
   "sdkWheels": [
-    "python/emo_panel_protocol-1.9.0-py3-none-any.whl"
+    "python/emo_panel_protocol-1.10.0-py3-none-any.whl"
   ],
   "sampleValidation": {
     "model": "PASS",
@@ -114,19 +114,19 @@
       "byteSize": 277
     },
     "proto/runtime.proto": {
-      "sha256": "d4bd35d15a071a6eb54414216b8dacf3d8ab90c3fb5be239b1e27b3c3eba9920",
-      "byteSize": 37546
+      "sha256": "45d8fa87e08d37a774f711b67b41f03d7236d533a3febd35689da86a3156d9ce",
+      "byteSize": 37663
     },
-    "python/emo_panel_protocol-1.9.0-py3-none-any.whl": {
-      "sha256": "d7a7759d10dc775686287791b8927e27699971c62fc577c402008e1b1dff8bec",
-      "byteSize": 43919
+    "python/emo_panel_protocol-1.10.0-py3-none-any.whl": {
+      "sha256": "5c0860d3aba23f6ba7910ceec2c43a415e6ad2a467a56cbca0628cdbd1f251ea",
+      "byteSize": 43943
     },
     "README.md": {
-      "sha256": "cffc310938de045ea4d4d1085d4aab27ce1911662a63da21b871246439780445",
-      "byteSize": 29068
+      "sha256": "3eb55c02ebdfcca61aa6fea9e714860def860f7888d598d81f740b37bc43f8f2",
+      "byteSize": 29494
     },
     "sample-panels/demo.emoweb": {
-      "sha256": "bf71743552c571b2f659725e71882bade244310704be6f3e3d4e0841f0f7991e",
+      "sha256": "607e124df6c4003516c03c5697dbc96d50ff9059184bcfb2d4d54fcba8803aa0",
       "byteSize": 2810
     },
     "sample-panels/source/demo.emoproj": {
@@ -174,16 +174,16 @@
       "byteSize": 55453
     },
     "schemas/runtime-rpc.schema.json": {
-      "sha256": "d2e7eeed418a0dc2c3f09eaed196ce9ffc07920aa6372082b7375273a9d17860",
-      "byteSize": 99987
+      "sha256": "0cffede5ca265d3e080064e3a00a79c7ac880520750f7d7f3b7e9eafeb055a04",
+      "byteSize": 100063
     },
     "theme.json": {
       "sha256": "2012c1a1bf4361f40f2dbeea6e73ab9aaf505e7ae38c1d4a96953ad77c584437",
       "byteSize": 793
     },
     "typescript/panel-contract.ts": {
-      "sha256": "ac928690e3fe52f9e6b1da49f821987b16a277ad4ce4842e35719238ecb133b2",
-      "byteSize": 40244
+      "sha256": "f4834710166ff4a31d1f735c9b207c21741e86be1adbe53d4d232b5d2e121afc",
+      "byteSize": 40278
     }
   }
 }

@@ -109,10 +109,11 @@ _MODEL_DEFINITIONS = _formal_models()
 
 _LOOP_CONFIG = {"type": "object", "properties": {
     "mode": {"enum": ["repeat", "foreach", "while"]}, "bodyWorkflowId": STRING,
-    "conditionWorkflowId": STRING, "conditionMode": {"enum": ["workflow", "boolean", "globalVariable"]},
+    "conditionWorkflowId": STRING, "conditionMode": {"enum": ["workflow", "boolean", "globalVariable", "always"]},
     "conditionPort": STRING, "conditionVariableId": STRING, "itemInputPort": STRING, "indexInputPort": STRING,
     "contractVersion": {"const": 2}, "repeatCount": {"type": "integer", "minimum": 0},
     "maxIterations": {"type": "integer", "minimum": 0}, "timeoutMs": {"type": "integer", "minimum": 0},
+    "minIntervalMs": {"type": "integer", "minimum": 0},
     "unlimited": {"type": "boolean"}, "cycleBoundary": {"enum": ["inherit", "iteration"]}},
     "required": ["mode", "bodyWorkflowId", "maxIterations", "timeoutMs"],
     "additionalProperties": False}

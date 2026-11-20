@@ -503,6 +503,8 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
                 ("project_id", ""), ("workflow_id", ""), ("inputs_json", ""),
                 ("capture_presentation", False))}
             arguments["legacy_snapshot_policy"] = policy
+            if getattr(request, "follow_project_run_mode", False):
+                arguments["follow_project_run_mode"] = True
             if getattr(request, "expected_document_revision", 0):
                 arguments["expected_document_revision"] = request.expected_document_revision
             inspectionId = str(getattr(request, "inspection_session_id", ""))
@@ -772,7 +774,8 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
                     inspectionEnabled=bool(inspectionId),
                     inspectionCredits=(self.runInspectionStore.prepareReceiver(record.jobId, workspacePath,
                         lambda error: self._inspectionFailed(record.jobId, error)) if inspectionId else None),
-                    continuous=(self.productionMode and document.production is not None
+                    continuous=((self.productionMode or getattr(request, "follow_project_run_mode", False))
+                                and document.production is not None
                                 and document.production.mode == "continuous"),
                     cycleIntervalMs=(document.production.cycleIntervalMs if document.production else 100),
                     copyArtifacts=not self.productionMode,

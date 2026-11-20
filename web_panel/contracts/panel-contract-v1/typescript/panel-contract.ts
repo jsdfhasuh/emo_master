@@ -377,7 +377,7 @@ export type RpcSqliteTargetReply = { "ok"?: boolean; "code"?: string; "message"?
 
 export type RpcStartJobReply = { "ok"?: boolean; "jobId"?: string; "message"?: string; "status"?: string; "runtimeInstanceId"?: string; "startRequestId"?: string; "legacySnapshotPolicy"?: string; "projectRevision"?: string; "inspectionSessionId"?: string; "diagnosticsJson"?: string };
 
-export type RpcStartJobRequest = { "projectId"?: string; "workflowId"?: string; "inputsJson"?: string; "capturePresentation"?: boolean; "startRequestId"?: string; "expectedRuntimeInstanceId"?: string; "legacySnapshotPolicy"?: string; "inspectionSessionId"?: string; "expectedDocumentRevision"?: string };
+export type RpcStartJobRequest = { "projectId"?: string; "workflowId"?: string; "inputsJson"?: string; "capturePresentation"?: boolean; "startRequestId"?: string; "expectedRuntimeInstanceId"?: string; "legacySnapshotPolicy"?: string; "inspectionSessionId"?: string; "expectedDocumentRevision"?: string; "followProjectRunMode"?: boolean };
 
 export type RpcStartRequestLookup = { "startRequestId"?: string; "runtimeInstanceId"?: string };
 

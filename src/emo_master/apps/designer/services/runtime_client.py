@@ -1519,6 +1519,18 @@ class RuntimeClient:
         return self._call("GetStartRequest", runtime_pb2.StartRequestLookup(
             start_request_id=startRequestId, runtime_instance_id=runtimeInstanceId))
 
+    def requireContinuousProjectRun(self) -> None:
+        """Older production hosts already apply the project's continuous policy."""
+        message = "当前 Runtime 不支持按工程设置持续运行，请升级 Runtime 后重试"
+        try:
+            info = self.getRuntimeInfo()
+        except RuntimeClientError as error:
+            if "UNIMPLEMENTED" in error.code:
+                raise RuntimeClientError("E_PROJECT_RUN_MODE_UNSUPPORTED", message) from error
+            raise
+        if not info.ok or not (info.production_mode or "project_run_mode_v1" in info.capabilities):
+            raise RuntimeClientError("E_PROJECT_RUN_MODE_UNSUPPORTED", message)
+
     def releaseDisplayJob(self, jobId: str, runtimeInstanceId: str):
         status = self.getJobStatus(jobId)
         if not getattr(status, "ok", False) or getattr(status, "status", "") not in {"COMPLETED", "FAILED", "ABORTED"}:
@@ -1538,6 +1550,7 @@ class RuntimeClient:
         expectedRuntimeInstanceId: str = "",
         inspectionSessionId: str = "",
         expectedDocumentRevision: int = 0,
+        followProjectRunMode: bool = False,
     ) -> object:
         policy = normalizeLegacySnapshotPolicy(legacySnapshotPolicy)
         if policy == "NONE":
@@ -1563,6 +1576,7 @@ class RuntimeClient:
             legacy_snapshot_policy=policy,
             inspection_session_id=inspectionSessionId,
             expected_document_revision=expectedDocumentRevision,
+            follow_project_run_mode=followProjectRunMode,
         )
         return self._call("StartJob", request)
 

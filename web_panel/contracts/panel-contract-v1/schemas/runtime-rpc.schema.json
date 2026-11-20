@@ -1329,6 +1329,9 @@
         "expectedDocumentRevision": {
           "type": "string",
           "pattern": "^-?[0-9]+$"
+        },
+        "followProjectRunMode": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false

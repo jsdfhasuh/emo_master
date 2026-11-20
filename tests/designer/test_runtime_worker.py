@@ -3,6 +3,8 @@ from __future__ import annotations
 import threading
 import time
 
+import pytest
+
 try:
     from PySide2.QtCore import QCoreApplication
 except ImportError:
@@ -77,6 +79,45 @@ def testRuntimeWorkerDoesNotBlockCallerWhileFollowingJob() -> None:
         if application is not None:
             application.processEvents()
     assert len(events) == 1
+
+
+@pytest.mark.parametrize("mode, capability, productionHost, shouldStart", [
+    ("continuous", True, False, True),
+    ("continuous", False, True, True),
+    ("continuous", False, False, False),
+    ("single", False, False, True),
+])
+def testDesignerRunFollowsProjectModeAndChecksContinuousSupport(
+        mode, capability, productionHost, shouldStart, monkeypatch):
+    from emo_master.apps.designer.services.runtime_client import RuntimeClient
+    from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+
+    starts, failures, uncertain = [], [], []
+
+    class Service:
+        def GetRuntimeInfo(self, request, context):
+            assert mode == "continuous"  # Single projects can use pre-capability peers.
+            return pb.RuntimeInfoReply(ok=True, production_mode=productionHost,
+                capabilities=["project_run_mode_v1"] if capability else [])
+
+        def StartJob(self, request, context):
+            starts.append(request)
+            return pb.StartJobReply(status="REJECTED", message="test admission")
+
+    client = RuntimeClient(Service())
+    monkeypatch.setattr(client, "prepareStart", lambda *args, **kwargs: "")
+    worker = RuntimeWorker(client, "project", "main")
+    worker.projectRunMode = mode
+    worker.failed.connect(failures.append)
+    worker.uncertain.connect(uncertain.append)
+    _runWorker(worker)
+    if shouldStart:
+        assert len(starts) == 1 and starts[0].follow_project_run_mode
+        assert failures == ["test admission"]
+    else:
+        assert not starts
+        assert len(failures) == 1 and "不支持按工程设置持续运行" in failures[0]
+    assert not uncertain
 
 
 def testRuntimeWorkerRequestStopCancelsActiveStreamAndClientSubscription() -> None:
@@ -337,7 +378,7 @@ def testCaptureRunUsesOriginalStartAndNegotiatedRequestIdentity() -> None:
     project, fields = client.calls[0]
     assert project == "original-project"
     assert fields == {"workflowId": "main", "inputs": {}, "capturePresentation": True,
-                      "legacySnapshotPolicy": "ALL",
+                      "legacySnapshotPolicy": "ALL", "followProjectRunMode": True,
                       "startRequestId": worker.startRequestId, "expectedRuntimeInstanceId": "runtime-one"}
     assert accepted[0].job_id == "job-worker"
 

@@ -13,7 +13,30 @@ from emo_master.apps.designer.ui.main_window import MainWindow
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from tests.runtime.test_dispatch_queue_integration import gateConsumers
+from tests.runtime.runtime_test_utils import jobFailureDetails
 from tests.ui.page_designer.test_normal_run_viewing import waitFor, displayedImagesReady
+
+
+def waitForConsumerImages(preview, runtime, jobId):
+    try:
+        waitFor(lambda: displayedImagesReady(preview.observer))
+    except AssertionError as error:
+        observer, session = preview.observer, preview.session
+        view = session.readSnapshot()
+        state = dict(connection=view.connection, detail=view.detail, job=view.jobId,
+            visible=observer.isVisible(), minimized=observer.isMinimized(), detached=observer.detached,
+            page=observer.currentPageId, sourceMode=observer.source.currentIndex(),
+            sources=sorted(observer.imageSources()), demand=session._wantedImages,
+            status=observer.status.text(), errors=list(session.errors)[-4:], records=list(session.records)[-2:],
+            scopes={key: dict(key=scope.result.identity.resultKey, status=scope.result.status,
+                images=list(scope.images), failures=dict(scope.failures), states=dict(scope.imageStates))
+                for key, scope in view.scopes.items()},
+            widgets=[dict(id=component.componentId, key=widget.key, null=widget.image.isNull())
+                for component, widget in observer.widgets.get(observer.currentPageId, {}).values()
+                if component.type == 'image'])
+        result = next(iter(view.scopes.values())).result if view.scopes else None
+        raise AssertionError(f'{error}; display={state!r}; '
+            + jobFailureDetails(runtime, jobId, result=result)) from error
 
 
 @pytest.mark.parametrize("slots", [("detection",), ("left", "right")])
@@ -63,7 +86,7 @@ def testDesignerContinuousConsumerPageAndQueueMonitor(qtApp, tmp_path, monkeypat
         preview.watchCurrent()
         waitFor(lambda: preview.hub is not None or preview.error)
         assert preview.error is None
-        waitFor(lambda: displayedImagesReady(preview.observer))
+        waitForConsumerImages(preview, runtime, group.slots[slots[-1]].jobId)
         result = next(iter(preview.observer.displayed.values())).result
         assert result.identity.jobId == group.slots[slots[-1]].jobId and result.status == "COMPLETE"
         assert f"consumer / {slots[-1]}" in preview.observer.banner.text()
@@ -116,7 +139,7 @@ def testDesignerContinuousConsumerPageAndQueueMonitor(qtApp, tmp_path, monkeypat
             preview.watchCurrent()
             waitFor(lambda: preview.hub is not None or preview.error)
             assert preview.error is None
-            waitFor(lambda: displayedImagesReady(preview.observer))
+            waitForConsumerImages(preview, runtime, newGroup.slots[slots[0]].jobId)
             assert next(iter(preview.observer.displayed.values())).result.identity.jobId == newGroup.slots[slots[0]].jobId
             rest.clear()
             waitFor(lambda: bool(newGroup.waiting))

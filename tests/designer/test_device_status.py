@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import pytest
 from PySide2.QtCore import QEvent, QPoint
 from PySide2.QtGui import QHelpEvent
-from PySide2.QtWidgets import QPushButton, QToolTip
+from PySide2.QtWidgets import QLabel, QPushButton, QToolTip
 
 from emo_master.apps.designer.ui.device_status import DeviceStatusObserver, duration, statusPresentation
 from emo_master.apps.designer.ui.runtime_panel import RuntimePanelState
@@ -370,9 +370,15 @@ def testNativeStatusRefreshesWithoutDeviceDialogAndClickOpensAllDevices(
         assert button.fontMetrics().horizontalAdvance(button.text()) < button.width()
         assert window.statusBar().rect().contains(button.geometry())
         assert window.grab().save(str(tmp_path / f'status-{width}.png'))
-    hoverStatus(retainedQtApplication, button)
-    tips = [widget for widget in retainedQtApplication.topLevelWidgets() if widget.objectName() == 'qtooltip_label']
-    assert tips and tips[0].isVisible()
-    assert tips[0].grab().save(str(tmp_path / 'status-tooltip.png'))
-    print('STATUS_SCREENSHOTS', tmp_path)
-    QToolTip.hideText()
+    try:
+        hoverStatus(retainedQtApplication, button)
+        # Qt's QTipLabel is a QLabel; unrelated native wrappers are not capture targets.
+        tips = [widget for widget in retainedQtApplication.topLevelWidgets()
+                if isinstance(widget, QLabel) and widget.objectName() == 'qtooltip_label']
+        assert len(tips) == 1
+        tip = tips[0]
+        assert tip.isVisible() and tip.text() == button.toolTip()
+        assert tip.grab().save(str(tmp_path / 'status-tooltip.png'))
+        print('STATUS_SCREENSHOTS', tmp_path)
+    finally:
+        QToolTip.hideText()

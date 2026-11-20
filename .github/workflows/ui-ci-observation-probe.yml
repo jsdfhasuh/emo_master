@@ -34,7 +34,7 @@ jobs:
           tests/ui/page_designer/test_dispatch_live_page.py
           tests/ui/page_designer/test_dispatch_queue_viewing.py
           -q --timeout=120 --timeout-method=thread -o faulthandler_timeout=60
-          --basetemp=build/ui-ci-observation
+          --basetemp=ui-ci-observation
           --junitxml=build/ui-ci-observation.xml
       - name: Retain failure diagnostics and tooltip screenshots
         if: always()
@@ -43,5 +43,5 @@ jobs:
           name: ui-ci-observation-${{ github.sha }}
           path: |
             build/ui-ci-observation.xml
-            build/ui-ci-observation/**/status-*.png
+            ui-ci-observation/**/status-*.png
           if-no-files-found: ignore

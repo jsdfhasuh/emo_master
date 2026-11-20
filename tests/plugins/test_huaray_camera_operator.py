@@ -433,6 +433,22 @@ def testCameraOpenFailureDestroysCreatedHandle() -> None:
     assert api.destroyCount == 1
 
 
+def testCameraOpenNotAvailableReportsCameraAndControlAccessHint() -> None:
+    api = _FakeImvApi()
+    api.openResult = -116
+    operator = HuarayCameraOperator(lambda: api)
+    key = "Huaray Technology:test-camera"
+
+    result = operator.executeNode({}, _params(selectionMode="cameraKey", cameraKey=key), {})
+
+    assert result["error"]["code"] == "E_CAMERA_OPEN_FAILED"
+    message = result["error"]["message"]
+    assert all(text in message for text in (key, "-116", "控制连接不可用", "网卡", "控制权"))
+    assert result["diagnostics"]["operation"] == "IMV_Open"
+    assert result["diagnostics"]["sdkCode"] == -116
+    assert api.destroyCount == 1
+
+
 def testCameraRejectsDeviceRangeAndIncrementMismatch() -> None:
     api = _FakeImvApi()
     operator = HuarayCameraOperator(lambda: api)

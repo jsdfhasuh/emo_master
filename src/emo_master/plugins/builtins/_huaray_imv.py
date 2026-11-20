@@ -16,6 +16,7 @@ from ._huaray_device_info import DeviceInfo as _IMV_DeviceInfo
 
 
 IMV_OK = 0
+IMV_NOT_AVAILABLE = -116
 IMV_TIMEOUT = -119
 IMV_INTERFACE_ALL = 0x00000000
 
@@ -602,6 +603,14 @@ class CameraSession:
             self.handle = handle
             self.handleCreated = True
             openResult = self.api.open(self.handle)
+            if openResult == IMV_NOT_AVAILABLE:
+                raise HuarayCameraError(
+                    "E_CAMERA_OPEN_FAILED",
+                    f"相机 {identifier} 的控制连接不可用（IMV_Open，SDK -116 / IMV_NOT_AVAILABLE）。"
+                    "请检查本机网卡与相机的网络连接，并确认其他程序或主机是否持有相机控制权。",
+                    operation="IMV_Open",
+                    sdkCode=openResult,
+                )
             _checkSdkResult(
                 openResult,
                 "E_CAMERA_OPEN_FAILED",

@@ -225,8 +225,8 @@ try:
             except ValueError:
                 return text
 
-    class _IntegerListControl(QLineEdit):
-        """Compact list editing; the saved value remains a JSON integer array."""
+    class _NumericListControl(QLineEdit):
+        """Edit one or more numbers while preserving the array parameter."""
 
         def __init__(self, value: object, placeholder: str) -> None:
             super().__init__()
@@ -922,8 +922,8 @@ try:
             if field.fieldType == "array":
                 if field.schema.get("xWidget") == "file-patterns":
                     return FilePatternsControl(selectedValue)
-                if field.schema.get("xWidget") == "integer-list":
-                    control = _IntegerListControl(selectedValue, str(field.schema.get("xPlaceholder", "")))
+                if field.schema.get("xWidget") in ("integer-list", "number-list"):
+                    control = _NumericListControl(selectedValue, str(field.schema.get("xPlaceholder", "")))
                     if (self._rawSchema.get("xCollectionFilter") or self._rawSchema.get("xModeOperator")) and isinstance(selectedValue, str):
                         control.setText(selectedValue)
                     return control
@@ -976,12 +976,13 @@ try:
                 return value
             if isinstance(control, _IntegerValueControl):
                 return control.value()
-            if isinstance(control, _IntegerListControl):
-                title = _parameterErrorTitle(field.name, field.schema) if field else "整数列表"
+            if isinstance(control, _NumericListControl):
+                title = _parameterErrorTitle(field.name, field.schema) if field else "数值"
                 try:
                     value = control.value()
                 except json.JSONDecodeError as error:
-                    raise ValueError(f"{title}：编号格式错误，请用逗号分隔整数") from error
+                    kind = "整数" if field and field.schema.get("xWidget") == "integer-list" else "数值"
+                    raise ValueError(f"{title}：请输入{kind}，多个{kind}用逗号分隔") from error
                 message = _valueError(value, field.schema if field else {"type": "array"}, title)
                 if message:
                     raise ValueError(message)

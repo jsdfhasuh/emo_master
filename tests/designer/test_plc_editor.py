@@ -596,8 +596,11 @@ def testFormalValidationUsesExistingOperatorValidator(editor, directory, params)
 
 def testMalformedFormalValuesJsonCannotApply(editor):
     controller, context, workspace = editor("plc_slmp_write", window=True)
-    controller.paramForm._controls["values"].setPlainText("[broken")
+    control = controller.paramForm._controls["values"]
+    control.setText("[broken")
     assert not workspace.applyChanges()
+    assert "请输入数值" in workspace._statusLabel.text()
+    assert control.text() == "[broken"
     assert not context.applied and not context.calls
 
 

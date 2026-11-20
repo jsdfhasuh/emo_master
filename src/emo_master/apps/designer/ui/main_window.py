@@ -5186,6 +5186,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             # Remote catalogs may arrive after a minimal project was opened.
             schema = (deepcopy(catalogSchema) if not node.paramSchema else
                       mergeParameterTitles(node.paramSchema, catalogSchema))
+            if node.operatorId == "communication.plc.slmp_write":
+                from emo_master.apps.designer.ui.plc_presentation import configurePlcWriteValues
+                configurePlcWriteValues(schema)
             if node.operatorId == "vision.io.video_loader":
                 edges = (self.flowModel.edges if sourceWorkflowId == self.activeWorkflowId else
                          self.workflowStore.get(sourceWorkflowId).edges)

@@ -254,7 +254,8 @@ class MvsSession:
     def _nodeAccess(self, name: str) -> int:
         access = self._sdk.MV_XML_AccessMode()
         result = self._camera.MV_XML_GetNodeAccessMode(name, access)
-        if result == self._sdk.MV_E_GC_NODE_NOT_FOUND:
+        # Some MVS Python bindings omit this status from MvErrorDefine.h.
+        if result == getattr(self._sdk, "MV_E_GC_NODE_NOT_FOUND", 0x80000109):
             return self._sdk.AM_NI
         _require(result, f"check access to {name}", "E_CAMERA_CONFIG_FAILED")
         return access.value
@@ -392,7 +393,7 @@ class MvsSession:
         info = frame.stFrameInfo
         width = int(info.nExtendWidth or info.nWidth)
         height = int(info.nExtendHeight or info.nHeight)
-        size = int(info.nFrameLenEx or info.nFrameLen)
+        size = int(getattr(info, "nFrameLenEx", 0) or info.nFrameLen)
         if not frame.pBufAddr or not 0 < size <= 0xFFFFFFFF or info.nLostPacket:
             raise MvsError("E_CAMERA_FRAME_INVALID", "MVS returned an incomplete image")
         shape = _outputShape(width, height, color, capacity)

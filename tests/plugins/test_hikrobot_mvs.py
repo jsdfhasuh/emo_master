@@ -446,6 +446,45 @@ def test_single_frame_configuration_is_changed_before_repeated_triggers(sdk, ses
     assert sdk.calls.count(("TriggerSoftware",)) == 2
 
 
+@pytest.mark.parametrize("accessResult", [0, 0x80000109, 0x80000106])
+def test_node_access_with_older_mvs_bindings(sdk, session, accessResult):
+    del sdk.MV_E_GC_NODE_NOT_FOUND
+    sdk.failures["ExposureAuto access"] = accessResult
+    params = dict(triggerMode="software", outputColor="gray", exposureMode="manual", exposureUs=55.0)
+    if accessResult == 0x80000106:
+        with pytest.raises(mvs.MvsError, match="check access to ExposureAuto.*0x80000106") as caught:
+            session.start(params)
+        assert caught.value.code == "E_CAMERA_CONFIG_FAILED"
+        assert ("start",) not in sdk.calls
+        return
+
+    session.start(params)
+    assert (("ExposureAuto", "Off") in sdk.calls) == (accessResult == 0)
+    assert ("ExposureTime", 55.0) in sdk.calls
+    image, _ = session.capture(params, lambda: None, 4, 100)
+    assert image.shape == (2, 2)
+
+
+@pytest.mark.parametrize("extendedLength", [None, 4, 0x100000004])
+def test_frame_length_across_mvs_bindings(sdk, session, extendedLength):
+    if extendedLength is None:
+        del sdk.frameInfo.nFrameLenEx
+    else:
+        sdk.frameInfo.nFrameLen = 0
+        sdk.frameInfo.nFrameLenEx = extendedLength
+    params = dict(triggerMode="software", outputColor="gray")
+    session.start(params)
+    if extendedLength == 0x100000004:
+        with pytest.raises(mvs.MvsError, match="incomplete image") as caught:
+            session.capture(params, lambda: None, 4, 100)
+        assert caught.value.code == "E_CAMERA_FRAME_INVALID"
+        assert not any(row[0] == "convert" for row in sdk.calls)
+    else:
+        image, _ = session.capture(params, lambda: None, 4, 100)
+        assert image.tolist() == [[1, 2], [3, 4]]
+    assert ("free",) in sdk.calls
+
+
 @pytest.mark.parametrize("frameCount", [1, 4])
 def test_burst_only_camera_uses_one_frame_per_software_trigger(sdk, session, frameCount):
     del sdk.triggerSelectors[3]

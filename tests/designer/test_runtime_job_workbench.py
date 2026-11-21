@@ -81,6 +81,47 @@ def _selectEntry(workbench, entry):
     assert workbench._detailEntry.eventId == entry.eventId
 
 
+def _runDebugFromDesignerAndReturn(window, jobId):
+    from shiboken2 import isValid
+
+    window.navigateToWorkflow("body", "value")
+    window.openNodeParamDialog("value")
+    editor = window.nodeParamDialog
+    assert editor.key.workflowId == "body" and editor.key.nodeId == "value"
+    try:
+        _click(editor._debugButton)
+        debug = editor._debugWindow
+        waitUntil(lambda: debug.run.isEnabled() or debug.state == "FAULTED", timeout=12)
+        assert debug.run.isEnabled(), debug.status.text()
+        _click(debug.run)
+        waitUntil(lambda: len(debug.records) == 1 and debug.run.isEnabled(), timeout=12)
+        firstId = debug.records[0]["executionId"]
+        assert debug.records[0]["outputs"] == {"value": 12}
+        editor._schemaForm.setSchema(editor.context.paramSchema, {"value": 9})
+        _click(debug.run)
+        waitUntil(lambda: len(debug.records) == 2 and debug.run.isEnabled(), timeout=12)
+        assert debug.records[0]["outputs"] == {"value": 9}
+        debug.tabs.setCurrentIndex(3)
+        finished = next(debug.logs.item(i) for i in range(debug.logs.count()) if
+                        debug.logs.item(i).data(Qt.UserRole).get("type") == "execution.finished"
+                        and debug.logs.item(i).data(Qt.UserRole).get("executionId") == firstId)
+        debug.logs.setCurrentItem(finished)
+        _click(debug.logResult)
+        raw = json.loads(debug.resultDetail.rawTree.toPlainText())
+        assert raw["executionId"] == firstId and raw["sessionId"] == debug.debugSessionId
+        assert raw["sourceIdentity"]["generation"] == debug.debugGeneration
+        assert raw["outputs"] == {"value": 12} and "jobId" not in raw
+        _capture(debug, "q1-operator-debug-result.png")
+        debug.resultDetail.tabs.setCurrentIndex(1)
+        _capture(debug, "q1-operator-debug-raw.png")
+        _click(debug.end)
+        waitUntil(lambda: not isValid(debug), timeout=12)
+    finally:
+        editor.forceClose()
+    window.openLogDialog()
+    assert window.logDialog.isVisible() and window.logDialog.jobLogs.job.job_id == jobId
+
+
 def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_path):
     service = RuntimeService(dbPath=tmp_path / "runtime.db", workspaceRoot=tmp_path / "jobs",
                              logDirectory=tmp_path / "runtime-logs")
@@ -115,6 +156,9 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
         grpc.channel_ready_future(channel).result(timeout=5)
         client = RuntimeClient(rpc.RuntimeServiceStub(channel))
         window = ownedDesignerWindow(client, settingsStore=Settings(), localLogDirectory=tmp_path / "designer-logs")
+        assert window.loadProjectDirectory(str(path), confirmed=True)
+        assert window._currentProjectId() == projectId and "body" in window.workflowStore.workflows
+        window.show()
         window.openLogDialog()
         dialog = window.logDialog
         dialog.resize(1400, 860)
@@ -238,6 +282,8 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
         assert workbench.jobTitle.text() == terminalTitle and "估算" not in terminalTitle
         _click(locate)
         assert "尚未确认" in workbench.jobHint.text()
+        _runDebugFromDesignerAndReturn(window, jobId)
+        assert [record.jobId for record in service.jobRepository.all()] == [jobId]
         print(f"Q1 Job {jobId} · WARN {warn.eventId} · completed {done.eventId} · SQLite {receipt.eventId}")
     finally:
         releaseFirst.set()

@@ -767,8 +767,8 @@ class RuntimeClient:
     def getDeviceOverview(self, projectId, *, cancellation=None):
         return self._deviceCall('getDeviceOverview', projectId, cancellation=cancellation)
 
-    def getDeviceDiagnostics(self, scope, deviceId, cursor=0):
-        return self._deviceCall('getDeviceDiagnostics', scope, deviceId, cursor)
+    def getDeviceDiagnostics(self, scope, deviceId, cursor=0, *, cancellation=None):
+        return self._deviceCall('getDeviceDiagnostics', scope, deviceId, cursor, cancellation=cancellation)
 
     def controlDevice(self, projectId, runtimeInstanceId, deviceId, state, action, *, confirmed=False):
         return self._deviceCall('controlDevice', projectId, runtimeInstanceId, deviceId, state, action,
@@ -1615,6 +1615,16 @@ class RuntimeClient:
         return self._call("ListRuns", runtime_pb2.ListRunsRequest(runtime_instance_id=runtimeInstanceId,
             project_id=projectId, workflow_id=workflowId, include_terminal=includeTerminal))
 
+    def listJobHistory(self, runtimeInstanceId: str, projectId: str = "", *, statuses=(),
+                       startEndedAtMs=None, endEndedAtMs=None, limit=50, cursor="", cancellation=None):
+        request = runtime_pb2.ListJobHistoryRequest(runtime_instance_id=runtimeInstanceId, project_id=projectId,
+            statuses=statuses, limit=limit, cursor=cursor)
+        if startEndedAtMs is not None:
+            request.start_ended_at_ms = startEndedAtMs
+        if endEndedAtMs is not None:
+            request.end_ended_at_ms = endEndedAtMs
+        return self._displayCall("ListJobHistory", request, 5000, cancellation, "runtime-logs")
+
     def getRunState(self, runtimeInstanceId: str, projectId: str, jobId: str):
         return self._call("GetRunState", runtime_pb2.GetRunStateRequest(runtime_instance_id=runtimeInstanceId,
             project_id=projectId, job_id=jobId))
@@ -1785,12 +1795,14 @@ class RuntimeClient:
 
     def queryRuntimeLogs(self, *, runtimeInstanceId="", projectId="", jobId="", deviceId="",
                          component="", levels=(), workflowId="", nodeId="", startTimestampMs=None,
-                         endTimestampMs=None, afterEventId=0, upperEventId=None, limit=200, cancellation=None):
+                         endTimestampMs=None, afterEventId=0, upperEventId=None, limit=200, latestFirst=False,
+                         beforeEventId=None, cancellation=None):
         request = runtime_pb2.QueryRuntimeLogsRequest(runtime_instance_id=runtimeInstanceId,
             project_id=projectId, job_id=jobId, device_id=deviceId, component=component,
-            levels=levels, workflow_id=workflowId, node_id=nodeId, after_event_id=afterEventId, limit=limit)
+            levels=levels, workflow_id=workflowId, node_id=nodeId, after_event_id=afterEventId,
+            limit=limit, latest_first=latestFirst)
         for name, value in (("upper_event_id", upperEventId), ("start_timestamp_ms", startTimestampMs),
-                            ("end_timestamp_ms", endTimestampMs)):
+                            ("end_timestamp_ms", endTimestampMs), ("before_event_id", beforeEventId)):
             if value is not None:
                 setattr(request, name, value)
         if (self.runtimeService is getattr(self, "_unsupportedLogQueryTarget", None)

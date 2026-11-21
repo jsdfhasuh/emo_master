@@ -45,6 +45,11 @@ class StructuredLogEntry:
     runtimeInstanceId: str = ""
     sequence: int = 0
     eventId: int | None = None
+    parentWorkflowRunId: str = ""
+    parentWorkflowRunIdRecorded: bool = False
+    iterationPathRecorded: bool = False
+    rawTimestampMs: int | None = None
+    _runtimeRecord: dict[str, object] | None = field(default=None, repr=False, compare=False)
 
     @classmethod
     def fromLine(cls, line: str) -> "StructuredLogEntry":
@@ -63,25 +68,29 @@ class StructuredLogEntry:
 
     @classmethod
     def fromRuntimeEvent(cls, event: dict[str, object]) -> "StructuredLogEntry":
-        rawIteration = event.get("iterationPath", ())
-        iteration = (
-            tuple(
-                item
-                for item in rawIteration
-                if isinstance(item, int) and not isinstance(item, bool)
-            )
-            if isinstance(rawIteration, (list, tuple))
-            else ()
-        )
+        eventType = str(event.get("eventType", ""))
         rawPayload = event.get("payload", {})
-        timestampMs = _integer(event.get("timestampMs"), 0)
+        rawIteration = event.get("iterationPath")
+        iteration: tuple[int, ...] = ()
+        validIteration = False
+        if isinstance(rawIteration, (list, tuple)) and all(type(index) is int and index >= 0 for index in rawIteration):
+            iteration = tuple(rawIteration)
+            validIteration = True
+        # Older native device rows used an empty transport path even when the
+        # cache row itself supplied no iteration attribution.
+        if (not iteration and eventType.startswith("device.") and isinstance(rawPayload, dict)
+                and type(rawPayload.get("cursor")) is int and "iterationPath" not in rawPayload):
+            validIteration = False
+        rawTimestamp = event.get("timestampMs")
+        timestampMs = rawTimestamp if type(rawTimestamp) is int and rawTimestamp > 0 else None
+        parentWorkflowRunId = event.get("parentWorkflowRunId")
         from emo_master.core.contracts.diagnostic_logging import componentForEvent
         return cls(
-            timestampMs=timestampMs if timestampMs > 0 else _nowMs(),
+            timestampMs=timestampMs if timestampMs is not None else _nowMs(),
             level=_level(event.get("level", "INFO")),
             message=str(event.get("message", "")),
             source="runtime",
-            eventType=str(event.get("eventType", "")),
+            eventType=eventType,
             jobId=str(event.get("jobId", "")),
             workflowId=str(event.get("workflowId", "")),
             workflowRunId=str(event.get("workflowRunId", "")),
@@ -94,11 +103,33 @@ class StructuredLogEntry:
             workflowName=str(event.get("workflowName", "")),
             nodeName=str(event.get("nodeName", "")),
             originApp=str(event.get("originApp", "runtime") or "runtime"),
-            component=str(event.get("component") or componentForEvent(str(event.get("eventType", "")))),
+            component=str(event.get("component") or componentForEvent(eventType)),
             runtimeInstanceId=str(event.get("runtimeInstanceId", "")),
             sequence=_integer(event.get("sequence"), 0),
             eventId=_integer(event.get("eventId"), 0) or None,
+            parentWorkflowRunId=parentWorkflowRunId if isinstance(parentWorkflowRunId, str) else "",
+            parentWorkflowRunIdRecorded=isinstance(parentWorkflowRunId, str),
+            iterationPathRecorded=validIteration,
+            rawTimestampMs=timestampMs,
+            _runtimeRecord=dict(event),
         )
+
+    @property
+    def isRuntime(self) -> bool:
+        return self.originApp.lower() == "runtime" if self.originApp else self.source == "runtime"
+
+    @property
+    def effectiveJobId(self) -> str:
+        if not self.isRuntime:
+            return ""
+        if self.jobId != "__runtime__":
+            return self.jobId
+        jobId = self.payload.get("jobId")
+        return jobId if isinstance(jobId, str) and jobId not in {"", "__runtime__"} else ""
+
+    @property
+    def isRuntimeSystem(self) -> bool:
+        return self.isRuntime and self.jobId == "__runtime__" and not self.effectiveJobId
 
     def displayTime(self) -> str:
         return datetime.fromtimestamp(self.timestampMs / 1000.0).strftime("%H:%M:%S.%f")[:-3]
@@ -139,9 +170,14 @@ class StructuredLogEntry:
         standard = lifecycle.get(self.eventType)
         return standard[1] if standard and self.message == standard[0] else self.message
 
+    def rawRecord(self) -> dict[str, object]:
+        if self._runtimeRecord is not None and self.isRuntime:
+            return dict(self._runtimeRecord)
+        return self.detailPayload()
+
     def detailPayload(self) -> dict[str, object]:
         return {
-            "timestampMs": self.timestampMs,
+            "timestampMs": self.rawTimestampMs if self._runtimeRecord is not None and self.isRuntime else self.timestampMs,
             "level": self.level,
             "source": self.source,
             "eventType": self.eventType,
@@ -150,6 +186,7 @@ class StructuredLogEntry:
             "workflowId": self.workflowId,
             "workflowName": self.workflowName,
             "workflowRunId": self.workflowRunId,
+            "parentWorkflowRunId": self.parentWorkflowRunId,
             "nodeId": self.nodeId,
             "nodeName": self.nodeName,
             "nodeRunId": self.nodeRunId,
@@ -183,6 +220,7 @@ try:
         QMessageBox,
         QPushButton,
         QSplitter,
+        QStackedWidget,
         QTabBar,
         QTableWidget,
         QTableWidgetItem,
@@ -191,7 +229,6 @@ try:
         QSizePolicy,
     )
     from emo_master.apps.designer.ui.icon_map import icon
-    from emo_master.apps.designer.ui.log_json_tree import LogJsonTree
 
     class _LogFilterComboBox(QComboBox):
         popupClosed: Any = Signal()
@@ -203,6 +240,7 @@ try:
 
     class StructuredLogView(QWidget):
         diagnosticCreated: Any = Signal(object)
+        jobExportStatus: Any = Signal(str, bool)
         columns = ("时间", "级别", "应用 / 模块", "Job", "工作流", "节点", "迭代", "事件", "错误码", "消息")
 
         def __init__(
@@ -240,6 +278,8 @@ try:
             self._historyCancel = None
             self._historyReply = None
             self._historyFilters: dict[str, Any] = {}
+            self.systemOnly = False
+            self.designerOnly = False
             self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
             self._historyResources = {"cancel": None, "call": None}
             root = QVBoxLayout()
@@ -351,26 +391,30 @@ try:
                 self.table.setColumnWidth(column, width)
             self.table.setAlternatingRowColors(True)
             self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
-            self.detailViewer = LogJsonTree()
+            from emo_master.apps.designer.ui.log_record_detail import LogRecordDetail
+            self.recordDetail = LogRecordDetail(self)
+            self.detailViewer = self.recordDetail.rawTree
             self.detailViewer.setObjectName("runtimeLogDetails")
             self._logViewer = self.detailViewer
             details = QWidget()
             detailLayout = QVBoxLayout(details)
             detailLayout.setContentsMargins(0, 0, 0, 0)
             detailActions = QHBoxLayout()
-            detailActions.addWidget(QLabel("日志详情 · JSON"))
+            detailActions.addWidget(QLabel("日志详情"))
             detailActions.addStretch(1)
-            self.copyDetailsButton = QPushButton("复制完整 JSON")
-            self.copyDetailsButton.setAutoDefault(False)
-            self.copyDetailsButton.setEnabled(False)
-            self.copyDetailsButton.clicked.connect(self.detailViewer.copyJson)
-            detailActions.addWidget(self.copyDetailsButton)
+            self.copyDetailsButton = self.recordDetail.copyRecordButton
             detailLayout.addLayout(detailActions)
-            detailLayout.addWidget(self.detailViewer)
-            splitter = QSplitter(Qt.Vertical)
+            detailLayout.addWidget(self.recordDetail)
+            self.detailPanel = details
+            closeDetails = QPushButton("关闭详情")
+            closeDetails.setAutoDefault(False)
+            closeDetails.clicked.connect(details.hide)
+            detailActions.addWidget(closeDetails)
+            details.hide()
+            splitter = QSplitter(Qt.Horizontal)
             splitter.addWidget(self.table)
             splitter.addWidget(details)
-            splitter.setSizes([300, 200])
+            splitter.setSizes([720, 400])
             root.addWidget(splitter)
             self.navigationHint = QLabel("选择一条日志，可查看详情或定位节点")
             self.navigationHint.setObjectName("runtimeLogNavigationHint")
@@ -421,6 +465,7 @@ try:
             self.table.verticalScrollBar().valueChanged.connect(self._onScrollChanged)
             self.table.verticalScrollBar().rangeChanged.connect(self._onScrollRangeChanged)
             self.table.currentCellChanged.connect(self._showDetails)
+            self.table.cellClicked.connect(self._showDetails)
             self.table.cellDoubleClicked.connect(self._navigateFromRow)
             self.locateButton.clicked.connect(self._navigateSelected)
             self.showErrorsButton.clicked.connect(self._showAllErrors)
@@ -544,6 +589,8 @@ try:
             level = self.levelFilter.currentText()
             if level in {"DEBUG", "INFO", "WARN", "ERROR"}:
                 filters["levels"] = [level]
+            if self.systemOnly:
+                filters["jobId"] = "__runtime__"
             return filters
 
         def _selectedLocalFiles(self):
@@ -563,7 +610,9 @@ try:
             self.historyQueryButton.setEnabled(False)
             self.historyNextButton.setEnabled(False)
             self.historyExportButton.setEnabled(False)
-            self.historyStatus.setText("正在" + ("导出" if kind == "export" else "读取") + "选定范围…")
+            self.historyStatus.setText("正在" + ("导出" if kind in {"export", "job_export"} else "读取") + "选定范围…")
+            if kind == "job_export":
+                self.jobExportStatus.emit("正在导出此 Job 的完整可查询记录…", True)
             self._historyTimer.start()
 
         def cancelHistory(self):
@@ -622,7 +671,18 @@ try:
             if cancelled.is_set():
                 context.cancel()
             try:
-                return client.queryRuntimeLogs(**options, cancellation=context)
+                while True:
+                    reply = client.queryRuntimeLogs(**options, cancellation=context)
+                    if not self.systemOnly or not reply["ok"]:
+                        return reply
+                    rows = [row for row in reply["events"]
+                            if StructuredLogEntry.fromRuntimeEvent(row["event"]).isRuntimeSystem]
+                    if rows or not reply["hasMore"]:
+                        return dict(reply, events=rows)
+                    if cancelled.is_set():
+                        raise LogExportCancelled("日志任务已取消")
+                    options = dict(options, afterEventId=reply["nextEventId"],
+                        upperEventId=reply["upperEventId"], runtimeInstanceId=reply["runtimeInstanceId"])
             finally:
                 if self._historyResources["call"] is context:
                     self._historyResources["call"] = None
@@ -642,11 +702,12 @@ try:
             else:
                 try:
                     value = future.result()
-                    if kind == "export":
+                    if kind in {"export", "job_export"}:
                         self.historyStatus.setText(f"已导出 {value} 条日志：{self._historyExportPath}")
                     elif kind == "local":
                         entries = [StructuredLogEntry.fromRuntimeEvent(row) for row in value]
-                        self.setEntries([dataclassReplace(entry, source=str(row.get("source", "designer"))) for entry, row in zip(entries, value)])
+                        self.setEntries([dataclassReplace(entry, originApp="designer", source=str(row.get("source", "designer")))
+                                         for entry, row in zip(entries, value)])
                         self.historyStatus.setText(f"本机文件最近记录：{len(entries)} 条；完整导出读取选定文件全部记录。")
                     elif not value["ok"]:
                         self.historyStatus.setText(self._historyFailureMessage(value["code"] + "：" + value["message"]))
@@ -662,6 +723,8 @@ try:
                         self.historyStatus.setText(f"Runtime 历史当前页 {len(value['events'])} 条；上界 {value['upperEventId']}，游标 {value['nextEventId']}。")
                 except Exception as error:
                     self.historyStatus.setText(self._historyFailureMessage("日志任务失败：" + str(error)))
+            if kind == "job_export":
+                self.jobExportStatus.emit(self.historyStatus.text(), False)
             mode = self.rangeCombo.currentData()
             self.historyCancelButton.setEnabled(False)
             self.historyQueryButton.setEnabled(mode != "current")
@@ -673,14 +736,15 @@ try:
                 return message + "；仍保留上次成功范围，翻页和完整导出沿用：" + json.dumps(self._historyFilters, ensure_ascii=False)
             return message
 
-        def exportHistory(self):
+        def exportHistory(self, *, jobScope=None):
             from emo_master.core.log_export import exportLogs, LogExportCancelled
             from emo_master.apps.operator_runtime.log_reader import snapshotLogFiles, iterLogFileRecords
             self.syncRuntimeInstance()
             mode = self.rangeCombo.currentData()
-            if mode == "current":
+            if mode == "current" and jobScope is None:
                 return
-            selected, selectedFilter = QFileDialog.getSaveFileName(self, "导出完整选定范围",
+            selected, selectedFilter = QFileDialog.getSaveFileName(self,
+                "导出此 Job 完整记录" if jobScope is not None else "导出完整选定范围",
                 str(self._exportDirectory / "日志历史.jsonl"), "JSON Lines (*.jsonl);;JSON (*.json);;文本 (*.txt)")
             if not selected:
                 return
@@ -695,7 +759,7 @@ try:
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
                     return
             try:
-                if mode == "local":
+                if mode == "local" and jobScope is None:
                     ranges = snapshotLogFiles(self._selectedLocalFiles())
                     filters = {"files": [{"path": str(row.path), "endOffset": row.endOffset} for row in ranges]}
                     def task(cancelled):
@@ -705,12 +769,17 @@ try:
                     client = self._historyClient
                     if client is None or not callable(getattr(client, "queryRuntimeLogs", None)):
                         raise ValueError("此 Runtime 不支持历史日志查询")
-                    filters = dict(self._historyFilters if self._historyReply else self._selectedHistoryFilters())
-                    previous = dict(self._historyReply) if self._historyReply else None
+                    if jobScope is None:
+                        filters = dict(self._historyFilters if self._historyReply else self._selectedHistoryFilters())
+                        previous = dict(self._historyReply) if self._historyReply else None
+                        requestedInstance = ""
+                    else:
+                        filters = {key: jobScope[key] for key in ("projectId", "jobId")}
+                        requestedInstance, previous = jobScope["runtimeInstanceId"], None
                     def task(cancelled):
                         def records():
                             cursor, upper = 0, previous["upperEventId"] if previous else None
-                            instance = previous["runtimeInstanceId"] if previous else ""
+                            instance = previous["runtimeInstanceId"] if previous else requestedInstance
                             while True:
                                 if cancelled.is_set():
                                     raise LogExportCancelled("日志导出已取消")
@@ -720,16 +789,19 @@ try:
                                     raise ValueError(reply["code"] + "：" + reply["message"])
                                 upper, instance = reply["upperEventId"], reply["runtimeInstanceId"]
                                 for row in reply["events"]:
-                                    yield StructuredLogEntry.fromRuntimeEvent(dict(row["event"], eventId=row["eventId"])).detailPayload()
+                                    entry = StructuredLogEntry.fromRuntimeEvent(dict(row["event"], eventId=row["eventId"]))
+                                    yield entry.rawRecord() if jobScope is not None else entry.detailPayload()
                                 cursor = reply["nextEventId"]
                                 if not reply["hasMore"]:
                                     break
                         return exportLogs(path, records(), formatName=formatName, scope="runtime_history",
                             filters=filters, cancelled=cancelled.is_set)
                 self._historyExportPath = path
-                self._startHistoryTask("export", task)
+                self._startHistoryTask("job_export" if jobScope is not None else "export", task)
             except (OSError, ValueError) as error:
                 self.historyStatus.setText("日志导出失败：" + str(error))
+                if jobScope is not None:
+                    self.jobExportStatus.emit(self.historyStatus.text(), False)
 
         def _updateExportActions(self):
             filteredCount = sum(self._matches(entry) for entry in self._entries)
@@ -812,7 +884,7 @@ try:
                     self._directoryError(message)
 
         def appendEntry(self, entry: StructuredLogEntry) -> None:
-            if self.rangeCombo.currentData() != "current":
+            if self.rangeCombo.currentData() != "current" or (self.designerOnly and entry.isRuntime):
                 return
             self._entries.append(entry)
             self._countEntry(entry, 1)
@@ -853,7 +925,8 @@ try:
                         names.pop(key, None)
 
         def hideEvent(self, event) -> None:
-            self.cancelHistory()
+            if self._historyFuture is not None and self._historyTask[0] != "job_export":
+                self.cancelHistory()
             self._refreshTimer.stop()
             self._viewDirty = self._viewDirty or bool(self._pendingEntries or self._pendingEvicted)
             self._pendingEntries.clear()
@@ -1188,16 +1261,19 @@ try:
         def _showDetails(self, row: int, _column: int, *_args) -> None:
             if not 0 <= row < len(self._visibleEntries):
                 self._detailEntry = None
-                self.detailViewer.clear()
+                self.recordDetail.clear()
+                self.detailPanel.hide()
                 self.copyDetailsButton.setEnabled(False)
                 self.locateButton.setEnabled(False)
                 self.navigationHint.setText("选择一条日志，可查看详情或定位节点")
                 return
             entry = self._visibleEntries[row]
             if entry is self._detailEntry:
+                self.detailPanel.show()
                 return
             self._detailEntry = entry
-            self.detailViewer.setPayload(entry.detailPayload())
+            self.recordDetail.setEvent(entry.rawRecord(), displayMessage=entry.displayMessage())
+            self.detailPanel.show()
             self.copyDetailsButton.setEnabled(True)
             self.locateButton.setEnabled(bool(entry.nodeId) and self._onNavigate is not None)
             if not entry.nodeId:
@@ -1289,6 +1365,7 @@ try:
             self.setWindowFlag(Qt.WindowMinMaxButtonsHint, True)
             self.setWindowTitle("运行日志")
             self.resize(1200, 720)
+            self.jobLogs: Any = None
             layout = QVBoxLayout()
             layout.setContentsMargins(0, 0, 0, 0)
             self.view = StructuredLogView(
@@ -1305,11 +1382,188 @@ try:
             layout.addWidget(self.view)
             self.setLayout(layout)
 
+        def enableWorkbench(self, *, makeEntry, onCurrent, directory, onError, onDiagnostic):
+            from emo_master.apps.designer.ui.runtime_job_logs import RuntimeJobLogs
+            self.layout().removeWidget(self.view)
+            self._currentLogEntries = onCurrent
+            self.sources = QTabBar()
+            self.sources.setObjectName("logSources")
+            self.sources.setDrawBase(False)
+            self.sources.addTab("Runtime 运行日志")
+            self.sources.addTab("Designer 本机日志")
+            self.sourcePages = QStackedWidget()
+            self.layout().addWidget(self.sources)
+            self.layout().addWidget(self.sourcePages, 1)
+            self.sources.currentChanged.connect(self.sourcePages.setCurrentIndex)
+
+            runtime = QWidget()
+            runtimeLayout = QVBoxLayout(runtime)
+            self.runtimeNavigation = QTabBar()
+            self.runtimeNavigation.setObjectName("runtimeLogNavigation")
+            self.runtimeNavigation.setDrawBase(False)
+            for title in ("运行任务", "系统事件", "高级历史查询"):
+                self.runtimeNavigation.addTab(title)
+            runtimeLayout.addWidget(self.runtimeNavigation)
+            self.runtimePages = QStackedWidget()
+            runtimeLayout.addWidget(self.runtimePages, 1)
+            self.runtimeNavigation.currentChanged.connect(self._runtimePageChanged)
+            self.jobLogs = RuntimeJobLogs(self.view.maximumEntries, makeEntry, runtime,
+                                         onNavigate=self.view._onNavigate)
+            self.runtimePages.addWidget(self.jobLogs)
+            self.system = StructuredLogView(runtime, maximumEntries=self.view.maximumEntries)
+            self.system.systemOnly = True
+            self.system.rangeCombo.setCurrentIndex(self.system.rangeCombo.findData("runtime"))
+            self.system.rangeCombo.hide()
+            self.system.historyInputs["jobId"].hide()
+            self.system.areaTabs.hide()
+            self.system.logDirectoryButton.hide()
+            self.system.clearButton.hide()
+            self.system.locateButton.hide()
+            self.system.historyStatus.setText("Runtime 系统事件 · 查询无任务归属的保留记录。")
+            self.runtimePages.addWidget(self.system)
+
+            history = QWidget()
+            historyLayout = QVBoxLayout(history)
+            historyLayout.setContentsMargins(0, 0, 0, 0)
+            self.historyBack = QPushButton("返回任务")
+            self.historyBack.setAutoDefault(False)
+            self.historyBack.setVisible(False)
+            self.historyBack.clicked.connect(self._returnFromJobHistory)
+            self.historyStructure = QPushButton("在执行结构中查看")
+            self.historyStructure.setAutoDefault(False)
+            self.historyStructure.clicked.connect(self._openHistoryEvent)
+            historyRow = QHBoxLayout()
+            historyRow.addWidget(self.historyBack)
+            historyRow.addStretch()
+            historyRow.addWidget(self.historyStructure)
+            historyLayout.addLayout(historyRow)
+            self.view.rangeCombo.hide()
+            self.view.logDirectoryButton.hide()
+            self.view.areaTabs.hide()
+            historyLayout.addWidget(self.view)
+            self.runtimePages.addWidget(history)
+            self.sourcePages.addWidget(runtime)
+            self.jobLogs.historyRequested.connect(self._jobHistory)
+            self._exportJobScope = None
+            self.jobLogs.exportRequested.connect(self._startJobExport)
+            self.jobLogs.exportCancelRequested.connect(self.view.cancelHistory)
+            self.view.jobExportStatus.connect(self._jobExportStatus)
+            self.view.table.currentCellChanged.connect(self._historySelectionChanged)
+            self._historySelectionChanged()
+
+            designer = QWidget()
+            designerLayout = QVBoxLayout(designer)
+            designerRange = QTabBar()
+            designerRange.setDrawBase(False)
+            designerRange.addTab("当前会话")
+            designerRange.addTab("本机历史文件")
+            designerLayout.addWidget(designerRange)
+            designerPages = QStackedWidget()
+            designerLayout.addWidget(designerPages, 1)
+            designerRange.currentChanged.connect(designerPages.setCurrentIndex)
+            self.designerViews = []
+            for mode in ("current", "local"):
+                view = StructuredLogView(designer, maximumEntries=self.view.maximumEntries)
+                view.designerOnly = True
+                view.setLogDirectory(directory, onError)
+                view.sourceFilter.removeItem(view.sourceFilter.findText("runtime"))
+                view.diagnosticCreated.connect(onDiagnostic)
+                view.rangeCombo.setCurrentIndex(view.rangeCombo.findData(mode))
+                view.rangeCombo.hide()
+                if mode == "current":
+                    view.historyStatus.setText("Designer 当前会话日志")
+                    for button in (view.historyQueryButton, view.historyNextButton,
+                                   view.historyExportButton, view.historyCancelButton):
+                        button.hide()
+                view.locateButton.hide()
+                self.designerViews.append(view)
+                designerPages.addWidget(view)
+            self.sourcePages.addWidget(designer)
+            self.setEntries(onCurrent())
+
+        def setWorkbenchClient(self, client, *, runtimeInstance):
+            self.view.setRuntimeClient(client, lambda: self.view.setEntries(self._currentLogEntries()),
+                                       runtimeInstance=runtimeInstance)
+            self.system.setRuntimeClient(client, runtimeInstance=runtimeInstance)
+            self.jobLogs.synchronize(client, runtimeInstance())
+
+        def syncWorkbench(self, client, instance):
+            self.view.syncRuntimeInstance()
+            self.system.syncRuntimeInstance()
+            self.jobLogs.synchronize(client, instance)
+
+        def _startJobExport(self, scope):
+            self._exportJobScope = scope
+            self.view.exportHistory(jobScope=scope)
+
+        def _jobExportStatus(self, message, busy):
+            if self.jobLogs.job is not None and self.jobLogs._queryScope() == self._exportJobScope:
+                self.jobLogs.exportFeedback(message, busy)
+
+        def _runtimePageChanged(self, index):
+            self.runtimePages.setCurrentIndex(index)
+            if index == 2 and self.view.rangeCombo.currentData() != "runtime":
+                self.view.rangeCombo.setCurrentIndex(self.view.rangeCombo.findData("runtime"))
+            elif index == 1 and self.system._historyReply is None:
+                self.system.queryHistory()
+
+        def _jobHistory(self, filters):
+            self.historyBack.show()
+            self.sources.setCurrentIndex(0)
+            self.runtimeNavigation.setCurrentIndex(2)
+            self.view._resetFilters()
+            self.view.historyInputs["jobId"].setReadOnly(True)
+            for key, edit in self.view.historyInputs.items():
+                edit.setText(str(filters.get(key, "")))
+            level = self.view.levelFilter.findText(filters["level"])
+            self.view.levelFilter.setCurrentIndex(max(level, 0))
+            self.view.queryHistory()
+
+        def _returnFromJobHistory(self):
+            self.historyBack.hide()
+            self.view.historyInputs["jobId"].setReadOnly(False)
+            self.runtimeNavigation.setCurrentIndex(0)
+
+        def openRuntimeHistory(self, *, projectId="", deviceId=""):
+            self.historyBack.hide()
+            self.sources.setCurrentIndex(0)
+            self.runtimeNavigation.setCurrentIndex(2)
+            self.view.historyInputs["jobId"].setReadOnly(False)
+            if deviceId:
+                self.view.openDeviceHistory(projectId, deviceId)
+
+        def _historySelectionChanged(self, *_):
+            row = self.view.table.currentRow()
+            entries = self.view._visibleEntries
+            self.historyStructure.setEnabled(0 <= row < len(entries) and bool(entries[row].effectiveJobId))
+
+        def _openHistoryEvent(self):
+            row = self.view.table.currentRow()
+            if not 0 <= row < len(self.view._visibleEntries):
+                return
+            entry = self.view._visibleEntries[row]
+            if not entry.effectiveJobId or not entry.eventId or not self.view._historyReply:
+                return
+            self.sources.setCurrentIndex(0)
+            self.runtimeNavigation.setCurrentIndex(0)
+            job = dict(jobId=entry.effectiveJobId, projectId=entry.projectId, workflowId=entry.workflowId)
+            self.jobLogs.openJob(job, eventId=entry.eventId, upper=self.view._historyReply["upperEventId"])
+
+        def openJob(self, job, *, focus=None, eventId=None):
+            self.sources.setCurrentIndex(0)
+            self.runtimeNavigation.setCurrentIndex(0)
+            self.jobLogs.openJob(job, focus=focus, eventId=eventId)
+
         def appendEntry(self, entry: StructuredLogEntry) -> None:
             self.view.appendEntry(entry)
+            if self.jobLogs is not None:
+                self.jobLogs.appendEntry(entry)
+                self.designerViews[0].appendEntry(entry)
 
         def setEntries(self, entries: list[StructuredLogEntry]) -> None:
             self.view.setEntries(entries)
+            if self.jobLogs is not None:
+                self.designerViews[0].setEntries([entry for entry in entries if not entry.isRuntime])
 
         def appendLog(self, line: str) -> None:
             self.view.appendLog(line)

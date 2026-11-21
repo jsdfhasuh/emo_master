@@ -6,8 +6,8 @@ from PySide2.QtCore import QObject, Qt, QTimer, Signal
 from PySide2.QtGui import QPixmap
 from PySide2.QtWidgets import (
     QAbstractItemView, QCheckBox, QComboBox, QDialog, QFileDialog, QFormLayout,
-    QHBoxLayout, QHeaderView, QLabel, QMessageBox, QPushButton, QPlainTextEdit,
-    QTableWidget, QTableWidgetItem, QTabWidget, QVBoxLayout, QWidget,
+    QHBoxLayout, QHeaderView, QLabel, QListWidget, QListWidgetItem, QMessageBox, QPushButton,
+    QSplitter, QTableWidget, QTableWidgetItem, QTabWidget, QVBoxLayout, QWidget,
 )
 
 from emo_master.apps.designer.services.operator_debug import DebugConnection
@@ -21,6 +21,7 @@ from .debug_values import InputRow, ValueTree, tool, imagePortTitle
 from .debug_artifact_tools import DebugActionFeedback, DebugArtifactTools
 from .debug_parameters import DebugParameterSection
 from .icon_map import icon
+from .log_record_detail import LogRecordDetail, debugEventText
 from .widgets import PreviewLabel, WrapLabel, scrollContent
 from .plc_presentation import ADVANCED_FIELDS, NUMBER_TYPES, PORT_TITLES, STATES, frameTitle, plcLog, plcSchema
 
@@ -36,7 +37,6 @@ class OperatorDebugWindow(QDialog):
         super().__init__(editor)
         self.editor, self.valid = editor, valid
         self.isPlc = editor.context.operatorId in {"communication.plc.slmp_read", "communication.plc.slmp_write"}
-        self.logEvents = []
         self.connection = DebugConnection(editor.context._runtimeClient)
         self.connection.projectDirectory = getattr(editor.context, "getProjectDirectory", lambda: "")()
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-debug")
@@ -54,6 +54,8 @@ class OperatorDebugWindow(QDialog):
         self.executionId = ""
         self.executionStatus = ""
         self.sequence = 0
+        self.debugSessionId = ""
+        self.debugGeneration = None
         self.records = []
         self.rows = {}
         self.sources = []
@@ -113,43 +115,54 @@ class OperatorDebugWindow(QDialog):
         self.tabs.addTab(scrollContent(self.inputBody), "输入")
         result = QWidget()
         resultLayout = QVBoxLayout(result)
-        resultBar = QHBoxLayout()
         self.versions = QComboBox()
         self.versions.currentIndexChanged.connect(self.showResult)
-        resultBar.addWidget(self.versions, 1)
+        resultLayout.addWidget(self.versions)
+        self.resultLabel = WrapLabel("")
+        resultLayout.addWidget(self.resultLabel)
+        self.resultTabs = QTabWidget()
+        self.resultTabs.setDocumentMode(True)
+        self.resultDetail = LogRecordDetail(self.resultTabs)
+        self.resultDetail.clear("尚未收到调试执行结果")
+        self.resultTabs.addTab(self.resultDetail, "执行详情")
+        portPage = QWidget()
+        portLayout = QVBoxLayout(portPage)
+        portBar = QHBoxLayout()
         self.outputPorts = QComboBox()
         self.outputPorts.currentIndexChanged.connect(self.showOutput)
-        resultBar.addWidget(self.outputPorts, 1)
+        portBar.addWidget(self.outputPorts, 1)
         self.artifacts = DebugArtifactTools(self, lambda: dict(projectId=self.editor.key.projectId,
             workflowId=self.editor.key.workflowId, nodeId=self.editor.key.nodeId, operatorId=self.editor.context.operatorId),
             self.editor.collectParams, self.exportSelection)
         # Static tools belong to the input page even before open finishes or
         # when the operator has no input ports. Dynamic rows never own them.
         inputLayout.insertWidget(0, self.artifacts.panel)
-        resultBar.addWidget(self.artifacts.export)
-        resultBar.addWidget(self.artifacts.raw)
-        resultLayout.addLayout(resultBar)
-        self.resultLabel = WrapLabel("")
-        resultLayout.addWidget(self.resultLabel)
+        portBar.addWidget(self.artifacts.export)
+        portBar.addWidget(self.artifacts.raw)
+        portLayout.addLayout(portBar)
         self.outputMessage = WrapLabel("")
         self.outputMessage.hide()
-        resultLayout.addWidget(self.outputMessage)
+        portLayout.addWidget(self.outputMessage)
         self.plcSummary = WrapLabel("")
         self.plcSummary.setVisible(self.isPlc)
-        resultLayout.addWidget(self.plcSummary)
+        portLayout.addWidget(self.plcSummary)
         self.rawOutput = QCheckBox("原始输出")
         self.rawOutput.setVisible(self.isPlc)
         self.rawOutput.toggled.connect(self.showOutput)
-        resultLayout.addWidget(self.rawOutput)
+        portLayout.addWidget(self.rawOutput)
         self.plcResults = self.resultTable(["地址", "数值", "数值类型"])
         self.plcResults.hide()
-        resultLayout.addWidget(self.plcResults, 1)
+        portLayout.addWidget(self.plcResults, 1)
         self.image = PreviewLabel()
         self.image.hide()
-        resultLayout.addWidget(self.image, 1)
+        portLayout.addWidget(self.image, 1)
         self.outputTree = ValueTree()
         self.outputTree.setMinimumHeight(80)
-        resultLayout.addWidget(self.outputTree, 1)
+        portLayout.addWidget(self.outputTree, 1)
+        self.resultTabs.addTab(portPage, "输出端口")
+        if self.isPlc:
+            self.resultTabs.setCurrentWidget(portPage)
+        resultLayout.addWidget(self.resultTabs, 1)
         self.tabs.addTab(result, "结果")
         self.details = ValueTree()
         if self.isPlc:
@@ -165,19 +178,25 @@ class OperatorDebugWindow(QDialog):
             self.tabs.addTab(detailPage, "参数与状态")
         else:
             self.tabs.addTab(self.details, "参数与状态")
-        self.logs = QPlainTextEdit()
-        self.logs.setReadOnly(True)
-        self.logs.setMaximumBlockCount(1000)
-        if self.isPlc:
-            logPage = QWidget()
-            logLayout = QVBoxLayout(logPage)
-            self.rawLogs = QCheckBox("原始事件")
-            self.rawLogs.toggled.connect(self.renderLogs)
-            logLayout.addWidget(self.rawLogs)
-            logLayout.addWidget(self.logs)
-            self.tabs.addTab(logPage, "日志")
-        else:
-            self.tabs.addTab(self.logs, "日志")
+        logPage = QWidget()
+        logLayout = QVBoxLayout(logPage)
+        self.logResult = QPushButton("查看此条日志的执行结果")
+        self.logResult.setEnabled(False)
+        self.logResult.hide()
+        self.logResult.clicked.connect(self.openLogResult)
+        logLayout.addWidget(self.logResult, 0, Qt.AlignLeft)
+        splitter = QSplitter(Qt.Horizontal)
+        self.logs = QListWidget()
+        self.logs.setAccessibleName("调试会话日志")
+        self.logs.setTextElideMode(Qt.ElideRight)
+        splitter.addWidget(self.logs)
+        self.logDetail = LogRecordDetail(splitter)
+        splitter.addWidget(self.logDetail)
+        splitter.setStretchFactor(1, 1)
+        splitter.setSizes([240, 600])
+        logLayout.addWidget(splitter, 1)
+        self.logs.currentItemChanged.connect(self.showLog)
+        self.tabs.addTab(logPage, "日志")
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.poll)
         self.timer.start(250)
@@ -237,18 +256,86 @@ class OperatorDebugWindow(QDialog):
         return STATES.get(state, state) if self.isPlc else state
 
     def appendLog(self, event):
-        if self.isPlc:
-            self.logEvents.append(event)
-            del self.logEvents[:-1000]
-            text = plcLog(event) if isinstance(event, dict) and not self.rawLogs.isChecked() else str(event)
-        else:
-            text = str(event)
-        self.logs.appendPlainText(text)
+        self.appendLogs((event,))
 
-    def renderLogs(self):
-        self.logs.setPlainText("\n".join(
-            plcLog(event) if isinstance(event, dict) and not self.rawLogs.isChecked() else str(event)
-            for event in self.logEvents))
+    def logText(self, event):
+        if isinstance(event, str):
+            return event
+        inner = event.get("event")
+        if self.isPlc and (event.get("type") in {"session.opened", "session.ready", "session.closed",
+                "execution.started", "execution.finished"} or
+                isinstance(inner, dict) and inner.get("eventType") == "node.log"):
+            return plcLog(event)
+        return debugEventText(event)
+
+    def appendLogs(self, events):
+        if not events:
+            return
+        current = self.logs.currentItem()
+        scrollbar = self.logs.verticalScrollBar()
+        follow = current is None or (self.logs.currentRow() == self.logs.count() - 1
+                                    and scrollbar.value() == scrollbar.maximum())
+        self.logs.blockSignals(True)
+        for event in events:
+            if isinstance(event, dict) and event.get("generation") != self.debugGeneration:
+                continue
+            item = QListWidgetItem(self.logText(event), self.logs)
+            item.setData(Qt.UserRole, event)
+        while self.logs.count() > 1000:
+            self.logs.takeItem(0)
+        if follow and self.logs.count():
+            self.logs.setCurrentRow(self.logs.count() - 1)
+            self.logs.scrollToBottom()
+        self.logs.blockSignals(False)
+        if self.logs.currentItem() is not current:
+            self.showLog(self.logs.currentItem())
+
+    def showLog(self, item, *_):
+        if item is None:
+            self.logDetail.clear()
+        else:
+            event = item.data(Qt.UserRole)
+            self.logDetail.setDebugEvent(event, self.debugSessionId,
+                displayMessage=self.logText(event) if self.isPlc else None)
+        self.updateLogResult()
+
+    def logResultIndex(self):
+        item = self.logs.currentItem()
+        wrapper = item.data(Qt.UserRole) if item is not None else None
+        if not isinstance(wrapper, dict) or not wrapper.get("executionId"):
+            return -1
+        return next((index for index, record in enumerate(self.records)
+                     if self.matchesResult(record, wrapper["executionId"], wrapper["generation"])), -1)
+
+    def matchesResult(self, record, executionId, generation):
+        return (record.get("sessionId") == self.debugSessionId
+                and record.get("executionId") == executionId
+                and record.get("sourceIdentity", {}).get("generation") == generation == self.debugGeneration)
+
+    def updateLogResult(self):
+        item = self.logs.currentItem()
+        wrapper = item.data(Qt.UserRole) if item is not None else None
+        self.logResult.setVisible(isinstance(wrapper, dict) and bool(wrapper.get("executionId")))
+        available = self.logResultIndex() >= 0
+        self.logResult.setEnabled(available)
+        self.logResult.setText("查看此条日志的执行结果" if available else "此条日志的执行结果暂不可用")
+
+    def openLogResult(self):
+        index = self.logResultIndex()
+        if index >= 0:
+            self.versions.setCurrentIndex(index)
+            self.resultTabs.setCurrentWidget(self.resultDetail)
+            self.tabs.setCurrentIndex(1)
+
+    def setSession(self, session):
+        identity = (session["sessionId"], session["generation"])
+        if identity == (self.debugSessionId, self.debugGeneration):
+            return
+        if self.debugSessionId:
+            self.clearResults()
+            self.logs.clear()
+            self.logDetail.clear()
+        self.debugSessionId, self.debugGeneration = identity
 
     def selectedOutputPort(self):
         return self.outputPorts.currentData(Qt.UserRole + 1) or self.outputPorts.currentText()
@@ -452,6 +539,14 @@ class OperatorDebugWindow(QDialog):
     def resetSession(self):
         if not self.reset.isEnabled():
             return
+        self.clearResults()
+        for row in self.rows.values():
+            row.reference = None
+            row.mode.setCurrentIndex(0)
+        self.state = "RESETTING"
+        self.submit("reset", lambda: self.connection.mutation("ResetOperatorDebugSession"))
+
+    def clearResults(self):
         self.outputMessage.hide()
         self.executionId = ""
         self.executionStatus = ""
@@ -464,11 +559,8 @@ class OperatorDebugWindow(QDialog):
         self.plcSummary.clear()
         self.image.clear()
         self.pixmap = None
-        for row in self.rows.values():
-            row.reference = None
-            row.mode.setCurrentIndex(0)
-        self.state = "RESETTING"
-        self.submit("reset", lambda: self.connection.mutation("ResetOperatorDebugSession"))
+        self.resultDetail.clear("尚未收到调试执行结果")
+        self.updateLogResult()
 
     def copyState(self):
         answer = QMessageBox.question(self, "复制生产变量快照", "读取当前工程的生产持久变量并复制到调试会话？",
@@ -534,6 +626,7 @@ class OperatorDebugWindow(QDialog):
             return
         if name == "open":
             self.capability = value["capability"]
+            self.setSession(value["session"])
             root = value["session"].get("resourceRoot", "")
             self.resourceNotice.setToolTip("会话工程目录：" + (root or "未提供；相对资源路径不可用"))
             self.resourceNotice.setVisible(bool(self.capability.get("singleNodeOnly")) and not self.isPlc)
@@ -548,11 +641,15 @@ class OperatorDebugWindow(QDialog):
             self.actionFeedback.success(name)
             self.updateResultLabel()
         elif name == "poll":
+            self.setSession(value["session"])
             self.state = value["session"]["state"]
             self.status.setText(self.stateTitle(self.state) if self.isPlc else f"{self.state} | 缓存 {value['session']['cacheBytes']//1024} KiB | {value['session'].get('message', '')}")
             self.status.setToolTip(value['session'].get('message', ''))
+            result = value["result"]
+            if result and not self.matchesResult(result, self.executionId, self.debugGeneration):
+                result = None
             detail = dict(session={key: item for key, item in value["session"].items() if key not in {"ttlMs", "lastSequence"}},
-                          execution=value["result"])
+                          execution=result)
             fingerprint = digest(detail)
             if fingerprint != self.detailFingerprint and self.versions.currentIndex() <= 0:
                 self.details.setValue(detail)
@@ -560,13 +657,10 @@ class OperatorDebugWindow(QDialog):
                 self.showPlcParameters(self.records[0] if self.records else None)
             events = value["events"]
             self.sequence = events["nextSequence"]
-            if events["gap"]:
-                self.appendLog("部分早期日志已淘汰")
-            for event in events["events"]:
-                self.appendLog(event)
+            gap = ("部分早期日志已淘汰",) if events["gap"] else ()
+            self.appendLogs((*gap, *events["events"]))
             if value["leaseError"]:
                 self.status.setText("续租失败：" + value["leaseError"])
-            result = value["result"]
             if result and result["status"] != "RUNNING":
                 self.executionId = ""
                 self.executionStatus = ""
@@ -581,6 +675,7 @@ class OperatorDebugWindow(QDialog):
                     self.versions.setItemData(index, identity, Qt.ToolTipRole)
                 self.versions.blockSignals(False)
                 self.showResult()
+                self.updateLogResult()
                 self.tabs.setCurrentIndex(1)
         elif name.startswith("file:"):
             try:
@@ -637,7 +732,9 @@ class OperatorDebugWindow(QDialog):
         self.outputTree.clear()
         if 0 <= index < len(self.records):
             record = self.records[index]
-            self.details.setValue(record)
+            raw = {key: value for key, value in record.items() if key != "configuration"}
+            self.details.setValue(raw)
+            self.resultDetail.setDebugResult(raw, sessionId=self.debugSessionId, generation=self.debugGeneration)
             self.showPlcParameters(record)
             ports = list(record.get("outputs", {}))
             if self.isPlc and "values" in ports:
@@ -663,6 +760,8 @@ class OperatorDebugWindow(QDialog):
                 selection = self.outputPorts.findData(preferred, Qt.UserRole + 1)
             if selection >= 0:
                 self.outputPorts.setCurrentIndex(selection)
+        else:
+            self.resultDetail.clear("尚未收到调试执行结果")
         self.updateResultLabel()
         self.outputPorts.blockSignals(False)
         self.showOutput()
@@ -674,13 +773,12 @@ class OperatorDebugWindow(QDialog):
             record = self.records[index]
             if text:
                 text += "；以下为历史结果（保留原参数身份） / "
-            if self.isPlc:
-                text += f"{self.stateTitle(record['status'])} | 耗时 {record.get('elapsedMs', 0):.1f} 毫秒"
-                error = f"{record.get('code', '')} {record.get('message', '')}".strip()
-                if error:
-                    text += " | " + error
-            else:
-                text += f"{record['status']} | {record.get('elapsedMs', 0):.1f} ms | {record.get('code', '')} {record.get('message', '')}"
+            text += self.stateTitle(record["status"])
+            if type(record.get("elapsedMs")) in (int, float):
+                text += f" | 耗时 {record['elapsedMs']:.1f} 毫秒"
+            error = f"{record.get('code', '')} {record.get('message', '')}".strip()
+            if error:
+                text += " | " + error
         self.resultLabel.setText(text)
 
     def exportSelection(self):

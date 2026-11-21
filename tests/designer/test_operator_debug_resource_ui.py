@@ -1,5 +1,6 @@
 """Qt interaction checks for real-operation admission and debug-only SQL inputs."""
 from contextlib import closing
+import json
 import os
 from pathlib import Path
 import sqlite3
@@ -84,6 +85,12 @@ def testSqliteEditorShowsMappedDebugInputsAndNeverWritesProduction(runtime, tmp_
         wait(lambda: len(dialog.records) == 1 and dialog.run.isEnabled())
         assert dialog.records[0]["status"] == "SUCCEEDED", dialog.records
         assert dialog.records[0]["outputs"]["receipt"]["status"] == "COMMITTED"
+        rows = [dialog.logs.item(index) for index in range(dialog.logs.count())]
+        log = next(row for row in rows if row.data(Qt.UserRole).get("event", {}).get("eventType") == "node.log")
+        dialog.logs.setCurrentItem(log)
+        wrapper = json.loads(dialog.logDetail.rawTree.toPlainText())
+        assert wrapper["event"]["payload"]["data"]["receipt"]["status"] == "COMMITTED"
+        assert wrapper["executionId"] == dialog.records[0]["executionId"] and dialog.logResult.isEnabled()
         assert path.read_bytes() == beforeDb and payload == before and calls == []
         evidence(dialog, "sqlite-isolated")
         dialog.close()

@@ -15,6 +15,7 @@ class RuntimeGlobalLogs:
         self.service, self.cursor = service, afterEventId
         self.runtimeInstanceId, self.filters = runtimeInstanceId, dict(filters or {})
         self.supported = None
+        self.initialPosition = None
         self.events = queue.Queue(maxsize=256)
         self.stop, self.finished = threading.Event(), threading.Event()
         self.lock = threading.Lock()
@@ -71,6 +72,7 @@ class RuntimeGlobalLogs:
                     if not reply.ok:
                         if reply.code == "RESET_REQUIRED":
                             self.runtimeInstanceId, self.cursor, upper = reply.runtime_instance_id, None, None
+                            self.initialPosition = None
                             self._publish("reset", dict(runtimeInstanceId=self.runtimeInstanceId))
                             continue
                         if reply.code == "UNIMPLEMENTED":
@@ -79,16 +81,22 @@ class RuntimeGlobalLogs:
                         return
                     self.runtimeInstanceId = reply.runtime_instance_id
                     self.supported = True
-                    if disconnected:
+                    recovered = disconnected
+                    if recovered:
                         self._notice("INFO", "GLOBAL_LOG_RECOVERED", "Runtime 日志查询已恢复")
                     failures, disconnected = 0, False
                     if initial:
+                        self.initialPosition = (self.runtimeInstanceId, reply.upper_event_id)
                         self.cursor = reply.upper_event_id
                     else:
+                        previous = self.cursor
                         for row in reply.events:
                             if not self._publish("event", dict(eventPayload(row.event), eventId=row.event_id)):
                                 return
                         self.cursor = reply.next_event_id
+                        if (self.cursor != previous or recovered) and not self._publish(
+                                "progress", (self.runtimeInstanceId, self.cursor)):
+                            return
                     upper = reply.upper_event_id if not initial and reply.has_more else None
                     if upper is None and self.stop.wait(.5):
                         return
@@ -115,11 +123,13 @@ class RuntimeGlobalLogs:
         finally:
             self.finished.set()
 
-    def take(self):
+    def take(self, *, includeProgress=False):
         result = []
         for _ in range(256):
             try:
-                result.append(self.events.get_nowait())
+                item = self.events.get_nowait()
+                if includeProgress or item[0] != "progress":
+                    result.append(item)
             except queue.Empty:
                 break
         return result

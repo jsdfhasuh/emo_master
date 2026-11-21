@@ -243,6 +243,8 @@ export type RpcInspectSqliteTargetRequest = { "databasePath"?: string; "projectD
 
 export type RpcJobEvent = { "jobId"?: string; "nodeId"?: string; "eventType"?: string; "level"?: string; "code"?: string; "message"?: string; "payloadJson"?: string; "timestampMs"?: string; "sequence"?: string; "projectId"?: string; "workflowId"?: string; "workflowRunId"?: string; "parentWorkflowRunId"?: string; "nodeRunId"?: string; "iterationPathJson"?: string; "originApp"?: string; "component"?: string; "runtimeInstanceId"?: string };
 
+export type RpcJobHistorySummary = { "jobId"?: string; "projectId"?: string; "projectRevision"?: string; "workflowId"?: string; "status"?: string; "acceptedAtMs"?: string; "startedAtMs"?: string; "endedAtMs"?: string; "errorCode"?: string; "message"?: string; "stopMode"?: string };
+
 export type RpcListDeviceTypesReply = { "typesJson"?: string; "requirementsJson"?: string; "rejectedJson"?: string };
 
 export type RpcListDeviceTypesRequest = {  };
@@ -250,6 +252,10 @@ export type RpcListDeviceTypesRequest = {  };
 export type RpcListGlobalCountersReply = { "ok"?: boolean; "code"?: string; "message"?: string; "counters"?: Array<RpcGlobalCounterInfo> };
 
 export type RpcListGlobalCountersRequest = { "projectId"?: string };
+
+export type RpcListJobHistoryReply = { "ok"?: boolean; "code"?: string; "message"?: string; "runtimeInstanceId"?: string; "jobs"?: Array<RpcJobHistorySummary>; "hasMore"?: boolean; "nextCursor"?: string };
+
+export type RpcListJobHistoryRequest = { "runtimeInstanceId"?: string; "projectId"?: string; "statuses"?: Array<string>; "startEndedAtMs"?: string; "endEndedAtMs"?: string; "limit"?: number; "cursor"?: string };
 
 export type RpcListNodePreviewSourcesReply = { "sources"?: Array<RpcPreviewSourceInfo>; "jobId"?: string; "legacySnapshotPolicy"?: string; "captureState"?: string; "message"?: string };
 
@@ -333,7 +339,7 @@ export type RpcQueryHistoryPageRequest = { "context"?: RpcHistoryContext; "compo
 
 export type RpcQueryRuntimeLogsReply = { "ok"?: boolean; "code"?: string; "message"?: string; "runtimeInstanceId"?: string; "upperEventId"?: string; "nextEventId"?: string; "hasMore"?: boolean; "events"?: Array<RpcStoredLogEvent> };
 
-export type RpcQueryRuntimeLogsRequest = { "runtimeInstanceId"?: string; "projectId"?: string; "jobId"?: string; "deviceId"?: string; "component"?: string; "levels"?: Array<string>; "workflowId"?: string; "nodeId"?: string; "startTimestampMs"?: string; "endTimestampMs"?: string; "afterEventId"?: string; "upperEventId"?: string; "limit"?: number };
+export type RpcQueryRuntimeLogsRequest = { "runtimeInstanceId"?: string; "projectId"?: string; "jobId"?: string; "deviceId"?: string; "component"?: string; "levels"?: Array<string>; "workflowId"?: string; "nodeId"?: string; "startTimestampMs"?: string; "endTimestampMs"?: string; "afterEventId"?: string; "upperEventId"?: string; "limit"?: number; "latestFirst"?: boolean; "beforeEventId"?: string };
 
 export type RpcReadHistoryImageRequest = { "context"?: RpcHistoryContext; "imageRef"?: string; "componentId"?: string };
 

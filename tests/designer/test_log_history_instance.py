@@ -43,8 +43,8 @@ def historyWindow(ownedDesignerWindow):
     # An inert reader exposes the same instance and reset queue as the live
     # reader, without timing sleeps or letting a background query race setup.
     resets = []
-    reader = SimpleNamespace(runtimeInstanceId="alpha", supported=True,
-        take=lambda: [resets.pop(0) for _ in range(len(resets))], service=client.runtimeService,
+    reader = SimpleNamespace(runtimeInstanceId="alpha", supported=True, initialPosition=("alpha", 0),
+        take=lambda **_: [resets.pop(0) for _ in range(len(resets))], service=client.runtimeService,
         close=lambda: None, cursor=0, finished=threading.Event(), unsupported=False)
     window._logResources["reader"] = reader
     window._drainGlobalLogs(reader)

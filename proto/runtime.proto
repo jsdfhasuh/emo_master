@@ -218,6 +218,37 @@ message ListRunsReply {
   string runtime_instance_id = 4;
   repeated RunState runs = 5;
 }
+message ListJobHistoryRequest {
+  string runtime_instance_id = 1;
+  string project_id = 2;
+  repeated string statuses = 3;
+  optional int64 start_ended_at_ms = 4;
+  optional int64 end_ended_at_ms = 5;
+  int32 limit = 6;
+  string cursor = 7;
+}
+message JobHistorySummary {
+  string job_id = 1;
+  string project_id = 2;
+  int64 project_revision = 3;
+  string workflow_id = 4;
+  string status = 5;
+  int64 accepted_at_ms = 6;
+  int64 started_at_ms = 7;
+  int64 ended_at_ms = 8;
+  string error_code = 9;
+  string message = 10;
+  string stop_mode = 11;
+}
+message ListJobHistoryReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string runtime_instance_id = 4;
+  repeated JobHistorySummary jobs = 5;
+  bool has_more = 6;
+  string next_cursor = 7;
+}
 message GetRunStateRequest {
   string runtime_instance_id = 1;
   string project_id = 2;
@@ -342,6 +373,8 @@ message QueryRuntimeLogsRequest {
   int64 after_event_id = 11;
   optional int64 upper_event_id = 12;
   int32 limit = 13;
+  bool latest_first = 14; // Descending by event_id. Requires after_event_id == 0.
+  optional int64 before_event_id = 15; // Exclusive cursor in latest_first mode.
 }
 message QueryRuntimeLogsReply {
   bool ok = 1;
@@ -853,6 +886,7 @@ service RuntimeService {
   rpc PrepareProjectImport(PrepareProjectImportRequest) returns (ProjectConfigurationReply);
   rpc GetRuntimeInfo(RuntimeInfoRequest) returns (RuntimeInfoReply);
   rpc ListRuns(ListRunsRequest) returns (ListRunsReply);
+  rpc ListJobHistory(ListJobHistoryRequest) returns (ListJobHistoryReply);
   rpc GetRunState(GetRunStateRequest) returns (GetRunStateReply);
   rpc QueryHistoryPage(QueryHistoryPageRequest) returns (HistoryReply);
   rpc QueryHistoryAggregate(QueryHistoryAggregateRequest) returns (HistoryReply);

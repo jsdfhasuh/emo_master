@@ -46,6 +46,15 @@ class DeviceDiagnostics:
         fields['level'] = level if level in {'DEBUG', 'INFO', 'WARN', 'ERROR'} else defaultLevel
         if fields.get('code') == 'E_DEVICE_CANCELLED':
             fields['level'] = 'INFO'
+        source = fields.get('source')
+        if isinstance(source, dict):
+            for key in ('workflowId', 'nodeId', 'workflowRunId', 'parentWorkflowRunId', 'nodeRunId', 'slot'):
+                value = source.get(key)
+                if not fields.get(key) and isinstance(value, str) and value:
+                    fields[key] = value
+            path = source.get('iterationPath')
+            if 'iterationPath' not in fields and isinstance(path, (list, tuple)):
+                fields['iterationPath'] = list(path)
         # Keep previews bounded; receipts have compact count/outcome metadata.
         if isinstance(fields.get('dataHex'), str):
             data = bytes.fromhex(fields['dataHex'])

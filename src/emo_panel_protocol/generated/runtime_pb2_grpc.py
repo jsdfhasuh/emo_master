@@ -74,6 +74,11 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.ListRunsRequest.SerializeToString,
                 response_deserializer=runtime__pb2.ListRunsReply.FromString,
                 _registered_method=True)
+        self.ListJobHistory = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ListJobHistory',
+                request_serializer=runtime__pb2.ListJobHistoryRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ListJobHistoryReply.FromString,
+                _registered_method=True)
         self.GetRunState = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/GetRunState',
                 request_serializer=runtime__pb2.GetRunStateRequest.SerializeToString,
@@ -607,6 +612,12 @@ class RuntimeServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ListRuns(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListJobHistory(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -1236,6 +1247,11 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
                     servicer.ListRuns,
                     request_deserializer=runtime__pb2.ListRunsRequest.FromString,
                     response_serializer=runtime__pb2.ListRunsReply.SerializeToString,
+            ),
+            'ListJobHistory': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListJobHistory,
+                    request_deserializer=runtime__pb2.ListJobHistoryRequest.FromString,
+                    response_serializer=runtime__pb2.ListJobHistoryReply.SerializeToString,
             ),
             'GetRunState': grpc.unary_unary_rpc_method_handler(
                     servicer.GetRunState,
@@ -1939,6 +1955,33 @@ class RuntimeService(object):
             '/emo_master.runtime.RuntimeService/ListRuns',
             runtime__pb2.ListRunsRequest.SerializeToString,
             runtime__pb2.ListRunsReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListJobHistory(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ListJobHistory',
+            runtime__pb2.ListJobHistoryRequest.SerializeToString,
+            runtime__pb2.ListJobHistoryReply.FromString,
             options,
             channel_credentials,
             insecure,

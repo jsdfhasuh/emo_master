@@ -280,24 +280,34 @@ def testRuntimeServiceSinkKeepsSqliteAndJsonlSequencesAligned(
                 "data": {"count": 1},
             },
         )
+        iteration = service.eventStore.append(
+            "job-service",
+            "loop.iteration.completed",
+            "checked exit condition",
+            payload={"iteration": 2, "bodyExecuted": False},
+        )
         second = service.eventStore.append(
             "job-service",
             "job.completed",
             "job completed",
             payload={"status": "COMPLETED"},
         )
-        assert (first.sequence, second.sequence) == (1, 2)
+        assert (first.sequence, iteration.sequence, second.sequence) == (1, 2, 3)
+        page = service.QueryRuntimeLogs(runtime_pb2.QueryRuntimeLogsRequest(job_id="job-service"), None)
+        assert page.ok and json.loads(page.events[1].event.payload_json) == {"iteration": 2, "bodyExecuted": False}
     finally:
         service.close()
 
     persisted = service.sqliteStore.listJobEventsAfter("job-service")
     records = _records(logDirectory)
-    assert [event.sequence for event in persisted] == [1, 2]
-    assert [record["sequence"] for record in records] == [1, 2]
+    assert [event.sequence for event in persisted] == [1, 2, 3]
+    assert [record["sequence"] for record in records] == [1, 2, 3]
     assert [record["eventType"] for record in records] == [
         "node.log",
+        "loop.iteration.completed",
         "job.completed",
     ]
+    assert records[1]["payload"] == {"iteration": 2, "bodyExecuted": False}
 
 
 def testRuntimeServiceFollowStreamReplaysLogFailureCreatedAfterTerminal(

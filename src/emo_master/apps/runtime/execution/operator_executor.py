@@ -177,12 +177,13 @@ class OperatorExecutor:
         }
         if node.devicePlans:
             runtimeContext['deviceParameters'] = deviceParameters
+            executionSource = {key: runtimeContext[key] for key in (
+                'workflowId', 'nodeId', 'nodeRunId', 'workflowRunId', 'parentWorkflowRunId', 'iterationPath')}
+
             def executeDevice(slot, action, arguments):
                 plan = node.devicePlans[slot]
-                source = {key: runtimeContext[key] for key in ('workflowId', 'nodeId', 'nodeRunId', 'workflowRunId', 'iterationPath')}
-                source['slot'] = slot
                 fields = dict(deviceId=plan['deviceId'], params=deviceParameters[slot], arguments=arguments,
-                              cycleId=context.cycleId or context.workflowRunId, source=source,
+                              cycleId=context.cycleId or context.workflowRunId, source=dict(executionSource, slot=slot),
                               selectors=dict(plan.get('selectors', {})))
                 try:
                     from emo_master.core.project.tcp_dependencies import isTcpDeviceType
@@ -198,7 +199,7 @@ class OperatorExecutor:
             runtimeContext['executeDevice'] = executeDevice
             runtimeContext['captureDevice'] = lambda slot: self.devices.capture(
                 node.devicePlans[slot]['deviceId'], deviceParameters[slot], context.cycleId or context.workflowRunId,
-                source=dict(workflowId=context.workflowId, nodeId=node.nodeId, slot=slot),
+                source=dict(executionSource, slot=slot),
                 selectors=dict(node.devicePlans[slot].get('selectors', {})))
         if node.operatorId == "vision.io.sqlite_writer":
             from emo_master.apps.runtime.business_sqlite.backend import insert

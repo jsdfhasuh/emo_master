@@ -883,8 +883,12 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
         upper = request.upper_event_id if request.HasField("upper_event_id") else None
         start = request.start_timestamp_ms if request.HasField("start_timestamp_ms") else None
         end = request.end_timestamp_ms if request.HasField("end_timestamp_ms") else None
+        latest = request.latest_first
+        before = request.before_event_id if request.HasField("before_event_id") else None
         limit = request.limit or 200
         if (request.after_event_id < 0 or upper is not None and upper < request.after_event_id
+                or latest and request.after_event_id != 0
+                or before is not None and (not latest or before <= 0)
                 or not 1 <= limit <= 1000 or start is not None and start < 0
                 or end is not None and end < 0 or start is not None and end is not None and start > end):
             reply.code, reply.message = "INVALID_ARGUMENT", "Invalid log cursor, time range or limit (1-1000)"
@@ -894,14 +898,14 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
             projectId=request.project_id, jobId=request.job_id, deviceId=request.device_id,
             component=request.component, levels=tuple(request.levels),
             workflowId=request.workflow_id, nodeId=request.node_id,
-            startTimestampMs=start, endTimestampMs=end)
+            startTimestampMs=start, endTimestampMs=end, latestFirst=latest, beforeEventId=before)
         reply.ok, reply.code, reply.upper_event_id = True, "OK", upper
         for index, (eventId, event) in enumerate(rows[:limit]):
             projected = replace(event, payloadJson=json.dumps(
                 _projectEvent(event)["payload"], ensure_ascii=False, separators=(",", ":")))
             reply.events.add(event_id=eventId, event=self._toProtoEvent(projected))
             reply.has_more = index + 1 < len(rows)
-            reply.next_event_id = eventId if reply.has_more else max(request.after_event_id, upper)
+            reply.next_event_id = eventId if latest or reply.has_more else upper
             if reply.ByteSize() > LOG_QUERY_REPLY_BYTES:
                 del reply.events[-1]
                 reply.next_event_id = reply.events[-1].event_id if reply.events else request.after_event_id
@@ -911,7 +915,7 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
                     reply.message = "A projected log record exceeds the reply byte budget"
                 return reply
         reply.has_more = len(rows) > limit
-        if not reply.has_more:
+        if not latest and not reply.has_more:
             reply.next_event_id = max(request.after_event_id, upper)
         return reply
 

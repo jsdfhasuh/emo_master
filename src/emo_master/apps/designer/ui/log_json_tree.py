@@ -26,7 +26,7 @@ class LogJsonTree(ValueTree):
         super().__init__(parent)
         self._payload = None
         self.setObjectName("logJsonDetails")
-        self.setAccessibleName("日志 JSON 详情")
+        self.setAccessibleName("当前记录 JSON")
         self.setHeaderLabels(["字段", "值", "类型"])
         self.setUniformRowHeights(True)
         self.setColumnWidth(0, 230)
@@ -34,14 +34,14 @@ class LogJsonTree(ValueTree):
         self.header().setSectionResizeMode(0, QHeaderView.Interactive)
         self.header().setSectionResizeMode(1, QHeaderView.Stretch)
         self.header().setSectionResizeMode(2, QHeaderView.ResizeToContents)
-        self.setToolTip("展开对象或数组查看字段；双击长文本查看完整内容；右键可复制值或完整 JSON。")
+        self.setToolTip("展开对象或数组查看字段；双击长文本查看收到的内容；右键可复制值或当前记录。")
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self._contextMenu)
 
     def setPayload(self, payload):
         self.clear()
         self._payload = payload
-        root = self.appendValue(self.invisibleRootItem(), "日志详情", payload)
+        root = self.appendValue(self.invisibleRootItem(), "当前记录", payload)
         root.setExpanded(True)
         self.setCurrentItem(root)
 
@@ -98,6 +98,6 @@ class LogJsonTree(ValueTree):
         menu = QMenu(self)
         selected = menu.addAction("复制选中值", self.copySelectedValue)
         selected.setEnabled(item is not None and item.data(0, _VALUE_ROLE) is not None)
-        complete = menu.addAction("复制完整 JSON", self.copyJson)
+        complete = menu.addAction("复制当前记录 JSON", self.copyJson)
         complete.setEnabled(self._payload is not None)
         menu.exec_(self.viewport().mapToGlobal(position))

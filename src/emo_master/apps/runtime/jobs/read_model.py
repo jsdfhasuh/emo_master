@@ -1,9 +1,12 @@
 """Read current Runtime-owned runs without acquiring execution or device ownership."""
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import json
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+from emo_master.apps.runtime.jobs.models import JobStatus
+from emo_master.apps.runtime.jobs.repository import jobTimestampMs
 
 
 def runState(runtime, jobId):
@@ -33,7 +36,9 @@ def runState(runtime, jobId):
                     for member in group.members
                     for memberRecord in [runtime.jobRepository.getCurrentSnapshot(member)])
     document = runtime.loadedDocument
-    workflow = document.workflows.get(record.workflowId) if document and document.project.projectId == record.projectId else None
+    sameRevision = (document and document.project.projectId == record.projectId
+                    and getattr(document.project, 'revision', None) == record.projectRevision)
+    workflow = document.workflows.get(record.workflowId) if sameRevision else None
     active = not record.isTerminal or owned or groupActive
     capture = bool(config.get('capture'))
     actions = (['stop'] if active else []) + (['view'] if capture else [])
@@ -88,7 +93,8 @@ class RunReadRpcMixin:
             return pb.RuntimeInfoReply(ok=True, runtime_instance_id=self.runtimeInstanceId,
                 protocol_version='1.0', capabilities=['runtime_info_v1', 'run_catalog_v1', 'stop_identity_v1',
                     'remote_project_import_v1', 'history_query_v1', 'history_image_v1', 'project_resource_read_v1',
-                    'runtime_logs_query_v1', 'output_requests_v1', 'candidate_project_precheck_v1', 'project_run_mode_v1'],
+                    'runtime_logs_query_v1', 'runtime_logs_recent_v1', 'job_history_query_v1',
+                    'output_requests_v1', 'candidate_project_precheck_v1', 'project_run_mode_v1'],
                 production_mode=self.productionMode, project_id=document.project.projectId if document else '',
                 document_revision=current.get('documentRevision', 0),
                 production_inputs_json=json.dumps(production.inputs if production else {}, ensure_ascii=False),
@@ -102,6 +108,53 @@ class RunReadRpcMixin:
                                    runtime_instance_id=self.runtimeInstanceId)
         return pb.ListRunsReply(ok=True, runtime_instance_id=self.runtimeInstanceId,
             runs=currentRuns(self, request.project_id, request.workflow_id, includeTerminal=request.include_terminal))
+
+    def ListJobHistory(self, request, context):
+        reply = pb.ListJobHistoryReply(runtime_instance_id=self.runtimeInstanceId)
+        if request.runtime_instance_id and request.runtime_instance_id != self.runtimeInstanceId:
+            reply.code, reply.message = 'RESET_REQUIRED', 'Runtime instance changed'
+            return reply
+        statuses = tuple(dict.fromkeys(request.statuses)) or tuple(
+            status.value for status in JobStatus if JobStatus.terminal(status.value))
+        start = request.start_ended_at_ms if request.HasField('start_ended_at_ms') else None
+        end = request.end_ended_at_ms if request.HasField('end_ended_at_ms') else None
+        limit = request.limit or 50
+        if (not 1 <= limit <= 200 or not all(map(JobStatus.terminal, statuses))
+                or start is not None and start < 0 or end is not None and end < 0
+                or start is not None and end is not None and start > end):
+            reply.code, reply.message = 'INVALID_ARGUMENT', 'Invalid Job history status, time range or limit (1-200)'
+            return reply
+        # Match SQLite's UTC ISO strings without rounding archived microseconds.
+        try:
+            startAt, endAt = (datetime.fromtimestamp(value / 1000.0, timezone.utc).isoformat()
+                              if value is not None else None for value in (start, end))
+        except (OverflowError, OSError, ValueError):
+            reply.code, reply.message = 'INVALID_ARGUMENT', 'Job history time range is out of bounds'
+            return reply
+        before = None
+        if request.cursor:
+            try:
+                key = json.loads(request.cursor)
+            except (ValueError, RecursionError):
+                key = None
+            if not isinstance(key, list) or len(key) != 2 or not all(isinstance(value, str) for value in key):
+                reply.code, reply.message = 'INVALID_ARGUMENT', 'Invalid Job history cursor'
+                return reply
+            before = key[0], key[1]
+        rows = self.sqliteStore.queryJobHistory(projectId=request.project_id, statuses=statuses,
+            startEndedAt=startAt, endEndedAt=endAt, before=before, limit=limit)
+        reply.ok, reply.code = True, 'OK'
+        reply.has_more = len(rows) > limit
+        for row in rows[:limit]:
+            jobId, projectId, revision, workflowId, status, accepted, started, ended, code, message, mode, _ = row
+            reply.jobs.add(job_id=jobId, project_id=projectId, project_revision=revision,
+                workflow_id=workflowId, status=status, accepted_at_ms=jobTimestampMs(accepted),
+                started_at_ms=jobTimestampMs(started), ended_at_ms=jobTimestampMs(ended),
+                error_code=code or '', message=message or '', stop_mode=mode or '')
+        if reply.has_more:
+            last = rows[limit - 1]
+            reply.next_cursor = json.dumps([last[-1], last[0]], separators=(',', ':'))
+        return reply
 
     def GetRunState(self, request, context):
         if not all((request.runtime_instance_id, request.project_id, request.job_id)):

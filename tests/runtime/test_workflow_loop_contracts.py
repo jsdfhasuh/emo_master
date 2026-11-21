@@ -167,10 +167,10 @@ def _payload(mode: str, bodyOperator: str, loopConfig: dict[str, object]) -> dic
     }
 
 
-def _runner(payload: dict[str, object], registry: dict[str, object]) -> WorkflowRunner:
+def _runner(payload: dict[str, object], registry: dict[str, object], *, eventPublisher=None) -> WorkflowRunner:
     document = ProjectDocument.model_validate(payload)
     compiled = WorkflowCompiler(operatorRegistry=registry).compile(document)
-    return WorkflowRunner(compiled, registry)
+    return WorkflowRunner(compiled, registry, eventPublisher=eventPublisher)
 
 
 def testWhileUsesConditionAndState() -> None:
@@ -185,12 +185,17 @@ def testWhileUsesConditionAndState() -> None:
             "timeoutMs": 1000,
         },
     )
+    events = []
     runner = _runner(
         payload,
         {"test.condition": _ConditionOperator, "test.body": _BodyOperator},
+        eventPublisher=lambda **event: events.append(event),
     )
     result = runner.run("main", {"state": {"count": 0}}, RunContext.root("job", "main"), CancellationToken())
     assert result.outputs == {"state": {"count": 2}}
+    completed = [event["payload"] for event in events if event["eventType"] == "loop.iteration.completed"]
+    assert completed == [{"iteration": 0, "bodyExecuted": True}, {"iteration": 1, "bodyExecuted": True},
+                         {"iteration": 2, "bodyExecuted": False}]
 
 
 def testWhileInitialFalsePreservesStateWithoutRunningBody() -> None:
@@ -296,9 +301,11 @@ def testRepeatZeroPreservesInputsWithoutRunningBody() -> None:
             "timeoutMs": 1000,
         },
     )
+    events = []
     runner = _runner(
         payload,
         {"test.condition": _ConditionOperator, "test.body": _BodyOperator},
+        eventPublisher=lambda **event: events.append(event),
     )
 
     result = runner.run(
@@ -309,6 +316,10 @@ def testRepeatZeroPreservesInputsWithoutRunningBody() -> None:
     )
 
     assert result.outputs == {"state": {"count": 4}}
+    assert [event["payload"] for event in events if event["eventType"] == "loop.started"] == [
+        {"mode": "repeat", "totalIterations": 0},
+    ]
+    assert not any(event["eventType"] == "loop.iteration.started" for event in events)
 
 
 def testLoopBodyContextUsesIndependentWorkflowRunsAndIterationPaths() -> None:

@@ -378,6 +378,35 @@ class SqliteStore:
         ]
         return dict(zip(fields, row))
 
+    def queryJobHistory(self, *, projectId: str, statuses: tuple[str, ...],
+                        startEndedAt: str | None, endEndedAt: str | None,
+                        before: tuple[str, str] | None, limit: int) -> list[tuple]:
+        """Read a terminal Job page plus one look-ahead row."""
+        orderTime = "COALESCE(endAt, startAt)"
+        placeholders = ", ".join("?" for _ in statuses)
+        clauses = [f"status IN ({placeholders})"]
+        values: list[object] = list(statuses)
+        if projectId:
+            clauses.append("projectId = ?")
+            values.append(projectId)
+        if startEndedAt is not None:
+            clauses.append("endAt >= ?")
+            values.append(startEndedAt)
+        if endEndedAt is not None:
+            clauses.append("endAt < ?")
+            values.append(endEndedAt)
+        if before is not None:
+            clauses.append(f"({orderTime}, jobId) < (?, ?)")
+            values.extend(before)
+        with self.connection() as connection:
+            return connection.execute(
+                "SELECT jobId, projectId, projectRevision, workflowId, status, "
+                "COALESCE(acceptedAt, startAt), startedAt, endAt, errorCode, errorMessage, stopMode, "
+                f"{orderTime} FROM jobs WHERE " + " AND ".join(clauses)
+                + f" ORDER BY {orderTime} DESC, jobId DESC LIMIT ?",
+                (*values, limit + 1),
+            ).fetchall()
+
     def getJobSnapshotOptions(self, jobId: str) -> dict[str, str]:
         """Read one immutable accepted event, without materializing event history.
 
@@ -420,7 +449,8 @@ class SqliteStore:
                          deviceId: str = "", component: str = "", levels: tuple[str, ...] = (),
                          workflowId: str = "", nodeId: str = "",
                          startTimestampMs: int | None = None,
-                         endTimestampMs: int | None = None) -> tuple[int, list[tuple[int, RuntimeEvent]]]:
+                         endTimestampMs: int | None = None, latestFirst: bool = False,
+                         beforeEventId: int | None = None) -> tuple[int, list[tuple[int, RuntimeEvent]]]:
         """Read matching rows before pagination, including one look-ahead row.
 
         The upper bound belongs to this query, independently of each row's
@@ -432,6 +462,9 @@ class SqliteStore:
                     "SELECT COALESCE(MAX(eventId), 0) FROM jobEvents").fetchone()[0])
             clauses = ["eventId > ?", "eventId <= ?", "eventType != 'process.heartbeat'"]
             values: list[object] = [afterEventId, upperEventId]
+            if beforeEventId is not None:
+                clauses.append("eventId < ?")
+                values.append(beforeEventId)
             for field, value in (("projectId", projectId), ("component", component),
                                  ("workflowId", workflowId), ("nodeId", nodeId)):
                 if value:
@@ -456,11 +489,12 @@ class SqliteStore:
             if endTimestampMs is not None:
                 clauses.append("timestampMs < ?")
                 values.append(endTimestampMs)
+            order = "DESC" if latestFirst else "ASC"
             rows = connection.execute(
                 "SELECT eventId, jobId, eventType, message, level, nodeId, code, payloadJson, "
                 "sequence, timestampMs, projectId, workflowId, workflowRunId, parentWorkflowRunId, "
                 "nodeRunId, iterationPathJson, originApp, component, runtimeInstanceId "
-                "FROM jobEvents WHERE " + " AND ".join(clauses) + " ORDER BY eventId LIMIT ?",
+                "FROM jobEvents WHERE " + " AND ".join(clauses) + f" ORDER BY eventId {order} LIMIT ?",
                 (*values, limit + 1)).fetchall()
         return upperEventId, [(int(row[0]), RuntimeEvent(*row[1:])) for row in rows]
 

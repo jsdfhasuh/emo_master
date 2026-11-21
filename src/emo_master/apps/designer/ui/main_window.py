@@ -806,6 +806,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._globalLogTransport = None
         self._globalLogCursor = None
         self._globalLogInstance = ""
+        self._globalLogDelivery = None
         self._pendingTaskLogs: deque[dict[str, object]] = deque(maxlen=DEFAULT_MAX_LOG_ENTRIES)
         self._logPollingTimer = None
         self._loggingClosed = False
@@ -1323,19 +1324,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         rootLayout.addWidget(self.mainSplitter)
         rootWidget.setLayout(rootLayout)
         self.setCentralWidget(rootWidget)
-        self.logDialog = LogDialog(
-            self,
-            onClear=self._clearRuntimeLogCache,
-            onNavigate=self.navigateToRuntimeLogEntry,
-            maximumEntries=DEFAULT_MAX_LOG_ENTRIES,
-        )
+        self.logDialog = self._createLogDialog()
         self.logDialog.hide()
-        if _nativeQt:
-            self.logDialog.view.setLogDirectory(self._localLogDirectory,
-                                               lambda message: self.appendRuntimeLog("ERROR", message))
-            self.logDialog.view.diagnosticCreated.connect(self.appendLocalEvent)
-            self.logDialog.view.setRuntimeClient(self.runtimeClient,
-                lambda: self.logDialog.setEntries(self.logEntries), runtimeInstance=self._currentLogRuntimeInstance)
 
         self.workflowController = WorkflowController(
             workflowStore=self.workflowStore,
@@ -3187,6 +3177,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 self._localLogFailures.append(str(failure))
             self._drainLocalLogFailures()
         if self.logDialog is not None:
+            if _nativeQt and self.logDialog.jobLogs is not None:
+                self.logDialog.jobLogs.shutdown()
             self.logDialog.close()
         try:
             super().closeEvent(event)
@@ -4359,23 +4351,31 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.previewImageLabel.setPixmap(pixmap)
         self._displayedRunImage = imageIdentity
 
+    def _createLogDialog(self) -> LogDialog:
+        dialog = LogDialog(
+            self,
+            onClear=self._clearRuntimeLogCache,
+            onNavigate=self.navigateToRuntimeLogEntry,
+            maximumEntries=DEFAULT_MAX_LOG_ENTRIES,
+        )
+        if not _nativeQt:
+            dialog.setEntries(self.logEntries)
+            return dialog
+        dialog.view.setLogDirectory(self._localLogDirectory,
+            lambda message: self.appendRuntimeLog("ERROR", message))
+        dialog.view.diagnosticCreated.connect(self.appendLocalEvent)
+        dialog.enableWorkbench(makeEntry=self._runtimeLogEntry, onCurrent=lambda: self.logEntries,
+            directory=self._localLogDirectory, onError=lambda message: self.appendRuntimeLog("ERROR", message),
+            onDiagnostic=self.appendLocalEvent)
+        dialog.setWorkbenchClient(self.runtimeClient, runtimeInstance=self._currentLogRuntimeInstance)
+        if self._globalLogDelivery is not None:
+            dialog.jobLogs.progress(*self._globalLogDelivery)
+        return dialog
+
     def openLogDialog(self) -> None:
         self._pollOperationalLogs(retry=True)
         if self.logDialog is None:
-            self.logDialog = LogDialog(
-                self,
-                onClear=self._clearRuntimeLogCache,
-                onNavigate=self.navigateToRuntimeLogEntry,
-                maximumEntries=DEFAULT_MAX_LOG_ENTRIES,
-            )
-            self.logDialog.setEntries(self.logEntries)
-            if _nativeQt:
-                self.logDialog.view.setLogDirectory(self._localLogDirectory,
-                                                   lambda message: self.appendRuntimeLog("ERROR", message))
-                self.logDialog.view.diagnosticCreated.connect(self.appendLocalEvent)
-        if _nativeQt:
-            self.logDialog.view.setRuntimeClient(self.runtimeClient,
-                lambda: self.logDialog.setEntries(self.logEntries), runtimeInstance=self._currentLogRuntimeInstance)
+            self.logDialog = self._createLogDialog()
         if _nativeQt and self.logDialog.isMinimized():
             self.logDialog.setWindowState(self.logDialog.windowState() & ~Qt.WindowMinimized)
         self.logDialog.show()
@@ -4456,14 +4456,26 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         return self._globalLogInstance if self._globalLogTransport is service else ""
 
     def _drainGlobalLogs(self, reader):
-        if _nativeQt and self.logDialog is not None:
-            self.logDialog.view.syncRuntimeInstance()
-        for kind, event in reader.take():
+        dialog = self.logDialog if _nativeQt else None
+        if dialog is not None:
+            dialog.syncWorkbench(self.runtimeClient, reader.runtimeInstanceId)
+        if reader.initialPosition is not None and (
+                self._globalLogDelivery is None or self._globalLogDelivery[0] != reader.initialPosition[0]):
+            self._globalLogDelivery = reader.initialPosition
+            if dialog is not None:
+                dialog.jobLogs.progress(*self._globalLogDelivery)
+        for kind, event in reader.take(includeProgress=True):
             if kind == "event":
                 self.appendRuntimeEvent(event)
             elif kind == "reset":
                 self._clearRuntimeOriginCache()
+            elif kind == "progress":
+                self._globalLogDelivery = event
+                if dialog is not None:
+                    dialog.jobLogs.progress(*event)
             else:
+                if dialog is not None and event.get("code") in {"GLOBAL_LOG_DISCONNECTED", "GLOBAL_LOG_STOPPED"}:
+                    dialog.jobLogs.interrupted()
                 self.appendLocalEvent(event)
         if reader.supported is False:
             while self._pendingTaskLogs:
@@ -4502,12 +4514,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             reader = None
             self._globalLogCursor = None
             self._globalLogInstance = ""
+            self._globalLogDelivery = None
             self._pendingTaskLogs.clear()
             self._globalLogTransport = service
             self._clearRuntimeOriginCache()
             if _nativeQt and self.logDialog is not None:
-                self.logDialog.view.setRuntimeClient(self.runtimeClient,
-                    lambda: self.logDialog.setEntries(self.logEntries), runtimeInstance=self._currentLogRuntimeInstance)
+                self.logDialog.setWorkbenchClient(self.runtimeClient, runtimeInstance=self._currentLogRuntimeInstance)
         if not getattr(self.runtimeClient, "_closed", False) and service is not None:
             if reader is None or (retry and reader.finished.is_set() and not reader.unsupported):
                 from emo_master.apps.designer.services.global_logs import RuntimeGlobalLogs

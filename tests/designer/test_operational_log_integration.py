@@ -302,6 +302,178 @@ def testHistoryExportReadsCompleteFixedRangeAndCancellationKeepsTarget(ownedDesi
     assert target.read_bytes() == original and "未报告成功" in view.historyStatus.text()
 
 
+def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow, tmp_path, monkeypatch):
+    from PySide2.QtCore import Qt
+    from PySide2.QtTest import QTest
+    from PySide2.QtWidgets import QFileDialog, QPushButton, QTabBar
+    from emo_master.apps.designer.state.project_store import loadProjectDocument, saveProject
+    from emo_master.apps.designer.state.workflow_store import WorkflowStore
+    from emo_master.apps.runtime.main import createRuntimeServer
+    from emo_master.core.project.models import ProjectDocument
+    from emo_master.core.workflow.compiler import WorkflowCompiler
+    from emo_master.plugins.builtins.integer_add.operator import IntegerAddOperator
+    from tests.runtime.production_fixture import waitFor
+
+    def click(button):
+        assert button.isVisible() and button.isEnabled(), button.text()
+        QTest.mouseClick(button, Qt.LeftButton)
+
+    def tab(bar, index):
+        QTest.mouseClick(bar, Qt.LeftButton, pos=bar.tabRect(index).center())
+        assert bar.currentIndex() == index
+
+    payload = WorkflowStore().toPayload("日志工作台软件走查")
+    operator = IntegerAddOperator.meta
+    payload["dependencies"]["operators"] = [dict(operatorId=operator.operatorId, version=operator.version)]
+    flow = payload["workflows"]["main"]
+    flow["outputs"] = {"value": "integer"}
+    flow["nodes"].insert(1, dict(nodeId="sum", kind="operator", operatorId=operator.operatorId,
+                               params=dict(leftValue=2, rightValue=3)))
+    flow["edges"] = [dict(fromNode="sum", fromPort="value", toNode="__workflow_output__", toPort="value")]
+    document = ProjectDocument.model_validate(payload)
+    path = tmp_path / "addition.emoproj"
+    saveProject(path, document.model_dump(mode="json"))
+    loaded = loadProjectDocument(path)
+    assert loaded == document and loaded.schemaVersion == "2.10" and loaded.presentation.schemaVersion == "1.3"
+    WorkflowCompiler({operator.operatorId: IntegerAddOperator}).compile(loaded)
+    projectId = document.project.projectId
+    database = tmp_path / "history.sqlite"
+
+    first = RuntimeService(dbPath=database, runtimeInstanceId="q2-before-restart")
+    try:
+        loadedReply = first.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None)
+        assert loadedReply.ok, loadedReply.message
+        started = first.StartJob(pb.StartJobRequest(project_id=projectId, workflow_id="main",
+            start_request_id="q2-add", expected_runtime_instance_id=first.runtimeInstanceId,
+            legacy_snapshot_policy="NONE"), None)
+        assert started.ok, started.message
+        jobId = started.job_id
+        waitFor(lambda: first.jobRepository.get(jobId).isTerminal)
+        record = first.jobRepository.get(jobId)
+        assert record.status == "COMPLETED", record.message
+        assert any(row.nodeId == "sum" and row.eventType == "node.completed"
+                   for row in first.sqliteStore.listJobEventsAfter(jobId))
+
+        # Persist representative additional pages through the existing Runtime event store.
+        first.eventStore.append(jobId, "node.log", "早期范围命中", level="WARN", nodeId="early",
+                                projectId=projectId, workflowId="main")
+        for index in range(205):
+            first.eventStore.append(jobId, "node.log", f"分页夹具 {index + 1}",
+                level="WARN" if index == 204 else "INFO", projectId=projectId)
+        first.eventStore.append("__runtime__", "device.action.failed", "同 Job 的设备摘要",
+                                projectId=projectId, payload={"jobId": jobId, "deviceId": "software"})
+        first.eventStore.append("__runtime__", "node.preview.failed", "独立系统事件", projectId=projectId)
+        for index in range(50):
+            other = f"fixture-{index:02d}"
+            first.sqliteStore.insertJob(other, projectId, workflowId="fixture")
+            first.sqliteStore.updateJobStatus(other, "COMPLETED", endedAtMs=record.endedAtMs + 1000 + index)
+    finally:
+        first.close()
+
+    runtime = RuntimeService(dbPath=database, runtimeInstanceId="q2-after-restart")
+    server, port, _ = createRuntimeServer(port=0, runtimeService=runtime)
+    server.start()
+    channel = grpc.insecure_channel(f"127.0.0.1:{port}")
+    client = RuntimeClient(runtimeService=rpc.RuntimeServiceStub(channel))
+    window = None
+    try:
+        window = ownedDesignerWindow(client, settingsStore=Settings())
+        window.openLogDialog()
+        dialog = window.logDialog
+        jobs, history = dialog.jobLogs, dialog.view
+        waitUntil(lambda: jobs.capabilities is not None, timeout=10)
+        click(jobs.catalogHistory)
+        waitUntil(jobs.catalogNext.isEnabled, timeout=10)
+        click(jobs.catalogNext)
+        waitUntil(lambda: jobs.pending is None, timeout=10)
+        item, = jobs.directory.findItems("main", Qt.MatchExactly | Qt.MatchRecursive)
+        assert item.toolTip(0) == jobId and item.text(2) == "已完成"
+        jobs.directory.setCurrentItem(item)
+        assert not jobs.stopButton.isVisible()
+        assert dialog.grab().save(str(tmp_path / "q2-history.png"))
+        click(jobs.openButton)
+        waitUntil(lambda: jobs.window is not None and not jobs._opening and jobs._upper is not None, timeout=10)
+        assert jobs.instance == "q2-after-restart"
+        assert len(jobs.window.entries) == 200 and jobs.earlier.isEnabled()
+        assert {entry.runtimeInstanceId for entry in jobs.window.entries} == {"q2-before-restart"}
+        assert all(entry.message != "早期范围命中" for entry in jobs.window.entries)
+        jobs.warning.setChecked(True)
+
+        click(jobs.filterToggle)
+        jobs.inputs["nodeId"].setText("early")
+        query, = [button for button in jobs.filters.findChildren(QPushButton)
+                  if button.text() == "查询整个历史范围…"]
+        click(query)
+        waitUntil(lambda: history._historyReply is not None and history._historyFuture is None, timeout=10)
+        assert [(entry.jobId, entry.message) for entry in history._entries] == [(jobId, "早期范围命中")]
+        assert history._historyReply["runtimeInstanceId"] == "q2-after-restart"
+        assert "Runtime 历史" in history.historyStatus.text()
+        assert dialog.grab().save(str(tmp_path / "q2-range-query.png"))
+
+        click(dialog.historyBack)
+        assert jobs.warning.isChecked() and jobs.inputs["nodeId"].text() == "early"
+        waitUntil(lambda: "节点 ID early" in jobs.rangeStatus.text() and jobs.events.topLevelItemCount() == 0)
+        click(jobs.filterToggle)
+        expected = client.queryRuntimeLogs(runtimeInstanceId=jobs.instance, projectId=projectId,
+                                           jobId=jobId, limit=1000)
+        assert expected["ok"] and not expected["hasMore"]
+        exportPages = []
+        queryRuntimeLogs = client.queryRuntimeLogs
+
+        def observePage(**options):
+            reply = queryRuntimeLogs(**options)
+            exportPages.append((options, reply))
+            return reply
+
+        monkeypatch.setattr(client, "queryRuntimeLogs", observePage)
+        target = tmp_path / "whole-job.json"
+        monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_: (str(target), "JSON (*.json)"))
+        click(jobs.exportButton)
+        waitUntil(lambda: target.exists() and history._historyFuture is None, timeout=10)
+        exported = json.loads(target.read_text(encoding="utf-8"))
+        rows = exported["entries"]
+        assert exported["entryCount"] > len(jobs.window.entries)
+        assert [(row["eventId"], row["jobId"], row["message"]) for row in rows] == [
+            (row["eventId"], row["event"]["jobId"], row["event"]["message"]) for row in expected["events"]]
+        assert all(row["runtimeInstanceId"] == "q2-before-restart" for row in rows)
+        assert any(row["level"] == "INFO" for row in rows)
+        assert exported["filters"]["jobId"] == jobId
+        firstPage, secondPage = exportPages
+        assert firstPage[0]["afterEventId"] == 0 and firstPage[1]["hasMore"]
+        assert secondPage[0]["afterEventId"] == firstPage[1]["nextEventId"]
+        assert secondPage[0]["upperEventId"] == firstPage[1]["upperEventId"] == expected["upperEventId"]
+        assert all(not options.get("latestFirst") and "beforeEventId" not in options and "levels" not in options
+                   for options, _ in exportPages)
+        assert dialog.grab().save(str(tmp_path / "q2-export.png"))
+
+        window.appendLocalEvent(dict(level="ERROR", eventType="runtime.client.failed", jobId=jobId,
+            projectId=projectId, code="Q2_DESIGNER", message="Designer 客户端错误夹具"), source="runtime_client")
+        writer = window._logResources["writer"]
+        assert writer.waitUntilProcessed(jobId, writer.sequence)
+        tab(dialog.sources, 1)
+        assert any(entry.jobId == jobId and entry.code == "Q2_DESIGNER" for entry in dialog.designerViews[0]._entries)
+        localTabs = dialog.sourcePages.widget(1).findChild(QTabBar)
+        tab(localTabs, 1)
+        local = dialog.designerViews[1]
+        click(local.historyQueryButton)
+        waitUntil(lambda: any(entry.jobId == jobId and entry.code == "Q2_DESIGNER" for entry in local._entries))
+        tab(dialog.sources, 0)
+        assert jobs.warning.isChecked() and jobs.inputs["nodeId"].text() == "early"
+        tab(dialog.runtimeNavigation, 1)
+        waitUntil(lambda: dialog.system._historyReply is not None, timeout=10)
+        assert [entry.message for entry in dialog.system._entries] == ["独立系统事件"]
+        tab(dialog.runtimeNavigation, 0)
+        assert jobs.job.job_id == jobId and jobs.warning.isChecked()
+        print(f"Q2 Job {jobId} · query upper eventId {expected['upperEventId']} · exported {len(rows)} records")
+    finally:
+        if window is not None:
+            window.close()
+        client.close()
+        channel.close()
+        server.stop(0).wait()
+        runtime.close()
+
+
 def testDesignerLocalHistoryAndTargetChangeRejectOldReturn(ownedDesignerWindow, tmp_path):
     import threading
     from emo_master.apps.designer.services.local_log import DesignerLogWriter

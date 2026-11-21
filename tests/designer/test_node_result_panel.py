@@ -115,6 +115,37 @@ def testRunTargetsHaveSeparateHistoryAndProjectSwitchReleasesBoth():
         window.close()
 
 
+def testRunLogShortcutUsesSelectedInvocationAndValidatesRuntime(monkeypatch):
+    window, node = windowWithNode()
+    coordinator = window.nodeResultCoordinator
+    captured = []
+    try:
+        monkeypatch.setattr(window, "_currentLogRuntimeInstance", lambda: "runtime")
+        monkeypatch.setattr(window.logDialog, "openJob", lambda job, **focus: captured.append((job, focus)))
+        window._setCurrentJobId("job")
+        coordinator.history.bindContext(("runtime", "inspection"))
+        accepted = SimpleNamespace(job_id="job", project_revision=1)
+        window._rememberRuntimeLogJob(accepted)
+        coordinator.accepted(accepted)
+        project = window._currentProjectId()
+        for sequence, invocation in enumerate(("earlier", "later"), start=1):
+            raw = dict(event("node.completed", sequence, job="job", node=node, execution=invocation),
+                       workflowRunId=f"run-{invocation}", projectId=project,
+                       runtimeInstanceId="runtime", eventId=sequence)
+            coordinator.applyRuntimeEvent(raw)
+            window.appendRuntimeEvent(raw)
+        coordinator.history.older = True
+        coordinator.panel.logs.click()
+        assert captured == [(dict(jobId="job", projectId=project, workflowId="main"),
+                             dict(focus=("run-earlier", "earlier"), eventId=1))]
+        assert window.logDialog.isVisible()
+        monkeypatch.setattr(window, "_currentLogRuntimeInstance", lambda: "replacement-runtime")
+        coordinator.panel.logs.click()
+        assert len(captured) == 1 and window.logDialog.isVisible()
+    finally:
+        window.close()
+
+
 def testExpiredContextClearsHistoryAndImageInsteadOfKeepingOldResults():
     window, node = windowWithNode()
     coordinator = window.nodeResultCoordinator

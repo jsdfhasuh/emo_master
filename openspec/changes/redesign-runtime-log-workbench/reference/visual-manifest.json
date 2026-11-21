@@ -1,0 +1,102 @@
+{
+  "version": "2.3",
+  "source_commit": "9d59fd16a1d0d3ec0c60725c839ff38183d6916b",
+  "reference_kind": "Static layout references, not browser or Qt screenshots",
+  "prototype_sha256": "b34b0d633b7e9cec858fcfe4f4a01d6b16667ca6abdf782e32edeb31abf397e6",
+  "inline_fragment_sha256": "92eb738cdf4ea61ec3408013c47cb9dd683b2ddb33e7eea5e5cf0c8dc609e6b4",
+  "superseded_detail_content": {
+    "images/03_filter_drawer.png": "images/08_operator_reading.png"
+  },
+  "files": [
+    {
+      "path": "images/01_runtime_tasks.png",
+      "bytes": 273255,
+      "sha256": "42edc48fc47bfeb06217ba1275dd10c9b32da832fa538f7dfc934ae833a588db"
+    },
+    {
+      "path": "images/01_runtime_tasks.svg",
+      "bytes": 8897,
+      "sha256": "ae7c78d65b207cf84a9a7632f8e64e34a974acc3580e60ec98a223f884aa6345"
+    },
+    {
+      "path": "images/02_while_tree.png",
+      "bytes": 371732,
+      "sha256": "06f1fc96c175490b67434b7786b7181280520ee00806e581346b46d0730e0a71"
+    },
+    {
+      "path": "images/02_while_tree.svg",
+      "bytes": 25762,
+      "sha256": "676bab8ce1f2d8c52e2d0a6f33b2726657b1060471ddba5f22b4c5eb01835d73"
+    },
+    {
+      "path": "images/03_filter_drawer.png",
+      "bytes": 372018,
+      "sha256": "a725e61c5fc557e3b1d99d401be78a1716272ed79cb28632eb19e5b5d89f9ff8"
+    },
+    {
+      "path": "images/03_filter_drawer.svg",
+      "bytes": 19590,
+      "sha256": "49637a5c1fe993c0d9d328479b0ba5b84bfb9461eb4415944264b00dd1482159"
+    },
+    {
+      "path": "images/04_continuous_calls.png",
+      "bytes": 337890,
+      "sha256": "490acbe107024d9bf3023b2717e0349c9a28d3c6d1e63fd2818a00145db98c35"
+    },
+    {
+      "path": "images/04_continuous_calls.svg",
+      "bytes": 15681,
+      "sha256": "c8123501ac39ff671e7a9a547b0ecd1ee5204ca60f33e3327efdab3c9e03506c"
+    },
+    {
+      "path": "images/05_execution_time.png",
+      "bytes": 328422,
+      "sha256": "1508980feba150354b12a935516637ca88813f8d3a0818c4efdbf0e1afcc9222"
+    },
+    {
+      "path": "images/05_execution_time.svg",
+      "bytes": 16507,
+      "sha256": "4bc9ff3fe2ec435b9954ea209edf99de6f22061b11ac5eaa1ea6f257b425a8b7"
+    },
+    {
+      "path": "images/06_device_diagnostics.png",
+      "bytes": 344583,
+      "sha256": "4052fa323a2816c16da65aada492a5bee99022d90948ee24cd31f8e5d1e1c652"
+    },
+    {
+      "path": "images/06_device_diagnostics.svg",
+      "bytes": 12935,
+      "sha256": "c903e3c5fba4aa70c2b9e160e5be516bd3220eb7f47fcdd7fe3b7b9b2ca6d0b0"
+    },
+    {
+      "path": "images/07_designer_logs.png",
+      "bytes": 307335,
+      "sha256": "3a873ddc9fc42b956bcb16f2d6cb7a6b7d4d0718a3b45e5975add13e1f25b26e"
+    },
+    {
+      "path": "images/07_designer_logs.svg",
+      "bytes": 10857,
+      "sha256": "cf0158e3417551a4ca41eeb8caa4b2958bfe9bfa9e77d99e68523b1b213810b6"
+    },
+    {
+      "path": "images/08_operator_reading.png",
+      "bytes": 419241,
+      "sha256": "faf5fce5a6ea16575cd4f5fa7bc905dba7d916c637539aa0251e31501630c45f"
+    },
+    {
+      "path": "images/08_operator_reading.svg",
+      "bytes": 19913,
+      "sha256": "0b0fa5e85c3d824e6b2f579b4d270bee464ff3075c1fe8fd56f5a805ddd0384b"
+    },
+    {
+      "path": "images/09_operator_debug.png",
+      "bytes": 316340,
+      "sha256": "ce9f011c0c211445fcfbc948e01078642e30cff5fd818caa99b45851241557bb"
+    },
+    {
+      "path": "images/09_operator_debug.svg",
+      "bytes": 11527,
+      "sha256": "f9779078fa0a9e0ef7da473704b8b2640a96492ea970cf64d19fdbc2de9dcd70"
+    }
+  ]
+}

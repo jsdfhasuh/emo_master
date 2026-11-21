@@ -1,0 +1,18 @@
+{
+  "method": "Node VM + minimal DOM stand-in",
+  "fragment": "/workspace/emo-log-coverage.html",
+  "passed": [
+    "YOLO completion uses source-shaped metrics/diagnostics/ioSummary; raw copy remains same record",
+    "No-business-log integer result displays scalar zero, without a missing-log error",
+    "SQLite active log receipt expands and copies with fallback",
+    "Independent debug wrapper and result source remain distinct; returning preserves task filters/selection",
+    "Generic fixtures preserve typed empty values, table paging and truncation notice",
+    "All nine documented scene anchors render in Node VM with DOM stand-in"
+  ],
+  "not_verified": [
+    "Browser rendering / layout / screenshots",
+    "Native Qt implementation",
+    "Real Runtime or hardware"
+  ],
+  "product_implementation": false
+}

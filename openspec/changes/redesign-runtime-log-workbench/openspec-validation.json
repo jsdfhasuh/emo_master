@@ -1,0 +1,20 @@
+{
+  "items": [
+    {
+      "id": "redesign-runtime-log-workbench",
+      "type": "change",
+      "valid": true,
+      "issues": [],
+      "durationMs": 38
+    }
+  ],
+  "summary": {
+    "totals": {"items": 1, "passed": 1, "failed": 0},
+    "byType": {"change": {"items": 1, "passed": 1, "failed": 0}}
+  },
+  "version": "1.0",
+  "root": {
+    "path": "/workspace/scratch/0942a9500043/operator-coverage-completion/package",
+    "source": "nearest"
+  }
+}

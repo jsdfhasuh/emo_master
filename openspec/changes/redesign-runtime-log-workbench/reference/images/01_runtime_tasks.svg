@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1120" viewBox="0 0 1440 1120"><rect width="100%" height="100%" fill="#f5f6f8"/>
+<text x="25" y="36" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="22" font-weight="600" fill="#20242b">01  运行任务首页</text>
+<text x="25" y="60" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#626b78">静态布局参考图 · 按原型样本整理 · 非浏览器 / Qt 截图</text>
+<rect x="24" y="80" width="1392" height="926" rx="7" fill="#ffffff" stroke="#d8dce3"/>
+<rect x="25" y="81" width="1390" height="50" rx="0" fill="#f5f6f8"/>
+<path d="M24,131 L1416,131" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<rect x="42" y="94" width="25" height="25" rx="6" fill="#2563eb"/>
+<text x="50" y="114" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="18" font-weight="600" fill="#ffffff">e</text>
+<text x="78" y="114" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="600" fill="#20242b">emo_master</text>
+<path d="M186,96 L186,116" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="202" y="114" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">运行日志</text>
+<text x="978" y="114" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">交互原型 · 模拟数据 · Runtime / 设备未连接</text>
+<text x="44" y="165" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="600" fill="#2563eb">Runtime 运行日志</text>
+<text x="218" y="165" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="400" fill="#626b78">Designer 本机日志</text>
+<path d="M42,179 L176,179" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M24,181 L1416,181" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<rect x="43" y="193" width="100" height="32" rx="5" fill="#edf3ff" stroke="#2563eb"/>
+<text x="55" y="214" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#2563eb">运行任务</text>
+<rect x="150" y="193" width="100" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="162" y="214" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">系统事件</text>
+<text x="1110" y="214" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">当前 Runtime · 模拟连接</text>
+<text x="43" y="274" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="22" font-weight="600" fill="#20242b">运行任务</text>
+<text x="43" y="301" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#626b78">当前 Runtime · 运行中与最近已结束任务</text>
+<text x="43" y="350" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="16" font-weight="600" fill="#20242b">运行中</text>
+<text x="170" y="349" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">3</text>
+<path d="M43,367 L1388,367" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="45" y="399" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="15" font-weight="600" fill="#20242b">主采集流程</text>
+<text x="45" y="425" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">Job-001 · 脚垫装配 · 开始 09:20:00.000</text>
+<text x="580" y="401" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">单次启动 · While 持续运行</text>
+<rect x="930" y="384" width="52" height="24" rx="4" fill="#edf3ff"/>
+<text x="938" y="400" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#2563eb">运行中</text>
+<text x="1054" y="402" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">已运行 ≈ 12.50 s</text>
+<rect x="1264" y="388" width="120" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="1276" y="409" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">查看日志 ›</text>
+<path d="M43,457 L1388,457" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="45" y="489" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="15" font-weight="600" fill="#20242b">批量图片检测</text>
+<text x="45" y="515" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">Job-002 · 脚垫装配 · 开始 09:19:30.000</text>
+<text x="580" y="491" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">单次启动 · ForEach</text>
+<rect x="930" y="474" width="52" height="24" rx="4" fill="#edf3ff"/>
+<text x="938" y="490" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#2563eb">运行中</text>
+<text x="1054" y="492" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">已运行 ≈ 42.50 s</text>
+<rect x="1264" y="478" width="120" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="1276" y="499" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">查看日志 ›</text>
+<path d="M43,547 L1388,547" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="45" y="579" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="15" font-weight="600" fill="#20242b">连续尺寸检测</text>
+<text x="45" y="605" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">Job-004 · 脚垫装配 · 开始 09:18:00.000</text>
+<text x="580" y="581" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">连续运行 · 重复调用工作流</text>
+<rect x="930" y="564" width="52" height="24" rx="4" fill="#edf3ff"/>
+<text x="938" y="580" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#2563eb">运行中</text>
+<text x="1054" y="582" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">已运行 ≈ 2 分 12 秒</text>
+<rect x="1264" y="568" width="120" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="1276" y="589" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">查看日志 ›</text>
+<text x="43" y="692" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="16" font-weight="600" fill="#20242b">最近已结束</text>
+<text x="170" y="691" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">1</text>
+<path d="M43,709 L1388,709" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="45" y="741" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="15" font-weight="600" fill="#20242b">设备自检</text>
+<text x="45" y="767" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">Job-003 · 脚垫装配 · 开始 09:17:04.000</text>
+<text x="580" y="743" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">单次启动</text>
+<rect x="930" y="726" width="44" height="24" rx="4" fill="#fff0ee"/>
+<text x="938" y="742" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#c43838">失败</text>
+<text x="1054" y="744" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">耗时 3.02 s</text>
+<rect x="1264" y="730" width="120" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="1276" y="751" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">查看日志 ›</text>
+<text x="45" y="968" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">每行是一项运行任务；循环轮次在任务内部查看。</text>
+<text x="25" y="1044" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="600" fill="#20242b">首页一行对应一个 Job；While 轮次与连续调用进入任务内部查看。</text>
+<text x="25" y="1073" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#626b78">图中未演示“更早历史”入口；正式实现按 D4 和任务清单保留，不能照图省略。</text>
+</svg>

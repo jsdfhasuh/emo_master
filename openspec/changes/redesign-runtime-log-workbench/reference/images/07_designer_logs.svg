@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1120" viewBox="0 0 1440 1120"><rect width="100%" height="100%" fill="#f5f6f8"/>
+<text x="25" y="36" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="22" font-weight="600" fill="#20242b">07  Designer 本机日志独立来源</text>
+<text x="25" y="60" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#626b78">静态布局参考图 · 按原型样本整理 · 非浏览器 / Qt 截图</text>
+<rect x="24" y="80" width="1392" height="926" rx="7" fill="#ffffff" stroke="#d8dce3"/>
+<rect x="25" y="81" width="1390" height="50" rx="0" fill="#f5f6f8"/>
+<path d="M24,131 L1416,131" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<rect x="42" y="94" width="25" height="25" rx="6" fill="#2563eb"/>
+<text x="50" y="114" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="18" font-weight="600" fill="#ffffff">e</text>
+<text x="78" y="114" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="600" fill="#20242b">emo_master</text>
+<path d="M186,96 L186,116" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="202" y="114" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">运行日志</text>
+<text x="978" y="114" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">交互原型 · 模拟数据 · Runtime / 设备未连接</text>
+<text x="44" y="165" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="400" fill="#626b78">Runtime 运行日志</text>
+<text x="218" y="165" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="600" fill="#2563eb">Designer 本机日志</text>
+<path d="M215,179 L355,179" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M24,181 L1416,181" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="45" y="213" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#626b78">工程编辑、界面操作与本机客户端日志</text>
+<text x="44" y="268" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="22" font-weight="600" fill="#20242b">Designer 本机日志</text>
+<text x="44" y="295" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">工程编辑、界面操作与本机客户端日志</text>
+<rect x="44" y="317" width="110" height="32" rx="5" fill="#edf3ff" stroke="#2563eb"/>
+<text x="56" y="338" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#2563eb">当前会话</text>
+<rect x="162" y="317" width="110" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="174" y="338" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">本机文件</text>
+<text x="300" y="339" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">仅本机会话 designer-demo-01</text>
+<rect x="44" y="368" width="660" height="34" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="56" y="391" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">搜索本机日志…</text>
+<rect x="720" y="369" width="104" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="732" y="390" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">全部等级</text>
+<rect x="836" y="369" width="133" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="848" y="390" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">高级筛选 ⌄</text>
+<rect x="25" y="425" width="1034" height="34" rx="0" fill="#f5f6f8"/>
+<path d="M24,425 L1060,425" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<path d="M24,459 L1060,459" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="42" y="446" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">Designer 当前会话 · 模拟数据</text>
+<text x="855" y="446" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#2563eb">展开全部   ·   收起全部</text>
+<rect x="36" y="468" width="1009" height="76" rx="0" fill="#ffffff"/>
+<text x="48" y="490" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">09:20:08.000</text>
+<rect x="159" y="474" width="64" height="24" rx="4" fill="#edf3ff"/>
+<text x="167" y="490" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#2563eb">INFO</text>
+<text x="246" y="492" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="400" fill="#20242b">工程保存完成 · 工作流设置已更新</text>
+<text x="246" y="522" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">模块 project · 来源 Designer</text>
+<path d="M44,541 L1034,541" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<rect x="36" y="551" width="1009" height="76" rx="0" fill="#edf3ff"/>
+<text x="48" y="573" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">09:19:50.000</text>
+<rect x="159" y="557" width="76" height="24" rx="4" fill="#fff0ee"/>
+<text x="167" y="573" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#c43838">ERROR</text>
+<text x="246" y="575" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="600" fill="#20242b">无法连接 Runtime · 127.0.0.1:50051</text>
+<text x="246" y="605" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">模块 runtime_client · 来源 Designer</text>
+<path d="M44,624 L1034,624" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<rect x="36" y="634" width="1009" height="76" rx="0" fill="#ffffff"/>
+<text x="48" y="656" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">09:16:35.000</text>
+<rect x="159" y="640" width="76" height="24" rx="4" fill="#f5f6f8"/>
+<text x="167" y="656" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">DEBUG</text>
+<text x="246" y="658" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="400" fill="#20242b">已打开主采集流程画布</text>
+<text x="246" y="688" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">模块 flow_designer · 来源 Designer</text>
+<path d="M44,707 L1034,707" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<rect x="36" y="717" width="1009" height="76" rx="0" fill="#ffffff"/>
+<text x="48" y="739" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">09:16:20.000</text>
+<rect x="159" y="723" width="64" height="24" rx="4" fill="#edf3ff"/>
+<text x="167" y="739" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#2563eb">INFO</text>
+<text x="246" y="741" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="400" fill="#20242b">工程保存完成 · 脚垫装配</text>
+<text x="246" y="771" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">模块 project · 来源 Designer</text>
+<path d="M44,790 L1034,790" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<rect x="1060" y="425" width="355" height="581" rx="0" fill="#ffffff"/>
+<path d="M1060,425 L1060,1006" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="1078" y="456" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="16" font-weight="600" fill="#20242b">本机日志详情</text>
+<text x="1384" y="459" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="18" font-weight="400" fill="#626b78">×</text>
+<path d="M1060,472 L1416,472" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<rect x="1078" y="491" width="76" height="24" rx="4" fill="#fff0ee"/>
+<text x="1086" y="507" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#c43838">ERROR</text>
+<text x="1078" y="547" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="16" font-weight="600" fill="#20242b">无法连接 Runtime · 127.0.0.1:50051</text>
+<text x="1078" y="591" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">来源</text>
+<text x="1152" y="592" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">Designer 本机</text>
+<text x="1078" y="620" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">模块</text>
+<text x="1152" y="621" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">runtime_client</text>
+<text x="1078" y="649" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">事件</text>
+<text x="1152" y="650" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">runtime.connection.failed</text>
+<text x="1078" y="678" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">时间</text>
+<text x="1152" y="679" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">09:19:50.000</text>
+<text x="1078" y="707" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">错误码</text>
+<text x="1152" y="708" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">GRPC_UNAVAILABLE</text>
+<text x="1078" y="757" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#2563eb">› 原始 JSON</text>
+<text x="25" y="1044" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="600" fill="#20242b">Designer 当前会话与本机文件属于独立来源，切换后各自保留筛选与阅读位置。</text>
+<text x="25" y="1073" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#626b78">先按 originApp / 可信生产者分类。Designer 客户端错误即使携带 Job ID，也不能搬进 Runtime。</text>
+</svg>

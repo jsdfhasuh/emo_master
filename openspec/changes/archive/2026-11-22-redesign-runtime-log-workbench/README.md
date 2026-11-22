@@ -1,5 +1,15 @@
 # emo_master Runtime 日志工作台 · 完整计划 V2.4
 
+## 归档状态 · 2026-11-22
+
+本变更已完成实施、审查修复及主分支合并，51 项任务全部完成。产品由 [PR #16](https://github.com/jsdfhasuh/emo_master/pull/16) 合入，交付记录由 [PR #17](https://github.com/jsdfhasuh/emo_master/pull/17) 补齐；本次归档以 `d702c4ef60722c51eb703a721942ec9bc9d007eb` 为基线，由 **ChatGPT Web** 执行。
+
+- 当前有效规格：[runtime-log-workbench 正式规范](../../../specs/runtime-log-workbench/spec.md)，包含原文转入的 21 条需求和 57 个场景。
+- 实施、验证与未验证范围：[V2.4 实施与验收记录](implementation-report-v2_4.md)。任务完成情况见 [tasks.md](tasks.md)。
+- 下文保留当时的完整计划、原型和交接说明；其中“待实施”“继续实现”等文字属于历史上下文，不再表示活动任务。原始证据和模拟原型的性质保持不变。
+
+---
+
 **这是一份已整合的完整计划。只交给 Codex 这一包即可，不需要再提供 V2.3、补充包或 Patch 01。**
 
 唯一 change：`redesign-runtime-log-workbench`。全部目标、当前待办和原型均归入此目录，不含第二个待执行 change。

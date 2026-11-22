@@ -1532,11 +1532,17 @@ try:
             self.historyBack.setAutoDefault(False)
             self.historyBack.setVisible(False)
             self.historyBack.clicked.connect(self._returnFromJobHistory)
+            self.receivedRuntimeLogs = QPushButton("当前收到的 Runtime 记录")
+            self.receivedRuntimeLogs.setAutoDefault(False)
+            self.receivedRuntimeLogs.setCheckable(True)
+            self.receivedRuntimeLogs.hide()
+            self.receivedRuntimeLogs.toggled.connect(self._showReceivedRuntimeLogs)
             self.historyStructure = QPushButton("在执行结构中查看")
             self.historyStructure.setAutoDefault(False)
             self.historyStructure.clicked.connect(self._openHistoryEvent)
             historyRow = QHBoxLayout()
             historyRow.addWidget(self.historyBack)
+            historyRow.addWidget(self.receivedRuntimeLogs)
             historyRow.addStretch()
             historyRow.addWidget(self.historyStructure)
             historyLayout.addLayout(historyRow)
@@ -1585,10 +1591,11 @@ try:
             self.setEntries(onCurrent())
 
         def setWorkbenchClient(self, client, *, runtimeInstance):
-            self.view.setRuntimeClient(client, lambda: self.view.setEntries(self._currentLogEntries()),
+            self.view.setRuntimeClient(client, self._loadCurrentLogEntries,
                                        runtimeInstance=runtimeInstance)
             self.system.setRuntimeClient(client, runtimeInstance=runtimeInstance)
             self.jobLogs.synchronize(client, runtimeInstance())
+            self.receivedRuntimeLogs.setVisible(any(map(self._receivedRuntimeRecord, self._currentLogEntries())))
 
         def syncWorkbench(self, client, instance):
             self.view.syncRuntimeInstance()
@@ -1605,13 +1612,15 @@ try:
 
         def _runtimePageChanged(self, index):
             self.runtimePages.setCurrentIndex(index)
-            if index == 2 and self.view.rangeCombo.currentData() != "runtime":
+            if (index == 2 and not self.receivedRuntimeLogs.isChecked()
+                    and self.view.rangeCombo.currentData() != "runtime"):
                 self.view.rangeCombo.setCurrentIndex(self.view.rangeCombo.findData("runtime"))
             elif index == 1 and self.system._historyReply is None:
                 self.system.queryHistory()
 
         def _jobHistory(self, filters):
             self.historyBack.show()
+            self.receivedRuntimeLogs.setChecked(False)
             self.sources.setCurrentIndex(0)
             self.runtimeNavigation.setCurrentIndex(2)
             if any(self.view._historyFilters.get(key, "") != filters.get(key, "") for key in ("projectId", "jobId")):
@@ -1636,6 +1645,7 @@ try:
 
         def openRuntimeHistory(self, *, projectId="", deviceId=""):
             self.historyBack.hide()
+            self.receivedRuntimeLogs.setChecked(False)
             self.sources.setCurrentIndex(0)
             self.runtimeNavigation.setCurrentIndex(2)
             self.view.historyInputs["jobId"].setReadOnly(False)
@@ -1646,7 +1656,31 @@ try:
         def _historySelectionChanged(self, *_):
             row = self.view.table.currentRow()
             entries = self.view._visibleEntries
-            self.historyStructure.setEnabled(0 <= row < len(entries) and bool(entries[row].effectiveJobId))
+            self.historyStructure.setEnabled(bool(self.view._historyReply and 0 <= row < len(entries)
+                and entries[row].effectiveJobId and entries[row].eventId))
+
+        @staticmethod
+        def _receivedRuntimeRecord(entry: StructuredLogEntry) -> bool:
+            # Legacy observers only run once forward querying is confirmed unsupported.
+            return entry.isRuntime and entry.eventId is None
+
+        def _loadCurrentLogEntries(self):
+            entries = self._currentLogEntries()
+            if self.receivedRuntimeLogs.isChecked():
+                entries = [entry for entry in entries if self._receivedRuntimeRecord(entry)]
+            self.view.setEntries(entries)
+
+        def _showReceivedRuntimeLogs(self, checked):
+            if checked:
+                self.view._resetFilters()
+            mode = "current" if checked else "runtime"
+            if checked and self.view.rangeCombo.currentData() == mode:
+                self._loadCurrentLogEntries()
+            else:
+                self.view.rangeCombo.setCurrentIndex(self.view.rangeCombo.findData(mode))
+            if checked:
+                self.view.historyStatus.setText("显示本会话已收到的旧版 Runtime 记录。范围受当前缓存限制。")
+            self._historySelectionChanged()
 
         def _openHistoryEvent(self):
             row = self.view.table.currentRow()
@@ -1666,15 +1700,28 @@ try:
             self.jobLogs.openJob(job, focus=focus, eventId=eventId)
 
         def appendEntry(self, entry: StructuredLogEntry) -> None:
-            self.view.appendEntry(entry)
-            if self.jobLogs is not None:
-                self.jobLogs.appendEntry(entry)
-                self.designerViews[0].appendEntry(entry)
+            if self.jobLogs is None:
+                self.view.appendEntry(entry)
+                return
+            received = self._receivedRuntimeRecord(entry)
+            if received:
+                self.receivedRuntimeLogs.show()
+            if received or not self.receivedRuntimeLogs.isChecked():
+                self.view.appendEntry(entry)
+            self.jobLogs.appendEntry(entry)
+            self.designerViews[0].appendEntry(entry)
 
         def setEntries(self, entries: list[StructuredLogEntry]) -> None:
-            self.view.setEntries(entries)
-            if self.jobLogs is not None:
-                self.designerViews[0].setEntries([entry for entry in entries if not entry.isRuntime])
+            if self.jobLogs is None:
+                self.view.setEntries(entries)
+                return
+            received = [entry for entry in entries if self._receivedRuntimeRecord(entry)]
+            self.receivedRuntimeLogs.setVisible(bool(received))
+            if not received:
+                self.receivedRuntimeLogs.setChecked(False)
+            if self.view.rangeCombo.currentData() == "current":
+                self.view.setEntries(received if self.receivedRuntimeLogs.isChecked() else entries)
+            self.designerViews[0].setEntries([entry for entry in entries if not entry.isRuntime])
 
         def appendLog(self, line: str) -> None:
             self.view.appendLog(line)

@@ -8,6 +8,8 @@ import time
 
 import grpc
 import pytest
+from PySide2.QtCore import Qt
+from PySide2.QtTest import QTest
 
 from emo_master.apps.designer.page_designer.runtime_logs import PreviewRuntimeLogs
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
@@ -239,12 +241,28 @@ def testObservedJobAppearsInExistingLogWindowWithDetails(designer, logsServer, m
     assert entry.source == 'runtime' and entry.level == 'WARN' and entry.jobId == 'external-job'
     assert entry.payload['sourceId'] == 'live' and '6220800' in entry.payload['reason']
     assert entry.projectInstanceToken == ''
+    assert entry.eventId is None
+    window.appendLocalEvent(dict(level='WARN', eventType='presentation.client.failed',
+        code='CLIENT_ONLY', message='Designer 客户端错误', jobId=entry.jobId), source='page_designer')
     window.openLogDialog()
-    waitFor(lambda: entry in window.logDialog.view._visibleEntries)
-    index = window.logDialog.view._visibleEntries.index(entry)
-    window.logDialog.view._showDetails(index, 0)
-    assert 'BUDGET_EXCEEDED' in window.logDialog.view.detailViewer.toPlainText()
-    assert 'raw image 6220800' in window.logDialog.view.detailViewer.toPlainText()
+    dialog = window.logDialog
+    QTest.mouseClick(dialog.runtimeNavigation, Qt.LeftButton, pos=dialog.runtimeNavigation.tabRect(2).center())
+    assert dialog.view.isVisible() and dialog.view.rangeCombo.currentData() == 'runtime'
+    assert dialog.receivedRuntimeLogs.isVisible()
+    probeCount = len(service.queryRequests)
+    QTest.mouseClick(dialog.receivedRuntimeLogs, Qt.LeftButton)
+    waitFor(lambda: entry in dialog.view._visibleEntries)
+    assert len(service.queryRequests) == probeCount
+    assert dialog.view._visibleEntries == [entry]
+    assert '已收到' in dialog.view.historyStatus.text() and '缓存' in dialog.view.historyStatus.text()
+    assert not dialog.view.historyQueryButton.isEnabled()
+    assert entry not in dialog.system._entries and entry not in dialog.designerViews[0]._entries
+    assert any(row.code == 'CLIENT_ONLY' for row in dialog.designerViews[0]._entries)
+    index = dialog.view._visibleEntries.index(entry)
+    dialog.view.table.setCurrentCell(index, 0)
+    assert 'BUDGET_EXCEEDED' in dialog.view.detailViewer.toPlainText()
+    assert 'raw image 6220800' in dialog.view.detailViewer.toPlainText()
+    assert not dialog.historyStructure.isEnabled()
     preview.stopViewing()
     waitFor(lambda: not preview.active())
     assert preview.logCursors['external-job'] == 1
@@ -260,6 +278,7 @@ def testObservedJobAppearsInExistingLogWindowWithDetails(designer, logsServer, m
         'reason': 'image slab quarantined until actual owner retirement'})
     service.rows['external-job'].append(problem)
     waitFor(lambda: any(entry.level == 'ERROR' and entry.source == 'runtime' for entry in window.logEntries))
+    waitFor(lambda: {row.level for row in dialog.view._visibleEntries} == {'INFO', 'WARN', 'ERROR'})
     artifactDirectory = os.environ.get('EMO_PRESENTATION_LOG_ARTIFACTS')
     if artifactDirectory:
         from PySide2.QtWidgets import QApplication, QLabel, QSplitter
@@ -272,12 +291,26 @@ def testObservedJobAppearsInExistingLogWindowWithDetails(designer, logsServer, m
         dialog.view.sourceFilter.setCurrentText('runtime')
         waitFor(lambda: len(dialog.view._visibleEntries) == 3)
         dialog.view._showDetails(0, 0)
+        dialog.view.recordDetail.tabs.setCurrentWidget(dialog.view.detailViewer)
         assert {row.level for row in dialog.view._visibleEntries} == {'INFO', 'WARN', 'ERROR'}
-        dialog.findChild(QSplitter).setSizes([230, 350])
+        dialog.view.findChild(QSplitter).setSizes([230, 350])
         QApplication.processEvents()
         scroll = dialog.view.detailViewer.verticalScrollBar()
         scroll.setValue(scroll.maximum())
         assert dialog.grab().save(str(output / 'designer-log-window.png'))
+    QTest.mouseClick(dialog.receivedRuntimeLogs, Qt.LeftButton)
+    assert dialog.view.rangeCombo.currentData() == 'runtime' and dialog.receivedRuntimeLogs.isVisible()
+    service.queryCode = 'OK'
+    with grpc.insecure_channel(address) as channel:
+        client.runtimeService = rpc.RuntimeServiceStub(channel)
+        try:
+            window._pollOperationalLogs()
+            waitFor(lambda: window._logResources['reader'].supported is True)
+            assert dialog.receivedRuntimeLogs.isHidden() and dialog.view.rangeCombo.currentData() == 'runtime'
+            assert all(row.code != 'BUDGET_EXCEEDED' for row in window.logEntries)
+        finally:
+            client._closed = True
+            window._stopGlobalLogs()
 
 
 def testRunCommandJobKeepsItsExistingLogSubscription(designer, logsServer, monkeypatch):
@@ -393,6 +426,7 @@ def testModernPageUsesOnlyGlobalQueryWithDetails(designer, logsServer, monkeypat
         entries = [entry for entry in window.logEntries if entry.eventType == row.event_type]
         assert len(entries) == 1 and entries[0].eventId == 1
         assert entries[0].payload['sourceId'] == 'live' and '6220800' in entries[0].payload['reason']
+        assert window.logDialog.receivedRuntimeLogs.isHidden()
         assert preview.runtimeLogs is None and service.requests == []
     finally:
         client._closed = True

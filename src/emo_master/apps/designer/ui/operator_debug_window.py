@@ -126,8 +126,8 @@ class OperatorDebugWindow(QDialog):
         self.resultDetail = LogRecordDetail(self.resultTabs)
         self.resultDetail.clear("尚未收到调试执行结果")
         self.resultTabs.addTab(self.resultDetail, "执行详情")
-        portPage = QWidget()
-        portLayout = QVBoxLayout(portPage)
+        self.resultPorts = QWidget()
+        portLayout = QVBoxLayout(self.resultPorts)
         portBar = QHBoxLayout()
         self.outputPorts = QComboBox()
         self.outputPorts.currentIndexChanged.connect(self.showOutput)
@@ -160,9 +160,9 @@ class OperatorDebugWindow(QDialog):
         self.outputTree = ValueTree()
         self.outputTree.setMinimumHeight(80)
         portLayout.addWidget(self.outputTree, 1)
-        self.resultTabs.addTab(portPage, "输出端口")
+        self.resultTabs.addTab(self.resultPorts, "输出端口")
         if self.isPlc:
-            self.resultTabs.setCurrentWidget(portPage)
+            self.resultTabs.setCurrentWidget(self.resultPorts)
         resultLayout.addWidget(self.resultTabs, 1)
         self.tabs.addTab(result, "结果")
         self.details = ValueTree()
@@ -757,13 +757,15 @@ class OperatorDebugWindow(QDialog):
                     self.outputPorts.addItem(imagePortTitle(port) + " · 未生成", "")
                     self.outputPorts.setItemData(self.outputPorts.count() - 1, port, Qt.UserRole + 1)
                     self.outputPorts.setItemData(self.outputPorts.count() - 1, message, Qt.ToolTipRole)
+            images = [port for port, asset in record.get("outputAssets", {}).items() if asset["mime"] == "image/png"]
             selection = self.outputPorts.findData(previousPort, Qt.UserRole + 1)
             if selection < 0:
-                images = [port for port, asset in record.get("outputAssets", {}).items() if asset["mime"] == "image/png"]
                 preferred = next((port for port in ("overlay", "croppedImage", "image") if port in images), next(iter(images), ""))
                 selection = self.outputPorts.findData(preferred, Qt.UserRole + 1)
             if selection >= 0:
                 self.outputPorts.setCurrentIndex(selection)
+            if not previousPort and self.selectedOutputPort() in images:
+                self.resultTabs.setCurrentWidget(self.resultPorts)
         else:
             self.resultDetail.clear("尚未收到调试执行结果")
         self.updateResultLabel()

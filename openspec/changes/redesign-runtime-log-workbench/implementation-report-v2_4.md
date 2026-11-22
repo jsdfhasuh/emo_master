@@ -119,3 +119,43 @@ python -m pytest -q -s --tb=short tests/designer/test_runtime_job_workbench.py::
 ```
 
 本次两条验收由 QTest 驱动实际 Qt 窗口。未另做人工点击验收、真实硬件、全部算子、全时区、冻结安装包、全仓 pytest 或远端 CI。
+
+## 2026-11-22 合并与 CI 交付
+
+执行者为 Codex。开始时工作分支干净，本地与远端 `codex/runtime-log-workbench` 均为 `3f3c3b4b1a301ab2bb807b5fcd669dff72ed46b3`，远端 `main` 为 `9d59fd16a1d0d3ec0c60725c839ff38183d6916b`。核对了这两个远端提交之间的全部 122 个文件、7 个提交，以及 `d0c1df94` 之后仅有的同一 OpenSpec 文档与证据差异。独立的本地 `main` 工作树保留用户修改。
+
+### 合并前集成修正
+
+- `058022c80171915d06d8dce8d05f258f48e07a37` 修复切换工程或 Job 时，新历史查询失败可能沿用旧任务列表、分页游标和导出范围的问题。同一任务的已提交查询及日期草稿仍保留。两项直接反例在修复前失败，修复后通过。
+- `da0b8e25675a3bb4ad88f3f7bd96537ea5ee80ea` 根据 Linux 源码 CI 的四项失败做局部修正。单算子调试首次获得图像时显示输出端口，切换到历史结果时保留用户所选详情页。旧 Runtime 已收到的无全局事件 ID 记录可在现有高级历史页查看，范围标明受当前缓存限制，沿用既有读取与缓存，切换目标时更新入口。设备弹窗测试通过原生窗口展开「技术条件」后继续核对原来的模态释放、焦点和草稿断言。 [Linux 失败证据](https://github.com/jsdfhasuh/emo_master/actions/runs/44981996455/job/137084431998)
+- 随后的 Windows 非 Runtime 分片初次运行仅有双范围页面预览用例在初始图像等待时超时。该用例在 `9d59fd16` 基线和 `da0b8e25` 的本机 Windows 原生 Qt 上均通过，远端超时根因未确定。保持代码、测试和门禁不变，在同一提交上重跑失败分片并通过。 [超时记录](https://github.com/jsdfhasuh/emo_master/actions/runs/44984472142/job/137092022300) · [Windows 分片重跑](https://github.com/jsdfhasuh/emo_master/actions/runs/44984472142/job/137100205590)
+
+### 合并和远端运行
+
+PR 检查结束后核对了开放状态、源码与 Web 检查、评审要求、最新目标 SHA 和 GitHub 测试合并树 `10c00f38ab604abd06f6b92eae9130abd488ae47`。按普通合并提交保留历史。远端 `main` 的产品合并提交为 `9a9cc511d2c2eec588b5602405cd364e40ae313a`，两个父提交为原 `main` 与 `da0b8e25`。重新拉取后确认完整包含交付分支，提交树与通过 PR 验证的树一致。 [产品 PR #16](https://github.com/jsdfhasuh/emo_master/pull/16) · [产品合并提交](https://github.com/jsdfhasuh/emo_master/commit/9a9cc511d2c2eec588b5602405cd364e40ae313a)
+
+| 阶段 | 对应提交 | GitHub Actions 运行 |
+| --- | --- | --- |
+| PR 源码 CI | `da0b8e25` | Linux、Windows 各两个分片及汇总通过。 [CI 第 2 次尝试](https://github.com/jsdfhasuh/emo_master/actions/runs/44984472142/attempts/2) |
+| PR Web panel | `da0b8e25` | Linux、Windows 及软件 Runtime 集成通过。 [Web panel](https://github.com/jsdfhasuh/emo_master/actions/runs/44984472233) |
+| 主分支推送后源码 CI | `9a9cc511` | 该合并提交的独立 [源码 CI 结果](https://github.com/jsdfhasuh/emo_master/actions/runs/44990323997) |
+| 主分支推送后 Web panel | `9a9cc511` | 该合并提交的独立 [Web panel 结果](https://github.com/jsdfhasuh/emo_master/actions/runs/44990324003) |
+
+### 本机集成核对
+
+`da0b8e25675a3bb4ad88f3f7bd96537ea5ee80ea` 的干净工作树上，Windows 原生 QPA `windows`、1920 × 1080、Python 3.10.21 和 PySide2 5.15.2.1。软件 Runtime 的 Q1、Q2 与八项直接相关回归共 10 项通过，29.13 秒。未合并前文各批次数量。OpenSpec strict、proto 生成一致性、Ruff、mypy（648 个源文件）和完整 Git 差异检查通过。
+
+```powershell
+openspec validate redesign-runtime-log-workbench --type change --strict --no-interactive
+python scripts/gen_proto.py --check
+python -m ruff check src tests
+python -m mypy --config-file mypy.ini src
+git diff --check 9d59fd16a1d0d3ec0c60725c839ff38183d6916b...da0b8e25675a3bb4ad88f3f7bd96537ea5ee80ea
+
+$env:PYTHONPATH = 'src'
+$env:QT_QPA_PLATFORM = 'windows'
+$env:PYTHONIOENCODING = 'utf-8'
+python -m pytest -q -s --tb=short tests/designer/test_runtime_job_workbench.py::testNativeWhileLogsWarningDeviceReturnAndTimeline tests/designer/test_operational_log_integration.py::testNativeWorkbenchHistoryAndWholeJobExportAfterRestart tests/designer/test_operational_log_integration.py::testPinnedHistoryRetiresOtherJobScopeEvenWhenQueryFails tests/designer/test_operational_log_integration.py::testHistoryFailedFilterKeepsSuccessfulPagingAndExportScope tests/designer/test_debug_image_results.py tests/designer/test_device_workspace.py::testDeviceRuntimeLogsKeepDraftAndReleaseModalInput tests/ui/page_designer/test_presentation_logs.py::testObservedJobAppearsInExistingLogWindowWithDetails
+```
+
+保留原 QTest 界面证据。此次未另做人工点击验收、真实硬件验证、全部算子、全时区、冻结包和本机全仓测试。冻结包工作流的路径过滤条件未命中此次改动。

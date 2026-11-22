@@ -1,6 +1,8 @@
 from threading import Event
 from types import SimpleNamespace
 
+import pytest
+
 from PySide2.QtCore import Qt
 
 from emo_master.apps.designer.page_designer.runtime_logs import eventPayload
@@ -291,4 +293,65 @@ def testRelatedBookmarkReplaysTheSavedRangeWithDecreasingPageCursors(designerApp
         assert [row["eventId"] for row in unavailable["events"]] == [21]
         assert "beforeEventId" not in requests[-1] and "upperEventId" not in requests[-1]
     finally:
+        view.shutdown()
+
+
+@pytest.mark.parametrize("available", (True, False), ids=("restored", "unavailable"))
+def testRelatedBookmarkRestoresTemporarilyRevealedEventOrClosesDrawer(designerApplication, available):
+    source = RunState(job_id="job", project_id="project", runtime_instance_id="runtime", workflow_id="main",
+                      status="RUNNING", active=True, run_group_id="group")
+    member = RunState(job_id="related", project_id="project", runtime_instance_id="runtime", workflow_id="secondary",
+                      status="RUNNING", active=True, run_group_id="group", source_job_id="job")
+    original, revealed = ("event", 6), ("event", 8)
+    rows = {
+        "job": [_event(5, "workflow.started", projectId="project"),
+                _event(6, "node.log", caller="warn", nodeRun="warn", level="WARN", projectId="project"),
+                _event(8, "node.started", caller="step", nodeRun="current", projectId="project")],
+        "related": [_event(12, "workflow.started", jobId="related", projectId="project")],
+    }
+
+    def query(jobId, **options):
+        events = [row for row in reversed(rows[jobId]) if row.eventId < options.get("beforeEventId", 26)]
+        return dict(ok=True, runtimeInstanceId="runtime", upperEventId=25, hasMore=False,
+                    nextEventId=events[-1].eventId if events else 0,
+                    events=[dict(eventId=row.eventId, event=row.rawRecord()) for row in events])
+
+    view = RuntimeJobLogs(10, StructuredLogEntry.fromRuntimeEvent)
+    try:
+        view.synchronize(SimpleNamespace(runtimeService=object(), queryRuntimeLogs=query), "runtime")
+        view.capabilities = {"runtime_logs_recent_v1"}
+        view.progress("runtime", 25)
+        view.runs = {job.job_id: job for job in (source, member)}
+        view.show()
+        view.openJob(source)
+        waitUntil(lambda: not view._opening)
+        view.mode.setCurrentIndex(1)
+        view.warning.setChecked(True)
+        waitUntil(lambda: set(view._items) == {original})
+        view.events.setCurrentItem(view._items[original])
+        view._locate()
+        waitUntil(lambda: not view._opening and view._reveal == revealed)
+        assert view.events.currentItem().data(0, Qt.UserRole) == revealed
+
+        view.relatedButton.click()
+        view.relatedJobs.setCurrentItem(view.relatedJobs.topLevelItem(0))
+        view.openRelatedButton.click()
+        waitUntil(lambda: not view._opening and view.job.job_id == "related")
+        if not available:
+            rows["job"].pop()
+        view.returnSourceButton.click()
+        waitUntil(lambda: not view._opening and view.job.job_id == "job")
+        assert view.warning.isChecked() and view.mode.currentIndex() == 1
+        if available:
+            assert view._reveal == revealed and not view.returnContext.isHidden()
+            assert view.events.currentItem().data(0, Qt.UserRole) == revealed and view._detailEntry.eventId == revealed[1]
+            view.returnContext.click()
+            assert set(view._items) == {original} and view.events.currentItem().data(0, Qt.UserRole) == original
+            assert view._detailEntry.eventId == original[1]
+        else:
+            assert view._reveal is None and view.returnContext.isHidden()
+            assert set(view._items) == {original} and view.events.currentItem() is None
+            assert view.drawer.isHidden() and view._detailEntry is None and "无法" in view.jobHint.text()
+    finally:
+        view.close()
         view.shutdown()

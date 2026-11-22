@@ -10,7 +10,7 @@ import grpc
 from PySide2.QtCore import QCoreApplication, QEvent, QPoint, QPointF, Qt
 from PySide2.QtGui import QMouseEvent
 from PySide2.QtTest import QTest
-from PySide2.QtWidgets import QPushButton
+from PySide2.QtWidgets import QAbstractItemView, QPushButton
 
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
 from emo_master.apps.designer.state.project_store import loadProjectDocument, saveProject
@@ -159,10 +159,35 @@ def _walkRelatedJobs(dialog, service, client, projectId):
                 items[jobId] = item
         return items
 
+    def topTimelineKey():
+        item = workbench.events.itemAt(0, 1)
+        assert item is not None
+        return item.data(0, Qt.UserRole)
+
+    def scrollTimelineTo(row):
+        QCoreApplication.processEvents()
+        tree = workbench.events
+        target = tree.topLevelItem(row)
+        tree.scrollToItem(target, QAbstractItemView.PositionAtTop)
+        scroll = tree.verticalScrollBar()
+        assert scroll.minimum() < scroll.value() < scroll.maximum()
+        key = topTimelineKey()
+        assert key == target.data(0, Qt.UserRole)
+        return key
+
     try:
-        service.eventStore.append(source, "node.log", "关联往返定位夹具", level="WARN", projectId=projectId,
-            workflowId="main", workflowRunId=uuid4().hex, nodeId="source-marker", nodeRunId=uuid4().hex,
-            timestampMs=started + 1000, payload={"data": {"sample": 42}})
+        sourceRun, loopRun = (uuid4().hex for _ in range(2))
+        iteration = dict(projectId=projectId, workflowId="main", workflowRunId=sourceRun, nodeId="source-marker",
+                         nodeRunId=loopRun, iterationPath=(0,))
+        service.eventStore.append(source, "loop.iteration.started", "关联往返夹具第 1 轮",
+                                  timestampMs=started + 900, payload={"iteration": 0}, **iteration)
+        for index in range(56):
+            service.eventStore.append(source, "node.log", f"关联往返滚动夹具 {index + 1:02d}", level="WARN",
+                                      timestampMs=started + 920 + index * 10, **iteration)
+        service.eventStore.append(source, "node.log", "关联往返定位夹具", level="WARN",
+                                  timestampMs=started + 1155, payload={"data": {"sample": 42}}, **iteration)
+        service.eventStore.append(source, "node.log", "本轮 INFO 记录夹具", level="INFO",
+                                  timestampMs=started + 1205, payload={"data": {"sample": 43}}, **iteration)
         service.eventStore.append(detection, "node.log", "独立检测任务夹具", projectId=projectId,
                                  workflowId="body", timestampMs=started + 21000)
         back = next(button for button in workbench.jobPage.findChildren(QPushButton)
@@ -196,9 +221,18 @@ def _walkRelatedJobs(dialog, service, client, projectId):
         _click(workbench.technicalToggle)
         _click(workbench.filterToggle)
         workbench.mode.setCurrentIndex(1)
-        marker, = [entry for entry in workbench.window.entries if entry.nodeId == "source-marker"]
-        waitUntil(lambda: ("event", marker.eventId) in workbench._items)
-        _selectEntry(workbench, marker)
+        warning, = [entry for entry in workbench.window.entries if entry.message == "关联往返定位夹具"]
+        info, = [entry for entry in workbench.window.entries if entry.message == "本轮 INFO 记录夹具"]
+        waitUntil(lambda: ("event", warning.eventId) in workbench._items)
+        assert ("event", info.eventId) not in workbench._items
+        _selectEntry(workbench, warning)
+        originalTop = scrollTimelineTo(4)
+        _click(workbench.readContext)
+        assert "本轮已加载上下文" in workbench.rangeStatus.text()
+        _selectEntry(workbench, info)
+        contextTop = scrollTimelineTo(9)
+        assert originalTop != contextTop
+        assert contextTop != ("event", info.eventId) and originalTop != ("event", warning.eventId)
         _click(workbench.relatedButton)
         assert workbench.pages.currentWidget() is workbench.relatedPage
         related = {workbench.relatedJobs.topLevelItem(i).toolTip(1): workbench.relatedJobs.topLevelItem(i)
@@ -216,10 +250,21 @@ def _walkRelatedJobs(dialog, service, client, projectId):
                   and workbench._detailEntry is not None, timeout=10)
         assert workbench.mode.currentIndex() == 1 and workbench.warning.isChecked()
         assert workbench.search.text() == "关联往返" and workbench.inputs["nodeId"].text() == "source-marker"
-        assert workbench._detailEntry.eventId == marker.eventId and workbench.jobTitle.text() == terminalTitle
-        assert workbench.events.currentItem().data(0, Qt.UserRole) == ("event", marker.eventId)
+        assert "本轮已加载上下文" in workbench.rangeStatus.text()
+        assert workbench._detailEntry.eventId == info.eventId and workbench.jobTitle.text() == terminalTitle
+        assert workbench.events.currentItem().data(0, Qt.UserRole) == ("event", info.eventId)
+        assert json.loads(workbench.detail.rawTree.toPlainText())["eventId"] == info.eventId
         waitUntil(lambda: workbench.drawer.isVisible() and workbench.drawer.width() >= workbench.drawer.minimumWidth())
+        QCoreApplication.processEvents()
+        assert topTimelineKey() == contextTop
         _capture(dialog, "q1-related-return.png")
+        _click(workbench.returnContext)
+        assert ("event", info.eventId) not in workbench._items
+        assert workbench.events.currentItem().data(0, Qt.UserRole) == ("event", warning.eventId)
+        assert workbench._detailEntry.eventId == warning.eventId
+        assert json.loads(workbench.detail.rawTree.toPlainText())["eventId"] == warning.eventId
+        assert topTimelineKey() == originalTop
+        _capture(dialog, "q1-related-return-to-filter.png")
         _click(back)
         waitUntil(lambda: workbench.pending is None, timeout=10)
         assert workbench.directory.currentItem().toolTip(0) == source
@@ -228,7 +273,8 @@ def _walkRelatedJobs(dialog, service, client, projectId):
         workbench._refreshCatalog()
         waitUntil(lambda: source not in workbench.runs and workbench.pending is None, timeout=10)
         assert source not in catalogItems("最近已结束")
-        print(f"Q1 related fixture source {source} · members {detection}, {storage} · restored event {marker.eventId}")
+        print(f"Q1 related fixture source {source} · members {detection}, {storage} · restored INFO {info.eventId}"
+              f" at top {contextTop[1]} · returned to WARN {warning.eventId} at top {originalTop[1]}")
     finally:
         records.update(independent, status="ABORTED", endedAtMs=nowMs())
         with service.jobSupervisor._lock:

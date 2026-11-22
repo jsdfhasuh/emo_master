@@ -103,8 +103,7 @@ class RuntimeJobLogs(QWidget):
         self._focus = None
         self._before = self._upper = self._earlierUpper = None
         self._staged = None
-        self._context = None
-        self._reveal = None
+        self._context = self._reveal = self._previousContext = None
         self._anchors = {}
         self._expanded = set()
         self._items = {}
@@ -735,6 +734,7 @@ class RuntimeJobLogs(QWidget):
         if not self._relatedFromCatalog and self.window is not None:
             bookmark.update(filters=self._captureFilters(), mode=self.mode.currentIndex(),
                             selection=self._selection, anchors=dict(self._anchors), expanded=set(self._expanded),
+                            context=self._context, reveal=self._reveal, previousContext=self._previousContext,
                             drawer=not self.drawer.isHidden(), info=not self.info.isHidden(),
                             detailTab=self.detail.tabs.currentIndex(), showTimes=self.timeRange.isChecked(),
                             first=self.window.firstEventId, last=self.window.lastEventId,
@@ -819,7 +819,7 @@ class RuntimeJobLogs(QWidget):
         self._expanded.clear()
         self._selection = ("event", eventId) if eventId else None
         self._focus = focus
-        self._context = self._reveal = None
+        self._context = self._reveal = self._previousContext = None
         self._closeDrawer()
         self.jobHint.clear()
         self.exportFeedback("", False)
@@ -840,7 +840,7 @@ class RuntimeJobLogs(QWidget):
         if self.job is None:
             return
         self._cancel()
-        self._context = self._reveal = None
+        self._context = self._reveal = self._previousContext = None
         self.returnContext.hide()
         self._closeDrawer()
         self.window = JobEventWindow(self.job.job_id, self.maximumEntries)
@@ -942,11 +942,7 @@ class RuntimeJobLogs(QWidget):
                             and readerGeneration == self._readerGeneration)
         self.jobHint.setText(error)
         restore, self._restoreLocation = self._restoreLocation, None
-        if restore is not None:
-            self._selection = restore["selection"]
-            self._anchors = restore["anchors"]
-            self._expanded = restore["expanded"]
-        self._render(captureAnchor=False)
+        self._render(captureAnchor=False, restore=restore)
         locate, self._locateAfterLoad = self._locateAfterLoad, False
         if locate and not error:
             self._applyLocation()
@@ -955,14 +951,25 @@ class RuntimeJobLogs(QWidget):
         elif self._targetEvent and self._selection in self._items:
             self._select(self._selection)
 
+    def _restoreBookmarkedScope(self, bookmark):
+        self._selection, self._anchors, self._expanded = bookmark["selection"], bookmark["anchors"], bookmark["expanded"]
+        self._context, self._reveal = bookmark["context"], bookmark["reveal"]
+        self._previousContext = bookmark["previousContext"]
+        if ((self._context is not None and self.structure.contextMatches(self._context) is None)
+                or (self._reveal is not None and self.structure.representativeEventId(self._reveal) is None)):
+            self._context = self._reveal = self._previousContext = None
+            self._selection = None
+        self.returnContext.setVisible(self._context is not None or self._reveal is not None)
+
     def _restoreBookmarkedPosition(self, bookmark):
-        keys = [self._selection, *self._anchors.values()]
-        if any(key is not None and self.structure.representativeEventId(key) is None for key in keys):
+        item = self.events.currentItem()
+        selected = item.data(0, _ROLE) if item is not None else None
+        if (selected != bookmark["selection"] or self._context != bookmark["context"] or self._reveal != bookmark["reveal"]
+                or any(self.structure.representativeEventId(key) is None for key in self._anchors.values())):
             self.jobHint.setText("原阅读位置无法在当前可查询范围定位，已显示可用记录。")
-        if bookmark["drawer"] and self._selection is not None and self._selection[0] == "event":
-            entry = next((event for event in self.window.entries if event.eventId == self._selection[1]), None)
-            if entry is not None:
-                self._showEntry(entry)
+        if selected == bookmark["selection"] and bookmark["drawer"]:
+            self._restoreSelectionDrawer()
+            if self._detailEntry is not None:
                 self.detail.tabs.setCurrentIndex(bookmark["detailTab"])
 
     def _queryScope(self):
@@ -1028,7 +1035,7 @@ class RuntimeJobLogs(QWidget):
                 self._closeDrawer()
                 self._selection = None
                 self._anchors.clear()
-                self._context = self._reveal = None
+                self._context = self._reveal = self._previousContext = None
                 self.returnContext.hide()
             else:
                 self._rememberAnchor()
@@ -1111,6 +1118,13 @@ class RuntimeJobLogs(QWidget):
         self._restoreFilters(dict(values={}, search="", warning=False, level=0, draft=(None, None), dates=(None, None),
                                   advanced=not self.filters.isHidden(), technical=self.technicalToggle.isChecked()))
 
+    def _effectiveLevels(self) -> tuple[str, ...] | None:
+        level = self.level.currentText() if self.level.currentIndex() else ""
+        if self.warning.isChecked():
+            levels = ("WARN", "ERROR")
+            return tuple(value for value in levels if not level or value == level)
+        return (level,) if level else None
+
     def _advancedHistory(self):
         values = self._filterValues()
         filters = {name: values[name] for name in ("deviceId", "component", "workflowId", "nodeId") if name in values}
@@ -1118,7 +1132,7 @@ class RuntimeJobLogs(QWidget):
                         if value is not None})
         if self.job is not None:
             filters.update(jobId=self.job.job_id, projectId=self.job.project_id)
-        filters["level"] = self.level.currentText() if self.level.currentIndex() else ""
+        filters["levels"] = self._effectiveLevels()
         self.historyRequested.emit(filters)
 
     def _export(self):
@@ -1134,15 +1148,14 @@ class RuntimeJobLogs(QWidget):
         if self._context is not None:
             return self.structure.contextMatches(self._context) or (lambda _entry: False)
         filters = self._filterValues()
-        rank = self.level.currentText() if self.level.currentIndex() else ""
+        levels = self._effectiveLevels()
         needle = self.search.text().strip().casefold()
-        warning = self.warning.isChecked()
         bounds = self._effectiveDateBounds
 
         def matches(entry):
             if self._reveal == ("event", entry.eventId):
                 return True
-            if warning and entry.level not in {"WARN", "ERROR"} or rank and entry.level != rank:
+            if levels is not None and entry.level not in levels:
                 return False
             if needle and needle not in " ".join((entry.message, entry.displayMessage(), entry.code,
                     entry.eventType, entry.displayWorkflow(), entry.displayNode())).casefold():
@@ -1174,7 +1187,7 @@ class RuntimeJobLogs(QWidget):
         self._shownMode = self.mode.currentIndex()
         self._render(captureAnchor=False)
 
-    def _render(self, *, captureAnchor=True):
+    def _render(self, *, captureAnchor=True, restore=None):
         if self.window is None:
             return
         if captureAnchor:
@@ -1182,6 +1195,8 @@ class RuntimeJobLogs(QWidget):
         follow = not self.window.paused
         self._dirty = False
         self.structure = ExecutionTree(self.window.entries)
+        if restore is not None:
+            self._restoreBookmarkedScope(restore)
         if not self.filters.isHidden():
             updateIdentityChoices(self.inputs, self.window.entries)
         matches = self._scopePredicate()
@@ -1474,13 +1489,23 @@ class RuntimeJobLogs(QWidget):
     def _leaveContext(self):
         if self._context is not None or self._reveal is not None:
             self._selection, self._anchors, self._expanded = self._previousContext
-        self._context = self._reveal = None
+        self._context = self._reveal = self._previousContext = None
         self.returnContext.hide()
         self._render(captureAnchor=False)
-        if self._selection in self._items and self._selection[0] == "event" and not self.drawer.isHidden():
-            event = next((entry for entry in self.window.entries if entry.eventId == self._selection[1]), None)
+        if self._selection is not None and self._selection not in self._items:
+            self.jobHint.setText("原阅读位置无法在当前可查询范围定位，已显示可用记录。")
+        if not self.drawer.isHidden():
+            self._restoreSelectionDrawer()
+
+    def _restoreSelectionDrawer(self):
+        item = self.events.currentItem()
+        key = item.data(0, _ROLE) if item is not None else None
+        if key is not None and key == self._selection and key[0] == "event":
+            event = next((entry for entry in self.window.entries if entry.eventId == key[1]), None)
             if event is not None:
                 self._showEntry(event)
+                return
+        self._closeDrawer()
 
     def _locate(self):
         if self.window is None or self.job is None or self._opening:

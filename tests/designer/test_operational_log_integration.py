@@ -305,7 +305,7 @@ def testHistoryExportReadsCompleteFixedRangeAndCancellationKeepsTarget(ownedDesi
 def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow, tmp_path, monkeypatch):
     import os
     from pathlib import Path
-    from PySide2.QtCore import Qt
+    from PySide2.QtCore import QCoreApplication, Qt
     from PySide2.QtTest import QTest
     from PySide2.QtWidgets import QFileDialog, QPushButton, QTabBar
     from emo_master.apps.designer.state.project_store import loadProjectDocument, saveProject
@@ -327,6 +327,7 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
     def screenshot(name):
         directory = Path(os.environ.get("EMO_LOG_WORKBENCH_V2_4_EVIDENCE_DIR", str(tmp_path)))
         directory.mkdir(parents=True, exist_ok=True)
+        QCoreApplication.processEvents()
         assert dialog.grab().save(str(directory / name))
 
     payload = WorkflowStore().toPayload("日志工作台软件走查")
@@ -365,13 +366,26 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         endedAt = record.endedAtMs
         startMs = (endedAt // 1000 + 1) * 1000 + 123
         endMs = startMs + 5
-        for timestamp, message in ((startMs - 1, "起点之前"), (startMs, "早期范围命中"), (endMs, "恰在终点")):
-            first.eventStore.append(jobId, "node.log", message, level="WARN", nodeId="early",
+        for timestamp, level, message in (
+            (startMs - 1, "WARN", "起点之前"),
+            (startMs, "WARN", "早期范围命中"),
+            (startMs + 1, "ERROR", "早期错误命中"),
+            (startMs + 2, "INFO", "同范围 INFO"),
+            (endMs, "WARN", "恰在终点"),
+        ):
+            first.eventStore.append(jobId, "node.log", message, level=level, nodeId="early",
                                     projectId=projectId, workflowId="main", timestampMs=timestamp)
+        matching = [("WARN", "早期范围命中"), ("ERROR", "早期错误命中")]
         for index in range(205):
-            first.eventStore.append(jobId, "node.log", f"分页夹具 {index + 1}",
-                level="WARN" if index == 204 else "INFO", projectId=projectId,
-                timestampMs=startMs + 1 if index == 204 else endMs)
+            message = f"分页夹具 {index + 1}"
+            if index < 199:
+                level = "WARN" if index % 2 == 0 else "ERROR"
+                matching.append((level, message))
+                first.eventStore.append(jobId, "node.log", message, level=level, nodeId="early",
+                                        projectId=projectId, timestampMs=startMs + 3)
+            else:
+                first.eventStore.append(jobId, "node.log", message, projectId=projectId,
+                    level="WARN" if index == 204 else "INFO", timestampMs=startMs + 1 if index == 204 else endMs)
         first.eventStore.append("__runtime__", "device.action.failed", "同 Job 的设备摘要",
                                 projectId=projectId, payload={"jobId": jobId, "deviceId": "software"})
         first.eventStore.append("__runtime__", "node.preview.failed", "独立系统事件", projectId=projectId)
@@ -439,33 +453,64 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         assert ("event", recentWarn.eventId) in jobs._items
         assert jobs.dateRange.startEdit.dateTime().toMSecsSinceEpoch() == startMs
 
+        assert jobs.level.currentText() == "全部等级"
+        logPages = []
+        queryRuntimeLogs = client.queryRuntimeLogs
+
+        def observePage(**options):
+            reply = queryRuntimeLogs(**options)
+            logPages.append((options, reply))
+            return reply
+
+        monkeypatch.setattr(client, "queryRuntimeLogs", observePage)
         jobs.inputs["nodeId"].setText("early")
         query, = [button for button in jobs.filters.findChildren(QPushButton)
                   if button.text() == "查询整个历史范围…"]
         click(query)
         waitUntil(lambda: history._historyReply is not None and history._historyFuture is None, timeout=10)
-        assert [(entry.jobId, entry.message) for entry in history._entries] == [(jobId, "早期范围命中")]
+        assert [(entry.level, entry.message) for entry in history._entries] == matching[:200]
+        waitUntil(lambda: len(history._visibleEntries) == 200, timeout=10)
+        displayed = {entry.message for entry in history._visibleEntries}
+        assert {"早期范围命中", "早期错误命中"} <= displayed
+        assert "同范围 INFO" not in displayed
+        assert all(entry.jobId == jobId for entry in history._visibleEntries)
         assert history._historyReply["runtimeInstanceId"] == "q2-after-restart"
-        assert "Runtime 历史" in history.historyStatus.text()
+        assert "Runtime 历史" in history.historyStatus.text() and "WARN / ERROR" in history.historyStatus.text()
         assert history.historyDateRange.bounds() == (startMs, endMs)
-        assert history._historyFilters["startTimestampMs"] == startMs
-        assert history._historyFilters["endTimestampMs"] == endMs
+        assert history.levelFilter.currentText() == "告警 / 错误"
         assert history.historyInputs["projectId"].isReadOnly() and history.historyInputs["jobId"].isReadOnly()
-        screenshot("q2-history-date.png")
+        screenshot("q2-history-warning-levels.png")
 
         applied = history._historyReply
+        history.levelFilter.setCurrentIndex(history.levelFilter.findText("INFO"))
         history.historyDateRange.setBounds(endMs, startMs)
         click(history.historyQueryButton)
+        assert len(logPages) == 1
         assert history._historyFuture is None and history._historyReply is applied and history.historyDateRange.error.isVisible()
-        assert [entry.message for entry in history._entries] == ["早期范围命中"]
+        assert [(entry.level, entry.message) for entry in history._entries] == matching[:200]
+        click(history.historyNextButton)
+        waitUntil(lambda: history._historyFuture is None, timeout=10)
+        assert [(entry.level, entry.message) for entry in history._entries] == matching[200:]
+        waitUntil(lambda: [(entry.level, entry.message) for entry in history._visibleEntries] == matching[200:])
+        assert logPages[1][0]["afterEventId"] == applied["nextEventId"]
+        assert logPages[1][0]["upperEventId"] == applied["upperEventId"]
+        screenshot("q2-history-applied-page.png")
         targetRange = tmp_path / "selected-range.json"
         monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_: (str(targetRange), "JSON (*.json)"))
         click(history.historyExportButton)
         waitUntil(lambda: targetRange.exists() and history._historyFuture is None, timeout=10)
         selected = json.loads(targetRange.read_text(encoding="utf-8"))
-        assert [event["message"] for event in selected["entries"]] == ["早期范围命中"]
-        assert selected["filters"]["startTimestampMs"] == startMs and selected["filters"]["endTimestampMs"] == endMs
+        assert [(event["level"], event["message"]) for event in selected["entries"]] == matching
+        scoped = dict(jobId=jobId, projectId=projectId, nodeId="early", startTimestampMs=startMs,
+                      endTimestampMs=endMs)
+        assert len(logPages) == 4  # Two displayed pages and two pages of the complete selected range.
+        scopes = [options for options, _ in logPages] + [selected["filters"]]
+        for filters in scopes:
+            assert {key: filters[key] for key in scoped} == scoped
+            assert tuple(filters["levels"]) == ("WARN", "ERROR")
+        assert all(options["upperEventId"] == applied["upperEventId"] for options, _ in logPages[1:])
 
+        history.levelFilter.setCurrentIndex(history.levelFilter.findText("告警 / 错误"))
         history.historyDateRange.setBounds(startMs, startMs)
         click(history.historyQueryButton)
         waitUntil(lambda: history._historyFuture is None, timeout=10)
@@ -474,25 +519,48 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         click(history.historyQueryButton)
         waitUntil(lambda: history._historyFuture is None, timeout=10)
         assert not any(key in history._historyFilters for key in ("startTimestampMs", "endTimestampMs"))
-        assert [row.message for row in history._entries] == ["起点之前", "早期范围命中", "恰在终点"]
+        assert {row.message for row in history._entries} >= {"起点之前", "早期范围命中", "恰在终点"}
 
         click(dialog.historyBack)
         assert jobs.warning.isChecked() and jobs.inputs["nodeId"].text() == "early"
         assert jobs.dateRange.bounds() == (startMs, endMs)
+        jobs.level.setCurrentIndex(jobs.level.findText("WARN"))
+        requestCount = len(logPages)
+        click(query)
+        waitUntil(lambda: history._historyFuture is None and len(logPages) == requestCount + 1, timeout=10)
+        warnOnly = [pair for pair in matching if pair[0] == "WARN"]
+        waitUntil(lambda: [(entry.level, entry.message) for entry in history._visibleEntries] == warnOnly)
+        assert history.levelFilter.currentText() == "WARN"
+        options, _ = logPages[-1]
+        assert {key: options[key] for key in scoped} == scoped and options["levels"] == ["WARN"]
+        click(dialog.historyBack)
+
+        jobs.level.setCurrentIndex(jobs.level.findText("INFO"))
         waitUntil(lambda: "节点 ID early" in jobs.rangeStatus.text() and jobs.events.topLevelItemCount() == 0)
+        requestCount = len(logPages)
+        click(query)
+        waitUntil(lambda: history._historyFuture is None and not history._visibleEntries, timeout=10)
+        assert not history._entries and not history.historyNextButton.isEnabled()
+        assert history.levelFilter.currentText() == "无匹配等级"
+        assert "无匹配等级" in history.historyStatus.text()
+        assert len(logPages) == requestCount
+        screenshot("q2-history-empty-levels.png")
+        targetEmpty = tmp_path / "empty-level-range.json"
+        monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_: (str(targetEmpty), "JSON (*.json)"))
+        click(history.historyExportButton)
+        waitUntil(lambda: targetEmpty.exists() and history._historyFuture is None, timeout=10)
+        empty = json.loads(targetEmpty.read_text(encoding="utf-8"))
+        assert empty["entryCount"] == 0 and empty["entries"] == []
+        assert empty["filters"] == dict(scoped, levels=[])
+        assert len(logPages) == requestCount
+
+        click(dialog.historyBack)
+        assert jobs.warning.isChecked() and jobs.level.currentText() == "INFO"
         click(jobs.filterToggle)
-        expected = client.queryRuntimeLogs(runtimeInstanceId=jobs.instance, projectId=projectId,
+        expected = queryRuntimeLogs(runtimeInstanceId=jobs.instance, projectId=projectId,
                                            jobId=jobId, limit=1000)
         assert expected["ok"] and not expected["hasMore"]
-        exportPages = []
-        queryRuntimeLogs = client.queryRuntimeLogs
-
-        def observePage(**options):
-            reply = queryRuntimeLogs(**options)
-            exportPages.append((options, reply))
-            return reply
-
-        monkeypatch.setattr(client, "queryRuntimeLogs", observePage)
+        logPages.clear()
         target = tmp_path / "whole-job.json"
         monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_: (str(target), "JSON (*.json)"))
         click(jobs.exportButton)
@@ -505,13 +573,13 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         assert all(row["runtimeInstanceId"] == "q2-before-restart" for row in rows)
         assert any(row["level"] == "INFO" for row in rows)
         assert exported["filters"]["jobId"] == jobId
-        firstPage, secondPage = exportPages
+        firstPage, secondPage = logPages
         assert firstPage[0]["afterEventId"] == 0 and firstPage[1]["hasMore"]
         assert secondPage[0]["afterEventId"] == firstPage[1]["nextEventId"]
         assert secondPage[0]["upperEventId"] == firstPage[1]["upperEventId"] == expected["upperEventId"]
         assert all(not options.get("latestFirst")
                    and not {"beforeEventId", "levels", "startTimestampMs", "endTimestampMs", "nodeId"} & options.keys()
-                   for options, _ in exportPages)
+                   for options, _ in logPages)
         screenshot("q2-whole-job-export.png")
 
         window.appendLocalEvent(dict(level="ERROR", eventType="runtime.client.failed", jobId=jobId,
@@ -537,7 +605,8 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         tab(dialog.runtimeNavigation, 0)
         assert jobs.job.job_id == jobId and jobs.warning.isChecked()
         print(f"Q2 Job {jobId} · [start, end) {startMs}, {endMs} · catalog endedAt {endedAt}"
-              f" · upper eventId {expected['upperEventId']} · exported {len(rows)} records")
+              f" · upper eventId {expected['upperEventId']} · WARN/ERROR {len(matching)} across 2 pages"
+              f" · INFO conflict 0 queries · whole Job exported {len(rows)} records")
     finally:
         if window is not None:
             window.close()

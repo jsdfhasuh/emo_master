@@ -619,12 +619,32 @@ try:
             self._resetFilters()
             self.queryHistory()
 
+        def setHistoryLevels(self, levels: tuple[str, ...] | None):
+            if levels is None:
+                self.levelFilter.setCurrentIndex(0)
+                return
+            if len(levels) == 1:
+                self.levelFilter.setCurrentIndex(self.levelFilter.findText(levels[0]))
+                return
+            label = "告警 / 错误" if levels else "无匹配等级"
+            index = self.levelFilter.findText(label)
+            if index < 0:
+                index = self.levelFilter.count()
+                self.levelFilter.addItem(label, levels)
+            self.levelFilter.setCurrentIndex(index)
+
+        def _selectedLevels(self):
+            levels = self.levelFilter.currentData()
+            if levels is not None:
+                return levels
+            return (self.levelFilter.currentText(),) if self.levelFilter.currentIndex() > 0 else None
+
         def _selectedHistoryFilters(self):
             filters = {name: edit.text().strip() for name, edit in self.historyInputs.items() if edit.text().strip()}
             filters.update(self.historyDateRange.options())
-            level = self.levelFilter.currentText()
-            if level in {"DEBUG", "INFO", "WARN", "ERROR"}:
-                filters["levels"] = [level]
+            levels = self._selectedLevels()
+            if levels is not None:
+                filters["levels"] = list(levels)
             if self.systemOnly:
                 filters["jobId"] = "__runtime__"
             return filters
@@ -700,6 +720,8 @@ try:
                     candidateFilters = self._selectedHistoryFilters()
                     options = dict(candidateFilters)
                 instance = (self._historyReply or {}).get("runtimeInstanceId", self._historyInstance)
+                if options.get("levels") == []:
+                    options["runtimeInstanceId"] = instance
                 self._startHistoryTask("runtime", lambda cancelled: self._queryHistoryPage(client, options, cancelled),
                                        filters=candidateFilters, runtimeInstance=instance)
             except (ValueError, OSError) as error:
@@ -710,6 +732,10 @@ try:
             from emo_master.core.log_export import LogExportCancelled
             if cancelled.is_set():
                 raise LogExportCancelled("日志任务已取消")
+            if options.get("levels") == []:
+                # An empty repeated levels field on the wire means unrestricted.
+                return dict(ok=True, runtimeInstanceId=options["runtimeInstanceId"], upperEventId=0,
+                            nextEventId=0, hasMore=False, events=[])
             context = DisplayCallContext()
             self._historyResources["call"] = context
             if cancelled.is_set():
@@ -775,8 +801,8 @@ try:
                         levels = " / ".join(candidateFilters.get("levels", ()))
                         other = [f"{title} {field if len(field) <= 16 else field[:12] + '…'}"
                                  for title, field in scoped]
-                        if levels:
-                            other.append(levels)
+                        if "levels" in candidateFilters:
+                            other.append(levels or "无匹配等级")
                         self.historyStatus.setText(f"Runtime 历史当前页 {len(value['events'])} 条 · "
                             + " · ".join((dates or "时间不限", *other)))
                         self.historyStatus.setToolTip(" · ".join([f"上界 {value['upperEventId']}，游标 {value['nextEventId']}",
@@ -1303,8 +1329,12 @@ try:
             area = self.areaTabs.tabData(self.areaTabs.currentIndex())
             if area != "all" and area != entry.designArea():
                 return False
+            levels = (self._historyFilters.get("levels") if self.rangeCombo.currentData() == "runtime"
+                      and self._historyReply is not None else self._selectedLevels())
+            if levels is not None and entry.level not in levels:
+                return False
             for combo, value in (
-                (self.levelFilter, entry.level), (self.sourceFilter, entry.source),
+                (self.sourceFilter, entry.source),
                 (self.jobFilter, entry.jobId),
                 (self.eventTypeFilter, entry.eventType),
             ):
@@ -1591,8 +1621,7 @@ try:
             self.view.historyDateRange.setBounds(filters.get("startTimestampMs"), filters.get("endTimestampMs"))
             self.view.historyTechnicalToggle.setChecked(False)
             self.view.historyFiltersToggle.setChecked(True)
-            level = self.view.levelFilter.findText(filters["level"])
-            self.view.levelFilter.setCurrentIndex(max(level, 0))
+            self.view.setHistoryLevels(filters["levels"])
             self.view.queryHistory()
 
         def _returnFromJobHistory(self):

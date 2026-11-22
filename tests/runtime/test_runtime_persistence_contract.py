@@ -370,6 +370,20 @@ def testQueryRuntimeLogsRpcFixedUpperIdentityAssociationsAndTime(queryRpc):
     assert reset.next_event_id == 3
     assert query(after_event_id=-1).code == 'INVALID_ARGUMENT'
     assert query(limit=1001).code == 'INVALID_ARGUMENT'
+    latest = query(job_id='A', latest_first=True, limit=2)
+    assert (latest.upper_event_id, latest.next_event_id, latest.has_more) == (5, 3, True)
+    assert [row.event_id for row in latest.events] == [5, 3]
+    store.append('A', 'node.log', 'after the recent window', timestampMs=600)
+    earlier = query(job_id='A', latest_first=True, before_event_id=latest.next_event_id,
+                    upper_event_id=latest.upper_event_id)
+    assert (earlier.upper_event_id, earlier.next_event_id, earlier.has_more) == (5, 1, False)
+    assert [row.event_id for row in earlier.events] == [1]
+    empty = query(latest_first=True, before_event_id=earlier.next_event_id,
+                  upper_event_id=earlier.upper_event_id)
+    assert (empty.upper_event_id, empty.next_event_id, empty.has_more, len(empty.events)) == (5, 0, False, 0)
+    assert query(latest_first=True, after_event_id=1).code == 'INVALID_ARGUMENT'
+    assert query(before_event_id=1).code == 'INVALID_ARGUMENT'
+    assert query(latest_first=True, before_event_id=0).code == 'INVALID_ARGUMENT'
 
 
 @pytest.mark.parametrize("completedType", ("node.completed", "dispatch.invocation.completed"))
@@ -385,9 +399,18 @@ def testQueryRuntimeLogsRpcByteBudgetAndProjectionKeepCursor(queryRpc, monkeypat
     assert page.next_event_id == 2
     following = query(after_event_id=page.next_event_id, upper_event_id=page.upper_event_id)
     assert [row.event_id for row in following.events] == [3]
+    latest = query(latest_first=True)
+    assert latest.ok and latest.ByteSize() <= 1800 and latest.has_more and latest.next_event_id == 2
+    assert [row.event_id for row in latest.events] == [3, 2]
+    earlier = query(latest_first=True, before_event_id=2, upper_event_id=latest.upper_event_id)
+    assert earlier.ok and not earlier.has_more and earlier.next_event_id == 1
+    assert [row.event_id for row in earlier.events] == [1]
     service.eventStore.append('A', 'node.log', 'oversize' * 300)
     large = query(after_event_id=3)
     assert not large.ok and large.code == 'EVENT_TOO_LARGE' and large.next_event_id == 3
+    largeLatest = query(latest_first=True)
+    assert not largeLatest.ok and largeLatest.code == 'EVENT_TOO_LARGE'
+    assert largeLatest.next_event_id == 0 and not largeLatest.events
     context = dict(runGroupId='group-1', dispatchId='dispatch-1', deliveryId='delivery-1',
                    invocationId='invocation-1', targetSlotId='slot-1', documentRevision=7)
     original = dict(context, outputs={'huge': 'x' * 5000}, status='OK')
@@ -409,9 +432,80 @@ def testRuntimeLogsQueryThroughProductionAioAdapter(tmp_path):
         page = stub.QueryRuntimeLogs(runtime_pb2.QueryRuntimeLogsRequest(), timeout=5)
         assert page.ok and page.events[0].event.message == 'aio query'
         assert page.events[0].event.runtime_instance_id == service.runtimeInstanceId
-        assert 'runtime_logs_query_v1' in stub.GetRuntimeInfo(runtime_pb2.RuntimeInfoRequest(), timeout=5).capabilities
+        capabilities = stub.GetRuntimeInfo(runtime_pb2.RuntimeInfoRequest(), timeout=5).capabilities
+        assert {'runtime_logs_query_v1', 'runtime_logs_recent_v1', 'job_history_query_v1'} <= set(capabilities)
     finally:
         channel.close()
+        server.stop(0).wait()
+        service.close()
+
+
+def testJobHistoryUsesPersistedTerminalRowsAndKeysetAfterRestart(tmp_path):
+    from emo_master.apps.runtime.main import createRuntimeServer
+    from emo_master.apps.designer.services.runtime_client import RuntimeClient
+
+    path = tmp_path / 'job-history.db'
+    sameEnd = 1_700_000_000_100
+    first = RuntimeService(dbPath=path, runtimeInstanceId='old-runtime')
+    try:
+        for jobId, projectId, status, ended in (
+            ('z', 'project', 'FAILED', sameEnd),
+            ('a', 'project', 'ABORTED', sameEnd),
+            ('older', 'project', 'COMPLETED', sameEnd - 1),
+            ('other-project', 'elsewhere', 'COMPLETED', sameEnd + 1),
+        ):
+            first.sqliteStore.insertJob(jobId, projectId, projectRevision=7, workflowId='flow', acceptedAtMs=sameEnd - 10)
+            first.sqliteStore.updateJobStatus(jobId, status, startedAtMs=sameEnd - 3, endedAtMs=ended,
+                errorCode='E_SOFTWARE' if status == 'FAILED' else None,
+                errorMessage='failed in software' if status == 'FAILED' else None,
+                stopMode='graceful' if status == 'ABORTED' else None)
+        with first.sqliteStore.connection() as connection:
+            connection.execute(
+                "INSERT INTO jobs (jobId, projectId, releaseId, status, startAt) VALUES "
+                "('legacy', 'project', '', 'COMPLETED', '2023-11-14T22:13:19+00:00')"
+            )
+            connection.execute("UPDATE jobs SET endAt = '2023-11-14T22:13:20.100900+00:00' "
+                               "WHERE jobId = 'other-project'")
+        first.eventStore.append('z', 'node.log', 'old-runtime event', projectId='project')
+    finally:
+        first.close()
+
+    service = RuntimeService(dbPath=path, runtimeInstanceId='new-runtime')
+    service.sqliteStore.insertJob('still-active', 'project', status='RUNNING')
+    server, port, _ = createRuntimeServer(port=0, runtimeService=service)
+    server.start()
+    channel = grpc.insecure_channel(f'127.0.0.1:{port}')
+    client = RuntimeClient(runtime_pb2_grpc.RuntimeServiceStub(channel), ownedChannel=channel)
+    try:
+        assert not client.listRuns('new-runtime', 'project', includeTerminal=True).runs
+        page = client.listJobHistory('new-runtime', 'project', limit=1)
+        assert page.ok and page.has_more and page.next_cursor and page.runtime_instance_id == 'new-runtime'
+        row, = page.jobs
+        assert (row.job_id, row.project_revision, row.workflow_id, row.status) == ('z', 7, 'flow', 'FAILED')
+        assert (row.accepted_at_ms, row.started_at_ms, row.ended_at_ms) == (sameEnd - 10, sameEnd - 3, sameEnd)
+        assert (row.error_code, row.message) == ('E_SOFTWARE', 'failed in software')
+        following = client.listJobHistory('new-runtime', 'project', limit=3, cursor=page.next_cursor)
+        assert [row.job_id for row in following.jobs] == ['a', 'older', 'legacy']
+        assert following.jobs[0].stop_mode == 'graceful'
+        assert not following.has_more and not following.next_cursor
+        legacy = following.jobs[-1]
+        assert (legacy.accepted_at_ms, legacy.started_at_ms, legacy.ended_at_ms) == (1_699_999_999_000, 0, 0)
+        timed = client.listJobHistory('new-runtime', 'project', startEndedAtMs=sameEnd, endEndedAtMs=sameEnd + 1)
+        assert [row.job_id for row in timed.jobs] == ['z', 'a']
+        archived = client.listJobHistory('new-runtime', 'elsewhere', startEndedAtMs=sameEnd, endEndedAtMs=sameEnd + 1)
+        assert [row.job_id for row in archived.jobs] == ['other-project']
+        onlyStopped = client.listJobHistory('new-runtime', 'project', statuses=['ABORTED'])
+        assert [row.job_id for row in onlyStopped.jobs] == ['a']
+        empty = client.listJobHistory('new-runtime', 'project', startEndedAtMs=sameEnd + 1)
+        assert empty.ok and not empty.jobs and not empty.has_more and not empty.next_cursor
+        assert client.listJobHistory('old-runtime', 'project').code == 'RESET_REQUIRED'
+        assert client.listJobHistory('new-runtime', 'project', statuses=['RUNNING']).code == 'INVALID_ARGUMENT'
+        assert client.listJobHistory('new-runtime', 'project', cursor='invalid').code == 'INVALID_ARGUMENT'
+        events = client.queryRuntimeLogs(runtimeInstanceId='new-runtime', jobId='z', latestFirst=True)
+        assert events['ok'] and events['runtimeInstanceId'] == 'new-runtime'
+        assert [row['event']['runtimeInstanceId'] for row in events['events']] == ['old-runtime']
+    finally:
+        client.close()
         server.stop(0).wait()
         service.close()
 

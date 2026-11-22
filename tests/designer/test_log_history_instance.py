@@ -43,8 +43,8 @@ def historyWindow(ownedDesignerWindow):
     # An inert reader exposes the same instance and reset queue as the live
     # reader, without timing sleeps or letting a background query race setup.
     resets = []
-    reader = SimpleNamespace(runtimeInstanceId="alpha", supported=True,
-        take=lambda: [resets.pop(0) for _ in range(len(resets))], service=client.runtimeService,
+    reader = SimpleNamespace(runtimeInstanceId="alpha", supported=True, initialPosition=("alpha", 0),
+        take=lambda **_: [resets.pop(0) for _ in range(len(resets))], service=client.runtimeService,
         close=lambda: None, cursor=0, finished=threading.Event(), unsupported=False)
     window._logResources["reader"] = reader
     window._drainGlobalLogs(reader)
@@ -114,10 +114,10 @@ def testDeviceHistoryStartsCleanScopeAndDropsPreviousPage(historyWindow, monkeyp
     _window, view, client, _reader, _resets = historyWindow
     view.rangeCombo.setCurrentIndex(view.rangeCombo.findData(previousMode))
     oldFilters = dict(projectId='old-project', jobId='old-job', deviceId='old-device',
-        component='operator', workflowId='old-workflow', nodeId='business_log',
-        startTimestampMs='10', endTimestampMs='20')
+        component='operator', workflowId='old-workflow', nodeId='business_log')
     for key, value in oldFilters.items():
         view.historyInputs[key].setText(value)
+    view.historyDateRange.setBounds(10, 20)
     view.restoreSettings(dict(area='page', level='ERROR', source='editor', job='old-job',
         workflow=['old-project', 'old-workflow'], node=['old-project', 'old-workflow', 'business_log'],
         event='node.log', search='COMMITTED', autoScroll=False))
@@ -141,6 +141,7 @@ def testDeviceHistoryStartsCleanScopeAndDropsPreviousPage(historyWindow, monkeyp
         assert view.rangeCombo.currentData() == 'runtime'
         assert {k: edit.text() for k, edit in view.historyInputs.items() if edit.text()} == scope
         assert view._historyReply is None and view._historyFilters == {}
+        assert view.historyDateRange.bounds() == (None, None)
         assert view._entries == [] and not view.historyNextButton.isEnabled()
         assert not view.historyExportButton.isEnabled()
         settings = view.settings()

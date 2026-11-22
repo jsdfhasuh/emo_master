@@ -1,0 +1,30 @@
+{
+  "revision": "2.3",
+  "source_commit": "9d59fd16a1d0d3ec0c60725c839ff38183d6916b",
+  "scope": "Plan and prototype packaging only; no product or hardware verification",
+  "openspec_strict": "passed; actual output in openspec-validation.json",
+  "prototype_logic": "6 groups and 9 scene entry points; Node VM + DOM stand-in, not a browser",
+  "counts": {
+    "tasks": 38,
+    "completed_product_tasks": 0,
+    "requirements": 16,
+    "scenarios": 39
+  },
+  "acceptance_groups": 6,
+  "native_walkthroughs_planned": 2,
+  "builtin_inventory": {
+    "manifests": 82,
+    "builtin_python_files": 166,
+    "unique_operator_ids": 82,
+    "entry_modules": 58,
+    "explicit_operator_logger_classes": 4
+  },
+  "reference_images": {
+    "png": 9,
+    "svg": 9
+  },
+  "image_decode_and_manifest": "passed",
+  "relative_links": "passed",
+  "standalone_documents": "copied byte-for-byte from package",
+  "product_implementation": false
+}

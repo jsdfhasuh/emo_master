@@ -51,9 +51,9 @@ class JobRepository:
             workflowId=str(loaded.get("workflowId", "")),
             status=str(loaded.get("status", JobStatus.FAILED.value)),
             pid=int(loaded["pid"]) if isinstance(loaded.get("pid"), int) else None,
-            acceptedAtMs=_toMs(loaded.get("acceptedAt")),
-            startedAtMs=_toMs(loaded.get("startedAt")),
-            endedAtMs=_toMs(loaded.get("endAt")),
+            acceptedAtMs=jobTimestampMs(loaded.get("acceptedAt")),
+            startedAtMs=jobTimestampMs(loaded.get("startedAt")),
+            endedAtMs=jobTimestampMs(loaded.get("endAt")),
             errorCode=str(loaded.get("errorCode", "") or ""),
             message=str(loaded.get("errorMessage", "") or ""),
             stopMode=str(loaded.get("stopMode", "") or ""),
@@ -115,7 +115,7 @@ class JobRepository:
             return list(self._jobs.values())
 
 
-def _toMs(value: object) -> int:
+def jobTimestampMs(value: object) -> int:
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return int(value)
     if not isinstance(value, str) or value == "":

@@ -53,9 +53,13 @@ def testOperatorPrefersImagesExplainsMissingOutputAndKeepsHistoricalIdentity(run
         assert dialog.outputMessage.isVisible() and dialog.outputMessage.text() == message
         assert dialog.pixmap is None and dialog.exportSelection() is None
         assert not dialog.artifacts.export.isEnabled()
+        dialog.resultTabs.setCurrentWidget(dialog.resultDetail)
         dialog.versions.setCurrentIndex(1)
         wait(lambda: dialog.pixmap is not None and not dialog.busy)
+        assert dialog.resultDetail.isVisible()
+        dialog.resultTabs.setCurrentWidget(dialog.resultPorts)
         assert dialog.selectedOutputPort() == "overlay" and not dialog.outputMessage.isVisible()
+        assert dialog.image.isVisible()
         assert dialog.pixmap.toImage().pixelColor(0, 0).red() == 190
         assert dialog.exportSelection()["identity"]["rawParams"] == {"drawOverlay": True}
         dialog.versions.setCurrentIndex(0)

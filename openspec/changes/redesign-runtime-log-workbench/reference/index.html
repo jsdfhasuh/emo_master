@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>emo_master 日志工作台 · 完整方案参考</title>
+<style>
+:root{color-scheme:light dark;font-family:"Microsoft YaHei UI","Noto Sans CJK SC",system-ui,sans-serif;color:light-dark(#20242b,#e6e9ee);background:light-dark(#f5f6f8,#181c23)}*{box-sizing:border-box}body{max-width:1240px;margin:0 auto;padding:28px 24px 50px;font-size:15px;line-height:1.6}h1{font-size:25px;margin:0 0 8px}h2{font-size:20px;margin:30px 0 12px}p{margin:8px 0 12px}.muted{color:light-dark(#626b78,#aeb7c5)}.notice{background:light-dark(#fff7e6,#453822);border-radius:6px;padding:13px 16px;margin:18px 0;color:light-dark(#79540e,#f2c77d)}nav{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}nav a{display:block;padding:10px 14px;border:1px solid light-dark(#cdd5e0,#3d4654);border-radius:5px;background:light-dark(#fff,#222731);text-decoration:none;color:light-dark(#2563eb,#88adff)}a{color:light-dark(#2563eb,#88adff)}.figures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}figure{margin:0;background:light-dark(#fff,#222731);border:1px solid light-dark(#d8dce3,#3d4654);border-radius:6px;overflow:hidden}figure img{display:block;width:100%;height:auto}figcaption{padding:12px 14px;font-size:14px}strong{font-weight:600}code{overflow-wrap:anywhere}@media(max-width:700px){body{padding:18px 14px}.figures{grid-template-columns:1fr}h1{font-size:22px}}
+</style>
+</head>
+<body>
+<h1>日志工作台 · 完整方案参考</h1>
+<p class="muted">统一交互入口：运行任务、真实执行结构、循环与连续调用、日期和技术筛选、易读详情、设备诊断、Designer 与独立调试。</p>
+<div class="notice"><strong>此页是原型参考导航，不进入正式产品。</strong> 可点击样例、静态目标图和旧 Qt 存档截图分别标注。模拟数据 / 模拟连接；没有真实 Runtime 或设备操作。</div>
+<h2>可点击样例</h2>
+<nav aria-label="原型参考场景导航">
+<a href="prototype.html#01_runtime_tasks">运行任务首页</a>
+<a href="prototype.html#02_while_tree">While 多轮结构</a>
+<a href="prototype.html#03_filter_drawer">日期筛选与详情抽屉</a>
+<a href="prototype.html#05_execution_time">执行时间</a>
+<a href="prototype.html#04_continuous_calls">连续调用</a>
+<a href="prototype.html#06_device_diagnostics">设备诊断</a>
+<a href="prototype.html#07_designer_logs">Designer 日志</a>
+<a href="prototype.html#08_operator_reading">算子易读详情</a>
+<a href="prototype.html#09_operator_debug">独立单算子调试</a>
+</nav>
+<p>首页点“还有 2 个关联任务未结束”查看关联任务；任务详情点“高级筛选”，再展开或收起“技术条件”。日期输入使用 <strong>本机时区示例 UTC+08:00</strong>；正式产品必须遵守设计文档中的真实本机时区规则。</p>
+<p class="muted">可离线双击打开。按钮、筛选、树分支、来源切换及详情抽屉均为本地交互。参阅 <a href="README.md">完整参考说明</a>及 <a href="visual-guide.md">视觉使用规则</a>；正式范围以同一变更的完整设计与规格为准，不需要读取另一个旧方案或原型。</p>
+<p><strong>关系说明：</strong>普通子工作流在同一个 Job 的执行树内；首页展开的“关联任务”是有明确来源关系的独立 Job。不能仅凭 active 状态断言某个子流程还在运行。</p>
+<h2>当前静态目标结构</h2>
+<p class="muted">用于核对信息层级、分组和默认展开关系。以下图片由结构绘制，<strong>不是 Qt 截图，也不是新实现验收结果</strong>。</p>
+<div class="figures">
+<figure><a href="images/target-01-task-status.png"><img src="images/target-01-task-status.png" alt="目标结构示意：已完成主任务保留20秒耗时，并可展开两个仍在运行的关联任务"></a><figcaption><strong>首页状态与关联任务</strong><br>任务按实际状态归组，主任务终态不因关联活动而改写。<a href="images/target-01-task-status.svg">SVG</a> · <a href="images/target-01-task-status.png">PNG</a></figcaption></figure>
+<figure><a href="images/target-02-compact-reading.png"><img src="images/target-02-compact-reading.png" alt="目标结构示意：日期范围与折叠技术条件位于执行结构和右侧详情上方"></a><figcaption><strong>紧凑筛选与执行阅读</strong><br>常用日期范围可见，技术条件收起，执行结构和易读详情保留主要空间。<a href="images/target-02-compact-reading.svg">SVG</a> · <a href="images/target-02-compact-reading.png">PNG</a></figcaption></figure>
+</div>
+<h2>保留的结构参考</h2>
+<p class="muted">以下只说明仍适用的关系。外围导航、筛选默认状态和字段布局以最新原型与上面两张目标图为准，不能按旧图重新引入已经取消的产品工具条。</p>
+<details><summary>查看循环、连续调用、时间、设备与 Designer 的五组结构参考</summary><div class="figures">
+<figure><a href="images/02_while_tree.png"><img loading="lazy" src="images/02_while_tree.png" alt="仅结构参考：While 与普通子调用"></a><figcaption><strong>仅结构参考：While 与普通子调用</strong><br>同一 Job 内的循环、普通子工作流和节点，不是多条独立 Job。 <a href="images/02_while_tree.svg">SVG</a> · <a href="images/02_while_tree.png">PNG</a></figcaption></figure>
+<figure><a href="images/04_continuous_calls.png"><img loading="lazy" src="images/04_continuous_calls.png" alt="仅结构参考：连续运行的根调用"></a><figcaption><strong>仅结构参考：连续运行的根调用</strong><br>同一 Job 下的不同实际调用，不能按可见行数虚构次数。 <a href="images/04_continuous_calls.svg">SVG</a> · <a href="images/04_continuous_calls.png">PNG</a></figcaption></figure>
+<figure><a href="images/05_execution_time.png"><img loading="lazy" src="images/05_execution_time.png" alt="仅结构参考：执行时间关系"></a><figcaption><strong>仅结构参考：执行时间关系</strong><br>工作流、轮次、节点及右侧时间详情，实际数值以日志证据为准。 <a href="images/05_execution_time.svg">SVG</a> · <a href="images/05_execution_time.png">PNG</a></figcaption></figure>
+<figure><a href="images/06_device_diagnostics.png"><img loading="lazy" src="images/06_device_diagnostics.png" alt="仅结构参考：设备近期诊断"></a><figcaption><strong>仅结构参考：设备近期诊断</strong><br>任务事件下钻已有近期缓存，并返回原位置。 <a href="images/06_device_diagnostics.svg">SVG</a> · <a href="images/06_device_diagnostics.png">PNG</a></figcaption></figure>
+<figure><a href="images/07_designer_logs.png"><img loading="lazy" src="images/07_designer_logs.png" alt="仅结构参考：Designer 独立来源"></a><figcaption><strong>仅结构参考：Designer 独立来源</strong><br>本机编辑和客户端日志与 Runtime 的任务/系统事件分开。 <a href="images/07_designer_logs.svg">SVG</a> · <a href="images/07_designer_logs.png">PNG</a></figcaption></figure>
+</div></details>
+<h2>旧实现 Qt 存档截图</h2>
+<p class="muted">基线 <code>fa4b72d751189c2689882a0a0d127fd280a35fde</code>。这些图片说明旧实现已有哪些能力；<strong>不是本次新方案验收</strong>，不能据此判断当前完整方案已经验收通过。</p>
+<div class="figures">
+<figure><a href="images/q1-while-warning.png"><img src="images/q1-while-warning.png" alt="旧实现Qt存档截图：展开全部技术筛选的While告警页"></a><figcaption><strong>旧 Qt：While 告警与筛选</strong><br>保留原图，便于对照减少默认筛选占位和技术信息暴露的目标。</figcaption></figure>
+<figure><a href="images/q1-execution-summary.png"><img src="images/q1-execution-summary.png" alt="旧实现Qt存档截图：算子执行摘要"></a><figcaption><strong>旧 Qt：算子执行摘要</strong><br>此功能已有，不因完整整合文档而重复实现；以原有数据显示契约继续读取。</figcaption></figure>
+</div>
+</body>
+</html>

@@ -27,6 +27,12 @@ from tests.runtime.test_operator_debug_rpc import runtime as runtime
 from tests.runtime.test_workflow_debug_control import nestedProject
 
 
+def logText(dialog):
+    if isinstance(dialog, OperatorDebugWindow):
+        return '\n'.join(dialog.logs.item(row).text() for row in range(dialog.logs.count()))
+    return dialog.logs.toPlainText()
+
+
 @contextmanager
 def inputWindow(runtime, kind):
     editor = None
@@ -48,7 +54,7 @@ def inputWindow(runtime, kind):
         except AssertionError as error:
             raise AssertionError(f"Debug open did not become ready: state={dialog.state}, busy={dialog.busy}, "
                 f"identity={dialog.connection.identity}, uncertain={dialog.connection.uncertain}, "
-                f"status={dialog.status.text()!r}, logs={dialog.logs.toPlainText()!r}") from error
+                f"status={dialog.status.text()!r}, logs={logText(dialog)!r}") from error
         yield dialog, port, start, choose
     finally:
         if editor is not None:
@@ -329,7 +335,7 @@ def testFixtureFailureSurvivesNaturalPollAndOnlySuccessfulLoadClearsIt(runtime, 
         monkeypatch.setattr(dialog.connection, method, observed)
         processEventsFor(.85)
         assert len(polls) >= 2 and 'READY' in dialog.status.text()
-        assert message == dialog.actionStatus.text() and message in dialog.logs.toPlainText()
+        assert message == dialog.actionStatus.text() and message in logText(dialog)
         assert dialog.actionStatus.isVisible()
         assert row.wire() == {'inline': 3} and start.isEnabled()
         dialog.actionFeedback.success('artifact:save', '其他保存成功')
@@ -339,7 +345,7 @@ def testFixtureFailureSurvivesNaturalPollAndOnlySuccessfulLoadClearsIt(runtime, 
         wait(lambda: row.wire() == {'inline': 9} and not dialog.busy)
         assert 'artifact:load' not in dialog.actionFeedback.errors
         assert '输入集已整体载入' in dialog.actionStatus.text()
-        assert message in dialog.logs.toPlainText()
+        assert message in logText(dialog)
 
 
 @pytest.mark.parametrize('kind', ['operator', 'workflow'])

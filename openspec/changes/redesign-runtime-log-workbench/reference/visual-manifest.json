@@ -1,0 +1,187 @@
+{
+  "version": "2.4-integrated",
+  "change_id": "redesign-runtime-log-workbench",
+  "entry_page": "index.html",
+  "prototype": "prototype.html",
+  "priority": [
+    "complete design and specification",
+    "latest prototype and current target schematics",
+    "inherited structure references"
+  ],
+  "prototype_provenance": {
+    "sha256": "4d1fedd12e253a526517173354e4a4dfc1e8431fe7dcfea3e80940f277e8800b",
+    "bytes": 168781,
+    "inherited_latest_corrected_prototype": true,
+    "copied_without_functional_or_text_changes": true,
+    "inline_source_name": "emo-log-usability-review.html"
+  },
+  "images": [
+    {
+      "path": "images/02_while_tree.png",
+      "bytes": 371732,
+      "sha256": "06f1fc96c175490b67434b7786b7181280520ee00806e581346b46d0730e0a71",
+      "kind": "inherited-structure-reference-only",
+      "source_baseline": "9d59fd16a1d0d3ec0c60725c839ff38183d6916b",
+      "copy_verified_identical": true,
+      "scope": "Retained execution/device/source relationships; current layout and contracts take priority."
+    },
+    {
+      "path": "images/02_while_tree.svg",
+      "bytes": 25762,
+      "sha256": "676bab8ce1f2d8c52e2d0a6f33b2726657b1060471ddba5f22b4c5eb01835d73",
+      "kind": "inherited-structure-reference-only",
+      "source_baseline": "9d59fd16a1d0d3ec0c60725c839ff38183d6916b",
+      "copy_verified_identical": true,
+      "scope": "Retained execution/device/source relationships; current layout and contracts take priority."
+    },
+    {
+      "path": "images/04_continuous_calls.png",
+      "bytes": 337890,
+      "sha256": "490acbe107024d9bf3023b2717e0349c9a28d3c6d1e63fd2818a00145db98c35",
+      "kind": "inherited-structure-reference-only",
+      "source_baseline": "9d59fd16a1d0d3ec0c60725c839ff38183d6916b",
+      "copy_verified_identical": true,
+      "scope": "Retained execution/device/source relationships; current layout and contracts take priority."
+    },
+    {
+      "path": "images/04_continuous_calls.svg",
+      "bytes": 15681,
+      "sha256": "c8123501ac39ff671e7a9a547b0ecd1ee5204ca60f33e3327efdab3c9e03506c",
+      "kind": "inherited-structure-reference-only",
+      "source_baseline": "9d59fd16a1d0d3ec0c60725c839ff38183d6916b",
+      "copy_verified_identical": true,
+      "scope": "Retained execution/device/source relationships; current layout and contracts take priority."
+    },
+    {
+      "path": "images/05_execution_time.png",
+      "bytes": 328422,
+      "sha256": "1508980feba150354b12a935516637ca88813f8d3a0818c4efdbf0e1afcc9222",
+      "kind": "inherited-structure-reference-only",
+      "source_baseline": "9d59fd16a1d0d3ec0c60725c839ff38183d6916b",
+      "copy_verified_identical": true,
+      "scope": "Retained execution/device/source relationships; current layout and contracts take priority."
+    },
+    {
+      "path": "images/05_execution_time.svg",
+      "bytes": 16507,
+      "sha256": "4bc9ff3fe2ec435b9954ea209edf99de6f22061b11ac5eaa1ea6f257b425a8b7",
+      "kind": "inherited-structure-reference-only",
+      "source_baseline": "9d59fd16a1d0d3ec0c60725c839ff38183d6916b",
+      "copy_verified_identical": true,
+      "scope": "Retained execution/device/source relationships; current layout and contracts take priority."
+    },
+    {
+      "path": "images/06_device_diagnostics.png",
+      "bytes": 344583,
+      "sha256": "4052fa323a2816c16da65aada492a5bee99022d90948ee24cd31f8e5d1e1c652",
+      "kind": "inherited-structure-reference-only",
+      "source_baseline": "9d59fd16a1d0d3ec0c60725c839ff38183d6916b",
+      "copy_verified_identical": true,
+      "scope": "Retained execution/device/source relationships; current layout and contracts take priority."
+    },
+    {
+      "path": "images/06_device_diagnostics.svg",
+      "bytes": 12935,
+      "sha256": "c903e3c5fba4aa70c2b9e160e5be516bd3220eb7f47fcdd7fe3b7b9b2ca6d0b0",
+      "kind": "inherited-structure-reference-only",
+      "source_baseline": "9d59fd16a1d0d3ec0c60725c839ff38183d6916b",
+      "copy_verified_identical": true,
+      "scope": "Retained execution/device/source relationships; current layout and contracts take priority."
+    },
+    {
+      "path": "images/07_designer_logs.png",
+      "bytes": 307335,
+      "sha256": "3a873ddc9fc42b956bcb16f2d6cb7a6b7d4d0718a3b45e5975add13e1f25b26e",
+      "kind": "inherited-structure-reference-only",
+      "source_baseline": "9d59fd16a1d0d3ec0c60725c839ff38183d6916b",
+      "copy_verified_identical": true,
+      "scope": "Retained execution/device/source relationships; current layout and contracts take priority."
+    },
+    {
+      "path": "images/07_designer_logs.svg",
+      "bytes": 10857,
+      "sha256": "cf0158e3417551a4ca41eeb8caa4b2958bfe9bfa9e77d99e68523b1b213810b6",
+      "kind": "inherited-structure-reference-only",
+      "source_baseline": "9d59fd16a1d0d3ec0c60725c839ff38183d6916b",
+      "copy_verified_identical": true,
+      "scope": "Retained execution/device/source relationships; current layout and contracts take priority."
+    },
+    {
+      "path": "images/q1-execution-summary.png",
+      "bytes": 88393,
+      "sha256": "805f9d88047e05b3298a85aaec9cb669e721316161de91487c3e36fb77ee5a89",
+      "kind": "archived-qt-baseline-screenshot",
+      "source_baseline": "fa4b72d751189c2689882a0a0d127fd280a35fde",
+      "copy_verified_identical": true,
+      "scope": "Baseline Qt evidence only; not acceptance for the integrated target."
+    },
+    {
+      "path": "images/q1-while-warning.png",
+      "bytes": 79734,
+      "sha256": "539dd236a47cb19357c8ed7bd6ee0078fe3fad2edf445baaf90b0f28e7f19910",
+      "kind": "archived-qt-baseline-screenshot",
+      "source_baseline": "fa4b72d751189c2689882a0a0d127fd280a35fde",
+      "copy_verified_identical": true,
+      "scope": "Baseline Qt evidence only; not acceptance for the integrated target."
+    },
+    {
+      "path": "images/target-01-task-status.png",
+      "bytes": 111814,
+      "sha256": "c73ce13fefd897a0ce9b338fdf26fcda3ffcda5e17fdc671a5e8c1e3e0a8cb87",
+      "kind": "current-target-static-schematic-not-qt",
+      "source_baseline": "fa4b72d751189c2689882a0a0d127fd280a35fde",
+      "copy_verified_identical": true,
+      "scope": "Current layout relationship and status wording; not a Qt capture or pixel-level acceptance."
+    },
+    {
+      "path": "images/target-01-task-status.svg",
+      "bytes": 8164,
+      "sha256": "c4020e0aae87eb8f1239f2040a225eda568804181178198fec9b9264b7f523b1",
+      "kind": "current-target-static-schematic-not-qt",
+      "source_baseline": "fa4b72d751189c2689882a0a0d127fd280a35fde",
+      "copy_verified_identical": true,
+      "scope": "Current layout relationship and status wording; not a Qt capture or pixel-level acceptance."
+    },
+    {
+      "path": "images/target-02-compact-reading.png",
+      "bytes": 131707,
+      "sha256": "38d3daef24dffc6a1b6b3788ab6ef1b293efacd0e00a26cc2b34eea206073c29",
+      "kind": "current-target-static-schematic-not-qt",
+      "source_baseline": "fa4b72d751189c2689882a0a0d127fd280a35fde",
+      "copy_verified_identical": true,
+      "scope": "Current layout relationship and status wording; not a Qt capture or pixel-level acceptance."
+    },
+    {
+      "path": "images/target-02-compact-reading.svg",
+      "bytes": 13091,
+      "sha256": "6e17dc44cd68067367f9b5982dbad343e31dbfeef0a63ebcf7adaf11ac551d89",
+      "kind": "current-target-static-schematic-not-qt",
+      "source_baseline": "fa4b72d751189c2689882a0a0d127fd280a35fde",
+      "copy_verified_identical": true,
+      "scope": "Current layout relationship and status wording; not a Qt capture or pixel-level acceptance."
+    }
+  ],
+  "image_counts": {
+    "current_target_png": 2,
+    "current_target_svg": 2,
+    "inherited_structure_png": 5,
+    "inherited_structure_svg": 5,
+    "archived_qt_png": 2
+  },
+  "excluded_obsolete_visuals": {
+    "01_runtime_tasks": "replaced by target-01-task-status",
+    "03_filter_drawer": "replaced by target-02-compact-reading",
+    "08_operator_reading": "obsolete mock scenario toolbar; use current prototype scene 08",
+    "09_operator_debug": "obsolete mock scenario toolbar; use current prototype scene 09",
+    "visual-gallery.html": "replaced by the single index.html"
+  },
+  "operator_inventory": {
+    "path": "operator-coverage.json",
+    "source_commit": "9d59fd16a1d0d3ec0c60725c839ff38183d6916b",
+    "records": 82,
+    "operator_records_and_counts_unchanged": true,
+    "metadata_change": "Clarified historical static-audit scope; removed obsolete blanket statement that all product tasks remain unimplemented.",
+    "source_sha256": "2d5c0c169c1abc0445731bf8966653b14af5cb0410b05f782c4687a184ced0ba",
+    "delivered_sha256": "255ed71f1d65972434d34ad9ede150c94be7e995b9e4e602234202682d8e66da"
+  }
+}

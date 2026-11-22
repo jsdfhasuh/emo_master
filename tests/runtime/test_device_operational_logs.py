@@ -33,6 +33,17 @@ def testNativeFailureJsonlProjectionRetainsLevelCodeAndIdentity(explicitLevel):
     assert (event.originApp, event.component, event.runtimeInstanceId) == ('runtime', 'device', 'runtime')
 
 
+def testNativeSourceCannotReplaceTrustedJobScopeOrEmptyPath():
+    diagnostics = DeviceDiagnostics()
+    source = dict(jobId='other-job', deviceId='other-device', projectId='other-project',
+                  workflowId='other-flow', workflowRunId='actual-run', iterationPath=[4])
+    row = diagnostics.append(SCOPE, 'camera', 'device.action.completed', 'captured',
+        jobId='job', workflowId='flow', iterationPath=[], source=source)
+    assert (row['jobId'], row['deviceId'], row['projectId']) == ('job', 'camera', 'project')
+    assert (row['workflowId'], row['workflowRunId'], row['iterationPath']) == ('flow', 'actual-run', [])
+    assert row['source'] == source
+
+
 def testGlobalFailureSummariesAndRecoveryHaveSinglePersistentCopy(tmp_path):
     now = [0.0]
     diagnostics = DeviceDiagnostics(clock=lambda: now[0])
@@ -150,7 +161,8 @@ def testActionLogRetainsOperationContextAndOnlyExistingOutcome(monkeypatch, fail
     monkeypatch.setattr(driver, 'execute', perform)
     try:
         kwargs = dict(cycleId='cycle-a', requestId='actual-request',
-                      source=dict(workflowId='main', nodeId='read', slot='plc'),
+                      source=dict(workflowId='main', nodeId='read', slot='plc', workflowRunId='body-run',
+                                  parentWorkflowRunId='root-run', nodeRunId='read-run', iterationPath=[0, 1]),
                       arguments=dict(device='D', startAddress=800, count=1))
         if failure:
             with pytest.raises((RuntimeError, DeviceError)):
@@ -166,7 +178,9 @@ def testActionLogRetainsOperationContextAndOnlyExistingOutcome(monkeypatch, fail
             assert row['outcome'] == 'UNKNOWN'
         else:
             assert 'outcome' not in row
-        assert not row.get('workflowRunId') and not row.get('nodeRunId')
+        assert {k: row[k] for k in ('workflowRunId', 'parentWorkflowRunId', 'nodeRunId', 'iterationPath')} == dict(
+            workflowRunId='body-run', parentWorkflowRunId='root-run', nodeRunId='read-run', iterationPath=[0, 1])
+        assert row['source'] == kwargs['source']
     finally:
         manager.close()
 

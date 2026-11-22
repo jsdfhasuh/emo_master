@@ -19,7 +19,8 @@ def eventPayload(event):
               'originApp': 'origin_app', 'component': 'component', 'runtimeInstanceId': 'runtime_instance_id'}
     result = {name: getattr(event, wire, '') for name, wire in fields.items()}
     result['payload'] = json.loads(event.payload_json or '{}')
-    result['iterationPath'] = json.loads(event.iteration_path_json or '[]')
+    if event.iteration_path_json:
+        result['iterationPath'] = json.loads(event.iteration_path_json)
     return result
 
 

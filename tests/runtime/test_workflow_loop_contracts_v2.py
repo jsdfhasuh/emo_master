@@ -53,10 +53,10 @@ def _metadata(name: str) -> dict[str, object]:
     }
 
 
-def _run(payload: dict[str, object], registry: dict[str, object], inputs):
+def _run(payload: dict[str, object], registry: dict[str, object], inputs, *, eventPublisher=None):
     document = ProjectDocument.model_validate(payload)
     compiled = WorkflowCompiler(operatorRegistry=registry).compile(document)
-    runner = WorkflowRunner(compiled, registry)
+    runner = WorkflowRunner(compiled, registry, eventPublisher=eventPublisher)
     return runner.run(
         "main",
         inputs,
@@ -144,16 +144,23 @@ def _foreachPayload() -> dict[str, object]:
 
 
 def testForEachV2AggregatesBodyOutputsByPort() -> None:
+    events = []
     result = _run(
         _foreachPayload(),
         {"test.map": _MapItemOperator},
         {"items": ["a", "b", "c"], "prefix": "edge-"},
+        eventPublisher=lambda **event: events.append(event),
     )
 
     assert result == {
         "edge": ["edge-a", "edge-b", "edge-c"],
         "ordinal": [0, 1, 2],
     }
+    assert [event["payload"] for event in events if event["eventType"] == "loop.started"] == [
+        {"mode": "foreach", "totalIterations": 3},
+    ]
+    assert all("bodyExecuted" not in event["payload"] for event in events
+               if event["eventType"] == "loop.iteration.completed")
 
 
 def testForEachV2EmptyInputReturnsOneEmptyListPerBodyOutput() -> None:
@@ -296,6 +303,7 @@ def _whilePayload() -> dict[str, object]:
 
 
 def testWhileV2UsesBodyPortsAsTypedState() -> None:
+    events = []
     result = _run(
         _whilePayload(),
         {
@@ -303,6 +311,9 @@ def testWhileV2UsesBodyPortsAsTypedState() -> None:
             "test.increment": _IncrementOperator,
         },
         {"count": 0},
+        eventPublisher=lambda **event: events.append(event),
     )
 
     assert result == {"count": 3}
+    completed = [event["payload"] for event in events if event["eventType"] == "loop.iteration.completed"]
+    assert [event["bodyExecuted"] for event in completed] == [True, True, True, False]

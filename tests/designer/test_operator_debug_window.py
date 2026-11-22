@@ -1,4 +1,7 @@
 from copy import deepcopy
+import json
+from pathlib import Path
+import os
 import time
 from types import SimpleNamespace
 
@@ -58,7 +61,35 @@ def testNativeWindowExecutesUnappliedDraftAndKeepsTwoResults(runtime):
         wait(lambda: len(dialog.records) == 2 and dialog.run.isEnabled())
         assert [record["outputs"]["value"] for record in dialog.records] == [9, 3]
         assert dialog.exportSelection()["wire"] == {"inline": 9}
-        dialog.versions.setCurrentIndex(1)
+        firstExecutionId = dialog.records[1]["executionId"]
+        dialog.tabs.setCurrentIndex(3)
+        rows = [dialog.logs.item(index) for index in range(dialog.logs.count())]
+        oldResultEvent = next(row for row in rows if (row.data(Qt.UserRole).get("type") == "execution.finished"
+                             and row.data(Qt.UserRole).get("executionId") == firstExecutionId))
+        assert all(row.data(Qt.UserRole).get("event", {}).get("eventType") != "node.completed" for row in rows)
+        dialog.logs.scrollToItem(oldResultEvent)
+        QTest.mouseClick(dialog.logs.viewport(), Qt.LeftButton, pos=dialog.logs.visualItemRect(oldResultEvent).center())
+        assert json.loads(dialog.logDetail.rawTree.toPlainText()) == oldResultEvent.data(Qt.UserRole)
+        assert dialog.logResult.isEnabled()
+        QTest.mouseClick(dialog.logResult, Qt.LeftButton)
+        assert dialog.tabs.currentIndex() == 1 and dialog.resultTabs.currentWidget() == dialog.resultDetail
+        shown = json.loads(dialog.resultDetail.rawTree.toPlainText())
+        assert shown["outputs"] == {"value": 3} and shown["executionId"] == firstExecutionId
+        assert shown["sessionId"] == dialog.debugSessionId and shown["sourceIdentity"]["generation"] == dialog.debugGeneration
+        assert "configuration" not in shown and "jobId" not in shown
+        fields = [dialog.resultDetail.readable.topLevelItem(index).text(0)
+                  for index in range(dialog.resultDetail.readable.topLevelItemCount())]
+        assert "已返回输出" in fields and "finishedAtMs" not in fields and "输入来源" in fields
+        assert dialog.resultDetail.readable.topLevelItem(fields.index("状态")).text(1) == "执行成功"
+        if evidence := os.environ.get("EMO_LOG_WORKBENCH_EVIDENCE_DIR"):
+            directory = Path(evidence)
+            directory.mkdir(parents=True, exist_ok=True)
+            assert dialog.grab().save(str(directory / "q1-operator-debug-result.png"))
+        bar = dialog.resultDetail.tabs.tabBar()
+        QTest.mouseClick(bar, Qt.LeftButton, pos=bar.tabRect(1).center())
+        assert dialog.resultDetail.rawTree.isVisible() and json.loads(dialog.resultDetail.rawTree.toPlainText()) == shown
+        if evidence:
+            assert dialog.grab().save(str(directory / "q1-operator-debug-raw.png"))
         historical = dialog.exportSelection()
         assert historical["port"] == "value" and historical["wire"] == {"inline": 3}
         assert historical["identity"]["selection"] == "history"
@@ -69,6 +100,7 @@ def testNativeWindowExecutesUnappliedDraftAndKeepsTwoResults(runtime):
         QTest.mouseClick(dialog.reset, Qt.LeftButton)
         wait(lambda: dialog.run.isEnabled() and dialog.connection.identity["generation"] == 2)
         assert dialog.records == []
+        assert not dialog.logResult.isEnabled() and not dialog.resultDetail.rawTree.toPlainText()
         QTest.mouseClick(dialog.end, Qt.LeftButton)
         wait(lambda: not isValid(dialog))
         assert not runtime.operatorDebugManager.ownsResources()

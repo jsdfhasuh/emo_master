@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1120" viewBox="0 0 1440 1120"><rect width="100%" height="100%" fill="#f5f6f8"/>
+<text x="25" y="36" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="22" font-weight="600" fill="#20242b">05  起止时间与执行时间详情</text>
+<text x="25" y="60" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#626b78">静态布局参考图 · 按原型样本整理 · 非浏览器 / Qt 截图</text>
+<rect x="24" y="80" width="1392" height="926" rx="7" fill="#ffffff" stroke="#d8dce3"/>
+<rect x="25" y="81" width="1390" height="50" rx="0" fill="#f5f6f8"/>
+<path d="M24,131 L1416,131" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<rect x="42" y="94" width="25" height="25" rx="6" fill="#2563eb"/>
+<text x="50" y="114" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="18" font-weight="600" fill="#ffffff">e</text>
+<text x="78" y="114" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="600" fill="#20242b">emo_master</text>
+<path d="M186,96 L186,116" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="202" y="114" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">运行日志</text>
+<text x="978" y="114" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">交互原型 · 模拟数据 · Runtime / 设备未连接</text>
+<text x="44" y="165" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="600" fill="#2563eb">Runtime 运行日志</text>
+<text x="218" y="165" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="400" fill="#626b78">Designer 本机日志</text>
+<path d="M42,179 L176,179" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M24,181 L1416,181" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<rect x="43" y="193" width="100" height="32" rx="5" fill="#edf3ff" stroke="#2563eb"/>
+<text x="55" y="214" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#2563eb">运行任务</text>
+<rect x="150" y="193" width="100" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="162" y="214" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">系统事件</text>
+<text x="1110" y="214" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">当前 Runtime · 模拟连接</text>
+<text x="44" y="253" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">‹ 运行任务</text>
+<rect x="1240" y="232" width="148" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="1252" y="253" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">任务信息 ⌄</text>
+<text x="44" y="295" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="22" font-weight="600" fill="#20242b">主采集流程</text>
+<rect x="405" y="274" width="52" height="24" rx="4" fill="#edf3ff"/>
+<text x="413" y="290" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#2563eb">运行中</text>
+<text x="505" y="293" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="600" fill="#20242b">已运行 ≈ 12.50 s</text>
+<text x="44" y="320" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">Job-001 · 脚垫装配 · 单次启动 · While 持续运行</text>
+<text x="965" y="321" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">开始 2026-11-21 09:20:00.000 · UTC+08</text>
+<rect x="44" y="339" width="104" height="32" rx="5" fill="#edf3ff" stroke="#2563eb"/>
+<text x="56" y="360" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#2563eb">执行结构</text>
+<rect x="156" y="339" width="104" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="168" y="360" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">时间顺序</text>
+<rect x="1145" y="339" width="108" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="1157" y="360" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">定位当前</text>
+<rect x="1261" y="339" width="127" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="1273" y="360" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">显示设置 ⌄</text>
+<rect x="44" y="385" width="500" height="34" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="55" y="407" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">搜索当前已加载事件…</text>
+<rect x="558" y="385" width="70" height="32" rx="5" fill="#edf3ff" stroke="#2563eb"/>
+<text x="570" y="406" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#2563eb">全部</text>
+<rect x="633" y="385" width="70" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="645" y="406" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">INFO</text>
+<rect x="708" y="385" width="70" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="720" y="406" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">WARN</text>
+<rect x="783" y="385" width="70" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="795" y="406" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">ERROR</text>
+<rect x="875" y="385" width="130" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="887" y="406" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">设备：全部</text>
+<rect x="1015" y="385" width="135" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="1027" y="406" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">高级筛选 ⌄</text>
+<text x="1190" y="408" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">□ 自动跟随</text>
+<rect x="44" y="438" width="1344" height="45" rx="5" fill="#f5f6f8" stroke="#d8dce3"/>
+<text x="57" y="464" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">时间显示</text>
+<rect x="141" y="445" width="102" height="32" rx="5" fill="#ffffff" stroke="#d8dce3"/>
+<text x="153" y="466" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#20242b">执行耗时</text>
+<rect x="251" y="445" width="119" height="32" rx="5" fill="#edf3ff" stroke="#2563eb"/>
+<text x="263" y="466" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#2563eb">开始 / 结束</text>
+<rect x="25" y="500" width="1034" height="34" rx="0" fill="#f5f6f8"/>
+<path d="M24,500 L1060,500" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<path d="M24,534 L1060,534" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="42" y="521" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">起止时间模式 · 当前任务 / 调用 / 轮次 / 节点</text>
+<text x="855" y="521" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#2563eb">展开全部   ·   收起全部</text>
+<text x="43" y="562" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">⌄</text>
+<rect x="62" y="549" width="45" height="20" rx="2" fill="#f5f6f8" stroke="#d8dce3"/>
+<text x="67" y="563" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="10" font-weight="400" fill="#626b78">工作流</text>
+<text x="117" y="564" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="600" fill="#20242b">主采集流程 · 本次调用</text>
+<rect x="670" y="548" width="52" height="24" rx="4" fill="#edf3ff"/>
+<text x="678" y="564" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#2563eb">运行中</text>
+<text x="760" y="565" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">09:20:00.000 → 进行中</text>
+<path d="M34,577 L1032,577" fill="none" stroke="#eef0f4" stroke-width="1"/>
+<path d="M48,577 L48,608" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="66" y="594" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">⌄</text>
+<rect x="85" y="581" width="45" height="20" rx="2" fill="#f5f6f8" stroke="#d8dce3"/>
+<text x="90" y="595" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="10" font-weight="400" fill="#626b78">循环</text>
+<text x="140" y="596" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">While · 持续检测</text>
+<rect x="670" y="580" width="52" height="24" rx="4" fill="#edf3ff"/>
+<text x="678" y="596" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#2563eb">运行中</text>
+<text x="760" y="597" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">09:20:00.010 → 进行中</text>
+<path d="M34,609 L1032,609" fill="none" stroke="#eef0f4" stroke-width="1"/>
+<path d="M48,609 L48,640" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<path d="M71,609 L71,640" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="89" y="626" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">⌄</text>
+<rect x="108" y="613" width="45" height="20" rx="2" fill="#f5f6f8" stroke="#d8dce3"/>
+<text x="113" y="627" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="10" font-weight="400" fill="#626b78">轮次</text>
+<text x="163" y="628" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">第 2 轮</text>
+<rect x="670" y="612" width="52" height="24" rx="4" fill="#edf8f2"/>
+<text x="678" y="628" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#247452">已完成</text>
+<text x="760" y="629" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">09:20:05.000 → 09:20:05.920</text>
+<path d="M34,641 L1032,641" fill="none" stroke="#eef0f4" stroke-width="1"/>
+<rect x="29" y="643" width="1007" height="29" rx="0" fill="#edf3ff"/>
+<path d="M48,641 L48,672" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<path d="M71,641 L71,672" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<path d="M94,641 L94,672" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="112" y="658" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">›</text>
+<rect x="131" y="645" width="45" height="20" rx="2" fill="#f5f6f8" stroke="#d8dce3"/>
+<text x="136" y="659" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="10" font-weight="400" fill="#626b78">节点</text>
+<text x="186" y="660" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">PLC 写入</text>
+<rect x="670" y="644" width="52" height="24" rx="4" fill="#edf8f2"/>
+<text x="678" y="660" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#247452">已完成</text>
+<text x="760" y="661" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">09:20:05.570 → 09:20:05.850</text>
+<path d="M34,673 L1032,673" fill="none" stroke="#eef0f4" stroke-width="1"/>
+<path d="M48,673 L48,704" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<path d="M71,673 L71,704" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="89" y="690" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">⌄</text>
+<rect x="108" y="677" width="45" height="20" rx="2" fill="#f5f6f8" stroke="#d8dce3"/>
+<text x="113" y="691" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="10" font-weight="400" fill="#626b78">轮次</text>
+<text x="163" y="692" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">第 3 轮</text>
+<rect x="670" y="676" width="52" height="24" rx="4" fill="#edf3ff"/>
+<text x="678" y="692" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#2563eb">执行中</text>
+<text x="760" y="693" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">09:20:10.000 → 进行中</text>
+<path d="M34,705 L1032,705" fill="none" stroke="#eef0f4" stroke-width="1"/>
+<rect x="1060" y="500" width="355" height="506" rx="0" fill="#ffffff"/>
+<path d="M1060,500 L1060,1006" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="1078" y="531" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="16" font-weight="600" fill="#20242b">执行时间</text>
+<text x="1384" y="534" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="18" font-weight="400" fill="#626b78">×</text>
+<path d="M1060,547 L1416,547" fill="none" stroke="#d8dce3" stroke-width="1"/>
+<text x="1078" y="583" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="17" font-weight="600" fill="#20242b">PLC 写入</text>
+<rect x="1258" y="564" width="52" height="24" rx="4" fill="#edf8f2"/>
+<text x="1266" y="580" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#247452">已完成</text>
+<text x="1078" y="626" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">执行耗时</text>
+<text x="1078" y="673" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="29" font-weight="600" fill="#20242b">280 ms</text>
+<text x="1078" y="716" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">开始</text>
+<text x="1152" y="717" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">2026-11-21</text>
+<text x="1152" y="736" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">09:20:05.570</text>
+<text x="1078" y="764" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="11" font-weight="400" fill="#626b78">结束</text>
+<text x="1152" y="765" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">2026-11-21</text>
+<text x="1152" y="784" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#20242b">09:20:05.850</text>
+<text x="1078" y="822" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">主采集流程 › While 持续检测</text>
+<text x="1078" y="843" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#626b78">› 第 2 轮 › PLC 写入</text>
+<text x="1078" y="887" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="12" font-weight="400" fill="#2563eb">› 执行标识与原始数据</text>
+<text x="25" y="1044" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="14" font-weight="600" fill="#20242b">紧凑行显示耗时；需要排查时切换起止时间，右侧查看所选节点的时间详情。</text>
+<text x="25" y="1073" font-family="Noto Sans CJK SC,Microsoft YaHei,sans-serif" font-size="13" font-weight="400" fill="#626b78">STOPPING 继续估时；终态停止；重启确认时间不冒充真实结束，缺少时间不能用接收时间补算。</text>
+</svg>

@@ -43,13 +43,13 @@ class LoopRunner:
         if not isinstance(unlimited, bool) or (unlimited and (mode != "while" or config.get("contractVersion") != CURRENT_LOOP_CONTRACT_VERSION)):
             raise LoopExecutionError("E_WORKFLOW_INVALID", "unlimited requires While contractVersion=2")
         startedAt = self._clock()
-        self.workflowRunner.publish("loop.started", context, "loop started", payload={"mode": mode})
         try:
             if mode == "repeat":
                 result = self._repeat(node, inputs, context, cancellation, maxIterations, timeoutMs, startedAt)
             elif mode == "foreach":
                 result = self._foreach(node, inputs, context, cancellation, maxIterations, timeoutMs, startedAt)
             elif mode == "while":
+                self.workflowRunner.publish("loop.started", context, "loop started", payload={"mode": mode})
                 result = self._while(node, inputs, context, cancellation, maxIterations, timeoutMs, startedAt)
             else:
                 raise LoopExecutionError("E_WORKFLOW_INVALID", f"unsupported loop mode: {mode}")
@@ -79,6 +79,7 @@ class LoopRunner:
         count = _requiredInt(node.loop, "repeatCount")
         if count < 0 or count > maximum:
             raise LoopExecutionError("E_LOOP_LIMIT_REACHED", "repeatCount exceeds maxIterations")
+        self.workflowRunner.publish("loop.started", context, "loop started", payload={"mode": "repeat", "totalIterations": count})
         # A zero-count repeat is a no-op and preserves its input interface.
         outputs: dict[str, object] = {
             name: inputs[name] for name in node.outputPorts if name in inputs
@@ -114,6 +115,7 @@ class LoopRunner:
             )
         if len(items) > maximum:
             raise LoopExecutionError("E_LOOP_LIMIT_REACHED", "items exceed maxIterations")
+        self.workflowRunner.publish("loop.started", context, "loop started", payload={"mode": "foreach", "totalIterations": len(items)})
         if node.loop.get("contractVersion") == CURRENT_LOOP_CONTRACT_VERSION:
             return self._foreachV2(
                 node,
@@ -234,7 +236,7 @@ class LoopRunner:
             if not isinstance(condition, bool):
                 raise LoopExecutionError("E_INPUT_TYPE", "While condition must return bool")
             if not condition:
-                self._iterationEvent("loop.iteration.completed", iterationContext, index)
+                self._iterationEvent("loop.iteration.completed", iterationContext, index, bodyExecuted=False)
                 return self.workflowRunner.result({"state": state}, metrics, diagnostics)
             self._debugPoint("loop.body", node, {"state": state}, iterationContext)
             bodyContext = context.childWorkflow(
@@ -252,7 +254,7 @@ class LoopRunner:
             if not isinstance(nextState, dict):
                 raise LoopExecutionError("E_INPUT_TYPE", "While body must return state:object")
             state = nextState
-            self._iterationEvent("loop.iteration.completed", iterationContext, index)
+            self._iterationEvent("loop.iteration.completed", iterationContext, index, bodyExecuted=True)
             self._check(cancellation, timeoutMs, startedAt)
         raise LoopExecutionError("E_LOOP_LIMIT_REACHED", "while loop reached maxIterations")
 
@@ -298,7 +300,7 @@ class LoopRunner:
                 iterationContext = cycleContext.forIteration(index)
                 self._iterationEvent("loop.iteration.started", iterationContext, index)
                 condition, state = self._whileIteration(node, state, iterationContext, cancellation, metrics, diagnostics)
-                self._iterationEvent("loop.iteration.completed", iterationContext, index)
+                self._iterationEvent("loop.iteration.completed", iterationContext, index, bodyExecuted=condition)
             if not condition:
                 return self.workflowRunner.result(state, metrics, diagnostics)
             self._check(cancellation, timeoutMs, startedAt)
@@ -351,8 +353,11 @@ class LoopRunner:
         if timeoutMs > 0 and (self._clock() - startedAt) * 1000.0 >= timeoutMs:
             raise LoopExecutionError("E_LOOP_TIMEOUT", "loop timeout exceeded")
 
-    def _iterationEvent(self, eventType, context, index) -> None:
-        self.workflowRunner.publish(eventType, context, f"loop iteration {index}", payload={"iteration": index})
+    def _iterationEvent(self, eventType, context, index, *, bodyExecuted: bool | None = None) -> None:
+        payload = {"iteration": index}
+        if bodyExecuted is not None:
+            payload["bodyExecuted"] = bodyExecuted
+        self.workflowRunner.publish(eventType, context, f"loop iteration {index}", payload=payload)
         if self.workflowRunner.debugController is not None:
             node = self.workflowRunner.compiledProject.workflows[context.workflowId].nodeById[context.callerNodeId]
             self._debugPoint(eventType, node, {"iteration": index}, context)

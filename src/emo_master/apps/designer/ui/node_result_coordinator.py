@@ -50,9 +50,34 @@ class NodeResultCoordinator(QObject):
         window.previewSection = self.panel.imagePage
         self.panel.selectionChanged.connect(self.refresh)
         self.panel.portChanged.connect(self.refresh)
-        self.panel.logs.clicked.connect(window.openLogDialog)
+        self.panel.logs.clicked.connect(self.openRunLogs)
         self.panel.configureRequested.connect(self.configure)
         self.panel.enlargeRequested.connect(self.openViewer)
+
+    def openRunLogs(self):
+        window = self.window
+        workflowId, nodeId = window.activeWorkflowId, window.flowModel.selectedNodeId or ""
+        view = self.history.view(workflowId, nodeId)
+        window.openLogDialog()
+        job = view["job"]
+        if job is None or not window._currentProjectId():
+            return
+        known = window._runtimeLogJobProjects.get(job.jobId)
+        if known != (window._currentProjectId(), window._runtimeLogProjectToken):
+            return
+        instance = window._currentLogRuntimeInstance()
+        resultInstance = self.history.contextId[0] if self.history.contextId else self.images.runtimeId
+        if not instance or resultInstance != instance:
+            return
+        record = view["record"] or {}
+        identity = record.get("workflowRunId"), record.get("nodeRunId")
+        eventId = None
+        if all(identity):
+            eventId = next((entry.eventId for entry in reversed(window.logEntries)
+                if entry.eventId and entry.runtimeInstanceId == instance and entry.projectId == known[0]
+                and entry.effectiveJobId == job.jobId and (entry.workflowRunId, entry.nodeRunId) == identity), None)
+        window.logDialog.openJob(dict(jobId=job.jobId, projectId=known[0], workflowId=workflowId),
+                                  focus=identity if all(identity) else None, eventId=eventId)
 
     def showPanel(self):
         self.window.onNodeSelectionChanged()

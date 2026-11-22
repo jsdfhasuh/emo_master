@@ -237,6 +237,7 @@ class AioRuntimeServer:
                         "OpenOperatorPreviewSession": "bulk", "OpenDraftOperatorPreviewSession": "bulk",
                         "InspectSqliteTarget": "sqlite",
                         "QueryHistoryPage": "sqlite", "QueryHistoryAggregate": "sqlite", "QueryRuntimeLogs": "sqlite",
+                        "ListJobHistory": "sqlite",
                         "ReadHistoryImage": "asset", "ReadProjectResource": "asset",
                         "OpenPlcDebugSession": "plc",
                         "InitializeSqliteTarget": "sqlite"}.get(name, "control")

@@ -248,6 +248,111 @@
       },
       "additionalProperties": false
     },
+    "RpcListJobHistoryRequest": {
+      "type": "object",
+      "properties": {
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "statuses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "startEndedAtMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "endEndedAtMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "cursor": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcListJobHistoryReply": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "runtimeInstanceId": {
+          "type": "string"
+        },
+        "jobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RpcJobHistorySummary"
+          }
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "nextCursor": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RpcJobHistorySummary": {
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "projectRevision": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "workflowId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "acceptedAtMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "startedAtMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "endedAtMs": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
+        },
+        "errorCode": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "stopMode": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "RpcGetRunStateRequest": {
       "type": "object",
       "properties": {
@@ -1599,6 +1704,13 @@
         },
         "limit": {
           "type": "integer"
+        },
+        "latestFirst": {
+          "type": "boolean"
+        },
+        "beforeEventId": {
+          "type": "string",
+          "pattern": "^-?[0-9]+$"
         }
       },
       "additionalProperties": false
@@ -3302,6 +3414,12 @@
     "RuntimeService/ListRuns": {
       "request": "#/$defs/RpcListRunsRequest",
       "response": "#/$defs/RpcListRunsReply",
+      "serverStreaming": false,
+      "clientStreaming": false
+    },
+    "RuntimeService/ListJobHistory": {
+      "request": "#/$defs/RpcListJobHistoryRequest",
+      "response": "#/$defs/RpcListJobHistoryReply",
       "serverStreaming": false,
       "clientStreaming": false
     },

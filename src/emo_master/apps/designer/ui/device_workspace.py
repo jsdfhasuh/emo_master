@@ -517,7 +517,7 @@ class DeviceWorkspace(QDialog):
         if not self.close():
             return
         window.openLogDialog()
-        window.logDialog.view.openDeviceHistory(projectId, deviceId)
+        window.logDialog.openRuntimeHistory(projectId=projectId, deviceId=deviceId)
 
     def readDiagnostics(self):
         state = self.states.get(self.selectedId)

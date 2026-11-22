@@ -177,9 +177,14 @@ def testDeviceRuntimeLogsKeepDraftAndReleaseModalInput(ownedDesignerWindow, tmp_
     # QLineEdit would bypass the sibling-window block this regression fixes.
     QApplication.processEvents()
     dialog = window.logDialog
+    handle = dialog.windowHandle()
+    technical = dialog.view.historyTechnicalToggle
+    QTest.mouseClick(handle, Qt.LeftButton, pos=technical.mapTo(dialog, technical.rect().center()))
+    QApplication.processEvents()
     edit = dialog.view.historyInputs['component']
-    QTest.mouseClick(dialog.windowHandle(), Qt.LeftButton, pos=edit.mapTo(dialog, edit.rect().center()))
-    QTest.keyClick(dialog.windowHandle(), Qt.Key_X)
+    assert edit.isVisible()
+    QTest.mouseClick(handle, Qt.LeftButton, pos=edit.mapTo(dialog, edit.rect().center()))
+    QTest.keyClick(handle, Qt.Key_X)
     assert edit.hasFocus() and edit.text() == 'x'
     dialog.hide()
     c.showDevices()

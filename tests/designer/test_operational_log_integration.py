@@ -302,6 +302,320 @@ def testHistoryExportReadsCompleteFixedRangeAndCancellationKeepsTarget(ownedDesi
     assert target.read_bytes() == original and "未报告成功" in view.historyStatus.text()
 
 
+def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow, tmp_path, monkeypatch):
+    import os
+    from pathlib import Path
+    from PySide2.QtCore import QCoreApplication, Qt
+    from PySide2.QtTest import QTest
+    from PySide2.QtWidgets import QFileDialog, QPushButton, QTabBar
+    from emo_master.apps.designer.state.project_store import loadProjectDocument, saveProject
+    from emo_master.apps.designer.state.workflow_store import WorkflowStore
+    from emo_master.apps.runtime.main import createRuntimeServer
+    from emo_master.core.project.models import ProjectDocument
+    from emo_master.core.workflow.compiler import WorkflowCompiler
+    from emo_master.plugins.builtins.integer_add.operator import IntegerAddOperator
+    from tests.runtime.production_fixture import waitFor
+
+    def click(button):
+        assert button.isVisible() and button.isEnabled(), button.text()
+        QTest.mouseClick(button, Qt.LeftButton)
+
+    def tab(bar, index):
+        QTest.mouseClick(bar, Qt.LeftButton, pos=bar.tabRect(index).center())
+        assert bar.currentIndex() == index
+
+    def screenshot(name):
+        directory = Path(os.environ.get("EMO_LOG_WORKBENCH_V2_4_EVIDENCE_DIR", str(tmp_path)))
+        directory.mkdir(parents=True, exist_ok=True)
+        QCoreApplication.processEvents()
+        assert dialog.grab().save(str(directory / name))
+
+    payload = WorkflowStore().toPayload("日志工作台软件走查")
+    operator = IntegerAddOperator.meta
+    payload["dependencies"]["operators"] = [dict(operatorId=operator.operatorId, version=operator.version)]
+    flow = payload["workflows"]["main"]
+    flow["outputs"] = {"value": "integer"}
+    flow["nodes"].insert(1, dict(nodeId="sum", kind="operator", operatorId=operator.operatorId,
+                               params=dict(leftValue=2, rightValue=3)))
+    flow["edges"] = [dict(fromNode="sum", fromPort="value", toNode="__workflow_output__", toPort="value")]
+    document = ProjectDocument.model_validate(payload)
+    path = tmp_path / "addition.emoproj"
+    saveProject(path, document.model_dump(mode="json"))
+    loaded = loadProjectDocument(path)
+    assert loaded == document and loaded.schemaVersion == "2.10" and loaded.presentation.schemaVersion == "1.3"
+    WorkflowCompiler({operator.operatorId: IntegerAddOperator}).compile(loaded)
+    projectId = document.project.projectId
+    database = tmp_path / "history.sqlite"
+
+    first = RuntimeService(dbPath=database, runtimeInstanceId="q2-before-restart")
+    try:
+        loadedReply = first.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None)
+        assert loadedReply.ok, loadedReply.message
+        started = first.StartJob(pb.StartJobRequest(project_id=projectId, workflow_id="main",
+            start_request_id="q2-add", expected_runtime_instance_id=first.runtimeInstanceId,
+            legacy_snapshot_policy="NONE"), None)
+        assert started.ok, started.message
+        jobId = started.job_id
+        waitFor(lambda: first.jobRepository.get(jobId).isTerminal)
+        record = first.jobRepository.get(jobId)
+        assert record.status == "COMPLETED", record.message
+        assert any(row.nodeId == "sum" and row.eventType == "node.completed"
+                   for row in first.sqliteStore.listJobEventsAfter(jobId))
+
+        # Non-whole-second boundaries are shared by the recent and early fixture rows.
+        endedAt = record.endedAtMs
+        startMs = (endedAt // 1000 + 1) * 1000 + 123
+        endMs = startMs + 5
+        for timestamp, level, message in (
+            (startMs - 1, "WARN", "起点之前"),
+            (startMs, "WARN", "早期范围命中"),
+            (startMs + 1, "ERROR", "早期错误命中"),
+            (startMs + 2, "INFO", "同范围 INFO"),
+            (endMs, "WARN", "恰在终点"),
+        ):
+            first.eventStore.append(jobId, "node.log", message, level=level, nodeId="early",
+                                    projectId=projectId, workflowId="main", timestampMs=timestamp)
+        matching = [("WARN", "早期范围命中"), ("ERROR", "早期错误命中")]
+        for index in range(205):
+            message = f"分页夹具 {index + 1}"
+            if index < 199:
+                level = "WARN" if index % 2 == 0 else "ERROR"
+                matching.append((level, message))
+                first.eventStore.append(jobId, "node.log", message, level=level, nodeId="early",
+                                        projectId=projectId, timestampMs=startMs + 3)
+            else:
+                first.eventStore.append(jobId, "node.log", message, projectId=projectId,
+                    level="WARN" if index == 204 else "INFO", timestampMs=startMs + 1 if index == 204 else endMs)
+        first.eventStore.append("__runtime__", "device.action.failed", "同 Job 的设备摘要",
+                                projectId=projectId, payload={"jobId": jobId, "deviceId": "software"})
+        first.eventStore.append("__runtime__", "node.preview.failed", "独立系统事件", projectId=projectId)
+        for index in range(50):
+            other = f"fixture-{index:02d}"
+            first.sqliteStore.insertJob(other, projectId, workflowId="fixture")
+            first.sqliteStore.updateJobStatus(other, "COMPLETED", endedAtMs=record.endedAtMs + 1000 + index)
+    finally:
+        first.close()
+
+    runtime = RuntimeService(dbPath=database, runtimeInstanceId="q2-after-restart")
+    server, port, _ = createRuntimeServer(port=0, runtimeService=runtime)
+    server.start()
+    channel = grpc.insecure_channel(f"127.0.0.1:{port}")
+    client = RuntimeClient(runtimeService=rpc.RuntimeServiceStub(channel))
+    window = None
+    try:
+        window = ownedDesignerWindow(client, settingsStore=Settings())
+        window.openLogDialog()
+        dialog = window.logDialog
+        jobs, history = dialog.jobLogs, dialog.view
+        waitUntil(lambda: jobs.capabilities is not None, timeout=10)
+        assert jobs.catalogDateRange.bounds() == (None, None)
+        historyCalls = []
+        listJobHistory = client.listJobHistory
+
+        def observeDirectory(instance, **options):
+            if options.get("limit") != 20:
+                historyCalls.append(dict(options))
+            return listJobHistory(instance, **options)
+
+        monkeypatch.setattr(client, "listJobHistory", observeDirectory)
+        click(jobs.catalogHistory)
+        waitUntil(jobs.catalogNext.isEnabled, timeout=10)
+        assert "startEndedAtMs" not in historyCalls[-1] and "endEndedAtMs" not in historyCalls[-1]
+        refresh, = [button for button in jobs.catalog.findChildren(QPushButton) if button.text() == "刷新"]
+        jobs.catalogDateRange.setBounds(endedAt, None)
+        click(refresh)
+        waitUntil(lambda: jobs.pending is None, timeout=10)
+        assert historyCalls[-1]["startEndedAtMs"] == endedAt and "startTimestampMs" not in historyCalls[-1]
+        calls = len(historyCalls)
+        jobs.catalogDateRange.setBounds(endedAt + 2, endedAt + 1)
+        click(refresh)
+        assert jobs.catalogDateRange.error.isVisible() and len(historyCalls) == calls
+        click(jobs.catalogNext)
+        waitUntil(lambda: jobs.pending is None, timeout=10)
+        assert historyCalls[-1]["startEndedAtMs"] == endedAt and "endEndedAtMs" not in historyCalls[-1]
+        jobs.catalogDateRange.setBounds(endedAt, None)
+        item, = jobs.directory.findItems("main", Qt.MatchExactly | Qt.MatchRecursive)
+        assert item.toolTip(0) == jobId and item.text(2) == "已完成"
+        jobs.directory.setCurrentItem(item)
+        assert not jobs.stopButton.isVisible()
+        screenshot("q2-directory-date.png")
+        click(jobs.openButton)
+        waitUntil(lambda: jobs.window is not None and not jobs._opening and jobs._upper is not None, timeout=10)
+        assert jobs.instance == "q2-after-restart"
+        assert len(jobs.window.entries) == 200 and jobs.earlier.isEnabled()
+        assert {entry.runtimeInstanceId for entry in jobs.window.entries} == {"q2-before-restart"}
+        assert all(entry.message != "早期范围命中" for entry in jobs.window.entries)
+        jobs.warning.setChecked(True)
+        click(jobs.filterToggle)
+        jobs.dateRange.setBounds(startMs, endMs)
+        waitUntil(lambda: "00.123" in jobs.rangeStatus.text() or ".123" in jobs.rangeStatus.text())
+        recentWarn = next(row for row in jobs.window.entries if row.message == "分页夹具 205")
+        assert ("event", recentWarn.eventId) in jobs._items
+        assert jobs.dateRange.startEdit.dateTime().toMSecsSinceEpoch() == startMs
+
+        assert jobs.level.currentText() == "全部等级"
+        logPages = []
+        queryRuntimeLogs = client.queryRuntimeLogs
+
+        def observePage(**options):
+            reply = queryRuntimeLogs(**options)
+            logPages.append((options, reply))
+            return reply
+
+        monkeypatch.setattr(client, "queryRuntimeLogs", observePage)
+        jobs.inputs["nodeId"].setText("early")
+        query, = [button for button in jobs.filters.findChildren(QPushButton)
+                  if button.text() == "查询整个历史范围…"]
+        click(query)
+        waitUntil(lambda: history._historyReply is not None and history._historyFuture is None, timeout=10)
+        assert [(entry.level, entry.message) for entry in history._entries] == matching[:200]
+        waitUntil(lambda: len(history._visibleEntries) == 200, timeout=10)
+        displayed = {entry.message for entry in history._visibleEntries}
+        assert {"早期范围命中", "早期错误命中"} <= displayed
+        assert "同范围 INFO" not in displayed
+        assert all(entry.jobId == jobId for entry in history._visibleEntries)
+        assert history._historyReply["runtimeInstanceId"] == "q2-after-restart"
+        assert "Runtime 历史" in history.historyStatus.text() and "WARN / ERROR" in history.historyStatus.text()
+        assert history.historyDateRange.bounds() == (startMs, endMs)
+        assert history.levelFilter.currentText() == "告警 / 错误"
+        assert history.historyInputs["projectId"].isReadOnly() and history.historyInputs["jobId"].isReadOnly()
+        screenshot("q2-history-warning-levels.png")
+
+        applied = history._historyReply
+        history.levelFilter.setCurrentIndex(history.levelFilter.findText("INFO"))
+        history.historyDateRange.setBounds(endMs, startMs)
+        click(history.historyQueryButton)
+        assert len(logPages) == 1
+        assert history._historyFuture is None and history._historyReply is applied and history.historyDateRange.error.isVisible()
+        assert [(entry.level, entry.message) for entry in history._entries] == matching[:200]
+        click(history.historyNextButton)
+        waitUntil(lambda: history._historyFuture is None, timeout=10)
+        assert [(entry.level, entry.message) for entry in history._entries] == matching[200:]
+        waitUntil(lambda: [(entry.level, entry.message) for entry in history._visibleEntries] == matching[200:])
+        assert logPages[1][0]["afterEventId"] == applied["nextEventId"]
+        assert logPages[1][0]["upperEventId"] == applied["upperEventId"]
+        screenshot("q2-history-applied-page.png")
+        targetRange = tmp_path / "selected-range.json"
+        monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_: (str(targetRange), "JSON (*.json)"))
+        click(history.historyExportButton)
+        waitUntil(lambda: targetRange.exists() and history._historyFuture is None, timeout=10)
+        selected = json.loads(targetRange.read_text(encoding="utf-8"))
+        assert [(event["level"], event["message"]) for event in selected["entries"]] == matching
+        scoped = dict(jobId=jobId, projectId=projectId, nodeId="early", startTimestampMs=startMs,
+                      endTimestampMs=endMs)
+        assert len(logPages) == 4  # Two displayed pages and two pages of the complete selected range.
+        scopes = [options for options, _ in logPages] + [selected["filters"]]
+        for filters in scopes:
+            assert {key: filters[key] for key in scoped} == scoped
+            assert tuple(filters["levels"]) == ("WARN", "ERROR")
+        assert all(options["upperEventId"] == applied["upperEventId"] for options, _ in logPages[1:])
+
+        history.levelFilter.setCurrentIndex(history.levelFilter.findText("告警 / 错误"))
+        history.historyDateRange.setBounds(startMs, startMs)
+        click(history.historyQueryButton)
+        waitUntil(lambda: history._historyFuture is None, timeout=10)
+        assert not history._entries and history._historyFilters["endTimestampMs"] == startMs
+        history.historyDateRange.setBounds(None, None)
+        click(history.historyQueryButton)
+        waitUntil(lambda: history._historyFuture is None, timeout=10)
+        assert not any(key in history._historyFilters for key in ("startTimestampMs", "endTimestampMs"))
+        assert {row.message for row in history._entries} >= {"起点之前", "早期范围命中", "恰在终点"}
+
+        click(dialog.historyBack)
+        assert jobs.warning.isChecked() and jobs.inputs["nodeId"].text() == "early"
+        assert jobs.dateRange.bounds() == (startMs, endMs)
+        jobs.level.setCurrentIndex(jobs.level.findText("WARN"))
+        requestCount = len(logPages)
+        click(query)
+        waitUntil(lambda: history._historyFuture is None and len(logPages) == requestCount + 1, timeout=10)
+        warnOnly = [pair for pair in matching if pair[0] == "WARN"]
+        waitUntil(lambda: [(entry.level, entry.message) for entry in history._visibleEntries] == warnOnly)
+        assert history.levelFilter.currentText() == "WARN"
+        options, _ = logPages[-1]
+        assert {key: options[key] for key in scoped} == scoped and options["levels"] == ["WARN"]
+        click(dialog.historyBack)
+
+        jobs.level.setCurrentIndex(jobs.level.findText("INFO"))
+        waitUntil(lambda: "节点 ID early" in jobs.rangeStatus.text() and jobs.events.topLevelItemCount() == 0)
+        requestCount = len(logPages)
+        click(query)
+        waitUntil(lambda: history._historyFuture is None and not history._visibleEntries, timeout=10)
+        assert not history._entries and not history.historyNextButton.isEnabled()
+        assert history.levelFilter.currentText() == "无匹配等级"
+        assert "无匹配等级" in history.historyStatus.text()
+        assert len(logPages) == requestCount
+        screenshot("q2-history-empty-levels.png")
+        targetEmpty = tmp_path / "empty-level-range.json"
+        monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_: (str(targetEmpty), "JSON (*.json)"))
+        click(history.historyExportButton)
+        waitUntil(lambda: targetEmpty.exists() and history._historyFuture is None, timeout=10)
+        empty = json.loads(targetEmpty.read_text(encoding="utf-8"))
+        assert empty["entryCount"] == 0 and empty["entries"] == []
+        assert empty["filters"] == dict(scoped, levels=[])
+        assert len(logPages) == requestCount
+
+        click(dialog.historyBack)
+        assert jobs.warning.isChecked() and jobs.level.currentText() == "INFO"
+        click(jobs.filterToggle)
+        expected = queryRuntimeLogs(runtimeInstanceId=jobs.instance, projectId=projectId,
+                                           jobId=jobId, limit=1000)
+        assert expected["ok"] and not expected["hasMore"]
+        logPages.clear()
+        target = tmp_path / "whole-job.json"
+        monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_: (str(target), "JSON (*.json)"))
+        click(jobs.exportButton)
+        waitUntil(lambda: target.exists() and history._historyFuture is None, timeout=10)
+        exported = json.loads(target.read_text(encoding="utf-8"))
+        rows = exported["entries"]
+        assert exported["entryCount"] > len(jobs.window.entries)
+        assert [(row["eventId"], row["jobId"], row["message"]) for row in rows] == [
+            (row["eventId"], row["event"]["jobId"], row["event"]["message"]) for row in expected["events"]]
+        assert all(row["runtimeInstanceId"] == "q2-before-restart" for row in rows)
+        assert any(row["level"] == "INFO" for row in rows)
+        assert exported["filters"]["jobId"] == jobId
+        firstPage, secondPage = logPages
+        assert firstPage[0]["afterEventId"] == 0 and firstPage[1]["hasMore"]
+        assert secondPage[0]["afterEventId"] == firstPage[1]["nextEventId"]
+        assert secondPage[0]["upperEventId"] == firstPage[1]["upperEventId"] == expected["upperEventId"]
+        assert all(not options.get("latestFirst")
+                   and not {"beforeEventId", "levels", "startTimestampMs", "endTimestampMs", "nodeId"} & options.keys()
+                   for options, _ in logPages)
+        screenshot("q2-whole-job-export.png")
+
+        window.appendLocalEvent(dict(level="ERROR", eventType="runtime.client.failed", jobId=jobId,
+            projectId=projectId, code="Q2_DESIGNER", message="Designer 客户端错误夹具", timestampMs=startMs),
+            source="runtime_client")
+        writer = window._logResources["writer"]
+        assert writer.waitUntilProcessed(jobId, writer.sequence)
+        tab(dialog.sources, 1)
+        assert any(entry.jobId == jobId and entry.code == "Q2_DESIGNER" for entry in dialog.designerViews[0]._entries)
+        localTabs = dialog.sourcePages.widget(1).findChild(QTabBar)
+        tab(localTabs, 1)
+        local = dialog.designerViews[1]
+        click(local.historyFiltersToggle)
+        local.historyDateRange.setBounds(startMs, endMs)
+        click(local.historyQueryButton)
+        waitUntil(lambda: local._historyFuture is None)
+        assert [(entry.jobId, entry.code) for entry in local._entries] == [(jobId, "Q2_DESIGNER")]
+        tab(dialog.sources, 0)
+        assert jobs.warning.isChecked() and jobs.inputs["nodeId"].text() == "early"
+        tab(dialog.runtimeNavigation, 1)
+        waitUntil(lambda: dialog.system._historyReply is not None, timeout=10)
+        assert [entry.message for entry in dialog.system._entries] == ["独立系统事件"]
+        tab(dialog.runtimeNavigation, 0)
+        assert jobs.job.job_id == jobId and jobs.warning.isChecked()
+        print(f"Q2 Job {jobId} · [start, end) {startMs}, {endMs} · catalog endedAt {endedAt}"
+              f" · upper eventId {expected['upperEventId']} · WARN/ERROR {len(matching)} across 2 pages"
+              f" · INFO conflict 0 queries · whole Job exported {len(rows)} records")
+    finally:
+        if window is not None:
+            window.close()
+        client.close()
+        channel.close()
+        server.stop(0).wait()
+        runtime.close()
+
+
 def testDesignerLocalHistoryAndTargetChangeRejectOldReturn(ownedDesignerWindow, tmp_path):
     import threading
     from emo_master.apps.designer.services.local_log import DesignerLogWriter
@@ -402,6 +716,66 @@ def testHistoryFailedFilterKeepsSuccessfulPagingAndExportScope(ownedDesignerWind
     assert [request["afterEventId"] for request in client.calls[exportStart:]] == [0, 1]
     assert all(request["projectId"] == "B" and request["upperEventId"] == 4 for request in client.calls[exportStart:])
     assert [json.loads(line)["projectId"] for line in target.read_text(encoding="utf-8").splitlines()] == ["B", "B"]
+
+
+@pytest.mark.parametrize("project,job,error", [("project", "B", "READ_FAILED"), ("other-project", "A", "transport")])
+def testPinnedHistoryRetiresOtherJobScopeEvenWhenQueryFails(ownedDesignerWindow, tmp_path, monkeypatch,
+                                                            project, job, error):
+    from PySide2.QtWidgets import QFileDialog
+
+    class QueryClient(Client):
+        runtimeService = object()
+
+        def __init__(self):
+            self.calls = []
+
+        def queryRuntimeLogs(self, **options):
+            self.calls.append(options)
+            sameJob = (options["projectId"], options["jobId"]) == ("project", "A")
+            if sameJob and options.get("startTimestampMs") == 1000:
+                return dict(ok=True, runtimeInstanceId="instance", upperEventId=25, nextEventId=10, hasMore=True,
+                            events=[dict(eventId=10, event=dict(jobId="A", projectId="project", level="WARN",
+                                                              message="Original Job", timestampMs=1500))])
+            if not sameJob and error == "transport":
+                raise RuntimeError("transport failed")
+            return dict(ok=False, code="READ_FAILED", message="retry allowed", runtimeInstanceId="instance")
+
+    client = QueryClient()
+    window = ownedDesignerWindow(client, settingsStore=Settings())
+    window.openLogDialog()
+    dialog, view = window.logDialog, window.logDialog.view
+
+    dialog._jobHistory(dict(projectId="project", jobId="A", startTimestampMs=1000, endTimestampMs=2000, levels=None))
+    waitUntil(lambda: view._historyFuture is None)
+    assert view.historyNextButton.isEnabled() and view._historyFilters["jobId"] == "A"
+    view.historyDateRange.setBounds(2100, 2000)
+    previousCallCount = len(client.calls)
+    view.queryHistory()
+    assert len(client.calls) == previousCallCount and view.historyDateRange.bounds() == (2100, 2000)
+    view.historyDateRange.setBounds(1100, 2000)
+    view.queryHistory()
+    waitUntil(lambda: view._historyFuture is None)
+    assert view.historyDateRange.bounds() == (1100, 2000)
+    assert view._historyFilters["startTimestampMs"] == 1000
+    assert view._historyReply["upperEventId"] == 25 and view.historyNextButton.isEnabled()
+    assert [entry.jobId for entry in view._visibleEntries] == ["A"]
+
+    dialog._returnFromJobHistory()
+    dialog._jobHistory(dict(projectId=project, jobId=job, levels=None))
+    waitUntil(lambda: view._historyFuture is None)
+    assert error in view.historyStatus.text() and "仍保留上次成功范围" not in view.historyStatus.text()
+    assert view.historyInputs["projectId"].text() == project and view.historyInputs["projectId"].isReadOnly()
+    assert view.historyInputs["jobId"].text() == job and view.historyInputs["jobId"].isReadOnly()
+    assert not view._visibleEntries and view._historyReply is None and not view._historyFilters
+    assert not view.historyNextButton.isEnabled()
+
+    target = tmp_path / "pinned.jsonl"
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_: (str(target), "JSON Lines (*.jsonl)"))
+    view.exportHistory()
+    waitUntil(lambda: view._historyFuture is None)
+    request = client.calls[-1]
+    assert (request["projectId"], request["jobId"]) == (project, job)
+    assert request["upperEventId"] is None and not target.exists()
 
 
 @pytest.mark.parametrize("changedInstance", [False, True], ids=["same-instance", "restarted-instance"])

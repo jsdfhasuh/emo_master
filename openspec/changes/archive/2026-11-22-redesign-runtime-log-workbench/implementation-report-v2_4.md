@@ -159,3 +159,22 @@ python -m pytest -q -s --tb=short tests/designer/test_runtime_job_workbench.py::
 ```
 
 保留原 QTest 界面证据。此次未另做人工点击验收、真实硬件验证、全部算子、全时区、冻结包和本机全仓测试。冻结包工作流的路径过滤条件未命中此次改动。
+
+## 2026-11-22 OpenSpec 归档与独立复核
+
+本次文档收尾由 **ChatGPT Web** 执行，基线为已合并且 CI 通过的 `d702c4ef60722c51eb703a721942ec9bc9d007eb`。产品实施、Windows 本机测试和前述合并操作的实际执行者仍为 Codex；本节没有重新认领这些执行结果。
+
+- 独立核对 PR #16、PR #17、远端主分支、六次已记录 CI 及相关作业日志。`da0b8e25` 到产品合并提交 `9a9cc511` 没有文件内容差异；`9a9cc511` 到基线 `d702c4ef` 只追加实施报告。最终主分支的 Windows 源码分片明确记录日志工作台 Q1、Q2 通过。 [最终主分支 CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44994435279) · [Windows 源码分片](https://github.com/jsdfhasuh/emo_master/actions/runs/44994435279/job/137122334424)
+- 原两项 P2 和合并前集成修正已完成源码、测试断言及证据复核。一次页面预览等待超时的根因仍未确定，保留上文“合并前集成修正”中的原始失败记录及后续通过结果；本次归档不把它改写为根因已修复。
+- 使用 OpenSpec 2.0.0 的标准 archive 操作，将同一 change 归入 `openspec/changes/archive/2026-11-22-redesign-runtime-log-workbench/`，并生成 [正式规范](../../../specs/runtime-log-workbench/spec.md)。21 条需求、57 个场景及 Purpose 原文不变，51 项任务全部完成。
+- 原有 77 个文件完整归档；除 README 的归档入口和本报告的新增尾节外，原文件内容保持不变。历史报告段落、截图、可点击原型、校验记录及固定提交链接继续保留。没有修改产品源码、测试、协议、依赖或 CI 工作流。
+
+本次在本地执行 change 严格校验、标准归档、正式 spec 严格校验，核对需求正文一致性、文件 Git blob 校验值和相对链接目标。CLI 使用官方支持的 `OPENSPEC_TELEMETRY=0`、`DO_NOT_TRACK=1`、`OPENSPEC_NO_UPDATE_CHECK=1` 关闭遥测和自动更新检查；未为归档向遥测服务发送项目数据。
+
+```bash
+OPENSPEC_TELEMETRY=0 DO_NOT_TRACK=1 OPENSPEC_NO_UPDATE_CHECK=1 openspec validate redesign-runtime-log-workbench --type change --strict --no-interactive
+OPENSPEC_TELEMETRY=0 DO_NOT_TRACK=1 OPENSPEC_NO_UPDATE_CHECK=1 openspec archive redesign-runtime-log-workbench --yes --json
+OPENSPEC_TELEMETRY=0 DO_NOT_TRACK=1 OPENSPEC_NO_UPDATE_CHECK=1 openspec validate runtime-log-workbench --type spec --strict --no-interactive
+```
+
+以上命令使用本地安装的 OpenSpec 2.0.0 CLI。产品验证范围及未验证项沿用前文，不把本次规格归档计为额外的产品、人工或硬件验收；归档提交自身的远端检查结果以对应 PR 和主分支运行记录为准。

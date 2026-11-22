@@ -1614,6 +1614,10 @@ try:
             self.historyBack.show()
             self.sources.setCurrentIndex(0)
             self.runtimeNavigation.setCurrentIndex(2)
+            if any(self.view._historyFilters.get(key, "") != filters.get(key, "") for key in ("projectId", "jobId")):
+                self.view._historySourceChanged()
+                self.view._historyFilters = {}
+                self.view.historyStatus.setToolTip("")
             self.view._resetFilters()
             for key, edit in self.view.historyInputs.items():
                 edit.setReadOnly(key in {"projectId", "jobId"})

@@ -718,6 +718,66 @@ def testHistoryFailedFilterKeepsSuccessfulPagingAndExportScope(ownedDesignerWind
     assert [json.loads(line)["projectId"] for line in target.read_text(encoding="utf-8").splitlines()] == ["B", "B"]
 
 
+@pytest.mark.parametrize("project,job,error", [("project", "B", "READ_FAILED"), ("other-project", "A", "transport")])
+def testPinnedHistoryRetiresOtherJobScopeEvenWhenQueryFails(ownedDesignerWindow, tmp_path, monkeypatch,
+                                                            project, job, error):
+    from PySide2.QtWidgets import QFileDialog
+
+    class QueryClient(Client):
+        runtimeService = object()
+
+        def __init__(self):
+            self.calls = []
+
+        def queryRuntimeLogs(self, **options):
+            self.calls.append(options)
+            sameJob = (options["projectId"], options["jobId"]) == ("project", "A")
+            if sameJob and options.get("startTimestampMs") == 1000:
+                return dict(ok=True, runtimeInstanceId="instance", upperEventId=25, nextEventId=10, hasMore=True,
+                            events=[dict(eventId=10, event=dict(jobId="A", projectId="project", level="WARN",
+                                                              message="Original Job", timestampMs=1500))])
+            if not sameJob and error == "transport":
+                raise RuntimeError("transport failed")
+            return dict(ok=False, code="READ_FAILED", message="retry allowed", runtimeInstanceId="instance")
+
+    client = QueryClient()
+    window = ownedDesignerWindow(client, settingsStore=Settings())
+    window.openLogDialog()
+    dialog, view = window.logDialog, window.logDialog.view
+
+    dialog._jobHistory(dict(projectId="project", jobId="A", startTimestampMs=1000, endTimestampMs=2000, levels=None))
+    waitUntil(lambda: view._historyFuture is None)
+    assert view.historyNextButton.isEnabled() and view._historyFilters["jobId"] == "A"
+    view.historyDateRange.setBounds(2100, 2000)
+    previousCallCount = len(client.calls)
+    view.queryHistory()
+    assert len(client.calls) == previousCallCount and view.historyDateRange.bounds() == (2100, 2000)
+    view.historyDateRange.setBounds(1100, 2000)
+    view.queryHistory()
+    waitUntil(lambda: view._historyFuture is None)
+    assert view.historyDateRange.bounds() == (1100, 2000)
+    assert view._historyFilters["startTimestampMs"] == 1000
+    assert view._historyReply["upperEventId"] == 25 and view.historyNextButton.isEnabled()
+    assert [entry.jobId for entry in view._visibleEntries] == ["A"]
+
+    dialog._returnFromJobHistory()
+    dialog._jobHistory(dict(projectId=project, jobId=job, levels=None))
+    waitUntil(lambda: view._historyFuture is None)
+    assert error in view.historyStatus.text() and "仍保留上次成功范围" not in view.historyStatus.text()
+    assert view.historyInputs["projectId"].text() == project and view.historyInputs["projectId"].isReadOnly()
+    assert view.historyInputs["jobId"].text() == job and view.historyInputs["jobId"].isReadOnly()
+    assert not view._visibleEntries and view._historyReply is None and not view._historyFilters
+    assert not view.historyNextButton.isEnabled()
+
+    target = tmp_path / "pinned.jsonl"
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_: (str(target), "JSON Lines (*.jsonl)"))
+    view.exportHistory()
+    waitUntil(lambda: view._historyFuture is None)
+    request = client.calls[-1]
+    assert (request["projectId"], request["jobId"]) == (project, job)
+    assert request["upperEventId"] is None and not target.exists()
+
+
 @pytest.mark.parametrize("changedInstance", [False, True], ids=["same-instance", "restarted-instance"])
 def testReaderErrorRetryKeepsMatchingCursorAndInstance(ownedDesignerWindow, tmp_path, changedInstance):
     service = GlobalService(tmp_path / "query-retry")

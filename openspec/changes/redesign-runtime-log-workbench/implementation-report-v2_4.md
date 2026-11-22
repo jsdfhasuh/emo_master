@@ -67,3 +67,55 @@ python -m pytest -q -s --tb=short tests/designer/test_runtime_job_workbench.py::
 
 - 窄窗走查初次使用的移动事件没有保持鼠标按下状态。改用原生 Qt 的带左键状态移动事件，确认分栏宽度实际改变，并重新捕获界面。
 - 真实硬件、冻结安装包、全仓 pytest、全部 82 个算子及全时区矩阵未执行。现有 CI 工作流的推送分支范围不包含本分支，远端 CI 未作为本轮通过证据。
+
+## 2026-11-22 审查修复与重新验收
+
+执行者为 Codex。工作树为 `D:/emo-runtime-log-workbench`，分支为 `codex/runtime-log-workbench`。开始时本地和远端分支均为 `993a8796c4510cf5fa1850cd205b973caf0dbd57`，工作树干净。以下回归实测代码提交为 `d0c1df946750c803c2d9cf082549eceb7bbe1865`。运行时只存在同一 OpenSpec change 的文档修改，代码和测试与该提交一致。历史实施记录和原截图保留在本报告前文及 `evidence/v2_4`。
+
+- 关联返回补齐单个来源书签的临时轮次、临时定位及原筛选位置。在有界窗口重新查询并重建执行结构后，先恢复临时范围，再生成列表。右侧详情按列表实际选中项恢复。原范围或事件不可再定位时，显示可用记录并给出提示。
+- 修复 V2.4 之前已存在的历史等级遗漏。Job 已加载窗口与高级历史入口共用告警快捷条件和所选等级的交集。历史展示、分页及选定范围导出沿用已提交条件。冲突形成明确的空范围，查询和空范围导出均无需发历史 RPC。Runtime 继续接收已有 `levels` 字段，完整 Job 导出继续以原有任务身份和固定上界查询。
+
+### Q1 关联任务往返与临时阅读
+
+Windows 原生 Qt Widgets 通过 QTest 操作现有 Designer，连接真实软件 Runtime。保留原 While、SQLite、模拟设备和调试路径，关联任务及用于滚动的轮次事件由已标识夹具写入 Runtime。来源 Job 为 `cdcc2a10-0b81-4268-91f2-ca83bc6cf6f8`，两个关联成员为 `170cf940-c1ba-4337-9dae-fed37d4a9062` 和 `7ede3037-b2fc-4650-9649-b31724669603`。
+
+- 先启用告警 / 错误，选择 WARN `626`，再进入本轮上下文，选中原筛选隐藏的 INFO `627`。进入关联任务并返回后，时间顺序模式、临时范围和“返回原筛选”仍可用。列表选择与原始 JSON 都对应 INFO `627`，顶部可见事件为 `578`。 [关联返回的 INFO 与上下文](evidence/v2_4-review-fixes/q1-related-return.png)
+- 点击“返回原筛选”，重现原告警条件、关键词及节点 ID。列表选择与详情回到 WARN `626`，顶部可见事件恢复为 `574`。两处顶部行均与选中行不同。定向测试另覆盖临时定位往返和原事件已不可查询时的提示与抽屉关闭。 [退出临时范围后原告警](evidence/v2_4-review-fixes/q1-related-return-to-filter.png)
+
+### Q2 历史等级与两种导出
+
+沿用软件 Runtime 重启和持久数据路径。实际整数加法 Job 为 `b2497310-b596-4271-8f86-58df007da4ba`，结束时间 `1795317753058`。在该 Job 同一节点 `early` 的 `[1795317754123, 1795317754128)` 插入 INFO、WARN、ERROR 和分页夹具，并在边界外加入对照。保留历史目录结束时间校验、毫秒半开区间、等值空区间和本机日志来源检查。
+
+- 从 Job 勾选告警 / 错误、等级保持全部，进入高级历史。实际请求携带 `levels=["WARN", "ERROR"]` 和工程、Job、节点、时间条件，首屏显示 200 条，下一页 1 条。同范围 INFO 未返回。倒置日期和未提交的 INFO 等级编辑未改变当前范围，下一页与选定范围导出使用原条件和固定上界，选定范围共导出 201 条。 [合并等级查询](evidence/v2_4-review-fixes/q2-history-warning-levels.png) · [保留已提交条件的下一页](evidence/v2_4-review-fixes/q2-history-applied-page.png)
+- 快捷条件加 WARN 时，实际请求只含 WARN。快捷条件加 INFO 时显示“无匹配等级”，不发新查询，选定范围导出 0 条，JSON 保留显式 `levels=[]`。 [冲突空结果](evidence/v2_4-review-fixes/q2-history-empty-levels.png)
+- 返回 Job 后，在本地条件仍互斥、已加载 200 条的情况下，完整 Job 导出以固定上界 `225` 读取两页，共 223 条，包含 INFO 和本地节点、时间范围之外的记录。测试替换文件选择器的返回路径，逐条对照真实 Runtime 查询。 [完整 Job 导出](evidence/v2_4-review-fixes/q2-whole-job-export.png)
+
+### 本次命令及结果
+
+Windows 原生 QPA 为 `windows`，桌面 1920 × 1080，Python 3.10.21、PySide2 5.15.2.1、gRPC 1.78.0，本机时区 `Asia/Shanghai`。`python` 指向 `C:/Users/jsdfhasuh/.conda/envs/emo_master/python.exe`。六张截图均来自本次 QTest 运行，已在归档前核对。
+
+| 检查 | 实际结果 |
+| --- | --- |
+| Windows 原生 Qt ＋软件 Runtime Q1、Q2 | 2 通过，17.25 秒 |
+| Designer 定向回归 | 100 通过，29.09 秒。筛除的 Q2 已在原生 Qt 命令单独执行 |
+| OpenSpec strict、proto 生成一致性、Ruff、mypy、Git 差异校验 | 通过，mypy 检查 648 个源文件 |
+
+```powershell
+openspec validate redesign-runtime-log-workbench --type change --strict --no-interactive
+python scripts/gen_proto.py --check
+python -m ruff check src tests
+python -m mypy --config-file mypy.ini src
+git diff --check 993a8796c4510cf5fa1850cd205b973caf0dbd57 HEAD
+
+$env:PYTHONPATH = 'src'
+$env:PYTHONIOENCODING = 'utf-8'
+$env:QT_QPA_PLATFORM = 'offscreen'
+python -m pytest -q --tb=short tests/designer/test_job_log.py tests/designer/test_log_dialog.py tests/designer/test_log_history_instance.py tests/designer/test_log_categories.py tests/designer/test_log_export.py tests/designer/test_operational_log_integration.py -k 'not testNativeWorkbenchHistoryAndWholeJobExportAfterRestart'
+
+$env:QT_QPA_PLATFORM = 'windows'
+$env:EMO_LOG_WORKBENCH_EVIDENCE_DIR = 'D:/tmp/emo-log-workbench-v24-review-native-1795317703891'
+$env:EMO_LOG_WORKBENCH_V2_4_EVIDENCE_DIR = $env:EMO_LOG_WORKBENCH_EVIDENCE_DIR
+python -m pytest -q -s --tb=short tests/designer/test_runtime_job_workbench.py::testNativeWhileLogsWarningDeviceReturnAndTimeline tests/designer/test_operational_log_integration.py::testNativeWorkbenchHistoryAndWholeJobExportAfterRestart
+```
+
+本次两条验收由 QTest 驱动实际 Qt 窗口。未另做人工点击验收、真实硬件、全部算子、全时区、冻结安装包、全仓 pytest 或远端 CI。

@@ -188,6 +188,13 @@
 - **AND** 结果显示为搜索命中列表，不将稀疏命中列表冒充完整执行树
 - **AND** 不因任务详情改为本地筛选而删除既有服务端检索能力，也不宣称尚未实现的全文搜索能力
 
+#### Scenario: Carry effective log levels from a Job into history search
+
+- **WHEN** 用户启用告警／错误快捷条件后从 Job 进入服务端高级历史查询
+- **THEN** 有效等级为 `WARN`、`ERROR` 与所选等级的交集，等级不限时查询这两个等级，页面显示实际提交的范围
+- **AND** 没有共同等级时显示空结果，不用不限等级查询或导出扩大范围
+- **AND** 历史翻页和选定范围导出沿用已提交的有效等级，完整 Job 导出仍使用该任务自己的可查询范围
+
 ### Requirement: Context and current-position navigation use available evidence
 
 系统 SHALL 允许查看本轮已加载上下文、继续加载更早记录并返回原筛选；定位当前执行位置必须具备对应 Job 的可信、连续的生命周期证据。
@@ -387,6 +394,13 @@
 - **AND** 使用轻量来源书签恢复原筛选、视图和可查询的选择/阅读锚点
 - **AND** 继续使用单个有界事件窗口与现有查询，不建立每任务长期读取器或多个持久事件缓存
 - **AND** 若原锚点已经不可查询，明确提示并显示可用范围，不伪造原位置已恢复
+
+#### Scenario: Round-trip from a temporary iteration context
+
+- **WHEN** 用户在普通告警／错误筛选下查看本轮上下文、选中 INFO 事件并打开详情，再访问关联 Job 后返回
+- **THEN** 先恢复可查询的临时范围，再恢复原事件、详情抽屉和阅读位置，即使普通告警筛选会隐藏该事件
+- **AND** 用户再返回原筛选时，恢复进入临时范围前的选中项、展开和阅读位置
+- **AND** 临时范围或位置无法恢复时保留可确认范围并提示，选择和范围均使用原有执行身份
 
 ### Requirement: Optional date-time filters preserve the existing range contract
 

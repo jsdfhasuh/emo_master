@@ -3,19 +3,23 @@ import json
 import os
 from pathlib import Path
 from threading import Event
+from uuid import uuid4
 
 import grpc
 
-from PySide2.QtCore import Qt
+from PySide2.QtCore import QCoreApplication, QEvent, QPoint, QPointF, Qt
+from PySide2.QtGui import QMouseEvent
 from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QPushButton
 
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
 from emo_master.apps.designer.state.project_store import loadProjectDocument, saveProject
 from emo_master.apps.runtime.business_sqlite.backend import initialize
+from emo_master.apps.runtime.frame_dispatch.scheduler import RunGroup, Slot
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rpc
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
+from emo_master.apps.runtime.jobs.models import JobRecord, nowMs
 from emo_master.apps.runtime.main import createRuntimeServer
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.compiler import WorkflowCompiler
@@ -36,6 +40,7 @@ def _capture(dialog, name):
     if target:
         directory = Path(target)
         directory.mkdir(parents=True, exist_ok=True)
+        QCoreApplication.processEvents()
         assert dialog.grab().save(str(directory / name))
 
 
@@ -120,6 +125,115 @@ def _runDebugFromDesignerAndReturn(window, jobId):
         editor.forceClose()
     window.openLogDialog()
     assert window.logDialog.isVisible() and window.logDialog.jobLogs.job.job_id == jobId
+
+
+def _walkRelatedJobs(dialog, service, client, projectId):
+    """Use existing run-group snapshots to make the overlapping statuses deterministic."""
+    workbench = dialog.jobLogs
+    source, detection, storage, independent = (str(uuid4()) for _ in range(4))
+    started = nowMs() - 120000
+    revision = service.loadedDocument.project.revision
+    records = service.jobRepository
+    records.create(JobRecord(source, projectId, revision, "main", acceptedAtMs=started))
+    records.update(source, status="COMPLETED", startedAtMs=started, endedAtMs=started + 20000)
+    for index in range(20):
+        other = f"q1-recent-{index}"
+        service.sqliteStore.insertJob(other, projectId, workflowId="recent-fixture")
+        service.sqliteStore.updateJobStatus(other, "COMPLETED", endedAtMs=started + 21000 + index)
+    for jobId, status in ((detection, "RUNNING"), (storage, "STOPPING"), (independent, "RUNNING")):
+        records.create(JobRecord(jobId, projectId, revision, "body", status=status,
+                                 startedAtMs=started + 19000))
+    group = RunGroup(source, {"detect": Slot("body", 1, detection), "save": Slot("body", 1, storage)},
+                     service.deviceManager, service.loadedDocument)
+    records.update(independent, runGroupId="another-group", sourceJobId=source)
+    with service.jobSupervisor._lock:
+        service.deviceManager.dispatchGroups.update((jobId, group) for jobId in group.members)
+
+    def catalogItems(section):
+        root, = workbench.directory.findItems(section, Qt.MatchExactly)
+        items = {}
+        for index in range(root.childCount()):
+            item = root.child(index)
+            jobId = item.toolTip(0)
+            if jobId:
+                items[jobId] = item
+        return items
+
+    try:
+        service.eventStore.append(source, "node.log", "关联往返定位夹具", level="WARN", projectId=projectId,
+            workflowId="main", workflowRunId=uuid4().hex, nodeId="source-marker", nodeRunId=uuid4().hex,
+            timestampMs=started + 1000, payload={"data": {"sample": 42}})
+        service.eventStore.append(detection, "node.log", "独立检测任务夹具", projectId=projectId,
+                                 workflowId="body", timestampMs=started + 21000)
+        back = next(button for button in workbench.jobPage.findChildren(QPushButton)
+                    if button.text() == "返回运行任务")
+        _click(back)
+        waitUntil(lambda: source in workbench.runs and workbench.pending is None, timeout=10)
+        active = catalogItems("运行中")
+        ended = catalogItems("最近已结束")
+        assert set(active) >= {detection, storage, independent} and source not in active
+        assert active[detection].text(2) == "运行中" and active[storage].text(2) == "停止中"
+        assert active[detection].text(0) == active[independent].text(0)
+        item = ended[source]
+        assert item.text(2) == "已完成" and "还有 2 个关联任务未结束" in item.text(5)
+        assert source not in {row.job_id for row in workbench.recent}
+        workbench.directory.setCurrentItem(item)
+        state = client.getRunState(service.runtimeInstanceId, projectId, source)
+        assert state.ok and state.run.active and state.run.run_group_id == group.groupId
+        assert "stop" in state.run.allowed_actions and workbench.stopButton.isVisible()
+        assert workbench.catalogRelatedButton.isVisible()
+        _capture(dialog, "q1-task-catalog.png")
+        _click(workbench.openButton)
+        waitUntil(lambda: workbench._upper is not None and not workbench._opening, timeout=10)
+        terminalTitle = workbench.jobTitle.text()
+        assert "已完成" in terminalTitle and "20" in terminalTitle
+
+        workbench.warning.setChecked(True)
+        workbench.search.setText("关联往返")
+        _click(workbench.filterToggle)
+        _click(workbench.technicalToggle)
+        workbench.inputs["nodeId"].setText("source-marker")
+        _click(workbench.technicalToggle)
+        _click(workbench.filterToggle)
+        workbench.mode.setCurrentIndex(1)
+        marker, = [entry for entry in workbench.window.entries if entry.nodeId == "source-marker"]
+        waitUntil(lambda: ("event", marker.eventId) in workbench._items)
+        _selectEntry(workbench, marker)
+        _click(workbench.relatedButton)
+        assert workbench.pages.currentWidget() is workbench.relatedPage
+        related = {workbench.relatedJobs.topLevelItem(i).toolTip(1): workbench.relatedJobs.topLevelItem(i)
+                   for i in range(workbench.relatedJobs.topLevelItemCount())}
+        assert set(related) == {detection, storage}
+        assert related[detection].text(2) == "运行中" and related[storage].text(2) == "停止中"
+        _capture(dialog, "q1-related-jobs.png")
+        workbench.relatedJobs.setCurrentItem(related[detection])
+        _click(workbench.openRelatedButton)
+        waitUntil(lambda: workbench.job.job_id == detection and workbench._upper is not None
+                  and not workbench._opening, timeout=10)
+        assert any(entry.message == "独立检测任务夹具" for entry in workbench.window.entries)
+        _click(workbench.returnSourceButton)
+        waitUntil(lambda: workbench.job.job_id == source and not workbench._opening
+                  and workbench._detailEntry is not None, timeout=10)
+        assert workbench.mode.currentIndex() == 1 and workbench.warning.isChecked()
+        assert workbench.search.text() == "关联往返" and workbench.inputs["nodeId"].text() == "source-marker"
+        assert workbench._detailEntry.eventId == marker.eventId and workbench.jobTitle.text() == terminalTitle
+        assert workbench.events.currentItem().data(0, Qt.UserRole) == ("event", marker.eventId)
+        waitUntil(lambda: workbench.drawer.isVisible() and workbench.drawer.width() >= workbench.drawer.minimumWidth())
+        _capture(dialog, "q1-related-return.png")
+        _click(back)
+        waitUntil(lambda: workbench.pending is None, timeout=10)
+        assert workbench.directory.currentItem().toolTip(0) == source
+        records.update(detection, status="COMPLETED", endedAtMs=nowMs())
+        records.update(storage, status="ABORTED", endedAtMs=nowMs())
+        workbench._refreshCatalog()
+        waitUntil(lambda: source not in workbench.runs and workbench.pending is None, timeout=10)
+        assert source not in catalogItems("最近已结束")
+        print(f"Q1 related fixture source {source} · members {detection}, {storage} · restored event {marker.eventId}")
+    finally:
+        records.update(independent, status="ABORTED", endedAtMs=nowMs())
+        with service.jobSupervisor._lock:
+            for jobId in group.members:
+                service.deviceManager.dispatchGroups.pop(jobId, None)
 
 
 def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_path):
@@ -217,10 +331,46 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
         waitUntil(lambda: ("event", done.eventId) not in workbench._items)
         _selectEntry(workbench, warn)
         assert workbench.events.currentItem().parent() is not None
+        call = workbench._items[("workflow", warn.workflowRunId)]
+        assert warn.workflowRunId not in call.text(0) and warn.workflowRunId in call.toolTip(0)
         _click(workbench.filterToggle)
         assert workbench.filters.isVisible()
+        _click(workbench.technicalToggle)
+        assert workbench.technicalFilters.isVisible()
+        workbench.inputs["workflowRunId"].setText(warn.workflowRunId)
+        workbench.inputs["iterationPath"].setText("0")
+        waitUntil(lambda: ("event", warn.eventId) not in workbench._items)
+        workbench.inputs["iterationPath"].setText("1")
+        waitUntil(lambda: ("event", warn.eventId) in workbench._items)
+        _selectEntry(workbench, warn)
+        _click(workbench.technicalToggle)
+        assert workbench.technicalFilters.isHidden() and workbench.inputs["iterationPath"].text() == "1"
         _capture(dialog, "q1-while-warning.png")
+        nodeInput = workbench.inputs["nodeId"]
+        candidate = nodeInput.completer()
+        candidate.setCompletionPrefix("capture")
+        assert candidate.completionCount() == 1 and candidate.currentCompletion() == warn.nodeId
+        nodeInput.setText(candidate.currentCompletion())
+        candidate.activated["QModelIndex"].emit(candidate.completionModel().index(0, 0))
+        assert workbench.inputs["workflowId"].text() == warn.workflowId
+        nodeInput.clear()
+        workbench.inputs["workflowId"].clear()
         _click(workbench.filterToggle)
+        dialog.resize(1040, 660)
+        QCoreApplication.processEvents()
+        handle = workbench.split.handle(1)
+        center = handle.rect().center()
+        oldSizes = workbench.split.sizes()
+        target = center - QPoint(40, 0)
+        QTest.mousePress(handle, Qt.LeftButton, pos=center)
+        drag = QMouseEvent(QEvent.MouseMove, QPointF(target), QPointF(handle.mapToGlobal(target)),
+                           Qt.NoButton, Qt.LeftButton, Qt.NoModifier)
+        QCoreApplication.sendEvent(handle, drag)
+        QTest.mouseRelease(handle, Qt.LeftButton, pos=handle.rect().center())
+        assert workbench.split.sizes() != oldSizes
+        assert workbench.filterToggle.isVisible() and workbench.detail.tabs.tabBar().isVisible()
+        _capture(dialog, "q1-narrow-split.png")
+        dialog.resize(1400, 860)
         workbench.mode.setCurrentIndex(1)
         assert workbench.events.currentItem().data(0, Qt.UserRole) == ("event", warn.eventId)
         workbench.mode.setCurrentIndex(0)
@@ -247,10 +397,14 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
         _click(back)
         assert workbench._detailEntry.eventId == warn.eventId and workbench.warning.isChecked()
 
+        workbench.inputs["workflowRunId"].clear()
+        workbench.inputs["iterationPath"].clear()
         _click(workbench.warning)
         waitUntil(lambda: ("event", done.eventId) in workbench._items)
         _selectEntry(workbench, done)
         assert workbench.detail.rawTree.toPlainText() == json.dumps(done.rawRecord(), ensure_ascii=False, indent=2)
+        status, = workbench.detail.readable.findItems("状态", Qt.MatchExactly)
+        assert status.text(1) == "已完成" and done.rawRecord()["payload"]["status"] == "COMPLETED"
         assert "输出摘要" in [workbench.detail.readable.topLevelItem(i).text(0)
                              for i in range(workbench.detail.readable.topLevelItemCount())]
         _capture(dialog, "q1-execution-summary.png")
@@ -285,6 +439,7 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
         _runDebugFromDesignerAndReturn(window, jobId)
         assert [record.jobId for record in service.jobRepository.all()] == [jobId]
         print(f"Q1 Job {jobId} · WARN {warn.eventId} · completed {done.eventId} · SQLite {receipt.eventId}")
+        _walkRelatedJobs(dialog, service, client, projectId)
     finally:
         releaseFirst.set()
         releaseSecond.set()

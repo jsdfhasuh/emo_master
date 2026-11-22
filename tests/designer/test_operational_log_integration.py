@@ -303,6 +303,8 @@ def testHistoryExportReadsCompleteFixedRangeAndCancellationKeepsTarget(ownedDesi
 
 
 def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow, tmp_path, monkeypatch):
+    import os
+    from pathlib import Path
     from PySide2.QtCore import Qt
     from PySide2.QtTest import QTest
     from PySide2.QtWidgets import QFileDialog, QPushButton, QTabBar
@@ -321,6 +323,11 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
     def tab(bar, index):
         QTest.mouseClick(bar, Qt.LeftButton, pos=bar.tabRect(index).center())
         assert bar.currentIndex() == index
+
+    def screenshot(name):
+        directory = Path(os.environ.get("EMO_LOG_WORKBENCH_V2_4_EVIDENCE_DIR", str(tmp_path)))
+        directory.mkdir(parents=True, exist_ok=True)
+        assert dialog.grab().save(str(directory / name))
 
     payload = WorkflowStore().toPayload("日志工作台软件走查")
     operator = IntegerAddOperator.meta
@@ -354,12 +361,17 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         assert any(row.nodeId == "sum" and row.eventType == "node.completed"
                    for row in first.sqliteStore.listJobEventsAfter(jobId))
 
-        # Persist representative additional pages through the existing Runtime event store.
-        first.eventStore.append(jobId, "node.log", "早期范围命中", level="WARN", nodeId="early",
-                                projectId=projectId, workflowId="main")
+        # Non-whole-second boundaries are shared by the recent and early fixture rows.
+        endedAt = record.endedAtMs
+        startMs = (endedAt // 1000 + 1) * 1000 + 123
+        endMs = startMs + 5
+        for timestamp, message in ((startMs - 1, "起点之前"), (startMs, "早期范围命中"), (endMs, "恰在终点")):
+            first.eventStore.append(jobId, "node.log", message, level="WARN", nodeId="early",
+                                    projectId=projectId, workflowId="main", timestampMs=timestamp)
         for index in range(205):
             first.eventStore.append(jobId, "node.log", f"分页夹具 {index + 1}",
-                level="WARN" if index == 204 else "INFO", projectId=projectId)
+                level="WARN" if index == 204 else "INFO", projectId=projectId,
+                timestampMs=startMs + 1 if index == 204 else endMs)
         first.eventStore.append("__runtime__", "device.action.failed", "同 Job 的设备摘要",
                                 projectId=projectId, payload={"jobId": jobId, "deviceId": "software"})
         first.eventStore.append("__runtime__", "node.preview.failed", "独立系统事件", projectId=projectId)
@@ -382,15 +394,37 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         dialog = window.logDialog
         jobs, history = dialog.jobLogs, dialog.view
         waitUntil(lambda: jobs.capabilities is not None, timeout=10)
+        assert jobs.catalogDateRange.bounds() == (None, None)
+        historyCalls = []
+        listJobHistory = client.listJobHistory
+
+        def observeDirectory(instance, **options):
+            if options.get("limit") != 20:
+                historyCalls.append(dict(options))
+            return listJobHistory(instance, **options)
+
+        monkeypatch.setattr(client, "listJobHistory", observeDirectory)
         click(jobs.catalogHistory)
         waitUntil(jobs.catalogNext.isEnabled, timeout=10)
+        assert "startEndedAtMs" not in historyCalls[-1] and "endEndedAtMs" not in historyCalls[-1]
+        refresh, = [button for button in jobs.catalog.findChildren(QPushButton) if button.text() == "刷新"]
+        jobs.catalogDateRange.setBounds(endedAt, None)
+        click(refresh)
+        waitUntil(lambda: jobs.pending is None, timeout=10)
+        assert historyCalls[-1]["startEndedAtMs"] == endedAt and "startTimestampMs" not in historyCalls[-1]
+        calls = len(historyCalls)
+        jobs.catalogDateRange.setBounds(endedAt + 2, endedAt + 1)
+        click(refresh)
+        assert jobs.catalogDateRange.error.isVisible() and len(historyCalls) == calls
         click(jobs.catalogNext)
         waitUntil(lambda: jobs.pending is None, timeout=10)
+        assert historyCalls[-1]["startEndedAtMs"] == endedAt and "endEndedAtMs" not in historyCalls[-1]
+        jobs.catalogDateRange.setBounds(endedAt, None)
         item, = jobs.directory.findItems("main", Qt.MatchExactly | Qt.MatchRecursive)
         assert item.toolTip(0) == jobId and item.text(2) == "已完成"
         jobs.directory.setCurrentItem(item)
         assert not jobs.stopButton.isVisible()
-        assert dialog.grab().save(str(tmp_path / "q2-history.png"))
+        screenshot("q2-directory-date.png")
         click(jobs.openButton)
         waitUntil(lambda: jobs.window is not None and not jobs._opening and jobs._upper is not None, timeout=10)
         assert jobs.instance == "q2-after-restart"
@@ -398,8 +432,13 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         assert {entry.runtimeInstanceId for entry in jobs.window.entries} == {"q2-before-restart"}
         assert all(entry.message != "早期范围命中" for entry in jobs.window.entries)
         jobs.warning.setChecked(True)
-
         click(jobs.filterToggle)
+        jobs.dateRange.setBounds(startMs, endMs)
+        waitUntil(lambda: "00.123" in jobs.rangeStatus.text() or ".123" in jobs.rangeStatus.text())
+        recentWarn = next(row for row in jobs.window.entries if row.message == "分页夹具 205")
+        assert ("event", recentWarn.eventId) in jobs._items
+        assert jobs.dateRange.startEdit.dateTime().toMSecsSinceEpoch() == startMs
+
         jobs.inputs["nodeId"].setText("early")
         query, = [button for button in jobs.filters.findChildren(QPushButton)
                   if button.text() == "查询整个历史范围…"]
@@ -408,10 +447,38 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         assert [(entry.jobId, entry.message) for entry in history._entries] == [(jobId, "早期范围命中")]
         assert history._historyReply["runtimeInstanceId"] == "q2-after-restart"
         assert "Runtime 历史" in history.historyStatus.text()
-        assert dialog.grab().save(str(tmp_path / "q2-range-query.png"))
+        assert history.historyDateRange.bounds() == (startMs, endMs)
+        assert history._historyFilters["startTimestampMs"] == startMs
+        assert history._historyFilters["endTimestampMs"] == endMs
+        assert history.historyInputs["projectId"].isReadOnly() and history.historyInputs["jobId"].isReadOnly()
+        screenshot("q2-history-date.png")
+
+        applied = history._historyReply
+        history.historyDateRange.setBounds(endMs, startMs)
+        click(history.historyQueryButton)
+        assert history._historyFuture is None and history._historyReply is applied and history.historyDateRange.error.isVisible()
+        assert [entry.message for entry in history._entries] == ["早期范围命中"]
+        targetRange = tmp_path / "selected-range.json"
+        monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_: (str(targetRange), "JSON (*.json)"))
+        click(history.historyExportButton)
+        waitUntil(lambda: targetRange.exists() and history._historyFuture is None, timeout=10)
+        selected = json.loads(targetRange.read_text(encoding="utf-8"))
+        assert [event["message"] for event in selected["entries"]] == ["早期范围命中"]
+        assert selected["filters"]["startTimestampMs"] == startMs and selected["filters"]["endTimestampMs"] == endMs
+
+        history.historyDateRange.setBounds(startMs, startMs)
+        click(history.historyQueryButton)
+        waitUntil(lambda: history._historyFuture is None, timeout=10)
+        assert not history._entries and history._historyFilters["endTimestampMs"] == startMs
+        history.historyDateRange.setBounds(None, None)
+        click(history.historyQueryButton)
+        waitUntil(lambda: history._historyFuture is None, timeout=10)
+        assert not any(key in history._historyFilters for key in ("startTimestampMs", "endTimestampMs"))
+        assert [row.message for row in history._entries] == ["起点之前", "早期范围命中", "恰在终点"]
 
         click(dialog.historyBack)
         assert jobs.warning.isChecked() and jobs.inputs["nodeId"].text() == "early"
+        assert jobs.dateRange.bounds() == (startMs, endMs)
         waitUntil(lambda: "节点 ID early" in jobs.rangeStatus.text() and jobs.events.topLevelItemCount() == 0)
         click(jobs.filterToggle)
         expected = client.queryRuntimeLogs(runtimeInstanceId=jobs.instance, projectId=projectId,
@@ -442,12 +509,14 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         assert firstPage[0]["afterEventId"] == 0 and firstPage[1]["hasMore"]
         assert secondPage[0]["afterEventId"] == firstPage[1]["nextEventId"]
         assert secondPage[0]["upperEventId"] == firstPage[1]["upperEventId"] == expected["upperEventId"]
-        assert all(not options.get("latestFirst") and "beforeEventId" not in options and "levels" not in options
+        assert all(not options.get("latestFirst")
+                   and not {"beforeEventId", "levels", "startTimestampMs", "endTimestampMs", "nodeId"} & options.keys()
                    for options, _ in exportPages)
-        assert dialog.grab().save(str(tmp_path / "q2-export.png"))
+        screenshot("q2-whole-job-export.png")
 
         window.appendLocalEvent(dict(level="ERROR", eventType="runtime.client.failed", jobId=jobId,
-            projectId=projectId, code="Q2_DESIGNER", message="Designer 客户端错误夹具"), source="runtime_client")
+            projectId=projectId, code="Q2_DESIGNER", message="Designer 客户端错误夹具", timestampMs=startMs),
+            source="runtime_client")
         writer = window._logResources["writer"]
         assert writer.waitUntilProcessed(jobId, writer.sequence)
         tab(dialog.sources, 1)
@@ -455,8 +524,11 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         localTabs = dialog.sourcePages.widget(1).findChild(QTabBar)
         tab(localTabs, 1)
         local = dialog.designerViews[1]
+        click(local.historyFiltersToggle)
+        local.historyDateRange.setBounds(startMs, endMs)
         click(local.historyQueryButton)
-        waitUntil(lambda: any(entry.jobId == jobId and entry.code == "Q2_DESIGNER" for entry in local._entries))
+        waitUntil(lambda: local._historyFuture is None)
+        assert [(entry.jobId, entry.code) for entry in local._entries] == [(jobId, "Q2_DESIGNER")]
         tab(dialog.sources, 0)
         assert jobs.warning.isChecked() and jobs.inputs["nodeId"].text() == "early"
         tab(dialog.runtimeNavigation, 1)
@@ -464,7 +536,8 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         assert [entry.message for entry in dialog.system._entries] == ["独立系统事件"]
         tab(dialog.runtimeNavigation, 0)
         assert jobs.job.job_id == jobId and jobs.warning.isChecked()
-        print(f"Q2 Job {jobId} · query upper eventId {expected['upperEventId']} · exported {len(rows)} records")
+        print(f"Q2 Job {jobId} · [start, end) {startMs}, {endMs} · catalog endedAt {endedAt}"
+              f" · upper eventId {expected['upperEventId']} · exported {len(rows)} records")
     finally:
         if window is not None:
             window.close()

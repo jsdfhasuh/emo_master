@@ -8,28 +8,31 @@ from types import SimpleNamespace
 from PySide2.QtCore import QTimer, Qt, Signal
 from PySide2.QtWidgets import (
     QAbstractItemView, QCheckBox, QComboBox, QGridLayout, QHBoxLayout, QHeaderView,
-    QLabel, QLineEdit, QPushButton, QSplitter, QStackedWidget, QTreeWidget,
+    QLabel, QLineEdit, QPushButton, QSizePolicy, QSplitter, QStackedWidget, QTreeWidget,
     QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 
+from emo_master.apps.designer.presenters.node_run_presenter import frameworkLogMessage
 from emo_master.apps.designer.services.display_calls import DisplayCallContext
 from emo_master.apps.designer.state.job_log import ExecutionTree, JobEventWindow, jobExecutionTime
+from emo_master.apps.designer.ui.log_filters import (
+    OptionalDateTimeRange, describeDateBounds, deviceChoices as _deviceChoices, includesTimestamp, updateIdentityChoices,
+)
 from emo_master.apps.designer.ui.log_record_detail import LogRecordDetail
 from emo_master.ui.communication_panel import DeviceDiagnosticsView, exportDeviceCache
 
 
 _TERMINAL = {"COMPLETED", "FAILED", "ABORTED"}
+_UNFINISHED = {"ACCEPTED", "STARTING", "RUNNING", "STOPPING"}
+_UNFINISHED_PROCESSING = "本次执行已结束，但 Runtime 尚未完成与本次任务有关的处理。当前接口未提供具体原因。"
 _STATUS = {
     "ACCEPTED": "已受理", "STARTING": "启动中", "RUNNING": "运行中", "STOPPING": "停止中",
     "COMPLETED": "已完成", "FAILED": "失败", "ABORTED": "已停止",
 }
 _ROLE = Qt.UserRole
-_LABELS = (
-    ("projectId", "工程 ID"), ("workflowId", "工作流 ID"), ("nodeId", "节点 ID"),
-    ("deviceId", "设备 ID"), ("component", "模块"), ("eventType", "事件类型"),
-    ("workflowRunId", "调用 ID"), ("iterationPath", "轮次路径（原始索引，如 0/1）"),
-    ("startTimestampMs", "开始时间 ms（含）"), ("endTimestampMs", "结束时间 ms（不含）"),
-)
+_COMMON_FIELDS = (("workflowId", "工作流 ID"), ("nodeId", "节点 ID"), ("deviceId", "设备 ID"))
+_TECHNICAL_FIELDS = (("projectId", "工程 ID"), ("component", "模块"), ("eventType", "事件类型"),
+                     ("workflowRunId", "调用 ID"), ("iterationPath", "轮次路径（原始索引，如 0/1）"))
 
 
 def _label():
@@ -61,18 +64,17 @@ def _stamp(value):
     return datetime.fromtimestamp(value / 1000).isoformat(sep=" ", timespec="milliseconds") if value else "未记录"
 
 
-def _deviceChoices(entry):
-    payload = entry.payload
-    direct = payload.get("deviceId")
-    if isinstance(direct, str) and direct:
-        return [(payload.get("slot", "") or direct, direct, payload.get("scope") or payload)]
-    bindings = payload.get("deviceBindings")
-    if not isinstance(bindings, dict):
-        return []
-    diagnostics = payload.get("diagnostics")
-    slot = diagnostics.get("deviceSlot") if isinstance(diagnostics, dict) else None
-    return [(key, binding["deviceId"], binding.get("scope") or {}) for key, binding in bindings.items()
-            if (not slot or key == slot) and isinstance(binding, dict) and binding.get("deviceId")]
+def _jobKey(job):
+    return (job.project_id, job.job_id) if job is not None else None
+
+
+def _jobName(job):
+    return getattr(job, "workflow_name", "") or job.workflow_id or job.job_id
+
+
+
+def _jobMessage(job):
+    return frameworkLogMessage("job." + job.status.lower(), job.message)
 
 
 class RuntimeJobLogs(QWidget):
@@ -114,6 +116,9 @@ class RuntimeJobLogs(QWidget):
         self._dirty = False
         self._shownMode = 0
         self._historyMode = False
+        self._sourceBookmark = None
+        self._relatedSource = None
+        self._restoreLocation = None
         self.work = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-job-logs")
         self.pending = None
         self.calls = {}
@@ -131,6 +136,7 @@ class RuntimeJobLogs(QWidget):
         root.addWidget(self.pages)
         self._buildCatalog()
         self._buildDetail()
+        self._buildRelated()
         self._buildDevice()
         self.poll = QTimer(self)
         self.poll.setInterval(40)
@@ -154,17 +160,20 @@ class RuntimeJobLogs(QWidget):
         _button(row, "刷新", self._refreshCatalog)
         panel.addLayout(row)
         self.catalogFilters = QWidget()
-        filters = QHBoxLayout(self.catalogFilters)
-        filters.setContentsMargins(0, 0, 0, 0)
-        self.catalogProject, self.catalogFrom, self.catalogTo = (
-            QLineEdit(placeholderText=label) for label in ("工程 ID", "结束时间起点 ms（含）", "结束时间终点 ms（不含）"))
+        catalogLayout = QVBoxLayout(self.catalogFilters)
+        catalogLayout.setContentsMargins(0, 0, 0, 0)
+        filters = QHBoxLayout()
+        self.catalogProject = QLineEdit(placeholderText="工程 ID，留空不限")
         self.catalogStatus = QComboBox()
         self.catalogStatus.addItem("全部终态", "")
         for value in ("COMPLETED", "FAILED", "ABORTED"):
             self.catalogStatus.addItem(_STATUS[value], value)
-        for control in (self.catalogProject, self.catalogStatus, self.catalogFrom, self.catalogTo):
-            filters.addWidget(control)
+        filters.addWidget(self.catalogProject, 1)
+        filters.addWidget(self.catalogStatus)
         self.catalogNext = _button(filters, "下一页", lambda: self._readCatalogHistory(True))
+        catalogLayout.addLayout(filters)
+        self.catalogDateRange = OptionalDateTimeRange("任务结束时间范围")
+        catalogLayout.addWidget(self.catalogDateRange)
         panel.addWidget(self.catalogFilters)
         self.catalogFilters.hide()
         self.catalogHint = _label()
@@ -172,10 +181,12 @@ class RuntimeJobLogs(QWidget):
         self.directory = _tree(["运行任务", "工程", "状态", "实际开始", "运行时间", "最近活动"])
         self.directory.setColumnWidth(3, 185)
         self.directory.setColumnWidth(4, 145)
+        self.directory.setColumnWidth(5, 270)
         panel.addWidget(self.directory, 1)
         actions = QHBoxLayout()
         self.openButton = _button(actions, "查看日志", self._openSelectedJob)
         self.stopButton = _button(actions, "停止任务", self._stopSelectedJob)
+        self.catalogRelatedButton = _button(actions, "查看关联任务", self._openCatalogRelated)
         actions.addStretch(1)
         panel.addLayout(actions)
         self.directory.itemSelectionChanged.connect(self._catalogActions)
@@ -188,12 +199,19 @@ class RuntimeJobLogs(QWidget):
         panel = QVBoxLayout(self.jobPage)
         header = QHBoxLayout()
         _button(header, "返回运行任务", self.home)
+        self.returnSourceButton = _button(header, "返回来源任务", self._returnSource)
+        self.returnSourceButton.hide()
         self.jobTitle = _label()
         header.addWidget(self.jobTitle, 1)
+        self.relatedButton = _button(header, "查看关联任务", self._openJobRelated)
+        self.relatedButton.hide()
         self.infoToggle = _button(header, "任务信息", self._toggleInfo)
         self.exportButton = _button(header, "导出此 Job 完整记录…", self._export)
         self.exportButton.setToolTip("包含仍可查询的整个任务范围，包括未加载至当前窗口的记录")
         panel.addLayout(header)
+        self.jobSecondary = _label()
+        self.jobSecondary.hide()
+        panel.addWidget(self.jobSecondary)
         self.info = _label()
         panel.addWidget(self.info)
         self.info.hide()
@@ -214,24 +232,50 @@ class RuntimeJobLogs(QWidget):
         _button(row, "定位当前", self._locate)
         panel.addLayout(row)
         self.filters = QWidget()
-        filterLayout = QGridLayout(self.filters)
+        self.filters.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        filterLayout = QVBoxLayout(self.filters)
         filterLayout.setContentsMargins(0, 0, 0, 0)
+        self.filterScope = _label()
+        self.filterScope.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        filterLayout.addWidget(self.filterScope)
+        common = QGridLayout()
         self.level = QComboBox()
         self.level.addItems(("全部等级", "DEBUG", "INFO", "WARN", "ERROR"))
-        filterLayout.addWidget(QLabel("等级"), 0, 0)
-        filterLayout.addWidget(self.level, 0, 1)
+        common.addWidget(QLabel("等级"), 0, 0)
+        common.addWidget(self.level, 0, 1)
         self.inputs = {}
-        for index, (key, text) in enumerate(_LABELS, start=1):
-            edit = QLineEdit()
+        for index, (key, title) in enumerate(_COMMON_FIELDS, start=1):
+            edit = QLineEdit(placeholderText="输入精确 ID 或检索已加载名称")
+            edit.setAccessibleName(title)
             self.inputs[key] = edit
             row, column = divmod(index, 2)
-            filterLayout.addWidget(QLabel(text), row, column * 2)
-            filterLayout.addWidget(edit, row, column * 2 + 1)
+            common.addWidget(QLabel(title), row, column * 2)
+            common.addWidget(edit, row, column * 2 + 1)
             edit.textChanged.connect(self._scheduleRender)
+        filterLayout.addLayout(common)
+        self._effectiveDateBounds = (None, None)
+        self.dateRange = OptionalDateTimeRange()
+        self.dateRange.changed.connect(self._acceptDateFilter)
+        filterLayout.addWidget(self.dateRange)
         commands = QHBoxLayout()
+        self.technicalToggle = _button(commands, "技术条件", self._toggleTechnicalFilters)
+        self.technicalToggle.setCheckable(True)
         _button(commands, "查询整个历史范围…", self._advancedHistory)
         commands.addStretch(1)
-        filterLayout.addLayout(commands, len(_LABELS) // 2 + 1, 0, 1, 4)
+        filterLayout.addLayout(commands)
+        self.technicalFilters = QWidget()
+        technical = QGridLayout(self.technicalFilters)
+        technical.setContentsMargins(0, 0, 0, 0)
+        for index, (key, title) in enumerate(_TECHNICAL_FIELDS):
+            edit = QLineEdit()
+            edit.setAccessibleName(title)
+            self.inputs[key] = edit
+            row, column = divmod(index, 2)
+            technical.addWidget(QLabel(title), row, column * 2)
+            technical.addWidget(edit, row, column * 2 + 1)
+            edit.textChanged.connect(self._scheduleRender)
+        filterLayout.addWidget(self.technicalFilters)
+        self.technicalFilters.hide()
         panel.addWidget(self.filters)
         self.filters.hide()
 
@@ -250,7 +294,11 @@ class RuntimeJobLogs(QWidget):
         self.returnContext.hide()
         panel.addLayout(row)
         self.rangeStatus = _label()
-        panel.addWidget(self.rangeStatus)
+        filterStatus = QHBoxLayout()
+        filterStatus.addWidget(self.rangeStatus, 1)
+        self.clearFilters = _button(filterStatus, "清除筛选", self._resetFilters)
+        self.clearFilters.hide()
+        panel.addLayout(filterStatus)
 
         self.split = QSplitter(Qt.Horizontal)
         self.events = _tree(["事件 / 执行结构", "等级 / 状态", "时间", "运行时间"])
@@ -299,6 +347,26 @@ class RuntimeJobLogs(QWidget):
         self.events.itemCollapsed.connect(lambda item: self._expanded.discard(item.data(0, _ROLE)))
         self.events.verticalScrollBar().sliderMoved.connect(self._readAt)
         self.events.viewport().installEventFilter(self)
+
+    def _buildRelated(self):
+        self.relatedPage = QWidget()
+        panel = QVBoxLayout(self.relatedPage)
+        header = QHBoxLayout()
+        _button(header, "返回", self._leaveRelated)
+        self.relatedTitle = _label()
+        header.addWidget(self.relatedTitle, 1)
+        panel.addLayout(header)
+        self.relatedJobs = _tree(["关联任务", "Job", "状态", "运行时间"])
+        self.relatedJobs.setColumnWidth(3, 150)
+        panel.addWidget(self.relatedJobs, 1)
+        actions = QHBoxLayout()
+        self.openRelatedButton = _button(actions, "查看日志", self._openRelatedJob)
+        self.openRelatedButton.setEnabled(False)
+        actions.addStretch(1)
+        panel.addLayout(actions)
+        self.relatedJobs.itemSelectionChanged.connect(self._relatedActions)
+        self.relatedJobs.itemDoubleClicked.connect(lambda *_: self._openRelatedJob())
+        self.pages.addWidget(self.relatedPage)
 
     def _buildDevice(self):
         self.devicePage = QWidget()
@@ -358,6 +426,8 @@ class RuntimeJobLogs(QWidget):
         self.history.clear()
         self.historyCursor = ""
         self.job = self.window = self._staged = self.structure = None
+        self._sourceBookmark = self._relatedSource = self._restoreLocation = None
+        self.returnSourceButton.hide()
         self._upper = self._before = self._earlierUpper = None
         self._opening = False
         self.interrupted()
@@ -426,7 +496,7 @@ class RuntimeJobLogs(QWidget):
             self._updateTimes()
         if self._ticks % 3 or self.pending is not None or self._historyMode and self.pages.currentWidget() is self.catalog:
             return
-        if self.pages.currentWidget() in (self.jobPage, self.catalog):
+        if self.pages.currentWidget() in (self.jobPage, self.catalog, self.relatedPage):
             self._refreshCatalog()
 
     def _refreshCatalog(self):
@@ -444,16 +514,16 @@ class RuntimeJobLogs(QWidget):
         def request(context):
             features = set(capabilities) if capabilities is not None else set(client.getRuntimeInfo().capabilities)
             runs = client.listRuns(instance, "", includeTerminal="job_history_query_v1" not in features)
-            if not runs.ok:
-                raise ValueError(runs.message)
+            if not runs.ok or getattr(runs, "runtime_instance_id", "") not in ("", instance):
+                raise ValueError(runs.message or "Runtime 实例已切换。")
             recent = None
             if "job_history_query_v1" in features and isCatalog:
                 recent = client.listJobHistory(instance, limit=20, cancellation=context)
-                if not recent.ok:
-                    raise ValueError(recent.message)
+                if not recent.ok or recent.runtime_instance_id != instance:
+                    raise ValueError(recent.message or "Runtime 实例已切换。")
             selected = None
             if selectedJob is not None:
-                selected = next((row for row in runs.runs if row.job_id == selectedJob.job_id), None)
+                selected = next((row for row in runs.runs if _jobKey(row) == _jobKey(selectedJob)), None)
                 if selected is None and getattr(selectedJob, "active", False):
                     state = client.getRunState(instance, selectedJob.project_id, selectedJob.job_id)
                     if state.ok:
@@ -468,19 +538,22 @@ class RuntimeJobLogs(QWidget):
 
         def accept(value):
             self.capabilities, runs, recent, selected = value
-            self.runs = {run.job_id: run for run in runs}
+            self.runs = {run.job_id: run for run in runs
+                         if getattr(run, "runtime_instance_id", "") in ("", instance)}
             self.activity = {key: value for key, value in self.activity.items() if key in self.runs}
             if recent is not None:
                 self.recent = tuple(recent.jobs)
             elif "job_history_query_v1" not in self.capabilities:
                 self.recent = tuple(run for run in runs if run.status in _TERMINAL)
             if self.job is not None and self.pages.currentWidget() is self.jobPage:
-                if selected is not None and selected.job_id == self.job.job_id:
+                if selected is not None and _jobKey(selected) == _jobKey(self.job):
                     self.job = selected
                 if self._opening:
                     self._requestLatest()
                 self._updateTimes()
             self._renderCatalog()
+            if self.pages.currentWidget() is self.relatedPage:
+                self._renderRelated()
 
         self._read(request, accept, self.catalogHint)
 
@@ -499,19 +572,14 @@ class RuntimeJobLogs(QWidget):
         cursor = self.historyCursor if nextPage else ""
         if nextPage and not cursor:
             return
-        try:
-            if nextPage:
-                scope = self.historyScope
-            else:
-                status = self.catalogStatus.currentData()
-                scope = dict(projectId=self.catalogProject.text().strip(), statuses=(status,) if status else ())
-                if self.catalogFrom.text().strip():
-                    scope["startEndedAtMs"] = int(self.catalogFrom.text())
-                if self.catalogTo.text().strip():
-                    scope["endEndedAtMs"] = int(self.catalogTo.text())
-        except ValueError:
-            self.catalogHint.setText("结束时间需使用整数毫秒。")
-            return
+        if nextPage:
+            scope = self.historyScope
+        else:
+            if not self.catalogDateRange.isValidRange():
+                return
+            status = self.catalogStatus.currentData()
+            scope = dict(projectId=self.catalogProject.text().strip(), statuses=(status,) if status else (),
+                         **self.catalogDateRange.options("startEndedAtMs", "endEndedAtMs"))
 
         def accept(reply):
             if not reply.ok or reply.runtime_instance_id != instance:
@@ -526,18 +594,21 @@ class RuntimeJobLogs(QWidget):
 
     def _renderCatalog(self):
         selected = self._selectedJob()
-        selectedId = selected.job_id if selected else ""
+        selectedKey = _jobKey(selected)
         scroll = self.directory.verticalScrollBar().value()
         self.directory.blockSignals(True)
         self.directory.clear()
         self.catalogTitle.setText("历史任务" if self._historyMode else "运行任务")
-        active = {key: row for key, row in self.runs.items() if row.active}
+        current = {_jobKey(row): row for row in self.runs.values()}
         if self._historyMode:
-            groups = [("终态任务", [self.runs.get(row.job_id, row) for row in self.history])]
+            groups = [("终态任务", [current.get(_jobKey(row), row) for row in self.history])]
         else:
-            groups = [("正在运行", tuple(active.values())), ("最近已结束", sorted(
-                (row for row in self.recent if row.job_id not in active),
-                key=lambda row: (row.ended_at_ms, row.job_id), reverse=True))]
+            unfinished = [row for row in current.values() if row.status in _UNFINISHED]
+            ended = {_jobKey(row): current.get(_jobKey(row), row) for row in self.recent}
+            ended.update((key, row) for key, row in current.items() if row.status in _TERMINAL and row.active)
+            groups = [("运行中", sorted(unfinished, key=lambda row: (row.accepted_at_ms, row.job_id))),
+                      ("最近已结束", sorted((row for row in ended.values() if row.status in _TERMINAL),
+                                           key=lambda row: (row.ended_at_ms, row.job_id), reverse=True))]
         for title, rows in groups:
             group = QTreeWidgetItem([title])
             group.setFlags(Qt.ItemIsEnabled)
@@ -546,23 +617,28 @@ class RuntimeJobLogs(QWidget):
             if not rows:
                 group.addChild(QTreeWidgetItem(["暂无任务"]))
             for job in rows:
-                name = getattr(job, "workflow_name", "") or job.workflow_id or job.job_id
                 timing = jobExecutionTime(job)
-                item = QTreeWidgetItem([name, job.project_id, _STATUS.get(job.status, job.status),
-                    _stamp(timing.startedAtMs), timing.display(), self.activity.get(job.job_id, job.message)])
+                hint = self._secondaryStatus(job)
+                activity = self.activity.get(job.job_id, _jobMessage(job))
+                item = QTreeWidgetItem([_jobName(job), job.project_id, _STATUS.get(job.status, job.status),
+                    _stamp(timing.startedAtMs), timing.display(), " · ".join(filter(None, (hint, activity)))])
                 item.setData(0, _ROLE, job)
                 item.setToolTip(0, job.job_id)
-                item.setToolTip(5, item.text(5))
+                tip = "\n".join(filter(None, (_UNFINISHED_PROCESSING, activity))) if hint == "结束处理未完成" else item.text(5)
+                item.setToolTip(5, tip)
                 group.addChild(item)
-                if job.job_id == selectedId:
+                if _jobKey(job) == selectedKey:
                     self.directory.setCurrentItem(item)
         self.directory.verticalScrollBar().setValue(scroll)
         self.directory.blockSignals(False)
         if self.capabilities is not None:
             supported = "job_history_query_v1" in self.capabilities
-            self.catalogHint.setText("历史目录为终态任务，可按结束时间翻页。" if self._historyMode and supported
-                else f"Runtime {self.instance}" if supported
-                else "跨重启任务目录不可用。仍可使用 Runtime 高级历史查询。")
+            if self._historyMode and supported:
+                dates = describeDateBounds((self.historyScope.get("startEndedAtMs"), self.historyScope.get("endEndedAtMs")))
+                self.catalogHint.setText("终态任务 · 结束时间" + (f" · {dates}" if dates else "不限"))
+            else:
+                self.catalogHint.setText(f"Runtime {self.instance}" if supported else
+                    "跨重启任务目录不可用。仍可使用 Runtime 高级历史查询。")
             self.catalogHistory.setEnabled(supported)
         self.catalogNext.setEnabled(bool(self.historyCursor))
         self._catalogActions()
@@ -575,6 +651,114 @@ class RuntimeJobLogs(QWidget):
         job = self._selectedJob()
         self.openButton.setEnabled(job is not None)
         self.stopButton.setVisible(bool(job and not self._historyMode and "stop" in getattr(job, "allowed_actions", ())))
+        members = self._relatedMembers(job)
+        self.catalogRelatedButton.setVisible(bool(members))
+        self.stopButton.setText("停止关联任务" if members and job.status in _TERMINAL else "停止任务")
+        self.stopButton.setToolTip("可向 Runtime 发送停止请求，结果以实际返回为准")
+
+    def _relatedMembers(self, job):
+        if job is None or not job.project_id or not self.instance:
+            return ()
+        source = self.runs.get(job.job_id)
+        if (_jobKey(source) != _jobKey(job) or source.runtime_instance_id != self.instance
+                or not source.run_group_id):
+            return ()
+        return tuple(sorted((row for row in self.runs.values()
+                             if row.job_id != source.job_id and row.status in _UNFINISHED
+                             and row.runtime_instance_id == self.instance and row.project_id == source.project_id
+                             and row.run_group_id == source.run_group_id and row.source_job_id == source.job_id),
+                            key=lambda row: (row.accepted_at_ms, row.job_id)))
+
+    def _secondaryStatus(self, job):
+        if job.status not in _TERMINAL or not getattr(job, "active", False):
+            return ""
+        members = self._relatedMembers(job)
+        return f"还有 {len(members)} 个关联任务未结束" if members else "结束处理未完成"
+
+    def _openCatalogRelated(self):
+        self._openRelated(self._selectedJob(), catalog=True)
+
+    def _openJobRelated(self):
+        self._openRelated(self.job, catalog=False)
+
+    def _openRelated(self, job, *, catalog):
+        if not self._relatedMembers(job):
+            return
+        if not catalog and self.window is not None:
+            self._rememberAnchor()
+            self.window.pause()
+        self._relatedSource = job
+        self._relatedFromCatalog = catalog
+        self.pages.setCurrentWidget(self.relatedPage)
+        self._renderRelated()
+
+    def _renderRelated(self):
+        source = self._relatedSource
+        if source is None:
+            return
+        members = self._relatedMembers(source)
+        selected = self.relatedJobs.currentItem()
+        selectedKey = _jobKey(selected.data(0, _ROLE)) if selected is not None else None
+        self.relatedTitle.setText(f"{_jobName(source)} · " + (f"还有 {len(members)} 个关联任务未结束" if members
+                                  else "当前快照没有可确认的未结束关联任务。"))
+        self.relatedJobs.clear()
+        for job in members:
+            item = QTreeWidgetItem([_jobName(job), job.job_id[:8], _STATUS[job.status], jobExecutionTime(job).display()])
+            item.setData(0, _ROLE, job)
+            item.setToolTip(1, job.job_id)
+            self.relatedJobs.addTopLevelItem(item)
+            if _jobKey(job) == selectedKey:
+                self.relatedJobs.setCurrentItem(item)
+        self._relatedActions()
+
+    def _relatedActions(self):
+        self.openRelatedButton.setEnabled(self.relatedJobs.currentItem() is not None)
+
+    def _leaveRelated(self):
+        self._relatedSource = None
+        self.pages.setCurrentWidget(self.catalog if self._relatedFromCatalog else self.jobPage)
+        if self._dirty and not self._relatedFromCatalog:
+            self._render()
+
+    def _openRelatedJob(self):
+        selected = self.relatedJobs.currentItem()
+        source = self._relatedSource
+        if selected is None or source is None:
+            return
+        key = _jobKey(selected.data(0, _ROLE))
+        member = next((row for row in self._relatedMembers(source) if _jobKey(row) == key), None)
+        if member is None:
+            self._renderRelated()
+            return
+        bookmark = {"job": dict(jobId=source.job_id, projectId=source.project_id, workflowId=source.workflow_id),
+                    "catalog": self._relatedFromCatalog, "instance": self.instance}
+        if not self._relatedFromCatalog and self.window is not None:
+            bookmark.update(filters=self._captureFilters(), mode=self.mode.currentIndex(),
+                            selection=self._selection, anchors=dict(self._anchors), expanded=set(self._expanded),
+                            drawer=not self.drawer.isHidden(), info=not self.info.isHidden(),
+                            detailTab=self.detail.tabs.currentIndex(), showTimes=self.timeRange.isChecked(),
+                            first=self.window.firstEventId, last=self.window.lastEventId,
+                            upper=max(self._upper or 0, self.window.lastEventId or 0))
+        self._relatedSource = None
+        self.openJob(member, sourceBookmark=bookmark)
+
+    def _returnSource(self):
+        bookmark = self._sourceBookmark
+        if bookmark is None or bookmark["instance"] != self.instance:
+            return
+        source = bookmark["job"]
+        if bookmark["catalog"]:
+            self.home()
+            for index in range(self.directory.topLevelItemCount()):
+                group = self.directory.topLevelItem(index)
+                for childIndex in range(group.childCount()):
+                    item = group.child(childIndex)
+                    if _jobKey(item.data(0, _ROLE)) == (source["projectId"], source["jobId"]):
+                        self.directory.setCurrentItem(item)
+                        self.directory.scrollToItem(item)
+                        return
+        else:
+            self.openJob(source, restore=bookmark)
 
     def _stopSelectedJob(self):
         job, client, instance = self._selectedJob(), self.client, self.instance
@@ -597,8 +781,14 @@ class RuntimeJobLogs(QWidget):
 
     def home(self):
         self._cancel()
+        self.redraw.stop()
         self._opening = False
         self.job = self.window = self.structure = self._staged = None
+        self.events.clear()
+        self._items.clear()
+        self._branches.clear()
+        self._sourceBookmark = self._relatedSource = self._restoreLocation = None
+        self.returnSourceButton.hide()
         self._upper = self._before = None
         self._closeDrawer()
         self.pages.setCurrentWidget(self.catalog)
@@ -609,16 +799,22 @@ class RuntimeJobLogs(QWidget):
         if job is not None:
             self.openJob(job)
 
-    def openJob(self, job, *, eventId=None, upper=None, focus=None):
+    def openJob(self, job, *, eventId=None, upper=None, focus=None, sourceBookmark=None, restore=None):
         if isinstance(job, dict):
             jobId, projectId = job["jobId"], job["projectId"]
-            known = self.runs.get(jobId) or next((row for row in (*self.recent, *self.history)
-                if row.job_id == jobId and row.project_id == projectId), None)
+            current = self.runs.get(jobId)
+            known = current if _jobKey(current) == (projectId, jobId) else next((row for row in (*self.recent, *self.history)
+                if _jobKey(row) == (projectId, jobId)), None)
             job = known or SimpleNamespace(job_id=jobId, project_id=projectId,
                 workflow_id=job.get("workflowId", ""), status="", message="", accepted_at_ms=0,
                 started_at_ms=0, ended_at_ms=0, error_code="")
         self._cancel()
+        self.redraw.stop()
+        self.window = self.structure = None
+        self.events.clear()
         self.job = job
+        self._sourceBookmark = sourceBookmark
+        self.returnSourceButton.setVisible(sourceBookmark is not None)
         self._anchors.clear()
         self._expanded.clear()
         self._selection = ("event", eventId) if eventId else None
@@ -627,16 +823,20 @@ class RuntimeJobLogs(QWidget):
         self._closeDrawer()
         self.jobHint.clear()
         self.exportFeedback("", False)
-        for edit in (*self.inputs.values(), self.search):
-            edit.clear()
-        self.warning.setChecked(False)
-        self.level.setCurrentIndex(0)
+        self.filters.hide()
+        self.technicalToggle.setChecked(False)
+        self._resetFilters()
         self.mode.setCurrentIndex(0)
+        if restore is not None:
+            self._restoreFilters(restore["filters"])
+            self.mode.setCurrentIndex(restore["mode"])
+            self.info.setVisible(restore["info"])
+            self.timeRange.setChecked(restore["showTimes"])
         self.pages.setCurrentWidget(self.jobPage)
-        self._openLatest(eventId=eventId, upper=upper)
+        self._openLatest(eventId=eventId, upper=upper, restore=restore)
         self._updateTimes()
 
-    def _openLatest(self, *, eventId=None, upper=None, locate=False):
+    def _openLatest(self, *, eventId=None, upper=None, locate=False, restore=None):
         if self.job is None:
             return
         self._cancel()
@@ -646,6 +846,9 @@ class RuntimeJobLogs(QWidget):
         self.window = JobEventWindow(self.job.job_id, self.maximumEntries)
         self.structure = None
         self._upper = self._before = self._earlierUpper = None
+        self._restoreLocation = restore
+        if restore is not None and restore["last"] is not None:
+            eventId, upper = restore["last"], restore["upper"]
         self._targetEvent, self._targetUpper = eventId, upper
         self._locateAfterLoad = locate
         self._staged = deque(maxlen=self.maximumEntries)
@@ -673,6 +876,7 @@ class RuntimeJobLogs(QWidget):
             return
         client, query = self.client, self._queryScope()
         target = self._targetEvent
+        restore = self._restoreLocation
         readerGeneration = self._readerGeneration
         if target:
             query.update(beforeEventId=target + 1, upperEventId=self._targetUpper)
@@ -690,11 +894,41 @@ class RuntimeJobLogs(QWidget):
         def failed(message):
             self._opening = False
             self._staged = None
+            self._restoreLocation = None
             self.jobHint.setText(message + "。可返回最新重试或查询历史。")
             self._updateRange()
 
-        self._read(lambda ctx: client.queryRuntimeLogs(**query, latestFirst=True, cancellation=ctx),
-                   accept, self.jobHint, reportError=failed)
+        def request(context):
+            if restore is not None and restore["first"] is not None:
+                return self._readBookmarkedRange(client, query, restore["first"], context)
+            return client.queryRuntimeLogs(**query, latestFirst=True, cancellation=context)
+
+        self._read(request, accept, self.jobHint, reportError=failed)
+
+    def _readBookmarkedRange(self, client, query, first, context):
+        # The bookmark holds two range keys. Rebuild only the old bounded
+        # window, using the same descending cursor as Load Earlier.
+        rows = []
+        while True:
+            limit = min(1000, self.maximumEntries - len(rows))
+            reply = client.queryRuntimeLogs(**query, latestFirst=True, limit=limit, cancellation=context)
+            if not reply["ok"] or reply["runtimeInstanceId"] != query["runtimeInstanceId"]:
+                return reply
+            loaded = reply["events"]
+            inside = [row for row in loaded if row["eventId"] >= first]
+            rows.extend(inside)
+            cursor = reply["nextEventId"]
+            more = reply["hasMore"] or len(inside) < len(loaded)
+            if not reply["hasMore"] or cursor <= first or len(rows) >= self.maximumEntries:
+                if rows:
+                    return dict(reply, events=rows, nextEventId=rows[-1]["eventId"], hasMore=more)
+                # The saved range is no longer queryable. Leave the filters in
+                # place and give the reader the available recent window.
+                options = {key: val for key, val in query.items() if key not in {"beforeEventId", "upperEventId"}}
+                return client.queryRuntimeLogs(**options, latestFirst=True, cancellation=context)
+            if cursor >= query["beforeEventId"]:
+                raise ValueError("Runtime 日志游标未推进。")
+            query = dict(query, beforeEventId=cursor)
 
     def _completeLatest(self, readerGeneration, gapEntries=(), *, truncated=False, error=""):
         if not self._targetEvent:
@@ -707,12 +941,29 @@ class RuntimeJobLogs(QWidget):
         self._continuous = (not self._targetEvent and not error and self._readerOnline
                             and readerGeneration == self._readerGeneration)
         self.jobHint.setText(error)
+        restore, self._restoreLocation = self._restoreLocation, None
+        if restore is not None:
+            self._selection = restore["selection"]
+            self._anchors = restore["anchors"]
+            self._expanded = restore["expanded"]
         self._render(captureAnchor=False)
         locate, self._locateAfterLoad = self._locateAfterLoad, False
         if locate and not error:
             self._applyLocation()
+        elif restore is not None:
+            self._restoreBookmarkedPosition(restore)
         elif self._targetEvent and self._selection in self._items:
             self._select(self._selection)
+
+    def _restoreBookmarkedPosition(self, bookmark):
+        keys = [self._selection, *self._anchors.values()]
+        if any(key is not None and self.structure.representativeEventId(key) is None for key in keys):
+            self.jobHint.setText("原阅读位置无法在当前可查询范围定位，已显示可用记录。")
+        if bookmark["drawer"] and self._selection is not None and self._selection[0] == "event":
+            entry = next((event for event in self.window.entries if event.eventId == self._selection[1]), None)
+            if entry is not None:
+                self._showEntry(entry)
+                self.detail.tabs.setCurrentIndex(bookmark["detailTab"])
 
     def _queryScope(self):
         return dict(projectId=self.job.project_id, jobId=self.job.job_id, runtimeInstanceId=self.instance)
@@ -823,14 +1074,48 @@ class RuntimeJobLogs(QWidget):
 
     def _toggleFilters(self):
         self.filters.setVisible(self.filters.isHidden())
+        if not self.filters.isHidden() and self.window is not None:
+            updateIdentityChoices(self.inputs, self.window.entries)
+
+    def _toggleTechnicalFilters(self, checked):
+        self.technicalFilters.setVisible(checked)
+
+    def _acceptDateFilter(self):
+        if self.dateRange.isValidRange() and self.dateRange.bounds() != self._effectiveDateBounds:
+            self._effectiveDateBounds = self.dateRange.bounds()
+            self._scheduleRender()
+        self._updateRange()
 
     def _filterValues(self):
         return {key: edit.text().strip() for key, edit in self.inputs.items() if edit.text().strip()}
 
+    def _captureFilters(self):
+        return dict(values=self._filterValues(), search=self.search.text(), warning=self.warning.isChecked(),
+                    level=self.level.currentIndex(), draft=self.dateRange.bounds(), dates=self._effectiveDateBounds,
+                    advanced=not self.filters.isHidden(), technical=self.technicalToggle.isChecked())
+
+    def _restoreFilters(self, state):
+        for key, edit in self.inputs.items():
+            edit.setText(state["values"].get(key, ""))
+        self.search.setText(state["search"])
+        self.warning.setChecked(state["warning"])
+        self.level.setCurrentIndex(state["level"])
+        self.dateRange.setBounds(*state["draft"])
+        self._effectiveDateBounds = state["dates"]
+        self.filters.setVisible(state["advanced"])
+        self.technicalToggle.setChecked(state["technical"])
+        self._toggleTechnicalFilters(state["technical"])
+        self._scheduleRender()
+
+    def _resetFilters(self):
+        self._restoreFilters(dict(values={}, search="", warning=False, level=0, draft=(None, None), dates=(None, None),
+                                  advanced=not self.filters.isHidden(), technical=self.technicalToggle.isChecked()))
+
     def _advancedHistory(self):
         values = self._filterValues()
-        filters = {name: values[name] for name in ("deviceId", "component", "workflowId", "nodeId",
-                   "startTimestampMs", "endTimestampMs") if name in values}
+        filters = {name: values[name] for name in ("deviceId", "component", "workflowId", "nodeId") if name in values}
+        filters.update({key: value for key, value in zip(("startTimestampMs", "endTimestampMs"), self._effectiveDateBounds)
+                        if value is not None})
         if self.job is not None:
             filters.update(jobId=self.job.job_id, projectId=self.job.project_id)
         filters["level"] = self.level.currentText() if self.level.currentIndex() else ""
@@ -852,8 +1137,7 @@ class RuntimeJobLogs(QWidget):
         rank = self.level.currentText() if self.level.currentIndex() else ""
         needle = self.search.text().strip().casefold()
         warning = self.warning.isChecked()
-        start = int(filters["startTimestampMs"]) if filters.get("startTimestampMs", "").isdigit() else None
-        end = int(filters["endTimestampMs"]) if filters.get("endTimestampMs", "").isdigit() else None
+        bounds = self._effectiveDateBounds
 
         def matches(entry):
             if self._reveal == ("event", entry.eventId):
@@ -863,9 +1147,7 @@ class RuntimeJobLogs(QWidget):
             if needle and needle not in " ".join((entry.message, entry.displayMessage(), entry.code,
                     entry.eventType, entry.displayWorkflow(), entry.displayNode())).casefold():
                 return False
-            if start is not None and (entry.rawTimestampMs is None or entry.rawTimestampMs < start):
-                return False
-            if end is not None and (entry.rawTimestampMs is None or entry.rawTimestampMs >= end):
+            if not includesTimestamp(entry.rawTimestampMs, bounds):
                 return False
             for key in ("projectId", "workflowId", "nodeId", "eventType", "component", "workflowRunId"):
                 if key in filters and getattr(entry, key) != filters[key]:
@@ -900,6 +1182,8 @@ class RuntimeJobLogs(QWidget):
         follow = not self.window.paused
         self._dirty = False
         self.structure = ExecutionTree(self.window.entries)
+        if not self.filters.isHidden():
+            updateIdentityChoices(self.inputs, self.window.entries)
         matches = self._scopePredicate()
         self._items.clear()
         self._branches.clear()
@@ -945,7 +1229,7 @@ class RuntimeJobLogs(QWidget):
         item = QTreeWidgetItem([entry.displayMessage() or entry.eventType, entry.level,
                                entry.displayTime() if entry.rawTimestampMs else "未记录"])
         item.setData(0, _ROLE, key)
-        item.setToolTip(0, entry.message)
+        item.setToolTip(0, "\n".join(part for part in (entry.message, entry.eventType, entry.code) if part))
         self._items[key] = item
         return item
 
@@ -955,6 +1239,21 @@ class RuntimeJobLogs(QWidget):
             return
         item = QTreeWidgetItem([branch.title])
         item.setData(0, _ROLE, branch.key)
+        tooltip = [branch.title]
+        kind, *identity = branch.key
+        if kind == "workflow":
+            tooltip.append(f"工作流调用 ID {identity[0]}")
+            source = branch.start or branch.end
+            if source is not None and source.parentWorkflowRunId:
+                tooltip.append(f"父调用 ID {source.parentWorkflowRunId}")
+        elif kind in {"node", "loop", "iteration"}:
+            tooltip.append(f"工作流调用 ID {identity[0]}")
+            if kind == "node":
+                tooltip.append(f"节点执行 ID {identity[1]}")
+            else:
+                tooltip.append(f"循环节点 ID {identity[1]}")
+                tooltip.append("原始轮次路径 " + ("/".join(map(str, identity[2:])) or "[]"))
+        item.setToolTip(0, "\n".join(tooltip))
         self._items[branch.key] = item
         self._branches[branch.key] = branch
         parent.addChild(item)
@@ -967,11 +1266,25 @@ class RuntimeJobLogs(QWidget):
         if self.window is None:
             return
         suffix = []
+        job = self.job
+        if job is not None:
+            self.filterScope.setText("当前任务范围 · 名称候选来自已加载事件")
+            self.filterScope.setToolTip(f"工程 {job.project_id} · Job {job.job_id}")
+        filters = self._filterValues()
+        dates = describeDateBounds(self._effectiveDateBounds)
+        invalidDates = not self.dateRange.isValidRange()
+        self.clearFilters.setVisible(bool(filters or dates or invalidDates or self.search.text().strip()
+                                         or self.warning.isChecked() or self.level.currentIndex()))
         if self._context is not None:
             suffix.append("本轮已加载上下文" + (" · 可加载更早事件" if self._canReadEarlier() else ""))
         else:
-            filters = self._filterValues()
-            summary = [f"{label} {filters[key]}" for key, label in _LABELS if key in filters]
+            summary = [f"{label} {filters[key]}" for key, label in (*_COMMON_FIELDS, *_TECHNICAL_FIELDS) if key in filters]
+            if dates:
+                summary.append(dates)
+            if invalidDates:
+                summary.append("开始时间不能晚于结束时间，沿用有效范围")
+            if self.search.text().strip():
+                summary.insert(0, f"关键字 {self.search.text().strip()}")
             if self.warning.isChecked():
                 summary.insert(0, "告警 / 错误")
             if self.level.currentIndex():
@@ -993,26 +1306,31 @@ class RuntimeJobLogs(QWidget):
         if self.job is None:
             return
         time = jobExecutionTime(self.job)
-        title = getattr(self.job, "workflow_name", "") or self.job.workflow_id or self.job.job_id
+        title = _jobName(self.job)
         status = _STATUS.get(self.job.status, self.job.status or "状态未确认")
         self.jobTitle.setText(f"{title}   ·   {status}   ·   {time.display()}")
+        secondary = self._secondaryStatus(self.job)
+        self.jobSecondary.setText(secondary)
+        self.jobSecondary.setVisible(bool(secondary))
+        self.relatedButton.setVisible(bool(self._relatedMembers(self.job)))
         extra = "\n重启确认 " + _stamp(time.confirmedAtMs) if time.confirmedAtMs else ""
-        if getattr(self.job, "active", False) and self.job.status in _TERMINAL:
-            extra += "\n下游资源仍在收尾"
+        if secondary == "结束处理未完成":
+            extra += "\n" + _UNFINISHED_PROCESSING
         active = self.structure.activeKeys(jobStatus=self.job.status, runtimeInstanceId=self.instance,
             continuous=self._continuous and self.window is not None and not self.window.paused) if self.structure else set()
         if self.job.status in {"RUNNING", "STOPPING"}:
             calls = sorted(key[1] for key in active if key[0] == "workflow")
-            description = "，".join(calls[:3]) if calls else "未确认"
-            if len(calls) > 3:
-                description += f" 等 {len(calls)} 次"
+            description = f"{len(calls)} 次" if calls else "未确认"
             extra += "\n活动调用 " + description
+            self.info.setToolTip("活动工作流调用 ID\n" + "\n".join(calls) if calls else "")
+        else:
+            self.info.setToolTip("")
         if self.job.job_id in self.activity:
             extra += "\n最近活动 " + self.activity[self.job.job_id]
         self.info.setText(f"Job {self.job.job_id}   ·   工程 {self.job.project_id or '未记录'}\n"
                           f"受理 {_stamp(time.acceptedAtMs)}   ·   实际开始 {_stamp(time.startedAtMs)}"
                           f"   ·   实际结束 {_stamp(time.endedAtMs)}{extra}\n"
-                          + " ".join(value for value in (time.note, self.job.error_code, self.job.message) if value))
+                          + " ".join(value for value in (time.note, self.job.error_code, _jobMessage(self.job)) if value))
         if self.structure is None or self.window is None:
             return
         for key, branch in self._branches.items():
@@ -1020,13 +1338,20 @@ class RuntimeJobLogs(QWidget):
             item = self._items[key]
             if branch.end is not None:
                 eventType = branch.end.eventType
-                status = "失败" if eventType.endswith(".failed") else "已跳过" if eventType == "node.skipped" else "已结束"
+                status = {"node.skipped": "已跳过", "loop.timeout": "已超时", "loop.limit_reached": "达到次数上限"}.get(eventType)
+                if status is None:
+                    status = "失败" if eventType.endswith(".failed") else "已完成"
+                if branch.kind == "iteration" and branch.bodyExecuted is not True and branch.mode not in {"foreach", "repeat"}:
+                    status = "已结束"
             else:
                 status = "执行中" if key in active else ""
             item.setText(1, status)
-            label = timing.display(showRange=self.timeRange.isChecked())
+            if timing.startedAtMs is not None and branch.start is not None:
+                item.setText(2, branch.start.displayTime())
+                item.setToolTip(2, _stamp(timing.startedAtMs))
+            label = "时间信息不完整" if timing.note else timing.display(showRange=self.timeRange.isChecked())
             item.setText(3, label)
-            item.setToolTip(3, "\n".join(dict.fromkeys(part for part in (label, timing.note) if part)))
+            item.setToolTip(3, timing.display(showRange=True))
 
     def _readAt(self, value):
         if self.window is not None and value < self.events.verticalScrollBar().maximum():
@@ -1075,6 +1400,8 @@ class RuntimeJobLogs(QWidget):
                 context["实际结束"] = _stamp(timing.endedAtMs)
             if timing.elapsedMs is not None:
                 context["执行时间"] = timing.display()
+            if timing.note:
+                context["时间说明"] = timing.note
         if entry.effectiveJobId != entry.jobId:
             context["所属任务"] = entry.effectiveJobId
         for key, label in (("deviceId", "设备"), ("slot", "设备槽位"), ("channelId", "通道"),

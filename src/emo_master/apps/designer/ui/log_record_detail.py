@@ -7,7 +7,9 @@ from PySide2.QtWidgets import (
     QTableWidget, QTableWidgetItem, QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 
-from emo_master.apps.designer.presenters.node_run_presenter import describePort
+from emo_master.apps.designer.presenters.node_run_presenter import (
+    describePort, executionStatusTitle, frameworkLogMessage,
+)
 from emo_master.core.contracts.run_inspection import normalizeInspection
 from .log_json_tree import LogJsonTree, _VALUE_ROLE, _copyText, _json
 from .widgets import OptionalWrapLabel, WrapLabel
@@ -21,6 +23,14 @@ _NODE_TITLES = {
     "node.skipped": "节点跳过记录",
     "node.log": "算子主动日志",
     "node.preview.failed": "实时预览失败",
+}
+_FRAMEWORK_TITLES = {
+    "job.accepted": "任务已受理", "job.started": "任务开始执行", "job.stopping": "任务正在停止",
+    "job.completed": "任务已完成", "job.failed": "任务失败", "job.aborted": "任务已停止",
+    "workflow.started": "工作流开始", "workflow.completed": "工作流完成", "workflow.failed": "工作流失败",
+    "loop.started": "循环开始", "loop.completed": "循环结束", "loop.failed": "循环失败",
+    "loop.timeout": "循环超时", "loop.limit_reached": "循环达到次数上限",
+    "loop.iteration.started": "该轮开始", "loop.iteration.completed": "该轮结束",
 }
 _DEBUG_EVENT_TITLES = {
     "session.opened": "调试会话已建立",
@@ -104,10 +114,20 @@ def debugEventText(wrapper):
     """The wrapper type names transport notifications, the inner type names a log."""
     inner = wrapper.get("event")
     if isinstance(inner, dict):
-        return " · ".join(str(inner[key]) for key in ("level", "code", "message") if inner.get(key)) or str(inner.get("eventType", ""))
+        message = _eventMessage(inner)
+        return " · ".join(str(value) for value in (inner.get("level"), inner.get("code"), message) if value) or str(inner.get("eventType", ""))
     kind = wrapper.get("type", "")
     title = _DEBUG_EVENT_TITLES.get(kind, kind)
-    return " · ".join(str(value) for value in (title, wrapper.get("status"), wrapper.get("code"), wrapper.get("message")) if value)
+    status = wrapper.get("status")
+    if kind == "execution.finished":
+        status = executionStatusTitle(status) or status
+    return " · ".join(str(value) for value in (title, status, wrapper.get("code"), wrapper.get("message")) if value)
+
+
+def _eventMessage(event):
+    return frameworkLogMessage(event.get("eventType", ""), event.get("message", ""),
+                               nodeId=event.get("nodeId", ""), workflowId=event.get("workflowId", ""),
+                               iterationPath=event.get("iterationPath"), payload=event.get("payload"))
 
 
 class LogRecordDetail(QWidget):
@@ -189,11 +209,14 @@ class LogRecordDetail(QWidget):
 
     def _showEvent(self, raw, event, *, displayMessage=None, context=None, includeTime=False):
         kind = event.get("eventType", "")
-        title = _NODE_TITLES.get(kind, kind or "日志记录")
+        title = _NODE_TITLES.get(kind) or _FRAMEWORK_TITLES.get(kind) or kind or "日志记录"
+        message = event.get("message", "")
+        readable = _eventMessage(event) if displayMessage is None else displayMessage
+        if kind in _FRAMEWORK_TITLES and readable == title and message != readable:
+            readable = ""
         if event.get("level"):
             title = f"{event['level']} · {title}"
-        message = event.get("message", "")
-        self._startRecord(raw, title, message if displayMessage is None else displayMessage, originalMessage=message)
+        self._startRecord(raw, title, readable, originalMessage=message)
         if includeTime:
             self.readable.field("发生时间", event.get("timestampMs", _MISSING), description=_timeText(event.get("timestampMs")))
         if event.get("code"):
@@ -221,8 +244,12 @@ class LogRecordDetail(QWidget):
         remaining = dict(payload)
         if payload.get("truncated") is True:
             self.notice.setText("该记录标记为已截断。详情与复制使用当前收到的数据。")
-        if kind in {"node.started", "node.completed", "node.failed", "node.skipped"}:
-            for key, label in (("status", "状态"), ("message", "跳过原因" if kind == "node.skipped" else "原因"),
+        nodeRecord = kind in {"node.started", "node.completed", "node.failed", "node.skipped"}
+        if (nodeRecord or kind in _FRAMEWORK_TITLES) and "status" in remaining:
+            value = remaining.pop("status")
+            self.readable.field("状态", value, description=executionStatusTitle(value))
+        if nodeRecord:
+            for key, label in (("message", "跳过原因" if kind == "node.skipped" else "原因"),
                                ("code", "记录代码"), ("reason", "原因"), ("missingInputs", "缺少输入"),
                                ("blockedByBranches", "未选中的上游分支")):
                 if key in remaining:
@@ -290,6 +317,9 @@ class LogRecordDetail(QWidget):
         self._startRecord(wrapper, _DEBUG_EVENT_TITLES.get(kind, kind or "会话通知"),
                           wrapper.get("message", "") if displayMessage is None else displayMessage)
         fields = {key: value for key, value in wrapper.items() if key not in {"type", "sequence", "generation", "executionId"}}
+        if kind == "execution.finished" and "status" in fields:
+            value = fields.pop("status")
+            self.readable.field("状态", value, description=executionStatusTitle(value))
         if fields:
             self.readable.field("通知数据", fields, expand=True)
         self.readable.field("记录身份", identity)
@@ -304,7 +334,9 @@ class LogRecordDetail(QWidget):
             ("resolvedParams", "解析参数"), ("inputSources", "输入来源"), ("bindingSources", "绑定来源"),
         ):
             if key in record:
-                self.readable.field(label, record[key], expand=key in {"outputs", "metrics", "diagnostics"})
+                value = record[key]
+                self.readable.field(label, value, description=executionStatusTitle(value) if key == "status" else None,
+                                    expand=key in {"outputs", "metrics", "diagnostics"})
         identity = {"调试会话": sessionId, "代次": generation}
         if "executionId" in record:
             identity["调试执行"] = record["executionId"]

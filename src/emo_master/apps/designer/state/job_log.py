@@ -233,9 +233,9 @@ class ExecutionTree:
 
         for runId, runEntries in byRun.items():
             workflow = self._workflow(runId)
-            example = runEntries[0]
-            if example.displayWorkflow():
-                workflow.title = f"{example.displayWorkflow()} · 调用 {runId}"
+            confirmedName = next((entry.workflowName for entry in runEntries if entry.workflowName), "")
+            workflowId = next((entry.workflowId for entry in runEntries if entry.workflowId), "")
+            workflow.title = confirmedName or workflowId or "工作流名称未记录"
             for entry in runEntries:
                 if entry.eventType == _WORKFLOW_START:
                     workflow.start = entry
@@ -310,7 +310,7 @@ class ExecutionTree:
         return self._branches[key]
 
     def _workflow(self, runId: str) -> ExecutionBranch:
-        return self._branch(("workflow", runId), "workflow", f"调用 {runId} · 父调用详情未加载")
+        return self._branch(("workflow", runId), "workflow", "父调用详情未加载")
 
     def _attach(self, branch: ExecutionBranch, parent: ExecutionBranch) -> None:
         if branch.key in self._parents:

@@ -5,6 +5,7 @@ from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QDialog, QPushButton, QTableWidget
 
 from emo_master.apps.designer.ui import log_json_tree, log_record_detail
+from emo_master.apps.designer.ui.log_dialog import StructuredLogEntry
 from emo_master.apps.designer.ui.log_json_tree import LogJsonTree
 from emo_master.apps.designer.ui.log_record_detail import LogRecordDetail
 
@@ -170,3 +171,38 @@ def testWorkbenchReadsReceivedIoSummaryMetricsAndReasons(designerApplication):
     assert child(root, "指标").text(1) == "{} · 无附加指标"
     assert child(root, "诊断").text(1) == "本记录未提供"
     assert json.loads(detail.rawTree.toPlainText()) == wrapper
+
+
+def testFrameworkPresentationTranslatesOnlyKnownFieldsAndCopiesOriginalValues(designerApplication, monkeypatch):
+    copies = []
+    monkeypatch.setattr(log_json_tree, "_copyText", copies.append)
+    record = {"eventType": "loop.iteration.started", "message": "loop iteration 0", "iterationPath": [0]}
+    entry = StructuredLogEntry.fromRuntimeEvent(record)
+    assert entry.displayMessage() == "该轮开始" and entry.rawRecord() == record
+
+    detail = LogRecordDetail()
+    detail.setEvent(record)
+    assert "该轮开始" in detail.title.text()
+    assert json.loads(detail.rawTree.toPlainText()) == record
+    custom = dict(record, message="loop iteration 0 (custom data)")
+    assert StructuredLogEntry.fromRuntimeEvent(custom).displayMessage() == custom["message"]
+    record = {"eventType": "node.log", "message": "loop iteration 0", "payload": {"data": {"status": "RUNNING"}}}
+    detail.setEvent(record)
+    root = detail.readable.invisibleRootItem()
+    assert detail.message.text() == "loop iteration 0"
+    assert child(child(root, "日志数据"), "status").text(1) == "RUNNING"
+
+    result = {"executionId": "first", "status": "SUCCEEDED", "outputs": {"status": "FAILED"}}
+    detail.setDebugResult(result, sessionId="session", generation=1)
+    status = child(root, "状态")
+    assert status.text(1) == "执行成功"
+    assert child(child(root, "已返回输出"), "status").text(1) == "FAILED"
+    detail.readable.setCurrentItem(status)
+    detail.copyValueButton.click()
+    detail.copyRecordButton.click()
+    assert [json.loads(value) for value in copies] == ["SUCCEEDED", result]
+
+    detail.setEvent({"eventType": "node.failed", "payload": {"status": "UNRECOGNIZED"}})
+    assert child(root, "状态").text(1) == "UNRECOGNIZED"
+    detail.setEvent({"eventType": "node.completed", "payload": {"status": "COMPLETED"}})
+    assert child(root, "状态").text(1) == "已完成"

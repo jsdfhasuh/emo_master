@@ -13,6 +13,8 @@ import re
 import time
 from typing import Any
 
+from emo_master.apps.designer.presenters.node_run_presenter import frameworkLogMessage
+
 
 _LINE_PATTERN = re.compile(r"^\[(?P<time>[^]]+)]\[(?P<level>[^]]+)]\s?(?P<message>.*)$")
 DEFAULT_MAX_LOG_ENTRIES = 10000
@@ -160,15 +162,8 @@ class StructuredLogEntry:
         return "general"
 
     def displayMessage(self) -> str:
-        lifecycle = {
-            "node.started": (f"node started: {self.nodeId}", "开始执行节点"),
-            "node.completed": (f"node completed: {self.nodeId}", "节点执行完成"),
-            "node.skipped": (f"node skipped: {self.nodeId}", "跳过节点"),
-            "workflow.started": (f"workflow started: {self.workflowId}", "工作流开始执行"),
-            "workflow.completed": (f"workflow completed: {self.workflowId}", "工作流执行完成"),
-        }
-        standard = lifecycle.get(self.eventType)
-        return standard[1] if standard and self.message == standard[0] else self.message
+        return frameworkLogMessage(self.eventType, self.message, nodeId=self.nodeId, workflowId=self.workflowId,
+                                   iterationPath=self.iterationPath, payload=self.payload)
 
     def rawRecord(self) -> dict[str, object]:
         if self._runtimeRecord is not None and self.isRuntime:
@@ -229,6 +224,9 @@ try:
         QSizePolicy,
     )
     from emo_master.apps.designer.ui.icon_map import icon
+    from emo_master.apps.designer.ui.log_filters import (
+        OptionalDateTimeRange, describeDateBounds, includesTimestamp, updateIdentityChoices,
+    )
 
     class _LogFilterComboBox(QComboBox):
         popupClosed: Any = Signal()
@@ -278,6 +276,7 @@ try:
             self._historyCancel = None
             self._historyReply = None
             self._historyFilters: dict[str, Any] = {}
+            self._localHistoryBounds = None
             self.systemOnly = False
             self.designerOnly = False
             self._historyExecutor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-log-history")
@@ -295,23 +294,50 @@ try:
             for button in (self.historyQueryButton, self.historyNextButton, self.historyExportButton, self.historyCancelButton):
                 button.setAutoDefault(False)
                 historyRow.addWidget(button)
+            self.historyFiltersToggle = QPushButton("高级筛选")
+            self.historyFiltersToggle.setAutoDefault(False)
+            self.historyFiltersToggle.setCheckable(True)
+            self.historyFiltersToggle.toggled.connect(self._showHistoryFilters)
+            historyRow.addWidget(self.historyFiltersToggle)
             root.addLayout(historyRow)
             self.historyFiltersWidget = QWidget()
-            historyFilters = QGridLayout(self.historyFiltersWidget)
+            historyFilters = QVBoxLayout(self.historyFiltersWidget)
             historyFilters.setContentsMargins(0, 0, 0, 0)
+            self.historyCommonFields = QWidget()
+            common = QGridLayout(self.historyCommonFields)
+            common.setContentsMargins(0, 0, 0, 0)
             self.historyInputs = {}
-            for index, (name, label) in enumerate((("projectId", "工程 ID"), ("jobId", "Job ID"), ("deviceId", "设备 ID"),
-                    ("component", "模块"), ("workflowId", "工作流 ID"), ("nodeId", "节点 ID"),
-                    ("startTimestampMs", "开始时间 ms（含）"), ("endTimestampMs", "结束时间 ms（不含）"))):
+            for index, (name, title) in enumerate((("workflowId", "工作流 ID"), ("nodeId", "节点 ID"), ("deviceId", "设备 ID"))):
                 edit = QLineEdit()
-                edit.setPlaceholderText(label + "，留空不限")
+                edit.setPlaceholderText(title + "或已加载名称")
+                edit.setAccessibleName(title)
                 self.historyInputs[name] = edit
-                historyFilters.addWidget(edit, index // 4, index % 4)
+                common.addWidget(edit, 0, index)
+            historyFilters.addWidget(self.historyCommonFields)
+            self.historyDateRange = OptionalDateTimeRange()
+            historyFilters.addWidget(self.historyDateRange)
+            self.historyTechnicalToggle = QPushButton("技术条件")
+            self.historyTechnicalToggle.setAutoDefault(False)
+            self.historyTechnicalToggle.setCheckable(True)
+            historyFilters.addWidget(self.historyTechnicalToggle, 0, Qt.AlignLeft)
+            self.historyTechnicalFields = QWidget()
+            technical = QGridLayout(self.historyTechnicalFields)
+            technical.setContentsMargins(0, 0, 0, 0)
+            for index, (name, title) in enumerate((("projectId", "工程 ID"), ("jobId", "Job ID"), ("component", "模块"))):
+                edit = QLineEdit()
+                edit.setPlaceholderText(title + "，留空不限")
+                edit.setAccessibleName(title)
+                self.historyInputs[name] = edit
+                technical.addWidget(edit, 0, index)
+            self.historyTechnicalFields.hide()
+            self.historyTechnicalToggle.toggled.connect(self.historyTechnicalFields.setVisible)
+            historyFilters.addWidget(self.historyTechnicalFields)
             self.localFileCombo = QComboBox()
             self.localFileCombo.setMinimumContentsLength(20)
             root.addWidget(self.historyFiltersWidget)
             root.addWidget(self.localFileCombo)
             self.historyStatus = QLabel()
+            self.historyStatus.setTextFormat(Qt.PlainText)
             self.historyStatus.setWordWrap(True)
             root.addWidget(self.historyStatus)
             filters = QGridLayout()
@@ -536,11 +562,21 @@ try:
                     self.historyNextButton.setEnabled(False)
                     self.historyStatus.setText("Runtime 实例已切换；请重新查询历史日志。")
 
+        def _showHistoryFilters(self, checked):
+            self.historyFiltersWidget.setVisible(checked and self.rangeCombo.currentData() != "current")
+            if checked and self.rangeCombo.currentData() == "runtime":
+                updateIdentityChoices(self.historyInputs, self._entries)
+
         def _historySourceChanged(self):
             self.cancelHistory()
             mode = self.rangeCombo.currentData()
-            self.historyFiltersWidget.setVisible(mode == "runtime")
+            self.historyFiltersToggle.setVisible(mode != "current")
+            self.historyCommonFields.setVisible(mode == "runtime")
+            self.historyTechnicalToggle.setVisible(mode == "runtime")
+            self.historyTechnicalFields.setVisible(mode == "runtime" and self.historyTechnicalToggle.isChecked())
+            self._showHistoryFilters(self.historyFiltersToggle.isChecked())
             self.localFileCombo.setVisible(mode == "local")
+            self._localHistoryBounds = None
             self.historyQueryButton.setEnabled(mode != "current")
             self.historyNextButton.setEnabled(False)
             self.historyExportButton.setEnabled(mode != "current")
@@ -578,14 +614,14 @@ try:
             scope = {"projectId": projectId, "deviceId": deviceId}
             for name, edit in self.historyInputs.items():
                 edit.setText(scope.get(name, ""))
+            self.historyDateRange.setBounds(None, None)
+            self.historyFiltersToggle.setChecked(True)
             self._resetFilters()
             self.queryHistory()
 
         def _selectedHistoryFilters(self):
             filters = {name: edit.text().strip() for name, edit in self.historyInputs.items() if edit.text().strip()}
-            for name in ("startTimestampMs", "endTimestampMs"):
-                if name in filters:
-                    filters[name] = int(filters[name])
+            filters.update(self.historyDateRange.options())
             level = self.levelFilter.currentText()
             if level in {"DEBUG", "INFO", "WARN", "ERROR"}:
                 filters["levels"] = [level]
@@ -632,18 +668,26 @@ try:
             mode = self.rangeCombo.currentData()
             if mode == "current":
                 return
+            continuing = mode == "runtime" and nextPage and self._historyReply is not None
+            if not continuing and not self.historyDateRange.isValidRange():
+                self.historyFiltersToggle.setChecked(True)
+                return
             try:
                 if mode == "local":
                     from emo_master.apps.operator_runtime.log_reader import JsonlTailReader
                     paths = self._selectedLocalFiles()
+                    bounds = self.historyDateRange.bounds()
+
                     def read(cancelled):
                         rows = []
                         for path in reversed(paths):
                             if cancelled.is_set():
                                 return None
-                            rows.extend(record.data for record in JsonlTailReader().read(path).records)
+                            rows.extend(record.data for record in JsonlTailReader().read(path).records
+                                        if includesTimestamp(record.data.get("timestampMs"), bounds))
                         return rows[-self.maximumEntries:]
-                    self._startHistoryTask("local", read)
+
+                    self._startHistoryTask("local", read, filters=self.historyDateRange.options())
                     return
                 client = self._historyClient
                 if client is None or not callable(getattr(client, "queryRuntimeLogs", None)):
@@ -705,10 +749,13 @@ try:
                     if kind in {"export", "job_export"}:
                         self.historyStatus.setText(f"已导出 {value} 条日志：{self._historyExportPath}")
                     elif kind == "local":
+                        self._localHistoryBounds = (candidateFilters.get("startTimestampMs"), candidateFilters.get("endTimestampMs"))
+                        dates = describeDateBounds(self._localHistoryBounds)
                         entries = [StructuredLogEntry.fromRuntimeEvent(row) for row in value]
                         self.setEntries([dataclassReplace(entry, originApp="designer", source=str(row.get("source", "designer")))
                                          for entry, row in zip(entries, value)])
-                        self.historyStatus.setText(f"本机文件最近记录：{len(entries)} 条；完整导出读取选定文件全部记录。")
+                        self.historyStatus.setText(f"本机文件最近记录 {len(entries)} 条"
+                            + (f" · {dates}" if dates else " · 时间不限") + " · 导出读取选定文件的完整范围")
                     elif not value["ok"]:
                         self.historyStatus.setText(self._historyFailureMessage(value["code"] + "：" + value["message"]))
                         if value["code"] == "RESET_REQUIRED":
@@ -720,7 +767,22 @@ try:
                         self._historyFilters = candidateFilters
                         self._historyReply = value
                         self.setEntries(entries)
-                        self.historyStatus.setText(f"Runtime 历史当前页 {len(value['events'])} 条；上界 {value['upperEventId']}，游标 {value['nextEventId']}。")
+                        dates = describeDateBounds((candidateFilters.get("startTimestampMs"),
+                                                    candidateFilters.get("endTimestampMs")))
+                        scoped = [(title, candidateFilters[key]) for key, title in (
+                            ("projectId", "工程"), ("jobId", "Job"), ("deviceId", "设备"), ("workflowId", "工作流"),
+                            ("nodeId", "节点"), ("component", "模块")) if candidateFilters.get(key)]
+                        levels = " / ".join(candidateFilters.get("levels", ()))
+                        other = [f"{title} {field if len(field) <= 16 else field[:12] + '…'}"
+                                 for title, field in scoped]
+                        if levels:
+                            other.append(levels)
+                        self.historyStatus.setText(f"Runtime 历史当前页 {len(value['events'])} 条 · "
+                            + " · ".join((dates or "时间不限", *other)))
+                        self.historyStatus.setToolTip(" · ".join([f"上界 {value['upperEventId']}，游标 {value['nextEventId']}",
+                                                                 *(f"{title} {field}" for title, field in scoped)]))
+                        if self.historyFiltersToggle.isChecked():
+                            updateIdentityChoices(self.historyInputs, entries)
                 except Exception as error:
                     self.historyStatus.setText(self._historyFailureMessage("日志任务失败：" + str(error)))
             if kind == "job_export":
@@ -741,8 +803,13 @@ try:
             from emo_master.apps.operator_runtime.log_reader import snapshotLogFiles, iterLogFileRecords
             self.syncRuntimeInstance()
             mode = self.rangeCombo.currentData()
-            if mode == "current" and jobScope is None:
-                return
+            if jobScope is None:
+                if mode == "current":
+                    return
+                hasApplied = self._historyReply is not None if mode == "runtime" else self._localHistoryBounds is not None
+                if not hasApplied and not self.historyDateRange.isValidRange():
+                    self.historyFiltersToggle.setChecked(True)
+                    return
             selected, selectedFilter = QFileDialog.getSaveFileName(self,
                 "导出此 Job 完整记录" if jobScope is not None else "导出完整选定范围",
                 str(self._exportDirectory / "日志历史.jsonl"), "JSON Lines (*.jsonl);;JSON (*.json);;文本 (*.txt)")
@@ -761,9 +828,15 @@ try:
             try:
                 if mode == "local" and jobScope is None:
                     ranges = snapshotLogFiles(self._selectedLocalFiles())
+                    bounds = self._localHistoryBounds if self._localHistoryBounds is not None else self.historyDateRange.bounds()
                     filters = {"files": [{"path": str(row.path), "endOffset": row.endOffset} for row in ranges]}
+                    filters.update({key: value for key, value in zip(("startTimestampMs", "endTimestampMs"), bounds)
+                                    if value is not None})
+
                     def task(cancelled):
-                        return exportLogs(path, iterLogFileRecords(ranges, cancelled=cancelled.is_set),
+                        records = (record for record in iterLogFileRecords(ranges, cancelled=cancelled.is_set)
+                                   if includesTimestamp(record.get("timestampMs"), bounds))
+                        return exportLogs(path, records,
                             formatName=formatName, scope="local_files", filters=filters, cancelled=cancelled.is_set)
                 else:
                     client = self._historyClient
@@ -1512,9 +1585,12 @@ try:
             self.sources.setCurrentIndex(0)
             self.runtimeNavigation.setCurrentIndex(2)
             self.view._resetFilters()
-            self.view.historyInputs["jobId"].setReadOnly(True)
             for key, edit in self.view.historyInputs.items():
+                edit.setReadOnly(key in {"projectId", "jobId"})
                 edit.setText(str(filters.get(key, "")))
+            self.view.historyDateRange.setBounds(filters.get("startTimestampMs"), filters.get("endTimestampMs"))
+            self.view.historyTechnicalToggle.setChecked(False)
+            self.view.historyFiltersToggle.setChecked(True)
             level = self.view.levelFilter.findText(filters["level"])
             self.view.levelFilter.setCurrentIndex(max(level, 0))
             self.view.queryHistory()
@@ -1522,6 +1598,7 @@ try:
         def _returnFromJobHistory(self):
             self.historyBack.hide()
             self.view.historyInputs["jobId"].setReadOnly(False)
+            self.view.historyInputs["projectId"].setReadOnly(False)
             self.runtimeNavigation.setCurrentIndex(0)
 
         def openRuntimeHistory(self, *, projectId="", deviceId=""):
@@ -1529,6 +1606,7 @@ try:
             self.sources.setCurrentIndex(0)
             self.runtimeNavigation.setCurrentIndex(2)
             self.view.historyInputs["jobId"].setReadOnly(False)
+            self.view.historyInputs["projectId"].setReadOnly(False)
             if deviceId:
                 self.view.openDeviceHistory(projectId, deviceId)
 

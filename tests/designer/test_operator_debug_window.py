@@ -80,6 +80,7 @@ def testNativeWindowExecutesUnappliedDraftAndKeepsTwoResults(runtime):
         fields = [dialog.resultDetail.readable.topLevelItem(index).text(0)
                   for index in range(dialog.resultDetail.readable.topLevelItemCount())]
         assert "已返回输出" in fields and "finishedAtMs" not in fields and "输入来源" in fields
+        assert dialog.resultDetail.readable.topLevelItem(fields.index("状态")).text(1) == "执行成功"
         if evidence := os.environ.get("EMO_LOG_WORKBENCH_EVIDENCE_DIR"):
             directory = Path(evidence)
             directory.mkdir(parents=True, exist_ok=True)

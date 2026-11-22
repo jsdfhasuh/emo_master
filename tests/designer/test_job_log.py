@@ -1,11 +1,13 @@
 from threading import Event
 from types import SimpleNamespace
 
+from PySide2.QtCore import Qt
+
 from emo_master.apps.designer.page_designer.runtime_logs import eventPayload
 from emo_master.apps.designer.state.job_log import ExecutionTree, JobEventWindow, jobExecutionTime
 from emo_master.apps.designer.ui.log_dialog import StructuredLogEntry
 from emo_master.apps.designer.ui.runtime_job_logs import RuntimeJobLogs
-from emo_master.apps.runtime.grpc_server.generated.runtime_pb2 import JobEvent
+from emo_master.apps.runtime.grpc_server.generated.runtime_pb2 import JobEvent, JobHistorySummary, RunState
 from tests.designer.qt_wait import waitUntil
 
 
@@ -56,6 +58,7 @@ def testTreeAssociatesChildCallsAndNestedLoopsBeforeProjectingWarnings():
     tree = ExecutionTree(reversed(rows))
     assert tree.rootCount == 2
     branches = {branch.key: branch for branch in _walk(tree.roots)}
+    assert branches["workflow", "first"].title == branches["workflow", "second"].title == "main"
     loop = branches["node", "first", "outer"]
     assert loop.mode == "while" and loop.totalIterations is None and loop.completedIterations == 1
     assert branches["node", "body", "inner"].totalIterations == 1
@@ -207,4 +210,85 @@ def testWorkbenchClosesGapBeforeConfirmingContinuityAndReloadsLiveTrimmedRange(d
     finally:
         release.set()
         view.close()
+        view.shutdown()
+
+
+def testCatalogUsesRunStatusAndProvesRelatedJobsFromCurrentIdentity(designerApplication):
+    def active(jobId, status, **fields):
+        return RunState(job_id=jobId, runtime_instance_id="runtime", project_id=fields.pop("project", "project"),
+                        workflow_name="同名工作流", workflow_id="wf", active=True, status=status, **fields)
+
+    source = active("source", "FAILED", run_group_id="group", source_job_id="source", ended_at_ms=10,
+                    allowed_actions=["stop"], message="实际错误")
+    one = active("one", "ACCEPTED", run_group_id="group", source_job_id="source")
+    two = active("two", "STOPPING", run_group_id="group", source_job_id="source")
+    independent = active("independent", "RUNNING", run_group_id="group", source_job_id="other-source")
+    otherProject = active("other-project", "RUNNING", run_group_id="group", source_job_id="source", project="other")
+    owned = active("owned", "ABORTED", owns_resources=True)
+    ordinary = JobHistorySummary(job_id="ordinary", project_id="project", workflow_id="ordinary", status="COMPLETED",
+                                 ended_at_ms=20)
+    duplicate = JobHistorySummary(job_id=source.job_id, project_id=source.project_id, workflow_id="stale",
+                                  status="COMPLETED", ended_at_ms=10)
+    view = RuntimeJobLogs(10, StructuredLogEntry.fromRuntimeEvent)
+    try:
+        view.synchronize(SimpleNamespace(runtimeService=object()), "runtime")
+        view.runs = {job.job_id: job for job in (source, one, two, independent, otherProject, owned)}
+        view.recent = (ordinary, duplicate)
+        view.show()
+        view._renderCatalog()
+
+        def rows(section):
+            group, = view.directory.findItems(section, Qt.MatchExactly)
+            return {group.child(i).toolTip(0): group.child(i) for i in range(group.childCount())}
+
+        assert set(rows("运行中")) == {"one", "two", "independent", "other-project"}
+        ended = rows("最近已结束")
+        assert set(ended) == {"ordinary", "source", "owned"}
+        assert ended["source"].text(2) == "失败" and "还有 2 个关联任务未结束" in ended["source"].text(5)
+        assert ended["owned"].text(2) == "已停止" and ended["owned"].text(5) == "结束处理未完成"
+        assert "未提供具体原因" in ended["owned"].toolTip(5)
+        assert ended["ordinary"].text(5) == ""
+        view.directory.setCurrentItem(ended["source"])
+        assert view.stopButton.isVisible() and view.catalogRelatedButton.isVisible()
+        view._renderCatalog()
+        assert view.directory.currentItem().toolTip(0) == "source"
+
+        view.runs.pop("source")
+        view.recent = (ordinary,)
+        view._renderCatalog()
+        assert "source" not in rows("最近已结束")
+        view._historyMode = True
+        view.history = [ordinary]
+        view._renderCatalog()
+        assert set(rows("终态任务")) == {"ordinary"}
+        view.directory.setCurrentItem(rows("终态任务")["ordinary"])
+        assert not view.stopButton.isVisible()
+    finally:
+        view.close()
+        view.shutdown()
+
+
+def testRelatedBookmarkReplaysTheSavedRangeWithDecreasingPageCursors(designerApplication):
+    requests = []
+
+    def query(**options):
+        requests.append(options)
+        keys = {12: (11, 9), 9: (8, 6, 4), 16: (11, 9)}.get(options.get("beforeEventId"), (21,))
+        return dict(ok=True, runtimeInstanceId="runtime", upperEventId=options.get("upperEventId", 21),
+                    events=[dict(eventId=key) for key in keys], nextEventId=keys[-1], hasMore=keys[-1] in (4, 9))
+
+    view = RuntimeJobLogs(5, StructuredLogEntry.fromRuntimeEvent)
+    try:
+        client = SimpleNamespace(queryRuntimeLogs=query)
+        scope = dict(beforeEventId=12, upperEventId=15, runtimeInstanceId="runtime", jobId="source")
+        page = view._readBookmarkedRange(client, scope, 6, object())
+        assert [row["eventId"] for row in page["events"]] == [11, 9, 8, 6]
+        assert page["hasMore"] and page["nextEventId"] == 6
+        assert [request["beforeEventId"] for request in requests] == [12, 9]
+        assert {request["upperEventId"] for request in requests} == {15}
+
+        unavailable = view._readBookmarkedRange(client, dict(scope, beforeEventId=16), 15, object())
+        assert [row["eventId"] for row in unavailable["events"]] == [21]
+        assert "beforeEventId" not in requests[-1] and "upperEventId" not in requests[-1]
+    finally:
         view.shutdown()

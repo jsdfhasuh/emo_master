@@ -12,6 +12,7 @@ from PySide2.QtWidgets import (
 
 from emo_master.apps.designer.services.operator_debug import DebugConnection
 from emo_master.apps.designer.services.debug_input_files import inputFileFilter, readInputFile
+from emo_master.apps.designer.presenters.node_run_presenter import executionStatusTitle
 from emo_master.apps.runtime.operator_debug.assets import VALUE_BYTES
 from emo_master.apps.runtime.operator_debug.contracts import digest, parse
 from emo_master.apps.runtime.operator_debug.data import companionPort
@@ -670,7 +671,10 @@ class OperatorDebugWindow(QDialog):
                 self.versions.clear()
                 for index, record in enumerate(self.records):
                     identity = f"{record['status']} / {record['executionId'][:8]} / 参数 {digest(record['rawParams'])[:8]}"
-                    title = f"{'本次' if index == 0 else '上次'} · {self.stateTitle(record['status']).removeprefix('执行')}" if self.isPlc else identity
+                    status = record["status"]
+                    label = (self.stateTitle(status).removeprefix("执行") if self.isPlc
+                             else executionStatusTitle(status) or status)
+                    title = f"{'本次' if index == 0 else '上次'} · {label}"
                     self.versions.addItem(title)
                     self.versions.setItemData(index, identity, Qt.ToolTipRole)
                 self.versions.blockSignals(False)
@@ -773,7 +777,8 @@ class OperatorDebugWindow(QDialog):
             record = self.records[index]
             if text:
                 text += "；以下为历史结果（保留原参数身份） / "
-            text += self.stateTitle(record["status"])
+            status = record["status"]
+            text += self.stateTitle(status) if self.isPlc else executionStatusTitle(status) or status
             if type(record.get("elapsedMs")) in (int, float):
                 text += f" | 耗时 {record['elapsedMs']:.1f} 毫秒"
             error = f"{record.get('code', '')} {record.get('message', '')}".strip()

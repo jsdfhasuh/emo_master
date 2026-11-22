@@ -1,43 +1,30 @@
-# Runtime 运行日志工作台重构 · V2.3 算子覆盖补齐
+# Change: Runtime 日志工作台完整计划 V2.4
 
 ## Why
 
-当前 Designer 日志窗口把实时记录、Runtime 历史、本机文件、历史查询条件、实时筛选、分类标签、十列表格和底部 JSON 详情放在同一窗口中。工程师需要先理解日志来源和筛选项，再从平铺事件中还原一次运行；长时间运行、While / ForEach、多层子工作流和设备诊断时尤其不直观。
+工程师需要从“一次真实任务”进入日志，按工作流调用、循环轮次和节点执行阅读，并在长时间运行时保留筛选、阅读位置、明确的时间与来源。原 `redesign-runtime-log-workbench` 已在 fa4b72d7 实现主要能力，但现有首页把 active 当成仍执行，导致终态任务混在运行中；“下游资源仍在收尾”、毫秒输入和集中展开的技术字段也增加理解成本。
 
-本 change 将现有日志窗口调整为任务优先的运行日志工作台：先找到一次 Job，再按真实工作流调用、循环迭代和节点执行查看事件；Designer 本机日志保持独立。设备诊断作为运行任务中的进一步排查入口，不再增加一套重复的 Runtime 日志来源。
-
-基线日志详情已有结构化 JSON 树，工程师仍需从技术字段中寻找业务内容。V2.2 的主动日志易读层不能覆盖大部分没有直接 logger 调用的算子。V2.3 将已存在的节点生命周期 ioSummary / metrics / diagnostics 设为必需通用展示，主动日志作为附加；同时把单算子调试已有日志和结果接入同一展示能力。此次只补齐设计、原型和交付包，未实施产品、未进行 Qt / Runtime 验收。
+本版把已确认的完整设计与当前修订合为同一个 change。Codex 只需要本包的规范、任务、原型和验收，不再自行拼接多份计划或套用 Patch 01。
 
 ## What Changes
 
-- 一级入口只保留 **Runtime 运行日志** 与 **Designer 本机日志**；运行任务是 Runtime 日志内部的主要视图，不再与 Runtime 日志并列。
-- Runtime 首页分为“正在运行”和“最近已结束”，并提供更早历史查询。
-- 单个 Job 详情包含运行概览、执行结构、事件日志；默认按执行结构组织，允许切换时间顺序。
-- 执行树按 `workflowRunId`、`parentWorkflowRunId`、`nodeRunId`、`iterationPath` 组织工作流调用、子工作流、While / ForEach / Repeat 迭代和节点事件；While 最后一次 false 条件检查不算作循环体执行轮次。
-- 运行任务详情先加载最近原始事件页，再补取实时增量，并支持固定上界下向更早分页及有界窗口；保留现有服务端高级历史查询，完整 Job 导出不受本地过滤限制；展示 Job、工作流调用、循环迭代和节点的开始时间、结束时间及执行耗时；时间不完整时明确标记，不推测。
-- 高级筛选默认收起，保留等级快捷筛选、搜索、条件摘要、筛选上下文和右侧详情抽屉。
-- 算子详情必须直接展示当前选中 started / completed / failed / skipped 的真实输入输出摘要、指标、诊断和原因，不依赖算子主动打日志；node.log.payload.data 是附加记录。共用字段 / 对象 / 数组、长文本和复制能力，保留 LogJsonTree，不猜字段单位、完整输出或历史图片。
-- 单算子调试窗口复用同一 Qt 详情组件或格式化适配点；ReadOperatorDebugEvents 的会话 wrapper 与 GetOperatorDebugExecution 的执行结果明确分开。沿用已有轮询、身份与结果组件，不造 node.completed 或生产 Job，不新增调试 RPC / 存储。纯 / 实时预览仅兼容已有失败摘要和 payload.logs，不建立成功预览持久流。
-- 设备诊断沿用现有 `GetDeviceDiagnostics` 和设备诊断缓存，从任务中的设备事件继续查看；不把缓存记录再次复制进 Runtime 事件树。
-- Designer 当前会话与本机历史文件继续使用现有 `DesignerLogWriter` 和本机文件读取能力。
-- 复用现有 `jobEvents` 与 `jobs` 表。为跨 Runtime 重启的已结束任务目录增加只读分页查询，不新建任务表或日志存储。
-- 补齐 Designer 对父工作流关联字段的保留；循环类型复用现有 `mode`，只补充准确可知的总量及 While 条件检查是否进入循环体的信息。
-- 统一设备 `executeDevice` 与 `captureDevice` 的执行上下文关联，并在DeviceDiagnostics.append 形成记录前集中归一化嵌套 source，使设备诊断能准确回到 Job、工作流调用、节点和循环路径。
-
-## Capabilities
-
-### New Capabilities
-- `runtime-log-workbench`：Designer 中 Runtime 任务优先的日志查看、执行树、执行时间、通用执行与主动日志易读详情、单算子调试共享展示、设备诊断联动和 Designer 本机日志入口。
-
-### Modified Capabilities
-- 无。本 change 以现有日志整合能力为基础，不重新定义算子日志 API、Runtime 事件持久化规则或设备日志产生机制。
+- 完整保留 Runtime / Designer 归属、运行中 + 最近已结束首页、跨重启目录、真实执行树、循环与连续运行、有界日志窗口、唯一实时 reader、高级筛选、时间、右侧详情、通用算子 / 调试易读层、设备下钻和完整导出合同。
+- 首页按 Job 自身 status 分组；最近历史与当前仍 active 的终态 Job 合并去重，实时状态优先且不被 recent 页额度挤掉。
+- 对真实独立下游显示“还有 N 个关联任务未结束”，允许查看并返回原上下文；普通同 Job 子工作流和 While 轮次留在执行树。原因无法确认时使用“结束处理未完成”，不推测设备正在关闭。
+- 复用本机日期时间控件，保留毫秒、可空边界及半开区间，覆盖任务本地事件、服务端历史事件和历史任务目录三个入口。
+- 高级筛选分常用 / 技术条件，折叠不失效；主行压缩完整 UUID 和长说明，共享详情提供已知框架文字和状态的易读表达，原始值和导出保持。
 
 ## Impact
 
-- 基线：`jsdfhasuh/emo_master`，本次核查固定提交 `9d59fd16a1d0d3ec0c60725c839ff38183d6916b`。
-- Designer：`apps/designer/ui/log_dialog.py`、`ui/log_json_tree.py` 的既有检查能力、`ui/operator_debug_window.py`、`services/operator_debug.py` 既有数据读取接线、`services/global_logs.py`、`services/runtime_client.py`、`services/local_log.py`、节点结果日志入口及相关 UI。V2.3 算子覆盖增量在共享展示与接线，不据此重写 Runtime 日志生产者或调试协议。
-- Runtime：`jobs/read_model.py`、`jobs/repository.py`、`context/sqlite_store.py`、`grpc_server/service.py`、`workflow/loop_runner.py`、`execution/operator_executor.py`。
-- 设备诊断：沿用 `devices/diagnostics.py`、`devices/manager.py`、`ui/communication_panel.py`、`apps/designer/ui/device_workspace.py`。
-- 协议：新增历史任务只读查询所需的 proto / SDK / Web 契约镜像生成物；本 change 不改 Web 日志界面。
-- 不新增日志中间件、事件数据库、设备日志数据库、WebView 或独立日志服务。
-- 不给所有算子批量添加 node.log，不修改日志限流 / 等级策略，不扩大单算子调试的既有准入范围，也不为界面补造完整输入输出或全轮图片保存能力。
+- 当前基线：`codex/runtime-log-workbench` / `fa4b72d751189c2689882a0a0d127fd280a35fde`（2026-11-22 核对）。实际实施前核对后续差异。
+- 主要改动在 `runtime_job_logs.py`、`log_dialog.py`、`log_record_detail.py` 及必要的轻量 UI 状态适配；复用现有 Python 3.10 / PySide2 5.15.2.1 / Qt Widgets。
+- `tasks.md` 保留原 38 条已实施记录，并以 7.1–7.11 列出当前未完成工作。本版的文档完成不代表这些 UI 修订已经实现。
+- 本 change 的唯一 capability 为 `runtime-log-workbench`。正式 specs 目前尚未归档，因此统一提供 21 个 ADDED Requirement，无另一个 change 的归档或实施依赖。
+- 当前修订无需新增 RPC、表、状态枚举、设备采集器、常驻读取器、逐算子渲染器或全量历史扫描。原已实现后台合同继续保留。
+- 验证复用 G1–G6 与 Q1/Q2，只补受影响行为和相关 Qt 证据，保留仓库必须的门禁。
+
+## Evidence and Delivery
+
+完整设计见 [design.md](design.md)，当前工作见 [tasks.md](tasks.md)，验收见 [acceptance.md](acceptance.md)，源码依据见 [source-map.md](source-map.md)。先操作 [可点击原型](reference/prototype.html)，再按 [图片与场景入口](reference/index.html) 对照；页面明确使用模拟数据 / 模拟连接。
+
+原 [implementation-report.md](implementation-report.md) 与 `evidence/` 是 fa4b72d7 的基线档案，本次没有新增产品实现或原生 Qt 验收。实施后的结果单独写入 `implementation-report-v2_4.md`，按真实结果勾选第 7 节。

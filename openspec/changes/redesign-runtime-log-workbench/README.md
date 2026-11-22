@@ -1,34 +1,40 @@
-# OpenSpec change：redesign-runtime-log-workbench
+# emo_master Runtime 日志工作台 · 完整计划 V2.4
 
-## 实施状态
+**这是一份已整合的完整计划。只交给 Codex 这一包即可，不需要再提供 V2.3、补充包或 Patch 01。**
 
-本 change 的产品实现、验证结果和原生 Qt 截图见 [实施与验收记录](implementation-report.md)，勾选状态见 [tasks.md](tasks.md)。下文保留附件的原始计划状态。
+唯一 change：`redesign-runtime-log-workbench`。全部目标、当前待办和原型均归入此目录，不含第二个待执行 change。
 
-## 附件基线
+## 先看可操作界面
 
-- 修订版本：**V2.3 算子覆盖补齐与精简审查**，2026-11-21。
-- 固定源码基线：`9d59fd16a1d0d3ec0c60725c839ff38183d6916b`；本次复核远端 HEAD 一致。
-- 本包仅包含设计、实施计划、验收标准和既有交互原型，**不含正式实现**。任务初始全部未完成；没有 Qt / Runtime / 真机验收通过的声明。
-- 正式栈：Python 3.10、PySide2 / Qt Widgets、现有 gRPC；不引入 WebView 或另一套日志服务。
-- 本版补齐所有节点的真实执行摘要与单算子调试入口；此前已确认的来源、任务、循环、筛选、时间与设备交互保持。原型样例与真实源码结构对齐，数值和连接仍为模拟。
+打开 [reference/index.html](reference/index.html)，进入 [可点击原型](reference/prototype.html)。首页在“最近已结束”中找到“本批采集”，展开“还有 2 个关联任务未结束”，打开检测或保存任务，再返回来源任务。原型数据和连接均为模拟。
 
-## 阅读与使用
+普通子工作流与主流程使用同一个 Job，由调用方等待返回；它们及循环轮次只在执行结构内展开。这里“关联任务”专指实际创建了独立 Job 的下游任务。当前字段无法给出具体未结束项时，仅显示“结束处理未完成”。
 
-1. 先读 `sol-handoff.md`，再核对目标仓库当前 `AGENTS.md`、HEAD、工作区。
-2. 先打开 `reference/prototype.html` 体验当前场景，再看 `reference/visual-gallery.html`：9 张 PNG + 9 张 SVG 静态布局参考图可进入对应场景；本版更新图 08 通用算子详情，新增图 09 独立单算子调试。另读 `reference/visual-guide.md` 的逐图约束和未演示能力。图 03 保留区域关系，详情内容以新版图 08 / 09 为准。这些图片不是浏览器或 Qt 截图，不作为像素基准。
-3. `design.md` 定义数据、身份、范围和交互合同；`specs/runtime-log-workbench/spec.md` 定义必须达到的行为。
-4. `tasks.md` 是唯一实施进度清单；按阶段实现，实际完成后才勾选。
-5. `acceptance.md` 给出聚焦自动验证与两条 Qt + 软件 Runtime 走查；`source-map.md` 给出现有代码和测试入口。
-6. `operator-coverage.md` 与 `reference/operator-coverage.json` 记录 82 个内置算子的静态盘点；盘点不是逐算子测试清单。`review-notes.md` 记录本轮查漏与精简判断；`readiness-check.md` 记录计划文件与原型的实际验证边界。
+## 阅读与执行
 
-## 本次收口
+| 文件 | 用途 |
+| --- | --- |
+| [proposal.md](proposal.md) | 完整变更目标与实际剩余范围 |
+| [design.md](design.md) | 唯一完整设计，直接包含所有最终合同 |
+| [specs/runtime-log-workbench/spec.md](specs/runtime-log-workbench/spec.md) | 一份完整 ADDED 规范 |
+| [tasks.md](tasks.md) | 原 38 条历史完成状态与本轮第 7 节的 11 项实施记录 |
+| [acceptance.md](acceptance.md) | 统一 G1–G6 与 Q1/Q2，当前只补受影响验证 |
+| [codex-handoff.md](codex-handoff.md) | 当前执行步骤及可直接复制的提示词 |
+| [source-map.md](source-map.md) | 当前源码落点、复用能力与状态语义证据 |
+| [operator-coverage.md](operator-coverage.md) | 82 个内置算子的历史静态盘点和数据边界 |
+| [review-notes.md](review-notes.md) / [readiness-check.md](readiness-check.md) | 一致性、实现范围与测试范围审查 |
+| [reference/index.html](reference/index.html) | 唯一可视参考入口：原型、目标图、旧结构图及基线图 |
+| [implementation-report.md](implementation-report.md) / [evidence/README.md](evidence/README.md) | fa4b72d7 的原实施报告和八张证据存档 |
+| [implementation-report-v2_4.md](implementation-report-v2_4.md) | 本轮改动、命令、原生 Qt 走查及验证边界 |
 
-保留既有查询、唯一实时源、循环、时间、设备与完整 Job 导出合同。V2.3 将 node.started / completed / failed / skipped 中已返回的 ioSummary / metrics / diagnostics 设为通用易读展示的必做项；node.log.payload.data 仍表示作者主动记录的字段。单算子调试复用同一展示组件，适配已有 ReadOperatorDebugEvents 与 GetOperatorDebugExecution，不造正式 Job 或 node.completed，不新增 RPC。原始检查继续使用 LogJsonTree。
+## 应用到代码仓库
 
-不逐个给 82 个算子补重复 logger.info，不为每个算子建立专属渲染器，也不新建成功预览历史或图片库。新增的调试入口接线单列任务，验证合并到既有检查；仍保留两条原生 Qt + 软件 Runtime 走查。
+以当前仓库代码为准，将本目录中的计划文件更新到仓库同名 change。保留仓库已有的产品代码、用户修改、实施报告和证据；不要用整个目录清空或覆盖方式抹掉包外文件。按当前 `tasks.md` 第 7 节继续实现。
 
-不新增任务表、设备日志表、全库扫描服务、通用补偿框架或硬件测试矩阵。不能仅凭 OpenSpec 校验或原型承诺最终实现成功；最终交付以实际变更及验收证据为准。
+如旧 `refine-runtime-log-workbench-usability` 已被复制进工作区，先核对其是否含未纳入的实施记录或用户修改，把有效内容并入本 change；同一工作只保留本计划作为有效执行清单。不要再单独执行或排队归档旧 refine 计划。原 `Patch 01` 的“资源收尾中”口径已经被本设计的具体关联提示 / 准确未知原因提示替代，不再套用旧补丁。
 
-## 给实施者的视觉要求
+`implementation-report.md` 是固定提交原文，不代表本轮新结果。实际完成第 7 节后，由执行者新建 `implementation-report-v2_4.md` 和相关真实 Qt 证据，记录验证环境与未验证项。
 
-先体验原型，再对照图片和视觉指南实施。保留已确认来源关系、任务优先、折叠信息区、高级筛选、执行树、运行时间、右侧详情和设备往返。没有主动业务日志的算子，也应能读到已有执行摘要。调试会话事件和执行结果明确各自来源；原始页保留现有树能力。不能只看 PNG 仿制页面，也不能因原型简化而删掉 design/spec 中要求的历史查询、完整导出和诊断能力。
+## 本轮实施证据
+
+第 7 节完成项对应 [V2.4 实施与验收记录](implementation-report-v2_4.md)。原型仍用于说明交互，新的验收图位于 [evidence/v2_4](evidence/v2_4)。

@@ -1,7 +1,6 @@
-# Runtime 运行日志工作台 · V2.3 算子覆盖补齐
+# Runtime 日志工作台完整变更规范 · V2.4
 
 ## Purpose
-
 在 Designer 中以运行任务为入口查看 Runtime 的真实执行过程，按工作流调用、循环迭代和节点执行组织事件，并能从设备事件下钻到现有设备诊断；Designer 本机日志保持独立来源。节点框架执行记录与附加主动日志都提供通用易读详情，现有单算子调试窗口复用展示能力但保留独立会话 / 结果来源。交互以随包原型为参考，正式实现使用现有 PySide2 / Qt Widgets；原型的模拟数据和连接状态不构成实现或验收证据。
 
 ## ADDED Requirements
@@ -32,21 +31,37 @@
 
 ### Requirement: Run task home prioritizes active and recently ended Jobs
 
-系统 SHALL 先显示当前活动任务，再显示最近已结束任务，并提供更早历史；同一 Job 在合并目录中只显示一次，当前实时 `RunState` 优先。
+系统 SHALL 保留“运行中”和“最近已结束”两个首页分组，以任务自身 status 判断分组，而不以 active 单独判定工作流仍在执行。当前实时 RunState SHALL 优先于同一身份的历史摘要；常规 recent 页与当前仍 active 的终态任务 SHALL 合并去重后展示在“最近已结束”。任务操作 SHALL 遵循现有 allowed_actions 和身份校验。
 
 #### Scenario: View active and recently ended Jobs
 
-- **WHEN** 用户打开 Runtime 运行日志
-- **THEN** 当前活动任务显示在上方，最近终态任务按结束时间倒序显示在下方
-- **AND** 同一 Job 内的循环迭代或连续根调用不会生成新的首页任务
-- **AND** 当前任务操作遵循已有 `allowed_actions`，不从状态文案自行推导
+- **WHEN** 用户打开 Runtime 运行任务首页
+- **THEN** 已受理、启动中、运行中、停止中等非终态任务显示在上组，终态任务显示在下组并按可用结束时间倒序排列
+- **AND** 当前返回任务的实际状态保留，不将“已完成”改写为运行中或结束处理中
+- **AND** 同一 Job 在主目录只有一个任务条目，同一 Job 内循环轮次和连续根调用不生成首页任务
+- **AND** 当前 Runtime、工程和 Job 的身份用于合并，当前 RunState 覆盖历史摘要
+
+#### Scenario: Keep a terminal but Runtime-owned task visible
+
+- **WHEN** 某任务已完成、失败或已停止，但当前 ListRuns 仍返回它且 active 为 true
+- **THEN** 该任务出现在“最近已结束”，即使它不在常规最近历史页内
+- **AND** 它不受常规 recent 页额度裁剪，也不在“运行中”重复显示
+- **AND** 使用当前成功 ListRuns 快照与 recent 合并，不新增永久保留任务缓存
+- **AND** 后续它不再 active 后按普通 recent 或更早历史规则处理
+
+#### Scenario: Keep the result duration and allowed action distinct
+
+- **WHEN** 用户查看或选择终态 active 任务
+- **THEN** 本任务自身耗时按既有终态时间规则固定，不随关联任务活动增长
+- **AND** 若 Runtime 返回 stop 权限，保留该任务已有合法停止操作与执行前身份检查
+- **AND** 不因任务被移动到“最近已结束”就清除权限，也不因副提示存在自行创造停止权限
 
 #### Scenario: Browse history after Runtime restart
 
 - **WHEN** 用户查看更早历史
-- **THEN** 系统从现有 SQLite `jobs` 表读取终态任务摘要，支持工程、状态和时间范围以及稳定分页
-- **AND** 不新建任务表，不将历史摘要当作当前 Runtime 所拥有的可停止任务
-- **AND** 历史事件保留原始 Runtime 实例标识；查询请求使用当前目标实例校验，不以事件的旧实例标识拒绝可查询历史
+- **THEN** 系统继续从现有 SQLite jobs 表读取终态摘要，保留工程、状态、结束时间条件及稳定分页
+- **AND** 不新建任务表，不将纯历史摘要当作当前 Runtime 所拥有的可停止任务
+- **AND** 历史事件保留原生产实例标识，查询使用当前目标实例校验
 
 ### Requirement: Job event windows combine recent history and live updates
 
@@ -337,3 +352,125 @@
 - **WHEN** 用户导出设备诊断
 - **THEN** 导出范围标注为已返回的近期缓存
 - **AND** 沿用可获得的截断信息，被截断缓存不被描述为完整设备历史
+
+### Requirement: Related Jobs are explained using actual run identities
+
+系统 SHALL 从已有运行快照的 Runtime、工程、运行组和来源任务关系确认关联 Job，展示实际未终态成员的数量、名称、状态及查看入口；不得仅凭 active、相同名称、时间邻近或循环路径猜测关联。原因尚未明确时 SHALL 使用次要说明“结束处理未完成”，保留原执行结果。
+
+#### Scenario: Explain a completed producer with running consumers
+
+- **WHEN** 已完成主任务在当前快照中有可确认的未终态下游 Job
+- **THEN** 显示“还有 N 个关联任务未结束”，N 来自实际匹配去重后的成员
+- **AND** 展开后可看各任务状态和独立日志，关联入口仅为快捷引用，不增加主目录任务计数
+- **AND** While 轮次、同一 Job 的子工作流调用和连续根调用不计为关联 Job
+- **AND** 同名但身份不匹配的其他任务不进入列表
+
+#### Scenario: Keep ordinary subworkflow calls inside their Job
+
+- **WHEN** 一个普通子工作流、循环体或连续根调用在同一 Job 内执行
+- **THEN** 使用实际 workflowRunId、parentWorkflowRunId、nodeRunId 和 iterationPath 在任务内展示，不生成额外首页 Job 或关联任务数量
+- **AND** 普通子工作流沿用现有同步等待语义，正常情况下子调用未返回时不将整个 Job 误报为已完成
+- **AND** 只有实际创建独立 Job、且具备来源与运行组关系的下游才进入关联任务列表
+- **AND** Dispatch 与 Join 的既有提交 / 等待语义保持，不要求源任务一定先于下游结束
+
+#### Scenario: Explain an owned terminal task without a specific reason
+
+- **WHEN** 终态任务仍 active，但当前数据不能确认具体未结束的关联任务
+- **THEN** 显示“结束处理未完成”，详情说明 Runtime 尚保留该次任务的处理状态、具体未完成项暂未提供
+- **AND** 不声称相机未释放、正在保存结果或清理一定正在推进
+- **AND** 普通已完成且没有后续活动的任务不附加该说明
+
+#### Scenario: Open a related Job and return
+
+- **WHEN** 用户从任务查看某个真实关联 Job 后返回来源任务
+- **THEN** 以真实目标身份打开其既有日志页
+- **AND** 使用轻量来源书签恢复原筛选、视图和可查询的选择/阅读锚点
+- **AND** 继续使用单个有界事件窗口与现有查询，不建立每任务长期读取器或多个持久事件缓存
+- **AND** 若原锚点已经不可查询，明确提示并显示可用范围，不伪造原位置已恢复
+
+### Requirement: Optional date-time filters preserve the existing range contract
+
+系统 SHALL 在任务已加载事件筛选、服务端事件历史查询和历史任务目录的现有时间条件上提供可空日期时间输入，显示本机时区，保留毫秒精度，并转换为原有整数毫秒参数。系统 SHALL 沿用开始含、结束不含的范围语义，不新增时区 RPC 或改变导出范围。
+
+#### Scenario: Query using a local date-time range
+
+- **WHEN** 用户在任一已有时间筛选入口设置有效日期时间范围
+- **THEN** 系统按本机时区转换为同一个时间点的整数毫秒，保留毫秒值
+- **AND** 起点相等的事件包含，终点相等的事件排除
+- **AND** 任务事件使用事件发生时间，历史任务目录使用任务结束时间，标签明确区分
+- **AND** 控件回填、条件摘要、历史下一页和返回沿用同一已生效范围，不在翻页时悄悄重算
+
+#### Scenario: Leave either bound unset or use an empty interval
+
+- **WHEN** 用户清空任一时间边界，或者输入相等的开始与结束时间
+- **THEN** 清空边界代表不限制该侧，默认不自动附加当天或 1970 年边界
+- **AND** 相等边界表示合法空区间，不扩大成全天或报错
+- **AND** 清空后已有范围参数被实际移除，而不只清除显示文本
+
+#### Scenario: Reject a reversed range without changing the displayed result
+
+- **WHEN** 用户输入开始晚于结束的范围
+- **THEN** 界面给出简短行内提示，不发出无效查询，也不以倒置条件重绘为“无结果”
+- **AND** 已显示结果与其生效条件保持，输入纠正后可以正常应用
+- **AND** 无需弹出额外确认框或新增重试机制
+
+#### Scenario: Keep history filtering and full Job export separate
+
+- **WHEN** 用户从已加载筛选进入历史查询或发起完整任务导出
+- **THEN** 历史查询只携带原接口支持且范围明确的有效条件，任务身份固定，结果仍为历史命中列表
+- **AND** 完整任务导出继续使用原完整 Job 范围及固定上界，不意外继承本地日期/等级/节点筛选
+- **AND** 返回任务时恢复原有效筛选和阅读状态
+
+### Requirement: Advanced filters retain capability with compact disclosure
+
+系统 SHALL 默认收起高级筛选，将常用条件与技术条件分层显示，保留全部原有字段、精确 ID 和原始轮次路径能力；任何折叠动作不得清除已应用条件。候选名称与轮次 SHALL 仅来自当前可用且身份匹配的元数据或已加载记录。
+
+#### Scenario: Collapse technical filters while they are active
+
+- **WHEN** 用户设置调用 ID 或原始轮次路径后收起技术条件
+- **THEN** 筛选继续生效，条件摘要或计数仍可见，并可清除
+- **AND** 重新展开后保留输入值
+- **AND** 不将隐藏字段当成无条件，也不删除原服务端历史查询入口
+
+#### Scenario: Choose names and iterations without losing precision
+
+- **WHEN** 用户按工作流、节点或循环轮次筛选
+- **THEN** 已知名称绑定真实 ID，同名对象可区分，用户仍可输入精确 ID
+- **AND** 第 1 轮、第 2 轮来自真实 0-based 路径的展示转换，嵌套路径保留
+- **AND** 候选来自已加载范围时明确标注，不声称列出全部历史轮次
+- **AND** 不新增全量目录查询、历史扫描或按可见位置重编号
+
+### Requirement: Execution labels are concise while identity remains exact
+
+系统 SHALL 在执行树主行优先展示可确认名称、循环轮次、状态、时间和消息；完整调用/执行 ID 与时间不完整的详细原因放入详情或提示。系统 SHALL 保留以真实 workflowRunId、parentWorkflowRunId、nodeRunId、iterationPath 构造和选择执行结构的方式。
+
+#### Scenario: Read repeated and nested executions
+
+- **WHEN** 同名工作流或节点在多轮循环、嵌套调用或连续运行中出现
+- **THEN** 不同执行保持独立，折叠展开、筛选祖先、选择和时间顺序切换仍指向原对象
+- **AND** 主行不默认重复输出完整 UUID，详情可查看和复制完整身份
+- **AND** 没有名称时使用真实标识回退，不能凭日志顺序制造全局调用次数
+
+#### Scenario: Read an incomplete execution time
+
+- **WHEN** 起止记录或必要时间信息不足
+- **THEN** 时间列采用简短的不完整状态，详情或提示展示实际已知原因
+- **AND** 不把缺失字段伪装为已结束、未执行或历史已清理
+- **AND** 不为了缩短文字隐藏未知状态或推算不存在的耗时
+
+### Requirement: Readable framework text does not rewrite original events
+
+系统 SHALL 在既有显示适配处为已知框架默认事件和状态提供中文易读表达，继续复用共享详情组件；算子主动消息、用户业务文本、未知值、原始记录与导出内容 SHALL 保持。
+
+#### Scenario: Read a known framework event or result status
+
+- **WHEN** 用户在任务详情或既有算子调试详情中查看可识别的框架事件/状态
+- **THEN** 显示易读文案，例如循环开始、该轮开始、已完成
+- **AND** 原始 JSON 保留原 eventType、status、message 和完整执行身份
+- **AND** 共享映射不扩成逐算子专属渲染器
+
+#### Scenario: Read a user message or an unknown framework value
+
+- **WHEN** 所选日志包含算子自定义消息，或未知事件/状态
+- **THEN** 保留原文或原值，不猜业务含义，不按英文字符串全局替换
+- **AND** 复制当前记录与完整导出仍对应实际原始记录

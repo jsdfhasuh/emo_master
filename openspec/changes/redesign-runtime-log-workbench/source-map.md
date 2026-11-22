@@ -1,107 +1,113 @@
-# 源码位置与复用依据 · V2.3 算子覆盖补齐
+# 源码位置与复用依据 · V2.4 完整整合计划
 
-基线：[9d59fd16a1d0d3ec0c60725c839ff38183d6916b](https://github.com/jsdfhasuh/emo_master/tree/9d59fd16a1d0d3ec0c60725c839ff38183d6916b)
+## 1. 当前基线与使用方式
 
-以下是本 change 的优先核查入口；行号会随实施分支变化，执行者必须按函数名重新定位。本文区分基线已有能力与 V2.3 待实施改动，不代表实现或测试已完成。82 个内置算子的盘点范围与条件见 [operator-coverage.md](operator-coverage.md)。
+当前实现基线为 [`fa4b72d751189c2689882a0a0d127fd280a35fde`](https://github.com/jsdfhasuh/emo_master/tree/fa4b72d751189c2689882a0a0d127fd280a35fde)，分支 `codex/runtime-log-workbench`。本文按该提交已有实现定位，**不沿用早期 `9d59fd1` 时“工作台尚未实现”的描述**。
 
-| 文件 | 当前能力 / 本 change 关注点 |
-|---|---|
-| `src/emo_master/apps/designer/ui/log_dialog.py` | 现有日志窗口、`StructuredLogEntry`、来源切换、历史查询、筛选、表格、JSON 详情、`openDeviceHistory()`；主要 UI 重构位置。`exportHistory()` 受 `_historyFilters` / `_historyReply` 影响，新增完整 Job 导出必须绑定明确的 Job 范围，不能直接继承另一视图的筛选 |
-| `src/emo_master/apps/designer/ui/log_json_tree.py` | 已有 LogJsonTree：字段 / 值 / 类型、对象与数组惰性展开、长文本查看、复制所选值和当前记录。V2.3 易读层不能以纯文本替代它 |
-| `src/emo_master/apps/designer/ui/operator_debug_window.py` | 普通算子的 appendLog 当前使用 str(event)，PLC 有专门格式化；复用通用易读组件，保留现有执行、结果和 PLC 功能，不借此重做整个调试器 |
-| `src/emo_master/apps/designer/services/operator_debug.py` | DebugConnection.snapshot 已分别读取 ReadOperatorDebugEvents 与 GetOperatorDebugExecution；前者提供事件 wrapper，后者提供当前 executionId 的执行结果，无需新增 RPC |
-| `src/emo_master/apps/runtime/operator_debug/worker.py` | 直接调用 OperatorExecutor，未经过 WorkflowRunner。成功结果已有 outputs / outputAssets / metrics / diagnostics / elapsedMs；日志通过独立 pipe 发送，不能假设存在 node.completed / ioSummary |
-| `src/emo_master/apps/runtime/operator_debug/manager.py` | 独立会话 / generation / executionId、sequence 和有界事件缓存；日志 wrapper 的 event 才是内层事件，执行结果通过已有查询取得。复用既有身份与缓存，不增加 Job 映射或副本 |
-| `src/emo_master/apps/runtime/preview/executor.py`、`preview/live.py` | 预览使用 BufferedOperatorLogger；纯预览失败带最近消息摘要，实时预览失败可产生 node.preview.failed 且 payload.logs 带缓冲记录。本次只展示实际收到的失败信息，不新增成功预览持久日志流 |
-| `src/emo_master/core/contracts/operator_logging.py` | getOperatorLogger / getDeviceLogger 的公共接口；message、code、payload 没有任意业务字段的中文名 / 单位元数据，不重定义该协议 |
-| `src/emo_master/apps/runtime/events/operator_logger.py` | OperatorLogManager.emit 将用户 payload 放到事件 payload.data，附 operatorId / phase 及可用 deviceBindings；_safePayload / _safeValue 已有截断、脱敏与类型摘要。V2.3 只消费既有结构 |
-| `src/emo_master/apps/runtime/events/jsonl_writer.py` | _projectEvent 被 QueryRuntimeLogs 复用；非设备 completed 事件的白名单保留 metrics / diagnostics / ioSummary，但不提供完整 outputs。原始页展示的是当前收到的投影记录 |
-| `src/emo_master/core/contracts/run_inspection.py` | describeValue / summarizePorts / normalizeInspection 提供标量、集合计数、image / array shape 与 dtype、redacted / unavailable 及 omitted / truncated；复用现有类型含义，不由摘要恢复全部值 |
-| `src/emo_master/apps/designer/ui/node_result_panel.py` | portText 已按现有端口摘要解释输入 / 输出，节点结果界面与日志数据具有不同职责 |
-| `src/emo_master/apps/designer/state/run_result_history.py` | applyEvent 为每个节点保留最近两次 execution；view 提供当前 / 上一次，不能当作任意历史循环结果索引 |
-| `src/emo_master/apps/designer/services/inspection_images.py` | _read 依赖检查会话并按 Job / workflowRunId / nodeRunId / 端口查询，核验 revision / captureId；历史结果图并非仅凭一条日志即可取得 |
-| `src/emo_master/apps/designer/services/global_logs.py` | `RuntimeGlobalLogs`：唯一 Runtime 实时 reader。当前 `cursor` 是查询/入队进度，不等于界面已应用进度；为详情快照与实时接续补充同一 reader 的交付水位，不能另开持续 Job reader |
-| `src/emo_master/apps/designer/services/local_log.py` | `DesignerLogWriter`、当前会话与本机文件归属，继续复用 |
-| `src/emo_master/apps/designer/services/runtime_client.py` | `ListRuns`、`GetRunState`、`QueryRuntimeLogs`、`GetDeviceDiagnostics` 客户端包装；新增历史任务查询包装 |
-| `src/emo_master/apps/runtime/jobs/read_model.py` | `RunReadRpcMixin` 承载 `GetRuntimeInfo`、`ListRuns` / `GetRunState`；`currentRuns()` 基于 `jobRepository.all()`。新增历史目录与反向日志查询能力时同步 `GetRuntimeInfo.capabilities`，让客户端显式识别支持范围 |
-| `src/emo_master/apps/runtime/jobs/repository.py` | `JobRepository.all()` 只读当前进程 `_jobs`；`get()` 有 SQLite 单条回读 |
-| `src/emo_master/apps/runtime/context/sqlite_store.py` | `jobs` 表读写、`getJob()`、`queryRuntimeLogs()`；新增历史任务只读分页查询及反向事件页，不新增表。`markOrphanedJobsFailed()` 将重启确认时刻写为 endAt，不能当作旧进程实际结束时间 |
-| `src/emo_master/apps/runtime/grpc_server/service.py` | `QueryRuntimeLogs`、`GetDeviceDiagnostics` RPC 及运行读模型 mixin 的装配；QueryRuntimeLogs 的行数/字节上限、终页游标与新旧方向语义需要一致；新增历史任务查询 RPC |
-| `src/emo_master/apps/runtime/workflow/loop_runner.py` | `_iterationEvent()`、旧版 `_while` / `_whileV2`、ForEach / Repeat 事件；复用 `loop.started.payload.mode`，不新增 loopType；仅补准确可知的 totalIterations，以及 While completed 的 bodyExecuted 真/假/缺省语义 |
-| `src/emo_master/apps/runtime/workflow/context.py` | `workflowRunId`、`parentWorkflowRunId`、`iterationPath`、`cycleId` 的真实语义 |
-| `src/emo_master/apps/runtime/workflow/runner.py` | `workflow.started/completed/failed`、`node.started/completed/failed/skipped` 生命周期事件 |
-| `src/emo_master/apps/runtime/jobs/worker_main.py` | 连续运行 `_runContinuous()` 每轮创建新的根 RunContext；同一 Job 下产生多个 workflowRunId |
-| `src/emo_master/apps/runtime/execution/operator_executor.py` | `executeDevice` 与 `captureDevice` 的 source 字段；统一传递执行上下文 |
-| `src/emo_master/apps/runtime/devices/diagnostics.py` | 有界设备诊断缓存、设备摘要/恢复、`query()`。原生事件从 `append()` 经 `_operationalRows()` / `_event()` 输出；在 append 形成 row 前归一化 source，顶层已有可信字段优先。`projectEvent()` 仅处理 node.log / node.failed，不能只改该方法 |
-| `src/emo_master/apps/designer/ui/device_workspace.py` | 设备工作台已有诊断页和 `openRuntimeLogs()` 跳转 |
-| `src/emo_master/ui/communication_panel.py` | `DeviceDiagnosticsView`、通道筛选、HEX / UTF-8、详情、缓存导出 |
-| `src/emo_master/apps/designer/ui/node_result_coordinator.py` | 节点结果“运行日志”入口；补充可用 Job / workflowRunId / nodeRunId 上下文 |
-| `src/emo_master/apps/designer/state/node_run_inspection.py` | `NodeRunInspection` 是有界的最近节点观测，按 workflowId / nodeId 保存，并校验 Job、sequence、执行身份；不是全 Job 当前节点权威快照。仅在运行身份匹配且事件接续证据充分时辅助定位，否则显示当前执行位置未确认 |
-| `proto/runtime.proto` | Runtime RPC 合同；新增历史任务查询后同步生成物 |
-| `scripts/gen_proto.py`、`scripts/build_panel_contract.py` | 现有协议生成入口；不要手工修改生成物代替源 proto |
+当前已有原生 Qt 工作台、运行目录与历史查询、有界事件窗口、真实执行结构、易读详情、设备诊断往返和独立算子调试接线。原实施事实保留在 [implementation-report.md](implementation-report.md)；该报告记录的是既有实现及当时验证，不代表本轮 7.x 改进已完成。
 
-## 已有文档和验证依据
+本包只有一个 change：`redesign-runtime-log-workbench`。完整目标、任务进度和验收分别见 [design.md](design.md)、[tasks.md](tasks.md)、[acceptance.md](acceptance.md)。源码表中“7.x”指这次待完成的界面与语义改进，具体勾选项以任务清单为准。按函数名核对当前代码，行号只作固定提交的辅助证据，不机械应用旧补丁。
 
-- `docs/plans/2026-11-03-logging-consolidation-implementation-plan.md`：日志整合 v3.5 已完成的范围和明确边界。
-- `docs/testing/2026-11-03-logging-consolidation/README.md`：此前日志整合的测试与交付证据。
-- `docs/handoffs/2026-11-05-web-visible-acceptance-repairs.md`：`openDeviceHistory()` 会清理旧查询游标与筛选，避免设备查询被旧条件筛空。
-- `tests/runtime/test_device_operational_logs.py`：设备故障摘要、恢复与 EventStore 集成。
-- `tests/runtime/test_device_feedback_closure.py`：设备诊断归属、回执与缓存边界。
-- `tests/designer/test_operational_log_integration.py`：Runtime 全局日志与 Designer 集成。
-- `tests/designer/test_log_dialog.py`：日志窗口筛选、详情、历史查询与导出。
-- `tests/designer/test_log_json_tree.py`：已覆盖类型、对象展开、数组分页、长文本和复制；复用这些保障，只补新增易读组件与原始页共享同一数据的接线断言。
-- `tests/designer/test_operator_debug_window.py`：已有原生调试窗口及两次结果、输入值区别、结构值分页、执行选择等用例；在相关用例中补日志 wrapper 与执行结果的展示接线，不另造全套调试测试。
-- `tests/runtime/test_operator_debug_data.py`、`test_operator_debug_rpc.py`、`test_operator_debug_sessions.py`：调试输出、RPC 与会话身份的现有依据。未改变 Runtime 合同时，不因展示层改动重复新增这些后端测试。
-- `tests/designer/test_device_workspace_usability.py`：设备诊断入口与日志跳转。
-- `tests/runtime/test_operator_logging.py`：算子日志在循环与子工作流中的关联身份。
+## 2. 完整日志工作台的现有实现
 
-## 重要实现边界
+### 2.1 来源、任务目录与入口
 
-- `JobRepository.all()` 不是历史任务数据库；历史列表从现有 SQLite `jobs` 表读取。
-- `RuntimeEvent` 已有 `parentWorkflowRunId`，但 Designer `StructuredLogEntry` 当前未完整保留。
-- `LoopRunner` 已有 iteration start/completed 事件；补元数据，不另建循环记录表。
-- `GetDeviceDiagnostics` 是有界近期缓存，且绑定当前工程加载代次；它不是完整跨重启设备历史。
-- `captureDevice` 当前 source 比 `executeDevice` 少执行身份字段，需对齐。
-- `QueryRuntimeLogs` 已经能把 `__runtime__` 中明确带有真实 Job ID 的设备摘要纳入 Job 查询；不要把这些摘要再作为独立系统事件重复展示。
+| 源码位置 | fa4b72d7 已有能力 | 7.x 的复用与修改边界 |
+| --- | --- | --- |
+| [`apps/designer/ui/log_dialog.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/designer/ui/log_dialog.py) | `StructuredLogEntry` 保留执行身份、原始记录和来源；`isRuntime()`、`effectiveJobId()`、`isRuntimeSystem()` 区分 Runtime/Designer 及真实 Job 归属。`LogDialog` 已接入任务页、系统事件与高级历史查询。 | 保留两个一级来源，不能因 Designer 记录携带 Job ID 而改来源。仅完善已知框架默认消息和日期条件显示，不改原始事件与导出内容。 |
+| [`apps/designer/ui/runtime_job_logs.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/designer/ui/runtime_job_logs.py) | `RuntimeJobLogs` 已有目录、任务详情、设备页；`_refreshCatalog()` 读取 `ListRuns` 与最近历史，`_readCatalogHistory()` 读取更早目录。首页 recent 当前请求 `limit=20`。 | `_renderCatalog()` 从以 active 分组改为按 status 分组；将 current terminal-active 与普通 recent 合并去重，实时对象优先。保留现有分页和选择，不增加任务账本。 |
+| [`apps/designer/ui/main_window.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/designer/ui/main_window.py) | 正常日志入口已创建工作台；全局事件分发、Runtime 切换和日志显示已经接入。 | 继续复用入口与事件交付，不为关联任务增加一个独立日志窗口服务或第二个持续 reader。 |
+| [`apps/designer/services/local_log.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/designer/services/local_log.py) | Designer 当前会话与本机文件日志来源。 | 保持本机来源和既有文件读取语义，时间输入共用适配时不改其归属。 |
+| [`apps/runtime/jobs/read_model.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/jobs/read_model.py) | `runState()`、`currentRuns()`、`ListRuns`、`GetRunState`、`ListJobHistory` 和能力声明均已存在。历史 RPC 从 SQLite 读取，默认页大小 50；不是当前进程内存列表。 | 本轮用已有 status、active、组/来源字段与 allowed_actions 解释目录，不改变 Runtime 生命周期或新增 RPC。 |
+| [`apps/designer/services/runtime_client.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/designer/services/runtime_client.py) | `listRuns()`、`listJobHistory()`、`getRunState()`、`queryRuntimeLogs()` 及设备查询已有包装。另有 `dispatchQueueState()`。 | 关联数量使用现有 ListRuns 快照；本轮不强制新增队列轮询。日期控件转换为原请求字段，不扩协议。 |
 
+### 2.2 持久查询、有限窗口与实时接续
 
-## V2 审查补充
+| 源码位置 | fa4b72d7 已有能力 | 本轮应保留的合同 |
+| --- | --- | --- |
+| [`apps/runtime/context/sqlite_store.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/context/sqlite_store.py) | `queryJobHistory()` 在现有 jobs 表执行终态 keyset 分页；`queryRuntimeLogs()` 已支持前向、`latestFirst`、`beforeEventId`、固定 upper、真实 Job 及带 payload Job 归属的系统分区事件。 | 不新增表或全量扫描。目录时间使用 endAt，事件时间使用 timestampMs；两者均起点包含、终点不包含。历史生产者实例与当前查询目标实例不是同一概念。 |
+| [`apps/runtime/grpc_server/service.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/grpc_server/service.py) 与 [`proto/runtime.proto`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/proto/runtime.proto) | 日志正反向查询、字节/行数限制、运行读模型和设备诊断 RPC 已接入。 | 游标以原始返回页和服务端 next/hasMore 为准。界面本地筛选后为空，不代表历史耗尽。7.x 没有新增 proto 需求。 |
+| [`apps/designer/services/global_logs.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/designer/services/global_logs.py) | `RuntimeGlobalLogs._read()` 依次排入事件和 progress；`take(includeProgress=True)` 支持上层按交付顺序处理。已有断线通知和受控重连。 | 使用原 reader 及交付水位；有限历史页查询和缺口补取不另建常驻订阅。保留既有行为，不为新提示追加重试层。 |
+| [`apps/designer/state/job_log.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/designer/state/job_log.py) | `JobEventWindow` 按有效 Job 和 eventId 去重，窗口上限 10000；暂停时计新增而不持续塞入载荷，向前合并保护选中范围。 | 新关联导航只存轻量书签，不为每个任务持有一个长期事件窗口。返回按现有查询重建可用范围。 |
+| `runtime_job_logs.py::_openLatest()`、`_requestLatest()`、`_fillGap()`、`_readEarlier()`、`appendEntry()` | 已实现最近页、固定上界、有限实时补齐、更早页、阅读暂停和返回最新。 | 日期和文案调整不改变这些读模型；关联返回复用 eventId、结构键和查询上界，不重写窗口算法。 |
 
-- `src/emo_master/apps/runtime/context/sqlite_store.py`：`queryRuntimeLogs()` 当前按全局 `eventId` 升序读取并固定 `upperEventId`；V2 扩展同一请求支持最近页与 `beforeEventId` 向前分页，旧请求语义保持。
-- `src/emo_master/apps/runtime/context/sqlite_store.py`：Job 查询已包含 `jobId='__runtime__'` 且 payload `jobId` 匹配的设备摘要；系统事件页必须剔除这些关联项并继续消费空可见页的游标。
-- `src/emo_master/apps/runtime/jobs/models.py`：`JobProcessSpec.continuous` 是执行配置；不要把 `JobRecord.executionMode='runtime'` 当成单次 / 连续模式。
-- `src/emo_master/apps/runtime/context/sqlite_store.py`：`jobs.startAt` 是插入/受理阶段时间，实际受理时间优先使用记录中的 `acceptedAt`，实际执行开始另有 `startedAt`；`durationMs` 当前按 `startAt` 计算，不应未经核对作为实际执行耗时。
-- `src/emo_master/apps/runtime/jobs/read_model.py`：`RunState.active` 包含运行组资源所有权语义，不能单独决定 Job 自身计时是否继续。
-- `src/emo_master/apps/runtime/workflow/loop_runner.py`：While false 条件检查仍发出 iteration started/completed，但循环体没有运行；V2 通过 `bodyExecuted` 明确区分。
-- `src/emo_master/apps/runtime/devices/manager.py` 与 `devices/diagnostics.py`：设备操作执行标识部分保存在嵌套 source；V2.1 将归一化位置明确为 `DeviceDiagnostics.append()` 形成 row 前，不要求每层重复兜底，不覆盖 Manager 的可信 jobId / scope / 设备归属。
-- `proto/runtime.proto` 与 `scripts/gen_proto.py`：新增查询参数后通过现有脚本生成 Python gRPC；`scripts/build_panel_contract.py` 负责同步 Runtime RPC schema / TypeScript 契约镜像。此处只同步契约生成物，不改 Web UI。
+### 2.3 执行结构、循环、连续运行和时间
 
-## V2.1 实施时必须对照的边界
+| 源码位置 | fa4b72d7 已有能力 | 7.x 的复用与修改边界 |
+| --- | --- | --- |
+| `state/job_log.py::ExecutionTree`、`ExecutionBranch` | 用 workflowRunId、parentWorkflowRunId、nodeRunId、iterationPath 建树；保留真实分支，投影筛选保留祖先；有代表事件和上下文定位能力。 | 精简主行的完整 UUID 和重复文字，原始键不改。名称相同不能合并调用，缺字段不能按日志顺序猜父子关系。 |
+| [`apps/runtime/workflow/loop_runner.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/workflow/loop_runner.py) | 现有 While 路径、ForEach、Repeat 事件已有 mode、可知 totalIterations，以及 While 迭代 bodyExecuted 的真/假证据。 | 本轮只使阅读更简洁。false 条件检查不计为执行循环体；旧记录缺省仍是未记录，不反查工程推算。 |
+| [`apps/runtime/workflow/context.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/workflow/context.py) 与 [`workflow/subflow_runner.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/workflow/subflow_runner.py) | 普通子工作流创建新的调用 ID，保留同一 Job；同步调用返回后才发布子工作流完成。 | 普通嵌套调用留在该任务执行树中，不变成首页“关联任务”。详见第 3 节。 |
+| [`apps/runtime/workflow/runner.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/workflow/runner.py) 与 [`jobs/worker_main.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/jobs/worker_main.py) | 工作流和节点生命周期事件已存在；`_runContinuous()` 在同一 Job 内为每次根调用创建新 RunContext。 | 连续根调用与循环轮次均不是独立 Job。没有全量历史时，不把可见位置伪装成全局运行次数。 |
+| `state/job_log.py::jobExecutionTime()`、`ExecutionTime`、`ExecutionBranch.executionTime()` | 已区分实际开始、终态固定耗时、运行中经过时间、不完整配对和重启确认时间。 | 短标签只改呈现；详细原因留在详情/提示。terminal-active 的主 Job 不继续计时，下游 Job 用自己的时间。 |
+| `runtime_job_logs.py::_render()`、`_updateTimes()`、`_eventSelected()` | 树/时间视图、选中恢复、抽屉、运行时间和当前位置已有接线。 | 移除“下游资源仍在收尾”统一解释，按真实关联或未知原因分别显示；保留定位所需的连续性证据。 |
 
-- `RuntimeGlobalLogs._read()` 当前首次连接直接把 cursor 设到 `upper_event_id`，后续将查询事件入队后才推进 cursor；`take()` 还要由上层消费。详情快照的上界不能与 reader 的查询进度混同。交付水位须表示同一查询范围、同一 Runtime 身份下此前事件已经交付并应用；有限的缺口补取与历史页查询不是第二条持续订阅。
-- `QueryRuntimeLogs` 的反向页游标取原始返回页的边界，不取 UI 筛选后可见记录；末页、零记录页及字节预算截断均按 `design.md` 的明确合同处理。旧的正向查询和已有服务端高级筛选保留。
-- 现有 `NodeRunInspection` 的 RUNNING 观测和“最新一条日志”都不能单独证明当前执行位置；断线、分页缺口、身份不匹配或缺少起止配对时不能猜测。`ListRuns` / `GetRunState` 也没有提供当前 nodeRunId 的权威字段。
-- `JobStatus.STOPPING` 是非终态；有真实 startedAt 且尚无结束时间时仍可显示经过时间。`E_RUNTIME_RESTARTED` 的 endAt 仅为重启确认时间；内部对象缺少配对事件时不据此伪造结束时间。
-- `DeviceDiagnostics._operationalRows()` 的聚合键不含 Job 或轮次，occurrences / durationMs 属于设备同类问题聚合；恢复摘要不改变之前失败节点的结果。
-- `tests/designer/test_operational_log_integration.py` 已覆盖携带 Job ID 的 Designer 本机错误。一级来源先判 originApp / 已知采集来源，再在 Runtime 内判断 Job 归属。
-- `exportHistory()` 的已有固定上界遍历和取消机制应复用；完整 Job 导出需要自己的固定 Job 查询范围，不能因为 `_historyFilters` 中残留等级、设备或时间条件而漏导，也不能把当前有界窗口当作完整 Job。
-- 执行树使用 10000 条有界原始事件窗口；选中项及其路径可保留轻量定位状态，但树展开不得成为无限保留原始事件的理由。具体窗口切换与上下文范围提示以 `design.md` 为准。
+### 2.4 算子易读详情、独立调试与预览边界
 
-## V2.2 算子详情核查结论
+| 源码位置 | fa4b72d7 已有能力 | 7.x 的复用与修改边界 |
+| --- | --- | --- |
+| [`apps/designer/ui/log_record_detail.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/designer/ui/log_record_detail.py) | `LogRecordDetail` 已有易读/原始页、值展开与复制、同形对象数组表格；`_eventPayload()` 读取生命周期、ioSummary、metrics、diagnostics 和主动日志 data。 | 只完善已知状态与框架默认文案的中文和层次，保留未知/用户文本；不为每个算子建立专属渲染器。 |
+| [`apps/designer/ui/log_json_tree.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/designer/ui/log_json_tree.py) | 原始记录、对象/数组惰性展开、长文本与复制的共用能力。 | 易读页面继续共享真实值，false、0、null、空集合和缺字段不能互换，不改复制的原始记录。 |
+| [`core/contracts/run_inspection.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/core/contracts/run_inspection.py) 与 [`apps/runtime/events/jsonl_writer.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/events/jsonl_writer.py) | 端口摘要的类型/尺寸/计数、截断和不可用原因已有合同；查询投影保留摘要、指标和诊断，并不保证携带完整 outputs。 | 不从摘要恢复完整图像、数组或任意旧轮结果；原始页是当前实际收到的记录。 |
+| [`apps/runtime/execution/operator_executor.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/execution/operator_executor.py) 与 [`events/operator_logger.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/events/operator_logger.py) | 正式普通算子执行注入 logger 与调用上下文；主动日志进入实际 node.log.payload.data。框架节点完成记录不依赖算子主动写日志。 | 复用已收到的结果摘要与主动数据，不为提升“覆盖率”批量添加重复日志，也不重定义 logging 协议。 |
+| [`apps/designer/ui/operator_debug_window.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/designer/ui/operator_debug_window.py) | 已从普通 str(event) 列表升级为共享易读详情；`showLog()`、`matchesResult()`、`openLogResult()` 按 session/generation/executionId 对应真实结果，保留 PLC 与输出端口视图。 | 共享显示改进覆盖此入口即可，不重做调试器，不增加正式 Job，不把另一次结果显示成所选日志的结果。 |
+| [`apps/designer/services/operator_debug.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/designer/services/operator_debug.py)、[`runtime/operator_debug/worker.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/operator_debug/worker.py)、[`runtime/operator_debug/manager.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/operator_debug/manager.py) | 独立事件 wrapper 和结果读取已存在，调试 worker 直接执行算子，不经过 WorkflowRunner。 | 保留独立会话身份；不能虚构 node.completed/ioSummary，也不能将单算子调试并入生产 Job 历史。 |
+| [`apps/runtime/preview/executor.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/preview/executor.py)、[`preview/live.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/preview/live.py) | 预览失败使用既有消息或缓冲日志；实时预览失败事件可带 payload.logs。 | 继续展示实际收到的失败信息，不新增成功预览持久日志管线。 |
 
-- `LogDialog` 当前已把 `entry.detailPayload()` 交给 `LogJsonTree`，不是只有原始文本。新增的是默认易读层与数据分区，不是重新实现一个基础 JSON 查看器。
-- `OperatorLogManager.emit()` 的真实 node.log payload 是 `{operatorId, phase, data, deviceBindings?, truncated?}`；`data` 只是作者主动写入的日志内容。`phase=lifecycle` 不能区分初始化和清理；code 可能是正常业务代码。
-- `_safeValue()` 会按字段名隐藏敏感值，将二进制 / 数组类对象转为说明，并限制字符串、集合和深度；整体数据过大时 `_safePayload()` 返回截断摘要。嵌套值截断不一定传播到顶层 truncated，不能把缺少该标记当作完整性证明。
-- `workflow/runner.py` 的 node.started / completed / failed 发布 ioSummary，完成事件还包含 metrics / diagnostics；日志查询投影去掉完整 outputs。可读化必须区分主动日志字段与执行结果摘要。
-- 节点结果最近两次记录和图片检查会话均有范围；旧轮日志不能跳到最新图片充当该轮结果。此版不增加任意历史图片恢复或重新执行能力。
-- V2.2 新增验证并入 `tests/designer/test_log_dialog.py` 与已有 LogJsonTree 相关测试、G6 和 Q1；复用 `tests/runtime/test_operator_logging.py` 已有数据契约证据，不重复构造限流 / 脱敏测试套。
+节点结果检查与日志有不同数据范围：`apps/designer/state/run_result_history.py`、`services/inspection_images.py`、`ui/node_result_panel.py` 继续服务既有有限结果/图片读取；不因为日志中有旧轮执行 ID 就承诺任意历史图片可取。历史算子盘点见随包 `operator-coverage.md`，其静态盘点不能替代当前产品的逐设备运行验证。
 
-## V2.3 全算子与多入口覆盖核查
+### 2.5 设备诊断与导出
 
-- 正式工作流的普通注册算子通过 OperatorExecutor 取得 logger；基础 node.started / completed / failed / skipped 事件由 WorkflowRunner 产生。结构节点由其专用 runner 执行，不能要求它们调用普通算子的 execute logger。
-- 完整读取 82 份 manifest 和 166 个内置 Python 文件，定位 82 个唯一 operatorId、58 个入口模块及相关基类。只有 Huaray 相机、SLMP 读、SLMP 写、SQLite 写四个类显式调用 OperatorLogger；这不是日志功能完成率，亦不是目标机器注册 / 设备运行通过率。
-- YOLO 检测的 latencyMs / detectionCount、PatchCore 的诊断摘要、Threshold 的前景比例等已有返回数据主要进入完成事件的 metrics / diagnostics；整数加法只有结果值。D10 把这些当前事件摘要的通用展示改为必需，不再让它们依赖一条不存在的 node.log。
-- 相机 captureDevice、PLC executeDevice 的托管路径会绕过兼容直连分支的显式业务日志；优先利用已有返回指标和设备诊断，不重复复制到 node.log。所有内置文件中未发现 getDeviceLogger 调用，不代表设备 Manager 没有产生诊断。
-- 单算子调试用 wrapper 的 session / generation / executionId 识别归属，先区分记录类型，再适配内层 event。GetOperatorDebugExecution 的结果是另一份明确标识的数据，不能包装成虚构的 node.completed，也不能加入正式 Job 历史。
-- 数值、对象、数组和未知字段使用通用展示；已知端口摘要复用 run_inspection / 结果面板的解释方式。当前事件可直接读，不为字段展示逐条查询其他事件；同次已加载关联信息作为单独来源，不改变原始记录复制内容。
-- V2.3 的代表数据与调试入口断言并入既有 G6、6.2 和 Q1；不逐算子写相同测试，不要求加载所有模型或连接真实设备，不新增性能专项、故障组合和跨版本矩阵。
+| 源码位置 | fa4b72d7 已有能力 | 本轮应保留的合同 |
+| --- | --- | --- |
+| `execution/operator_executor.py` 的设备执行上下文与 [`apps/runtime/devices/diagnostics.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/devices/diagnostics.py) | 采图/设备操作传递可用执行身份；`DeviceDiagnostics.append()` 已集中提取 source 中的调用、父调用、节点及轮次，保留可信顶层身份。 | 不再次给各驱动加同一套兜底。设备同类问题聚合不等于本 Job 这一轮的统计。 |
+| [`apps/runtime/devices/manager.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/devices/manager.py) 与 `diagnostics.py::query()` | Runtime、工程加载范围、设备和现有有界近期诊断缓存。 | 诊断不是第三个永久日志数据库；历史任务不自动拥有当前设备缓存。 |
+| [`ui/communication_panel.py`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/ui/communication_panel.py)、`runtime_job_logs.py::_openDevice()`、`apps/designer/ui/device_workspace.py` | 设备诊断下钻、通道选择、HEX/UTF-8、缓存导出与返回已有实现。 | 保留原范围检查、选择和返回路径；7.x 布局改动不丢设备入口。 |
+| `log_dialog.py::StructuredLogView` 的历史/导出路径与 `RuntimeJobLogs` 导出信号 | 完整 Job 导出已经走独立固定 Job 范围和现有前向分页/取消机制。 | 本地日期、WARN、节点条件不侵入完整 Job 导出；高级历史的“完整选定范围”仍使用其已提交条件。无需新导出器。 |
+
+## 3. “子工作流”与“关联任务”的源码判定
+
+### 普通子工作流是同一 Job 内的同步调用
+
+`RunContext.childWorkflow()` 保留 `jobId=self.jobId`，生成新的 `workflowRunId`，并记录 `parentWorkflowRunId=self.workflowRunId`。`SubflowRunner.run()` 第 63–72 行同步调用子工作流，返回后才发布 `subflow.completed`。`worker_main.runJobProcess()` 在 `runCycle()` 返回后才发 `job.completed`。
+
+所以正常执行下，不能解释为“普通子工作流还在执行，父 Job 已经成功完成”。这些子调用和循环轮次显示在同一任务的执行结构里，不增加首页任务数。
+
+### 派发产生的是独立下游 Job
+
+[`jobs/supervisor.py::_startRunGroup()`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/jobs/supervisor.py) 为 slot 生成新 Job ID、建立 `JobRecord`，记录运行组和来源 Job，并分别启动下游任务。
+
+[`frame_dispatch/runner.py::DispatchRunner.run()`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/frame_dispatch/runner.py) 的 Dispatch 分支取得接收结果后返回；Join 分支则等待目标结果。未等待的下游因此可能在源任务完成后继续处理。是否等待取决于真实流程，不因出现“子流程”名称就一概推断。
+
+[`frame_dispatch/scheduler.py::RunGroup.next()`](https://github.com/jsdfhasuh/emo_master/blob/fa4b72d751189c2689882a0a0d127fd280a35fde/src/emo_master/apps/runtime/frame_dispatch/scheduler.py) 在源已结束且组内没有待处理/正在执行记录时才关闭消费者。`read_model.runState()` 同时保留组成员活动与所有权信息。
+
+### active 不能单独证明有子任务，更不能证明设备正在关闭
+
+`runState()` 使用 `active = not record.isTerminal or owned or groupActive`。`JobSupervisor._ownedJobs()` 包含 `_handles`、`_bridges`、`_finalizations`、`_recoveries`、`_retirements`。因此无下游 Job 时，也可能仍存在进程、事件桥或结束处理记录。
+
+7.x 只在同 Runtime、工程、非空运行组及明确来源 Job 关系匹配时，展示实际未终态成员数量和入口。无法确认具体关联项时显示“结束处理未完成”，不推测设备动作或自动推进。`RunState` 没有更具体原因字段，本轮不为文案增加新字段。
+
+## 4. 7.x 待改位置总表
+
+| 待完成目标 | 优先修改点 | 保持不变的部分 |
+| --- | --- | --- |
+| 状态分组、终态 active 保留、唯一目录行 | `RuntimeJobLogs._refreshCatalog()`、`_renderCatalog()` | 当前 ListRuns / history RPC、原分页与 Runtime 切换边界 |
+| 真实关联说明、合法停止、终态时长 | `_updateTimes()`、`_catalogActions()`、`_stopSelectedJob()` | allowed_actions、操作前身份检查、源 Job 的既有停止组行为、jobExecutionTime |
+| 关联查看与返回 | `openJob()`、`home()`、已有选中/定位字段 | 一个轻量来源书签；单个有界窗口；不可查锚点如实提示 |
+| 可空日期时间、毫秒与范围 | `_buildCatalog()`、`_buildDetail()`、`_scopePredicate()`、`_advancedHistory()`；`StructuredLogView` 时间条件读取、回填和提交 | 本机时区、开始含/结束不含、目录与事件字段区别、既有导出范围 |
+| 常用/技术筛选分层 | 原高级条件控件、名称映射、已加载轮次选项 | 精确 ID、原始路径、折叠不清值、固定任务范围；不新增目录全量查询 |
+| 树主行与共享详情更易读 | ExecutionBranch 标题/显示适配、StructuredLogEntry.displayMessage、LogRecordDetail | 原始执行键、未知/用户消息、原始 JSON/复制/导出和共享调试组件 |
+| 原生 Qt 布局与证据 | 原页头、筛选容器、树/详情 QSplitter、已有 Q1/Q2 | Python 3.10、PySide2 5.15.2.1 / Qt Widgets；无 WebView/QML/Qt6，无生产模拟工具条 |
+
+## 5. 现有验证与本轮落点
+
+| 原有验证位置 | 已有职责 | 7.x 最小补充 |
+| --- | --- | --- |
+| `tests/designer/test_job_log.py` | 有界窗口、执行结构、配对时间与当前位置等模型/接线 | 目录按状态合并、真实关联与直接反例；已有时间/结构断言继续复用 |
+| `tests/designer/test_runtime_job_workbench.py` | Q1：实际 Qt 与软件 Runtime 的持续任务、告警、摘要、设备往返和单算子调试 | 在既有流程核对新首页说明、关联返回、筛选折叠与阅读布局，不新建完整第三流程 |
+| `tests/designer/test_operational_log_integration.py` | Q2：重启、历史范围查询、来源隔离与完整 Job 导出 | 日期控件接线、有效范围返回及完整导出不继承本地日期条件 |
+| `tests/designer/test_log_dialog.py`、`test_log_json_tree.py`、`test_log_export.py`、`test_operator_debug_window.py` | 筛选、真实值/复制、原始详情、导出与调试身份 | 优先补当前受影响入口；共享展示验证一次，不逐算子复制 |
+| `tests/runtime/test_runtime_persistence_contract.py`、`test_run_catalog.py`、`test_workflow_loop_contracts.py`、`test_workflow_loop_contracts_v2.py`、`test_operator_logging.py`、设备相关既有测试 | 既有查询、循环、日志和诊断合同 | 保留原必要门禁；没有改变后端合同时，不把本轮展示改进扩成后台故障矩阵 |
+| `scripts/gen_proto.py`、`scripts/build_panel_contract.py` 与仓库静态检查 | 现有协议/镜像生成及质量检查 | 保留仓库要求。本轮不新增协议；发现确实修改到契约时才按既有脚本生成与验证 |
+
+验证命令、执行环境、实际 HEAD 与未提交修改应记入本轮实施记录。原报告中 Windows Qt、软件 Runtime 和测试数量是旧实施者的记录，不是本轮重新执行的结果。原型、静态布局图和旧 Qt 截图分别标识，不能代替修改后的实际界面与行为证据。

@@ -1,0 +1,69 @@
+# Runtime 日志工作台 V2.4 实施与验收
+
+## 工作区与版本
+
+- 实际执行者为 Codex。工作树为 `D:/emo-runtime-log-workbench`，分支为 `codex/runtime-log-workbench`。
+- 开始时本地和远端分支均在 `fa4b72d751189c2689882a0a0d127fd280a35fde`，该工作树干净，基线后没有差异。核对了既有任务目录、唯一全局读取器、有界事件窗口、日志原始数据、诊断、调试与导出链路。
+- 本轮代码和测试提交为 `e7e78e0dd79f7d6a8e7d2d54f7c3979d63f96f4b`。提交前的综合回归使用当时的改动树。提交后从这个 SHA 重跑了 Q1、Q2 和状态／目录回归，工作树只有本 change 文档与新证据待提交。
+- 将附件更新到同名 OpenSpec change，保留原第 1–6 节的 38 项、旧实现报告、8 张原生证据及包外文件。当前完整规格含 21 项要求。本轮进度按第 7 节记录。
+- 浏览器打开了 V2.4 的参考导航及可操作原型，检查首页终态分组、关联展开、高级筛选和时间视图。下文的验收来自变更后的实际 Qt 窗口。
+
+## 修改与原因
+
+| 文件 | 改动 |
+| --- | --- |
+| `src/emo_master/apps/designer/ui/runtime_job_logs.py` | 首页按任务自身状态分组，终态仍 active 的任务与最近历史合并，实时 RunState 优先。关联按当前 Runtime、工程、运行组及来源 Job 匹配。当前快照无法解释原因时提示“结束处理未完成”。关联查看和返回使用一个不含事件载荷的来源书签，按原有固定游标有限重查，恢复筛选、视图、展开、选择及详情页。保留 Runtime 授权的停止操作和各任务自己的计时。 |
+| `src/emo_master/apps/designer/ui/log_filters.py`、`src/emo_master/apps/designer/ui/log_dialog.py` | 三处共享可空日期输入，Designer 本机历史沿用相同控件。日期按操作机本机时区换算为原有整数毫秒参数，区间包含起点、排除终点。倒置只显示行内提示，下一页与选定范围导出使用已提交条件。常用与技术条件独立展开，精确 ID 和原始嵌套轮次路径保留，候选只来自当前可用记录。 |
+| `src/emo_master/apps/designer/state/job_log.py`、`src/emo_master/apps/designer/presenters/node_run_presenter.py` | 主行用名称、轮次、状态和时间，完整调用身份及时间证据放入提示或详情，树键仍是真实结构身份。仅将已知框架默认消息和明确状态转为中文显示。 |
+| `src/emo_master/apps/designer/ui/log_record_detail.py`、`src/emo_master/apps/designer/ui/operator_debug_window.py` | 保留生产任务与独立调试共用详情。易读界面显示已记录的输入输出摘要、状态及诊断，原始 JSON、复制值、业务文本、未知值、日志归属和调试结果身份沿用真实数据。 |
+| `tests/designer/test_job_log.py`、`test_log_history_instance.py`、`test_log_json_tree.py`、`test_operational_log_integration.py`、`test_operator_debug_window.py`、`test_runtime_job_workbench.py` | 在已有测试中补充目录合并、真实关联条件、单窗口书签、日期接线、原值保护和 Q1/Q2 操作。 |
+
+运行时服务、gRPC 协议、存储和调度算法沿用基线。普通子工作流、循环和连续根调用仍在各自 Job 的执行结构中。
+
+## Q1 原生走查
+
+- Windows Qt Widgets 用真实软件 Runtime、临时工程、模拟相机与 SQLite，执行了 While Job `8433195e-2750-40c2-80cd-a9a0d0d638f8`。告警事件为 `241`，整数加法完成摘要为 `235`，SQLite 主动日志为 `242`。验证精确调用 ID、真实轮次路径、按已加载身份候选筛选，折叠后仍生效。窄窗中拖动原生分隔条，右侧详情和关键按钮保持可用。 [执行树与常用条件](evidence/v2_4/q1-while-warning.png) · [窄窗分隔条](evidence/v2_4/q1-narrow-split.png)
+- 同一 Runtime 使用明确标识的 JobRecord／RunGroup 状态夹具。来源任务 `3be027de-7abd-4d69-aa67-4b6706b6eb9b` 已完成、耗时固定 20 秒，超出常规最近页仍保留在“最近已结束”。两条独立成员分别为运行中和停止中。具有同名及同一来源字段的错组任务未计入。Runtime 返回的停止授权仍可用。成员结束后，超出普通最近页的来源退出首页。 [任务首页](evidence/v2_4/q1-task-catalog.png) · [关联任务](evidence/v2_4/q1-related-jobs.png)
+- 从来源的时间顺序视图打开关联任务日志，再返回原来源，恢复告警筛选、关键词、节点 ID、选中事件 `768` 和详情。夹具通过原有 Runtime gRPC 读取。 [返回原记录](evidence/v2_4/q1-related-return.png)
+- 原有模拟设备诊断往返、节点摘要值与原始记录复制均通过。同一 Designer 原入口调试两次，从第一次结束通知仍能打开第一次的结果，显示中文成功状态且保留原始状态与身份。 [节点执行摘要](evidence/v2_4/q1-execution-summary.png) · [设备缓存](evidence/v2_4/q1-device-cache.png) · [调试易读](evidence/v2_4/q1-operator-debug-result.png) · [调试原始记录](evidence/v2_4/q1-operator-debug-raw.png)
+
+## Q2 原生走查
+
+- 软件 Runtime 执行真实整数加法 Job `fe6e70e9-e9de-46cc-afb2-0df0e7e8b31b`，使用已标记的历史任务和事件夹具形成分页。关闭生产者 Runtime 后，新实例连接原 SQLite。历史目录以实际结束时间 `1795314571492` 为起点，下一页沿用已提交的单侧范围。倒置时未发新请求。 [历史任务结束时间](evidence/v2_4/q2-directory-date.png)
+- Job 本地 WARN 使用 `[1795314572123, 1795314572128)`，日期控件显示实际本机时区 `Asia/Shanghai`。服务端查询命中近期窗口外恰在起点的事件，排除起点之前及恰在终点的事件。等值返回空结果，清空恢复不限。倒置未改变旧结果，按旧范围导出仍只包含匹配记录。返回 Job 保留本地条件。Designer 本机历史按日期读取带 Job ID 的客户端错误，来源保持为 Designer。 [毫秒历史查询](evidence/v2_4/q2-history-date.png)
+- 通过原有文件导出按钮完成 Job 全量范围导出。测试只替换了文件选择器返回的路径。当前窗口有 200 条，实际导出以固定上界 `223` 前向读取两页，共 221 条，包含本地日期、等级和节点条件之外的记录。逐条对照实际 Runtime 查询。 [完整记录导出](evidence/v2_4/q2-whole-job-export.png)
+
+## 命令及结果
+
+使用 Windows、Python 3.10.21、PySide2 5.15.2.1 和 gRPC 1.78.0。`python` 指向 `C:/Users/jsdfhasuh/.conda/envs/emo_master/python.exe`，命令从实施工作树运行。
+
+| 检查 | 结果 |
+| --- | --- |
+| OpenSpec strict、proto 生成一致性、Ruff、mypy、Git 差异校验 | 通过，mypy 共 648 个源文件 |
+| Designer 与 Runtime 受影响回归 | 183 通过。随后新增打开不同 Job 时筛选默认折叠的调整，下列提交后走查及状态／目录回归覆盖了该入口 |
+| 提交后执行树与目录定向回归 | 17 通过 |
+| 提交后 Windows 原生 Qt Q1、Q2 | 2 通过，15.71 秒 |
+
+```powershell
+openspec validate redesign-runtime-log-workbench --type change --strict --no-interactive
+python scripts/gen_proto.py --check
+python -m ruff check src tests
+python -m mypy --config-file mypy.ini src
+git diff --check
+
+$env:PYTHONPATH = 'src'
+$env:QT_QPA_PLATFORM = 'offscreen'
+python -m pytest -q --tb=short tests/designer/test_job_log.py tests/designer/test_log_dialog.py tests/designer/test_log_history_instance.py tests/designer/test_log_categories.py tests/designer/test_log_json_tree.py tests/designer/test_log_export.py tests/designer/test_node_result_panel.py tests/designer/test_runtime_log_names.py tests/designer/test_operational_log_integration.py tests/designer/test_operator_debug_window.py tests/designer/test_operator_debug_resource_ui.py tests/designer/test_device_workspace_usability.py tests/runtime/test_run_catalog.py --maxfail=3
+python -m pytest -q --tb=short tests/designer/test_job_log.py tests/runtime/test_run_catalog.py
+
+$env:QT_QPA_PLATFORM = 'windows'
+$env:PYTHONIOENCODING = 'utf-8'
+$env:EMO_LOG_WORKBENCH_EVIDENCE_DIR = 'D:/emo-runtime-log-workbench/openspec/changes/redesign-runtime-log-workbench/evidence/v2_4'
+$env:EMO_LOG_WORKBENCH_V2_4_EVIDENCE_DIR = $env:EMO_LOG_WORKBENCH_EVIDENCE_DIR
+python -m pytest -q -s --tb=short tests/designer/test_runtime_job_workbench.py::testNativeWhileLogsWarningDeviceReturnAndTimeline tests/designer/test_operational_log_integration.py::testNativeWorkbenchHistoryAndWholeJobExportAfterRestart
+```
+
+## 验证边界
+
+- 窄窗走查初次使用的移动事件没有保持鼠标按下状态。改用原生 Qt 的带左键状态移动事件，确认分栏宽度实际改变，并重新捕获界面。
+- 真实硬件、冻结安装包、全仓 pytest、全部 82 个算子及全时区矩阵未执行。现有 CI 工作流的推送分支范围不包含本分支，远端 CI 未作为本轮通过证据。

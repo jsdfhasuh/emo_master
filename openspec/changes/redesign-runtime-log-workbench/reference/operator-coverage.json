@@ -9,7 +9,7 @@
     "entry_modules": 58,
     "explicit_operator_logger_classes": 4
   },
-  "scope_note": "Logger-call counts are not logging feature completion rates. Framework lifecycle records, return metrics/diagnostics, managed device diagnostics and separate debug/preview channels are distinct. All product tasks remain unimplemented.",
+  "scope_note": "Static operator coverage at the recorded source_commit. Logger-call counts are not logging feature completion rates. Framework lifecycle records, returned metrics/diagnostics, managed device diagnostics and separate debug/preview channels remain distinct. This inherited inventory is not a new execution or hardware validation; current implementation status is governed by the integrated design and acceptance records.",
   "operators": [
     {
       "operatorId": "vision.image.absdiff",
@@ -851,5 +851,7 @@
       "explicit_operator_logger_calls": false,
       "execution_path_note": "No explicit OperatorLogger/DeviceLogger call found in the builtin source or reviewed base implementation; framework and device events are separate"
     }
-  ]
+  ],
+  "integration_note": "The 82 operator records and counts are unchanged; only this inventory scope metadata was clarified for the consolidated handoff.",
+  "inherited_inventory_sha256": "2d5c0c169c1abc0445731bf8966653b14af5cb0410b05f782c4687a184ced0ba"
 }

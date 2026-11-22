@@ -1,51 +1,42 @@
-# 日志工作台视觉参照与实现对照
+# 完整方案的统一视觉参照
 
-本补充提供 **9 张静态布局参考图（PNG + SVG），不是浏览器截图或原生 Qt 截图**。内容取自随包 HTML 的模拟任务、事件和时间；本轮未取得真实浏览器截图，也未进行正式 Qt / Runtime 验收。
+本目录只有一个 [参考导航](index.html) 和一个 [可点击原型](prototype.html)。设计与数据合同以本变更的 [design.md](../design.md) 和 [spec.md](../specs/runtime-log-workbench/spec.md) 为准。
 
-## 使用顺序
+## 当前目标结构
 
-1. 先打开 [图片与原型导航](visual-gallery.html)，或打开 [交互原型](prototype.html)，实际点击来源、任务、筛选、执行树、详情和设备往返。
-2. 对照下表查看关键状态图片。图片规定区域关系、信息层级和状态表达，**不规定精确像素尺寸**；布局与可点击交互以 HTML 为参考。
-3. 实现中的数据、身份、查询范围、状态和耗时以 `../design.md` 与 `../specs/runtime-log-workbench/spec.md` 为准。原型没有演示的能力仍按 `../tasks.md` 实施、按 `../acceptance.md` 验收。
+| 图片 | 用途 | 证据性质 |
+| --- | --- | --- |
+| [target-01-task-status.png](images/target-01-task-status.png) / [SVG](images/target-01-task-status.svg) | 当前首页分组、终态冻结、独立关联 Job 展开。 | 静态目标示意，不是 Qt 截图。 |
+| [target-02-compact-reading.png](images/target-02-compact-reading.png) / [SVG](images/target-02-compact-reading.svg) | 当前日期范围、收起技术条件、执行结构与右侧详情的空间关系。 | 静态目标示意，不是像素级验收标准。 |
 
-## 九张图及对应操作
+## 保留的结构参考
 
-图片位于 `reference/images/`；同名 `.svg` 是可缩放版本。
+这些图来自此前方案的静态绘制，内容仍可说明特定结构。**外围导航、工具条、默认筛选展开方式以及时间和技术字段的当前表达，以最新原型和两张目标图为准。** 图中的模拟值、列表长度、已加载条数均不是正式数据保证。
 
-| 图片 | 在原型中如何进入 | 重点与设计对应 |
-|---|---|---|
-| [01_runtime_tasks.png](images/01_runtime_tasks.png) | 点击“‹ 运行任务” | 两个一级来源；Runtime 内的任务/系统事件；运行中与最近已结束；任务时间。D1–D4、D8 |
-| [02_while_tree.png](images/02_while_tree.png) | 首页打开“主采集流程”，展开 While 第 2 轮及视觉检测子流程 | 一个 Job 内多轮执行；嵌套 Repeat/节点层级；已结束与运行中分开；信息区可收起。D5–D9 |
-| [03_filter_drawer.png](images/03_filter_drawer.png) | 主采集流程 → 高级筛选 → WARN → “PLC 响应较慢 · 准备重试” | 高级条件、命中祖先和右侧详情同时可理解；原始数据按需展开。D9、D10 |
-| [04_continuous_calls.png](images/04_continuous_calls.png) | 首页打开“连续尺寸检测”，展开各次调用 | 同一 Job 下各根 WorkflowRun 独立显示，不能变成多条首页任务。D3、D6、D8 |
-| [05_execution_time.png](images/05_execution_time.png) | 主采集流程 → 显示设置 → 起止时间 → 点击第 2 轮 PLC 写入的时间 | 紧凑时间、起止范围和执行时间详情；模拟时钟不得替代真实生命周期。D8、D10 |
-| [06_device_diagnostics.png](images/06_device_diagnostics.png) | 选择 PLC 告警 → 设备诊断 → 选择响应较慢记录 → 返回事件 | 近期设备缓存范围、任务/轮次关联和返回原位置；不是第三套日志来源。D11 |
-| [07_designer_logs.png](images/07_designer_logs.png) | 点击“Designer 本机日志”，查看 Runtime 连接失败；可切换当前会话/本机文件 | Designer 与 Runtime 来源分离，本机客户端错误不冒充任务失败。D1、D12 |
-| [08_operator_reading.png](images/08_operator_reading.png) | 默认场景；切换 YOLO 执行摘要、整数加法或 SQLite 主动日志 | 框架记录和主动日志均可读；数值为模拟，数据形状依据源码。D10.1–D10.2 |
-| [09_operator_debug.png](images/09_operator_debug.png) | 顶部“单算子调试”；选择事件，切换“日志 / 执行结果” | 独立会话日志与当前执行结果，原始记录和返回位置保持。D10.3 |
+| 图片 | 保留的含义 | 当前交互入口 |
+| --- | --- | --- |
+| [02_while_tree.png](images/02_while_tree.png) / [SVG](images/02_while_tree.svg) | 同一 Job 内 While 多轮、普通子调用、嵌套 Repeat、节点事件。 | [While 结构](prototype.html#02_while_tree) |
+| [04_continuous_calls.png](images/04_continuous_calls.png) / [SVG](images/04_continuous_calls.svg) | 同一 Job 内连续运行的不同根调用；不能按可见行数虚构调用序号。 | [连续调用](prototype.html#04_continuous_calls) |
+| [05_execution_time.png](images/05_execution_time.png) / [SVG](images/05_execution_time.svg) | 调用/轮次/节点时间与右侧时间详情。 | [运行时间](prototype.html#05_execution_time) |
+| [06_device_diagnostics.png](images/06_device_diagnostics.png) / [SVG](images/06_device_diagnostics.svg) | 任务事件下钻近期设备缓存，再返回原位置。 | [设备诊断](prototype.html#06_device_diagnostics) |
+| [07_designer_logs.png](images/07_designer_logs.png) / [SVG](images/07_designer_logs.svg) | Designer 是独立产生端；本机客户端错误不是 Runtime 任务失败。 | [Designer 日志](prototype.html#07_designer_logs) |
 
-## 原型简化项，实施时不能照图删功能
+旧首页图和旧筛选图没有纳入，避免与当前目标状态冲突。旧算子和调试静态图含有已经取消的演示场景栏，也没有纳入；相应能力完整保留在同一最新原型的 [算子详情](prototype.html#08_operator_reading) 和 [独立调试](prototype.html#09_operator_debug) 入口。
 
-- **历史查询与完整导出：** 原型主要演示已加载样本，未展示完整的服务端历史查询、更早任务目录及完整 Job 导出入口。正式实现必须保留原有高级历史条件，能查窗口外记录，并完整分页导出所选 Job；见 D4、D9、第 9 节。
-- **上下文范围：** 本包已把原 HTML 的“完整上下文”旧文案修正为“已加载上下文”；缺页不能宣称完整。
-- **设备诊断：** 原型抽屉简化为等级、摘要/JSON 和往返；正式实现仍须复用已有通道、HEX / UTF-8、详情与近期缓存导出。模拟 `taskEventId` 不构成缓存 cursor 到 Runtime eventId 的真实映射。
-- **时间与当前节点：** 图中时间和运行状态是明确设置的样本。真实实现必须处理 STOPPING、重启确认时间、时间缺失与连续事件证据，不能凭最近一条日志猜当前节点。
-- **未展示的数据场景：** While `bodyExecuted` 三态及 false 退出检查、ForEach 总量、有界窗口退窗、Runtime 能力不足提示等，仍按本版合同实施和验收。不得因图片数量有限而省略。
+## Qt 基线存档
 
-所有图保留“模拟数据 / 未连接”提示。图片相似、HTML 可点击或文件校验通过，均不能替代两条原生 Qt + 软件 Runtime 操作验收。
+| 图片 | 基线与限制 |
+| --- | --- |
+| [q1-while-warning.png](images/q1-while-warning.png) | `fa4b72d751189c2689882a0a0d127fd280a35fde`，既有 While 告警、筛选与详情窗口。旧布局用于说明已实现能力及需要修正之处，不是新方案验收。 |
+| [q1-execution-summary.png](images/q1-execution-summary.png) | 同一提交的既有算子执行摘要。保留原样，不以修改后的示意图替换实际存档。 |
 
+## 原型简化不能改变合同
 
-## V2.3 算子覆盖场景
+- 原型主要操作已加载模拟数据，未完整实现服务端历史查询、全量分页导出、更早任务目录或能力协商。这些能力仍按完整规格实施。
+- “已加载上下文”不代表全部历史；图中树节点和时间是明确的模拟执行边界，不能据此推断真实缺页、重启时间或当前运行节点。
+- 原型的近期设备诊断展示有所简化。正式实现继续复用已有通道、HEX / UTF-8、详情和缓存导出；样例中的关联值不构成真实设备缓存 cursor 到 Runtime eventId 的映射。
+- YOLO、整数加法和 SQLite 样例演示框架摘要、指标/诊断及主动日志的不同来源。不得把通用 `demo.*` 数据写成所有算子都已记录的真实业务字段。
+- 独立调试使用已有会话事件与独立执行结果；它不生成生产 Job，也不伪造正式任务的 `node.completed`。
+- 已停止/失败/完成主任务与独立关联任务分别显示状态。普通子工作流仍在同一 Job 的树内；不能把其数量写成独立 Job 数量。
 
-默认 `prototype.html#08_operator_reading` 展示 YOLO 的 node.completed，已有 metrics / diagnostics / ioSummary 可读。主工作区的来源、任务、循环、高级筛选和时间保持；图 03 只作区域布局参考，详情内容以新版图 08 / 09 为准。
-
-- “YOLO 执行摘要”：读取本条完成事件的 latencyMs、detectionCount、诊断文本和输入输出摘要。0 个目标保持为有效结果；模型信息可展开，不编造历史结果图。
-- “整数加法”：没有主动 node.log、没有附加指标，仍显示本次标量输入输出摘要。输出 0 不被替换成缺失。
-- “SQLite 主动日志”：读取真实结构的 payload.data.receipt；回执的执行身份与当前选中事件一致。对象、值和当前记录可复制。
-- “单算子调试”：进入场景 09，选择会话事件，切换易读 / 原始；“执行结果”读取独立结果。没有生产 Job 或 node.completed。返回恢复原任务筛选、选择和展开状态。这个入口是原型演示导航，正式软件继续使用既有 OperatorDebugWindow。
-- “通用数据演示”：保留零值与空值、列表与对象、重试、截断样例。这些 demo.* 字段明确为通用模拟数据，不冒充 YOLO 或托管 PLC 已经记录的字段。
-- “原始 JSON”：保留结构树、文本与复制；它与易读区针对同一条记录。调试日志原始页保留 wrapper，结果原始页保留当前执行结果，各自范围清楚。
-
-图 08 在有限版面突出主要指标和摘要，未列完的已记录端口请通过可点击原型查看。图 09 展示日志页；执行结果、对象展开、复制与返回通过原型操作。所有顶部样例按钮仅用于演示，不增加第三个产品日志来源。
-
-实际交互脚本检查使用 Node VM + DOM 替身，覆盖六组逻辑和九个锚点；未做真实浏览器视觉、原生 Qt 或 Runtime / 设备验收。静态图 08 / 09 已读取检查布局，其余图保留此前版本。图片不是浏览器截图，不能据此宣称原生窗口已通过。
+静态图由绘图工具生成。可点击、图片可解码、摘要一致或脚本冒烟通过都不能替代原生 Qt 与软件 Runtime 的实际操作验收。

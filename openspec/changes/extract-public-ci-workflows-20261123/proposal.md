@@ -1,39 +1,46 @@
-# 提取公共 CI 工作流并闭源 emo_master
+# 将 emo_master 验证 CI 迁移到公共 Runner 并闭源
 
 ## 背景
 
-emo_master 当前 GitHub 仓库仍为 Public。2026-11-23 的 main 基线为 `b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd`。仓库包含 12 个启用中的 Actions 工作流、4 个归档工作流，以及产品专属 CI 脚本和诊断代码。
+emo_master 当前 GitHub 仓库为 Public，2026-11-23 审查基线为 `b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd`。当前有 12 个活动 Actions 工作流、4 个历史归档工作流。用户选择优先最大限度节省 GitHub Actions 计算额度，同时将产品源码仓库转为 Private。
 
-目标是将 emo_master 转为 Private，同时把适合跨项目复用的 GitHub Actions 能力沉淀到独立 Public 仓库（暂定 `jsdfhasuh/emo_master_ci`），并保持私有仓库可持续执行完整测试、构建和发布。
+GitHub 对公共仓库使用标准 GitHub-hosted Runner 的计算分钟不收费；Reusable Workflow 即使定义在公共仓库，仍按调用方仓库计费。因此，本变更目标不是“把 YAML 放到公共仓库”，而是让主要验证任务真正由公共仓库触发并在公共仓库的标准 Runner 上执行。
 
 ## 目标
 
-- 建立独立公开的 CI 工具仓库，提供经过固定 SHA 引用的 reusable workflow / composite action。
-- 私有 emo_master 继续持有所有产品源码、产品测试、测试数据、诊断脚本和发布策略。
-- 私有仓库的 PR、push、手动运行继续触发 Linux/Windows Python 3.10 全量检查，保留现有分片覆盖与汇总门禁。
-- 通过公开仓库自带的合成示例项目验证公共工作流，不将 emo_master 源码复制到公共仓库。
-- 在完成跨仓库调用、PR 检查、构建和发布验证后，将 emo_master 仓库可见性改为 Private。
+- 将 emo_master 的产品源码仓库转为 Private。
+- 新建公开 CI 仓库 `jsdfhasuh/emo_master_ci`，实际承载 Linux/Windows 标准 Runner 上的产品测试、Web 测试、Runtime 诊断及可安全公开日志的验证任务。
+- 私有 emo_master 只保留轻量触发/回调工作流、必要的发布控制和私有凭据；主要计算负载迁移至公共 CI 仓库。
+- 公共 Runner 只在受信任的提交上读取私有源码；读取凭据不进入被测代码环境，且不出现在 dispatch payload、日志或产物中。
+- 通过 GitHub App 的最小权限和 Check Runs 回调，将公共执行结果准确关联到私有仓库的原始 commit / PR，保留 required-check 门禁。
+- 最大限度保留现有 Python 3.10、Linux/Windows、pytest 分片、Web、Display Session、Runtime 诊断和冻结包验证覆盖。
+- 只有在公开 Runner 联调、私有回调、凭据隔离和闭源后复验通过后，才将 emo_master 切换为 Private。
 
 ## 非目标
 
-- 不迁移 Designer、Runtime、Web、算子、设备、协议或任何产品实现。
-- 不公开产品测试代码、诊断观察器、生产配置、工程样例或内部证据。
-- 不重写现有测试框架，不减少测试覆盖，不为了抽象而将产品专属步骤参数化成任意 shell 命令。
-- 不在本变更中重构 `python_build_scripts` 的产品打包逻辑；继续固定 SHA 调用现有打包工作流。
-- 不承诺通过改为 Private 撤回已经被公开 Fork、Clone、缓存或下载的代码。
+- 不公开 emo_master 源码、测试代码、工程样例、诊断原始证据、构建配置或内部文档。
+- 不将私有源码提交、镜像或长期存放在公共 CI 仓库的 Git 历史、分支或 Release 中。
+- 不把私有源码上传为公共 Actions Artifact；公共 Runner 运行日志只允许输出经过审核的摘要。
+- 不在公共 Runner 上执行来自未信任 fork / 外部贡献者的 PR 代码；这类 PR 不自动进入公共执行链路。
+- 不把 Release 写入凭据、私有包或最终发布资产交给公共 CI 仓库。
+- 不为了抽象而将产品专属测试重写为通用框架，不减少断言或覆盖。
+- 不将 GitHub Actions 公共仓库免费误解为所有配套服务、Artifact 存储、网络、第三方服务或大型 Runner 均免费。
 
-## 实施策略
+## 核心架构
 
-优先从主 `CI` 工作流中提取稳定、通用且能独立测试的 Runner 编排能力。产品专属的变更范围选择、`scripts/ci_check.py`、pytest 分片实现和分片报告仍留在 emo_master；公共工作流只负责在调用方仓库上下文中检出源码、配置 Python、安装调用方依赖、执行固定约定的检查入口、上传/汇总产物。
+私有 emo_master 监听 push / pull_request / workflow_dispatch，使用专用 GitHub App 对公共 CI 仓库发起 dispatch。公共 CI 仓库在受信任的默认分支工作流中，根据固定仓库白名单和 commit SHA 获取私有源码，在公共标准 Runner 执行验证。测试结束后由独立、干净的回调 job 使用最小权限 GitHub App 更新私有仓库 Check Run；私有 PR 的合并门禁依赖该 Check Run。
 
-其余 11 个活动工作流逐个按 design.md 分类，不以“全部 YAML 搬走”为目标。公开仓库只提供通用能力，不主动拉取私有源码；使用 `workflow_call` 时，checkout 默认检出调用方仓库。所有外部工作流和 Action 固定到审核过的完整 Commit SHA。
+公共 Runner 的主要测试 job 不持有私有仓库 token、App 私钥、Release token 或其他凭据。私有源码仅存在于该次临时 Runner 工作目录中；不推送到公共 Git 仓库、不上传公共 Artifact，任务结束后由 GitHub 回收 Runner。日志与报告必须先做公开安全审查，只输出白名单摘要。
 
 ## 完成标准
 
-- 公共 CI 仓库已创建、公开，具有合成样例项目和通过的自测工作流。
-- emo_master 私有分支成功调用固定 SHA 的公共 reusable workflow；PR 检查名、Linux/Windows 两平台、Python 3.10、分片覆盖、artifact 与汇总行为保持。
-- Web、诊断、Windows 包验证、发布等产品专属工作流仍可在私有仓库独立运行。
-- 私有仓库的 PR、push、手动 CI、Windows release 和 Runtime package 路径完成验证。
-- 对外部打包仓库的私有源码读取凭据、release token、权限和仓库可见性影响完成核对。
-- 迁移清单记录所有 12 个活动工作流及 4 个归档工作流的处置，不把未执行或 skipped 当作通过。
-- 完成公开历史与产物风险告知后，由仓库管理员执行 Private 可见性切换，并验证切换后 Actions 仍可运行。
+- 公共 CI 仓库已创建并公开，默认分支受到保护，外部 fork PR 不会触发任何持有私有仓库凭据的工作流。
+- 私有 emo_master 可通过 GitHub App 安全触发公共 CI；dispatch 只传 repo 固定标识、commit SHA、PR 元数据和关联 Check Run ID，不传 Token。
+- 公共 Runner 能读取指定私有 commit，读取凭据不进入测试进程，并在测试开始前撤销或销毁。
+- 公共测试日志和产物不暴露私有源码、路径、工程数据、诊断原始记录、环境变量或凭据。
+- 所有验证任务在公共标准 Linux/Windows Runner 实际运行，公共 Runner 运行分钟不计入私有仓库额度；记录实际迁移的 runner minutes。
+- 私有仓库的 required check 能正确显示 queued / in_progress / success / failure / cancelled，并绑定准确 SHA。
+- 现有测试覆盖、分片覆盖证明、Web/Runtime/Windows 验证和诊断语义保持；未运行的测试不能标记通过。
+- Release 发布凭据和私有发布资产仍留在私有边界，实际发布前验证来源和产物身份。
+- emo_master 转为 Private 后，重新验证 PR、push、手动触发、检查回调、Windows 构建/发布控制链路。
+- 迁移报告包含费用节省计算、公共执行的安全边界、已验证项目和未验证项。

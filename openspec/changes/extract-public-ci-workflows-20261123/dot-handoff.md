@@ -1,36 +1,37 @@
-# dot 执行提示词：仅 GitHub 托管 Runner 的公共合成 CI
+# dot：完整迁移 emo_master 产品 CI（公共 Secrets Token 直连）
 
-继续处理 `jsdfhasuh/emo_master` 的 PR #21，计划分支 `plan/extract-public-ci-workflows-20261123`，OpenSpec change 为 `extract-public-ci-workflows-20261123`。按最新远端内容执行，先核对 HEAD 与工作区差异；不要回退后续提交或重复已完成的工作。
+继续 `jsdfhasuh/emo_master` PR #21，分支 `plan/extract-public-ci-workflows-20261123`，OpenSpec change `extract-public-ci-workflows-20261123`。读取最新远端与 AGENTS.md，不回退后续提交／用户工作区。
 
-## 用户已确定的范围
+## 目标必须执行完整
 
-用户明确“不考虑私有 runner”。本轮不评估、不部署自托管、自建、本地、租用服务器或一次性 VM Runner；只用标准 GitHub 托管 Runner。产品仓库将来转为 Private 仍可用 GitHub 托管 Runner，这不是自托管路线。
+用户要求产品源码最终 Private，全部 12 项真实产品测试、诊断、构建、包验证和发布计算迁到公共 `emo_master_ci` 标准 GitHub 托管 Linux / Windows Runner。公共仓库 Secrets 存只读 Token，直接拉取产品提交。
 
-公共 `emo_master_ci` 只运行从零建立的独立合成项目。不得读取、复制、下载或运行 emo_master 产品源码、产品测试、工程数据、配置、历史诊断或构建包；产品仓库目前公开也不构成例外。不得创建产品 GitHub App、Source Reader、跨仓库产品 Token、产品 Secrets、dispatcher 或产品 Check Run 回调。
+不考虑私有／自托管 Runner，不增加 GitHub App、Workers、数据库、外部对象存储。合成测试只是前置步骤，通过后继续真实产品 12 项、状态回传、私有发布 dry-run 和切换，不在 synthetic-only 阶段结束交付。
 
-## 执行内容
+产品仓库允许留一个短 dispatcher；只取事件、写 pending、调公共 workflow，不运行产品测试或构建，不等待重任务。它仍消耗少量私有额度，须如实报告，不能宣称私有 Actions 总用量为零。
 
-1. 阅读最新 AGENTS.md 与本 change 的 proposal / design / specs / tasks。本轮起点曾有严格校验错误，不能沿用 dot 旧提交的通过记录。使用固定 OpenSpec 2.1.1、关闭遥测和更新检查，运行：
-   `openspec validate extract-public-ci-workflows-20261123 --strict --no-interactive`
-   并运行 `git diff --check`。设置 `OPENSPEC_TELEMETRY=0`、`OPENSPEC_NO_UPDATE_CHECK=1`；按当前 shell 的方式设置，不修改全局用户配置。报告真实提交及是否包含工作区修改。
+## 按最新计划持续执行
 
-2. 核实 `jsdfhasuh/emo_master_ci` 是否已存在及权限。在已有授权与权限内创建或使用独立公共仓库；已有内容先读，不覆盖历史。配置维护权限、默认分支保护和 Actions 最小权限，管理权限受阻则列明具体设置和已完成部分，不能虚报成功。
+1. 阅读 proposal / design / workflow-migration / specs / tasks / acceptance。产品静态审查基线为 `82a1aa6d8499ee203ea8e452c2f016db37ea7b3f`，开工核对最新差异，记录实际 HEAD 和未提交修改范围。
+2. 使用 OpenSpec 2.1.1；设置 `OPENSPEC_TELEMETRY=0`、`OPENSPEC_NO_UPDATE_CHECK=1` 后执行 `openspec validate extract-public-ci-workflows-20261123 --strict --no-interactive` 和 `git diff --check`。历史通过不代替本次内容。
+3. 核实／创建公共 CI 仓库及可信分支／Environment 设置；配置仅目标仓库范围的 dispatch、read、status、release Token 和 age 公私钥。不得把秘密放入代码、聊天、URL 或 Artifact。
+4. 实现私有轻量 dispatcher、可信请求 Artifact、公共 preflight、固定 SHA 直接 checkout，以及显式源事件接口。不能将公共 github.sha／workflow_dispatch 当产品 SHA／原事件。
+5. 实现原始输出捕获与 age 密文 Artifact。产品 job 只持公钥；状态回写和解密由独立干净控制 job 执行，不执行下载报告中的代码。管理员可本地解密完整报告。
+6. 按迁移矩阵逐项落实所有 12 项真实产品路径，保留原触发／输入／平台／断言／诊断结论。主 CI 保留四分片与完整集合证明；Windows 原生 Qt 桌面要求是既有契约，不能以合成运行代替。
+7. 修改外部 python_build_scripts 的受控新入口：显式产品上下文、同目标 build+verify 后加密、独立 publisher，移除明文 Artifact 和构建发布 Token／secrets:inherit，固定实际新 SHA，不影响其他产品原入口。
+8. 更新 product scope／release workflow contract 等相关测试，保留语义，不删除测试或弱化断言。构建+运行包验证放同 job，避免将共享解密私钥交给执行产品代码的 job。
+9. 用独立 Commit Status reporter 回写产品正确 check SHA，使用新 context 前缀；核实 GitHub API job 真实结果与证据。全局取消无回调保留 pending 阻断，使用原生重跑，不建设额外对账平台。
+10. 按 acceptance 完成同版本 12 项实跑对照、PR 新 head / base／失败／取消重跑、私有替身 draft Release。新门禁确认可用后停止原重任务双跑，保留回滚快照。
+11. 完成公开历史盘点、Private 权限与账户门禁核实；在已有授权边界内执行可见性与生产动作，切换后独立复验。没有具体授权的付费／可见性／生产发布动作，先准备全部可审查内容再列出该动作；不要每个阶段重复请求许可。
+12. 交付完整证据矩阵、密文报告读取方法、实际费用组成、未验证项与回滚方式。产品仓库最终只留短控制任务，不把 0 项迁移写成阶段最终成果。
 
-3. 从零写一个小型 Python 3.10 合成项目，可使用公开依赖。建立公共仓库自身的 push / pull_request / workflow_dispatch 自测，使用标准 ubuntu-latest、windows-latest。第三方 Action 固定核实过的完整 SHA；默认 permissions 为 contents: read，checkout 不保留写凭据。不使用 pull_request_target 执行外部 PR 代码。
+## 必须如实说明
 
-4. 两个平台各实际验证正常成功与手动可控失败。失败开关仅操纵虚构 fixture，测试必须非零退出，相关 job / workflow 必须真实失败，不能用 continue-on-error、忽略退出码或汇总覆盖掩盖。若用矩阵，避免一平台失败提前取消另一平台的验收。默认正常运行保持可通过。
+- 公共仓库 Secrets 不随仓库公开自动披露；但可信工作流维护者与实际执行代码构成安全边界。
+- Token、persist-credentials:false、日志捕获和加密 Artifact 不能保证任意恶意代码无法外传已经读取的源码。记录该残余风险，不再设无限的绝对证明门槛。
+- 公共 Artifact 存的是可公开下载的密文，不能称为私有存储；私钥只在可信控制 job 和用户备份中。
+- 12 项诊断／测试结果分别报告，inconclusive 和 skipped 不冒称通过。
+- 取源成功／合成成功／OpenSpec 通过都不等于完整迁移成功。
+- 推送后按实际执行者 `dot` 在对应 PR 评论，说明修改、真实验证与未验证项；不要冒用 ChatGPT Web。
 
-5. 允许公开的合成日志与普通断言堆栈，确保没有产品内容或真实凭据。没有需要就不引入 Artifact、cache、回调或额外凭据；不用为未实现能力增加故障演练。
-
-6. 保留 emo_master 12 个活动工作流、4 个归档工作流、原平台、测试集合、断言、报告与检查门禁。本轮不修改产品 CI、不重跑无关诊断，不新增 Qt 桌面或冻结包验收。不合并 PR、不发布产品、不修改仓库可见性。
-
-## 交付
-
-- 公共仓库和 workflow 链接、完整提交 SHA、Linux / Windows 成功与预期失败的 run URL 和真实 job 结论。
-- 最新 OpenSpec strict / diff check 的命令、版本、退出状态及工作区范围。
-- 实际 job 时长、使用的 Artifact / cache、仓库保护与权限状态；无账单访问时标明，不能虚构费用。
-- 明确结论：本轮只验证公共合成基础设施；产品迁移数为 0，未产生已验证的产品额度节省，也未证明产品源码公共执行安全。
-- 后续若有建议，仅限 GitHub 托管执行方式，先审查已有 scope / concurrency / cache，避免重复已有优化；本轮不实施产品变化，不再提出私有 Runner。
-- 保持 PR #21 为 Draft。推送后在对应 PR / 提交下以实际执行者 `dot` 发表评论，说明改动、验证及未验证项，不冒用 ChatGPT Web。
-
-完成上述相关验收后交付，不扩展为所有通道绝对保密证明、全部产品测试迁移或自托管平台建设。
+权限或账户条件受阻时，完成所有仍可完成的代码、配置模板和验证，再准确列出缺口。最终目标始终是完整真实产品 CI 迁移。

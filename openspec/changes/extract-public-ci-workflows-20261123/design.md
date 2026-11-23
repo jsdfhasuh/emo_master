@@ -1,146 +1,223 @@
-# 设计说明：公共合成 CI 与 GitHub 托管执行边界
+# 完整设计：公共仓库 Token 取源与全量产品 CI
 
-## 1. 审查基线
+## 1. 基线和决策
 
-- 仓库：`jsdfhasuh/emo_master`；本轮仓库接口仍返回 Public。
-- 产品 main 基线：`b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd`。
-- 计划审查起点：`5f480ded9e4fd162f7e347764581d85d5bee732d`，分支 `plan/extract-public-ci-workflows-20261123`，PR #21。
-- 活动工作流 12 个，历史归档工作流 4 个。此前接口观察 main 的 `protected=false` 属于历史证据，不能代替后续设置核实。
-- CI 关键脚本：`scripts/ci_scope.py`、`scripts/ci_check.py`、`scripts/ci_pytest_reports.py`、`scripts/ci_pytest_shard.py`、`scripts/ci_shard_summary.py`。
-- 外部打包仓库：`jsdfhasuh/python_build_scripts`；产品调用固定 `91766f6d18ca9a333f64cf1c6030202457ec4a8a`。
-- 用户最新约束：只考虑 GitHub 托管 Runner；不评估、不部署自托管／私有 Runner。
+- 产品审查基线：`82a1aa6d8499ee203ea8e452c2f016db37ea7b3f`。
+- 计划修订父提交：`39ac1bfb6fe606fa633ca565cb18e8b5f7550555`；PR #21。
+- 产品 main 从 `b75df0a` 到 `82a1aa6` 的工作流、AGENTS.md、ci_scope.py 和 release workflow contract 未变；产品代码／测试有变化，旧测试数量不可直接沿用。
+- 审查时产品仓库仍 Public，main 的 protected=false；目标 Private 和强制门禁属于迁移实施项，不能写成已有状态。
+- 当前 12 个活动工作流、4 个历史归档工作流。外部 packager 固定 `91766f6d18ca9a333f64cf1c6030202457ec4a8a`。
+- 用户最终要求：完整迁移，公共 Secrets 中 Token 直连取源，排除自托管 Runner。合成项目仅用于最早联调。
 
-## 2. 费用与术语
+## 2. 最少组件
 
-| 事项 | 本计划中的含义 |
+```mermaid
+flowchart TD
+  A["产品仓库：源码、PR、标签"] --> B["轻量 dispatcher"]
+  B --> C["公共仓库：可信工作流"]
+  C --> D["Linux / Windows 产品 CI"]
+  D --> E["加密 Artifact"]
+  E --> F["独立汇总与发布任务"]
+  F --> A
+  D --> F
+```
+
+所有节点的执行环境都是 GitHub 托管服务；测试、诊断、构建、验证、汇总与发布 job 均归公共 `emo_master_ci`。产品端 dispatcher 只是短控制任务，会有少量私有 Actions 用量，不承诺零控制成本。
+
+不增加 GitHub App、Webhook 服务、Workers、D1、R2、自建机器或常驻控制进程。原 `python_build_scripts` 继续作为受固定版本控制的公共打包工具仓库。
+
+## 3. 凭据与权限
+
+全部 fine-grained PAT 只选择所需目标仓库，设置有限有效期，记录到期日和轮换方式。不得将 Token 写入 Git、dispatch 输入、命令行 URL、日志或 Artifact，也不使用覆盖所有仓库的 classic PAT。
+
+| 配置 | 保存位置 | 最小权限／用途 |
+|---|---|---|
+| `PUBLIC_CI_DISPATCH_TOKEN` | 产品仓库 Actions Secret | 只选 emo_master_ci；Actions: write；触发指定公共 workflow |
+| `PRODUCT_READ_TOKEN` | 公共仓库受保护的 source-read、ci-control、release environment；配置同一限定只读 PAT | 只选 emo_master；Contents: read、Actions: read、Pull requests: read；产品 jobs 取源，控制 jobs 读取可信请求与核实 PR／标签 |
+| `PRODUCT_STATUS_TOKEN` | 公共仓库 ci-control environment | 只选 emo_master；Commit statuses: write；独立控制 job 回写状态 |
+| `PRODUCT_RELEASE_TOKEN` | 公共仓库 release environment | 只选产品发布仓库；Contents: write；仅独立 publisher 使用 |
+| `CI_EVIDENCE_IDENTITY` | 公共仓库 ci-control / release environment，另有用户离线备份 | age 解密私钥，仅可信汇总／发布代码可读 |
+| `CI_EVIDENCE_RECIPIENT` | 公共仓库变量／受审配置 | age 公钥，可公开，产品执行 job 只能取得公钥 |
+
+产品 dispatcher 使用自身 `GITHUB_TOKEN` 的 contents: read / statuses: write；请求描述使用当前 run 的 Artifact。公共 job 的 `GITHUB_TOKEN` 默认 contents: read，控制任务按实际 API 增加 actions: read；不需要 id-token: write。
+
+Environment 仅允许可信公共默认分支／批准的固定 tag；公共工作流及控制脚本通过代码审查，第三方 Action 固定真实完整 SHA。不能把环境名称当作不可绕过的身份认证：能修改并合入可信工作流的维护者处于信任边界内。
+
+Contents: write 不仅限 Release；通过只在干净 publisher job 中使用来缩小暴露面。PAT 不是按某个 SHA 授权；固定 SHA 是可信控制逻辑的约束。Token 到期视为明确运行失败，不自动提升权限或改用其他凭据。
+
+## 4. 产品事件如何触发公共 CI
+
+### 4.1 产品端只留一个短工作流
+
+新增 `.github/workflows/dispatch-public-ci.yml`，统一覆盖原 12 项的 push / PR / tag / 手动入口和各自过滤规则：
+
+1. 使用固定可信控制代码读取事件元数据、确定套件与准确源身份，不安装产品依赖、不执行产品脚本。
+2. PR 可使用 `pull_request_target` 做纯元数据调度，代码来自目标分支；此 job 不 checkout 或执行 PR 内容。未知 fork 不自动取得产品源码／权限，维护者批准具体 SHA 后才调度。
+3. push 与标签按原分支／路径策略路由；原仅手动的 stop 诊断仍仅手动。手动入口保留 suite、source_ref、packager_ref 等现有参数能力，参数取白名单和合理范围。
+4. 生成小型 `request.json`，上传到 `ci-request-<run_id>-<run_attempt>` Artifact；只含执行描述，不含源码或 Token。使用上传返回的 Artifact ID 调度，重跑创建新名称／ID，不覆盖旧 attempt 请求。
+5. 将所需产品状态设为 pending，调用公共 `workflow_dispatch`，输入仅为产品 dispatcher run ID 和 request artifact ID。
+6. 获取公共 run ID 后更新 pending 的 target_url，随即结束，不在私有 job 等待产品测试完成。
+
+使用 GitHub REST API 版本 `2026-03-10`；当前官方 workflow dispatch 返回 200 与 workflow_run_id / URL，ref 为 branch 或 tag。实施时实测，不沿用旧版必然 204 的假设。[2]
+
+### 4.2 请求描述与校验
+
+请求至少包括：
+
+```json
+{
+  "schema_version": 1,
+  "request_id": "<product-run-id>-<attempt>",
+  "source_repository_id": "<fixed-product-repository-id>",
+  "source_event_name": "pull_request",
+  "source_ref": "<original-product-ref>",
+  "source_head_sha": "<40-hex>",
+  "source_base_sha": "<40-hex-or-null>",
+  "source_before_sha": "<40-hex-or-null>",
+  "source_merge_sha": "<40-hex-or-null>",
+  "check_sha": "<product-gate-sha>",
+  "source_pr_number": 0,
+  "source_tag": null,
+  "ci_workflow_sha": "<approved-public-workflow-sha>",
+  "packager_sha": "<approved-packager-sha>",
+  "suites": ["source"],
+  "manual_inputs": {}
+}
+```
+
+这是协议示例，不是可直接使用的真实请求。
+
+公共 preflight 固定产品 repository ID，使用只读 Token 读取该 run 与请求 Artifact；核实 dispatcher workflow ID、可信执行版本、事件类型、Artifact 所属 run／digest、PR／标签状态以及 suite 白名单。不能接受任意仓库／下载地址，不能把请求 Artifact 中自称的权限或 PASS 当可信结论。
+
+公共 workflow 从受保护默认分支的批准版本运行；核实实际 workflow SHA 与请求一致，防止公共 ref 移动后执行未审版本。源事件文件仅留在私有工作目录；公开输出只提供通用请求标识和状态。
+
+请求描述留在产品仓库 Artifact，使产品转为 Private 后元数据也受仓库权限保护；公共端不需要额外数据库或 HMAC 服务。
+
+## 5. 直接 Token 取源与上下文适配
+
+各产品执行 job 直接 checkout 固定 `jsdfhasuh/emo_master` 的完整 execution SHA，Token 仅传给取源步骤，使用 `persist-credentials: false`，放入独立 `product/` 路径。CI 工具仓库与产品工作目录不能混用。
+
+在凭据清理前取得 scope 所需 before / base / merge 提交与必要历史；否则 ci_scope 后续 git fetch 可能失败。release 路由保留 fetch-depth: 0 和必要标签，供 HEAD、clean checkout、previous source 和发布说明生成使用。保留真实 .git 元数据与产品 HEAD，不以缺失 Git 身份的 tarball 替代。82a1aa6 未发现 .gitmodules 或 filter=lfs 声明；开工仍核对目标版本，不自动开启外部子仓库取源。
+
+| 值 | 用法 |
 |---|---|
-| 仓库 Public / Private | 仓库可见性；本轮不改变产品仓库可见性 |
-| GitHub 托管 Runner | GitHub 提供和维护的执行环境；本轮唯一允许的 Runner 类型 |
-| 私有／自托管 Runner | 用户自行维护或租用的执行机器；本轮完全排除，含评估 |
-| 公共仓库标准 Runner | 计算使用免费；只适用标准机型，不扩展为一切服务免费 |
-| 私有仓库标准托管 Runner | 消耗账户包含的计算用量，超出部分按账户规则计费 |
-| 公共 Reusable Workflow | 仍在调用方上下文执行并计费；YAML 所在仓库不改变这一点 |
+| 公共 `github.sha` | CI 控制工作流的版本；不能当产品版本 |
+| 产品 head SHA | PR 原始提交；冻结包路径保留原 head 构建语义 |
+| 产品 merge SHA | 主源码 PR CI 原先测试的合并提交；核实其父提交对应 head / base |
+| execution SHA | 每个 suite 实际 checkout 的提交，由原语义决定 |
+| check SHA | 产品 PR 门禁的提交；与 execution SHA 分开记录 |
+| 产品原事件 | 决定 scope、Web 手动全量、标签发布和并发语义 |
 
-首期采用标准 `ubuntu-latest`、`windows-latest` 和 Python 3.10，不选 Larger Runner。实际 image / OS 版本随 run 记录。
+新增明确的 `--event-context` / `EMO_CI_CONTEXT` 输入，适配 `scripts/ci_scope.py`；保留原 GitHub 事件读取作为过渡期兼容入口。不全局伪造 `GITHUB_*`。未知路径仍走 full，不能因公共触发均为 workflow_dispatch 而把所有产品事件误判为手动。
 
-当前 `emo_master` 为 Public，不能把它的标准托管运行量当成已经产生的私有付费分钟。公共合成项目不替代产品任务，因此本轮产品迁移数为 0，不能归因出产品额度节省。将来 Private 的预测与当前实测分列。
+具体修正包括 Web 的 FULL_WEB_LOGIC、credit 的 expected-sha、SQLite 控制的 repo 路径、构建 source_ref / release_repo / tag。逐项位置见迁移矩阵。
 
-记录 job 实际时长与 OS；将耗时、账户计费计算用量、Artifact 和 cache 存储区分。没有账单权限时报告缺口，不把墙钟时间直接写成计费分钟或节省金额。费用依据见 §10。
+## 6. PR 状态和门禁
 
-## 3. 仓库职责和数据边界
+采用 Commit Status API，状态仅 pending / success / failure / error，fine-grained PAT 支持 Commit statuses: write。[3]
 
-### 3.1 产品仓库 emo_master
+新 context 使用独立前缀，例如 `public-ci/source-linux`、`public-ci/source-windows`，不与旧 Actions Check Run 同名；同名 check 与 status 可能都被要求通过，不能留下永久 pending。[4]
 
-产品源码、测试、诊断、构建配置和现有工作流继续留在原仓库，使用既有 GitHub 托管执行方式。本轮不改变触发、测试、门禁或发布链路，也不增加公共 dispatcher、Source Reader、Check Reporter 或产品凭据。
+PR 门禁使用经核实的 test-merge SHA；主源码执行该 merge，冻结包保留执行 head 的原语义，并在状态描述／私密证据中明确 execution SHA。两者均绑定同一个 head / base 组合。所有该 PR 的必需 context 都写入统一 check SHA，不能一部分写 head、一部分写 merge 导致 GitHub 选择 merge 后缺项。无可合并 SHA 时报告冲突，不伪造可放行的合并结果。
 
-将来仓库转为 Private 与更换 Runner 类型无关；继续使用 GitHub 托管 Runner 不需要用户部署机器。本轮不实施可见性切换。
+head 或 base 改变后旧组合不满足新门禁。按原触发和严格分支策略更新 PR／重新调度，避免无条件对所有 PR 反复全跑；至少实测一次新 head 和一次 base 更新后的阻断／重跑。
 
-### 3.2 公共合成仓库 emo_master_ci
+独立 reporter 在新 Runner 上运行，只执行公共仓库中固定、受审的解析与状态代码，不执行产品脚本或下载包内代码。它根据：
 
-- 先核实仓库是否存在及当前权限；已有仓库先审查内容，不覆盖历史或无关工作。
-- 从零编写小型独立 Python fixture，使用虚构输入；允许公开依赖。
-- 不复制 emo_master 的源码、产品测试、工程样例、配置、诊断、构建文件、文档或 Git 历史；当前产品仍公开不构成例外。
-- 仅运行公共仓库自身的自测；输入只包含合成测试参数，不接收产品提交、路径、工程或凭据。
-- 不创建或更新 emo_master 产品 Check Run，不触发产品构建或发布。
-- 对外说明这是合成基础设施验证；公开代码的许可遵循已确定的仓库政策，不把产品材料一并公开。
+- 可信产品请求与当前 PR／标签身份；
+- 公共 workflow ID / SHA、run ID / attempt 和 GitHub API 的预期 job 真实结果；
+- 必需报告的存在性、完整性与原分片集合不变量；
 
-### 3.3 安全结论的范围
+决定状态，不能只相信报告里的 PASS。scope 合法跳过可按原策略报告“无需源码全测”的成功摘要；测试未执行、失败、取消、超时或缺少必需证据不能冒称通过。
 
-GitHub 托管 Runner 默认可访问公网。能读取源码的测试进程、依赖安装脚本或构建子进程，可能通过网络或其他输出通道带出数据。撤销下载 Token 不能收回已经落盘的源码；重定向 stdout 仅改变部分输出位置。[3][4]
+保留原 concurrency：自动验证可取消过期运行，手动与诊断按原策略不取消。公共请求、汇总与 reporter 使用一致的并发分组，并检查当前 pending 请求标记与 run 关联，拒绝旧请求覆盖新请求。不同产品 SHA 的状态绝不串用；重跑按实际 attempt 取证。
 
-这一风险并非公共仓库独有。公共执行还引入公开日志／产物和跨仓库授权面；Private 本身也不保证恶意代码无法外传。本轮采用用户已确认的边界：公共端没有产品源码、数据和访问权限，安全审查据此检查输入与权限，不要求合成测试证明真实产品保密。
+reporter 使用 `if: always()` 处理正常失败，但不承诺整条 workflow 被取消后一定运行。全局取消留下 pending 时门禁仍阻断，交付记录明确“未完成／需重跑”；使用 GitHub 原生重跑处理，不新增通用对账平台。可在正常控制收尾机会将取消写为 error。
 
-不将 Private Networking 等同于免费标准 Runner 已具备外部强制的默认拒绝出口策略；本轮不建设网络隔离平台。未来若重新考虑公共执行产品任务，需另立变更评估具体威胁模型、费用和剩余风险，并取得相应授权；不把未来方案写成本轮待实现任务或完成条件。
+切换 required status 时检查 GitHub 账户支持 Private 分支保护；个人 Free 与 Pro 能力不同，不能把 ChatGPT Pro 当 GitHub Pro。PAT status 不提供独立 GitHub App 来源绑定；本版基于可信维护者权限，不能宣称 App 级来源保证。
 
-## 4. 最小公共自测设计
+## 7. 日志与 Artifact：保留完整证据，不公开明文
 
-- 触发：公共仓库自己的 `push`、`pull_request` 和 `workflow_dispatch`；执行上下文必须属于公共仓库。
-- 平台：标准 Linux / Windows 托管 job，Python 3.10；同一独立合成项目在两平台执行。
-- 成功路径：正常合成输入，断言通过，测试命令退出 0，job 成功。
-- 失败路径：仅手动合成验证用的明确失败开关，造成一个可控断言失败；测试命令非零退出、相应 job / workflow 真实失败。失败 run 是预期的负向证据，正常默认运行不应持续红灯。
-- 摘要：平台、合成测试标识、真实结果与时长；汇总不能覆盖失败结论，不将取消、超时、未执行记为成功。
-- 无需为本轮新增 Qt 桌面、冻结包、真实设备或全部历史诊断验收；这些属于产品既有覆盖。
-- 未使用的 artifact、cache 或回调不为满足清单而专门引入；无需对未实现能力增加故障演练。
+公共仓库日志和 Artifact 不作为私有空间。直接取源不会自动公开整个工作目录，但脚本输出、cache 和上传行为可能披露内容。[5][6]
 
-可控失败在 Linux / Windows 各验证一次即可；如果 workflow 使用矩阵，应避免一个失败提前取消另一平台而丢失验收证据。验收完成后保留默认正常运行与手动失败验证能力，不需要长期重复制造失败。
+采用一个成熟的加密工具 age，不自行设计密码协议：
 
-## 5. 权限、日志和仓库设置
+1. 公共执行器把产品安装／测试／诊断／打包的 stdout、stderr 和原始报告收集到本地文件。关闭 shell trace；公开仅打印阶段、平台、计数和通用错误类别。
+2. 产品子进程的 GITHUB_STEP_SUMMARY / OUTPUT 等文件指向局部文件，控制器只转出允许的字段，避免无意把诊断内容直接写进公开摘要；这只是常规输出治理，不是恶意进程沙箱。
+3. 先打包日志、JUnit、节点清单、截图与必要产物，再用 `CI_EVIDENCE_RECIPIENT` 加密。文件名、内层路径及详细 manifest 放入密文包。
+4. `upload-artifact` 仅允许明确的 `*.tar.age` 文件；不使用工作区通配符，不上传明文失败日志。不缓存产品源码或包含产品文件的虚拟环境。
+5. Artifact 外部名称只含 run / attempt / 平台 / job 槽位，记录密文 digest、来源 job、size 和 key ID。保留期沿用原必要范围，通常 7–14 天，避免无依据延长。
+6. 可信汇总／publisher 按确切 run / attempt / artifact ID 读取密文，解密后校验内层源 SHA、目标、文件 hash 与允许路径。安全解析归档，拒绝越界路径，不执行其中程序。
+7. 管理员可下载密文后本地解密查阅完整错误；交付下载／解密命令与私钥离线备份说明。轮换密钥时保留对应旧私钥直到所需历史证据到期。
 
-- 公共 workflow 默认 `permissions: contents: read`；未使用的写权限与 `id-token` 不授予。正常使用公共仓库作用域的 `GITHUB_TOKEN`，不能把“无产品凭据”写成“完全没有 Token”。
-- checkout 仅当前公共仓库；不保留 Git 写入凭据，不拉产品仓库、私有 submodule 或私有依赖。
-- 第三方 Actions 固定经核实的完整提交 SHA；不能编造版本 SHA。
-- 不使用 `pull_request_target` 执行外部 PR 的代码。fork 合成自测不能获得产品权限或触发产品流程。
-- 核实可信维护者、默认分支保护与 Actions 权限；管理权限不足时列出具体未完成设置，不假称已生效。
-- 合成 fixture、虚构数据、断言错误和普通测试堆栈本来就应可公开，允许必要的调试输出。不要求重定向全部日志，也不建立不存在的私有错误回传渠道。
-- 公共日志、摘要、Artifact 和缓存不得含产品材料或真实凭据。不使用产品源码包、产品构建包或历史诊断作测试样本。
-- 默认不额外上传 Artifact 或开启 cache；确有必要时只含独立合成材料／公开依赖，并记录保留时间和实际使用量。
+公钥只负责加密，测试 job 不持有解密私钥。密文 Artifact 仍是公开可下载的密文，其保密依赖私钥安全；加密不是上传者身份签名，报告来源必须用 GitHub run/job 绑定核实。加密失败时保留失败结论，不回退上传明文。
 
-## 6. 产品工作流保留清单
+### 跨 job 包验证
 
-以下 12 项在本阶段均保持产品仓库原路径、原触发和 GitHub 托管执行方式，迁移状态为“未迁移”。表中的覆盖描述为审查基线，不代表本轮重新执行过这些测试。
+为避免把解密私钥交给会执行产品程序的 job，将同一目标的“构建 → 解压／启动冻结包验证 → 采集证据”放在同一个 Windows job，完成后才加密上传。Designer 与 Runtime 可分别并行。保持原验证步骤和时限，实测确认合并后的正常运行低于 GitHub-hosted 单 job 限额。
 
-| 当前工作流（均位于 .github/workflows/） | 保留的产品覆盖 |
+测试分片之间只交换加密报告；可信汇总器解密 JSON / JUnit 并验证集合，不运行产品测试代码。它的实现与原 `ci_shard_summary.py` 的数据契约和断言保持等价。
+
+## 8. 全量任务与外部打包改造
+
+12 项全部迁移，具体表见 [workflow-migration.md](workflow-migration.md)。原 4 个归档 YAML 不恢复。
+
+外部固定 `91766f6` 不可原样用于公共 caller：它会上传原始 build.log、请求、诊断和包，还使用 caller 的 repository / SHA 及 secrets: inherit。
+
+在 `python_build_scripts` 新增受控版本／入口，保留其他项目原入口：
+
+- 明确 source repository、execution SHA、source tag、release repository、packager SHA。
+- build-only 路径不接受发布 Token；输出模式改为本地验证后 age 加密 Artifact。
+- 同目标 build 与执行包验证同 job；可信 publisher 单独下载／解密／校验／上传。
+- 不再向 build 传 RELEASE_REPO_TOKEN 或 secrets: inherit。
+- 保留编排 Python 3.11 与产品 Python 3.10、PyInstaller 6.22.2、Inno Setup 6.7.3 的当前分工，不顺带升级工具链。
+- 得到实际新 commit SHA 后同步所有 uses / packager_ref；不编造 SHA，不修改历史固定提交，不影响 VisionWorkshop 的既有构建。
+
+publisher 在新的干净 job 上，只运行固定发布代码。验证两个目标均完成原校验、产品 tag / 版本 / SHA 一致、文件 digest 正确后，才取得发布 Token。它不执行产品二进制、安装脚本或产品提供的发布脚本。资产目标明确为产品 Private Release；不使用公共 caller 的 github.repository 默认值。
+
+未切换 Private 前，发布验证使用私有替身目标的 draft Release，并清楚记录不会触发生产发布。正式 v* 标签路径保留既有发布语义，在已授权生产动作范围内执行。
+
+## 9. 代码落点
+
+| 仓库 | 修改点 |
 |---|---|
-| `ci.yml` | Linux / Windows、Python 3.10、runtime / other 四分片、JUnit 与测试集合完整性汇总 |
-| `web-panel-ci.yml` | Web 后端、前端、浏览器、HTTP / WS、wheel、软件 Runtime 集成 |
-| `display-session-contract.yml` | Windows 原生 Qt、Display Session 和实时数据契约 |
-| `runtime-a18-diagnostics.yml` | A18 线程诊断及 SQLite 失败上下文 |
-| `runtime-capture-diagnostics.yml` | Runtime 采集诊断 |
-| `runtime-credit-diagnostics.yml` | Windows 原生 Qt 导出额度对照 |
-| `runtime-sqlite-append-controls.yml` | SQLite append 生命周期控制 |
-| `runtime-sqlite-failure-diagnostics.yml` | SQLite 故障点观察和独立控制 |
-| `runtime-stop-diagnostics.yml` | Runtime stop 生命周期诊断 |
-| `runtime-windows.yml` | Operator Runtime 构建、归档和验证 |
-| `validate-windows-package.yml` | Windows 冻结包构建与验证 |
-| `release-windows.yml` | Tag 校验、Designer / Runtime 正式发布 |
+| emo_master | 新 dispatch-public-ci.yml；ci_scope.py 显式上下文；原工作流内脚本调用的源 SHA／目录适配；tests/test_release_workflow_contract.py 及相关 scope 契约；迁移记录与回滚快照 |
+| emo_master_ci | 12 项公共 workflow／受审可复用入口；preflight、取源、输出捕获、age 打包、可信集合汇总、status reporter、publisher；合成协议测试；Secrets 配置和证据读取说明 |
+| python_build_scripts | 新公共安全输出与 build+verify / publisher 入口；显式产品上下文；固定新版本并保留其他产品兼容 |
 
-`docs/ci/archived-workflows/` 中 4 个历史 YAML 保持归档，不恢复、不迁移。
+不能删除 release workflow contract 测试以绕过迁移。原测试硬编码产品 YAML、jobs、github.sha、packager pin 与无发布权限等假设，应改为校验新 dispatcher、公共工作流固定版本／manifest 和私有发布目标，保留有意义的原断言。
 
-原主 CI 的集合完整性证明必须保留：同平台两个分片的 collected 集合相等，selected 集合互斥、并集等于 collected，每个 selected 项确实开始执行。它不是代码覆盖率，不能被测试数量相同替代；pytest 跳过不等于通过。
+## 10. 切换与费用
 
-## 7. 仅限 GitHub 托管 Runner 的后续节省候选
+按 tasks 的阶段推进到全部完成，不能停在合成自测：
 
-本轮只形成有证据的建议，不修改产品工作流：
+- 先搭最小取源／结果／加密链路，再真实接入全部 12 项。
+- 新旧在同一个产品版本上对照必要路径；新逻辑尚未等价前不移除旧门禁。
+- 新状态在产品 PR 实际出现并验证失败阻断后，切换 required contexts；旧工作流保存可恢复版本，再停用／移出活动目录，避免长期双跑。
+- 最终产品目录只保留短 dispatcher；12 个产品计算工作流不再从产品仓库启动。
+- 盘点公开历史／Release／副本、Private 权限与账户方案；在既有授权边界内完成可见性切换，切换后实际复验，不以切换前测试代替。
+- 回滚为停用新 dispatcher、恢复原工作流和原门禁、停止重复任务；仓库若已 Private，仍可暂在 Private 的 GitHub 托管 Runner 执行。回滚可能消耗私有额度，但不是自托管 Runner，也不自动把仓库重新公开。
 
-1. 以实际运行数据识别重复触发、过期提交运行和耗时热点。
-2. 核实现有 scope / 路径过滤、concurrency、公开依赖缓存和 Artifact 保留策略，提出局部改进；不能把已经存在的优化再算一遍节省。
-3. 评估需保留的 required checks 和手动诊断语义，不通过漏测、取消必需验证或让检查永久 Pending 节省用量。
-4. 只有真实减少了产品运行量并保持覆盖，才可报告产品额度改善；Public 当前实测和未来 Private 估算分开。
+公共标准托管计算免费，reusable 归调用方计费；因此重任务必须是公共 workflow 的调用上下文。[1] 费用报告分别列：
+公共标准计算、私有 dispatcher 实际用量、请求与加密 Artifact 存储、GitHub 账户方案费用。
+当前产品 Public 不能虚构已有私有付费基线；未来 Private 原地运行的成本是预测，迁移后数据是实测。不承诺全部服务免费或固定节省百分比。
 
-不列出或比较任何自托管／私有 Runner 替代路线，不将其改名为专用机器、临时 VM 或租用执行服务继续评估。
+## 11. 安全边界与本次验证状态
 
-## 8. 闭源与发布的后续事项
+现实边界：公共 Runner 会读取真实产品源码。可信维护者可以通过修改工作流使用 Secrets；恶意产品代码或被攻陷依赖也可能外传所读内容。最小权限、persist-credentials:false、日志捕获、加密 Artifact 都降低具体风险，不构成“任意恶意代码无外传”的保证。这不是停止全量迁移的理由，也不是可以省略的事实。
 
-这些是独立的后续准备，不阻塞本轮独立合成实现，也不随合成通过自动完成：
+不执行未经审查的公共 fork 产品代码；批准绑定具体 SHA。正常提交和已获授权的工作无需逐阶段重复征求确认。仅真实缺少账户安装／Secret 配置权限、付费升级、可见性变更或生产发布授权时，给出已准备好的具体动作与影响，不能以泛泛安全担忧中断其余实施。
 
-- 盘点已公开的源码历史、Release、Packages、Pages、Artifact 和外部副本；Private 不会撤回已下载副本。[5]
-- 复核外部打包固定版本的私有取源、`secrets: inherit`、Artifact 往返和发布权限。本轮不修改该调用，不运行正式发布。
-- 同仓库触发的 reusable workflow 与外部仓库独立取源的权限情形不同，不能未经验证一律要求新增 PAT。
-- 真正申请 Private 切换前，在不使用产品秘密的隔离替身中确认必要的权限与不发布 dry-run；提交切换报告，按已确认的独立审批边界执行。
-- 正式切换后另行复验 PR / push / 手动 CI 与 Windows 构建控制链路；不能将切换后的结果写成切换前已验证。
+本次交付为完整计划与代码静态审计，尚未实际创建公共仓库、配置 Token、运行 12 项新链路或切换 Private。历史 dot 的 5e15f431 校验、本轮父提交 39ac1bfb 的合成计划校验，只属于各自版本；本版需重新 strict 校验。
 
-## 9. 证据与验收记录
+## 12. 官方依据
 
-保留历史证据，避免混用版本：
-
-| 版本／事件 | 证据含义 |
-|---|---|
-| 原始 `19af981f1a142715b544ba06412daee7add5bd5d` | 历史 OpenSpec delta 标题问题；不代表产品实施完成 |
-| dot 的 `5e15f431205aeb7df20fbb89bade4c8891bec4c5` | dot 在 PR 评论报告 OpenSpec 2.1.1 strict、diff check、CI scope 9/9 通过；仅对应其版本 |
-| 本轮起点 `5f480ded9e4fd162f7e347764581d85d5bee732d` | ChatGPT Web 在干净 checkout 实际运行 OpenSpec 2.1.1 strict，退出 1：一个 Scenario 层级错误、两个 Requirement 缺 MUST / SHALL |
-| 外部构建静态审查 | 固定引用 `91766f6d18ca9a333f64cf1c6030202457ec4a8a`；此前观察 master 为 `702fca523be0aae306763cde6f19742a96c4a0cb`，不作为新的实时值 |
-| 历史公开面 | 此前 0 forks 的接口结果不能证明没有 clone、脱离 fork、外部镜像或下载产物 |
-
-本轮修订后须重新严格校验；结果以本次提交的 PR 评论及 dot 的后续实跑报告为准。运行 OpenSpec 时使用其官方遥测关闭选项 `OPENSPEC_TELEMETRY=0`，并关闭更新检查，执行本地验证。
-
-当前未完成项：公共仓库创建／配置及 Linux / Windows 实跑、账户用量读取、产品后续优化、Private 权限 dry-run 和可见性切换。没有执行的项目不得写成已通过。
-
-## 10. 官方资料
-
-以下为本轮费用与安全判断依据，后续执行需以当时规则和账户实际配置核实：
-
-1. [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions)：公共标准托管计算、私有包含用量、存储与 Larger Runner 的区别。
-2. [Billing and usage](https://docs.github.com/en/actions/concepts/billing-and-usage)：Reusable Workflow 归调用方计费。
-3. [Private networking with GitHub-hosted runners](https://docs.github.com/en/actions/concepts/runners/private-networking)：默认公网访问；私有网络连接与出口隔离须区分。
-4. [Compromised runners](https://docs.github.com/en/actions/concepts/security/compromised-runners)：执行恶意代码、Token 与跨仓库权限的风险。
-5. [Setting repository visibility](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility)：可见性变更影响。
+1. [Billing and usage](https://docs.github.com/en/actions/concepts/billing-and-usage) 与 [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions)。
+2. [Workflow dispatch API](https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event)。
+3. [Commit statuses API](https://docs.github.com/en/rest/commits/statuses#create-a-commit-status)。
+4. [Required status checks 与 merge / head 规则](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)。
+5. [actions/checkout：跨私有仓库与凭据持久化](https://github.com/actions/checkout)。
+6. [Secrets](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)、[Environment 保护](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments)、[Compromised runners](https://docs.github.com/en/actions/concepts/security/compromised-runners)。
+7. [age 官方实现](https://github.com/FiloSottile/age)、[Actions Artifact](https://github.com/actions/upload-artifact)。
+8. [Release API](https://docs.github.com/en/rest/releases/releases)、[Actions limits](https://docs.github.com/en/actions/reference/limits)。
+9. [GitHub Additional Product Terms](https://docs.github.com/en/site-policy/github-terms/github-terms-for-additional-products-and-features)。本方案用于项目开发／测试／发布；未发现对正常公共 CI 授权取私有源码的普遍禁止，也没有该架构的专门免费背书，仍遵守平台规则。

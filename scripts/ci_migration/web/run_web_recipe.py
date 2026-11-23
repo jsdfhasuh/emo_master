@@ -2,9 +2,10 @@
 import argparse
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
-import sys
+import tempfile
 
 
 RECIPE = Path(__file__).with_name("web_recipe.json")
@@ -34,6 +35,44 @@ def private_environment(extra):
     return env
 
 
+def resolve_windows_git_bash(env):
+    """Find Git for Windows, not System32's Windows Subsystem for Linux shim."""
+    for key in ("ProgramW6432", "ProgramFiles", "ProgramFiles(x86)"):
+        if value := env.get(key):
+            candidate = Path(value) / "Git" / "bin" / "bash.exe"
+            if candidate.is_file():
+                return str(candidate.resolve())
+    if git := shutil.which("git", path=env.get("PATH", "")):
+        git_root = Path(git).resolve().parent.parent
+        candidate = git_root / "bin" / "bash.exe"
+        if (git_root / "usr" / "bin" / "bash.exe").is_file() and candidate.is_file():
+            return str(candidate.resolve())
+    return None
+
+
+def shell_command(step, platform, env):
+    if step["shell"] == "bash":
+        if platform == "windows-latest":
+            bash = resolve_windows_git_bash(env)
+        else:
+            bash = shutil.which("bash", path=env.get("PATH", ""))
+        return ([bash, "--noprofile", "--norc", "-eo", "pipefail"] if bash else None,
+                ".sh", step["run"])
+    if step["shell"] == "pwsh":
+        pwsh = shutil.which("pwsh", path=env.get("PATH", ""))
+        script = ("$ErrorActionPreference = 'Stop'\n" + step["run"]
+                  + "\nif (Test-Path variable:LASTEXITCODE) { exit $LASTEXITCODE }")
+        return ([pwsh, "-NoProfile", "-NonInteractive", "-File"] if pwsh else None,
+                ".ps1", script)
+    raise ValueError("unknown shell")
+
+
+def failure(category, step=None):
+    suffix = "" if step is None else f":{step:02d}"
+    print(f"WEB_RECIPE_FAILURE:{category}{suffix}", flush=True)
+    return 1
+
+
 def execute(recipe, job, platform, event, product, evidence):
     selected, steps = select(recipe, job, platform, event)
     if os.environ.get("RUNNER_OS") != REQUIRED_HOST[platform]:
@@ -43,20 +82,24 @@ def execute(recipe, job, platform, event, product, evidence):
         raise ValueError("missing verified product directory")
     env = private_environment(selected["env"])
     evidence.mkdir(parents=True, exist_ok=False)
-    for step in steps:
-        shell = ["bash", "--noprofile", "--norc", "-eo", "pipefail", "-c"]
-        script = step["run"]
-        if step["shell"] == "pwsh":
-            shell = ["pwsh", "-NoProfile", "-NonInteractive", "-Command"]
-            script = "$ErrorActionPreference = 'Stop'\n" + script + "\nif (Test-Path variable:LASTEXITCODE) { exit $LASTEXITCODE }"
-        elif step["shell"] != "bash":
-            raise ValueError("unknown shell")
-        with (evidence / f"step-{step['id']:02d}.log").open("xb") as log:
-            completed = subprocess.run([*shell, script], cwd=cwd, env=env,
-                                       stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
-        if completed.returncode != 0:
-            print(f"Web job failed at step {step['id']:02d}; see protected evidence.")
-            return 1
+    with tempfile.TemporaryDirectory(prefix="emo-web-recipe-") as temp:
+        for step in steps:
+            number = step["id"]
+            shell, extension, script = shell_command(step, platform, env)
+            if shell is None:
+                return failure("shell-unavailable", number)
+            script_path = Path(temp) / f"step-{number:02d}{extension}"
+            script_path.write_text(script, encoding="utf-8", newline="\n")
+            with (evidence / f"step-{number:02d}.log").open("xb") as log:
+                try:
+                    completed = subprocess.run(
+                        [*shell, script_path.as_posix()], cwd=cwd, env=env,
+                        stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
+                    )
+                except OSError:
+                    return failure("shell-launch", number)
+            if completed.returncode != 0:
+                return failure("command-failed", number)
     print("Web job completed.")
     return 0
 
@@ -73,8 +116,7 @@ def main():
         return execute(json.loads(RECIPE.read_text(encoding="utf-8")), args.job, args.platform,
                        args.source_event, args.product.resolve(), args.evidence.resolve())
     except (KeyError, OSError, ValueError):
-        print("Web job setup failed; check trusted controller configuration.", file=sys.stderr)
-        return 1
+        return failure("setup")
 
 
 if __name__ == "__main__":

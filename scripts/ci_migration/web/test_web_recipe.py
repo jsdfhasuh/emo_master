@@ -7,7 +7,7 @@ import unittest
 from contextlib import redirect_stdout
 from unittest.mock import patch
 
-from run_web_recipe import RECIPE, execute, select
+from run_web_recipe import RECIPE, execute, resolve_windows_git_bash, select, shell_command
 
 
 class RecipeTests(unittest.TestCase):
@@ -54,10 +54,28 @@ class RecipeTests(unittest.TestCase):
             with patch.dict(os.environ, {"RUNNER_OS": "Linux"}), redirect_stdout(output):
                 result = execute(probe, "web-panel", "ubuntu-latest", "push", Path(root), evidence)
             self.assertEqual(result, 1)
+            self.assertEqual(output.getvalue().strip(), "WEB_RECIPE_FAILURE:command-failed:01")
             self.assertNotIn("private", output.getvalue())
             self.assertNotIn("secret", output.getvalue())
             self.assertIn("secret", (evidence / "step-01.log").read_text())
             self.assertFalse((evidence / "step-02.log").exists())
+
+    def test_windows_bash_uses_git_installation_not_generic_resolution(self):
+        with tempfile.TemporaryDirectory() as root:
+            candidate = Path(root) / "Git" / "bin" / "bash.exe"
+            candidate.parent.mkdir(parents=True)
+            candidate.touch()
+            env = {"ProgramFiles": root, "PATH": ""}
+            with patch("run_web_recipe.shutil.which", side_effect=AssertionError):
+                shell, extension, script = shell_command(
+                    {"shell": "bash", "run": "echo sample"}, "windows-latest", env
+                )
+            self.assertEqual(shell[0], str(candidate.resolve()))
+            self.assertEqual(shell[-1], "pipefail")
+            self.assertEqual((extension, script), (".sh", "echo sample"))
+        with patch("run_web_recipe.shutil.which", return_value=None) as which:
+            self.assertIsNone(resolve_windows_git_bash({"PATH": ""}))
+            which.assert_called_once_with("git", path="")
 
 
 if __name__ == "__main__":

@@ -1,144 +1,117 @@
-# Public CI Execution
+# Public Synthetic CI
 
 ## ADDED Requirements
 
-### Requirement: 公共仓库运行独立合成 CI
+### Requirement: 只使用 GitHub 托管 Runner
 
-公开 `emo_master_ci` MUST 在自己的标准 GitHub-hosted Runner 上执行独立合成项目，以验证公共 CI 基础设施和节省额度的计费路径；不得仅用私有调用方 Reusable Workflow 冒充公共仓库执行。
+本变更 MUST 只使用标准 GitHub 托管 Runner；MUST NOT 评估、部署或切换到自托管、自建、本地、租用服务器或其他私有 Runner。
 
-#### Scenario: 公共仓库合成测试
+#### Scenario: 执行或评估 Runner 方案
 
-- GIVEN 公共仓库已配置独立合成项目
-- WHEN 触发 Linux/Windows 标准 Runner 自测
-- THEN 所有实际测试 job MUST 在公共仓库的 Runner 上执行
-- AND 不得读取、下载或执行 emo_master 私有源码、产品测试和诊断
-- AND 该 runner 的计算使用量 MUST 归公共仓库，不得误称为私有调用方的 Reusable Workflow 费用
+- GIVEN 用户已排除私有 Runner
+- WHEN dot 实施公共自测或记录后续费用建议
+- THEN MUST 仅采用标准 GitHub 托管执行方式
+- AND MUST NOT 将自托管路线作为评估任务或备用部署方案
+- AND MUST 区分仓库 Private 可见性与 Runner 托管方式
 
-### Requirement: 私有源码安全读取
+### Requirement: 公共仓库独立执行合成 CI
 
-未经用户批准的隔离架构不得读取私有提交。公共 CI 的首阶段只执行独立合成项目；真实源码读取是单独的安全准入项。
+公开 `emo_master_ci` MUST 在自身工作流上下文使用标准 Linux / Windows GitHub 托管 Runner 执行独立合成项目。
 
-#### Scenario: 合成阶段不读取产品源码
+#### Scenario: 公共合成项目运行
 
-- GIVEN 尚未通过产品源码保密准入
-- WHEN 公共 workflow 执行
-- THEN MUST 只使用合成项目和虚构数据
-- AND MUST NOT 安装或请求 Source Reader App、产品 Token 或任何私有源码
-- AND MUST NOT 将合成项目通过记为产品 CI 迁移通过
+- GIVEN 公共仓库内存在从零编写的合成 Python 项目
+- WHEN 公共仓库的 push、pull_request 或 workflow_dispatch 触发自测
+- THEN MUST 在 Linux / Windows 使用 Python 3.10 执行该合成项目
+- AND MUST 记录真实 workflow、run、提交 SHA、平台和 job 结论
+- AND MUST NOT 将私有调用方引用公共 Reusable Workflow 记成公共仓库免费执行
 
-### Scenario: 未来产品源码准入
+### Requirement: 产品材料与权限不进入公共自测
 
-- GIVEN 已有独立审查通过且用户明确批准的 Runner 外部隔离架构
-- WHEN 评估读取指定私有提交
-- THEN 必须固定仓库与完整 SHA、使用最小短期凭据，并证明测试进程及所有输出通道无法外传
-- AND 单纯 Token 撤销、日志重定向、临时 VM 或可信分支不得作为充分证明
+公共自测 MUST 仅使用可公开的独立 fixture、虚构输入和公开依赖；MUST NOT 读取、下载、复制或执行 emo_master 产品材料，也不得持有产品访问权限。
 
-### Requirement: 不可信代码隔离
+#### Scenario: 构建合成自测输入
 
-公共 Runner 合成阶段不得接触产品权限；任何未来产品执行 MUST NOT 自动执行未信任的 fork PR 代码。
+- GIVEN 产品仓库当前仍为 Public，或将来已经转为 Private
+- WHEN 建立 fixture、测试、依赖、workflow 输入、日志或产物
+- THEN MUST NOT 引入产品源码、产品测试、工程样例、配置、历史、原始诊断或产品构建包
+- AND MUST NOT 配置产品 GitHub App、Source Reader、跨仓库 Token 或产品 Secrets
+- AND MAY 使用仅当前公共仓库作用域、最小只读权限的 GITHUB_TOKEN
 
-#### Scenario: 外部 fork PR
+### Requirement: 合成测试结果真实传播
 
-- GIVEN PR head repo 不等于私有 emo_master
-- WHEN 私有 dispatcher 判断是否启动公共 CI
-- THEN 默认 MUST 拒绝自动 dispatch
-- AND MUST NOT 使用 `pull_request_target` 执行 fork 源码
-- AND 只有经过明确人工审查并进入受信任提交后才允许公共执行
+公共自测 MUST 在 Linux / Windows 分别证明成功路径与可控测试失败路径，保留测试退出码和实际 job 结论。
 
-### Requirement: 公开日志与产物安全
+#### Scenario: 正常合成测试通过
 
-公共 workflow MUST 只输出公开安全的摘要。
+- GIVEN 使用正常合成输入
+- WHEN 测试命令执行完成
+- THEN MUST 退出 0 且对应 job 成功
+- AND MUST NOT 将未执行、跳过、取消或超时表述为测试通过
 
-#### Scenario: 测试成功或失败
+#### Scenario: 手动可控失败
 
-- GIVEN 产品测试在公共 Runner 上执行
-- WHEN 生成日志和报告
-- THEN stdout/stderr 与原始诊断证据 MUST 留在临时 Runner，不得上传公共 Artifact
-- AND 公开日志 MUST 仅包含白名单状态、平台、分片、计数、请求 ID 和通用失败类别
-- AND MUST NOT 包含私有源码片段、工程数据、设备配置、内部路径、原始异常堆栈或凭据
+- GIVEN 手动选择明确的合成失败开关
+- WHEN 一个预定断言失败
+- THEN 测试命令 MUST 非零退出，相关 job 和 workflow MUST 真实失败
+- AND MUST NOT 通过 continue-on-error、忽略退出码或汇总覆盖将失败记为成功
+- AND MUST 保留两平台实际执行证据，不能以一个平台失败后另一个被取消代替
 
-### Requirement: 结果回传私有仓库
+### Requirement: 公共权限与输出可审查
 
-公共 CI MUST 将结果关联回正确的私有 commit。
+公共 workflow MUST 使用最小权限和经核实的完整 Action SHA，所有输入与输出均符合独立合成范围。
 
-#### Scenario: Check Run 回调
+#### Scenario: 公共 PR 或 fork 自测
 
-- GIVEN 未来已获用户批准的产品执行隔离架构，且私有控制端已创建 pending Check Run
-- WHEN 对应公共产品测试完成
-- THEN 独立 callback job MUST 只通知私有可信端，由私有端利用最小 Checks: write 权限更新对应 Check Run
-- AND MUST 校验 check_run_id、head_sha、external_id/request_id 与预期 App 身份
-- AND 创建和更新 MUST 使用同一门禁 App；结果 MUST 来自 GitHub API 对固定 workflow、run/attempt 及预期 job 的复核，不得信任测试代码生成的 PASS 标记
-- AND 失败、取消、超时、未回调、SHA 不匹配 MUST NOT 使用 success、neutral 或 skipped 表示门禁通过
+- GIVEN 自测可能执行公共 PR 代码
+- WHEN 工作流运行
+- THEN MUST 不授予产品权限，不触发产品流程
+- AND MUST NOT 使用 pull_request_target 执行外部 PR 代码
+- AND MUST 核实维护权限、默认分支保护及 Actions 设置，未配置项如实报告
 
-### Requirement: 覆盖保留与私有发布边界
+#### Scenario: 输出合成诊断
 
-系统 MUST 对 12 个活动工作流逐项评估成本和安全边界；未通过产品源码保密准入的工作流必须保留在私有执行边界。
+- GIVEN fixture、测试数据和异常均来自独立合成项目
+- WHEN 生成测试日志或必要产物
+- THEN MAY 输出可公开的断言信息和普通错误堆栈
+- AND MUST NOT 包含产品材料或真实凭据
+- AND MUST NOT 将日志重定向、Token 撤销或合成成功当作产品源码保密证明
 
-#### Scenario: 全量 CI 迁移
+### Requirement: 保留产品覆盖和检查边界
 
-- GIVEN 当前 12 个活动工作流
-- WHEN 迁移方案完成审查
-- THEN 首阶段公共 Runner MUST 只运行合成项目；主 CI、Web CI、Display Session、Runtime 诊断、Windows 包验证等产品任务在通过独立源码保密准入前 MUST 保留原执行路径及门禁，明确标为未迁移
-- AND Release 写入、签名凭据和正式私有发布资产 MUST 留在私有边界
-- AND 不得公开上传产品二进制或原始诊断证据
-- AND 4 个归档工作流 MUST 保持归档，不重新启用
+系统 MUST 保留 emo_master 的 12 个活动工作流、原有产品检查门禁和 4 个归档工作流；公共合成结果 MUST NOT 替代任何产品验证。
 
-### Requirement: 公共仓库安全与计费验证
+#### Scenario: 公共合成测试通过
 
-公共仓库 MUST 使用标准 GitHub-hosted Runner、固定 Action SHA、受保护默认分支和最小权限。
+- GIVEN 公共 Linux / Windows 自测已通过
+- WHEN 记录本轮完成状态
+- THEN MUST 只标记公共合成基础设施验证通过，产品迁移数 MUST 为 0
+- AND MUST NOT 创建或更新产品 Check Run，或触发产品构建与发布
+- AND MUST 保留产品原平台、测试集合、断言和报告；不得将 skipped 记为 passed
+- AND MUST 保留原分片 collected 一致、selected 互斥、并集完整和选中项已开始执行的证明
+- AND MUST 保持 4 个历史 YAML 归档
 
-#### Scenario: 迁移后核对费用
+### Requirement: 费用报告区分实测与预测
 
-- GIVEN 公共 CI 工作流已运行
-- WHEN 对比迁移前后 GitHub Billing / Actions usage
-- THEN MUST 区分公共标准 Runner 免费计算与 Artifact/缓存/外部服务存储费用
-- AND MUST 报告实际迁移的 runner minutes，不得仅凭配置宣称节省金额
+费用报告 MUST 区分标准公共托管计算、私有仓库包含用量、存储、实际耗时与未来估算；MUST NOT 在未迁移产品任务时宣称节省了产品额度。
 
-### Requirement: 公共执行的保密准入
+#### Scenario: 合成验证完成后报告
 
-未经独立验证，公共 Runner MUST NOT 接收真实产品源码、原始报告、正式资产或有访问权限的 GitHub App 私钥；分支保护、临时 VM、日志重定向和凭据撤销不能替代进程及所有输出通道的隔离。
+- GIVEN 仅公共合成任务实际运行，产品执行方式保持原样
+- WHEN 记录时长、存储和费用
+- THEN MUST 报告实际 run 数据及缺失的账单权限或数据
+- AND MUST 说明产品迁移数为 0，合成自测未带来已验证的产品额度节省
+- AND MUST NOT 将当前 Public 产品仓库虚构为已有私有付费基线
+- AND MUST 将未来 Private 情形和托管 Runner 优化建议单列，未实施项不得计入已节省金额
 
-#### Scenario: 仅使用合成项目验证公共运行
+### Requirement: 后续产品迁移和可见性变更独立处理
 
-- GIVEN 尚无经过验证的 Linux/Windows 隔离边界
-- WHEN 执行公共 CI 试点
-- THEN MUST 只使用独立合成 Python 项目、虚构数据及不具备真实产品权限的身份
-- AND MUST 保留旧门禁、旧覆盖和正式发布链路，不得将合成执行记作产品迁移通过
-- AND MUST NOT 创建产品 Source Reader App 或配置产品私钥
+任何未来产品公共执行、产品 CI 修改或 Private 切换 MUST 作为独立后续事项；MUST NOT 因本轮合成成功自动实施。
 
-#### Scenario: 产品执行准入失败
+#### Scenario: 交付本轮验证
 
-- GIVEN 测试或构建进程可访问产品源码和任一未受控的外部或公共输出通道
-- WHEN 评估公共执行
-- THEN MUST 保留该项在原执行边界并报告阻断，不得复制源码、凭据或原始证据至公共环境
-- AND 公共结果 MUST NOT 触发私有发布
-
-#### Scenario: 可见性变更
-
-- GIVEN 私有替身仓库已验证权限和发布 dry-run，且切换前验收证据已齐备
-- WHEN 提交最终验收报告
-- THEN MUST 等待用户明确批准后才切换正式仓库可见性
-- AND MUST 在切换后单独复验正式仓库，不得将后验验证写作切换前已通过
-
-
-### Requirement: 合成自测与产品源码隔离不得混淆
-
-公共仓库合成项目的通过结果 MUST NOT 作为产品源码保密或产品 CI 迁移通过的证据。
-
-#### Scenario: 公共合成项目通过
-
-- GIVEN Linux/Windows 合成项目测试全部通过
-- WHEN 记录迁移状态
-- THEN 只能标记公共 Runner 基础设施自测通过
-- AND 产品源码读取、产品测试迁移和 Private 切换仍保持未验证
-
-### Requirement: 私有自托管 Runner 作为成本替代方案
-
-系统 SHOULD 评估私有仓库使用一次性自托管 Runner 执行产品 CI 的可行性。
-
-#### Scenario: 评估私有 Runner
-
-- GIVEN 公共 Runner 无法证明产品源码保密
-- WHEN 评估额度节省方案
-- THEN 应核对 GitHub 自托管 Runner 的计费规则、主机成本、一次性 VM、Runner group 限制、网络出口控制及 Windows Qt 支持
-- AND 未经用户批准不得自动部署或切换
+- GIVEN 最新 OpenSpec 已严格校验且公共合成验证已有报告
+- WHEN dot 提交执行结果
+- THEN MUST 保持本轮未授权的产品源码接入、产品权限、发布与可见性修改未实施
+- AND MUST 区分计划校验、合成实跑、产品源码保密和 Private 后复验的证据
+- AND MUST NOT 将后续安全架构、闭源 dry-run 或自托管评估变成本轮隐藏完成条件

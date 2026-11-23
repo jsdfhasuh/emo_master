@@ -119,6 +119,44 @@ class GitScopeTests(unittest.TestCase):
         self.assertEqual(output.read_text(encoding="utf-8"), "run_full=false\n")
         self.assertIn("not required", summary.read_text(encoding="utf-8"))
 
+    def runScopeCli(self, source, contextFlag=False, githubName="workflow_dispatch"):
+        sourceContext = self.repo / "source-context.json"
+        if source is not None:
+            sourceContext.write_text(json.dumps(source), encoding="utf-8")
+        output = self.repo / "output.txt"
+        output.unlink(missing_ok=True)
+        githubEvent = self.repo / "event.json"
+        githubEvent.write_text(json.dumps({"before": self.base, "ref": "refs/heads/main"}), encoding="utf-8")
+        script = Path(__file__).resolve().parents[1] / "scripts/ci_scope.py"
+        env = dict(os.environ, GITHUB_EVENT_NAME=githubName, GITHUB_EVENT_PATH=str(githubEvent),
+                   GITHUB_OUTPUT=str(output), EMO_CI_CONTEXT=str(sourceContext))
+        env.pop("GITHUB_STEP_SUMMARY", None)
+        args = [sys.executable, str(script)]
+        if contextFlag:
+            env["EMO_CI_CONTEXT"] = str(self.repo / "unreadable.json")
+            args += ["--event-context", str(sourceContext)]
+        result = subprocess.run(args, cwd=self.repo, env=env, check=True, capture_output=True, text=True)
+        result = json.loads(result.stdout)
+        self.assertEqual(output.read_text(encoding="utf-8"), f"run_full={str(result['run_full']).lower()}\n")
+        return result
+
+    def testExplicitSourcePrOverridesPublicManualEvent(self):
+        self.write("web_panel/frontend/src/main.tsx", "export const title = 'Web';\n")
+        self.commit()
+        push = {"event_name": "push", "event": {"before": self.base,
+                                               "ref": "refs/heads/agent/runtime-workflow-architecture-v1"}}
+        pr = {"event_name": "pull_request", "event": {"pull_request": {"base": {"sha": self.base}}}}
+        self.assertTrue(self.runScopeCli(push)["run_full"])
+        self.assertFalse(self.runScopeCli(pr, contextFlag=True)["run_full"])
+
+    def testInvalidSourceContextNeverFallsBackToPublicEvent(self):
+        self.write("README.md", "Docs only\n")
+        self.commit()
+        for source in (None, {"event_name": "pull_request", "event": {"pull_request": []}},
+                       {"event_name": "push", "event": {"before": "not-a-sha"}}):
+            with self.subTest(source=source):
+                self.assertTrue(self.runScopeCli(source, githubName="push")["run_full"])
+
 
 if __name__ == "__main__":
     unittest.main()

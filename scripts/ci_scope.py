@@ -1,6 +1,8 @@
 """Select full source checks without skipping the workflow's status checks."""
 from pathlib import Path, PurePosixPath
+import argparse
 import json
+import re
 import os
 import subprocess
 
@@ -46,7 +48,7 @@ def selectChecks(eventName, event, repo):
         base = event.get("before")
     else:
         return True, "Manual or unsupported event: full source checks.", []
-    if not base or set(base) == {"0"}:
+    if not isinstance(base, str) or re.fullmatch("[0-9a-fA-F]{40}", base) is None or set(base) == {"0"}:
         return True, "No previous revision: full source checks.", []
     try:
         paths = changedPaths(base, repo)
@@ -61,10 +63,33 @@ def selectChecks(eventName, event, repo):
     return full, reason, paths
 
 
-def main():
-    eventPath = os.environ.get("GITHUB_EVENT_PATH")
-    event = json.loads(Path(eventPath).read_text(encoding="utf-8")) if eventPath else {}
-    full, reason, paths = selectChecks(os.environ.get("GITHUB_EVENT_NAME", ""), event, Path.cwd())
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--event-context", type=Path,
+                        help="Verified source event JSON; defaults to EMO_CI_CONTEXT, then GitHub event")
+    args = parser.parse_args(argv)
+    sourceContext = args.event_context or os.environ.get("EMO_CI_CONTEXT")
+    if sourceContext:
+        try:
+            context = json.loads(Path(sourceContext).read_text(encoding="utf-8"))
+            sourceEvent = context["event"]
+            sourceName = context["event_name"]
+            if not isinstance(sourceEvent, dict) or not isinstance(sourceName, str):
+                raise ValueError
+            if sourceName == "pull_request":
+                pr = sourceEvent.get("pull_request")
+                baseData = pr.get("base") if isinstance(pr, dict) else None
+                if not isinstance(baseData, dict):
+                    raise ValueError
+        except (OSError, ValueError, TypeError, KeyError):
+            # Explicit invalid context must never be replaced by the caller event.
+            full, reason, paths = True, "Source event context unavailable: full source checks.", []
+        else:
+            full, reason, paths = selectChecks(sourceName, sourceEvent, Path.cwd())
+    else:
+        eventPath = os.environ.get("GITHUB_EVENT_PATH")
+        event = json.loads(Path(eventPath).read_text(encoding="utf-8")) if eventPath else {}
+        full, reason, paths = selectChecks(os.environ.get("GITHUB_EVENT_NAME", ""), event, Path.cwd())
     decision = str(full).lower()
     print(json.dumps({"run_full": full, "reason": reason, "changed_files": len(paths)}, ensure_ascii=False))
     if output := os.environ.get("GITHUB_OUTPUT"):

@@ -11,7 +11,7 @@
 
 - [ ] 2.1 新增 Job-scoped BackgroundTaskService、节点级 BackgroundTaskClient 和任务引用；首版一条 FIFO 工作线程、有界队列。
 - [ ] 2.2 实现 submit、wait、status、任务结果、完成/失败记录和提交时运行身份冻结；不复用已关闭的 OperatorLogger。
-- [ ] 2.3 队列满时实施可取消背压；终态记录有界保留，淘汰后 wait 返回明确的 E_BACKGROUND_TASK_EXPIRED。
+- [ ] 2.3 队列满时实施可取消背压；终态记录有界保留，淘汰后 wait 返回明确的 E_BACKGROUND_TASK_EXPIRED；保留独立的未观察失败摘要，不能因记录淘汰而漏报失败。
 - [ ] 2.4 实现正常 drain、取消待执行任务、等待当前任务收尾和幂等 close；未观察失败影响 Job 终态，原始工作流错误优先。
 
 ## 3. Runtime 与 Runner 接入
@@ -19,8 +19,9 @@
 - [ ] 3.1 在 Job worker 创建服务，并沿 WorkflowRunner → OperatorExecutor → 每次 executeNode runtimeContext 注入；OperatorExecutor 仅对声明 backgroundTasks 的算子注入。
 - [ ] 3.2 让 BackgroundTaskService 提供完成记录队列；WorkflowRunner 在节点边界和收尾阶段于 Runtime 执行线程处理任务事件及延迟产物，不从后台线程直接操作 ArtifactStore、ResultCollector 或预览对象。
 - [ ] 3.3 确认并覆盖正式 Job、单算子调试、工作流调试；调试能力必须来自 trustedEntries() 的已校验 manifest，不能信任客户端自报。
-- [ ] 3.4 保持 PurePreviewExecutor 和工作流 clone-safe trial 无后台提交能力，验证纯预览不能产生延迟副作用。
-- [ ] 3.5 调整 Job terminal 顺序：后台服务先 drain/cancel，Runner 处理剩余完成记录和产物，再关闭 AsyncPreviewSnapshotWriter，最后发布 terminal event；保留现有 graceful stop 超时行为。
+- [ ] 3.4 单算子调试在输出冻结前 drain 并解析最终任务状态；工作流调试在最终快照/会话关闭前 drain，暂停期间允许后台任务继续运行。
+- [ ] 3.5 保持 PurePreviewExecutor 和工作流 clone-safe trial 无后台提交能力，验证纯预览不能产生延迟副作用。
+- [ ] 3.6 调整 Job terminal 顺序：后台服务先 drain/cancel，Runner 处理剩余完成记录和产物，再关闭 AsyncPreviewSnapshotWriter，最后发布 terminal event；保留现有 5000ms graceful stop 超时语义。
 
 ## 4. ImageSaver 与下游依赖
 

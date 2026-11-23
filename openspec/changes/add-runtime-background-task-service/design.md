@@ -90,9 +90,10 @@ manifest 是能力声明的唯一来源。首版支持值：
 
 - `submit(callable, *args, taskName=...)`：提交任务并立即返回任务引用；不承诺文件已落地。
 - `task.id`：本 Job 内唯一任务 ID，适合放进 JSON 输出并传给后续算子。
-- `background.wait(taskId)`：等待指定任务结束；成功返回任务函数结果，失败抛出带原始错误信息的后台任务异常。等待过程响应当前节点取消。
+- `background.wait(taskId)`：等待指定任务结束；成功返回任务函数结果，失败抛出带原始错误信息的后台任务异常。等待过程响应当前节点取消。失败被 wait 抛给调用方后视为已观察；算子可明确捕获并处理。
 - `background.status(taskId)`：查询 `QUEUED / RUNNING / SUCCEEDED / FAILED / CANCELLED`。
 - 任务记录只保留有界数量的终态摘要；达到上限时只淘汰最早的终态记录，不淘汰运行中任务。等待已淘汰任务返回明确的 `E_BACKGROUND_TASK_EXPIRED`，不能伪造成功。
+- 任务记录淘汰不能抹去未观察失败：服务另行保留有界失败摘要/计数，Job 收尾仍能识别是否存在未处理失败。
 - 服务自动捕获提交时的 Job、Project、Workflow、WorkflowRun、Node、NodeRun、iterationPath、cycle 等身份；算子不能自行伪造归属。
 - 服务只传递轻量任务元数据和结果摘要，不把图片字节放入 Runtime 事件。
 - 通用服务不擅自复制任意 Python 参数。提交方必须保证传入参数在任务完成前不可变；图像算子在提交前复制图像，避免上游继续修改同一 ndarray。

@@ -7,6 +7,7 @@ from PySide2.QtWidgets import QMessageBox
 
 from emo_master.apps.designer.ui.device_wizard import SourceEditor
 from tests.core.project.test_devices import declaration, definition  # noqa: F401
+from tests.designer.runtime_feedback_fixture import messages  # noqa: F401
 from tests.designer.test_device_workspace import windowFor, waitUntil
 from tests.designer.test_project_configuration_ui import setupDialog
 
@@ -113,14 +114,14 @@ def testValidatedEffectsAreNextToSelectedChanges(ownedDesignerWindow, tmp_path):
         d.reject()
 
 
-def testWritePreflightsAndShowsImpactBeforeSingleConfirmation(ownedDesignerWindow, tmp_path, monkeypatch):
+def testWritePreflightsAndShowsImpactBeforeSingleConfirmation(ownedDesignerWindow, tmp_path, monkeypatch, messages):  # noqa: F811
     window, d, _calls, _path = setupDialog(ownedDesignerWindow, tmp_path)
     calls = []
     path = '/devices/definitions/camera/defaults/exposureUs'
-    def write(*args, **kwargs):
-        calls.append(kwargs['validate'])
+    def write(_snapshot, _payload, _paths, _requestId, *, validate=False):
+        calls.append(validate)
         return (dict(cycleSafe=True, changeEffects={path: dict(effect='next_cycle', devices=['camera'])})
-                if kwargs['validate'] else dict(state='COMMITTED'))
+                if validate else dict(state='COMMITTED'))
     window.runtimeClient.writeProjectConfiguration = write
     try:
         row = next(r for r in range(d.table.rowCount()) if d.table.item(r, 0).data(Qt.UserRole) == path)
@@ -131,11 +132,14 @@ def testWritePreflightsAndShowsImpactBeforeSingleConfirmation(ownedDesignerWindo
         monkeypatch.setattr(QMessageBox, 'question', cancel)
         d.writeButton.click()
         waitUntil(lambda: d.pending is None)
+        assert not messages, messages
         assert calls == [True] and not d.requestId
         monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
         d.writeButton.click()
         waitUntil(lambda: d.pending is None)
+        assert not messages, messages
         assert calls == [True, False]
+        assert '已提交' in d.receiptSummary and d.requestId
     finally:
         d.reject()
 

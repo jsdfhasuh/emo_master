@@ -23,16 +23,14 @@ GitHub 官方计费说明：公共仓库使用标准 GitHub-hosted Runner 的计
 
 **私有 `emo_master`**
 - 产品源码、测试、诊断脚本、构建配置、项目文档及私有证据。
-- 轻量 dispatcher：响应 push / pull_request / workflow_dispatch，创建待执行 Check Run 并触发公共 CI。
-- 私有回调：接收公共 CI 的 Check Run 结果并保留 PR 门禁。
-- Release 控制与发布凭据；最终私有 Release 资产不放入公共 Artifact。
+- 现有 12 个活动 CI 工作流、required checks、发布控制保持原样。
+- 本阶段不增加公共 CI dispatcher、产品 Check Run 回调或产品凭据。
 
 **公开 `emo_master_ci`**
-- 所有可公开执行的产品验证 workflow。
-- 只在保密准入后引入取源适配；不存储产品 App 私钥。
-- 测试输出脱敏、公开日志白名单、Check Run 回调适配器。
-- 合成项目自测与使用文档。
-- 不保存 emo_master 源码，不在 Git 历史中出现私有源码副本。
+- 独立合成 Python 项目和 Linux/Windows 自测工作流。
+- 公共 Runner 环境、调度、测试执行和摘要处理工具。
+- 不读取、不存储、不执行 emo_master 源码或测试；不配置产品 GitHub App、Token、Secrets。
+- 不创建或更新 emo_master 产品 Check Run。
 
 ### 3.2 公共执行准入（当前禁止接入产品源码）
 
@@ -67,17 +65,17 @@ GitHub 官方说明：GitHub-hosted Runner 默认可访问公共互联网。临�
 | 当前工作流 | 迁移后的执行位置 | 说明 |
 |---|---|---|
 | `ci.yml` | 公共 CI | 完整 Linux/Windows、Python 3.10、runtime/other 分片、报告覆盖检查。私有端只保留 scope 选择与 dispatcher；scope 决策也可通过固定 SHA/变更列表交给公共端计算，但不得传任意命令 |
-| `web-panel-ci.yml` | 公共 CI | Linux/Windows Web 测试、浏览器、HTTP/WS、wheel、软件 Runtime 集成；仅保留白名单摘要，不公开原始浏览器截图/日志 |
-| `display-session-contract.yml` | 公共 CI | Windows 原生 Qt 与 Display Session 合约测试；不公开 display-evidence、JUnit 原文和截图 |
-| `runtime-a18-diagnostics.yml` | 公共 CI | 执行既有 A18 诊断；公开只输出诊断是否完整和失败类别，不输出线程 ID、内部 JSON 或原始 SQLite 上下文 |
-| `runtime-capture-diagnostics.yml` | 公共 CI | 执行既有采集诊断；只公开摘要，不公开采集内部数据 |
-| `runtime-credit-diagnostics.yml` | 公共 CI | 执行现有导出额度对照；仅公开实验通过/失败和固定统计，不上传原始报告 |
-| `runtime-sqlite-append-controls.yml` | 公共 CI | 执行七项固定控制；不公开原始 SQLite 内容 |
-| `runtime-sqlite-failure-diagnostics.yml` | 公共 CI | 执行故障观察和独立控制；原始故障上下文不出 Runner |
-| `runtime-stop-diagnostics.yml` | 公共 CI | 执行停止生命周期诊断；只输出脱敏摘要 |
-| `runtime-windows.yml` | 公共 CI 执行构建/验证；私有发布控制 | Runtime 包在公共 Windows Runner 内生成、验证后清理；不上传公共 artifact。需要留存或交付的正式包由私有发布链路重新生成/私有化保存 |
-| `validate-windows-package.yml` | 公共 CI | 构建、冻结产物验证均在同一个公共 Windows job 内完成；不上传公开包或原始证据 |
-| `release-windows.yml` | 公共 CI 做 tag 源码验证和非发布验证；私有仓库执行最终发布 | 公共端不持有 Release token，不发布私有二进制；私有发布 job 只处理已验证 SHA，并按需在私有 Runner 重新构建/签名/发布 |
+| `web-panel-ci.yml` | 私有原路径保留 | Linux/Windows Web 测试、浏览器、HTTP/WS、wheel、软件 Runtime 集成；仅保留白名单摘要，不公开原始浏览器截图/日志 |
+| `display-session-contract.yml` | 私有原路径保留 | Windows 原生 Qt 与 Display Session 合约测试；不公开 display-evidence、JUnit 原文和截图 |
+| `runtime-a18-diagnostics.yml` | 私有原路径保留 | 执行既有 A18 诊断；公开只输出诊断是否完整和失败类别，不输出线程 ID、内部 JSON 或原始 SQLite 上下文 |
+| `runtime-capture-diagnostics.yml` | 私有原路径保留 | 执行既有采集诊断；只公开摘要，不公开采集内部数据 |
+| `runtime-credit-diagnostics.yml` | 私有原路径保留 | 执行现有导出额度对照；仅公开实验通过/失败和固定统计，不上传原始报告 |
+| `runtime-sqlite-append-controls.yml` | 私有原路径保留 | 执行七项固定控制；不公开原始 SQLite 内容 |
+| `runtime-sqlite-failure-diagnostics.yml` | 私有原路径保留 | 执行故障观察和独立控制；原始故障上下文不出 Runner |
+| `runtime-stop-diagnostics.yml` | 私有原路径保留 | 执行停止生命周期诊断；只输出脱敏摘要 |
+| `runtime-windows.yml` | 私有原路径保留 | Runtime 包在公共 Windows Runner 内生成、验证后清理；不上传公共 artifact。需要留存或交付的正式包由私有发布链路重新生成/私有化保存 |
+| `validate-windows-package.yml` | 私有原路径保留 | 构建、冻结产物验证均在同一个公共 Windows job 内完成；不上传公开包或原始证据 |
+| `release-windows.yml` | 私有原路径保留 | 公共端不持有 Release token，不发布私有二进制；私有发布 job 只处理已验证 SHA，并按需在私有 Runner 重新构建/签名/发布 |
 
 `docs/ci/archived-workflows/` 中 4 个历史归档 YAML 保留在私有仓库，不恢复、不迁移、不公开。
 
@@ -95,47 +93,37 @@ GitHub 官方说明：GitHub-hosted Runner 默认可访问公共互联网。临�
 
 ## 6. 信任边界与 PR 策略
 
-公共 Runner 会实际读取并执行私有源码，因此测试代码具有网络外传能力。GitHub-hosted Runner 是临时环境，但不能阻止被执行的代码主动把源码发送到外部网络。必须把“受信任代码”作为硬条件：
+公共 Runner 当前只运行无产品权限的合成项目，不接触私有源码或产品 Secrets。公共仓库仍应保护默认分支，避免外部 PR 改写 self-test 逻辑或滥用公共 Runner：
 
-- 只为仓库所有者或明确受信任作者的同仓库分支触发公共 CI。
-- 不为 fork PR 自动发放私有源码读取权限；不使用 `pull_request_target` 执行 PR 源码。
-- 对受信任 PR，可在私有 dispatcher 检查 `head.repo.full_name == github.repository`、作者 allowlist / approval 状态和固定 SHA 后再 dispatch。
-- 对外部 fork PR，默认不执行公共 CI；需人工审查后将代码带入受信任分支，再触发公共验证，或采用私有验证 Runner。
-- 公共 `emo_master_ci` 默认分支开启保护；仅所有者可直接写入，外部 fork PR 的 self-test 不得访问 Source Reader App Secret。
-- 公共 workflow 仅由 `workflow_dispatch` / `repository_dispatch` 触发；不得添加可由任意 PR 改写 workflow 后又读取私有凭据的触发路径。
-- 不运行不受信任的第三方 Action；使用完整 SHA 固定依赖 Action；升级必须经过代码审查和合成测试。
+- `emo_master_ci` 默认分支开启保护，仅可信维护者可合并。
+- fork PR 的 self-test 不访问产品 Secrets，不触发私有仓库流程。
+- 不使用 `pull_request_target` 执行外部 PR 提供的代码。
+- 第三方 Actions 固定完整 SHA；升级通过代码审查和合成测试。
+- 任何未来产品源码执行请求必须重新通过独立保密准入；作者可信、同仓库分支或人工批准不能代替网络/进程隔离。
 
 ## 7. 私有发布链路
 
-- 公共 CI 只做源代码测试、诊断、构建验证；不持有 Release 写 token、签名证书或私有发布凭据。
-- 公共 Runtime/Designer 构建若只用于验证，产物留在 Runner 本地，验证后清理。
-- 正式 Release、私有二进制资产、签名和发布说明仍由私有 emo_master / python_build_scripts 链路完成。
-- 审查并修正现有 `secrets: inherit`：改为显式最小 Secrets 映射；Source Reader 只读 token 与 Release 写 token 严格分离。
-- 切换前在已有隔离私有替身中验证 `python_build_scripts` 的私有取源、手动触发、私有 Artifact 往返及不发布 dry-run；切换获批后再在正式仓库复验。现有固定版本的通用构建工作流会上传包和日志，不能原样从公共仓库调用。
-- 不因迁移而公开产品安装包、Runtime ZIP、内部诊断附件或构建日志。
+- 本阶段不改动正式 Release、签名证书、发布说明或 `python_build_scripts` 调用。
+- 所有正式产品构建和发布继续使用现有私有工作流。
+- 后续闭源准备需单独审查现有 `secrets: inherit`、私有源码读取、Release token 和 Artifact 往返；本阶段不将这些密钥传给公共仓库。
+- 切换 Private 前，必须在隔离私有替身中验证打包仓库的私有取源、手动触发、私有 Artifact 往返及不发布 dry-run；现有固定版本通用构建工作流不能原样从公共仓库调用。
 
 ## 8. required checks 与结果关联
 
-- 私有控制端在 dispatch 前用专用 Check Reporter App 为准确的被测 commit SHA 创建 queued Check Run，名称固定，external_id 记录 request ID。原 CI 在 PR 上评估合并候选 SHA；不得仅测试 head 再把结果冒挂到合并候选。
-- 公共 CI callback job 使用 Checks: write 更新同一个 check run；必须校验 source SHA、check_run_id、external_id/request_id、预期 App 身份和 workflow run 对应关系。
-- callback job 只依赖 GitHub job result，不信任测试脚本写入的 PASS 文件或 artifact。
-- 公共 workflow 失败、取消、超时、未回调、重复请求或 SHA 不一致时，私有 check 不得标记 success、neutral 或 skipped。
-- 分支保护规则要求此 Check Run 来自指定 GitHub App；正式仓库闭源前须核实 GitHub 套餐在 Private 上仍支持该门禁，配置并实测拒绝错误 SHA、错误 App 和未通过结果。
-- 同一 PR 的新提交要创建新 check run；旧 SHA 的成功结果不能覆盖新 SHA。
+- 公共合成自测不创建、不更新 emo_master 的产品 Check Run；现有私有 required checks 保持不变。
+- 未来若用户批准产品 CI 调度，需另行设计私有控制端创建 queued Check Run、准确绑定 SHA/PR 和公共 run/attempt 的回调对账。
+- 任何未来回调必须依据 GitHub API 核实固定 workflow、run/attempt、必需 job 和目标 SHA；不得信任测试脚本写入的 PASS 文件或公共 Artifact。
+- 失败、取消、超时、未回调、重复请求或 SHA 不一致均不得产生成功门禁；新提交不得继承旧 SHA 的成功结果。
 
 ## 9. 安全验证与失败处理
 
-必须测试：
-- 无效仓库名、短 SHA、错误 SHA、错误 PR/ref、伪造 check_run_id 被拒绝。
-- Source Reader token 不出现在 workflow inputs、日志、artifact、GITHUB_OUTPUT/GITHUB_ENV 和被测进程环境。
-- token 在 checkout 后撤销/销毁；Git 配置无残留认证。
-- 测试进程无法读取 App 私钥、Release token 或私有回调 token。
-- 原始测试输出、失败堆栈、诊断文件不会进入公共日志和 artifact。
-- fork PR 不触发带私有读取能力的 workflow。
-- callback job 在干净 Runner 上执行，无法被测试代码篡改；失败/取消/超时正确反映为 Check Run 非成功。
-- 测试结束后 Runner 临时工作目录与缓存中不保留产品源码。
+当前合成阶段只验证：
+- 公共 self-test 不配置或请求产品 App、Token、Secrets。
+- fork PR 无法访问产品凭据或触发私有产品 CI。
+- 合成项目只输出固定白名单摘要，不上传合成测试原始日志和不必要 Artifact。
+- Linux/Windows Runner 的实际执行结果和分钟数可核对。
 
-安全检查不应变成无穷故障矩阵；覆盖上述直接信任边界与实际触发路径即可。
+本阶段不声称验证了真实产品源码的保密性，不运行真实源码探针，不创建 Source Reader App。未来产品准入必须独立审查公网出口、Runner 服务接口、进程/文件边界、日志、命令文件、缓存和 Artifact；若无法证明不可绕过，产品源码不得进入公共 Runner。
 
 ## 10. 实施顺序
 

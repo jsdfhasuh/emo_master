@@ -1,0 +1,10 @@
+# Windows diagnostics adapter
+Seven reviewed Windows recipes from product evidence scope `2a2bdcb44c634d26d7d359758f488425bb8ade7d`; checkout and Python setup are supplied by the trusted worker controller. Each original executable step, dependency install, validations, ordering and outcomes are preserved. Native display is acceptance of its specific contract; other suites are diagnostic-only. No GitHub Actions artifact upload remains. Display has its private evidence-existence check; credit's original missing-artifact warning is non-gating.
+
+Invoke on Windows with Python 3.10, Git and PowerShell 7 on PATH, from a dedicated fresh worker/venv, against a verified full checkout at its SHA. Example:
+
+    python run.py --suite display-session-contract --product-root C:\\job\\product --product-ref refs/heads/main --source-sha <verified-40-lowercase-hex> --private-evidence-dir C:\\job\\evidence
+
+The requested suite and product ref/identity must be validated by the trusted caller. Optional numeric --run-id / --run-attempt are isolated-run identity inputs used by the credit suite. Enforce recipe timeout_minutes externally with a whole-worker/process-tree deadline. No credential or trusted control job is allowed in the workload worker; this executor is not a confidentiality or network boundary. Private stdout/stderr and scripts remain in evidence; Python/PowerShell/test files can also write in the staged product. Do not mount archives, stdout logs, or private evidence into a public publication job. Only allowlisted fixed suite/job result may leave through an independently trusted broker, never by forwarding this process's stdout. Preserve full workspace only under its private evidence retention policy, or discard securely.
+
+`python -m unittest -v` checks recipe contracts and executor failure propagation without Windows workload execution. `extract.py` is a developer-only offline regeneration helper using PyYAML BaseLoader against reviewed source workflows; it is not a CI-time dynamic code loader.

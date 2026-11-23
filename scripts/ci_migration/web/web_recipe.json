@@ -1,0 +1,318 @@
+{
+  "triggers": {
+    "push": {
+      "branches": [
+        "main",
+        "codex/logging-and-designer-improvements"
+      ],
+      "paths": [
+        "web_panel/**",
+        "src/**",
+        "proto/**",
+        "requirements*.txt",
+        ".github/workflows/web-panel-ci.yml"
+      ]
+    },
+    "pull_request": {
+      "branches": [
+        "main"
+      ],
+      "paths": [
+        "web_panel/**",
+        "src/**",
+        "proto/**",
+        "requirements*.txt",
+        ".github/workflows/web-panel-ci.yml"
+      ]
+    },
+    "workflow_dispatch": null
+  },
+  "jobs": {
+    "web-panel": {
+      "timeout_minutes": 15,
+      "platforms": [
+        "ubuntu-latest",
+        "windows-latest"
+      ],
+      "cwd": "web_panel",
+      "env": {},
+      "steps": [
+        {
+          "id": 1,
+          "name": "Install only isolated Web dependencies",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python -m pip install contracts/panel-contract-v1/python/*.whl && python -m pip install -e '.[test]' build playwright"
+        },
+        {
+          "id": 2,
+          "name": "Verify delivered official SDK version",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python -c \"from importlib.metadata import version; assert version('emo-panel-protocol') == '1.10.0'\""
+        },
+        {
+          "id": 3,
+          "name": "Backend tests",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python -m unittest discover -s tests -v"
+        },
+        {
+          "id": 4,
+          "name": "Install frontend dependencies",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "npm --prefix frontend ci"
+        },
+        {
+          "id": 5,
+          "name": "Frontend logic regressions",
+          "shell": "bash",
+          "full_only": true,
+          "subset_only": false,
+          "run": "npm --prefix frontend test"
+        },
+        {
+          "id": 6,
+          "name": "Frontend platform regressions",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": true,
+          "run": "node --test frontend/tests/editor_draft_recovery.test.mjs frontend/tests/editor_round3.test.mjs"
+        },
+        {
+          "id": 7,
+          "name": "Build frontend",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "npm --prefix frontend run build"
+        },
+        {
+          "id": 8,
+          "name": "Install test browser",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "if [[ \"$RUNNER_OS\" == 'Linux' ]]; then\n  python -m playwright install --with-deps --only-shell chromium\nelse\n  python -m playwright install --only-shell chromium\nfi\n"
+        },
+        {
+          "id": 9,
+          "name": "Package UI and current sample",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python scripts/package_frontend.py && python dev/fixtures/make_demo_package.py"
+        },
+        {
+          "id": 10,
+          "name": "Browser fixture checks",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python frontend/tests/browser_smoke.py"
+        },
+        {
+          "id": 11,
+          "name": "Stop confirmation and retired image identity browser regression",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python frontend/tests/asset_retirement_browser.py"
+        },
+        {
+          "id": 12,
+          "name": "Shared spacer and expanded canvas browser checks",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python frontend/tests/spacer_browser.py"
+        },
+        {
+          "id": 13,
+          "name": "Current-target catalog refresh browser checks",
+          "shell": "bash",
+          "full_only": true,
+          "subset_only": false,
+          "run": "python frontend/tests/catalog_refresh_e2e.py"
+        },
+        {
+          "id": 14,
+          "name": "Editor draft recovery browser checks",
+          "shell": "bash",
+          "full_only": true,
+          "subset_only": false,
+          "run": "python frontend/tests/editor_draft_recovery_browser.py"
+        },
+        {
+          "id": 15,
+          "name": "Browser harness checks",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python -m unittest discover -s frontend/tests -p 'test_browser_harness.py' -v"
+        },
+        {
+          "id": 16,
+          "name": "Editor Dispatch capture isolation browser checks",
+          "shell": "bash",
+          "full_only": true,
+          "subset_only": false,
+          "run": "python frontend/tests/editor_dispatch_browser.py"
+        },
+        {
+          "id": 17,
+          "name": "Editor package and grid browser checks",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python frontend/tests/editor_package_browser.py"
+        },
+        {
+          "id": 18,
+          "name": "Browser full Web application checks",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python frontend/tests/backend_e2e.py"
+        },
+        {
+          "id": 19,
+          "name": "Opt-in local passwordless browser checks (synthetic Runtime)",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python frontend/tests/local_no_auth_e2e.py"
+        },
+        {
+          "id": 20,
+          "name": "Official preview CLI and browser contract checks",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python frontend/tests/official_e2e.py"
+        },
+        {
+          "id": 21,
+          "name": "Build independent distribution",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python -m build --wheel"
+        },
+        {
+          "id": 22,
+          "name": "Verify distribution includes UI and does not import Qt",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python - <<'PY'\nimport sys, zipfile\nfrom pathlib import Path\nimport emo_web_panel\nassert 'PySide2' not in sys.modules and 'emo_master' not in sys.modules\nwheel=next(Path('dist').glob('*.whl'))\nwith zipfile.ZipFile(wheel) as z:\n    assert 'emo_web_panel/static/index.html' in z.namelist()\nPY\n"
+        },
+        {
+          "id": 23,
+          "name": "Install wheel outside source checkout",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python scripts/verify_wheel.py"
+        }
+      ],
+      "evidence": [
+        "web_panel/frontend/test-tmp/*.png",
+        "web_panel/frontend/test-tmp/*.html",
+        "web_panel/frontend/test-tmp/spacer-browser/",
+        "web_panel/frontend/*-mobile.png",
+        "web_panel/frontend/*-desktop.png",
+        "web_panel/test-results/asset-retirement-browser/",
+        "web_panel/dist/*.whl",
+        "web_panel/contracts/panel-contract-v1/python/*.whl",
+        "web_panel/docs/",
+        "web_panel/README.md",
+        "web_panel/dev/fixtures/demo.emoweb"
+      ],
+      "node_version": "22",
+      "python_version": "3.10"
+    },
+    "product-runtime": {
+      "timeout_minutes": 20,
+      "platforms": [
+        "windows-latest"
+      ],
+      "cwd": ".",
+      "env": {
+        "QT_QPA_PLATFORM": "offscreen",
+        "PYTHONUTF8": "1",
+        "EMO_WEB_PRODUCT_RUNTIME": "1"
+      },
+      "steps": [
+        {
+          "id": 1,
+          "name": "Install owning Runtime dependencies in separate test environment",
+          "shell": "pwsh",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python -m pip install -r requirements.txt"
+        },
+        {
+          "id": 2,
+          "name": "Install independent gateway and supplied SDK for contract tests",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python -m pip install web_panel/contracts/panel-contract-v1/python/*.whl './web_panel[test]'"
+        },
+        {
+          "id": 3,
+          "name": "Verify delivered official SDK version",
+          "shell": "pwsh",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python -c \"from importlib.metadata import version; assert version('emo-panel-protocol') == '1.10.0'\""
+        },
+        {
+          "id": 4,
+          "name": "Actual software Runtime via loopback (no devices)",
+          "shell": "pwsh",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python -m unittest discover -s web_panel/tests -p test_product_runtime.py -v"
+        },
+        {
+          "id": 5,
+          "name": "Build Web UI for combined software Runtime browser acceptance",
+          "shell": "bash",
+          "full_only": false,
+          "subset_only": false,
+          "run": "npm --prefix web_panel/frontend ci && npm --prefix web_panel/frontend run build && python web_panel/scripts/package_frontend.py"
+        },
+        {
+          "id": 6,
+          "name": "Install browser for combined software Runtime acceptance",
+          "shell": "pwsh",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python -m pip install playwright && python -m playwright install --only-shell chromium"
+        },
+        {
+          "id": 7,
+          "name": "Required SDK 1.10.0 same-Runtime two-Job image and automatic restart acceptance",
+          "shell": "pwsh",
+          "full_only": false,
+          "subset_only": false,
+          "run": "python web_panel/frontend/tests/product_runtime_e2e.py"
+        }
+      ],
+      "evidence": [
+        "web_panel/test-results/product-runtime/",
+        "web_panel/test-results/product-browser/"
+      ],
+      "node_version": "22",
+      "python_version": "3.10"
+    }
+  }
+}

@@ -1,0 +1,408 @@
+{
+  "display-session-contract": {
+    "workflow_name": "Windows display subscription and live contract",
+    "triggers": {
+      "workflow_dispatch": "",
+      "push": {
+        "branches": [
+          "agent/runtime-workflow-architecture-v1"
+        ],
+        "paths": [
+          ".github/workflows/display-session-contract.yml",
+          "src/emo_master/apps/runtime/grpc_server/**",
+          "src/emo_master/apps/runtime/presentation/**",
+          "src/emo_master/clients/runtime/**",
+          "src/emo_master/apps/operator_runtime/**",
+          "tests/runtime/presentation/test_display_subscriptions.py",
+          "tests/runtime/presentation/test_live_decisions.py",
+          "tests/ui/operator_view/test_five_display_sessions.py",
+          "tests/ui/presentation/test_latest_sampling_contract.py",
+          "tests/runtime/presentation/test_failed_capture_retirement.py",
+          "tests/runtime/presentation/test_capture_lane_lifetime.py",
+          "tests/runtime/presentation/test_export_diagnostics.py"
+        ]
+      }
+    },
+    "job_if": null,
+    "private_artifacts": [
+      "display-evidence"
+    ],
+    "timeout_minutes": 15,
+    "env": {
+      "QT_QPA_PLATFORM": "windows",
+      "PYTHONUTF8": "1",
+      "PYTHONUNBUFFERED": "1",
+      "EMO_DISPLAY_EVIDENCE": "display-evidence",
+      "HUARAY_CAMERA_SMOKE": "0"
+    },
+    "steps": [
+      {
+        "ordinal": 3,
+        "run": "python -m pip install -r requirements-dev.txt"
+      },
+      {
+        "ordinal": 4,
+        "name": "Exact source identity",
+        "shell": "pwsh",
+        "run": "New-Item -ItemType Directory -Force display-evidence | Out-Null\ngit rev-parse HEAD | Set-Content display-evidence/source-sha.txt\n"
+      },
+      {
+        "ordinal": 5,
+        "name": "Five real Sessions and deterministic 96-frame live contract",
+        "run": "python -m pytest -v tests/runtime/presentation/test_display_subscriptions.py tests/runtime/presentation/test_live_decisions.py tests/runtime/test_stop_all_dispatch.py tests/ui/operator_view/test_five_display_sessions.py tests/ui/presentation/test_latest_sampling_contract.py tests/runtime/presentation/test_failed_capture_retirement.py tests/runtime/presentation/test_capture_lane_lifetime.py tests/runtime/presentation/test_export_diagnostics.py --junitxml=display-evidence/junit.xml -o faulthandler_timeout=90"
+      }
+    ]
+  },
+  "runtime-a18-diagnostics": {
+    "workflow_name": "Windows A18 phase diagnostics (not acceptance)",
+    "triggers": {
+      "workflow_dispatch": "",
+      "push": {
+        "branches": [
+          "agent/runtime-workflow-architecture-v1"
+        ],
+        "paths": [
+          ".github/workflows/runtime-a18-diagnostics.yml",
+          "scripts/r3_a18_thread_diagnostics.py",
+          "tests/test_r3_native_thread_origins.py",
+          "tests/ui/presentation/test_retained_acceptance_lifecycle.py"
+        ]
+      }
+    },
+    "job_if": null,
+    "private_artifacts": [],
+    "timeout_minutes": 30,
+    "env": {
+      "QT_QPA_PLATFORM": "offscreen"
+    },
+    "steps": [
+      {
+        "ordinal": 3,
+        "name": "Install the existing test dependencies",
+        "run": "python -m pip install -r requirements-dev.txt"
+      },
+      {
+        "ordinal": 4,
+        "name": "Record the checkout outside the test process",
+        "shell": "pwsh",
+        "run": "git rev-parse HEAD\ngit status --short\n"
+      },
+      {
+        "ordinal": 5,
+        "name": "Run original full pytest order with the A18 observer alone",
+        "id": "observed_tests",
+        "shell": "pwsh",
+        "run": "$evidence = Join-Path $env:RUNNER_TEMP 'runtime-a18-phase-diagnostics.json'\npython -m pytest -q -p scripts.r3_a18_thread_diagnostics --native-thread-origins $evidence\nexit $LASTEXITCODE\n"
+      },
+      {
+        "ordinal": 6,
+        "name": "Print bounded failure evidence in this job log",
+        "if": "always()",
+        "shell": "python",
+        "env": {
+          "ORIGINAL_TEST_STEP": "${{ steps.observed_tests.outcome }}"
+        },
+        "run": "import json, os\nfrom pathlib import Path\nevidence = Path(os.environ[\"RUNNER_TEMP\"]) / \"runtime-a18-phase-diagnostics.json\"\nif not evidence.exists():\n    print(\"A18_NOT_CAPTURED: no native-identity failure evidence; inconclusive, not thread acceptance or proof that uninstrumented Windows is fixed\")\n    if os.environ.get(\"ORIGINAL_TEST_STEP\") != \"success\":\n        raise RuntimeError(\"A18_DIAGNOSTIC_UNAVAILABLE: inspect the original pytest result for other failures or incomplete coverage\")\nelse:\n    if not evidence.is_file() or not 0 < evidence.stat().st_size <= 32 * 1024:\n        raise RuntimeError(\"A18_DIAGNOSTIC_INVALID: empty or oversized evidence\")\n    content = evidence.read_text(encoding=\"ascii\")\n    print(\"A18_PHASE_DIAGNOSTIC_JSON_BEGIN\")\n    print(content)\n    print(\"A18_PHASE_DIAGNOSTIC_JSON_END\")\n    record = json.loads(content)\n    expected = [(\"pre_fixture_baseline\", None), (\"warmed_fixture_baseline\", None),\n        (\"stable_initial\", None)] + [(\"navigation\", index) for index in range(99, 1000, 100)] + [\n        (\"floating\", index) for index in range(30)] + [(\"hidden_observers\", None),\n        (\"owners_closed\", None), (\"fixture_released\", None)]\n    rows = record.get(\"checkpoints\", [])\n    valid = (record.get(\"schema_version\") == 2 and record.get(\"role\") == \"diagnostic_only\"\n        and record.get(\"trigger\") == \"original_assertNoNewThreads_failed\"\n        and record.get(\"failure_kind\") == \"native_thread_ids\"\n        and record.get(\"checkpoint_identity\") == \"unverified\"\n        and record.get(\"observer_retired\") is True and record.get(\"errors\") == []\n        and record.get(\"snapshot_match\") == \"live_argument_dict_id\"\n        and record.get(\"output_truncated\") is False\n        and record.get(\"omitted_checkpoint_count\") == 0\n        and 3 <= len(rows) <= 46 and record.get(\"checkpoint_calls\") == len(rows)\n        and record.get(\"after_sample\") == len(rows) - 1\n        and record.get(\"before_sample\") in (0, 1)\n        and [(row.get(\"phase\"), row.get(\"index\")) for row in rows] == expected[:len(rows)]\n        and all(row.get(\"sample\") == index and row.get(\"native_ids_status\") == \"complete\"\n            and len(row.get(\"native_thread_ids\", [])) <= 128 for index, row in enumerate(rows)))\n    if not valid:\n        raise RuntimeError(\"A18_DIAGNOSTIC_INVALID: missing, truncated, unknown or unrestored checkpoint evidence\")\n    print(\"DIAGNOSTIC_ONLY: checkpoint identities remain unverified; start modules are not creators, owners or retention causes. Original pytest outcome is unchanged.\")\n"
+      },
+      {
+        "ordinal": 7,
+        "name": "Expose full native WAL race failure context after the original run",
+        "if": "always()",
+        "timeout-minutes": "2",
+        "shell": "pwsh",
+        "run": "# Separate process and unchanged predicates; plain assertions expose\n# the existing bounded result dictionary without pytest truncation.\npython -m pytest -q --assert=plain --tb=long tests/test_r3_sqlite_wal_metadata.py::testNativeWalChangesAreDetected\nexit $LASTEXITCODE\n"
+      }
+    ]
+  },
+  "runtime-capture-diagnostics": {
+    "workflow_name": "Windows normal capture diagnostics (not acceptance)",
+    "triggers": {
+      "workflow_dispatch": "",
+      "push": {
+        "branches": [
+          "agent/runtime-workflow-architecture-v1"
+        ],
+        "paths": [
+          ".github/workflows/runtime-capture-diagnostics.yml",
+          "scripts/r3_sqlite_capture_diagnostics.py",
+          "tests/test_r3_sqlite_capture_diagnostics.py"
+        ]
+      }
+    },
+    "job_if": null,
+    "private_artifacts": [],
+    "timeout_minutes": 30,
+    "env": {
+      "QT_QPA_PLATFORM": "offscreen"
+    },
+    "steps": [
+      {
+        "ordinal": 3,
+        "name": "Install the existing test dependencies",
+        "run": "python -m pip install -r requirements-dev.txt"
+      },
+      {
+        "ordinal": 4,
+        "name": "Record the hosted runner resource boundary",
+        "shell": "python",
+        "run": "import ctypes, json, os\nfrom ctypes import wintypes\nclass Memory(ctypes.Structure):\n    _fields_ = [(\"length\", wintypes.DWORD), (\"load\", wintypes.DWORD)] + [\n        (name, ctypes.c_ulonglong) for name in (\n            \"total_physical\", \"available_physical\", \"total_commit\",\n            \"available_commit\", \"total_virtual\", \"available_virtual\", \"extended_virtual\")]\nkernel = ctypes.WinDLL(\"kernel32\", use_last_error=True)\nkernel.GlobalMemoryStatusEx.argtypes = [ctypes.POINTER(Memory)]\nkernel.GlobalMemoryStatusEx.restype = wintypes.BOOL\nmemory = Memory()\nmemory.length = ctypes.sizeof(memory)\nif not kernel.GlobalMemoryStatusEx(ctypes.byref(memory)):\n    raise ctypes.WinError(ctypes.get_last_error())\nprint(json.dumps({\"role\": \"diagnostic_only\", \"runner\": \"windows-latest standard\",\n    \"job_timeout_minutes\": 30, \"cpu_count\": os.cpu_count(),\n    **{name: getattr(memory, name) for name in (\n        \"total_physical\", \"available_physical\", \"total_commit\", \"available_commit\")}}))\n"
+      },
+      {
+        "ordinal": 5,
+        "name": "Run original pytest order with the exact normal capture observer",
+        "id": "observed_tests",
+        "shell": "pwsh",
+        "run": "$evidence = Join-Path $env:RUNNER_TEMP 'runtime-capture-diagnostics.json'\npython -m pytest -q -p scripts.r3_sqlite_capture_diagnostics --sqlite-capture-diagnostics $evidence\nexit $LASTEXITCODE\n"
+      },
+      {
+        "ordinal": 6,
+        "name": "Print bounded synthetic evidence to this job log",
+        "if": "always()",
+        "shell": "python",
+        "env": {
+          "ORIGINAL_TEST_STEP": "${{ steps.observed_tests.outcome }}"
+        },
+        "run": "import json, os\nfrom pathlib import Path\nevidence = Path(os.environ[\"RUNNER_TEMP\"]) / \"runtime-capture-diagnostics.json\"\nif not evidence.is_file() or not 0 < evidence.stat().st_size <= 1024 * 1024:\n    raise RuntimeError(\"CAPTURE_DIAGNOSTIC_UNAVAILABLE: missing, empty or oversized; do not infer PASS\")\ncontent = evidence.read_text(encoding=\"utf-8\")\nprint(\"CAPTURE_DIAGNOSTIC_JSON_BEGIN\")\nprint(content)\nprint(\"CAPTURE_DIAGNOSTIC_JSON_END\")\nrecord = json.loads(content)\nsource = record.get(\"source\", {})\ntarget = \"tests/runtime/presentation/test_normal_capture.py::testOriginalStartCapturesInstalledOperatorsAndProductionCounter\"\nvalid = (source.get(\"test\") == target\n    and source.get(\"diagnostic_valid\") is True\n    and source.get(\"source_stable\") is True\n    and source.get(\"runtime_bound\") is True\n    and source.get(\"fixture_teardown_outcome\") in (\"passed\", \"failed\")\n    and record.get(\"observer_retired\") is True\n    and record.get(\"worker_instrumented\") is False\n    and record.get(\"errors\") == []\n    and source.get(\"pytest_outcome\") in (\"passed\", \"failed\"))\nif os.environ.get(\"ORIGINAL_TEST_STEP\") == \"success\":\n    valid = (valid and source.get(\"pytest_outcome\") == \"passed\"\n        and source.get(\"fixture_teardown_outcome\") == \"passed\")\nif not valid:\n    raise RuntimeError(\"CAPTURE_DIAGNOSTIC_INVALID: missing, changed or unfinished observations\")\n"
+      }
+    ]
+  },
+  "runtime-credit-diagnostics": {
+    "workflow_name": "Windows export credit diagnostics (not acceptance)",
+    "triggers": {
+      "workflow_dispatch": "",
+      "push": {
+        "branches": [
+          "agent/runtime-workflow-architecture-v1"
+        ],
+        "paths": [
+          ".github/workflows/runtime-credit-diagnostics.yml",
+          "scripts/r3_export_credit_report.py",
+          "scripts/r3_hosted_credit_guard.py",
+          "scripts/r3_export_credit_control.py",
+          "scripts/r3_export_credit_trace.py",
+          "scripts/r3_capture_credit_trace.py",
+          "scripts/r3_policy_measure.py",
+          "scripts/r3_measure.py",
+          "scripts/r3_asset_split_trace.py",
+          "scripts/r3_asset_split_analyze.py",
+          "tests/test_r3_export_credit_report.py",
+          "tests/test_r3_hosted_credit_guard.py",
+          "tests/runtime/presentation/test_r3_export_credit_control.py",
+          "tests/runtime/presentation/test_r3_export_credit_trace.py",
+          "tests/runtime/presentation/test_r3_capture_credit_trace.py",
+          "src/emo_master/apps/runtime/presentation/**",
+          "src/emo_master/ui/presentation/images.py",
+          "tests/ui/presentation/test_renderer.py"
+        ]
+      }
+    },
+    "job_if": "github.ref == 'refs/heads/agent/runtime-workflow-architecture-v1'",
+    "private_artifacts": [
+      "${{ runner.temp }}/export-credit-public.json"
+    ],
+    "timeout_minutes": 20,
+    "env": {
+      "QT_QPA_PLATFORM": "windows",
+      "HUARAY_CAMERA_SMOKE": "0",
+      "PYTHONUNBUFFERED": "1"
+    },
+    "steps": [
+      {
+        "ordinal": 3,
+        "name": "Install the existing test dependencies",
+        "run": "python -m pip install -r requirements-dev.txt"
+      },
+      {
+        "ordinal": 4,
+        "name": "Record the standard hosted resource boundary",
+        "shell": "python",
+        "run": "import ctypes, json, os\nfrom ctypes import wintypes\nclass Memory(ctypes.Structure):\n    _fields_ = [(\"length\", wintypes.DWORD), (\"load\", wintypes.DWORD)] + [\n        (name, ctypes.c_ulonglong) for name in (\n            \"total_physical\", \"available_physical\", \"total_commit\",\n            \"available_commit\", \"total_virtual\", \"available_virtual\", \"extended_virtual\")]\nkernel = ctypes.WinDLL(\"kernel32\", use_last_error=True)\nkernel.GlobalMemoryStatusEx.argtypes = [ctypes.POINTER(Memory)]\nkernel.GlobalMemoryStatusEx.restype = wintypes.BOOL\nmemory = Memory()\nmemory.length = ctypes.sizeof(memory)\nif not kernel.GlobalMemoryStatusEx(ctypes.byref(memory)):\n    raise ctypes.WinError(ctypes.get_last_error())\nprint(json.dumps({\"role\": \"diagnostic_only\", \"runner\": \"windows-latest standard\",\n    \"job_timeout_minutes\": 20, \"qt_platform_requested\": \"windows\",\n    \"cpu_count\": os.cpu_count(), **{name: getattr(memory, name) for name in (\n        \"total_physical\", \"available_physical\", \"total_commit\", \"available_commit\")}}))\n"
+      },
+      {
+        "ordinal": 5,
+        "name": "Run one bounded synthetic credit ABBA control",
+        "id": "credit_control",
+        "shell": "pwsh",
+        "run": "$evidence = Join-Path $env:RUNNER_TEMP ('export-credit-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)\npython scripts/r3_hosted_credit_guard.py --output $evidence\nexit $LASTEXITCODE\n"
+      },
+      {
+        "ordinal": 6,
+        "name": "Always print the complete bounded diagnostic report",
+        "if": "always()",
+        "shell": "pwsh",
+        "env": {
+          "ORIGINAL_CONTROL_STEP": "${{ steps.credit_control.outcome }}"
+        },
+        "run": "$evidence = Join-Path $env:RUNNER_TEMP ('export-credit-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)\npython scripts/r3_export_credit_report.py --evidence $evidence --expected-sha $env:GITHUB_SHA --original-step $env:ORIGINAL_CONTROL_STEP --output-json \"$env:RUNNER_TEMP/export-credit-public.json\"\nexit $LASTEXITCODE\n"
+      }
+    ]
+  },
+  "runtime-sqlite-append-controls": {
+    "workflow_name": "Windows SQLite append controls (not acceptance)",
+    "triggers": {
+      "workflow_dispatch": "",
+      "push": {
+        "branches": [
+          "agent/runtime-workflow-architecture-v1"
+        ],
+        "paths": [
+          ".github/workflows/runtime-sqlite-append-controls.yml",
+          "scripts/r3_sqlite_append_controls.py",
+          "tests/test_r3_sqlite_append_controls.py"
+        ]
+      }
+    },
+    "job_if": null,
+    "private_artifacts": [],
+    "timeout_minutes": 10,
+    "env": {
+      "QT_QPA_PLATFORM": "offscreen"
+    },
+    "steps": [
+      {
+        "ordinal": 3,
+        "name": "Install the existing test dependencies",
+        "run": "python -m pip install -r requirements-dev.txt"
+      },
+      {
+        "ordinal": 4,
+        "name": "Run the fixed seven isolated controls",
+        "id": "controls",
+        "shell": "pwsh",
+        "run": "$output = Join-Path $env:RUNNER_TEMP 'sqlite-append-control-evidence'\npython scripts/r3_sqlite_append_controls.py --repo $env:GITHUB_WORKSPACE --output $output\nexit $LASTEXITCODE\n"
+      },
+      {
+        "ordinal": 5,
+        "name": "Print bounded evidence and validate the fixed experiment",
+        "if": "always()",
+        "shell": "python",
+        "env": {
+          "ORIGINAL_CONTROL_STEP": "${{ steps.controls.outcome }}"
+        },
+        "run": "import json, os, sys\nfrom pathlib import Path\nrepo = Path(os.environ[\"GITHUB_WORKSPACE\"])\nsys.path.insert(0, str(repo))\nfrom scripts.r3_sqlite_append_controls import (\n    CASES, LOG_CAP, RESULT_CAP, SUMMARY_CAP, TOTAL_CAP, source_identity, validate_output)\nroot = Path(os.environ[\"RUNNER_TEMP\"]) / \"sqlite-append-control-evidence\"\nnames = [(\"summary.json\", SUMMARY_CAP)]\nfor case in CASES:\n    names.extend([(f\"{case}/result.json\", RESULT_CAP), (f\"{case}/worker.log\", LOG_CAP)])\ncollected, total = [], 0\nfor name, cap in names:\n    path = root / name\n    if not path.exists():\n        continue\n    if path.is_symlink() or not path.is_file():\n        raise RuntimeError(\"APPEND_CONTROL_INVALID: unexpected evidence file\")\n    with path.open(\"rb\") as handle:\n        data = handle.read(cap + 1)\n    total += len(data)\n    if len(data) > cap or total > TOTAL_CAP:\n        raise RuntimeError(\"APPEND_CONTROL_INVALID: evidence exceeds fixed quota\")\n    collected.append((name, data.decode(\"utf-8\")))\nfor name, content in collected:\n    print(\"APPEND_CONTROL_FILE_BEGIN \" + json.dumps(name))\n    print(content)\n    print(\"APPEND_CONTROL_FILE_END \" + json.dumps(name))\nif os.environ.get(\"ORIGINAL_CONTROL_STEP\") not in {\"success\", \"failure\"}:\n    raise RuntimeError(\"APPEND_CONTROL_INVALID: controls did not finish\")\nsummary = validate_output(root, expected_source=source_identity(repo))\nif os.environ[\"ORIGINAL_CONTROL_STEP\"] != \"success\":\n    raise RuntimeError(\"APPEND_CONTROL_INVALID: original control process failed\")\nprint(\"CONTROL_EXECUTION_VALID: fixed input/settings/ownership checks only; not latency acceptance or a hosted root cause\")\nprint(\"Raw and counted calibration differences are not observer-cost corrections. Background overlap, natural finalization and storage-path limits remain explicit in the evidence.\")\n"
+      }
+    ]
+  },
+  "runtime-sqlite-failure-diagnostics": {
+    "workflow_name": "Windows SQL failure diagnostics (not acceptance)",
+    "triggers": {
+      "workflow_dispatch": "",
+      "push": {
+        "branches": [
+          "agent/runtime-workflow-architecture-v1"
+        ],
+        "paths": [
+          ".github/workflows/runtime-sqlite-failure-diagnostics.yml",
+          "scripts/r3_sqlite_failure_diagnostics.py",
+          "scripts/r3_sqlite_phases.py",
+          "scripts/r3_sqlite_wal_metadata.py",
+          "scripts/r3_sqlite_controls.py",
+          "tests/test_r3_sqlite_failure_diagnostics.py",
+          "tests/test_r3_sqlite_phases.py",
+          "tests/test_r3_sqlite_wal_metadata.py",
+          "tests/test_r3_sqlite_controls.py"
+        ]
+      }
+    },
+    "job_if": null,
+    "private_artifacts": [],
+    "timeout_minutes": 30,
+    "env": {
+      "QT_QPA_PLATFORM": "offscreen"
+    },
+    "steps": [
+      {
+        "ordinal": 3,
+        "name": "Install the existing test dependencies",
+        "run": "python -m pip install -r requirements-dev.txt"
+      },
+      {
+        "ordinal": 4,
+        "name": "Record the hosted runner resource boundary",
+        "shell": "python",
+        "run": "import ctypes, json, os\nfrom ctypes import wintypes\nclass Memory(ctypes.Structure):\n    _fields_ = [(\"length\", wintypes.DWORD), (\"load\", wintypes.DWORD)] + [\n        (name, ctypes.c_ulonglong) for name in (\n            \"total_physical\", \"available_physical\", \"total_commit\",\n            \"available_commit\", \"total_virtual\", \"available_virtual\", \"extended_virtual\")]\nkernel = ctypes.WinDLL(\"kernel32\", use_last_error=True)\nkernel.GlobalMemoryStatusEx.argtypes = [ctypes.POINTER(Memory)]\nkernel.GlobalMemoryStatusEx.restype = wintypes.BOOL\nmemory = Memory()\nmemory.length = ctypes.sizeof(memory)\nif not kernel.GlobalMemoryStatusEx(ctypes.byref(memory)):\n    raise ctypes.WinError(ctypes.get_last_error())\nprint(json.dumps({\"role\": \"diagnostic_only\", \"runner\": \"windows-latest standard\",\n    \"job_timeout_minutes\": 30, \"cpu_count\": os.cpu_count(),\n    **{name: getattr(memory, name) for name in (\n        \"total_physical\", \"available_physical\", \"total_commit\", \"available_commit\")}}))\n"
+      },
+      {
+        "ordinal": 5,
+        "name": "Run original full pytest order with only the failure observer",
+        "id": "observed_tests",
+        "shell": "pwsh",
+        "run": "$evidence = Join-Path $env:RUNNER_TEMP 'runtime-sqlite-failure-diagnostics.json'\npython -m pytest -q -p scripts.r3_sqlite_failure_diagnostics --sqlite-failure-diagnostics $evidence --sqlite-failure-call-details\nexit $LASTEXITCODE\n"
+      },
+      {
+        "ordinal": 6,
+        "name": "Print and validate bounded failure evidence in this job log",
+        "if": "always()",
+        "shell": "python",
+        "env": {
+          "ORIGINAL_TEST_STEP": "${{ steps.observed_tests.outcome }}"
+        },
+        "run": "import json, os, sys\nfrom pathlib import Path\nsys.path.insert(0, os.environ[\"GITHUB_WORKSPACE\"])\nfrom scripts.r3_sqlite_failure_diagnostics import validDetailScope\nevidence = Path(os.environ[\"RUNNER_TEMP\"]) / \"runtime-sqlite-failure-diagnostics.json\"\nif not evidence.exists():\n    if os.environ.get(\"ORIGINAL_TEST_STEP\") != \"success\":\n        raise RuntimeError(\"SQLITE_FAILURE_DIAGNOSTIC_INVALID: failed or incomplete run without failure evidence; inspect pytest summary for coverage gaps\")\n    print(\"NO_FAILURE_OBSERVED: no failure helper ran; inconclusive, not proof that uninstrumented Windows is fixed\")\nelse:\n    if not evidence.is_file() or not 0 < evidence.stat().st_size <= 1024 * 1024:\n        raise RuntimeError(\"SQLITE_FAILURE_DIAGNOSTIC_INVALID: empty or oversized failure file\")\n    content = evidence.read_text(encoding=\"utf-8\")\n    print(\"SQLITE_FAILURE_DIAGNOSTIC_JSON_BEGIN\")\n    print(content)\n    print(\"SQLITE_FAILURE_DIAGNOSTIC_JSON_END\")\n    record = json.loads(content)\n    valid = (validDetailScope(record) and record.get(\"role\") == \"diagnostic_only\"\n        and record.get(\"status\") == \"FAILURE_OBSERVED\"\n        and record.get(\"session_finished\") is True and record.get(\"source_stable\") is True\n        and record.get(\"observer_retired\") is True and record.get(\"errors\") == []\n        and record.get(\"original_pytest_exit\") in (0, 1)\n        and record.get(\"selected_tests\") == record.get(\"started_tests\")\n        and record.get(\"failures\") and len(record[\"failures\"]) <= 16\n        and record.get(\"failed_tests_without_helper\") == 0\n        and record.get(\"dropped_failure_records\") == 0)\n    if valid:\n        valid = all(row.get(\"status\") == \"OBSERVED\" and row.get(\"observer_retired\") is True\n            and row.get(\"errors\") == [] and row.get(\"gaps\") == []\n            and row.get(\"process_run_token\") == record.get(\"process_run_token\")\n            and isinstance(row.get(\"test_epoch\"), int) and isinstance(row.get(\"store_token\"), int)\n            and row.get(\"sql\", {}).get(\"enabled\") is True\n            and row.get(\"sql\", {}).get(\"errors\") == [] for row in record[\"failures\"])\n    if not valid:\n        raise RuntimeError(\"SQLITE_FAILURE_DIAGNOSTIC_INVALID: missing, unobserved, changed or unfinished evidence\")\n"
+      },
+      {
+        "ordinal": 7,
+        "name": "Run isolated durable SQLite controls after original pytest exits",
+        "id": "durable_controls",
+        "if": "${{ always() && !cancelled() && (steps.observed_tests.outcome == 'success' || steps.observed_tests.outcome == 'failure') }}",
+        "shell": "pwsh",
+        "run": "$controls = Join-Path $env:RUNNER_TEMP 'runtime-sqlite-control-evidence'\npython scripts/r3_sqlite_controls.py --repo $env:GITHUB_WORKSPACE --output $controls --case-timeout 30\nexit $LASTEXITCODE\n"
+      },
+      {
+        "ordinal": 8,
+        "name": "Print bounded independent control evidence",
+        "if": "${{ always() && !cancelled() && (steps.durable_controls.outcome == 'success' || steps.durable_controls.outcome == 'failure') }}",
+        "shell": "python",
+        "run": "import json, os\nfrom pathlib import Path\nroot = Path(os.environ[\"RUNNER_TEMP\"]) / \"runtime-sqlite-control-evidence\"\nsummary = root / \"summary.json\"\nif not summary.is_file():\n    raise RuntimeError(\"SQLITE_CONTROLS_UNAVAILABLE: standalone controls did not produce a summary\")\nlimit = 1024 * 1024\nif not 0 < summary.stat().st_size <= limit:\n    raise RuntimeError(\"SQLITE_CONTROLS_INVALID: summary size outside bound\")\nrecord = json.loads(summary.read_text(encoding=\"utf-8\"))\nif record.get(\"schema_version\") != 1 or len(record.get(\"cases\", [])) != 5:\n    raise RuntimeError(\"SQLITE_CONTROLS_INVALID: missing five-case summary\")\n# Summary already embeds each bounded case result; do not duplicate it.\ntext = json.dumps(record, ensure_ascii=True)\nif len(text.encode(\"utf-8\")) > limit:\n    raise RuntimeError(\"SQLITE_CONTROLS_INVALID: combined log quota\")\nprint(\"SQLITE_CONTROLS_JSON_BEGIN\")\nprint(text)\nprint(\"SQLITE_CONTROLS_JSON_END\")\nprint(\"Standalone controls ran after pytest on the same VM; they do not describe failure-time conditions or prove a hosted fsync cause. Original pytest outcome is unchanged.\")\n"
+      }
+    ]
+  },
+  "runtime-stop-diagnostics": {
+    "workflow_name": "Windows stop diagnostics (not acceptance)",
+    "triggers": {
+      "workflow_dispatch": ""
+    },
+    "job_if": null,
+    "private_artifacts": [],
+    "timeout_minutes": 30,
+    "env": {
+      "QT_QPA_PLATFORM": "offscreen"
+    },
+    "steps": [
+      {
+        "ordinal": 3,
+        "name": "Install the existing test dependencies",
+        "run": "python -m pip install -r requirements-dev.txt"
+      },
+      {
+        "ordinal": 4,
+        "name": "Record the hosted runner resource boundary",
+        "shell": "python",
+        "run": "import ctypes, json, os\nfrom ctypes import wintypes\nclass Memory(ctypes.Structure):\n    _fields_ = [(\"length\", wintypes.DWORD), (\"load\", wintypes.DWORD)] + [\n        (name, ctypes.c_ulonglong) for name in (\n            \"total_physical\", \"available_physical\", \"total_commit\",\n            \"available_commit\", \"total_virtual\", \"available_virtual\", \"extended_virtual\")]\nkernel = ctypes.WinDLL(\"kernel32\", use_last_error=True)\nkernel.GlobalMemoryStatusEx.argtypes = [ctypes.POINTER(Memory)]\nkernel.GlobalMemoryStatusEx.restype = wintypes.BOOL\nmemory = Memory()\nmemory.length = ctypes.sizeof(memory)\nif not kernel.GlobalMemoryStatusEx(ctypes.byref(memory)):\n    raise ctypes.WinError(ctypes.get_last_error())\nprint(json.dumps({\"role\": \"diagnostic_only\", \"runner\": \"windows-latest standard\",\n    \"job_timeout_minutes\": 30, \"cpu_count\": os.cpu_count(),\n    **{name: getattr(memory, name) for name in (\n        \"total_physical\", \"available_physical\", \"total_commit\", \"available_commit\")}}))\n"
+      },
+      {
+        "ordinal": 5,
+        "name": "Run original pytest order with the explicit stop observer",
+        "id": "observed_tests",
+        "shell": "pwsh",
+        "run": "$evidence = Join-Path $env:RUNNER_TEMP 'runtime-stop-diagnostics.json'\n$nativeEvidence = Join-Path $env:RUNNER_TEMP 'runtime-native-thread-origins.json'\npython -m pytest -q -p scripts.r3_sqlite_stop_diagnostics --sqlite-stop-diagnostics $evidence -p scripts.r3_a18_thread_diagnostics --native-thread-origins $nativeEvidence\nexit $LASTEXITCODE\n"
+      },
+      {
+        "ordinal": 6,
+        "name": "Print optional bounded post-failure native evidence",
+        "if": "always()",
+        "shell": "python",
+        "run": "import json, os\nfrom pathlib import Path\nevidence = Path(os.environ[\"RUNNER_TEMP\"]) / \"runtime-native-thread-origins.json\"\nif not evidence.exists():\n    print(\"NATIVE_ORIGINS_NOT_CAPTURED: no evidence; do not infer thread acceptance\")\nelse:\n    if not evidence.is_file() or not 0 < evidence.stat().st_size <= 32 * 1024:\n        raise RuntimeError(\"NATIVE_ORIGINS_INVALID: empty or oversized evidence\")\n    content = evidence.read_text(encoding=\"ascii\")\n    record = json.loads(content)\n    if record.get(\"trigger\") != \"original_assertNoNewThreads_failed\":\n        raise RuntimeError(\"NATIVE_ORIGINS_INVALID: unknown failure trigger\")\n    print(\"NATIVE_ORIGINS_JSON_BEGIN\")\n    print(content)\n    print(\"NATIVE_ORIGINS_JSON_END\")\n"
+      },
+      {
+        "ordinal": 7,
+        "name": "Print bounded synthetic evidence to this job log",
+        "if": "always()",
+        "shell": "python",
+        "env": {
+          "ORIGINAL_TEST_STEP": "${{ steps.observed_tests.outcome }}"
+        },
+        "run": "import json, os\nfrom pathlib import Path\nevidence = Path(os.environ[\"RUNNER_TEMP\"]) / \"runtime-stop-diagnostics.json\"\nif not evidence.is_file() or evidence.stat().st_size == 0:\n    raise RuntimeError('STOP_DIAGNOSTIC_UNAVAILABLE: target may not have completed; do not infer PASS')\nelif evidence.stat().st_size > 1024 * 1024:\n    raise RuntimeError(\"Stop diagnostic evidence exceeds its original 1 MiB budget\")\nelse:\n    print(\"STOP_DIAGNOSTIC_JSON_BEGIN\")\n    content = evidence.read_text(encoding=\"utf-8\")\n    print(content)\n    print(\"STOP_DIAGNOSTIC_JSON_END\")\n    record = json.loads(content)\n    source = record.get(\"source\", {})\n    valid = (source.get(\"diagnostic_valid\") is True\n        and source.get(\"source_stable\") is True\n        and record.get(\"observer_retired\") is True\n        and record.get(\"errors\") == []\n        and source.get(\"pytest_outcome\") in (\"passed\", \"failed\"))\n    if os.environ.get(\"ORIGINAL_TEST_STEP\") == \"success\":\n        valid = valid and source.get(\"pytest_outcome\") == \"passed\"\n    if not valid:\n        raise RuntimeError(\"STOP_DIAGNOSTIC_INVALID: missing, changed or unfinished observations\")\n"
+      }
+    ]
+  }
+}

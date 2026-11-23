@@ -2,16 +2,16 @@
 
 ## ADDED Requirements
 
-### Requirement: 验证计算实际运行在公共仓库
+### Requirement: 公共仓库运行独立合成 CI
 
-系统 MUST 将目标产品验证任务的 runner job 放在公开 `emo_master_ci` 仓库执行，而不只是从私有仓库调用一个 reusable workflow。
+公开 `emo_master_ci` MUST 在自己的标准 GitHub-hosted Runner 上执行独立合成项目，以验证公共 CI 基础设施和节省额度的计费路径；不得仅用私有调用方 Reusable Workflow 冒充公共仓库执行。
 
-#### Scenario: 私有仓库提交触发公共 Runner
+#### Scenario: 公共仓库合成测试
 
-- GIVEN emo_master 是 Private，且 dispatcher 已验证提交来源可信
-- WHEN 私有仓库发生受支持的 push、pull_request 或手动触发
-- THEN dispatcher MUST 只向公共端发送不含敏感信息的请求 ID；产品 repo、完整 SHA、PR 和 check_run_id 绑定 MUST 保留在私有控制端
-- AND 公共仓库 MUST 在自己的标准 Linux/Windows Runner 上执行已通过安全准入的实际测试
+- GIVEN 公共仓库已配置独立合成项目
+- WHEN 触发 Linux/Windows 标准 Runner 自测
+- THEN 所有实际测试 job MUST 在公共仓库的 Runner 上执行
+- AND 不得读取、下载或执行 emo_master 私有源码、产品测试和诊断
 - AND 该 runner 的计算使用量 MUST 归公共仓库，不得误称为私有调用方的 Reusable Workflow 费用
 
 ### Requirement: 私有源码安全读取
@@ -63,8 +63,8 @@
 
 #### Scenario: Check Run 回调
 
-- GIVEN 私有 dispatcher 已创建 pending Check Run
-- WHEN 公共测试完成
+- GIVEN 未来已获用户批准的产品执行隔离架构，且私有控制端已创建 pending Check Run
+- WHEN 对应公共产品测试完成
 - THEN 独立 callback job MUST 只通知私有可信端，由私有端利用最小 Checks: write 权限更新对应 Check Run
 - AND MUST 校验 check_run_id、head_sha、external_id/request_id 与预期 App 身份
 - AND 创建和更新 MUST 使用同一门禁 App；结果 MUST 来自 GitHub API 对固定 workflow、run/attempt 及预期 job 的复核，不得信任测试代码生成的 PASS 标记
@@ -77,8 +77,8 @@
 #### Scenario: 全量 CI 迁移
 
 - GIVEN 当前 12 个活动工作流
-- WHEN 迁移完成
-- THEN 通过安全准入的主 CI、Web CI、Display Session、Runtime 诊断、Windows 包验证等验证任务 MUST 在公共 Runner 执行；未通过的任务 MUST 保留原执行路径及门禁，明确标为未迁移
+- WHEN 迁移方案完成审查
+- THEN 首阶段公共 Runner MUST 只运行合成项目；主 CI、Web CI、Display Session、Runtime 诊断、Windows 包验证等产品任务在通过独立源码保密准入前 MUST 保留原执行路径及门禁，明确标为未迁移
 - AND Release 写入、签名凭据和正式私有发布资产 MUST 留在私有边界
 - AND 不得公开上传产品二进制或原始诊断证据
 - AND 4 个归档工作流 MUST 保持归档，不重新启用
@@ -104,6 +104,7 @@
 - WHEN 执行公共 CI 试点
 - THEN MUST 只使用独立合成 Python 项目、虚构数据及不具备真实产品权限的身份
 - AND MUST 保留旧门禁、旧覆盖和正式发布链路，不得将合成执行记作产品迁移通过
+- AND MUST NOT 创建产品 Source Reader App 或配置产品私钥
 
 #### Scenario: 产品执行准入失败
 

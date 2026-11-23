@@ -7,7 +7,7 @@
 - 产品 main 从 `b75df0a` 到 `82a1aa6` 的工作流、AGENTS.md、ci_scope.py 和 release workflow contract 未变；产品代码／测试有变化，旧测试数量不可直接沿用。
 - 审查时产品仓库仍 Public，main 的 protected=false；目标 Private 和强制门禁属于迁移实施项，不能写成已有状态。
 - 当前 12 个活动工作流、4 个历史归档工作流。外部 packager 固定 `91766f6d18ca9a333f64cf1c6030202457ec4a8a`。
-- 用户最终要求：完整迁移，公共 Secrets 中 Token 直连取源，排除自托管 Runner。合成项目仅用于最早联调。
+- 用户最终要求：完整迁移，只新增一个公共 emo_master_ci，只提供一个足够权限的 Token；排除自托管 Runner。无需额外验证仓库，合成文件只用于必要工具联调。
 
 ## 2. 最少组件
 
@@ -26,30 +26,27 @@ flowchart TD
 
 不增加 GitHub App、Webhook 服务、Workers、D1、R2、自建机器或常驻控制进程。原 `python_build_scripts` 继续作为受固定版本控制的公共打包工具仓库。
 
-## 3. 凭据与权限
+## 3. 一个 Token，明确共享权限
 
-全部 fine-grained PAT 只选择所需目标仓库，设置有限有效期，记录到期日和轮换方式。不得将 Token 写入 Git、dispatch 输入、命令行 URL、日志或 Artifact，也不使用覆盖所有仓库的 classic PAT。
+统一使用用户提供的一枚 PAT，Secret 名称为 EMO_CI_TOKEN。它负责产品取源、公共调度、产品状态和 Release；dot 如需用同一枚 Token 管理本任务的代码与设置，可以在其受控本机使用，不再要求用户生成另一组 Token。
 
-| 配置 | 保存位置 | 最小权限／用途 |
+优先使用 fine-grained PAT，Repository access 选择本任务的 emo_master、emo_master_ci；同一 Token 也承担外部工具修改时再包含已有 python_build_scripts。若用户已经提供权限更宽的 Token，应核实并如实记录其实际范围，不扩大本任务操作范围。不存在“勾选全部权限就自动超越账号自身权限”的能力。
+
+| 配置 | 保存位置 | 用途 |
 |---|---|---|
-| `PUBLIC_CI_DISPATCH_TOKEN` | 产品仓库及 Private 验证仓库的 Actions repository Secret | 只选 emo_master_ci；Actions: write；触发指定公共 workflow |
-| `PRODUCT_READ_TOKEN` | 公共仓库受保护的 source-read、ci-control、release environment；配置同一限定只读 PAT | 只选 emo_master 与固定 Private 验证仓库 emo_master_ci_probe；Contents: read、Actions: read、Pull requests: read；取源、读取可信请求与核实 PR／标签 |
-| `PRODUCT_STATUS_TOKEN` | 公共仓库 ci-control environment | 只选 emo_master 与 emo_master_ci_probe；Commit statuses: write；独立控制 job 回写状态 |
-| `PRODUCT_RELEASE_TOKEN` | 公共仓库 release environment | 只选 emo_master 与 emo_master_ci_probe；Contents: write；仅独立 publisher 使用，Private probe 承接 draft 验证 |
-| `CI_EVIDENCE_IDENTITY` | 公共仓库 ci-control / release environment，另有用户离线备份 | age 解密私钥，仅可信汇总／发布代码可读 |
-| `CI_EVIDENCE_RECIPIENT` | 公共仓库变量／受审配置 | age 公钥，可公开，产品执行 job 只能取得公钥 |
+| EMO_CI_TOKEN | emo_master 与 emo_master_ci 的 Actions repository Secret，各保存同一值 | 调度、取源、状态回写、发布；用户可只录入一次，由 dot 在本机写入两处 |
+| CI_EVIDENCE_RECIPIENT | 公共 CI repository variable | age 加密公钥，产品任务使用 |
+| CI_EVIDENCE_IDENTITY | 公共 CI 的 ci-control / release Environment，并有持久私有备份 | 正常实现只在可信汇总／发布任务使用解密私钥 |
 
-产品 dispatcher 使用自身 `GITHUB_TOKEN` 的 contents: read / statuses: write；请求描述使用当前 run 的 Artifact。公共 job 的 `GITHUB_TOKEN` 默认 contents: read，控制任务按实际 API 增加 actions: read；不需要 id-token: write。
+运行链路需要 Contents / Actions / Commit statuses 写权限和 Pull requests 读权限。若用户希望 dot 也用同一 Token 完成实施及配置，则本任务还需要 Workflows、Pull requests、Secrets、Environments、Administration 相应写权限。详细一次性填写清单见 preflight.md。有效期、账号限制与轮换要求仍记录，不自动增加付费能力。
 
-Environment 仅允许可信公共默认分支／批准的固定 tag；公共工作流及控制脚本通过代码审查，第三方 Action 固定真实完整 SHA。新建的 source-read / ci-control 和本轮仅用于 dry-run 的 release 环境不增加 Required reviewers 或等待计时器，避免用户离线后逐 job 等待。正式生产发布仍按用户已授范围，已有审批规则不擅自删除。不能把环境名称当作不可绕过的身份认证：能修改并合入可信工作流的维护者处于信任边界内。
+先创建并初始化唯一新增的 Public emo_master_ci，再生成选定仓库的 Token。用户可以在 dot 受控本机不回显地输入一次，由 dot 写入两个仓库；若选择网页手工填写，也只需将同一值分别填两次。GitHub Secret 不能读回原值，不能只存公共一处后要求 dot 从 API 读取复制。
 
-dot 的本机开发／管理登录与上述 CI 运行时 Token 分离。前者须能修改三个实施仓库的 workflow、分支／PR 和必要设置；不能用只有读取权限的 CI Token 代替，也不上传本机管理凭据到公共 Runner。新仓库若未加入 dot 现有连接的授权范围，先由用户完成授权。
+公共 ci-control / release Environment 只限制可信默认分支／批准固定 tag，存放解密私钥；本轮普通任务和 dry-run 不新增逐次人工批准或等待计时器。公开 CI 的仓库级 Token 并不受这两个 Environment 自动隔离；现有保护规则按实际授权处理。原 source-read Environment 不是必需组件。
 
-先创建并初始化 Public emo_master_ci 和 Private emo_master_ci_probe，再生成 PAT；Repository access 选择 Only select repositories，不能以 Public repositories (read-only) 替代。GitHub Secrets 不支持读回原值：同一 READ Token 必须在仍持有其值时写入三个 Environment，dispatch Token 写入两个源仓库，不能存一处后期望 API 复制。具体顺序见 [preflight.md](preflight.md)。
+**本版是权限共享方案。** 同一 PAT 换 Secret 名称、拆成多个 job 或设置 workflow permissions，均不会缩减 PAT 自身权限。产品取源 job 所用 Token 同样具有状态／发布能力，若还包含工作流或管理权限，恶意代码也可能利用它修改工作流／设置并间接接触其他 Secrets。因此不能再声称“构建只有只读权限”“发布写权限仅 publisher”“age 私钥在恶意构建面前绝对隔离”。正常实现仍只在需要的步骤引用 Token，不直接把它作为产品程序环境变量传入，checkout 使用 persist-credentials:false，并避免无边界 secrets:inherit。
 
-验证仓库仅存合成源码、请求与私有 draft 验证产物，不镜像产品 Git 历史。公共控制器对生产和 probe 分别配置固定 repository ID；probe 模式只对固定合成项目开放，不接受任意目标。生产取源与发布仍固定 emo_master。验证完成后的权限清理作为记录项，不因需要用户再次编辑 PAT 阻断已完成的迁移。
-
-Contents: write 不仅限 Release；通过只在干净 publisher job 中使用来缩小暴露面。PAT 不是按某个 SHA 授权；固定 SHA 是可信控制逻辑的约束。Token 到期视为明确运行失败，不自动提升权限或改用其他凭据。
+该取舍减少用户准备与轮换数量，以可信维护者、可信工作流、受审代码及依赖为前提。输出加密和独立干净任务继续处理实际的输出与职责问题；它们不是共享管理 Token 下不可绕过的安全隔离。
 
 ## 4. 产品事件如何触发公共 CI
 
@@ -93,7 +90,7 @@ Contents: write 不仅限 Release；通过只在干净 publisher job 中使用�
 
 这是协议示例，不是可直接使用的真实请求。
 
-公共 preflight 固定产品 repository ID，使用只读 Token 读取该 run 与请求 Artifact；核实 dispatcher workflow ID、可信执行版本、事件类型、Artifact 所属 run／digest、PR／标签状态以及 suite 白名单。不能接受任意仓库／下载地址，不能把请求 Artifact 中自称的权限或 PASS 当可信结论。
+公共 preflight 固定产品 repository ID，使用 EMO_CI_TOKEN 读取该 run 与请求 Artifact；核实 dispatcher workflow ID、可信执行版本、事件类型、Artifact 所属 run／digest、PR／标签状态以及 suite 白名单。不能接受任意仓库／下载地址，不能把请求 Artifact 中自称的权限或 PASS 当可信结论。
 
 公共 workflow 从受保护默认分支的批准版本运行；核实实际 workflow SHA 与请求一致，防止公共 ref 移动后执行未审版本。源事件文件仅留在私有工作目录；公开输出只提供通用请求标识和状态。
 
@@ -156,7 +153,7 @@ reporter 使用 `if: always()` 处理正常失败，但不承诺整条 workflow 
 6. 可信汇总／publisher 按确切 run / attempt / artifact ID 读取密文，解密后校验内层源 SHA、目标、文件 hash 与允许路径。安全解析归档，拒绝越界路径，不执行其中程序。
 7. 管理员可下载密文后本地解密查阅完整错误；交付下载／解密命令与私钥离线备份说明。轮换密钥时保留对应旧私钥直到所需历史证据到期。
 
-公钥只负责加密，测试 job 不持有解密私钥。密文 Artifact 仍是公开可下载的密文，其保密依赖私钥安全；加密不是上传者身份签名，报告来源必须用 GitHub run/job 绑定核实。加密失败时保留失败结论，不回退上传明文。
+正常配置只向产品执行步骤提供加密公钥，不直接注入解密私钥；共享管理 Token 的间接访问风险按第 3 节如实保留。密文 Artifact 仍是公开可下载的密文，其保密依赖私钥安全；加密不是上传者身份签名，报告来源必须用 GitHub run/job 绑定核实。加密失败时保留失败结论，不回退上传明文。
 
 ### 跨 job 包验证
 
@@ -173,15 +170,15 @@ reporter 使用 `if: always()` 处理正常失败，但不承诺整条 workflow 
 在 `python_build_scripts` 新增受控版本／入口，保留其他项目原入口：
 
 - 明确 source repository、execution SHA、source tag、release repository、packager SHA。
-- build-only 路径不接受发布 Token；输出模式改为本地验证后 age 加密 Artifact。
+- build-only 路径在正常实现中不调用发布 API；共用 EMO_CI_TOKEN 的事实明确记录，输出模式改为本地验证后 age 加密 Artifact。
 - 同目标 build 与执行包验证同 job；可信 publisher 单独下载／解密／校验／上传。
-- 不再向 build 传 RELEASE_REPO_TOKEN 或 secrets: inherit。
+- 新入口只显式传递所需的 EMO_CI_TOKEN，不使用 secrets: inherit 传播其他凭据；不宣称该 Token 在 build 中变为只读。
 - 保留编排 Python 3.11 与产品 Python 3.10、PyInstaller 6.22.2、Inno Setup 6.7.3 的当前分工，不顺带升级工具链。
 - 得到实际新 commit SHA 后同步所有 uses / packager_ref；不编造 SHA，不修改历史固定提交，不影响 VisionWorkshop 的既有构建。
 
-publisher 在新的干净 job 上，只运行固定发布代码。验证两个目标均完成原校验、产品 tag / 版本 / SHA 一致、文件 digest 正确后，才取得发布 Token。它不执行产品二进制、安装脚本或产品提供的发布脚本。资产目标明确为产品 Private Release；不使用公共 caller 的 github.repository 默认值。
+publisher 在新的干净 job 上，只运行固定发布代码。在正常实现中，验证两个目标均完成原校验、产品 tag / 版本 / SHA 一致、文件 digest 正确后，才调用发布 API；它与构建共享 EMO_CI_TOKEN 的权限。它不执行产品二进制、安装脚本或产品提供的发布脚本。资产目标明确为产品 Private Release；不使用公共 caller 的 github.repository 默认值。
 
-未切换 Private 前，发布验证使用固定 Private emo_master_ci_probe 的 draft Release，并清楚记录不会触发生产发布。draft 的 target_commitish 必须是 probe 自身真实存在的默认分支提交；产品 execution SHA 单独写入证据，不能把跨仓库产品 SHA 当作 probe Git ref。默认保留 Contents: write 最小权限；遇到具体 Release API 对 workflow 变更的额外权限条件时核实目标，不自动扩大 Token。正式 v* 标签路径保留既有发布语义，在已授权生产动作范围内执行。
+只使用产品仓库作为发布目标。产品仍 Public 时先验证联合构建、包运行、加密和发布参数，实际私有上传留到按授权转 Private 后，在 emo_master 创建 draft Release 并上传／读回真实验证包。使用 ci-migration-validation-* 等验证 tag，避免新建 v* 标签意外触发正式发布；target_commitish 为产品自身受测提交。不能把 Public 状态成功写成私有权限已验证，也不能要求先有私有发布证据才能转 Private。正式 v* 发布保留既有语义，按已有生产授权执行。
 
 ## 9. 代码落点
 
@@ -191,17 +188,17 @@ publisher 在新的干净 job 上，只运行固定发布代码。验证两个�
 | emo_master_ci | 12 项公共 workflow／受审可复用入口；preflight、取源、输出捕获、age 打包、可信集合汇总、status reporter、publisher；合成协议测试；Secrets 配置和证据读取说明 |
 | python_build_scripts | 新公共安全输出与 build+verify / publisher 入口；显式产品上下文；固定新版本并保留其他产品兼容 |
 
-不能删除 release workflow contract 测试以绕过迁移。原测试硬编码产品 YAML、jobs、github.sha、packager pin 与无发布权限等假设，应改为校验新 dispatcher、公共工作流固定版本／manifest 和私有发布目标，保留有意义的原断言。
+不能删除 release workflow contract 测试以绕过迁移。原测试硬编码产品 YAML、jobs、github.sha、packager pin 与无发布权限等假设，应改为校验新 dispatcher、公共工作流固定版本／manifest、单 Token 真实权限模型及私有发布目标。删除已不符合用户选择的“构建 PAT 必须无发布权限”断言时应说明模型变更；其余测试覆盖和正确断言保留。
 
 ## 10. 切换与费用
 
 按 tasks 的阶段推进到全部完成，不能停在合成自测：
 
 - 先搭最小取源／结果／加密链路，再真实接入全部 12 项。
-- 新旧在同一个产品版本上对照必要路径；新逻辑尚未等价前不移除旧门禁。
-- 新状态在产品 PR 实际出现并验证失败阻断后，切换 required contexts；旧工作流保存可恢复版本，再停用／移出活动目录，避免长期双跑。
-- 最终产品目录只保留短 dispatcher；12 个产品计算工作流不再从产品仓库启动。
-- 盘点公开历史／Release／副本、Private 权限与账户方案；在既有授权边界内完成可见性切换，切换后实际复验，不以切换前测试代替。
+- 产品仍 Public 时，在同一版本对照真实测试、诊断、构建与包验证，验证状态回写并准备回滚；尚未等价前不移除旧门禁。
+- 盘点公开历史／Release／副本及账户方案，按已有授权将 emo_master 转为 Private；随后立即实际复验私有取源、请求读取、状态回写和该仓库的 draft Release 上传／读取。
+- Private 后必要验证通过，再完成 required contexts 与执行位置切换，停用／移出原 12 个重任务；产品最终只保留短 dispatcher，避免长期双跑。
+- 私有权限／发布验证失败时按准备好的方案恢复原 GitHub 托管 CI，保持仓库 Private 并修复对应路径；不将尚未完成的复验写成迁移成功。
 - 回滚为停用新 dispatcher、恢复原工作流和原门禁、停止重复任务；仓库若已 Private，仍可暂在 Private 的 GitHub 托管 Runner 执行。回滚可能消耗私有额度，但不是自托管 Runner，也不自动把仓库重新公开。
 
 公共标准托管计算免费，reusable 归调用方计费；因此重任务必须是公共 workflow 的调用上下文。[1] 费用报告分别列：
@@ -210,7 +207,7 @@ publisher 在新的干净 job 上，只运行固定发布代码。验证两个�
 
 ## 11. 安全边界与本次验证状态
 
-现实边界：公共 Runner 会读取真实产品源码。可信维护者可以通过修改工作流使用 Secrets；恶意产品代码或被攻陷依赖也可能外传所读内容。最小权限、persist-credentials:false、日志捕获、加密 Artifact 都降低具体风险，不构成“任意恶意代码无外传”的保证。这不是停止全量迁移的理由，也不是可以省略的事实。
+现实边界：公共 Runner 会读取真实产品源码。可信维护者可以通过修改工作流使用 Secrets；恶意产品代码或被攻陷依赖也可能外传所读内容。限定仓库范围、persist-credentials:false、日志捕获、加密 Artifact 都处理具体风险，不构成“任意恶意代码无外传”的保证。这不是停止全量迁移的理由，也不是可以省略的事实。
 
 不执行未经审查的公共 fork 产品代码；批准绑定具体 SHA。正常提交和已获授权的工作无需逐阶段重复征求确认。仅真实缺少账户安装／Secret 配置权限、付费升级、可见性变更或生产发布授权时，给出已准备好的具体动作与影响，不能以泛泛安全担忧中断其余实施。
 

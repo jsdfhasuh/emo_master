@@ -56,7 +56,7 @@
 - caller repository 与产品同仓判断将因新公共 caller 改变。
 - 编排 Python 3.11；产品 Python 3.10、PyInstaller 6.22.2、Inno Setup 6.7.3，迁移不顺带升级。
 
-新受控入口需要：显式源身份、只读取源 Token、build-only、同目标 build+verify、本地原始输出、age 加密 Artifact、独立 publisher。所有调用固定真实新 SHA；产品／工具仓库两边同时更新契约。保留其他产品旧入口，避免影响 VisionWorkshop。
+新受控入口需要：显式源身份、共享 EMO_CI_TOKEN、正常路径不发布的 build-only、同目标 build+verify、本地原始输出、age 加密 Artifact、独立 publisher。所有调用固定真实新 SHA；产品／工具仓库两边同时更新契约。保留其他产品旧入口，避免影响 VisionWorkshop。
 
 ## 门禁映射与归档
 

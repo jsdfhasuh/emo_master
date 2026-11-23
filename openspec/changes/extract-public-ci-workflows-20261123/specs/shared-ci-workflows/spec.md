@@ -4,7 +4,7 @@
 
 ### Requirement: 全部产品计算使用公共托管 Runner
 
-系统 MUST 将 12 个活动产品工作流的测试、诊断、构建、包验证、汇总与发布 job 迁移到公共 emo_master_ci 的标准 GitHub 托管 Runner；MUST NOT 引入自托管 Runner。
+系统 MUST 将 12 个活动产品工作流的测试、诊断、构建、包验证、汇总与发布 job 迁移到公共 emo_master_ci 的标准 GitHub 托管 Runner；MUST NOT 引入自托管 Runner。系统 MUST 只新增该公共仓库，不以额外验证仓库作为前置条件。
 
 #### Scenario: 完整迁移验收
 
@@ -17,14 +17,14 @@
 
 ### Requirement: 公共 Secrets Token 直接取源
 
-公共产品 job MUST 使用仅产品仓库只读权限的 fine-grained PAT 拉取明确完整 SHA，产品源码 MUST NOT 提交到公共 Git 历史。
+系统 MUST 支持用户只提供一枚足够权限的 PAT，以 EMO_CI_TOKEN 用于调度、取源、状态和发布，不强制四枚 Token。公共产品 job MUST 拉取明确完整 SHA，产品源码 MUST NOT 提交到公共 Git 历史；MUST 如实说明共享 PAT 的写入／管理权限不会因 job 拆分而降低。
 
 #### Scenario: 获取真实产品源码
 
 - GIVEN 公共可信工作流已取得经过核实的产品执行描述
 - WHEN checkout 指定产品版本
 - THEN MUST 固定产品 repository 和完整 execution SHA
-- AND MUST 使用 persist-credentials: false，Token 不得进入产品测试环境、输出或产物
+- AND MUST 使用 persist-credentials: false；正常实现不得主动向产品程序环境、输出或产物传入 Token，但 MUST NOT 将此称为恶意代码无法取得 PAT 的隔离保证
 - AND MUST 预取原 scope 所需 base / before 提交和必要 Git 身份
 - AND MUST NOT 将公共 github.sha 当作产品 SHA
 
@@ -71,14 +71,14 @@
 - GIVEN 产品 stdout / stderr、JUnit、诊断、截图或包已生成
 - WHEN 上传公共 Artifact
 - THEN MUST 只上传完整加密后的允许文件，详细名称与 manifest 放在密文内
-- AND 产品执行 job MUST 只取得加密公钥，不取得解密私钥
+- AND 正常实现 MUST 只向产品执行步骤注入加密公钥，不直接传入解密私钥；MUST NOT 宣称共享管理 PAT 下的恶意代码无法间接取得其他 Secrets
 - AND MUST NOT 公开上传明文源文件、报告、产品包或源码 cache
 - AND 加密失败 MUST 导致明确失败，不得回退明文上传
 - AND 报告 MUST 说明密文公开可下载、保密依赖私钥安全
 
 ### Requirement: 汇总不得执行产品代码
 
-持有解密私钥或状态写权限的汇总 job MUST 在独立 Runner 只执行固定可信控制代码，不执行产品脚本或 Artifact 内程序。
+负责解密及状态回写的汇总 job MUST 在独立 Runner 只执行固定可信控制代码，不执行产品脚本或 Artifact 内程序；此职责拆分 MUST NOT 被描述为共享 PAT 的权限隔离。
 
 #### Scenario: 主 CI 分片汇总
 
@@ -111,9 +111,9 @@
 - AND MUST NOT 声称 always 能保证回调完成
 - AND MAY 使用 GitHub 原生重跑恢复，不要求新增外部对账平台
 
-### Requirement: 构建验证与发布权限分开
+### Requirement: 构建验证与发布职责分开
 
-全部构建和发布计算 MUST 在公共标准托管 Runner；发布写权限 MUST 仅进入不运行产品代码的独立 publisher。
+全部构建和发布计算 MUST 在公共标准托管 Runner；正常实现的发布 API 调用 MUST 由不运行产品代码的独立 publisher 负责。系统 MUST 承认 build 所用的同一 PAT 也有发布写权限。
 
 #### Scenario: 产品包验证与正式上传
 
@@ -122,7 +122,7 @@
 - THEN MUST 在同一产品执行 job 完成构建及运行验证，再加密产物
 - AND publisher MUST 解密确定产物、核实产品 SHA / tag / 版本 / digest 后上传明确目标 Private Release
 - AND MUST NOT 在 publisher 中运行产品程序或构建脚本
-- AND build MUST NOT 取得 Release 写 Token 或共享解密私钥
+- AND 正常 build 实现 MUST NOT 调用发布 API 或直接接收共享解密私钥，MUST NOT 声称其 PAT 缺少 Release 写权限
 - AND Designer 与 Runtime 联合发布 MUST 等待两个目标的原验证成功
 
 ### Requirement: 外部打包工具显式迁移
@@ -134,7 +134,7 @@
 - GIVEN 原固定 packager 会上传明文报告与包
 - WHEN 改为公共 caller
 - THEN MUST 替换这些上传和 caller 默认 repository / SHA 假设
-- AND MUST 移除向构建传播的 secrets: inherit 与发布 Token
+- AND MUST 移除无边界 secrets: inherit，显式传递单个 EMO_CI_TOKEN，并保留其实际共享权限说明
 - AND MUST 保留原工具链、产品验证及其他项目兼容
 - AND MUST 更新相关 workflow contract 测试而非删掉约束
 
@@ -153,13 +153,14 @@
 
 ### Requirement: 完成切换并可回滚
 
-系统 MUST 在真实产品全量验收后切换门禁和执行位置，按已有授权完成 Private 相关动作并单独复验。
+系统 MUST 在真实产品验证和回滚准备后按已有授权转 Private，完成真实私有取源及产品 draft Release 验证，再完成最终门禁与执行位置切换。
 
 #### Scenario: 从影子运行切换正式链路
 
-- GIVEN 全部迁移路径已获得同版本对照和真实私有权限 dry-run 证据
-- WHEN 切换产品 CI
-- THEN MUST 核实 Private 分支保护能力，配置新 required contexts 后停止旧产品重任务双跑
+- GIVEN Public 阶段已完成同版本产品测试、诊断、构建和包验证对照并准备回滚
+- WHEN 按授权将产品转 Private 并推进最终切换
+- THEN MUST 实际验证私有取源、状态回写及 emo_master 自身的 draft Release 上传／读取
+- AND 这些验证通过后 MUST 核实 Private 分支保护能力，配置新 required contexts 并停止旧产品重任务双跑
 - AND MUST 保留旧工作流及门禁的可恢复版本
 - AND MUST 对 Private 后的 PR / push / 手动 / tag 与发布控制另行验证
 - AND MUST NOT 把计划校验、合成自测或切换前结果写成最终产品迁移完成

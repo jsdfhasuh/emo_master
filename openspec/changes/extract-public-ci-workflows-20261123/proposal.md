@@ -4,17 +4,17 @@
 
 用户要求的是完整迁移方案：产品源码仓库最终转为 Private，全部真实产品测试、诊断、构建与发布计算转到公共仓库，最大限度减少私有 Actions 用量，并明确排除私有／自托管 Runner。
 
-上一版 `39ac1bfb` 将合成测试误设为交付终点，没有完成用户目标。本版纠正范围：合成项目只是一项前置验证，最终必须完成 12/12 活动产品工作流的真实迁移。用户进一步要求使用公共仓库 Secrets 中的 Token 直接拉取产品，故不引入 GitHub App、Workers、数据库或外部对象存储。
+上一版 `39ac1bfb` 将合成测试误设为交付终点，没有完成用户目标。本版纠正范围：合成项目只是一项前置验证，最终必须完成 12/12 活动产品工作流的真实迁移。用户进一步明确：只新增一个公共 emo_master_ci，只提供一个足够权限的 Token。故不创建额外验证仓库，不要求四个 PAT，也不引入 GitHub App、Workers、数据库或外部对象存储。
 
 ## 确定采用的方案
 
-1. `emo_master_ci` 为 Public，保存可信 CI 工作流和通用控制工具。使用标准 GitHub 托管 Linux / Windows Runner，通过只读 fine-grained PAT 拉取 `emo_master` 的指定提交，执行真实产品任务。
+1. `emo_master_ci` 为 Public，保存可信 CI 工作流和通用控制工具。使用标准 GitHub 托管 Linux / Windows Runner，通过用户提供的一枚 PAT 拉取 `emo_master` 的指定提交，执行真实产品任务。
 2. `emo_master` 最终为 Private，保留源码、测试和产品配置；迁移完成后只保留一个轻量事件触发工作流，不在其中安装产品依赖、运行测试或打包。
-3. 取源、回写状态、正式发布使用分开的 Token。产品执行 job 不取得状态写入、Release 写入或证据解密私钥。
+3. 全链路统一使用一个 EMO_CI_TOKEN；产品 dispatcher 与公共 CI 各保存同一值，用户可以只录入一次由 dot 配置。任务仍按取源、测试、回写、发布分工，但不宣称同一 PAT 具有权限隔离；解密私钥仅按正常配置注入可信控制任务。
 4. 公共日志输出必要状态；原始日志、JUnit、诊断、截图和包使用 age 公钥加密，仅上传密文 Artifact。独立可信汇总／发布 job 解密，汇总真实结果或上传到产品 Private Release。
 5. 使用 GitHub Commit Status API 回写产品提交，保持可阻断的 PR 门禁；本版不需要自建 GitHub App，也不冒充 Check Runs 的 App 身份绑定。
 
-公共仓库 Secrets 不会随 Git 仓库内容一起公开。安全建立在可信维护者、受保护工作流、受审代码与依赖、最小权限和输出处理之上；不承诺能够阻止同一 Runner 内任意恶意程序外传其已经读取的源码。
+公共仓库 Secrets 不会随 Git 仓库内容一起公开。安全建立在可信维护者、受保护工作流、受审代码与依赖、限定仓库范围和输出处理之上；不承诺能够阻止同一 Runner 内任意恶意程序外传其已经读取的源码。
 
 ## “全部迁移”的准确范围
 
@@ -26,8 +26,8 @@
 
 - 产品与公共 CI 的完整事件、SHA、输入和结果关联协议。
 - 12 项迁移矩阵及对应真实运行证据，保留原平台、触发条件、断言、诊断语义和测试集合完整性。
-- 外部 `python_build_scripts` 的安全输出与 build / verify / publish 权限拆分版本，并固定新 commit SHA。
-- 原始证据加密上传、可信解密汇总、私有 Release dry-run。
+- 外部 `python_build_scripts` 的受控输出与 build / verify / publish 职责拆分版本，并固定新 commit SHA。
+- 原始证据加密上传、可信解密汇总；产品实际转 Private 后，在该产品仓库完成 draft Release 验证。
 - 新旧检查切换、停止双跑、Private 切换前后验证、费用与回滚记录。
 - 可持续执行到最终迁移完成的 dot 提示词，不以合成通过结束交付。
 

@@ -32,16 +32,22 @@ flowchart TD
 
 | 配置 | 保存位置 | 最小权限／用途 |
 |---|---|---|
-| `PUBLIC_CI_DISPATCH_TOKEN` | 产品仓库 Actions Secret | 只选 emo_master_ci；Actions: write；触发指定公共 workflow |
-| `PRODUCT_READ_TOKEN` | 公共仓库受保护的 source-read、ci-control、release environment；配置同一限定只读 PAT | 只选 emo_master；Contents: read、Actions: read、Pull requests: read；产品 jobs 取源，控制 jobs 读取可信请求与核实 PR／标签 |
-| `PRODUCT_STATUS_TOKEN` | 公共仓库 ci-control environment | 只选 emo_master；Commit statuses: write；独立控制 job 回写状态 |
-| `PRODUCT_RELEASE_TOKEN` | 公共仓库 release environment | 只选产品发布仓库；Contents: write；仅独立 publisher 使用 |
+| `PUBLIC_CI_DISPATCH_TOKEN` | 产品仓库及 Private 验证仓库的 Actions repository Secret | 只选 emo_master_ci；Actions: write；触发指定公共 workflow |
+| `PRODUCT_READ_TOKEN` | 公共仓库受保护的 source-read、ci-control、release environment；配置同一限定只读 PAT | 只选 emo_master 与固定 Private 验证仓库 emo_master_ci_probe；Contents: read、Actions: read、Pull requests: read；取源、读取可信请求与核实 PR／标签 |
+| `PRODUCT_STATUS_TOKEN` | 公共仓库 ci-control environment | 只选 emo_master 与 emo_master_ci_probe；Commit statuses: write；独立控制 job 回写状态 |
+| `PRODUCT_RELEASE_TOKEN` | 公共仓库 release environment | 只选 emo_master 与 emo_master_ci_probe；Contents: write；仅独立 publisher 使用，Private probe 承接 draft 验证 |
 | `CI_EVIDENCE_IDENTITY` | 公共仓库 ci-control / release environment，另有用户离线备份 | age 解密私钥，仅可信汇总／发布代码可读 |
 | `CI_EVIDENCE_RECIPIENT` | 公共仓库变量／受审配置 | age 公钥，可公开，产品执行 job 只能取得公钥 |
 
 产品 dispatcher 使用自身 `GITHUB_TOKEN` 的 contents: read / statuses: write；请求描述使用当前 run 的 Artifact。公共 job 的 `GITHUB_TOKEN` 默认 contents: read，控制任务按实际 API 增加 actions: read；不需要 id-token: write。
 
-Environment 仅允许可信公共默认分支／批准的固定 tag；公共工作流及控制脚本通过代码审查，第三方 Action 固定真实完整 SHA。不能把环境名称当作不可绕过的身份认证：能修改并合入可信工作流的维护者处于信任边界内。
+Environment 仅允许可信公共默认分支／批准的固定 tag；公共工作流及控制脚本通过代码审查，第三方 Action 固定真实完整 SHA。新建的 source-read / ci-control 和本轮仅用于 dry-run 的 release 环境不增加 Required reviewers 或等待计时器，避免用户离线后逐 job 等待。正式生产发布仍按用户已授范围，已有审批规则不擅自删除。不能把环境名称当作不可绕过的身份认证：能修改并合入可信工作流的维护者处于信任边界内。
+
+dot 的本机开发／管理登录与上述 CI 运行时 Token 分离。前者须能修改三个实施仓库的 workflow、分支／PR 和必要设置；不能用只有读取权限的 CI Token 代替，也不上传本机管理凭据到公共 Runner。新仓库若未加入 dot 现有连接的授权范围，先由用户完成授权。
+
+先创建并初始化 Public emo_master_ci 和 Private emo_master_ci_probe，再生成 PAT；Repository access 选择 Only select repositories，不能以 Public repositories (read-only) 替代。GitHub Secrets 不支持读回原值：同一 READ Token 必须在仍持有其值时写入三个 Environment，dispatch Token 写入两个源仓库，不能存一处后期望 API 复制。具体顺序见 [preflight.md](preflight.md)。
+
+验证仓库仅存合成源码、请求与私有 draft 验证产物，不镜像产品 Git 历史。公共控制器对生产和 probe 分别配置固定 repository ID；probe 模式只对固定合成项目开放，不接受任意目标。生产取源与发布仍固定 emo_master。验证完成后的权限清理作为记录项，不因需要用户再次编辑 PAT 阻断已完成的迁移。
 
 Contents: write 不仅限 Release；通过只在干净 publisher job 中使用来缩小暴露面。PAT 不是按某个 SHA 授权；固定 SHA 是可信控制逻辑的约束。Token 到期视为明确运行失败，不自动提升权限或改用其他凭据。
 
@@ -175,7 +181,7 @@ reporter 使用 `if: always()` 处理正常失败，但不承诺整条 workflow 
 
 publisher 在新的干净 job 上，只运行固定发布代码。验证两个目标均完成原校验、产品 tag / 版本 / SHA 一致、文件 digest 正确后，才取得发布 Token。它不执行产品二进制、安装脚本或产品提供的发布脚本。资产目标明确为产品 Private Release；不使用公共 caller 的 github.repository 默认值。
 
-未切换 Private 前，发布验证使用私有替身目标的 draft Release，并清楚记录不会触发生产发布。正式 v* 标签路径保留既有发布语义，在已授权生产动作范围内执行。
+未切换 Private 前，发布验证使用固定 Private emo_master_ci_probe 的 draft Release，并清楚记录不会触发生产发布。draft 的 target_commitish 必须是 probe 自身真实存在的默认分支提交；产品 execution SHA 单独写入证据，不能把跨仓库产品 SHA 当作 probe Git ref。默认保留 Contents: write 最小权限；遇到具体 Release API 对 workflow 变更的额外权限条件时核实目标，不自动扩大 Token。正式 v* 标签路径保留既有发布语义，在已授权生产动作范围内执行。
 
 ## 9. 代码落点
 

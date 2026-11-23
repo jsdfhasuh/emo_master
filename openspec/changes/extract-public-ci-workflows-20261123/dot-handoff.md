@@ -12,9 +12,11 @@
 
 ## 按最新计划持续执行
 
+用户在线时先执行 [preflight.md](preflight.md)：核实你实际执行环境的管理登录，建立公共 CI 与固定 Private probe、初始化默认分支及 Environment，给出准确 Token 填写位置；用户填好后尽早完成小型权限连通。不要把本会话 ChatGPT Web 能访问 GitHub 当作 dot 已获同样访问权限。用户离线后按其本次已授权范围持续实施，不重复请求已获授权动作。
+
 1. 阅读 proposal / design / workflow-migration / specs / tasks / acceptance。产品静态审查基线为 `82a1aa6d8499ee203ea8e452c2f016db37ea7b3f`，开工核对最新差异，记录实际 HEAD 和未提交修改范围。
 2. 使用 OpenSpec 2.1.1；设置 `OPENSPEC_TELEMETRY=0`、`OPENSPEC_NO_UPDATE_CHECK=1` 后执行 `openspec validate extract-public-ci-workflows-20261123 --strict --no-interactive` 和 `git diff --check`。历史通过不代替本次内容。
-3. 核实／创建公共 CI 仓库及可信分支／Environment 设置；配置仅目标仓库范围的 dispatch、read、status、release Token 和 age 公私钥。不得把秘密放入代码、聊天、URL 或 Artifact。
+3. 核实／创建公共 CI 仓库及 Private emo_master_ci_probe；先有仓库再配置 PAT，read / status / release 限定产品与 probe，dispatch 仅限定公共 CI。建立可信分支／Environment，日常测试和本轮 dry-run 不新增逐次人工批准；一次写齐所有 Secret 位置，不尝试读回 Secret。生成并备份 age 公私钥。不得把秘密放入代码、聊天、URL 或 Artifact。
 4. 实现私有轻量 dispatcher、可信请求 Artifact、公共 preflight、固定 SHA 直接 checkout，以及显式源事件接口。不能将公共 github.sha／workflow_dispatch 当产品 SHA／原事件。
 5. 实现原始输出捕获与 age 密文 Artifact。产品 job 只持公钥；状态回写和解密由独立干净控制 job 执行，不执行下载报告中的代码。管理员可本地解密完整报告。
 6. 按迁移矩阵逐项落实所有 12 项真实产品路径，保留原触发／输入／平台／断言／诊断结论。主 CI 保留四分片与完整集合证明；Windows 原生 Qt 桌面要求是既有契约，不能以合成运行代替。

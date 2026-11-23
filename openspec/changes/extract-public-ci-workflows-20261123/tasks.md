@@ -11,8 +11,8 @@
 
 ## B. 最小基础设施和权限
 
-- [ ] B1. 核实／创建 emo_master_ci Public 仓库，配置默认分支、维护权限、可信 workflow / Environment 分支限制与固定 Action SHA。
-- [ ] B2. 配置目标仓库限定的 dispatch / product-read / status / release Token，记录权限、有效期与轮换方式；不把密钥写进仓库或聊天。
+- [ ] B1. 先按 preflight.md 核实 dot 本机开发／管理登录；核实／创建 emo_master_ci Public 与 emo_master_ci_probe Private，初始化默认分支，配置维护权限、可信 workflow / Environment 分支限制与固定 Action SHA；普通测试及本轮 dry-run 不增加逐次人工审批。
+- [ ] B2. 仓库存在后配置目标仓库限定的 dispatch / product-read / status / release Token，包含固定 Private probe 所需权限；一次写齐各 Environment／源仓库，不能期望读回 Secret 复制；记录有效期与轮换方式，不把密钥写进仓库或聊天。
 - [ ] B3. 生成 age 公私钥；公钥供产品 jobs，私钥仅 ci-control / release 并离线备份；完成两平台加密／可信解密和失败不上传明文验证。
 - [ ] B4. 核实 GitHub 账户的 Private branch protection 能力与当前实际门禁；费用／权限缺口列明，不将未配置项假称成功。
 
@@ -23,7 +23,7 @@
 - [ ] C3. 实现只读 Token 直接 checkout、persist-credentials:false、所需 Git 历史预取；修改 ci_scope 等显式源事件接口。
 - [ ] C4. 实现最小输出捕获、age Artifact、可信解析与报告读取工具；密文来源和 digest 与 run / attempt / job 绑定。
 - [ ] C5. 实现独立 Commit Status reporter、并发和旧结果拒绝；取消未回传保持 pending 阻断，支持原生重跑。
-- [ ] C6. 用独立合成项目及私有替身验证两平台成功／失败、真实只读取源和产品状态回传。通过后继续 D–G，不在此结束。
+- [ ] C6. 用固定 Private emo_master_ci_probe 的独立合成项目验证两平台成功／失败、真实只读取源和状态回传；运行小文件加密／恢复及私有 draft 上传／读取连通检查。通过后继续 D–G，不在此结束，不能把探针文件上传当产品发布验收。
 
 ## D. 全部真实产品任务
 
@@ -51,7 +51,7 @@
 
 - [ ] F1. 按 acceptance.md 在同一受审产品版本完成 12 项真实公共运行及必要旧路径对照，记录所有版本与证据。
 - [ ] F2. 实测 PR 成功、失败、新 head、base 更新、取消／重跑；核实源 SHA、状态 contexts 和门禁行为。
-- [ ] F3. 完成联合 release dry-run 和私有替身 draft Release 上传／读取，真实生产发布按已有授权单独执行。
+- [ ] F3. 完成联合 release dry-run 和固定 Private probe 的 draft Release 产品包上传／读取；target_commitish 使用 probe 自身提交，产品 SHA 保留在证据；真实生产发布按已有授权单独执行。
 - [ ] F4. 切换新 required statuses，验证后停用／移出旧 12 个产品计算工作流；产品仅留短 dispatcher，4 个历史归档不恢复。
 - [ ] F5. 保存旧工作流、门禁、packager pin 与回滚命令；回滚继续使用 GitHub 托管 Runner，不自动改回 Public。
 

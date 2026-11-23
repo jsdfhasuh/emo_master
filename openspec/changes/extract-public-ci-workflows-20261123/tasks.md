@@ -29,7 +29,7 @@
 - [ ] D3. emo_master 手动运行完整源码检查；仅文档/Web 变更路径明确说明未运行全量源码测试，required checks 不失效。
 - [ ] D4. Web CI、Display Session contract、6 个 Runtime 诊断工作流分别保留原触发和产品测试能力。
 - [ ] D5. validate-windows-package、runtime-windows 和 release-windows 完成不发布验证；Release 发布只在用户明确授权时执行。
-- [ ] D6. 核对 `python_build_scripts` 对私有 emo_master 的读取 token、Release 写入 token、artifact 往返及跨仓库手动触发路径。
+- [ ] D6. 将 `release-windows.yml`、`runtime-windows.yml` 的 `secrets: inherit` 改为显式最小 Secrets 映射；核对 `python_build_scripts` 对私有 emo_master 的只读源码 token、Release 写入 token、artifact 往返及跨仓库手动触发路径。
 
 ## E. 闭源切换与收尾
 

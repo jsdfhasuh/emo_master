@@ -16,21 +16,26 @@
 
 ### Requirement: 私有源码安全读取
 
-公共 CI MUST 通过最小权限短期凭据读取指定私有提交。
+未经用户批准的隔离架构不得读取私有提交。公共 CI 的首阶段只执行独立合成项目；真实源码读取是单独的安全准入项。
 
-#### Scenario: 获取私有源码
+#### Scenario: 合成阶段不读取产品源码
 
-- GIVEN 公共 workflow 收到合法 source SHA
-- WHEN Source Reader 获取源码
-- THEN 仓库标识 MUST 固定为 `jsdfhasuh/emo_master`
-- AND SHA MUST 是完整且实际存在的提交
-- AND Token MUST NOT 出现在 dispatch payload、日志、artifact、GITHUB_OUTPUT/GITHUB_ENV 或被测进程环境
-- AND Token MUST 在测试开始前撤销或销毁
-- AND checkout 后 MUST 验证实际 HEAD 与请求 SHA 完全一致
+- GIVEN 尚未通过产品源码保密准入
+- WHEN 公共 workflow 执行
+- THEN MUST 只使用合成项目和虚构数据
+- AND MUST NOT 安装或请求 Source Reader App、产品 Token 或任何私有源码
+- AND MUST NOT 将合成项目通过记为产品 CI 迁移通过
+
+### Scenario: 未来产品源码准入
+
+- GIVEN 已有独立审查通过且用户明确批准的 Runner 外部隔离架构
+- WHEN 评估读取指定私有提交
+- THEN 必须固定仓库与完整 SHA、使用最小短期凭据，并证明测试进程及所有输出通道无法外传
+- AND 单纯 Token 撤销、日志重定向、临时 VM 或可信分支不得作为充分证明
 
 ### Requirement: 不可信代码隔离
 
-公共 Runner MUST NOT 自动执行未信任的 fork PR 代码。
+公共 Runner 合成阶段不得接触产品权限；任何未来产品执行 MUST NOT 自动执行未信任的 fork PR 代码。
 
 #### Scenario: 外部 fork PR
 
@@ -67,7 +72,7 @@
 
 ### Requirement: 覆盖保留与私有发布边界
 
-系统 MUST 将 12 个活动验证工作流逐项迁移到公共 Runner 或记录明确的私有发布例外。
+系统 MUST 对 12 个活动工作流逐项评估成本和安全边界；未通过产品源码保密准入的工作流必须保留在私有执行边界。
 
 #### Scenario: 全量 CI 迁移
 
@@ -113,3 +118,26 @@
 - WHEN 提交最终验收报告
 - THEN MUST 等待用户明确批准后才切换正式仓库可见性
 - AND MUST 在切换后单独复验正式仓库，不得将后验验证写作切换前已通过
+
+
+### Requirement: 合成自测与产品源码隔离不得混淆
+
+公共仓库合成项目的通过结果 MUST NOT 作为产品源码保密或产品 CI 迁移通过的证据。
+
+#### Scenario: 公共合成项目通过
+
+- GIVEN Linux/Windows 合成项目测试全部通过
+- WHEN 记录迁移状态
+- THEN 只能标记公共 Runner 基础设施自测通过
+- AND 产品源码读取、产品测试迁移和 Private 切换仍保持未验证
+
+### Requirement: 私有自托管 Runner 作为成本替代方案
+
+系统 SHOULD 评估私有仓库使用一次性自托管 Runner 执行产品 CI 的可行性。
+
+#### Scenario: 评估私有 Runner
+
+- GIVEN 公共 Runner 无法证明产品源码保密
+- WHEN 评估额度节省方案
+- THEN 应核对 GitHub 自托管 Runner 的计费规则、主机成本、一次性 VM、Runner group 限制、网络出口控制及 Windows Qt 支持
+- AND 未经用户批准不得自动部署或切换

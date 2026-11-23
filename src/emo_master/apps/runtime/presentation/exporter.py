@@ -4,8 +4,8 @@ Only bounded descriptors travel over the Pipe. Raw input lives in preallocated
 shared memory; the child writes a bounded staging file, never a large Pipe reply.
 A verified private-snapshot acknowledgment ends shared raw ownership. One child
 snapshot (at most one lane, within the encoder reservation) survives encoding.
-The serial owner retains the staging file and Job's slab until adoption/cleanup,
-while the producer may fill the same raw lane for one queued successor.
+Each lane keeps one bounded staging path through adoption/cleanup. A dual-lane
+slot can encode its sibling while that path is owned, but never overwrite it.
 """
 import multiprocessing
 import math
@@ -90,7 +90,7 @@ class ExportPool:
             "queue": queue.Queue(maxsize=2), "index": index, "process": None,
             "connection": None, "busy": False, "active": False, "pending": set(), "laneCount": 1,
             "lock": threading.RLock(), "quarantined": self.context.Value("b", False, lock=False),
-            "pendingDescriptors": {}, "currentDiagnostic": None}
+            "pendingDescriptors": {}, "currentDiagnostic": None, "publishing": {}}
         slot["laneFree"] = [slot["free"], self.context.BoundedSemaphore(1)]
         self.slots.append(slot)
         try:
@@ -146,8 +146,17 @@ class ExportPool:
             raise ValueError("image lane budget exceeded")
         slot = self.slots[index]
         with slot["lock"]:
-            if slot["busy"] or slot["pending"] or slot["quarantined"].value:
-                raise ValueError("image slab still owned or quarantined")
+            if self.stop.is_set() or slot["busy"] or slot["pending"] or slot["quarantined"].value:
+                raise ValueError("image slab still owned, quarantined or closing")
+            if count == 2 and "publishQueue" not in slot:
+                slot["publishQueue"] = queue.Queue(maxsize=2)
+                thread = threading.Thread(target=self._publishLoop, args=(slot,), name=f"display-adopt-{index}")
+                try:
+                    thread.start()
+                except BaseException:
+                    del slot["publishQueue"]
+                    raise
+                slot["publishThread"] = thread
             slot["laneCount"] = count
             return [self._descriptor(slot, lane) for lane in range(count)]
 
@@ -174,7 +183,7 @@ class ExportPool:
         slot = self.slots[descriptor["slot"]]
         lane = descriptor.get("lane", 0)
         with slot["lock"]:
-            if slot["quarantined"].value or not 0 <= lane < slot["laneCount"]:
+            if self.stop.is_set() or slot["quarantined"].value or not 0 <= lane < slot["laneCount"]:
                 raise ValueError("image slab unavailable")
             if lane in slot["pending"]:
                 raise ValueError("duplicate outstanding image lane")
@@ -200,7 +209,7 @@ class ExportPool:
             except BaseException:
                 slot["pending"].remove(lane)
                 slot["pendingDescriptors"].pop(lane, None)
-                slot["busy"] = bool(slot["pending"]) or slot.get("active", False)
+                slot["busy"] = bool(slot["pending"] or slot.get("publishing")) or slot.get("active", False)
                 raise
 
     def _reap(self, slot):
@@ -223,6 +232,8 @@ class ExportPool:
 
     def _releaseLane(self, slot, task, diagnostic, proof="verified_private_snapshot"):
         with slot["lock"]:
+            if slot["quarantined"].value:
+                raise RuntimeError("quarantined slab cannot return raw credit")
             if diagnostic.get("laneReleaseAttempted"):
                 raise RuntimeError("raw lane retirement already attempted")
             diagnostic["laneReleaseAttempted"] = True
@@ -235,12 +246,82 @@ class ExportPool:
             # busy includes the active callback/file owner. Clearing it here
             # would allow releaseSlot/configureLanes to reassign a live slab.
 
-    def _run(self, slot):
-        while not self.stop.is_set() or not slot["queue"].empty():
+    def _nextTask(self, slot, deferred):
+        # The pending-raw set still bounds queue + deferred to one per lane.
+        # Skip a successor whose previous image still owns its staging path.
+        while True:
+            with slot["lock"]:
+                publishing = slot.get("publishing", {})
+                for index, task in enumerate(deferred):
+                    if task["lane"] not in publishing:
+                        del deferred[index]
+                        return task
+                # Submission keeps this lock from its stop check to enqueue.
+                # Closing must not mistake an admitted in-flight task for an empty queue.
+                if self.stop.is_set() and not deferred and slot["queue"].empty():
+                    return None
             try:
-                task = slot["queue"].get(timeout=.02)
+                deferred.append(slot["queue"].get(timeout=.02))
             except queue.Empty:
                 continue
+
+    def _publish(self, task, path, outcome, diagnostic):
+        diagnostic.update(outcome=outcome, ownerPhase="callback", callbackStartedNs=time.monotonic_ns())
+        task["exportDiagnostic"] = dict(diagnostic)
+        try:
+            self.callback(task, path, outcome)
+        except Exception as error:
+            diagnostic["callbackErrorType"] = type(error).__name__
+            self.errors.append("callback: " + type(error).__name__)
+            self.errors[:] = self.errors[-32:]
+        finally:
+            diagnostic["callbackEndedNs"] = time.monotonic_ns()
+
+    def _publishLoop(self, slot):
+        pending = slot["publishQueue"]
+        while True:
+            entry = pending.get()
+            try:
+                if entry is None:
+                    return
+                self._publishStaged(slot, *entry)
+            finally:
+                pending.task_done()
+
+    def _publishStaged(self, slot, task, path, diagnostic):
+        try:
+            self._publish(task, path, "AVAILABLE", diagnostic)
+            path.unlink(missing_ok=True)
+        except Exception as error:
+            self._quarantine(slot)
+            diagnostic["retirementErrorType"] = type(error).__name__
+            diagnostic["retirementDetail"] = str(error)[:240]
+            self.errors.append(repr(error))
+            self.errors[:] = self.errors[-32:]
+        finally:
+            diagnostic["retirementEndedNs"] = time.monotonic_ns()
+            with slot["lock"]:
+                diagnostic["ownerPhase"] = "quarantined" if slot["quarantined"].value else "retired"
+                self.diagnostics.append(diagnostic)
+                del slot["publishing"][task["lane"]]
+                if not slot["quarantined"].value:
+                    slot["busy"] = slot["active"] or bool(slot["pending"] or slot["publishing"])
+            if "retirementErrorType" in diagnostic:
+                self._reportRetirementError(diagnostic)
+
+    def _reportRetirementError(self, diagnostic):
+        callback = getattr(self, "retirementCallback", None)
+        if callback is not None:
+            try:
+                callback(dict(diagnostic))
+            except Exception as error:
+                # Diagnostic sinks must not retain ownership or change results.
+                self.errors.append("retirement diagnostic: " + type(error).__name__)
+                self.errors[:] = self.errors[-32:]
+
+    def _run(self, slot):
+        deferred: deque[dict] = deque()
+        while (task := self._nextTask(slot, deferred)) is not None:
             with slot["lock"]:
                 slot["active"] = True
             path = self.root / f"slot-{slot['index']}-lane-{task['lane']}.png"
@@ -355,16 +436,26 @@ class ExportPool:
                             reusable = False
                             self._quarantine(slot)
                             self.errors.append(repr(releaseError))
-            diagnostic.update(stage=stage, outcome=outcome, ownerPhase="callback", callbackStartedNs=time.monotonic_ns())
-            task["exportDiagnostic"] = dict(diagnostic)
+            diagnostic.update(stage=stage, outcome=outcome)
+            if outcome == "AVAILABLE" and slot.get("laneCount") == 2:
+                with slot["lock"]:
+                    if not slot["quarantined"].value:
+                        diagnostic["ownerPhase"] = "awaiting_adoption"
+                        slot["publishing"][task["lane"]] = diagnostic
+                        slot["publishQueue"].put_nowait((task, path, diagnostic))
+                        slot["active"] = False
+                        slot["currentDiagnostic"] = None
+                        # The staging owner keeps this slot busy until cleanup.
+                        continue
+                # An earlier staged owner quarantined this slab while the reader ran.
+                outcome, reusable = "EXPORT_FAILED", False
             try:
-                self.callback(task, path if outcome == "AVAILABLE" else None, outcome)
-            except Exception as error:
-                diagnostic["callbackErrorType"] = type(error).__name__
-                self.errors.append("callback: " + type(error).__name__)
-                self.errors[:] = self.errors[-32:]
+                if slot.get("laneCount") == 2:
+                    # Preserve one ordered callback at a time per slot. A failure may
+                    # follow a staged success, but must not publish ahead of it.
+                    slot["publishQueue"].join()
+                self._publish(task, path if outcome == "AVAILABLE" else None, outcome, diagnostic)
             finally:
-                diagnostic["callbackEndedNs"] = time.monotonic_ns()
                 # A failed reap quarantines the entire slab, including the
                 # other lane. No credit is reused until real owner disposal.
                 try:
@@ -387,12 +478,14 @@ class ExportPool:
                                 # task is retired; each queued successor keeps
                                 # its own reservation until _run handles it.
                         with slot["lock"]:
+                            if slot["quarantined"].value:
+                                raise RuntimeError("adoption owner quarantined the slab")
                             if not diagnostic["laneReleased"]:
                                 self._releaseLane(slot, task, diagnostic)
                             # An admitted successor owns its own pending entry
                             # and reservation; never remove or release it here.
                             slot["active"] = False
-                            slot["busy"] = bool(slot["pending"])
+                            slot["busy"] = bool(slot["pending"] or slot.get("publishing"))
                 except Exception as error:
                     self._quarantine(slot)
                     diagnostic["retirementErrorType"] = type(error).__name__
@@ -405,15 +498,7 @@ class ExportPool:
                 with slot["lock"]:
                     slot["currentDiagnostic"] = None
                 if "startupErrorType" in diagnostic or "retirementErrorType" in diagnostic:
-                    callback = getattr(self, "retirementCallback", None)
-                    if callback is not None:
-                        try:
-                            callback(dict(diagnostic))
-                        except Exception as error:
-                            # A bounded diagnostic sink must never retain raw
-                            # ownership or change an already-published result.
-                            self.errors.append("retirement diagnostic: " + type(error).__name__)
-                            self.errors[:] = self.errors[-32:]
+                    self._reportRetirementError(diagnostic)
 
     def ownershipSnapshot(self, jobId):
         """Bounded, read-only, nonblocking metadata; never probe a raw credit.
@@ -431,9 +516,10 @@ class ExportPool:
                 active = slot.get("currentDiagnostic")
                 pending = [dict(row) for row in slot.get("pendingDescriptors", {}).values()
                            if row.get("jobId") == jobId][:2]
-                if pending or (active is not None and active.get("jobId") == jobId):
+                publishing = [dict(row) for row in slot.get("publishing", {}).values() if row.get("jobId") == jobId]
+                if pending or publishing or (active is not None and active.get("jobId") == jobId):
                     result["slots"].append({"slot": slot["index"], "busy": slot["busy"],
-                        "quarantined": bool(slot["quarantined"].value), "pendingRaw": pending,
+                        "quarantined": bool(slot["quarantined"].value), "pendingRaw": pending, "publishing": publishing,
                         "active": dict(active) if active is not None and active.get("jobId") == jobId else None})
             finally:
                 slot["lock"].release()
@@ -443,13 +529,29 @@ class ExportPool:
 
     def close(self):
         self.stop.set()
+        # Join every owner before disposing any slab, including if a caller
+        # retries close after a blocked owner has had time to retire.
         for slot in self.slots:
             thread = slot.get("thread")
             if thread:
                 thread.join(12)
                 if thread.is_alive():
                     raise RuntimeError("export owner still running")
+            publisher = slot.get("publishThread")
+            if publisher:
+                if not slot.get("publishClosing"):
+                    slot["publishQueue"].put(None, timeout=12)
+                    slot["publishClosing"] = True
+                publisher.join(12)
+                if publisher.is_alive():
+                    raise RuntimeError("export adoption owner still running")
+        for slot in self.slots:
             self._reap(slot)
+        for slot in self.slots:
+            if slot.get("disposed"):
+                continue
+            for lane in range(2):
+                (self.root / f"slot-{slot['index']}-lane-{lane}.png").unlink(missing_ok=True)
             with slot["lock"]:
                 slot["pending"].clear()
                 slot.get("pendingDescriptors", {}).clear()
@@ -458,3 +560,4 @@ class ExportPool:
                 slot["quarantined"].value = False
             slot["memory"].close()
             slot["memory"].unlink()
+            slot["disposed"] = True

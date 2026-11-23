@@ -14,6 +14,19 @@ NAMES = (
     "runtime-stop-diagnostics",
 )
 
+def add_junit(step):
+    if step.get("id") != "observed_tests" and "--assert=plain --tb=long" not in step["run"]:
+        return step
+    filename = ("wal-control-junit.xml" if "--assert=plain --tb=long" in step["run"]
+                else "observed-junit.xml")
+    lines = step["run"].splitlines(keepends=True)
+    matches = [i for i, line in enumerate(lines) if line.startswith("python -m pytest ")]
+    if len(matches) != 1:
+        raise ValueError("expected exactly one original pytest command")
+    i = matches[0]
+    lines[i] = lines[i].removesuffix("\n") + f' --junitxml="$env:RUNNER_TEMP/{filename}"\n'
+    return {**step, "run": "".join(lines)}
+
 def extract(source, dest):
     recipes = {}
     for name in NAMES:
@@ -29,7 +42,7 @@ def extract(source, dest):
                 continue
             assert set(step) <= {"id", "if", "env", "timeout-minutes", "name", "shell", "run"}
             assert "run" in step
-            steps.append({"ordinal": i, **step})
+            steps.append({"ordinal": i, **add_junit(step)})
         recipes[name] = {
             "workflow_name": data["name"],
             "triggers": data["on"],

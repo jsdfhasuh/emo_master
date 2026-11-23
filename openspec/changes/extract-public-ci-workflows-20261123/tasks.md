@@ -7,7 +7,7 @@
 - [x] A1. 按产品 main 82a1aa6 复核 12 活动／4 归档、上下文耦合与外部 packager 固定版本，记录在 workflow-migration.md。
 - [x] A2. 将方案纠正为完整真实产品迁移，采用公共 Secrets Token 直连；移除 synthetic-only 终点及外部控制平台。
 - [x] A3. ChatGPT Web 对本次完整计划实际运行 OpenSpec 2.1.1 strict 和 git diff --check，均退出 0；本次提交 PR 评论记录准确内容与验证范围，不复用旧版本结果。
-- [ ] A4. dot 开工核对最新 main / PR head 与未提交修改；比较后续产品／workflow 差异，记录实际执行基线。
+- [x] A4. dot 开工核对最新 main / PR head 与未提交修改；比较后续产品／workflow 差异，记录实际执行基线。
 
 ## B. 最小基础设施和权限
 
@@ -65,3 +65,15 @@
 - [ ] G6. 按实际执行者身份在推送对应 PR 下评论；本计划修订用 ChatGPT Web，dot 实施用 dot。未经授权不合并或发布。
 
 权限缺失时完成仍可执行的代码、配置模板与验证，准确列出被阻断的具体动作。不能再次把整体交付缩成合成项目，也不能无依据宣称完整迁移已完成。
+
+
+## 执行检查点：dot，2026-11-23
+
+- 核对产品 main `82a1aa6`、计划 `4bd1e42`；未合并，未变更可见性。现有 12 项活动、4 项归档无修改。
+- **B1/B2 部分完成**：公共仓库、README、`main` 保护、同名 Secret 已核对。[只读预检](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45203312880) 通过现有公共凭据的认证及两仓库受限 Secret 元数据读取；未读取 Secret 值，不能据此认定两值相同、写权限齐全或未来 Private 取源已通过。
+- **C1/C5 部分完成**：[产品草稿 #22](https://github.com/jsdfhasuh/emo_master/pull/22) 提交 `15aa2bf` 按原 12 个工作流选择事件及可信 job/attempt 结论核验，21 项定向用例通过。提交 `cc68df5` 增加源码、Web、诊断、Windows 打包运行适配器；Web 4 项、本地诊断 3 项、分片集合 2 项定向模拟通过。未启用正式 dispatcher、Check 回写或生产 Artifact 管线。
+- **D1 影子运行**：[四个真实产品 Source 分片](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45203988805)，公共工作流 `c1cbfef`，产品 `82a1aa6`。跨 job 原始清单的加密收集和两平台集合核对尚未验证。
+- **D2 影子运行**：[Linux / Windows 自动和手动全量 / owning Runtime](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45204466083)，公共工作流 `1bf05da`，产品 `cc68df5`。
+- **D3–D5/D7–D9 影子运行**：[Display 及五项 Windows 诊断](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45204631640)，公共工作流 `6efe88f`，产品 `cc68df5`。D6 credit 的旧架构分支条件不能借用新分支冒充，尚未执行。
+- **D10/D11 及 D12 构建部分**：[Designer / Runtime build-only](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45204870674)，公共工作流 `17d8e7b`，产品 `cc68df5`、打包器 `91766f6`。未执行正式标签发布、签名、Release 写入或私有资产回读。
+- 以上影子运行使用已公开产品提交，不注入 PAT、不公开上传原始产物、不替代旧门禁。启动和本地模拟均不算已迁移通过；队列内和未独立核验的条目保持未完成。合并最终 PR、正式发布、转 Private 仍需用户明确确认。

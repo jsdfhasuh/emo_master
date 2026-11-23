@@ -1,41 +1,49 @@
 # 任务清单
 
-## A. 迁移前盘点
+## A. 修订与基线
 
-- [ ] A1. 固定当前 main HEAD、仓库可见性、工作流清单、活动 PR、分支和最近 CI 结果；保留当前 Actions YAML 与关键证据备份。
-- [ ] A2. 核对 12 个活动工作流和 4 个归档 YAML 的触发器、权限、Secrets、checkout 源、Action 版本、测试入口、产物和 required-check 名称。
-- [ ] A3. 盘点 Releases、Packages、Pages、Fork、公开 artifact、外部镜像和文档直链；记录 Private 切换不能撤回的公开历史风险。
-- [ ] A4. 核对账户 Actions policy、Reusable workflow access、第三方 Action allowlist 和 fork PR 权限；记录当前 main 未启用 branch protection 的状态。
+- [ ] A1. 核对最新 main、PR #21、12 个活动工作流、4 个归档工作流、CI 脚本及 python_build_scripts；更新实际审查 SHA。
+- [ ] A2. 完成 OpenSpec strict validation；修正旧方案中“Reusable Workflow 即可免费”的错误架构。
+- [ ] A3. 记录迁移前 Actions usage、Runner OS/minutes、Artifact/Cache storage 基线；没有权限读取账单时标注需用户提供。
+- [ ] A4. 盘点公开 Fork/Clone/Release/Packages/Pages/Artifacts/外部镜像，记录 Private 切换不能撤回历史副本。
 
-## B. 建立公共 CI 仓库
+## B. 公共仓库与权限
 
-- [ ] B1. 确认并创建 `jsdfhasuh/emo_master_ci`（或用户确认的名称），设置 Public、默认分支、许可证和基础保护规则。
-- [ ] B2. 实现最小 `python-source-ci.yml` reusable workflow；固定 checkout 调用方源码、Python 3.10、调用方依赖安装、runtime/other 双分片、测试报告上传和覆盖汇总。
-- [ ] B3. 不把产品专属 scope 选择器、测试脚本、诊断观察器、Web 测试、包验证或发布逻辑复制到公共仓库。
-- [ ] B4. 建立合成 Python fixture 和 self-test workflow，覆盖成功、失败、报告缺失、分片覆盖不完整等直接契约；测试数据不得来自 emo_master。
-- [ ] B5. 核对公共工作流无任意 shell 输入、无 PAT/Secrets、默认只读权限，固定所有第三方 Action 版本；记录首个可用完整 SHA。
+- [ ] B1. 创建 `jsdfhasuh/emo_master_ci`，配置 Public、明确许可证、默认分支保护和仅可信维护者写入。
+- [ ] B2. 建立 Dispatcher App：私有端私钥；仅授予触发公共 workflow 所需 Actions: write，以及必要的私有 Checks: write。
+- [ ] B3. 建立 Source Reader / Check Reporter App：公共端私钥；私有 emo_master 仅授予 Contents: read、Checks: write；不授予发布或写源码权限。
+- [ ] B4. 核对 App 安装范围和 token permission override；若无法做到 job 级最小权限，拆成两个更窄 App，不扩大权限凑合。
+- [ ] B5. 公共仓库 self-test 不使用 Source Reader Secret；fork PR 的 self-test 与私有源码执行 workflow 完全隔离。
 
-## C. emo_master 接入
+## C. 端到端调度与安全
 
-- [ ] C1. 在本迁移分支将 `ci.yml` 的通用 Runner 编排替换为调用公共 reusable workflow；产品 scope 选择器及其测试仍在私有仓库。
-- [ ] C2. 保留原有 required check 名称、PR/push/manual 触发、并发分组、跳过说明和手动运行完整覆盖行为。
-- [ ] C3. 固定公共工作流完整 SHA；禁止使用 main、浮动 tag 或未审核分支。
-- [ ] C4. 核对调用方 checkout 实际检出事件对应的私有源代码，不产生公共仓库源码副本、不向公共仓库上传测试 artifact。
+- [ ] C1. 私有 dispatcher 为原始 commit 创建 pending Check Run，并向公共仓库 workflow_dispatch 发送完整 SHA、PR 元数据和 check_run_id；不传 Token。
+- [ ] C2. 公共 workflow 校验固定 source repo、完整 SHA、PR/ref/check_run_id/request_id，拒绝任意 URL、仓库或命令输入。
+- [ ] C3. 实现 Source Reader fetch action，在一个隔离步骤内获取短期 token、checkout 精确 commit、清除凭据；token 不进入 outputs/env/artifact/logs。
+- [ ] C4. 测试 job 不继承任何 App 私钥、私有仓库 token、Release token；验证测试进程环境与 Git 配置没有认证残留。
+- [ ] C5. 测试输出写入临时文件；只发布白名单摘要，不上传产品源码、原始日志、JUnit、诊断 JSON、截图或二进制包。
+- [ ] C6. 独立 callback job 在干净 Runner 上按 GitHub job result 更新私有 Check Run；校验 SHA、check_run_id、request_id、App 身份；失败/取消/超时/缺失回调不得绿灯。
+- [ ] C7. 同仓库受信任 PR 可自动触发；fork PR 不自动 dispatch、不使用 pull_request_target；验证手动审批路径。
 
-## D. 双仓库联调与产品流程验证
+## D. 迁移全部活动验证工作流
 
-- [ ] D1. 公共仓库合成 fixture 的 Linux/Windows Python 3.10 self-test 全部通过。
-- [ ] D2. emo_master PR 完整源码检查：Linux/Windows runtime/other 分片全部运行，报告上传、下载、覆盖汇总通过。
-- [ ] D3. emo_master 手动运行完整源码检查；仅文档/Web 变更路径明确说明未运行全量源码测试，required checks 不失效。
-- [ ] D4. Web CI、Display Session contract、6 个 Runtime 诊断工作流分别保留原触发和产品测试能力。
-- [ ] D5. validate-windows-package、runtime-windows 和 release-windows 完成不发布验证；Release 发布只在用户明确授权时执行。
-- [ ] D6. 将 `release-windows.yml`、`runtime-windows.yml` 的 `secrets: inherit` 改为显式最小 Secrets 映射；核对 `python_build_scripts` 对私有 emo_master 的只读源码 token、Release 写入 token、artifact 往返及跨仓库手动触发路径。
+- [ ] D1. 主 CI：Linux/Windows、Python 3.10、runtime/other 四分片、pytest 报告覆盖汇总完整运行。
+- [ ] D2. Web CI：Linux/Windows 后端、前端、浏览器、HTTP/WS、wheel 和软件 Runtime 集成覆盖完整运行。
+- [ ] D3. Display Session contract：Windows 原生 Qt 与全部原有契约用例执行；原始 evidence 留在 Runner。
+- [ ] D4. 六个 Runtime 诊断工作流全部有公共 Runner 对应执行入口；只输出脱敏摘要。
+- [ ] D5. Windows package validation 在公共 Windows Runner 内构建、验证并清理，不上传公开包。
+- [ ] D6. Runtime package 验证在公共 Runner 执行；正式资产仍由私有发布链路构建/保存。
+- [ ] D7. Release workflow 拆分为公共 tag 源码/测试验证与私有发布；发布 token、签名和二进制资产不进入公共 CI。
+- [ ] D8. 4 个历史归档工作流保持原样，不恢复、不复制到公共仓库。
+- [ ] D9. 修正现有 `secrets: inherit`，按实际使用点显式映射最小凭据；核对 python_build_scripts 私有源码读取与 Release 权限。
 
-## E. 闭源切换与收尾
+## E. 私有仓库门禁与计费
 
-- [ ] E1. 核对当前工作区/分支没有未处理的产品代码变更；备份 main、tag、Release 和关键 CI 证据。
-- [ ] E2. 用户确认公开历史风险及新仓库名称后，将 emo_master 可见性改为 Private；不得删除或重写历史作为本计划的隐含动作。
-- [ ] E3. 在 Private 状态重新执行 PR CI、手动 CI、Web CI 和不发布的 Windows 构建验证。
-- [ ] E4. 如外部打包仓库独立手动构建需要读取私有源码，配置最小权限只读 `SOURCE_REPO_TOKEN`；Release 写 token 单独限制。
-- [ ] E5. 更新 README/CI 文档，说明公共工作流版本固定方式、调用方权限、失败排查和产品专属工作流边界。
-- [ ] E6. 记录迁移前后固定 SHA、实际运行链接、测试覆盖、未验证项及 Private 切换时间；只有所有关键链路通过才标记完成。
+- [ ] E1. 在 emo_master 配置 required Check Run，指定 GitHub App 来源，验证 PR merge commit 与 head SHA 绑定。
+- [ ] E2. 验证 push、PR、手动触发、重复提交、取消、超时、失败和重试。
+- [ ] E3. 在 emo_master 转为 Private 前，完成所有公共 Runner 真实源码测试、日志安全审查和权限审查。
+- [ ] E4. 经用户明确确认后，将 emo_master 切换为 Private；不删除或重写历史作为隐含动作。
+- [ ] E5. Private 状态下重新执行 PR、push、手动 CI、Windows 构建验证及 Release dry-run。
+- [ ] E6. 对比迁移前后 Billing / Actions usage，统计公共标准 Runner 实际分钟、私有 dispatcher 分钟、Artifact/Cache 存储和实际节省额。
+- [ ] E7. 更新 README、docs/ci/README.md、AGENTS/安全约定（仅必要范围），记录调度方式、权限、日志边界和故障排查。
+- [ ] E8. 记录所有工作流状态、SHA、run 链接、CI 覆盖、未验证项和 Private 切换时间；全部关键门禁通过后才标记完成。

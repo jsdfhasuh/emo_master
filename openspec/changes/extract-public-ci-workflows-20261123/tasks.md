@@ -92,3 +92,8 @@
 - [最新产品原门禁](https://github.com/jsdfhasuh/emo_master/actions/runs/45205481370)（产品草稿 `f370753`）：四分片均未通过。Linux 和 Windows 都有设备包导入及资源生命周期问题；日志确认共享依赖计划的调用缺少 `sourceRoot`，以及设备包模型缺少被读取的 `workflows`。Windows 双图测试另外报 `EXPORT_TIMEOUT`；不得据此修改时限。上述实证来自产品自身 CI，不把公共影子任务一律归为同一原因。
 - [诊断终态](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45204631640)：Display Session、SQLite append 通过；A18、采集、SQLite failure、stop 失败；credit 未执行。
 - [Windows 打包终态](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45204870674)：Designer build-only 构建与冻结包验证通过，Runtime build-only 失败；发布未执行。
+
+### 修复提交与复跑
+
+- 产品草稿 #22 的 `d0b2ba5` 修复设备包资源助手兼容问题，按节点路径契约更新了测试数据且未降低断言；Linux Python 3.10 的 39 项定向测试、9 项 TCP 模块测试、Ruff、mypy 通过。独立的 Windows 双图导出超时未修。[产品四分片复跑](https://github.com/jsdfhasuh/emo_master/actions/runs/45286899752) · [公共四分片复跑](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45286937868)（工作流 `9f0bf64`）。
+- 产品草稿 `9edd522` 修复 SQLite 诊断模块导入、补足冻结包标识并引入固定失败阶段。4 项定向诊断单测通过。[诊断复跑](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45286827329)（工作流 `2f677a6`） · [不发布的打包复跑](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45286826636)（工作流 `ce03137`）。以上新运行仍待验收，未变更旧门禁。

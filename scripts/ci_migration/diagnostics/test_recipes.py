@@ -27,6 +27,20 @@ class RecipesTest(unittest.TestCase):
             self.assertEqual(r, {"status": "skipped", "steps": []})
             self.assertEqual(list(root.iterdir()), [])
 
+    def test_inline_python_can_import_product_module(self):
+        with tempfile.TemporaryDirectory() as work:
+            root = Path(work)
+            product = root / "product"
+            product.mkdir()
+            (product / "private_fixture_module.py").write_text("VALUE = 42")
+            evidence = root / "evidence"
+            evidence.mkdir()
+            recipe = {"job_if": None, "env": {}, "steps": [
+                {"ordinal": 3, "shell": "python",
+                 "run": "from private_fixture_module import VALUE; assert VALUE == 42"}
+            ]}
+            self.assertEqual(execute(recipe, ARCH_REF, product, evidence)["status"], "success")
+
     def test_failure_does_not_prevent_validators_or_clear_outcome(self):
         sql = RECIPES["runtime-sqlite-failure-diagnostics"]
         validator = next(step["if"] for step in sql["steps"] if "!cancelled()" in step.get("if", ""))

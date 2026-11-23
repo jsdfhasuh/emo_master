@@ -6,7 +6,8 @@ param(
   [Parameter(Mandatory)][string]$PackagerRoot,
   [ValidatePattern('\A[0-9a-f]{40}\z')][string]$PreviousSourceSha,
   [Parameter(Mandatory)][ValidatePattern('\A[A-Za-z0-9][A-Za-z0-9._-]{0,79}\z')][string]$ReleaseTag,
-  [Parameter(Mandatory)][string]$OutputDirectory
+  [Parameter(Mandatory)][string]$OutputDirectory,
+  [ValidatePattern('\A[0-9a-f]{40}\z')][string]$WorkflowSha
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -28,14 +29,21 @@ if (-not $env:ISCC_PATH -or -not (Test-Path -LiteralPath $env:ISCC_PATH -PathTyp
 $OutputDirectory = (New-Item -ItemType Directory -Path $OutputDirectory).FullName
 $package = (New-Item -ItemType Directory -Path (Join-Path $OutputDirectory 'package')).FullName
 $evidence = (New-Item -ItemType Directory -Path (Join-Path $OutputDirectory 'evidence')).FullName
+$phasePath = Join-Path $OutputDirectory 'stage.txt'
+function Set-ValidationStage {
+  param([ValidateSet('runtime-source','runtime-identity','build','runtime-archive-native','designer-icons','designer-contract','designer-frozen','complete')][string]$Stage)
+  Set-Content -LiteralPath $phasePath -Value $Stage -Encoding ascii -NoNewline
+}
 $env:PYTHONUTF8 = '1'
 if ($Target -eq 'emo-master-runtime') {
+  Set-ValidationStage 'runtime-source'
   Push-Location $SourceRoot
   try {
     $env:QT_QPA_PLATFORM = 'offscreen'
     & ./scripts/validate_runtime_source.ps1 -ReportDirectory (Join-Path $package 'source-check')
     Remove-Item Env:QT_QPA_PLATFORM -ErrorAction SilentlyContinue
   } finally { Pop-Location }
+  Set-ValidationStage 'runtime-identity'
   [ordered]@{
     source_repo = 'jsdfhasuh/emo_master'
     source_commit = $SourceSha
@@ -43,6 +51,7 @@ if ($Target -eq 'emo-master-runtime') {
     packager_commit = $packagerSha
     requested_source_ref = $SourceSha
     requested_packager_ref = $packagerSha
+    workflow_sha = if ($WorkflowSha) { $WorkflowSha } else { $null }
     publish_requested = $false
     fieldAcceptance = 'NOT_RUN'
   } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $package 'runtime-build.json') -Encoding utf8
@@ -50,6 +59,7 @@ if ($Target -eq 'emo-master-runtime') {
 # A validation build has no changelog range. An approved release can supply a vetted local ancestor.
 if (-not $PreviousSourceSha) { $PreviousSourceSha = $SourceSha }
 git -C $SourceRoot merge-base --is-ancestor $PreviousSourceSha $SourceSha
+Set-ValidationStage 'build'
 Push-Location $PackagerRoot
 try {
   & ./scripts/publish-local-release.ps1 -BuildOnly -Target $Target -ReleaseTag $ReleaseTag `
@@ -58,11 +68,17 @@ try {
 Push-Location $SourceRoot
 try {
   if ($Target -eq 'emo-master-runtime') {
+    Set-ValidationStage 'runtime-archive-native'
     & ./scripts/verify_runtime_artifacts.ps1 -ArtifactDirectory $package -ReleaseTag $ReleaseTag -SourceCommit $SourceSha -PackagerCommit $packagerSha
   } else {
+    Set-ValidationStage 'designer-icons'
     & ./scripts/verify_windows_package.ps1 -Archive (Join-Path $package "emo-master-windows-$ReleaseTag.zip") -OutputDirectory (Join-Path $evidence 'icons')
+    Set-ValidationStage 'designer-contract'
     python -m pytest tests/test_release_workflow_contract.py tests/test_frozen_runtime_validation.py -q
     $env:PYTHONPATH = Join-Path $SourceRoot 'src'
+    Set-ValidationStage 'designer-frozen'
     python scripts/verify_frozen_runtime.py --artifact-directory $package --output (Join-Path $evidence 'frozen-validation.json') --expected-source-sha $SourceSha
   }
 } finally { Pop-Location }
+
+Set-ValidationStage 'complete'

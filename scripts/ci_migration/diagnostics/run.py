@@ -48,6 +48,12 @@ def execute(recipe, ref, product, evidence, source_sha="", run_id="0", run_attem
                 raise ValueError("Unsupported recipe shell")
             source = evidence / f"step-{number:02d}.{('py' if shell == 'python' else 'ps1')}"
             script = step["run"]
+            if shell == "python":
+                # The shell script is stored outside the checkout; give inline
+                # Python the same staged-source imports as the product job.
+                script = ("import sys as _emo_sys, os as _emo_os\n"
+                          "_emo_sys.path.insert(0, _emo_os.environ['GITHUB_WORKSPACE'])\n"
+                          + script)
             if shell == "pwsh":
                 script = "$ErrorActionPreference = 'stop'\n" + script + "\nif ((Test-Path -LiteralPath variable:\\LASTEXITCODE)) { exit $LASTEXITCODE }\n"
             source.write_text(script, encoding="utf-8")
@@ -80,7 +86,7 @@ def execute(recipe, ref, product, evidence, source_sha="", run_id="0", run_attem
             outcomes[ident] = status
     if "display-evidence" in recipe.get("private_artifacts", ()):
         artifact_ok = any(p.is_file() for p in (product / "display-evidence").rglob("*"))
-        result.append({"ordinal": 7, "status": "success" if artifact_ok else "failure"})
+        result.append({"ordinal": 6, "status": "success" if artifact_ok else "failure"})
         failed |= not artifact_ok
     return {"status": "failure" if failed else "success", "steps": result}
 

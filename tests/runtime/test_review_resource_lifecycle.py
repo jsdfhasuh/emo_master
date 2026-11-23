@@ -38,6 +38,14 @@ def resourceProject(root):
     return project, source
 
 
+def selectReplacement(candidate, data, name):
+    # Managed operator inputs are now selected by the node path, not by a
+    # legacy binding overriding that path. Update both halves atomically.
+    candidate["resources"]["items"]["image"] = dict(manifest(data, name), purpose="input_image")
+    node = next(node for node in candidate["workflows"]["main"]["nodes"] if node["nodeId"] == "file")
+    node["params"]["imagePath"] = name
+
+
 def upload(service, document, data):
     request = pb.ProjectResourceTransferRequest(runtime_instance_id=service.runtimeInstanceId,
         project_id=document["project"]["projectId"], transfer_id="replacement", action="BEGIN",
@@ -83,7 +91,7 @@ def testInitialLocalResourceSurvivesDirectoryRemovalOrAllowsExplicitRepair(tmp_p
             assert not reply.ok
         candidate = deepcopy(service.projectConfiguration.snapshot()["payload"])
         data = REPLACEMENT
-        candidate["resources"]["items"]["image"] = dict(manifest(data, "new.png"), purpose="input_image")
+        selectReplacement(candidate, data, "new.png")
         transfer = upload(service, candidate, data)
         assert write(service, candidate)["state"] == "COMMITTED"
         assert not service.onlineRecoveryError
@@ -116,7 +124,7 @@ def testPreparedUploadCannotBeCancelledUntilCancelledWriteRetires(tmp_path, monk
         assert service.LoadProject(pb.LoadProjectRequest(project_path=str(project)), None).ok
         candidate = deepcopy(service.projectConfiguration.current["payload"])
         data = b"candidate bytes"
-        candidate["resources"]["items"]["image"] = dict(manifest(data, "candidate.png"), purpose="input_image")
+        selectReplacement(candidate, data, "candidate.png")
         transfer = upload(service, candidate, data)
         original = service._preparePinnedProjectConfiguration
         def prepare(payload, cancelled):
@@ -193,7 +201,7 @@ def testResourceCommitFailureReleasesCandidateButKeepsOnlineCopy(tmp_path):
     try:
         assert service.LoadProject(pb.LoadProjectRequest(project_path=str(project)), None).ok
         candidate = deepcopy(service.projectConfiguration.current["payload"])
-        candidate["resources"]["items"]["image"] = dict(manifest(REPLACEMENT, "candidate.png"), purpose="input_image")
+        selectReplacement(candidate, REPLACEMENT, "candidate.png")
         transfer = upload(service, candidate, REPLACEMENT)
         with service.sqliteStore.connection() as connection:
             connection.execute("CREATE TRIGGER failReceipt BEFORE INSERT ON projectWriteReceipts BEGIN SELECT RAISE(ABORT,'injected failure'); END")
@@ -217,7 +225,7 @@ def testFailedLocalPreparationReclaimsOnlyItsAutomaticallyIngestedCopy(tmp_path)
         source = project.parent / "candidate.png"
         source.write_bytes(REPLACEMENT)
         candidate = deepcopy(service.projectConfiguration.current["payload"])
-        candidate["resources"]["items"]["image"] = dict(manifest(REPLACEMENT, source.name), purpose="input_image")
+        selectReplacement(candidate, REPLACEMENT, source.name)
         with service.sqliteStore.connection() as connection:
             connection.execute("CREATE TRIGGER failReceipt BEFORE INSERT ON projectWriteReceipts BEGIN SELECT RAISE(ABORT,'injected failure'); END")
         assert write(service, candidate, "local-rollback")["state"] == "FAILED"

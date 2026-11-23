@@ -23,6 +23,7 @@ def testPortableDeviceResourcesSiteFieldsAndAtomicHistory(tmp_path, declaration,
     session = ProjectEditSession(payload)
     before = session.payload()
     package = exportDevices(session, ['camera'], tmp_path)
+    assert 'workflows' not in package.model_dump()
     assert package.devices['camera'].connection['source'] == ''
     assert base64.b64decode(package.resourceData['model']) == data
     assert 'private/source.bin' not in package.model_dump_json()

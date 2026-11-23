@@ -10,6 +10,7 @@
 | A2 声明能力 | ImageSaver 的 manifest 声明 backgroundTasks，PluginManifest 保留该值 | Registry scan 后检查 descriptor.manifest |
 | A3 未知能力 | 未支持值、重复值、非字符串值导致对应算子被拒绝并给出明确 issue | 参数化校验测试 |
 | A4 注入隔离 | 声明算子收到 backgroundTasks；未声明算子没有该键 | 两个最小测试算子在 executeNode 中检查 context |
+| A5 下游等待能力 | 需要 wait 的消费者必须声明 backgroundTasks；未声明消费者不能访问客户端 | 一个声明消费者和一个未声明消费者分别验证 |
 
 ## B. 后台任务基本行为
 
@@ -22,18 +23,20 @@
 | B5 失败可见 | 后台异常有 task.failed 事件；wait 能抛出原始错误 | 使用确定性失败函数 |
 | B6 背压 | 队列满时提交方等待；释放一个队列位置后继续，取消时可退出 | 用 Event 控制单线程和有限队列容量 |
 | B7 身份关联 | 完成/失败事件保留提交时 nodeId、nodeRunId 和 workflowRunId | 在算子返回后再释放后台任务，检查事件字段 |
+| B8 记录有界 | 终态记录超过上限时只淘汰最早终态；运行中任务不被淘汰；查询过期 ID 返回明确错误 | 使用小型测试上限和确定性任务序列 |
 
-## C. 生命周期
+## C. 生命周期与 Runner 完成处理
 
 | 验收项 | 预期行为 | 验证方法 |
 |---|---|---|
-| C1 正常结束 | Job terminal event 晚于所有已接收任务完成 | 记录 task.completed 与 job.completed 顺序 |
+| C1 正常结束 | Job terminal event 晚于所有已接收任务完成和延迟产物登记 | 记录 task.completed、artifact.created 与 job.completed 顺序 |
 | C2 未观察失败 | 未 wait 的任务失败不能被当作 Job 成功 | 后台任务抛错，验证 Job 以 E_BACKGROUND_TASK_FAILED 结束 |
-| C3 取消 | 排队未启动任务取消，正在执行任务结束后 worker 才释放 workspace | 用可控 Event 模拟一个活动任务和一个排队任务 |
+| C3 取消 | 排队未启动任务取消，活动任务按现有停止宽限收尾 | 用可控 Event 验证协作停止；另验证超出 5000ms graceful stop 后由现有 Supervisor 终止 |
 | C4 原错误优先 | 工作流已有错误时，后台收尾错误不覆盖主错误 | 同时制造确定性节点错误和后台错误，检查主错误及附加诊断 |
 | C5 连续运行 | 多个 cycle 共用同一个 Job 服务，Job 停止时统一收尾 | 两个 cycle 提交任务，验证线程身份相同及终态顺序 |
+| C6 预览 writer 顺序 | 后台任务完成和 artifact capture 发生在 AsyncPreviewSnapshotWriter 关闭之前 | 用可控任务记录 close/capture 顺序 |
 
-## D. ImageSaver 与文件产物
+## D. ImageSaver、产物与 SQLite 文件引用
 
 | 验收项 | 预期行为 | 验证方法 |
 |---|---|---|
@@ -41,14 +44,16 @@
 | D2 后台提交 | saveMode=background 立即返回 accepted、SUBMITTED、taskId，不能返回 saved=true | 阻塞写入函数后检查算子返回 |
 | D3 数据快照 | 上游在提交后修改原 ndarray，不影响落盘内容 | 提交后修改源数组，对比文件解码结果 |
 | D4 最终保存 | 任务完成后文件内容可正常解码，wait 返回成功结果 | 临时目录写入 PNG/JPEG 并重新读取 |
-| D5 产物延迟登记 | 文件写入成功前不发布 artifact.created；成功后沿用原 ArtifactStore/预览链路 | 观察任务事件和 artifact.created 的先后关系 |
+| D5 产物延迟登记 | 文件写入成功前不发布 artifact.created；成功后沿用原 ArtifactStore/预览链路 | 观察任务事件、registerPath 与 artifact.created 的先后关系 |
 | D6 失败不造假 | 写入失败不发布 artifact.created；未观察失败使 Job 失败 | 以可控写入函数抛出 OSError 验证 |
-| D7 文件依赖 | 下游立即读取未完成文件会失败或必须先 wait；wait 后可正常读取 | 一个消费者分别执行不等待与显式等待路径 |
+| D7 SQLite 文件引用等待 | pending ImageSaver 输出绑定 FILE_REFERENCE 时，Runner 在 SQLiteWriter 执行前等待，成功后再形成正常 BoundValue | 用阻塞任务确认中间节点可先运行，SQLite 节点直到文件成功后才启动 |
+| D8 SQLite 文件引用失败 | 保存任务失败时不生成有效 FILE_REFERENCE，不执行数据库 insert，并按现有 SQLite failurePolicy 产生失败 receipt | 注入确定性保存异常并检查 insert 未调用 |
+| D9 普通消费者等待 | 普通 JSON 输出可携带 taskId；声明能力的下游 wait 后读取文件成功，未声明能力的算子不能访问服务 | 两个下游算子对同一输出分别验证 |
 
 ## E. 执行模式边界
 
 - 正式 Job 只向已声明 backgroundTasks 的算子注入客户端。
-- 单算子调试和工作流调试只接受从已校验 manifest 传入的能力声明，并在结果冻结/会话关闭前完成已提交任务。
+- 单算子调试和工作流调试只接受由 Runtime trustedEntries() 从已校验 manifest 生成的能力声明，并在结果冻结/最终快照前按计划 drain。
 - PurePreviewExecutor 不注入可提交的服务；previewMode=pure 不允许延迟文件副作用。
 - clone-safe trial 不继承正式工作流服务。
 - 未声明能力的直接 OperatorExecutor 调用不影响现有同步算子。

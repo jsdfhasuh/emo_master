@@ -15,18 +15,22 @@
 | core/plugin/validator.py | validateManifestFields 解析 manifest 字段并构造 PluginManifest；当前未识别 runtimeCapabilities | 需增加可选字符串列表校验、重复/未知值校验及默认空列表 |
 | core/plugin/registry.py | scanRoots 通过 validateManifestFields 解析 manifest，成功后创建 PluginDescriptor | 继续沿用现有注册流程，声明自然保存在 descriptor.manifest |
 | core/plugin/validator.py | loadOperatorClass 当前要求 validateParams/executeNode；validateConsistency 比较 meta 的 ID、名称、版本、端口和参数 | 不增加必需方法或 OperatorMeta 字段；运行时能力由 manifest 单点声明 |
-| apps/runtime/execution/operator_executor.py | invoke 为每次 executeNode 构造 runtimeContext 字典；执行器持有 operatorRegistry，生产 registry 值为 PluginDescriptor；日志在 executeNode 返回后关闭 | 可从当前 descriptor.manifest.runtimeCapabilities 判定是否注入；后台任务不能继续使用已关闭 logger |
-| apps/runtime/workflow/runner.py | WorkflowRunner 创建 OperatorExecutor；Job 运行时节点结束会执行 artifact 发布；_publishArtifacts 目前立即处理所有带 path 的 JSON 输出 | 需要将服务沿 Runner 传入，并延迟处理异步文件产物 |
-| apps/runtime/jobs/worker_main.py | 每个 Job worker 进程扫描插件、构造 WorkflowRunner；预览快照 writer 在此创建并在 terminal 前关闭 | 服务应在同一 Job worker 创建，并在 Job terminal 前收尾 |
-| apps/runtime/jobs/supervisor.py | JobSupervisor 使用 multiprocessing spawn 创建 Job 进程 | Python 线程只能 Job 内共享，不能跨 Job 共享 |
+| apps/runtime/execution/operator_executor.py | invoke 为每次 executeNode 构造 runtimeContext 字典；正式 Job registry 值为 PluginDescriptor；日志在 executeNode 返回后关闭 | 可从 descriptor.manifest.runtimeCapabilities 判定是否注入；后台任务不能继续使用已关闭 logger |
+| apps/runtime/workflow/runner.py | 节点成功后先调用 _publishArtifacts，再捕获 outgoingBindings；captureBoundValue 会立即调用 toStorage | 仅延迟 artifact 不够；SQLite FILE_REFERENCE 也必须延迟到目标 SQLiteWriter 节点前采集 |
+| apps/runtime/workflow/runner.py | _publishArtifacts 立即处理所有输出值中带 path 的 JSON；启用 ArtifactStore 时 registerPath 会复制文件并计算 SHA-256 | pending artifact 必须等 task 成功后再登记 |
+| core/workflow/parameter_bindings.py | captureBoundValue 立即调用 SQLite toStorage；FILE_REFERENCE 需要 saved=true 且文件存在 | 后台 ImageSaver 返回 saved=false 时，当前绑定采集必然失败；需 Runner 暂存 pending binding 并在消费者执行前 wait |
+| core/contracts/sqlite_writer.py | FILE_REFERENCE 只接受已保存的持久文件；拒绝不存在文件和预览/临时路径 | SQLiteWriter 事务代码不需改，但 Runner 必须先解析 pending 引用 |
+| apps/runtime/jobs/worker_main.py | 每个 Job worker 进程扫描插件、构造 WorkflowRunner；publishTerminal 当前先关闭 previewWriter，再发 terminal event | 后台服务 drain 和 Runner completion/artifact drain 必须发生在 previewWriter.close 之前 |
+| apps/runtime/jobs/supervisor.py | JobSupervisor 使用 multiprocessing spawn 创建 Job 进程；gracefulStopTimeoutMs 默认 5000ms，超时会终止 worker | 后台任务停止必须尊重现有停止宽限，不承诺无限等待或强行中断 Python I/O |
 | apps/runtime/preview/async_writer.py | AsyncPreviewSnapshotWriter 有独立线程、有界缓存、同节点合并/丢弃策略 | 可借鉴线程生命周期，不可直接复用其丢弃策略保存业务图片 |
 | apps/runtime/preview/executor.py | PurePreviewExecutor 自己使用 ThreadPoolExecutor 执行纯预览，并设置 isPreview=True；runtimeContext 没有通用后台服务 | 纯预览必须继续隔离后台副作用 |
-| apps/runtime/operator_debug/worker.py | 单算子调试 worker 直接创建 OperatorExecutor；调试 registry 当前以 class 构造，不天然保留 PluginDescriptor | 调试请求需携带来自已校验 PluginManifest 的能力声明，不能仅凭 class 自我声明 |
-| apps/runtime/workflow_debug/worker.py | 工作流调试 worker 创建 WorkflowRunner；clone-safe trial 另建 OperatorExecutor | 调试会话需传递已校验能力；trial 不继承服务 |
+| apps/runtime/operator_debug/contracts.py | trustedEntries 从当前 PluginDescriptor 验证内置算子身份，生成调试准入描述 | 应从这里把已校验 runtimeCapabilities 放入调试 worker spec |
+| apps/runtime/operator_debug/worker.py | 单算子调试 worker 直接创建 class-only OperatorExecutor；输出冻结前没有后台任务 drain | 需显式传递能力映射，并在 freezeOutputs 前 drain |
+| apps/runtime/workflow_debug/worker.py | 工作流调试 worker 创建 WorkflowRunner；clone-safe trial 另建 OperatorExecutor | 调试会话需共享自己的服务；trial 不继承 |
 | plugins/builtins/image_saver/operator.py | 当前在 executeNode 内执行 cv2.imencode、创建目录和文件写入，成功后返回 saved/path | 首个接入者，保留同步默认 |
 | plugins/builtins/detection_archive/operator.py | 逐个裁剪并同步调用 ImageSaver，保存后累计 cropPaths 和 progress | 首版不改，避免同时改变部分完成语义 |
 | plugins/builtins/result_writer/operator.py | 序列化后执行原子写入 | 保持同步 |
-| plugins/builtins/sqlite_writer/operator.py | 等待事务提交并返回 receipt | 保持同步，不能把事务提交伪装成排队成功 |
+| plugins/builtins/sqlite_writer/operator.py | 从 runtimeContext.mappedOutputs 读取 BoundValue，并在自身执行中完成事务 | SQLiteWriter 本身不需异步化；Runner 负责在执行前解析延迟文件引用 |
 
 ## 关键源码入口
 
@@ -35,19 +39,23 @@
 - [PluginRegistry](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/core/plugin/registry.py)
 - [OperatorExecutor](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/apps/runtime/execution/operator_executor.py)
 - [WorkflowRunner](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/apps/runtime/workflow/runner.py)
+- [参数绑定采集](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/core/workflow/parameter_bindings.py)
+- [SQLite 文件引用校验](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/core/contracts/sqlite_writer.py)
+- [ArtifactStore](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/apps/runtime/artifacts/store.py)
 - [Job worker](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/apps/runtime/jobs/worker_main.py)
 - [JobSupervisor](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/apps/runtime/jobs/supervisor.py)
-- [预览异步写入](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/apps/runtime/preview/async_writer.py)
 - [纯预览执行器](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/apps/runtime/preview/executor.py)
+- [调试准入声明](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/apps/runtime/operator_debug/contracts.py)
+- [单算子调试 worker](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/apps/runtime/operator_debug/worker.py)
+- [工作流调试 worker](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/apps/runtime/workflow_debug/worker.py)
 - [ImageSaver](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/plugins/builtins/image_saver/operator.py)
 - [DetectionArchive](https://github.com/jsdfhasuh/emo_master/blob/b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd/src/emo_master/plugins/builtins/detection_archive/operator.py)
 
 ## 尚待实施时确认
 
-- 现有 Worker terminal 发布与 finally 清理顺序的最小调整点。
-- BackgroundTaskService 的队列容量默认值及任务结果保留时长；不作为工程配置暴露。
-- ArtifactStore 注册回调的具体接口，确保复制/哈希仍在文件完成之后执行。
-- 调试请求如何携带并验证 runtimeCapabilities，避免能力声明在 class-only debug registry 中丢失。
-- 调试 worker 的任务 drain 与输出冻结先后关系。
+- BackgroundTaskService 的队列容量、终态记录上限及结果保留策略；作为 Runtime 内部常量，不作为工程配置暴露。
+- Runner 完成记录队列的线程归属和 drain 位置，确保 ArtifactStore、ResultCollector 和预览 writer 只由 Runtime 执行线程调用。
+- 调试 worker 如何传递 trustedEntries 生成的能力映射，并在输出冻结前 drain。
+- Worker terminal 发布与 finally 清理顺序的最小调整点；必须保持现有 5000ms graceful stop 超时语义。
 
-以上是实现落点确认项，不代表当前代码已有后台任务服务。
+以上是固定源码核查，不代表当前代码已有后台任务服务。

@@ -9,7 +9,7 @@
 
 入口：[创建仓库](https://github.com/new) · [创建 fine-grained PAT](https://github.com/settings/personal-access-tokens/new)。
 
-先有 CI 仓库，才能在 Only select repositories 中选它。若这枚 Token 同时给 dot 实施和 CI 运行使用，仓库范围选择 emo_master、emo_master_ci、python_build_scripts；仅运行链路需要前两者。建议有效期 90 天，受账户策略限制时遵循策略。
+先有 CI 仓库，才能在 Only select repositories 中选它。**本次已核实 `jsdfhasuh/emo_master_ci` 已存在且为 Public、默认分支 main**。如果你创建 fine-grained PAT 时该仓库尚不存在，必须回到 Token 的 Repository access 检查并将 `emo_master_ci` 加入授权范围；仅把 Token 保存为该仓库 Secret，不会自动授予它访问该仓库的权限。若现有 Token 无法编辑授权范围，则重新生成一枚并替换两处 Secret。若这枚 Token 同时给 dot 实施和 CI 运行使用，仓库范围选择 emo_master、emo_master_ci；只有确实要由该 Token 推送 `python_build_scripts` 时才加入第三个仓库。建议有效期 90 天，受账户策略限制时遵循策略。
 
 ## 2. 一枚 Token 的权限清单
 
@@ -17,9 +17,9 @@
 |---|---|
 | 取源与 Release；触发和读 Actions；回写状态 | Contents、Actions、Commit statuses：Read and write |
 | 读取产品 PR；dot 创建／更新本任务 PR | Pull requests：Read and write |
-| dot 修改 workflow、写 Secrets、配置 Environment 与仓库／门禁／可见性 | Workflows、Secrets、Environments、Administration：Read and write |
+| dot 修改 workflow、写 Secrets、配置 Environment／Variables 与仓库／门禁／可见性 | Workflows、Secrets、Environments、Variables、Administration：Read and write |
 
-Metadata 保持必需只读。dot 已有足够管理登录时可沿用，不必为同一工作额外生成管理 Token。Token 不能超越账号自身权限，也不能解锁付费账户功能。Private 强制分支保护仍核对 GitHub 账户条件；不能自动付费升级。
+Metadata 保持必需只读。`Variables: write` 用于设置 `CI_EVIDENCE_RECIPIENT` 等非敏感仓库变量；`Environments: write` 用于创建环境及配置环境变量／Secret。dot 已有足够管理登录时可沿用，不必为同一工作额外生成管理 Token。Token 不能超越账号自身权限，也不能解锁付费账户功能。Private 强制分支保护仍核对 GitHub 账户条件；不能自动付费升级。
 
 ## 3. 用户只录入一次，配置由 dot 完成
 

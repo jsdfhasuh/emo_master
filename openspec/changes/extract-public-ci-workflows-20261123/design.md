@@ -34,26 +34,35 @@ GitHub 官方计费说明：公共仓库使用标准 GitHub-hosted Runner 的计
 - 合成项目自测与使用文档。
 - 不保存 emo_master 源码，不在 Git 历史中出现私有源码副本。
 
-### 3.2 执行准入（当前不接产品源码和密钥）
+### 3.2 公共执行准入（当前禁止接入产品源码）
 
-公共标准 Runner 是临时 VM，不是私有源码与测试进程之间的保密边界。测试、npm 生命周期脚本、打包子进程一旦可读源码，单靠重定向 stdout、撤销 token、固定 Action SHA 或清理工作目录，不会限制网络、Runner 服务、GitHub 工作流命令文件与其他公开输出。公开 Artifact 也不能转运产品分片原始清单。按以下顺序推进：
+GitHub 官方说明：GitHub-hosted Runner 默认可访问公共互联网。临时 VM 只能降低跨任务持久化风险，不能阻止当前任务中的测试、npm 生命周期脚本、依赖安装脚本或打包子进程读取源码后通过网络外传。stdout 重定向、撤销 Token、固定 Action SHA、清理工作目录和只上传白名单摘要都不能证明源码保密。合成项目也不能证明真实产品代码在同一环境下不会外传。
 
-1. 公共端先运行独立合成项目，真实产品权限、源码、配置和凭据一律不接入。
-2. 后续产品资格试验只能以无敏感内容的私有替身和合成标记开展。Linux 和 Windows 都须独立验证隔离执行身份、文件与进程边界、可访问网络、Runner API/工作流命令文件及固定格式结果出口；不得在证据不足时用真实源码测试安全性。
-3. 若标准 Runner 无法保留原覆盖并证明上述边界，方案 A 的产品执行停止。可单独提请用户选用私有仓库专用隔离自托管 Runner（Runner 计算额度与主机成本分开核算），或保留私有托管执行并优化触发/缓存。不默认改变已授权架构。
-4. 公开工作流不得加入原始报告或产品资产上传步骤。若维持各平台两个独立分片 VM，完整节点 ID 清单的跨 job 证明必须留在私有边界；如改同机顺序运行，则先核对原独立桌面、稳定性与时间预算，且须在原断言不变的前提下实测。只比较计数不等价于集合覆盖。
-5. 私有端依据来源、当前提交和检查策略创建 queued Check Run。公共请求采用固定 workflow/ref 和不含敏感字段的请求标识；固定真实目标 SHA 和 PR head/base 与 run/attempt 的映射留在私有可信端。公共回调是完成通知而非可信的 PASS；私有端以 GitHub API 核实 run 对应仓库、固定 workflow、调度版本、attempt、各必需 job 和当前目标 SHA 后才能回填。取消回调未运行时由私有调度/对账处理；未回调、缺 job、失败、取消、超时和 SHA 不一致均不产生通过结论。
+因此设为明确硬门槛：
 
-### 3.3 GitHub App 与权限隔离
+1. 公共仓库首阶段只运行独立合成 Python 项目，使用虚构数据和无产品权限身份；不接真实 emo_master 源码、测试、配置、App、Token、工程文件或原始证据。
+2. 合成测试只证明公共仓库的调度、Runner、测试执行和结果处理链路可用；不得将其作为产品源码保密已通过的证据。
+3. GitHub-hosted Runner 默认有公网访问。GitHub 的 Private Networking 文档描述的是让 Runner 访问私有网络资源，不等于为标准公共 Runner 提供默认拒绝公网出口的安全保证。除非另有由 Runner 外部强制、不可由 job 内代码绕过的网络出口控制及进程/文件隔离，并有独立审计证据，否则禁止向公共 Runner 提供真实产品源码。
+4. 若不能证明完整隔离，公共 Runner 的产品源码执行路线正式判定为不适用；12 个产品工作流继续在私有仓库原路径执行，不得用“受信任分支”替代安全证明。
+5. 为最大限度节省额度，优先评估私有仓库专用临时自托管 Runner：每个 job 使用一次性 VM/镜像，Runner group 仅授权 emo_master，工作结束销毁 VM；外部网络防火墙默认拒绝并只放行明确依赖；不存长期凭据、不与其他项目共享。该路线仍须审查测试代码外传、Runner 持久化和主机隔离，主机/维护成本单独计算。未经用户确认不得部署或改用该路线。
+6. Windows 原生 Qt、GUI、冻结包验证必须单独评估是否可在隔离自托管 Windows VM 中保留真实桌面能力；不能用 Linux 容器或合成测试替代。
+7. 若后续另行申请公共 Runner 产品试验，必须先提交隔离架构、可绕过性分析、网络规则、执行身份、日志/命令文件/缓存/Artifact 输出清单和独立审查证据，等待用户明确批准；不得用真实源码做安全探针。
 
-- Dispatcher App 仅安装在公共 CI 仓库，Actions: write；私钥仅在私有可信端。该权限并不原生限制为单个 workflow，需由私有调用端固定 workflow/ref 且对账核实。
-- Source Reader App 仅安装在产品仓库，Contents: read；长期私钥仅在私有可信端。安装令牌限仓库和权限，不能原生限制到某个 SHA；固定 SHA 授权须由私有端实现。若缺乏有证据的私有取源及隔离路径，不下发任何真实读取凭据。
-- Check Reporter App 仅安装在产品仓库，Checks: write；长期私钥仅在私有可信端。以同一 App 创建、更新和归属 required check，不依赖跨 App 更新或公共端写私有关卡。用于回读公共运行状态的身份与 Checks 写入分离，优先使用公共只读 API。
-- fork PR 不自动运行真实产品测试；owner/可信同仓库分支也不能绕过执行准入。避免由 PR 可改写的代码接触私钥。公共默认分支在任何敏感集成前先保护；合成自测从不接触产品 Secrets。
+### 3.3 调度与检查结果
+
+公共合成自测不创建或更新 emo_master 产品 required check。未来如有经用户批准的产品 CI 调度，私有端应创建 queued Check Run 并保留目标 SHA、PR head/base、请求 ID、公共 workflow/run/attempt 的可信映射。公共回调仅为完成通知；私有端通过 GitHub API 核验固定 workflow、run/attempt、必需 job 和准确目标 SHA 后，才可更新同一门禁 App 创建的 Check Run。取消回调未运行时由私有端对账；缺失回调、缺 job、失败、取消、超时和 SHA 不匹配均不得成功。
+
+### 3.4 GitHub App 与权限隔离（仅设计，不在合成阶段创建产品密钥）
+
+- 公共合成自测不需要安装任何可访问 emo_master 的 GitHub App，也不配置 Source Reader / Check Reporter 私钥。
+- 只有用户批准了明确的产品执行隔离架构后，才设计 Dispatcher、Source Reader 和 Check Reporter 的安装范围。App 权限应按真实调用需求最小化；Actions: write 不能天然限制为单个 workflow，Contents: read 不能天然限制为某个 SHA。
+- 不把 Source Reader App 私钥放在公共仓库。若方案要求公共 Runner 直接取得可读取产品源码的 Token，则该 Token 和源码都处于可被测试进程读取/外传的风险环境，不能视为安全隔离。
+- 任何私有 Check Run 都由私有可信端创建和更新；公共仓库只提供不含敏感信息的合成运行状态，不能持有产品 Checks 写权限。
+- fork PR、同仓库受信任分支均不能绕过产品源码保密准入。
 
 ## 4. 工作流逐项迁移策略
 
-下表为通过准入后的目标，不是已验收状态。当前 12 项均保留现有产品执行路径和原有断言。
+下表仅是未来候选，不代表已获准迁移。当前 12 项均保留现有产品执行路径和原有断言；公共仓库只运行合成等价自测，不读取或执行这些产品文件。产品 CI 若要节省额度，优先另案评估私有临时自托管 Runner。
 
 | 当前工作流 | 迁移后的执行位置 | 说明 |
 |---|---|---|
@@ -130,16 +139,14 @@ GitHub 官方计费说明：公共仓库使用标准 GitHub-hosted Runner 的计
 
 ## 10. 实施顺序
 
-1. 核对最新 main、PR #21 和工作流；修订本 OpenSpec 并严格校验。
-2. 创建公共 `emo_master_ci` 仓库、许可证、保护规则和分权 GitHub App 的设计；真实密钥不上公共端。
-3. 先用合成项目实际验证标准 Runner，再使用私有替身验证调度和检查；真实产品执行须先通过保密准入。
-4. 将主 CI 迁移至公共 Runner，先跑 Linux/Windows 四分片并确认检查绑定正确 SHA。
-5. 迁移 Web、Display Session、Runtime 诊断和 Windows 包验证；逐项审查日志和 artifact。
-6. 拆分 Release：公共端做验证，私有端持有发布权限和正式资产。
-7. 逐一验证 12 个活动工作流的触发、结果、覆盖和权限；归档的 4 个 YAML 保持原样。
-8. 盘点公开 Fork/Clone/Release/Packages/Pages/外部镜像/历史 artifacts；说明 Private 不能撤回既有副本。
-9. 所有关键链路通过后，经用户明确确认切换 emo_master 为 Private。
-10. 在 Private 状态复验 PR、push、手动触发、回调、Windows 构建和 Release 控制；读取 Billing usage 比较迁移前后实际消耗。
+1. 完成 OpenSpec strict validation 和 PR 审查。
+2. 创建公共 `emo_master_ci`，配置许可证、默认分支保护和维护者权限；不配置任何产品 Secrets/App。
+3. 仅建立合成 Python fixture，验证公共 Linux/Windows Runner、调度、测试退出码、固定格式结果和运行摘要；不触发产品 required check。
+4. 对照 GitHub 官方 Runner 安全文档，记录公共 Runner 默认网络能力及其不提供的出口隔离保证；明确合成测试不证明产品源码安全。
+5. 独立评估私有临时自托管 Runner 的 Linux/Windows 可行性、费用、网络策略和 Qt 桌面支持；先提交方案，不擅自部署。
+6. 只有找到由 Runner 外部强制且不可由任务绕过的产品源码隔离架构，并经用户明确批准，才可新增真实产品源码试点；否则保留所有产品 CI 在私有原路径。
+7. 在任何闭源切换前，先解决 `python_build_scripts` 私有取源、发布权限、分支门禁和公开历史盘点；切换 Private 需要用户另行明确确认。
+8. 切换后在 Private 状态复验现有 PR、push、手动 CI、Windows 构建和 Release 控制；读取 Billing usage 比较真实节省额。
 
 ## 11. 本轮静态复核
 

@@ -83,3 +83,12 @@
 - [Web 首轮](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45204466083) Linux Web 通过，Windows 三路在 recipe 步骤失败；失败未被忽略。产品 `f370753` 明确 Git Bash/PowerShell 启动并新增可公开的固定失败类别，5 个定向用例通过。[公共复跑](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45205566980) 固定工作流 `17f364a`，真实 Windows 修复结论待验证。
 - 同一产品提交增加 dispatcher 请求来源身份验证（4 项定向用例通过）；尚未接到生产 dispatcher 或状态回写。
 - [诊断影子运行](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45204631640) 的 Display Session 与 SQLite append Windows 作业已通过。分别保留其显示契约／诊断含义，其他作业结果未核对前保持待验证。
+
+
+### 影子运行终态与修复排查
+
+- [Web 修复复跑](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45205566980)：Linux Web、Windows 自动 Web、Windows 手动全量 Web、Windows owning Runtime 均通过。同一公开 SHA 证据不替代 Private 验收。
+- [主 CI 公共影子运行](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45203988805)：Linux 和 Windows 的 runtime／other 均在原检查步骤失败。公开摘要不包含内部失败详情；覆盖集合核验未验收。
+- [最新产品原门禁](https://github.com/jsdfhasuh/emo_master/actions/runs/45205481370)（产品草稿 `f370753`）：四分片均未通过。Linux 和 Windows 都有设备包导入及资源生命周期问题；日志确认共享依赖计划的调用缺少 `sourceRoot`，以及设备包模型缺少被读取的 `workflows`。Windows 双图测试另外报 `EXPORT_TIMEOUT`；不得据此修改时限。上述实证来自产品自身 CI，不把公共影子任务一律归为同一原因。
+- [诊断终态](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45204631640)：Display Session、SQLite append 通过；A18、采集、SQLite failure、stop 失败；credit 未执行。
+- [Windows 打包终态](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45204870674)：Designer build-only 构建与冻结包验证通过，Runtime build-only 失败；发布未执行。

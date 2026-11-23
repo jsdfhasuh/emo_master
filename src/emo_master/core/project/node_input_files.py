@@ -31,19 +31,29 @@ def activeNodeInputFile(workflow: WorkflowDefinition, node: WorkflowNode) -> str
     return field
 
 
-def nodeInputPathKey(value, projectRoot=None) -> str | None:
+def _nodeInputRelativePath(value, projectRoot=None) -> str | None:
     if not isinstance(value, str) or not value.strip():
         return None
     path = Path(value.strip().replace("\\", "/"))
     if path.is_absolute():
-        if projectRoot is None or not path.is_relative_to(projectRoot):
+        if projectRoot is None or ".." in path.parts:
             return None
-        path = path.relative_to(projectRoot)
+        # Canonical containment handles Windows short-name aliases while
+        # rejecting paths that resolve outside through a junction/symlink.
+        try:
+            root = Path(projectRoot).resolve()
+            path = path.resolve().relative_to(root)
+        except (OSError, RuntimeError, ValueError):
+            return None
     try:
-        relative = safeRelativePath(path.as_posix())
+        return safeRelativePath(path.as_posix())
     except ValueError:
         return None
-    return os.path.normcase(relative).replace("\\", "/")
+
+
+def nodeInputPathKey(value, projectRoot=None) -> str | None:
+    relative = _nodeInputRelativePath(value, projectRoot)
+    return os.path.normcase(relative).replace("\\", "/") if relative is not None else None
 
 
 def nodeInputResource(document, workflow, node, projectRoot=None) -> tuple[str, Resource] | None:
@@ -141,15 +151,14 @@ def alignWorkflowInputFiles(workflows: dict[str, WorkflowDefinition], plan: Reso
             if not isinstance(value, str) or not value.strip():
                 continue
             selectedPath = Path(value.strip().replace("\\", "/"))
-            pathKey = nodeInputPathKey(value, root)
             try:
-                if pathKey is None:
+                relative = _nodeInputRelativePath(value, root)
+                if relative is None:
                     if root is None and (selectedPath.is_absolute() or PureWindowsPath(value).is_absolute()):
                         # With no Designer source root this path belongs to the Runtime host.
                         continue
                     raise ValueError(f"输入文件在工程目录外，请在节点中重新选择文件以导入工程：{value}")
-                relative = (selectedPath.relative_to(root).as_posix()
-                            if root is not None and selectedPath.is_absolute() else selectedPath.as_posix())
+                pathKey = os.path.normcase(relative).replace("\\", "/")
                 key = byPath.get(pathKey)
                 # Keep the spelling declared on the editing host when delivering
                 # a project from Windows to a case-sensitive Runtime.

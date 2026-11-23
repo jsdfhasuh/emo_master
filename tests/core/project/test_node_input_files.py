@@ -78,3 +78,37 @@ def testExplicitImportKeepsFileNameAndNeverOverwritesPreviousSelection(tmp_path)
     assert new != old and (project / new).name == "model.onnx"
     assert (project / old).read_bytes() == b"old" and (project / new).read_bytes() == b"new"
     assert projectInputFilePath(project / new, project, "vision.inference.yolo") == new
+
+
+def testAbsoluteProjectAliasUsesCanonicalContainment(tmp_path, monkeypatch):
+    project = tmp_path / "long project directory"
+    project.mkdir()
+    (project / "input.png").write_bytes(b"image")
+    alias = tmp_path / "LONGPR~1" / "input.png"
+    outside = tmp_path / "outside.png"
+    outside.write_bytes(b"outside")
+
+    # Model Windows resolve() expanding a real 8.3 alias, without requiring
+    # 8.3 generation to be enabled on the testing volume.
+    pathType = type(project)
+    resolve = pathType.resolve
+
+    def expandAlias(path, *args, **kwargs):
+        if path == alias:
+            return resolve(project / "input.png", *args, **kwargs)
+        return resolve(path, *args, **kwargs)
+
+    monkeypatch.setattr(pathType, "resolve", expandAlias)
+    document = ProjectDocument.model_validate(WorkflowStore().toPayload())
+    wid = document.entryWorkflowId
+    node = WorkflowNode(nodeId="file", operatorId="vision.io.image_loader", params={"imagePath": str(alias)})
+    document.workflows[wid].nodes.append(node)
+    aligned = alignNodeInputFiles(document, project)
+    selected = aligned.workflows[wid].nodes[-1]
+    assert selected.params["imagePath"] == "input.png"
+    resource = nodeInputResource(aligned, aligned.workflows[wid], selected)
+    assert resource is not None and resource[1].sha256 == hashlib.sha256(b"image").hexdigest()
+
+    node.params["imagePath"] = str(outside)
+    with pytest.raises(WorkflowCompileError):
+        alignNodeInputFiles(document, project)

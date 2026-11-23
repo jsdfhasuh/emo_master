@@ -60,26 +60,26 @@ GitHub 官方说明：GitHub-hosted Runner 默认可访问公共互联网。临�
 
 ## 4. 工作流逐项迁移策略
 
-下表仅是未来候选，不代表已获准迁移。当前 12 项均保留现有产品执行路径和原有断言；公共仓库只运行合成等价自测，不读取或执行这些产品文件。产品 CI 若要节省额度，优先另案评估私有临时自托管 Runner。
+下表是当前执行边界审计结果，不是产品迁移批准。12 个活动工作流全部保留在 emo_master 私有原路径执行，触发条件、测试集合、断言、Artifact 和 required checks 不因本轮公共合成自测而改变。公共仓库只验证通用 Runner 基础设施，不复制或执行以下产品工作流。
 
-| 当前工作流 | 迁移后的执行位置 | 说明 |
+| 当前工作流 | 本阶段执行位置 | 产品覆盖范围（保持不变） |
 |---|---|---|
-| `ci.yml` | 公共 CI | 完整 Linux/Windows、Python 3.10、runtime/other 分片、报告覆盖检查。私有端只保留 scope 选择与 dispatcher；scope 决策也可通过固定 SHA/变更列表交给公共端计算，但不得传任意命令 |
-| `web-panel-ci.yml` | 私有原路径保留 | Linux/Windows Web 测试、浏览器、HTTP/WS、wheel、软件 Runtime 集成；仅保留白名单摘要，不公开原始浏览器截图/日志 |
-| `display-session-contract.yml` | 私有原路径保留 | Windows 原生 Qt 与 Display Session 合约测试；不公开 display-evidence、JUnit 原文和截图 |
-| `runtime-a18-diagnostics.yml` | 私有原路径保留 | 执行既有 A18 诊断；公开只输出诊断是否完整和失败类别，不输出线程 ID、内部 JSON 或原始 SQLite 上下文 |
-| `runtime-capture-diagnostics.yml` | 私有原路径保留 | 执行既有采集诊断；只公开摘要，不公开采集内部数据 |
-| `runtime-credit-diagnostics.yml` | 私有原路径保留 | 执行现有导出额度对照；仅公开实验通过/失败和固定统计，不上传原始报告 |
-| `runtime-sqlite-append-controls.yml` | 私有原路径保留 | 执行七项固定控制；不公开原始 SQLite 内容 |
-| `runtime-sqlite-failure-diagnostics.yml` | 私有原路径保留 | 执行故障观察和独立控制；原始故障上下文不出 Runner |
-| `runtime-stop-diagnostics.yml` | 私有原路径保留 | 执行停止生命周期诊断；只输出脱敏摘要 |
-| `runtime-windows.yml` | 私有原路径保留 | Runtime 包在公共 Windows Runner 内生成、验证后清理；不上传公共 artifact。需要留存或交付的正式包由私有发布链路重新生成/私有化保存 |
-| `validate-windows-package.yml` | 私有原路径保留 | 构建、冻结产物验证均在同一个公共 Windows job 内完成；不上传公开包或原始证据 |
-| `release-windows.yml` | 私有原路径保留 | 公共端不持有 Release token，不发布私有二进制；私有发布 job 只处理已验证 SHA，并按需在私有 Runner 重新构建/签名/发布 |
+| `.github/workflows/ci.yml` | 私有原路径保留 | Linux/Windows、Python 3.10、runtime/other 四分片、JUnit 和完整覆盖汇总 |
+| `web-panel-ci.yml` | 私有原路径保留 | Web 后端、前端、浏览器、HTTP/WS、wheel、软件 Runtime 集成 |
+| `display-session-contract.yml` | 私有原路径保留 | Windows 原生 Qt、Display Session 和实时数据契约 |
+| `runtime-a18-diagnostics.yml` | 私有原路径保留 | A18 线程诊断及 SQLite 失败上下文 |
+| `runtime-capture-diagnostics.yml` | 私有原路径保留 | Runtime 采集诊断 |
+| `runtime-credit-diagnostics.yml` | 私有原路径保留 | Windows 原生 Qt 导出额度对照 |
+| `runtime-sqlite-append-controls.yml` | 私有原路径保留 | SQLite append 生命周期控制 |
+| `runtime-sqlite-failure-diagnostics.yml` | 私有原路径保留 | SQLite 故障点观察和独立控制 |
+| `runtime-stop-diagnostics.yml` | 私有原路径保留 | Runtime stop 生命周期诊断 |
+| `runtime-windows.yml` | 私有原路径保留 | Operator Runtime 构建、归档和验证 |
+| `validate-windows-package.yml` | 私有原路径保留 | Windows 冻结包构建与验证 |
+| `release-windows.yml` | 私有原路径保留 | Tag 校验、Designer/Runtime 正式发布 |
 
 `docs/ci/archived-workflows/` 中 4 个历史归档 YAML 保留在私有仓库，不恢复、不迁移、不公开。
 
-如果某项诊断输出无法在不泄漏内部信息的情况下脱敏，则该项先暂停公共调度并单独评估；不得为满足“全迁移”而把原始证据公开。所有 12 个活动工作流都必须有明确的迁移结果，不能静默遗留。
+若未来某项产品执行获得独立保密准入，必须再逐项验证原平台、测试集合、报告完整性和证据语义；未通过准入的工作流继续保留原执行边界。不得为满足“全迁移”而公开原始证据或减少断言。
 
 ## 5. 日志、Artifact 与数据保护
 

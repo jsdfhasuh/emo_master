@@ -1,15 +1,15 @@
 """Read-only draft source catalog and validation, sharing compiler port rules."""
-from copy import deepcopy
 from types import SimpleNamespace
 
 from emo_master.core.contracts.port_types import normalizePortType
 from emo_master.core.contracts.sqlite_writer import OPERATOR_ID, parseConfig
 from emo_master.core.project.models import ProjectDocument
-from emo_master.core.workflow.compiler import WorkflowCompiler
+from emo_master.core.workflow.compiler import WorkflowCompiler, WorkflowPortContext
+from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields
 
 
 def sourceCatalog(payload, workflowId, catalog):
-    document = ProjectDocument.model_validate(payload)
+    document = payload if isinstance(payload, WorkflowPortContext) else ProjectDocument.model_validate(payload)
     registry = {d['operatorId']: SimpleNamespace(
         inputPorts=d.get('inputPortSpecs', d.get('inputPorts', {})),
         outputPorts=d.get('outputPortSpecs', d.get('outputPorts', {}))) for d in catalog}
@@ -21,6 +21,11 @@ def sourceCatalog(payload, workflowId, catalog):
                 raise ValueError('正式算子定义尚未加载或不可用，不能使用旧保存端口')
             if node.kind == 'subflow' and node.targetWorkflowId not in document.workflows:
                 raise ValueError('目标流程已删除或不可用')
+            if node.kind == 'loop':
+                for field in loopWorkflowReferenceFields(node.loop):
+                    target = node.loop.get(field)
+                    if target is not None and (not isinstance(target, str) or target not in document.workflows):
+                        raise ValueError('目标流程已删除或不可用')
             _, ports = compiler.nodePortDefinitions(document, workflowId, node)
         except (ValueError, KeyError) as error:
             result.append({'nodeId': node.nodeId, 'name': node.displayName or node.nodeId,
@@ -28,7 +33,7 @@ def sourceCatalog(payload, workflowId, catalog):
             continue
         result.append({'nodeId': node.nodeId, 'name': node.displayName or node.nodeId,
                        'ports': ports, 'operatorId': node.operatorId, 'error': ''})
-    return deepcopy(result)
+    return result
 
 
 def validateDraftMappings(config, sources, workflow, nodeId):

@@ -88,6 +88,27 @@ def testDefinitionThenTabBackForwardRestoresExactCallerAndViewWithoutMutatingPro
     assert {key: (id(run), run.jobId) for key, run in w.runtimeController.runs.items()} == jobs
 
 
+def testTabAndBackRefreshToolbarOnceWithFinalSelection(window, monkeypatch):
+    w = window
+    selected(w, 'second')
+    chrome = w.pageCoordinator.chrome
+    update = chrome.update
+    refreshes = []
+
+    def recordUpdate(*, projectChanged):
+        refreshes.append((w.activeWorkflowId, w.flowScene.getSelectedNodeId(), projectChanged))
+        update(projectChanged=projectChanged)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(chrome, 'update', recordUpdate)
+        patch.setattr(w.pageCoordinator.session, 'payload',
+                      lambda: pytest.fail('browsing should not rebuild the project for title or history'))
+        w.workflowTabs.selectWorkflow('child')
+        assert w.workflowNavigation.move(-1)
+
+    assert refreshes == [('child', None, False), ('main', 'second', False)]
+
+
 def testSharedChildReturnsToActualCallNodeAndNewJumpDropsForward(window):
     w, nav = window, window.workflowNavigation
     for caller in ['first', 'second']:

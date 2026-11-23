@@ -611,6 +611,23 @@ class WorkflowStore:
         self.get(workflowId)
         self.activeWorkflowId = workflowId
 
+    @property
+    def schemaVersion(self) -> str:
+        presentation = self.projectExtensions.get("presentation")
+        pageVersion = presentation.get("schemaVersion") if isinstance(presentation, dict) else None
+        if pageVersion == "1.3":
+            return "2.10"
+        if self.devices.get("schemaVersion") == "1.0":
+            if "communication" in self.projectExtensions:
+                return "2.6"
+            if pageVersion == "1.2":
+                return "2.9"
+            return "2.8" if pageVersion == "1.1" else "2.7"
+        for key, version in (("communication", "2.5"), ("globalVariables", "2.4"), ("production", "2.3")):
+            if key in self.projectExtensions:
+                return version
+        return "2.2" if self.projectExtensions else "2.1"
+
     def toPayload(self, projectName: str | None = None) -> dict[str, object]:
         self.ensureBoundaryNodes()
         project = deepcopy(self.project)
@@ -619,17 +636,8 @@ class WorkflowStore:
         project["updatedAt"] = utc_now_iso()
         revision = project.get("revision", 1)
         project["revision"] = (revision if isinstance(revision, int) else 1) + 1
-        presentation = self.projectExtensions.get("presentation")
         return {
-            "schemaVersion": ("2.10" if isinstance(presentation, dict) and presentation.get("schemaVersion") == "1.3"
-                              else "2.9" if isinstance(presentation, dict) and presentation.get("schemaVersion") == "1.2" and self.devices.get("schemaVersion") == "1.0" and "communication" not in self.projectExtensions
-                              else "2.8" if isinstance(presentation, dict) and presentation.get("schemaVersion") == "1.1" and self.devices.get("schemaVersion") == "1.0" and "communication" not in self.projectExtensions
-                              else "2.7" if self.devices.get("schemaVersion") == "1.0" and "communication" not in self.projectExtensions
-                              else "2.6" if self.devices.get("schemaVersion") == "1.0"
-                              else "2.5" if "communication" in self.projectExtensions
-                              else "2.4" if "globalVariables" in self.projectExtensions
-                              else "2.3" if "production" in self.projectExtensions
-                              else "2.2" if self.projectExtensions else "2.1"),
+            "schemaVersion": self.schemaVersion,
             **deepcopy(self.projectExtensions),
             "project": project,
             "entryWorkflowId": self.entryWorkflowId,

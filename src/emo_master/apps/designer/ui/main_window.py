@@ -4639,6 +4639,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             dialog.hide()
 
     def updateToolbarState(self, *, projectChanged: bool = True) -> None:
+        if self.workflowNavigation is not None and self.workflowNavigation.restoringLocation:
+            return
         from emo_master.apps.designer.operator_editors.sqlite_canvas import refreshCanvasHints
         refreshCanvasHints(self)
         new = self._menuActions.get("新建项目…")

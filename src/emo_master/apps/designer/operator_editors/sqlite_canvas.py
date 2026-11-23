@@ -3,20 +3,40 @@ from copy import deepcopy
 
 from emo_master.apps.designer.operator_editors.sqlite_sources import sourceCatalog, validateDraftMappings
 from emo_master.core.contracts.sqlite_writer import OPERATOR_ID
+from emo_master.core.workflow.compiler import WorkflowPortContext
+
+
+def _draftSources(window, key):
+    if key.projectId != window._currentProjectId():
+        raise ValueError('编辑器所属项目已关闭')
+    store = window.workflowStore
+    state = store.workflows.get(key.workflowId)
+    if state is None:
+        raise ValueError('编辑器所属流程或节点已删除')
+    if key.workflowId == store.activeWorkflowId:
+        graph = window.flowModel.toProjectGraph()
+    else:
+        graph = {'nodes': state.nodes, 'edges': state.edges}
+    if not any(node['nodeId'] == key.nodeId for node in graph['nodes']):
+        raise ValueError('编辑器所属流程或节点已删除')
+    # Calls, loops and dispatch targets use other workflows' interfaces only.
+    workflows = {workflowId: {'name': flow.name, 'inputs': flow.inputs, 'outputs': flow.outputs}
+                 for workflowId, flow in store.workflows.items()}
+    workflow = workflows[key.workflowId]
+    workflow.update(graph)
+    context = WorkflowPortContext(schemaVersion=store.schemaVersion, project=store.project, workflows=workflows,
+                                  globalVariables=store.projectExtensions.get('globalVariables', {}))
+    return sourceCatalog(context, key.workflowId, window.operatorCatalogController.getCatalog()), workflow
 
 
 def draftForEditor(window, key):
-    if key.projectId != window._currentProjectId():
-        raise ValueError('编辑器所属项目已关闭')
-    store = deepcopy(window.workflowStore)
-    store.captureActiveGraph(window.flowModel.toProjectGraph(), window.flowScene.getNodePositions())
-    payload = store.toPayload()
-    payload['project'] = deepcopy(store.project)
-    workflow = payload['workflows'].get(key.workflowId)
-    if workflow is None or not any(n['nodeId'] == key.nodeId for n in workflow['nodes']):
-        raise ValueError('编辑器所属流程或节点已删除')
-    sources = sourceCatalog(payload, key.workflowId, window.operatorCatalogController.getCatalog())
-    return {'sources': sources, 'workflow': workflow,
+    sources, workflow = _draftSources(window, key)
+    if key.workflowId == window.workflowStore.activeWorkflowId:
+        layout = {'nodePositions': {nodeId: {'x': x, 'y': y}
+                                    for nodeId, (x, y) in window.flowScene.getNodePositions().items()}}
+    else:
+        layout = window.workflowStore.get(key.workflowId).layout
+    return {'sources': sources, 'workflow': deepcopy({**workflow, 'layout': layout}),
             'directory': str(window.currentProjectDir or window.loadedProjectPath or '')}
 
 
@@ -32,7 +52,7 @@ def refreshCanvasHints(window):
         scene.setBindingDependencies(*dependencies)
         return
     try:
-        draft = draftForEditor(window, EditorKey(window._currentProjectId(), window.activeWorkflowId, writers[0].nodeId))
+        sources, workflow = _draftSources(window, EditorKey(window._currentProjectId(), window.activeWorkflowId, writers[0].nodeId))
     except (ValueError, KeyError) as draftError:
         for node in writers:
             scene.setSqliteHints(node.nodeId, '来源目录不可用', str(draftError))
@@ -41,7 +61,7 @@ def refreshCanvasHints(window):
     for node in writers:
         error = ''
         try:
-            validateDraftMappings(node.params, draft['sources'], draft['workflow'], node.nodeId)
+            validateDraftMappings(node.params, sources, workflow, node.nodeId)
         except (ValueError, KeyError) as problem:
             error = str(problem)
         rows = node.params.get('mappings', [])
